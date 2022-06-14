@@ -1,13 +1,14 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Immutable;
 using Mono.Cecil;
 using Mono.Linker;
 
 namespace ILLink.Shared.TypeSystemProxy
 {
-	readonly partial struct MethodProxy
+	readonly partial struct MethodProxy : IEquatable<MethodProxy>
 	{
 		public MethodProxy (MethodDefinition method) => Method = method;
 
@@ -51,5 +52,13 @@ namespace ILLink.Shared.TypeSystemProxy
 		internal partial bool ReturnsVoid () => Method.ReturnsVoid ();
 
 		public override string ToString () => Method.ToString ();
+
+		public ReferenceKind ParameterReferenceKind (int index) => Method.ParameterReferenceKind (index);
+
+		public bool Equals (MethodProxy other) => Method.Equals (other.Method);
+
+		public override bool Equals (object? obj) => obj is MethodProxy other && Equals (other);
+
+		public override int GetHashCode () => Method.GetHashCode ();
 	}
 }

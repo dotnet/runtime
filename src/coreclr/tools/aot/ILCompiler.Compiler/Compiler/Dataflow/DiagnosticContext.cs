@@ -8,7 +8,7 @@ using ILCompiler.Logging;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-    readonly partial struct DiagnosticContext
+    public readonly partial struct DiagnosticContext
     {
         public readonly MessageOrigin Origin;
         public readonly bool DiagnosticsEnabled;

@@ -3,7 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using ILCompiler.Logging;
+using ILLink.Shared;
+using System.Reflection.Metadata;
 using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
 using ILLink.Shared.TypeSystemProxy;
@@ -11,6 +15,7 @@ using Internal.IL;
 using Internal.TypeSystem;
 
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
+using System.Diagnostics.CodeAnalysis;
 
 #nullable enable
 
@@ -23,35 +28,35 @@ namespace ILCompiler.Dataflow
     {
         public MultiValue Value { get; }
 
-        /// <summary>
-        /// True if the value is on the stack as a byref
-        /// </summary>
-        public bool IsByRef { get; }
-
         public StackSlot()
         {
             Value = new MultiValue(UnknownValue.Instance);
-            IsByRef = false;
         }
 
-        public StackSlot(SingleValue value, bool isByRef = false)
+        public StackSlot(SingleValue value)
         {
             Value = new MultiValue(value);
-            IsByRef = isByRef;
         }
 
-        public StackSlot(MultiValue value, bool isByRef = false)
+        public StackSlot(MultiValue value)
         {
             Value = value;
-            IsByRef = isByRef;
         }
     }
 
     abstract partial class MethodBodyScanner
     {
         protected static ValueSetLattice<SingleValue> MultiValueLattice => default;
+        protected static ValueSetLattice<MethodProxy> MethodLattice => default;
+
+        protected readonly FlowAnnotations _annotations;
 
         internal MultiValue ReturnValue { private set; get; }
+
+        protected MethodBodyScanner(FlowAnnotations annotations)
+        {
+            _annotations = annotations;
+        }
 
         protected virtual void WarnAboutInvalidILInMethod(MethodIL method, int ilOffset)
         {
@@ -193,6 +198,34 @@ namespace ILCompiler.Dataflow
             }
         }
 
+        [Conditional("DEBUG")]
+        static void ValidateNoReferenceToReference(ValueBasicBlockPair?[] locals, MethodIL method, int ilOffset)
+        {
+            for (int localVariableIndex = 0; localVariableIndex < locals.Length; localVariableIndex++)
+            {
+                ValueBasicBlockPair? localVariable = locals[localVariableIndex];
+                if (localVariable == null)
+                    continue;
+
+                MultiValue localValue = localVariable.Value.Value;
+                foreach (var val in localValue)
+                {
+                    if (val is LocalVariableReferenceValue reference)
+                    {
+                        ValueBasicBlockPair? referenceLocalVariable = locals[reference.LocalIndex];
+                        if (referenceLocalVariable.HasValue
+                            && referenceLocalVariable.Value.Value.Any(v => v is ReferenceValue))
+                        {
+                            throw new InvalidOperationException(MessageContainer.CreateErrorMessage(
+                                $"In method {method.OwningMethod.GetDisplayName()}, local variable {localVariableIndex} references variable {reference.LocalIndex} which is a reference.",
+                                (int)DiagnosticId.LinkerUnexpectedError,
+                                origin: new MessageOrigin(method, ilOffset)).ToMSBuildString());
+                        }
+                    }
+                }
+            }
+        }
+
         private static void StoreMethodLocalValue(
             ValueBasicBlockPair?[] valueCollection,
             in MultiValue valueToStore,
@@ -253,7 +286,82 @@ namespace ILCompiler.Dataflow
             }
         }
 
-        public void Scan(MethodIL methodBody)
+        // Scans the method as well as any nested functions (local functions or lambdas) and state machines
+        // reachable from it.
+        public virtual void InterproceduralScan(MethodIL methodBody)
+        {
+            var methodsInGroup = new ValueSet<MethodProxy>(methodBody.OwningMethod);
+
+            // Optimization to prevent multiple scans of a method.
+            // Eventually we will need to allow re-scanning in some cases, for example
+            // when we discover new inputs to a method. But we aren't doing dataflow across
+            // lambdas and local functions yet, so no need for now.
+            HashSet<MethodDesc> scannedMethods = new HashSet<MethodDesc>();
+
+            while (true)
+            {
+                if (!TryGetNextMethodToScan(out MethodIL? methodToScan))
+                    break;
+
+                scannedMethods.Add(methodToScan.OwningMethod);
+                Scan(methodToScan, ref methodsInGroup);
+
+                // For state machine methods, also scan the state machine members.
+                // Simplification: assume that all generated methods of the state machine type are
+                // invoked at the point where the state machine method is called.			
+                if (CompilerGeneratedState.TryGetStateMachineType(methodToScan, out TypeDefinition? stateMachineType))
+                {
+                    foreach (var method in stateMachineType.Methods)
+                    {
+                        Debug.Assert(!CompilerGeneratedNames.IsLambdaOrLocalFunction(method.Name));
+                        if (method.Body is MethodBody stateMachineBody)
+                            Scan(stateMachineBody, ref methodsInGroup);
+                    }
+                }
+            }
+
+#if DEBUG
+            // Validate that the compiler-generated callees tracked by the compiler-generated state
+            // are the same set of methods that we discovered and scanned above.
+            if (_context.CompilerGeneratedState.TryGetCompilerGeneratedCalleesForUserMethod(methodBody.Method, out List<IMemberDefinition>? compilerGeneratedCallees))
+            {
+                var calleeMethods = compilerGeneratedCallees.OfType<MethodDesc>();
+                Debug.Assert(methodsInGroup.Count() == 1 + calleeMethods.Count());
+                foreach (var method in calleeMethods)
+                    Debug.Assert(methodsInGroup.Contains(method));
+            }
+            else
+            {
+                Debug.Assert(methodsInGroup.Count() == 1);
+            }
+#endif
+
+            bool TryGetNextMethodToScan([NotNullWhen(true)] out MethodIL? method)
+            {
+                foreach (var candidate in methodsInGroup)
+                {
+                    var candidateMethod = candidate.Method;
+                    MethodIL methodIL = _annotations.ILProvider.GetMethodIL(candidate.Method);
+                    if (!scannedMethods.Contains(candidateMethod) && methodIL != null)
+                    {
+                        method = methodIL;
+                        return true;
+                    }
+                }
+                method = null;
+                return false;
+            }
+        }
+
+        void TrackNestedFunctionReference(MethodDesc method, ref ValueSet<MethodProxy> methodsInGroup)
+        {
+            if (!CompilerGeneratedNames.IsLambdaOrLocalFunction(method.Name))
+                return;
+
+            methodsInGroup = MethodLattice.Meet(methodsInGroup, new(method));
+        }
+
+        protected virtual void Scan(MethodIL methodBody, ref ValueSet<MethodProxy> methodsInGroup)
         {
             MethodDesc thisMethod = methodBody.OwningMethod;
 
@@ -270,6 +378,7 @@ namespace ILCompiler.Dataflow
             ILReader reader = new ILReader(methodBody.GetILBytes());
             while (reader.HasNext)
             {
+                ValidateNoReferenceToReference(locals, methodBody, reader.Offset);
                 int curBasicBlock = blockIterator.MoveNext(reader.Offset);
 
                 if (knownStacks.ContainsKey(reader.Offset))
@@ -377,13 +486,23 @@ namespace ILCompiler.Dataflow
                         break;
 
                     case ILOpcode.arglist:
-                    case ILOpcode.ldftn:
                     case ILOpcode.sizeof_:
                     case ILOpcode.ldc_i8:
                     case ILOpcode.ldc_r4:
                     case ILOpcode.ldc_r8:
                         PushUnknown(currentStack);
                         reader.Skip(opcode);
+                        break;
+
+                    case ILOpcode.ldftn:
+                        {
+                            if (methodBody.GetObject(reader.ReadILToken()) is MethodDesc methodOperand)
+                            {
+                                TrackNestedFunctionReference(methodOperand, ref methodsInGroup);
+                            }
+
+                            PushUnknown(currentStack);
+                        }
                         break;
 
                     case ILOpcode.ldarg:
@@ -573,7 +692,7 @@ namespace ILCompiler.Dataflow
                     case ILOpcode.stind_r8:
                     case ILOpcode.stind_ref:
                     case ILOpcode.stobj:
-                        ScanIndirectStore(methodBody, offset, currentStack);
+                        ScanIndirectStore(methodBody, offset, currentStack, locals, curBasicBlock);
                         reader.Skip(opcode);
                         break;
 
@@ -643,7 +762,11 @@ namespace ILCompiler.Dataflow
                     case ILOpcode.call:
                     case ILOpcode.callvirt:
                     case ILOpcode.newobj:
-                        HandleCall(methodBody, opcode, offset, (MethodDesc)methodBody.GetObject(reader.ReadILToken()), currentStack, curBasicBlock);
+                        {
+                            MethodDesc methodOperand = (MethodDesc)methodBody.GetObject(reader.ReadILToken());
+                            TrackNestedFunctionReference(methodOperand, ref methodsInGroup);
+                            HandleCall(methodBody, opcode, offset, methodOperand, currentStack, locals, curBasicBlock);
+                        }
                         break;
 
                     case ILOpcode.jmp:
@@ -680,7 +803,9 @@ namespace ILCompiler.Dataflow
                             if (hasReturnValue)
                             {
                                 StackSlot retValue = PopUnknown(currentStack, 1, methodBody, offset);
-                                ReturnValue = MultiValueLattice.Meet(ReturnValue, retValue.Value);
+                                // If the return value is a reference, treat it as the value itself for now
+                                //	We can handle ref return values better later
+                                ReturnValue = MultiValueLattice.Meet(ReturnValue, DereferenceValue(retValue.Value, locals));
                             }
                             ClearStack(ref currentStack);
                             break;
@@ -760,12 +885,16 @@ namespace ILCompiler.Dataflow
             }
             else
             {
+                // This is semantically wrong if it returns true - we would representing a reference parameter as a reference to a parameter - but it should be fine for now
                 isByRef = thisMethod.Signature[paramNum - (thisMethod.Signature.IsStatic ? 0 : 1)].IsByRefOrPointer();
             }
 
             isByRef |= opcode == ILOpcode.ldarga || opcode == ILOpcode.ldarga_s;
 
-            StackSlot slot = new StackSlot(GetMethodParameterValue(thisMethod, paramNum), isByRef);
+            StackSlot slot = new StackSlot(
+                isByRef
+                ? new ParameterReferenceValue(thisMethod, paramNum)
+                : GetMethodParameterValue(thisMethod, paramNum));
             currentStack.Push(slot);
         }
 
@@ -796,14 +925,16 @@ namespace ILCompiler.Dataflow
                 || methodBody.GetLocals()[index].Type.IsByRefOrPointer();
 
             ValueBasicBlockPair? localValue = locals[index];
-            if (!localValue.HasValue)
+            StackSlot newSlot;
+            if (isByRef)
             {
-                currentStack.Push(new StackSlot(UnknownValue.Instance, isByRef));
+                newSlot = new StackSlot(new LocalVariableReferenceValue(index));
             }
+            else if (localValue.HasValue)
+                newSlot = new StackSlot(localValue.Value.Value);
             else
-            {
-                currentStack.Push(new StackSlot(localValue.Value.Value, isByRef));
-            }
+                newSlot = new StackSlot(UnknownValue.Instance);
+            currentStack.Push(newSlot);
         }
 
         private static void ScanLdtoken(MethodIL methodBody, object operand, Stack<StackSlot> currentStack)
@@ -870,7 +1001,9 @@ namespace ILCompiler.Dataflow
         private void ScanIndirectStore(
             MethodIL methodBody,
             int offset,
-            Stack<StackSlot> currentStack)
+            Stack<StackSlot> currentStack,
+            ValueBasicBlockPair?[] locals,
+            int curBasicBlock)
         {
             StackSlot valueToStore = PopUnknown(currentStack, 1, methodBody, offset);
             StackSlot destination = PopUnknown(currentStack, 1, methodBody, offset);
@@ -884,6 +1017,56 @@ namespace ILCompiler.Dataflow
                 else if (uniqueDestination is MethodParameterValue parameterDestination)
                 {
                     HandleStoreParameter(methodBody, offset, parameterDestination, valueToStore.Value);
+                }
+            }
+
+        }
+
+        /// <summary>
+        /// Handles storing the source value in a target <see cref="ReferenceValue"/> or MultiValue of ReferenceValues.
+        /// </summary>
+        /// <param name="target">A set of <see cref="ReferenceValue"/> that a value is being stored into</param>
+        /// <param name="source">The value to store</param>
+        /// <param name="method">The method body that contains the operation causing the store</param>
+        /// <param name="offset">The instruction offset causing the store</param>
+        /// <exception cref="LinkerFatalErrorException">Throws if <paramref name="target"/> is not a valid target for an indirect store.</exception>
+        protected void StoreInReference(MultiValue target, MultiValue source, MethodIL method, int offset, ValueBasicBlockPair?[] locals, int curBasicBlock)
+        {
+            foreach (var value in target)
+            {
+                switch (value)
+                {
+                    case LocalVariableReferenceValue localReference:
+                        StoreMethodLocalValue(locals, source, localReference.LocalIndex, curBasicBlock);
+                        break;
+                    case FieldReferenceValue fieldReference
+                when GetFieldValue(fieldReference.FieldDefinition).AsSingleValue() is FieldValue fieldValue:
+                        HandleStoreField(method, offset, fieldValue, source);
+                        break;
+                    case ParameterReferenceValue parameterReference
+                when GetMethodParameterValue(parameterReference.MethodDefinition, parameterReference.ParameterIndex) is MethodParameterValue parameterValue:
+                        HandleStoreParameter(method, offset, parameterValue, source);
+                        break;
+                    case ParameterReferenceValue parameterReference
+                    when GetMethodParameterValue(parameterReference.MethodDefinition, parameterReference.ParameterIndex) is MethodThisParameterValue thisParameterValue:
+                        HandleStoreMethodThisParameter(method, offset, thisParameterValue, source);
+                        break;
+                    case MethodReturnValue methodReturnValue:
+                        // Ref returns don't have special ReferenceValue values, so assume if the target here is a MethodReturnValue then it must be a ref return value
+                        HandleStoreMethodReturnValue(method, offset, methodReturnValue, source);
+                        break;
+                    case IValueWithStaticType valueWithStaticType:
+                        if (valueWithStaticType.StaticType is not null && FlowAnnotations.IsTypeInterestingForDataflow(valueWithStaticType.StaticType))
+                            throw new InvalidOperationException(MessageContainer.CreateErrorMessage(
+                                $"Unhandled StoreReference call. Unhandled attempt to store a value in {value} of type {value.GetType()}.",
+                                (int)DiagnosticId.LinkerUnexpectedError,
+                                origin: new MessageOrigin(method, offset)).ToMSBuildString());
+                        // This should only happen for pointer derefs, which can't point to interesting types
+                        break;
+                    default:
+                        // These cases should only be refs to array elements
+                        // References to array elements are not yet tracked and since we don't allow annotations on arrays, they won't cause problems
+                        break;
                 }
             }
 
@@ -904,7 +1087,10 @@ namespace ILCompiler.Dataflow
 
             bool isByRef = opcode == ILOpcode.ldflda || opcode == ILOpcode.ldsflda;
 
-            StackSlot slot = new StackSlot(GetFieldValue(field), isByRef);
+            MultiValue newValue = isByRef ?
+                new FieldReferenceValue(field)
+                : GetFieldValue(field);
+            StackSlot slot = new(newValue);
             currentStack.Push(slot);
         }
 
@@ -913,6 +1099,14 @@ namespace ILCompiler.Dataflow
         }
 
         protected virtual void HandleStoreParameter(MethodIL method, int offset, MethodParameterValue parameter, MultiValue valueToStore)
+        {
+        }
+
+        protected virtual void HandleStoreMethodThisParameter(MethodIL method, int offset, MethodThisParameterValue thisParameter, MultiValue sourceValue)
+        {
+        }
+
+        protected virtual void HandleStoreMethodReturnValue(MethodIL method, int offset, MethodReturnValue thisParameter, MultiValue sourceValue)
         {
         }
 
@@ -968,19 +1162,77 @@ namespace ILCompiler.Dataflow
             return methodParams;
         }
 
+        internal MultiValue DereferenceValue(MultiValue maybeReferenceValue, ValueBasicBlockPair?[] locals)
+        {
+            MultiValue dereferencedValue = MultiValueLattice.Top;
+            foreach (var value in maybeReferenceValue)
+            {
+                switch (value)
+                {
+                    case FieldReferenceValue fieldReferenceValue:
+                        dereferencedValue = MultiValue.Meet(
+                            dereferencedValue,
+                            GetFieldValue(fieldReferenceValue.FieldDefinition));
+                        break;
+                    case ParameterReferenceValue parameterReferenceValue:
+                        dereferencedValue = MultiValue.Meet(
+                            dereferencedValue,
+                            GetMethodParameterValue(parameterReferenceValue.MethodDefinition, parameterReferenceValue.ParameterIndex));
+                        break;
+                    case LocalVariableReferenceValue localVariableReferenceValue:
+                        var valueBasicBlockPair = locals[localVariableReferenceValue.LocalIndex];
+                        if (valueBasicBlockPair.HasValue)
+                            dereferencedValue = MultiValue.Meet(dereferencedValue, valueBasicBlockPair.Value.Value);
+                        else
+                            dereferencedValue = MultiValue.Meet(dereferencedValue, UnknownValue.Instance);
+                        break;
+                    case ReferenceValue referenceValue:
+                        throw new NotImplementedException($"Unhandled dereference of ReferenceValue of type {referenceValue.GetType().FullName}");
+                    default:
+                        dereferencedValue = MultiValue.Meet(dereferencedValue, value);
+                        break;
+                }
+            }
+            return dereferencedValue;
+        }
+
+        /// <summary>
+        /// Assigns a MethodParameterValue to the location of each parameter passed by reference. (i.e. assigns the value to x when passing `ref x` as a parameter)
+        /// </summary>
+        protected void AssignRefAndOutParameters(
+            MethodIL callingMethodBody,
+            MethodDesc calledMethod,
+            ValueNodeList methodArguments,
+            int offset,
+            ValueBasicBlockPair?[] locals,
+            int curBasicBlock)
+        {
+            int parameterOffset = !calledMethod.Signature.IsStatic ? 1 : 0;
+            int parameterIndex = 0;
+            for (int ilArgumentIndex = parameterOffset; ilArgumentIndex < methodArguments.Count; ilArgumentIndex++, parameterIndex++)
+            {
+                if (calledMethod.ParameterReferenceKind(ilArgumentIndex) is not (ReferenceKind.Ref or ReferenceKind.Out))
+                    continue;
+                SingleValue newByRefValue = _annotations.GetMethodParameterValue(calledMethod, parameterIndex);
+                StoreInReference(methodArguments[ilArgumentIndex], newByRefValue, callingMethodBody, offset, locals, curBasicBlock);
+            }
+        }
+
         private void HandleCall(
             MethodIL callingMethodBody,
             ILOpcode opcode,
             int offset,
             MethodDesc calledMethod,
             Stack<StackSlot> currentStack,
+            ValueBasicBlockPair?[] locals,
             int curBasicBlock)
         {
             bool isNewObj = opcode == ILOpcode.newobj;
 
             SingleValue? newObjValue;
-            ValueNodeList methodParams = PopCallArguments(currentStack, calledMethod, callingMethodBody, isNewObj,
-                                                           offset, out newObjValue);
+            ValueNodeList methodArguments = PopCallArguments(currentStack, calledMethod, callingMethodBody, isNewObj,
+                                                             offset, out newObjValue);
+            ValueNodeList dereferencedMethodArguments = new(methodArguments.Select(argument => DereferenceValue(argument, locals)).ToList());
 
             MultiValue methodReturnValue;
             bool handledFunction = HandleCall(
@@ -988,7 +1240,7 @@ namespace ILCompiler.Dataflow
                 calledMethod,
                 opcode,
                 offset,
-                methodParams,
+                dereferencedMethodArguments,
                 out methodReturnValue);
 
             // Handle the return value or newobj result
@@ -1011,9 +1263,11 @@ namespace ILCompiler.Dataflow
             }
 
             if (isNewObj || !calledMethod.Signature.ReturnType.IsVoid)
-                currentStack.Push(new StackSlot(methodReturnValue, calledMethod.Signature.ReturnType.IsByRefOrPointer()));
+                currentStack.Push(new StackSlot(methodReturnValue));
 
-            foreach (var param in methodParams)
+            AssignRefAndOutParameters(callingMethodBody, calledMethod, methodArguments, offset, locals, curBasicBlock);
+
+            foreach (var param in methodArguments)
             {
                 foreach (var v in param)
                 {
@@ -1088,6 +1342,7 @@ namespace ILCompiler.Dataflow
                 PushUnknown(currentStack);
                 return;
             }
+            // We don't yet handle arrays of references or pointers
             bool isByRef = opcode == ILOpcode.ldelema;
 
             int? index = indexToLoadFrom.Value.AsConstInt();
@@ -1100,15 +1355,16 @@ namespace ILCompiler.Dataflow
                 }
                 return;
             }
-
-            if (arr.IndexValues.TryGetValue(index.Value, out ValueBasicBlockPair arrayIndexValue))
+            // Don't try to track refs to array elements. Set it as unknown, then push unknown to the stack
+            else if (isByRef)
             {
-                currentStack.Push(new StackSlot(arrayIndexValue.Value, isByRef));
-            }
-            else
-            {
+                arr.IndexValues[index.Value] = new ValueBasicBlockPair(UnknownValue.Instance, curBasicBlock);
                 PushUnknown(currentStack);
             }
+            else if (arr.IndexValues.TryGetValue(index.Value, out ValueBasicBlockPair arrayIndexValue))
+                currentStack.Push(new StackSlot(arrayIndexValue.Value));
+            else
+                PushUnknown(currentStack);
         }
     }
 }

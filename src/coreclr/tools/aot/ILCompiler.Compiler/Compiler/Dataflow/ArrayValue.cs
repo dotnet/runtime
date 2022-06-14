@@ -27,9 +27,9 @@ namespace ILLink.Shared.TrimAnalysis
             return result;
         }
 
-        public static MultiValue Create(int size, TypeDesc elementType)
+        public static ArrayValue Create(int size, TypeDesc elementType)
         {
-            return new MultiValue(new ArrayValue(new ConstIntValue(size), elementType));
+            return new ArrayValue(new ConstIntValue(size), elementType);
         }
 
         /// <summary>

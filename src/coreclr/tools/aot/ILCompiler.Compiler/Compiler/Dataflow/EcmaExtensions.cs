@@ -8,6 +8,7 @@ using MethodAttributes = System.Reflection.MethodAttributes;
 using FieldAttributes = System.Reflection.FieldAttributes;
 using TypeAttributes = System.Reflection.TypeAttributes;
 using Debug = System.Diagnostics.Debug;
+using ILLink.Shared.TypeSystemProxy;
 
 namespace ILCompiler.Dataflow
 {
@@ -62,6 +63,29 @@ namespace ILCompiler.Dataflow
                 return GetProperty(mdType, name, signature);
 
             return null;
+        }
+
+        public static ReferenceKind ParameterReferenceKind(this MethodDesc method, int index)
+        {
+            if (!method.Signature.IsStatic)
+            {
+                if (index == 0)
+                {
+                    return method.OwningType.IsValueType ? ReferenceKind.Ref : ReferenceKind.None;
+                }
+
+                index--;
+            }
+
+            // Parameter metadata index 0 is for return parameter
+            var parameterMetadata = method.GetParameterMetadata()[index + 1];
+            if (!method.Signature[index].IsByRef)
+                return ReferenceKind.None;
+            if (parameterMetadata.In)
+                return ReferenceKind.In;
+            if (parameterMetadata.Out)
+                return ReferenceKind.Out;
+            return ReferenceKind.Ref;
         }
     }
 }

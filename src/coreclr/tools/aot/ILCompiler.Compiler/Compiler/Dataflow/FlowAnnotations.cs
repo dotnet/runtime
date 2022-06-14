@@ -16,6 +16,8 @@ using ILLink.Shared.TypeSystemProxy;
 
 using Debug = System.Diagnostics.Debug;
 using WellKnownType = Internal.TypeSystem.WellKnownType;
+using System.Reflection;
+using ILLink.Shared.DataFlow;
 
 #nullable enable
 
@@ -29,10 +31,13 @@ namespace ILLink.Shared.TrimAnalysis
         private readonly TypeAnnotationsHashtable _hashtable;
         private readonly Logger _logger;
 
+        public ILProvider ILProvider { get; }
+
         public FlowAnnotations(Logger logger, ILProvider ilProvider)
         {
             _hashtable = new TypeAnnotationsHashtable(logger, ilProvider);
             _logger = logger;
+            ILProvider = ilProvider;
         }
 
         public bool RequiresDataflowAnalysis(MethodDesc method)
@@ -203,6 +208,37 @@ namespace ILLink.Shared.TrimAnalysis
         {
             field = field.GetTypicalFieldDefinition();
             return GetAnnotations(field.OwningType).TryGetAnnotation(field, out _);
+        }
+
+        public static bool IsTypeInterestingForDataflow(TypeDesc type)
+        {
+            // NOTE: this method is not particulary fast. It's assumed that the caller limits
+            // calls to this method as much as possible.
+
+            if (type.IsWellKnownType(WellKnownType.String))
+                return true;
+
+            if (!type.IsDefType)
+                return false;
+
+            var metadataType = (MetadataType)type;
+
+            foreach (var intf in type.RuntimeInterfaces)
+            {
+                if (intf.Name == "IReflect" && intf.Namespace == "System.Reflection")
+                    return true;
+            }
+
+            if (metadataType.Name == "IReflect" && metadataType.Namespace == "System.Reflection")
+                return true;
+
+            do
+            {
+                if (metadataType.Name == "Type" && metadataType.Namespace == "System")
+                    return true;
+            } while ((metadataType = metadataType.MetadataBaseType) != null);
+
+            return false;
         }
 
         private TypeAnnotations GetAnnotations(TypeDesc type)
@@ -525,20 +561,37 @@ namespace ILLink.Shared.TrimAnalysis
                 }
 
                 DynamicallyAccessedMemberTypes[]? typeGenericParameterAnnotations = null;
-                foreach (EcmaGenericParameter genericParameter in ecmaType.Instantiation)
+                if (ecmaType.Instantiation.Length > 0)
                 {
-                    GenericParameter genericParameterDef = reader.GetGenericParameter(genericParameter.Handle);
-
-                    var annotation = GetMemberTypesForDynamicallyAccessedMembersAttribute(reader, genericParameterDef.GetCustomAttributes());
-                    if (annotation != DynamicallyAccessedMemberTypes.None)
+                    var attrs = GetGeneratedTypeAttributes(ecmaType);
+                    for (int i = 0; i < ecmaType.Instantiation.Length; i++)
                     {
-                        if (typeGenericParameterAnnotations == null)
-                            typeGenericParameterAnnotations = new DynamicallyAccessedMemberTypes[ecmaType.Instantiation.Length];
-                        typeGenericParameterAnnotations[genericParameter.Index] = annotation;
+                        EcmaGenericParameter genericParameter = (EcmaGenericParameter)ecmaType.Instantiation[i];
+                        GenericParameter genericParameterDef = reader.GetGenericParameter(genericParameter.Handle);
+                        var provider = attrs?[genericParameterIndex] ?? genericParameterDef;
+
+                        var annotation = GetMemberTypesForDynamicallyAccessedMembersAttribute(reader, genericParameterDef.GetCustomAttributes());
+                        if (annotation != DynamicallyAccessedMemberTypes.None)
+                        {
+                            if (typeGenericParameterAnnotations == null)
+                                typeGenericParameterAnnotations = new DynamicallyAccessedMemberTypes[ecmaType.Instantiation.Length];
+                            typeGenericParameterAnnotations[genericParameter.Index] = annotation;
+                        }
                     }
                 }
 
                 return new TypeAnnotations(ecmaType, typeAnnotation, annotatedMethods.ToArray(), annotatedFields.ToArray(), typeGenericParameterAnnotations);
+            }
+
+            private IReadOnlyList<ICustomAttributeProvider>? GetGeneratedTypeAttributes(EcmaType typeDef)
+            {
+                if (!CompilerGeneratedNames.IsGeneratedType(typeDef.Name))
+                {
+                    return null;
+                }
+                var attrs = _context.CompilerGeneratedState.GetGeneratedTypeAttributes(typeDef);
+                Debug.Assert(attrs is null || attrs.Count == typeDef.Instantiation.Length);
+                return attrs;
             }
 
             private static bool ScanMethodBodyForFieldAccess(MethodIL body, bool write, out FieldDesc? found)
@@ -594,37 +647,6 @@ namespace ILLink.Shared.TrimAnalysis
                 }
 
                 return true;
-            }
-
-            private bool IsTypeInterestingForDataflow(TypeDesc type)
-            {
-                // NOTE: this method is not particulary fast. It's assumed that the caller limits
-                // calls to this method as much as possible.
-
-                if (type.IsWellKnownType(WellKnownType.String))
-                    return true;
-
-                if (!type.IsDefType)
-                    return false;
-
-                var metadataType = (MetadataType)type;
-
-                foreach (var intf in type.RuntimeInterfaces)
-                {
-                    if (intf.Name == "IReflect" && intf.Namespace == "System.Reflection")
-                        return true;
-                }
-
-                if (metadataType.Name == "IReflect" && metadataType.Namespace == "System.Reflection")
-                    return true;
-
-                do
-                {
-                    if (metadataType.Name == "Type" && metadataType.Namespace == "System")
-                        return true;
-                } while ((metadataType = metadataType.MetadataBaseType) != null);
-
-                return false;
             }
         }
 
@@ -891,5 +913,44 @@ namespace ILLink.Shared.TrimAnalysis
 
         internal partial MethodParameterValue GetMethodParameterValue(MethodProxy method, int parameterIndex)
             => GetMethodParameterValue(method, parameterIndex, GetParameterAnnotation(method.Method, parameterIndex + (method.IsStatic() ? 0 : 1)));
+
+        // Linker-specific dataflow value creation. Eventually more of these should be shared.
+        internal SingleValue GetFieldValue(FieldDesc field)
+            => field.Name switch
+            {
+                "EmptyTypes" when field.OwningType.IsTypeOf(ILLink.Shared.TypeSystemProxy.WellKnownType.System_Type) => ArrayValue.Create(0, field.OwningType),
+                "Empty" when field.OwningType.IsTypeOf(ILLink.Shared.TypeSystemProxy.WellKnownType.System_String) => new KnownStringValue(string.Empty),
+                _ => new FieldValue(field, GetFieldAnnotation(field))
+            };
+
+        internal SingleValue GetTypeValueFromGenericArgument(TypeDesc genericArgument)
+        {
+            if (genericArgument is GenericParameterDesc inputGenericParameter)
+            {
+                return GetGenericParameterValue(inputGenericParameter);
+            }
+            else if (genericArgument is MetadataType genericArgumentType)
+            {
+                if (genericArgumentType.IsTypeOf(ILLink.Shared.TypeSystemProxy.WellKnownType.System_Nullable_T))
+                {
+                    var innerGenericArgument = genericArgumentType.Instantiation.Length == 1 ? genericArgumentType.Instantiation[0] : null;
+                    switch (innerGenericArgument)
+                    {
+                        case GenericParameterDesc gp:
+                            return new NullableValueWithDynamicallyAccessedMembers(genericArgumentType,
+                                new GenericParameterValue(gp, GetGenericParameterAnnotation(gp)));
+
+                        case TypeDesc underlyingType:
+                            return new NullableSystemTypeValue(genericArgumentType, new SystemTypeValue(underlyingType));
+                    }
+                }
+                // All values except for Nullable<T>, including Nullable<> (with no type arguments)
+                return new SystemTypeValue(genericArgumentType);
+            }
+            else
+            {
+                return UnknownValue.Instance;
+            }
+        }
     }
 }

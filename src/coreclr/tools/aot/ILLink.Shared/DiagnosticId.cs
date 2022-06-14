@@ -179,6 +179,9 @@ namespace ILLink.Shared
 		DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithDynamicallyAccessedMembers = 2115,
 		RequiresUnreferencedCodeOnStaticConstructor = 2116,
 		MethodsAreAssociatedWithUserMethod = 2117,
+		CompilerGeneratedMemberAccessedViaReflection = 2118,
+		DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMember = 2119,
+		DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMemberOnBase = 2120,
 
 		// Single-file diagnostic ids.
 		AvoidAssemblyLocationInSingleFile = 3000,
@@ -215,7 +218,7 @@ namespace ILLink.Shared
 				2103 => MessageSubCategory.TrimAnalysis,
 				2106 => MessageSubCategory.TrimAnalysis,
 				2107 => MessageSubCategory.TrimAnalysis,
-				>= 2109 and <= 2116 => MessageSubCategory.TrimAnalysis,
+				>= 2109 and <= 2120 => MessageSubCategory.TrimAnalysis,
 				>= 3050 and <= 3052 => MessageSubCategory.AotAnalysis,
 				>= 3054 and <= 3055 => MessageSubCategory.AotAnalysis,
 				_ => MessageSubCategory.None,

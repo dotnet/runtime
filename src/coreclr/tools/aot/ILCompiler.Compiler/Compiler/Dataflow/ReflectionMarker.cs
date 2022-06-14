@@ -17,27 +17,32 @@ using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore
 
 namespace ILCompiler.Dataflow
 {
-    internal class ReflectionMarker
+    public class ReflectionMarker
     {
         private DependencyList _dependencies = new DependencyList();
         private readonly Logger _logger;
         private readonly NodeFactory _factory;
         private readonly FlowAnnotations _annotations;
         private bool _typeHierarchyDataFlow;
+        private bool _enabled;
         private const string RequiresUnreferencedCodeAttribute = nameof(RequiresUnreferencedCodeAttribute);
 
         public DependencyList Dependencies { get => _dependencies; }
 
-        public ReflectionMarker(Logger logger, NodeFactory factory, FlowAnnotations annotations, bool typeHierarchyDataFlow)
+        public ReflectionMarker(Logger logger, NodeFactory factory, FlowAnnotations annotations, bool typeHierarchyDataFlow, bool enabled)
         {
             _logger = logger;
             _factory = factory;
             _annotations = annotations;
             _typeHierarchyDataFlow = typeHierarchyDataFlow;
+            _enabled = enabled;
         }
 
         internal void MarkTypeForDynamicallyAccessedMembers(in MessageOrigin origin, TypeDesc typeDefinition, DynamicallyAccessedMemberTypes requiredMemberTypes, Origin memberWithRequirements, bool declaredOnly = false)
         {
+            if (!_enabled)
+                return;
+
             foreach (var member in typeDefinition.GetDynamicallyAccessedMembers(requiredMemberTypes, declaredOnly))
             {
                 switch (member)
@@ -63,21 +68,26 @@ namespace ILCompiler.Dataflow
             }
         }
 
-        internal bool TryResolveTypeNameAndMark(string typeName, MessageOrigin origin, bool needsAssemblyName, Origin memberWithRequirements, [NotNullWhen(true)] out TypeDesc? type)
+        internal bool TryResolveTypeNameAndMark(string typeName, in DiagnosticContext diagnosticContext, bool needsAssemblyName, Origin memberWithRequirements, [NotNullWhen(true)] out TypeDesc? type)
         {
-            ModuleDesc? callingModule = ((origin.MemberDefinition as MethodDesc)?.OwningType as MetadataType)?.Module;
+            ModuleDesc? callingModule = ((diagnosticContext.Origin.MemberDefinition as MethodDesc)?.OwningType as MetadataType)?.Module;
 
-            if (!ILCompiler.DependencyAnalysis.ReflectionMethodBodyScanner.ResolveType(typeName, callingModule, origin.MemberDefinition.Context, out TypeDesc foundType, out ModuleDesc referenceModule))
+            // NativeAOT doesn't have a fully capable type name resolver yet
+            // Once this is implemented don't forget to wire up marking of type forwards which are used in generic parameters
+            if (!ILCompiler.DependencyAnalysis.ReflectionMethodBodyScanner.ResolveType(typeName, callingModule, diagnosticContext.Origin.MemberDefinition.Context, out TypeDesc foundType, out ModuleDesc referenceModule))
             {
                 type = default;
                 return false;
             }
 
-            // Also add module metadata in case this reference was through a type forward
-            if (_factory.MetadataManager.CanGenerateMetadata(referenceModule.GetGlobalModuleType()))
-                _dependencies.Add(_factory.ModuleMetadata(referenceModule), memberWithRequirements.ToString());
+            if (_enabled)
+            {
+                // Also add module metadata in case this reference was through a type forward
+                if (_factory.MetadataManager.CanGenerateMetadata(referenceModule.GetGlobalModuleType()))
+                    _dependencies.Add(_factory.ModuleMetadata(referenceModule), memberWithRequirements.ToString());
 
-            MarkType(origin, foundType, memberWithRequirements);
+                MarkType(diagnosticContext.Origin, foundType, memberWithRequirements);
+            }
 
             type = foundType;
             return true;
@@ -85,11 +95,17 @@ namespace ILCompiler.Dataflow
 
         internal void MarkType(in MessageOrigin origin, TypeDesc type, Origin memberWithRequirements)
         {
+            if (!_enabled)
+                return;
+
             RootingHelpers.TryGetDependenciesForReflectedType(ref _dependencies, _factory, type, memberWithRequirements.ToString());
         }
 
         internal void MarkMethod(in MessageOrigin origin, MethodDesc method, Origin memberWithRequirements)
         {
+            if (!_enabled)
+                return;
+
             if (method.DoesMethodRequire(RequiresUnreferencedCodeAttribute, out _))
             {
                 if (_typeHierarchyDataFlow)
@@ -109,6 +125,9 @@ namespace ILCompiler.Dataflow
 
         void MarkField(in MessageOrigin origin, FieldDesc field, Origin memberWithRequirements)
         {
+            if (!_enabled)
+                return;
+
             if (_annotations.ShouldWarnWhenAccessedForReflection(field) && !ReflectionMethodBodyScanner.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, RequiresUnreferencedCodeAttribute))
             {
                 WarnOnReflectionAccess(origin, field, memberWithRequirements);
@@ -119,6 +138,9 @@ namespace ILCompiler.Dataflow
 
         internal void MarkProperty(in MessageOrigin origin, PropertyPseudoDesc property, Origin memberWithRequirements)
         {
+            if (!_enabled)
+                return;
+
             if (property.GetMethod != null)
                 MarkMethod(origin, property.GetMethod, memberWithRequirements);
             if (property.SetMethod != null)
@@ -127,6 +149,9 @@ namespace ILCompiler.Dataflow
 
         void MarkEvent(in MessageOrigin origin, EventPseudoDesc @event, Origin memberWithRequirements)
         {
+            if (!_enabled)
+                return;
+
             if (@event.AddMethod != null)
                 MarkMethod(origin, @event.AddMethod, memberWithRequirements);
             if (@event.RemoveMethod != null)
@@ -135,30 +160,45 @@ namespace ILCompiler.Dataflow
 
         internal void MarkConstructorsOnType(in MessageOrigin origin, TypeDesc type, Func<MethodDesc, bool>? filter, Origin memberWithRequirements, BindingFlags? bindingFlags = null)
         {
+            if (!_enabled)
+                return;
+
             foreach (var ctor in type.GetConstructorsOnType(filter, bindingFlags))
                 MarkMethod(origin, ctor, memberWithRequirements);
         }
 
         internal void MarkFieldsOnTypeHierarchy(in MessageOrigin origin, TypeDesc type, Func<FieldDesc, bool> filter, Origin memberWithRequirements, BindingFlags? bindingFlags = BindingFlags.Default)
         {
+            if (!_enabled)
+                return;
+
             foreach (var field in type.GetFieldsOnTypeHierarchy(filter, bindingFlags))
                 MarkField(origin, field, memberWithRequirements);
         }
 
         internal void MarkPropertiesOnTypeHierarchy(in MessageOrigin origin, TypeDesc type, Func<PropertyPseudoDesc, bool> filter, Origin memberWithRequirements, BindingFlags? bindingFlags = BindingFlags.Default)
         {
+            if (!_enabled)
+                return;
+
             foreach (var property in type.GetPropertiesOnTypeHierarchy(filter, bindingFlags))
                 MarkProperty(origin, property, memberWithRequirements);
         }
 
         internal void MarkEventsOnTypeHierarchy(in MessageOrigin origin, TypeDesc type, Func<EventPseudoDesc, bool> filter, Origin memberWithRequirements, BindingFlags? bindingFlags = BindingFlags.Default)
         {
+            if (!_enabled)
+                return;
+
             foreach (var @event in type.GetEventsOnTypeHierarchy(filter, bindingFlags))
                 MarkEvent(origin, @event, memberWithRequirements);
         }
 
         internal void MarkStaticConstructor(in MessageOrigin origin, TypeDesc type)
         {
+            if (!_enabled)
+                return;
+
             if (!type.IsGenericDefinition && !type.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true) && type.HasStaticConstructor)
             {
                 // Mark the GC static base - it contains a pointer to the class constructor, but also info

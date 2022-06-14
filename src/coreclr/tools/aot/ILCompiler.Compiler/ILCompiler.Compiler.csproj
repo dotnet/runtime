@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <AssemblyName>ILCompiler.Compiler</AssemblyName>
@@ -317,26 +317,35 @@
     <Compile Include="Compiler\CompilerTypeSystemContext.ValueTypeMethods.cs" />
     <Compile Include="Compiler\CompilerGeneratedInteropStubManager.cs" />
     <Compile Include="Compiler\Dataflow\ArrayValue.cs" />
+    <Compile Include="Compiler\Dataflow\AttributeDataFlow.cs" />
     <Compile Include="Compiler\Dataflow\DiagnosticContext.cs" />
+    <Compile Include="Compiler\Dataflow\DiagnosticUtilities.cs" />
     <Compile Include="Compiler\Dataflow\DynamicallyAccessedMembersBinder.cs" />
     <Compile Include="Compiler\Dataflow\EcmaExtensions.cs" />
+    <Compile Include="Compiler\Dataflow\FieldReferenceValue.cs" />
     <Compile Include="Compiler\Dataflow\FieldValue.cs" />
     <Compile Include="Compiler\Dataflow\FlowAnnotations.cs" />
+    <Compile Include="Compiler\Dataflow\GenericArgumentDataFlow.cs" />
     <Compile Include="Compiler\Dataflow\GenericParameterProxy.cs" />
     <Compile Include="Compiler\Dataflow\GenericParameterValue.cs" />
     <Compile Include="Compiler\Dataflow\HandleCallAction.cs" />
     <Compile Include="Compiler\Dataflow\IValueWithStaticType.cs" />
+    <Compile Include="Compiler\Dataflow\LocalVariableReferenceValue.cs" />
     <Compile Include="Compiler\Dataflow\MethodBodyScanner.cs" />
     <Compile Include="Compiler\Dataflow\MethodParameterValue.cs" />
     <Compile Include="Compiler\Dataflow\MethodProxy.cs" />
     <Compile Include="Compiler\Dataflow\MethodReturnValue.cs" />
     <Compile Include="Compiler\Dataflow\MethodThisParameterValue.cs" />
-    <Compile Include="Compiler\Dataflow\DiagnosticUtilities.cs" />
     <Compile Include="Compiler\Dataflow\Origin.cs" />
+    <Compile Include="Compiler\Dataflow\ParameterReferenceValue.cs" />
+    <Compile Include="Compiler\Dataflow\ReferenceValue.cs" />
     <Compile Include="Compiler\Dataflow\ReflectionMethodBodyScanner.cs" />
     <Compile Include="Compiler\Dataflow\ReflectionMarker.cs" />
     <Compile Include="Compiler\Dataflow\RequireDynamicallyAccessedMembersAction.cs" />
     <Compile Include="Compiler\Dataflow\ScannerExtensions.cs" />
+    <Compile Include="Compiler\Dataflow\TrimAnalysisAssignmentPattern.cs" />
+    <Compile Include="Compiler\Dataflow\TrimAnalysisMethodCallPattern.cs" />
+    <Compile Include="Compiler\Dataflow\TrimAnalysisPatternStore.cs" />
     <Compile Include="Compiler\Dataflow\TypeExtensions.cs" />
     <Compile Include="Compiler\Dataflow\TypeProxy.cs" />
     <Compile Include="Compiler\Dataflow\ValueNode.cs" />

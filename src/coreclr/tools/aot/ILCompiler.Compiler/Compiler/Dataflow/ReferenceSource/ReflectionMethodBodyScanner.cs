@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -24,6 +23,7 @@ namespace Mono.Linker.Dataflow
 		MessageOrigin _origin;
 		readonly FlowAnnotations _annotations;
 		readonly ReflectionMarker _reflectionMarker;
+		public readonly TrimAnalysisPatternStore TrimAnalysisPatterns;
 
 		public static bool RequiresReflectionMethodBodyScannerForCallSite (LinkContext context, MethodReference calledMethod)
 		{
@@ -52,117 +52,34 @@ namespace Mono.Linker.Dataflow
 			return context.Annotations.FlowAnnotations.RequiresDataFlowAnalysis (fieldDefinition);
 		}
 
-		bool ShouldEnableReflectionPatternReporting (ICustomAttributeProvider? provider)
-		{
-			if (_markStep.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (provider))
-				return false;
-
-			return true;
-		}
-
 		public ReflectionMethodBodyScanner (LinkContext context, MarkStep parent, MessageOrigin origin)
 			: base (context)
 		{
 			_markStep = parent;
 			_origin = origin;
 			_annotations = context.Annotations.FlowAnnotations;
-			_reflectionMarker = new ReflectionMarker (context, parent);
+			_reflectionMarker = new ReflectionMarker (context, parent, enabled: false);
+			TrimAnalysisPatterns = new TrimAnalysisPatternStore (context);
 		}
 
-		public void ScanAndProcessReturnValue (MethodBody methodBody)
+		public override void InterproceduralScan (MethodBody methodBody)
 		{
-			Scan (methodBody);
+			base.InterproceduralScan (methodBody);
+
+			var reflectionMarker = new ReflectionMarker (_context, _markStep, enabled: true);
+			TrimAnalysisPatterns.MarkAndProduceDiagnostics (reflectionMarker, _markStep);
+		}
+
+		protected override void Scan (MethodBody methodBody, ref ValueSet<MethodProxy> methodsInGroup)
+		{
+			_origin = new MessageOrigin (methodBody.Method);
+			base.Scan (methodBody, ref methodsInGroup);
 
 			if (!methodBody.Method.ReturnsVoid ()) {
 				var method = methodBody.Method;
 				var methodReturnValue = _annotations.GetMethodReturnValue (method);
-				if (methodReturnValue.DynamicallyAccessedMemberTypes != 0) {
-					var diagnosticContext = new DiagnosticContext (_origin, ShouldEnableReflectionPatternReporting (_origin.Provider), _context);
-					RequireDynamicallyAccessedMembers (diagnosticContext, ReturnValue, methodReturnValue);
-				}
-			}
-		}
-
-		public void ProcessAttributeDataflow (MethodDefinition method, IList<CustomAttributeArgument> arguments)
-		{
-			for (int i = 0; i < method.Parameters.Count; i++) {
-				var parameterValue = _annotations.GetMethodParameterValue (method, i);
-				if (parameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None) {
-					MultiValue value = GetValueNodeForCustomAttributeArgument (arguments[i]);
-					var diagnosticContext = new DiagnosticContext (_origin, diagnosticsEnabled: true, _context);
-					RequireDynamicallyAccessedMembers (diagnosticContext, value, parameterValue);
-				}
-			}
-		}
-
-		public void ProcessAttributeDataflow (FieldDefinition field, CustomAttributeArgument value)
-		{
-			MultiValue valueNode = GetValueNodeForCustomAttributeArgument (value);
-			foreach (var fieldValueCandidate in GetFieldValue (field)) {
-				if (fieldValueCandidate is not ValueWithDynamicallyAccessedMembers fieldValue)
-					continue;
-
-				var diagnosticContext = new DiagnosticContext (_origin, diagnosticsEnabled: true, _context);
-				RequireDynamicallyAccessedMembers (diagnosticContext, valueNode, fieldValue);
-			}
-		}
-
-		MultiValue GetValueNodeForCustomAttributeArgument (CustomAttributeArgument argument)
-		{
-			SingleValue value;
-			if (argument.Type.Name == "Type") {
-				TypeDefinition? referencedType = ResolveToTypeDefinition ((TypeReference) argument.Value);
-				if (referencedType == null)
-					value = UnknownValue.Instance;
-				else
-					value = new SystemTypeValue (referencedType);
-			} else if (argument.Type.MetadataType == MetadataType.String) {
-				value = new KnownStringValue ((string) argument.Value);
-			} else {
-				// We shouldn't have gotten a non-null annotation for this from GetParameterAnnotation
-				throw new InvalidOperationException ();
-			}
-
-			Debug.Assert (value != null);
-			return value;
-		}
-
-		public void ProcessGenericArgumentDataFlow (GenericParameter genericParameter, TypeReference genericArgument)
-		{
-			var genericParameterValue = _annotations.GetGenericParameterValue (genericParameter);
-			Debug.Assert (genericParameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None);
-
-			MultiValue genericArgumentValue = GetTypeValueNodeFromGenericArgument (genericArgument);
-
-			var diagnosticContext = new DiagnosticContext (_origin, ShouldEnableReflectionPatternReporting (_origin.Provider), _context);
-			RequireDynamicallyAccessedMembers (diagnosticContext, genericArgumentValue, genericParameterValue);
-		}
-
-		MultiValue GetTypeValueNodeFromGenericArgument (TypeReference genericArgument)
-		{
-			if (genericArgument is GenericParameter inputGenericParameter) {
-				// Technically this should be a new value node type as it's not a System.Type instance representation, but just the generic parameter
-				// That said we only use it to perform the dynamically accessed members checks and for that purpose treating it as System.Type is perfectly valid.
-				return _annotations.GetGenericParameterValue (inputGenericParameter);
-			} else if (ResolveToTypeDefinition (genericArgument) is TypeDefinition genericArgumentType) {
-				if (genericArgumentType.IsTypeOf (WellKnownType.System_Nullable_T)) {
-					var innerGenericArgument = (genericArgument as IGenericInstance)?.GenericArguments.FirstOrDefault ();
-					switch (innerGenericArgument) {
-					case GenericParameter gp:
-						return new NullableValueWithDynamicallyAccessedMembers (genericArgumentType,
-							new GenericParameterValue (gp, _context.Annotations.FlowAnnotations.GetGenericParameterAnnotation (gp)));
-
-					case TypeReference underlyingType:
-						if (ResolveToTypeDefinition (underlyingType) is TypeDefinition underlyingTypeDefinition)
-							return new NullableSystemTypeValue (genericArgumentType, new SystemTypeValue (underlyingTypeDefinition));
-						else
-							return UnknownValue.Instance;
-					}
-				}
-				// All values except for Nullable<T>, including Nullable<> (with no type arguments)
-				return new SystemTypeValue (genericArgumentType);
-			} else {
-				return UnknownValue.Instance;
+				if (methodReturnValue.DynamicallyAccessedMemberTypes != 0)
+					HandleAssignmentPattern (_origin, ReturnValue, methodReturnValue);
 			}
 		}
 
@@ -192,63 +109,98 @@ namespace Mono.Linker.Dataflow
 			return _annotations.GetMethodParameterValue (method, parameterIndex, dynamicallyAccessedMemberTypes);
 		}
 
-		protected override MultiValue GetFieldValue (FieldDefinition field)
-		{
-			switch (field.Name) {
-			case "EmptyTypes" when field.DeclaringType.IsTypeOf (WellKnownType.System_Type): {
-					return ArrayValue.Create (0, field.DeclaringType);
-				}
-			case "Empty" when field.DeclaringType.IsTypeOf (WellKnownType.System_String): {
-					return new KnownStringValue (string.Empty);
-				}
+		protected override MultiValue GetFieldValue (FieldDefinition field) => _annotations.GetFieldValue (field);
 
-			default: {
-					DynamicallyAccessedMemberTypes memberTypes = _context.Annotations.FlowAnnotations.GetFieldAnnotation (field);
-					return new FieldValue (ResolveToTypeDefinition (field.FieldType), field, memberTypes);
-				}
+		private void HandleStoreValueWithDynamicallyAccessedMembers (ValueWithDynamicallyAccessedMembers targetValue, Instruction operation, MultiValue sourceValue)
+		{
+			if (targetValue.DynamicallyAccessedMemberTypes != 0) {
+				_origin = _origin.WithInstructionOffset (operation.Offset);
+				HandleAssignmentPattern (_origin, sourceValue, targetValue);
 			}
 		}
 
 		protected override void HandleStoreField (MethodDefinition method, FieldValue field, Instruction operation, MultiValue valueToStore)
-		{
-			if (field.DynamicallyAccessedMemberTypes != 0) {
-				_origin = _origin.WithInstructionOffset (operation.Offset);
-				var diagnosticContext = new DiagnosticContext (_origin, ShouldEnableReflectionPatternReporting (_origin.Provider), _context);
-				RequireDynamicallyAccessedMembers (diagnosticContext, valueToStore, field);
-			}
-		}
+			=> HandleStoreValueWithDynamicallyAccessedMembers (field, operation, valueToStore);
 
 		protected override void HandleStoreParameter (MethodDefinition method, MethodParameterValue parameter, Instruction operation, MultiValue valueToStore)
-		{
-			if (parameter.DynamicallyAccessedMemberTypes != 0) {
-				_origin = _origin.WithInstructionOffset (operation.Offset);
-				var diagnosticContext = new DiagnosticContext (_origin, ShouldEnableReflectionPatternReporting (_origin.Provider), _context);
-				RequireDynamicallyAccessedMembers (diagnosticContext, valueToStore, parameter);
-			}
-		}
+			=> HandleStoreValueWithDynamicallyAccessedMembers (parameter, operation, valueToStore);
+
+		protected override void HandleStoreMethodThisParameter (MethodDefinition method, MethodThisParameterValue thisParameter, Instruction operation, MultiValue valueToStore)
+			=> HandleStoreValueWithDynamicallyAccessedMembers (thisParameter, operation, valueToStore);
+
+		protected override void HandleStoreMethodReturnValue (MethodDefinition method, MethodReturnValue returnValue, Instruction operation, MultiValue valueToStore)
+			=> HandleStoreValueWithDynamicallyAccessedMembers (returnValue, operation, valueToStore);
 
 		public override bool HandleCall (MethodBody callingMethodBody, MethodReference calledMethod, Instruction operation, ValueNodeList methodParams, out MultiValue methodReturnValue)
 		{
 			methodReturnValue = new ();
-			MultiValue? maybeMethodReturnValue = null;
 
 			var reflectionProcessed = _markStep.ProcessReflectionDependency (callingMethodBody, operation);
 			if (reflectionProcessed)
 				return false;
 
-			var callingMethodDefinition = callingMethodBody.Method;
+			Debug.Assert (callingMethodBody.Method == _origin.Provider);
 			var calledMethodDefinition = _context.TryResolve (calledMethod);
 			if (calledMethodDefinition == null)
 				return false;
 
-			bool requiresDataFlowAnalysis = _context.Annotations.FlowAnnotations.RequiresDataFlowAnalysis (calledMethodDefinition);
-			DynamicallyAccessedMemberTypes returnValueDynamicallyAccessedMemberTypes = requiresDataFlowAnalysis ?
-				_context.Annotations.FlowAnnotations.GetReturnParameterAnnotation (calledMethodDefinition) : 0;
-
 			_origin = _origin.WithInstructionOffset (operation.Offset);
-			bool diagnosticsEnabled = ShouldEnableReflectionPatternReporting (_origin.Provider);
-			var diagnosticContext = new DiagnosticContext (_origin, diagnosticsEnabled, _context);
-			var handleCallAction = new HandleCallAction (_context, _reflectionMarker, diagnosticContext, callingMethodDefinition);
+
+			MultiValue instanceValue;
+			ImmutableArray<MultiValue> arguments;
+			if (calledMethodDefinition.HasImplicitThis ()) {
+				instanceValue = methodParams[0];
+				arguments = methodParams.Skip (1).ToImmutableArray ();
+			} else {
+				instanceValue = MultiValueLattice.Top;
+				arguments = methodParams.ToImmutableArray ();
+			}
+
+			TrimAnalysisPatterns.Add (new TrimAnalysisMethodCallPattern (
+				operation,
+				calledMethod,
+				instanceValue,
+				arguments,
+				_origin
+			));
+
+			var diagnosticContext = new DiagnosticContext (_origin, diagnosticsEnabled: false, _context);
+			return HandleCall (
+				operation,
+				calledMethod,
+				instanceValue,
+				arguments,
+				diagnosticContext,
+				_reflectionMarker,
+				_context,
+				_markStep,
+				out methodReturnValue);
+		}
+
+		public static bool HandleCall (
+			Instruction operation,
+			MethodReference calledMethod,
+			MultiValue instanceValue,
+			ImmutableArray<MultiValue> argumentValues,
+			DiagnosticContext diagnosticContext,
+			ReflectionMarker reflectionMarker,
+			LinkContext context,
+			MarkStep markStep,
+			out MultiValue methodReturnValue)
+		{
+			var origin = diagnosticContext.Origin;
+			var calledMethodDefinition = context.TryResolve (calledMethod);
+			Debug.Assert (calledMethodDefinition != null);
+			var callingMethodDefinition = origin.Provider as MethodDefinition;
+			Debug.Assert (callingMethodDefinition != null);
+
+			bool requiresDataFlowAnalysis = context.Annotations.FlowAnnotations.RequiresDataFlowAnalysis (calledMethodDefinition);
+			var annotatedMethodReturnValue = context.Annotations.FlowAnnotations.GetMethodReturnValue (calledMethodDefinition);
+			Debug.Assert (requiresDataFlowAnalysis || annotatedMethodReturnValue.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.None);
+
+			MultiValue? maybeMethodReturnValue = null;
+
+			var handleCallAction = new HandleCallAction (context, reflectionMarker, diagnosticContext, callingMethodDefinition);
 			switch (Intrinsics.GetIntrinsicIdForMethod (calledMethodDefinition)) {
 			case IntrinsicId.IntrospectionExtensions_GetTypeInfo:
 			case IntrinsicId.TypeInfo_AsType:
@@ -294,42 +246,31 @@ namespace Mono.Linker.Dataflow
 					|| appDomainCreateInstance == IntrinsicId.AppDomain_CreateInstanceFrom
 					|| appDomainCreateInstance == IntrinsicId.AppDomain_CreateInstanceFromAndUnwrap:
 			case IntrinsicId.Assembly_CreateInstance: {
-					var instanceValue = MultiValueLattice.Top;
-					IReadOnlyList<MultiValue> parameterValues = methodParams;
-					if (calledMethodDefinition.HasImplicitThis ()) {
-						instanceValue = methodParams[0];
-						parameterValues = parameterValues.Skip (1).ToImmutableList ();
-					}
-					return handleCallAction.Invoke (calledMethodDefinition, instanceValue, parameterValues, out methodReturnValue, out _);
+					return handleCallAction.Invoke (calledMethodDefinition, instanceValue, argumentValues, out methodReturnValue, out _);
 				}
 
 			case IntrinsicId.None: {
 					if (calledMethodDefinition.IsPInvokeImpl) {
 						// Is the PInvoke dangerous?
-						bool comDangerousMethod = IsComInterop (calledMethodDefinition.MethodReturnType, calledMethodDefinition.ReturnType);
+						bool comDangerousMethod = IsComInterop (calledMethodDefinition.MethodReturnType, calledMethodDefinition.ReturnType, context);
 						foreach (ParameterDefinition pd in calledMethodDefinition.Parameters) {
-							comDangerousMethod |= IsComInterop (pd, pd.ParameterType);
+							comDangerousMethod |= IsComInterop (pd, pd.ParameterType, context);
 						}
 
 						if (comDangerousMethod) {
 							diagnosticContext.AddDiagnostic (DiagnosticId.CorrectnessOfCOMCannotBeGuaranteed, calledMethodDefinition.GetDisplayName ());
 						}
 					}
-					_markStep.CheckAndReportRequiresUnreferencedCode (calledMethodDefinition, _origin);
+					if (context.Annotations.DoesMethodRequireUnreferencedCode (calledMethodDefinition, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCode))
+						MarkStep.ReportRequiresUnreferencedCode (calledMethodDefinition.GetDisplayName (), requiresUnreferencedCode, diagnosticContext);
 
-					var instanceValue = MultiValueLattice.Top;
-					IReadOnlyList<MultiValue> parameterValues = methodParams;
-					if (calledMethodDefinition.HasImplicitThis ()) {
-						instanceValue = methodParams[0];
-						parameterValues = parameterValues.Skip (1).ToImmutableList ();
-					}
-					return handleCallAction.Invoke (calledMethodDefinition, instanceValue, parameterValues, out methodReturnValue, out _);
+					return handleCallAction.Invoke (calledMethodDefinition, instanceValue, argumentValues, out methodReturnValue, out _);
 				}
 
 			case IntrinsicId.TypeDelegator_Ctor: {
 					// This is an identity function for analysis purposes
 					if (operation.OpCode == OpCodes.Newobj)
-						AddReturnValue (methodParams[1]);
+						AddReturnValue (argumentValues[0]);
 				}
 				break;
 
@@ -338,13 +279,22 @@ namespace Mono.Linker.Dataflow
 				}
 				break;
 
+			case IntrinsicId.Enum_GetValues:
+			case IntrinsicId.Marshal_SizeOf:
+			case IntrinsicId.Marshal_OffsetOf:
+			case IntrinsicId.Marshal_PtrToStructure:
+			case IntrinsicId.Marshal_DestroyStructure:
+			case IntrinsicId.Marshal_GetDelegateForFunctionPointer:
+				// These intrinsics are not interesting for trimmer (they are interesting for AOT and that's why they are recognized)
+				break;
+
 			//
 			// System.Object
 			//
 			// GetType()
 			//
 			case IntrinsicId.Object_GetType: {
-					foreach (var valueNode in methodParams[0]) {
+					foreach (var valueNode in instanceValue) {
 						// Note that valueNode can be statically typed in IL as some generic argument type.
 						// For example:
 						//   void Method<T>(T instance) { instance.GetType().... }
@@ -363,7 +313,7 @@ namespace Mono.Linker.Dataflow
 						TypeDefinition? staticType = (valueNode as IValueWithStaticType)?.StaticType;
 						if (staticType is null) {
 							// We don't know anything about the type GetType was called on. Track this as a usual result of a method call without any annotations
-							AddReturnValue (_annotations.GetMethodReturnValue (calledMethodDefinition));
+							AddReturnValue (context.Annotations.FlowAnnotations.GetMethodReturnValue (calledMethodDefinition));
 						} else if (staticType.IsSealed || staticType.IsTypeOf ("System", "Delegate")) {
 							// We can treat this one the same as if it was a typeof() expression
 
@@ -382,15 +332,15 @@ namespace Mono.Linker.Dataflow
 						} else {
 							// Make sure the type is marked (this will mark it as used via reflection, which is sort of true)
 							// This should already be true for most cases (method params, fields, ...), but just in case
-							_reflectionMarker.MarkType (_origin, staticType);
+							reflectionMarker.MarkType (origin, staticType);
 
-							var annotation = _markStep.DynamicallyAccessedMembersTypeHierarchy
-								.ApplyDynamicallyAccessedMembersToTypeHierarchy (_reflectionMarker, staticType);
+							var annotation = markStep.DynamicallyAccessedMembersTypeHierarchy
+								.ApplyDynamicallyAccessedMembersToTypeHierarchy (staticType);
 
 							// Return a value which is "unknown type" with annotation. For now we'll use the return value node
 							// for the method, which means we're loosing the information about which staticType this
 							// started with. For now we don't need it, but we can add it later on.
-							AddReturnValue (_annotations.GetMethodReturnValue (calledMethodDefinition, annotation));
+							AddReturnValue (context.Annotations.FlowAnnotations.GetMethodReturnValue (calledMethodDefinition, annotation));
 						}
 					}
 				}
@@ -414,13 +364,13 @@ namespace Mono.Linker.Dataflow
 			bool returnsVoid = calledMethod.ReturnsVoid ();
 			methodReturnValue = maybeMethodReturnValue ?? (returnsVoid ?
 				MultiValueLattice.Top :
-				_annotations.GetMethodReturnValue (calledMethodDefinition, returnValueDynamicallyAccessedMemberTypes));
+				annotatedMethodReturnValue);
 
 			// Validate that the return value has the correct annotations as per the method return value annotations
-			if (returnValueDynamicallyAccessedMemberTypes != 0) {
+			if (annotatedMethodReturnValue.DynamicallyAccessedMemberTypes != 0) {
 				foreach (var uniqueValue in methodReturnValue) {
 					if (uniqueValue is ValueWithDynamicallyAccessedMembers methodReturnValueWithMemberTypes) {
-						if (!methodReturnValueWithMemberTypes.DynamicallyAccessedMemberTypes.HasFlag (returnValueDynamicallyAccessedMemberTypes))
+						if (!methodReturnValueWithMemberTypes.DynamicallyAccessedMemberTypes.HasFlag (annotatedMethodReturnValue.DynamicallyAccessedMemberTypes))
 							throw new InvalidOperationException ($"Internal linker error: processing of call from {callingMethodDefinition.GetDisplayName ()} to {calledMethod.GetDisplayName ()} returned value which is not correctly annotated with the expected dynamic member access kinds.");
 					} else if (uniqueValue is SystemTypeValue) {
 						// SystemTypeValue can fullfill any requirement, so it's always valid
@@ -439,7 +389,7 @@ namespace Mono.Linker.Dataflow
 			}
 		}
 
-		bool IsComInterop (IMarshalInfoProvider marshalInfoProvider, TypeReference parameterType)
+		static bool IsComInterop (IMarshalInfoProvider marshalInfoProvider, TypeReference parameterType, LinkContext context)
 		{
 			// This is best effort. One can likely find ways how to get COM without triggering these alarms.
 			// AsAny marshalling of a struct with an object-typed field would be one, for example.
@@ -460,7 +410,7 @@ namespace Mono.Linker.Dataflow
 
 			if (nativeType == NativeType.None) {
 				// Resolve will look at the element type
-				var parameterTypeDef = _context.TryResolve (parameterType);
+				var parameterTypeDef = context.TryResolve (parameterType);
 
 				if (parameterTypeDef != null) {
 					if (parameterTypeDef.IsTypeOf (WellKnownType.System_Array)) {
@@ -481,10 +431,10 @@ namespace Mono.Linker.Dataflow
 					} else if (parameterTypeDef.IsMulticastDelegate ()) {
 						// Delegates are special cased by interop
 						return false;
-					} else if (parameterTypeDef.IsSubclassOf ("System.Runtime.InteropServices", "CriticalHandle", _context)) {
+					} else if (parameterTypeDef.IsSubclassOf ("System.Runtime.InteropServices", "CriticalHandle", context)) {
 						// Subclasses of CriticalHandle are special cased by interop
 						return false;
-					} else if (parameterTypeDef.IsSubclassOf ("System.Runtime.InteropServices", "SafeHandle", _context)) {
+					} else if (parameterTypeDef.IsSubclassOf ("System.Runtime.InteropServices", "SafeHandle", context)) {
 						// Subclasses of SafeHandle are special cased by interop
 						return false;
 					} else if (!parameterTypeDef.IsSequentialLayout && !parameterTypeDef.IsExplicitLayout) {
@@ -497,10 +447,12 @@ namespace Mono.Linker.Dataflow
 			return false;
 		}
 
-		void RequireDynamicallyAccessedMembers (in DiagnosticContext diagnosticContext, in MultiValue value, ValueWithDynamicallyAccessedMembers targetValue)
+		void HandleAssignmentPattern (
+			in MessageOrigin origin,
+			in MultiValue value,
+			ValueWithDynamicallyAccessedMembers targetValue)
 		{
-			var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction (_context, _reflectionMarker, diagnosticContext);
-			requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
+			TrimAnalysisPatterns.Add (new TrimAnalysisAssignmentPattern (value, targetValue, origin));
 		}
 	}
 }

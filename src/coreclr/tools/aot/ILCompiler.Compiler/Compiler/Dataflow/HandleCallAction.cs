@@ -75,7 +75,7 @@ namespace ILLink.Shared.TrimAnalysis
             return false;
         }
 
-        private partial bool TryResolveTypeNameForCreateInstance(in MethodProxy calledMethod, string assemblyName, string typeName, out TypeProxy resolvedType)
+        private partial bool TryResolveTypeNameForCreateInstanceAndMark(in MethodProxy calledMethod, string assemblyName, string typeName, out TypeProxy resolvedType)
         {
             // TODO: niche APIs that we probably shouldn't even have added
             // We have to issue a warning, otherwise we could break the app without a warning.

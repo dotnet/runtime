@@ -30,7 +30,6 @@ namespace ILCompiler.Dataflow
 {
     class ReflectionMethodBodyScanner : MethodBodyScanner
     {
-        private readonly FlowAnnotations _annotations;
         private readonly Logger _logger;
         private readonly NodeFactory _factory;
         private readonly ReflectionMarker _reflectionMarker;
@@ -121,8 +120,8 @@ namespace ILCompiler.Dataflow
         private ScanningPurpose _purpose;
 
         private ReflectionMethodBodyScanner(NodeFactory factory, FlowAnnotations annotations, Logger logger, ScanningPurpose purpose = ScanningPurpose.Default)
+            : base(annotations)
         {
-            _annotations = annotations;
             _logger = logger;
             _factory = factory;
             _purpose = purpose;
@@ -169,83 +168,6 @@ namespace ILCompiler.Dataflow
             return scanner._reflectionMarker.Dependencies;
         }
 
-        public static DependencyList? ProcessAttributeDataflow(NodeFactory factory, FlowAnnotations annotations, Logger logger, MethodDesc method, CustomAttributeValue arguments)
-        {
-            DependencyList? result = null;
-
-            // First do the dataflow for the constructor parameters if necessary.
-            if (annotations.RequiresDataflowAnalysis(method))
-            {
-                for (int i = 0; i < method.Signature.Length; i++)
-                {
-                    var parameterValue = annotations.GetMethodParameterValue(method, i);
-                    if (parameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None)
-                    {
-                        MultiValue value = GetValueForCustomAttributeArgument(arguments.FixedArguments[i].Value);
-                        var diagnosticContext = new DiagnosticContext(new MessageOrigin(method), diagnosticsEnabled: true, logger);
-                        var scanner = new ReflectionMethodBodyScanner(factory, annotations, logger);
-                        scanner.RequireDynamicallyAccessedMembers(diagnosticContext, value, parameterValue, parameterValue.ParameterOrigin);
-                        AddResults(scanner._reflectionMarker.Dependencies);
-                    }
-                }
-            }
-
-            // Named arguments next
-            TypeDesc attributeType = method.OwningType;
-            foreach (var namedArgument in arguments.NamedArguments)
-            {
-                MultiValue targetValues = new();
-                Origin? targetContext = null;
-                if (namedArgument.Kind == CustomAttributeNamedArgumentKind.Field)
-                {
-                    FieldDesc field = attributeType.GetField(namedArgument.Name);
-                    if (field != null)
-                    {
-                        targetValues = GetFieldValue(field, annotations);
-                        targetContext = new FieldOrigin(field);
-                    }
-                }
-                else
-                {
-                    Debug.Assert(namedArgument.Kind == CustomAttributeNamedArgumentKind.Property);
-                    PropertyPseudoDesc property = ((MetadataType)attributeType).GetProperty(namedArgument.Name, null);
-                    MethodDesc setter = property.SetMethod;
-                    if (setter != null && setter.Signature.Length > 0 && !setter.Signature.IsStatic)
-                    {
-                        targetValues = annotations.GetMethodParameterValue(setter, 0);
-                        targetContext = new ParameterOrigin(setter, 1);
-                    }
-                }
-
-                foreach (var targetValueCandidate in targetValues)
-                {
-                    if (targetValueCandidate is not ValueWithDynamicallyAccessedMembers targetValue ||
-                        targetValue.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.None)
-                        continue;
-
-                    MultiValue valueNode = GetValueForCustomAttributeArgument(namedArgument.Value);
-                    var diagnosticContext = new DiagnosticContext(new MessageOrigin(method), diagnosticsEnabled: true, logger);
-                    var scanner = new ReflectionMethodBodyScanner(factory, annotations, logger);
-                    scanner.RequireDynamicallyAccessedMembers(diagnosticContext, valueNode, targetValue, targetContext!);
-                    AddResults(scanner._reflectionMarker.Dependencies);
-                }
-            }
-
-            return result;
-
-            void AddResults(DependencyList dependencies)
-            {
-                if (result == null)
-                {
-                    result = dependencies;
-                }
-                else
-                {
-                    result.AddRange(dependencies);
-                }
-            }
-        }
-
         public static DependencyList ProcessTypeGetTypeDataflow(NodeFactory factory, FlowAnnotations flowAnnotations, Logger logger, MetadataType type)
         {
             DynamicallyAccessedMemberTypes annotation = flowAnnotations.GetTypeAnnotation(type);
@@ -253,74 +175,6 @@ namespace ILCompiler.Dataflow
             var reflectionMarker = new ReflectionMarker(logger, factory, flowAnnotations, true);
             reflectionMarker.MarkTypeForDynamicallyAccessedMembers(new MessageOrigin(type), type, annotation, new TypeOrigin(type));
             return reflectionMarker.Dependencies;
-        }
-
-        static MultiValue GetValueForCustomAttributeArgument(object? argument)
-        {
-            SingleValue? result = null;
-            if (argument is TypeDesc td)
-            {
-                result = new SystemTypeValue(td);
-            }
-            else if (argument is string str)
-            {
-                result = new KnownStringValue(str);
-            }
-            else
-            {
-                Debug.Assert(argument is null);
-                result = NullValue.Instance;
-            }
-
-            Debug.Assert(result != null);
-            return result;
-        }
-
-        public static DependencyList ProcessGenericArgumentDataFlow(NodeFactory factory, FlowAnnotations flowAnnotations, Logger logger, GenericParameterDesc genericParameter, TypeDesc genericArgument, TypeSystemEntity source)
-        {
-            var scanner = new ReflectionMethodBodyScanner(factory, flowAnnotations, logger);
-
-            var genericParameterValue = flowAnnotations.GetGenericParameterValue(genericParameter);
-            Debug.Assert(genericParameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None);
-
-            MultiValue genericArgumentValue = scanner.GetTypeValueNodeFromGenericArgument(genericArgument);
-
-            bool enableDiagnostics = ShouldSuppressAnalysisWarningsForRequires(source, RequiresUnreferencedCodeAttribute);
-            var diagnosticContext = new DiagnosticContext(new MessageOrigin(source), diagnosticsEnabled: enableDiagnostics, logger);
-            var origin = new GenericParameterOrigin(genericParameter);
-            scanner.RequireDynamicallyAccessedMembers(diagnosticContext, genericArgumentValue, genericParameterValue, origin);
-
-            return scanner._reflectionMarker.Dependencies;
-        }
-
-        MultiValue GetTypeValueNodeFromGenericArgument(TypeDesc genericArgument)
-        {
-            if (genericArgument is GenericParameterDesc inputGenericParameter)
-            {
-                return _annotations.GetGenericParameterValue(inputGenericParameter);
-            }
-            else if (genericArgument is MetadataType genericArgumentType)
-            {
-                if (genericArgumentType.IsTypeOf(WellKnownType.System_Nullable_T))
-                {
-                    var innerGenericArgument = genericArgumentType.Instantiation.Length == 1 ? genericArgumentType.Instantiation[0] : null;
-                    switch (innerGenericArgument)
-                    {
-                        case GenericParameterDesc gp:
-                            return new NullableValueWithDynamicallyAccessedMembers(genericArgumentType,
-                                new GenericParameterValue(gp, _annotations.GetGenericParameterAnnotation(gp)));
-
-                        case TypeDesc underlyingType:
-                            return new NullableSystemTypeValue(genericArgumentType, new SystemTypeValue(underlyingType));
-                    }
-                }
-                // All values except for Nullable<T>, including Nullable<> (with no type arguments)
-                return new SystemTypeValue(genericArgumentType);
-            }
-            else
-            {
-                return UnknownValue.Instance;
-            }
         }
 
         protected override void WarnAboutInvalidILInMethod(MethodIL method, int ilOffset)
