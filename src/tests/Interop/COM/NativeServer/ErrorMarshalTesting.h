@@ -49,7 +49,7 @@ public: // IErrorMarshalTesting
     DEF_FUNC(InterfaceSupportsErrorInfo)(
         /* [in] */ __RPC__in REFIID riid)
     {
-        return S_OK;
+        return riid == IID_IErrorMarshalTesting ? S_OK : S_FALSE;
     }
 
 public: // IUnknown
