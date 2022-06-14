@@ -19,7 +19,7 @@
     <Compile Include="DnsEndPointTest.cs" />
     <Compile Include="DualModeSocketTest.cs" />
     <Compile Include="ExecutionContextFlowTest.cs" />
-    <Compile Include="InlineCompletions.Unix.cs" Condition="'$(TargetPlatformIdentifier)' == 'Unix'"/>
+    <Compile Include="InlineCompletions.Unix.cs" Condition="'$(TargetPlatformIdentifier)' == 'Unix'" />
     <Compile Include="IPPacketInformationTest.cs" />
     <Compile Include="KeepAliveTest.cs" />
     <Compile Include="LingerStateTest.cs" />
@@ -55,50 +55,31 @@
     <Compile Include="SocketTaskExtensionsTest.cs" />
     <Compile Include="MulticastOptionTest.cs" />
     <Compile Include="UdpClientTest.cs" />
+    <Compile Include="EnableBroadcastSocketTest.cs" />
     <Compile Include="UnixDomainSocketTest.cs" />
     <!-- Common Sockets files -->
-    <Compile Include="$(CommonTestPath)System\Net\Configuration.cs"
-             Link="SocketCommon\Configuration.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Configuration.Sockets.cs"
-             Link="SocketCommon\Configuration.Sockets.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Sockets\TestSettings.cs"
-             Link="SocketCommon\TestSettings.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Sockets\Fletcher32.cs"
-             Link="SocketCommon\Fletcher32.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Sockets\SocketTestExtensions.cs"
-             Link="SocketCommon\SocketTestExtensions.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Sockets\SocketTestServer.cs"
-             Link="SocketCommon\SocketTestServer.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Sockets\SocketTestServerAsync.cs"
-             Link="SocketCommon\SocketTestServerAsync.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Sockets\SocketTestServerAPM.cs"
-             Link="SocketCommon\SocketTestServerAPM.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Sockets\SocketImplementationType.cs"
-             Link="SocketCommon\SocketImplementationType.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.cs" Link="SocketCommon\Configuration.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.Sockets.cs" Link="SocketCommon\Configuration.Sockets.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Sockets\TestSettings.cs" Link="SocketCommon\TestSettings.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Sockets\Fletcher32.cs" Link="SocketCommon\Fletcher32.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Sockets\SocketTestExtensions.cs" Link="SocketCommon\SocketTestExtensions.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Sockets\SocketTestServer.cs" Link="SocketCommon\SocketTestServer.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Sockets\SocketTestServerAsync.cs" Link="SocketCommon\SocketTestServerAsync.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Sockets\SocketTestServerAPM.cs" Link="SocketCommon\SocketTestServerAPM.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Sockets\SocketImplementationType.cs" Link="SocketCommon\SocketImplementationType.cs" />
     <!-- Common test files -->
-    <Compile Include="$(CommonTestPath)System\Net\TestLogging.cs"
-             Link="Common\System\Net\TestLogging.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\VerboseTestLogging.cs"
-             Link="Common\System\Net\VerboseTestLogging.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\EventSourceTestLogging.cs"
-             Link="Common\System\Net\EventSourceTestLogging.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Capability.Sockets.cs"
-             Link="Common\System\Net\Capability.Sockets.cs" />
-    <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs"
-             Link="Common\System\ShouldNotBeInvokedException.cs" />
-    <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
-             Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
-    <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs"
-             Link="Common\System\Buffers\NativeMemoryManager.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
-             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
-    <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs"
-             Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
-    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
-             Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\TestLogging.cs" Link="Common\System\Net\TestLogging.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\VerboseTestLogging.cs" Link="Common\System\Net\VerboseTestLogging.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\EventSourceTestLogging.cs" Link="Common\System\Net\EventSourceTestLogging.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Capability.Sockets.cs" Link="Common\System\Net\Capability.Sockets.cs" />
+    <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs" Link="Common\System\ShouldNotBeInvokedException.cs" />
+    <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs" Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
+    <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs" Link="Common\System\Buffers\NativeMemoryManager.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs" Link="Common\System\Threading\Tasks\TaskToApm.cs" />
+    <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs" Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
+    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs" Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs" Link="Common\System\IO\TempFile.cs" />
-    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs"
-             Link="Common\TestUtilities\System\DisableParallelization.cs" />
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />

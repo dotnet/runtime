@@ -700,6 +700,10 @@ namespace System.Net.Sockets
         {
             get
             {
+                if (SocketType != SocketType.Dgram)
+                {
+                    return false;
+                }
                 return (int)GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast)! != 0 ? true : false;
             }
             set
