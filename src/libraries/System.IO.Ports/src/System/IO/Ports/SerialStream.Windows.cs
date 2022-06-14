@@ -74,10 +74,7 @@ namespace System.IO.Ports
                 if (value <= 0 || (value > _commProp.dwMaxBaud && _commProp.dwMaxBaud > 0))
                 {
                     // if no upper bound on baud rate imposed by serial driver, note that argument must be positive
-                    if (_commProp.dwMaxBaud == 0)
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(BaudRate), SR.ArgumentOutOfRange_NeedPosNum);
-                    }
+                    ArgumentOutOfRangeException.ThrowIfZero(_commProp.dwMaxBaud);
                     // if no upper bound on baud rate imposed by serial driver, note that argument must be positive
                     throw new ArgumentOutOfRangeException(nameof(BaudRate), SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, 0, _commProp.dwMaxBaud));
                 }

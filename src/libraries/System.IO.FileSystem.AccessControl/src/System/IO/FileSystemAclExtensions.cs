@@ -247,10 +247,7 @@ namespace System.IO
                 access |= FileAccess.Write;
             }
 
-            if (access == 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(rights));
-            }
+            ArgumentOutOfRangeException.ThrowIfZero(access);
 
             return access;
         }

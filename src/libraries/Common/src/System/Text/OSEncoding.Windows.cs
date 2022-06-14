@@ -68,10 +68,7 @@ namespace System.Text
             if (charCount == 0)
                 return 0;
 
-            if (bytes.Length == 0)
-            {
-                throw new ArgumentOutOfRangeException(SR.Argument_EncodingConversionOverflowBytes);
-            }
+            ArgumentOutOfRangeException.ThrowIfZero(bytes.Length);
 
             fixed (char* pChars = s)
             fixed (byte* pBytes = &bytes[0])
@@ -98,10 +95,7 @@ namespace System.Text
             if (charCount == 0)
                 return 0;
 
-            if (bytes.Length == 0)
-            {
-                throw new ArgumentOutOfRangeException(SR.Argument_EncodingConversionOverflowBytes);
-            }
+            ArgumentOutOfRangeException.ThrowIfZero(bytes.Length);
 
             fixed (char* pChars = chars)
             fixed (byte* pBytes = &bytes[0])
@@ -148,8 +142,7 @@ namespace System.Text
             if (byteCount == 0)
                 return 0;
 
-            if (chars.Length == 0)
-                throw new ArgumentOutOfRangeException(SR.Argument_EncodingConversionOverflowChars);
+            ArgumentOutOfRangeException.ThrowIfZero(chars.Length);
 
             fixed (byte* pBytes = bytes)
             fixed (char* pChars = &chars[0])

@@ -124,10 +124,7 @@ namespace System.Management
             {
                 throw new ArgumentOutOfRangeException(nameof(dmtfDate));
             }
-            if (dmtf.Length == 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(dmtfDate));
-            }
+            ArgumentOutOfRangeException.ThrowIfZero(dmtf.Length);
 
             // if the length of the string is not equal to the
             // standard length of the DMTF datetime then throw an exception

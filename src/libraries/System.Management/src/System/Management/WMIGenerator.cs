@@ -171,10 +171,7 @@ namespace System.Management
                 throw new ArgumentOutOfRangeException(SR.NullFilePathException);
             }
 
-            if (filePath.Length == 0)
-            {
-                throw new ArgumentOutOfRangeException(SR.EmptyFilePathException);
-            }
+            ArgumentOutOfRangeException.ThrowIfZero(filePath.Length);
 
             NETNamespace = netNamespace;
             CheckIfClassIsProperlyInitialized();

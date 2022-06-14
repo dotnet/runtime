@@ -197,10 +197,7 @@ namespace System.Net.WebSockets
             }
 
             WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
-            if (buffer.Count == 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(buffer));
-            }
+            ArgumentOutOfRangeException.ThrowIfZero(buffer.Count);
 
             _receiveBufferSize = receiveBufferSize;
             _buffer = buffer;
