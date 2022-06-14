@@ -6045,13 +6045,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     // For arm64/LoongArch64, we want to allocate JIT data always adjacent to code similar to what native compiler does.
     // This way allows us to use a single `ldr` to access such data like float constant/jmp table.
 
-    UNATIVE_OFFSET roDataAlignmentDelta = 0;
-    if (emitConsDsc.dsdOffs && (emitConsDsc.alignment == TARGET_POINTER_SIZE))
-    {
-        UNATIVE_OFFSET roDataAlignment = TARGET_POINTER_SIZE; // 8 Byte align by default.
-        roDataAlignmentDelta = (UNATIVE_OFFSET)ALIGN_UP(emitTotalHotCodeSize, roDataAlignment) - emitTotalHotCodeSize;
-        assert((roDataAlignmentDelta == 0) || (roDataAlignmentDelta == 4));
-    }
+    const UNATIVE_OFFSET roDataAlignmentDelta =
+        (UNATIVE_OFFSET)ALIGN_UP(emitTotalHotCodeSize, emitConsDsc.alignment) - emitTotalHotCodeSize;
 
     args.hotCodeSize  = emitTotalHotCodeSize + roDataAlignmentDelta + emitConsDsc.dsdOffs;
     args.coldCodeSize = emitTotalColdCodeSize;
