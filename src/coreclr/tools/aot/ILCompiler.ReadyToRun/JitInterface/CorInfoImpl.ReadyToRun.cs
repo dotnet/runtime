@@ -2772,7 +2772,8 @@ namespace Internal.JitInterface
                     typicalMethod is EcmaMethod ecmaMethod &&
                     ecmaMethod.Module == typicalMethod.Context.SystemModule) // NonVersionable code in System.Collections.Immutable is causing problems and needs to be treated specially
                 {
-                    Debug.Assert(_compilation.CompilationModuleGroup.CrossModuleInlineable(typicalMethod));
+                    Debug.Assert(_compilation.CompilationModuleGroup.CrossModuleInlineable(typicalMethod) ||
+                                 _compilation.CompilationModuleGroup.IsNonVersionableWithILTokensThatDoNotNeedTranslation(typicalMethod));
                     bool needsTokenTranslation = !_compilation.CompilationModuleGroup.IsNonVersionableWithILTokensThatDoNotNeedTranslation(typicalMethod);
 
                     if (needsTokenTranslation)
