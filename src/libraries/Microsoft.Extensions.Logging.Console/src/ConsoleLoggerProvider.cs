@@ -21,8 +21,7 @@ namespace Microsoft.Extensions.Logging.Console
         private readonly IOptionsMonitor<ConsoleLoggerOptions> _options;
         private readonly ConcurrentDictionary<string, ConsoleLogger> _loggers;
         private ConcurrentDictionary<string, ConsoleFormatter> _formatters;
-        // for testing
-        internal ConsoleLoggerProcessor MessageQueue;
+        private ConsoleLoggerProcessor _messageQueue;
 
         private IDisposable? _optionsReloadToken;
         private IExternalScopeProvider _scopeProvider = NullExternalScopeProvider.Instance;
@@ -61,7 +60,7 @@ namespace Microsoft.Extensions.Logging.Console
                 errorConsole = new AnsiParsingLogConsole(stdErr: true);
             }
 
-            MessageQueue = new ConsoleLoggerProcessor(console, errorConsole);
+            _messageQueue = new ConsoleLoggerProcessor(console, errorConsole);
         }
 
         [UnsupportedOSPlatformGuard("windows")]
@@ -153,7 +152,7 @@ namespace Microsoft.Extensions.Logging.Console
 
             return _loggers.TryGetValue(name, out ConsoleLogger? logger) ?
                 logger :
-                _loggers.GetOrAdd(name, new ConsoleLogger(name, MessageQueue, logFormatter, _scopeProvider, _options.CurrentValue));
+                _loggers.GetOrAdd(name, new ConsoleLogger(name, _messageQueue, logFormatter, _scopeProvider, _options.CurrentValue));
         }
 
 #pragma warning disable CS0618
@@ -189,7 +188,7 @@ namespace Microsoft.Extensions.Logging.Console
         public void Dispose()
         {
             _optionsReloadToken?.Dispose();
-            MessageQueue.Dispose();
+            _messageQueue.Dispose();
         }
 
         /// <inheritdoc />

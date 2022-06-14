@@ -434,16 +434,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                     .GetRequiredService<ILoggerProvider>();
 
                 var consoleLoggerProvider = Assert.IsType<ConsoleLoggerProvider>(loggerProvider);
-                consoleLoggerProvider.MessageQueue = consoleLoggerProcessor;
                 var logger = (ConsoleLogger)consoleLoggerProvider.CreateLogger("Category");
-
-                // Act
-                logger.Log(
-                    LogLevel.Information,
-                    0,
-                    "This is a test, and {curly braces} are just fine!",
-                    null,
-                    (state, exception) => state.ToString());
 
                 // Assert
                 Assert.True(System.Console.IsOutputRedirected);
@@ -451,10 +442,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 var formatter = Assert.IsType<SimpleConsoleFormatter>(logger.Formatter);
                 Assert.Equal(LoggerColorBehavior.Disabled, formatter.FormatterOptions.ColorBehavior);
 
-                Assert.Equal(1, sink.Writes.Count);
-                var write = sink.Writes[0];
-                Assert.Equal(TestConsole.DefaultBackgroundColor, write.BackgroundColor);
-                Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
             }, new RemoteInvokeOptions { StartInfo = new ProcessStartInfo() { RedirectStandardOutput = true } }).Dispose();
         }
 
