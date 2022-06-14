@@ -510,12 +510,12 @@ if(GCC)
   set(WARNINGS "-Wall -Wunused -Wmissing-declarations -Wpointer-arith -Wno-cast-qual -Wwrite-strings -Wno-switch -Wno-switch-enum -Wno-unused-value -Wno-attributes -Wno-format-zero-length -Wno-unused-function")
   set(WARNINGS_C "-Wmissing-prototypes -Wstrict-prototypes -Wnested-externs")
 
+  set(WERROR "-Werror=return-type")
+  set(WERROR_C "-Werror=implicit-function-declaration")
+
   if (CMAKE_C_COMPILER_ID MATCHES "Clang")
     set(WARNINGS "${WARNINGS} -Qunused-arguments -Wno-tautological-compare -Wno-parentheses-equality -Wno-self-assign -Wno-return-stack-address -Wno-constant-logical-operand -Wno-zero-length-array -Wno-asm-operand-widths")
   endif()
-
-  set(WERROR "-Werror=return-type")
-  set(WERROR_C "-Werror=implicit-function-declaration")
 
   check_c_compiler_flag("-Werror=incompatible-pointer-types" WERROR_INCOMPATIBLE_POINTER_TYPES)
   if(WERROR_INCOMPATIBLE_POINTER_TYPES)

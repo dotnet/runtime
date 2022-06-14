@@ -556,30 +556,24 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
             // The cpyXXXX code is rather complex and this could cause it to be more complex, but
             // it might be the right thing to do.
 
-            unsigned size     = putArgStk->GetStackByteSize();
-            unsigned loadSize = layout->GetSize();
-
-            assert(loadSize <= size);
+            // If possible, widen the load, this results in more compact code.
+            unsigned loadSize = srcIsLocal ? roundUp(layout->GetSize(), TARGET_POINTER_SIZE) : layout->GetSize();
+            putArgStk->SetArgLoadSize(loadSize);
 
             // TODO-X86-CQ: The helper call either is not supported on x86 or required more work
             // (I don't know which).
-
             if (!layout->HasGCPtr())
             {
 #ifdef TARGET_X86
                 // Codegen for "Kind::Push" will always load bytes in TARGET_POINTER_SIZE
-                // chunks. As such, the correctness of this code depends on the fact that
-                // morph will copy any "mis-sized" (too small) non-local OBJs into a temp,
-                // thus preventing any possible out-of-bounds memory reads.
-                assert(((layout->GetSize() % TARGET_POINTER_SIZE) == 0) || src->OperIsLocalRead() ||
-                       (src->OperIsIndir() && src->AsIndir()->Addr()->IsLocalAddrExpr()));
-                if (size < XMM_REGSIZE_BYTES)
+                // chunks. As such, we'll only use this path for correctly-sized sources.
+                if ((loadSize < XMM_REGSIZE_BYTES) && ((loadSize % TARGET_POINTER_SIZE) == 0))
                 {
                     putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Push;
                 }
                 else
 #endif // TARGET_X86
-                    if (size <= CPBLK_UNROLL_LIMIT)
+                    if (loadSize <= CPBLK_UNROLL_LIMIT)
                 {
                     putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Unroll;
                 }
@@ -615,7 +609,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
             // so if possible, widen the load to avoid the sign/zero-extension.
             if (varTypeIsSmall(regType) && srcIsLocal)
             {
-                assert(putArgStk->GetStackByteSize() <= genTypeSize(TYP_INT));
+                assert(genTypeSize(TYP_INT) <= putArgStk->GetStackByteSize());
                 regType = TYP_INT;
             }
 

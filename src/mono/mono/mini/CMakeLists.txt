@@ -289,6 +289,12 @@ if(ENABLE_INTERP_LIB)
 add_library(mono-ee-interp STATIC "${interp_sources}")
 target_link_libraries(mono-ee-interp monoapi)
 install(TARGETS mono-ee-interp LIBRARY)
+if(HOST_WASM AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+# Always optimize the interpreter, even in Debug builds.  Unoptimized interp_exec_method and
+# generate_code are so big that some browsers overflow the stack with even a few recursive
+# invocations (e.g. during .cctor initialization)
+target_compile_options(mono-ee-interp PRIVATE -O1)
+endif()
 endif()
 
 if(ENABLE_LLVM)

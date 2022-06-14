@@ -194,27 +194,55 @@ pal::string_t get_replaced_char(const pal::string_t& path, pal::char_t match, pa
     return out;
 }
 
-const pal::char_t* get_arch()
+namespace
+{
+    const pal::char_t* s_all_architectures[] =
+    {
+        _X("arm"),
+        _X("arm64"),
+        _X("armv6"),
+        _X("loongarch64"),
+        _X("ppc64le"),
+        _X("s390x"),
+        _X("x64"),
+        _X("x86")
+    };
+    static_assert((sizeof(s_all_architectures) / sizeof(*s_all_architectures)) == static_cast<size_t>(pal::architecture::__last), "Invalid known architectures count");
+}
+
+pal::architecture get_current_arch()
 {
 #if defined(TARGET_AMD64)
-    return _X("x64");
+    return pal::architecture::x64;
 #elif defined(TARGET_X86)
-    return _X("x86");
+    return pal::architecture::x86;
 #elif defined(TARGET_ARMV6)
-    return _X("armv6");
+    return pal::architecture::armv6;
 #elif defined(TARGET_ARM)
-    return _X("arm");
+    return pal::architecture::arm;
 #elif defined(TARGET_ARM64)
-    return _X("arm64");
+    return pal::architecture::arm64;
 #elif defined(TARGET_LOONGARCH64)
-    return _X("loongarch64");
+    return pal::architecture::loongarch64;
 #elif defined(TARGET_S390X)
-    return _X("s390x");
+    return pal::architecture::s390X;
 #elif defined(TARGET_POWERPC64)
-    return _X("ppc64le");
+    return pal::architecture::ppc64le;
 #else
 #error "Unknown target"
 #endif
+}
+
+const pal::char_t* get_arch_name(pal::architecture arch)
+{
+    int idx = static_cast<int>(arch);
+    assert(0 <= idx && idx < static_cast<int>(pal::architecture::__last));
+    return s_all_architectures[idx];
+}
+
+const pal::char_t* get_current_arch_name()
+{
+    return get_arch_name(get_current_arch());
 }
 
 pal::string_t get_current_runtime_id(bool use_fallback)
@@ -230,7 +258,7 @@ pal::string_t get_current_runtime_id(bool use_fallback)
     if (!rid.empty())
     {
         rid.append(_X("-"));
-        rid.append(get_arch());
+        rid.append(get_current_arch_name());
     }
 
     return rid;
@@ -368,10 +396,14 @@ bool try_stou(const pal::string_t& str, unsigned* num)
     return true;
 }
 
+pal::string_t get_dotnet_root_env_var_for_arch(pal::architecture arch)
+{
+    return DOTNET_ROOT_ENV_VAR _X("_") + to_upper(get_arch_name(arch));
+}
+
 bool get_dotnet_root_from_env(pal::string_t* dotnet_root_env_var_name, pal::string_t* recv)
 {
-    *dotnet_root_env_var_name = _X("DOTNET_ROOT_");
-    dotnet_root_env_var_name->append(to_upper(get_arch()));
+    *dotnet_root_env_var_name = get_dotnet_root_env_var_for_arch(get_current_arch());
     if (get_file_path_from_env(dotnet_root_env_var_name->c_str(), recv))
         return true;
 
@@ -386,7 +418,7 @@ bool get_dotnet_root_from_env(pal::string_t* dotnet_root_env_var_name, pal::stri
 
     // If no architecture-specific environment variable was set
     // fallback to the default DOTNET_ROOT.
-    *dotnet_root_env_var_name = _X("DOTNET_ROOT");
+    *dotnet_root_env_var_name = DOTNET_ROOT_ENV_VAR;
     return get_file_path_from_env(dotnet_root_env_var_name->c_str(), recv);
 }
 
@@ -465,7 +497,7 @@ pal::string_t get_download_url(const pal::char_t* framework_name, const pal::cha
     }
 
     url.append(_X("&arch="));
-    url.append(get_arch());
+    url.append(get_current_arch_name());
     pal::string_t rid = get_current_runtime_id(true /*use_fallback*/);
     url.append(_X("&rid="));
     url.append(rid);

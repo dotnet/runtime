@@ -9682,19 +9682,14 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         vnpUniq.SetBoth(vnStore->VNForExpr(compCurBB, call->TypeGet()));
     }
 
-#if defined(FEATURE_READYTORUN) && (defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64))
-    if (call->IsR2RRelativeIndir())
+    if (call->GetIndirectionCellArgKind() != WellKnownArg::None)
     {
-#ifdef DEBUG
-        GenTree* indirectCellAddress = args->GetArgByIndex(0)->GetNode();
-        assert(indirectCellAddress->IsCnsIntOrI() && indirectCellAddress->GetRegNum() == REG_R2R_INDIRECT_PARAM);
-#endif // DEBUG
-
-        // For ARM indirectCellAddress is consumed by the call itself, so it should have added as an implicit argument
-        // in morph. So we do not need to use EntryPointAddrAsArg0, because arg0 is already an entry point addr.
+        // If we are VN'ing a call with indirection cell arg (e.g. because this
+        // is a helper in a R2R compilation) then morph should already have
+        // added this arg, so we do not need to use EntryPointAddrAsArg0
+        // because the indirection cell itself allows us to disambiguate.
         useEntryPointAddrAsArg0 = false;
     }
-#endif // FEATURE_READYTORUN && (TARGET_ARMARCH || TARGET_LOONGARCH64)
 
     CallArg* curArg = &*args->Args().begin();
     if (nArgs == 0)
