@@ -1271,7 +1271,7 @@ mono_arch_get_native_call_context_args (CallContext *ccontext, gpointer frame, M
 	gpointer storage;
 	ArgInfo *ainfo;
 
-	for (guint16 i = 0; i < sig->param_count + sig->hasthis; i++) {
+	for (guint i = 0; i < sig->param_count + sig->hasthis; i++) {
 		ainfo = &cinfo->args [i];
 
 		if (ainfo->storage == ArgValuetypeAddrInIReg || ainfo->storage == ArgValuetypeAddrOnStack) {
@@ -7854,7 +7854,7 @@ MONO_RESTORE_WARNING
 	}
 
 	/* Keep this in sync with emit_load_volatile_arguments */
-	for (guint16 i = 0; i < sig->param_count + sig->hasthis; ++i) {
+	for (guint i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		ArgInfo *ainfo = cinfo->args + i;
 
 		ins = cfg->args [i];
@@ -7974,7 +7974,7 @@ MONO_RESTORE_WARNING
 		if (first_bb->in_count > 1)
 			next = NULL;
 
-		for (guint16 i = 0; next && i < sig->param_count + sig->hasthis; ++i) {
+		for (guint i = 0; next && i < sig->param_count + sig->hasthis; ++i) {
 			ArgInfo *ainfo = cinfo->args + i;
 			gboolean match = FALSE;
 
