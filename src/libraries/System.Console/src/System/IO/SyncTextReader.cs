@@ -119,8 +119,9 @@ namespace System.IO
         {
             ArgumentNullException.ThrowIfNull(buffer);
 
-            if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (index < 0 ) throw new ArgumentOutOfRangeException(nameof(index) ;
+
+            if (count < 0) throw new ArgumentOutOfRangeException(nameof(count);
             if (buffer.Length - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -131,8 +132,9 @@ namespace System.IO
         {
             ArgumentNullException.ThrowIfNull(buffer);
 
-            if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (index < 0 ) throw new ArgumentOutOfRangeException(nameof(index) ;
+
+            if (count < 0) throw new ArgumentOutOfRangeException(nameof(count);
             if (buffer.Length - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 

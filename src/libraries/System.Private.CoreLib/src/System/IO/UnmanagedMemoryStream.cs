@@ -163,8 +163,9 @@ namespace System.IO
         {
             ArgumentNullException.ThrowIfNull(pointer);
 
-            if (length < 0 || capacity < 0)
-                throw new ArgumentOutOfRangeException((length < 0) ? nameof(length) : nameof(capacity), SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (length < 0 ) throw new ArgumentOutOfRangeException(nameof(length) ;
+
+            if (capacity < 0) throw new ArgumentOutOfRangeException(nameof(capacity);
             if (length > capacity)
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_LengthGreaterThanCapacity);
             // Check for wraparound.

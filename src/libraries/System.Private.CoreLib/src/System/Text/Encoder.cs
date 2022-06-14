@@ -159,9 +159,9 @@ namespace System.Text
             ArgumentNullException.ThrowIfNull(chars);
             ArgumentNullException.ThrowIfNull(bytes);
 
-            if (charCount < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException(charCount < 0 ? nameof(charCount) : nameof(byteCount),
-                    SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (charCount < 0 ) throw new ArgumentOutOfRangeException(nameof(charCount) ;
+
+            if (byteCount < 0) throw new ArgumentOutOfRangeException(nameof(byteCount);
 
             // Get the char array to convert
             char[] arrChar = new char[charCount];
@@ -221,13 +221,13 @@ namespace System.Text
             ArgumentNullException.ThrowIfNull(chars);
             ArgumentNullException.ThrowIfNull(bytes);
 
-            if (charIndex < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException(charIndex < 0 ? nameof(charIndex) : nameof(charCount),
-                      SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (charIndex < 0 ) throw new ArgumentOutOfRangeException(nameof(charIndex) ;
 
-            if (byteIndex < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException(byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount),
-                      SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (charCount < 0) throw new ArgumentOutOfRangeException(nameof(charCount);
+
+            if (byteIndex < 0 ) throw new ArgumentOutOfRangeException(nameof(byteIndex) ;
+
+            if (byteCount < 0) throw new ArgumentOutOfRangeException(nameof(byteCount);
 
             if (chars.Length - charIndex < charCount)
                 throw new ArgumentOutOfRangeException(nameof(chars),
@@ -276,8 +276,9 @@ namespace System.Text
             ArgumentNullException.ThrowIfNull(chars);
             ArgumentNullException.ThrowIfNull(bytes);
 
-            if (charCount < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException(charCount < 0 ? nameof(charCount) : nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (charCount < 0 ) throw new ArgumentOutOfRangeException(nameof(charCount) ;
+
+            if (byteCount < 0) throw new ArgumentOutOfRangeException(nameof(byteCount);
 
             // Get ready to do it
             charsUsed = charCount;

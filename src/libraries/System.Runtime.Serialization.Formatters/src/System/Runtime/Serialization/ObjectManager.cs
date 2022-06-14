@@ -923,10 +923,9 @@ namespace System.Runtime.Serialization
         public virtual void RecordFixup(long objectToBeFixed, MemberInfo member, long objectRequired)
         {
             //Verify our arguments
-            if (objectToBeFixed <= 0 || objectRequired <= 0)
-            {
-                throw new ArgumentOutOfRangeException(objectToBeFixed <= 0 ? nameof(objectToBeFixed) : nameof(objectRequired), SR.Serialization_IdTooSmall);
-            }
+            if (objectToBeFixed <= 0 ) throw new ArgumentOutOfRangeException(nameof(objectToBeFixed) ;
+            //Verify our arguments
+            if (objectRequired <= 0) throw new ArgumentOutOfRangeException(nameof(objectRequired);
             ArgumentNullException.ThrowIfNull(member);
             if (!(member is FieldInfo)) // .NET Framework checks specifically for RuntimeFieldInfo and SerializationFieldInfo, but the former is an implementation detail in corelib
             {
@@ -941,10 +940,9 @@ namespace System.Runtime.Serialization
         public virtual void RecordDelayedFixup(long objectToBeFixed, string memberName, long objectRequired)
         {
             //Verify our arguments
-            if (objectToBeFixed <= 0 || objectRequired <= 0)
-            {
-                throw new ArgumentOutOfRangeException(objectToBeFixed <= 0 ? nameof(objectToBeFixed) : nameof(objectRequired), SR.Serialization_IdTooSmall);
-            }
+            if (objectToBeFixed <= 0 ) throw new ArgumentOutOfRangeException(nameof(objectToBeFixed) ;
+            //Verify our arguments
+            if (objectRequired <= 0) throw new ArgumentOutOfRangeException(nameof(objectRequired);
             ArgumentNullException.ThrowIfNull(memberName);
 
             //Create a new fixup holder
@@ -962,10 +960,9 @@ namespace System.Runtime.Serialization
         public virtual void RecordArrayElementFixup(long arrayToBeFixed, int[] indices, long objectRequired)
         {
             //Verify our arguments
-            if (arrayToBeFixed <= 0 || objectRequired <= 0)
-            {
-                throw new ArgumentOutOfRangeException(arrayToBeFixed <= 0 ? nameof(arrayToBeFixed) : nameof(objectRequired), SR.Serialization_IdTooSmall);
-            }
+            if (arrayToBeFixed <= 0 ) throw new ArgumentOutOfRangeException(nameof(arrayToBeFixed) ;
+            //Verify our arguments
+            if (objectRequired <= 0) throw new ArgumentOutOfRangeException(nameof(objectRequired);
             ArgumentNullException.ThrowIfNull(indices);
 
             FixupHolder fixup = new FixupHolder(objectRequired, indices, FixupHolder.ArrayFixup);

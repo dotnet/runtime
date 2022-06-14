@@ -719,9 +719,9 @@ namespace System.Text
             ArgumentNullException.ThrowIfNull(chars);
             ArgumentNullException.ThrowIfNull(bytes);
 
-            if (charCount < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException(charCount < 0 ? nameof(charCount) : nameof(byteCount),
-                    SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (charCount < 0 ) throw new ArgumentOutOfRangeException(nameof(charCount) ;
+
+            if (byteCount < 0) throw new ArgumentOutOfRangeException(nameof(byteCount);
 
             // Get the char array to convert
             char[] arrChar = new ReadOnlySpan<char>(chars, charCount).ToArray();
@@ -853,9 +853,9 @@ namespace System.Text
             ArgumentNullException.ThrowIfNull(bytes);
             ArgumentNullException.ThrowIfNull(chars);
 
-            if (byteCount < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException(byteCount < 0 ? nameof(byteCount) : nameof(charCount),
-                    SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (byteCount < 0 ) throw new ArgumentOutOfRangeException(nameof(byteCount) ;
+
+            if (charCount < 0) throw new ArgumentOutOfRangeException(nameof(charCount);
 
             // Get the byte array to convert
             byte[] arrByte = new ReadOnlySpan<byte>(bytes, byteCount).ToArray();

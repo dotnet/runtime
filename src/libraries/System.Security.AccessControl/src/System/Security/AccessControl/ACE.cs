@@ -131,7 +131,8 @@ namespace System.Security.AccessControl
                     nameof(binaryForm),
                     SR.ArgumentOutOfRange_ArrayTooSmall);
             }
-            else if (Length > ushort.MaxValue)
+
+            if (Length > ushort.MaxValue)
             {
                 //
                 // Only have two bytes to store the length in.
@@ -261,7 +262,8 @@ namespace System.Security.AccessControl
                     nameof(binaryForm),
                     SR.ArgumentOutOfRange_ArrayTooSmall);
             }
-            else if ((binaryForm[offset + 3] << 8) + (binaryForm[offset + 2] << 0) > binaryForm.Length - offset)
+
+            if ((binaryForm[offset + 3] << 8) + (binaryForm[offset + 2] << 0) > binaryForm.Length - offset)
             {
                 //
                 // Reported length of ACE ought to be no longer than the

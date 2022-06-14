@@ -49,8 +49,9 @@ namespace System.Text
         {
             ArgumentNullException.ThrowIfNull(bytes);
 
-            if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (index < 0 ) throw new ArgumentOutOfRangeException(nameof(index) ;
+
+            if (count < 0) throw new ArgumentOutOfRangeException(nameof(count);
 
             if (bytes.Length - index < count)
                 throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_IndexCountBuffer);
@@ -131,8 +132,9 @@ namespace System.Text
             ArgumentNullException.ThrowIfNull(bytes);
             ArgumentNullException.ThrowIfNull(chars);
 
-            if (byteIndex < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException(byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (byteIndex < 0 ) throw new ArgumentOutOfRangeException(nameof(byteIndex) ;
+
+            if (byteCount < 0) throw new ArgumentOutOfRangeException(nameof(byteCount);
 
             if (bytes.Length - byteIndex < byteCount)
                 throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_IndexCountBuffer);
@@ -161,8 +163,9 @@ namespace System.Text
             ArgumentNullException.ThrowIfNull(bytes);
             ArgumentNullException.ThrowIfNull(chars);
 
-            if (byteCount < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException(byteCount < 0 ? nameof(byteCount) : nameof(charCount), SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (byteCount < 0 ) throw new ArgumentOutOfRangeException(nameof(byteCount) ;
+
+            if (charCount < 0) throw new ArgumentOutOfRangeException(nameof(charCount);
 
             if (charCount == 0)
                 return 0;
@@ -201,11 +204,13 @@ namespace System.Text
             ArgumentNullException.ThrowIfNull(bytes);
             ArgumentNullException.ThrowIfNull(chars);
 
-            if (byteIndex < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException(byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (byteIndex < 0 ) throw new ArgumentOutOfRangeException(nameof(byteIndex) ;
 
-            if (charIndex < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException(charIndex < 0 ? nameof(charIndex) : nameof(charCount), SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (byteCount < 0) throw new ArgumentOutOfRangeException(nameof(byteCount);
+
+            if (charIndex < 0 ) throw new ArgumentOutOfRangeException(nameof(charIndex) ;
+
+            if (charCount < 0) throw new ArgumentOutOfRangeException(nameof(charCount);
 
             if (bytes.Length - byteIndex < byteCount)
                 throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_IndexCountBuffer);
@@ -238,8 +243,9 @@ namespace System.Text
             ArgumentNullException.ThrowIfNull(bytes);
             ArgumentNullException.ThrowIfNull(chars);
 
-            if (byteCount < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException(byteCount < 0 ? nameof(byteCount) : nameof(charCount), SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (byteCount < 0 ) throw new ArgumentOutOfRangeException(nameof(byteCount) ;
+
+            if (charCount < 0) throw new ArgumentOutOfRangeException(nameof(charCount);
 
             int count = byteCount;
             while (count > 0)

@@ -79,8 +79,9 @@ namespace System.Text
             if (chars is null)
                 throw new ArgumentNullException(nameof(chars));
 
-            if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (index < 0 ) throw new ArgumentOutOfRangeException(nameof(index) ;
+
+            if (count < 0) throw new ArgumentOutOfRangeException(nameof(count);
 
             if (chars.Length - index < count)
                 throw new ArgumentOutOfRangeException(nameof(chars), SR.ArgumentOutOfRange_IndexCountBuffer);
@@ -120,8 +121,9 @@ namespace System.Text
             if (bytes is null)
                 throw new ArgumentNullException(nameof(bytes));
 
-            if (charIndex < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException((charIndex < 0 ? nameof(charIndex) : nameof(charCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (charIndex < 0 ) throw new ArgumentOutOfRangeException(nameof(charIndex) ;
+
+            if (charCount < 0) throw new ArgumentOutOfRangeException(nameof(charCount);
 
             if (chars.Length - charIndex < charCount)
                 throw new ArgumentOutOfRangeException(nameof(chars), SR.ArgumentOutOfRange_IndexCountBuffer);
@@ -151,8 +153,9 @@ namespace System.Text
             if (bytes is null)
                 throw new ArgumentNullException(nameof(bytes));
 
-            if (byteCount < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException((byteCount < 0 ? nameof(byteCount) : nameof(charCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (byteCount < 0 ) throw new ArgumentOutOfRangeException(nameof(byteCount) ;
+
+            if (charCount < 0) throw new ArgumentOutOfRangeException(nameof(charCount);
 
             m_mustFlush = flush;
             m_throwOnOverflow = true;
@@ -171,11 +174,13 @@ namespace System.Text
             if (bytes is null)
                 throw new ArgumentNullException(nameof(bytes));
 
-            if (charIndex < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException((charIndex < 0 ? nameof(charIndex) : nameof(charCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (charIndex < 0 ) throw new ArgumentOutOfRangeException(nameof(charIndex) ;
 
-            if (byteIndex < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException((byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (charCount < 0) throw new ArgumentOutOfRangeException(nameof(charCount);
+
+            if (byteIndex < 0 ) throw new ArgumentOutOfRangeException(nameof(byteIndex) ;
+
+            if (byteCount < 0) throw new ArgumentOutOfRangeException(nameof(byteCount);
 
             if (chars.Length - charIndex < charCount)
                 throw new ArgumentOutOfRangeException(nameof(chars), SR.ArgumentOutOfRange_IndexCountBuffer);
@@ -212,8 +217,9 @@ namespace System.Text
             if (bytes is null)
                 throw new ArgumentNullException(nameof(bytes));
 
-            if (charCount < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException((charCount < 0 ? nameof(charCount) : nameof(byteCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (charCount < 0 ) throw new ArgumentOutOfRangeException(nameof(charCount) ;
+
+            if (byteCount < 0) throw new ArgumentOutOfRangeException(nameof(byteCount);
 
             // We don't want to throw
             m_mustFlush = flush;

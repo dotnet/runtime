@@ -67,8 +67,9 @@ namespace System.Globalization
         {
             ArgumentNullException.ThrowIfNull(unicode);
 
-            if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException((index < 0) ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (index < 0 ) throw new ArgumentOutOfRangeException(nameof(index) ;
+
+            if (count < 0) throw new ArgumentOutOfRangeException(nameof(count);
             if (index > unicode.Length)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             if (index > unicode.Length - count)
@@ -114,8 +115,9 @@ namespace System.Globalization
         {
             ArgumentNullException.ThrowIfNull(ascii);
 
-            if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException((index < 0) ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (index < 0 ) throw new ArgumentOutOfRangeException(nameof(index) ;
+
+            if (count < 0) throw new ArgumentOutOfRangeException(nameof(count);
             if (index > ascii.Length)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             if (index > ascii.Length - count)

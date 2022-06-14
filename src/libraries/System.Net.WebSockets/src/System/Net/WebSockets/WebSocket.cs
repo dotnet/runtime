@@ -213,13 +213,9 @@ namespace System.Net.WebSockets
                     0));
             }
 
-            if (receiveBufferSize <= 0 || sendBufferSize <= 0)
-            {
-                throw new ArgumentOutOfRangeException(
-                    receiveBufferSize <= 0 ? nameof(receiveBufferSize) : nameof(sendBufferSize),
-                    receiveBufferSize <= 0 ? receiveBufferSize : sendBufferSize,
-                    SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, 0));
-            }
+            if (receiveBufferSize <= 0 ) throw new ArgumentOutOfRangeException(nameof(receiveBufferSize) ;
+
+            if (sendBufferSize <= 0) throw new ArgumentOutOfRangeException(nameof(sendBufferSize);
 
             // Ignore useZeroMaskingKey. ManagedWebSocket doesn't currently support that debugging option.
             // Ignore internalBuffer. ManagedWebSocket uses its own small buffer for headers/control messages.
