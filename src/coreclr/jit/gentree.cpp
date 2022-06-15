@@ -4680,6 +4680,11 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costEx += 1;
                     costSz += 1;
                 }
+                else if (tree->TypeIs(TYP_STRUCT))
+                {
+                    costEx += IND_COST_EX;
+                    costSz += 2;
+                }
                 break;
 
             case GT_LCL_FLD_ADDR:

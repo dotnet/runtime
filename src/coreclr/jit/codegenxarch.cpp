@@ -4755,7 +4755,8 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
     unsigned varNum = tree->GetLclNum();
     assert(varNum < compiler->lvaCount);
 
-    GetEmitter()->emitIns_R_S(ins_Load(targetType), size, targetReg, varNum, offs);
+    instruction loadIns = tree->DontExtend() ? INS_mov : ins_Load(targetType);
+    GetEmitter()->emitIns_R_S(loadIns, size, targetReg, varNum, offs);
 
     genProduceReg(tree);
 }
@@ -5106,16 +5107,7 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     else
     {
         genConsumeAddress(addr);
-        instruction loadIns = ins_Load(targetType);
-        if (tree->DontExtend())
-        {
-            assert(varTypeIsSmall(tree));
-            // The user of this IND does not need
-            // the upper bits to be set, so we don't need to use longer
-            // INS_movzx/INS_movsx and can use INS_mov instead.
-            // It usually happens when the real type is a small struct.
-            loadIns = INS_mov;
-        }
+        instruction loadIns = tree->DontExtend() ? INS_mov : ins_Load(targetType);
         emit->emitInsLoadInd(loadIns, emitTypeSize(tree), tree->GetRegNum(), tree);
     }
 

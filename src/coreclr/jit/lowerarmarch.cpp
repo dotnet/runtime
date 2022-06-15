@@ -760,7 +760,6 @@ void Lowering::LowerModPow2(GenTree* node)
     mod->ChangeOper(GT_CSNEG_MI);
     mod->gtOp1 = trueExpr;
     mod->gtOp2 = falseExpr;
-    mod->gtFlags |= GTF_USE_FLAGS;
 
     JITDUMP("Lower: optimize X MOD POW2");
     DISPNODE(mod);

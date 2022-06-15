@@ -408,7 +408,12 @@ enum GenTreeFlags : unsigned int
     GTF_NOREG_AT_USE = 0x00000100, // tree node is in memory at the point of use
 
     GTF_SET_FLAGS   = 0x00000200, // Requires that codegen for this node set the flags. Use gtSetFlags() to check this flag.
-    GTF_USE_FLAGS   = 0x00000400, // Indicates that this node uses the flags bits.
+
+#ifdef TARGET_XARCH
+    GTF_DONT_EXTEND = 0x00000400, // This small-typed tree produces a value with undefined upper bits. Used on x86/x64 as a
+                                  // lowering optimization and tells the codegen to use instructions like "mov al, [addr]"
+                                  // instead of "movzx/movsx", when the user node doesn't need the upper bits.
+#endif // TARGET_XARCH
 
     GTF_MAKE_CSE    = 0x00000800, // Hoisted expression: try hard to make this into CSE (see optPerformHoistExpr)
     GTF_DONT_CSE    = 0x00001000, // Don't bother CSE'ing this expr
@@ -526,16 +531,9 @@ enum GenTreeFlags : unsigned int
                                               //             alignment of 1 byte)
     GTF_IND_INVARIANT           = 0x01000000, // GT_IND   -- the target is invariant (a prejit indirection)
     GTF_IND_NONNULL             = 0x00400000, // GT_IND   -- the indirection never returns null (zero)
-#if defined(TARGET_XARCH)
-    GTF_IND_DONT_EXTEND         = 0x00200000, // GT_IND   -- the indirection does not need to extend for small types
-#endif // TARGET_XARCH
 
     GTF_IND_FLAGS = GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_TLS_REF | GTF_IND_UNALIGNED | GTF_IND_INVARIANT |
-                    GTF_IND_NONNULL | GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP
-#if defined(TARGET_XARCH)
-                     | GTF_IND_DONT_EXTEND
-#endif // TARGET_XARCH
-                    ,
+                    GTF_IND_NONNULL | GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP,
 
     GTF_ADDRMODE_NO_CSE         = 0x80000000, // GT_ADD/GT_MUL/GT_LSH -- Do not CSE this node only, forms complex
                                               //                         addressing mode
@@ -2006,6 +2004,25 @@ public:
     {
         gtFlags &= ~GTF_REVERSE_OPS;
     }
+
+#if defined(TARGET_XARCH)
+    void SetDontExtend()
+    {
+        assert(varTypeIsSmall(TypeGet()) && OperIs(GT_IND, GT_LCL_FLD));
+        gtFlags |= GTF_DONT_EXTEND;
+    }
+
+    void ClearDontExtend()
+    {
+        gtFlags &= ~GTF_DONT_EXTEND;
+    }
+
+    bool DontExtend() const
+    {
+        assert(varTypeIsSmall(TypeGet()) || ((gtFlags & GTF_DONT_EXTEND) == 0));
+        return (gtFlags & GTF_DONT_EXTEND) != 0;
+    }
+#endif // TARGET_XARCH
 
     bool IsUnsigned() const
     {
@@ -6761,23 +6778,6 @@ struct GenTreeIndir : public GenTreeOp
     {
         return (gtFlags & GTF_IND_UNALIGNED) != 0;
     }
-
-#if defined(TARGET_XARCH)
-    void SetDontExtend()
-    {
-        gtFlags |= GTF_IND_DONT_EXTEND;
-    }
-
-    void ClearDontExtend()
-    {
-        gtFlags &= ~GTF_IND_DONT_EXTEND;
-    }
-
-    bool DontExtend() const
-    {
-        return (gtFlags & GTF_IND_DONT_EXTEND) != 0;
-    }
-#endif // TARGET_XARCH
 
 #if DEBUGGABLE_GENTREE
     // Used only for GenTree::GetVtableForOper()
