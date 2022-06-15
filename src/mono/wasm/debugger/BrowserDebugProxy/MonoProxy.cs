@@ -27,7 +27,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         // index of the runtime in a same JS page/process
         public int RuntimeId { get; private init; }
         public bool JustMyCode { get; private set; }
-        public PauseOnExceptionsKind PauseOnExceptions { get; set; }
+        private PauseOnExceptionsKind PauseOnExceptions { get; set; }
 
         protected readonly ProxyOptions _options;
 
@@ -36,6 +36,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.urlSymbolServerList = urlSymbolServerList ?? new List<string>();
             RuntimeId = runtimeId;
             _options = options;
+            PauseOnExceptions = PauseOnExceptionsKind.Unset;
         }
 
         internal ExecutionContext GetContext(SessionId sessionId)
@@ -256,13 +257,10 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
         private static PauseOnExceptionsKind GetPauseOnExceptionsStatusFromString(string state)
         {
-            return state switch
-            {
-                "all" => PauseOnExceptionsKind.All,
-                "uncaught" => PauseOnExceptionsKind.Uncaught,
-                "none" => PauseOnExceptionsKind.None,
-                _ => PauseOnExceptionsKind.Unset
-            };
+            PauseOnExceptionsKind pauseOnException;
+            if (Enum.TryParse(state, true, out pauseOnException))
+                return pauseOnException;
+            return PauseOnExceptionsKind.Unset;
         }
 
         protected override async Task<bool> AcceptCommand(MessageId id, JObject parms, CancellationToken token)
@@ -279,7 +277,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if  (method == "Debugger.setPauseOnExceptions")
                 {
                     string state = args["state"].Value<string>();
-                    PauseOnExceptions = GetPauseOnExceptionsStatusFromString(state);
+                    var pauseOnException = GetPauseOnExceptionsStatusFromString(state);
+                    if (pauseOnException != PauseOnExceptionsKind.Unset)
+                        PauseOnExceptions = pauseOnException;
                 }
                 return false;
             }
@@ -493,7 +493,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case "Debugger.setPauseOnExceptions":
                     {
                         string state = args["state"].Value<string>();
-                        context.PauseOnExceptions = GetPauseOnExceptionsStatusFromString(state);
+                        var pauseOnException = GetPauseOnExceptionsStatusFromString(state);
+                        if (pauseOnException != PauseOnExceptionsKind.Unset)
+                            context.PauseOnExceptions = pauseOnException;
 
                         if (context.IsRuntimeReady)
                             await context.SdbAgent.EnableExceptions(context.PauseOnExceptions, token);
