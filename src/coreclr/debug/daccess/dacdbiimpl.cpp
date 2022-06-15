@@ -6482,6 +6482,7 @@ bool DacHeapWalker::GetSize(TADDR tMT, size_t &size)
         // If size == 0, it means we have a heap corruption and
         // we will stuck in an infinite loop, so better fail the call now.
         ret &= (0 < size);
+        // Also guard for cases where the size reported is too large and exceeds the high allocation mark.
         ret &= ((tMT + size) <= mHeaps[mCurrHeap].Segments[mCurrSeg].End);
     }
     EX_CATCH
