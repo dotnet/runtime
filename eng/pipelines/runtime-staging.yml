@@ -60,30 +60,30 @@ jobs:
 # WebAssembly legs - run windows builds. Also, debugger tests which are currently
 # unstable
 #
-- template: /eng/pipelines/common/templates/wasm-library-tests.yml
-  parameters:
-    platforms:
-      - Browser_wasm_win
-    alwaysRun: ${{ variables.isRollingBuild }}
-    scenarios:
-      - normal
-      - WasmTestOnBrowser
+#- template: /eng/pipelines/common/templates/wasm-library-tests.yml
+  #parameters:
+    #platforms:
+      #- Browser_wasm_win
+    #alwaysRun: ${{ variables.isRollingBuild }}
+    #scenarios:
+      #- normal
+      #- WasmTestOnBrowser
 
-# AOT Library tests
-- template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
-  parameters:
-    platforms:
-      - Browser_wasm_win
-    nameSuffix: _AOT
-    runSmokeOnlyArg: $(_runSmokeTestsOnlyArg)
-    runAOT: true
-    alwaysRun: ${{ variables.isRollingBuild }}
+## AOT Library tests
+#- template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
+  #parameters:
+    #platforms:
+      #- Browser_wasm_win
+    #nameSuffix: _AOT
+    #runSmokeOnlyArg: $(_runSmokeTestsOnlyArg)
+    #runAOT: true
+    #alwaysRun: ${{ variables.isRollingBuild }}
 
-- template: /eng/pipelines/common/templates/wasm-build-tests.yml
-  parameters:
-    platforms:
-      - Browser_wasm_win
-    alwaysRun: ${{ variables.isRollingBuild }}
+#- template: /eng/pipelines/common/templates/wasm-build-tests.yml
+  #parameters:
+    #platforms:
+      #- Browser_wasm_win
+    #alwaysRun: ${{ variables.isRollingBuild }}
 
 - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
   parameters:
