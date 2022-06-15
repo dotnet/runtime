@@ -2233,7 +2233,7 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
         // Rare case: if we have to reserve memory above the coreclr we'll only try to allocate 128Mb (for relocs) in front of it.
         // It doesn't make much sense to do probing here in a loop
         preferredStartAddress = coreclrLoadAddress - 128 * 1024 * 1024;
-        m_startAddress = ReserveVirtualMemory(pthrCurrent, (void*)preferredStartAddress, 128 * 1024 * 1024, MEM_RESERVE_EXECUTABLE);
+        m_startAddress = ReserveVirtualMemory(pthrCurrent, (void*)preferredStartAddress, 128 * 1024 * 1024 - CoreClrLibrarySize, MEM_RESERVE_EXECUTABLE);
     }
 #endif
 
