@@ -1031,9 +1031,6 @@ bool Lowering::TryLowerSwitchToBitTest(
 #endif // TARGET_XARCH
 }
 
-// NOTE: this method deliberately does not update the call arg table. It must only
-// be used by NewPutArg and LowerArg; these functions are responsible for updating
-// the call arg table as necessary.
 void Lowering::ReplaceArgWithPutArgOrBitcast(GenTree** argSlot, GenTree* putArgOrBitcast)
 {
     assert(argSlot != nullptr);
@@ -1069,12 +1066,7 @@ void Lowering::ReplaceArgWithPutArgOrBitcast(GenTree** argSlot, GenTree* putArgO
 // Notes:
 //    For System V systems with native struct passing (i.e. UNIX_AMD64_ABI defined)
 //    this method allocates a single GT_PUTARG_REG for 1 eightbyte structs and a GT_FIELD_LIST of two GT_PUTARG_REGs
-//    for two eightbyte structs.
-//
-//    For STK passed structs the method generates GT_PUTARG_STK tree. For System V systems with native struct passing
-//    (i.e. UNIX_AMD64_ABI defined) this method also sets the GC pointers count and the pointers
-//    layout object, so the codegen of the GT_PUTARG_STK could use this for optimizing copying to the stack by value.
-//    (using block copy primitives for non GC pointers and a single TARGET_POINTER_SIZE copy with recording GC info.)
+//    for two eightbyte structs. For STK passed structs the method generates GT_PUTARG_STK tree.
 //
 GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, var_types type)
 {
@@ -1085,19 +1077,6 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
     GenTree* putArg = nullptr;
 
     bool isOnStack = (callArg->AbiInfo.GetRegNum() == REG_STK);
-
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
-    // Mark contained when we pass struct
-    // GT_FIELD_LIST is always marked contained when it is generated
-    if (type == TYP_STRUCT)
-    {
-        arg->SetContained();
-        if ((arg->OperGet() == GT_OBJ) && (arg->AsObj()->Addr()->OperGet() == GT_LCL_VAR_ADDR))
-        {
-            MakeSrcContained(arg, arg->AsObj()->Addr());
-        }
-    }
-#endif
 
 #if FEATURE_ARG_SPLIT
     // Struct can be split into register(s) and stack on ARM
@@ -1120,10 +1099,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
                                                                 callArg->AbiInfo.GetStackByteSize(),
 #endif
                                                                 callArg->AbiInfo.NumRegs, call, putInIncomingArgArea);
-        // If struct argument is morphed to GT_FIELD_LIST node(s),
-        // we can know GC info by type of each GT_FIELD_LIST node.
-        // So we skip setting GC Pointer info.
-        //
+
         GenTreePutArgSplit* argSplit = putArg->AsPutArgSplit();
         for (unsigned regIndex = 0; regIndex < callArg->AbiInfo.NumRegs; regIndex++)
         {
@@ -1132,6 +1108,12 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
 
         if (arg->OperGet() == GT_OBJ)
         {
+            arg->SetContained();
+            if (arg->AsObj()->Addr()->OperGet() == GT_LCL_VAR_ADDR)
+            {
+                MakeSrcContained(arg, arg->AsObj()->Addr());
+            }
+
             ClassLayout* layout = arg->AsObj()->GetLayout();
 
             // Set type of registers
@@ -1206,8 +1188,6 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
 #ifdef DEBUG
             // Make sure state is correct. The PUTARG_STK has TYP_VOID, as it doesn't produce
             // a result. So the type of its operand must be the correct type to push on the stack.
-            // For a FIELD_LIST, this will be the type of the field (not the type of the arg),
-            // but otherwise it is generally the type of the operand.
             callArg->CheckIsStruct();
 #endif
 
@@ -1458,6 +1438,13 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
         {
             ReplaceArgWithPutArgOrBitcast(ppArg, putArg);
         }
+    }
+
+    arg = *ppArg;
+
+    if (arg->OperIs(GT_PUTARG_STK))
+    {
+        LowerPutArgStk(arg->AsPutArgStk());
     }
 }
 

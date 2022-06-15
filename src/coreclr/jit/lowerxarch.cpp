@@ -466,10 +466,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
 // LowerPutArgStk: Lower a GT_PUTARG_STK.
 //
 // Arguments:
-//    tree      - The node of interest
-//
-// Return Value:
-//    None.
+//    putArgStk - The node of interest
 //
 void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
 {
@@ -4703,22 +4700,6 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
             // contained we must clear it.
             ctrlExpr->SetRegNum(REG_NA);
             MakeSrcContained(call, ctrlExpr);
-        }
-    }
-
-    for (CallArg& arg : call->gtArgs.EarlyArgs())
-    {
-        if (arg.GetEarlyNode()->OperIs(GT_PUTARG_STK))
-        {
-            LowerPutArgStk(arg.GetEarlyNode()->AsPutArgStk());
-        }
-    }
-
-    for (CallArg& arg : call->gtArgs.LateArgs())
-    {
-        if (arg.GetLateNode()->OperIs(GT_PUTARG_STK))
-        {
-            LowerPutArgStk(arg.GetLateNode()->AsPutArgStk());
         }
     }
 }
