@@ -1096,7 +1096,7 @@ private:
         // | Partial    | LCL_FLD | OBJ/LCL_FLD | LCL_FLD |
         // |------------|---------|-------------|---------|
         //
-        // * - On Windows x64 only.
+        // * - On Windows x64/Unix x64 only.
         //
         // |------------|------|------|--------|----------|
         // | SIMD       | CALL | ASG  | RETURN | HWI/SIMD |
@@ -1114,9 +1114,9 @@ private:
 
         if (user->IsCall())
         {
-#ifndef WINDOWS_AMD64_ABI
+#if !defined(WINDOWS_AMD64_ABI) && !defined(UNIX_AMD64_ABI)
             return IndirTransform::None;
-#endif // !WINDOWS_AMD64_ABI
+#endif // !defined(WINDOWS_AMD64_ABI) && !defined(UNIX_AMD64_ABI)
         }
 
         if (match == StructMatch::Compatible)
