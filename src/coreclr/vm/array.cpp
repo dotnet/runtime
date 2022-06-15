@@ -1183,7 +1183,7 @@ public:
         if (s_pArrayStubCache == NULL)
         {
             ArrayStubCache * pArrayStubCache = new ArrayStubCache(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap());
-            if (FastInterlockCompareExchangePointer(&s_pArrayStubCache, pArrayStubCache, NULL) != NULL)
+            if (InterlockedCompareExchangeT(&s_pArrayStubCache, pArrayStubCache, NULL) != NULL)
                 delete pArrayStubCache;
         }
 
