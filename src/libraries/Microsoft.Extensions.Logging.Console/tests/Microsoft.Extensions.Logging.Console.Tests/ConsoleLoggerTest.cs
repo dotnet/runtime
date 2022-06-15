@@ -440,7 +440,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 Assert.True(System.Console.IsOutputRedirected);
                 Assert.Null(logger.Options.FormatterName);
                 var formatter = Assert.IsType<SimpleConsoleFormatter>(logger.Formatter);
-                Assert.Equal(LoggerColorBehavior.Disabled, formatter.FormatterOptions.ColorBehavior);
+                Assert.Equal(LoggerColorBehavior.Default, formatter.FormatterOptions.ColorBehavior);
 
             }, new RemoteInvokeOptions { StartInfo = new ProcessStartInfo() { RedirectStandardOutput = true } }).Dispose();
         }
