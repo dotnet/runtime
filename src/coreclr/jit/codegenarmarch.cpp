@@ -3874,14 +3874,9 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
 
         case GenIntCastDesc::CHECK_INT_RANGE:
         {
-            const regNumber tempReg = cast->GetSingleTempReg();
-            assert(tempReg != reg);
-            instGen_Set_Reg_To_Imm(EA_8BYTE, tempReg, INT32_MAX);
-            GetEmitter()->emitIns_R_R(INS_cmp, EA_8BYTE, reg, tempReg);
-            genJumpToThrowHlpBlk(EJ_gt, SCK_OVERFLOW);
-            instGen_Set_Reg_To_Imm(EA_8BYTE, tempReg, INT32_MIN);
-            GetEmitter()->emitIns_R_R(INS_cmp, EA_8BYTE, reg, tempReg);
-            genJumpToThrowHlpBlk(EJ_lt, SCK_OVERFLOW);
+            // Emit "if ((long)(int)x != x) goto OVERFLOW"
+            GetEmitter()->emitIns_R_R(INS_cmp, EA_8BYTE, reg, reg, INS_OPTS_SXTW);
+            genJumpToThrowHlpBlk(EJ_ne, SCK_OVERFLOW);
         }
         break;
 #endif
