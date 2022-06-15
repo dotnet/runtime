@@ -27,7 +27,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         // index of the runtime in a same JS page/process
         public int RuntimeId { get; private init; }
         public bool JustMyCode { get; private set; }
-        private PauseOnExceptionsKind PauseOnExceptions { get; set; }
+        private PauseOnExceptionsKind _defaultPauseOnExceptions { get; set; }
 
         protected readonly ProxyOptions _options;
 
@@ -36,7 +36,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.urlSymbolServerList = urlSymbolServerList ?? new List<string>();
             RuntimeId = runtimeId;
             _options = options;
-            PauseOnExceptions = PauseOnExceptionsKind.Unset;
+            _defaultPauseOnExceptions = PauseOnExceptionsKind.Unset;
         }
 
         internal ExecutionContext GetContext(SessionId sessionId)
@@ -161,7 +161,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             bool? is_default = aux_data["isDefault"]?.Value<bool>();
                             if (is_default == true)
                             {
-                                await OnDefaultContext(sessionId, new ExecutionContext(new MonoSDBHelper (this, logger, sessionId), id, aux_data, PauseOnExceptions), token);
+                                await OnDefaultContext(sessionId, new ExecutionContext(new MonoSDBHelper (this, logger, sessionId), id, aux_data, _defaultPauseOnExceptions), token);
                             }
                         }
                         return true;
@@ -279,7 +279,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     string state = args["state"].Value<string>();
                     var pauseOnException = GetPauseOnExceptionsStatusFromString(state);
                     if (pauseOnException != PauseOnExceptionsKind.Unset)
-                        PauseOnExceptions = pauseOnException;
+                        _defaultPauseOnExceptions = pauseOnException;
                 }
                 return false;
             }
