@@ -635,7 +635,7 @@ public:
 
 #ifndef DACCESS_COMPILE
 static CrstStatic s_csReadyToRunStandaloneMethodMetadata;
-static MapSHash<MethodDesc*, ReadyToRunStandaloneMethodMetadata*> s_methodMetadata;
+static MapSHash<MethodDesc*, ReadyToRunStandaloneMethodMetadata*> *s_methodMetadata = NULL;
 
 void GenerateReadyToRunStandaloneMethodMetadata(MethodDesc *pMD, ReadyToRunStandaloneMethodMetadata *pBlock)
 {
@@ -659,6 +659,7 @@ void GenerateReadyToRunStandaloneMethodMetadata(MethodDesc *pMD, ReadyToRunStand
 void InitReadyToRunStandaloneMethodMetadata()
 {
     s_csReadyToRunStandaloneMethodMetadata.Init(CrstLeafLock);
+    s_methodMetadata = new MapSHash<MethodDesc*, ReadyToRunStandaloneMethodMetadata*>;
 }
 
 ReadyToRunStandaloneMethodMetadata* GetReadyToRunStandaloneMethodMetadata(MethodDesc *pMD)
@@ -667,7 +668,7 @@ ReadyToRunStandaloneMethodMetadata* GetReadyToRunStandaloneMethodMetadata(Method
 
     {
         CrstHolder lock(&s_csReadyToRunStandaloneMethodMetadata);
-        if (s_methodMetadata.Lookup(pMD, &retVal))
+        if (s_methodMetadata->Lookup(pMD, &retVal))
         {
             return retVal;
         }
@@ -678,12 +679,12 @@ ReadyToRunStandaloneMethodMetadata* GetReadyToRunStandaloneMethodMetadata(Method
 
     {
         CrstHolder lock(&s_csReadyToRunStandaloneMethodMetadata);
-        if (s_methodMetadata.Lookup(pMD, &retVal))
+        if (s_methodMetadata->Lookup(pMD, &retVal))
         {
             return retVal;
         }
 
-        s_methodMetadata.Add(pMD, newMethodBlock);
+        s_methodMetadata->Add(pMD, newMethodBlock);
         retVal = newMethodBlock.Extract();
     }
     return retVal;
