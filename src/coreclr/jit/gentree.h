@@ -6084,8 +6084,7 @@ struct GenTreeSIMD : public GenTreeJitIntrinsic
     }
 #endif
 
-    bool OperIsMemoryLoad() const; // Returns true for the SIMD Intrinsic instructions that have MemoryLoad semantics,
-                                   // false otherwise
+    bool OperIsMemoryLoad() const;
 
     SIMDIntrinsicID GetSIMDIntrinsicId() const
     {
@@ -6129,12 +6128,10 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     }
 #endif
 
-    bool OperIsMemoryLoad() const;  // Returns true for the HW Intrinsic instructions that have MemoryLoad semantics,
-                                    // false otherwise
-    bool OperIsMemoryStore() const; // Returns true for the HW Intrinsic instructions that have MemoryStore semantics,
-                                    // false otherwise
-    bool OperIsMemoryLoadOrStore() const; // Returns true for the HW Intrinsic instructions that have MemoryLoad or
-                                          // MemoryStore semantics, false otherwise
+    bool OperIsMemoryLoad(GenTree** pAddr = nullptr) const;
+    bool OperIsMemoryStore(GenTree** pAddr = nullptr) const;
+    bool OperIsMemoryLoadOrStore() const;
+
     bool IsSimdAsHWIntrinsic() const
     {
         return (gtFlags & GTF_SIMDASHW_OP) != 0;
