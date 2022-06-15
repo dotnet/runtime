@@ -222,10 +222,9 @@ namespace Internal.Reflection
 
             RuntimeTypeHandle toTypeHandle = toTypeInfo._typeHandle;
             RuntimeTypeHandle fromTypeHandle = fromTypeInfo._typeHandle;
-            
+
             if (RuntimeAugments.IsGenericTypeDefinition(toTypeHandle) || RuntimeAugments.IsGenericTypeDefinition(fromTypeHandle))
                 throw new NotSupportedException(SR.Reflection_Disabled);
-
 
             if (RuntimeAugments.IsAssignableFrom(toTypeHandle, fromTypeHandle))
                 return true;
