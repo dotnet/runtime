@@ -575,6 +575,44 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
 }
 
 //------------------------------------------------------------------------
+// LowerPutArgStk: Lower a GT_PUTARG_STK.
+//
+// Arguments:
+//    putArgStk - The node to lower
+//
+void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
+{
+    GenTree* src = putArgStk->Data();
+
+    if (src->TypeIs(TYP_STRUCT))
+    {
+        // STRUCT args (FIELD_LIST / OBJ / LCL_VAR / LCL_FLD) will always be contained.
+        MakeSrcContained(putArgStk, src);
+
+        // TODO-ADDR: always perform this transformation in local morph and delete this code.
+        if (src->OperIs(GT_OBJ) && src->AsObj()->Addr()->OperIsLocalAddr())
+        {
+            GenTreeLclVarCommon* lclAddrNode = src->AsObj()->Addr()->AsLclVarCommon();
+            unsigned             lclNum      = lclAddrNode->GetLclNum();
+            unsigned             lclOffs     = lclAddrNode->GetLclOffs();
+            ClassLayout*         layout      = src->AsObj()->GetLayout();
+
+            src->ChangeOper(GT_LCL_FLD);
+            src->AsLclFld()->SetLclNum(lclNum);
+            src->AsLclFld()->SetLclOffs(lclOffs);
+            src->AsLclFld()->SetLayout(layout);
+
+            BlockRange().Remove(lclAddrNode);
+        }
+        else if (src->OperIs(GT_LCL_VAR))
+        {
+            // TODO-1stClassStructs: support struct enregistration here by retyping "src" to its register type.
+            comp->lvaSetVarDoNotEnregister(src->AsLclVar()->GetLclNum() DEBUGARG(DoNotEnregisterReason::IsStructArg));
+        }
+    }
+}
+
+//------------------------------------------------------------------------
 // LowerCast: Lower GT_CAST(srcType, DstType) nodes.
 //
 // Arguments:
@@ -722,7 +760,6 @@ void Lowering::LowerModPow2(GenTree* node)
     mod->ChangeOper(GT_CSNEG_MI);
     mod->gtOp1 = trueExpr;
     mod->gtOp2 = falseExpr;
-    mod->gtFlags |= GTF_USE_FLAGS;
 
     JITDUMP("Lower: optimize X MOD POW2");
     DISPNODE(mod);

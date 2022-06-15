@@ -90,15 +90,6 @@ pal::string_t sdk_resolver::resolve(const pal::string_t& dotnet_root, bool print
     return {};
 }
 
-void sdk_resolver::print_global_file_path()
-{
-    trace::println(
-        _X("\n")
-        _X("global.json file:\n")
-        _X("  %s"),
-        global_file.empty() ? _X("Not found") : global_file.c_str());
-}
-
 void sdk_resolver::print_resolution_error(const pal::string_t& dotnet_root, const pal::char_t *main_error_prefix) const
 {
     bool sdk_exists = false;

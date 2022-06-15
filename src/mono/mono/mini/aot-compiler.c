@@ -3029,7 +3029,7 @@ encode_value (gint32 value, guint8 *buf, guint8 **endbuf)
 		p [1] = value & 0xff;
 		p += 2;
 	} else if ((value >= 0) && (value <= 0x1fffffff)) {
-		p [0] = (value >> 24) | 0xc0;
+		p [0] = GINT32_TO_UINT8 ((value >> 24) | 0xc0);
 		p [1] = (value >> 16) & 0xff;
 		p [2] = (value >> 8) & 0xff;
 		p [3] = value & 0xff;
@@ -5490,7 +5490,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 		if (acfg->aot_opts.log_generics)
 			aot_printf (acfg, "%*sAdding method %s.\n", depth, "", mono_method_get_full_name (method));
 
-		add_method (acfg, method);
+		add_extra_method_with_depth (acfg, method, 0);
 	}
 
 	/* Add superclasses */

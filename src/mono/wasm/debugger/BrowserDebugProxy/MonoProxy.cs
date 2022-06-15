@@ -1509,7 +1509,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 else
                 {
-                    await foreach (SourceFile source in context.store.Load(sessionId, loaded_files, token).WithCancellation(token))
+                    var useDebuggerProtocol = false;
+                    (int MajorVersion, int MinorVersion) = await context.SdbAgent.GetVMVersion(token);
+                    if (MajorVersion == 2 && MinorVersion >= 61)
+                        useDebuggerProtocol = true;
+
+                    await foreach (SourceFile source in context.store.Load(sessionId, loaded_files, context, useDebuggerProtocol, token))
                     {
                         await OnSourceFileAdded(sessionId, source, context, token);
                     }
