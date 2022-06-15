@@ -18,7 +18,7 @@
   -->
 
   <PropertyGroup>
-    <_workItemTimeout Condition="'$(_workItemTimeout)' == ''">01:30:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(Scenario)' == 'BuildWasmApps' and '$(_workItemTimeout)' == ''">01:30:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">01:00:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' == 'WasmDebuggerTests'">01:00:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' == 'WasmTestOnBrowser' and '$(BrowserHost)' == 'windows'">00:45:00</_workItemTimeout>
@@ -51,9 +51,10 @@
     <FirefoxForHelixPayload>$(TestArchiveRoot)firefox.zip</FirefoxForHelixPayload>
     <DebuggerHost Condition="'$(DebuggerHost)' == ''">chrome</DebuggerHost>
 
+    <NeedsWorkload Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsWorkload>
     <NeedsEMSDK Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">true</NeedsEMSDK>
-    <NeedsEMSDKNode Condition="'$(Scenario)' == 'WasmTestOnNodeJs'">true</NeedsEMSDKNode>
-    <NeedsToRunOnBrowser Condition="'$(Scenario)' == 'WasmTestOnBrowser'">true</NeedsToRunOnBrowser>
+    <NeedsEMSDKNode Condition="'$(Scenario)' == 'WasmTestOnNodeJs' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsEMSDKNode>
+    <NeedsToRunOnBrowser Condition="'$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsToRunOnBrowser>
     <NeedsToRunOnBrowser Condition="'$(NeedsToRunOnBrowser)' == '' and '$(IsWasmDebuggerTests)' == 'true'">true</NeedsToRunOnBrowser>
 
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
@@ -206,6 +207,7 @@
         <PayloadArchive>%(Identity)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
+        <OriginalFileName>%(Identity)</OriginalFileName>
       </HelixWorkItem>
 
       <_DefaultWorkItems Remove="@(_DefaultWorkItems)" />
@@ -223,12 +225,6 @@
   <Target Name="_AddWorkItemsForBuildWasmApps" Condition="'$(Scenario)' == 'BuildWasmApps'">
     <PropertyGroup>
       <BuildWasmAppsJobsList>$(RepositoryEngineeringDir)testing\scenarios\BuildWasmAppsJobsList.txt</BuildWasmAppsJobsList>
-
-      <_workItemTimeout>01:30:00</_workItemTimeout>
-      <NeedsWorkload>true</NeedsWorkload>
-      <NeedsEMSDKNode>true</NeedsEMSDKNode>
-      <NeedsToRunOnBrowser>true</NeedsToRunOnBrowser>
-
       <WorkItemPrefix Condition="'$(TestUsingWorkloads)' == 'true'">Workloads-</WorkItemPrefix>
       <WorkItemPrefix Condition="'$(TestUsingWorkloads)' != 'true'">NoWorkload-</WorkItemPrefix>
 
