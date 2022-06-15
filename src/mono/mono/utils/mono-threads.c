@@ -31,6 +31,7 @@
 #include <mono/utils/mono-coop-semaphore.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-threads-debug.h>
+#include <mono/utils/mono-threads-wasm.h>
 #include <mono/utils/os-event.h>
 #include <mono/utils/w32api.h>
 #include <glib.h>
@@ -506,6 +507,10 @@ register_thread (MonoThreadInfo *info)
 	mono_os_event_init (&info->handle->event, FALSE);
 
 	mono_os_sem_init (&info->resume_semaphore, 0);
+
+#ifdef HOST_BROWSER
+	mono_threads_wasm_on_thread_attached ();
+#endif
 
 	/*set TLS early so SMR works */
 	mono_native_tls_set_value (thread_info_key, info);

@@ -412,6 +412,36 @@ mono_threads_platform_stw_defer_initial_suspend (MonoThreadInfo *info)
 }
 
 #ifndef DISABLE_THREADS
+extern void
+mono_wasm_pthread_on_pthread_created_main_thread (gpointer pthread_id, gpointer notify_ptr);
+
+extern void
+mono_wasm_on_pthread_created (gpointer notify_ptr);
+#endif
+
+void
+mono_threads_wasm_on_thread_attached (void)
+{
+#ifdef DISABLE_THREADS
+	return;
+#else
+	if (emscripten_is_main_browser_thread ())
+		return;
+
+	// Set up a MessageChannel between the new thread (which might be on a pooled reused WebWorker) and the main thread.
+	
+	/* A pointer to this address is passed to both the new worker (this thread) and the main
+	 * browser thread, and is used to make the worker wait until the runtime sets up the
+	 * communication channel */
+	int32_t notify_word;
+
+	mono_threads_wasm_async_run_in_main_thread_vii (mono_wasm_pthread_on_pthread_created_main_thread, pthread_self(), &notify_word);
+	mono_wasm_on_pthread_created (&notify_word);
+#endif
+}
+
+
+#ifndef DISABLE_THREADS
 void
 mono_threads_wasm_async_run_in_main_thread (void (*func) (void))
 {
@@ -423,7 +453,16 @@ mono_threads_wasm_async_run_in_main_thread_vi (void (*func) (gpointer), gpointer
 {
 	emscripten_async_run_in_main_runtime_thread (EM_FUNC_SIG_VI, func, user_data);
 }
+
+void
+mono_threads_wasm_async_run_in_main_thread_vii (void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2)
+{
+	emscripten_async_run_in_main_runtime_thread (EM_FUNC_SIG_VII, func, user_data1, user_data2);
+}
+
+
 #endif /* DISABLE_THREADS */
+
 
 #endif /* HOST_BROWSER */
 

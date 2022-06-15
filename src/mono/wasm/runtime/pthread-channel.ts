@@ -35,8 +35,9 @@ type pthread_ptr = number;
 ///     This is because we can't easily add a handler to _every_ new worker as it is added to the pthread worker pool.
 ///
 ///  2. If we could have a way to avoid collisions with Emscripten's own message handlers entirely, we wouldn't need a MessageChannel at all, we could just piggyback on the normal worker communication.
-
-
+///
+///
+/// FIXME: we really need to hook deeper - if a third party library creates a thread we need to attach it when it attaches to the runtime.
 
 /// a symbol that we use as a key on messages on the global worker-to-main channel to identify our own messages
 /// we can't use an actual JS Symbol because those don't transfer between workers.
