@@ -210,9 +210,6 @@ namespace Internal.Reflection
             if (object.ReferenceEquals(c, this))
                 return true;
 
-            if (RuntimeAugments.IsGenericTypeDefinition(_typeHandle))
-                return false;
-
             c = c.UnderlyingSystemType;
 
             Type typeInfo = c;
@@ -225,6 +222,10 @@ namespace Internal.Reflection
 
             RuntimeTypeHandle toTypeHandle = toTypeInfo._typeHandle;
             RuntimeTypeHandle fromTypeHandle = fromTypeInfo._typeHandle;
+            
+            if (RuntimeAugments.IsGenericTypeDefinition(toTypeHandle) || RuntimeAugments.IsGenericTypeDefinition(fromTypeHandle))
+                throw new NotSupportedException(SR.Reflection_Disabled);
+
 
             if (RuntimeAugments.IsAssignableFrom(toTypeHandle, fromTypeHandle))
                 return true;
