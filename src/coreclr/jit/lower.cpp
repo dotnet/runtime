@@ -5443,8 +5443,7 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
 
     // Check if we can "contain" LEA(BFIZ) in order to extend 32bit index to 64bit as part of load/store.
     if ((index != nullptr) && index->OperIs(GT_BFIZ) && index->gtGetOp1()->OperIs(GT_CAST) &&
-        index->gtGetOp2()->IsCnsIntOrI() &&
-        (varTypeIsIntegral(targetType) || varTypeIsFloating(targetType) || varTypeIsGC(targetType)))
+        index->gtGetOp2()->IsCnsIntOrI() && !varTypeIsStruct(targetType))
     {
         // BFIZ node is a binary op where op1 is GT_CAST and op2 is GT_CNS_INT
         GenTreeCast* cast = index->gtGetOp1()->AsCast();
