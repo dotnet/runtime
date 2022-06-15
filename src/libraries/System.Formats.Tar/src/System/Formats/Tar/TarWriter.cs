@@ -196,7 +196,6 @@ namespace System.Formats.Tar
                         entry._header.WriteAsGnu(_archiveStream, buffer);
                         break;
                     case TarEntryFormat.Unknown:
-                    default:
                         throw new FormatException(string.Format(SR.TarInvalidFormat, Format));
                 }
             }

@@ -48,8 +48,12 @@ namespace System.Formats.Tar
         /// </list>
         /// </remarks>
         public PaxTarEntry(TarEntryType entryType, string entryName)
-            : this(entryType, entryName, extendedAttributes: new Dictionary<string, string>())
+            : base(entryType, entryName, TarEntryFormat.Pax)
         {
+            _header._prefix = string.Empty;
+
+            Debug.Assert(_header._mTime != default);
+            AddNewAccessAndChangeTimestampsIfNotExist(useMTime: true);
         }
 
         /// <summary>

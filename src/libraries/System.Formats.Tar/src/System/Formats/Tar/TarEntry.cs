@@ -21,9 +21,10 @@ namespace System.Formats.Tar
         // Constructor called when reading a TarEntry from a TarReader.
         internal TarEntry(TarHeader header, TarReader readerOfOrigin, TarEntryFormat format)
         {
+            // This constructor is called after reading a header from the archive,
+            // and we should've already detected the format of the header.
             Debug.Assert(header._format == format);
             _header = header;
-            _header._format = format;
             _readerOfOrigin = readerOfOrigin;
         }
 

@@ -33,7 +33,6 @@ namespace System.Formats.Tar
         {
             _header._aTime = _header._mTime; // mtime was set in base constructor
             _header._cTime = _header._mTime;
-            _header._gnuUnusedBytes = null;
         }
 
         /// <summary>
@@ -42,41 +41,45 @@ namespace System.Formats.Tar
         public GnuTarEntry(TarEntry other)
             : base(other, TarEntryFormat.Gnu)
         {
-            bool changedATime = false;
-            bool changedCTime = false;
-
             if (other is GnuTarEntry gnuOther)
             {
                 _header._aTime = gnuOther.AccessTime;
                 _header._cTime = gnuOther.ChangeTime;
                 _header._gnuUnusedBytes = other._header._gnuUnusedBytes;
             }
-            else if (other is PaxTarEntry paxOther)
+            else
             {
-                changedATime = TarHelpers.TryGetDateTimeOffsetFromTimestampString(paxOther._header._extendedAttributes, TarHeader.PaxEaATime, out DateTimeOffset aTime);
-                if (changedATime)
+                bool changedATime = false;
+                bool changedCTime = false;
+
+                if (other is PaxTarEntry paxOther)
                 {
-                    _header._aTime = aTime;
+                    changedATime = TarHelpers.TryGetDateTimeOffsetFromTimestampString(paxOther._header._extendedAttributes, TarHeader.PaxEaATime, out DateTimeOffset aTime);
+                    if (changedATime)
+                    {
+                        _header._aTime = aTime;
+                    }
+
+                    changedCTime = TarHelpers.TryGetDateTimeOffsetFromTimestampString(paxOther._header._extendedAttributes, TarHeader.PaxEaCTime, out DateTimeOffset cTime);
+                    if (changedCTime)
+                    {
+                        _header._cTime = cTime;
+                    }
                 }
 
-                changedCTime = TarHelpers.TryGetDateTimeOffsetFromTimestampString(paxOther._header._extendedAttributes, TarHeader.PaxEaCTime, out DateTimeOffset cTime);
-                if (changedCTime)
+                // Either 'other' was V7 or Ustar (those formats do not have atime or ctime),
+                // or 'other' was PAX and at least one of the timestamps was not found in the extended attributes
+                if (!changedATime || !changedCTime)
                 {
-                    _header._cTime = cTime;
-                }
-            }
-
-            // 'other' was V7 or Ustar, or the entries were not found in PAX extended attributes
-            if (!changedATime || !changedCTime)
-            {
-                DateTimeOffset now = DateTimeOffset.UtcNow;
-                if (!changedATime)
-                {
-                    _header._aTime = now;
-                }
-                if (!changedCTime)
-                {
-                    _header._cTime = now;
+                    DateTimeOffset now = DateTimeOffset.UtcNow;
+                    if (!changedATime)
+                    {
+                        _header._aTime = now;
+                    }
+                    if (!changedCTime)
+                    {
+                        _header._cTime = now;
+                    }
                 }
             }
         }
