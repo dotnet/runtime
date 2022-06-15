@@ -268,7 +268,7 @@ namespace Microsoft.Extensions.Http
             // Assert - 1
             var activeEntry1 = Assert.Single(factory._activeHandlers).Value.Value;
             Assert.Equal("github", activeEntry1.Name);
-            Assert.Equal(TimeSpan.FromMinutes(2), activeEntry1.Lifetime);
+            Assert.Equal(TimeSpan.FromMinutes(10), activeEntry1.Lifetime);
             Assert.NotNull(activeEntry1.Handler);
 
             // Act - 2 - Now simulate the timer triggering to complete the expiry.
@@ -289,7 +289,7 @@ namespace Microsoft.Extensions.Http
             // Assert - 3
             var activeEntry2 = Assert.Single(factory._activeHandlers).Value.Value;
             Assert.Equal("github", activeEntry1.Name);
-            Assert.Equal(TimeSpan.FromMinutes(2), activeEntry1.Lifetime);
+            Assert.Equal(TimeSpan.FromMinutes(10), activeEntry1.Lifetime);
             Assert.NotNull(activeEntry1.Handler);
             Assert.NotSame(activeEntry1, activeEntry2);
             Assert.NotSame(activeEntry1.Handler, activeEntry2.Handler);
@@ -311,7 +311,7 @@ namespace Microsoft.Extensions.Http
             // Assert - 1
             var activeEntry1 = Assert.Single(factory._activeHandlers).Value.Value;
             Assert.Equal("github", activeEntry1.Name);
-            Assert.Equal(TimeSpan.FromMinutes(2), activeEntry1.Lifetime);
+            Assert.Equal(TimeSpan.FromMinutes(10), activeEntry1.Lifetime);
             Assert.NotNull(activeEntry1.Handler);
 
             // Act - 2 - Now create another client, it shouldn't replace the entry.
@@ -338,7 +338,7 @@ namespace Microsoft.Extensions.Http
             // Assert - 4
             var activeEntry2 = Assert.Single(factory._activeHandlers).Value.Value;
             Assert.Equal("github", activeEntry1.Name);
-            Assert.Equal(TimeSpan.FromMinutes(2), activeEntry1.Lifetime);
+            Assert.Equal(TimeSpan.FromMinutes(10), activeEntry1.Lifetime);
             Assert.NotNull(activeEntry1.Handler);
             Assert.NotSame(activeEntry1, activeEntry2);
             Assert.NotSame(activeEntry1.Handler, activeEntry2.Handler);

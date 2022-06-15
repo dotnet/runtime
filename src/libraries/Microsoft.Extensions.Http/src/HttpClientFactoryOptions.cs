@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Http
         // IMPORTANT: This is used in a resource string. Update the resource if this changes.
         internal static readonly TimeSpan MinimumHandlerLifetime = TimeSpan.FromSeconds(1);
 
-        private TimeSpan _handlerLifetime = TimeSpan.FromMinutes(2);
+        private TimeSpan _handlerLifetime = TimeSpan.FromMinutes(10);
 
         /// <summary>
         /// Gets a list of operations used to configure an <see cref="HttpMessageHandlerBuilder"/>.
