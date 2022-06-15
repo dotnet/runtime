@@ -3604,14 +3604,16 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
     }
     else if (src->OperIs(GT_CAST) && varTypeIsIntegral(src) && varTypeIsIntegral(lclRegType) &&
              !varTypeUsesFloatReg(lclRegType) && !varTypeUsesFloatReg(src->gtGetOp1()) &&
-             genActualType(lclRegType) == genActualType(src->gtGetOp1()) &&
-             genTypeSize(lclRegType) <= genTypeSize(src->gtGetOp1()) &&
-             (varTypeIsUnsigned(lclRegType) == varTypeIsUnsigned(src->gtGetOp1())) && !src->gtOverflow())
+             genTypeSize(lclRegType) <= genTypeSize(src->gtGetOp1()) && !src->gtOverflow())
     {
-        GenTree* cast   = src;
-        src             = src->gtGetOp1();
-        lclStore->gtOp1 = src;
-        BlockRange().Remove(cast);
+        LclVarDsc* varDsc = comp->lvaGetDesc(lclStore->AsLclVarCommon());
+        if (varDsc->lvNormalizeOnLoad())
+        {
+            GenTree* cast   = src;
+            src             = src->gtGetOp1();
+            lclStore->gtOp1 = src;
+            BlockRange().Remove(cast);
+        }
     }
 
     LowerStoreLoc(lclStore);
