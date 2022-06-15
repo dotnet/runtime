@@ -700,7 +700,7 @@ namespace System.Net.Sockets
         {
             get
             {
-                if (SocketType != SocketType.Dgram)
+                if (SocketType == SocketType.Stream)
                 {
                     return false;
                 }
