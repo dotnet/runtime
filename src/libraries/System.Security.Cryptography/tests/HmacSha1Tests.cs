@@ -9,7 +9,6 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class HmacSha1Tests : Rfc2202HmacTests
     {
         private static readonly byte[][] s_testKeys2202 =

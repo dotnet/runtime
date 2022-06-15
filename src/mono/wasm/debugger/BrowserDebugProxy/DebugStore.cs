@@ -1366,36 +1366,61 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        public async IAsyncEnumerable<SourceFile> Load(SessionId id, string[] loaded_files, [EnumeratorCancellation] CancellationToken token)
+        public async IAsyncEnumerable<SourceFile> Load(SessionId id, string[] loaded_files, ExecutionContext context, bool useDebuggerProtocol, [EnumeratorCancellation] CancellationToken token)
         {
             var asm_files = new List<string>();
-            var pdb_files = new List<string>();
-            foreach (string file_name in loaded_files)
-            {
-                if (file_name.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase))
-                    pdb_files.Add(file_name);
-                else
-                    asm_files.Add(file_name);
-            }
-
             List<DebugItem> steps = new List<DebugItem>();
-            foreach (string url in asm_files)
-            {
-                try
-                {
-                    string candidate_pdb = Path.ChangeExtension(url, "pdb");
-                    string pdb = pdb_files.FirstOrDefault(n => n == candidate_pdb);
 
-                    steps.Add(
-                        new DebugItem
-                        {
-                            Url = url,
-                            Data = Task.WhenAll(MonoProxy.HttpClient.GetByteArrayAsync(url, token), pdb != null ? MonoProxy.HttpClient.GetByteArrayAsync(pdb, token) : Task.FromResult<byte[]>(null))
-                        });
-                }
-                catch (Exception e)
+            if (!useDebuggerProtocol)
+            {
+                var pdb_files = new List<string>();
+                foreach (string file_name in loaded_files)
                 {
-                    logger.LogDebug($"Failed to read {url} ({e.Message})");
+                    if (file_name.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase))
+                        pdb_files.Add(file_name);
+                    else
+                        asm_files.Add(file_name);
+                }
+
+                foreach (string url in asm_files)
+                {
+                    try
+                    {
+                        string candidate_pdb = Path.ChangeExtension(url, "pdb");
+                        string pdb = pdb_files.FirstOrDefault(n => n == candidate_pdb);
+
+                        steps.Add(
+                            new DebugItem
+                            {
+                                Url = url,
+                                Data = Task.WhenAll(MonoProxy.HttpClient.GetByteArrayAsync(url, token), pdb != null ? MonoProxy.HttpClient.GetByteArrayAsync(pdb, token) : Task.FromResult<byte[]>(null))
+                            });
+                    }
+                    catch (Exception e)
+                    {
+                        logger.LogDebug($"Failed to read {url} ({e.Message})");
+                    }
+                }
+            }
+            else
+            {
+                foreach (string file_name in loaded_files)
+                {
+                    if (file_name.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase))
+                        continue;
+                    try
+                    {
+                        steps.Add(
+                            new DebugItem
+                            {
+                                Url = file_name,
+                                Data = context.SdbAgent.GetBytesFromAssemblyAndPdb(Path.GetFileName(file_name), token)
+                            });
+                    }
+                    catch (Exception e)
+                    {
+                        logger.LogDebug($"Failed to read {file_name} ({e.Message})");
+                    }
                 }
             }
 
@@ -1405,6 +1430,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 try
                 {
                     byte[][] bytes = await step.Data.ConfigureAwait(false);
+                    if (bytes[0] == null)
+                    {
+                        logger.LogDebug($"Bytes from assembly {step.Url} is NULL");
+                        continue;
+                    }
                     assembly = new AssemblyInfo(monoProxy, id, step.Url, bytes[0], bytes[1], logger, token);
                 }
                 catch (Exception e)

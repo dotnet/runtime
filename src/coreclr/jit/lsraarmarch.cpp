@@ -403,20 +403,19 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
 {
     assert(argNode->gtOper == GT_PUTARG_STK);
 
-    GenTree* putArgChild = argNode->gtGetOp1();
+    GenTree* src      = argNode->Data();
+    int      srcCount = 0;
 
-    int srcCount = 0;
-
-    // Do we have a TYP_STRUCT argument (or a GT_FIELD_LIST), if so it must be a multireg pass-by-value struct
-    if (putArgChild->TypeIs(TYP_STRUCT) || putArgChild->OperIs(GT_FIELD_LIST))
+    // Do we have a TYP_STRUCT argument, if so it must be a multireg pass-by-value struct
+    if (src->TypeIs(TYP_STRUCT))
     {
         // We will use store instructions that each write a register sized value
 
-        if (putArgChild->OperIs(GT_FIELD_LIST))
+        if (src->OperIs(GT_FIELD_LIST))
         {
-            assert(putArgChild->isContained());
+            assert(src->isContained());
             // We consume all of the items in the GT_FIELD_LIST
-            for (GenTreeFieldList::Use& use : putArgChild->AsFieldList()->Uses())
+            for (GenTreeFieldList::Use& use : src->AsFieldList()->Uses())
             {
                 BuildUse(use.GetNode());
                 srcCount++;
@@ -443,36 +442,25 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
             buildInternalIntRegisterDefForNode(argNode);
 #endif // TARGET_ARM64
 
-            if (putArgChild->OperGet() == GT_OBJ)
+            assert(src->isContained());
+
+            if (src->OperIs(GT_OBJ))
             {
-                assert(putArgChild->isContained());
-                GenTree* objChild = putArgChild->gtGetOp1();
-                if (objChild->OperGet() == GT_LCL_VAR_ADDR)
-                {
-                    // We will generate all of the code for the GT_PUTARG_STK, the GT_OBJ and the GT_LCL_VAR_ADDR
-                    // as one contained operation, and there are no source registers.
-                    //
-                    assert(objChild->isContained());
-                }
-                else
-                {
-                    // We will generate all of the code for the GT_PUTARG_STK and its child node
-                    // as one contained operation
-                    //
-                    srcCount = BuildOperandUses(objChild);
-                }
+                // Build uses for the address to load from.
+                //
+                srcCount = BuildOperandUses(src->AsObj()->Addr());
             }
             else
             {
                 // No source registers.
-                putArgChild->OperIs(GT_LCL_VAR);
+                assert(src->OperIs(GT_LCL_VAR, GT_LCL_FLD));
             }
         }
     }
     else
     {
-        assert(!putArgChild->isContained());
-        srcCount = BuildOperandUses(putArgChild);
+        assert(!src->isContained());
+        srcCount = BuildOperandUses(src);
 #if defined(FEATURE_SIMD)
         if (compMacOsArm64Abi() && argNode->GetStackByteSize() == 12)
         {

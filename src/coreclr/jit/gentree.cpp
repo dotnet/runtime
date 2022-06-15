@@ -4401,6 +4401,11 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 {
                     costSz = 10;
                     costEx = 2;
+                    if (con->IsIconHandle())
+                    {
+                        // A sort of a hint for CSE to try harder for class handles
+                        costEx += 1;
+                    }
                 }
 #endif // TARGET_AMD64
                 else
@@ -16410,7 +16415,7 @@ const GenTreeLclVarCommon* GenTree::IsLocalAddrExpr() const
 //
 GenTreeLclVar* GenTree::IsImplicitByrefParameterValue(Compiler* compiler)
 {
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if FEATURE_IMPLICIT_BYREFS && !defined(TARGET_LOONGARCH64) // TODO-LOONGARCH64-CQ: enable this.
 
     GenTreeLclVar* lcl = nullptr;
 
@@ -16442,7 +16447,7 @@ GenTreeLclVar* GenTree::IsImplicitByrefParameterValue(Compiler* compiler)
         return lcl;
     }
 
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#endif // FEATURE_IMPLICIT_BYREFS && !defined(TARGET_LOONGARCH64)
 
     return nullptr;
 }

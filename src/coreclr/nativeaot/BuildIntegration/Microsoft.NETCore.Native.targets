@@ -46,7 +46,6 @@ The .NET Foundation licenses this file to you under the MIT license.
 
   <!-- Set up default feature switches -->
   <PropertyGroup>
-    <EnableUnsafeBinaryFormatterSerialization Condition="'$(EnableUnsafeBinaryFormatterSerialization)' == ''">false</EnableUnsafeBinaryFormatterSerialization>
     <UseSystemResourceKeys Condition="$(IlcDisableReflection) == 'true'">true</UseSystemResourceKeys>
     <EventSourceSupport Condition="$(IlcDisableReflection) == 'true'">false</EventSourceSupport>
   </PropertyGroup>

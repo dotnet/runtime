@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Numerics;
+using System.Runtime.Intrinsics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
@@ -10,6 +12,7 @@ public unsafe class TypeMismatchedArgs
     private static readonly HfaUnion s_hfaDblFlt = new HfaUnion { DblHfa = { FirstDblValue = 1.0, SecondDblValue = 2.0 } };
     private static readonly HfaDblLngUnion s_dblLngHfa = new HfaDblLngUnion { DblLng = { FirstLngValue = 10, SecondLngValue = 20 } };
     private static readonly FourDblLngUnion s_fourDblLngHfa = new FourDblLngUnion { Lngs = { LongOne = 30 } };
+    private static readonly Vtor128Union s_vtor128 = new Vtor128Union { Vtor4 = new Vector4(4, 3, 2, 1) };
 
     public static int Main()
     {
@@ -31,6 +34,11 @@ public unsafe class TypeMismatchedArgs
         if (ProblemWithSplitStructHfaMismatch(s_fourDblLngHfa.Hfa))
         {
             return 104;
+        }
+
+        if (ProblemWithVectorCallArg())
+        {
+            return 105;
         }
 
         return 100;
@@ -71,10 +79,33 @@ public unsafe class TypeMismatchedArgs
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool ProblemWithVectorCallArg()
+    {
+        var result = CallForVector4(GetVector128().AsVector4());
+
+        return result != s_vtor128.Vtor4.X;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static float CallForVector4(Vector4 value) => value.X;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Vector128<float> GetVector128() => s_vtor128.Vtor128;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static double CallForHfaDblStruct(HfaDblStruct value) => value.FirstDblValue;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static long CallForSplitStructWithFourLongs(int arg0, int arg1, StructWithFourLongs splitArg) => splitArg.LongOne;
+}
+
+[StructLayout(LayoutKind.Explicit)]
+struct Vtor128Union
+{
+    [FieldOffset(0)]
+    public Vector4 Vtor4;
+    [FieldOffset(0)]
+    public Vector128<float> Vtor128;
 }
 
 [StructLayout(LayoutKind.Explicit)]
