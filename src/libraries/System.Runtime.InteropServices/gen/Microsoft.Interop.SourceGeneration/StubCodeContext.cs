@@ -58,7 +58,8 @@ namespace Microsoft.Interop
             Unmarshal,
 
             /// <summary>
-            /// Notify a marshaller object that the Invoke stage was successful (no exception thrown).
+            /// Notify a marshaller object that the Invoke stage and all stages preceeding the Invoke stage
+            /// successfully completed without any exceptions.
             /// </summary>
             NotifyForSuccessfulInvoke,
 
