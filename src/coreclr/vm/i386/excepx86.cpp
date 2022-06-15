@@ -1658,7 +1658,7 @@ EXCEPTION_HANDLER_IMPL(COMPlusFrameHandler)
 
             // Switch to preemp mode since we are returning back to the OS.
             // We will do the quick switch since we are short of stack
-            FastInterlockAnd (&pThread->m_fPreemptiveGCDisabled, 0);
+            InterlockedAnd((LONG*)&pThread->m_fPreemptiveGCDisabled, 0);
 
             return ExceptionContinueSearch;
         }
@@ -1710,7 +1710,7 @@ EXCEPTION_HANDLER_IMPL(COMPlusFrameHandler)
 
             // Switch to preemp mode since we are returning back to the OS.
             // We will do the quick switch since we are short of stack
-            FastInterlockAnd(&pThread->m_fPreemptiveGCDisabled, 0);
+            InterlockedAnd((LONG*)&pThread->m_fPreemptiveGCDisabled, 0);
 
             return ExceptionContinueSearch;
         }

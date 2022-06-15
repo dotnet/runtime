@@ -3807,7 +3807,7 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
         else
         {
             BOOL fWatsonAlreadyLaunched = FALSE;
-            if (FastInterlockCompareExchange(&g_watsonAlreadyLaunched, 1, 0) != 0)
+            if (InterlockedCompareExchange(&g_watsonAlreadyLaunched, 1, 0) != 0)
             {
                 fWatsonAlreadyLaunched = TRUE;
             }

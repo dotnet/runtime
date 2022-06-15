@@ -325,7 +325,7 @@ void UnManagedPerAppDomainTPCount::SetAppDomainRequestsActive()
     LONG count = VolatileLoad(&m_outstandingThreadRequestCount);
     while (count < (LONG)ThreadpoolMgr::NumberOfProcessors)
     {
-        LONG prevCount = FastInterlockCompareExchange(&m_outstandingThreadRequestCount, count+1, count);
+        LONG prevCount = InterlockedCompareExchange(&m_outstandingThreadRequestCount, count+1, count);
         if (prevCount == count)
         {
             ThreadpoolMgr::MaybeAddWorkingWorker();
@@ -346,7 +346,7 @@ bool FORCEINLINE UnManagedPerAppDomainTPCount::TakeActiveRequest()
 
     while (count > 0)
     {
-        LONG prevCount = FastInterlockCompareExchange(&m_outstandingThreadRequestCount, count-1, count);
+        LONG prevCount = InterlockedCompareExchange(&m_outstandingThreadRequestCount, count-1, count);
         if (prevCount == count)
             return true;
         count = prevCount;
@@ -568,7 +568,7 @@ void ManagedPerAppDomainTPCount::SetAppDomainRequestsActive()
         LONG count = VolatileLoad(&m_numRequestsPending);
         while (true)
         {
-            LONG prev = FastInterlockCompareExchange(&m_numRequestsPending, count+1, count);
+            LONG prev = InterlockedCompareExchange(&m_numRequestsPending, count+1, count);
             if (prev == count)
             {
                 ThreadpoolMgr::MaybeAddWorkingWorker();
@@ -593,7 +593,7 @@ void ManagedPerAppDomainTPCount::ClearAppDomainRequestsActive()
     LONG count = VolatileLoad(&m_numRequestsPending);
     while (count > 0)
     {
-        LONG prev = FastInterlockCompareExchange(&m_numRequestsPending, 0, count);
+        LONG prev = InterlockedCompareExchange(&m_numRequestsPending, 0, count);
         if (prev == count)
             break;
         count = prev;
@@ -608,7 +608,7 @@ bool ManagedPerAppDomainTPCount::TakeActiveRequest()
     LONG count = VolatileLoad(&m_numRequestsPending);
     while (count > 0)
     {
-        LONG prev = FastInterlockCompareExchange(&m_numRequestsPending, count-1, count);
+        LONG prev = InterlockedCompareExchange(&m_numRequestsPending, count-1, count);
         if (prev == count)
             return true;
         count = prev;

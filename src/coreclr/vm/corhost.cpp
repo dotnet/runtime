@@ -90,7 +90,7 @@ STDMETHODIMP CorHost2::Start()
         else
         {
             // Increment the global (and dynamic) refCount...
-            FastInterlockIncrement(&m_RefCount);
+            InterlockedIncrement(&m_RefCount);
 
             // And set our flag that this host has invoked the Start...
             m_fStarted = TRUE;
@@ -113,7 +113,7 @@ STDMETHODIMP CorHost2::Start()
             // So, if you want to do that, just make sure you are the first host to load the
             // specific version of CLR in memory AND start it.
             m_fFirstToLoadCLR = TRUE;
-            FastInterlockIncrement(&m_RefCount);
+            InterlockedIncrement(&m_RefCount);
         }
     }
 
@@ -159,7 +159,7 @@ HRESULT CorHost2::Stop()
                 break;
             }
             else
-            if (FastInterlockCompareExchange(&m_RefCount, refCount - 1, refCount) == refCount)
+            if (InterlockedCompareExchange(&m_RefCount, refCount - 1, refCount) == refCount)
             {
                 // Indicate that we have got a Stop for a corresponding Start call from the
                 // Host. Semantically, CoreCLR has stopped for them.
