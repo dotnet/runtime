@@ -1706,7 +1706,7 @@ GenTree* Compiler::createAddressNodeForSIMDInit(GenTree* tree, unsigned simdSize
         GenTree* objRef = tree->AsField()->GetFldObj();
         if (objRef != nullptr && objRef->gtOper == GT_ADDR)
         {
-            src/coreclr/jit/simd.cppGenTree* obj = objRef->AsOp()->gtOp1;
+            GenTree* obj = objRef->AsOp()->gtOp1;
 
             // If the field is directly from a struct, then in this case,
             // we should set this struct's lvUsedInSIMDIntrinsic as true,
