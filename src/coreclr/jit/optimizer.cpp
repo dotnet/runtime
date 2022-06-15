@@ -2875,7 +2875,7 @@ bool Compiler::optIsLoopEntry(BasicBlock* block) const
 }
 
 //-----------------------------------------------------------------------------
-// optCanonicalizeLoop: Canonicalize a loop nest
+// optCanonicalizeLoopNest: Canonicalize a loop nest
 //
 // Arguments:
 //   loopInd - index of outermost loop in the nest
@@ -3046,8 +3046,9 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
     BlockToBlockMap* const blockMap = new (getAllocator(CMK_LoopOpt)) BlockToBlockMap(getAllocator(CMK_LoopOpt));
     blockMap->Set(t, newT);
     optRedirectBlock(b, blockMap);
-    JITDUMP("Redirecting top->bottom backedge " FMT_BB " -> " FMT_BB " to " FMT_BB " -> " FMT_BB "\n", b->bbNum,
-            t->bbNum, b->bbNum, newT->bbNum);
+    JITDUMP("in optCanonicalizeLoop: redirecting bottom->top backedge " FMT_BB " -> " FMT_BB " to " FMT_BB " -> " FMT_BB
+            "\n",
+            b->bbNum, t->bbNum, b->bbNum, newT->bbNum);
 
     // Redirect non-loop preds of "t" to also go to "newT". Inner loops that also branch to "t" should continue
     // to do so. However, there maybe be other predecessors from outside the loop nest that need to be updated
@@ -3068,7 +3069,7 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
         // outside-in, so we shouldn't encounter the new blocks at the loop boundaries, or in the predecessor lists.
         if (t->bbNum <= topPredBlock->bbNum && topPredBlock->bbNum <= b->bbNum)
         {
-            // Note we've already redirected t->b above.
+            // Note we've already redirected b->t above.
             //
             if (topPredBlock->bbNum != b->bbNum)
             {
