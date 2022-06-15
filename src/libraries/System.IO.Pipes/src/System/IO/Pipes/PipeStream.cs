@@ -30,7 +30,7 @@ namespace System.IO.Pipes
 
         protected PipeStream(PipeDirection direction, int bufferSize)
         {
-            ArgumentOutOfRangeException.ThrowIfEnum(direction < PipeDirection.In || direction > PipeDirection.InOut);
+            ArgumentOutOfRangeException.ThrowIf(direction < PipeDirection.In || direction > PipeDirection.InOut);
             ArgumentOutOfRangeException.ThrowIfNegative(bufferSize);
 
             Init(direction, PipeTransmissionMode.Byte, (uint)bufferSize);
@@ -38,8 +38,8 @@ namespace System.IO.Pipes
 
         protected PipeStream(PipeDirection direction, PipeTransmissionMode transmissionMode, int outBufferSize)
         {
-            ArgumentOutOfRangeException.ThrowIfEnum(direction < PipeDirection.In || direction > PipeDirection.InOut);
-            ArgumentOutOfRangeException.ThrowIfEnum(transmissionMode < PipeTransmissionMode.Byte || transmissionMode > PipeTransmissionMode.Message);
+            ArgumentOutOfRangeException.ThrowIf(direction < PipeDirection.In || direction > PipeDirection.InOut);
+            ArgumentOutOfRangeException.ThrowIf(transmissionMode < PipeTransmissionMode.Byte || transmissionMode > PipeTransmissionMode.Message);
             ArgumentOutOfRangeException.ThrowIfNegative(outBufferSize);
 
             Init(direction, transmissionMode, (uint)outBufferSize);

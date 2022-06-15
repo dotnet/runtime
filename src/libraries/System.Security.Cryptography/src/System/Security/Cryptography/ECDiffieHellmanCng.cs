@@ -60,7 +60,7 @@ namespace System.Security.Cryptography
 
             set
             {
-                ArgumentOutOfRangeException.ThrowIfEnum(value < ECDiffieHellmanKeyDerivationFunction.Hash || value > ECDiffieHellmanKeyDerivationFunction.Tls);
+                ArgumentOutOfRangeException.ThrowIf(value < ECDiffieHellmanKeyDerivationFunction.Hash || value > ECDiffieHellmanKeyDerivationFunction.Tls);
 
                 _kdf = value;
             }

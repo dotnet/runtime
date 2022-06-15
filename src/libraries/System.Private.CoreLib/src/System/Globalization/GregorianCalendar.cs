@@ -46,7 +46,7 @@ namespace System.Globalization
 
         public GregorianCalendar(GregorianCalendarTypes type)
         {
-            ArgumentOutOfRangeException.ThrowIfEnum(type < GregorianCalendarTypes.Localized || type > GregorianCalendarTypes.TransliteratedFrench);
+            ArgumentOutOfRangeException.ThrowIf(type < GregorianCalendarTypes.Localized || type > GregorianCalendarTypes.TransliteratedFrench);
 
             _type = type;
         }
@@ -57,7 +57,7 @@ namespace System.Globalization
             set
             {
                 VerifyWritable();
-                ArgumentOutOfRangeException.ThrowIfEnum(value < GregorianCalendarTypes.Localized || value > GregorianCalendarTypes.TransliteratedFrench);
+                ArgumentOutOfRangeException.ThrowIf(value < GregorianCalendarTypes.Localized || value > GregorianCalendarTypes.TransliteratedFrench);
 
                 _type = value;
             }

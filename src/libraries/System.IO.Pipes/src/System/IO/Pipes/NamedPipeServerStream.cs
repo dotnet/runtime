@@ -95,8 +95,8 @@ namespace System.IO.Pipes
             HandleInheritability inheritability)
         {
             ArgumentException.ThrowIfNullOrEmpty(pipeName);
-            ArgumentOutOfRangeException.ThrowIfEnum(direction < PipeDirection.In || direction > PipeDirection.InOut);
-            ArgumentOutOfRangeException.ThrowIfEnum(transmissionMode < PipeTransmissionMode.Byte || transmissionMode > PipeTransmissionMode.Message);
+            ArgumentOutOfRangeException.ThrowIf(direction < PipeDirection.In || direction > PipeDirection.InOut);
+            ArgumentOutOfRangeException.ThrowIf(transmissionMode < PipeTransmissionMode.Byte || transmissionMode > PipeTransmissionMode.Message);
             ArgumentOutOfRangeException.ThrowIf((options & ~(PipeOptions.WriteThrough | PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly)) != 0);
             ArgumentOutOfRangeException.ThrowIfNegative(inBufferSize);
             ArgumentOutOfRangeException.ThrowIfNegative(outBufferSize);
@@ -105,7 +105,7 @@ namespace System.IO.Pipes
             // inheritability will always be None since this private constructor is only called from other constructors from which
             // inheritability is always set to None. Desktop has a public constructor to allow setting it to something else, but Core
             // doesn't.
-            ArgumentOutOfRangeException.ThrowIfEnum(inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable);
+            ArgumentOutOfRangeException.ThrowIf(inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable);
 
             if ((options & PipeOptions.CurrentUserOnly) != 0)
             {

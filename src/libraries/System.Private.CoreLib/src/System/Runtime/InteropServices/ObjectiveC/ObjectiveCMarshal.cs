@@ -161,7 +161,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
         {
             ArgumentNullException.ThrowIfNull(func);
 
-            ArgumentOutOfRangeException.ThrowIfEnum(msgSendFunction < MessageSendFunction.MsgSend || msgSendFunction > MessageSendFunction.MsgSendSuperStret);
+            ArgumentOutOfRangeException.ThrowIf(msgSendFunction < MessageSendFunction.MsgSend || msgSendFunction > MessageSendFunction.MsgSendSuperStret);
 
             if (!TrySetGlobalMessageSendCallback(msgSendFunction, func))
                 throw new InvalidOperationException(SR.InvalidOperation_ResetGlobalObjectiveCMsgSend);

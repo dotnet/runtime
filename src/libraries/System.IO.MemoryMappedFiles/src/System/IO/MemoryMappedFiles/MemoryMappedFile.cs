@@ -62,7 +62,7 @@ namespace System.IO.MemoryMappedFiles
         {
             ArgumentException.ThrowIfNullOrEmpty(mapName);
 
-            ArgumentOutOfRangeException.ThrowIfEnum(inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable);
+            ArgumentOutOfRangeException.ThrowIf(inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable);
 
             ArgumentOutOfRangeException.ThrowIf(((int)desiredAccessRights & ~((int)(MemoryMappedFileRights.FullControl | MemoryMappedFileRights.AccessSystemSecurity))) != 0);
 
@@ -109,7 +109,7 @@ namespace System.IO.MemoryMappedFiles
 
             ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
-            ArgumentOutOfRangeException.ThrowIfEnum(access < MemoryMappedFileAccess.ReadWrite ||
+            ArgumentOutOfRangeException.ThrowIf(access < MemoryMappedFileAccess.ReadWrite ||
                 access > MemoryMappedFileAccess.ReadWriteExecute);
 
             if (mode == FileMode.Append)
@@ -193,7 +193,7 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentException(SR.Argument_EmptyFile);
             }
 
-            ArgumentOutOfRangeException.ThrowIfEnum(access < MemoryMappedFileAccess.ReadWrite ||
+            ArgumentOutOfRangeException.ThrowIf(access < MemoryMappedFileAccess.ReadWrite ||
                 access > MemoryMappedFileAccess.ReadWriteExecute);
 
             if (access == MemoryMappedFileAccess.Write)
@@ -201,7 +201,7 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentException(SR.Argument_NewMMFWriteAccessNotAllowed, nameof(access));
             }
 
-            ArgumentOutOfRangeException.ThrowIfEnum(inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable);
+            ArgumentOutOfRangeException.ThrowIf(inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable);
 
             // flush any bytes written to the FileStream buffer so that we can see them in our MemoryMappedFile
             fileStream.Flush();
@@ -245,7 +245,7 @@ namespace System.IO.MemoryMappedFiles
 
             ArgumentOutOfRangeException.ThrowIf(IntPtr.Size == 4 && capacity > uint.MaxValue);
 
-            ArgumentOutOfRangeException.ThrowIfEnum(access < MemoryMappedFileAccess.ReadWrite ||
+            ArgumentOutOfRangeException.ThrowIf(access < MemoryMappedFileAccess.ReadWrite ||
                 access > MemoryMappedFileAccess.ReadWriteExecute);
 
             if (access == MemoryMappedFileAccess.Write)
@@ -255,7 +255,7 @@ namespace System.IO.MemoryMappedFiles
 
             ArgumentOutOfRangeException.ThrowIf(((int)options & ~((int)(MemoryMappedFileOptions.DelayAllocatePages))) != 0);
 
-            ArgumentOutOfRangeException.ThrowIfEnum(inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable);
+            ArgumentOutOfRangeException.ThrowIf(inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable);
 
             SafeMemoryMappedFileHandle handle = CreateCore(null, mapName, inheritability, access, options, capacity, -1);
             return new MemoryMappedFile(handle);
@@ -290,12 +290,12 @@ namespace System.IO.MemoryMappedFiles
 
             ArgumentOutOfRangeException.ThrowIf(IntPtr.Size == 4 && capacity > uint.MaxValue);
 
-            ArgumentOutOfRangeException.ThrowIfEnum(access < MemoryMappedFileAccess.ReadWrite ||
+            ArgumentOutOfRangeException.ThrowIf(access < MemoryMappedFileAccess.ReadWrite ||
                 access > MemoryMappedFileAccess.ReadWriteExecute);
 
             ArgumentOutOfRangeException.ThrowIf(((int)options & ~((int)(MemoryMappedFileOptions.DelayAllocatePages))) != 0);
 
-            ArgumentOutOfRangeException.ThrowIfEnum(inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable);
+            ArgumentOutOfRangeException.ThrowIf(inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable);
 
             SafeMemoryMappedFileHandle handle;
             // special case for write access; create will never succeed
@@ -327,7 +327,7 @@ namespace System.IO.MemoryMappedFiles
 
             ArgumentOutOfRangeException.ThrowIfNegative(size);
 
-            ArgumentOutOfRangeException.ThrowIfEnum(access < MemoryMappedFileAccess.ReadWrite || access > MemoryMappedFileAccess.ReadWriteExecute);
+            ArgumentOutOfRangeException.ThrowIf(access < MemoryMappedFileAccess.ReadWrite || access > MemoryMappedFileAccess.ReadWriteExecute);
 
             ArgumentOutOfRangeException.ThrowIf(IntPtr.Size == 4 && size > uint.MaxValue);
 
@@ -352,7 +352,7 @@ namespace System.IO.MemoryMappedFiles
 
             ArgumentOutOfRangeException.ThrowIfNegative(size);
 
-            ArgumentOutOfRangeException.ThrowIfEnum(access < MemoryMappedFileAccess.ReadWrite || access > MemoryMappedFileAccess.ReadWriteExecute);
+            ArgumentOutOfRangeException.ThrowIf(access < MemoryMappedFileAccess.ReadWrite || access > MemoryMappedFileAccess.ReadWriteExecute);
 
             ArgumentOutOfRangeException.ThrowIf(IntPtr.Size == 4 && size > uint.MaxValue);
 

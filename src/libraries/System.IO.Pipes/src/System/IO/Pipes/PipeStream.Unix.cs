@@ -404,7 +404,7 @@ namespace System.IO.Pipes
             set
             {
                 CheckPipePropertyOperations();
-                ArgumentOutOfRangeException.ThrowIfEnum(value < PipeTransmissionMode.Byte || value > PipeTransmissionMode.Message);
+                ArgumentOutOfRangeException.ThrowIf(value < PipeTransmissionMode.Byte || value > PipeTransmissionMode.Message);
 
                 if (value != PipeTransmissionMode.Byte) // Unix pipes are only byte-based, not message-based
                 {

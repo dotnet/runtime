@@ -65,7 +65,7 @@ namespace System.Speech.Synthesis
         {
             Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
 
-            ArgumentOutOfRangeException.ThrowIfEnum(rate < PromptRate.NotSet || rate > PromptRate.ExtraSlow);
+            ArgumentOutOfRangeException.ThrowIf(rate < PromptRate.NotSet || rate > PromptRate.ExtraSlow);
 
             // Validate that text can be added in this context
             ValidateElement(_elementStack.Peek(), SsmlElement.Text);
@@ -100,7 +100,7 @@ namespace System.Speech.Synthesis
         {
             Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
 
-            ArgumentOutOfRangeException.ThrowIfEnum(volume < PromptVolume.NotSet || volume > PromptVolume.Default);
+            ArgumentOutOfRangeException.ThrowIf(volume < PromptVolume.NotSet || volume > PromptVolume.Default);
 
             // Validate that text can be added in this context
             ValidateElement(_elementStack.Peek(), SsmlElement.Text);
@@ -137,7 +137,7 @@ namespace System.Speech.Synthesis
         {
             Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
 
-            ArgumentOutOfRangeException.ThrowIfEnum(emphasis < PromptEmphasis.NotSet || emphasis > PromptEmphasis.Reduced);
+            ArgumentOutOfRangeException.ThrowIf(emphasis < PromptEmphasis.NotSet || emphasis > PromptEmphasis.Reduced);
 
             // Validate that text can be added in this context
             ValidateElement(_elementStack.Peek(), SsmlElement.Text);
@@ -420,7 +420,7 @@ namespace System.Speech.Synthesis
         {
             Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
 
-            ArgumentOutOfRangeException.ThrowIfEnum(sayAs < SayAs.SpellOut || sayAs > SayAs.Text);
+            ArgumentOutOfRangeException.ThrowIf(sayAs < SayAs.SpellOut || sayAs > SayAs.Text);
 
             // check for well formed document
             ValidateElement(_elementStack.Peek(), SsmlElement.Text);

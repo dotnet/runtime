@@ -1610,7 +1610,7 @@ namespace System.Security.Cryptography
 
         private static void CheckPaddingMode(PaddingMode paddingMode)
         {
-            ArgumentOutOfRangeException.ThrowIfEnum(paddingMode < PaddingMode.None || paddingMode > PaddingMode.ISO10126);
+            ArgumentOutOfRangeException.ThrowIf(paddingMode < PaddingMode.None || paddingMode > PaddingMode.ISO10126);
         }
 
         private void CheckInitializationVectorSize(ReadOnlySpan<byte> iv)

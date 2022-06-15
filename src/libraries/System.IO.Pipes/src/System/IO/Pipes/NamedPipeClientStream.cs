@@ -63,8 +63,8 @@ namespace System.IO.Pipes
                 throw new ArgumentException(SR.Argument_EmptyServerName);
             }
             ArgumentOutOfRangeException.ThrowIf((options & ~(PipeOptions.WriteThrough | PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly)) != 0);
-            ArgumentOutOfRangeException.ThrowIfEnum(impersonationLevel < TokenImpersonationLevel.None || impersonationLevel > TokenImpersonationLevel.Delegation);
-            ArgumentOutOfRangeException.ThrowIfEnum(inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable);
+            ArgumentOutOfRangeException.ThrowIf(impersonationLevel < TokenImpersonationLevel.None || impersonationLevel > TokenImpersonationLevel.Delegation);
+            ArgumentOutOfRangeException.ThrowIf(inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable);
             if ((options & PipeOptions.CurrentUserOnly) != 0)
             {
                 IsCurrentUserOnly = true;

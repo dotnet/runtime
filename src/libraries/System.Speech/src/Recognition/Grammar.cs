@@ -216,7 +216,7 @@ namespace System.Speech.Recognition
             get { return _weight; }
             set
             {
-                ArgumentOutOfRangeException.ThrowIfEnum(value < 0.0 || value > 1.0);
+                ArgumentOutOfRangeException.ThrowIf(value < 0.0 || value > 1.0);
                 // Note: you can still set or get this property regardless of whether the Grammar is loaded or not.
                 // In theory we could throw in certain scenarios but this is probably simplest.
                 if (_grammarState != GrammarState.Unloaded && !_weight.Equals(value))

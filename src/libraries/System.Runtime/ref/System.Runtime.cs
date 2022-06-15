@@ -299,7 +299,6 @@ namespace System
         public ArgumentOutOfRangeException(string? paramName, object? actualValue, string? message) { }
         public ArgumentOutOfRangeException(string? paramName, string? message) { }
         public static void ThrowIf(bool condition) {throw null;}
-        public static void ThrowIfEnum(bool condition) {throw null;}
         public static void ThrowIfNegative<T>(T value, [System.Runtime.CompilerServices.CallerArgumentExpression("value")] string? paramName = null) where T : struct, System.Numerics.INumberBase<T>, System.Numerics.ISignedNumber<T>, System.Numerics.IComparisonOperators<T, T> {}
         public static void ThrowIfZero<T>(T value, [System.Runtime.CompilerServices.CallerArgumentExpression("value")] string? paramName = null) where T : struct, System.Numerics.INumberBase<T>, System.Numerics.ISignedNumber<T>, System.Numerics.IComparisonOperators<T, T> {}
         public static void ThrowIfNegativeOrZero<T>(T value, [System.Runtime.CompilerServices.CallerArgumentExpression("value")] string? paramName = null) where T : struct, System.Numerics.INumberBase<T>, System.Numerics.ISignedNumber<T>, System.Numerics.IComparisonOperators<T, T> {}

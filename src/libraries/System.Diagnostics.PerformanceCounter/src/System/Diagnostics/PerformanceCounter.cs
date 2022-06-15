@@ -226,7 +226,7 @@ namespace System.Diagnostics
             get { return _instanceLifetime; }
             set
             {
-                ArgumentOutOfRangeException.ThrowIfEnum(value > PerformanceCounterInstanceLifetime.Process || value < PerformanceCounterInstanceLifetime.Global);
+                ArgumentOutOfRangeException.ThrowIf(value > PerformanceCounterInstanceLifetime.Process || value < PerformanceCounterInstanceLifetime.Global);
 
                 if (_initialized)
                     throw new InvalidOperationException(SR.CantSetLifetimeAfterInitialized);

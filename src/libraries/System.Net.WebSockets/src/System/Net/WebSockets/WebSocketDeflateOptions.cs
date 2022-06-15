@@ -25,7 +25,7 @@ namespace System.Net.WebSockets
             get => _clientMaxWindowBits;
             set
             {
-                ArgumentOutOfRangeException.ThrowIfEnum(value < WebSocketValidate.MinDeflateWindowBits || value > WebSocketValidate.MaxDeflateWindowBits);
+                ArgumentOutOfRangeException.ThrowIf(value < WebSocketValidate.MinDeflateWindowBits || value > WebSocketValidate.MaxDeflateWindowBits);
                 _clientMaxWindowBits = value;
             }
         }
@@ -48,7 +48,7 @@ namespace System.Net.WebSockets
             get => _serverMaxWindowBits;
             set
             {
-                ArgumentOutOfRangeException.ThrowIfEnum(value < WebSocketValidate.MinDeflateWindowBits || value > WebSocketValidate.MaxDeflateWindowBits);
+                ArgumentOutOfRangeException.ThrowIf(value < WebSocketValidate.MinDeflateWindowBits || value > WebSocketValidate.MaxDeflateWindowBits);
                 _serverMaxWindowBits = value;
             }
         }

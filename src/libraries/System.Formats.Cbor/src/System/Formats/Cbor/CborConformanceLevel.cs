@@ -56,7 +56,7 @@ namespace System.Formats.Cbor
 
         public static void Validate(CborConformanceMode conformanceMode)
         {
-            ArgumentOutOfRangeException.ThrowIfEnum(conformanceMode < CborConformanceMode.Lax ||
+            ArgumentOutOfRangeException.ThrowIf(conformanceMode < CborConformanceMode.Lax ||
                 conformanceMode > CborConformanceMode.Ctap2Canonical);
         }
 

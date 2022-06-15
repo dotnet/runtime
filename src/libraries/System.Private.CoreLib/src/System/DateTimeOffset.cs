@@ -952,7 +952,7 @@ namespace System
             // This operation cannot overflow because offset should have already been validated to be within
             // 14 hours and the DateTime instance is more than that distance from the boundaries of long.
             long utcTicks = dateTime.Ticks - offset.Ticks;
-            ArgumentOutOfRangeException.ThrowIfEnum(utcTicks < DateTime.MinTicks || utcTicks > DateTime.MaxTicks);
+            ArgumentOutOfRangeException.ThrowIf(utcTicks < DateTime.MinTicks || utcTicks > DateTime.MaxTicks);
             // make sure the Kind is set to Unspecified
             //
             return new DateTime(utcTicks, DateTimeKind.Unspecified);

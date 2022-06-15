@@ -129,7 +129,7 @@ namespace System.Globalization
 
         internal void CheckTicksRange(long ticks)
         {
-            ArgumentOutOfRangeException.ThrowIfEnum(ticks < MinSupportedDateTime.Ticks || ticks > MaxSupportedDateTime.Ticks);
+            ArgumentOutOfRangeException.ThrowIf(ticks < MinSupportedDateTime.Ticks || ticks > MaxSupportedDateTime.Ticks);
         }
 
         internal void CheckEraRange(int era)
