@@ -210,6 +210,9 @@ namespace Internal.Reflection
             if (object.ReferenceEquals(c, this))
                 return true;
 
+            if (RuntimeAugments.IsGenericTypeDefinition(_typeHandle))
+                return false;
+
             c = c.UnderlyingSystemType;
 
             Type typeInfo = c;
