@@ -198,12 +198,7 @@ namespace System.Text.RegularExpressions.Generator
             for (int i = 0; i < arguments.Length; i++)
             {
                 IArgumentOperation argument = arguments[i];
-                // argument.Parameter can be null for __arglist
-                string? argumentName = argument.Parameter?.Name;
-                if (argumentName is null)
-                {
-                    continue;
-                }
+                string argumentName = argument.Parameter.Name;
 
                 // If one of the arguments is a timeout, then we don't emit a diagnostic.
                 if (argumentName.Equals(timeoutArgumentName, StringComparison.OrdinalIgnoreCase) ||
