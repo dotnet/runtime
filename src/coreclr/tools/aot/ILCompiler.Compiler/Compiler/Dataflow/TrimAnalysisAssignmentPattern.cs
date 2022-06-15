@@ -25,7 +25,7 @@ namespace ILCompiler.Dataflow
 
         public void MarkAndProduceDiagnostics(ReflectionMarker reflectionMarker, Logger logger)
         {
-            bool diagnosticsEnabled = !context.Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode(Origin.Provider);
+            bool diagnosticsEnabled = !context.Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode(Origin.MemberDefinition);
             var diagnosticContext = new DiagnosticContext(Origin, diagnosticsEnabled, logger);
 
             foreach (var sourceValue in Source)

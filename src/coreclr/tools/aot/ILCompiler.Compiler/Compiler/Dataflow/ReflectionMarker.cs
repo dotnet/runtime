@@ -21,8 +21,8 @@ namespace ILCompiler.Dataflow
     {
         private DependencyList _dependencies = new DependencyList();
         private readonly Logger _logger;
-        private readonly NodeFactory _factory;
-        private readonly FlowAnnotations _annotations;
+        public NodeFactory Factory { get; }
+        public FlowAnnotations Annotations { get; }
         private bool _typeHierarchyDataFlow;
         private bool _enabled;
         private const string RequiresUnreferencedCodeAttribute = nameof(RequiresUnreferencedCodeAttribute);
@@ -32,8 +32,8 @@ namespace ILCompiler.Dataflow
         public ReflectionMarker(Logger logger, NodeFactory factory, FlowAnnotations annotations, bool typeHierarchyDataFlow, bool enabled)
         {
             _logger = logger;
-            _factory = factory;
-            _annotations = annotations;
+            Factory = factory;
+            Annotations = annotations;
             _typeHierarchyDataFlow = typeHierarchyDataFlow;
             _enabled = enabled;
         }
@@ -83,8 +83,8 @@ namespace ILCompiler.Dataflow
             if (_enabled)
             {
                 // Also add module metadata in case this reference was through a type forward
-                if (_factory.MetadataManager.CanGenerateMetadata(referenceModule.GetGlobalModuleType()))
-                    _dependencies.Add(_factory.ModuleMetadata(referenceModule), memberWithRequirements.ToString());
+                if (Factory.MetadataManager.CanGenerateMetadata(referenceModule.GetGlobalModuleType()))
+                    _dependencies.Add(Factory.ModuleMetadata(referenceModule), memberWithRequirements.ToString());
 
                 MarkType(diagnosticContext.Origin, foundType, memberWithRequirements);
             }
@@ -98,7 +98,7 @@ namespace ILCompiler.Dataflow
             if (!_enabled)
                 return;
 
-            RootingHelpers.TryGetDependenciesForReflectedType(ref _dependencies, _factory, type, memberWithRequirements.ToString());
+            RootingHelpers.TryGetDependenciesForReflectedType(ref _dependencies, Factory, type, memberWithRequirements.ToString());
         }
 
         internal void MarkMethod(in MessageOrigin origin, MethodDesc method, Origin memberWithRequirements)
@@ -115,12 +115,12 @@ namespace ILCompiler.Dataflow
                 }
             }
 
-            if (_annotations.ShouldWarnWhenAccessedForReflection(method) && !ReflectionMethodBodyScanner.ShouldSuppressAnalysisWarningsForRequires(method, RequiresUnreferencedCodeAttribute))
+            if (Annotations.ShouldWarnWhenAccessedForReflection(method) && !ReflectionMethodBodyScanner.ShouldSuppressAnalysisWarningsForRequires(method, RequiresUnreferencedCodeAttribute))
             {
                 WarnOnReflectionAccess(origin, method, memberWithRequirements);
             }
 
-            RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, _factory, method, memberWithRequirements.ToString());
+            RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, Factory, method, memberWithRequirements.ToString());
         }
 
         void MarkField(in MessageOrigin origin, FieldDesc field, Origin memberWithRequirements)
@@ -128,12 +128,12 @@ namespace ILCompiler.Dataflow
             if (!_enabled)
                 return;
 
-            if (_annotations.ShouldWarnWhenAccessedForReflection(field) && !ReflectionMethodBodyScanner.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, RequiresUnreferencedCodeAttribute))
+            if (Annotations.ShouldWarnWhenAccessedForReflection(field) && !ReflectionMethodBodyScanner.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, RequiresUnreferencedCodeAttribute))
             {
                 WarnOnReflectionAccess(origin, field, memberWithRequirements);
             }
 
-            RootingHelpers.TryGetDependenciesForReflectedField(ref _dependencies, _factory, field, memberWithRequirements.ToString());
+            RootingHelpers.TryGetDependenciesForReflectedField(ref _dependencies, Factory, field, memberWithRequirements.ToString());
         }
 
         internal void MarkProperty(in MessageOrigin origin, PropertyPseudoDesc property, Origin memberWithRequirements)
@@ -203,10 +203,11 @@ namespace ILCompiler.Dataflow
             {
                 // Mark the GC static base - it contains a pointer to the class constructor, but also info
                 // about whether the class constructor already executed and it's what is looked at at runtime.
-                _dependencies.Add(_factory.TypeNonGCStaticsSymbol((MetadataType)type), "RunClassConstructor reference");
+                _dependencies.Add(Factory.TypeNonGCStaticsSymbol((MetadataType)type), "RunClassConstructor reference");
             }
         }
 
+        // TODO: This should use DiagnosticContext to avoid generating warnings when we run data flow on a method multiple times
         void WarnOnReflectionAccess(in MessageOrigin origin, TypeSystemEntity entity, Origin memberWithRequirements)
         {
             if (_typeHierarchyDataFlow)

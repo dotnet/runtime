@@ -12,7 +12,7 @@ using ILCompiler.Logging;
 using ILLink.Shared;
 using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
-
+using ILLink.Shared.TypeSystemProxy;
 using Internal.IL;
 using Internal.TypeSystem;
 
@@ -33,9 +33,14 @@ namespace ILCompiler.Dataflow
         private readonly Logger _logger;
         private readonly NodeFactory _factory;
         private readonly ReflectionMarker _reflectionMarker;
+        private readonly TrimAnalysisPatternStore TrimAnalysisPatterns;
+
+        private MessageOrigin _origin;
+
         private const string RequiresUnreferencedCodeAttribute = nameof(RequiresUnreferencedCodeAttribute);
         private const string RequiresDynamicCodeAttribute = nameof(RequiresDynamicCodeAttribute);
         private const string RequiresAssemblyFilesAttribute = nameof(RequiresAssemblyFilesAttribute);
+
 
         public static bool RequiresReflectionMethodBodyScannerForCallSite(FlowAnnotations flowAnnotations, MethodDesc methodDefinition)
         {
@@ -59,6 +64,8 @@ namespace ILCompiler.Dataflow
                 fieldDefinition.DoesFieldRequire(RequiresDynamicCodeAttribute, out _);
         }
 
+        // TODO: This should use DiagnosticContext so that it avoids generating warnings in cases we run data flow
+        // on a method multiple times.
         void CheckAndReportRequires(TypeSystemEntity calledMember, in MessageOrigin origin, string requiresAttributeName)
         {
             // If the caller of a method is already marked with `Requires` a new warning should not
@@ -111,26 +118,41 @@ namespace ILCompiler.Dataflow
             _logger.LogWarning(currentOrigin, diagnosticId, displayName, arg1, arg2);
         }
 
-        private enum ScanningPurpose
-        {
-            Default,
-            GetTypeDataflow,
-        }
-
-        private ScanningPurpose _purpose;
-
-        private ReflectionMethodBodyScanner(NodeFactory factory, FlowAnnotations annotations, Logger logger, ScanningPurpose purpose = ScanningPurpose.Default)
+        private ReflectionMethodBodyScanner(NodeFactory factory, FlowAnnotations annotations, Logger logger, MessageOrigin origin)
             : base(annotations)
         {
             _logger = logger;
             _factory = factory;
-            _purpose = purpose;
-            _reflectionMarker = new ReflectionMarker(logger, factory, annotations, purpose == ScanningPurpose.GetTypeDataflow);
+            _origin = origin;
+            _reflectionMarker = new ReflectionMarker(logger, factory, annotations, typeHierarchyDataFlow: false, enabled: false);
+            TrimAnalysisPatterns = new TrimAnalysisPatternStore(logger);
+        }
+
+        public override void InterproceduralScan(MethodIL methodBody)
+        {
+            base.InterproceduralScan(methodBody);
+
+            var reflectionMarker = new ReflectionMarker(_logger, _factory, _annotations, typeHierarchyDataFlow: false, enabled: true);
+            TrimAnalysisPatterns.MarkAndProduceDiagnostics(reflectionMarker);
+        }
+
+        protected override void Scan(MethodIL methodBody, ref ValueSet<MethodProxy> methodsInGroup)
+        {
+            _origin = new MessageOrigin(methodBody.OwningMethod);
+            base.Scan(methodBody, ref methodsInGroup);
+
+            if (!methodBody.OwningMethod.Signature.ReturnType.IsVoid)
+            {
+                var method = methodBody.OwningMethod;
+                var methodReturnValue = _annotations.GetMethodReturnValue(method);
+                if (methodReturnValue.DynamicallyAccessedMemberTypes != 0)
+                    HandleAssignmentPattern(_origin, ReturnValue, methodReturnValue);
+            }
         }
 
         public static DependencyList ScanAndProcessReturnValue(NodeFactory factory, FlowAnnotations annotations, Logger logger, MethodIL methodBody)
         {
-            var scanner = new ReflectionMethodBodyScanner(factory, annotations, logger);
+            var scanner = new ReflectionMethodBodyScanner(factory, annotations, logger, new MessageOrigin(methodBody.OwningMethod));
 
             Debug.Assert(methodBody.GetMethodILDefinition() == methodBody);
             if (methodBody.OwningMethod.HasInstantiation || methodBody.OwningMethod.OwningType.HasInstantiation)
@@ -152,18 +174,7 @@ namespace ILCompiler.Dataflow
                 methodBody = new InstantiatedMethodIL(methodBody.OwningMethod, methodBody);
             }
 
-            scanner.Scan(methodBody);
-
-            if (!methodBody.OwningMethod.Signature.ReturnType.IsVoid)
-            {
-                var method = methodBody.OwningMethod;
-                var methodReturnValue = scanner._annotations.GetMethodReturnValue(method);
-                if (methodReturnValue.DynamicallyAccessedMemberTypes != 0)
-                {
-                    var diagnosticContext = new DiagnosticContext(new MessageOrigin(method), !ShouldSuppressAnalysisWarningsForRequires(method, RequiresUnreferencedCodeAttribute), scanner._logger);
-                    scanner.RequireDynamicallyAccessedMembers(diagnosticContext, scanner.ReturnValue, methodReturnValue, new MethodReturnOrigin(method));
-                }
-            }
+            scanner.InterproceduralScan(methodBody);
 
             return scanner._reflectionMarker.Dependencies;
         }
@@ -172,7 +183,7 @@ namespace ILCompiler.Dataflow
         {
             DynamicallyAccessedMemberTypes annotation = flowAnnotations.GetTypeAnnotation(type);
             Debug.Assert(annotation != DynamicallyAccessedMemberTypes.None);
-            var reflectionMarker = new ReflectionMarker(logger, factory, flowAnnotations, true);
+            var reflectionMarker = new ReflectionMarker(logger, factory, flowAnnotations, typeHierarchyDataFlow: true, enabled: true);
             reflectionMarker.MarkTypeForDynamicallyAccessedMembers(new MessageOrigin(type), type, annotation, new TypeOrigin(type));
             return reflectionMarker.Dependencies;
         }
@@ -204,70 +215,100 @@ namespace ILCompiler.Dataflow
             return _annotations.GetMethodParameterValue(method, parameterIndex, dynamicallyAccessedMemberTypes);
         }
 
-        static MultiValue GetFieldValue(FieldDesc field, FlowAnnotations annotations)
+        protected override MultiValue GetFieldValue(FieldDesc field) => _annotations.GetFieldValue(field);
+
+        private void HandleStoreValueWithDynamicallyAccessedMembers(MethodIL methodBody, int offset, ValueWithDynamicallyAccessedMembers targetValue, MultiValue sourceValue)
         {
-            switch (field.Name)
+            if (targetValue.DynamicallyAccessedMemberTypes != 0)
             {
-                case "EmptyTypes" when field.OwningType.IsTypeOf(ILLink.Shared.TypeSystemProxy.WellKnownType.System_Type):
-                    {
-                        return ArrayValue.Create(0, field.OwningType);
-                    }
-                case "Empty" when field.OwningType.IsTypeOf(ILLink.Shared.TypeSystemProxy.WellKnownType.System_String):
-                    {
-                        return new KnownStringValue(string.Empty);
-                    }
-
-                default:
-                    {
-                        DynamicallyAccessedMemberTypes memberTypes = annotations.GetFieldAnnotation(field);
-                        return new FieldValue(field, memberTypes);
-                    }
+                _origin = _origin.WithInstructionOffset(methodBody, offset);
+                HandleAssignmentPattern(_origin, sourceValue, targetValue);
             }
-        }
-
-        protected override MultiValue GetFieldValue(FieldDesc field)
-        {
-            return GetFieldValue(field, _annotations);
         }
 
         protected override void HandleStoreField(MethodIL methodBody, int offset, FieldValue field, MultiValue valueToStore)
-        {
-            if (field.DynamicallyAccessedMemberTypes != 0)
-            {
-                var diagnosticContext = new DiagnosticContext(new MessageOrigin(methodBody, offset), !ShouldSuppressAnalysisWarningsForRequires(methodBody.OwningMethod, RequiresUnreferencedCodeAttribute), _logger);
-                RequireDynamicallyAccessedMembers(diagnosticContext, valueToStore, field, new FieldOrigin(field.Field));
-            }
+            => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, field, valueToStore);
+        // TODO: The previous HandleStoreField also did this:
+            // CheckAndReportRequires(field.Field, new MessageOrigin(methodBody.OwningMethod), RequiresUnreferencedCodeAttribute);
+            // CheckAndReportRequires(field.Field, new MessageOrigin(methodBody.OwningMethod), RequiresDynamicCodeAttribute);
 
-            CheckAndReportRequires(field.Field, new MessageOrigin(methodBody.OwningMethod), RequiresUnreferencedCodeAttribute);
-            CheckAndReportRequires(field.Field, new MessageOrigin(methodBody.OwningMethod), RequiresDynamicCodeAttribute);
-        }
+        protected override void HandleStoreParameter(MethodIL methodBody, int offset, MethodParameterValue parameter, MultiValue valueToStore)
+            => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, parameter, valueToStore);
 
-        protected override void HandleStoreParameter(MethodIL method, int offset, MethodParameterValue parameter, MultiValue valueToStore)
-        {
-            if (parameter.DynamicallyAccessedMemberTypes != 0)
-            {
-                var diagnosticContext = new DiagnosticContext(new MessageOrigin(method, offset), !ShouldSuppressAnalysisWarningsForRequires(method.OwningMethod, RequiresUnreferencedCodeAttribute), _logger);
-                RequireDynamicallyAccessedMembers(diagnosticContext, valueToStore, parameter, parameter.ParameterOrigin);
-            }
-        }
+        protected override void HandleStoreMethodThisParameter(MethodIL methodBody, int offset, MethodThisParameterValue thisParameter, MultiValue valueToStore)
+            => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, thisParameter, valueToStore);
+
+        protected override void HandleStoreMethodReturnValue(MethodIL methodBody, int offset, MethodReturnValue returnValue, MultiValue valueToStore)
+            => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, returnValue, valueToStore);
 
         public override bool HandleCall(MethodIL callingMethodBody, MethodDesc calledMethod, ILOpcode operation, int offset, ValueNodeList methodParams, out MultiValue methodReturnValue)
         {
             methodReturnValue = null;
+            Debug.Assert(callingMethodBody.OwningMethod == _origin.MemberDefinition);
+
+            _origin = _origin.WithInstructionOffset(callingMethodBody, offset);
+
+            MultiValue instanceValue;
+            ImmutableArray<MultiValue> arguments;
+            if (!calledMethod.Signature.IsStatic)
+            {
+                instanceValue = methodParams[0];
+                arguments = methodParams.Skip(1).ToImmutableArray();
+            }
+            else
+            {
+                instanceValue = MultiValueLattice.Top;
+                arguments = methodParams.ToImmutableArray();
+            }
+
+            TrimAnalysisPatterns.Add(new TrimAnalysisMethodCallPattern(
+                callingMethodBody,
+                operation,
+                offset,
+                calledMethod,
+                instanceValue,
+                arguments,
+                _origin
+            ));
+
+            var diagnosticContext = new DiagnosticContext(_origin, diagnosticsEnabled: false, _logger);
+            return HandleCall(
+                callingMethodBody,
+                calledMethod,
+                operation,
+                offset,
+                instanceValue,
+                arguments,
+                diagnosticContext,
+                _reflectionMarker,
+                out methodReturnValue);
+        }
+
+        public static bool HandleCall(
+            MethodIL callingMethodBody,
+            MethodDesc calledMethod,
+            ILOpcode operation,
+            int offset,
+            MultiValue instanceValue,
+            ImmutableArray<MultiValue> argumentValues,
+            DiagnosticContext diagnosticContext,
+            ReflectionMarker reflectionMarker,
+            out MultiValue methodReturnValue)
+        {
+            var origin = diagnosticContext.Origin;
+            var callingMethodDefinition = callingMethodBody.OwningMethod;
+            Debug.Assert(callingMethodDefinition != origin.MemberDefinition);
+
+            bool requiresDataFlowAnalysis = reflectionMarker.Annotations.RequiresDataflowAnalysis(calledMethod);
+            var annotatedMethodReturnValue = reflectionMarker.Annotations.GetMethodReturnValue(calledMethod);
+            Debug.Assert(requiresDataFlowAnalysis || annotatedMethodReturnValue.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.None);
+
             MultiValue? maybeMethodReturnValue = null;
 
-            var callingMethodDefinition = callingMethodBody.OwningMethod;
             bool shouldEnableReflectionWarnings = !ShouldSuppressAnalysisWarningsForRequires(callingMethodDefinition, RequiresUnreferencedCodeAttribute);
             bool shouldEnableAotWarnings = !ShouldSuppressAnalysisWarningsForRequires(callingMethodDefinition, RequiresDynamicCodeAttribute);
 
-            DynamicallyAccessedMemberTypes returnValueDynamicallyAccessedMemberTypes = 0;
-
-            bool requiresDataFlowAnalysis = _annotations.RequiresDataflowAnalysis(calledMethod);
-            returnValueDynamicallyAccessedMemberTypes = requiresDataFlowAnalysis ?
-                _annotations.GetReturnParameterAnnotation(calledMethod) : 0;
-
-            var diagnosticContext = new DiagnosticContext(new MessageOrigin(callingMethodBody, offset), shouldEnableReflectionWarnings, _logger);
-            var handleCallAction = new HandleCallAction(_annotations, _reflectionMarker, diagnosticContext, callingMethodDefinition, new MethodOrigin(calledMethod));
+            var handleCallAction = new HandleCallAction(reflectionMarker.Annotations, reflectionMarker, diagnosticContext, callingMethodDefinition, new MethodOrigin(calledMethod));
 
             var intrinsicId = Intrinsics.GetIntrinsicIdForMethod(calledMethod);
             switch (intrinsicId)
@@ -317,14 +358,7 @@ namespace ILCompiler.Dataflow
                 || appDomainCreateInstance == IntrinsicId.AppDomain_CreateInstanceFromAndUnwrap:
                 case IntrinsicId.Assembly_CreateInstance:
                     {
-                        var instanceValue = MultiValueLattice.Top;
-                        IReadOnlyList<MultiValue> parameterValues = methodParams;
-                        if (!calledMethod.Signature.IsStatic)
-                        {
-                            instanceValue = methodParams[0];
-                            parameterValues = parameterValues.Skip(1).ToImmutableList();
-                        }
-                        bool result = handleCallAction.Invoke(calledMethod, instanceValue, parameterValues, out methodReturnValue, out _);
+                        bool result = handleCallAction.Invoke(calledMethod, instanceValue, argumentValues, out methodReturnValue, out _);
 
                         // Special case some intrinsics for AOT handling (on top of the trimming handling done in the HandleCallAction)
                         switch (intrinsicId)
@@ -366,26 +400,18 @@ namespace ILCompiler.Dataflow
                             }
                         }
 
-                        var origin = new MessageOrigin(callingMethodBody, offset);
                         CheckAndReportRequires(calledMethod, origin, RequiresUnreferencedCodeAttribute);
                         CheckAndReportRequires(calledMethod, origin, RequiresDynamicCodeAttribute);
                         CheckAndReportRequires(calledMethod, origin, RequiresAssemblyFilesAttribute);
 
-                        var instanceValue = MultiValueLattice.Top;
-                        IReadOnlyList<MultiValue> parameterValues = methodParams;
-                        if (!calledMethod.Signature.IsStatic)
-                        {
-                            instanceValue = methodParams[0];
-                            parameterValues = parameterValues.Skip(1).ToImmutableList();
-                        }
-                        return handleCallAction.Invoke(calledMethod, instanceValue, parameterValues, out methodReturnValue, out _);
+                        return handleCallAction.Invoke(calledMethod, instanceValue, argumentValues, out methodReturnValue, out _);
                     }
 
                 case IntrinsicId.TypeDelegator_Ctor:
                     {
                         // This is an identity function for analysis purposes
                         if (operation == ILOpcode.newobj)
-                            AddReturnValue(methodParams[1]);
+                            AddReturnValue(argumentValues[0]);
                     }
                     break;
 
@@ -407,7 +433,7 @@ namespace ILCompiler.Dataflow
                         // type instead).
                         //
                         // At least until we have shared enum code, this needs extra handling to get it right.
-                        foreach (var value in methodParams[0])
+                        foreach (var value in argumentValues[0])
                         {
                             if (value is SystemTypeValue systemTypeValue
                                 && !systemTypeValue.RepresentedType.Type.IsGenericDefinition
@@ -415,11 +441,11 @@ namespace ILCompiler.Dataflow
                             {
                                 if (systemTypeValue.RepresentedType.Type.IsEnum)
                                 {
-                                    _reflectionMarker.Dependencies.Add(_factory.ConstructedTypeSymbol(systemTypeValue.RepresentedType.Type.MakeArrayType()), "Enum.GetValues");
+                                    reflectionMarker.Dependencies.Add(reflectionMarker.Factory.ConstructedTypeSymbol(systemTypeValue.RepresentedType.Type.MakeArrayType()), "Enum.GetValues");
                                 }
                             }
                             else
-                                CheckAndReportRequires(calledMethod, new MessageOrigin(callingMethodBody, offset), RequiresDynamicCodeAttribute);
+                                CheckAndReportRequires(calledMethod, origin, RequiresDynamicCodeAttribute);
                         }
                     }
                     break;
@@ -442,7 +468,7 @@ namespace ILCompiler.Dataflow
                             ? 0 : 1;
 
                         // We need the data to do struct marshalling.
-                        foreach (var value in methodParams[paramIndex])
+                        foreach (var value in argumentValues[paramIndex])
                         {
                             if (value is SystemTypeValue systemTypeValue
                                 && !systemTypeValue.RepresentedType.Type.IsGenericDefinition
@@ -450,17 +476,17 @@ namespace ILCompiler.Dataflow
                             {
                                 if (systemTypeValue.RepresentedType.Type.IsDefType)
                                 {
-                                    _reflectionMarker.Dependencies.Add(_factory.StructMarshallingData((DefType)systemTypeValue.RepresentedType.Type), "Marshal API");
+                                    reflectionMarker.Dependencies.Add(reflectionMarker.Factory.StructMarshallingData((DefType)systemTypeValue.RepresentedType.Type), "Marshal API");
                                     if (intrinsicId == IntrinsicId.Marshal_PtrToStructure
                                         && systemTypeValue.RepresentedType.Type.GetParameterlessConstructor() is MethodDesc ctorMethod
-                                        && !_factory.MetadataManager.IsReflectionBlocked(ctorMethod))
+                                        && !reflectionMarker.Factory.MetadataManager.IsReflectionBlocked(ctorMethod))
                                     {
-                                        _reflectionMarker.Dependencies.Add(_factory.ReflectableMethod(ctorMethod), "Marshal API");
+                                        reflectionMarker.Dependencies.Add(reflectionMarker.Factory.ReflectableMethod(ctorMethod), "Marshal API");
                                     }
                                 }
                             }
                             else
-                                CheckAndReportRequires(calledMethod, new MessageOrigin(callingMethodBody, offset), RequiresDynamicCodeAttribute);
+                                CheckAndReportRequires(calledMethod, origin, RequiresDynamicCodeAttribute);
                         }
                     }
                     break;
@@ -473,7 +499,7 @@ namespace ILCompiler.Dataflow
                 case IntrinsicId.Marshal_GetDelegateForFunctionPointer:
                     {
                         // We need the data to do delegate marshalling.
-                        foreach (var value in methodParams[1])
+                        foreach (var value in argumentValues[1])
                         {
                             if (value is SystemTypeValue systemTypeValue
                                 && !systemTypeValue.RepresentedType.Type.IsGenericDefinition
@@ -481,11 +507,11 @@ namespace ILCompiler.Dataflow
                             {
                                 if (systemTypeValue.RepresentedType.Type.IsDelegate)
                                 {
-                                    _reflectionMarker.Dependencies.Add(_factory.DelegateMarshallingData((DefType)systemTypeValue.RepresentedType.Type), "Marshal API");
+                                    reflectionMarker.Dependencies.Add(reflectionMarker.Factory.DelegateMarshallingData((DefType)systemTypeValue.RepresentedType.Type), "Marshal API");
                                 }
                             }
                             else
-                                CheckAndReportRequires(calledMethod, new MessageOrigin(callingMethodBody, offset), RequiresDynamicCodeAttribute);
+                                CheckAndReportRequires(calledMethod, origin, RequiresDynamicCodeAttribute);
                         }
                     }
                     break;
@@ -497,7 +523,7 @@ namespace ILCompiler.Dataflow
                 //
                 case IntrinsicId.Object_GetType:
                     {
-                        foreach (var valueNode in methodParams[0])
+                        foreach (var valueNode in instanceValue)
                         {
                             // Note that valueNode can be statically typed in IL as some generic argument type.
                             // For example:
@@ -518,7 +544,7 @@ namespace ILCompiler.Dataflow
                             if (staticType is null || (!staticType.IsDefType && !staticType.IsArray))
                             {
                                 // We don't know anything about the type GetType was called on. Track this as a usual "result of a method call without any annotations"
-                                AddReturnValue(_annotations.GetMethodReturnValue(calledMethod));
+                                AddReturnValue(reflectionMarker.Annotations.GetMethodReturnValue(calledMethod));
                             }
                             else if (staticType.IsSealed() || staticType.IsTypeOf("System", "Delegate"))
                             {
@@ -541,19 +567,19 @@ namespace ILCompiler.Dataflow
                             {
                                 Debug.Assert(staticType is MetadataType || staticType.IsArray);
                                 MetadataType closestMetadataType = staticType is MetadataType mdType ?
-                                    mdType : (MetadataType)_factory.TypeSystemContext.GetWellKnownType(Internal.TypeSystem.WellKnownType.Array);
+                                    mdType : (MetadataType)reflectionMarker.Factory.TypeSystemContext.GetWellKnownType(Internal.TypeSystem.WellKnownType.Array);
 
-                                var annotation = _annotations.GetTypeAnnotation(staticType);
+                                var annotation = reflectionMarker.Annotations.GetTypeAnnotation(staticType);
 
                                 if (annotation != default)
                                 {
-                                    _reflectionMarker.Dependencies.Add(_factory.ObjectGetTypeFlowDependencies(closestMetadataType), "GetType called on this type");
+                                    reflectionMarker.Dependencies.Add(reflectionMarker.Factory.ObjectGetTypeFlowDependencies(closestMetadataType), "GetType called on this type");
                                 }
 
                                 // Return a value which is "unknown type" with annotation. For now we'll use the return value node
                                 // for the method, which means we're loosing the information about which staticType this
                                 // started with. For now we don't need it, but we can add it later on.
-                                AddReturnValue(_annotations.GetMethodReturnValue(calledMethod, annotation));
+                                AddReturnValue(reflectionMarker.Annotations.GetMethodReturnValue(calledMethod, annotation));
                             }
                         }
                     }
@@ -569,16 +595,16 @@ namespace ILCompiler.Dataflow
             bool returnsVoid = calledMethod.Signature.ReturnType.IsVoid;
             methodReturnValue = maybeMethodReturnValue ?? (returnsVoid ?
                 MultiValueLattice.Top :
-                _annotations.GetMethodReturnValue(calledMethod, returnValueDynamicallyAccessedMemberTypes)!);
+                annotatedMethodReturnValue);
 
             // Validate that the return value has the correct annotations as per the method return value annotations
-            if (returnValueDynamicallyAccessedMemberTypes != 0)
+            if (annotatedMethodReturnValue.DynamicallyAccessedMemberTypes != 0)
             {
                 foreach (var uniqueValue in methodReturnValue)
                 {
                     if (uniqueValue is ValueWithDynamicallyAccessedMembers methodReturnValueWithMemberTypes)
                     {
-                        if (!methodReturnValueWithMemberTypes.DynamicallyAccessedMemberTypes.HasFlag(returnValueDynamicallyAccessedMemberTypes))
+                        if (!methodReturnValueWithMemberTypes.DynamicallyAccessedMemberTypes.HasFlag(annotatedMethodReturnValue.DynamicallyAccessedMemberTypes))
                             throw new InvalidOperationException($"Internal linker error: processing of call from {callingMethodDefinition.GetDisplayName()} to {calledMethod.GetDisplayName()} returned value which is not correctly annotated with the expected dynamic member access kinds.");
                     }
                     else if (uniqueValue is SystemTypeValue)
@@ -601,7 +627,7 @@ namespace ILCompiler.Dataflow
             }
         }
 
-        bool IsComInterop(MarshalAsDescriptor? marshalInfoProvider, TypeDesc parameterType)
+        static bool IsComInterop(MarshalAsDescriptor? marshalInfoProvider, TypeDesc parameterType)
         {
             // This is best effort. One can likely find ways how to get COM without triggering these alarms.
             // AsAny marshalling of a struct with an object-typed field would be one, for example.
@@ -680,10 +706,12 @@ namespace ILCompiler.Dataflow
             return false;
         }
 
-        void RequireDynamicallyAccessedMembers(in DiagnosticContext diagnosticContext, in MultiValue value, ValueWithDynamicallyAccessedMembers targetValue, Origin memberWithRequirements)
+        void HandleAssignmentPattern(
+            in MessageOrigin origin,
+            in MultiValue value,
+            ValueWithDynamicallyAccessedMembers targetValue)
         {
-            var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(_reflectionMarker, diagnosticContext, memberWithRequirements);
-            requireDynamicallyAccessedMembersAction.Invoke(value, targetValue);
+            TrimAnalysisPatterns.Add(new TrimAnalysisAssignmentPattern(value, targetValue, origin));
         }
     }
 }

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using Internal.IL;
 using Internal.TypeSystem;
@@ -36,12 +37,12 @@ namespace ILCompiler.Logging
             SourceColumn = sourceColumn;
         }
 
-        public MessageOrigin(MethodIL origin, int ilOffset)
+        public MessageOrigin(MethodIL methodBody, int ilOffset)
         {
             string document = null;
             int? lineNumber = null;
 
-            IEnumerable<ILSequencePoint> sequencePoints = origin.GetDebugInfo()?.GetSequencePoints();
+            IEnumerable<ILSequencePoint> sequencePoints = methodBody.GetDebugInfo()?.GetSequencePoints();
             if (sequencePoints != null)
             {
                 foreach (var sequencePoint in sequencePoints)
@@ -54,9 +55,15 @@ namespace ILCompiler.Logging
                 }
             }
             FileName = document;
-            MemberDefinition = origin.OwningMethod;
+            MemberDefinition = methodBody.OwningMethod;
             SourceLine = lineNumber;
             SourceColumn = null;
+        }
+
+        public MessageOrigin WithInstructionOffset(MethodIL methodBody, int ilOffset)
+        {
+            Debug.Assert(methodBody.OwningMethod == MemberDefinition);
+            return new MessageOrigin(methodBody, ilOffset);
         }
 
         public override string ToString()

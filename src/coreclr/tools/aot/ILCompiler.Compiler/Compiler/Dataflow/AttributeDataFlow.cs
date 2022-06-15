@@ -128,7 +128,7 @@ namespace ILCompiler.Dataflow
             Origin memberWithRequirements,
             ref DependencyList? result)
         {
-            var reflectionMarker = new ReflectionMarker(_logger, _factory, _annotations, enabled: true);
+            var reflectionMarker = new ReflectionMarker(_logger, _factory, _annotations, typeHierarchyDataFlow: false, enabled: true);
             var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(reflectionMarker, diagnosticContext, memberWithRequirements);
             requireDynamicallyAccessedMembersAction.Invoke(value, targetValue);
 
