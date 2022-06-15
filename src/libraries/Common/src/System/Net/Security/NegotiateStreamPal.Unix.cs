@@ -376,16 +376,6 @@ namespace System.Net.Security
                 ref resultBlob,
                 ref contextFlags);
 
-            // Confidentiality flag should not be set if not requested
-            if (status.ErrorCode == SecurityStatusPalErrorCode.CompleteNeeded)
-            {
-                ContextFlagsPal mask = ContextFlagsPal.Confidentiality;
-                if ((requestedContextFlags & mask) != (contextFlags & mask))
-                {
-                    throw new PlatformNotSupportedException(SR.net_nego_protection_level_not_supported);
-                }
-            }
-
             return status;
         }
 
