@@ -651,7 +651,6 @@ void EEStartupHelper()
         // Initialize the event pipe.
         EventPipeAdapter::Initialize();
 #endif // FEATURE_PERFTRACING
-        GenAnalysis::Initialize();
 
 #ifdef TARGET_UNIX
         PAL_SetShutdownCallback(EESocketCleanupHelper);
@@ -877,6 +876,7 @@ void EEStartupHelper()
         // EventPipe initialization, so this is done after the GC has been fully initialized.
         EventPipeAdapter::FinishInitialize();
 #endif // FEATURE_PERFTRACING
+        GenAnalysis::Initialize();
 
         // This isn't done as part of InitializeGarbageCollector() above because thread
         // creation requires AppDomains to have been set up.
