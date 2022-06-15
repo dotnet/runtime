@@ -22,6 +22,7 @@ namespace System.Text.RegularExpressions.Symbolic
             var converter = new RegexNodeConverter(bddBuilder, regexTree.CaptureNumberSparseMapping);
 
             SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(regexTree.Root);
+
             // Determine if the root node is supported for safe handling
             int threshold = SymbolicRegexThresholds.GetSymbolicRegexSafeSizeThreshold();
             Debug.Assert(threshold > 0);
@@ -98,6 +99,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         Capture(0, start, end);
                     }
+
                     runtextpos = end;
                 }
                 else

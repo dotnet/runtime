@@ -62,11 +62,6 @@ PALEXPORT int32_t AndroidCryptoNative_X509ChainSetCustomTrustStore(X509ChainCont
                                                                    jobject* /*X509Certificate[]*/ customTrustStore,
                                                                    int32_t customTrustStoreLen);
 
-/*
-Returns true if revocation checking is supported. Returns false otherwise.
-*/
-PALEXPORT bool AndroidCryptoNative_X509ChainSupportsRevocationOptions(void);
-
 // Matches managed X509RevocationMode enum
 enum
 {

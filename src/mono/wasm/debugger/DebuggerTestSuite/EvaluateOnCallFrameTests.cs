@@ -1294,5 +1294,21 @@ namespace DebuggerTests
                     ("this", TObject("DIMClass")),
                     ("this.dimClassMember", TNumber(123)));
             });
+
+        [Theory]
+        [InlineData("DefaultMethodStatic", "IDefaultInterface", "EvaluateStatic")]
+        [InlineData("DefaultMethodAsyncStatic", "IDefaultInterface", "EvaluateAsyncStatic", true)]
+        public async Task EvaluateLocalsInDefaultInterfaceMethodStatic(string pauseMethod, string methodInterface, string entryMethod, bool isAsync = false) =>
+            await CheckInspectLocalsAtBreakpointSite(
+            methodInterface, pauseMethod, 2, isAsync ? "MoveNext" : pauseMethod,
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DefaultInterfaceMethod:{entryMethod}'); }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                await EvaluateOnCallFrameAndCheck(id,
+                    ("localString", TString($"{pauseMethod}()")),
+                    ("IDefaultInterface.defaultInterfaceMember", TString("defaultInterfaceMember")) //without interface name: "defaultInterfaceMember" fails; Issue #70135
+                );
+            });
     }
 }

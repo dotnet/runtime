@@ -575,6 +575,44 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
 }
 
 //------------------------------------------------------------------------
+// LowerPutArgStk: Lower a GT_PUTARG_STK.
+//
+// Arguments:
+//    putArgStk - The node to lower
+//
+void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
+{
+    GenTree* src = putArgStk->Data();
+
+    if (src->TypeIs(TYP_STRUCT))
+    {
+        // STRUCT args (FIELD_LIST / OBJ / LCL_VAR / LCL_FLD) will always be contained.
+        MakeSrcContained(putArgStk, src);
+
+        // TODO-ADDR: always perform this transformation in local morph and delete this code.
+        if (src->OperIs(GT_OBJ) && src->AsObj()->Addr()->OperIsLocalAddr())
+        {
+            GenTreeLclVarCommon* lclAddrNode = src->AsObj()->Addr()->AsLclVarCommon();
+            unsigned             lclNum      = lclAddrNode->GetLclNum();
+            unsigned             lclOffs     = lclAddrNode->GetLclOffs();
+            ClassLayout*         layout      = src->AsObj()->GetLayout();
+
+            src->ChangeOper(GT_LCL_FLD);
+            src->AsLclFld()->SetLclNum(lclNum);
+            src->AsLclFld()->SetLclOffs(lclOffs);
+            src->AsLclFld()->SetLayout(layout);
+
+            BlockRange().Remove(lclAddrNode);
+        }
+        else if (src->OperIs(GT_LCL_VAR))
+        {
+            // TODO-1stClassStructs: support struct enregistration here by retyping "src" to its register type.
+            comp->lvaSetVarDoNotEnregister(src->AsLclVar()->GetLclNum() DEBUGARG(DoNotEnregisterReason::IsStructArg));
+        }
+    }
+}
+
+//------------------------------------------------------------------------
 // LowerCast: Lower GT_CAST(srcType, DstType) nodes.
 //
 // Arguments:
@@ -677,23 +715,17 @@ void Lowering::LowerRotate(GenTree* tree)
 //     TODO: We could do this optimization in morph but we do not have
 //           a conditional select op in HIR. At some point, we may
 //           introduce such an op.
-GenTree* Lowering::LowerModPow2(GenTree* node)
+void Lowering::LowerModPow2(GenTree* node)
 {
     assert(node->OperIs(GT_MOD));
-    GenTree* mod      = node;
-    GenTree* dividend = mod->gtGetOp1();
-    GenTree* divisor  = mod->gtGetOp2();
+    GenTreeOp* mod      = node->AsOp();
+    GenTree*   dividend = mod->gtGetOp1();
+    GenTree*   divisor  = mod->gtGetOp2();
 
     assert(divisor->IsIntegralConstPow2());
 
     const var_types type = mod->TypeGet();
     assert((type == TYP_INT) || (type == TYP_LONG));
-
-    LIR::Use use;
-    if (!BlockRange().TryGetUse(node, &use))
-    {
-        return nullptr;
-    }
 
     ssize_t cnsValue = static_cast<ssize_t>(divisor->AsIntConCommon()->IntegralValue()) - 1;
 
@@ -725,21 +757,14 @@ GenTree* Lowering::LowerModPow2(GenTree* node)
     BlockRange().InsertAfter(cns2, falseExpr);
     LowerNode(falseExpr);
 
-    GenTree* const cc = comp->gtNewOperNode(GT_CSNEG_MI, type, trueExpr, falseExpr);
-    cc->gtFlags |= GTF_USE_FLAGS;
+    mod->ChangeOper(GT_CSNEG_MI);
+    mod->gtOp1 = trueExpr;
+    mod->gtOp2 = falseExpr;
 
     JITDUMP("Lower: optimize X MOD POW2");
     DISPNODE(mod);
-    JITDUMP("to:\n");
-    DISPNODE(cc);
 
-    BlockRange().InsertBefore(mod, cc);
-    ContainCheckNode(cc);
-    BlockRange().Remove(mod);
-
-    use.ReplaceWith(cc);
-
-    return cc->gtNext;
+    ContainCheckNode(mod);
 }
 
 //------------------------------------------------------------------------

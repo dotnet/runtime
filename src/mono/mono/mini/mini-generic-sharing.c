@@ -4280,7 +4280,9 @@ mini_get_shared_method_full (MonoMethod *method, GetSharedMethodFlags flags, Mon
 	}
 	case MONO_WRAPPER_DELEGATE_INVOKE: {
 		if (info->subtype == WRAPPER_SUBTYPE_NONE) {
-			MonoMethod *ginvoke = mini_get_shared_method_full (info->d.delegate_invoke.method, flags, error);
+			MonoMethod *m = mono_class_inflate_generic_method_checked (info->d.delegate_invoke.method, context, error);
+			return_val_if_nok (error, NULL);
+			MonoMethod *ginvoke = mini_get_shared_method_full (m, flags, error);
 			return_val_if_nok (error, NULL);
 
 			return mono_marshal_get_delegate_invoke (ginvoke, NULL);
@@ -4289,7 +4291,9 @@ mini_get_shared_method_full (MonoMethod *method, GetSharedMethodFlags flags, Mon
 	}
 	case MONO_WRAPPER_DELEGATE_BEGIN_INVOKE:
 	case MONO_WRAPPER_DELEGATE_END_INVOKE: {
-		MonoMethod *ginvoke = mini_get_shared_method_full (info->d.delegate_invoke.method, flags, error);
+		MonoMethod *m = mono_class_inflate_generic_method_checked (info->d.delegate_invoke.method, context, error);
+		return_val_if_nok (error, NULL);
+		MonoMethod *ginvoke = mini_get_shared_method_full (m, flags, error);
 		return_val_if_nok (error, NULL);
 
 		if (method->wrapper_type == MONO_WRAPPER_DELEGATE_BEGIN_INVOKE)

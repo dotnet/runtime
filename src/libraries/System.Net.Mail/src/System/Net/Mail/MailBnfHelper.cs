@@ -199,7 +199,7 @@ namespace System.Net.Mime
                 ++offset;
             }
             int start = offset;
-            StringBuilder localBuilder = (builder != null ? builder : new StringBuilder());
+            StringBuilder localBuilder = builder ?? new StringBuilder();
             for (; offset < data.Length; offset++)
             {
                 if (data[offset] == '\\')
@@ -278,7 +278,7 @@ namespace System.Net.Mime
 
         internal static string? GetDateTimeString(DateTime value, StringBuilder? builder)
         {
-            StringBuilder localBuilder = (builder != null ? builder : new StringBuilder());
+            StringBuilder localBuilder = builder ?? new StringBuilder();
             localBuilder.Append(value.Day);
             localBuilder.Append(' ');
             localBuilder.Append(s_months[value.Month]);

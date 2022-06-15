@@ -15,17 +15,17 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
 {
     public static class MissingMetadataExceptionCreator
     {
-        internal static MissingMetadataException Create(string resourceId, MemberInfo pertainant)
+        internal static MissingMetadataException Create(string resourceId, MemberInfo? pertainant)
         {
             return CreateFromMetadataObject(resourceId, pertainant);
         }
 
-        internal static MissingMetadataException Create(TypeInfo pertainant)
+        internal static MissingMetadataException Create(TypeInfo? pertainant)
         {
             return CreateFromMetadataObject(SR.Reflection_InsufficientMetadata_EdbNeeded, pertainant);
         }
 
-        internal static MissingMetadataException Create(TypeInfo pertainant, string nestedTypeName)
+        internal static MissingMetadataException Create(TypeInfo? pertainant, string nestedTypeName)
         {
             if (pertainant == null)
                 return new MissingMetadataException(SR.Format(SR.Reflection_InsufficientMetadata_NoHelpAvailable, "<unavailable>"));
@@ -40,7 +40,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
             }
         }
 
-        internal static MissingMetadataException Create(Type pertainant)
+        internal static MissingMetadataException Create(Type? pertainant)
         {
             return CreateFromMetadataObject(SR.Reflection_InsufficientMetadata_EdbNeeded, pertainant);
         }
@@ -50,7 +50,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
             return CreateFromMetadataObject(SR.Reflection_InsufficientMetadata_EdbNeeded, pertainant);
         }
 
-        private static MissingMetadataException CreateFromString(string pertainant)
+        private static MissingMetadataException CreateFromString(string? pertainant)
         {
             if (pertainant == null)
                 return new MissingMetadataException(SR.Format(SR.Reflection_InsufficientMetadata_NoHelpAvailable, "<unavailable>"));
@@ -71,7 +71,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
             return CreateFromString(s);
         }
 
-        internal static MissingMetadataException CreateFromMetadataObject(string resourceId, object pertainant)
+        internal static MissingMetadataException CreateFromMetadataObject(string resourceId, object? pertainant)
         {
             if (pertainant == null)
                 return new MissingMetadataException(SR.Format(SR.Reflection_InsufficientMetadata_NoHelpAvailable, "<unavailable>"));

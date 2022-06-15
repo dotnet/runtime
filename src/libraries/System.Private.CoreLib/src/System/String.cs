@@ -21,6 +21,7 @@ namespace System
     // positions (indices) are zero-based.
 
     [Serializable]
+    [NonVersionable] // This only applies to field layout
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed partial class String : IComparable, IEnumerable, IConvertible, IEnumerable<char>, IComparable<string?>, IEquatable<string?>, ICloneable
     {
@@ -482,7 +483,6 @@ namespace System
             return chars;
         }
 
-        [NonVersionable]
         public static bool IsNullOrEmpty([NotNullWhen(false)] string? value)
         {
             return value == null || value.Length == 0;
