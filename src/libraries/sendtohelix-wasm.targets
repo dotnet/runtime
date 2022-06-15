@@ -198,19 +198,16 @@
 
   <Target Name="_AddWorkItemsForLibraryTests" Condition="'$(IsRunningLibraryTests)' == 'true'">
     <ItemGroup Label="Add samples">
-      <_WasmWorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip"                          Condition="'$(Scenario)' == 'WasmTestOnBrowser'" />
-      <_WasmWorkItem Include="$(TestArchiveRoot)browserornodejs/**/*.zip"                      Condition="'$(Scenario)' == 'WasmTestOnBrowser'" />
-      <_WasmWorkItem Include="$(TestArchiveRoot)browserornodejs/**/*.zip"                      Condition="'$(Scenario)' == 'WasmTestOnNodeJs'" />
-      <_WasmWorkItem Include="$(TestArchiveRoot)nodejsonly/**/*.zip"                           Condition="'$(Scenario)' == 'WasmTestOnNodeJs'" />
+      <_WasmWorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip"     Condition="'$(Scenario)' == 'WasmTestOnBrowser'" />
+      <_WasmWorkItem Include="$(TestArchiveRoot)browserornodejs/**/*.zip" Condition="'$(Scenario)' == 'WasmTestOnBrowser'" />
+      <_WasmWorkItem Include="$(TestArchiveRoot)browserornodejs/**/*.zip" Condition="'$(Scenario)' == 'WasmTestOnNodeJs'" />
+      <_WasmWorkItem Include="$(TestArchiveRoot)nodejsonly/**/*.zip"      Condition="'$(Scenario)' == 'WasmTestOnNodeJs'" />
 
       <HelixWorkItem Include="@(_WasmWorkItem -> '$(WorkItemPrefix)%(FileName)')">
         <PayloadArchive>%(Identity)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>
-
-      <_DefaultWorkItems Remove="@(_DefaultWorkItems)" />
-      <_DefaultWorkItems Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
     </ItemGroup>
 
     <!-- Create work items for run-only WASM sample apps  -->
@@ -224,6 +221,9 @@
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>
+
+      <_DefaultWorkItems Remove="@(_DefaultWorkItems)" />
+      <_DefaultWorkItems Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
 
       <HelixWorkItem Include="@(_DefaultWorkItems -> '$(WorkItemPrefix)%(FileName)')">
         <PayloadArchive>%(Identity)</PayloadArchive>
