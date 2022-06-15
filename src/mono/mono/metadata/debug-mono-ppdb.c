@@ -362,7 +362,8 @@ mono_ppdb_lookup_location_internal (MonoImage *image, int idx, uint32_t offset, 
 	const char *ptr;
 	const char *end;
 	char *docname = NULL;
-	int size, docidx, iloffset, delta_il, delta_lines, delta_cols, start_line, start_col, adv_line, adv_col;
+	int size, docidx, delta_lines, delta_cols, start_line, start_col, adv_line, adv_col;
+	guint32 iloffset;
 	gboolean first = TRUE, first_non_hidden = TRUE;
 	MonoDebugSourceLocation *location;
 
@@ -386,7 +387,7 @@ mono_ppdb_lookup_location_internal (MonoImage *image, int idx, uint32_t offset, 
 	start_line = 0;
 	start_col = 0;
 	while (ptr < end) {
-		delta_il = mono_metadata_decode_value (ptr, &ptr);
+		guint32 delta_il = mono_metadata_decode_value (ptr, &ptr);
 		if (!first && delta_il == 0) {
 			/* document-record */
 			docidx = mono_metadata_decode_value (ptr, &ptr);
@@ -743,8 +744,8 @@ mono_ppdb_lookup_locals (MonoDebugMethodInfo *minfo)
 * We use this to pass context information to the row locator
 */
 typedef struct {
-	int idx;			/* The index that we are trying to locate */
-	int col_idx;		/* The index in the row where idx may be stored */
+	guint32 idx;			/* The index that we are trying to locate */
+	guint32 col_idx;		/* The index in the row where idx may be stored */
 	MonoTableInfo *t;	/* pointer to the table */
 	guint32 result;
 } locator_t;

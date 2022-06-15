@@ -1406,6 +1406,8 @@ __CAST_PTRTYPE_TO_UTYPE(gintptr, gulong, ULONG_MAX)
 __CAST_PTRTYPE_TO_STYPE(gintptr, gint, INT_MIN, INT_MAX)
 __CAST_PTRTYPE_TO_UTYPE(gintptr, guint, UINT_MAX)
 
+__CAST_PTRTYPE_TO_UTYPE(gintptr, gsize, SIZE_MAX)
+
 __CAST_PTRTYPE_TO_STYPE(guintptr, gint32, INT32_MIN, INT32_MAX)
 __CAST_PTRTYPE_TO_UTYPE(guintptr, guint32, UINT32_MAX)
 __CAST_PTRTYPE_TO_STYPE(guintptr, gint16, INT16_MIN, INT16_MAX)
@@ -1587,6 +1589,8 @@ __CAST_UTYPE_TO_STYPE(gunichar, gchar, CHAR_MIN, CHAR_MAX)
 #define GINTPTR_TO_LONG(v)       G_CAST_PTRTYPE_TO_STYPE(gintptr, glong, v)
 #define GINTPTR_TO_INT(v)        G_CAST_PTRTYPE_TO_STYPE(gintptr, gint, v)
 #define GINTPTR_TO_UINT(v)       G_CAST_PTRTYPE_TO_UTYPE(gintptr, guint, v)
+
+#define GINTPTR_TO_SIZE(v)       G_CAST_PTRTYPE_TO_UTYPE(gintptr, gsize, v)
 
 #define GUINTPTR_TO_INT32(v)     G_CAST_PTRTYPE_TO_STYPE(guintptr, gint32, v)
 #define GUINTPTR_TO_UINT32(v)    G_CAST_PTRTYPE_TO_UTYPE(guintptr, guint32, v)

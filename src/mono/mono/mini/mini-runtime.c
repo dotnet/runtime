@@ -5157,7 +5157,7 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 	GHashTable *assemblies = (GHashTable*)user_data;
 	MonoImage *image = mono_assembly_get_image_internal (ass);
 	MonoMethod *method, *invoke;
-	int i, count = 0;
+	int count = 0;
 
 	if (g_hash_table_lookup (assemblies, ass))
 		return;
@@ -5167,7 +5167,7 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 	if (mini_verbose > 0)
 		printf ("PRECOMPILE: %s.\n", mono_image_get_filename (image));
 
-	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
+	for (guint32 i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
 		ERROR_DECL (error);
 
 		method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, error);
@@ -5199,7 +5199,7 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 	}
 
 	/* Load and precompile referenced assemblies as well */
-	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_ASSEMBLYREF); ++i) {
+	for (guint32 i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_ASSEMBLYREF); ++i) {
 		mono_assembly_load_reference (image, i);
 		if (image->references [i])
 			mono_precompile_assembly (image->references [i], assemblies);

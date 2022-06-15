@@ -2772,7 +2772,7 @@ mono_image_get_table_info (MonoImage *image, int table_id)
 /**
  * mono_image_get_table_rows:
  */
-int
+guint32
 mono_image_get_table_rows (MonoImage *image, int table_id)
 {
 	if (table_id < 0 || table_id >= MONO_TABLE_NUM)
@@ -2783,7 +2783,7 @@ mono_image_get_table_rows (MonoImage *image, int table_id)
 /**
  * mono_table_info_get_rows:
  */
-int
+guint32
 mono_table_info_get_rows (const MonoTableInfo *table)
 {
 	return table_info_get_rows (table);
