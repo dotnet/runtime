@@ -759,6 +759,8 @@ struct GenTree
         return gtType;
     }
 
+    ClassLayout* GetLayout(Compiler* compiler) const;
+
 #ifdef DEBUG
     genTreeOps gtOperSave; // Only used to save gtOper when we destroy a node, to aid debugging.
 #endif
