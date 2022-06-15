@@ -5,7 +5,7 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
-    internal sealed partial class AesImplementation : Aes
+    internal sealed partial class AesImplementation
     {
         private static UniversalCryptoTransform CreateTransformCore(
             CipherMode cipherMode,
@@ -14,10 +14,10 @@ namespace System.Security.Cryptography
             byte[]? iv,
             int blockSize,
             int paddingSize,
-            int feedback,
+            int feedbackSize,
             bool encrypting)
         {
-            throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(Aes)));
+            throw new NotImplementedException();
         }
 
         private static ILiteSymmetricCipher CreateLiteCipher(
@@ -26,10 +26,10 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> iv,
             int blockSize,
             int paddingSize,
-            int feedback,
+            int feedbackSize,
             bool encrypting)
         {
-            throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(Aes)));
+            throw new NotImplementedException();
         }
     }
 }
