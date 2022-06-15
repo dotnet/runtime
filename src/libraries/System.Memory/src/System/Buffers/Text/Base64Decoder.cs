@@ -615,6 +615,11 @@ namespace System.Buffers.Text
 
                 // lookup
                 Vector128<byte> hiNibbles = Vector128.ShiftRightLogical(str.AsInt32(), 4).AsByte();
+                if (Ssse3.IsSupported)
+                {
+                    // Ensure the high bits are masked off for the shuffle.
+                    hiNibbles = Vector128.BitwiseAnd(hiNibbles, mask2F);
+                }
                 Vector128<byte> hi = SimdShuffle(lutHi, hiNibbles, f);
                 Vector128<byte> lo = SimdShuffle(lutLo, str, f);
 
