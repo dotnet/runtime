@@ -66,7 +66,6 @@ get_pe_debug_info (MonoImage *image, guint8 *out_guid, gint32 *out_age, gint32 *
 {
 	MonoPEDirEntry *debug_dir_entry;
 	ImageDebugDirectory debug_dir;
-	int idx;
 	gboolean guid_found = FALSE;
 	guint8 *data;
 
@@ -77,7 +76,7 @@ get_pe_debug_info (MonoImage *image, guint8 *out_guid, gint32 *out_age, gint32 *
 		return FALSE;
 
 	int offset = mono_cli_rva_image_map (image, debug_dir_entry->rva);
-	for (idx = 0; idx < debug_dir_entry->size / sizeof (ImageDebugDirectory); ++idx) {
+	for (guint32 idx = 0; idx < debug_dir_entry->size / sizeof (ImageDebugDirectory); ++idx) {
 		data = (guint8 *) ((ImageDebugDirectory *) (image->raw_data + offset) + idx);
 		debug_dir.characteristics = read32(data);
 		debug_dir.time_date_stamp = read32(data + 4);
@@ -494,7 +493,7 @@ mono_ppdb_get_seq_points_internal (MonoImage *image, MonoPPDBFile *ppdb, MonoMet
 		return -1;
 
 	MonoTableInfo *methodbody_table = &tables [MONO_TABLE_METHODBODY];
-	if (G_UNLIKELY (method_idx - 1 >= table_info_get_rows (methodbody_table))) {
+	if (G_UNLIKELY (GINT_TO_UINT32(method_idx) - 1 >= table_info_get_rows (methodbody_table))) {
 		char *method_name = mono_method_full_name (method, FALSE);
 		g_error ("Method idx %d is greater than number of rows (%d) in PPDB MethodDebugInformation table, for method %s in '%s'. Likely a malformed PDB file.",
 		 method_idx - 1, table_info_get_rows (methodbody_table), method_name, image->name);
@@ -626,7 +625,7 @@ mono_ppdb_lookup_locals_internal (MonoImage *image, int method_idx)
 	guint32 cols [MONO_LOCALSCOPE_SIZE];
 	guint32 locals_cols [MONO_LOCALVARIABLE_SIZE];
 
-	int i, lindex, sindex, locals_idx, locals_end_idx, nscopes, start_scope_idx, scope_idx;
+	guint32 lindex, locals_idx, locals_end_idx, nscopes, start_scope_idx, scope_idx;
 
 	start_scope_idx = mono_metadata_localscope_from_methoddef (image, method_idx);
 
@@ -652,7 +651,7 @@ mono_ppdb_lookup_locals_internal (MonoImage *image, int method_idx)
 	// this endpoint becomes locals_end_idx below
 
 	// March to the last scope that is in this method
-	int rows = table_info_get_rows (&tables [MONO_TABLE_LOCALSCOPE]);
+	guint32 rows = table_info_get_rows (&tables [MONO_TABLE_LOCALSCOPE]);
 	while (scope_idx <= rows) {
 		mono_metadata_decode_row (&tables [MONO_TABLE_LOCALSCOPE], scope_idx-1, cols, MONO_LOCALSCOPE_SIZE);
 		if (cols [MONO_LOCALSCOPE_METHOD] != method_idx)
@@ -681,7 +680,7 @@ mono_ppdb_lookup_locals_internal (MonoImage *image, int method_idx)
 	res->locals = g_new0 (MonoDebugLocalVar, res->num_locals);
 
 	lindex = 0;
-	for (sindex = 0; sindex < nscopes; ++sindex) {
+	for (guint32 sindex = 0; sindex < nscopes; ++sindex) {
 		scope_idx = start_scope_idx + sindex;
 		mono_metadata_decode_row (&tables [MONO_TABLE_LOCALSCOPE], scope_idx-1, cols, MONO_LOCALSCOPE_SIZE);
 
@@ -697,7 +696,7 @@ mono_ppdb_lookup_locals_internal (MonoImage *image, int method_idx)
 
 		//printf ("Scope: %s %d %d %d-%d\n", mono_method_full_name (method, 1), cols [MONO_LOCALSCOPE_STARTOFFSET], cols [MONO_LOCALSCOPE_LENGTH], locals_idx, locals_end_idx);
 
-		for (i = locals_idx; i < locals_end_idx; ++i) {
+		for (guint32 i = locals_idx; i < locals_end_idx; ++i) {
 			mono_metadata_decode_row (&tables [MONO_TABLE_LOCALVARIABLE], i - 1, locals_cols, MONO_LOCALVARIABLE_SIZE);
 
 			res->locals [lindex].name = g_strdup (mono_metadata_string_heap (image, locals_cols [MONO_LOCALVARIABLE_NAME]));
