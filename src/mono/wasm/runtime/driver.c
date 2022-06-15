@@ -238,24 +238,6 @@ mono_wasm_assembly_already_added (const char *assembly_name)
 	return 0;
 }
 
-const unsigned char *
-mono_wasm_get_assembly_bytes (const char *assembly_name, unsigned int *size)
-{
-	if (assembly_count == 0)
-		return 0;
-
-	WasmAssembly *entry = assemblies;
-	while (entry != NULL) {
-		if (strcmp (entry->assembly.name, assembly_name) == 0)
-		{
-			*size = entry->assembly.size;
-			return entry->assembly.data;
-		}
-		entry = entry->next;
-	}
-	return NULL;
-}
-
 typedef struct WasmSatelliteAssembly_ WasmSatelliteAssembly;
 
 struct WasmSatelliteAssembly_ {

@@ -140,8 +140,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         VmReadMemory = 16,
         VmWriteMemory = 17,
         GetAssemblyByName = 18,
-        GetModuleByGUID = 19,
-        GetAssemblyAndPdbBytes = 20
+        GetModuleByGUID = 19
     }
 
     internal enum CmdFrame {
@@ -751,9 +750,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static int MINOR_VERSION = 61;
         private static int MAJOR_VERSION = 2;
 
-        private int VmMinorVersion { get; set; }
-        private int VmMajorVersion { get; set; }
-
         private Dictionary<int, MethodInfoWithDebugInformation> methods;
         private Dictionary<int, AssemblyInfo> assemblies;
         private Dictionary<int, TypeInfoWithDebugInformation> types;
@@ -774,8 +770,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.proxy = proxy;
             this.logger = logger;
             this.sessionId = sessionId;
-            this.VmMajorVersion = -1;
-            this.VmMinorVersion = -1;
             ValueCreator = new(this, logger);
             ResetStore(null);
         }
@@ -888,18 +882,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
 
         public void ClearCache() => ValueCreator.ClearCache();
-
-        public async Task<(int, int)> GetVMVersion(CancellationToken token)
-        {
-            if (VmMajorVersion != -1)
-                return (VmMajorVersion, VmMinorVersion);
-            using var commandParamsWriter = new MonoBinaryWriter();
-            using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdVM.Version, commandParamsWriter, token);
-            retDebuggerCmdReader.ReadString(); //vm version
-            VmMajorVersion = retDebuggerCmdReader.ReadInt32();
-            VmMinorVersion = retDebuggerCmdReader.ReadInt32();
-            return (VmMajorVersion, VmMinorVersion);
-        }
 
         public async Task<bool> SetProtocolVersion(CancellationToken token)
         {
@@ -2146,24 +2128,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        public async Task<byte[][]> GetBytesFromAssemblyAndPdb(string assemblyName, CancellationToken token)
-        {
-            using var commandParamsWriter = new MonoBinaryWriter();
-            byte[] assembly_buf = null;
-            byte[] pdb_buf = null;
-            commandParamsWriter.Write(assemblyName);
-            var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdVM.GetAssemblyAndPdbBytes, commandParamsWriter, token);
-            int assembly_size = retDebuggerCmdReader.ReadInt32();
-            if (assembly_size > 0)
-                assembly_buf = retDebuggerCmdReader.ReadBytes(assembly_size);
-            int pdb_size = retDebuggerCmdReader.ReadInt32();
-            if (pdb_size > 0)
-                pdb_buf = retDebuggerCmdReader.ReadBytes(pdb_size);
-            byte[][] ret = new byte[2][];
-            ret[0] = assembly_buf;
-            ret[1] = pdb_buf;
-            return ret;
-        }
         private static readonly string[] s_primitiveTypeNames = new[]
             {
             "bool",
