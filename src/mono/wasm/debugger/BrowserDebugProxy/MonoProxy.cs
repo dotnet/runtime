@@ -264,6 +264,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 _ => PauseOnExceptionsKind.Unset
             };
         }
+
         protected override async Task<bool> AcceptCommand(MessageId id, JObject parms, CancellationToken token)
         {
             var method = parms["method"].Value<string>();
