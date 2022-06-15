@@ -32,7 +32,7 @@ internal struct ReceiveBuffers
     {
         lock (_syncRoot)
         {
-            if (_buffer.ActiveMemory.Length + totalLength > MaxBufferedBytes)
+            if (_buffer.ActiveMemory.Length > MaxBufferedBytes - totalLength)
             {
                 totalLength = MaxBufferedBytes - _buffer.ActiveMemory.Length;
                 final = false;
