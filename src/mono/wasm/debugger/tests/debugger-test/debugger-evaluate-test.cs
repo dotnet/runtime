@@ -470,7 +470,7 @@ namespace DebuggerTests
         }
     }
 
-    public class EvaluateLocalsWithElementAccessTests
+    public class EvaluateLocalsWithIndexingTests
     {
         public class TestEvaluate
         {

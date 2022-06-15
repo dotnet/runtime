@@ -402,7 +402,27 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
     }
 
-    internal sealed record MethodInfoWithDebugInformation(MethodInfo Info, int DebugId, string Name);
+    internal sealed class MethodInfoWithDebugInformation
+    {
+        private ParameterInfo[] _paramsInfo;
+        public MethodInfo Info { get; }
+        public int DebugId { get; }
+        public string Name { get; }
+        public ParameterInfo[] GetParametersInfo()
+        {
+            if (_paramsInfo != null)
+                return _paramsInfo;
+            _paramsInfo = Info.GetParametersInfo();
+            return _paramsInfo;
+        }
+
+        public MethodInfoWithDebugInformation(MethodInfo info, int debugId, string name)
+        {
+            Info = info;
+            DebugId = debugId;
+            Name = name;
+        }
+    }
 
     internal sealed class TypeInfoWithDebugInformation
     {
@@ -1554,7 +1574,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return retDebuggerCmdReader.ReadInt32();
         }
 
-        public async Task<int> GetMethodIdByName(int type_id, string method_name, CancellationToken token)
+        public async Task<int[]> GetMethodIdsByName(int type_id, string method_name, CancellationToken token)
         {
             if (type_id <= 0)
                 throw new DebuggerAgentException($"Invalid type_id {type_id} (method_name: {method_name}");
@@ -1566,7 +1586,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             commandParamsWriter.Write((int)1); //case sensitive
             using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdType.GetMethodsByNameFlags, commandParamsWriter, token);
             var nMethods = retDebuggerCmdReader.ReadInt32();
-            return retDebuggerCmdReader.ReadInt32();
+            if (nMethods == 0)
+                return null;
+            int[] methodIds = new int[nMethods];
+            for (int i = 0; i < nMethods; i++)
+                methodIds[i] = retDebuggerCmdReader.ReadInt32();
+            return methodIds;
         }
 
         public async Task<bool> IsDelegate(int objectId, CancellationToken token)
@@ -1965,7 +1990,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                             break;
                         cAttrTypeId = genericTypeId;
                     }
-                    methodId = await GetMethodIdByName(cAttrTypeId, ".ctor", token);
+                    int[] methodIds = await GetMethodIdsByName(cAttrTypeId, ".ctor", token);
+                    if (methodIds != null)
+                        methodId = methodIds[0];
                     break;
                 }
 
