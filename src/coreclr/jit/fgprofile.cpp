@@ -2159,6 +2159,10 @@ PhaseStatus Compiler::fgIncorporateProfileData()
                 fgPgoClassProfiles++;
                 break;
 
+            case ICorJitInfo::PgoInstrumentationKind::GetLikelyMethod:
+                fgPgoMethodProfiles++;
+                break;
+
             case ICorJitInfo::PgoInstrumentationKind::HandleHistogramIntCount:
             case ICorJitInfo::PgoInstrumentationKind::HandleHistogramLongCount:
                 if (iSchema + 1 < fgPgoSchemaCount)

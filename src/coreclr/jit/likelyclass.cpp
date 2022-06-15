@@ -146,7 +146,7 @@ static unsigned getLikelyClassesOrMethods(LikelyClassMethodRecord*              
             {
                 return 0;
             }
-            assert(result != 0); // we don't expect zero in GetLikelyClass
+            assert(result != 0); // we don't expect zero in GetLikelyClass/GetLikelyMethod
             pLikelyEntries[0].likelihood = (UINT32)(schema[i].Other & 0xFF);
             pLikelyEntries[0].handle     = result;
             return 1;
@@ -380,7 +380,8 @@ void Compiler::getRandomGDV(ICorJitInfo::PgoInstrumentationSchema* schema,
             continue;
         }
 
-        if ((schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::GetLikelyClass) &&
+        if (((schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::GetLikelyClass) ||
+             (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::GetLikelyMethod)) &&
             (schema[i].Count == 1))
         {
             INT_PTR result = *(INT_PTR*)(pInstrumentationData + schema[i].Offset);
