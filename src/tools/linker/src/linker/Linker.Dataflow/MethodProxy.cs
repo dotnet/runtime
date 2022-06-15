@@ -53,7 +53,7 @@ namespace ILLink.Shared.TypeSystemProxy
 
 		public override string ToString () => Method.ToString ();
 
-		public ReferenceKind ParameterReferenceKind (int index) => Method.ParameterReferenceKind (index);
+		public ReferenceKind ParameterReferenceKind (int index) => Method.HasImplicitThis () ? Method.ParameterReferenceKind (index + 1) : Method.ParameterReferenceKind (index);
 
 		public bool Equals (MethodProxy other) => Method.Equals (other.Method);
 
