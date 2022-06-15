@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Security.Cryptography
 {
@@ -29,13 +30,12 @@ namespace System.Security.Cryptography
         private int m_Nb;
         private int m_Nk;
 
-        private int[] m_encryptindex = null;
-        private int[] m_decryptindex = null;
+        private int[] m_encryptindex;
+        private int[] m_decryptindex;
 
         private int[] m_IV;
         private int[] m_lastBlockBuffer;
-        private byte[] m_depadBuffer;
-        private byte[] m_shiftRegister;
+        private byte[]? m_depadBuffer;
 
         public RijndaelManagedTransform(byte[] rgbKey,
                                         CipherMode mode,
@@ -46,7 +46,7 @@ namespace System.Security.Cryptography
                                         RijndaelManagedTransformMode transformMode)
         {
             if (rgbKey == null)
-                throw new ArgumentNullException("rgbKey");
+                throw new ArgumentNullException(nameof(rgbKey));
 
             Debug.Assert(mode == CipherMode.CBC, "CipherMode is unsupported");
             Debug.Assert(PaddingValue == PaddingMode.PKCS7, "PaddingMode is unsupported");
@@ -105,14 +105,14 @@ namespace System.Security.Cryptography
                     break;
 
                 default:
-                    throw new CryptographicException(Environment.GetResourceString("Cryptography_InvalidCipherMode"));
+                    throw new CryptographicException(SR.GetResourceString("Cryptography_InvalidCipherMode"));
             }
 
             // we only support CBC mode
             if (rgbIV == null)
-                throw new ArgumentNullException("rgbIV");
+                throw new ArgumentNullException(nameof(rgbIV));
             if (rgbIV.Length / 4 != m_Nb)
-                throw new CryptographicException(Environment.GetResourceString("Cryptography_InvalidIVSize"));
+                throw new CryptographicException(SR.GetResourceString("Cryptography_InvalidIVSize"));
 
             m_IV = new int[m_Nb];
             int index = 0;
@@ -128,55 +128,36 @@ namespace System.Security.Cryptography
             GenerateKeyExpansion(rgbKey);
 
             m_lastBlockBuffer = new int[m_Nb];
-            Buffer.InternalBlockCopy(m_IV, 0, m_lastBlockBuffer, 0, m_blockSizeBytes);
-
+            Buffer.BlockCopy(m_IV, 0, m_lastBlockBuffer, 0, m_blockSizeBytes);
         }
 
         public void Dispose()
         {
-            Dispose(true);
-        }
-
-        public void Clear()
-        {
-            Dispose(true);
-        }
-
-        private void Dispose(bool disposing)
-        {
-            if (disposing)
+            // We need to always zeroize the following fields because they contain sensitive data
+            if (m_IV != null)
             {
-                // We need to always zeroize the following fields because they contain sensitive data
-                if (m_IV != null)
-                {
-                    Array.Clear(m_IV, 0, m_IV.Length);
-                    m_IV = null;
-                }
-                if (m_lastBlockBuffer != null)
-                {
-                    Array.Clear(m_lastBlockBuffer, 0, m_lastBlockBuffer.Length);
-                    m_lastBlockBuffer = null;
-                }
-                if (m_encryptKeyExpansion != null)
-                {
-                    Array.Clear(m_encryptKeyExpansion, 0, m_encryptKeyExpansion.Length);
-                    m_encryptKeyExpansion = null;
-                }
-                if (m_decryptKeyExpansion != null)
-                {
-                    Array.Clear(m_decryptKeyExpansion, 0, m_decryptKeyExpansion.Length);
-                    m_decryptKeyExpansion = null;
-                }
-                if (m_depadBuffer != null)
-                {
-                    Array.Clear(m_depadBuffer, 0, m_depadBuffer.Length);
-                    m_depadBuffer = null;
-                }
-                if (m_shiftRegister != null)
-                {
-                    Array.Clear(m_shiftRegister, 0, m_shiftRegister.Length);
-                    m_shiftRegister = null;
-                }
+                Array.Clear(m_IV, 0, m_IV.Length);
+                m_IV = null!;
+            }
+            if (m_lastBlockBuffer != null)
+            {
+                Array.Clear(m_lastBlockBuffer, 0, m_lastBlockBuffer.Length);
+                m_lastBlockBuffer = null!;
+            }
+            if (m_encryptKeyExpansion != null)
+            {
+                Array.Clear(m_encryptKeyExpansion, 0, m_encryptKeyExpansion.Length);
+                m_encryptKeyExpansion = null!;
+            }
+            if (m_decryptKeyExpansion != null)
+            {
+                Array.Clear(m_decryptKeyExpansion, 0, m_decryptKeyExpansion.Length);
+                m_decryptKeyExpansion = null!;
+            }
+            if (m_depadBuffer != null)
+            {
+                Array.Clear(m_depadBuffer, 0, m_depadBuffer.Length);
+                m_depadBuffer = null;
             }
         }
 
@@ -227,14 +208,14 @@ namespace System.Security.Cryptography
         public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
         {
             // Note: special handling required if decrypting & using padding because the padding adds to the end of the last
-            // block, we have to buffer an entire block's worth of bytes in case what I just transformed turns out to be 
+            // block, we have to buffer an entire block's worth of bytes in case what I just transformed turns out to be
             // the last block Then in TransformFinalBlock we strip off the padding.
 
-            if (inputBuffer == null) throw new ArgumentNullException("inputBuffer");
-            if (outputBuffer == null) throw new ArgumentNullException("outputBuffer");
-            if (inputOffset < 0) throw new ArgumentOutOfRangeException("inputOffset", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
-            if (inputCount <= 0 || (inputCount % InputBlockSize != 0) || (inputCount > inputBuffer.Length)) throw new ArgumentException(Environment.GetResourceString("Argument_InvalidValue"));
-            if ((inputBuffer.Length - inputCount) < inputOffset) throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
+            if (inputBuffer == null) throw new ArgumentNullException(nameof(inputBuffer));
+            if (outputBuffer == null) throw new ArgumentNullException(nameof(outputBuffer));
+            if (inputOffset < 0) throw new ArgumentOutOfRangeException(nameof(inputOffset), SR.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+            if (inputCount <= 0 || (inputCount % InputBlockSize != 0) || (inputCount > inputBuffer.Length)) throw new ArgumentException(SR.GetResourceString("Argument_InvalidValue"));
+            if ((inputBuffer.Length - inputCount) < inputOffset) throw new ArgumentException(SR.GetResourceString("Argument_InvalidOffLen"));
 
             if (m_transformMode == RijndaelManagedTransformMode.Encrypt)
             {
@@ -257,7 +238,7 @@ namespace System.Security.Cryptography
                     m_depadBuffer = new byte[InputBlockSize];
                     // copy the last InputBlockSize bytes to m_depadBuffer everything else gets processed and returned
                     int inputToProcess = inputCount - InputBlockSize;
-                    Buffer.InternalBlockCopy(inputBuffer, inputOffset + inputToProcess, m_depadBuffer, 0, InputBlockSize);
+                    Buffer.BlockCopy(inputBuffer, inputOffset + inputToProcess, m_depadBuffer, 0, InputBlockSize);
                     return DecryptData(inputBuffer,
                                        inputOffset,
                                        inputToProcess,
@@ -269,16 +250,16 @@ namespace System.Security.Cryptography
                 else
                 {
                     // we already have a depad buffer, so we need to decrypt that info first & copy it out
-                    int r = DecryptData(m_depadBuffer,
-                                        0, m_depadBuffer.Length,
-                                        ref outputBuffer,
-                                        outputOffset,
-                                        m_paddingValue,
-                                        false);
+                    DecryptData(m_depadBuffer,
+                                0, m_depadBuffer.Length,
+                                ref outputBuffer,
+                                outputOffset,
+                                m_paddingValue,
+                                false);
                     outputOffset += OutputBlockSize;
                     int inputToProcess = inputCount - InputBlockSize;
-                    Buffer.InternalBlockCopy(inputBuffer, inputOffset + inputToProcess, m_depadBuffer, 0, InputBlockSize);
-                    r = DecryptData(inputBuffer,
+                    Buffer.BlockCopy(inputBuffer, inputOffset + inputToProcess, m_depadBuffer, 0, InputBlockSize);
+                    int r = DecryptData(inputBuffer,
                                     inputOffset,
                                     inputToProcess,
                                     ref outputBuffer,
@@ -292,15 +273,15 @@ namespace System.Security.Cryptography
 
         public byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
         {
-            if (inputBuffer == null) throw new ArgumentNullException("inputBuffer");
-            if (inputOffset < 0) throw new ArgumentOutOfRangeException("inputOffset", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
-            if (inputCount < 0 || (inputCount > inputBuffer.Length)) throw new ArgumentException(Environment.GetResourceString("Argument_InvalidValue"));
-            if ((inputBuffer.Length - inputCount) < inputOffset) throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
+            if (inputBuffer == null) throw new ArgumentNullException(nameof(inputBuffer));
+            if (inputOffset < 0) throw new ArgumentOutOfRangeException(nameof(inputOffset), SR.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+            if (inputCount < 0 || (inputCount > inputBuffer.Length)) throw new ArgumentException(SR.GetResourceString("Argument_InvalidValue"));
+            if ((inputBuffer.Length - inputCount) < inputOffset) throw new ArgumentException(SR.GetResourceString("Argument_InvalidOffLen"));
 
             if (m_transformMode == RijndaelManagedTransformMode.Encrypt)
             {
                 // If we're encrypting we can alway return what we compute because there's no m_depadBuffer
-                byte[] transformedBytes = null;
+                byte[]? transformedBytes = null;
                 EncryptData(inputBuffer,
                             inputOffset,
                             inputCount,
@@ -314,11 +295,11 @@ namespace System.Security.Cryptography
             else
             {
                 if (inputCount % InputBlockSize != 0)
-                    throw new CryptographicException(Environment.GetResourceString("Cryptography_SSD_InvalidDataSize"));
+                    throw new CryptographicException(SR.GetResourceString("Cryptography_SSD_InvalidDataSize"));
 
                 if (m_depadBuffer == null)
                 {
-                    byte[] transformedBytes = null;
+                    byte[]? transformedBytes = null;
                     DecryptData(inputBuffer,
                                 inputOffset,
                                 inputCount,
@@ -332,9 +313,9 @@ namespace System.Security.Cryptography
                 else
                 {
                     byte[] temp = new byte[m_depadBuffer.Length + inputCount];
-                    Buffer.InternalBlockCopy(m_depadBuffer, 0, temp, 0, m_depadBuffer.Length);
-                    Buffer.InternalBlockCopy(inputBuffer, inputOffset, temp, m_depadBuffer.Length, inputCount);
-                    byte[] transformedBytes = null;
+                    Buffer.BlockCopy(m_depadBuffer, 0, temp, 0, m_depadBuffer.Length);
+                    Buffer.BlockCopy(inputBuffer, inputOffset, temp, m_depadBuffer.Length, inputCount);
+                    byte[]? transformedBytes = null;
                     DecryptData(temp,
                                 0,
                                 temp.Length,
@@ -355,7 +336,7 @@ namespace System.Security.Cryptography
         public void Reset()
         {
             m_depadBuffer = null;
-            Buffer.InternalBlockCopy(m_IV, 0, m_lastBlockBuffer, 0, m_blockSizeBytes);
+            Buffer.BlockCopy(m_IV, 0, m_lastBlockBuffer, 0, m_blockSizeBytes);
         }
 
         //
@@ -366,19 +347,19 @@ namespace System.Security.Cryptography
         private unsafe int EncryptData(byte[] inputBuffer,
                                        int inputOffset,
                                        int inputCount,
-                                       ref byte[] outputBuffer,
+                                       [NotNull] ref byte[]? outputBuffer,
                                        int outputOffset,
                                        PaddingMode paddingMode,
                                        bool fLast)
         {
             if (inputBuffer.Length < inputOffset + inputCount)
-                throw new CryptographicException(Environment.GetResourceString("Cryptography_InsufficientBuffer"));
+                throw new CryptographicException(SR.GetResourceString("Cryptography_InsufficientBuffer"));
 
             int padSize = 0;
             int lonelyBytes = inputCount % m_inputBlockSize;
 
             // Check the padding mode and make sure we have enough outputBuffer to handle any padding we have to do.
-            byte[] padBytes = null;
+            byte[]? padBytes = null;
             int workBaseIndex = inputOffset, index = 0;
             if (fLast)
             {
@@ -400,7 +381,7 @@ namespace System.Security.Cryptography
             else
             {
                 if ((outputBuffer.Length - outputOffset) < (inputCount + padSize))
-                    throw new CryptographicException(Environment.GetResourceString("Cryptography_InsufficientBuffer"));
+                    throw new CryptographicException(SR.GetResourceString("Cryptography_InsufficientBuffer"));
             }
 
             fixed (int* encryptindex = m_encryptindex)
@@ -421,10 +402,15 @@ namespace System.Security.Cryptography
                                 if (blockNum != iNumBlocks - 1 || padSize == 0)
                                 {
                                     Debug.Assert(m_blockSizeBytes <= m_Nb * sizeof(int), "m_blockSizeBytes <= m_Nb * sizeof(int)");
-                                    Buffer.Memcpy((byte*)work, 0, inputBuffer, workBaseIndex, m_blockSizeBytes);
+                                    fixed (byte* pInputBuffer = inputBuffer)
+                                    {
+                                        Buffer.MemoryCopy(pInputBuffer + workBaseIndex, (byte*)work, m_blockSizeBytes, m_blockSizeBytes);
+                                    }
                                 }
                                 else
                                 {
+                                    Debug.Assert(padBytes is not null);
+
                                     int padIndex = 0;
                                     index = workBaseIndex;
                                     for (int i = 0; i < m_Nb; ++i)
@@ -456,7 +442,7 @@ namespace System.Security.Cryptography
                                 fixed (int* pLastBlockBuffer = m_lastBlockBuffer)
                                 {
                                     Debug.Assert(m_blockSizeBytes <= m_lastBlockBuffer.Length * sizeof(int), "m_blockSizeBytes <= m_lastBlockBuffer.Length * sizeof(int)");
-                                    Buffer.Memcpy((byte*)pLastBlockBuffer, (byte*)temp, m_blockSizeBytes);
+                                    Buffer.MemoryCopy((byte*)temp, (byte*)pLastBlockBuffer, m_blockSizeBytes, m_blockSizeBytes);
                                 }
                                 workBaseIndex += m_inputBlockSize;
                             }
@@ -477,13 +463,13 @@ namespace System.Security.Cryptography
         private unsafe int DecryptData(byte[] inputBuffer,
                                        int inputOffset,
                                        int inputCount,
-                                       ref byte[] outputBuffer,
+                                       [NotNull] ref byte[]? outputBuffer,
                                        int outputOffset,
                                        PaddingMode paddingMode,
                                        bool fLast)
         {
             if (inputBuffer.Length < inputOffset + inputCount)
-                throw new CryptographicException(Environment.GetResourceString("Cryptography_InsufficientBuffer"));
+                throw new CryptographicException(SR.GetResourceString("Cryptography_InsufficientBuffer"));
 
             if (outputBuffer == null)
             {
@@ -493,7 +479,7 @@ namespace System.Security.Cryptography
             else
             {
                 if ((outputBuffer.Length - outputOffset) < inputCount)
-                    throw new CryptographicException(Environment.GetResourceString("Cryptography_InsufficientBuffer"));
+                    throw new CryptographicException(SR.GetResourceString("Cryptography_InsufficientBuffer"));
             }
 
             fixed (int* encryptindex = m_encryptindex)
@@ -561,15 +547,15 @@ namespace System.Security.Cryptography
                                             byte[] outputBuffer1 = outputBuffer;
                                             int padSize = 0;
                                             if (inputCount == 0)
-                                                throw new CryptographicException(Environment.GetResourceString("Cryptography_PKCS7_InvalidPadding"));
+                                                throw new CryptographicException(SR.GetResourceString("Cryptography_PKCS7_InvalidPadding"));
                                             padSize = outputBuffer[inputCount - 1];
                                             if (padSize > outputBuffer.Length || padSize > InputBlockSize || padSize <= 0)
-                                                throw new CryptographicException(Environment.GetResourceString("Cryptography_PKCS7_InvalidPadding"));
+                                                throw new CryptographicException(SR.GetResourceString("Cryptography_PKCS7_InvalidPadding"));
                                             for (index = 1; index <= padSize; index++)
                                                 if (outputBuffer[inputCount - index] != padSize)
-                                                    throw new CryptographicException(Environment.GetResourceString("Cryptography_PKCS7_InvalidPadding"));
+                                                    throw new CryptographicException(SR.GetResourceString("Cryptography_PKCS7_InvalidPadding"));
                                             outputBuffer1 = new byte[outputBuffer.Length - padSize];
-                                            Buffer.InternalBlockCopy(outputBuffer, 0, outputBuffer1, 0, outputBuffer.Length - padSize);
+                                            Buffer.BlockCopy(outputBuffer, 0, outputBuffer1, 0, outputBuffer.Length - padSize);
                                             outputBuffer = outputBuffer1;
                                             return outputBuffer1.Length;
                                         }
@@ -631,7 +617,7 @@ namespace System.Security.Cryptography
         // AES decryption function.
         //
 
-        unsafe private void Dec(int* decryptindex, int* decryptKeyExpansion, int* iT, int* iTF, int* work, int* temp)
+        private unsafe void Dec(int* decryptindex, int* decryptKeyExpansion, int* iT, int* iTF, int* work, int* temp)
         {
             int keyIndex = m_Nb * m_Nr;
             for (int i = 0; i < m_Nb; ++i)
@@ -683,6 +669,8 @@ namespace System.Security.Cryptography
         // Key expansion routine.
         //
 
+        [MemberNotNull(nameof(m_encryptKeyExpansion))]
+        [MemberNotNull(nameof(m_decryptKeyExpansion))]
         private void GenerateKeyExpansion(byte[] rgbKey)
         {
             switch (m_blockSizeBits > rgbKey.Length * 8 ? m_blockSizeBits : rgbKey.Length * 8)
@@ -700,7 +688,7 @@ namespace System.Security.Cryptography
                     break;
 
                 default:
-                    throw new CryptographicException(Environment.GetResourceString("Cryptography_InvalidKeySize"));
+                    throw new CryptographicException(SR.GetResourceString("Cryptography_InvalidKeySize"));
             }
 
             m_encryptKeyExpansion = new int[m_Nb * (m_Nr + 1)];
