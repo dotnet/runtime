@@ -3604,6 +3604,8 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
     }
     // Catch-all narrow cast removal for int -> int.
     else if (src->OperIs(GT_CAST) && varTypeIsIntegral(lclRegType) && varTypeIsIntegral(src) &&
+             genActualType(lclRegType) == genActualType(src) &&
+             genActualType(lclRegType) == genActualType(src->gtGetOp1()) &&
              varTypeIsIntegral(src->gtGetOp1()) && !varTypeUsesFloatReg(lclRegType) && !varTypeUsesFloatReg(src) &&
              !varTypeUsesFloatReg(src->gtGetOp1()) && genTypeSize(lclRegType) <= genTypeSize(src) && !src->gtOverflow())
     {
@@ -7181,6 +7183,20 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
                 ind->ChangeType(type);
             }
         }
+
+        /*
+        GenTree* const src = ind->gtGetOp2();
+        // Catch-all narrow cast removal for int -> int.
+        if (src->OperIs(GT_CAST) && varTypeIsIntegral(ind) && varTypeIsIntegral(src) &&
+            varTypeIsIntegral(src->gtGetOp1()) && genActualType(ind) == genActualType(src) &&
+            genActualType(ind) == genActualType(src->gtGetOp1()) && !varTypeUsesFloatReg(ind) &&
+            !varTypeUsesFloatReg(src) &&
+            !varTypeUsesFloatReg(src->gtGetOp1()) && genTypeSize(ind) <= genTypeSize(src) && !src->gtOverflow())
+        {
+            ind->gtOp2 = src->gtGetOp1();
+            BlockRange().Remove(src);
+        }
+        */
 
         LowerStoreIndir(ind);
     }
