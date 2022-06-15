@@ -275,7 +275,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             if (!contexts.TryGetValue(id, out ExecutionContext context))
             {
-                if  (method ==  "Debugger.setPauseOnExceptions")
+                if  (method == "Debugger.setPauseOnExceptions")
                 {
                     string state = args["state"].Value<string>();
                     PauseOnExceptions = GetPauseOnExceptionsStatusFromString(state);
