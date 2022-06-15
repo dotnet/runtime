@@ -12200,12 +12200,58 @@ GenTree* Compiler::fgOptimizeCast(GenTreeCast* cast)
 GenTree* Compiler::fgOptimizeCastOnAssignment(GenTreeOp* asg)
 {
     assert(asg->OperIs(GT_ASG));
-    assert(asg->gtGetOp2()->OperIs(GT_CAST));
 
-    if (fgIsSafeToRemoveIntToIntCastOnAssignment(asg))
+    GenTree* const op1 = asg->gtGetOp1();
+    GenTree* const op2 = asg->gtGetOp2();
+
+    assert(op2->OperIs(GT_CAST));
+
+    GenTree* const effectiveOp1 = op1->gtEffectiveVal();
+
+    if (!effectiveOp1->OperIs(GT_IND, GT_LCL_VAR))
+        return asg;
+
+    if (effectiveOp1->OperIs(GT_LCL_VAR) &&
+        !lvaGetDesc(effectiveOp1->AsLclVarCommon()->GetLclNum())->lvNormalizeOnLoad())
+        return asg;
+
+    if (op2->gtOverflow())
+        return asg;
+
+    if (gtIsActiveCSE_Candidate(op2))
+        return asg;
+
+    GenTreeCast* cast         = op2->AsCast();
+    var_types    castToType   = cast->CastToType();
+    var_types    castFromType = cast->CastFromType();
+
+    if (gtIsActiveCSE_Candidate(cast->CastOp()))
+        return asg;
+
+    if (!varTypeIsSmall(effectiveOp1))
+        return asg;
+
+    if (!varTypeIsSmall(castToType))
+        return asg;
+
+    if (!varTypeIsIntegral(castFromType))
+        return asg;
+
+    // If we are performing a narrowing cast and
+    // castToType is larger or the same as op1's type
+    // then we can discard the cast.
+    if (genTypeSize(castToType) < genTypeSize(effectiveOp1))
+        return asg;
+
+    if (genActualType(castFromType) == genActualType(castToType))
     {
         // Removes the cast.
-        asg->AsOp()->gtOp2 = asg->gtGetOp2()->AsCast()->CastOp();
+        asg->gtOp2 = cast->CastOp();
+    }
+    else
+    {
+        // This is a type-changing cast so we cannot remove it entirely.
+        cast->gtCastType = genActualType(castToType);
     }
 
     return asg;
