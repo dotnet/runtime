@@ -1,27 +1,17 @@
-using System.Diagnostics.Contracts;
-// ==++==
-// 
-//   Copyright (c) Microsoft Corporation.  All rights reserved.
-// 
-// ==--==
-// <OWNER>Microsoft</OWNER>
-// 
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
-//
-// RijndaelManagedTransform.cs
-//
+using System.Diagnostics;
 
 namespace System.Security.Cryptography
 {
-    [Serializable]
     internal enum RijndaelManagedTransformMode
     {
         Encrypt = 0,
         Decrypt = 1
     }
 
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class RijndaelManagedTransform : ICryptoTransform
+    internal sealed class RijndaelManagedTransform : ICryptoTransform
     {
         private CipherMode m_cipherMode;
         private PaddingMode m_paddingValue;
@@ -47,22 +37,19 @@ namespace System.Security.Cryptography
         private byte[] m_depadBuffer;
         private byte[] m_shiftRegister;
 
-        internal RijndaelManagedTransform(byte[] rgbKey,
-                                           CipherMode mode,
-                                           byte[] rgbIV,
-                                           int blockSize,
-                                           int feedbackSize,
-                                           PaddingMode PaddingValue,
-                                           RijndaelManagedTransformMode transformMode)
+        public RijndaelManagedTransform(byte[] rgbKey,
+                                        CipherMode mode,
+                                        byte[] rgbIV,
+                                        int blockSize,
+                                        int feedbackSize,
+                                        PaddingMode PaddingValue,
+                                        RijndaelManagedTransformMode transformMode)
         {
             if (rgbKey == null)
                 throw new ArgumentNullException("rgbKey");
-            Contract.EndContractBlock();
 
-#if !FEATURE_CRYPTO
-            Contract.Assert(mode == CipherMode.CBC, "CipherMode is unsupported on CoreCLR");
-            Contract.Assert(PaddingValue == PaddingMode.PKCS7, "PaddingMode is unsupported on CoreCLR");
-#endif // !FEATURE_CRYPTO
+            Debug.Assert(mode == CipherMode.CBC, "CipherMode is unsupported");
+            Debug.Assert(PaddingValue == PaddingMode.PKCS7, "PaddingMode is unsupported");
 
             m_blockSizeBits = blockSize;
             m_blockSizeBytes = blockSize / 8;
@@ -121,10 +108,7 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(Environment.GetResourceString("Cryptography_InvalidCipherMode"));
             }
 
-            // On CorECLR we only support CBC mode
-#if FEATURE_CRYPTO
-            if (mode == CipherMode.CBC || mode == CipherMode.CFB) {
-#endif // FEATURE_CRYPTO
+            // we only support CBC mode
             if (rgbIV == null)
                 throw new ArgumentNullException("rgbIV");
             if (rgbIV.Length / 4 != m_Nb)
@@ -140,34 +124,15 @@ namespace System.Security.Cryptography
                 int i3 = rgbIV[index++];
                 m_IV[i] = i3 << 24 | i2 << 16 | i1 << 8 | i0;
             }
-#if FEATURE_CRYPTO
-            }
-#endif // FEATURE_CRYPTO
 
             GenerateKeyExpansion(rgbKey);
 
-#if FEATURE_CRYPTO // see code:System.Security.Cryptography.RijndaelManaged#CoreCLRRijndaelModes
-            if (m_cipherMode == CipherMode.CBC) {
-#endif // FEATURE_CRYPTO
             m_lastBlockBuffer = new int[m_Nb];
             Buffer.InternalBlockCopy(m_IV, 0, m_lastBlockBuffer, 0, m_blockSizeBytes);
-#if FEATURE_CRYPTO
-            }
-#endif // FEATURE_CRYPTO
 
-#if FEATURE_CRYPTO
-            if (m_cipherMode == CipherMode.CFB) {
-                m_shiftRegister = new byte[4*m_Nb];
-                Buffer.InternalBlockCopy(m_IV, 0, m_shiftRegister, 0, 4*m_Nb);
-            }
-#endif // FEATURE_CRYPTO
         }
 
-#if FEATURE_CORECLR
-        void IDisposable.Dispose()
-#else
         public void Dispose()
-#endif
         {
             Dispose(true);
         }
@@ -270,7 +235,6 @@ namespace System.Security.Cryptography
             if (inputOffset < 0) throw new ArgumentOutOfRangeException("inputOffset", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (inputCount <= 0 || (inputCount % InputBlockSize != 0) || (inputCount > inputBuffer.Length)) throw new ArgumentException(Environment.GetResourceString("Argument_InvalidValue"));
             if ((inputBuffer.Length - inputCount) < inputOffset) throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
-            Contract.EndContractBlock();
 
             if (m_transformMode == RijndaelManagedTransformMode.Encrypt)
             {
@@ -286,15 +250,6 @@ namespace System.Security.Cryptography
             }
             else
             {
-#if FEATURE_CRYPTO // see code:System.Security.Cryptography.RijndaelManaged#CoreCLRRijndaelModes
-                if (m_paddingValue == PaddingMode.Zeros || m_paddingValue == PaddingMode.None) {
-                    // like encryption, if we're using None or Zeros padding on decrypt we can write out all
-                    // the bytes.  Note that we cannot depad a block partially padded with Zeros because
-                    // we can't tell if those zeros are plaintext or pad.
-                    return DecryptData(inputBuffer, inputOffset, inputCount, ref outputBuffer, outputOffset, m_paddingValue, false);
-                }
-                else {
-#endif // FEATURE_CRYPTO
                 // OK, now we're in the special case.  Check to see if this is the *first* block we've seen
                 // If so, buffer it and return null zero bytes
                 if (m_depadBuffer == null)
@@ -332,9 +287,6 @@ namespace System.Security.Cryptography
                                     false);
                     return (OutputBlockSize + r);
                 }
-#if FEATURE_CRYPTO
-                }
-#endif // FEATURE_CRYPTO
             }
         }
 
@@ -344,7 +296,6 @@ namespace System.Security.Cryptography
             if (inputOffset < 0) throw new ArgumentOutOfRangeException("inputOffset", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (inputCount < 0 || (inputCount > inputBuffer.Length)) throw new ArgumentException(Environment.GetResourceString("Argument_InvalidValue"));
             if ((inputBuffer.Length - inputCount) < inputOffset) throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
-            Contract.EndContractBlock();
 
             if (m_transformMode == RijndaelManagedTransformMode.Encrypt)
             {
@@ -404,14 +355,7 @@ namespace System.Security.Cryptography
         public void Reset()
         {
             m_depadBuffer = null;
-#if FEATURE_CRYPTO // see code:System.Security.Cryptography.RijndaelManaged#CoreCLRRijndaelModes
-            if (m_cipherMode == CipherMode.CBC)
-#endif // FEATURE_CRYPTO
             Buffer.InternalBlockCopy(m_IV, 0, m_lastBlockBuffer, 0, m_blockSizeBytes);
-#if FEATURE_CRYPTO
-            if (m_cipherMode == CipherMode.CFB)
-                Buffer.InternalBlockCopy(m_IV, 0, m_shiftRegister, 0, 4*m_Nb);
-#endif // FEATURE_CRYPTO
         }
 
         //
@@ -419,7 +363,6 @@ namespace System.Security.Cryptography
         // This method writes the encrypted data into the output buffer. If the output buffer is null,
         // it allocates it and populates it with the encrypted data.
         //
-        [SecuritySafeCritical]
         private unsafe int EncryptData(byte[] inputBuffer,
                                        int inputOffset,
                                        int inputCount,
@@ -439,59 +382,13 @@ namespace System.Security.Cryptography
             int workBaseIndex = inputOffset, index = 0;
             if (fLast)
             {
-#if FEATURE_CRYPTO // see code:System.Security.Cryptography.RijndaelManaged#CoreCLRRijndaelModes
-                switch (paddingMode) {
-                case PaddingMode.None:
-                    if (lonelyBytes != 0)
-                        throw new CryptographicException(Environment.GetResourceString("Cryptography_SSE_InvalidDataSize"));
-                    break;
-                case PaddingMode.Zeros:
-                    if (lonelyBytes != 0)
-                        padSize = m_inputBlockSize - lonelyBytes;
-                    break;
-                case PaddingMode.PKCS7:
-#endif // FEATURE_CRYPTO
                 padSize = m_inputBlockSize - lonelyBytes;
-
-#if FEATURE_CRYPTO
-                    break;
-                case PaddingMode.ANSIX923:
-                    padSize = m_inputBlockSize - lonelyBytes;
-                    break;
-                case PaddingMode.ISO10126:
-                    padSize = m_inputBlockSize - lonelyBytes;
-                    break;
-                }
-#endif // FEATURE_CRYPTO
 
                 if (padSize != 0)
                 {
                     padBytes = new byte[padSize];
-#if FEATURE_CRYPTO
-                    switch (paddingMode) {
-                    case PaddingMode.None:
-                        break;
-                    case PaddingMode.Zeros:
-                        // padBytes is already initialized with zeros
-                        break;
-                    case PaddingMode.PKCS7:
-#endif // FEATURE_CRYPTO
                     for (index = 0; index < padSize; index++)
                         padBytes[index] = (byte)padSize;
-
-#if FEATURE_CRYPTO
-                        break;
-                    case PaddingMode.ANSIX923:
-                        // padBytes is already initialized with zeros. Simply change the last byte.
-                        padBytes[padSize - 1] = (byte) padSize;
-                        break;
-                    case PaddingMode.ISO10126:
-                        // generate random bytes
-                        Utils.StaticRandomNumberGenerator.GetBytes(padBytes);
-                        padBytes[padSize - 1] = (byte) padSize;
-                        break;
-                    }
-#endif // FEATURE_CRYPTO
                 }
             }
 
@@ -521,15 +418,9 @@ namespace System.Security.Cryptography
                             int transformCount = outputOffset;
                             for (int blockNum = 0; blockNum < iNumBlocks; ++blockNum)
                             {
-#if FEATURE_CRYPTO // see code:System.Security.Cryptography.RijndaelManaged#CoreCLRRijndaelModes
-                                if (m_cipherMode == CipherMode.CFB) {
-                                    Contract.Assert(m_blockSizeBytes <= m_Nb * sizeof(int), "m_blockSizeBytes <= m_Nb * sizeof(int)");
-                                    Buffer.Memcpy((byte *)work, 0, m_shiftRegister, 0, m_blockSizeBytes);
-                                } else {
-#endif // FEATURE_CRYPTO
                                 if (blockNum != iNumBlocks - 1 || padSize == 0)
                                 {
-                                    Contract.Assert(m_blockSizeBytes <= m_Nb * sizeof(int), "m_blockSizeBytes <= m_Nb * sizeof(int)");
+                                    Debug.Assert(m_blockSizeBytes <= m_Nb * sizeof(int), "m_blockSizeBytes <= m_Nb * sizeof(int)");
                                     Buffer.Memcpy((byte*)work, 0, inputBuffer, workBaseIndex, m_blockSizeBytes);
                                 }
                                 else
@@ -545,63 +436,15 @@ namespace System.Security.Cryptography
                                         work[i] = i3 << 24 | i2 << 16 | i1 << 8 | i0;
                                     }
                                 }
-#if FEATURE_CRYPTO
-                                }
-#endif // FEATURE_CRYPTO
 
-#if FEATURE_CRYPTO
-                                if (m_cipherMode == CipherMode.CBC) {
-#endif // FEATURE_CRYPTO
                                 for (int i = 0; i < m_Nb; ++i)
                                 {
                                     // XOR with the last encrypted block
                                     work[i] ^= m_lastBlockBuffer[i];
                                 }
-#if FEATURE_CRYPTO
-                                }
-#endif // FEATURE_CRYPTO
 
                                 Enc(encryptindex, encryptKeyExpansion, T, TF, work, temp);
 
-#if FEATURE_CRYPTO
-                                if (m_cipherMode == CipherMode.CFB) {
-                                    index = workBaseIndex;
-                                    if (blockNum != iNumBlocks - 1 || padSize == 0) {
-                                        for (int i = 0; i < m_Nb; ++i) {
-                                            if (index >= workBaseIndex + m_inputBlockSize) break;
-                                            outputBuffer[transformCount++] = (byte)((temp[i]       & 0xFF) ^ inputBuffer[index++]);
-                                            if (index >= workBaseIndex + m_inputBlockSize) break;
-                                            outputBuffer[transformCount++] = (byte)((temp[i] >> 8  & 0xFF) ^ inputBuffer[index++]);
-                                            if (index >= workBaseIndex + m_inputBlockSize) break;
-                                            outputBuffer[transformCount++] = (byte)((temp[i] >> 16 & 0xFF) ^ inputBuffer[index++]);
-                                            if (index >= workBaseIndex + m_inputBlockSize) break;
-                                            outputBuffer[transformCount++] = (byte)((temp[i] >> 24 & 0xFF) ^ inputBuffer[index++]);
-                                        }
-                                    } else {
-                                        byte[] tmpInputBuffer = new byte[m_inputBlockSize];
-                                        Buffer.InternalBlockCopy(inputBuffer, workBaseIndex, tmpInputBuffer, 0, lonelyBytes);
-                                        Buffer.InternalBlockCopy(padBytes, 0, tmpInputBuffer, lonelyBytes, padSize);
-                                        index = 0;
-                                        for (int i = 0; i < m_Nb; ++i) {
-                                            if (index >= m_inputBlockSize) break;
-                                            outputBuffer[transformCount++] = (byte)((temp[i]       & 0xFF) ^ tmpInputBuffer[index++]);
-                                            if (index >= m_inputBlockSize) break;
-                                            outputBuffer[transformCount++] = (byte)((temp[i] >> 8  & 0xFF) ^ tmpInputBuffer[index++]);
-                                            if (index >= m_inputBlockSize) break;
-                                            outputBuffer[transformCount++] = (byte)((temp[i] >> 16 & 0xFF) ^ tmpInputBuffer[index++]);
-                                            if (index >= m_inputBlockSize) break;
-                                            outputBuffer[transformCount++] = (byte)((temp[i] >> 24 & 0xFF) ^ tmpInputBuffer[index++]);
-                                        }
-                                    }
-                                    // shift m_lastBlockBuffer to the left by m_inputBlockSize bytes.
-                                    index = 0;
-                                    while (index < m_blockSizeBytes - m_inputBlockSize) {
-                                        m_shiftRegister[index] = m_shiftRegister[index + m_inputBlockSize];
-                                        index++;
-                                    }
-                                    Buffer.InternalBlockCopy(outputBuffer, blockNum * m_inputBlockSize, m_shiftRegister, m_blockSizeBytes - m_inputBlockSize, m_inputBlockSize);
-                                } else {
-#endif // FEATURE_CRYPTO
                                 for (int i = 0; i < m_Nb; ++i)
                                 {
                                     outputBuffer[transformCount++] = (byte)(temp[i] & 0xFF);
@@ -610,18 +453,11 @@ namespace System.Security.Cryptography
                                     outputBuffer[transformCount++] = (byte)(temp[i] >> 24 & 0xFF);
                                 }
 
-#if FEATURE_CRYPTO
-                                    if (m_cipherMode == CipherMode.CBC) {
-#endif // FEATURE_CRYPTO
                                 fixed (int* pLastBlockBuffer = m_lastBlockBuffer)
                                 {
-                                    Contract.Assert(m_blockSizeBytes <= m_lastBlockBuffer.Length * sizeof(int), "m_blockSizeBytes <= m_lastBlockBuffer.Length * sizeof(int)");
+                                    Debug.Assert(m_blockSizeBytes <= m_lastBlockBuffer.Length * sizeof(int), "m_blockSizeBytes <= m_lastBlockBuffer.Length * sizeof(int)");
                                     Buffer.Memcpy((byte*)pLastBlockBuffer, (byte*)temp, m_blockSizeBytes);
                                 }
-#if FEATURE_CRYPTO
-                                    }
-                                }
-#endif // FEATURE_CRYPTO
                                 workBaseIndex += m_inputBlockSize;
                             }
                         }
@@ -638,7 +474,6 @@ namespace System.Security.Cryptography
         // it allocates it and populates it with the decrypted data.
         //
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private unsafe int DecryptData(byte[] inputBuffer,
                                        int inputOffset,
                                        int inputCount,
@@ -684,18 +519,6 @@ namespace System.Security.Cryptography
                                             int workBaseIndex = inputOffset, index = 0, transformCount = outputOffset;
                                             for (int blockNum = 0; blockNum < iNumBlocks; ++blockNum)
                                             {
-#if FEATURE_CRYPTO // see code:System.Security.Cryptography.RijndaelManaged#CoreCLRRijndaelModes
-                                                if (m_cipherMode == CipherMode.CFB) {
-                                                    index = 0;
-                                                    for (int i = 0; i < m_Nb; ++i) {
-                                                        int i0 = m_shiftRegister[index++];
-                                                        int i1 = m_shiftRegister[index++];
-                                                        int i2 = m_shiftRegister[index++];
-                                                        int i3 = m_shiftRegister[index++];
-                                                        work[i] = i3 << 24 | i2 << 16 | i1 << 8 | i0;
-                                                    }
-                                                } else {
-#endif // FEATURE_CRYPTO
                                                 index = workBaseIndex;
                                                 for (int i = 0; i < m_Nb; ++i)
                                                 {
@@ -705,40 +528,9 @@ namespace System.Security.Cryptography
                                                     int i3 = inputBuffer[index++];
                                                     work[i] = i3 << 24 | i2 << 16 | i1 << 8 | i0;
                                                 }
-#if FEATURE_CRYPTO
-                                                }
-#endif // FEATURE_CRYPTO
 
-#if FEATURE_CRYPTO
-                                                if (m_cipherMode == CipherMode.CFB) {
-                                                    // We use the encryption function in both encryption and decryption in CFB mode.
-                                                    Enc(encryptindex, encryptKeyExpansion, T, TF, work, temp);
-
-                                                    index = workBaseIndex;
-                                                    for (int i = 0; i < m_Nb; ++i) {
-                                                        if (index >= workBaseIndex + m_inputBlockSize) break;
-                                                        outputBuffer[transformCount++] = (byte)((temp[i]       & 0xFF) ^ inputBuffer[index++]);
-                                                        if (index >= workBaseIndex + m_inputBlockSize) break;
-                                                        outputBuffer[transformCount++] = (byte)((temp[i] >> 8  & 0xFF) ^ inputBuffer[index++]);
-                                                        if (index >= workBaseIndex + m_inputBlockSize) break;
-                                                        outputBuffer[transformCount++] = (byte)((temp[i] >> 16 & 0xFF) ^ inputBuffer[index++]);
-                                                        if (index >= workBaseIndex + m_inputBlockSize) break;
-                                                        outputBuffer[transformCount++] = (byte)((temp[i] >> 24 & 0xFF) ^ inputBuffer[index++]);
-                                                    }
-                                                    // shift m_lastBlockBuffer to the left by m_inputBlockSize bytes.
-                                                    index = 0;
-                                                    while (index < m_blockSizeBytes - m_inputBlockSize) {
-                                                        m_shiftRegister[index] = m_shiftRegister[index + m_inputBlockSize];
-                                                        index++;
-                                                    }
-                                                    Buffer.InternalBlockCopy(inputBuffer, workBaseIndex, m_shiftRegister, m_blockSizeBytes - m_inputBlockSize, m_inputBlockSize);
-                                                } else {
-#endif // FEATURE_CRYPTO
                                                 Dec(decryptindex, decryptKeyExpansion, iT, iTF, work, temp);
 
-#if FEATURE_CRYPTO
-                                                    if (m_cipherMode == CipherMode.CBC) {
-#endif // FEATURE_CRYPTO
                                                 index = workBaseIndex;
                                                 for (int i = 0; i < m_Nb; ++i)
                                                 {
@@ -750,9 +542,6 @@ namespace System.Security.Cryptography
                                                     int i3 = inputBuffer[index++];
                                                     m_lastBlockBuffer[i] = i3 << 24 | i2 << 16 | i1 << 8 | i0;
                                                 }
-#if FEATURE_CRYPTO
-                                                    }
-#endif // FEATURE_CRYPTO
 
                                                 for (int i = 0; i < m_Nb; ++i)
                                                 {
@@ -761,9 +550,6 @@ namespace System.Security.Cryptography
                                                     outputBuffer[transformCount++] = (byte)(temp[i] >> 16 & 0xFF);
                                                     outputBuffer[transformCount++] = (byte)(temp[i] >> 24 & 0xFF);
                                                 }
-#if FEATURE_CRYPTO
-                                                }
-#endif // FEATURE_CRYPTO
 
                                                 workBaseIndex += m_inputBlockSize;
                                             }
@@ -774,14 +560,6 @@ namespace System.Security.Cryptography
                                             // this is the last block, remove the padding.
                                             byte[] outputBuffer1 = outputBuffer;
                                             int padSize = 0;
-#if FEATURE_CRYPTO // see code:System.Security.Cryptography.RijndaelManaged#CoreCLRRijndaelModes
-                                            switch (paddingMode) {
-                                            case PaddingMode.None:
-                                                break;
-                                            case PaddingMode.Zeros:
-                                                break;
-                                            case PaddingMode.PKCS7:
-#endif // FEATURE_CRYPTO
                                             if (inputCount == 0)
                                                 throw new CryptographicException(Environment.GetResourceString("Cryptography_PKCS7_InvalidPadding"));
                                             padSize = outputBuffer[inputCount - 1];
@@ -792,33 +570,6 @@ namespace System.Security.Cryptography
                                                     throw new CryptographicException(Environment.GetResourceString("Cryptography_PKCS7_InvalidPadding"));
                                             outputBuffer1 = new byte[outputBuffer.Length - padSize];
                                             Buffer.InternalBlockCopy(outputBuffer, 0, outputBuffer1, 0, outputBuffer.Length - padSize);
-#if FEATURE_CRYPTO
-                                                break;
-                                            case PaddingMode.ANSIX923:
-                                                if (inputCount == 0)
-                                                    throw new CryptographicException(Environment.GetResourceString("Cryptography_PKCS7_InvalidPadding"));
-                                                padSize = outputBuffer[inputCount - 1];
-                                                if (padSize > outputBuffer.Length || padSize > InputBlockSize || padSize <= 0)
-                                                    throw new CryptographicException(Environment.GetResourceString("Cryptography_PKCS7_InvalidPadding"));
-                                                // check the validity of the padding
-                                                for (index = 2; index <= padSize; index++) 
-                                                    if (outputBuffer[inputCount - index] != 0)
-                                                        throw new CryptographicException(Environment.GetResourceString("Cryptography_PKCS7_InvalidPadding"));
-                                                outputBuffer1 = new byte[outputBuffer.Length - padSize];
-                                                Buffer.InternalBlockCopy(outputBuffer, 0, outputBuffer1, 0, outputBuffer.Length - padSize);
-                                                break;
-                                            case PaddingMode.ISO10126:
-                                                if (inputCount == 0)
-                                                    throw new CryptographicException(Environment.GetResourceString("Cryptography_PKCS7_InvalidPadding"));
-                                                padSize = outputBuffer[inputCount - 1];
-                                                if (padSize > outputBuffer.Length || padSize > InputBlockSize || padSize <= 0)
-                                                    throw new CryptographicException(Environment.GetResourceString("Cryptography_PKCS7_InvalidPadding"));
-                                                // Just ignore the random bytes
-                                                outputBuffer1 = new byte[outputBuffer.Length - padSize];
-                                                Buffer.InternalBlockCopy(outputBuffer, 0, outputBuffer1, 0, outputBuffer.Length - padSize);
-                                                break;
-                                            }
-#endif // FEATURE_CRYPTO
                                             outputBuffer = outputBuffer1;
                                             return outputBuffer1.Length;
                                         }
@@ -834,7 +585,6 @@ namespace System.Security.Cryptography
         //
         // AES encryption function.
         //
-        [System.Security.SecurityCritical]  // auto-generated
         private unsafe void Enc(int* encryptindex, int* encryptKeyExpansion, int* T, int* TF, int* work, int* temp)
         {
             for (int i = 0; i < m_Nb; ++i)
@@ -881,7 +631,6 @@ namespace System.Security.Cryptography
         // AES decryption function.
         //
 
-        [System.Security.SecurityCritical]  // auto-generated
         unsafe private void Dec(int* decryptindex, int* decryptKeyExpansion, int* iT, int* iTF, int* work, int* temp)
         {
             int keyIndex = m_Nb * m_Nr;
