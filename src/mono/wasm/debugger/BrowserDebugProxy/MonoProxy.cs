@@ -169,7 +169,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case "Debugger.paused":
                     {
                         // Don't process events from sessions we aren't tracking
-                        if (!contexts.TryGetValue(sessionId, out _))
+                        if (!contexts.ContainsKey(sessionId))
                             return false;
 
                         //TODO figure out how to stich out more frames and, in particular what happens when real wasm is on the stack
