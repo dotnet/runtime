@@ -51,7 +51,7 @@ namespace System.Net.Quic.Tests
 
         protected override async Task<StreamPair> CreateConnectedStreamsAsync()
         {
-            var listener = await QuicProvider.CreateListenerAsync(new QuicListenerOptions()
+            var listener = await QuicListener.ListenAsync(new QuicListenerOptions()
             {
                 ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
                 ServerAuthenticationOptions = GetSslServerAuthenticationOptions()
@@ -71,7 +71,7 @@ namespace System.Net.Quic.Tests
                 {
                     try
                     {
-                        connection2 = await QuicProvider.CreateConnectionAsync(new QuicClientConnectionOptions()
+                        connection2 = await QuicConnection.ConnectAsync(new QuicClientConnectionOptions()
                         {
                             RemoteEndPoint = listener.ListenEndPoint,
                             ClientAuthenticationOptions = GetSslClientAuthenticationOptions()

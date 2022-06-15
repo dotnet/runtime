@@ -3,6 +3,7 @@
 
 using System.Net.Quic.Implementations;
 using System.Net.Quic.Implementations.MsQuic;
+using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -12,6 +13,18 @@ namespace System.Net.Quic
 {
     public sealed class QuicConnection : IDisposable
     {
+        public static bool IsSupported => MsQuicApi.IsQuicSupported;
+
+        public static ValueTask<QuicConnection> ConnectAsync(QuicClientConnectionOptions options, CancellationToken cancellationToken = default)
+        {
+            if (!IsSupported)
+            {
+                throw new PlatformNotSupportedException(SR.SystemNetQuic_PlatformNotSupported);
+            }
+
+            return ValueTask.FromResult(new QuicConnection(new MsQuicConnection(options)));
+        }
+
         private readonly MsQuicConnection _provider;
 
         internal QuicConnection(MsQuicConnection provider)

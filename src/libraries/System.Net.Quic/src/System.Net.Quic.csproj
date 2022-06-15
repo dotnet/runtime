@@ -18,7 +18,6 @@
     <Compile Include="System\Net\Quic\QuicConnection.cs" />
     <Compile Include="System\Net\Quic\QuicConnectionAbortedException.cs" />
     <Compile Include="System\Net\Quic\QuicException.cs" />
-    <Compile Include="System\Net\Quic\QuicProvider.cs" />
     <Compile Include="System\Net\Quic\QuicListener.cs" />
     <Compile Include="System\Net\Quic\QuicListenerOptions.cs" />
     <Compile Include="System\Net\Quic\QuicOperationAbortedException.cs" />
@@ -42,7 +41,8 @@
   </ItemGroup>
   <!-- Unsupported platforms -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == ''">
-    <Compile Include="System\Net\Quic\QuicProvider.Unsupported.cs" />
+    <Compile Include="System\Net\Quic\QuicListener.Unsupported.cs" />
+    <Compile Include="System\Net\Quic\QuicConnection.Unsupported.cs" />
   </ItemGroup>
   <!-- Windows specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">

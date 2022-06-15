@@ -19,7 +19,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 try
                 {
-                    return QuicProvider.IsSupported;
+                    return QuicConnection.IsSupported;
                 }
                 catch (System.PlatformNotSupportedException)
                 {

@@ -107,7 +107,7 @@ namespace System.Net.Http
         public static async ValueTask<QuicConnection> ConnectQuicAsync(HttpRequestMessage request, DnsEndPoint endPoint, SslClientAuthenticationOptions clientAuthenticationOptions, CancellationToken cancellationToken)
         {
             clientAuthenticationOptions = SetUpRemoteCertificateValidationCallback(clientAuthenticationOptions, request);
-            QuicConnection connection = await QuicProvider.CreateConnectionAsync(new QuicClientConnectionOptions()
+            QuicConnection connection = await QuicConnection.ConnectAsync(new QuicClientConnectionOptions()
             {
                 RemoteEndPoint = endPoint,
                 ClientAuthenticationOptions = clientAuthenticationOptions

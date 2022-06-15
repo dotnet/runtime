@@ -134,7 +134,7 @@ namespace System.Net.Http
 
             if (IsHttp3Supported())
             {
-                _http3Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version30 && QuicProvider.IsSupported;
+                _http3Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version30 && QuicConnection.IsSupported;
             }
 
             switch (kind)

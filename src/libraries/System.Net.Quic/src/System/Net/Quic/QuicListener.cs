@@ -3,6 +3,7 @@
 
 using System.Net.Quic.Implementations;
 using System.Net.Quic.Implementations.MsQuic;
+using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Security;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,6 +12,18 @@ namespace System.Net.Quic
 {
     public sealed class QuicListener : IDisposable
     {
+        public static bool IsSupported => MsQuicApi.IsQuicSupported;
+
+        public static ValueTask<QuicListener> ListenAsync(QuicListenerOptions options, CancellationToken cancellationToken = default)
+        {
+            if (!IsSupported)
+            {
+                throw new PlatformNotSupportedException(SR.SystemNetQuic_PlatformNotSupported);
+            }
+
+            return ValueTask.FromResult(new QuicListener(new MsQuicListener(options)));
+        }
+
         private readonly MsQuicListener _provider;
 
         internal QuicListener(MsQuicListener provider)

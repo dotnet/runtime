@@ -21,7 +21,7 @@ namespace System.Net.Quic.Tests
         private static readonly byte[] s_ping = "PING"u8.ToArray();
         private static readonly byte[] s_pong = "PONG"u8.ToArray();
 
-        public static bool IsSupported => QuicProvider.IsSupported;
+        public static bool IsSupported => QuicListener.IsSupported && QuicConnection.IsSupported;
 
         public static SslApplicationProtocol ApplicationProtocol { get; } = new SslApplicationProtocol("quictest");
 
@@ -78,7 +78,7 @@ namespace System.Net.Quic.Tests
 
         internal ValueTask<QuicConnection> CreateQuicConnection(QuicClientConnectionOptions clientOptions)
         {
-            return QuicProvider.CreateConnectionAsync(clientOptions);
+            return QuicConnection.ConnectAsync(clientOptions);
         }
 
         internal QuicListenerOptions CreateQuicListenerOptions()
@@ -109,7 +109,7 @@ namespace System.Net.Quic.Tests
             return CreateQuicListener(options);
         }
 
-        internal ValueTask<QuicListener> CreateQuicListener(QuicListenerOptions options) => QuicProvider.CreateListenerAsync(options);
+        internal ValueTask<QuicListener> CreateQuicListener(QuicListenerOptions options) => QuicListener.ListenAsync(options);
 
         internal Task<(QuicConnection, QuicConnection)> CreateConnectedQuicConnection(QuicListener listener) => CreateConnectedQuicConnection(null, listener);
         internal async Task<(QuicConnection, QuicConnection)> CreateConnectedQuicConnection(QuicClientConnectionOptions? clientOptions, QuicListenerOptions listenerOptions)

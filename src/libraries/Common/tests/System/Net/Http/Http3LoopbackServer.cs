@@ -42,7 +42,7 @@ namespace System.Net.Test.Common
                 MaxBidirectionalStreams = options.MaxBidirectionalStreams,
             };
 
-            _listener = QuicProvider.CreateListenerAsync(listenerOptions).Result;
+            _listener = QuicListener.ListenAsync(listenerOptions).Result;
         }
 
         public override void Dispose()

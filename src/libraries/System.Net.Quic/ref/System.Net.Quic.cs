@@ -17,12 +17,14 @@ namespace System.Net.Quic
     {
         internal QuicConnection() { }
         public bool Connected { get { throw null; } }
+        public static bool IsSupported { get { throw null; } }
         public System.Net.IPEndPoint? LocalEndPoint { get { throw null; } }
         public System.Net.Security.SslApplicationProtocol NegotiatedApplicationProtocol { get { throw null; } }
         public System.Security.Cryptography.X509Certificates.X509Certificate? RemoteCertificate { get { throw null; } }
         public System.Net.EndPoint RemoteEndPoint { get { throw null; } }
         public System.Threading.Tasks.ValueTask<System.Net.Quic.QuicStream> AcceptStreamAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.Threading.Tasks.ValueTask CloseAsync(long errorCode, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<System.Net.Quic.QuicConnection> ConnectAsync(System.Net.Quic.QuicClientConnectionOptions options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.Threading.Tasks.ValueTask ConnectAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public void Dispose() { }
         public int GetRemoteAvailableBidirectionalStreamCount() { throw null; }
@@ -44,9 +46,11 @@ namespace System.Net.Quic
     public sealed partial class QuicListener : System.IDisposable
     {
         internal QuicListener() { }
+        public static bool IsSupported { get { throw null; } }
         public System.Net.IPEndPoint ListenEndPoint { get { throw null; } }
         public System.Threading.Tasks.ValueTask<System.Net.Quic.QuicConnection> AcceptConnectionAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public void Dispose() { }
+        public static System.Threading.Tasks.ValueTask<System.Net.Quic.QuicListener> ListenAsync(System.Net.Quic.QuicListenerOptions options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public partial class QuicListenerOptions : System.Net.Quic.QuicOptions
     {
@@ -65,12 +69,6 @@ namespace System.Net.Quic
         public System.TimeSpan IdleTimeout { get { throw null; } set { } }
         public int MaxBidirectionalStreams { get { throw null; } set { } }
         public int MaxUnidirectionalStreams { get { throw null; } set { } }
-    }
-    public static partial class QuicProvider
-    {
-        public static bool IsSupported { get { throw null; } }
-        public static System.Threading.Tasks.ValueTask<System.Net.Quic.QuicConnection> CreateConnectionAsync(System.Net.Quic.QuicClientConnectionOptions options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static System.Threading.Tasks.ValueTask<System.Net.Quic.QuicListener> CreateListenerAsync(System.Net.Quic.QuicListenerOptions options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public sealed partial class QuicStream : System.IO.Stream
     {
