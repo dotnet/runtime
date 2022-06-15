@@ -5215,7 +5215,7 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     }
 
 #ifdef TARGET_ARM64
-    if (parent->OperIsIndir() && parent->AsIndir()->IsVolatile() && !varTypeIsGC(addr))
+    if (parent->OperIsIndir() && parent->AsIndir()->IsVolatile())
     {
         // For Arm64 we avoid using LEA for volatile INDs
         // because we won't be able to use ldar/star
