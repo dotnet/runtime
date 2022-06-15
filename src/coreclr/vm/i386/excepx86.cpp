@@ -1235,8 +1235,6 @@ void InitializeExceptionHandling()
 {
     WRAPPER_NO_CONTRACT;
 
-    InitSavedExceptionInfo();
-
     CLRAddVectoredHandlers();
 
     // Initialize the lock used for synchronizing access to the stacktrace in the exception object
