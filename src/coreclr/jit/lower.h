@@ -436,6 +436,8 @@ private:
     // Similar to above, but allows bypassing a "transparent" parent.
     bool IsSafeToContainMem(GenTree* grandparentNode, GenTree* parentNode, GenTree* childNode) const;
 
+    bool IsSafeToRemoveCastOnStore(GenTree* parentNode, GenTreeCast* childNode);
+
     inline LIR::Range& BlockRange() const
     {
         return LIR::AsRange(m_block);
