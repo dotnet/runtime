@@ -28,8 +28,6 @@ namespace System.Net.Sockets.Tests
                 });
             }
         }
-
-
         [Fact]
         public void UdpConstructor_EnableBroadcast_Configurable()
         {
