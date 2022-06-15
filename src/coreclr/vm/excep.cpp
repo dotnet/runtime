@@ -6582,66 +6582,6 @@ struct SavedExceptionInfo
     }
 };
 
-SavedExceptionInfo g_SavedExceptionInfo;  // Globals are guaranteed zero-init;
-
-void InitSavedExceptionInfo()
-{
-    g_SavedExceptionInfo.Init();
-}
-
-EXTERN_C VOID FixContextForFaultingExceptionFrame (
-        EXCEPTION_RECORD* pExceptionRecord,
-        CONTEXT *pContextRecord)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // don't copy parm args as have already supplied them on the throw
-    memcpy((void*) pExceptionRecord,
-           (void*) &g_SavedExceptionInfo.m_ExceptionRecord,
-           offsetof(EXCEPTION_RECORD, ExceptionInformation)
-          );
-
-    ReplaceExceptionContextRecord(pContextRecord, &g_SavedExceptionInfo.m_ExceptionContext);
-
-    g_SavedExceptionInfo.Leave();
-
-    GetThread()->ResetThreadStateNC(Thread::TSNC_DebuggerIsManagedException);
-}
-
-EXTERN_C VOID __fastcall
-LinkFrameAndThrow(FaultingExceptionFrame* pFrame)
-{
-    WRAPPER_NO_CONTRACT;
-
-    *(TADDR*)pFrame = FaultingExceptionFrame::GetMethodFrameVPtr();
-    *pFrame->GetGSCookiePtr() = GetProcessGSCookie();
-
-    pFrame->InitAndLink(&g_SavedExceptionInfo.m_ExceptionContext);
-
-    GetThread()->SetThreadStateNC(Thread::TSNC_DebuggerIsManagedException);
-
-    ULONG       argcount = g_SavedExceptionInfo.m_ExceptionRecord.NumberParameters;
-    ULONG       flags    = g_SavedExceptionInfo.m_ExceptionRecord.ExceptionFlags;
-    ULONG       code     = g_SavedExceptionInfo.m_ExceptionRecord.ExceptionCode;
-    ULONG_PTR*  args     = &g_SavedExceptionInfo.m_ExceptionRecord.ExceptionInformation[0];
-
-    RaiseException(code, flags, argcount, args);
-}
-
-void SetNakedThrowHelperArgRegistersInContext(CONTEXT* pContext)
-{
-#if defined(TARGET_AMD64)
-    pContext->Rcx = (UINT_PTR)GetIP(pContext);
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
-    // Save the original IP in LR
-    pContext->Lr = (DWORD)GetIP(pContext);
-#else
-    PORTABILITY_WARNING("NakedThrowHelper argument not defined");
-#endif
-}
-
-EXTERN_C VOID STDCALL NakedThrowHelper(VOID);
-
 void HandleManagedFault(EXCEPTION_RECORD*               pExceptionRecord,
                         CONTEXT*                        pContext,
                         EXCEPTION_REGISTRATION_RECORD*  pEstablisherFrame,
@@ -6650,37 +6590,16 @@ void HandleManagedFault(EXCEPTION_RECORD*               pExceptionRecord,
     WRAPPER_NO_CONTRACT;
 
     // Ok.  Now we have a brand new fault in jitted code.
-    if (!Thread::UseContextBasedThreadRedirection())
-    {
-        // Once this code path gets enough bake time, perhaps this path could always be used instead of the alternative path to
-        // redirect the thread
-        FrameWithCookie<FaultingExceptionFrame> frameWithCookie;
-        FaultingExceptionFrame *frame = &frameWithCookie;
-    #if defined(FEATURE_EH_FUNCLETS)
-        *frame->GetGSCookiePtr() = GetProcessGSCookie();
-    #endif // FEATURE_EH_FUNCLETS
-        frame->InitAndLink(pContext);
+    FrameWithCookie<FaultingExceptionFrame> frameWithCookie;
+    FaultingExceptionFrame *frame = &frameWithCookie;
+#if defined(FEATURE_EH_FUNCLETS)
+    *frame->GetGSCookiePtr() = GetProcessGSCookie();
+#endif // FEATURE_EH_FUNCLETS
+    frame->InitAndLink(pContext);
 
-        SEHException exception(pExceptionRecord);
-        OBJECTREF managedException = CLRException::GetThrowableFromException(&exception);
-        RaiseTheExceptionInternalOnly(managedException, FALSE);
-    }
-    else
-    {
-        g_SavedExceptionInfo.Enter();
-        g_SavedExceptionInfo.SaveExceptionRecord(pExceptionRecord);
-        g_SavedExceptionInfo.SaveContext(pContext);
-
-        SetNakedThrowHelperArgRegistersInContext(pContext);
-
-        SetIP(pContext, GetEEFuncEntryPoint(NakedThrowHelper));
-    }
-}
-
-#else // USE_FEF && !TARGET_UNIX
-
-void InitSavedExceptionInfo()
-{
+    SEHException exception(pExceptionRecord);
+    OBJECTREF managedException = CLRException::GetThrowableFromException(&exception);
+    RaiseTheExceptionInternalOnly(managedException, FALSE);
 }
 
 #endif // USE_FEF && !TARGET_UNIX
@@ -7008,12 +6927,6 @@ LONG WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExceptionInfo
 
     if (action == VEH_EXECUTE_HANDLE_MANAGED_EXCEPTION)
     {
-        //
-        // If the exception context was unwound by Phase3 then
-        // we'll jump here to save the managed context and resume execution at
-        // NakedThrowHelper.  This needs to be done outside of any holder's
-        // scope, because HandleManagedFault may not return.
-        //
         HandleManagedFault(pExceptionInfo->ExceptionRecord,
                            pExceptionInfo->ContextRecord,
                            NULL, // establisher frame (x86 only)

@@ -1166,12 +1166,11 @@ namespace InteropLibImports
         }
         CONTRACTL_END;
 
-        bool isValid = false;
         ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
 
-        isValid = ObjectHandleIsNull(objectHandle) != FALSE;
-
-        return isValid;
+        // A valid target is one that is not null.
+        bool isNotNull = ObjectHandleIsNull(objectHandle) == FALSE;
+        return isNotNull;
     }
 
     bool GetGlobalPeggingState() noexcept
