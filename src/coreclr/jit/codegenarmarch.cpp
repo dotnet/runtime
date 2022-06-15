@@ -4430,6 +4430,16 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
         }
         else
         {
+#ifdef TARGET_ARM64
+            // Handle LEA with "contained" BFIZ
+            if (index->isContained() && index->OperIs(GT_BFIZ))
+            {
+                assert(scale == 0);
+                scale = (DWORD)index->gtGetOp2()->AsIntConCommon()->IconValue();
+                index = index->gtGetOp1()->gtGetOp1();
+            }
+#endif
+
             // Then compute target reg from [base + index*scale]
             genScaledAdd(size, lea->GetRegNum(), memBase->GetRegNum(), index->GetRegNum(), scale);
         }
