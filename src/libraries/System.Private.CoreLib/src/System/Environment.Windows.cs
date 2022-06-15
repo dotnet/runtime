@@ -205,7 +205,7 @@ namespace System
             }
             finally
             {
-                Interop.Kernel32.LocalFree((nint)argvW);
+                Interop.Kernel32.LocalFree((IntPtr)argvW);
             }
         }
     }
