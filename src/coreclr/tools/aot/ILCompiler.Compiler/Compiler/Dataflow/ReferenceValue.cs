@@ -3,7 +3,7 @@
 
 using ILLink.Shared.DataFlow;
 
-#nullable enabled
+#nullable enable
 
 namespace ILLink.Shared.TrimAnalysis
 {
