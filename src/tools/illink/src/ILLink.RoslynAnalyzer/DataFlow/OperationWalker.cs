@@ -13,8 +13,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		private void VisitChildOperations (IOperation operation, TArgument argument)
 		{
-			// https://github.com/dotnet/roslyn/issues/49475 would let us use ChildOperations, a struct enumerable.
-			foreach (var child in operation.Children)
+			foreach (var child in operation.ChildOperations)
 				Visit (child, argument);
 		}
 

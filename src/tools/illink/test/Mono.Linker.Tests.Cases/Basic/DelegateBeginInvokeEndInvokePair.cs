@@ -5,6 +5,9 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.Basic
 {
+	[KeptDelegateCacheField ("0", nameof (Method))]
+	[KeptDelegateCacheField ("1", nameof (Method))]
+	[KeptDelegateCacheField ("2", nameof (Method))]
 	class DelegateBeginInvokeEndInvokePair
 	{
 		public static void Main ()

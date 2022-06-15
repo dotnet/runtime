@@ -3,8 +3,7 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.Basic
 {
-	[KeptDelegateCacheField ("0")]
-	[KeptDelegateCacheField ("1")]
+	[KeptDelegateCacheField ("0", nameof (Tmp_Bar))]
 	class UsedEventIsKept
 	{
 		public static void Main ()

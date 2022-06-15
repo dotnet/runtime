@@ -146,6 +146,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			VerifyFixedBufferFields (original, linked);
 
+			// Need to check delegate cache fields before the normal field check
+			VerifyDelegateBackingFields (original, linked);
+			VerifyPrivateImplementationDetails (original, linked);
+
 			foreach (var td in original.NestedTypes) {
 				VerifyTypeDefinition (td, linked?.NestedTypes.FirstOrDefault (l => td.FullName == l.FullName));
 				linkedMembers.Remove (td.FullName);
@@ -161,9 +165,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				VerifyEvent (e, linked?.Events.FirstOrDefault (l => e.Name == l.Name), linked);
 				linkedMembers.Remove (e.FullName);
 			}
-
-			// Need to check delegate cache fields before the normal field check
-			VerifyDelegateBackingFields (original, linked);
 
 			foreach (var f in original.Fields) {
 				if (verifiedGeneratedFields.Contains (f.FullName))
@@ -712,6 +713,41 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			Assert.That (linkedAttrs, Is.EquivalentTo (expectedAttrs), $"Security attributes on `{src}' are not matching");
 		}
 
+		void VerifyPrivateImplementationDetails (TypeDefinition original, TypeDefinition linked)
+		{
+			var expectedImplementationDetailsMethods = GetCustomAttributeCtorValues<string> (original, nameof (KeptPrivateImplementationDetailsAttribute))
+				.Select (attr => attr.ToString ())
+				.ToList ();
+
+			if (expectedImplementationDetailsMethods.Count == 0)
+				return;
+
+			VerifyPrivateImplementationDetailsType (original.Module, linked.Module, out TypeDefinition srcImplementationDetails, out TypeDefinition linkedImplementationDetails);
+			foreach (var methodName in expectedImplementationDetailsMethods) {
+				var originalMethod = srcImplementationDetails.Methods.FirstOrDefault (m => m.Name == methodName);
+				if (originalMethod == null)
+					Assert.Fail ($"Could not locate original private implementation details method {methodName}");
+
+				var linkedMethod = linkedImplementationDetails.Methods.FirstOrDefault (m => m.Name == methodName);
+				VerifyMethodKept (originalMethod, linkedMethod);
+				linkedMembers.Remove (linkedMethod.FullName);
+			}
+			verifiedGeneratedTypes.Add (srcImplementationDetails.FullName);
+		}
+
+		static void VerifyPrivateImplementationDetailsType (ModuleDefinition src, ModuleDefinition linked, out TypeDefinition srcImplementationDetails, out TypeDefinition linkedImplementationDetails)
+		{
+			srcImplementationDetails = src.Types.FirstOrDefault (t => string.IsNullOrEmpty (t.Namespace) && t.Name.StartsWith ("<PrivateImplementationDetails>"));
+
+			if (srcImplementationDetails == null)
+				Assert.Fail ("Could not locate <PrivateImplementationDetails> in the original assembly.  Does your test use initializers?");
+
+			linkedImplementationDetails = linked.Types.FirstOrDefault (t => string.IsNullOrEmpty (t.Namespace) && t.Name.StartsWith ("<PrivateImplementationDetails>"));
+
+			if (linkedImplementationDetails == null)
+				Assert.Fail ("Could not locate <PrivateImplementationDetails> in the linked assembly");
+		}
+
 		protected virtual void VerifyArrayInitializers (MethodDefinition src, MethodDefinition linked)
 		{
 			var expectedIndicies = GetCustomAttributeCtorValues<object> (src, nameof (KeptInitializerData))
@@ -726,15 +762,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			if (!src.HasBody)
 				Assert.Fail ($"`{nameof (KeptInitializerData)}` cannot be used on methods that don't have bodies");
 
-			var srcImplementationDetails = src.Module.Types.FirstOrDefault (t => string.IsNullOrEmpty (t.Namespace) && t.Name.StartsWith ("<PrivateImplementationDetails>"));
-
-			if (srcImplementationDetails == null)
-				Assert.Fail ("Could not locate <PrivateImplementationDetails> in the original assembly.  Does your test use initializers?");
-
-			var linkedImplementationDetails = linked.Module.Types.FirstOrDefault (t => string.IsNullOrEmpty (t.Namespace) && t.Name.StartsWith ("<PrivateImplementationDetails>"));
-
-			if (linkedImplementationDetails == null)
-				Assert.Fail ("Could not locate <PrivateImplementationDetails> in the linked assembly");
+			VerifyPrivateImplementationDetailsType (src.Module, linked.Module, out TypeDefinition srcImplementationDetails, out TypeDefinition linkedImplementationDetails);
 
 			var possibleInitializerFields = src.Body.Instructions
 				.Where (ins => IsLdtokenOnPrivateImplementationDetails (srcImplementationDetails, ins))
@@ -874,21 +902,33 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		void VerifyDelegateBackingFields (TypeDefinition src, TypeDefinition linked)
 		{
-			var expectedFieldNames = GetCustomAttributeCtorValues<string> (src, nameof (KeptDelegateCacheFieldAttribute))
-				.Select (unique => $"<>f__mg$cache{unique}")
+			var expectedFieldNames = src.CustomAttributes
+				.Where (a => a.AttributeType.Name == nameof (KeptDelegateCacheFieldAttribute))
+				.Select (a => (a.ConstructorArguments[0].Value as string, a.ConstructorArguments[1].Value as string))
+				.Select (indexAndField => $"<{indexAndField.Item1}>__{indexAndField.Item2}")
 				.ToList ();
 
 			if (expectedFieldNames.Count == 0)
 				return;
 
-			foreach (var srcField in src.Fields) {
-				if (!expectedFieldNames.Contains (srcField.Name))
+			foreach (var nestedType in src.NestedTypes) {
+				if (nestedType.Name != "<>O")
 					continue;
 
-				var linkedField = linked?.Fields.FirstOrDefault (l => l.Name == srcField.Name);
-				VerifyFieldKept (srcField, linkedField);
-				verifiedGeneratedFields.Add (srcField.FullName);
-				linkedMembers.Remove (srcField.FullName);
+				var linkedNestedType = linked.NestedTypes.FirstOrDefault (t => t.Name == nestedType.Name);
+				foreach (var expectedFieldName in expectedFieldNames) {
+					var originalField = nestedType.Fields.FirstOrDefault (f => f.Name == expectedFieldName);
+					if (originalField is null)
+						Assert.Fail ($"Invalid expected delegate backing field {expectedFieldName} in {src}. This member was not in the unlinked assembly");
+
+					var linkedField = linkedNestedType?.Fields.FirstOrDefault (f => f.Name == expectedFieldName);
+					VerifyFieldKept (originalField, linkedField);
+					verifiedGeneratedFields.Add (linkedField.FullName);
+					linkedMembers.Remove (linkedField.FullName);
+				}
+
+				VerifyTypeDefinitionKept (nestedType, linkedNestedType);
+				verifiedGeneratedTypes.Add (linkedNestedType.FullName);
 			}
 		}
 

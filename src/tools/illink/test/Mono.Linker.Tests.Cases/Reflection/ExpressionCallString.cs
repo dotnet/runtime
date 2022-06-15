@@ -10,6 +10,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 	[SetupCSharpCompilerToUse ("csc")]
 	[Reference ("System.Core.dll")]
 	[ExpectedNoWarnings]
+	[KeptPrivateImplementationDetails ("ThrowSwitchExpressionException")]
 	public class ExpressionCallString
 	{
 		public static void Main ()

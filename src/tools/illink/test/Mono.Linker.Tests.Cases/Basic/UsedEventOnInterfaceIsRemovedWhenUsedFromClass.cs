@@ -3,7 +3,7 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.Basic
 {
-	[KeptDelegateCacheField ("0")]
+	[KeptDelegateCacheField ("0", nameof (Bar_Ping))]
 	class UsedEventOnInterfaceIsRemovedWhenUsedFromClass
 	{
 		static void Main ()

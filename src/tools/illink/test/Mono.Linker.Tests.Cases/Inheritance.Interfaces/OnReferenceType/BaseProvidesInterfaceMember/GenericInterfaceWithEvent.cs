@@ -2,7 +2,7 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BaseProvidesInterfaceMember
 {
-	[KeptDelegateCacheField ("0")]
+	[KeptDelegateCacheField ("0", nameof (EventMethod))]
 	public class GenericInterfaceWithEvent
 	{
 		public static void Main ()
