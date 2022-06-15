@@ -2196,34 +2196,45 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
         preferredStartAddress += preferredStartAddressIncrement;
 
     } while (sizeOfAllocation >= MemoryProbingIncrement);
-#else
 
-    // Always try to allocate above the location of libcoreclr on arm - we want to start allocating near it (withih 128Mb distance)
-    // however, we want to reserve as much as possible (ideally, 756Mb)
-    preferredStartAddress = coreclrLoadAddress + CoreClrLibrarySize;
+#else // TARGET_XARCH
 
-    do
+    if ((coreclrLoadAddress < 0xFFFFFFFF) || ((coreclrLoadAddress - MaxExecutableMemorySizeNearCoreClr) < 0xFFFFFFFF))
     {
-        m_startAddress = ReserveVirtualMemory(pthrCurrent, (void*)preferredStartAddress, sizeOfAllocation, MEM_RESERVE_EXECUTABLE);
-        if (m_startAddress != nullptr)
+        // Try to allocate above the location of libcoreclr on arm - we want to start allocating near it (withih 128Mb distance)
+        // however, we want to reserve as much as possible (ideally, 756Mb)
+        preferredStartAddress = coreclrLoadAddress + CoreClrLibrarySize;
+
+        do
         {
-            break;
-        }
+            m_startAddress = ReserveVirtualMemory(pthrCurrent, (void*)preferredStartAddress, sizeOfAllocation, MEM_RESERVE_EXECUTABLE);
+            if (m_startAddress != nullptr)
+            {
+                break;
+            }
 
-        // Try to allocate a smaller region...
-        sizeOfAllocation -= 64 * 1024 * 1024;
-        const int32_t smallestAllocSize = MaxExecutableMemorySizeNearCoreClr / 3 * 2;
-        if (sizeOfAllocation < smallestAllocSize)
-        {
-            // ...but not less than 2/3rd of what we initially planned
-            sizeOfAllocation = smallestAllocSize;
-        }
+            // Try to allocate a smaller region...
+            sizeOfAllocation -= 64 * 1024 * 1024;
+            const int32_t smallestAllocSize = MaxExecutableMemorySizeNearCoreClr / 3 * 2;
+            if (sizeOfAllocation < smallestAllocSize)
+            {
+                // ...but not less than 2/3rd of what we initially planned
+                sizeOfAllocation = smallestAllocSize;
+            }
 
-        // Probe each 8Mb
-        preferredStartAddress += 8 * 1024 * 1024;
+            // Probe each 8Mb
+            preferredStartAddress += 8 * 1024 * 1024;
 
-        // bail out if preferredStartAddress is already too far from coreclr and we won't be able to use relocs
-    } while ((preferredStartAddress - coreclrLoadAddress) < (128 * 1024 * 1024));
+            // bail out if preferredStartAddress is already too far from coreclr and we won't be able to use relocs
+        } while ((preferredStartAddress - coreclrLoadAddress) < (128 * 1024 * 1024));
+    }
+    else
+    {
+        // Rare case: if we have to reserve memory above the coreclr we'll only try to allocate 128Mb (for relocs) in front of it.
+        // It doesn't make much sense to do probing here in a loop
+        preferredStartAddress = coreclrLoadAddress - 128 * 1024 * 1024;
+        m_startAddress = ReserveVirtualMemory(pthrCurrent, (void*)preferredStartAddress, 128 * 1024 * 1024, MEM_RESERVE_EXECUTABLE);
+    }
 #endif
 
     if (m_startAddress == nullptr)

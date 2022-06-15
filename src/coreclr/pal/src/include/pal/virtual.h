@@ -186,7 +186,7 @@ private:
     // that can be used to calculate an approximate location of the memory that
     // is in 2GB range from the coreclr library. In addition, having precise size of libcoreclr
     // is not necessary for the calculations.
-    static const int32_t CoreClrLibrarySize = 10 * 1024 * 1024;
+    static const int32_t CoreClrLibrarySize = 16 * 1024 * 1024;
 
 #ifdef TARGET_XARCH
     // This constant represent the max size of the virtual memory that this allocator
