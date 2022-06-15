@@ -281,6 +281,9 @@ namespace Wasm.Build.Tests
         {
             CreateBlazorWasmTemplateProject(id);
 
+            string extraProps = @"
+                <EmccExtraLDFlags>-sERROR_ON_UNDEFINED_SYMBOLS=0</EmccExtraLDFlags>
+            ";
             string extraItems = @$"
                 <PackageReference Include=""SkiaSharp"" Version=""2.80.3"" />
                 <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.80.3"" />
@@ -289,7 +292,7 @@ namespace Wasm.Build.Tests
                 <WasmFilesToIncludeInFileSystem Include=""{Path.Combine(BuildEnvironment.TestAssetsPath, "mono.png")}"" />
             ";
             string projectFile = Path.Combine(_projectDir!, $"{id}.csproj");
-            AddItemsPropertiesToProject(projectFile, extraItems: extraItems);
+            AddItemsPropertiesToProject(projectFile, extraItems: extraItems, extraProperties: extraProps);
 
             return projectFile;
         }
