@@ -207,7 +207,6 @@
         <PayloadArchive>%(Identity)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
-        <OriginalFileName>%(Identity)</OriginalFileName>
       </HelixWorkItem>
 
       <_DefaultWorkItems Remove="@(_DefaultWorkItems)" />
@@ -217,7 +216,6 @@
         <PayloadArchive>%(Identity)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
-        <OriginalFileName>%(FileName)</OriginalFileName>
       </HelixWorkItem>
     </ItemGroup>
   </Target>
