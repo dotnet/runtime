@@ -115,7 +115,6 @@ namespace System.Runtime.Loader.Tests
         public static void LoadFromAssemblyName_ValidTrustedPlatformAssembly()
         {
             var asmName = typeof(System.Linq.Enumerable).Assembly.GetName();
-            asmName.CodeBase = null;
             var loadContext = new CustomTPALoadContext();
 
             // We should be able to override (and thus, load) assemblies that were
@@ -131,7 +130,6 @@ namespace System.Runtime.Loader.Tests
         public static void LoadFromAssemblyName_FallbackToDefaultContext()
         {
             var asmName = typeof(System.Linq.Enumerable).Assembly.GetName();
-            asmName.CodeBase = null;
             var loadContext = new AssemblyLoadContext("FallbackToDefaultContextTest");
 
             // This should not have any special handlers, so it should just find the version in the default context

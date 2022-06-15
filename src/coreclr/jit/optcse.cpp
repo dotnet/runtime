@@ -3584,7 +3584,6 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
 
         case GT_ARR_ELEM:
         case GT_ARR_LENGTH:
-        case GT_LCL_FLD:
             return true;
 
         case GT_LCL_VAR:
@@ -3687,7 +3686,9 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
             return true; // allow Intrinsics to be CSE-ed
 
         case GT_OBJ:
-            return varTypeIsEnregisterable(type); // Allow enregisterable GT_OBJ's to be CSE-ed. (i.e. SIMD types)
+        case GT_LCL_FLD:
+            // TODO-1stClassStructs: support CSE for enregisterable TYP_STRUCTs.
+            return varTypeIsEnregisterable(type);
 
         case GT_COMMA:
             return true; // Allow GT_COMMA nodes to be CSE-ed.
