@@ -62,7 +62,7 @@ mono_metadata_update_cleanup_on_close (MonoImage *base_image)
 }
 
 void
-mono_image_effective_table_slow (const MonoTableInfo **t, int idx)
+mono_image_effective_table_slow (const MonoTableInfo **t, uint32_t idx)
 {
 	mono_component_hot_reload ()->effective_table_slow (t, idx);
 }
@@ -143,7 +143,7 @@ mono_metadata_has_updates_api (void)
  * Returns the number of rows from the specified table that the current thread can see.
  * If there's a EnC metadata update, this number may change.
  */
-int
+guint32
 mono_metadata_table_num_rows_slow (MonoImage *base_image, int table_index)
 {
 	return mono_component_hot_reload()->table_num_rows_slow (base_image, table_index);
