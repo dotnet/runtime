@@ -55,6 +55,10 @@ internal static class ReflectionTest
         TestNotReflectedIsNotReflectable.Run();
         TestGenericInstantiationsAreEquallyReflectable.Run();
 #endif
+        TestAttributeInheritance2.Run();
+        TestInvokeMethodMetadata.Run();
+        TestVTableOfNullableUnderlyingTypes.Run();
+        TestInterfaceLists.Run();
 
         //
         // Mostly functionality tests
@@ -1872,6 +1876,97 @@ internal static class ReflectionTest
             RuntimeHelpers.RunClassConstructor(typeof(TypeWithNoStaticFieldsButACCtor).TypeHandle);
             if (!s_cctorRan)
                 throw new Exception();
+        }
+    }
+
+    class TestAttributeInheritance2
+    {
+        [AttributeUsage(AttributeTargets.All, Inherited = true)]
+        class AttAttribute : Attribute { }
+
+        class Base
+        {
+            [Att]
+            public virtual void VirtualMethodWithAttribute() { }
+        }
+
+        class Derived : Base
+        {
+            public override void VirtualMethodWithAttribute() { }
+        }
+
+        public static void Run()
+        {
+            object[] attrs = typeof(Derived).GetMethod(nameof(Derived.VirtualMethodWithAttribute)).GetCustomAttributes(inherit: true);
+            if (attrs.Length != 1 || attrs[0].GetType().Name != nameof(AttAttribute))
+            {
+                throw new Exception();
+            }
+        }
+    }
+
+    class TestInvokeMethodMetadata
+    {
+        delegate int WithDefaultParameter1(int value = 1234);
+        delegate DateTime WithDefaultParameter2(DateTime value);
+
+        public static int Method(int value) => value;
+
+        public static DateTime Method(DateTime value) => value;
+
+        public static void Run()
+        {
+            // Check that we have metadata for the Invoke method to convert Type.Missing to the actual value.
+            WithDefaultParameter1 del1 = Method;
+            int val = (int)del1.DynamicInvoke(new object[] { Type.Missing });
+            if (val != 1234)
+                throw new Exception();
+
+            // Check that we have metadata for the Invoke method to find a matching method
+            Delegate del2 = Delegate.CreateDelegate(typeof(WithDefaultParameter2), typeof(TestInvokeMethodMetadata), nameof(Method));
+            if (del2.Method.ReturnType != typeof(DateTime))
+                throw new Exception();
+        }
+    }
+
+    class TestVTableOfNullableUnderlyingTypes
+    {
+        struct NeverAllocated
+        {
+            public override string ToString() => "Never allocated";
+        }
+
+        static Type s_hidden = typeof(Nullable<NeverAllocated>);
+
+        public static void Run()
+        {
+            // Underlying type of a Nullable needs to be considered constructed.
+            // Trimming warning suppressions in the libraries depend on this invariant.
+            var instance = RuntimeHelpers.GetUninitializedObject(s_hidden);
+            if (instance.ToString() != "Never allocated")
+                throw new Exception();
+        }
+    }
+
+    class TestInterfaceLists
+    {
+        interface IGeneric<T> { }
+
+        class Class<T> : IGeneric<T> { }
+
+        static Type s_hidden = typeof(Class<string>);
+
+        public static void Run()
+        {
+            // Can't drop an interface from the interface list if the interface is referenced.
+            // Trimming warning suppressions in the libraries depend on this invariant.
+            foreach (var intface in s_hidden.GetInterfaces())
+            {
+                if (intface.HasSameMetadataDefinitionAs(typeof(IGeneric<object>)))
+                    return;
+            }
+
+            throw new Exception();
         }
     }
 

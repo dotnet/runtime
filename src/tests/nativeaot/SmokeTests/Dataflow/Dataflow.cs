@@ -389,7 +389,10 @@ class Program
             Assert.Equal(1, typeof(TypeWithSpecificMethodKept).CountMethods());
             Assert.Equal(1, typeof(TypeWithSpecificOverloadKept).CountMethods());
             Assert.Equal(2, typeof(TypeWithAllOverloadsKept).CountMethods());
-            Assert.Equal(2, typeof(TestDynamicDependency).CountMethods());
+
+            // We only expect DependentMethod. We specifically don't expect to see the Run method (current method).
+            Assert.Equal(1, typeof(TestDynamicDependency).CountMethods());
+
             Assert.Equal(1, typeof(TypeWithPublicPropertiesKept).CountProperties());
         }
     }
