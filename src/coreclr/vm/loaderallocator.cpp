@@ -919,10 +919,11 @@ OBJECTREF LoaderAllocator::CompareExchangeValueInHandle(LOADERHANDLE handle, OBJ
     if ((((UINT_PTR)handle) & 1) != 0)
     {
         OBJECTREF *ptr = (OBJECTREF *)(((UINT_PTR)handle) - 1);
-        gc.previous = *ptr;
-        if ((*ptr) == gc.compare)
+
+        gc.previous = InterlockedCompareExchangeT(ptr, gc.value, gc.compare);
+        if (gc.previous == gc.compare)
         {
-            SetObjectReference(ptr, gc.value);
+            ErectWriteBarrier(ptr, gc.value);
         }
     }
     else
