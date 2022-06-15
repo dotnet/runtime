@@ -56,6 +56,9 @@ namespace Wasm.Build.Tests
             string projectName = $"AppUsingSkiaSharp";
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs,
+                            extraProperties: @"
+                                <EmccExtraLDFlags>-sERROR_ON_UNDEFINED_SYMBOLS=0</EmccExtraLDFlags>
+                            ",
                             extraItems: @$"
                                 <PackageReference Include=""SkiaSharp"" Version=""2.80.3"" />
                                 <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.80.3"" />
