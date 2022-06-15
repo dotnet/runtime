@@ -15,7 +15,7 @@ namespace Mono.Linker.Tests.Cases.Attributes.Csc
 	[RemovedMemberInAssembly ("LibraryWithType.dll", typeof (TypeDefinedInReference), "Unused()")]
 	[KeptMemberInAssembly ("LibraryWithAttribute.dll", typeof (AttributeDefinedInReference), ".ctor()")]
 	[KeptMemberInAssembly ("LibraryWithAttribute.dll", typeof (AttributeDefinedInReference), "set_PropertyType(System.Type)")]
-	[KeptDelegateCacheField ("0")]
+	[KeptDelegateCacheField ("0", nameof (FooOnMyEvent))]
 	public class OnlyTypeUsedInAssemblyIsTypeOnAttributePropertyOnEvent
 	{
 		public static void Main ()

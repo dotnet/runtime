@@ -5,7 +5,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
 {
 	[SetupLinkerArgument ("--used-attrs-only", "true")]
-	[KeptDelegateCacheField ("0")]
+	[KeptDelegateCacheField ("0", nameof (Tmp_Something))]
 	class UsedAttributeTypeOnEventIsKept
 	{
 		static void Main ()

@@ -9,6 +9,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 {
 	[KeptMember (".cctor()")]
 	[ExpectedNoWarnings ()]
+	[KeptDelegateCacheField ("0", nameof (AssemblyResolver))]
+	[KeptDelegateCacheField ("1", nameof (GetTypeFromAssembly))]
 	public class TypeUsedViaReflection
 	{
 		public static void Main ()

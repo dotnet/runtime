@@ -19,6 +19,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			case OperationKind.FieldReference:
 			case OperationKind.ParameterReference:
 			case OperationKind.ArrayElementReference:
+			case OperationKind.ImplicitIndexerReference:
 				break;
 			case OperationKind.None:
 			case OperationKind.InstanceReference:

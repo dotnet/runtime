@@ -11,6 +11,7 @@ using DAMT = System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes;
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
 	[ExpectedNoWarnings]
+	[KeptPrivateImplementationDetails ("ThrowSwitchExpressionException")]
 	class NullableAnnotations
 	{
 		[Kept]
