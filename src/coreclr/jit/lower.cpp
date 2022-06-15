@@ -3602,9 +3602,10 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
         BlockRange().InsertBefore(lclStore, bitcast);
         ContainCheckBitCast(bitcast);
     }
-    else if (src->OperIs(GT_CAST) && varTypeIsIntegral(src) && varTypeIsIntegral(lclRegType) &&
-             !varTypeUsesFloatReg(lclRegType) && !varTypeUsesFloatReg(src->gtGetOp1()) &&
-             genTypeSize(lclRegType) <= genTypeSize(src->gtGetOp1()) && !src->gtOverflow())
+    // Catch-all narrow cast removal for int -> int.
+    else if (src->OperIs(GT_CAST) && varTypeIsIntegral(lclRegType) && varTypeIsIntegral(src) &&
+             varTypeIsIntegral(src->gtGetOp1()) && !varTypeUsesFloatReg(lclRegType) && !varTypeUsesFloatReg(src) &&
+             !varTypeUsesFloatReg(src->gtGetOp1()) && genTypeSize(lclRegType) <= genTypeSize(src) && !src->gtOverflow())
     {
         LclVarDsc* varDsc = comp->lvaGetDesc(lclStore->AsLclVarCommon());
         if (varDsc->lvNormalizeOnLoad())
