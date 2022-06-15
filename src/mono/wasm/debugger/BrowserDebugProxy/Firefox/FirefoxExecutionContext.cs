@@ -14,7 +14,7 @@ internal sealed class FirefoxExecutionContext : ExecutionContext
     public string? GlobalName { get; set; }
     public Result LastDebuggerAgentBufferReceived { get; set; }
 
-    public FirefoxExecutionContext(MonoSDBHelper sdbAgent, int id, string actorName, PauseOnExceptionsKind pauseOnExceptions = PauseOnExceptionsKind.Unset) : base(sdbAgent, id, actorName, pauseOnExceptions)
+    public FirefoxExecutionContext(MonoSDBHelper sdbAgent, int id, string actorName) : base(sdbAgent, id, actorName, PauseOnExceptionsKind.Unset)
     {
         ActorName = actorName;
     }
