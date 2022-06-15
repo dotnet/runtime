@@ -796,6 +796,24 @@ namespace System.Tests
         public static void Max_Double_NotNetFramework(double x, double y, double expectedResult)
         {
             AssertExtensions.Equal(expectedResult, Math.Max(x, y), 0.0);
+
+            if (double.IsNaN(x))
+            {
+                ulong bits = BitConverter.DoubleToUInt64Bits(x);
+                bits ^= BitConverter.DoubleToUInt64Bits(-0.0);
+                x = BitConverter.UInt64BitsToDouble(bits);
+
+                AssertExtensions.Equal(expectedResult, Math.Max(x, y), 0.0);
+            }
+
+            if (double.IsNaN(y))
+            {
+                ulong bits = BitConverter.DoubleToUInt64Bits(y);
+                bits ^= BitConverter.DoubleToUInt64Bits(-0.0);
+                y = BitConverter.UInt64BitsToDouble(bits);
+
+                AssertExtensions.Equal(expectedResult, Math.Max(x, y), 0.0);
+            }
         }
 
         [Fact]
@@ -854,6 +872,24 @@ namespace System.Tests
         public static void Max_Single_NotNetFramework(float x, float y, float expectedResult)
         {
             AssertExtensions.Equal(expectedResult, Math.Max(x, y), 0.0f);
+
+            if (float.IsNaN(x))
+            {
+                uint bits = BitConverter.SingleToUInt32Bits(x);
+                bits ^= BitConverter.SingleToUInt32Bits(-0.0f);
+                x = BitConverter.UInt32BitsToSingle(bits);
+
+                AssertExtensions.Equal(expectedResult, Math.Max(x, y), 0.0f);
+            }
+
+            if (float.IsNaN(y))
+            {
+                uint bits = BitConverter.SingleToUInt32Bits(y);
+                bits ^= BitConverter.SingleToUInt32Bits(-0.0f);
+                y = BitConverter.UInt32BitsToSingle(bits);
+
+                AssertExtensions.Equal(expectedResult, Math.Max(x, y), 0.0f);
+            }
         }
 
         [Fact]
@@ -919,6 +955,24 @@ namespace System.Tests
         public static void Min_Double_NotNetFramework(double x, double y, double expectedResult)
         {
             AssertExtensions.Equal(expectedResult, Math.Min(x, y), 0.0);
+
+            if (double.IsNaN(x))
+            {
+                ulong bits = BitConverter.DoubleToUInt64Bits(x);
+                bits ^= BitConverter.DoubleToUInt64Bits(-0.0);
+                x = BitConverter.UInt64BitsToDouble(bits);
+
+                AssertExtensions.Equal(expectedResult, Math.Min(x, y), 0.0);
+            }
+
+            if (double.IsNaN(y))
+            {
+                ulong bits = BitConverter.DoubleToUInt64Bits(y);
+                bits ^= BitConverter.DoubleToUInt64Bits(-0.0);
+                y = BitConverter.UInt64BitsToDouble(bits);
+
+                AssertExtensions.Equal(expectedResult, Math.Min(x, y), 0.0);
+            }
         }
 
         [Fact]
@@ -977,6 +1031,24 @@ namespace System.Tests
         public static void Min_Single_NotNetFramework(float x, float y, float expectedResult)
         {
             AssertExtensions.Equal(expectedResult, Math.Min(x, y), 0.0f);
+
+            if (float.IsNaN(x))
+            {
+                uint bits = BitConverter.SingleToUInt32Bits(x);
+                bits ^= BitConverter.SingleToUInt32Bits(-0.0f);
+                x = BitConverter.UInt32BitsToSingle(bits);
+
+                AssertExtensions.Equal(expectedResult, Math.Min(x, y), 0.0f);
+            }
+
+            if (float.IsNaN(y))
+            {
+                uint bits = BitConverter.SingleToUInt32Bits(y);
+                bits ^= BitConverter.SingleToUInt32Bits(-0.0f);
+                y = BitConverter.UInt32BitsToSingle(bits);
+
+                AssertExtensions.Equal(expectedResult, Math.Min(x, y), 0.0f);
+            }
         }
 
         [Fact]
@@ -2566,6 +2638,24 @@ namespace System.Tests
         public static void MaxMagnitude(double x, double y, double expectedResult)
         {
             AssertExtensions.Equal(expectedResult, Math.MaxMagnitude(x, y), 0.0);
+
+            if (double.IsNaN(x))
+            {
+                ulong bits = BitConverter.DoubleToUInt64Bits(x);
+                bits ^= BitConverter.DoubleToUInt64Bits(-0.0);
+                x = BitConverter.UInt64BitsToDouble(bits);
+
+                AssertExtensions.Equal(expectedResult, Math.MaxMagnitude(x, y), 0.0);
+            }
+
+            if (double.IsNaN(y))
+            {
+                ulong bits = BitConverter.DoubleToUInt64Bits(y);
+                bits ^= BitConverter.DoubleToUInt64Bits(-0.0);
+                y = BitConverter.UInt64BitsToDouble(bits);
+
+                AssertExtensions.Equal(expectedResult, Math.MaxMagnitude(x, y), 0.0);
+            }
         }
 
         [Theory]
@@ -2589,6 +2679,24 @@ namespace System.Tests
         public static void MinMagnitude(double x, double y, double expectedResult)
         {
             AssertExtensions.Equal(expectedResult, Math.MinMagnitude(x, y), 0.0);
+
+            if (double.IsNaN(x))
+            {
+                ulong bits = BitConverter.DoubleToUInt64Bits(x);
+                bits ^= BitConverter.DoubleToUInt64Bits(-0.0);
+                x = BitConverter.UInt64BitsToDouble(bits);
+
+                AssertExtensions.Equal(expectedResult, Math.MinMagnitude(x, y), 0.0);
+            }
+
+            if (double.IsNaN(y))
+            {
+                ulong bits = BitConverter.DoubleToUInt64Bits(y);
+                bits ^= BitConverter.DoubleToUInt64Bits(-0.0);
+                y = BitConverter.UInt64BitsToDouble(bits);
+
+                AssertExtensions.Equal(expectedResult, Math.MinMagnitude(x, y), 0.0);
+            }
         }
 
         [Theory]
