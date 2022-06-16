@@ -54,34 +54,30 @@ namespace ILCompiler
             }
 
             string action = GetAttribute(methodNav, "body");
-            if (!String.IsNullOrEmpty(action))
+            switch (action)
             {
-                switch (action)
-                {
-                    case "remove":
-                        _methodSubstitutions.Add(method, BodySubstitution.ThrowingBody);
-                        break;
-                    case "stub":
-                        BodySubstitution stubBody;
-                        if (method.Signature.ReturnType.IsVoid)
-                            stubBody = BodySubstitution.EmptyBody;
-                        else
-                            stubBody = BodySubstitution.Create(TryCreateSubstitution(method.Signature.ReturnType, GetAttribute(methodNav, "value")));
+                case "remove":
+                    _methodSubstitutions.Add(method, BodySubstitution.ThrowingBody);
+                    break;
+                case "stub":
+                    BodySubstitution stubBody;
+                    if (method.Signature.ReturnType.IsVoid)
+                        stubBody = BodySubstitution.EmptyBody;
+                    else
+                        stubBody = BodySubstitution.Create(TryCreateSubstitution(method.Signature.ReturnType, GetAttribute(methodNav, "value")));
 
-                        if (stubBody != null)
-                        {
-                            _methodSubstitutions[method] = stubBody;
-                        }
-                        else
-                        {
-                            // Context.LogWarning ($"Invalid value for '{method.GetDisplayName ()}' stub", 2010, _xmlDocumentLocation);
-                        }
-
-                        break;
-                    default:
-                        //Context.LogWarning($"Unknown body modification '{action}' for '{method.GetDisplayName()}'", 2011, _xmlDocumentLocation);
-                        break;
-                }
+                    if (stubBody != null)
+                    {
+                        _methodSubstitutions[method] = stubBody;
+                    }
+                    else
+                    {
+                        // Context.LogWarning ($"Invalid value for '{method.GetDisplayName ()}' stub", 2010, _xmlDocumentLocation);
+                    }
+                    break;
+                default:
+                    //Context.LogWarning($"Unknown body modification '{action}' for '{method.GetDisplayName()}'", 2011, _xmlDocumentLocation);
+                    break;
             }
         }
 
