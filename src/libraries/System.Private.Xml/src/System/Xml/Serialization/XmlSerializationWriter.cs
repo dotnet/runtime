@@ -3850,9 +3850,9 @@ namespace System.Xml.Serialization
             if (text.Mapping is PrimitiveMapping primitive)
             {
                 Writer.Write("WriteValue(");
-                if (text.Mapping is EnumMapping enum)
+                if (text.Mapping is EnumMapping enumMapping)
                 {
-                    WriteEnumValue(enum, source);
+                    WriteEnumValue(enumMapping, source);
                 }
                 else
                 {
