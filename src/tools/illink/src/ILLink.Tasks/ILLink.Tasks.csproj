@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <!-- Keep these in sync with ILLinkTasksAssembly in Microsoft.NET.ILLInk.Tasks.props. -->
     <!-- Keep the net#.0 TFM in sync with the Mono.Linker.csproj condition below. -->
@@ -20,6 +20,8 @@
     <!-- Place linker and cecil alongside ILLink.Tasks in the output, for integration tests. -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <Nullable>disable</Nullable>
+    <!-- Targets don't match the package id. This is intentional. -->
+    <NoWarn>$(NoWarn);NU5129</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -33,6 +35,9 @@
   <ItemGroup>
     <Content Include="sdk/Sdk.props" PackagePath="Sdk/" />
     <Content Include="build/$(PackageId).props" PackagePath="build/" />
+    <!-- Note: this should not match the package name, because we don't want the targets
+         to be imported by nuget. The SDK will import them in the right order. -->
+    <Content Include="build/Microsoft.NET.ILLink.targets" PackagePath="build/" />
   </ItemGroup>
 
   <ItemGroup>
