@@ -52,7 +52,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			compilationRoots.Add (new MainMethodRootProvider (entrypointModule, CreateInitializerList (typeSystemContext, options)));
 
-			ILProvider ilProvider = new NativeAotILProvider (compilationGroup);
+			ILProvider ilProvider = new NativeAotILProvider ();
 
 			ilProvider = new FeatureSwitchManager (ilProvider, options.FeatureSwitches);
 

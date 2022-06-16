@@ -27,6 +27,7 @@ namespace Internal.IL
     {
         private CompilationModuleGroup _compilationModuleGroup;
         private MutableModule _manifestMutableModule;
+        private int _version = 0;
 
         public ReadyToRunILProvider(CompilationModuleGroup compilationModuleGroup)
         {
@@ -37,6 +38,13 @@ namespace Internal.IL
         {
             _manifestMutableModule = module;
         }
+
+        void IncrementVersion()
+        {
+            _version++;
+        }
+
+        public int Version => _version;
 
         private MethodIL TryGetIntrinsicMethodILForActivator(MethodDesc method)
         {

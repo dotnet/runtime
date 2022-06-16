@@ -65,7 +65,7 @@ namespace ILCompiler
             foreach (var rootProvider in compilationRoots)
                 rootProvider.AddCompilationRoots(rootingService);
 
-            _methodILCache = new ILCache(ilProvider, NodeFactory.CompilationModuleGroup);
+            _methodILCache = new ILCache((ReadyToRunILProvider)ilProvider, NodeFactory.CompilationModuleGroup);
         }
 
         public abstract void Dispose();
@@ -136,11 +136,11 @@ namespace ILCompiler
 
         public sealed class ILCache : LockFreeReaderHashtable<MethodDesc, ILCache.MethodILData>
         {
-            public ILProvider ILProvider { get; }
+            public ReadyToRunILProvider ILProvider { get; }
             public int ExpectedILProviderVersion { get; }
             private readonly CompilationModuleGroup _compilationModuleGroup;
 
-            public ILCache(ILProvider provider, CompilationModuleGroup compilationModuleGroup)
+            public ILCache(ReadyToRunILProvider provider, CompilationModuleGroup compilationModuleGroup)
             {
                 ILProvider = provider;
                 ExpectedILProviderVersion = provider.Version;

@@ -491,6 +491,9 @@
     <Compile Include="..\..\Common\TypeSystem\IL\ILTokenReplacer.cs">
       <Link>IL\ILTokenReplacer.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\ILReader.cs">
+      <Link>IL\ILReader.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\ILEmitter.cs">
       <Link>IL\Stubs\ILEmitter.cs</Link>
     </Compile>
