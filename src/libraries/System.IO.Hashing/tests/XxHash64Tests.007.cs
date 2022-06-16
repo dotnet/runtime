@@ -47,19 +47,19 @@ namespace System.IO.Hashing.Tests
                 // Same inputs as the main XxHash64 tests, but with the seed applied.
                 new TestCase(
                     "Nobody inspects the spammish repetition",
-                    Encoding.ASCII.GetBytes("Nobody inspects the spammish repetition"),
+                    "Nobody inspects the spammish repetition"u8.ToArray(),
                     "C86A41E2F34280A0"),
                 new TestCase(
                     "The quick brown fox jumps over the lazy dog",
-                    Encoding.ASCII.GetBytes("The quick brown fox jumps over the lazy dog"),
+                    "The quick brown fox jumps over the lazy dog"u8.ToArray(),
                     "BB05857F11B054EB"),
                 new TestCase(
                     "The quick brown fox jumps over the lazy dog.",
-                    Encoding.ASCII.GetBytes("The quick brown fox jumps over the lazy dog."),
+                    "The quick brown fox jumps over the lazy dog."u8.ToArray(),
                     "618682461CB28F83"),
                 new TestCase(
                     "abc",
-                    Encoding.ASCII.GetBytes("abc"),
+                    "abc"u8.ToArray(),
                     "6BF4B26E3CA10C20"),
                 new TestCase(
                     "123456",

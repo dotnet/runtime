@@ -42,7 +42,9 @@
       COMPlus_HeapVerify;
       COMPlus_JITMinOpts;
       COMPlus_JitELTHookEnabled;
+      COMPlus_JitFakeProcedureSplitting;
       COMPlus_JitStress;
+      COMPlus_JitStressProcedureSplitting;
       COMPlus_JitStressRegs;
       COMPlus_TailcallStress;
       COMPlus_ReadyToRun;
@@ -188,6 +190,7 @@
     <TestEnvironment Include="jitosr" TC_OnStackReplacement="1" TC_QuickJitForLoops="1" TieredCompilation="1" />
     <TestEnvironment Include="jitosr_stress" TC_OnStackReplacement="1" TC_QuickJitForLoops="1" TC_OnStackReplacement_InitialCounter="1" OSR_HitLimit="1" TieredCompilation="1" />
     <TestEnvironment Include="jitosr_stress_random" TC_OnStackReplacement="1" TC_QuickJitForLoops="1" TC_OnStackReplacement_InitialCounter="1" OSR_HitLimit="2" TieredCompilation="1" JitRandomOnStackReplacement="15"/>
+    <TestEnvironment Include="jit_stress_splitting" JitFakeProcedureSplitting="1" JitStressProcedureSplitting="1" />
     <TestEnvironment Include="jitosr_pgo" TC_OnStackReplacement="1" TC_QuickJitForLoops="1" TieredCompilation="1" TieredPGO="1" />
     <TestEnvironment Include="jitpartialcompilation" TC_PartialCompilation="1" TC_QuickJitForLoops="1" TieredCompilation="1" />
     <TestEnvironment Include="jitpartialcompilation_pgo" TC_PartialCompilation="1" TC_QuickJitForLoops="1" TieredCompilation="1" TieredPGO="1" />

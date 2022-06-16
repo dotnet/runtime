@@ -1125,14 +1125,13 @@ void Compiler::eeDispLineInfos()
 void Compiler::eeAllocMem(AllocMemArgs* args)
 {
 #ifdef DEBUG
-    // Fake splitting implementation: hot section = hot code + 4K buffer + cold code
-    const UNATIVE_OFFSET hotSizeRequest      = args->hotCodeSize;
-    const UNATIVE_OFFSET coldSizeRequest     = args->coldCodeSize;
-    const UNATIVE_OFFSET fakeSplittingBuffer = 4096;
+    const UNATIVE_OFFSET hotSizeRequest  = args->hotCodeSize;
+    const UNATIVE_OFFSET coldSizeRequest = args->coldCodeSize;
 
+    // Fake splitting implementation: place hot/cold code in contiguous section
     if (JitConfig.JitFakeProcedureSplitting() && (coldSizeRequest > 0))
     {
-        args->hotCodeSize  = hotSizeRequest + fakeSplittingBuffer + coldSizeRequest;
+        args->hotCodeSize  = hotSizeRequest + coldSizeRequest;
         args->coldCodeSize = 0;
     }
 #endif
@@ -1143,8 +1142,8 @@ void Compiler::eeAllocMem(AllocMemArgs* args)
     if (JitConfig.JitFakeProcedureSplitting() && (coldSizeRequest > 0))
     {
         // Fix up hot/cold code pointers
-        args->coldCodeBlock   = ((BYTE*)args->hotCodeBlock) + hotSizeRequest + fakeSplittingBuffer;
-        args->coldCodeBlockRW = ((BYTE*)args->hotCodeBlockRW) + hotSizeRequest + fakeSplittingBuffer;
+        args->coldCodeBlock   = ((BYTE*)args->hotCodeBlock) + hotSizeRequest;
+        args->coldCodeBlockRW = ((BYTE*)args->hotCodeBlockRW) + hotSizeRequest;
 
         // Reset args' hot/cold code sizes in case caller reads them later
         args->hotCodeSize  = hotSizeRequest;
@@ -1160,13 +1159,6 @@ void Compiler::eeReserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwind
     {
         printf("reserveUnwindInfo(isFunclet=%s, isColdCode=%s, unwindSize=0x%x)\n", isFunclet ? "true" : "false",
                isColdCode ? "true" : "false", unwindSize);
-    }
-
-    // Fake splitting currently does not handle unwind info for cold code
-    if (isColdCode && JitConfig.JitFakeProcedureSplitting())
-    {
-        JITDUMP("reserveUnwindInfo for cold code with JitFakeProcedureSplitting enabled: ignoring cold unwind info\n");
-        return;
     }
 #endif // DEBUG
 
@@ -1206,13 +1198,6 @@ void Compiler::eeAllocUnwindInfo(BYTE*          pHotCode,
                 break;
         }
         printf(")\n");
-    }
-
-    // Fake splitting currently does not handle unwind info for cold code
-    if (pColdCode && JitConfig.JitFakeProcedureSplitting())
-    {
-        JITDUMP("allocUnwindInfo for cold code with JitFakeProcedureSplitting enabled: ignoring cold unwind info\n");
-        return;
     }
 #endif // DEBUG
 

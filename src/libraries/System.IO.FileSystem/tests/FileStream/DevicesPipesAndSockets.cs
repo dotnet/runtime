@@ -21,7 +21,7 @@ namespace System.IO.Tests
         {
             FileStreamOptions options = new() { Options = fileOptions, Access = FileAccess.Write, Share = FileShare.Write };
             using FileStream fs = new(devicePath, options);
-            fs.Write(Encoding.UTF8.GetBytes("foo"));
+            fs.Write("foo"u8);
         }
 
         [Theory]
@@ -30,21 +30,21 @@ namespace System.IO.Tests
         {
             FileStreamOptions options = new() { Options = fileOptions, Access = FileAccess.Write, Share = FileShare.Write };
             using FileStream fs = new(devicePath, options);
-            await fs.WriteAsync(Encoding.UTF8.GetBytes("foo"));
+            await fs.WriteAsync("foo"u8.ToArray());
         }
 
         [Theory]
         [MemberData(nameof(DevicePath_TestData))]
         public void CharacterDevice_WriteAllBytes(string devicePath)
         {
-            File.WriteAllBytes(devicePath, Encoding.UTF8.GetBytes("foo"));
+            File.WriteAllBytes(devicePath, "foo"u8.ToArray());
         }
 
         [Theory]
         [MemberData(nameof(DevicePath_TestData))]
         public async Task CharacterDevice_WriteAllBytesAsync(string devicePath)
         {
-            await File.WriteAllBytesAsync(devicePath, Encoding.UTF8.GetBytes("foo"));
+            await File.WriteAllBytesAsync(devicePath, "foo"u8.ToArray());
         }
 
         [Theory]

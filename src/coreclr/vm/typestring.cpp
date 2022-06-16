@@ -436,21 +436,6 @@ HRESULT TypeNameBuilder::AddAssemblySpec(LPCWSTR szAssemblySpec)
     return hr;
 }
 
-HRESULT TypeNameBuilder::ToString(BSTR* pszStringRepresentation)
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (!CheckParseState(ParseStateNAME | ParseStateGENARGS | ParseStatePTRARR | ParseStateBYREF | ParseStateASSEMSPEC))
-        return Fail();
-
-    if (m_instNesting)
-        return Fail();
-
-    *pszStringRepresentation = SysAllocString(m_pStr->GetUnicode());
-
-    return S_OK;
-}
-
 HRESULT TypeNameBuilder::Clear()
 {
     CONTRACTL

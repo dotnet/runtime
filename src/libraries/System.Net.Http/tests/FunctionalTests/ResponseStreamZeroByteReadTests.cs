@@ -48,7 +48,7 @@ namespace System.Net.Http.Functional.Tests
         {
             await stream.WriteAsync(Encoding.ASCII.GetBytes($"{data.Length:X}\r\n"));
             await stream.WriteAsync(data);
-            await stream.WriteAsync(Encoding.ASCII.GetBytes("\r\n"));
+            await stream.WriteAsync("\r\n"u8.ToArray());
         }
     }
 
@@ -62,7 +62,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 await stream.WriteAsync(Encoding.ASCII.GetBytes($"1\r\n"));
                 await stream.WriteAsync(data.AsMemory(i, 1));
-                await stream.WriteAsync(Encoding.ASCII.GetBytes("\r\n"));
+                await stream.WriteAsync("\r\n"u8.ToArray());
             }
         }
     }
@@ -137,7 +137,7 @@ namespace System.Net.Http.Functional.Tests
                 await sawZeroByteRead.Task.WaitAsync(TimeSpan.FromSeconds(10));
                 Assert.False(zeroByteReadTask.IsCompleted);
 
-                byte[] data = Encoding.UTF8.GetBytes("Hello");
+                byte[] data = "Hello"u8.ToArray();
                 await WriteAsync(server, data);
                 await server.FlushAsync();
 

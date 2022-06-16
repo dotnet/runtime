@@ -6,8 +6,6 @@ include asmconstants.inc
 
 Thread__GetAbortContext equ ?GetAbortContext@Thread@@QEAAPEAU_CONTEXT@@XZ
 
-extern FixContextHandler:proc
-extern LinkFrameAndThrow:proc
 extern GetCurrentSavedRedirectContext:proc
 extern Thread__GetAbortContext:proc
 extern HijackHandler:proc
@@ -204,26 +202,6 @@ NESTED_ENTRY RedirectForThrowControl2, _TEXT
 NESTED_END RedirectForThrowControl2, _TEXT
 
 GenerateRedirectedStubWithFrame RedirectForThrowControl, HijackHandler, RedirectForThrowControl2
-
-
-NAKED_THROW_HELPER_FRAME_SIZE = SIZEOF_MAX_OUTGOING_ARGUMENT_HOMES + 8
-
-NESTED_ENTRY NakedThrowHelper2, _TEXT
-
-        ; On entry
-        ; rcx -> FaultingExceptionFrame
-
-        alloc_stack     NAKED_THROW_HELPER_FRAME_SIZE
-        END_PROLOGUE
-
-        call            LinkFrameAndThrow
-
-        ; LinkFrameAndThrow doesn't return.
-        int             3
-
-NESTED_END NakedThrowHelper2, _TEXT
-
-GenerateRedirectedStubWithFrame NakedThrowHelper, FixContextHandler, NakedThrowHelper2
 
 
 ifdef FEATURE_SPECIAL_USER_MODE_APC

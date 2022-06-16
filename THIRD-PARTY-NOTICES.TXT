@@ -1099,3 +1099,13 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+License notice for code from The Practice of Programming
+-------------------------------
+
+Copyright (C) 1999 Lucent Technologies
+
+Excerpted from 'The Practice of Programming
+by Brian W. Kernighan and Rob Pike
+
+You may use this code for any purpose, as long as you leave the copyright notice and book citation attached.

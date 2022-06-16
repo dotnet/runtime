@@ -24,7 +24,7 @@ namespace System
     {
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "Trimmed fields don't make a difference for equality")]
-        public unsafe override bool Equals([NotNullWhen(true)] object? obj)
+        public override unsafe bool Equals([NotNullWhen(true)] object? obj)
         {
             if (null == obj)
             {

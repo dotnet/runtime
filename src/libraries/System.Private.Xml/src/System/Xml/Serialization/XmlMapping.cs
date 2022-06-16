@@ -117,7 +117,7 @@ namespace System.Xml.Serialization
             {
                 root = (XmlRootAttribute?)XmlAttributes.GetAttr(type, typeof(XmlRootAttribute));
             }
-            return $"{type.FullName}:{(root == null ? string.Empty : root.GetKey())}:{(ns == null ? string.Empty : ns)}";
+            return $"{type.FullName}:{(root == null ? string.Empty : root.GetKey())}:{ns ?? string.Empty}";
         }
 
         internal string? Key { get { return _key; } }

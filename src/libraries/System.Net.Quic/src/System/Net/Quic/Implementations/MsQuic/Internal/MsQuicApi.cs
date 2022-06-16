@@ -16,8 +16,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
     internal sealed unsafe class MsQuicApi
     {
-        private static readonly byte[] s_appName = Encoding.ASCII.GetBytes("System.Net.Quic");
-
         private static readonly Version MinWindowsVersion = new Version(10, 0, 20145, 1000);
 
         private static readonly Version MsQuicVersion = new Version(2, 0);
@@ -38,7 +36,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         {
             ApiTable = apiTable;
 
-            fixed (byte* pAppName = s_appName)
+            fixed (byte* pAppName = "System.Net.Quic"u8)
             {
                 var cfg = new QUIC_REGISTRATION_CONFIG {
                     AppName = (sbyte*)pAppName,

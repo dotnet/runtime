@@ -796,17 +796,12 @@ private:
             }
 
             // The LHS may be a LCL_VAR/LCL_FLD, these are not indirections so we need to handle them here.
-            // It can also be a GT_INDEX, this is an indirection but it never applies to lclvar addresses
-            // so it needs to be handled here as well.
-
             switch (indir->OperGet())
             {
                 case GT_LCL_VAR:
                     return m_compiler->lvaGetDesc(indir->AsLclVar())->lvExactSize;
                 case GT_LCL_FLD:
                     return genTypeSize(indir->TypeGet());
-                case GT_INDEX:
-                    return indir->AsIndex()->gtIndElemSize;
                 default:
                     break;
             }
@@ -841,10 +836,10 @@ private:
 
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(val.LclNum());
 
-        if (varDsc->lvPromoted || varDsc->lvIsStructField || m_compiler->lvaIsImplicitByRefLocal(val.LclNum()))
+        if (varDsc->lvPromoted || varDsc->lvIsStructField)
         {
-            // TODO-ADDR: For now we ignore promoted and "implicit by ref" variables,
-            // they require additional changes in subsequent phases.
+            // TODO-ADDR: For now we ignore promoted variables, they require
+            // additional changes in subsequent phases.
             return;
         }
 
@@ -1022,11 +1017,10 @@ private:
             return IndirTransform::None;
         }
 
-        if (varDsc->lvPromoted || varDsc->lvIsStructField || m_compiler->lvaIsImplicitByRefLocal(val.LclNum()))
+        if (varDsc->lvPromoted || varDsc->lvIsStructField)
         {
-            // TODO-ADDR: For now we ignore promoted and "implicit by ref" variables,
-            // they require additional changes in subsequent phases
-            // (e.g. fgMorphImplicitByRefArgs does not handle LCL_FLD nodes).
+            // TODO-ADDR: For now we ignore promoted variables, they require additional
+            // changes in subsequent phases.
             return IndirTransform::None;
         }
 
@@ -1104,21 +1098,21 @@ private:
 
         // Current matrix of matches/users/types:
         //
-        // |------------|------|---------|---------|
-        // | STRUCT     | CALL | ASG     | RETURN  |
-        // |------------|------|---------|---------|
-        // | Exact      | None | LCL_VAR | LCL_VAR |
-        // | Compatible | None | LCL_VAR | LCL_VAR |
-        // | Partial    | None | OBJ     | LCL_FLD |
-        // |------------|------|---------|---------|
+        // |------------|------|-------------|---------|
+        // | STRUCT     | CALL | ASG         | RETURN  |
+        // |------------|------|-------------|---------|
+        // | Exact      | None | LCL_VAR     | LCL_VAR |
+        // | Compatible | None | LCL_VAR     | LCL_VAR |
+        // | Partial    | None | OBJ/LCL_FLD | LCL_FLD |
+        // |------------|------|-------------|---------|
         //
-        // |------------|------|---------|---------|----------|
-        // | SIMD       | CALL | ASG     | RETURN  | HWI/SIMD |
-        // |------------|------|---------|---------|----------|
-        // | Exact      | None | None    | None    | None     |
-        // | Compatible | None | None    | None    | None     |
-        // | Partial    | None | None    | None    | None     |
-        // |------------|------|---------|---------|----------|
+        // |------------|------|------|--------|----------|
+        // | SIMD       | CALL | ASG  | RETURN | HWI/SIMD |
+        // |------------|------|------|--------|----------|
+        // | Exact      | None | None | None   | None     |
+        // | Compatible | None | None | None   | None     |
+        // | Partial    | None | None | None   | None     |
+        // |------------|------|------|--------|----------|
         //
         // TODO-ADDR: delete all the "None" entries and always
         // transform local nodes into LCL_VAR or LCL_FLD.
@@ -1132,7 +1126,7 @@ private:
             return IndirTransform::LclVar;
         }
 
-        if (user->OperIs(GT_ASG))
+        if (user->OperIs(GT_ASG) && (indir == user->AsOp()->gtGetOp1()))
         {
             return IndirTransform::ObjAddrLclFld;
         }

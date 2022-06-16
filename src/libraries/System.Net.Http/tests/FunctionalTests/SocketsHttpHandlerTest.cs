@@ -591,7 +591,7 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandler_TrailingHeaders_Test(ITestOutputHelper output) : base(output) { }
 
-        protected static byte[] DataBytes = Encoding.ASCII.GetBytes("data");
+        protected static byte[] DataBytes = "data"u8.ToArray();
 
         protected static readonly IList<HttpHeaderData> TrailingHeaders = new HttpHeaderData[] {
             new HttpHeaderData("MyCoolTrailerHeader", "amazingtrailer"),
@@ -1307,26 +1307,26 @@ namespace System.Net.Http.Functional.Tests
                             // Validate writing APIs on clientStream
 
                             clientStream.WriteByte((byte)'!');
-                            clientStream.Write(new byte[] { (byte)'\r', (byte)'\n' }, 0, 2);
+                            clientStream.Write("\r\n"u8.ToArray(), 0, 2);
                             Assert.Equal("!", await connection.ReadLineAsync());
 
-                            clientStream.Write(new Span<byte>(new byte[] { (byte)'h', (byte)'e', (byte)'l', (byte)'l', (byte)'o', (byte)'\r', (byte)'\n' }));
+                            clientStream.Write("hello\r\n"u8);
                             Assert.Equal("hello", await connection.ReadLineAsync());
 
-                            await clientStream.WriteAsync(new byte[] { (byte)'w', (byte)'o', (byte)'r', (byte)'l', (byte)'d', (byte)'\r', (byte)'\n' }, 0, 7);
+                            await clientStream.WriteAsync("world\r\n"u8.ToArray(), 0, 7);
                             Assert.Equal("world", await connection.ReadLineAsync());
 
-                            await clientStream.WriteAsync(new Memory<byte>(new byte[] { (byte)'a', (byte)'n', (byte)'d', (byte)'\r', (byte)'\n' }, 0, 5));
+                            await clientStream.WriteAsync(new Memory<byte>("and\r\n"u8.ToArray(), 0, 5));
                             Assert.Equal("and", await connection.ReadLineAsync());
 
-                            await Task.Factory.FromAsync(clientStream.BeginWrite, clientStream.EndWrite, new byte[] { (byte)'b', (byte)'e', (byte)'y', (byte)'o', (byte)'n', (byte)'d', (byte)'\r', (byte)'\n' }, 0, 8, null);
+                            await Task.Factory.FromAsync(clientStream.BeginWrite, clientStream.EndWrite, "beyond\r\n"u8.ToArray(), 0, 8, null);
                             Assert.Equal("beyond", await connection.ReadLineAsync());
 
                             clientStream.Flush();
                             await clientStream.FlushAsync();
 
                             // Validate reading APIs on clientStream
-                            await connection.Stream.WriteAsync(Encoding.ASCII.GetBytes("abcdefghijklmnopqrstuvwxyz"));
+                            await connection.Stream.WriteAsync("abcdefghijklmnopqrstuvwxyz"u8.ToArray());
                             var buffer = new byte[1];
 
                             Assert.Equal('a', clientStream.ReadByte());
@@ -2732,8 +2732,8 @@ namespace System.Net.Http.Functional.Tests
         {
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
 
-            byte[] RequestPrefix = Encoding.UTF8.GetBytes("request prefix\r\n");
-            byte[] ResponsePrefix = Encoding.UTF8.GetBytes("response prefix\r\n");
+            byte[] RequestPrefix = "request prefix\r\n"u8.ToArray();
+            byte[] ResponsePrefix = "response prefix\r\n"u8.ToArray();
 
             Socket listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             listenSocket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
@@ -3204,8 +3204,8 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PlaintextStreamFilter_ConnectionPrefix_Success(bool useSsl)
         {
-            byte[] RequestPrefix = Encoding.UTF8.GetBytes("request prefix\r\n");
-            byte[] ResponsePrefix = Encoding.UTF8.GetBytes("response prefix\r\n");
+            byte[] RequestPrefix = "request prefix\r\n"u8.ToArray();
+            byte[] ResponsePrefix = "response prefix\r\n"u8.ToArray();
 
             using var listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             listenSocket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
@@ -3386,7 +3386,7 @@ namespace System.Net.Http.Functional.Tests
                         context.PlaintextStream.Dispose();
 
                         MemoryStream memoryStream = new MemoryStream();
-                        memoryStream.Write(Encoding.UTF8.GetBytes("HTTP/1.1 200 OK\r\nContent-Length: 3\r\n\r\nfoo"));
+                        memoryStream.Write("HTTP/1.1 200 OK\r\nContent-Length: 3\r\n\r\nfoo"u8);
                         memoryStream.Seek(0, SeekOrigin.Begin);
 
                         DelegateStream newStream = new DelegateStream(

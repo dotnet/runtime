@@ -112,7 +112,7 @@ namespace System.ServiceModel.Syndication
 
         public Collection<SyndicationPerson> Authors
         {
-            get => _authors ?? (_authors = new NullNotAllowedCollection<SyndicationPerson>());
+            get => _authors ??= new NullNotAllowedCollection<SyndicationPerson>();
         }
 
 
@@ -120,12 +120,12 @@ namespace System.ServiceModel.Syndication
 
         public Collection<SyndicationCategory> Categories
         {
-            get => _categories ?? (_categories = new NullNotAllowedCollection<SyndicationCategory>());
+            get => _categories ??= new NullNotAllowedCollection<SyndicationCategory>();
         }
 
         public Collection<SyndicationPerson> Contributors
         {
-            get => _contributors ?? (_contributors = new NullNotAllowedCollection<SyndicationPerson>());
+            get => _contributors ??= new NullNotAllowedCollection<SyndicationPerson>();
         }
 
         public TextSyndicationContent Copyright { get; set; }
@@ -142,7 +142,7 @@ namespace System.ServiceModel.Syndication
 
         public IEnumerable<SyndicationItem> Items
         {
-            get => _items ?? (_items = new NullNotAllowedCollection<SyndicationItem>());
+            get => _items ??= new NullNotAllowedCollection<SyndicationItem>();
             set => _items = value ?? throw new ArgumentNullException(nameof(value));
         }
 
@@ -170,7 +170,7 @@ namespace System.ServiceModel.Syndication
 
         public Collection<SyndicationLink> Links
         {
-            get => _links ?? (_links = new NullNotAllowedCollection<SyndicationLink>());
+            get => _links ??= new NullNotAllowedCollection<SyndicationLink>();
         }
 
         public TextSyndicationContent Title { get; set; }
@@ -179,7 +179,7 @@ namespace System.ServiceModel.Syndication
 
         public SyndicationLink Documentation
         {
-            get => InternalDocumentation ?? (InternalDocumentation = TryReadDocumentationFromExtension(ElementExtensions));
+            get => InternalDocumentation ??= TryReadDocumentationFromExtension(ElementExtensions);
             set => InternalDocumentation = value;
         }
 
@@ -187,7 +187,7 @@ namespace System.ServiceModel.Syndication
 
         public TimeSpan? TimeToLive
         {
-            get => InternalTimeToLive ?? (InternalTimeToLive = TryReadTimeToLiveFromExtension(ElementExtensions));
+            get => InternalTimeToLive ??= TryReadTimeToLiveFromExtension(ElementExtensions);
             set
             {
                 if (value.HasValue && (value.Value.Milliseconds != 0 || value.Value.Seconds != 0 || value.Value.TotalMinutes < 0))
@@ -237,7 +237,7 @@ namespace System.ServiceModel.Syndication
 
         public SyndicationTextInput TextInput
         {
-            get => InternalTextInput ?? (InternalTextInput = TryReadTextInputFromExtension(ElementExtensions));
+            get => InternalTextInput ??= TryReadTextInputFromExtension(ElementExtensions);
             set => InternalTextInput = value;
         }
 

@@ -77,7 +77,7 @@ namespace System.Net.WebSockets.Tests
         public async Task ReceiveAsync_UTF8SplitAcrossMultipleBuffers_ValidDataReceived()
         {
             // 1 character - 2 bytes
-            byte[] payload = Encoding.UTF8.GetBytes("\u00E6");
+            byte[] payload = "\u00E6"u8.ToArray();
             var frame = new byte[payload.Length + 2];
             frame[0] = 0x81; // FIN = true, Opcode = Text
             frame[1] = (byte)payload.Length;
@@ -294,7 +294,7 @@ namespace System.Net.WebSockets.Tests
                     Assert.Equal(WebSocketState.Open, socket.State);
 
                     // Ask server to send us a close
-                    await socket.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(".close")), WebSocketMessageType.Text, true, default);
+                    await socket.SendAsync(new ArraySegment<byte>(".close"u8.ToArray()), WebSocketMessageType.Text, true, default);
 
                     // Verify received server-initiated close message.
                     WebSocketReceiveResult recvResult = await socket.ReceiveAsync(new ArraySegment<byte>(new byte[256]), default);

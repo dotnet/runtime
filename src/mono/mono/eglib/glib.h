@@ -1440,6 +1440,9 @@ __CAST_STYPE_TO_UTYPE(gssize, guint32, UINT32_MAX)
 __CAST_STYPE_TO_STYPE(gssize, gint, INT_MIN, INT_MAX)
 __CAST_STYPE_TO_UTYPE(gssize, guint, UINT_MAX)
 
+__CAST_STYPE_TO_UTYPE(gssize, gsize, SIZE_MAX)
+__CAST_UTYPE_TO_STYPE(gsize, gssize, PTRDIFF_MIN, PTRDIFF_MAX)
+
 __CAST_STYPE_TO_STYPE(gdouble, gint64, INT64_MIN, INT64_MAX)
 __CAST_STYPE_TO_UTYPE(gdouble, guint64, UINT64_MAX)
 __CAST_STYPE_TO_STYPE(gdouble, gint32, INT32_MIN, INT32_MAX)
@@ -1487,6 +1490,7 @@ __CAST_STYPE_TO_UTYPE(gint32, guint8, UINT8_MAX)
 
 __CAST_STYPE_TO_UTYPE(gint32, guint, UINT_MAX)
 
+__CAST_UTYPE_TO_UTYPE(guint32, guint, UINT_MAX)
 __CAST_UTYPE_TO_STYPE(guint32, gint32, INT32_MIN, INT32_MAX)
 __CAST_UTYPE_TO_STYPE(guint32, gint16, INT16_MIN, INT16_MAX)
 __CAST_UTYPE_TO_UTYPE(guint32, guint16, UINT16_MAX)
@@ -1617,6 +1621,9 @@ __CAST_UTYPE_TO_STYPE(gunichar, gchar, CHAR_MIN, CHAR_MAX)
 #define GSSIZE_TO_INT(v)         G_CAST_TYPE_TO_TYPE(gssize, gint, v)
 #define GSSIZE_TO_UINT(v)        G_CAST_TYPE_TO_TYPE(gssize, guint, v)
 
+#define GSSIZE_TO_SIZE(v)        G_CAST_TYPE_TO_TYPE(gssize, gsize, v)
+#define GSIZE_TO_SSIZE(v)        G_CAST_TYPE_TO_TYPE(gsize, gssize, v)
+
 #define GDOUBLE_TO_INT64(v)      G_CAST_TYPE_TO_TYPE(gdouble, gint64, v)
 #define GDOUBLE_TO_UINT64(v)     G_CAST_TYPE_TO_TYPE(gdouble, guint64, v)
 #define GDOUBLE_TO_INT32(v)      G_CAST_TYPE_TO_TYPE(gdouble, gint32, v)
@@ -1670,6 +1677,7 @@ __CAST_UTYPE_TO_STYPE(gunichar, gchar, CHAR_MIN, CHAR_MAX)
 
 #define GINT32_TO_UINT(v)        G_CAST_TYPE_TO_TYPE(gint32, guint, v)
 
+#define GUINT32_TO_UINT(v)       G_CAST_TYPE_TO_TYPE(guint32, guint, v)
 #define GUINT32_TO_INT32(v)      G_CAST_TYPE_TO_TYPE(guint32, gint32, v)
 #define GUINT32_TO_INT16(v)      G_CAST_TYPE_TO_TYPE(guint32, gint16, v)
 #define GUINT32_TO_UINT16(v)     G_CAST_TYPE_TO_TYPE(guint32, guint16, v)
