@@ -933,7 +933,7 @@ namespace System.Collections.Immutable
 
                 if (Count > 1)
                 {
-                    Array.Sort(_elements, comparison);
+                    Array.Sort(_elements, 0, _count, comparison);
                 }
             }
 
