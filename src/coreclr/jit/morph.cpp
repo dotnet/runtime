@@ -12723,13 +12723,13 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* c
             rhsMax = -1;
         }
 
-        if ((op == GT_LT && ((uint64_t)lhsMax < (uint64_t)rhsMin) ||
-             (op == GT_LE && ((uint64_t)lhsMax <= (uint64_t)rhsMin))))
+        if (((op == GT_LT) && ((uint64_t)lhsMax < (uint64_t)rhsMin)) ||
+            ((op == GT_LE) && ((uint64_t)lhsMax <= (uint64_t)rhsMin)))
         {
             ret = gtNewOneConNode(TYP_INT);
         }
-        else if ((op == GT_LT && ((uint64_t)lhsMin >= (uint64_t)rhsMax) ||
-                  (op == GT_LE && ((uint64_t)lhsMin > (uint64_t)rhsMax))))
+        else if (((op == GT_LT) && ((uint64_t)lhsMin >= (uint64_t)rhsMax)) ||
+                 ((op == GT_LE) && ((uint64_t)lhsMin > (uint64_t)rhsMax)))
         {
             ret = gtNewZeroConNode(TYP_INT);
         }
@@ -12743,7 +12743,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* c
             ret = gtNewZeroConNode(TYP_INT);
         }
         // [x0, x1] < [y0, y1] is true if x1 < y0
-        else if ((op == GT_LT) && lhsMax < rhsMin)
+        else if ((op == GT_LT) && (lhsMax < rhsMin))
         {
             ret = gtNewOneConNode(TYP_INT);
         }
