@@ -11413,7 +11413,7 @@ DONE_MORPHING_CHILDREN:
                     if (tree->OperIs(GT_GT, GT_LT, GT_LE, GT_GE))
                     {
                         tree = fgOptimizeRelationalComparisonWithFullRangeConst(tree->AsOp());
-                        if (tree->OperIs(GT_CNS_INT, GT_COMMA))
+                        if (tree->OperIs(GT_CNS_INT))
                         {
                             return tree;
                         }
@@ -12705,18 +12705,48 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* c
         std::swap(lhsMax, rhsMax);
     }
 
-    GenTree* ret        = nullptr;
-    //bool     isLhsConst = lhsMin == lhsMax;
-    // [x0, x1] <  [y0, y1] is false if x0 >= y1
-    // [x0, x1] <= [y0, y1] is false if x0 > y1
-    if (((op == GT_LT) && (lhsMin >= rhsMax)) || (((op == GT_LE) && (lhsMin > rhsMax))))
+    GenTree* ret = nullptr;
+
+    if (cmp->IsUnsigned())
     {
-        ret = gtNewZeroConNode(TYP_INT);
+        if ((lhsMin < 0) && (lhsMax >= 0))
+        {
+            // [0, (uint64_t)lhsMax] U [(uint64_t)lhsMin, MaxValue]
+            lhsMin = 0;
+            lhsMax = -1;
+        }
+
+        if ((rhsMin < 0) && (rhsMax >= 0))
+        {
+            // [0, (uint64_t)rhsMax] U [(uint64_t)rhsMin, MaxValue]
+            rhsMin = 0;
+            rhsMax = -1;
+        }
+
+        if ((op == GT_LT && ((uint64_t)lhsMax < (uint64_t)rhsMin) ||
+             (op == GT_LE && ((uint64_t)lhsMax <= (uint64_t)rhsMin))))
+        {
+            ret = gtNewOneConNode(TYP_INT);
+        }
+        else if ((op == GT_LT && ((uint64_t)lhsMin >= (uint64_t)rhsMax) ||
+                  (op == GT_LE && ((uint64_t)lhsMin > (uint64_t)rhsMax))))
+        {
+            ret = gtNewZeroConNode(TYP_INT);
+        }
     }
-    // [x0, x1] < [y0, y1] is true if x1 < y0
-    else if ((op == GT_LT) && lhsMax < rhsMin)
+    else
     {
-        ret = gtNewOneConNode(TYP_INT);
+        //  [x0, x1] <  [y0, y1] is false if x0 >= y1
+        //  [x0, x1] <= [y0, y1] is false if x0 > y1
+        if (((op == GT_LT) && (lhsMin >= rhsMax)) || (((op == GT_LE) && (lhsMin > rhsMax))))
+        {
+            ret = gtNewZeroConNode(TYP_INT);
+        }
+        // [x0, x1] < [y0, y1] is true if x1 < y0
+        else if ((op == GT_LT) && lhsMax < rhsMin)
+        {
+            ret = gtNewOneConNode(TYP_INT);
+        }
     }
 
     if (ret != nullptr)
