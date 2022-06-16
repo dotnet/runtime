@@ -101,23 +101,6 @@ namespace Microsoft.Extensions.Hosting
             Assert.IsType<WindowsServiceLifetime>(lifetime);
         }
 
-        [Fact]
-        public void ServiceCollectionExtensionMethodThrowsGivenWrongContentRoot()
-        {
-            var builder = new HostApplicationBuilder(new HostApplicationBuilderSettings
-            {
-                ContentRootPath = Path.GetTempPath(),
-            }); 
-
-            // Emulate calling builder.Services.UseWindowsService() from inside a Windows service.
-            UseWindowsServiceUnchecked(builder.Services);
-            // No reason to write event logs in this test.
-            builder.Logging.ClearProviders();
-
-            var ex = Assert.Throws<InvalidOperationException>(() => builder.Build());
-            Assert.Equal($"The IHostEnvironment.ConentRootPath value of '{Path.GetTempPath()}' must match the AppContext.BaseDirectory value of '{AppContext.BaseDirectory}' but is unequal.", ex.Message);
-        }
-
         private void UseWindowsServiceUnchecked(IServiceCollection services, Action<WindowsServiceLifetimeOptions> configure = null)
         {
             _useWindowsServiceUncheckedMethod ??= typeof(WindowsServiceLifetimeHostBuilderExtensions).GetMethod("UseWindowsServiceUnchecked",

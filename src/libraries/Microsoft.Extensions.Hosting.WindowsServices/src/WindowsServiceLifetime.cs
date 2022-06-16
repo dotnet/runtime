@@ -30,17 +30,6 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
             ThrowHelper.ThrowIfNull(optionsAccessor);
             ThrowHelper.ThrowIfNull(windowsServiceOptionsAccessor);
 
-            // REVIEW: Should we just log a warning instead?
-            // Only validate content root for the new IServiceCollection overload of UseWindowsServices() for maximum backwards compatibility.
-            // The IHostBuilder overload sets the content root unlike the IServiceCollection overload, so it should be less likely to be wrong anyway.
-            // We could try normalizing the paths before comparing, but if the ContentRootPath has changed from it's AppContext.BaseDirectory default,
-            // there's probably a misconfiguration.
-            if (windowsServiceOptionsAccessor.Value.ValidateContentRoot && !string.Equals(environment.ContentRootPath, AppContext.BaseDirectory, StringComparison.Ordinal))
-            {
-                throw new InvalidOperationException(
-                    $"The IHostEnvironment.ConentRootPath value of '{environment.ContentRootPath}' must match the AppContext.BaseDirectory value of '{AppContext.BaseDirectory}' but is unequal.");
-            }
-
             Environment = environment;
             ApplicationLifetime = applicationLifetime;
             Logger = loggerFactory.CreateLogger("Microsoft.Hosting.Lifetime");
