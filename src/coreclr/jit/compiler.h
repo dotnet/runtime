@@ -6811,11 +6811,6 @@ public:
         optMethodFlags |= OMF_HAS_GUARDEDDEVIRT;
     }
 
-    void clearMethodHasGuardedDevirtualization()
-    {
-        optMethodFlags &= ~OMF_HAS_GUARDEDDEVIRT;
-    }
-
     void pickGDV(GenTreeCall*           call,
                  IL_OFFSET              ilOffset,
                  bool                   isInterface,
