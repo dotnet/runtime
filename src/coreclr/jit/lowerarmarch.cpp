@@ -752,7 +752,6 @@ void Lowering::LowerModPow2(GenTree* node)
 
         mod->ChangeOper(GT_CNEG_LT);
         mod->gtOp1 = trueExpr;
-        mod->gtFlags |= GTF_USE_FLAGS;
     }
     else
     {
@@ -787,7 +786,6 @@ void Lowering::LowerModPow2(GenTree* node)
         mod->ChangeOper(GT_CSNEG_MI);
         mod->gtOp1 = trueExpr;
         mod->gtOp2 = falseExpr;
-        mod->gtFlags |= GTF_USE_FLAGS;
     }
 
     ContainCheckNode(mod);

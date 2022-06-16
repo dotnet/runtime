@@ -10283,7 +10283,7 @@ void CodeGen::genCodeForAddEx(GenTreeOp* tree)
 void CodeGen::genCodeForCond(GenTreeOp* tree)
 {
     assert(tree->OperIs(GT_CSNEG_MI, GT_CNEG_LT));
-    assert(!(tree->gtFlags & GTF_SET_FLAGS) && (tree->gtFlags & GTF_USE_FLAGS));
+    assert(!(tree->gtFlags & GTF_SET_FLAGS));
     genConsumeOperands(tree);
 
     switch (tree->OperGet())
