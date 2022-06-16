@@ -741,8 +741,6 @@ void CPFH_AdjustContextForThreadSuspensionRace(T_CONTEXT *pContext, Thread *pThr
 DWORD GetGcMarkerExceptionCode(LPVOID ip);
 bool IsGcMarker(T_CONTEXT *pContext, EXCEPTION_RECORD *pExceptionRecord);
 
-void InitSavedExceptionInfo();
-
 bool ShouldHandleManagedFault(
                         EXCEPTION_RECORD*               pExceptionRecord,
                         T_CONTEXT*                        pContext,

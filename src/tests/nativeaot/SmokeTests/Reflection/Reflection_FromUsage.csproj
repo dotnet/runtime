@@ -4,6 +4,7 @@
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestPriority>0</CLRTestPriority>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);REFLECTION_FROM_USAGE</DefineConstants>
 
     <!-- There's just too many of these warnings -->
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
@@ -11,12 +12,10 @@
 
     <!-- Look for MULTIMODULE_BUILD #define for the more specific incompatible parts -->
     <CLRTestTargetUnsupported Condition="'$(IlcMultiModule)' == 'true'">true</CLRTestTargetUnsupported>
+
+    <IlcTrimMetadata>false</IlcTrimMetadata>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Reflection.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <IlcArg Include="--reflectedonly" />
   </ItemGroup>
 </Project>

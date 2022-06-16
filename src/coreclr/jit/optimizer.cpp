@@ -2874,38 +2874,49 @@ bool Compiler::optIsLoopEntry(BasicBlock* block) const
     return false;
 }
 
-// Canonicalize the loop nest rooted at parent loop 'loopInd'.
-// Returns 'true' if the flow graph is modified.
+//-----------------------------------------------------------------------------
+// optCanonicalizeLoopNest: Canonicalize a loop nest
+//
+// Arguments:
+//   loopInd - index of outermost loop in the nest
+//
+// Returns:
+//   true if the flow graph was modified
+//
+// Notes:
+//   For loopInd and all contained loops, ensures each loop top's back edges
+//   do not come from nested loops.
+//
+//   Will split top blocks and redirect edges if needed.
+//
 bool Compiler::optCanonicalizeLoopNest(unsigned char loopInd)
 {
-    bool modified = false;
-
-    // Is the top of the current loop in any nested loop?
-    if (optLoopTable[loopInd].lpTop->bbNatLoopNum != loopInd)
-    {
-        if (optCanonicalizeLoop(loopInd))
-        {
-            modified = true;
-        }
-    }
+    bool modified = optCanonicalizeLoop(loopInd);
 
     for (unsigned char child = optLoopTable[loopInd].lpChild; //
          child != BasicBlock::NOT_IN_LOOP;                    //
          child = optLoopTable[child].lpSibling)
     {
-        if (optCanonicalizeLoopNest(child))
-        {
-            modified = true;
-        }
+        modified |= optCanonicalizeLoopNest(child);
     }
 
     return modified;
 }
 
+//-----------------------------------------------------------------------------
+// optCanonicalizeLoop: ensure that each loop top's back edges do not come
+//   from nested loops.
+//
+// Arguments:
+//   loopInd - index of the loop to consider
+//
+// Returns:
+//   true if flow changes were made
+//
 bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
 {
     // Is the top uniquely part of the current loop?
-    BasicBlock* t = optLoopTable[loopInd].lpTop;
+    BasicBlock* const t = optLoopTable[loopInd].lpTop;
 
     if (t->bbNatLoopNum == loopInd)
     {
@@ -2993,11 +3004,27 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
     // outside of and disjoint with the "try" region of the back edge. However, to
     // simplify things, we disqualify this type of loop, so we should never see this here.
 
-    BasicBlock* h = optLoopTable[loopInd].lpHead;
-    BasicBlock* b = optLoopTable[loopInd].lpBottom;
+    BasicBlock* const h = optLoopTable[loopInd].lpHead;
+    BasicBlock* const b = optLoopTable[loopInd].lpBottom;
 
     // The loop must be entirely contained within a single handler region.
     assert(BasicBlock::sameHndRegion(t, b));
+
+    // We expect h to be already "canonical" -- that is, it falls through to t
+    // and is not a degenerate BBJ_COND (both branches and falls through to t)
+    // or a side entry to the loop.
+    //
+    // Because of this, introducing a block before t automatically gives us
+    // the right flow out of h.
+    //
+    assert(h->bbNext == t);
+    assert(h->bbFallsThrough());
+    assert((h->bbJumpKind == BBJ_NONE) || (h->bbJumpKind == BBJ_COND));
+    if (h->bbJumpKind == BBJ_COND)
+    {
+        BasicBlock* const hj = h->bbJumpDest;
+        assert((hj->bbNum < t->bbNum) || (hj->bbNum > b->bbNum));
+    }
 
     // If the bottom block is in the same "try" region, then we extend the EH
     // region. Otherwise, we add the new block outside the "try" region.
@@ -3016,9 +3043,12 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
     // a call to fgUpdateChangedFlowGraph which will recompute the reachability sets anyway.
 
     // Redirect the "bottom" of the current loop to "newT".
-    BlockToBlockMap* blockMap = new (getAllocator(CMK_LoopOpt)) BlockToBlockMap(getAllocator(CMK_LoopOpt));
+    BlockToBlockMap* const blockMap = new (getAllocator(CMK_LoopOpt)) BlockToBlockMap(getAllocator(CMK_LoopOpt));
     blockMap->Set(t, newT);
     optRedirectBlock(b, blockMap);
+    JITDUMP("in optCanonicalizeLoop: redirecting bottom->top backedge " FMT_BB " -> " FMT_BB " to " FMT_BB " -> " FMT_BB
+            "\n",
+            b->bbNum, t->bbNum, b->bbNum, newT->bbNum);
 
     // Redirect non-loop preds of "t" to also go to "newT". Inner loops that also branch to "t" should continue
     // to do so. However, there maybe be other predecessors from outside the loop nest that need to be updated
@@ -3039,9 +3069,14 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
         // outside-in, so we shouldn't encounter the new blocks at the loop boundaries, or in the predecessor lists.
         if (t->bbNum <= topPredBlock->bbNum && topPredBlock->bbNum <= b->bbNum)
         {
-            JITDUMP("in optCanonicalizeLoop: 'top' predecessor " FMT_BB " is in the range of " FMT_LP " (" FMT_BB
-                    ".." FMT_BB "); not redirecting its bottom edge\n",
-                    topPredBlock->bbNum, loopInd, t->bbNum, b->bbNum);
+            // Note we've already redirected b->t above.
+            //
+            if (topPredBlock->bbNum != b->bbNum)
+            {
+                JITDUMP("in optCanonicalizeLoop: in-loop 'top' predecessor " FMT_BB " is in the range of " FMT_LP
+                        " (" FMT_BB ".." FMT_BB "); not redirecting its bottom edge\n",
+                        topPredBlock->bbNum, loopInd, t->bbNum, b->bbNum);
+            }
             continue;
         }
 
@@ -3073,10 +3108,12 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
         }
     }
 
+    assert(h->bbNext == newT);
     assert(newT->bbNext == t);
 
-    // If it had been a do-while loop (top == entry), update entry, as well.
-    BasicBlock* origE = optLoopTable[loopInd].lpEntry;
+    // If loopInd is a do-while loop (top == entry), update entry as well.
+    //
+    BasicBlock* const origE = optLoopTable[loopInd].lpEntry;
     if (optLoopTable[loopInd].lpTop == origE)
     {
         optLoopTable[loopInd].lpEntry = newT;
@@ -3088,24 +3125,10 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
     JITDUMP("in optCanonicalizeLoop: made new block " FMT_BB " [%p] the new unique top of loop %d.\n", newT->bbNum,
             dspPtr(newT), loopInd);
 
-    // Make sure the head block still goes to the entry...
-    if (h->bbJumpKind == BBJ_NONE && h->bbNext != optLoopTable[loopInd].lpEntry)
-    {
-        h->bbJumpKind = BBJ_ALWAYS;
-        h->bbJumpDest = optLoopTable[loopInd].lpEntry;
-    }
-    else if (h->bbJumpKind == BBJ_COND && h->bbNext == newT && newT != optLoopTable[loopInd].lpEntry)
-    {
-        BasicBlock* h2               = fgNewBBafter(BBJ_ALWAYS, h, /*extendRegion*/ true);
-        optLoopTable[loopInd].lpHead = h2;
-        h2->bbJumpDest               = optLoopTable[loopInd].lpEntry;
-        h2->bbStmtList               = nullptr;
-        fgInsertStmtAtEnd(h2, fgNewStmtFromTree(gtNewOperNode(GT_NOP, TYP_VOID, nullptr)));
-    }
-
     // If any loops nested in "loopInd" have the same head and entry as "loopInd",
-    // it must be the case that they were do-while's (since "h" fell through to the entry).
+    // it must be the case that they were also do-while's (since "h" fell through to the entry).
     // The new node "newT" becomes the head of such loops.
+    //
     for (unsigned char childLoop = optLoopTable[loopInd].lpChild; //
          childLoop != BasicBlock::NOT_IN_LOOP;                    //
          childLoop = optLoopTable[childLoop].lpSibling)
@@ -3114,6 +3137,11 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
             newT->bbJumpKind == BBJ_NONE && newT->bbNext == origE)
         {
             optUpdateLoopHead(childLoop, h, newT);
+
+            // Fix pred list here, so when we walk preds of child loop tops
+            // we see the right blocks.
+            //
+            fgReplacePred(optLoopTable[childLoop].lpTop, h, newT);
         }
     }
     return true;
