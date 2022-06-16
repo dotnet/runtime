@@ -444,14 +444,10 @@ namespace System.Net
             {
                 Encoding.Unicode.GetBytes(password, pwBytes);
                 MD4.HashData(pwBytes, pwHash);
-
-                using (var hmac = IncrementalHash.CreateHMAC(HashAlgorithmName.MD5, pwHash))
-                {
-                    // strangely, user is upper case, domain is not.
-                    byte[] blob = Encoding.Unicode.GetBytes(string.Concat(userName.ToUpperInvariant(), domain));
-                    hmac.AppendData(blob);
-                    hmac.GetHashAndReset(hash);
-                }
+                // strangely, user is upper case, domain is not.
+                byte[] blob = Encoding.Unicode.GetBytes(string.Concat(userName.ToUpperInvariant(), domain));
+                int written = HMACMD5.HashData(pwHash, blob, hash);
+                Debug.Assert(written == HMACMD5.HashSizeInBytes);
             }
             finally
             {
@@ -502,16 +498,12 @@ namespace System.Net
             {
                 IntPtr cbtData = _channelBinding.DangerousGetHandle();
                 int cbtDataSize = _channelBinding.Size;
-
-                using (var md5 = IncrementalHash.CreateHash(HashAlgorithmName.MD5))
-                {
-                    md5.AppendData(new Span<byte>((void *)cbtData, cbtDataSize));
-                    md5.GetHashAndReset(hashBuffer);
-                }
+                int written = MD5.HashData(new Span<byte>((void *)cbtData, cbtDataSize), hashBuffer);
+                Debug.Assert(written == MD5.HashSizeInBytes);
             }
             else
             {
-                hashBuffer.Fill(0);
+                hashBuffer.Clear();
             }
         }
 
@@ -716,12 +708,9 @@ namespace System.Net
             Debug.Assert(flags.HasFlag(Flags.NegotiateSign) && flags.HasFlag(Flags.NegotiateKeyExchange));
 
             // Derive session base key
-            Span<byte> sessionBaseKey = stackalloc byte[16];
-            using (var hmacSessionKey = IncrementalHash.CreateHMAC(HashAlgorithmName.MD5, ntlm2hash))
-            {
-                hmacSessionKey.AppendData(responseAsSpan.Slice(response.NtChallengeResponse.PayloadOffset, 16));
-                hmacSessionKey.GetHashAndReset(sessionBaseKey);
-            }
+            Span<byte> sessionBaseKey = stackalloc byte[HMACMD5.HashSizeInBytes];
+            int sessionKeyWritten = HMACMD5.HashData(ntlm2hash, responseAsSpan.Slice(response.NtChallengeResponse.PayloadOffset, 16), sessionBaseKey);
+            Debug.Assert(sessionKeyWritten == HMACMD5.HashSizeInBytes);
 
             // Encrypt exportedSessionKey with sessionBaseKey
             using (RC4 rc4 = new RC4(sessionBaseKey))
