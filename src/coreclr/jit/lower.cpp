@@ -1097,12 +1097,6 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
 
         if (arg->OperGet() == GT_OBJ)
         {
-            arg->SetContained();
-            if (arg->AsObj()->Addr()->OperGet() == GT_LCL_VAR_ADDR)
-            {
-                MakeSrcContained(arg, arg->AsObj()->Addr());
-            }
-
             ClassLayout* layout = arg->AsObj()->GetLayout();
 
             // Set type of registers
@@ -1382,9 +1376,9 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
 
     arg = *ppArg;
 
-    if (arg->OperIs(GT_PUTARG_STK))
+    if (arg->OperIsPutArgStk() || arg->OperIsPutArgSplit())
     {
-        LowerPutArgStk(arg->AsPutArgStk());
+        LowerPutArgStkOrSplit(arg->AsPutArgStk());
     }
 }
 
