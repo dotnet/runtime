@@ -25,6 +25,8 @@
 UINT32 g_nClrInstanceId = 0;
 #endif //!DACCESS_COMPILE
 
+bool g_atomic_present = false;
+
 //*****************************************************************************
 // Convert a string of hex digits into a hex value of the specified # of bytes.
 //*****************************************************************************
