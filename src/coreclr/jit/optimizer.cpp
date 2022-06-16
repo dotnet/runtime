@@ -1725,14 +1725,13 @@ public:
         // Thus, we have to be very careful and after entry discovery check that it is indeed
         // the only place we enter the loop (especially for non-reducible flow graphs).
 
-        JITDUMP("FindLoop: checking head:" FMT_BB " top:" FMT_BB " bottom:" FMT_BB "\n",
-            head->bbNum, top->bbNum, bottom->bbNum);
+        JITDUMP("FindLoop: checking head:" FMT_BB " top:" FMT_BB " bottom:" FMT_BB "\n", head->bbNum, top->bbNum,
+                bottom->bbNum);
 
         if (top->bbNum > bottom->bbNum) // is this a backward edge? (from BOTTOM to TOP)
         {
             // Edge from BOTTOM to TOP is not a backward edge
-            JITDUMP("    " FMT_BB "->" FMT_BB " is not a backedge\n",
-                bottom->bbNum, top->bbNum);
+            JITDUMP("    " FMT_BB "->" FMT_BB " is not a backedge\n", bottom->bbNum, top->bbNum);
             return false;
         }
 
@@ -1740,8 +1739,7 @@ public:
         {
             // Not a true back-edge; bottom is a block added to reconnect fall-through during
             // loop processing, so its block number does not reflect its position.
-            JITDUMP("    " FMT_BB "->" FMT_BB " is not a true backedge\n",
-                bottom->bbNum, top->bbNum);
+            JITDUMP("    " FMT_BB "->" FMT_BB " is not a true backedge\n", bottom->bbNum, top->bbNum);
             return false;
         }
 
@@ -1752,7 +1750,6 @@ public:
             // BBJ_SWITCH that has a backward jump appears only for labeled break.
             return false;
         }
-
 
         // The presence of a "back edge" is an indication that a loop might be present here.
         //
@@ -1975,7 +1972,7 @@ private:
 
                     // There are multiple entries to this loop, don't consider it.
 
-                    JITDUMP("   (find cycle) multiple entry:" FMT_BB "\n", block->bbNum);                    
+                    JITDUMP("   (find cycle) multiple entry:" FMT_BB "\n", block->bbNum);
                     return false;
                 }
 
@@ -2937,10 +2934,10 @@ bool Compiler::optCanonicalizeLoopNest(unsigned char loopInd)
 // Notes:
 //
 // Back edges incident on loop top fall into one three groups:
-// 
+//
 // (1) Outer non-loop backedges (preds dominated by enter where pred is not in loop)
 // (2) The canonical backedge (pred == bottom)
-// (3) Nested loop backedges or nested non-loop backedges 
+// (3) Nested loop backedges or nested non-loop backedges
 //     (preds dominated by enter, where pred is in loop, pred != bottom)
 //
 // We assume dominance has already been established by loop recognition (that is,
@@ -2954,16 +2951,16 @@ bool Compiler::optCanonicalizeLoopNest(unsigned char loopInd)
 // This method will split the loop top into two or three blocks depending on
 // whether (1) or (3) is non-empty, and redirect the edges accordingly.
 //
-// Loops are canoncalized outer to inner, so inner loops should never see outer loop 
+// Loops are canoncalized outer to inner, so inner loops should never see outer loop
 // non-backedges, as the parent loop canonicalization should have handled them.
 //
 bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
 {
-    bool modified = false;
-    BasicBlock* const b = optLoopTable[loopInd].lpBottom;
-    BasicBlock* const t = optLoopTable[loopInd].lpTop;
-    BasicBlock* const h = optLoopTable[loopInd].lpHead;
-    BasicBlock* const e = optLoopTable[loopInd].lpEntry;
+    bool              modified = false;
+    BasicBlock* const b        = optLoopTable[loopInd].lpBottom;
+    BasicBlock* const t        = optLoopTable[loopInd].lpTop;
+    BasicBlock* const h        = optLoopTable[loopInd].lpHead;
+    BasicBlock* const e        = optLoopTable[loopInd].lpEntry;
 
     // Look for case (1)
     //
@@ -2978,12 +2975,10 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
         }
         else
         {
-            JITDUMP("in optCanonicalizeLoop: " FMT_LP " top " FMT_BB " (entry " FMT_BB " bottom " FMT_BB ") %shas a non-loop backedge from " FMT_BB 
-                "\n",
-                loopInd, t->bbNum, e->bbNum, b->bbNum, 
-                doOuterCanon ? "also " : "",
-                topPredBlock->bbNum, 
-                doOuterCanon ? "" : ": need to canonicalize non-loop backedges");
+            JITDUMP("in optCanonicalizeLoop: " FMT_LP " top " FMT_BB " (entry " FMT_BB " bottom " FMT_BB
+                    ") %shas a non-loop backedge from " FMT_BB "\n",
+                    loopInd, t->bbNum, e->bbNum, b->bbNum, doOuterCanon ? "also " : "", topPredBlock->bbNum,
+                    doOuterCanon ? "" : ": need to canonicalize non-loop backedges");
             doOuterCanon = true;
         }
     }
@@ -3002,9 +2997,9 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
     assert(t == optLoopTable[loopInd].lpTop);
     if (t->bbNatLoopNum != loopInd)
     {
-        JITDUMP("in optCanonicalizeLoop: " FMT_LP " has top " FMT_BB " (entry " FMT_BB " bottom " FMT_BB ") with natural loop number " FMT_LP
-            ": need to canonicalize nested inner loop backedges\n",
-            loopInd, t->bbNum, e->bbNum, b->bbNum, t->bbNatLoopNum);
+        JITDUMP("in optCanonicalizeLoop: " FMT_LP " has top " FMT_BB " (entry " FMT_BB " bottom " FMT_BB
+                ") with natural loop number " FMT_LP ": need to canonicalize nested inner loop backedges\n",
+                loopInd, t->bbNum, e->bbNum, b->bbNum, t->bbNatLoopNum);
 
         const bool didCanon = optCanonicalizeLoopCore(loopInd, LoopCanonicalizationOption::Current);
         assert(didCanon);
@@ -3140,8 +3135,8 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
     // If the bottom block is in the same "try" region, then we extend the EH
     // region. Otherwise, we add the new block outside the "try" region.
     //
-    const bool extendRegion = BasicBlock::sameTryRegion(t, b);
-    BasicBlock* const newT  = fgNewBBbefore(BBJ_NONE, t, extendRegion);
+    const bool        extendRegion = BasicBlock::sameTryRegion(t, b);
+    BasicBlock* const newT         = fgNewBBbefore(BBJ_NONE, t, extendRegion);
 
     // Initially give newT the same weight as t; we will subtract from
     // this for each edge that does not move from t to newT.
@@ -3187,10 +3182,11 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
                     weightAdjust = topPredBlock->bbWeight;
                 }
             }
-            else 
+            else
             {
-                JITDUMP("in optCanonicalizeLoop (current): redirect bottom->top backedge " FMT_BB " -> " FMT_BB " to " FMT_BB " -> " FMT_BB "\n", topPredBlock->bbNum, t->bbNum,
-                    topPredBlock->bbNum, newT->bbNum);
+                JITDUMP("in optCanonicalizeLoop (current): redirect bottom->top backedge " FMT_BB " -> " FMT_BB
+                        " to " FMT_BB " -> " FMT_BB "\n",
+                        topPredBlock->bbNum, t->bbNum, topPredBlock->bbNum, newT->bbNum);
                 optRedirectBlock(b, blockMap);
             }
         }
@@ -3198,7 +3194,8 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
         {
             // Redirect non-loop preds of "t" to go to "newT". Inner loops that also branch to "t" should continue
             // to do so. However, there maybe be other predecessors from outside the loop nest that need to be updated
-            // to point to "newT". This normally wouldn't happen, since they too would be part of the loop nest. However,
+            // to point to "newT". This normally wouldn't happen, since they too would be part of the loop nest.
+            // However,
             // they might have been prevented from participating in the loop nest due to different EH nesting, or some
             // other reason.
             //
@@ -3210,7 +3207,7 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
             if ((t->bbNum <= topPredBlock->bbNum) && (topPredBlock->bbNum <= b->bbNum))
             {
                 if (topPredBlock->hasProfileWeight())
-                { 
+                {
                     // Note this may overstate the adjustment, if topPredBlock is BBJ_COND.
                     //
                     weightAdjust = topPredBlock->bbWeight;
@@ -3218,9 +3215,10 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
             }
             else
             {
-                JITDUMP("in optCanonicalizeLoop (outer): redirect %s->top %sedge " FMT_BB " -> " FMT_BB " to " FMT_BB " -> " FMT_BB "\n", 
-                    topPredBlock == h ? "head" : "nonloop", topPredBlock == h ? "" : "back",  topPredBlock->bbNum, t->bbNum,
-                    topPredBlock->bbNum, newT->bbNum);
+                JITDUMP("in optCanonicalizeLoop (outer): redirect %s->top %sedge " FMT_BB " -> " FMT_BB " to " FMT_BB
+                        " -> " FMT_BB "\n",
+                        topPredBlock == h ? "head" : "nonloop", topPredBlock == h ? "" : "back", topPredBlock->bbNum,
+                        t->bbNum, topPredBlock->bbNum, newT->bbNum);
                 optRedirectBlock(topPredBlock, blockMap);
             }
         }
@@ -3232,8 +3230,8 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
         if (weightAdjust > BB_ZERO_WEIGHT)
         {
             JITDUMP("in optCanonicalizeLoop: removing block " FMT_BB " weight " FMT_WT " from " FMT_BB "\n",
-                topPredBlock->bbNum, weightAdjust, newT->bbNum);
-            
+                    topPredBlock->bbNum, weightAdjust, newT->bbNum);
+
             if (newT->bbWeight >= weightAdjust)
             {
                 newT->setBBProfileWeight(newT->bbWeight - weightAdjust);
@@ -3253,11 +3251,10 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
     //
     if (option == LoopCanonicalizationOption::Current)
     {
-        JITDUMP("in optCanonicalizeLoop (current): " FMT_BB " is now the top of loop %d.\n", newT->bbNum,
-            loopInd);
+        JITDUMP("in optCanonicalizeLoop (current): " FMT_BB " is now the top of loop %d.\n", newT->bbNum, loopInd);
 
         optLoopTable[loopInd].lpTop = newT;
-        newT->bbNatLoopNum = loopInd;
+        newT->bbNatLoopNum          = loopInd;
 
         // If loopInd was a do-while loop (top == entry), update entry, as well.
         //
@@ -3279,7 +3276,7 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
                 (newT->bbJumpKind == BBJ_NONE) && (newT->bbNext == origE))
             {
                 optUpdateLoopHead(childLoop, h, newT);
-                
+
                 // Fix pred list here, so when we walk preds of child loop tops
                 // we see the right blocks.
                 //
@@ -3289,8 +3286,7 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
     }
     else if (option == LoopCanonicalizationOption::Outer)
     {
-        JITDUMP("in optCanonicalizeLoop (outer): " FMT_BB " is outside of loop " FMT_LP "\n", newT->bbNum,
-            loopInd);
+        JITDUMP("in optCanonicalizeLoop (outer): " FMT_BB " is outside of loop " FMT_LP "\n", newT->bbNum, loopInd);
 
         // If we are lifting outer backeges, then newT belongs to our parent loop
         //
