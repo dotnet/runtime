@@ -71,39 +71,43 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces
 			// The interface methods themselves are not used, but the implementation of these methods is
 			internal interface IStaticInterfaceMethodUnused
 			{
+				// Can be removed with Static Interface trimming optimization
+				[Kept]
 				static abstract void InterfaceUsedMethodNot ();
 			}
 
+			// Can be removed with Static Interface Trimming
+			[Kept]
 			internal interface IStaticInterfaceUnused
 			{
+				// Can be removed with Static Interface Trimming
+				[Kept]
 				static abstract void InterfaceAndMethodNoUsed ();
 			}
 
 			[Kept]
+			[KeptInterface (typeof (IStaticInterfaceUnused))]
+			[KeptInterface (typeof (IStaticInterfaceMethodUnused))]
 			internal class InterfaceMethodUsedThroughImplementation : IStaticInterfaceMethodUnused, IStaticInterfaceUnused
 			{
 				[Kept]
-				[RemovedOverride (typeof (IStaticInterfaceMethodUnused))]
 				public static void InterfaceUsedMethodNot () { }
 
 				[Kept]
-				[RemovedOverride (typeof (IStaticInterfaceUnused))]
 				public static void InterfaceAndMethodNoUsed () { }
 			}
 
 			[Kept]
+			[KeptInterface (typeof (IStaticInterfaceMethodUnused))]
+			[KeptInterface (typeof (IStaticInterfaceUnused))]
 			internal class InterfaceMethodUnused : IStaticInterfaceMethodUnused, IStaticInterfaceUnused
 			{
+				[Kept]
 				public static void InterfaceUsedMethodNot () { }
 
+				[Kept]
 				public static void InterfaceAndMethodNoUsed () { }
 			}
-
-			[Kept]
-			// This method keeps InterfaceMethodUnused without making it 'relevant to variant casting' like
-			//	doing a typeof or type argument would do. If the type is relevant to variant casting,
-			//	we will keep all interface implementations for interfaces that are kept
-			internal static void KeepInterfaceMethodUnused (InterfaceMethodUnused x) { }
 
 			[Kept]
 			public static void Test ()
@@ -111,11 +115,9 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces
 				InterfaceMethodUsedThroughImplementation.InterfaceUsedMethodNot ();
 				InterfaceMethodUsedThroughImplementation.InterfaceAndMethodNoUsed ();
 
-				// The interface has to be kept this way, because if both the type and the interface may
-				//	appear on the stack then they would be marked as relevant to variant casting and the
-				//	interface implementation would be kept.
-				Type t = typeof (IStaticInterfaceMethodUnused);
-				KeepInterfaceMethodUnused (null);
+				Type t;
+				t = typeof (IStaticInterfaceMethodUnused);
+				t = typeof (InterfaceMethodUnused);
 			}
 		}
 

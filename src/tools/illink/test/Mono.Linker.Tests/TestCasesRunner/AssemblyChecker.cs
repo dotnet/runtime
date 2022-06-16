@@ -173,13 +173,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				linkedMembers.Remove (f.FullName);
 			}
 
-			foreach (var originalMethod in original.Methods) {
-				if (verifiedEventMethods.Contains (originalMethod.FullName))
+			foreach (var m in original.Methods) {
+				if (verifiedEventMethods.Contains (m.FullName))
 					continue;
-				var methodSignature = originalMethod.GetSignature ();
-				var linkedMethod = linked?.Methods.FirstOrDefault (l => methodSignature == l.GetSignature ());
-				VerifyMethod (originalMethod, linkedMethod);
-				linkedMembers.Remove (originalMethod.FullName);
+				var msign = m.GetSignature ();
+				VerifyMethod (m, linked?.Methods.FirstOrDefault (l => msign == l.GetSignature ()));
+				linkedMembers.Remove (m.FullName);
 			}
 		}
 
@@ -246,16 +245,15 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				if (overriddenMethod.Resolve () is not MethodDefinition overriddenDefinition) {
 					Assert.Fail ($"Method {linked.GetDisplayName ()} overrides method {overriddenMethod} which does not exist");
 				} else if (overriddenDefinition.DeclaringType.IsInterface) {
-					Assert.True (linked.DeclaringType.Interfaces.Select (i => i.InterfaceType.FullName).Contains (overriddenMethod.DeclaringType.FullName),
+					Assert.True (linked.DeclaringType.Interfaces.Select (i => i.InterfaceType).Contains (overriddenMethod.DeclaringType),
 						$"Method {linked} overrides method {overriddenMethod}, but {linked.DeclaringType} does not implement interface {overriddenMethod.DeclaringType}");
 				} else {
 					TypeReference baseType = linked.DeclaringType;
 					TypeReference overriddenType = overriddenMethod.DeclaringType;
 					while (baseType is not null) {
-						if (baseType.FullName == overriddenType.FullName)
+						if (baseType.Equals (overriddenType))
 							break;
-						baseType = baseType.Resolve ()?.BaseType;
-						if (baseType is null)
+						if (baseType.Resolve ()?.BaseType is null)
 							Assert.Fail ($"Method {linked} overrides method {overriddenMethod} from, but {linked.DeclaringType} does not inherit from type {overriddenMethod.DeclaringType}");
 					}
 				}
@@ -423,7 +421,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			VerifySecurityAttributes (src, linked);
 			VerifyArrayInitializers (src, linked);
 			VerifyMethodBody (src, linked);
-			VerifyOverrides (src, linked);
 		}
 
 		protected virtual void VerifyMethodBody (MethodDefinition src, MethodDefinition linked)
