@@ -736,6 +736,18 @@ partial class Program
             await VerifyCS.VerifyCodeFixAsync(test, expectedDiagnostic, fixedSource);
         }
 
+        [Fact]
+        public async Task NoDiagnosticForTopLevelStatements_MultipleSourceFiles()
+        {
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources = { "public class C { }", @"var r = new System.Text.RegularExpressionsRegex("""");" },
+                },
+            }.RunAsync();
+        }
+
         #region Test helpers
 
         private static string ConstructRegexInvocation(InvocationType invocationType, string pattern, string? options = null)
