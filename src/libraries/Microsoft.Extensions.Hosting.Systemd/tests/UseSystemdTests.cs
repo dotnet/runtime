@@ -17,24 +17,22 @@ namespace Microsoft.Extensions.Hosting
                 .Build();
 
             var lifetime = host.Services.GetRequiredService<IHostLifetime>();
-            Assert.NotNull(lifetime);
             Assert.IsNotType<SystemdLifetime>(lifetime);
         }
 
         [Fact]
-        public void ServiceCollectionExtensoinMethodDefaultsToOffOutsideOfService()
+        public void ServiceCollectionExtensionMethodDefaultsToOffOutsideOfService()
         {
-            HostApplicationBuilder builder = new HostApplicationBuilder(new HostApplicationBuilderSettings
+            var builder = new HostApplicationBuilder(new HostApplicationBuilderSettings
             {
                 // Disable defaults that may not be supported on the testing platform like EventLogLoggerProvider.
                 DisableDefaults = true,
             });
-            builder.Services.UseSystemd();
 
+            builder.Services.UseSystemd();
             using IHost host = builder.Build();
 
             var lifetime = host.Services.GetRequiredService<IHostLifetime>();
-            Assert.NotNull(lifetime);
             Assert.IsNotType<SystemdLifetime>(lifetime);
         }
     }

@@ -13,8 +13,8 @@ namespace Microsoft.Extensions.Hosting
     public static class SystemdHostBuilderExtensions
     {
         /// <summary>
-        /// Configures the <see cref="IHost"/> lifetime to <see cref="SystemdLifetime"/>
-        /// which provides notification messages for application started and stopping,
+        /// Configures the <see cref="IHost"/> lifetime to <see cref="SystemdLifetime"/>,
+        /// provides notification messages for application started and stopping,
         /// and configures console logging to the systemd format.
         /// </summary>
         /// <remarks>
@@ -28,14 +28,14 @@ namespace Microsoft.Extensions.Hosting
         ///   </para>
         /// </remarks>
         /// <param name="hostBuilder">The <see cref="IHostBuilder"/> to configure.</param>
-        /// <returns>The <paramref name="hostBuilder"/> instance.</returns>
+        /// <returns>The <paramref name="hostBuilder"/> instance for chaining.</returns>
         public static IHostBuilder UseSystemd(this IHostBuilder hostBuilder)
         {
             if (SystemdHelpers.IsSystemdService())
             {
                 hostBuilder.ConfigureServices((hostContext, services) =>
                 {
-                    AddSystemdServices(services);
+                    AddSystemdLifetime(services);
                 });
             }
             return hostBuilder;
@@ -43,7 +43,7 @@ namespace Microsoft.Extensions.Hosting
 
         /// <summary>
         /// Configures the lifetime of the <see cref="IHost"/> built from <paramref name="services"/> to
-        /// <see cref="SystemdLifetime"/> which provides notification messages for application started
+        /// <see cref="SystemdLifetime"/> provides notification messages for application started
         /// and stopping, and configures console logging to the systemd format.
         /// </summary>
         /// <remarks>
@@ -59,18 +59,19 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="services">
         /// The <see cref="IServiceCollection"/> used to build the <see cref="IHost"/>.
         /// For example, <see cref="HostApplicationBuilder.Services"/> or the <see cref="IServiceCollection"/> passed to the
-        /// <see cref="IHostBuilder.ConfigureServices(System.Action{HostBuilderContext, IServiceCollection})"/> callback.</param>
-        /// <returns>The <paramref name="services"/> instance.</returns>
+        /// <see cref="IHostBuilder.ConfigureServices(System.Action{HostBuilderContext, IServiceCollection})"/> callback.
+        /// </param>
+        /// <returns>The <paramref name="services"/> instance for chaining.</returns>
         public static IServiceCollection UseSystemd(this IServiceCollection services)
         {
             if (SystemdHelpers.IsSystemdService())
             {
-                AddSystemdServices(services);
+                AddSystemdLifetime(services);
             }
             return services;
         }
 
-        private static void AddSystemdServices(IServiceCollection services)
+        private static void AddSystemdLifetime(IServiceCollection services)
         {
             services.Configure<ConsoleLoggerOptions>(options =>
             {
