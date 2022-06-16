@@ -1685,7 +1685,15 @@ bool Compiler::areArrayElementsContiguous(GenTree* op1, GenTree* op2)
 //
 bool Compiler::areArgumentsContiguous(GenTree* op1, GenTree* op2)
 {
-    if (op1->OperIs(GT_IND) && op2->OperIs(GT_IND))
+    if (op1->TypeGet() != op2->TypeGet())
+    {
+        return false;
+    }
+
+    assert(!op1->TypeIs(TYP_STRUCT));
+
+    if (op1->OperIs(GT_IND) && op1->AsIndir()->Addr()->OperIs(GT_INDEX_ADDR) && op2->OperIs(GT_IND) &&
+        op2->AsIndir()->Addr()->OperIs(GT_INDEX_ADDR))
     {
         return areArrayElementsContiguous(op1, op2);
     }
