@@ -114,8 +114,8 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
     void * pThunksSection = pNewMapping;
     void * pDataSection = (uint8_t*)pNewMapping + THUNKS_MAP_SIZE;
 
-    if (!PalVirtualProtect(pDataSection, THUNKS_MAP_SIZE, PAGE_READWRITE, NULL) ||
-        !PalVirtualProtect(pThunksSection, THUNKS_MAP_SIZE, PAGE_EXECUTE_READWRITE, NULL))
+    if (!PalVirtualProtect(pDataSection, THUNKS_MAP_SIZE, PAGE_READWRITE) ||
+        !PalVirtualProtect(pThunksSection, THUNKS_MAP_SIZE, PAGE_EXECUTE_READWRITE))
     {
         PalVirtualFree(pNewMapping, 0, MEM_RELEASE);
         return NULL;
@@ -223,7 +223,7 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
         }
     }
 
-    if (!PalVirtualProtect(pThunksSection, THUNKS_MAP_SIZE, PAGE_EXECUTE_READ, NULL))
+    if (!PalVirtualProtect(pThunksSection, THUNKS_MAP_SIZE, PAGE_EXECUTE_READ))
     {
         PalVirtualFree(pNewMapping, 0, MEM_RELEASE);
         return NULL;

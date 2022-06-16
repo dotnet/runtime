@@ -43,8 +43,6 @@ extern "C" void PopulateDebugHeaders();
 
 static bool DetectCPUFeatures();
 
-static bool InitGSCookie();
-
 extern RhConfig * g_pRhConfig;
 
 EXTERN_C bool g_fHasFastFxsave;
@@ -62,20 +60,19 @@ int g_cpuFeatures = 0;
 EXTERN_C int g_requiredCpuFeatures;
 #endif
 
+#ifdef TARGET_UNIX
+static bool InitGSCookie();
+
 //-----------------------------------------------------------------------------
 // GSCookies (guard-stack cookies) for detecting buffer overruns
 //-----------------------------------------------------------------------------
 
-#ifdef _MSC_VER
-#define READONLY_ATTR
-#else
 #ifdef __APPLE__
 #define READONLY_ATTR_ARGS section("__DATA,__const")
 #else
 #define READONLY_ATTR_ARGS section(".rodata")
 #endif
 #define READONLY_ATTR __attribute__((READONLY_ATTR_ARGS))
-#endif
 
 // Guard-stack cookie for preventing against stack buffer overruns
 typedef size_t GSCookie;
@@ -84,7 +81,8 @@ typedef size_t GSCookie;
 // volatile is so that accesses to it do not get optimized away because of the const
 //
 
-extern "C" volatile READONLY_ATTR const GSCookie s_gsCookie = 0;
+extern "C" volatile READONLY_ATTR const GSCookie __security_cookie = 0;
+#endif // TARGET_UNIX
 
 static bool InitDLL(HANDLE hPalInstance)
 {
@@ -145,8 +143,10 @@ static bool InitDLL(HANDLE hPalInstance)
         return false;
 #endif
 
+#ifdef TARGET_UNIX
     if (!InitGSCookie())
         return false;
+#endif
 
     if (!g_CastCacheLock.InitNoThrow(CrstType::CrstCastCache))
         return false;
@@ -304,42 +304,22 @@ bool DetectCPUFeatures()
 }
 #endif // !USE_PORTABLE_HELPERS
 
+#ifdef TARGET_UNIX
 inline
-GSCookie * GetProcessGSCookiePtr() { return  const_cast<GSCookie *>(&s_gsCookie); }
+GSCookie * GetProcessGSCookiePtr() { return  const_cast<GSCookie *>(&__security_cookie); }
 
 bool InitGSCookie()
 {
     volatile GSCookie * pGSCookiePtr = GetProcessGSCookiePtr();
 
-    // The GS cookie is stored in a read only data segment
-    uint32_t oldProtection;
-#if TARGET_WINDOWS
-    uint32_t * pOldProtection = &oldProtection;
-#else
-    // PAL layer is unable to extract old protection
-    uint32_t * pOldProtection = NULL;
-    oldProtection = PAGE_READONLY;
-#endif
-    
-    if (!PalVirtualProtect((void*)pGSCookiePtr, sizeof(GSCookie), PAGE_READWRITE, pOldProtection))
+    // The GS cookie is stored in a read only data segment    
+    if (!PalVirtualProtect((void*)pGSCookiePtr, sizeof(GSCookie), PAGE_READWRITE))
     {
         return false;
     }
 
-#if TARGET_WINDOWS
-    // The GSCookie cannot be in a writeable page
-    assert(((oldProtection & (PAGE_READWRITE|PAGE_WRITECOPY|PAGE_EXECUTE_READWRITE|
-                              PAGE_EXECUTE_WRITECOPY|PAGE_WRITECOMBINE)) == 0));
-
-    // Forces VC cookie to be initialized.
-    void * pf = &__security_check_cookie;
-    pf = NULL;
-
-    GSCookie val = (GSCookie)(__security_cookie ^ (GSCookie)PalGetTickCount64());
-#else // TARGET_WINDOWS
     // REVIEW: Need something better for PAL...
     GSCookie val = (GSCookie)PalGetTickCount64();
-#endif // !TARGET_UNIX
 
 #ifdef _DEBUG
     // In _DEBUG, always use the same value to make it easier to search for the cookie
@@ -348,8 +328,9 @@ bool InitGSCookie()
 
     *pGSCookiePtr = val;
 
-    return PalVirtualProtect((void*)pGSCookiePtr, sizeof(GSCookie), oldProtection, NULL);
+    return PalVirtualProtect((void*)pGSCookiePtr, sizeof(GSCookie), PAGE_READONLY);
 }
+#endif // TARGET_UNIX
 
 #ifdef PROFILE_STARTUP
 #define STD_OUTPUT_HANDLE ((uint32_t)-11)

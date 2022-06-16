@@ -1856,7 +1856,7 @@ namespace Internal.JitInterface
         {
             if (ppCookieVal != null)
             {
-                *ppCookieVal = (IntPtr*)ObjectToHandle(_compilation.NodeFactory.ExternSymbol("s_gsCookie"));
+                *ppCookieVal = (IntPtr*)ObjectToHandle(_compilation.NodeFactory.ExternSymbol("__security_cookie"));
                 *pCookieVal = IntPtr.Zero;
             }
             else
