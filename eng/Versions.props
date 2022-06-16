@@ -161,14 +161,14 @@
     <!-- MsQuic -->
     <SystemNetMsQuicTransportVersion>6.0.0-preview.7.21417.1</SystemNetMsQuicTransportVersion>
     <!-- Mono LLVM -->
-    <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>11.1.0-alpha.1.22263.3</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.22263.3</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>11.1.0-alpha.1.22263.3</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.22263.3</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>11.1.0-alpha.1.22263.3</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.22263.3</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>11.1.0-alpha.1.22263.3</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.22263.3</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
+    <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>11.1.0-alpha.1.22316.1</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
+    <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.22316.1</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
+    <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>11.1.0-alpha.1.22316.1</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
+    <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.22316.1</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
+    <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>11.1.0-alpha.1.22316.1</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
+    <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.22316.1</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
+    <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>11.1.0-alpha.1.22316.1</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
+    <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.22316.1</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
     <!-- emscripten / Node -->
     <MicrosoftNETWorkloadEmscriptenManifest60100Version>6.0.4</MicrosoftNETWorkloadEmscriptenManifest60100Version>
     <MicrosoftNETWorkloadEmscriptenManifest60200Version>6.0.4</MicrosoftNETWorkloadEmscriptenManifest60200Version>
