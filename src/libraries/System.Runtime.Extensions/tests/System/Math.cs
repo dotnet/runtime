@@ -799,6 +799,11 @@ namespace System.Tests
 
             if (double.IsNaN(x))
             {
+                // Toggle the sign of the NaN to validate both +NaN and -NaN behave the same.
+                // Negate should work as well but the JIT may constant fold or do other tricks
+                // and normalize to a single NaN form so we do bitwise tricks to ensure we test
+                // the right thing.
+
                 ulong bits = BitConverter.DoubleToUInt64Bits(x);
                 bits ^= BitConverter.DoubleToUInt64Bits(-0.0);
                 x = BitConverter.UInt64BitsToDouble(bits);
@@ -875,6 +880,11 @@ namespace System.Tests
 
             if (float.IsNaN(x))
             {
+                // Toggle the sign of the NaN to validate both +NaN and -NaN behave the same.
+                // Negate should work as well but the JIT may constant fold or do other tricks
+                // and normalize to a single NaN form so we do bitwise tricks to ensure we test
+                // the right thing.
+
                 uint bits = BitConverter.SingleToUInt32Bits(x);
                 bits ^= BitConverter.SingleToUInt32Bits(-0.0f);
                 x = BitConverter.UInt32BitsToSingle(bits);
@@ -958,6 +968,11 @@ namespace System.Tests
 
             if (double.IsNaN(x))
             {
+                // Toggle the sign of the NaN to validate both +NaN and -NaN behave the same.
+                // Negate should work as well but the JIT may constant fold or do other tricks
+                // and normalize to a single NaN form so we do bitwise tricks to ensure we test
+                // the right thing.
+
                 ulong bits = BitConverter.DoubleToUInt64Bits(x);
                 bits ^= BitConverter.DoubleToUInt64Bits(-0.0);
                 x = BitConverter.UInt64BitsToDouble(bits);
@@ -1034,6 +1049,11 @@ namespace System.Tests
 
             if (float.IsNaN(x))
             {
+                // Toggle the sign of the NaN to validate both +NaN and -NaN behave the same.
+                // Negate should work as well but the JIT may constant fold or do other tricks
+                // and normalize to a single NaN form so we do bitwise tricks to ensure we test
+                // the right thing.
+
                 uint bits = BitConverter.SingleToUInt32Bits(x);
                 bits ^= BitConverter.SingleToUInt32Bits(-0.0f);
                 x = BitConverter.UInt32BitsToSingle(bits);
@@ -2641,6 +2661,11 @@ namespace System.Tests
 
             if (double.IsNaN(x))
             {
+                // Toggle the sign of the NaN to validate both +NaN and -NaN behave the same.
+                // Negate should work as well but the JIT may constant fold or do other tricks
+                // and normalize to a single NaN form so we do bitwise tricks to ensure we test
+                // the right thing.
+
                 ulong bits = BitConverter.DoubleToUInt64Bits(x);
                 bits ^= BitConverter.DoubleToUInt64Bits(-0.0);
                 x = BitConverter.UInt64BitsToDouble(bits);
@@ -2682,6 +2707,11 @@ namespace System.Tests
 
             if (double.IsNaN(x))
             {
+                // Toggle the sign of the NaN to validate both +NaN and -NaN behave the same.
+                // Negate should work as well but the JIT may constant fold or do other tricks
+                // and normalize to a single NaN form so we do bitwise tricks to ensure we test
+                // the right thing.
+
                 ulong bits = BitConverter.DoubleToUInt64Bits(x);
                 bits ^= BitConverter.DoubleToUInt64Bits(-0.0);
                 x = BitConverter.UInt64BitsToDouble(bits);
@@ -2765,7 +2795,7 @@ namespace System.Tests
         [InlineData( 9.267056966972586,        2,                             37.06822786789034,        CrossPlatformMachineEpsilon * 100)]
         [InlineData( 0.5617597462207241,       5,                             17.97631187906317,        CrossPlatformMachineEpsilon * 100)]
         [InlineData( 0.7741522965913037,       6,                             49.545746981843436,       CrossPlatformMachineEpsilon * 100)]
-        [InlineData( -0.6787637026394024,      7,                             -86.88175393784351,       CrossPlatformMachineEpsilon * 100)]        
+        [InlineData( -0.6787637026394024,      7,                             -86.88175393784351,       CrossPlatformMachineEpsilon * 100)]
         [InlineData( -6.531673581913484,       1,                             -13.063347163826968,      CrossPlatformMachineEpsilon * 100)]
         [InlineData( 9.267056966972586,        2,                             37.06822786789034,        CrossPlatformMachineEpsilon * 100)]
         [InlineData( 0.5617597462207241,       5,                             17.97631187906317,        CrossPlatformMachineEpsilon * 100)]

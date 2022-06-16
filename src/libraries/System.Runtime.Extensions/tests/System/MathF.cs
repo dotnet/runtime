@@ -1093,6 +1093,11 @@ namespace System.Tests
 
             if (float.IsNaN(x))
             {
+                // Toggle the sign of the NaN to validate both +NaN and -NaN behave the same.
+                // Negate should work as well but the JIT may constant fold or do other tricks
+                // and normalize to a single NaN form so we do bitwise tricks to ensure we test
+                // the right thing.
+
                 uint bits = BitConverter.SingleToUInt32Bits(x);
                 bits ^= BitConverter.SingleToUInt32Bits(-0.0f);
                 x = BitConverter.UInt32BitsToSingle(bits);
@@ -1134,6 +1139,11 @@ namespace System.Tests
 
             if (float.IsNaN(x))
             {
+                // Toggle the sign of the NaN to validate both +NaN and -NaN behave the same.
+                // Negate should work as well but the JIT may constant fold or do other tricks
+                // and normalize to a single NaN form so we do bitwise tricks to ensure we test
+                // the right thing.
+
                 uint bits = BitConverter.SingleToUInt32Bits(x);
                 bits ^= BitConverter.SingleToUInt32Bits(-0.0f);
                 x = BitConverter.UInt32BitsToSingle(bits);
