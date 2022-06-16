@@ -6,7 +6,6 @@
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	[StaticCs.Closed]
 	enum IntrinsicId
 	{
 		None = 0,

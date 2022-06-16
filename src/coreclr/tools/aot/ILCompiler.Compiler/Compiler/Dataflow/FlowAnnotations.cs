@@ -123,6 +123,14 @@ namespace ILLink.Shared.TrimAnalysis
             return GetAnnotations(type.GetTypeDefinition()).TypeAnnotation;
         }
 
+        public bool ShouldWarnWhenAccessedForReflection(TypeSystemEntity entity) =>
+            entity switch
+            {
+                MethodDesc method => ShouldWarnWhenAccessedForReflection(method),
+                FieldDesc field => ShouldWarnWhenAccessedForReflection(field),
+                _ => false
+            };
+
         public DynamicallyAccessedMemberTypes GetGenericParameterAnnotation(GenericParameterDesc genericParameter)
         {
             if (genericParameter is not EcmaGenericParameter ecmaGenericParameter)

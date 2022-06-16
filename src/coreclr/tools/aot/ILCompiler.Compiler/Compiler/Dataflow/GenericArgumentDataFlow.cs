@@ -40,7 +40,10 @@ namespace ILCompiler.Dataflow
 
             MultiValue genericArgumentValue = _annotations.GetTypeValueFromGenericArgument(genericArgument);
 
-            var diagnosticContext = new DiagnosticContext(_origin, !_context.Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode(_origin.Provider), _logger);
+            var diagnosticContext = new DiagnosticContext(
+                _origin,
+                DiagnosticUtilities.ShouldSuppressAnalysisWarningsForRequires(_origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute),
+                _logger);
             return RequireDynamicallyAccessedMembers(diagnosticContext, genericArgumentValue, genericParameterValue, new GenericParameterOrigin(genericParameter));
         }
 

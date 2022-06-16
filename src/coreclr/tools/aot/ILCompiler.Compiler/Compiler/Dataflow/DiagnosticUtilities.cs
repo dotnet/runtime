@@ -200,5 +200,34 @@ namespace ILCompiler.Dataflow
                 _ => false
             };
         }
+
+        internal static bool ShouldSuppressAnalysisWarningsForRequires(TypeSystemEntity originMember, string requiresAttribute)
+        {
+            // Check if the current scope method has Requires on it
+            // since that attribute automatically suppresses all trim analysis warnings.
+            // Check both the immediate origin method as well as suppression context method
+            // since that will be different for compiler generated code.
+            if (originMember == null)
+                return false;
+
+            // TODO - handle fields and other members
+            // Other types of members still need to go through CompilerGeneratedState check
+            if (originMember is not MethodDesc method)
+                return false;
+
+            if (method.IsInRequiresScope(requiresAttribute))
+                return true;
+
+            MethodDesc userMethod = ILCompiler.Logging.CompilerGeneratedState.GetUserDefinedMethodForCompilerGeneratedMember(method);
+            if (userMethod != null &&
+                userMethod.IsInRequiresScope(requiresAttribute))
+                return true;
+
+            return false;
+        }
+
+        internal const string RequiresUnreferencedCodeAttribute = nameof(RequiresUnreferencedCodeAttribute);
+        internal const string RequiresDynamicCodeAttribute = nameof(RequiresDynamicCodeAttribute);
+        internal const string RequiresAssemblyFilesAttribute = nameof(RequiresAssemblyFilesAttribute);
     }
 }

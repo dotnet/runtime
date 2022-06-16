@@ -54,8 +54,12 @@ namespace ILCompiler.Dataflow
 
         public void MarkAndProduceDiagnostics(ReflectionMarker reflectionMarker, Logger logger)
         {
-            bool diagnosticsEnabled = !context.Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode(Origin.MemberDefinition);
-            var diagnosticContext = new DiagnosticContext(Origin, diagnosticsEnabled, logger);
+            var diagnosticContext = new DiagnosticContext(
+                Origin,
+                DiagnosticUtilities.ShouldSuppressAnalysisWarningsForRequires(Origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute),
+                DiagnosticUtilities.ShouldSuppressAnalysisWarningsForRequires(Origin.MemberDefinition, DiagnosticUtilities.RequiresDynamicCodeAttribute),
+                DiagnosticUtilities.ShouldSuppressAnalysisWarningsForRequires(Origin.MemberDefinition, DiagnosticUtilities.RequiresAssemblyFilesAttribute),
+                logger);
             ReflectionMethodBodyScanner.HandleCall(MethodBody, CalledMethod, Operation, Offset, Instance, Arguments,
                 diagnosticContext,
                 reflectionMarker,

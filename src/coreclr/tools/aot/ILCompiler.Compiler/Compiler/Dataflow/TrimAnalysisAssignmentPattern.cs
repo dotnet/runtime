@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+
 using ILCompiler.Logging;
 using ILLink.Shared.TrimAnalysis;
+
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 
 #nullable enable
@@ -15,18 +17,24 @@ namespace ILCompiler.Dataflow
         public MultiValue Source { init; get; }
         public MultiValue Target { init; get; }
         public MessageOrigin Origin { init; get; }
+        internal Origin MemberWithRequirements { init; get; }
 
-        public TrimAnalysisAssignmentPattern(MultiValue source, MultiValue target, MessageOrigin origin)
+        internal TrimAnalysisAssignmentPattern(MultiValue source, MultiValue target, MessageOrigin origin, Origin memberWithRequirements)
         {
             Source = source.Clone();
             Target = target.Clone();
             Origin = origin;
+            MemberWithRequirements = memberWithRequirements;
         }
 
         public void MarkAndProduceDiagnostics(ReflectionMarker reflectionMarker, Logger logger)
         {
-            bool diagnosticsEnabled = !context.Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode(Origin.MemberDefinition);
-            var diagnosticContext = new DiagnosticContext(Origin, diagnosticsEnabled, logger);
+            var diagnosticContext = new DiagnosticContext(
+                Origin,
+                DiagnosticUtilities.ShouldSuppressAnalysisWarningsForRequires(Origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute),
+                DiagnosticUtilities.ShouldSuppressAnalysisWarningsForRequires(Origin.MemberDefinition, DiagnosticUtilities.RequiresDynamicCodeAttribute),
+                DiagnosticUtilities.ShouldSuppressAnalysisWarningsForRequires(Origin.MemberDefinition, DiagnosticUtilities.RequiresAssemblyFilesAttribute),
+                logger);
 
             foreach (var sourceValue in Source)
             {
@@ -35,7 +43,7 @@ namespace ILCompiler.Dataflow
                     if (targetValue is not ValueWithDynamicallyAccessedMembers targetWithDynamicallyAccessedMembers)
                         throw new NotImplementedException();
 
-                    var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(reflectionMarker, diagnosticContext);
+                    var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(reflectionMarker, diagnosticContext, MemberWithRequirements);
                     requireDynamicallyAccessedMembersAction.Invoke(sourceValue, targetWithDynamicallyAccessedMembers);
                 }
             }

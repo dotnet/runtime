@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Reflection.Metadata;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.Logging;
 using ILLink.Shared;
@@ -25,8 +27,6 @@ namespace ILCompiler.Dataflow
         public FlowAnnotations Annotations { get; }
         private bool _typeHierarchyDataFlow;
         private bool _enabled;
-        private const string RequiresUnreferencedCodeAttribute = nameof(RequiresUnreferencedCodeAttribute);
-
         public DependencyList Dependencies { get => _dependencies; }
 
         public ReflectionMarker(Logger logger, NodeFactory factory, FlowAnnotations annotations, bool typeHierarchyDataFlow, bool enabled)
@@ -106,19 +106,7 @@ namespace ILCompiler.Dataflow
             if (!_enabled)
                 return;
 
-            if (method.DoesMethodRequire(RequiresUnreferencedCodeAttribute, out _))
-            {
-                if (_typeHierarchyDataFlow)
-                {
-                    _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithRequiresUnreferencedCode,
-                        ((TypeOrigin)memberWithRequirements).GetDisplayName(), method.GetDisplayName());
-                }
-            }
-
-            if (Annotations.ShouldWarnWhenAccessedForReflection(method) && !ReflectionMethodBodyScanner.ShouldSuppressAnalysisWarningsForRequires(method, RequiresUnreferencedCodeAttribute))
-            {
-                WarnOnReflectionAccess(origin, method, memberWithRequirements);
-            }
+            CheckAndWarnOnReflectionAccess(origin, method, memberWithRequirements);
 
             RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, Factory, method, memberWithRequirements.ToString());
         }
@@ -128,10 +116,7 @@ namespace ILCompiler.Dataflow
             if (!_enabled)
                 return;
 
-            if (Annotations.ShouldWarnWhenAccessedForReflection(field) && !ReflectionMethodBodyScanner.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, RequiresUnreferencedCodeAttribute))
-            {
-                WarnOnReflectionAccess(origin, field, memberWithRequirements);
-            }
+            CheckAndWarnOnReflectionAccess(origin, field, memberWithRequirements);
 
             RootingHelpers.TryGetDependenciesForReflectedField(ref _dependencies, Factory, field, memberWithRequirements.ToString());
         }
@@ -207,9 +192,23 @@ namespace ILCompiler.Dataflow
             }
         }
 
-        // TODO: This should use DiagnosticContext to avoid generating warnings when we run data flow on a method multiple times
-        void WarnOnReflectionAccess(in MessageOrigin origin, TypeSystemEntity entity, Origin memberWithRequirements)
+        void CheckAndWarnOnReflectionAccess(in MessageOrigin origin, TypeSystemEntity entity, Origin memberWithRequirements)
         {
+            if (entity.DoesMemberRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out CustomAttributeValue<TypeDesc>? requiresAttribute))
+            {
+                if (_typeHierarchyDataFlow)
+                {
+                    _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithRequiresUnreferencedCode,
+                        ((TypeOrigin)memberWithRequirements).GetDisplayName(),
+                        entity.GetDisplayName(),
+                        MessageFormat.FormatRequiresAttributeMessageArg(DiagnosticUtilities.GetRequiresAttributeMessage(requiresAttribute.Value)),
+                        MessageFormat.FormatRequiresAttributeUrlArg(DiagnosticUtilities.GetRequiresAttributeUrl(requiresAttribute.Value)));
+                }
+            }
+
+            if (!Annotations.ShouldWarnWhenAccessedForReflection(entity))
+                return;
+
             if (_typeHierarchyDataFlow)
             {
                 // Don't check whether the current scope is a RUC type or RUC method because these warnings
@@ -221,7 +220,7 @@ namespace ILCompiler.Dataflow
             }
             else
             {
-                if (!ReflectionMethodBodyScanner.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, RequiresUnreferencedCodeAttribute))
+                if (!DiagnosticUtilities.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute))
                 {
                     if (entity is FieldDesc)
                     {
