@@ -81,12 +81,8 @@ namespace System.Net
         {
             get
             {
-                if (_lastProtocolName == null)
-                {
-                    _lastProtocolName = ProtocolName;
-                }
-
-                return (object)_lastProtocolName == (object)NegotiationInfoClass.Kerberos;
+                _lastProtocolName ??= ProtocolName;
+                return _lastProtocolName == NegotiationInfoClass.Kerberos;
             }
         }
 
@@ -95,8 +91,7 @@ namespace System.Net
             get
             {
                 _lastProtocolName ??= ProtocolName;
-
-                return (object)_lastProtocolName == (object)NegotiationInfoClass.NTLM;
+                return _lastProtocolName == NegotiationInfoClass.NTLM;
             }
         }
 
