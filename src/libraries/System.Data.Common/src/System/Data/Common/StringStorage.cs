@@ -57,7 +57,7 @@ namespace System.Data.Common
                     }
                     if (max >= 0)
                     {
-                        for (++i; i < recordNos.Length; i++)
+                        for (i++; i < recordNos.Length; i++)
                         {
                             if (Compare(max, recordNos[i]) < 0)
                             {
