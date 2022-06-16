@@ -38,34 +38,40 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
-        public void Constructor_ConversionFromUstar()
-        {
-            UstarTarEntry ustar = new UstarTarEntry(TarEntryType.RegularFile, InitialEntryName);
-            V7TarEntry convertedUstar = new V7TarEntry(other: ustar);
-
-            Assert.Equal(TarEntryType.V7RegularFile, convertedUstar.EntryType);
-            Assert.Equal(InitialEntryName, convertedUstar.Name);
-        }
+        public void Constructor_ConversionFromUstar_RegularFile() => TestConstructionConversion(TarEntryType.RegularFile, TarEntryFormat.Ustar, TarEntryFormat.V7);
 
         [Fact]
-        public void Constructor_ConversionFromPax()
-        {
-            PaxTarEntry pax = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName);
-            V7TarEntry convertedPax = new V7TarEntry(other: pax);
-
-            Assert.Equal(TarEntryType.V7RegularFile, convertedPax.EntryType);
-            Assert.Equal(InitialEntryName, convertedPax.Name);
-        }
+        public void Constructor_ConversionFromUstar_Directory() => TestConstructionConversion(TarEntryType.Directory, TarEntryFormat.Ustar, TarEntryFormat.V7);
 
         [Fact]
-        public void Constructor_ConversionFromGnu()
-        {
-            GnuTarEntry gnu = new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName);
-            V7TarEntry convertedGnu = new V7TarEntry(other: gnu);
+        public void Constructor_ConversionFromUstar_SymbolicLink() => TestConstructionConversion(TarEntryType.SymbolicLink, TarEntryFormat.Ustar, TarEntryFormat.V7);
 
-            Assert.Equal(TarEntryType.V7RegularFile, convertedGnu.EntryType);
-            Assert.Equal(InitialEntryName, convertedGnu.Name);
-        }
+        [Fact]
+        public void Constructor_ConversionFromUstar_HardLink() => TestConstructionConversion(TarEntryType.HardLink, TarEntryFormat.Ustar, TarEntryFormat.V7);
+
+        [Fact]
+        public void Constructor_ConversionFromPax_RegularFile() => TestConstructionConversion(TarEntryType.RegularFile, TarEntryFormat.Pax, TarEntryFormat.V7);
+
+        [Fact]
+        public void Constructor_ConversionFromPax_Directory() => TestConstructionConversion(TarEntryType.Directory, TarEntryFormat.Pax, TarEntryFormat.V7);
+
+        [Fact]
+        public void Constructor_ConversionFromPax_SymbolicLink() => TestConstructionConversion(TarEntryType.SymbolicLink, TarEntryFormat.Pax, TarEntryFormat.V7);
+
+        [Fact]
+        public void Constructor_ConversionFromPax_HardLink() => TestConstructionConversion(TarEntryType.HardLink, TarEntryFormat.Pax, TarEntryFormat.V7);
+
+        [Fact]
+        public void Constructor_ConversionFromGnu_RegularFile() => TestConstructionConversion(TarEntryType.RegularFile, TarEntryFormat.Gnu, TarEntryFormat.V7);
+
+        [Fact]
+        public void Constructor_ConversionFromGnu_Directory() => TestConstructionConversion(TarEntryType.Directory, TarEntryFormat.Gnu, TarEntryFormat.V7);
+
+        [Fact]
+        public void Constructor_ConversionFromGnu_SymbolicLink() => TestConstructionConversion(TarEntryType.SymbolicLink, TarEntryFormat.Gnu, TarEntryFormat.V7);
+
+        [Fact]
+        public void Constructor_ConversionFromGnu_HardLink() => TestConstructionConversion(TarEntryType.HardLink, TarEntryFormat.Gnu, TarEntryFormat.V7);
 
         [Fact]
         public void Constructor_ConversionFromUstar_From_UnseekableTarReader()
@@ -153,66 +159,66 @@ namespace System.Formats.Tar.Tests
 
         [Fact]
         public void Constructor_ConversionV7_BackAndForth_RegularFile() =>
-            TestConstructionConversion(TarEntryType.RegularFile, TarEntryFormat.V7, TarEntryFormat.V7);
+            TestConstructionConversionBackAndForth(TarEntryType.RegularFile, TarEntryFormat.V7, TarEntryFormat.V7);
 
         [Fact]
         public void Constructor_ConversionUstar_BackAndForth_RegularFile() =>
-            TestConstructionConversion(TarEntryType.RegularFile, TarEntryFormat.V7, TarEntryFormat.Ustar);
+            TestConstructionConversionBackAndForth(TarEntryType.RegularFile, TarEntryFormat.V7, TarEntryFormat.Ustar);
 
         [Fact]
         public void Constructor_ConversionPax_BackAndForth_RegularFile() =>
-            TestConstructionConversion(TarEntryType.RegularFile, TarEntryFormat.V7, TarEntryFormat.Pax);
+            TestConstructionConversionBackAndForth(TarEntryType.RegularFile, TarEntryFormat.V7, TarEntryFormat.Pax);
 
         [Fact]
         public void Constructor_ConversionGnu_BackAndForth_RegularFile() =>
-            TestConstructionConversion(TarEntryType.RegularFile, TarEntryFormat.V7, TarEntryFormat.Gnu);
+            TestConstructionConversionBackAndForth(TarEntryType.RegularFile, TarEntryFormat.V7, TarEntryFormat.Gnu);
 
         [Fact]
         public void Constructor_ConversionV7_BackAndForth_Directory() =>
-            TestConstructionConversion(TarEntryType.Directory, TarEntryFormat.V7, TarEntryFormat.V7);
+            TestConstructionConversionBackAndForth(TarEntryType.Directory, TarEntryFormat.V7, TarEntryFormat.V7);
 
         [Fact]
         public void Constructor_ConversionUstar_BackAndForth_Directory() =>
-            TestConstructionConversion(TarEntryType.Directory, TarEntryFormat.V7, TarEntryFormat.Ustar);
+            TestConstructionConversionBackAndForth(TarEntryType.Directory, TarEntryFormat.V7, TarEntryFormat.Ustar);
 
         [Fact]
         public void Constructor_ConversionPax_BackAndForth_Directory() =>
-            TestConstructionConversion(TarEntryType.Directory, TarEntryFormat.V7, TarEntryFormat.Pax);
+            TestConstructionConversionBackAndForth(TarEntryType.Directory, TarEntryFormat.V7, TarEntryFormat.Pax);
 
         [Fact]
         public void Constructor_ConversionGnu_BackAndForth_Directory() =>
-            TestConstructionConversion(TarEntryType.Directory, TarEntryFormat.V7, TarEntryFormat.Gnu);
+            TestConstructionConversionBackAndForth(TarEntryType.Directory, TarEntryFormat.V7, TarEntryFormat.Gnu);
 
         [Fact]
         public void Constructor_ConversionV7_BackAndForth_SymbolicLink() =>
-            TestConstructionConversion(TarEntryType.SymbolicLink, TarEntryFormat.V7, TarEntryFormat.V7);
+            TestConstructionConversionBackAndForth(TarEntryType.SymbolicLink, TarEntryFormat.V7, TarEntryFormat.V7);
 
         [Fact]
         public void Constructor_ConversionUstar_BackAndForth_SymbolicLink() =>
-            TestConstructionConversion(TarEntryType.SymbolicLink, TarEntryFormat.V7, TarEntryFormat.Ustar);
+            TestConstructionConversionBackAndForth(TarEntryType.SymbolicLink, TarEntryFormat.V7, TarEntryFormat.Ustar);
 
         [Fact]
         public void Constructor_ConversionPax_BackAndForth_SymbolicLink() =>
-            TestConstructionConversion(TarEntryType.SymbolicLink, TarEntryFormat.V7, TarEntryFormat.Pax);
+            TestConstructionConversionBackAndForth(TarEntryType.SymbolicLink, TarEntryFormat.V7, TarEntryFormat.Pax);
 
         [Fact]
         public void Constructor_ConversionGnu_BackAndForth_SymbolicLink() =>
-            TestConstructionConversion(TarEntryType.SymbolicLink, TarEntryFormat.V7, TarEntryFormat.Gnu);
+            TestConstructionConversionBackAndForth(TarEntryType.SymbolicLink, TarEntryFormat.V7, TarEntryFormat.Gnu);
 
         [Fact]
         public void Constructor_ConversionV7_BackAndForth_HardLink() =>
-            TestConstructionConversion(TarEntryType.HardLink, TarEntryFormat.V7, TarEntryFormat.V7);
+            TestConstructionConversionBackAndForth(TarEntryType.HardLink, TarEntryFormat.V7, TarEntryFormat.V7);
 
         [Fact]
         public void Constructor_ConversionUstar_BackAndForth_HardLink() =>
-            TestConstructionConversion(TarEntryType.HardLink, TarEntryFormat.V7, TarEntryFormat.Ustar);
+            TestConstructionConversionBackAndForth(TarEntryType.HardLink, TarEntryFormat.V7, TarEntryFormat.Ustar);
 
         [Fact]
         public void Constructor_ConversionPax_BackAndForth_HardLink() =>
-            TestConstructionConversion(TarEntryType.HardLink, TarEntryFormat.V7, TarEntryFormat.Pax);
+            TestConstructionConversionBackAndForth(TarEntryType.HardLink, TarEntryFormat.V7, TarEntryFormat.Pax);
 
         [Fact]
         public void Constructor_ConversionGnu_BackAndForth_HardLink() =>
-            TestConstructionConversion(TarEntryType.HardLink, TarEntryFormat.V7, TarEntryFormat.Gnu);
+            TestConstructionConversionBackAndForth(TarEntryType.HardLink, TarEntryFormat.V7, TarEntryFormat.Gnu);
     }
 }

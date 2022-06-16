@@ -16,85 +16,141 @@ namespace System.Formats.Tar.Tests
     {
         protected void TestConstructionConversion(
             TarEntryType originalEntryType,
+            TarEntryFormat firstFormat,
+            TarEntryFormat formatToConvert)
+        {
+            using MemoryStream dataStream = new MemoryStream();
+
+            TarEntryType actualEntryType = GetTarEntryTypeForTarEntryFormat(originalEntryType, firstFormat);
+
+            TarEntry firstEntry = GetFirstEntry(dataStream, actualEntryType, firstFormat);
+            TarEntry otherEntry = ConvertAndVerifyEntry(firstEntry, originalEntryType, formatToConvert);
+        }
+
+        protected void TestConstructionConversionBackAndForth(
+            TarEntryType originalEntryType,
             TarEntryFormat firstAndLastFormat,
             TarEntryFormat formatToConvert)
         {
             using MemoryStream dataStream = new MemoryStream();
 
             TarEntryType firstAndLastEntryType = GetTarEntryTypeForTarEntryFormat(originalEntryType, firstAndLastFormat);
-            TarEntry firstEntry = InvokeTarEntryCreationConstructor(firstAndLastFormat, firstAndLastEntryType, "file.txt");
+
+            TarEntry firstEntry = GetFirstEntry(dataStream, firstAndLastEntryType, firstAndLastFormat);
+            TarEntry otherEntry = ConvertAndVerifyEntry(firstEntry, originalEntryType, formatToConvert); // First conversion
+            ConvertAndVerifyEntry(otherEntry, firstAndLastEntryType, firstAndLastFormat); // Convert back to original format
+        }
+
+        private TarEntry GetFirstEntry(MemoryStream dataStream, TarEntryType entryType, TarEntryFormat format)
+        {
+            TarEntry firstEntry = InvokeTarEntryCreationConstructor(format, entryType, "file.txt");
 
             firstEntry.Gid = TestGid;
             firstEntry.Uid = TestUid;
             firstEntry.Mode = TestMode;
             firstEntry.ModificationTime = TestModificationTime;
 
-            if (firstAndLastEntryType is TarEntryType.V7RegularFile or TarEntryType.RegularFile)
+            if (entryType is TarEntryType.V7RegularFile or TarEntryType.RegularFile)
             {
                 firstEntry.DataStream = dataStream;
-                Assert.Same(dataStream, firstEntry.DataStream);
             }
-
-            if (firstAndLastEntryType is TarEntryType.SymbolicLink or TarEntryType.HardLink)
+            else if (entryType is TarEntryType.SymbolicLink or TarEntryType.HardLink)
             {
                 firstEntry.LinkName = TestLinkName;
-                Assert.Equal(TestLinkName, firstEntry.LinkName);
             }
-
-            if (firstAndLastEntryType is TarEntryType.BlockDevice or TarEntryType.CharacterDevice)
+            else if (entryType is TarEntryType.BlockDevice or TarEntryType.CharacterDevice)
             {
                 PosixTarEntry posixTarEntry = firstEntry as PosixTarEntry;
                 posixTarEntry.DeviceMajor = TestBlockDeviceMajor;
                 posixTarEntry.DeviceMinor = TestBlockDeviceMinor;
             }
 
-            TarEntry otherEntry = InvokeTarEntryConversionConstructor(formatToConvert, firstEntry);
-
-            CheckConversionType(otherEntry, formatToConvert);
-            Assert.Equal(formatToConvert, otherEntry.Format);
-
-            TarEntryType otherEntryType = GetTarEntryTypeForTarEntryFormat(originalEntryType, formatToConvert);
-            Assert.Equal(otherEntryType, otherEntry.EntryType);
-
-            Assert.Equal(firstEntry.Gid, otherEntry.Gid);
-            Assert.Equal(firstEntry.Uid, otherEntry.Uid);
-            Assert.Equal(firstEntry.Mode, otherEntry.Mode);
-            Assert.Equal(firstEntry.ModificationTime, otherEntry.ModificationTime);
-
-            if (firstAndLastEntryType is TarEntryType.V7RegularFile or TarEntryType.RegularFile)
+            if (format is TarEntryFormat.Pax)
             {
-                Assert.Same(dataStream, otherEntry.DataStream);
+                PaxTarEntry paxEntry = firstEntry as PaxTarEntry;
+                Assert.Contains("atime", paxEntry.ExtendedAttributes);
+                Assert.Contains("ctime", paxEntry.ExtendedAttributes);
+            }
+            else if (format is TarEntryFormat.Gnu)
+            {
+                GnuTarEntry gnuEntry = firstEntry as GnuTarEntry;
+                gnuEntry.AccessTime = TestAccessTime;
+                gnuEntry.ChangeTime = TestChangeTime;
             }
 
-            if (firstAndLastEntryType is TarEntryType.SymbolicLink or TarEntryType.HardLink)
+            return firstEntry;
+        }
+
+        private TarEntry ConvertAndVerifyEntry(TarEntry originalEntry, TarEntryType entryType, TarEntryFormat formatToConvert)
+        {
+            TarEntry convertedEntry = InvokeTarEntryConversionConstructor(formatToConvert, originalEntry);
+
+            CheckConversionType(convertedEntry, formatToConvert);
+            Assert.Equal(formatToConvert, convertedEntry.Format);
+
+            TarEntryType convertedEntryType = GetTarEntryTypeForTarEntryFormat(entryType, formatToConvert);
+            Assert.Equal(convertedEntryType, convertedEntry.EntryType);
+
+            Assert.Equal(originalEntry.Gid, convertedEntry.Gid);
+            Assert.Equal(originalEntry.Uid, convertedEntry.Uid);
+            Assert.Equal(originalEntry.Mode, convertedEntry.Mode);
+            Assert.Equal(originalEntry.ModificationTime, convertedEntry.ModificationTime);
+
+            if (originalEntry.EntryType is TarEntryType.V7RegularFile or TarEntryType.RegularFile)
             {
-                Assert.Equal(TestLinkName, otherEntry.LinkName);
+                Assert.Same(originalEntry.DataStream, convertedEntry.DataStream);
+            }
+            else if (originalEntry.EntryType is TarEntryType.SymbolicLink or TarEntryType.HardLink)
+            {
+                Assert.Equal(originalEntry.LinkName, convertedEntry.LinkName);
+            }
+            else if (originalEntry.EntryType is TarEntryType.BlockDevice or TarEntryType.CharacterDevice)
+            {
+                PosixTarEntry originalPosixTarEntry = originalEntry as PosixTarEntry;
+                PosixTarEntry convertedPosixTarEntry = convertedEntry as PosixTarEntry;
+                Assert.Equal(originalPosixTarEntry.DeviceMajor, convertedPosixTarEntry.DeviceMajor);
+                Assert.Equal(originalPosixTarEntry.DeviceMinor, convertedPosixTarEntry.DeviceMinor);
             }
 
-            if (firstAndLastEntryType is TarEntryType.BlockDevice or TarEntryType.CharacterDevice)
+            if (formatToConvert is TarEntryFormat.Pax &&
+                originalEntry.Format is TarEntryFormat.Pax or TarEntryFormat.Gnu)
             {
-                PosixTarEntry posixTarEntry = firstEntry as PosixTarEntry;
-                Assert.Equal(TestBlockDeviceMajor, posixTarEntry.DeviceMajor);
-                Assert.Equal(TestBlockDeviceMinor, posixTarEntry.DeviceMinor);
+                GetTimestamps(originalEntry, out DateTimeOffset expectedATime, out DateTimeOffset expectedCTime);
+                PaxTarEntry paxEntry = convertedEntry as PaxTarEntry;
+                Assert.Equal(expectedATime, GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, "atime"));
+                Assert.Equal(expectedCTime, GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, "ctime"));
             }
 
-            TarEntry secondEntry = InvokeTarEntryConversionConstructor(firstAndLastFormat, otherEntry);
-            Assert.Equal(firstAndLastEntryType, secondEntry.EntryType);
-
-            Assert.Equal(firstEntry.Gid, secondEntry.Gid);
-            Assert.Equal(firstEntry.Uid, secondEntry.Uid);
-            Assert.Equal(firstEntry.Mode, otherEntry.Mode);
-            Assert.Equal(firstEntry.ModificationTime, otherEntry.ModificationTime);
-
-            if (firstAndLastEntryType is TarEntryType.V7RegularFile or TarEntryType.RegularFile)
+            if (formatToConvert is TarEntryFormat.Gnu &&
+                originalEntry.Format is TarEntryFormat.Pax or TarEntryFormat.Gnu)
             {
-                Assert.Same(dataStream, secondEntry.DataStream);
+                GetTimestamps(originalEntry, out DateTimeOffset expectedATime, out DateTimeOffset expectedCTime);
+                GnuTarEntry gnuEntry = convertedEntry as GnuTarEntry;
+                Assert.Equal(expectedATime, gnuEntry.AccessTime);
+                Assert.Equal(expectedCTime, gnuEntry.ChangeTime);
             }
 
-            if (firstAndLastEntryType is TarEntryType.SymbolicLink or TarEntryType.HardLink)
+            return convertedEntry;
+        }
+
+        private void GetTimestamps(TarEntry originalEntry, out DateTimeOffset expectedATime, out DateTimeOffset expectedCTime)
+        {
+            Assert.True(originalEntry.Format is TarEntryFormat.Gnu or TarEntryFormat.Pax);
+            if (originalEntry.Format is TarEntryFormat.Pax)
             {
-                Assert.Equal(TestLinkName, secondEntry.LinkName);
+                PaxTarEntry originalPaxEntry = originalEntry as PaxTarEntry;
+                Assert.Contains("atime", originalPaxEntry.ExtendedAttributes);
+                Assert.Contains("ctime", originalPaxEntry.ExtendedAttributes);
+                expectedATime = GetDateTimeOffsetFromTimestampString(originalPaxEntry.ExtendedAttributes, "atime");
+                expectedCTime = GetDateTimeOffsetFromTimestampString(originalPaxEntry.ExtendedAttributes, "ctime");
             }
+            else
+            {
+                GnuTarEntry originalGnuEntry = originalEntry as GnuTarEntry;
+                expectedATime = originalGnuEntry.AccessTime;
+                expectedCTime = originalGnuEntry.ChangeTime;
+            }
+
         }
 
         protected TarEntry InvokeTarEntryCreationConstructor(TarEntryFormat targetFormat, TarEntryType entryType, string entryName)
