@@ -13,7 +13,8 @@ namespace System.Net.Security
     /// </summary>
     public sealed class NegotiateAuthentication : IDisposable
     {
-        private readonly NTAuthentication _ntAuthentication;
+        private readonly NTAuthentication? _ntAuthentication;
+        private readonly string _requestedPackage;
         private readonly bool _isServer;
         private IIdentity? _remoteIdentity;
 
@@ -34,13 +35,23 @@ namespace System.Net.Security
             } | ContextFlagsPal.Connection;
 
             _isServer = false;
-            _ntAuthentication = new NTAuthentication(
-                isServer: false,
-                clientOptions.Package,
-                clientOptions.Credential,
-                clientOptions.TargetName,
-                contextFlags,
-                clientOptions.Binding);
+            _requestedPackage = clientOptions.Package;
+            try
+            {
+                _ntAuthentication = new NTAuthentication(
+                    isServer: false,
+                    clientOptions.Package,
+                    clientOptions.Credential,
+                    clientOptions.TargetName,
+                    contextFlags,
+                    clientOptions.Binding);
+            }
+            catch (PlatformNotSupportedException)
+            {
+            }
+            catch (Win32Exception)
+            {
+            }
         }
 
         /// <summary>
@@ -60,13 +71,23 @@ namespace System.Net.Security
             } | ContextFlagsPal.Connection;
 
             _isServer = true;
-            _ntAuthentication = new NTAuthentication(
-                isServer: true,
-                serverOptions.Package,
-                serverOptions.Credential,
-                null,
-                contextFlags,
-                serverOptions.Binding);
+            _requestedPackage = serverOptions.Package;
+            try
+            {
+                _ntAuthentication = new NTAuthentication(
+                    isServer: true,
+                    serverOptions.Package,
+                    serverOptions.Credential,
+                    null,
+                    contextFlags,
+                    serverOptions.Binding);
+            }
+            catch (PlatformNotSupportedException)
+            {
+            }
+            catch (Win32Exception)
+            {
+            }
         }
 
         /// <summary>
@@ -75,7 +96,7 @@ namespace System.Net.Security
         /// </summary>
         public void Dispose()
         {
-            _ntAuthentication.CloseContext();
+            _ntAuthentication?.CloseContext();
             if (_remoteIdentity is IDisposable disposableRemoteIdentity)
             {
                 disposableRemoteIdentity.Dispose();
@@ -86,7 +107,7 @@ namespace System.Net.Security
         /// Indicates whether authentication was successfully completed and the session
         /// was established.
         /// </summary>
-        public bool IsAuthenticated => _ntAuthentication.IsCompleted;
+        public bool IsAuthenticated => _ntAuthentication?.IsCompleted ?? false;
 
         /// <summary>
         /// Indicates the negotiated level of protection.
@@ -106,17 +127,17 @@ namespace System.Net.Security
         /// <summary>
         /// Indicates whether data signing was negotiated.
         /// </summary>
-        public bool IsSigned => _ntAuthentication.IsIntegrityFlag;
+        public bool IsSigned => _ntAuthentication?.IsIntegrityFlag ?? false;
 
         /// <summary>
         /// Indicates whether data encryption was negotiated.
         /// </summary>
-        public bool IsEncrypted => _ntAuthentication.IsConfidentialityFlag;
+        public bool IsEncrypted => _ntAuthentication?.IsConfidentialityFlag ?? false;
 
         /// <summary>
         /// Indicates whether both server and client have been authenticated.
         /// </summary>
-        public bool IsMutuallyAuthenticated => _ntAuthentication.IsMutualAuthFlag;
+        public bool IsMutuallyAuthenticated => _ntAuthentication?.IsMutualAuthFlag ?? false;
 
         /// <summary>
         /// Indicates whether the local side of the authentication is representing
@@ -139,7 +160,7 @@ namespace System.Net.Security
         /// property will be Kerberos, NTLM, or any other specific protocol that was
         /// negotiated between both sides of the authentication.
         /// </remarks>
-        public string Package => _ntAuthentication.ProtocolName;
+        public string Package => _ntAuthentication?.ProtocolName ?? _requestedPackage;
 
         /// <summary>
         /// Gets target name (service principal name) of the server.
@@ -151,7 +172,7 @@ namespace System.Net.Security
         /// For client-side of the authentication the property returns the target name
         /// specified in <see cref="NegotiateAuthenticationClientOptions.TargetName" />.
         /// </remarks>
-        public string? TargetName => IsServer ? _ntAuthentication.ClientSpecifiedSpn : _ntAuthentication.Spn;
+        public string? TargetName => IsServer ? _ntAuthentication?.ClientSpecifiedSpn : _ntAuthentication?.Spn;
 
         /// <summary>
         /// Gets information about the identity of the remote party.
@@ -168,7 +189,7 @@ namespace System.Net.Security
                 IIdentity? identity = _remoteIdentity;
                 if (identity is null)
                 {
-                    if (!IsAuthenticated)
+                    if (!IsAuthenticated || _ntAuthentication == null)
                     {
                         throw new InvalidOperationException(SR.net_auth_noauth);
                     }
@@ -206,6 +227,13 @@ namespace System.Net.Security
         /// </remarks>
         public byte[]? GetOutgoingBlob(ReadOnlySpan<byte> incomingBlob, out NegotiateAuthenticationStatusCode statusCode)
         {
+            if (_ntAuthentication == null)
+            {
+                // Unsupported protocol
+                statusCode = NegotiateAuthenticationStatusCode.Unsupported;
+                return null;
+            }
+
             byte[]? blob = _ntAuthentication.GetOutgoingBlob(incomingBlob, false, out SecurityStatusPal securityStatus);
 
             // Map error codes

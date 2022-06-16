@@ -514,6 +514,12 @@ namespace System.Net.Security
                 throw new PlatformNotSupportedException(SR.net_ntlm_not_possible_default_cred);
             }
 
+            if (!ntlmOnly && !string.Equals(package, NegotiationInfoClass.Negotiate))
+            {
+                // Native shim currently supports only NTLM and Negotiate
+                throw new PlatformNotSupportedException(SR.net_securitypackagesupport);
+            }
+
             try
             {
                 return isEmptyCredential ?

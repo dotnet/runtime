@@ -155,6 +155,7 @@ namespace System.Net
             {
                 _securityContext.Dispose();
             }
+            _isCompleted = false;
         }
 
         internal int VerifySignature(byte[] buffer, int offset, int count)

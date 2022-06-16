@@ -15,6 +15,7 @@ namespace System.Net.Security.Tests
     public class NegotiateAuthenticationTests
     {
         private static bool IsNtlmAvailable => Capability.IsNtlmInstalled() || OperatingSystem.IsAndroid() || OperatingSystem.IsTvOS();
+        private static bool IsNtlmUnavailable => !IsNtlmAvailable;
 
         private static NetworkCredential s_testCredentialRight = new NetworkCredential("rightusername", "rightpassword");
         private static NetworkCredential s_testCredentialWrong = new NetworkCredential("rightusername", "wrongpassword");
@@ -27,16 +28,66 @@ namespace System.Net.Security.Tests
             AssertExtensions.Throws<ArgumentNullException>("serverOptions", () => { new NegotiateAuthentication((NegotiateAuthenticationServerOptions)null); });
         }
 
-        // TODO: Currently fails both on Linux (proceeds with Negotiate) and managed implementation (throws PlatformNotSupportedException)
-        /*[Fact]
-        public void Unsupported_Package()
+        [Fact]
+        public void RemoteIdentity_ThrowsOnUnauthenticated()
+        {
+            NegotiateAuthenticationClientOptions clientOptions = new NegotiateAuthenticationClientOptions { Credential = s_testCredentialRight, TargetName = "HTTP/foo" };
+            NegotiateAuthentication negotiateAuthentication = new NegotiateAuthentication(clientOptions);
+            Assert.Throws<InvalidOperationException>(() => { _ = negotiateAuthentication.RemoteIdentity; });
+        }
+
+        [ConditionalFact(nameof(IsNtlmAvailable))]
+        public void RemoteIdentity_ThrowsOnDisposed()
+        {
+            FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight);
+            NegotiateAuthentication negotiateAuthentication = new NegotiateAuthentication(
+                new NegotiateAuthenticationClientOptions
+                {
+                    Package = "NTLM",
+                    Credential = s_testCredentialRight,
+                    TargetName = "HTTP/foo",
+                    RequiredProtectionLevel = ProtectionLevel.Sign
+                });
+
+            DoNtlmExchange(fakeNtlmServer, negotiateAuthentication);
+
+            Assert.True(fakeNtlmServer.IsAuthenticated);
+            Assert.True(negotiateAuthentication.IsAuthenticated);
+            _ = negotiateAuthentication.RemoteIdentity;
+
+            negotiateAuthentication.Dispose();
+            Assert.Throws<InvalidOperationException>(() => { _ = negotiateAuthentication.RemoteIdentity; });
+        }
+
+        [Fact]
+        public void Package_Unsupported()
         {
             NegotiateAuthenticationClientOptions clientOptions = new NegotiateAuthenticationClientOptions { Package = "INVALID", Credential = s_testCredentialRight, TargetName = "HTTP/foo" };
             NegotiateAuthentication negotiateAuthentication = new NegotiateAuthentication(clientOptions);
             NegotiateAuthenticationStatusCode statusCode;
             negotiateAuthentication.GetOutgoingBlob((byte[]?)null, out statusCode);
             Assert.Equal(NegotiateAuthenticationStatusCode.Unsupported, statusCode);
-        }*/
+        }
+
+        [ConditionalFact(nameof(IsNtlmAvailable))]
+        public void Package_Supported_NTLM()
+        {
+            NegotiateAuthenticationClientOptions clientOptions = new NegotiateAuthenticationClientOptions { Package = "NTLM", Credential = s_testCredentialRight, TargetName = "HTTP/foo" };
+            NegotiateAuthentication negotiateAuthentication = new NegotiateAuthentication(clientOptions);
+            NegotiateAuthenticationStatusCode statusCode;
+            negotiateAuthentication.GetOutgoingBlob((byte[]?)null, out statusCode);
+            Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, statusCode);
+        }
+
+        [ConditionalFact(nameof(IsNtlmUnavailable))]
+        public void Package_Unsupported_NTLM()
+        {
+            NegotiateAuthenticationClientOptions clientOptions = new NegotiateAuthenticationClientOptions { Package = "NTLM", Credential = s_testCredentialRight, TargetName = "HTTP/foo" };
+            NegotiateAuthentication negotiateAuthentication = new NegotiateAuthentication(clientOptions);
+            NegotiateAuthenticationStatusCode statusCode;
+            negotiateAuthentication.GetOutgoingBlob((byte[]?)null, out statusCode);
+            Assert.Equal(NegotiateAuthenticationStatusCode.Unsupported, statusCode);
+        }
 
         [Fact]
         public void NtlmProtocolExampleTest()

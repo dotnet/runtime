@@ -296,7 +296,7 @@ namespace System.Net
             _serverSeal = null;
             _clientSequenceNumber = 0;
             _serverSequenceNumber = 0;
-            IsCompleted = true;
+            IsCompleted = false;
         }
 
         internal string? GetOutgoingBlob(string? incomingBlob)
