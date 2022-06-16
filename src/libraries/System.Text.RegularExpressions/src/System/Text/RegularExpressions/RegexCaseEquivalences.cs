@@ -16,7 +16,12 @@ namespace System.Text.RegularExpressions
     {
         public const int CharactersPerRange = 1024;
 
+#if REGEXGENERATOR
+        private static ReadOnlySpan<char> SpecialCasingSetBehaviors => s_specialCasingSetBehaviors;
         private static readonly char[] s_specialCasingSetBehaviors = new char[5]
+#else
+        private static ReadOnlySpan<char> SpecialCasingSetBehaviors => new char[5]
+#endif
         {
             'I', 'i', '\u0130', 'I', '\u0131'
         };
@@ -45,14 +50,14 @@ namespace System.Text.RegularExpressions
                 equivalences = c switch
                 {
                     // Invariant mappings
-                    'i' or 'I' when mappingBehavior is RegexCaseBehavior.Invariant => s_specialCasingSetBehaviors.AsSpan(0, 2), // 'I' and 'i'
+                    'i' or 'I' when mappingBehavior is RegexCaseBehavior.Invariant => SpecialCasingSetBehaviors.Slice(0, 2), // 'I' and 'i'
 
                     // Non-Turkish mappings
-                    'i' or 'I' or '\u0130' when mappingBehavior is RegexCaseBehavior.NonTurkish => s_specialCasingSetBehaviors.AsSpan(0, 3), // 'I', 'i', and '\u0130'
+                    'i' or 'I' or '\u0130' when mappingBehavior is RegexCaseBehavior.NonTurkish => SpecialCasingSetBehaviors.Slice(0, 3), // 'I', 'i', and '\u0130'
 
                     // Turkish mappings
-                    'I' or '\u0131' when mappingBehavior is RegexCaseBehavior.Turkish => s_specialCasingSetBehaviors.AsSpan(3, 2), // 'I' and '\u0131'
-                    'i' or '\u0130' when mappingBehavior is RegexCaseBehavior.Turkish => s_specialCasingSetBehaviors.AsSpan(1, 2), // 'i' and '\u0130'
+                    'I' or '\u0131' when mappingBehavior is RegexCaseBehavior.Turkish => SpecialCasingSetBehaviors.Slice(3, 2), // 'I' and '\u0131'
+                    'i' or '\u0130' when mappingBehavior is RegexCaseBehavior.Turkish => SpecialCasingSetBehaviors.Slice(1, 2), // 'i' and '\u0130'
 
                     // Default
                     _ => default
@@ -158,7 +163,7 @@ namespace System.Text.RegularExpressions
 
             byte count = (byte)((mappingValue >> 13) & 0b111);
             ushort index3 = (ushort)(mappingValue & 0x1FFF);
-            equivalences = EquivalenceCasingValues.AsSpan(index3, count);
+            equivalences = EquivalenceCasingValues.Slice(index3, count);
 
             return true;
         }

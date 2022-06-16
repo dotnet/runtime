@@ -109,7 +109,7 @@ namespace System
         private static DateTime CreateDateTimeFromSystemTime(in Interop.Kernel32.SYSTEMTIME time, ulong hundredNanoSecond)
         {
             uint year = time.Year;
-            uint[] days = IsLeapYear((int)year) ? s_daysToMonth366 : s_daysToMonth365;
+            ReadOnlySpan<uint> days = IsLeapYear((int)year) ? DaysToMonth366 : DaysToMonth365;
             int month = time.Month - 1;
             uint n = DaysToYear(year) + days[month] + time.Day - 1;
             ulong ticks = n * (ulong)TicksPerDay;

@@ -598,7 +598,7 @@ namespace System.Xml.Schema
         //
         // for 'block' and 'final' attribute values
         //
-        private static readonly int[] s_derivationMethodValues = {
+        private static ReadOnlySpan<int> DerivationMethodValues => new int[] {
             (int)XmlSchemaDerivationMethod.Substitution,
             (int)XmlSchemaDerivationMethod.Extension,
             (int)XmlSchemaDerivationMethod.Restriction,
@@ -2525,12 +2525,12 @@ namespace System.Xml.Schema
                 {
                     if (stringValues[i] == s_derivationMethodStrings[j])
                     {
-                        if ((r & s_derivationMethodValues[j]) != 0 && (r & s_derivationMethodValues[j]) != s_derivationMethodValues[j])
+                        if ((r & DerivationMethodValues[j]) != 0 && (r & DerivationMethodValues[j]) != DerivationMethodValues[j])
                         {
                             SendValidationEvent(SR.Sch_InvalidXsdAttributeValue, attributeName, value, null);
                             return 0;
                         }
-                        r |= s_derivationMethodValues[j];
+                        r |= DerivationMethodValues[j];
                         matched = true;
                         break;
                     }

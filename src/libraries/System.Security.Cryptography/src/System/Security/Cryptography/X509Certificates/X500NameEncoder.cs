@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.X509Certificates
     {
         private const string OidTagPrefix = "OID.";
 
-        private static readonly char[] s_quoteNeedingChars =
+        private static ReadOnlySpan<char> QuoteNeedingChars => new char[]
         {
             ',',
             '+',
@@ -131,22 +131,18 @@ namespace System.Security.Cryptography.X509Certificates
             return writer.Encode();
         }
 
-        private static bool NeedsQuoting(string rdnValue)
+        private static bool NeedsQuoting(ReadOnlySpan<char> rdnValue)
         {
-            if (string.IsNullOrEmpty(rdnValue))
+            if (rdnValue.IsEmpty ||
+                IsQuotableWhitespace(rdnValue[0]) ||
+                IsQuotableWhitespace(rdnValue[^1]))
             {
                 return true;
             }
 
-            if (IsQuotableWhitespace(rdnValue[0]) ||
-                IsQuotableWhitespace(rdnValue[rdnValue.Length - 1]))
-            {
-                return true;
-            }
+            int index = rdnValue.IndexOfAny(QuoteNeedingChars);
 
-            int index = rdnValue.IndexOfAny(s_quoteNeedingChars);
-
-            return index != -1;
+            return index >= 0;
         }
 
         private static bool IsQuotableWhitespace(char c)

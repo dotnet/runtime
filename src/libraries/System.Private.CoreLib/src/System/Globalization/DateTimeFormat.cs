@@ -120,13 +120,12 @@ namespace System
     */
 
     // This class contains only static members and does not require the serializable attribute.
-    internal static
-    class DateTimeFormat
+    internal static class DateTimeFormat
     {
         internal const int MaxSecondsFractionDigits = 7;
         internal const long NullOffset = long.MinValue;
 
-        internal static char[] allStandardFormats =
+        internal static ReadOnlySpan<char> AllStandardFormats => new char[]
         {
             'd', 'D', 'f', 'F', 'g', 'G',
             'm', 'M', 'o', 'O', 'r', 'R',
@@ -1562,6 +1561,7 @@ namespace System
         {
             List<string> results = new List<string>(DEFAULT_ALL_DATETIMES_SIZE);
 
+            ReadOnlySpan<char> allStandardFormats = AllStandardFormats;
             for (int i = 0; i < allStandardFormats.Length; i++)
             {
                 string[] strings = GetAllDateTimes(dateTime, allStandardFormats[i], dtfi);
