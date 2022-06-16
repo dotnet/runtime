@@ -1043,7 +1043,7 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
 // Return value:
 //   range that represents the values given type allows
 //
-static Range GetRangeFromType(var_types type)
+Range RangeCheck::GetRangeFromType(var_types type)
 {
     switch (type)
     {
