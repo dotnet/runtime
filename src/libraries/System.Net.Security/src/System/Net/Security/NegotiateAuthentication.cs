@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Security.Principal;
 
@@ -159,6 +160,7 @@ namespace System.Net.Security
         /// An <see cref="IIdentity" /> object that describes the identity of the remote endpoint.
         /// </returns>
         /// <exception cref="InvalidOperationException">Authentication failed or has not occurred.</exception>
+        /// <exception cref="Win32Exception">System error occurred when trying to retrieve the identity.</exception>
         public IIdentity RemoteIdentity
         {
             get
