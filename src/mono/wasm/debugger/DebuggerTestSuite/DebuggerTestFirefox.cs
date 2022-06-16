@@ -225,52 +225,63 @@ public class DebuggerTestFirefox : DebuggerTestBase
         JToken value = variable.Value;
         JObject variableValue = null;
         string valueType = "value";
-        if (value?["type"] == null || value["type"].Value<string>() == "object")
+        if (value?["type"] == null || value["type"].Value<string>() == "object" || value["type"].Value<string>() == "string")
         {
             var actor = value["value"]?["actor"]?.Value<string>();
-            if (value["value"]["type"].Value<string>() == "null")
+            string type = value["value"]?["type"]?.Value<string>();
+            switch (type)
             {
-                variableValue = JObject.FromObject(new
+                case "null":
+                    variableValue = JObject.FromObject(new
                         {
                             type = "object",
                             subtype = "null",
                             className = value["value"]["class"].Value<string>(),
                             description = value["value"]["class"].Value<string>()
                         });
-                if (actor != null && actor.StartsWith("dotnet:pointer:"))
-                    variableValue["type"] = "symbol";
-            }
-            else if (value?["value"]?["type"].Value<string>() == "function")
-            {
-                variableValue = JObject.FromObject(new
-                    {
-                        type = "function",
-                        objectId = value["value"]["actor"].Value<string>(),
-                        className = "Function",
-                        description = $"get {name} ()"
-                    });
-                valueType = "get";
-            }
-            else {
-                variableValue = JObject.FromObject(new
+                    if (actor != null && actor.StartsWith("dotnet:pointer:"))
+                        variableValue["type"] = "symbol";
+                    break;
+                case "function":
+                    variableValue = JObject.FromObject(new
                         {
-                            type = value["value"]["type"],
+                            type = type,
+                            objectId = value["value"]["actor"].Value<string>(),
+                            className = "Function",
+                            description = $"get {name} ()"
+                        });
+                    valueType = "get";
+                    break;
+                case "string":
+                    variableValue = JObject.FromObject(new
+                        {
+                            type = type,
+                            objectId = value["value"]["actor"]?.Value<string>(),
+                            value = value["value"]["value"]?.Value<string>(),
+                            description = value["value"]["value"].Value<string>()
+                        });
+                    break;
+                default:
+                    variableValue = JObject.FromObject(new
+                        {
+                            type = type,
                             value = (string)null,
                             description = value["value"]?["value"]?.Value<string>() == null ? value["value"]["class"].Value<string>() : value["value"]?["value"]?.Value<string>(),
                             className = value["value"]["class"].Value<string>(),
                             objectId = actor,
                         });
-                if (actor.StartsWith("dotnet:valuetype:"))
-                    variableValue["isValueType"] = true;
-                if (actor.StartsWith("dotnet:array:"))
-                    variableValue["subtype"] = "array";
-                if (actor.StartsWith("dotnet:pointer:"))
-                    variableValue["type"] = "object";
-                if (actor.StartsWith("dotnet:pointer:-1"))
-                {
-                    variableValue["type"] = "symbol";
-                    variableValue["value"] = value["value"]?["value"]?.Value<string>();
-                }
+                    if (actor.StartsWith("dotnet:valuetype:"))
+                        variableValue["isValueType"] = true;
+                    if (actor.StartsWith("dotnet:array:"))
+                        variableValue["subtype"] = "array";
+                    if (actor.StartsWith("dotnet:pointer:"))
+                        variableValue["type"] = "object";
+                    if (actor.StartsWith("dotnet:pointer:-1"))
+                    {
+                        variableValue["type"] = "symbol";
+                        variableValue["value"] = value["value"]?["value"]?.Value<string>();
+                    }
+                    break;
             }
         }
         else

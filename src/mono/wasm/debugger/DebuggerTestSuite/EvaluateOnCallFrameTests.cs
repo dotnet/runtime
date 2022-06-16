@@ -1285,15 +1285,15 @@ namespace DebuggerTests
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
                 var (res, _) = await EvaluateOnCallFrame(id, "test.propString.Split('_', 3, System.StringSplitOptions.TrimEntries)");
-                var props = res["value"] ?? await GetProperties(res["objectId"]?.Value<string>()); // in firefox getProps is necessary
-                var expected_props = new [] { TString("s"), TString("t"), TString("r") };
+                var props = await GetProperties(res["objectId"]?.Value<string>());
+                var expected_props = new[] { TString("s"), TString("t"), TString("r") };
                 await CheckProps(props, expected_props, "props#1");
 
                 (res, _) = await EvaluateOnCallFrame(id, "localString.Split('*', 3, System.StringSplitOptions.RemoveEmptyEntries)");
-                props = res["value"] ?? await GetProperties(res["objectId"]?.Value<string>());
-                expected_props = new [] { TString("S"), TString("T"), TString("R") };
-                await CheckProps(props, expected_props, "props#3");
-             });
+                props = await GetProperties(res["objectId"]?.Value<string>());
+                expected_props = new[] { TString("S"), TString("T"), TString("R") };
+                await CheckProps(props, expected_props, "props#2");
+            });
 
         [Theory]
         [InlineData("DefaultMethod", "IDefaultInterface", "Evaluate")]

@@ -732,7 +732,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                         @class = variable["value"]?["className"]?.Value<string>(),
                         value = variable["value"]?["description"]?.Value<string>(),
                         actor = variable["value"]["objectId"].Value<string>(),
-                        type = "object"
+                        type = variable["value"]?["type"]?.Value<string>() ?? "object"
                     }),
                     enumerable = true,
                     configurable = false,
