@@ -19,9 +19,9 @@ dotnet nuget add source -n dotnet7 https://dnceng.pkgs.visualstudio.com/public/_
 
 Then, you will be able to add the latest prerelease version of the desired package to your project.
 
-**Example:** To add version 7.0.100-preview.5.22226.4 of the System.Data.OleDb package, use the [dotnet add package](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-add-package) command:
+**Example:** To add version 7.0-preview.5.22226.4 of the System.Data.OleDb package, use the [dotnet add package](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-add-package) command:
 ```
-dotnet add package System.Data.OleDb -v 7.0.100-preview.5.22226.4
+dotnet add package System.Data.OleDb -v 7.0-preview.5.22226.4
 ```
 
 To use nightly builds of the entire runtime, follow the steps given in the rest of this document instead.
@@ -30,9 +30,7 @@ To use nightly builds of the entire runtime, follow the steps given in the rest 
 
 1. Acquire the latest nightly .NET SDK by downloading and extracting a zip/tarball or using an installer from the [installers and binaries table in dotnet/installer](https://github.com/dotnet/installer#installers-and-binaries) (for example, https://aka.ms/dotnet/7.0/daily/dotnet-sdk-win-x64.zip).
 
-2. By default, the dotnet CLI will use the globally installed SDK if it matches the major/minor version you request and has a higher revision. To force it to use a locally installed SDK, you must set an environment variable `DOTNET_MULTILEVEL_LOOKUP=0` in your shell. You can use `dotnet --info` to verify what version of the Shared Framework it is using.
-
-3. Reminder: if you are using a local copy of the dotnet CLI, take care that when you type `dotnet` you do not inadvertently pick up a different copy that you may have in your path. On Windows, for example, if you use a Command Prompt, a global copy may be in the path, so use the fully qualified path to your local `dotnet` (e.g. `C:\dotnet\dotnet.exe`). If you receive an error "error NETSDK1045:  The current .NET SDK does not support targeting .NET 7.0." then you may be executing an older `dotnet`.
+2. If you are using a local copy of the dotnet CLI, take care that when you type `dotnet` you do not inadvertently pick up a different copy that you may have in your path. On Windows, for example, if you use a Command Prompt, a global copy may be in the path, so use the fully qualified path to your local `dotnet` (e.g. `C:\dotnet\dotnet.exe`). If you receive an error "error NETSDK1045:  The current .NET SDK does not support targeting .NET 7.0." then you may be executing an older `dotnet`.
 
 After setting up dotnet you can verify you are using the dogfooding version by executing `dotnet --info`. Here is an example output at the time of writing:
 ```
@@ -70,11 +68,10 @@ Learn about .NET Runtimes and SDKs:
 
 ```
 
-4. Our nightly builds are uploaded to dotnet-blob feeds, not NuGet - so ensure the .NET Core blob feed is in your nuget configuration in case you need other packages from .NET Core that aren't included in the download. For example, on Windows you could edit `%userprofile%\appdata\roaming\nuget\nuget.config` or on Linux edit `~/.nuget/NuGet/NuGet.Config` to add these lines:
+4. Our nightly builds are uploaded to nightly feed, not NuGet - so ensure the nightly feed is in your nuget configuration in case you need other packages that aren't included in the download. For example, on Windows you could edit `%userprofile%\appdata\roaming\nuget\nuget.config` or on Linux edit `~/.nuget/NuGet/NuGet.Config` to add these lines:
 ```xml
 <packageSources>
-    <add key="dotnet6" value="https://dnceng.pkgs.visualstudio.com/public/_packaging/dotnet6/nuget/v3/index.json" />
-    <add key="gRPC repository" value="https://grpc.jfrog.io/grpc/api/nuget/v3/grpc-nuget-dev" />
+    <add key="dotnet7" value="https://dnceng.pkgs.visualstudio.com/public/_packaging/dotnet7/nuget/v3/index.json" />
     ...
 </packageSources>
 ```
@@ -145,7 +142,7 @@ make it self-contained by adding a RuntimeIdentifier (RID).
     <!-- Ensure that the target framework is correct e.g. 'net7.0' -->
     <TargetFramework>net7.0</TargetFramework>
     <!-- modify build in this line with version reported by `dotnet --info` as above under ".NET runtimes installed" -> Microsoft.NETCore.App -->
-    <!-- moreover, this can be any valid Microsoft.NETCore.App package version from https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet6/nuget/v3/index.json -->
+    <!-- moreover, this can be any valid Microsoft.NETCore.App package version from https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet7/nuget/v3/index.json -->
     <RuntimeFrameworkVersion>7.0.0-preview.5.22224.3</RuntimeFrameworkVersion>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier> <!-- RID to make it self-contained -->
   </PropertyGroup>
