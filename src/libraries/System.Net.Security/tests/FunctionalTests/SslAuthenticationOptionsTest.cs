@@ -116,6 +116,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ClientOptions_TargetHostNull_OK()
         {
             (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();

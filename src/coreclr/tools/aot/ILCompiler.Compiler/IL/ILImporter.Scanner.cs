@@ -975,8 +975,9 @@ namespace Internal.IL
         private void ImportFieldAccess(int token, bool isStatic, string reason)
         {
             var field = (FieldDesc)_methodIL.GetObject(token);
+            var canonField = (FieldDesc)_canonMethodIL.GetObject(token);
 
-            _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _compilation.NodeFactory, _canonMethodIL, field);
+            _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _compilation.NodeFactory, _canonMethodIL, canonField);
 
             // Covers both ldsfld/ldsflda and ldfld/ldflda with a static field
             if (isStatic || field.IsStatic)

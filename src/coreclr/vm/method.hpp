@@ -3239,7 +3239,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        FastInterlockOr(reinterpret_cast<DWORD *>(&m_pComPlusCallInfo->m_flags), newFlags);
+        InterlockedOr((LONG*)&m_pComPlusCallInfo->m_flags, newFlags);
     }
 
 #ifdef TARGET_X86

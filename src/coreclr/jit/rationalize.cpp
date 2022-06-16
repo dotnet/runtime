@@ -265,6 +265,62 @@ void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*
                       arg1, arg2);
 }
 
+#ifdef TARGET_ARM64
+// RewriteSubLshDiv: Possibly rewrite a SubLshDiv node into a Mod.
+//
+// Arguments:
+//    use - A use of a node.
+//
+// Transform: a - (a / cns) << shift  =>  a % cns
+//            where cns is a signed integer constant that is a power of 2.
+// We do this transformation because Lowering has a specific optimization
+// for 'a % cns' that is not easily reduced by other means.
+//
+void Rationalizer::RewriteSubLshDiv(GenTree** use)
+{
+    if (!comp->opts.OptimizationEnabled())
+        return;
+
+    GenTree* const node = *use;
+
+    if (!node->OperIs(GT_SUB))
+        return;
+
+    GenTree* op1 = node->gtGetOp1();
+    GenTree* op2 = node->gtGetOp2();
+
+    if (!(node->TypeIs(TYP_INT, TYP_LONG) && op1->OperIs(GT_LCL_VAR)))
+        return;
+
+    if (!op2->OperIs(GT_LSH))
+        return;
+
+    GenTree* lsh   = op2;
+    GenTree* div   = lsh->gtGetOp1();
+    GenTree* shift = lsh->gtGetOp2();
+    if (div->OperIs(GT_DIV) && shift->IsIntegralConst())
+    {
+        GenTree* a   = div->gtGetOp1();
+        GenTree* cns = div->gtGetOp2();
+        if (a->OperIs(GT_LCL_VAR) && cns->IsIntegralConstPow2() &&
+            op1->AsLclVar()->GetLclNum() == a->AsLclVar()->GetLclNum())
+        {
+            size_t shiftValue = shift->AsIntConCommon()->IntegralValue();
+            size_t cnsValue   = cns->AsIntConCommon()->IntegralValue();
+            if ((cnsValue >> shiftValue) == 1)
+            {
+                node->ChangeOper(GT_MOD);
+                node->AsOp()->gtOp2 = cns;
+                BlockRange().Remove(lsh);
+                BlockRange().Remove(div);
+                BlockRange().Remove(a);
+                BlockRange().Remove(shift);
+            }
+        }
+    }
+}
+#endif
+
 #ifdef DEBUG
 
 void Rationalizer::ValidateStatement(Statement* stmt, BasicBlock* block)
@@ -774,6 +830,13 @@ PhaseStatus Rationalizer::DoPhase()
             {
                 m_rationalizer.RewriteIntrinsicAsUserCall(use, this->m_ancestors);
             }
+
+#ifdef TARGET_ARM64
+            if (node->OperIs(GT_SUB))
+            {
+                m_rationalizer.RewriteSubLshDiv(use);
+            }
+#endif
 
             return Compiler::WALK_CONTINUE;
         }
