@@ -43,7 +43,7 @@ namespace Microsoft.Extensions.Hosting
 
         /// <summary>
         /// Configures the lifetime of the <see cref="IHost"/> built from <paramref name="services"/> to
-        /// <see cref="SystemdLifetime"/> provides notification messages for application started
+        /// <see cref="SystemdLifetime"/>, provides notification messages for application started
         /// and stopping, and configures console logging to the systemd format.
         /// </summary>
         /// <remarks>
@@ -53,7 +53,7 @@ namespace Microsoft.Extensions.Hosting
         ///   </para>
         ///   <para>
         ///     The systemd service file must be configured with <c>Type=notify</c> to enable
-        ///     notifications. See https://www.freedesktop.org/software/systemd/man/systemd.service.html.
+        ///     notifications. See <see href="https://www.freedesktop.org/software/systemd/man/systemd.service.html"/>.
         ///   </para>
         /// </remarks>
         /// <param name="services">
