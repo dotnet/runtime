@@ -13115,6 +13115,10 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
     {
         gc_can_use_concurrent = false;
     }
+
+    GCConfig::SetConcurrentGC(gc_can_use_concurrent);
+#else
+    GCConfig::SetConcurrentGC(false);
 #endif //BACKGROUND_GC
 #endif //WRITE_WATCH
 
@@ -14118,6 +14122,8 @@ gc_heap::init_gc_heap (int  h_number)
 #ifdef DOUBLY_LINKED_FL
     current_sweep_seg = 0;
 #endif //DOUBLY_LINKED_FL
+#else
+
 #endif //BACKGROUND_GC
 
 #ifdef GC_CONFIG_DRIVEN
@@ -43949,10 +43955,10 @@ HRESULT GCHeap::Initialize()
     }
 
 #endif //HOST_64BIT
-    GCConfig::SetGCHeapHardLimit(static_cast<int>(gc_heap::heap_hard_limit));
-    GCConfig::SetGCHeapHardLimitSOH(static_cast<int>(gc_heap::heap_hard_limit_oh[soh]));
-    GCConfig::SetGCHeapHardLimitLOH(static_cast<int>(gc_heap::heap_hard_limit_oh[loh]));
-    GCConfig::SetGCHeapHardLimitPOH(static_cast<int>(gc_heap::heap_hard_limit_oh[poh]));
+    GCConfig::SetGCHeapHardLimit(static_cast<int64_t>(gc_heap::heap_hard_limit));
+    GCConfig::SetGCHeapHardLimitSOH(static_cast<int64_t>(gc_heap::heap_hard_limit_oh[soh]));
+    GCConfig::SetGCHeapHardLimitLOH(static_cast<int64_t>(gc_heap::heap_hard_limit_oh[loh]));
+    GCConfig::SetGCHeapHardLimitPOH(static_cast<int64_t>(gc_heap::heap_hard_limit_oh[poh]));
 
     uint32_t nhp = 1;
     uint32_t nhp_from_config = 0;
@@ -43968,7 +43974,7 @@ HRESULT GCHeap::Initialize()
     }
 
     const AffinitySet* process_affinity_set = GCToOSInterface::SetGCThreadsAffinitySet(config_affinity_mask, &config_affinity_set);
-    GCConfig::SetGCHeapAffinitizedMask(static_cast<int>(config_affinity_mask));
+    GCConfig::SetGCHeapAffinitizeMask(static_cast<int64_t>(config_affinity_mask));
 
     if (process_affinity_set->IsEmpty())
     {
@@ -44105,7 +44111,7 @@ HRESULT GCHeap::Initialize()
     }
 #endif //!USE_REGIONS
 
-    GCConfig::SetGCHeapCount(nhp);
+    GCConfig::SetHeapCount(static_cast<int64_t>(nhp));
 
 #ifdef USE_REGIONS
     // REGIONS TODO:
@@ -44233,6 +44239,7 @@ HRESULT GCHeap::Initialize()
 
 #ifdef HEAP_BALANCE_INSTRUMENTATION
     cpu_group_enabled_p = GCToOSInterface::CanEnableGCCPUGroups();
+    GCConfig::SetGCCpuGroup(cpu_group_enabled_p);
 
     if (!GCToOSInterface::GetNumaInfo (&total_numa_nodes_on_machine, &procs_per_numa_node))
     {
@@ -46477,7 +46484,6 @@ int GCHeap::SetGcLatencyMode (int newLatencyMode)
     }
 #endif //BACKGROUND_GC
 
-    GCConfig::SetGCLatencyMode(new_mode);
     return (int)set_pause_mode_success;
 }
 
@@ -47763,7 +47769,6 @@ bool GCHeap::IsConcurrentGCEnabled()
 #ifdef BACKGROUND_GC
     return (gc_heap::gc_can_use_concurrent && !(gc_heap::temp_disable_concurrent_p));
 #else
-    GCConfig::SetConcurrentGC(false);
     return FALSE;
 #endif //BACKGROUND_GC
 }

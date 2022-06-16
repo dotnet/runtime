@@ -738,38 +738,34 @@ namespace System
             return new TimeSpan(_GetTotalPauseDuration());
         }
 
-        [ThreadStatic]
-        private static Dictionary<string, object>? _result;
+        internal struct GCConfigurationContext
+        {
+            internal Dictionary<string, object> Configurations;
+        }
 
         [UnmanagedCallersOnly]
-        private static unsafe void Callback(void* name, GCConfigurationType type, long data)
+        private static unsafe void Callback(void* configurationContext, void* name, GCConfigurationType type, long data)
         {
-            if (name == null || _result == null)
-            {
-                return;
-            }
+            ref GCConfigurationContext context = ref Unsafe.As<byte, GCConfigurationContext>(ref *(byte*)configurationContext);
+            Debug.Assert(context.Configurations != null);
+            Dictionary<string, object> configurationDictionary = context.Configurations!;
 
-            string? nameAsString = Marshal.PtrToStringUTF8((IntPtr)name);
-            if (nameAsString == null)
+            string nameAsString = Marshal.PtrToStringUTF8((IntPtr)name)!;
+            switch (type)
             {
-                return;
-            }
-
-            switch(type)
-            {
-                case GCConfigurationType.LONG:
-                    _result[nameAsString] = data;
+                case GCConfigurationType.Int64:
+                    configurationDictionary[nameAsString] = data;
                     break;
 
-                case GCConfigurationType.STRING:
+                case GCConfigurationType.StringUtf8:
                     {
                         string? dataAsString = Marshal.PtrToStringUTF8((IntPtr)data);
-                        _result[nameAsString] = dataAsString ?? string.Empty;
+                        configurationDictionary![nameAsString] = dataAsString ?? string.Empty;
                         break;
                     }
 
-                case GCConfigurationType.BOOLEAN:
-                    _result[nameAsString] = data != 0 ? true : false;
+                case GCConfigurationType.Boolean:
+                    configurationDictionary![nameAsString] = data != 0;
                     break;
             }
         }
@@ -779,20 +775,31 @@ namespace System
         /// </summary>
         public static unsafe IReadOnlyDictionary<string, object> GetConfigurationVariables()
         {
-            _result = new Dictionary<string, object>();
-            _EnumerateConfigurationValues(&Callback);
-            return _result;
+            GCConfigurationContext context = new GCConfigurationContext
+            {
+                Configurations = new Dictionary<string, object>()
+            };
+
+            try
+            {
+                _EnumerateConfigurationValues(Unsafe.AsPointer(ref context), &Callback);
+                return context.Configurations!;
+            }
+
+            finally
+            {
+            }
         }
 
         // Corresponding Enum for the managed side of things in gcinterface.h that indicates the type of the configuration.
-        public enum GCConfigurationType : short
+        public enum GCConfigurationType
         {
-            LONG,
-            STRING,
-            BOOLEAN
+            Int64,
+            StringUtf8,
+            Boolean
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_EnumerateConfigurationValues")]
-        internal static unsafe partial void _EnumerateConfigurationValues(delegate* unmanaged<void*, GCConfigurationType, long, void> callback);
+        internal static unsafe partial void _EnumerateConfigurationValues(void* configurationDictionary, delegate* unmanaged<void*, void*, GCConfigurationType, long, void> callback);
     }
 }

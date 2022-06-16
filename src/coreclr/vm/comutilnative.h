@@ -170,7 +170,7 @@ public:
     static void RemoveMemoryPressure(UINT64 bytesAllocated);
     static void AddMemoryPressure(UINT64 bytesAllocated);
 
-    static void EnumerateConfigurationValues(EnumerateConfigurationValuesCallback callback);
+    static void EnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback);
 
 private:
     // Out-of-line helper to avoid EH prolog/epilog in functions that otherwise don't throw.

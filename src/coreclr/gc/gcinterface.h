@@ -539,12 +539,12 @@ public:
 // Enum representing the type to be passed to GC.CoreCLR.cs used to deduce the type of configuration.
 enum class GCConfigurationType
 {
-    LONG,
-    STRING,
-    BOOLEAN
+    Int64,
+    StringUtf8,
+    Boolean 
 };
 
-using ConfigurationValueFunc = void (*)(void* context, GCConfigurationType type, int64_t data);
+using ConfigurationValueFunc = void (*)(void* nameOfConfiguration, GCConfigurationType type, int64_t data);
 
 // IGCHeap is the interface that the VM will use when interacting with the GC.
 class IGCHeap {

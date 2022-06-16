@@ -1309,22 +1309,24 @@ extern "C" void QCALLTYPE GCInterface_AddMemoryPressure(UINT64 bytesAllocated)
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE GCInterface_EnumerateConfigurationValues(EnumerateConfigurationValuesCallback callback)
+extern "C" void QCALLTYPE GCInterface_EnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback)
 {
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
-    GCInterface::EnumerateConfigurationValues(callback);
+    GCInterface::EnumerateConfigurationValues(configurationContext, callback);
     END_QCALL;
 }
 
-void GCInterface::EnumerateConfigurationValues(EnumerateConfigurationValuesCallback callback)
+void GCInterface::EnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback)
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
+        PRECONDITION(configurationContext != nullptr);
+        PRECONDITION(callback != nullptr);
     }
     CONTRACTL_END;
 

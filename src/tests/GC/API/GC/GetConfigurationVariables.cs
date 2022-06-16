@@ -12,8 +12,8 @@ namespace ConfigurationVariables
         public void CollectAllVariables()
         {
             var configurations = GC.GetConfigurationVariables();
-            Assert.True(configurations != null, "Configuration is null.");
-            Assert.True(configurations.Count >= 0, "Configuration count is <= 0.");
+            Assert.True(configurations != null);
+            Assert.True(configurations.Count >= 0);
             foreach(var kvp in configurations)
             {
                 Assert.True(kvp.Key != null, "The name of the configuration is null.");
