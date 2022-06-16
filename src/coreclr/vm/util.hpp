@@ -73,8 +73,15 @@ BOOL inline FitsInU4(unsigned __int64 val)
     return val == (unsigned __int64)(unsigned __int32)val;
 }
 
+#if defined(DACCESS_COMPILE)
+#define FastInterlockedCompareExchange InterlockedCompareExchange
+#define FastInterlockedCompareExchange64 InterlockedCompareExchange64
+#define FastInterlockedCompareExchangeAcquire InterlockedCompareExchangeAcquire
+#define FastInterlockedCompareExchangeRelease InterlockedCompareExchangeRelease
 
-#if defined(TARGET_ARM64)
+#else
+
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
 
 FORCEINLINE LONG  FastInterlockedCompareExchange(
     LONG volatile *Destination,
@@ -142,7 +149,9 @@ FORCEINLINE LONG FastInterlockedCompareExchangeRelease(
     }
 }
 
-#endif // TARGET_ARM64
+#endif // defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+
+#endif //defined(DACCESS_COMPILE)
 
 
 //************************************************************************
