@@ -2142,16 +2142,14 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
     UINT_PTR preferredStartAddress;
     UINT_PTR coreclrLoadAddress;
 
-#if TARGET_XARCH
-    const int32_t AddressProbingIncrement = 128 * 1024 * 1024;
-    const int32_t AllocSizeProbingDecrement = 128 * 1024 * 1024;
-#else
+#ifdef TARGET_ARMARCH
     // Smaller steps on ARM because we try hard finding a spare memory in a 128Mb
     // distance from coreclr so e.g. all calls from corelib to coreclr could use relocs
     const int32_t AddressProbingIncrement = 8 * 1024 * 1024;
-    const int32_t AllocSizeProbingDecrement = 64 * 1024 * 1024;
+#else
+    const int32_t AddressProbingIncrement = 128 * 1024 * 1024;
 #endif
-    const int32_t MinAllocSize = 128 * 1024 * 1024;
+    const int32_t SizeProbingDecrement = 128 * 1024 * 1024;
 
     // Try to find and reserve an available region of virtual memory that is located
     // within 2GB range (defined by the MaxExecutableMemorySizeNearCoreClr constant) from the
@@ -2177,10 +2175,10 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
     else
     {
         // Try to allocate below the location of libcoreclr
-#ifndef TARGET_XARCH
+#ifdef TARGET_ARMARCH
         // For arm for the "high address" case it only makes sense to try to reserve 128Mb
         // and if it doesn't work - we'll reserve a full-sized region in a random location
-        sizeOfAllocation = MinAllocSize;
+        sizeOfAllocation = SizeProbingDecrement;
 #endif
 
         preferredStartAddress = coreclrLoadAddress - sizeOfAllocation;
@@ -2197,10 +2195,10 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
         }
 
         // Try to allocate a smaller region
-        sizeOfAllocation -= AllocSizeProbingDecrement;
+        sizeOfAllocation -= SizeProbingDecrement;
         preferredStartAddress += preferredStartAddressIncrement;
 
-    } while (sizeOfAllocation >= MinAllocSize);
+    } while (sizeOfAllocation >= SizeProbingDecrement);
 
     if (m_startAddress == nullptr)
     {

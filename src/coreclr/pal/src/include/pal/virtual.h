@@ -195,7 +195,7 @@ private:
     static const int32_t MaxExecutableMemorySize = 0x7FFF0000;
 #else
     // It seems to be more difficult to reserve a 2Gb chunk on arm so we'll try smaller one
-    static const int32_t MaxExecutableMemorySize = 768 * 1024 * 1024;
+    static const int32_t MaxExecutableMemorySize = 1024 * 1024 * 1024;
 #endif
 
     static const int32_t MaxExecutableMemorySizeNearCoreClr = MaxExecutableMemorySize - CoreClrLibrarySize;
