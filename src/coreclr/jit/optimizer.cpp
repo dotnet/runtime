@@ -2935,13 +2935,13 @@ bool Compiler::optCanonicalizeLoopNest(unsigned char loopInd)
 //
 // Back edges incident on loop top fall into one three groups:
 //
-// (1) Outer non-loop backedges (preds dominated by enter where pred is not in loop)
+// (1) Outer non-loop backedges (preds dominated by entry where pred is not in loop)
 // (2) The canonical backedge (pred == bottom)
 // (3) Nested loop backedges or nested non-loop backedges
-//     (preds dominated by enter, where pred is in loop, pred != bottom)
+//     (preds dominated by entry, where pred is in loop, pred != bottom)
 //
 // We assume dominance has already been established by loop recognition (that is,
-// anything classfied as a loop will have all backedges dominated by loop entry,
+// anything classified as a loop will have all backedges dominated by loop entry,
 // so the only possible non-backedge predecessor of top will be head).
 //
 // We cannot check dominance here as the flow graph is being modified.
@@ -2976,7 +2976,7 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
         else
         {
             JITDUMP("in optCanonicalizeLoop: " FMT_LP " top " FMT_BB " (entry " FMT_BB " bottom " FMT_BB
-                    ") %shas a non-loop backedge from " FMT_BB "\n",
+                    ") %shas a non-loop backedge from " FMT_BB "%s\n",
                     loopInd, t->bbNum, e->bbNum, b->bbNum, doOuterCanon ? "also " : "", topPredBlock->bbNum,
                     doOuterCanon ? "" : ": need to canonicalize non-loop backedges");
             doOuterCanon = true;
@@ -3247,11 +3247,11 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
     assert(newT->bbNext == t);
 
     // With the Option::Current we are changing which block is loop top.
-    // Make sutable updates.
+    // Make suitable updates.
     //
     if (option == LoopCanonicalizationOption::Current)
     {
-        JITDUMP("in optCanonicalizeLoop (current): " FMT_BB " is now the top of loop %d.\n", newT->bbNum, loopInd);
+        JITDUMP("in optCanonicalizeLoop (current): " FMT_BB " is now the top of loop " FMT_LP "\n", newT->bbNum, loopInd);
 
         optLoopTable[loopInd].lpTop = newT;
         newT->bbNatLoopNum          = loopInd;
