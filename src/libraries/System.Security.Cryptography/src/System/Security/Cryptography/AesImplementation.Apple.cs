@@ -7,7 +7,7 @@ namespace System.Security.Cryptography
 {
     internal sealed partial class AesImplementation
     {
-        private static UniversalCryptoTransform CreateTransformCore(
+        private static ICryptoTransform CreateTransformCore(
             CipherMode cipherMode,
             PaddingMode paddingMode,
             byte[] key,

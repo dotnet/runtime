@@ -12,13 +12,12 @@ namespace System.Security.Cryptography
         Decrypt = 1
     }
 
-    internal sealed class RijndaelManagedTransform : ICryptoTransform
+    internal sealed class RijndaelManagedTransform : ICryptoTransform, ILiteSymmetricCipher
     {
         private CipherMode m_cipherMode;
         private PaddingMode m_paddingValue;
         private RijndaelManagedTransformMode m_transformMode;
 
-        private int m_blockSizeBits;
         private int m_blockSizeBytes;
         private int m_inputBlockSize;
         private int m_outputBlockSize;
@@ -39,7 +38,7 @@ namespace System.Security.Cryptography
 
         public RijndaelManagedTransform(byte[] rgbKey,
                                         CipherMode mode,
-                                        byte[] rgbIV,
+                                        ReadOnlySpan<byte> rgbIV,
                                         int blockSize,
                                         int feedbackSize,
                                         PaddingMode PaddingValue,
@@ -51,12 +50,11 @@ namespace System.Security.Cryptography
             Debug.Assert(mode == CipherMode.CBC, "CipherMode is unsupported");
             Debug.Assert(PaddingValue == PaddingMode.PKCS7, "PaddingMode is unsupported");
 
-            m_blockSizeBits = blockSize;
-            m_blockSizeBytes = blockSize / 8;
+            m_blockSizeBytes = blockSize;
             m_cipherMode = mode;
             m_paddingValue = PaddingValue;
             m_transformMode = transformMode;
-            m_Nb = blockSize / 32;
+            m_Nb = blockSize / 4;
             m_Nk = rgbKey.Length / 4;
 
             int S1 = m_Nb > 6 ? 3 : 2;
@@ -109,8 +107,6 @@ namespace System.Security.Cryptography
             }
 
             // we only support CBC mode
-            if (rgbIV == null)
-                throw new ArgumentNullException(nameof(rgbIV));
             if (rgbIV.Length / 4 != m_Nb)
                 throw new CryptographicException(SR.GetResourceString("Cryptography_InvalidIVSize"));
 
@@ -165,44 +161,29 @@ namespace System.Security.Cryptography
         // ICryptoTransform methods and properties.
         //
 
-        public int BlockSizeValue
-        {
-            get
-            {
-                return m_blockSizeBits;
-            }
-        }
+        public int InputBlockSize => m_inputBlockSize;
 
-        public int InputBlockSize
-        {
-            get
-            {
-                return m_inputBlockSize;
-            }
-        }
+        public int OutputBlockSize => m_outputBlockSize;
 
-        public int OutputBlockSize
-        {
-            get
-            {
-                return m_outputBlockSize;
-            }
-        }
+        public bool CanTransformMultipleBlocks => true;
 
-        public bool CanTransformMultipleBlocks
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public bool CanReuseTransform => true;
 
-        public bool CanReuseTransform
+        public int BlockSizeInBytes => m_blockSizeBytes;
+
+        public int PaddingSizeInBytes => 16; // TODO: eerhardt check this
+
+        public int Transform(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            get
-            {
-                return true;
-            }
+            // TODO: eerhardt change this to make it efficient
+
+            byte[] inputBuffer = input.ToArray();
+
+            byte[] outputBuffer = new byte[output.Length];
+
+            int written = TransformBlock(inputBuffer, 0, inputBuffer.Length, outputBuffer, 0);
+            outputBuffer.AsSpan(0, written).CopyTo(output);
+            return written;
         }
 
         public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
@@ -271,6 +252,17 @@ namespace System.Security.Cryptography
             }
         }
 
+        public int TransformFinal(ReadOnlySpan<byte> input, Span<byte> output)
+        {
+            // TODO: eerhardt change this to make it efficient
+
+            byte[] inputBuffer = input.ToArray();
+
+            byte[] outputBuffer = TransformFinalBlock(inputBuffer, 0, inputBuffer.Length);
+            outputBuffer.CopyTo(output);
+            return outputBuffer.Length;
+        }
+
         public byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
         {
             if (inputBuffer == null) throw new ArgumentNullException(nameof(inputBuffer));
@@ -333,7 +325,9 @@ namespace System.Security.Cryptography
         // resets the state of the transform
         //
 
-        public void Reset()
+        void ILiteSymmetricCipher.Reset(ReadOnlySpan<byte> iv) => throw new NotImplementedException(); // never invoked
+
+        private void Reset()
         {
             m_depadBuffer = null;
             Buffer.BlockCopy(m_IV, 0, m_lastBlockBuffer, 0, m_blockSizeBytes);
@@ -381,7 +375,7 @@ namespace System.Security.Cryptography
             else
             {
                 if ((outputBuffer.Length - outputOffset) < (inputCount + padSize))
-                    throw new CryptographicException(SR.GetResourceString("Cryptography_InsufficientBuffer"));
+                    throw new ArgumentOutOfRangeException(nameof(outputOffset), SR.Argument_InvalidOffLen);
             }
 
             fixed (int* encryptindex = m_encryptindex)
@@ -479,7 +473,7 @@ namespace System.Security.Cryptography
             else
             {
                 if ((outputBuffer.Length - outputOffset) < inputCount)
-                    throw new CryptographicException(SR.GetResourceString("Cryptography_InsufficientBuffer"));
+                    throw new ArgumentOutOfRangeException(nameof(outputOffset), SR.Argument_InvalidOffLen);
             }
 
             fixed (int* encryptindex = m_encryptindex)
@@ -673,17 +667,17 @@ namespace System.Security.Cryptography
         [MemberNotNull(nameof(m_decryptKeyExpansion))]
         private void GenerateKeyExpansion(byte[] rgbKey)
         {
-            switch (m_blockSizeBits > rgbKey.Length * 8 ? m_blockSizeBits : rgbKey.Length * 8)
+            switch (m_blockSizeBytes > rgbKey.Length ? m_blockSizeBytes : rgbKey.Length)
             {
-                case 128:
+                case 16: // 128 bits
                     m_Nr = 10;
                     break;
 
-                case 192:
+                case 24: // 192 bits
                     m_Nr = 12;
                     break;
 
-                case 256:
+                case 32: // 256 bits
                     m_Nr = 14;
                     break;
 
