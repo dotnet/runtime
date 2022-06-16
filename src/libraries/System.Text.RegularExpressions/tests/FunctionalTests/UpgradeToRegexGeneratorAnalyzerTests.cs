@@ -739,7 +739,7 @@ partial class Program
         [Fact]
         public async Task NoDiagnosticForTopLevelStatements_MultipleSourceFiles()
         {
-            await new VerifyCS.Test
+            await new VerifyCS.Test(references: null, usePreviewLanguageVersion: true, numberOfIterations: 1)
             {
                 TestState =
                 {
