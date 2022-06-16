@@ -2144,7 +2144,7 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
 
 #if TARGET_XARCH
     const int32_t AddressProbingIncrement = 128 * 1024 * 1024;
-    const int32_t SizeProbingDecrement = 128 * 1024 * 1024;
+    const int32_t AllocSizeProbingDecrement = 128 * 1024 * 1024;
 #else
     // Smaller steps on ARM becuase we try hard finding a spare memory in a 128Mb
     // distance from coreclr so e.g. all calls from corelib to coreclr could use relocs
@@ -2197,7 +2197,7 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
         }
 
         // Try to allocate a smaller region
-        sizeOfAllocation -= SizeProbingDecrement;
+        sizeOfAllocation -= AllocSizeProbingDecrement;
         preferredStartAddress += preferredStartAddressIncrement;
 
     } while (sizeOfAllocation >= MinAllocSize);
