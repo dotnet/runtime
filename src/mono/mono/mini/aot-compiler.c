@@ -12307,6 +12307,51 @@ emit_unwind_info_sections_win32 (MonoAotCompile *acfg, const char *function_star
 }
 #endif
 
+/**
+ * should_emit_extra_method_for_generics:
+ * \param method The method to check for generic parameters.
+ * \param reference_type Specifies which constraint type to look for.
+ *
+ * Tests whether a generic method or a method of a generic type has all of its generic parameter contraints set to a specific type, and based on this setting decides whether
+ * extra methods should be generated for the method.
+ * For example: If a method has at least one generic parameter constrained to a reference type (reference_type=TRUE), then REF shared method must be generated.
+ * On the other hand, if a method has at least one generic parameters constrained to a value type (reference_type=FALSE), then GSHAREDVT method must be generated.
+ * Special case is when there are no constrains specified, then extra methods must be generated.
+ * 
+ * Returns: TRUE - extra method should be generated, otherwise FALSE
+ */
+static gboolean
+should_emit_extra_method_for_generics (MonoMethod *method, gboolean reference_type)
+{
+	MonoGenericContainer *gen_container = NULL;
+	MonoGenericParam *gen_param = NULL;
+	unsigned int gen_param_count;
+	unsigned int gen_constraint_mask = reference_type ? GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT : GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT;
+	
+	if (method->is_generic && mono_class_is_gtd (method->klass)) {
+		// TODO: This is rarely encountered and would increase the complexity of covering such case.
+		// For now always generate extra methods for such case. 
+		return TRUE;
+	} else if (method->is_generic) {
+		gen_container = mono_method_get_generic_container (method);
+		gen_param_count = mono_method_signature_internal (method)->generic_param_count;
+	} else if (mono_class_is_gtd (method->klass)) {
+		MonoGenericContainer *gen_container_method = mono_method_get_generic_container (method);
+		gen_container = mono_class_get_generic_container (method->klass);
+		gen_param_count = gen_container->type_argc;
+	} else {
+		return FALSE; // not a generic
+	}
+	g_assert (gen_param_count != 0);
+
+	for (unsigned int i = 0; i < gen_param_count; i++) {
+		gen_param = mono_generic_container_get_param (gen_container, i);
+		if ((gen_param->info.flags & gen_constraint_mask) || (gen_param->info.flags == GENERIC_PARAMETER_ATTRIBUTE_NO_SPECIAL_CONSTRAINT))
+			return TRUE;
+	}
+	return FALSE;
+}
+
 static gboolean
 should_emit_gsharedvt_method (MonoAotCompile *acfg, MonoMethod *method)
 {
@@ -12318,7 +12363,7 @@ should_emit_gsharedvt_method (MonoAotCompile *acfg, MonoMethod *method)
 	if (acfg->image == mono_get_corlib () && !strcmp (m_class_get_name (method->klass), "Volatile"))
 		/* Read<T>/Write<T> are not needed and cause JIT failures */
 		return FALSE;
-	return TRUE;
+	return should_emit_extra_method_for_generics (method, FALSE);
 }
 
 static gboolean
@@ -12368,7 +12413,7 @@ collect_methods (MonoAotCompile *acfg)
 		}
 		*/
 
-		if (method->is_generic || mono_class_is_gtd (method->klass)) {
+		if (should_emit_extra_method_for_generics (method, TRUE)) {
 			/* Compile the ref shared version instead */
 			method = mini_get_shared_method_full (method, SHARE_MODE_NONE, error);
 			if (!method) {
