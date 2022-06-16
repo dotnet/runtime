@@ -110,4 +110,8 @@ bool gcGenAnalysisDump = false;
         EventPipeAdapter::StartStreaming(gcGenAnalysisEventPipeSessionId);
         gcGenAnalysisState = GcGenAnalysisState::Enabled;
     }
+    else
+    {
+        gcGenAnalysisTrace = false;
+    }
 }
