@@ -6454,7 +6454,7 @@ void MethodTable::SetCl(mdTypeDef token)
     }
     else
     {
-        _ASSERTE(FitsIn<U2>(rid));
+        _ASSERTE(FitsIn<WORD>(rid));
         m_wToken = (WORD)rid;
     }
 

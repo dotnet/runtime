@@ -498,9 +498,8 @@ namespace System
             /// <summary>Finds the null-terminator for a string that begins at the specified position.</summary>
             private static int FindNullTerminator(byte[] buffer, int pos)
             {
-                int termPos = pos;
-                while (termPos < buffer.Length && buffer[termPos] != '\0') termPos++;
-                return termPos;
+                int i = buffer.AsSpan(pos).IndexOf((byte)'\0');
+                return i >= 0 ? pos + i : buffer.Length;
             }
         }
 

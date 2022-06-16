@@ -9332,10 +9332,7 @@ namespace System.Xml
 
             if (DtdValidation)
             {
-                if (_onDefaultAttributeUse != null)
-                {
-                    _onDefaultAttributeUse(defAttrInfo, this);
-                }
+                _onDefaultAttributeUse?.Invoke(defAttrInfo, this);
 
                 attr.typedValue = defAttrInfo.DefaultValueTyped;
             }
