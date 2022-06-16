@@ -46,10 +46,13 @@ namespace System.Net.Security
                     contextFlags,
                     clientOptions.Binding);
             }
-            catch (PlatformNotSupportedException)
+            catch (PlatformNotSupportedException) // Managed implementation, Unix
             {
             }
-            catch (Win32Exception)
+            catch (NotSupportedException) // Windows implementation
+            {
+            }
+            catch (Win32Exception) // Unix implementation in native layer
             {
             }
         }
@@ -82,10 +85,13 @@ namespace System.Net.Security
                     contextFlags,
                     serverOptions.Binding);
             }
-            catch (PlatformNotSupportedException)
+            catch (PlatformNotSupportedException) // Managed implementation, Unix
             {
             }
-            catch (Win32Exception)
+            catch (NotSupportedException) // Windows implementation
+            {
+            }
+            catch (Win32Exception) // Unix implementation in native layer
             {
             }
         }
