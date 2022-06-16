@@ -556,6 +556,21 @@ namespace System.Formats.Tar.Tests
             Assert.Null(reader.GetNextEntry());
         }
 
+        [Fact]
+        public void ReadEntriesWithSlashDotPrefix()
+        {
+            using MemoryStream archiveStream = GetStrangeTarMemoryStream("prefixDotSlashAndCurrentFolderEntry");
+            using (TarReader reader = new TarReader(archiveStream, leaveOpen: false))
+            {
+                TarEntry entry;
+                while ((entry = reader.GetNextEntry()) != null)
+                {
+                    Assert.NotNull(entry);
+                    Assert.StartsWith("./", entry.Name);
+                }
+            }
+        }
+
         private void Verify_Archive_RegularFile(TarEntry file, TarEntryFormat format, IReadOnlyDictionary<string, string> gea, string expectedFileName, string expectedContents)
         {
             Assert.NotNull(file);

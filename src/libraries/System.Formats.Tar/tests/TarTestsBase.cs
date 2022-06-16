@@ -108,6 +108,21 @@ namespace System.Formats.Tar.Tests
             return ms;
         }
 
+        protected static string GetStrangeTarFilePath(string testCaseName) =>
+            Path.Join(Directory.GetCurrentDirectory(), "strange", testCaseName + ".tar");
+
+        protected static MemoryStream GetStrangeTarMemoryStream(string testCaseName)
+        {
+            string path = GetStrangeTarFilePath(testCaseName);
+            MemoryStream ms = new();
+            using (FileStream fs = File.OpenRead(path))
+            {
+                fs.CopyTo(ms);
+            }
+            ms.Seek(0, SeekOrigin.Begin);
+            return ms;
+        }
+
         protected void SetCommonRegularFile(TarEntry regularFile, bool isV7RegularFile = false)
         {
             Assert.NotNull(regularFile);
