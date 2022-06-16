@@ -743,7 +743,7 @@ partial class Program
             {
                 TestState =
                 {
-                    Sources = { "public class C { }", @"var r = new System.Text.RegularExpressionsRegex("""");" },
+                    Sources = { "public class C { }", @"var r = new System.Text.RegularExpressions.Regex("""");" },
                 },
             }.RunAsync();
         }
