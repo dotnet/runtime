@@ -3251,7 +3251,8 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
     //
     if (option == LoopCanonicalizationOption::Current)
     {
-        JITDUMP("in optCanonicalizeLoop (current): " FMT_BB " is now the top of loop " FMT_LP "\n", newT->bbNum, loopInd);
+        JITDUMP("in optCanonicalizeLoop (current): " FMT_BB " is now the top of loop " FMT_LP "\n", newT->bbNum,
+                loopInd);
 
         optLoopTable[loopInd].lpTop = newT;
         newT->bbNatLoopNum          = loopInd;
