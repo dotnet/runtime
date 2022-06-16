@@ -48,23 +48,17 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             {
                 arrays[i] = (Uint8Array)factory.Call(null, bufferSize);
                 Assert.Equal(bufferSize, arrays[i].Length);
-
-                Console.WriteLine($"Created Uint8Array '{i}'");
             }
 
             for (int i = 0; i < iterations; i++)
             {
                 var data = arrays[i].ToArray();
                 Assert.Equal(bufferSize, data.Length);
-
-                Console.WriteLine($"Copy array '{i}' of size '{data.Length}'");
             }
 
             for (int i = 0; i < iterations; i++)
             {
                 arrays[i].Dispose();
-
-                Console.WriteLine($"Dispose array '{i}'");
             }
 
             Threading.Thread.Sleep(5000);
