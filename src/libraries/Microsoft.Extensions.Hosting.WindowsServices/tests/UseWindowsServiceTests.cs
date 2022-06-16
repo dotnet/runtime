@@ -19,35 +19,7 @@ namespace Microsoft.Extensions.Hosting
     {
         private static MethodInfo? _useWindowsServiceUncheckedMethod = null;
 
-        public static bool SupportsServiceBase
-        {
-            get
-            {
-                if (!PlatformDetection.IsWindows)
-                {
-                    return false;
-                }
-
-                try
-                {
-                    new ServiceBase();
-                }
-                catch (PlatformNotSupportedException)
-                {
-                    // PlatformNotSupportedException : ServiceController enables manipulating and accessing Windows services and it is not applicable for other operating systems.
-                    //   at System.ServiceProcess.ServiceBase..ctor() in C:\dev\dotnet\runtime\artifacts\obj\System.ServiceProcess.ServiceController\Debug\net7.0\System.ServiceProcess.ServiceController.notsupported.cs:line 24
-                    //   at Microsoft.Extensions.Hosting.WindowsServices.WindowsServiceLifetime..ctor(IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, ILoggerFactory loggerFactory, IOptions`1 optionsAccessor, IOptions`1 windowsServiceOptionsAccessor) in C:\dev\dotnet\runtime\src\libraries\Microsoft.Extensions.Hosting.WindowsServices\src\WindowsServiceLifetime.cs:line 26
-
-                    // REVIEW: This seems similar to https://github.com/dotnet/sdk/issues/16049 which was closed. I'm not sure why this is still happening in tests on Windows.
-                    // net462 tests can construct ServiceBase just fine, but not net7.0. Does anyone know what the real issue is here?
-                    return false;
-                }
-
-                return true;
-            }
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [Fact]
         public void DefaultsToOffOutsideOfService()
         {
             using IHost host = new HostBuilder()
@@ -58,7 +30,7 @@ namespace Microsoft.Extensions.Hosting
             Assert.IsType<ConsoleLifetime>(lifetime);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [Fact]
         public void ServiceCollectionExtensionMethodDefaultsToOffOutsideOfService()
         {
             var builder = new HostApplicationBuilder();
@@ -73,7 +45,7 @@ namespace Microsoft.Extensions.Hosting
             Assert.IsType<ConsoleLifetime>(lifetime);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [Fact]
         public void ServiceCollectionExtensionMethodAddsWindowsServiceLifetimeInsideOfService()
         {
             var builder = new HostApplicationBuilder();
@@ -86,7 +58,7 @@ namespace Microsoft.Extensions.Hosting
                 serviceDescriptor.ImplementationType == typeof(WindowsServiceLifetime));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [Fact]
         public void ServiceCollectionExtensionMethodSetsEventLogSourceNameToApplicationNameInsideOfService()
         {
             string appName = Guid.NewGuid().ToString();
@@ -113,7 +85,7 @@ namespace Microsoft.Extensions.Hosting
             Assert.Same(appName, eventLogSettings.SourceName);
         }
 
-        [ConditionalFact(typeof(UseWindowsServiceTests), nameof(SupportsServiceBase))]
+        [Fact]
         public void ServiceCollectionExtensionMethodCanBeCalledOnDefaultConfiguration()
         {
             var builder = new HostApplicationBuilder(); 
@@ -129,8 +101,7 @@ namespace Microsoft.Extensions.Hosting
             Assert.IsType<WindowsServiceLifetime>(lifetime);
         }
 
-
-        [ConditionalFact(typeof(UseWindowsServiceTests), nameof(SupportsServiceBase))]
+        [Fact]
         public void ServiceCollectionExtensionMethodThrowsGivenWrongContentRoot()
         {
             var builder = new HostApplicationBuilder(new HostApplicationBuilderSettings
