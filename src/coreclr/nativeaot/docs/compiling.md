@@ -4,18 +4,7 @@ This document explains how to compile and publish your project using Native AOT 
 
 ## Add ILCompiler package reference
 
-To use Native AOT with your project, you need to add a reference to the ILCompiler NuGet package containing the Native AOT compiler and runtime. Make sure the `nuget.config` file for your project contains the following package sources under the `<packageSources>` element:
-```xml
-<add key="dotnet7" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet7/nuget/v3/index.json" />
-<add key="nuget" value="https://api.nuget.org/v3/index.json" />
-```
-
-If your project has no `nuget.config` file, it may be created by running
-```bash
-> dotnet new nugetconfig
-```
-
-from the project's root directory. New package sources must be added after the `<clear />` element if you decide to keep it.
+To use Native AOT with your project, you need to add a reference to the ILCompiler NuGet package containing the Native AOT compiler and runtime.
 
 Once you have added the package sources, add a reference to the ILCompiler package either by running
 ```bash
@@ -28,6 +17,21 @@ or by adding the following element to the project file:
     <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="7.0.0-*" />
   </ItemGroup>
 ```
+
+## Using daily builds
+
+For using daily builds, you need to make sure the `nuget.config` file for your project contains the following package sources under the `<packageSources>` element:
+```xml
+<add key="dotnet7" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet7/nuget/v3/index.json" />
+<add key="nuget" value="https://api.nuget.org/v3/index.json" />
+```
+
+If your project has no `nuget.config` file, it may be created by running
+```bash
+> dotnet new nugetconfig
+```
+
+from the project's root directory. New package sources must be added after the `<clear />` element if you decide to keep it.
 
 ## Compile and publish your app
 
