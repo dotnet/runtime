@@ -933,11 +933,7 @@ namespace System.Collections.Immutable
 
                 if (Count > 1)
                 {
-                    // Array.Sort does not have an overload that takes both bounds and a Comparison.
-                    // We could special case _count == _elements.Length in order to try to avoid
-                    // the IComparer allocation, but the Array.Sort overload that takes a Comparison
-                    // allocates such an IComparer internally, anyway.
-                    Array.Sort(_elements, 0, _count, Comparer<T>.Create(comparison));
+                    Array.Sort(_elements, comparison);
                 }
             }
 
