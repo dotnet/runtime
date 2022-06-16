@@ -68,7 +68,7 @@ Learn about .NET Runtimes and SDKs:
 
 ```
 
-4. Our nightly builds are uploaded to nightly feed, not NuGet - so ensure the nightly feed is in your nuget configuration in case you need other packages that aren't included in the download. For example, on Windows you could edit `%userprofile%\appdata\roaming\nuget\nuget.config` or on Linux edit `~/.nuget/NuGet/NuGet.Config` to add these lines:
+3. Our nightly builds are uploaded to nightly feed, not NuGet - so ensure the nightly feed is in your nuget configuration in case you need other packages that aren't included in the download. For example, on Windows you could edit `%userprofile%\appdata\roaming\nuget\nuget.config` or on Linux edit `~/.nuget/NuGet/NuGet.Config` to add these lines:
 ```xml
 <packageSources>
     <add key="dotnet7" value="https://dnceng.pkgs.visualstudio.com/public/_packaging/dotnet7/nuget/v3/index.json" />
