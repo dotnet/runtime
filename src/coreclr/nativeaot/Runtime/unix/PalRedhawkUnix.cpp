@@ -808,8 +808,11 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress,
     return UInt32_TRUE;
 }
 
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualProtect(_In_ void* pAddress, size_t size, uint32_t protect)
+REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualProtect(_In_ void* pAddress, size_t size, uint32_t protect, uint32_t* pOldProtect)
 {
+    // Can't get old protection values for things that we didn't allocate. Should not be used.
+    ASSERT(!pOldProtect);
+
     int unixProtect = W32toUnixAccessControl(protect);
 
     return mprotect(pAddress, size, unixProtect) == 0;

@@ -652,10 +652,13 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress,
 }
 #pragma warning (pop)
 
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualProtect(_In_ void* pAddress, uintptr_t size, uint32_t protect)
+REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualProtect(_In_ void* pAddress, uintptr_t size, uint32_t protect, uint32_t* pOldProtect)
 {
+    // VirtualProtect doesn't accept NULL pOldProtect, but we do.
     DWORD oldProtect;
-    return VirtualProtect(pAddress, size, protect, &oldProtect);
+    if (!pOldProtect)
+        pOldProtect = (uint32_t*)&oldProtect;
+    return VirtualProtect(pAddress, size, protect, (PDWORD)pOldProtect);
 }
 
 REDHAWK_PALEXPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ void* pNewBuffer)
