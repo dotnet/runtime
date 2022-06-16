@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.Hosting
         {
             var builder = new HostApplicationBuilder();
 
-            builder.Services.UseWindowsService();
+            builder.Services.AddWindowsService();
             // No reason to write event logs in this test. Event log may be unsupported anyway.
             builder.Logging.ClearProviders();
 

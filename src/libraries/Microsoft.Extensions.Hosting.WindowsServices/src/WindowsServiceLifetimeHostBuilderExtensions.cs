@@ -74,9 +74,9 @@ namespace Microsoft.Extensions.Hosting
         /// <see cref="IHostBuilder.ConfigureServices(Action{HostBuilderContext, IServiceCollection})"/> callback.
         /// </param>
         /// <returns>The <paramref name="services"/> instance for chaining.</returns>
-        public static IServiceCollection UseWindowsService(this IServiceCollection services)
+        public static IServiceCollection AddWindowsService(this IServiceCollection services)
         {
-            return UseWindowsService(services, _ => { });
+            return AddWindowsService(services, _ => { });
         }
 
         /// <summary>
@@ -96,18 +96,18 @@ namespace Microsoft.Extensions.Hosting
         /// </param>
         /// <param name="configure">An <see cref="Action{WindowsServiceLifetimeOptions}"/> to configure the provided <see cref="WindowsServiceLifetimeOptions"/>.</param>
         /// <returns>The <paramref name="services"/> instance for chaining.</returns>
-        public static IServiceCollection UseWindowsService(this IServiceCollection services, Action<WindowsServiceLifetimeOptions> configure)
+        public static IServiceCollection AddWindowsService(this IServiceCollection services, Action<WindowsServiceLifetimeOptions> configure)
         {
             if (WindowsServiceHelpers.IsWindowsService())
             {
-                UseWindowsServiceUnchecked(services, configure);
+                AddWindowsServiceUnchecked(services, configure);
             }
 
             return services;
         }
 
         // This is a separate method for testing.
-        private static void UseWindowsServiceUnchecked(IServiceCollection services, Action<WindowsServiceLifetimeOptions> configure)
+        private static void AddWindowsServiceUnchecked(IServiceCollection services, Action<WindowsServiceLifetimeOptions> configure)
         {
             services.Configure<WindowsServiceLifetimeOptions>(options =>
             {

@@ -62,7 +62,7 @@ namespace Microsoft.Extensions.Hosting
         /// <see cref="IHostBuilder.ConfigureServices(System.Action{HostBuilderContext, IServiceCollection})"/> callback.
         /// </param>
         /// <returns>The <paramref name="services"/> instance for chaining.</returns>
-        public static IServiceCollection UseSystemd(this IServiceCollection services)
+        public static IServiceCollection AddSystemd(this IServiceCollection services)
         {
             if (SystemdHelpers.IsSystemdService())
             {
