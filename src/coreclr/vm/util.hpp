@@ -41,41 +41,6 @@ typedef unsigned __int64    U8;
 typedef float               R4;
 typedef double              R8;
 
-//
-// Forward the FastInterlock methods to the matching Win32 APIs. They are implemented
-// using compiler intrinsics so they are as fast as they can possibly be.
-//
-
-#define FastInterlockIncrement              InterlockedIncrement
-#define FastInterlockDecrement              InterlockedDecrement
-#define FastInterlockExchange               InterlockedExchange
-#define FastInterlockCompareExchange        InterlockedCompareExchange
-#define FastInterlockExchangeAdd            InterlockedExchangeAdd
-#define FastInterlockExchangeLong           InterlockedExchange64
-#define FastInterlockCompareExchangeLong    InterlockedCompareExchange64
-#define FastInterlockExchangeAddLong        InterlockedExchangeAdd64
-
-//
-// Forward FastInterlock[Compare]ExchangePointer to the
-// Utilcode Interlocked[Compare]ExchangeT.
-//
-#define FastInterlockExchangePointer        InterlockedExchangeT
-#define FastInterlockCompareExchangePointer InterlockedCompareExchangeT
-
-FORCEINLINE void FastInterlockOr(DWORD RAW_KEYWORD(volatile) *p, const int msk)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    InterlockedOr((LONG *)p, msk);
-}
-
-FORCEINLINE void FastInterlockAnd(DWORD RAW_KEYWORD(volatile) *p, const int msk)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    InterlockedAnd((LONG *)p, msk);
-}
-
 #ifndef TARGET_UNIX
 // Copied from malloc.h: don't want to bring in the whole header file.
 void * __cdecl _alloca(size_t);

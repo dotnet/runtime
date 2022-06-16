@@ -905,7 +905,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
             // We should be in cooperative mode if we are going to handle the SO.
             // We track SO state for the thread.
             EEPolicy::HandleStackOverflow();
-            FastInterlockAnd (&pThread->m_fPreemptiveGCDisabled, 0);
+            InterlockedAnd((LONG*)&pThread->m_fPreemptiveGCDisabled, 0);
             return ExceptionContinueSearch;
         }
     }
@@ -5485,7 +5485,7 @@ void TrackerAllocator::FreeTrackerMemory(ExceptionTracker* pTracker)
     // mark this entry as free
     EH_LOG((LL_INFO100, "TrackerAllocator: freeing tracker 0x%p, thread = 0x%p\n", pTracker, pTracker->m_pThread));
     CONSISTENCY_CHECK(pTracker->IsValid());
-    FastInterlockExchangePointer(&(pTracker->m_pThread), NULL);
+    InterlockedExchangeT(&(pTracker->m_pThread), NULL);
 }
 
 #ifndef TARGET_UNIX
@@ -5900,7 +5900,7 @@ UMThunkUnwindFrameChainHandler(IN     PEXCEPTION_RECORD   pExceptionRecord
         if (fIsSO)
         {
             // We don't have stack to do full-version EnablePreemptiveGC.
-            FastInterlockAnd (&pThread->m_fPreemptiveGCDisabled, 0);
+            InterlockedAnd((LONG*)&pThread->m_fPreemptiveGCDisabled, 0);
         }
         else
         {
@@ -5985,7 +5985,7 @@ CallDescrWorkerUnwindFrameChainHandler(IN     PEXCEPTION_RECORD   pExceptionReco
             CleanUpForSecondPass(pThread, true, (void*)MemoryStackFp, (void*)MemoryStackFp);
         }
 
-        FastInterlockAnd (&pThread->m_fPreemptiveGCDisabled, 0);
+        InterlockedAnd((LONG*)&pThread->m_fPreemptiveGCDisabled, 0);
         // We'll let the SO infrastructure handle this exception... at that point, we
         // know that we'll have enough stack to do it.
         return ExceptionContinueSearch;

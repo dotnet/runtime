@@ -987,7 +987,7 @@ FCIMPL1(INT64, GCInterface::GetTotalAllocatedBytes, CLR_BOOL precise)
 #else
         // As it could be noticed we read 64bit values that may be concurrently updated.
         // Such reads are not guaranteed to be atomic on 32bit so extra care should be taken.
-        uint64_t unused_bytes = FastInterlockCompareExchangeLong((LONG64*)& Thread::dead_threads_non_alloc_bytes, 0, 0);
+        uint64_t unused_bytes = InterlockedCompareExchange64((LONG64*)& Thread::dead_threads_non_alloc_bytes, 0, 0);
 #endif
 
         uint64_t allocated_bytes = GCHeapUtilities::GetGCHeap()->GetTotalAllocatedBytes() - unused_bytes;
@@ -998,7 +998,7 @@ FCIMPL1(INT64, GCInterface::GetTotalAllocatedBytes, CLR_BOOL precise)
         uint64_t current_high = high_watermark;
         while (allocated_bytes > current_high)
         {
-            uint64_t orig = FastInterlockCompareExchangeLong((LONG64*)& high_watermark, allocated_bytes, current_high);
+            uint64_t orig = InterlockedCompareExchange64((LONG64*)& high_watermark, allocated_bytes, current_high);
             if (orig == current_high)
                 return allocated_bytes;
 
@@ -1402,7 +1402,7 @@ FCIMPL2(INT32,COMInterlocked::Exchange, INT32 *location, INT32 value)
         FCThrow(kNullReferenceException);
     }
 
-    return FastInterlockExchange((LONG *) location, value);
+    return InterlockedExchange((LONG *) location, value);
 }
 FCIMPLEND
 
@@ -1414,7 +1414,7 @@ FCIMPL2_IV(INT64,COMInterlocked::Exchange64, INT64 *location, INT64 value)
         FCThrow(kNullReferenceException);
     }
 
-    return FastInterlockExchangeLong((INT64 *) location, value);
+    return InterlockedExchange64((INT64 *) location, value);
 }
 FCIMPLEND
 
@@ -1426,7 +1426,7 @@ FCIMPL3(INT32, COMInterlocked::CompareExchange, INT32* location, INT32 value, IN
         FCThrow(kNullReferenceException);
     }
 
-    return FastInterlockCompareExchange((LONG*)location, value, comparand);
+    return InterlockedCompareExchange((LONG*)location, value, comparand);
 }
 FCIMPLEND
 
@@ -1438,7 +1438,7 @@ FCIMPL3_IVV(INT64, COMInterlocked::CompareExchange64, INT64* location, INT64 val
         FCThrow(kNullReferenceException);
     }
 
-    return FastInterlockCompareExchangeLong((INT64*)location, value, comparand);
+    return InterlockedCompareExchange64((INT64*)location, value, comparand);
 }
 FCIMPLEND
 
@@ -1450,7 +1450,7 @@ FCIMPL2_IV(float,COMInterlocked::ExchangeFloat, float *location, float value)
         FCThrow(kNullReferenceException);
     }
 
-    LONG ret = FastInterlockExchange((LONG *) location, *(LONG*)&value);
+    LONG ret = InterlockedExchange((LONG *) location, *(LONG*)&value);
     return *(float*)&ret;
 }
 FCIMPLEND
@@ -1464,7 +1464,7 @@ FCIMPL2_IV(double,COMInterlocked::ExchangeDouble, double *location, double value
     }
 
 
-    INT64 ret = FastInterlockExchangeLong((INT64 *) location, *(INT64*)&value);
+    INT64 ret = InterlockedExchange64((INT64 *) location, *(INT64*)&value);
     return *(double*)&ret;
 }
 FCIMPLEND
@@ -1477,7 +1477,7 @@ FCIMPL3_IVV(float,COMInterlocked::CompareExchangeFloat, float *location, float v
         FCThrow(kNullReferenceException);
     }
 
-    LONG ret = (LONG)FastInterlockCompareExchange((LONG*) location, *(LONG*)&value, *(LONG*)&comparand);
+    LONG ret = (LONG)InterlockedCompareExchange((LONG*) location, *(LONG*)&value, *(LONG*)&comparand);
     return *(float*)&ret;
 }
 FCIMPLEND
@@ -1490,7 +1490,7 @@ FCIMPL3_IVV(double,COMInterlocked::CompareExchangeDouble, double *location, doub
         FCThrow(kNullReferenceException);
     }
 
-    INT64 ret = (INT64)FastInterlockCompareExchangeLong((INT64*) location, *(INT64*)&value, *(INT64*)&comparand);
+    INT64 ret = (INT64)InterlockedCompareExchange64((INT64*) location, *(INT64*)&value, *(INT64*)&comparand);
     return *(double*)&ret;
 }
 FCIMPLEND
@@ -1503,7 +1503,7 @@ FCIMPL2(LPVOID,COMInterlocked::ExchangeObject, LPVOID*location, LPVOID value)
         FCThrow(kNullReferenceException);
     }
 
-    LPVOID ret = FastInterlockExchangePointer(location, value);
+    LPVOID ret = InterlockedExchangeT(location, value);
 #ifdef _DEBUG
     Thread::ObjectRefAssign((OBJECTREF *)location);
 #endif
@@ -1521,7 +1521,7 @@ FCIMPL3(LPVOID,COMInterlocked::CompareExchangeObject, LPVOID *location, LPVOID v
     }
 
     // <TODO>@todo: only set ref if is updated</TODO>
-    LPVOID ret = FastInterlockCompareExchangePointer(location, value, comparand);
+    LPVOID ret = InterlockedCompareExchangeT(location, value, comparand);
     if (ret == comparand) {
 #ifdef _DEBUG
         Thread::ObjectRefAssign((OBJECTREF *)location);
@@ -1540,7 +1540,7 @@ FCIMPL2(INT32,COMInterlocked::ExchangeAdd32, INT32 *location, INT32 value)
         FCThrow(kNullReferenceException);
     }
 
-    return FastInterlockExchangeAdd((LONG *) location, value);
+    return InterlockedExchangeAdd((LONG *) location, value);
 }
 FCIMPLEND
 
@@ -1552,7 +1552,7 @@ FCIMPL2_IV(INT64,COMInterlocked::ExchangeAdd64, INT64 *location, INT64 value)
         FCThrow(kNullReferenceException);
     }
 
-    return FastInterlockExchangeAddLong((INT64 *) location, value);
+    return InterlockedExchangeAdd64((INT64 *) location, value);
 }
 FCIMPLEND
 

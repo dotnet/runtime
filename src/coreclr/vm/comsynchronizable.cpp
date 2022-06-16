@@ -295,7 +295,7 @@ void ThreadNative::Start(Thread* pNewThread, int threadStackSize, int priority, 
     pNewThread->SetThreadPriority(MapToNTPriority(priority));
     pNewThread->ChooseThreadCPUGroupAffinity();
 
-    FastInterlockOr((ULONG *) &pNewThread->m_State, Thread::TS_LegalToJoin);
+    pNewThread->SetThreadState(Thread::TS_LegalToJoin);
 
     DWORD ret = pNewThread->StartThread();
 

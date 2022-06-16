@@ -207,7 +207,7 @@ BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWO
                 BYTE* pEndOfUEFSectionBoundary = pAddressOfFollowingSection - 1;
 
                 // Set the end of UEF section boundary
-                FastInterlockExchangePointer(s_pEndOfUEFSectionBoundary.GetPointer(), pEndOfUEFSectionBoundary);
+                InterlockedExchangeT(s_pEndOfUEFSectionBoundary.GetPointer(), pEndOfUEFSectionBoundary);
             }
             else
             {
