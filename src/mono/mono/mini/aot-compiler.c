@@ -12336,7 +12336,6 @@ should_emit_extra_method_for_generics (MonoMethod *method, gboolean reference_ty
 		gen_container = mono_method_get_generic_container (method);
 		gen_param_count = mono_method_signature_internal (method)->generic_param_count;
 	} else if (mono_class_is_gtd (method->klass)) {
-		MonoGenericContainer *gen_container_method = mono_method_get_generic_container (method);
 		gen_container = mono_class_get_generic_container (method->klass);
 		gen_param_count = gen_container->type_argc;
 	} else {
