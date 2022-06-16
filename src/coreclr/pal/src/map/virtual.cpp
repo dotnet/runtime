@@ -2142,7 +2142,7 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
     UINT_PTR preferredStartAddress;
     UINT_PTR coreclrLoadAddress;
 
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
     // Smaller steps on ARM because we try hard finding a spare memory in a 128Mb
     // distance from coreclr so e.g. all calls from corelib to coreclr could use relocs
     const int32_t AddressProbingIncrement = 8 * 1024 * 1024;
@@ -2175,7 +2175,7 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
     else
     {
         // Try to allocate below the location of libcoreclr
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
         // For arm for the "high address" case it only makes sense to try to reserve 128Mb
         // and if it doesn't work - we'll reserve a full-sized region in a random location
         sizeOfAllocation = SizeProbingDecrement;
