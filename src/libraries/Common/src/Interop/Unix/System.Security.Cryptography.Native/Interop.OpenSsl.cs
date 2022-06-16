@@ -234,11 +234,19 @@ internal static partial class Interop
                     SetSslCertificate(sslCtx, certHandle!, certKeyHandle!);
                 }
 
-                if (sslAuthenticationOptions.CertificateContext != null && sslAuthenticationOptions.CertificateContext.IntermediateCertificates.Length > 0)
+                if (sslAuthenticationOptions.CertificateContext != null)
                 {
-                    if (!Ssl.AddExtraChainCertificates(sslCtx, sslAuthenticationOptions.CertificateContext.IntermediateCertificates))
+                    if (sslAuthenticationOptions.CertificateContext.IntermediateCertificates.Length > 0)
                     {
-                        throw CreateSslException(SR.net_ssl_use_cert_failed);
+                        if (!Ssl.AddExtraChainCertificates(sslCtx, sslAuthenticationOptions.CertificateContext.IntermediateCertificates))
+                        {
+                            throw CreateSslException(SR.net_ssl_use_cert_failed);
+                        }
+                    }
+
+                    if (sslAuthenticationOptions.CertificateContext.OcspStaplingAvailable)
+                    {
+                        Ssl.SslCtxSetDefaultOcspCallback(sslCtx);
                     }
                 }
             }
@@ -422,27 +430,37 @@ internal static partial class Interop
                         Ssl.SslSetVerifyPeer(sslHandle);
                     }
 
-                    if (sslAuthenticationOptions.CertificateContext?.Trust?._sendTrustInHandshake == true)
+                    if (sslAuthenticationOptions.CertificateContext != null)
                     {
-                        SslCertificateTrust trust = sslAuthenticationOptions.CertificateContext!.Trust!;
-                        X509Certificate2Collection certList = (trust._trustList ?? trust._store!.Certificates);
-
-                        Debug.Assert(certList != null, "certList != null");
-                        Span<IntPtr> handles = certList.Count <= 256
-                            ? stackalloc IntPtr[256]
-                            : new IntPtr[certList.Count];
-
-                        for (int i = 0; i < certList.Count; i++)
+                        if (sslAuthenticationOptions.CertificateContext.Trust?._sendTrustInHandshake == true)
                         {
-                            handles[i] = certList[i].Handle;
+                            SslCertificateTrust trust = sslAuthenticationOptions.CertificateContext!.Trust!;
+                            X509Certificate2Collection certList = (trust._trustList ?? trust._store!.Certificates);
+
+                            Debug.Assert(certList != null, "certList != null");
+                            Span<IntPtr> handles = certList.Count <= 256 ?
+                                stackalloc IntPtr[256] :
+                                new IntPtr[certList.Count];
+
+                            for (int i = 0; i < certList.Count; i++)
+                            {
+                                handles[i] = certList[i].Handle;
+                            }
+
+                            if (!Ssl.SslAddClientCAs(sslHandle, handles.Slice(0, certList.Count)))
+                            {
+                                // The method can fail only when the number of cert names exceeds the maximum capacity
+                                // supported by STACK_OF(X509_NAME) structure, which should not happen under normal
+                                // operation.
+                                Debug.Fail("Failed to add issuer to trusted CA list.");
+                            }
                         }
 
-                        if (!Ssl.SslAddClientCAs(sslHandle, handles.Slice(0, certList.Count)))
+                        byte[]? ocspResponse = sslAuthenticationOptions.CertificateContext.GetOcspResponseNoWaiting();
+
+                        if (ocspResponse != null)
                         {
-                            // The method can fail only when the number of cert names exceeds the maximum capacity
-                            // supported by STACK_OF(X509_NAME) structure, which should not happen under normal
-                            // operation.
-                            Debug.Fail("Failed to add issuer to trusted CA list.");
+                            Ssl.SslStapleOcsp(sslHandle, ocspResponse);
                         }
                     }
                 }

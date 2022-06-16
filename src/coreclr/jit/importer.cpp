@@ -334,6 +334,7 @@ void Compiler::impSaveStackState(SavedStack* savePtr, bool copy)
                     case GT_CNS_LNG:
                     case GT_CNS_DBL:
                     case GT_CNS_STR:
+                    case GT_CNS_VEC:
                     case GT_LCL_VAR:
                         table->val = gtCloneExpr(tree);
                         break;
@@ -861,20 +862,6 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
             // Morph trees that aren't already OBJs or MKREFANY to be OBJs
             assert(ti.IsType(TI_STRUCT));
 
-            // The argument and parameter types can be different for legitimate
-            // reasons, but we expect them to be compatible in those cases. One
-            // example where this happens is when inlining shared code into a
-            // non-generic function, in which case we might see the __Canon in
-            // the parameter type but exact types in the signature type.
-            //
-            // TODO-ARGS: Remove this quirk; we should be able to use the
-            // signature type that is different in the rare case above. It will
-            // cause positive diffs, but that is probably an indication that we
-            // have downstream phases that should be using
-            // `ClassLayout::AreCompatible` instead.
-            //
-            classHnd = ti.GetClassHandleForValueClass();
-
             bool forceNormalization = false;
             if (varTypeIsSIMD(argNode))
             {
@@ -1150,7 +1137,7 @@ GenTree* Compiler::impAssignStruct(GenTree*             dest,
     }
 
     assert(dest->gtOper == GT_LCL_VAR || dest->gtOper == GT_RETURN || dest->gtOper == GT_FIELD ||
-           dest->gtOper == GT_IND || dest->gtOper == GT_OBJ || dest->gtOper == GT_INDEX);
+           dest->gtOper == GT_IND || dest->gtOper == GT_OBJ);
 
     // Return a NOP if this is a self-assignment.
     if (dest->OperGet() == GT_LCL_VAR && src->OperGet() == GT_LCL_VAR &&
@@ -1230,7 +1217,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
 #endif // FEATURE_HW_INTRINSICS
     {
         assert(src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_FIELD, GT_IND, GT_OBJ, GT_CALL, GT_MKREFANY, GT_RET_EXPR,
-                           GT_COMMA) ||
+                           GT_COMMA, GT_CNS_VEC) ||
                ((src->TypeGet() != TYP_STRUCT) && src->OperIsSIMD()));
     }
 #endif // DEBUG
@@ -1422,11 +1409,6 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
             assert(src->AsObj()->GetLayout()->GetClassHandle() == structHnd);
         }
     }
-    else if (src->gtOper == GT_INDEX)
-    {
-        asgType = impNormStructType(structHnd);
-        assert(src->AsIndex()->gtStructElemClass == structHnd);
-    }
     else if (src->gtOper == GT_MKREFANY)
     {
         // Since we are assigning the result of a GT_MKREFANY,
@@ -1506,9 +1488,9 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
     if ((dest == nullptr) && (destAddr->OperGet() == GT_ADDR))
     {
         GenTree* destNode = destAddr->gtGetOp1();
-        // If the actual destination is a local, a GT_INDEX or a block node, or is a node that
-        // will be morphed, don't insert an OBJ(ADDR) if it already has the right type.
-        if (destNode->OperIs(GT_LCL_VAR, GT_INDEX) || destNode->OperIsBlk())
+        // If the actual destination is a local, or a block node,
+        // don't insert an OBJ(ADDR) if it already has the right type.
+        if (destNode->OperIs(GT_LCL_VAR) || destNode->OperIsBlk())
         {
             var_types destType = destNode->TypeGet();
             // If one or both types are TYP_STRUCT (one may not yet be normalized), they are compatible
@@ -1602,7 +1584,7 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
         return (structVal->AsObj()->Addr());
     }
     else if (oper == GT_CALL || oper == GT_RET_EXPR || oper == GT_OBJ || oper == GT_MKREFANY ||
-             structVal->OperIsSimdOrHWintrinsic())
+             structVal->OperIsSimdOrHWintrinsic() || structVal->IsCnsVec())
     {
         unsigned tmpNum = lvaGrabTemp(true DEBUGARG("struct address for call/obj"));
 
@@ -1719,7 +1701,7 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, CorInfoTyp
 //     it is either:
 //     - a known struct type (non-TYP_STRUCT, e.g. TYP_SIMD8)
 //     - an OBJ or a MKREFANY node, or
-//     - a node (e.g. GT_INDEX) that will be morphed.
+//     - a node (e.g. GT_FIELD) that will be morphed.
 //    If the node is a CALL or RET_EXPR, a copy will be made to a new temp.
 //
 GenTree* Compiler::impNormStructVal(GenTree*             structVal,
@@ -1741,28 +1723,14 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
     genTreeOps oper = structVal->OperGet();
     switch (oper)
     {
-        // GT_RETURN and GT_MKREFANY don't capture the handle.
-        case GT_RETURN:
-            break;
+        // GT_MKREFANY is supported directly by args morphing.
         case GT_MKREFANY:
             alreadyNormalized = true;
             break;
 
         case GT_CALL:
-            structVal->AsCall()->gtRetClsHnd = structHnd;
-            makeTemp                         = true;
-            break;
-
         case GT_RET_EXPR:
-            structVal->AsRetExpr()->gtRetClsHnd = structHnd;
-            makeTemp                            = true;
-            break;
-
-        case GT_INDEX:
-            // This will be transformed to an OBJ later.
-            alreadyNormalized                       = true;
-            structVal->AsIndex()->gtStructElemClass = structHnd;
-            structVal->AsIndex()->gtIndElemSize     = info.compCompHnd->getClassSize(structHnd);
+            makeTemp = true;
             break;
 
         case GT_FIELD:
@@ -1783,7 +1751,6 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
 
         case GT_OBJ:
         case GT_BLK:
-        case GT_ASG:
             // These should already have the appropriate type.
             assert(structVal->gtType == structType);
             alreadyNormalized = true;
@@ -1793,6 +1760,10 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
             assert(structVal->gtType == structType);
             structVal         = gtNewObjNode(structHnd, structVal->gtGetOp1());
             alreadyNormalized = true;
+            break;
+
+        case GT_CNS_VEC:
+            assert(varTypeIsSIMD(structVal) && (structVal->gtType == structType));
             break;
 
 #ifdef FEATURE_SIMD
@@ -1834,7 +1805,7 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
             }
 
 #ifdef FEATURE_SIMD
-            if (blockNode->OperIsSimdOrHWintrinsic())
+            if (blockNode->OperIsSimdOrHWintrinsic() || blockNode->IsCnsVec())
             {
                 parent->AsOp()->gtOp2 = impNormStructVal(blockNode, structHnd, curLevel, forceNormalization);
                 alreadyNormalized     = true;
@@ -1957,8 +1928,8 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     }
 
     // Generate the full lookup tree. May be null if we're abandoning an inline attempt.
-    GenTree* result = impLookupToTree(pResolvedToken, &embedInfo.lookup, gtTokenToIconFlags(pResolvedToken->token),
-                                      embedInfo.compileTimeHandle);
+    GenTreeFlags handleType = importParent ? GTF_ICON_CLASS_HDL : gtTokenToIconFlags(pResolvedToken->token);
+    GenTree*     result = impLookupToTree(pResolvedToken, &embedInfo.lookup, handleType, embedInfo.compileTimeHandle);
 
     // If we have a result and it requires runtime lookup, wrap it in a runtime lookup node.
     if ((result != nullptr) && embedInfo.lookup.lookupKind.needsRuntimeLookup)
@@ -3917,10 +3888,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_String_get_Chars:
             {
-                GenTree* op2 = impPopStack().val;
-                GenTree* op1 = impPopStack().val;
-                retNode      = gtNewIndexRef(TYP_USHORT, op1, op2);
-                retNode->gtFlags |= GTF_INX_STRING_LAYOUT;
+                GenTree* op2  = impPopStack().val;
+                GenTree* op1  = impPopStack().val;
+                GenTree* addr = gtNewIndexAddr(op1, op2, TYP_USHORT, NO_CLASS_HANDLE, OFFSETOF__CORINFO_String__chars,
+                                               OFFSETOF__CORINFO_String__stringLen);
+                retNode = gtNewIndexIndir(addr->AsIndexAddr());
                 break;
             }
 
@@ -7464,8 +7436,28 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                 const TypeCompareState compare =
                     info.compCompHnd->compareTypesForEquality(unboxResolvedToken.hClass, pResolvedToken->hClass);
 
+                bool optimize = false;
+
                 // If so, box/unbox.any is a nop.
                 if (compare == TypeCompareState::Must)
+                {
+                    optimize = true;
+                }
+                else if (compare == TypeCompareState::MustNot)
+                {
+                    // An attempt to catch cases where we mix enums and primitives, e.g.:
+                    //   (IntEnum)(object)myInt
+                    //   (byte)(object)myByteEnum
+                    //
+                    CorInfoType typ = info.compCompHnd->getTypeForPrimitiveValueClass(unboxResolvedToken.hClass);
+                    if ((typ >= CORINFO_TYPE_BYTE) && (typ <= CORINFO_TYPE_ULONG) &&
+                        (info.compCompHnd->getTypeForPrimitiveValueClass(pResolvedToken->hClass) == typ))
+                    {
+                        optimize = true;
+                    }
+                }
+
+                if (optimize)
                 {
                     JITDUMP("\n Importing BOX; UNBOX.ANY as NOP\n");
                     // Skip the next unbox.any instruction
@@ -8851,9 +8843,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                 // Create the address node.
                 GenTreeFlags handleKind = isBoxedStatic ? GTF_ICON_STATIC_BOX_PTR : GTF_ICON_STATIC_HDL;
                 op1                     = gtNewIconHandleNode((size_t)fldAddr, handleKind, innerFldSeq);
-#ifdef DEBUG
-                op1->AsIntCon()->gtTargetHandle = op1->AsIntCon()->gtIconVal;
-#endif
+                INDEBUG(op1->AsIntCon()->gtTargetHandle = reinterpret_cast<size_t>(pResolvedToken->hField));
 
                 if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
                 {
@@ -9257,15 +9247,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     // We only need to cast the return value of pinvoke inlined calls that return small types
 
-    // TODO-AMD64-Cleanup: Remove this when we stop interoperating with JIT64, or if we decide to stop
-    // widening everything! CoreCLR does not support JIT64 interoperation so no need to widen there.
-    // The existing x64 JIT doesn't bother widening all types to int, so we have to assume for
-    // the time being that the callee might be compiled by the other JIT and thus the return
-    // value will need to be widened by us (or not widened at all...)
-
-    // ReadyToRun code sticks with default calling convention that does not widen small return types.
-
-    bool checkForSmallType  = opts.IsReadyToRun();
+    bool checkForSmallType  = false;
     bool bIntrinsicImported = false;
 
     CORINFO_SIG_INFO calliSig;
@@ -9455,7 +9437,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         switch (callInfo->kind)
         {
-
             case CORINFO_VIRTUALCALL_STUB:
             {
                 assert(!(mflags & CORINFO_FLG_STATIC)); // can't call a static method
@@ -12875,7 +12856,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
         }
 
         CORINFO_CLASS_HANDLE clsHnd       = DUMMY_INIT(NULL);
-        CORINFO_CLASS_HANDLE ldelemClsHnd = DUMMY_INIT(NULL);
+        CORINFO_CLASS_HANDLE ldelemClsHnd = NO_CLASS_HANDLE;
         CORINFO_CLASS_HANDLE stelemClsHnd = DUMMY_INIT(NULL);
 
         var_types lclTyp, ovflType = TYP_UNKNOWN;
@@ -12944,7 +12925,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             CORINFO_SIG_INFO     sig;
             IL_OFFSET            jmpAddr;
             bool                 ovfl, unordered, callNode;
-            bool                 ldstruct;
             CORINFO_CLASS_HANDLE tokenType;
 
             union {
@@ -13642,13 +13622,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_LDELEM_I:
                 lclTyp = TYP_I_IMPL;
                 goto ARR_LD;
-
-            // Should be UINT, but since no platform widens 4->8 bytes it doesn't matter
-            // and treating it as TYP_INT avoids other asserts.
             case CEE_LDELEM_U4:
                 lclTyp = TYP_INT;
                 goto ARR_LD;
-
             case CEE_LDELEM_I4:
                 lclTyp = TYP_INT;
                 goto ARR_LD;
@@ -13674,84 +13650,32 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             ARR_LD:
             ARR_LD_POST_VERIFY:
 
-                /* Pull the index value and array address */
-                op2 = impPopStack().val;
-                op1 = impPopStack().val;
-                assertImp(op1->gtType == TYP_REF);
+                op2 = impPopStack().val; // index
+                op1 = impPopStack().val; // array
+                assertImp(op1->TypeIs(TYP_REF));
 
-                /* Check for null pointer - in the inliner case we simply abort */
-
-                if (compIsForInlining())
+                // Check for null pointer - in the inliner case we simply abort.
+                if (compIsForInlining() && op1->IsCnsIntOrI())
                 {
-                    if (op1->gtOper == GT_CNS_INT)
-                    {
-                        compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_NULL_FOR_LDELEM);
-                        return;
-                    }
+                    compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_NULL_FOR_LDELEM);
+                    return;
                 }
 
-                /* Mark the block as containing an index expression */
+                // Mark the block as containing an index expression.
 
-                if (op1->gtOper == GT_LCL_VAR)
+                if (op1->OperIs(GT_LCL_VAR) && op2->OperIs(GT_LCL_VAR, GT_CNS_INT, GT_ADD))
                 {
-                    if (op2->gtOper == GT_LCL_VAR || op2->gtOper == GT_CNS_INT || op2->gtOper == GT_ADD)
-                    {
-                        block->bbFlags |= BBF_HAS_IDX_LEN;
-                        optMethodFlags |= OMF_HAS_ARRAYREF;
-                    }
+                    block->bbFlags |= BBF_HAS_IDX_LEN;
+                    optMethodFlags |= OMF_HAS_ARRAYREF;
                 }
 
-                /* Create the index node and push it on the stack */
+                op1 = gtNewArrayIndexAddr(op1, op2, lclTyp, ldelemClsHnd);
 
-                op1 = gtNewIndexRef(lclTyp, op1, op2);
-
-                ldstruct = (opcode == CEE_LDELEM && lclTyp == TYP_STRUCT);
-
-                if ((opcode == CEE_LDELEMA) || ldstruct ||
-                    (ldelemClsHnd != DUMMY_INIT(NULL) && eeIsValueClass(ldelemClsHnd)))
+                if (opcode != CEE_LDELEMA)
                 {
-                    assert(ldelemClsHnd != DUMMY_INIT(NULL));
-
-                    // remember the element size
-                    if (lclTyp == TYP_REF)
-                    {
-                        op1->AsIndex()->gtIndElemSize = TARGET_POINTER_SIZE;
-                    }
-                    else
-                    {
-                        // If ldElemClass is precisely a primitive type, use that, otherwise, preserve the struct type.
-                        if (info.compCompHnd->getTypeForPrimitiveValueClass(ldelemClsHnd) == CORINFO_TYPE_UNDEF)
-                        {
-                            op1->AsIndex()->gtStructElemClass = ldelemClsHnd;
-                        }
-                        assert(lclTyp != TYP_STRUCT || op1->AsIndex()->gtStructElemClass != nullptr);
-                        if (lclTyp == TYP_STRUCT)
-                        {
-                            size                          = info.compCompHnd->getClassSize(ldelemClsHnd);
-                            op1->AsIndex()->gtIndElemSize = size;
-                            op1->gtType                   = lclTyp;
-                        }
-                    }
-
-                    if ((opcode == CEE_LDELEMA) || ldstruct)
-                    {
-                        // wrap it in a &
-                        lclTyp = TYP_BYREF;
-
-                        op1 = gtNewOperNode(GT_ADDR, lclTyp, op1);
-                    }
-                    else
-                    {
-                        assert(lclTyp != TYP_STRUCT);
-                    }
+                    op1 = gtNewIndexIndir(op1->AsIndexAddr());
                 }
 
-                if (ldstruct)
-                {
-                    // Create an OBJ for the result
-                    op1 = gtNewObjNode(ldelemClsHnd, op1);
-                    op1->gtFlags |= GTF_EXCEPT;
-                }
                 impPushOnStack(op1, tiRetVal);
                 break;
 
@@ -13776,7 +13700,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     CorInfoType jitTyp = info.compCompHnd->asCorInfoType(stelemClsHnd);
                     lclTyp             = JITtype2varType(jitTyp);
-                    goto ARR_ST_POST_VERIFY;
+                    goto ARR_ST;
                 }
 
             case CEE_STELEM_REF:
@@ -13793,7 +13717,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (impCanSkipCovariantStoreCheck(value, array))
                     {
                         lclTyp = TYP_REF;
-                        goto ARR_ST_POST_VERIFY;
+                        goto ARR_ST;
                     }
                 }
 
@@ -13827,7 +13751,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto ARR_ST;
 
             ARR_ST:
-            ARR_ST_POST_VERIFY:
+                // TODO-Review: this comment is no longer correct.
                 /* The strict order of evaluation is LHS-operands, RHS-operands,
                    range-check, and then assignment. However, codegen currently
                    does the range-check before evaluation the RHS-operands. So to
@@ -13839,45 +13763,29 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                                    "Strict ordering of exceptions for Array store"));
                 }
 
-                /* Pull the new value from the stack */
+                // Pull the new value from the stack.
                 op2 = impPopStack().val;
+                impBashVarAddrsToI(op2);
 
-                /* Pull the index value */
+                // Pull the index value.
                 op1 = impPopStack().val;
 
-                /* Pull the array address */
+                // Pull the array address.
                 op3 = impPopStack().val;
-
-                assertImp(op3->gtType == TYP_REF);
-                if (op2->IsLocalAddrExpr() != nullptr)
-                {
-                    op2->gtType = TYP_I_IMPL;
-                }
+                assertImp(op3->TypeIs(TYP_REF));
 
                 // Mark the block as containing an index expression
-
-                if (op3->gtOper == GT_LCL_VAR)
+                if (op3->OperIs(GT_LCL_VAR) && op1->OperIs(GT_LCL_VAR, GT_CNS_INT, GT_ADD))
                 {
-                    if (op1->gtOper == GT_LCL_VAR || op1->gtOper == GT_CNS_INT || op1->gtOper == GT_ADD)
-                    {
-                        block->bbFlags |= BBF_HAS_IDX_LEN;
-                        optMethodFlags |= OMF_HAS_ARRAYREF;
-                    }
+                    block->bbFlags |= BBF_HAS_IDX_LEN;
+                    optMethodFlags |= OMF_HAS_ARRAYREF;
                 }
 
-                /* Create the index node */
+                // Create the index node.
+                op1 = gtNewArrayIndexAddr(op3, op1, lclTyp, stelemClsHnd);
+                op1 = gtNewIndexIndir(op1->AsIndexAddr());
 
-                op1 = gtNewIndexRef(lclTyp, op3, op1);
-
-                /* Create the assignment node and append it */
-
-                if (lclTyp == TYP_STRUCT)
-                {
-                    assert(stelemClsHnd != DUMMY_INIT(NULL));
-
-                    op1->AsIndex()->gtStructElemClass = stelemClsHnd;
-                    op1->AsIndex()->gtIndElemSize     = info.compCompHnd->getClassSize(stelemClsHnd);
-                }
+                // Create the assignment node and append it.
                 if (varTypeIsStruct(op1))
                 {
                     op1 = impAssignStruct(op1, op2, stelemClsHnd, (unsigned)CHECK_SPILL_ALL);
@@ -13887,11 +13795,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op2 = impImplicitR4orR8Cast(op2, op1->TypeGet());
                     op1 = gtNewAssignNode(op1, op2);
                 }
-
-                /* Mark the expression as containing an assignment */
-
-                op1->gtFlags |= GTF_ASG;
-
                 goto SPILL_APPEND;
 
             case CEE_ADD:
@@ -17845,8 +17748,12 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                 {
                     // Do we have to normalize?
                     var_types fncRealRetType = JITtype2varType(info.compMethodInfo->args.retType);
-                    if ((varTypeIsSmall(op2->TypeGet()) || varTypeIsSmall(fncRealRetType)) &&
-                        fgCastNeeded(op2, fncRealRetType))
+                    // For RET_EXPR get the type info from the call. Regardless
+                    // of whether it ends up inlined or not normalization will
+                    // happen as part of that function's codegen.
+                    GenTree* returnedTree = op2->OperIs(GT_RET_EXPR) ? op2->AsRetExpr()->gtInlineCandidate : op2;
+                    if ((varTypeIsSmall(returnedTree->TypeGet()) || varTypeIsSmall(fncRealRetType)) &&
+                        fgCastNeeded(returnedTree, fncRealRetType))
                     {
                         // Small-typed return values are normalized by the callee
                         op2 = gtNewCastNode(TYP_INT, op2, false, fncRealRetType);
@@ -19988,8 +19895,8 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
 
             if (pParam->result->IsFailure())
             {
-                // Make sure not to report this one.  It was already reported by the VM.
-                pParam->result->SetReported();
+                // Do not report this as a failure. Instead report as a "VM failure"
+                pParam->result->SetVMFailure();
                 goto _exit;
             }
 
@@ -21282,7 +21189,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
 
     // Since we're not actually inlining yet, and this call site is
     // still just an inline candidate, there's nothing to report.
-    inlineResult.SetReported();
+    inlineResult.SetSuccessResult(INLINE_CHECK_CAN_INLINE_SUCCESS);
 }
 
 /******************************************************************************/
@@ -22648,14 +22555,14 @@ bool Compiler::impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
     assert(opts.OptimizationEnabled());
 
     // Check for assignment to same array, ie. arrLcl[i] = arrLcl[j]
-    if (value->OperIs(GT_INDEX) && array->OperIs(GT_LCL_VAR))
+    if (value->OperIs(GT_IND) && value->AsIndir()->Addr()->OperIs(GT_INDEX_ADDR) && array->OperIs(GT_LCL_VAR))
     {
-        GenTree* valueIndex = value->AsIndex()->Arr();
-        if (valueIndex->OperIs(GT_LCL_VAR))
+        GenTree* valueArray = value->AsIndir()->Addr()->AsIndexAddr()->Arr();
+        if (valueArray->OperIs(GT_LCL_VAR))
         {
-            unsigned valueLcl = valueIndex->AsLclVar()->GetLclNum();
-            unsigned arrayLcl = array->AsLclVar()->GetLclNum();
-            if ((valueLcl == arrayLcl) && !lvaGetDesc(arrayLcl)->IsAddressExposed())
+            unsigned valueArrayLcl = valueArray->AsLclVar()->GetLclNum();
+            unsigned arrayLcl      = array->AsLclVar()->GetLclNum();
+            if ((valueArrayLcl == arrayLcl) && !lvaGetDesc(arrayLcl)->IsAddressExposed())
             {
                 JITDUMP("\nstelem of ref from same array: skipping covariant store check\n");
                 return true;

@@ -1274,14 +1274,14 @@ void ThreadpoolMgr::EnsureGateThreadRunning()
             // Prevent the gate thread from exiting, if it hasn't already done so.  If it has, we'll create it on the next iteration of
             // this loop.
             //
-            FastInterlockCompareExchange(&GateThreadStatus, GATE_THREAD_STATUS_REQUESTED, GATE_THREAD_STATUS_WAITING_FOR_REQUEST);
+            InterlockedCompareExchange(&GateThreadStatus, GATE_THREAD_STATUS_REQUESTED, GATE_THREAD_STATUS_WAITING_FOR_REQUEST);
             break;
 
         case GATE_THREAD_STATUS_NOT_RUNNING:
             //
             // We need to create a new gate thread
             //
-            if (FastInterlockCompareExchange(&GateThreadStatus, GATE_THREAD_STATUS_REQUESTED, GATE_THREAD_STATUS_NOT_RUNNING) == GATE_THREAD_STATUS_NOT_RUNNING)
+            if (InterlockedCompareExchange(&GateThreadStatus, GATE_THREAD_STATUS_REQUESTED, GATE_THREAD_STATUS_NOT_RUNNING) == GATE_THREAD_STATUS_NOT_RUNNING)
             {
                 if (!CreateGateThread())
                 {
@@ -1324,7 +1324,7 @@ bool ThreadpoolMgr::ShouldGateThreadKeepRunning()
     //
     // Switch to WAITING_FOR_REQUEST, and see if we had a request since the last check.
     //
-    LONG previousStatus = FastInterlockExchange(&GateThreadStatus, GATE_THREAD_STATUS_WAITING_FOR_REQUEST);
+    LONG previousStatus = InterlockedExchange(&GateThreadStatus, GATE_THREAD_STATUS_WAITING_FOR_REQUEST);
 
     if (previousStatus == GATE_THREAD_STATUS_WAITING_FOR_REQUEST)
     {
@@ -1361,7 +1361,7 @@ bool ThreadpoolMgr::ShouldGateThreadKeepRunning()
             // It looks like we shouldn't be running.  But another thread may now tell us to run.  If so, they will set GateThreadStatus
             // back to GATE_THREAD_STATUS_REQUESTED.
             //
-            previousStatus = FastInterlockCompareExchange(&GateThreadStatus, GATE_THREAD_STATUS_NOT_RUNNING, GATE_THREAD_STATUS_WAITING_FOR_REQUEST);
+            previousStatus = InterlockedCompareExchange(&GateThreadStatus, GATE_THREAD_STATUS_NOT_RUNNING, GATE_THREAD_STATUS_WAITING_FOR_REQUEST);
             if (previousStatus == GATE_THREAD_STATUS_WAITING_FOR_REQUEST)
                 return false;
         }
@@ -3769,7 +3769,7 @@ int ThreadpoolMgr::GetCPUBusyTime_NT(PROCESS_CPU_INFORMATION* pOldInfo)
 
     if (CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
     {
-#if !defined(FEATURE_REDHAWK) && !defined(TARGET_UNIX)
+#if !defined(FEATURE_NATIVEAOT) && !defined(TARGET_UNIX)
         FILETIME newIdleTime, newKernelTime, newUserTime;
 
         CPUGroupInfo::GetSystemTimes(&newIdleTime, &newKernelTime, &newUserTime);

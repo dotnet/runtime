@@ -49,7 +49,6 @@ TypeManager::TypeManager(HANDLE osModule, ReadyToRunHeader * pHeader, void** pCl
     m_pThreadStaticsDataSection = (uint8_t*)GetModuleSection(ReadyToRunSectionType::ThreadStaticRegion, &length);
     m_pThreadStaticsGCInfo = (StaticGcDesc*)GetModuleSection(ReadyToRunSectionType::ThreadStaticGCDescRegion, &length);
     m_pTlsIndex = (uint32_t*)GetModuleSection(ReadyToRunSectionType::ThreadStaticIndex, &length);
-    m_pLoopHijackFlag = (uint32_t*)GetModuleSection(ReadyToRunSectionType::LoopHijackFlag, &length);
     m_pDispatchMapTable = (DispatchMap **)GetModuleSection(ReadyToRunSectionType::InterfaceDispatchTable, &length);
 }
 

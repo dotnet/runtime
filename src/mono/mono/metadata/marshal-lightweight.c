@@ -196,7 +196,7 @@ mono_mb_emit_save_args (MonoMethodBuilder *mb, MonoMethodSignature *sig, gboolea
 		mono_mb_emit_byte (mb, CEE_STIND_I);
 		/* tmp = tmp + sizeof (gpointer) */
 		if (sig->param_count)
-			mono_mb_emit_add_to_local (mb, tmp_var, TARGET_SIZEOF_VOID_P);
+			mono_mb_emit_add_to_local (mb, GINT_TO_UINT16 (tmp_var), TARGET_SIZEOF_VOID_P);
 
 	}
 
@@ -206,7 +206,7 @@ mono_mb_emit_save_args (MonoMethodBuilder *mb, MonoMethodSignature *sig, gboolea
 		mono_mb_emit_byte (mb, CEE_STIND_I);
 		/* tmp = tmp + sizeof (gpointer) */
 		if (i < (sig->param_count - 1))
-			mono_mb_emit_add_to_local (mb, tmp_var, TARGET_SIZEOF_VOID_P);
+			mono_mb_emit_add_to_local (mb, GINT_TO_UINT16 (tmp_var), TARGET_SIZEOF_VOID_P);
 	}
 
 	return params_var;
@@ -413,7 +413,7 @@ handle_enum:
 		mono_mb_emit_exception_full (mb, "Mono", "NullByRefReturnException", NULL);
 		mono_mb_patch_branch (mb, pos);
 
-		int ldind_op;
+		guint8 ldind_op;
 		MonoType* ret_byval = m_class_get_byval_arg (mono_class_from_mono_type_internal (sig->ret));
 		g_assert (!m_type_is_byref (ret_byval));
 		// TODO: Handle null references
@@ -1228,7 +1228,7 @@ load_array_class (MonoMethodBuilder *mb, int aklass)
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
 	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoVTable, klass));
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
-	mono_mb_emit_ldflda (mb, m_class_offsetof_element_class ());
+	mono_mb_emit_ldflda (mb, GINTPTR_TO_INT32 (m_class_offsetof_element_class ()));
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
 	mono_mb_emit_stloc (mb, aklass);
 }
@@ -1467,22 +1467,22 @@ emit_virtual_stelemref_ilgen (MonoMethodBuilder *mb, const char **param_names, M
 
 		/* if (vklass->idepth < aklass->idepth) goto failue */
 		mono_mb_emit_ldloc (mb, vklass);
-		mono_mb_emit_ldflda (mb, m_class_offsetof_idepth ());
+		mono_mb_emit_ldflda (mb, GINTPTR_TO_INT32 (m_class_offsetof_idepth ()));
 		mono_mb_emit_byte (mb, CEE_LDIND_U2);
 
 		mono_mb_emit_ldloc (mb, aklass);
-		mono_mb_emit_ldflda (mb, m_class_offsetof_idepth ());
+		mono_mb_emit_ldflda (mb, GINTPTR_TO_INT32 (m_class_offsetof_idepth ()));
 		mono_mb_emit_byte (mb, CEE_LDIND_U2);
 
 		b3 = mono_mb_emit_branch (mb, CEE_BLT_UN);
 
 		/* if (vklass->supertypes [aklass->idepth - 1] != aklass) goto failure */
 		mono_mb_emit_ldloc (mb, vklass);
-		mono_mb_emit_ldflda (mb, m_class_offsetof_supertypes ());
+		mono_mb_emit_ldflda (mb, GINTPTR_TO_INT32 (m_class_offsetof_supertypes ()));
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 
 		mono_mb_emit_ldloc (mb, aklass);
-		mono_mb_emit_ldflda (mb, m_class_offsetof_idepth ());
+		mono_mb_emit_ldflda (mb, GINTPTR_TO_INT32 (m_class_offsetof_idepth ()));
 		mono_mb_emit_byte (mb, CEE_LDIND_U2);
 		mono_mb_emit_icon (mb, 1);
 		mono_mb_emit_byte (mb, CEE_SUB);
@@ -1549,11 +1549,11 @@ emit_virtual_stelemref_ilgen (MonoMethodBuilder *mb, const char **param_names, M
 
 		/* if (vklass->supertypes [aklass->idepth - 1] != aklass) goto failure */
 		mono_mb_emit_ldloc (mb, vklass);
-		mono_mb_emit_ldflda (mb, m_class_offsetof_supertypes ());
+		mono_mb_emit_ldflda (mb, GINTPTR_TO_INT32 (m_class_offsetof_supertypes ()));
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 
 		mono_mb_emit_ldloc (mb, aklass);
-		mono_mb_emit_ldflda (mb, m_class_offsetof_idepth ());
+		mono_mb_emit_ldflda (mb, GINTPTR_TO_INT32 (m_class_offsetof_idepth ()));
 		mono_mb_emit_byte (mb, CEE_LDIND_U2);
 		mono_mb_emit_icon (mb, 1);
 		mono_mb_emit_byte (mb, CEE_SUB);
@@ -1622,7 +1622,7 @@ emit_virtual_stelemref_ilgen (MonoMethodBuilder *mb, const char **param_names, M
 
 		/* uiid = klass->interface_id; */
 		mono_mb_emit_ldloc (mb, aklass);
-		mono_mb_emit_ldflda (mb, m_class_offsetof_interface_id ());
+		mono_mb_emit_ldflda (mb, GINTPTR_TO_INT32 (m_class_offsetof_interface_id ()));
 		mono_mb_emit_byte (mb, CEE_LDIND_U4);
 		mono_mb_emit_stloc (mb, uiid);
 
@@ -1740,7 +1740,7 @@ emit_stelemref_ilgen (MonoMethodBuilder *mb)
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
 	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoVTable, klass));
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
-	mono_mb_emit_ldflda (mb, m_class_offsetof_element_class ());
+	mono_mb_emit_ldflda (mb, GINTPTR_TO_INT32 (m_class_offsetof_element_class ()));
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
 	mono_mb_emit_stloc (mb, aklass);
 
@@ -1754,22 +1754,22 @@ emit_stelemref_ilgen (MonoMethodBuilder *mb)
 
 	/* if (vklass->idepth < aklass->idepth) goto failue */
 	mono_mb_emit_ldloc (mb, vklass);
-	mono_mb_emit_ldflda (mb, m_class_offsetof_idepth ());
+	mono_mb_emit_ldflda (mb, GINTPTR_TO_INT32 (m_class_offsetof_idepth ()));
 	mono_mb_emit_byte (mb, CEE_LDIND_U2);
 
 	mono_mb_emit_ldloc (mb, aklass);
-	mono_mb_emit_ldflda (mb, m_class_offsetof_idepth ());
+	mono_mb_emit_ldflda (mb, GINTPTR_TO_INT32 (m_class_offsetof_idepth ()));
 	mono_mb_emit_byte (mb, CEE_LDIND_U2);
 
 	b2 = mono_mb_emit_branch (mb, CEE_BLT_UN);
 
 	/* if (vklass->supertypes [aklass->idepth - 1] != aklass) goto failure */
 	mono_mb_emit_ldloc (mb, vklass);
-	mono_mb_emit_ldflda (mb, m_class_offsetof_supertypes ());
+	mono_mb_emit_ldflda (mb, GINTPTR_TO_INT32 (m_class_offsetof_supertypes ()));
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
 
 	mono_mb_emit_ldloc (mb, aklass);
-	mono_mb_emit_ldflda (mb, m_class_offsetof_idepth ());
+	mono_mb_emit_ldflda (mb, GINTPTR_TO_INT32 (m_class_offsetof_idepth ()));
 	mono_mb_emit_byte (mb, CEE_LDIND_U2);
 	mono_mb_emit_icon (mb, 1);
 	mono_mb_emit_byte (mb, CEE_SUB);
@@ -1901,7 +1901,7 @@ emit_array_address_ilgen (MonoMethodBuilder *mb, int rank, int elem_size)
 		mono_mb_emit_byte (mb, CEE_ADD);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		/* sizes is an union, so this reads sizes.element_size */
-		mono_mb_emit_icon (mb, m_class_offsetof_sizes ());
+		mono_mb_emit_icon (mb, GINTPTR_TO_INT32 (m_class_offsetof_sizes ()));
 		mono_mb_emit_byte (mb, CEE_ADD);
 		mono_mb_emit_byte (mb, CEE_LDIND_I4);
 	}
@@ -2115,7 +2115,7 @@ emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature 
 		mono_mb_emit_stloc (mb, local_res);
 
 	/* i += 1 */
-	mono_mb_emit_add_to_local (mb, local_i, 1);
+	mono_mb_emit_add_to_local (mb, GINT_TO_UINT16 (local_i), 1);
 
 	/* i < l */
 	mono_mb_emit_ldloc (mb, local_i);
@@ -3067,7 +3067,7 @@ emit_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoJitICallInfo *callinfo, Mon
 
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, CEE_MONO_JIT_ICALL_ADDR);
-	mono_mb_emit_i4 (mb, mono_jit_icall_info_index (callinfo));
+	mono_mb_emit_i4 (mb, GPTRDIFF_TO_INT32 (mono_jit_icall_info_index (callinfo)));
 	mono_mb_emit_calli (mb, csig2);
 	if (check_exceptions)
 		emit_thread_interrupt_checkpoint (mb);

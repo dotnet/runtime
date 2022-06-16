@@ -93,13 +93,6 @@ static bool InitDLL(HANDLE hPalInstance)
 
     InitializeYieldProcessorNormalizedCrst();
 
-    STARTUP_TIMELINE_EVENT(NONGC_INIT_COMPLETE);
-
-    if (!RedhawkGCInterface::InitializeSubsystems())
-        return false;
-
-    STARTUP_TIMELINE_EVENT(GC_INIT_COMPLETE);
-
 #ifdef STRESS_LOG
     uint32_t dwTotalStressLogSize = g_pRhConfig->GetTotalStressLogSize();
     uint32_t dwStressLogLevel = g_pRhConfig->GetStressLogLevel();
@@ -113,6 +106,13 @@ static bool InitDLL(HANDLE hPalInstance)
                               (unsigned)dwTotalStressLogSize, hPalInstance);
     }
 #endif // STRESS_LOG
+
+    STARTUP_TIMELINE_EVENT(NONGC_INIT_COMPLETE);
+
+    if (!RedhawkGCInterface::InitializeSubsystems())
+        return false;
+
+    STARTUP_TIMELINE_EVENT(GC_INIT_COMPLETE);
 
 #ifndef USE_PORTABLE_HELPERS
     if (!DetectCPUFeatures())

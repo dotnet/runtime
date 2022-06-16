@@ -30,7 +30,9 @@ namespace Internal.Runtime.TypeLoader
     using DefTypeBasedGenericTypeLookup = TypeLoaderEnvironment.DefTypeBasedGenericTypeLookup;
     using HandleBasedGenericMethodLookup = TypeLoaderEnvironment.HandleBasedGenericMethodLookup;
     using MethodDescBasedGenericMethodLookup = TypeLoaderEnvironment.MethodDescBasedGenericMethodLookup;
+#if FEATURE_UNIVERSAL_GENERICS
     using ThunkKind = CallConverterThunk.ThunkKind;
+#endif
     using VTableSlotMapper = TypeBuilderState.VTableSlotMapper;
 
     internal static class LowLevelListExtensions
@@ -86,7 +88,7 @@ namespace Internal.Runtime.TypeLoader
         /// The StaticClassConstructionContext for a type is encoded in the negative space
         /// of the NonGCStatic fields of a type.
         /// </summary>
-        public static unsafe readonly int ClassConstructorOffset = -sizeof(System.Runtime.CompilerServices.StaticClassConstructionContext);
+        public static readonly unsafe int ClassConstructorOffset = -sizeof(System.Runtime.CompilerServices.StaticClassConstructionContext);
 
         private LowLevelList<TypeDesc> _typesThatNeedTypeHandles = new LowLevelList<TypeDesc>();
 
@@ -103,6 +105,10 @@ namespace Internal.Runtime.TypeLoader
         // Helper exception to abort type building if we do not find the generic type template
         internal class MissingTemplateException : Exception
         {
+            public MissingTemplateException()
+                // Cannot afford calling into resource manager from here, even to get the default message for System.Exception.
+                // This exception is always caught and rethrown as something more user friendly.
+                : base("Template is missing") { }
         }
 
 

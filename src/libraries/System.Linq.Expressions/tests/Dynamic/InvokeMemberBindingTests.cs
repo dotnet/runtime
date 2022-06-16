@@ -86,6 +86,7 @@ namespace System.Dynamic.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69944", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void GenericMethod()
         {
             dynamic d = new TestDerivedClass();
@@ -375,7 +376,7 @@ namespace System.Dynamic.Tests
             return testObjects.SelectMany(i => testObjects.Select(j => new[] { i, j }));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [MemberData(nameof(SameNameObjectPairs))]
         public void OperationOnTwoObjectsDifferentTypesOfSameName(object x, object y)
         {

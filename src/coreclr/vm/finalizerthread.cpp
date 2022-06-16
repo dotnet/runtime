@@ -473,7 +473,7 @@ void FinalizerThread::SignalFinalizationDone(BOOL fFinalizer)
 
     if (fFinalizer)
     {
-        FastInterlockAnd((DWORD*)&g_FinalizerWaiterStatus, ~FWS_WaitInterrupt);
+        InterlockedAnd((LONG*)&g_FinalizerWaiterStatus, ~FWS_WaitInterrupt);
     }
     hEventFinalizerDone->Set();
 }

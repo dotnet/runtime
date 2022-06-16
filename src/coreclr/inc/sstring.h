@@ -651,16 +651,12 @@ private:
     // preferred in this case.
     void Printf(const CHAR *format, ...);
     void VPrintf(const CHAR *format, va_list args);
-
-    void Printf(const WCHAR *format, ...);
-    void VPrintf(const WCHAR *format, va_list args);
-
     void AppendPrintf(const CHAR *format, ...);
     void AppendVPrintf(const CHAR *format, va_list args);
 
-    void AppendPrintf(const WCHAR *format, ...);
-    void AppendVPrintf(const WCHAR *format, va_list args);
+    void Printf(const WCHAR *format, ...);
 
+public:
     BOOL LoadResource(CCompRC::ResourceCategory eCategory, int resourceID);
     HRESULT LoadResourceAndReturnHR(CCompRC::ResourceCategory eCategory, int resourceID);
     HRESULT LoadResourceAndReturnHR(CCompRC* pResourceDLL, CCompRC::ResourceCategory eCategory, int resourceID);

@@ -71,10 +71,10 @@ namespace System.Net.Http.Headers
 
         public override string ToString()
         {
-            StringBuilder sb = StringBuilderCache.Acquire();
+            var sb = new ValueStringBuilder(stackalloc char[256]);
 
             // Warning codes are always 3 digits according to RFC2616
-            sb.Append(NumberFormatInfo.InvariantInfo, $"{_code:000}");
+            sb.AppendSpanFormattable(_code, "000", NumberFormatInfo.InvariantInfo);
 
             sb.Append(' ');
             sb.Append(_agent);
@@ -84,11 +84,11 @@ namespace System.Net.Http.Headers
             if (_date.HasValue)
             {
                 sb.Append(" \"");
-                sb.Append(HttpDateParser.DateToString(_date.Value));
+                sb.AppendSpanFormattable(_date.Value, "r");
                 sb.Append('\"');
             }
 
-            return StringBuilderCache.GetStringAndRelease(sb);
+            return sb.ToString();
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj)

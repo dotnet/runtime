@@ -1639,30 +1639,31 @@ bool Compiler::areLocalFieldsContiguous(GenTreeLclFld* first, GenTreeLclFld* sec
 // TODO-CQ:
 //      Right this can only check array element with const number as index. In future,
 //      we should consider to allow this function to check the index using expression.
-
+//
 bool Compiler::areArrayElementsContiguous(GenTree* op1, GenTree* op2)
 {
-    noway_assert(op1->gtOper == GT_INDEX);
-    noway_assert(op2->gtOper == GT_INDEX);
-    GenTreeIndex* op1Index = op1->AsIndex();
-    GenTreeIndex* op2Index = op2->AsIndex();
+    assert(op1->OperIs(GT_IND) && op2->OperIs(GT_IND));
+    assert(!op1->TypeIs(TYP_STRUCT) && (op1->TypeGet() == op2->TypeGet()));
 
-    GenTree* op1ArrayRef = op1Index->Arr();
-    GenTree* op2ArrayRef = op2Index->Arr();
+    GenTreeIndexAddr* op1IndexAddr = op1->AsIndir()->Addr()->AsIndexAddr();
+    GenTreeIndexAddr* op2IndexAddr = op2->AsIndir()->Addr()->AsIndexAddr();
+
+    GenTree* op1ArrayRef = op1IndexAddr->Arr();
+    GenTree* op2ArrayRef = op2IndexAddr->Arr();
     assert(op1ArrayRef->TypeGet() == TYP_REF);
     assert(op2ArrayRef->TypeGet() == TYP_REF);
 
-    GenTree* op1IndexNode = op1Index->Index();
-    GenTree* op2IndexNode = op2Index->Index();
+    GenTree* op1IndexNode = op1IndexAddr->Index();
+    GenTree* op2IndexNode = op2IndexAddr->Index();
     if ((op1IndexNode->OperGet() == GT_CNS_INT && op2IndexNode->OperGet() == GT_CNS_INT) &&
         op1IndexNode->AsIntCon()->gtIconVal + 1 == op2IndexNode->AsIntCon()->gtIconVal)
     {
-        if (op1ArrayRef->OperGet() == GT_FIELD && op2ArrayRef->OperGet() == GT_FIELD &&
+        if (op1ArrayRef->OperIs(GT_FIELD) && op2ArrayRef->OperIs(GT_FIELD) &&
             areFieldsParentsLocatedSame(op1ArrayRef, op2ArrayRef))
         {
             return true;
         }
-        else if (op1ArrayRef->OperIsLocal() && op2ArrayRef->OperIsLocal() &&
+        else if (op1ArrayRef->OperIs(GT_LCL_VAR) && op2ArrayRef->OperIs(GT_LCL_VAR) &&
                  op1ArrayRef->AsLclVarCommon()->GetLclNum() == op2ArrayRef->AsLclVarCommon()->GetLclNum())
         {
             return true;
@@ -1682,14 +1683,13 @@ bool Compiler::areArrayElementsContiguous(GenTree* op1, GenTree* op2)
 // TODO-CQ:
 //      Right now this can only check field and array. In future we should add more cases.
 //
-
 bool Compiler::areArgumentsContiguous(GenTree* op1, GenTree* op2)
 {
-    if (op1->OperGet() == GT_INDEX && op2->OperGet() == GT_INDEX)
+    if (op1->OperIs(GT_IND) && op2->OperIs(GT_IND))
     {
         return areArrayElementsContiguous(op1, op2);
     }
-    else if (op1->OperGet() == GT_FIELD && op2->OperGet() == GT_FIELD)
+    else if (op1->OperIs(GT_FIELD) && op2->OperIs(GT_FIELD))
     {
         return areFieldsContiguous(op1, op2);
     }
@@ -1701,7 +1701,7 @@ bool Compiler::areArgumentsContiguous(GenTree* op1, GenTree* op2)
 }
 
 //--------------------------------------------------------------------------------------------------------
-// createAddressNodeForSIMDInit: Generate the address node(GT_LEA) if we want to intialize vector2, vector3 or vector4
+// createAddressNodeForSIMDInit: Generate the address node if we want to intialize vector2, vector3 or vector4
 // from first argument's address.
 //
 // Arguments:
@@ -1713,19 +1713,16 @@ bool Compiler::areArgumentsContiguous(GenTree* op1, GenTree* op2)
 //      return the address node.
 //
 // TODO-CQ:
-//      1. Currently just support for GT_FIELD and GT_INDEX, because we can only verify the GT_INDEX node or GT_Field
-//         are located contiguously or not. In future we should support more cases.
-//      2. Though it happens to just work fine front-end phases are not aware of GT_LEA node.  Therefore, convert these
-//         to use GT_ADDR.
+//      Currently just supports GT_FIELD and GT_IND(GT_INDEX_ADDR), because we can only verify those nodes
+//      are located contiguously or not. In future we should support more cases.
+//
 GenTree* Compiler::createAddressNodeForSIMDInit(GenTree* tree, unsigned simdSize)
 {
-    assert(tree->OperGet() == GT_FIELD || tree->OperGet() == GT_INDEX);
-    GenTree*  byrefNode  = nullptr;
-    GenTree*  startIndex = nullptr;
-    unsigned  offset     = 0;
-    var_types baseType   = tree->gtType;
+    GenTree*  byrefNode = nullptr;
+    unsigned  offset    = 0;
+    var_types baseType  = tree->gtType;
 
-    if (tree->OperGet() == GT_FIELD)
+    if (tree->OperIs(GT_FIELD))
     {
         GenTree* objRef = tree->AsField()->GetFldObj();
         if (objRef != nullptr && objRef->gtOper == GT_ADDR)
@@ -1753,23 +1750,25 @@ GenTree* Compiler::createAddressNodeForSIMDInit(GenTree* tree, unsigned simdSize
         assert(byrefNode != nullptr);
         offset = tree->AsField()->gtFldOffset;
     }
-    else if (tree->OperGet() == GT_INDEX)
+    else
     {
+        assert(tree->OperIs(GT_IND) && tree->AsIndir()->Addr()->OperIs(GT_INDEX_ADDR));
 
-        GenTree* index = tree->AsIndex()->Index();
-        assert(index->OperGet() == GT_CNS_INT);
+        GenTreeIndexAddr* indexAddr = tree->AsIndir()->Addr()->AsIndexAddr();
+        GenTree*          arrayRef  = indexAddr->Arr();
+        GenTree*          index     = indexAddr->Index();
+        assert(index->IsCnsIntOrI());
 
         GenTree* checkIndexExpr = nullptr;
-        unsigned indexVal       = (unsigned)(index->AsIntCon()->gtIconVal);
+        unsigned indexVal       = (unsigned)index->AsIntCon()->gtIconVal;
         offset                  = indexVal * genTypeSize(tree->TypeGet());
-        GenTree* arrayRef       = tree->AsIndex()->Arr();
 
         // Generate the boundary check exception.
         // The length for boundary check should be the maximum index number which should be
         // (first argument's index number) + (how many array arguments we have) - 1
         // = indexVal + arrayElementsCount - 1
         unsigned arrayElementsCount = simdSize / genTypeSize(baseType);
-        checkIndexExpr              = new (this, GT_CNS_INT) GenTreeIntCon(TYP_INT, indexVal + arrayElementsCount - 1);
+        checkIndexExpr              = gtNewIconNode(indexVal + arrayElementsCount - 1);
         GenTreeArrLen*    arrLen    = gtNewArrLen(TYP_INT, arrayRef, (int)OFFSETOF__CORINFO_Array__length, compCurBB);
         GenTreeBoundsChk* arrBndsChk =
             new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(checkIndexExpr, arrLen, SCK_ARG_RNG_EXCPN);
@@ -1777,12 +1776,9 @@ GenTree* Compiler::createAddressNodeForSIMDInit(GenTree* tree, unsigned simdSize
         offset += OFFSETOF__CORINFO_Array__data;
         byrefNode = gtNewOperNode(GT_COMMA, arrayRef->TypeGet(), arrBndsChk, gtCloneExpr(arrayRef));
     }
-    else
-    {
-        unreached();
-    }
-    GenTree* address =
-        new (this, GT_LEA) GenTreeAddrMode(TYP_BYREF, byrefNode, startIndex, genTypeSize(tree->TypeGet()), offset);
+
+    GenTree* address = gtNewOperNode(GT_ADD, TYP_BYREF, byrefNode, gtNewIconNode(offset, TYP_I_IMPL));
+
     return address;
 }
 
@@ -1793,7 +1789,7 @@ GenTree* Compiler::createAddressNodeForSIMDInit(GenTree* tree, unsigned simdSize
 //
 // Arguments:
 //      stmt - GenTree*. Input statement node.
-
+//
 void Compiler::impMarkContiguousSIMDFieldAssignments(Statement* stmt)
 {
     if (opts.OptimizationDisabled())
@@ -2227,12 +2223,21 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                 assert(op1->TypeGet() == simdType);
 
                 // copy vector (op1) to array (op2) starting at index (op3)
-                simdTree = op1;
+                simdTree   = op1;
+                copyBlkDst = op2;
+                if (op3 != nullptr)
+                {
+#ifdef TARGET_64BIT
+                    // Upcast the index: it is safe to use a zero-extending cast since we've bounds checked it above.
+                    op3 = gtNewCastNode(TYP_I_IMPL, op3, /* fromUnsigned */ true, TYP_I_IMPL);
+#endif // !TARGET_64BIT
+                    GenTree* elemSizeNode = gtNewIconNode(genTypeSize(simdBaseType), TYP_I_IMPL);
+                    GenTree* indexOffs    = gtNewOperNode(GT_MUL, TYP_I_IMPL, op3, elemSizeNode);
+                    copyBlkDst            = gtNewOperNode(GT_ADD, TYP_BYREF, copyBlkDst, indexOffs);
+                }
 
-                // TODO-Cleanup: Though it happens to just work fine front-end phases are not aware of GT_LEA node.
-                // Therefore, convert these to use GT_ADDR .
-                copyBlkDst = new (this, GT_LEA)
-                    GenTreeAddrMode(TYP_BYREF, op2, op3, genTypeSize(simdBaseType), OFFSETOF__CORINFO_Array__data);
+                copyBlkDst = gtNewOperNode(GT_ADD, TYP_BYREF, copyBlkDst,
+                                           gtNewIconNode(OFFSETOF__CORINFO_Array__data, TYP_I_IMPL));
                 doCopyBlk = true;
             }
         }

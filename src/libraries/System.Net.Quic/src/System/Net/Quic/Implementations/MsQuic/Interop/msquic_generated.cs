@@ -7,6 +7,13 @@
 
 #pragma warning disable CS0649
 
+// Polyfill for MemoryMarshal on .NET Standard
+#if NETSTANDARD && !NETSTANDARD2_1_OR_GREATER
+using MemoryMarshal = Microsoft.Quic.Polyfill.MemoryMarshal;
+#else
+using MemoryMarshal = System.Runtime.InteropServices.MemoryMarshal;
+#endif
+
 using System.Runtime.InteropServices;
 
 namespace Microsoft.Quic
@@ -60,6 +67,9 @@ namespace Microsoft.Quic
         SET_ALLOWED_CIPHER_SUITES = 0x00002000,
         USE_PORTABLE_CERTIFICATES = 0x00004000,
         USE_SUPPLIED_CREDENTIALS = 0x00008000,
+        USE_SYSTEM_MAPPER = 0x00010000,
+        CACHE_ONLY_URL_RETRIEVAL = 0x00020000,
+        REVOCATION_CHECK_CACHE_ONLY = 0x00040000,
     }
 
     [System.Flags]
@@ -1679,10 +1689,32 @@ namespace Microsoft.Quic
         }
     }
 
+    internal unsafe partial struct QUIC_SCHANNEL_CREDENTIAL_ATTRIBUTE_W
+    {
+        [NativeTypeName("unsigned long")]
+        internal uint Attribute;
+
+        [NativeTypeName("unsigned long")]
+        internal uint BufferLength;
+
+        internal void* Buffer;
+    }
+
     internal unsafe partial struct QUIC_SCHANNEL_CONTEXT_ATTRIBUTE_W
     {
         [NativeTypeName("unsigned long")]
         internal uint Attribute;
+
+        internal void* Buffer;
+    }
+
+    internal unsafe partial struct QUIC_SCHANNEL_CONTEXT_ATTRIBUTE_EX_W
+    {
+        [NativeTypeName("unsigned long")]
+        internal uint Attribute;
+
+        [NativeTypeName("unsigned long")]
+        internal uint BufferLength;
 
         internal void* Buffer;
     }
@@ -2569,6 +2601,9 @@ namespace Microsoft.Quic
         [NativeTypeName("#define QUIC_PARAM_CONFIGURATION_VERSION_SETTINGS 0x03000002")]
         internal const uint QUIC_PARAM_CONFIGURATION_VERSION_SETTINGS = 0x03000002;
 
+        [NativeTypeName("#define QUIC_PARAM_CONFIGURATION_SCHANNEL_CREDENTIAL_ATTRIBUTE_W 0x03000003")]
+        internal const uint QUIC_PARAM_CONFIGURATION_SCHANNEL_CREDENTIAL_ATTRIBUTE_W = 0x03000003;
+
         [NativeTypeName("#define QUIC_PARAM_LISTENER_LOCAL_ADDRESS 0x04000000")]
         internal const uint QUIC_PARAM_LISTENER_LOCAL_ADDRESS = 0x04000000;
 
@@ -2658,6 +2693,12 @@ namespace Microsoft.Quic
 
         [NativeTypeName("#define QUIC_PARAM_TLS_SCHANNEL_CONTEXT_ATTRIBUTE_W 0x07000000")]
         internal const uint QUIC_PARAM_TLS_SCHANNEL_CONTEXT_ATTRIBUTE_W = 0x07000000;
+
+        [NativeTypeName("#define QUIC_PARAM_TLS_SCHANNEL_CONTEXT_ATTRIBUTE_EX_W 0x07000001")]
+        internal const uint QUIC_PARAM_TLS_SCHANNEL_CONTEXT_ATTRIBUTE_EX_W = 0x07000001;
+
+        [NativeTypeName("#define QUIC_PARAM_TLS_SCHANNEL_SECURITY_CONTEXT_TOKEN 0x07000002")]
+        internal const uint QUIC_PARAM_TLS_SCHANNEL_SECURITY_CONTEXT_TOKEN = 0x07000002;
 
         [NativeTypeName("#define QUIC_PARAM_STREAM_ID 0x08000000")]
         internal const uint QUIC_PARAM_STREAM_ID = 0x08000000;

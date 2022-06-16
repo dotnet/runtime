@@ -18,7 +18,7 @@ namespace System.Net.Security.Tests
 
         private static NetworkCredential s_testCredentialRight = new NetworkCredential("rightusername", "rightpassword");
         private static NetworkCredential s_testCredentialWrong = new NetworkCredential("rightusername", "wrongpassword");
-        private static byte[] s_Hello => "Hello"u8;
+        private static readonly byte[] s_Hello = "Hello"u8.ToArray();
 
         [Fact]
         public void NtlmProtocolExampleTest()
@@ -152,6 +152,51 @@ namespace System.Net.Security.Tests
             Assert.NotNull(authenticateBlob);
             byte[]? empty = fakeNtlmServer.GetOutgoingBlob(authenticateBlob);
             Assert.Null(empty);
+        }
+
+        [ConditionalTheory(nameof(IsNtlmInstalled))]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        public void NegotiateCorrectExchangeTest(bool requestMIC, bool requestConfidentiality)
+        {
+            // Older versions of gss-ntlmssp on Linux generate MIC at incorrect offset unless ForceNegotiateVersion is specified
+            FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight) { ForceNegotiateVersion = true };
+            FakeNegotiateServer fakeNegotiateServer = new FakeNegotiateServer(fakeNtlmServer) { RequestMIC = requestMIC };
+            NTAuthentication ntAuth = new NTAuthentication(
+                isServer: false, "Negotiate", s_testCredentialRight, "HTTP/foo",
+                ContextFlagsPal.Connection | ContextFlagsPal.InitIntegrity |
+                (requestConfidentiality ? ContextFlagsPal.Confidentiality : 0), null);
+
+            byte[]? clientBlob = null;
+            byte[]? serverBlob = null;
+            do
+            {
+                clientBlob = ntAuth.GetOutgoingBlob(serverBlob, throwOnError: false, out SecurityStatusPal status);
+                if (clientBlob != null)
+                {
+                    Assert.False(fakeNegotiateServer.IsAuthenticated);
+                    // Send the client blob to the fake server
+                    serverBlob = fakeNegotiateServer.GetOutgoingBlob(clientBlob);
+                }
+
+                if (status.ErrorCode == SecurityStatusPalErrorCode.OK)
+                {
+                    Assert.True(ntAuth.IsCompleted);
+                    Assert.True(fakeNegotiateServer.IsAuthenticated);
+                    Assert.True(fakeNtlmServer.IsAuthenticated);
+                }
+                else if (status.ErrorCode == SecurityStatusPalErrorCode.ContinueNeeded)
+                {
+                    Assert.NotNull(clientBlob);
+                    Assert.NotNull(serverBlob);
+                }
+                else
+                {
+                    Assert.Fail(status.ErrorCode.ToString());
+                }
+            }
+            while (!ntAuth.IsCompleted);
         }
     }
 }

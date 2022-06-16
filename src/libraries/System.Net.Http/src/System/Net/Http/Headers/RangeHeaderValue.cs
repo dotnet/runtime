@@ -54,7 +54,7 @@ namespace System.Net.Http.Headers
 
         public override string ToString()
         {
-            StringBuilder sb = StringBuilderCache.Acquire();
+            var sb = new ValueStringBuilder(stackalloc char[256]);
             sb.Append(_unit);
             sb.Append('=');
 
@@ -72,13 +72,13 @@ namespace System.Net.Http.Headers
                         sb.Append(", ");
                     }
 
-                    if (range.From.HasValue) sb.Append(range.From.GetValueOrDefault());
+                    if (range.From.HasValue) sb.AppendSpanFormattable(range.From.GetValueOrDefault());
                     sb.Append('-');
-                    if (range.To.HasValue) sb.Append(range.To.GetValueOrDefault());
+                    if (range.To.HasValue) sb.AppendSpanFormattable(range.To.GetValueOrDefault());
                 }
             }
 
-            return StringBuilderCache.GetStringAndRelease(sb);
+            return sb.ToString();
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj)

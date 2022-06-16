@@ -19,7 +19,7 @@ namespace System.Reflection.TypeLoading
             Debug.Assert(parameterType != null);
         }
 
-        public sealed override string? Name => _lazyName ?? (_lazyName = ComputeName());
+        public sealed override string? Name => _lazyName ??= ComputeName();
         protected abstract string? ComputeName();
         private volatile string? _lazyName;
 

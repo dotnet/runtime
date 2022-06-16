@@ -164,9 +164,7 @@ namespace System.Globalization
                     return false; // not exact match, and first input isn't in [A-Za-z]
                 }
 
-                // The ternary operator below seems redundant but helps RyuJIT generate more optimal code.
-                // See https://github.com/dotnet/runtime/issues/4207.
-                return (valueA == (valueB | 0x20u)) ? true : false;
+                return valueA == (valueB | 0x20u);
             }
 
             Debug.Assert(length == 0);

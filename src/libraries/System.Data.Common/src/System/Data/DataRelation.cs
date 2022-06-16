@@ -619,7 +619,7 @@ namespace System.Data
         /// Gets the collection of custom user information.
         /// </summary>
         [Browsable(false)]
-        public PropertyCollection ExtendedProperties => _extendedProperties ?? (_extendedProperties = new PropertyCollection());
+        public PropertyCollection ExtendedProperties => _extendedProperties ??= new PropertyCollection();
 
         internal bool CheckMultipleNested
         {
@@ -707,7 +707,7 @@ namespace System.Data
 
                 CheckState();
 
-                _relationName = (relationName == null ? "" : relationName);
+                _relationName = relationName ?? "";
                 _createConstraints = createConstraints;
             }
             finally

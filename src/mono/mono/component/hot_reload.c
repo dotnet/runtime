@@ -26,6 +26,7 @@
 #include "mono/metadata/debug-internals.h"
 #include "mono/metadata/mono-debug.h"
 #include "mono/metadata/debug-mono-ppdb.h"
+#include "mono/metadata/class-init.h"
 #include "mono/utils/bsearch.h"
 
 
@@ -63,7 +64,7 @@ static void
 hot_reload_cleanup_on_close (MonoImage *image);
 
 static void
-hot_reload_effective_table_slow (const MonoTableInfo **t, int idx);
+hot_reload_effective_table_slow (const MonoTableInfo **t, uint32_t idx);
 
 static void
 hot_reload_apply_changes (int origin, MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, gconstpointer dpdb_bytes_orig, uint32_t dpdb_length, MonoError *error);
@@ -92,7 +93,7 @@ hot_reload_get_updated_method_ppdb (MonoImage *base_image, uint32_t idx);
 static gboolean
 hot_reload_has_modified_rows (const MonoTableInfo *table);
 
-static int
+static guint32
 hot_reload_table_num_rows_slow (MonoImage *image, int table_index);
 
 static GSList*
@@ -134,6 +135,9 @@ hot_reload_added_methods_iter (MonoClass *klass, gpointer *iter);
 static MonoClassField *
 hot_reload_added_fields_iter (MonoClass *klass, gboolean lazy, gpointer *iter);
 
+static uint32_t
+hot_reload_get_num_fields_added (MonoClass *klass);
+
 static MonoClassMetadataUpdateField *
 metadata_update_field_setup_basic_info_and_resolve (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t fielddef_token, uint32_t field_flags, MonoError *error);
 
@@ -167,6 +171,7 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_get_typedef_skeleton_events,
 	&hot_reload_added_methods_iter,
 	&hot_reload_added_fields_iter,
+	&hot_reload_get_num_fields_added,
 };
 
 MonoComponentHotReload *
@@ -967,6 +972,17 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta)
 	}
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "================================");
 
+	rows = mono_image_get_table_rows (image_dmeta, MONO_TABLE_TYPEDEF);
+	for (int i = 1; i <= rows; ++i) {
+		guint32 cols [MONO_TYPEDEF_SIZE];
+		mono_metadata_decode_row (&image_dmeta->tables [MONO_TABLE_TYPEDEF], i - 1, cols, MONO_TYPEDEF_SIZE);
+		const char *name = mono_metadata_string_heap (image_base, cols [MONO_TYPEDEF_NAME]);
+		const char *nspace = mono_metadata_string_heap (image_base, cols [MONO_TYPEDEF_NAMESPACE]);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "dmeta typedef i=%d (token=0x%08x) -> nspace=[%x]%s, name=[%x]%s", i, MONO_TOKEN_TYPE_REF | i, cols [MONO_TYPEDEF_NAMESPACE], nspace, cols [MONO_TYPEDEF_NAME], name);
+	}
+
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "================================");
+
 	rows = mono_image_get_table_rows (image_base, MONO_TABLE_METHOD);
 	for (int i = 1; i <= rows ; ++i) {
 		guint32 cols [MONO_METHOD_SIZE];
@@ -1041,7 +1057,7 @@ effective_table_mutant (MonoImage *base, BaselineInfo *info, int tbl_index, cons
 }
 
 void
-hot_reload_effective_table_slow (const MonoTableInfo **t, int idx)
+hot_reload_effective_table_slow (const MonoTableInfo **t, uint32_t idx G_GNUC_UNUSED)
 {
 	/* FIXME: don't let any thread other than the updater thread see values from a delta image
 	 * with a generation past update_published
@@ -2678,7 +2694,7 @@ hot_reload_has_modified_rows (const MonoTableInfo *table)
 	return info->any_modified_rows[tbl_index];
 }
 
-static int
+static guint32
 hot_reload_table_num_rows_slow (MonoImage *base, int table_index)
 {
 	BaselineInfo *base_info = baseline_info_lookup (base);
@@ -2854,7 +2870,8 @@ hot_reload_get_field (MonoClass *klass, uint32_t fielddef_token) {
 static MonoClassMetadataUpdateField *
 metadata_update_field_setup_basic_info_and_resolve (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t fielddef_token, uint32_t field_flags, MonoError *error)
 {
-	g_assert (m_class_is_inited (parent_klass));
+	if (!m_class_is_inited (parent_klass))
+		mono_class_init_internal (parent_klass);
 
 	MonoClassMetadataUpdateInfo *parent_info = mono_class_get_or_add_metadata_update_info (parent_klass);
 
@@ -3086,4 +3103,13 @@ hot_reload_added_fields_iter (MonoClass *klass, gboolean lazy G_GNUC_UNUSED, gpo
 	idx++;
 	*iter = GUINT_TO_POINTER (idx);
 	return &field->field;
+}
+
+static uint32_t
+hot_reload_get_num_fields_added (MonoClass *klass)
+{
+	MonoClassMetadataUpdateInfo *info = mono_class_get_metadata_update_info (klass);
+	if (!info)
+		return 0;
+	return g_slist_length (info->added_fields);
 }

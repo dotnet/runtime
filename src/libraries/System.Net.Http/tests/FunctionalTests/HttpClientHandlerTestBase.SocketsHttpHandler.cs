@@ -68,7 +68,8 @@ namespace System.Net.Http.Functional.Tests
 
         protected static SocketsHttpHandler GetUnderlyingSocketsHttpHandler(HttpClientHandler handler)
         {
-            FieldInfo field = typeof(HttpClientHandler).GetField("_underlyingHandler", BindingFlags.Instance | BindingFlags.NonPublic);
+            var fieldName = PlatformDetection.IsMobile ? "_socketHandler" : "_underlyingHandler";
+            FieldInfo field = typeof(HttpClientHandler).GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
             return (SocketsHttpHandler)field?.GetValue(handler);
         }
 

@@ -40,7 +40,7 @@ lock_free_mempool_chunk_new (LockFreeMempool *mp, int len)
 	chunk = (LockFreeMempoolChunk *)mono_valloc (0, size, MONO_MMAP_READ|MONO_MMAP_WRITE, MONO_MEM_ACCOUNT_MEM_MANAGER);
 	g_assert (chunk);
 	chunk->mem = (guint8 *)ALIGN_PTR_TO ((char*)chunk + sizeof (LockFreeMempoolChunk), 16);
-	chunk->size = ((char*)chunk + size) - (char*)chunk->mem;
+	chunk->size = GPTRDIFF_TO_INT (((char*)chunk + size) - (char*)chunk->mem);
 	chunk->pos = 0;
 
 	/* Add to list of chunks lock-free */
@@ -346,7 +346,7 @@ static gint32 mem_manager_cache_hit, mem_manager_cache_miss;
 static guint32
 mix_hash (uintptr_t source)
 {
-	unsigned int hash = source;
+	unsigned int hash = GUINTPTR_TO_UINT (source);
 
 	// Actual hash
 	hash = (((hash * 215497) >> 16) ^ ((hash * 1823231) + hash));
@@ -354,7 +354,7 @@ mix_hash (uintptr_t source)
 MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	// Mix in highest bits on 64-bit systems only
 	if (sizeof (source) > 4)
-		hash = hash ^ ((source >> 31) >> 1);
+		hash = hash ^ GUINTPTR_TO_UINT ((source >> 31) >> 1);
 MONO_RESTORE_WARNING
 
 	return hash;

@@ -6,7 +6,7 @@ namespace System.Formats.Tar
     /// <summary>
     /// Represents a tar entry from an archive of the GNU format.
     /// </summary>
-    /// <remarks>Even though the <see cref="TarFormat.Gnu"/> format is not POSIX compatible, it implements and supports the Unix-specific fields that were defined in the POSIX IEEE P1003.1 standard from 1988: <c>devmajor</c>, <c>devminor</c>, <c>gname</c> and <c>uname</c>.</remarks>
+    /// <remarks>Even though the <see cref="TarEntryFormat.Gnu"/> format is not POSIX compatible, it implements and supports the Unix-specific fields that were defined in the POSIX IEEE P1003.1 standard from 1988: <c>devmajor</c>, <c>devminor</c>, <c>gname</c> and <c>uname</c>.</remarks>
     public sealed class GnuTarEntry : PosixTarEntry
     {
         // Constructor used when reading an existing archive.
@@ -29,7 +29,7 @@ namespace System.Formats.Tar
         /// </list>
         /// </remarks>
         public GnuTarEntry(TarEntryType entryType, string entryName)
-            : base(entryType, entryName, TarFormat.Gnu)
+            : base(entryType, entryName, TarEntryFormat.Gnu)
         {
         }
 

@@ -3146,7 +3146,7 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
         if (pMTDictionary != pDeclaringMTDictionary)
         {
             TypeHandle** pPerInstInfo = (TypeHandle**)pMT->GetPerInstInfo();
-            FastInterlockExchangePointer(pPerInstInfo + dictionaryIndex, (TypeHandle*)pDeclaringMTDictionary);
+            InterlockedExchangeT(pPerInstInfo + dictionaryIndex, (TypeHandle*)pDeclaringMTDictionary);
         }
     }
 
@@ -4154,6 +4154,35 @@ HCIMPL0(void, JIT_ThrowTypeNotSupportedException)
 HCIMPLEND
 
 /*********************************************************************/
+HCIMPL3(void, JIT_ThrowAmbiguousResolutionException,
+    MethodDesc *method,
+    MethodTable *interfaceType,
+    MethodTable *targetType)
+{
+    FCALL_CONTRACT;
+
+    SString strMethodName;
+    SString strInterfaceName;
+    SString strTargetClassName;
+
+    HELPER_METHOD_FRAME_BEGIN_0();    // Set up a frame
+
+    TypeString::AppendMethod(strMethodName, method, method->GetMethodInstantiation());
+    TypeString::AppendType(strInterfaceName, TypeHandle(interfaceType));
+    TypeString::AppendType(strTargetClassName, targetType);
+
+    HELPER_METHOD_FRAME_END();    // Set up a frame
+
+    FCThrowExVoid(
+        kAmbiguousImplementationException,
+        IDS_CLASSLOAD_AMBIGUOUS_OVERRIDE,
+        strMethodName,
+        strInterfaceName,
+        strTargetClassName);
+}
+HCIMPLEND
+
+/*********************************************************************/
 HCIMPL0(void, JIT_Overflow)
 {
     FCALL_CONTRACT;
@@ -4724,7 +4753,7 @@ HCIMPL0(VOID, JIT_StressGC)
         BYTE* retInstrs = ((BYTE*) *__ms->pRetAddr()) - 4;
         _ASSERTE(retInstrs[-1] == 0xE8);                // it is a call instruction
                 // Wack it to point to the JITStressGCNop instead
-        FastInterlockExchange((LONG*) retInstrs), (LONG) JIT_StressGC_NOP);
+        InterlockedExchange((LONG*) retInstrs), (LONG) JIT_StressGC_NOP);
 #endif // _X86
 
     HELPER_METHOD_FRAME_END();
