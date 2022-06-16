@@ -44,29 +44,22 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                         null,
                         Array.Empty<string>());
 
-                    try
+                    if (cert is X509Certificate2 cert2 && cert2.Handle != IntPtr.Zero && cert2.HasPrivateKey)
                     {
-                        if (((X509Certificate2)cert).HasPrivateKey)
-                        {
-                            certificate = cert;
-                        }
+                        certificate = cert;
                     }
-                    catch { }
                 }
                 else if (clientAuthenticationOptions.ClientCertificates != null)
                 {
-                    foreach (var cert in clientAuthenticationOptions.ClientCertificates)
+                    foreach (X509Certificate cert in clientAuthenticationOptions.ClientCertificates)
                     {
-                        try
+
+                        if (cert is X509Certificate2 cert2 && cert2.Handle != IntPtr.Zero && cert2.HasPrivateKey)
                         {
-                            if (((X509Certificate2)cert).HasPrivateKey)
-                            {
-                                // Pick first certificate with private key.
-                                certificate = cert;
-                                break;
-                            }
+                            // Pick first certificate with private key.
+                            certificate = cert;
+                            break;
                         }
-                        catch { }
                     }
                 }
             }
