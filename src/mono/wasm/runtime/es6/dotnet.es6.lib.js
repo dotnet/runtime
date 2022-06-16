@@ -49,7 +49,7 @@ if (ENVIRONMENT_IS_NODE) {
     }
 }
 let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
-    { isESM:true, isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile, quit_, ExitStatus, requirePromise:__dotnet_replacements.requirePromise },
+    { isESM:true, isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isWorker:ENVIRONMENT_IS_WORKER, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile, quit_, ExitStatus, requirePromise:__dotnet_replacements.requirePromise },
     { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
     __dotnet_replacements);
 updateGlobalBufferAndViews = __dotnet_replacements.updateGlobalBufferAndViews;

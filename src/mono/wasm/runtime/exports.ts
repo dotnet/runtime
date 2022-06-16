@@ -30,7 +30,7 @@ import {
     mono_wasm_debugger_attached,
     mono_wasm_set_entrypoint_breakpoint,
 } from "./debug";
-import { ENVIRONMENT_IS_WEB, ExitStatusError, runtimeHelpers, setImportsAndExports } from "./imports";
+import { ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, ExitStatusError, runtimeHelpers, setImportsAndExports } from "./imports";
 import { DotnetModuleConfigImports, DotnetModule, is_nullish } from "./types";
 import {
     mono_load_runtime_and_bcl_args, mono_wasm_load_config,
@@ -185,7 +185,7 @@ let exportedAPI: DotnetPublicAPI;
 // At runtime this will be referred to as 'createDotnetRuntime'
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 function initializeImportsAndExports(
-    imports: { isESM: boolean, isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, locateFile: Function, quit_: Function, ExitStatus: ExitStatusError, requirePromise: Promise<Function> },
+    imports: { isESM: boolean, isGlobal: boolean, isNode: boolean, isWorker: boolean, isShell: boolean, isWeb: boolean, locateFile: Function, quit_: Function, ExitStatus: ExitStatusError, requirePromise: Promise<Function> },
     exports: { mono: any, binding: any, internal: any, module: any },
     replacements: { fetch: any, readAsync: any, require: any, requireOut: any, noExitRuntime: boolean, updateGlobalBufferAndViews: Function },
 ): DotnetPublicAPI {
@@ -311,13 +311,11 @@ function initializeImportsAndExports(
 
     configure_emscripten_startup(module, exportedAPI);
 
-    // HACK: Emscripten expects the return value of this function to always be the Module object,
-    // but we changed ours to return a set of exported namespaces. In order for the emscripten
-    // generated worker code to keep working, we detect that we're running in a worker (via the
-    // presence of globalThis.importScripts) and emulate the old behavior. Note that this will
-    // impact anyone trying to load us in a web worker directly, not just emscripten!
-    if (typeof ((<any>globalThis)["importScripts"]) === "function")
+    if (ENVIRONMENT_IS_WORKER) {
+        // HACK: Emscripten's dotnet.worker.js expects the exports of dotnet.js module to be Module object
+        // until we have our own fix for dotnet.worker.js file
         return <any>exportedAPI.Module;
+    }
 
     return exportedAPI;
 }

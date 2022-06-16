@@ -346,31 +346,6 @@ if (typeof globalThis.crypto === 'undefined') {
     }
 }
 
-if (typeof globalThis.performance === 'undefined') {
-    if (is_node) {
-        const { performance } = require("perf_hooks");
-        globalThis.performance = performance;
-    } else {
-        // performance.now() is used by emscripten and doesn't work in JSC
-        globalThis.performance = {
-            now: function () {
-                return Date.now();
-            }
-        }
-    }
-}
-
-if (typeof globalThis.URL === 'undefined') {
-    globalThis.URL = class URL {
-        constructor(url) {
-            this.url = url;
-        }
-        toString() {
-            return this.url;
-        }
-    };
-}
-
 let toAbsoluteUrl = function (possiblyRelativeUrl) { return possiblyRelativeUrl; }
 if (is_browser) {
     const anchorTagForAbsoluteUrlConversions = document.createElement('a');
@@ -390,7 +365,7 @@ Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntim
                 const { 0: moduleName, 1: globalAlias } = module.split(':');
 
                 let message = `Loading npm '${moduleName}'`;
-                let moduleExport = require(moduleName);
+                let moduleExport = INTERNAL.require(moduleName);
 
                 if (globalAlias) {
                     message += ` and attaching to global as '${globalAlias}'`;
