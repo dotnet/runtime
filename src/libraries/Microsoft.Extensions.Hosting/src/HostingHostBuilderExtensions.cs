@@ -197,10 +197,20 @@ namespace Microsoft.Extensions.Hosting
 
         internal static void ApplyDefaultHostConfiguration(IConfigurationBuilder hostConfigBuilder, string[]? args)
         {
-            hostConfigBuilder.AddInMemoryCollection(new[]
+            // If we're running anywhere other than C:\Windows\system32, we default to using the CWD for the ContentRoot.
+            // However, since many things like Windows services and MSIX
+
+            // In my testing, both Environment.CurrentDirectory and Environment.GetFolderPath(Environment.SpecialFolder.System) return the path without
+            // any trailing directory separator characters. I'm not even sure the casing can ever be different from these APIs, but I it makes sense to
+            // ignore case for Windows path comparisons given the file system is usually (always?) going to be case insensitive for the system path.
+            var cwd = Environment.CurrentDirectory;
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || !string.Equals(cwd, Environment.GetFolderPath(Environment.SpecialFolder.System), StringComparison.OrdinalIgnoreCase))
             {
-                new KeyValuePair<string, string?>(HostDefaults.ContentRootKey, Directory.GetCurrentDirectory())
-            });
+                hostConfigBuilder.AddInMemoryCollection(new[]
+                {
+                    new KeyValuePair<string, string?>(HostDefaults.ContentRootKey, cwd),
+                });
+            }
 
             hostConfigBuilder.AddEnvironmentVariables(prefix: "DOTNET_");
             if (args is { Length: > 0 })

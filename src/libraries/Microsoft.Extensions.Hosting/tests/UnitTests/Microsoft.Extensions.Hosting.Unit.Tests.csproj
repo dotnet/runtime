@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
@@ -6,6 +6,13 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <AutoGenerateBindingRedirects Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">true</AutoGenerateBindingRedirects>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Disable parallelization because CreateDefaultBuilder_DoesNotChangeContentRootIfCurrentDirectoryIsWindowsSystemDirectory changes the CWD. -->
+    <!-- Once https://github.com/dotnet/runtime/issues/34090 is fixed, this should be moved out of process. -->
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs"
+         Link="Common\TestUtilities\System\DisableParallelization.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <Content Include="testroot\**\*" CopyToOutputDirectory="PreserveNewest" />
