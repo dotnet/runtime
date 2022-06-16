@@ -1756,12 +1756,6 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.TzSpecificLocalTimeToSystemTime.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.TzSpecificLocalTimeToSystemTime.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.VerifyVersionExW.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.VerifyVersionExW.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.VerSetConditionMask.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.VerSetConditionMask.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.VirtualAlloc_Ptr.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.VirtualAlloc_Ptr.cs</Link>
     </Compile>
