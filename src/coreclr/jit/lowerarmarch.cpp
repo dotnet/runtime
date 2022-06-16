@@ -731,16 +731,23 @@ void Lowering::LowerModPow2(GenTree* node)
     GenTree* dividend2 = comp->gtClone(dividend);
     BlockRange().InsertAfter(dividend, dividend2);
 
+    GenTreeIntCon* cns = comp->gtNewIconNode(divisorCnsValueMinusOne, type);
+    BlockRange().InsertAfter(dividend2, cns);
+
+    GenTree* const trueExpr = comp->gtNewOperNode(GT_AND, type, dividend, cns);
+    BlockRange().InsertAfter(cns, trueExpr);
+    LowerNode(trueExpr);
+
     if (divisorCnsValue == 2)
     {
         // {expr} % 2
-
-        GenTreeIntCon* cns = comp->gtNewIconNode(divisorCnsValueMinusOne, type);
-        BlockRange().InsertAfter(dividend2, cns);
-
-        GenTree* const trueExpr = comp->gtNewOperNode(GT_AND, type, dividend, cns);
-        BlockRange().InsertAfter(cns, trueExpr);
-        LowerNode(trueExpr);
+        // Logically turns into:
+        //     let a = {expr}
+        //     if a < 0 then -(a & 1) else (a & 1)
+        // which then turns into:
+        //     and   reg1, reg0, #1
+        //     cmp   reg0, #0
+        //     cneg  reg0, reg1, lt
 
         GenTreeIntCon* cnsZero = comp->gtNewIconNode(0, type);
         BlockRange().InsertAfter(trueExpr, cnsZero);
@@ -764,13 +771,6 @@ void Lowering::LowerModPow2(GenTree* node)
         //     negs  reg0, reg0
         //     and   reg0, reg0, #({cns} - 1)
         //     csneg reg0, reg1, reg0, mi
-
-        GenTreeIntCon* cns = comp->gtNewIconNode(divisorCnsValueMinusOne, type);
-        BlockRange().InsertAfter(dividend2, cns);
-
-        GenTree* const trueExpr = comp->gtNewOperNode(GT_AND, type, dividend, cns);
-        BlockRange().InsertAfter(cns, trueExpr);
-        LowerNode(trueExpr);
 
         GenTree* const neg = comp->gtNewOperNode(GT_NEG, type, dividend2);
         neg->gtFlags |= GTF_SET_FLAGS;
