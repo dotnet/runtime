@@ -51,6 +51,7 @@ namespace System.Formats.Tar
             : base(entryType, entryName, TarEntryFormat.Pax)
         {
             _header._prefix = string.Empty;
+            _header._extendedAttributes = new Dictionary<string, string>();
 
             Debug.Assert(_header._mTime != default);
             AddNewAccessAndChangeTimestampsIfNotExist(useMTime: true);
