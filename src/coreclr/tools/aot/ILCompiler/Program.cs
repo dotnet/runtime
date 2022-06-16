@@ -53,9 +53,8 @@ namespace ILCompiler
         private string _mapFileName;
         private string _metadataLogFileName;
         private bool _noMetadataBlocking;
-        private bool _disableReflection;
+        private string _reflectionData;
         private bool _completeTypesMetadata;
-        private bool _reflectedOnly;
         private bool _scanReflection;
         private bool _methodBodyFolding;
         private int _parallelism = Environment.ProcessorCount;
@@ -159,6 +158,8 @@ namespace ILCompiler
 
         private ArgumentSyntax ParseCommandLine(string[] args)
         {
+            var validReflectionDataOptions = new string[] { "all", "none" };
+
             IReadOnlyList<string> inputFiles = Array.Empty<string>();
             IReadOnlyList<string> referenceFiles = Array.Empty<string>();
 
@@ -201,9 +202,8 @@ namespace ILCompiler
                 syntax.DefineOption("map", ref _mapFileName, "Generate a map file");
                 syntax.DefineOption("metadatalog", ref _metadataLogFileName, "Generate a metadata log file");
                 syntax.DefineOption("nometadatablocking", ref _noMetadataBlocking, "Ignore metadata blocking for internal implementation details");
-                syntax.DefineOption("disablereflection", ref _disableReflection, "Disable generation of reflection metadata");
                 syntax.DefineOption("completetypemetadata", ref _completeTypesMetadata, "Generate complete metadata for types");
-                syntax.DefineOption("reflectedonly", ref _reflectedOnly, "Generate metadata only for reflected members");
+                syntax.DefineOption("reflectiondata", ref _reflectionData, $"Reflection data to generate (one of: {string.Join(", ", validReflectionDataOptions)})");
                 syntax.DefineOption("scanreflection", ref _scanReflection, "Scan IL for reflection patterns");
                 syntax.DefineOption("scan", ref _useScanner, "Use IL scanner to generate optimized code (implied by -O)");
                 syntax.DefineOption("noscan", ref _noScanner, "Do not use IL scanner to generate optimized code");
@@ -340,6 +340,11 @@ namespace ILCompiler
                 // + a rsp file that should work to directly run out of the zip file
 
                 Helpers.MakeReproPackage(_makeReproPath, _outputFilePath, args, argSyntax, new[] { "-r", "-m", "--rdxml", "--directpinvokelist" });
+            }
+
+            if (_reflectionData != null && Array.IndexOf(validReflectionDataOptions, _reflectionData) < 0)
+            {
+                Console.WriteLine($"Warning: option '{_reflectionData}' not recognized");
             }
 
             return argSyntax;
@@ -527,7 +532,7 @@ namespace ILCompiler
                                                                   InstructionSetSupportBuilder.GetNonSpecifiableInstructionSetsForArch(_targetArchitecture),
                                                                   _targetArchitecture);
 
-            bool supportsReflection = !_disableReflection && _systemModuleName == DefaultSystemModule;
+            bool supportsReflection = _reflectionData != "none" && _systemModuleName == DefaultSystemModule;
 
             //
             // Initialize type system context
@@ -758,8 +763,8 @@ namespace ILCompiler
                     metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.CompleteTypesOnly;
                 if (_scanReflection)
                     metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.ReflectionILScanning;
-                if (_reflectedOnly)
-                    metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.ReflectedMembersOnly;
+                if (_reflectionData == "all")
+                    metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts;
                 if (_rootDefaultAssemblies)
                     metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.RootDefaultAssemblies;
             }
