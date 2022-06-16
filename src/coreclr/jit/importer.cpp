@@ -1723,21 +1723,14 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
     genTreeOps oper = structVal->OperGet();
     switch (oper)
     {
-        // GT_RETURN and GT_MKREFANY don't capture the handle.
-        case GT_RETURN:
-            break;
+        // GT_MKREFANY is supported directly by args morphing.
         case GT_MKREFANY:
             alreadyNormalized = true;
             break;
 
         case GT_CALL:
-            structVal->AsCall()->gtRetClsHnd = structHnd;
-            makeTemp                         = true;
-            break;
-
         case GT_RET_EXPR:
-            structVal->AsRetExpr()->gtRetClsHnd = structHnd;
-            makeTemp                            = true;
+            makeTemp = true;
             break;
 
         case GT_FIELD:
@@ -1758,7 +1751,6 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
 
         case GT_OBJ:
         case GT_BLK:
-        case GT_ASG:
             // These should already have the appropriate type.
             assert(structVal->gtType == structType);
             alreadyNormalized = true;
@@ -1771,10 +1763,8 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
             break;
 
         case GT_CNS_VEC:
-        {
             assert(varTypeIsSIMD(structVal) && (structVal->gtType == structType));
             break;
-        }
 
 #ifdef FEATURE_SIMD
         case GT_SIMD:

@@ -894,7 +894,7 @@ void ClassLoader::LazyPopulateCaseInsensitiveHashTables()
 
             amTracker.SuppressRelease();
             pModule->SetAvailableClassCaseInsHash(pNewClassCaseInsHash);
-            FastInterlockDecrement((LONG*)&m_cUnhashedModules);
+            InterlockedDecrement((LONG*)&m_cUnhashedModules);
 
             _ASSERT(m_cUnhashedModules >= 0);
         }
