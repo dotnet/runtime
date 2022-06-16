@@ -97,8 +97,7 @@ namespace System.Formats.Tar.Tests
         [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void Extract_SymbolicLinkEntry_TargetInsideDirectory() => Extract_LinkEntry_TargetInsideDirectory_Internal(TarEntryType.SymbolicLink);
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68360", TestPlatforms.Android | TestPlatforms.LinuxBionic | TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [ConditionalFact(nameof(PlatformDetection.SupportsHardLinkCreation))]
         public void Extract_HardLinkEntry_TargetInsideDirectory() => Extract_LinkEntry_TargetInsideDirectory_Internal(TarEntryType.HardLink);
 
         private void Extract_LinkEntry_TargetInsideDirectory_Internal(TarEntryType entryType)
