@@ -2146,7 +2146,7 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
     const int32_t AddressProbingIncrement = 128 * 1024 * 1024;
     const int32_t AllocSizeProbingDecrement = 128 * 1024 * 1024;
 #else
-    // Smaller steps on ARM becuase we try hard finding a spare memory in a 128Mb
+    // Smaller steps on ARM because we try hard finding a spare memory in a 128Mb
     // distance from coreclr so e.g. all calls from corelib to coreclr could use relocs
     const int32_t AddressProbingIncrement = 8 * 1024 * 1024;
     const int32_t AllocSizeProbingDecrement = 64 * 1024 * 1024;
@@ -2178,7 +2178,7 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
     {
         // Try to allocate below the location of libcoreclr
 #ifndef TARGET_XARCH
-        // For arm for the "high addresss" case it only makes sense to try to reserve 128Mb
+        // For arm for the "high address" case it only makes sense to try to reserve 128Mb
         // and if it doesn't work - we'll reserve a full-sized region in a random location
         sizeOfAllocation = MinAllocSize;
 #endif
