@@ -302,9 +302,10 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
                 GenTree*  addOp2     = tgtAddr->AsOp()->gtGetOp2();
                 var_types addOp1Type = addOp1->TypeGet();
                 var_types addOp2Type = addOp2->TypeGet();
+
                 if (addOp1Type == TYP_BYREF || addOp1Type == TYP_REF)
                 {
-                    assert(addOp2Type != TYP_BYREF && addOp2Type != TYP_REF);
+                    assert(((addOp2Type != TYP_BYREF) || (addOp2->OperIs(GT_CNS_INT))) && (addOp2Type != TYP_REF));
                     tgtAddr        = addOp1;
                     simplifiedExpr = true;
                 }
