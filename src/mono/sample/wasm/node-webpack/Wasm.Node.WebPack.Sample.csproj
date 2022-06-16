@@ -1,13 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <WasmCopyAppZipToHelixTestDir>false</WasmCopyAppZipToHelixTestDir>
-    <WasmMainJSPath>main.js</WasmMainJSPath>
+    <WasmMainJSPath>main.mjs</WasmMainJSPath>
   </PropertyGroup>
-
-  <ItemGroup>
-    <WasmExtraFilesToDeploy Include="index.html" />
-  </ItemGroup>
-
 
   <Target Name="CopyRelinkedPackage" AfterTargets="WasmBuildApp" DependsOnTargets="Build" Inputs="$(WasmAppDir)/dotnet.js;
           $(WasmAppDir)/dotnet.wasm;
@@ -23,13 +18,11 @@
     <Touch Files="bin/dotnet-runtime/.npm-stamp" AlwaysCreate="true" />
   </Target>
 
-  <Target Name="WebPack" AfterTargets="WasmBuildApp" DependsOnTargets="CopyRelinkedPackage">
+  <Target Name="WebPack" AfterTargets="BuildSampleInTree" DependsOnTargets="CopyRelinkedPackage">
     <Exec Command="npm install" WorkingDirectory="$(MSBuildProjectDirectory)"/>
     <Exec Command="npm run webpack -- --env Configuration=$(Configuration) --env WasmAppDir=$(WasmAppDir)" WorkingDirectory="$(MSBuildProjectDirectory)"/>
   </Target>
 
-  <Target Name="RunSample" DependsOnTargets="WebPack">
-    <Exec Command="dotnet serve --directory $(WasmAppDir)" WorkingDirectory="$(MSBuildProjectDirectory)"/>
-  </Target>
+  <Target Name="RunSample" DependsOnTargets="RunSampleWithNode" />
 
 </Project>

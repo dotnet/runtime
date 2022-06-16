@@ -109,8 +109,8 @@
       <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true' and '$(RunAOTCompilationAfterBuild)' == 'true'">true</WasmBuildNative>
 
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and @(NativeFileReference->Count()) > 0" >true</WasmBuildNative>
-      <!-- need to re-link dotnet.js when targeting ES6 -->
-      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmEnableES6)' == 'true'" >true</WasmBuildNative>
+      <!-- need to re-link dotnet.js when not targeting ES6 -->
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmEnableES6)' == 'false'" >true</WasmBuildNative>
 
       <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
     </PropertyGroup>
@@ -120,8 +120,8 @@
       <!-- AOT==true overrides WasmBuildNative -->
       <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and @(NativeFileReference->Count()) > 0" >true</WasmBuildNative>
-      <!-- need to re-link dotnet.js when targeting ES6 -->
-      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmEnableES6)' == 'true'" >true</WasmBuildNative>
+      <!-- need to re-link dotnet.js when not targeting ES6 -->
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmEnableES6)' == 'false'" >true</WasmBuildNative>
 
       <!-- not aot, not trimmed app, no reason to relink -->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(PublishTrimmed)' != 'true'">false</WasmBuildNative>
@@ -196,7 +196,7 @@
 
       <_EmccCommonFlags Include="$(_DefaultEmccFlags)" />
       <_EmccCommonFlags Include="$(EmccFlags)" />
-      <_EmccCommonFlags Include="-s EXPORT_ES6=1"                   Condition="'$(WasmEnableES6)' == 'true'" />
+      <_EmccCommonFlags Include="-s EXPORT_ES6=1"                   Condition="'$(WasmEnableES6)' != 'false'" />
       <_EmccCommonFlags Include="-g"                                Condition="'$(WasmNativeStrip)' == 'false'" />
       <_EmccCommonFlags Include="-v"                                Condition="'$(EmccVerbose)' != 'false'" />
       <_EmccCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0"   Condition="'$(WasmExceptionHandling)' == 'false'" />
@@ -216,7 +216,7 @@
       <_EmccCFlags Include="-DDRIVER_GEN=1"                    Condition="'$(_WasmShouldAOT)' == 'true'" />
       <_EmccCFlags Include="-DINVARIANT_GLOBALIZATION=1"       Condition="'$(InvariantGlobalization)' == 'true'" />
       <_EmccCFlags Include="-DLINK_ICALLS=1"                   Condition="'$(WasmLinkIcalls)' == 'true'" />
-      <_EmccCFlags Include="-DENABLE_AOT_PROFILER=1"           Condition="'$(WasmProfilers)' == 'aot'" />
+      <_EmccCFlags Include="-DENABLE_AOT_PROFILER=1"           Condition="$(WasmProfilers.Contains('aot'))" />
       <_EmccCFlags Include="-DCORE_BINDINGS" />
       <_EmccCFlags Include="-DGEN_PINVOKE=1" />
       <_EmccCFlags Include="-emit-llvm" />
@@ -253,8 +253,8 @@
       <JSFileType Include="extpost.js" Kind="extern-post-js" />
 
       <_WasmExtraJSFile Include="$(_WasmRuntimePackSrcDir)\*.%(JSFileType.Identity)"     Kind="%(JSFileType.Kind)" />
-      <_WasmExtraJSFile Include="$(_WasmRuntimePackSrcDir)\cjs\*.%(JSFileType.Identity)" Kind="%(JSFileType.Kind)" Condition="'$(WasmEnableES6)' != 'true'" />
-      <_WasmExtraJSFile Include="$(_WasmRuntimePackSrcDir)\es6\*.%(JSFileType.Identity)" Kind="%(JSFileType.Kind)" Condition="'$(WasmEnableES6)' == 'true'" />
+      <_WasmExtraJSFile Include="$(_WasmRuntimePackSrcDir)\cjs\*.%(JSFileType.Identity)" Kind="%(JSFileType.Kind)" Condition="'$(WasmEnableES6)' == 'false'" />
+      <_WasmExtraJSFile Include="$(_WasmRuntimePackSrcDir)\es6\*.%(JSFileType.Identity)" Kind="%(JSFileType.Kind)" Condition="'$(WasmEnableES6)' != 'false'" />
 
       <_WasmNativeFileForLinking Include="@(NativeFileReference)" />
 

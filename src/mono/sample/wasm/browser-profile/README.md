@@ -12,7 +12,7 @@
 2. Initialize the profiler in the main javascript (e.g. main.js)
 
 ```
-var Module = {
+await createDotnetRuntime(() => ({
   onConfigLoaded: () => {
     ...
 

@@ -16,7 +16,7 @@ const DotnetSupportLib = {
     $DOTNET__postset: `
 let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require, updateGlobalBufferAndViews};
 if (ENVIRONMENT_IS_NODE) {
-    __dotnet_replacements.requirePromise = import('module').then(mod => {
+    __dotnet_replacements.requirePromise = import(/* webpackIgnore: true */'module').then(mod => {
         const require = mod.createRequire(import.meta.url);
         const path = require('path');
         const url = require('url');

@@ -46,6 +46,7 @@
   <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\console-node-ts\Wasm.Console.Node.TS.Sample.csproj" />
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-webpack\Wasm.Browser.WebPack.Sample.csproj" />
+    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\node-webpack\Wasm.Node.WebPack.Sample.csproj" />
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-nextjs\Wasm.Browser.NextJs.Sample.csproj" />
 
     <!-- These tests are completely disabled on wasm -->

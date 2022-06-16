@@ -155,6 +155,9 @@ async function mono_wasm_pre_init(): Promise<void> {
             throw err;
         }
     }
+    if (!moduleExt.configSrc && !moduleExt.config) {
+        Module.print("MONO_WASM: configSrc nor config was specified");
+    }
 
     Module.removeRunDependency("mono_wasm_pre_init");
 }
@@ -165,6 +168,9 @@ function mono_wasm_after_runtime_initialized(): void {
     }
     finalize_assets(Module.config);
     finalize_startup(Module.config);
+    if (!ctx || !ctx.loaded_files || ctx.loaded_files.length == 0) {
+        Module.print("MONO_WASM: no files were loaded into runtime");
+    }
 }
 
 function _print_error(message: string, err: any): void {

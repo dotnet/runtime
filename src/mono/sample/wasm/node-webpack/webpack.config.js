@@ -12,6 +12,7 @@ module.exports = (env) => {
         },
         mode: "production",// int webpack 5.68.0 devtools are not good with es6 module as library
         entry: './app.js',
+        target: 'node14',
         experiments: {
             outputModule: true,
         },
