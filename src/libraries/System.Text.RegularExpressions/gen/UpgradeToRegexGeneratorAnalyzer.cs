@@ -255,7 +255,7 @@ namespace System.Text.RegularExpressions.Generator
         /// </summary>
         private static bool ProjectUsesTopLevelStatements(Compilation compilation)
         {
-            var programType = compilation.GetTypeByMetadataName("Program");
+            INamedTypeSymbol? programType = compilation.GetTypeByMetadataName("Program");
             return programType is not null && !programType.GetMembers("<Main>$").IsEmpty;
         }
 
