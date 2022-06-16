@@ -1479,17 +1479,17 @@ public:
         if ((probeType == Compiler::GDVProbeType::ClassProfile) ||
             (probeType == Compiler::GDVProbeType::MethodAndClassProfile))
         {
-            CreateHistogramEntriesIfNecessary(compiler, call, true /* isTypeHistogram */);
+            CreateHistogramSchemaEntries(compiler, call, true /* isTypeHistogram */);
         }
 
         if ((probeType == Compiler::GDVProbeType::MethodProfile) ||
             (probeType == Compiler::GDVProbeType::MethodAndClassProfile))
         {
-            CreateHistogramEntriesIfNecessary(compiler, call, false /* isTypeHistogram */);
+            CreateHistogramSchemaEntries(compiler, call, false /* isTypeHistogram */);
         }
     }
 
-    void CreateHistogramEntriesIfNecessary(Compiler* compiler, GenTreeCall* call, bool isTypeHistogram)
+    void CreateHistogramSchemaEntries(Compiler* compiler, GenTreeCall* call, bool isTypeHistogram)
     {
         ICorJitInfo::PgoInstrumentationSchema schemaElem = {};
         schemaElem.Count                                 = 1;

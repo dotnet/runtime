@@ -846,11 +846,6 @@ private:
                     }
                 }
 
-                // Clear the inline candidate info (may be non-null since
-                // it's a union field used for other things by virtual
-                // stubs)
-                call->gtInlineCandidateInfo = nullptr;
-
                 context = MAKE_METHODCONTEXT(methodHnd);
             }
 
