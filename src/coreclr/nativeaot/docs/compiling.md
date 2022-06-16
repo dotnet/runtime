@@ -4,7 +4,7 @@ This document explains how to compile and publish your project using Native AOT 
 
 ## Add ILCompiler package reference
 
-To use Native AOT with your project, you need to add a reference to the ILCompiler NuGet package containing the Native AOT compiler and runtime.
+To use Native AOT with your project, you need to add `<PublishAot>true</PublishAot>` to your project file. Nuget package for Native AOT compiler and runtime would be included automatically.
 
 Once you have added the package sources, add a reference to the ILCompiler package either by running
 ```bash
