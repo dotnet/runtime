@@ -2,21 +2,8 @@
 
 This document explains how to compile and publish your project using Native AOT toolchain. First, please _ensure that [pre-requisites](prerequisites.md) are installed_. If you are starting a new project, you may find the [HelloWorld sample](https://github.com/dotnet/samples/tree/main/core/nativeaot/HelloWorld/README.md) directions useful.
 
-## Add ILCompiler package reference
+Please consult [documentation](https://github.com/dotnet/docs/blob/main/docs/core/deploying/native-aot.md) for instructions how to compile application.
 
-To use Native AOT with your project, you need to add `<PublishAot>true</PublishAot>` to your project file. Nuget package for Native AOT compiler and runtime would be included automatically.
-
-Once you have added the package sources, add a reference to the ILCompiler package either by running
-```bash
-> dotnet add package Microsoft.DotNet.ILCompiler -v 7.0.0-*
-```
-
-or by adding the following element to the project file:
-```xml
-  <ItemGroup>
-    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="7.0.0-*" />
-  </ItemGroup>
-```
 
 ## Using daily builds
 
@@ -32,6 +19,18 @@ If your project has no `nuget.config` file, it may be created by running
 ```
 
 from the project's root directory. New package sources must be added after the `<clear />` element if you decide to keep it.
+
+Once you have added the package sources, add a reference to the ILCompiler package either by running
+```bash
+> dotnet add package Microsoft.DotNet.ILCompiler -v 7.0.0-*
+```
+
+or by adding the following element to the project file:
+```xml
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="7.0.0-*" />
+  </ItemGroup>
+```
 
 ## Compile and publish your app
 
