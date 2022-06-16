@@ -21,14 +21,14 @@ namespace Microsoft.WebAssembly.Diagnostics
         private IList<string> urlSymbolServerList;
         private HashSet<SessionId> sessions = new HashSet<SessionId>();
         protected Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
-        private const string sPauseOnUncaught = "pause_on_uncaught";
-        private const string sPauseOnCaught = "pause_on_caught";
 
         public static HttpClient HttpClient => new HttpClient();
 
         // index of the runtime in a same JS page/process
         public int RuntimeId { get; private init; }
         public bool JustMyCode { get; private set; }
+        private PauseOnExceptionsKind _defaultPauseOnExceptions { get; set; }
+
         protected readonly ProxyOptions _options;
 
         public MonoProxy(ILogger logger, IList<string> urlSymbolServerList, int runtimeId = 0, string loggerId = "", ProxyOptions options = null) : base(logger, loggerId)
@@ -36,6 +36,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.urlSymbolServerList = urlSymbolServerList ?? new List<string>();
             RuntimeId = runtimeId;
             _options = options;
+            _defaultPauseOnExceptions = PauseOnExceptionsKind.Unset;
         }
 
         internal ExecutionContext GetContext(SessionId sessionId)
@@ -160,54 +161,17 @@ namespace Microsoft.WebAssembly.Diagnostics
                             bool? is_default = aux_data["isDefault"]?.Value<bool>();
                             if (is_default == true)
                             {
-                                await OnDefaultContext(sessionId, new ExecutionContext(new MonoSDBHelper (this, logger, sessionId), id, aux_data), token);
+                                await OnDefaultContext(sessionId, new ExecutionContext(new MonoSDBHelper (this, logger, sessionId), id, aux_data, _defaultPauseOnExceptions), token);
                             }
                         }
                         return true;
                     }
 
-                case "Runtime.exceptionThrown":
-                    {
-                        // Don't process events from sessions we aren't tracking
-                        if (!contexts.TryGetValue(sessionId, out ExecutionContext context))
-                            return false;
-
-                        if (!context.IsRuntimeReady)
-                        {
-                            string exceptionError = args?["exceptionDetails"]?["exception"]?["value"]?.Value<string>();
-                            if (exceptionError == sPauseOnUncaught || exceptionError == sPauseOnCaught)
-                                return true;
-                        }
-                        break;
-                    }
-
                 case "Debugger.paused":
                     {
                         // Don't process events from sessions we aren't tracking
-                        if (!contexts.TryGetValue(sessionId, out ExecutionContext context))
+                        if (!contexts.ContainsKey(sessionId))
                             return false;
-
-                        if (!context.IsRuntimeReady)
-                        {
-                            string reason = args?["reason"]?.Value<string>();
-                            if (reason == "exception")
-                            {
-                                string exceptionError = args?["data"]?["value"]?.Value<string>();
-                                if (exceptionError == sPauseOnUncaught)
-                                {
-                                    await SendResume(sessionId, token);
-                                    if (context.PauseOnExceptions == PauseOnExceptionsKind.Unset)
-                                        context.PauseOnExceptions = PauseOnExceptionsKind.Uncaught;
-                                    return true;
-                                }
-                                if (exceptionError == sPauseOnCaught)
-                                {
-                                    await SendResume(sessionId, token);
-                                    context.PauseOnExceptions = PauseOnExceptionsKind.All;
-                                    return true;
-                                }
-                            }
-                        }
 
                         //TODO figure out how to stich out more frames and, in particular what happens when real wasm is on the stack
                         string top_func = args?["callFrames"]?[0]?["functionName"]?.Value<string>();
@@ -291,6 +255,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             Result res = await SendMonoCommand(sessionId, MonoCommands.IsRuntimeReady(RuntimeId), token);
             return res.Value?["result"]?["value"]?.Value<bool>() ?? false;
         }
+        private static PauseOnExceptionsKind GetPauseOnExceptionsStatusFromString(string state)
+        {
+            PauseOnExceptionsKind pauseOnException;
+            if (Enum.TryParse(state, true, out pauseOnException))
+                return pauseOnException;
+            return PauseOnExceptionsKind.Unset;
+        }
 
         protected override async Task<bool> AcceptCommand(MessageId id, JObject parms, CancellationToken token)
         {
@@ -302,7 +273,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                 await AttachToTarget(id, token);
 
             if (!contexts.TryGetValue(id, out ExecutionContext context))
+            {
+                if  (method == "Debugger.setPauseOnExceptions")
+                {
+                    string state = args["state"].Value<string>();
+                    var pauseOnException = GetPauseOnExceptionsStatusFromString(state);
+                    if (pauseOnException != PauseOnExceptionsKind.Unset)
+                        _defaultPauseOnExceptions = pauseOnException;
+                }
                 return false;
+            }
 
             switch (method)
             {
@@ -513,13 +493,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case "Debugger.setPauseOnExceptions":
                     {
                         string state = args["state"].Value<string>();
-                        context.PauseOnExceptions = state switch
-                        {
-                            "all"      => PauseOnExceptionsKind.All,
-                            "uncaught" => PauseOnExceptionsKind.Uncaught,
-                            "none"     => PauseOnExceptionsKind.None,
-                            _          => PauseOnExceptionsKind.Unset
-                        };
+                        var pauseOnException = GetPauseOnExceptionsStatusFromString(state);
+                        if (pauseOnException != PauseOnExceptionsKind.Unset)
+                            context.PauseOnExceptions = pauseOnException;
 
                         if (context.IsRuntimeReady)
                             await context.SdbAgent.EnableExceptions(context.PauseOnExceptions, token);
@@ -1784,23 +1760,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             // see https://github.com/mono/mono/issues/19549 for background
             if (sessions.Add(sessionId))
             {
-                string checkUncaughtExceptions = string.Empty;
-                string checkCaughtExceptions = string.Empty;
-
-                //we only need this check if it's a non-vs debugging
-                if (sessionId == SessionId.Null)
-                {
-                    if (!contexts.TryGetValue(sessionId, out ExecutionContext context) || context.PauseOnExceptions == PauseOnExceptionsKind.Unset)
-                    {
-                        checkUncaughtExceptions = $"throw \"{sPauseOnUncaught}\";";
-                        checkCaughtExceptions = $"try {{throw \"{sPauseOnCaught}\";}} catch {{}}";
-                    }
-                }
-
                 await SendMonoCommand(sessionId, new MonoCommands("globalThis.dotnetDebugger = true"), token);
                 Result res = await SendCommand(sessionId,
                     "Page.addScriptToEvaluateOnNewDocument",
-                    JObject.FromObject(new { source = $"globalThis.dotnetDebugger = true; delete navigator.constructor.prototype.webdriver; {checkCaughtExceptions} {checkUncaughtExceptions}" }),
+                    JObject.FromObject(new { source = $"globalThis.dotnetDebugger = true; delete navigator.constructor.prototype.webdriver;" }),
                     token);
 
                 if (sessionId != SessionId.Null && !res.IsOk)

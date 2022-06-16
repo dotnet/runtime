@@ -2215,6 +2215,7 @@ public:
     {
         SuspendForGC,
         SuspendForDebugger,
+        ThreadAbort,
     };
 
     bool InjectActivation(ActivationReason reason);
