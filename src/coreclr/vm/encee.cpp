@@ -1358,7 +1358,7 @@ PTR_CBYTE EnCSyncBlockInfo::ResolveOrAllocateField(OBJECTREF thisPointer, EnCFie
 
         // put at front of list so the list is in order of most recently added
         pEntry->m_pNext = m_pList;
-        if (FastInterlockCompareExchangePointer(&m_pList, pEntry, pEntry->m_pNext) == pEntry->m_pNext)
+        if (InterlockedCompareExchangeT(&m_pList, pEntry, pEntry->m_pNext) == pEntry->m_pNext)
             break;
 
         // There was a race and another thread modified the list here, so we need to try again

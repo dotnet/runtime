@@ -1528,7 +1528,7 @@ void STDMETHODCALLTYPE EEShutDown(BOOL fIsDllUnloading)
 
     if (!fIsDllUnloading)
     {
-        if (FastInterlockIncrement(&OnlyOne) != 0)
+        if (InterlockedIncrement(&OnlyOne) != 0)
         {
             // I'm in a regular shutdown -- but another thread got here first.
             // It's a race if I return from here -- I'll call ExitProcess next, and

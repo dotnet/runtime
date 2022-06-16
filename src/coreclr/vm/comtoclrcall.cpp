@@ -868,7 +868,7 @@ void ComCallMethodDesc::InitRuntimeNativeInfo(MethodDesc *pStubMD)
     comCallMDWriterHolder.GetRW()->m_dwSlotInfo = (wSourceSlotEDX | (wStubStackSlotCount << 16));
     if (pwStubStackSlotOffsets != NULL)
     {
-        if (FastInterlockCompareExchangePointer(&comCallMDWriterHolder.GetRW()->m_pwStubStackSlotOffsets, pwStubStackSlotOffsets.GetValue(), NULL) == NULL)
+        if (InterlockedCompareExchangeT(&comCallMDWriterHolder.GetRW()->m_pwStubStackSlotOffsets, pwStubStackSlotOffsets.GetValue(), NULL) == NULL)
         {
             pwStubStackSlotOffsets.SuppressRelease();
         }

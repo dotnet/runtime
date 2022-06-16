@@ -236,7 +236,7 @@ namespace
                 ExtObjCxtCache* instMaybe = new ExtObjCxtCache();
 
                 // Attempt to set the global instance.
-                if (NULL != FastInterlockCompareExchangePointer(&g_Instance, instMaybe, NULL))
+                if (NULL != InterlockedCompareExchangeT(&g_Instance, instMaybe, NULL))
                     delete instMaybe;
             }
 
