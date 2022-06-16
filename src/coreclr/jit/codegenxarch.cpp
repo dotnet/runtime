@@ -517,22 +517,28 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 
             if (vecCon->IsAllBitsSet())
             {
+                if ((attr != EA_32BYTE) || compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                {
 #if defined(FEATURE_SIMD)
-                emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, attr, targetReg, targetReg, targetReg);
+                    emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, attr, targetReg, targetReg, targetReg);
 #else
-                emit->emitIns_R_R(INS_pcmpeqd, attr, targetReg, targetReg);
+                    emit->emitIns_R_R(INS_pcmpeqd, attr, targetReg, targetReg);
 #endif // FEATURE_SIMD
-                break;
+                    break;
+                }
             }
 
             if (vecCon->IsZero())
             {
+                if ((attr != EA_32BYTE) || compiler->compOpportunisticallyDependsOn(InstructionSet_AVX))
+                {
 #if defined(FEATURE_SIMD)
-                emit->emitIns_SIMD_R_R_R(INS_xorps, attr, targetReg, targetReg, targetReg);
+                    emit->emitIns_SIMD_R_R_R(INS_xorps, attr, targetReg, targetReg, targetReg);
 #else
-                emit->emitIns_R_R(INS_xorps, attr, targetReg, targetReg);
+                    emit->emitIns_R_R(INS_xorps, attr, targetReg, targetReg);
 #endif // FEATURE_SIMD
-                break;
+                    break;
+                }
             }
 
             switch (tree->TypeGet())
@@ -6724,11 +6730,14 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
             break;
 
         case GenIntCastDesc::CHECK_INT_RANGE:
-            GetEmitter()->emitIns_R_I(INS_cmp, EA_8BYTE, reg, INT32_MAX);
-            genJumpToThrowHlpBlk(EJ_jg, SCK_OVERFLOW);
-            GetEmitter()->emitIns_R_I(INS_cmp, EA_8BYTE, reg, INT32_MIN);
-            genJumpToThrowHlpBlk(EJ_jl, SCK_OVERFLOW);
-            break;
+        {
+            // Emit "if ((long)(int)x != x) goto OVERFLOW"
+            const regNumber regTmp = cast->GetSingleTempReg();
+            GetEmitter()->emitIns_Mov(INS_movsxd, EA_8BYTE, regTmp, reg, true);
+            GetEmitter()->emitIns_R_R(INS_cmp, EA_8BYTE, reg, regTmp);
+            genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);
+        }
+        break;
 #endif
 
         default:
