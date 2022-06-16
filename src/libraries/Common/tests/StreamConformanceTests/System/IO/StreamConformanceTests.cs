@@ -408,7 +408,7 @@ namespace System.IO.Tests
                 }
                 else
                 {
-                    Assert.Throws<NotSupportedException>(() => { stream.SetLength(-1); });
+                    Assert.Throws<NotSupportedException>(() => { stream.SetLength(0); });
                 }
             }
             else
