@@ -10,22 +10,17 @@ namespace Mono.Linker
 	public class OverrideInformation
 	{
 		readonly ITryResolveMetadata resolver;
-		readonly OverridePair _pair;
 
 		public OverrideInformation (MethodDefinition @base, MethodDefinition @override, ITryResolveMetadata resolver, InterfaceImplementation? matchingInterfaceImplementation = null)
 		{
-			_pair = new OverridePair (@base, @override);
+			Base = @base;
+			Override = @override;
 			MatchingInterfaceImplementation = matchingInterfaceImplementation;
 			this.resolver = resolver;
 		}
 
-		public readonly record struct OverridePair (MethodDefinition Base, MethodDefinition Override)
-		{
-			public bool IsStaticInterfaceMethodPair () => Base.DeclaringType.IsInterface && Base.IsStatic && Override.IsStatic;
-		}
-
-		public MethodDefinition Base { get => _pair.Base; }
-		public MethodDefinition Override { get => _pair.Override; }
+		public MethodDefinition Base { get; }
+		public MethodDefinition Override { get; }
 		public InterfaceImplementation? MatchingInterfaceImplementation { get; }
 
 		public bool IsOverrideOfInterfaceMember {
@@ -48,7 +43,5 @@ namespace Mono.Linker
 				return Base.DeclaringType;
 			}
 		}
-
-		public bool IsStaticInterfaceMethodPair => _pair.IsStaticInterfaceMethodPair ();
 	}
 }

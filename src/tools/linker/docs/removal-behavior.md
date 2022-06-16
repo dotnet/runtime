@@ -42,7 +42,7 @@ public class Program
 
 ### Method call on a constrained type parameter
 
-On a call to a static abstract interface method that is accessed through a constrained type parameter, the interface method is kept, as is every implementation method on every kept type.
+On a call to a static abstract interface method that is accessed through a constrained type parameter, the interface method is rooted, as well as every implementation method on every type.
 
 Example:
 

@@ -436,9 +436,6 @@ namespace Mono.Linker
 			return public_api.Contains (provider);
 		}
 
-		/// <summary>
-		/// Returns an IEnumerable of the methods that override this method. Note this is different than <see cref="MethodDefinition.Overrides"/>, which returns the MethodImpl's
-		/// </summary>
 		public IEnumerable<OverrideInformation>? GetOverrides (MethodDefinition method)
 		{
 			return TypeMapInfo.GetOverrides (method);
