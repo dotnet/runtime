@@ -20,11 +20,6 @@ namespace System.Net.Security
             throw new PlatformNotSupportedException();
         }
 
-        internal static string QueryContextAssociatedName(SafeDeleteContext? securityContext)
-        {
-            throw new PlatformNotSupportedException(SR.net_nego_server_not_supported);
-        }
-
         internal static void ValidateImpersonationLevel(TokenImpersonationLevel impersonationLevel)
         {
             throw new PlatformNotSupportedException();

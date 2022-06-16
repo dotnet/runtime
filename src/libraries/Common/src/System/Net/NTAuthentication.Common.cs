@@ -95,21 +95,6 @@ namespace System.Net
             }
         }
 
-        internal string? AssociatedName
-        {
-            get
-            {
-                if (!(IsValidContext && IsCompleted))
-                {
-                    throw new Win32Exception((int)SecurityStatusPalErrorCode.InvalidHandle);
-                }
-
-                string? name = NegotiateStreamPal.QueryContextAssociatedName(_securityContext!);
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"NTAuthentication: The context is associated with [{name}]");
-                return name;
-            }
-        }
-
         //
         // This overload does not attempt to impersonate because the caller either did it already or the original thread context is still preserved.
         //

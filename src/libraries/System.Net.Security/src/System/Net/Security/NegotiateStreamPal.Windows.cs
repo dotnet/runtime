@@ -21,7 +21,7 @@ namespace System.Net.Security
         internal static IIdentity GetIdentity(NTAuthentication context)
         {
             IIdentity? result;
-            string name = context.IsServer ? context.AssociatedName! : context.Spn!;
+            string? name = context.IsServer ? null : context.Spn;
             string protocol = context.ProtocolName;
 
             if (context.IsServer)
@@ -29,12 +29,14 @@ namespace System.Net.Security
                 SecurityContextTokenHandle? token = null;
                 try
                 {
-                    SecurityStatusPal status;
-                    SafeDeleteContext? securityContext = context.GetContext(out status);
+                    SafeDeleteContext? securityContext = context.GetContext(out SecurityStatusPal status);
                     if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
                     {
                         throw new Win32Exception((int)SecurityStatusAdapterPal.GetInteropFromSecurityStatusPal(status));
                     }
+
+                    name = QueryContextAssociatedName(securityContext!);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(context, $"NTAuthentication: The context is associated with [{name}]");
 
                     // This will return a client token when conducted authentication on server side.
                     // This token can be used for impersonation. We use it to create a WindowsIdentity and hand it out to the server app.
@@ -64,7 +66,7 @@ namespace System.Net.Security
             }
 
             // On the client we don't have access to the remote side identity.
-            result = new GenericIdentity(name, protocol);
+            result = new GenericIdentity(name ?? string.Empty, protocol);
             return result;
         }
 
