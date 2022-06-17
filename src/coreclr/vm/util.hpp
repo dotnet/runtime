@@ -81,7 +81,6 @@ BOOL inline FitsInU4(unsigned __int64 val)
 
 #if defined(DACCESS_COMPILE)
 #define FastInterlockedCompareExchange InterlockedCompareExchange
-#define FastInterlockedCompareExchange64 InterlockedCompareExchange64
 #define FastInterlockedCompareExchangeAcquire InterlockedCompareExchangeAcquire
 #define FastInterlockedCompareExchangeRelease InterlockedCompareExchangeRelease
 #else
@@ -100,21 +99,6 @@ FORCEINLINE LONG  FastInterlockedCompareExchange(
     else
     {
         return InterlockedCompareExchange(Destination, Exchange, Comperand);
-    }
-}
-
-FORCEINLINE LONGLONG  FastInterlockedCompareExchange64(
-    IN OUT LONGLONG volatile *Destination,
-    IN LONGLONG Exchange,
-    IN LONGLONG Comperand)
-{
-    if (g_arm64_atomics_present)
-    {
-        return (LONGLONG) __casal64((unsigned __int64*) Destination, (unsigned  __int64)Comperand, (unsigned __int64)Exchange);
-    }
-    else
-    {
-        return InterlockedCompareExchange64(Destination, Exchange, Comperand);
     }
 }
 
