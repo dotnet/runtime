@@ -48,7 +48,7 @@ namespace System.Formats.Tar
         /// </list>
         /// </remarks>
         public PaxTarEntry(TarEntryType entryType, string entryName)
-            : base(entryType, entryName, TarEntryFormat.Pax)
+            : base(entryType, entryName, TarEntryFormat.Pax, isGea: false)
         {
             _header._prefix = string.Empty;
             _header._extendedAttributes = new Dictionary<string, string>();
@@ -87,7 +87,7 @@ namespace System.Formats.Tar
         /// </list>
         /// </remarks>
         public PaxTarEntry(TarEntryType entryType, string entryName, IEnumerable<KeyValuePair<string, string>> extendedAttributes)
-            : base(entryType, entryName, TarEntryFormat.Pax)
+            : base(entryType, entryName, TarEntryFormat.Pax, isGea: false)
         {
             ArgumentNullException.ThrowIfNull(extendedAttributes);
 
