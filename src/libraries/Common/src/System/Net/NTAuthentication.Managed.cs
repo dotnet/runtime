@@ -498,7 +498,7 @@ namespace System.Net
             {
                 IntPtr cbtData = _channelBinding.DangerousGetHandle();
                 int cbtDataSize = _channelBinding.Size;
-                int written = MD5.HashData(new Span<byte>((void *)cbtData, cbtDataSize), hashBuffer);
+                int written = MD5.HashData(new Span<byte>((void*)cbtData, cbtDataSize), hashBuffer);
                 Debug.Assert(written == MD5.HashSizeInBytes);
             }
             else
