@@ -198,7 +198,9 @@ namespace Microsoft.Extensions.Hosting
         internal static void ApplyDefaultHostConfiguration(IConfigurationBuilder hostConfigBuilder, string[]? args)
         {
             // If we're running anywhere other than C:\Windows\system32, we default to using the CWD for the ContentRoot.
-            // However, since many things like Windows services and MSIX
+            // However, since many things like Windows services and MSIX installers have C:\Windows\system32 as there CWD which is not likely
+            // to really be the home for things like appsettings.json, we skip changing the ContentRoot in that case. The non-"default" initial
+            // value for ContentRoot is AppContext.BaseDirectory (e.g. the executable path) which probably makes more sense than the system32.
 
             // In my testing, both Environment.CurrentDirectory and Environment.GetFolderPath(Environment.SpecialFolder.System) return the path without
             // any trailing directory separator characters. I'm not even sure the casing can ever be different from these APIs, but I it makes sense to
