@@ -8,8 +8,8 @@ namespace Microsoft.Extensions.Hosting
 {
     public static partial class SystemdHostBuilderExtensions
     {
-        public static Microsoft.Extensions.DependencyInjection.IServiceCollection UseSystemd(this Microsoft.Extensions.DependencyInjection.IServiceCollection services) { throw null; }
-        public static Microsoft.Extensions.Hosting.IHostBuilder AddSystemd(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddSystemd(this Microsoft.Extensions.DependencyInjection.IServiceCollection services) { throw null; }
+        public static Microsoft.Extensions.Hosting.IHostBuilder UseSystemd(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder) { throw null; }
     }
 }
 namespace Microsoft.Extensions.Hosting.Systemd
