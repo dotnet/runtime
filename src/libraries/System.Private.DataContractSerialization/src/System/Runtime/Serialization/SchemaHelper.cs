@@ -9,9 +9,38 @@ using System.Collections.Generic;
 
 namespace System.Runtime.Serialization
 {
+#if smolloy_add_schema_import
+    using SchemaObjectDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, SchemaObjectInfo>;
+
+    internal sealed class SchemaObjectInfo
+    {
+        internal XmlSchemaType? _type;
+        internal XmlSchemaElement? _element;
+        internal XmlSchema? _schema;
+        internal List<XmlSchemaType>? _knownTypes;
+
+        internal SchemaObjectInfo(XmlSchemaType? type, XmlSchemaElement? element, XmlSchema? schema, List<XmlSchemaType>? knownTypes)
+        {
+            _type = type;
+            _element = element;
+            _schema = schema;
+            _knownTypes = knownTypes;
+        }
+    }
+
+    internal class SchemaTypePlaceholder
+    {
+        private XmlQualifiedName _stableName;
+
+        public SchemaTypePlaceholder(XmlQualifiedName stableName)
+        {
+            _stableName = stableName;
+        }
+    }
+#endif
+
     internal static class SchemaHelper
     {
-
         internal static bool NamespacesEqual(string? ns1, string? ns2)
         {
             if (ns1 == null || ns1.Length == 0)
@@ -124,5 +153,82 @@ namespace System.Runtime.Serialization
                 import.Namespace = ns;
             schema.Includes.Add(import);
         }
+
+#if smolloy_add_schema_import
+        internal static XmlSchemaType? GetSchemaType(SchemaObjectDictionary schemaInfo, XmlQualifiedName typeName)
+        {
+            SchemaObjectInfo? schemaObjectInfo;
+            if (schemaInfo.TryGetValue(typeName, out schemaObjectInfo))
+            {
+                return schemaObjectInfo._type;
+            }
+            return null;
+        }
+
+        internal static XmlSchema? GetSchemaWithType(SchemaObjectDictionary schemaInfo, XmlSchemaSet schemas, XmlQualifiedName typeName)
+        {
+            SchemaObjectInfo? schemaObjectInfo;
+            if (schemaInfo.TryGetValue(typeName, out schemaObjectInfo))
+            {
+                if (schemaObjectInfo._schema != null)
+                    return schemaObjectInfo._schema;
+            }
+            ICollection currentSchemas = schemas.Schemas();
+            string ns = typeName.Namespace;
+            foreach (XmlSchema schema in currentSchemas)
+            {
+                if (NamespacesEqual(ns, schema.TargetNamespace))
+                {
+                    return schema;
+                }
+            }
+            return null;
+        }
+
+        internal static XmlSchemaElement? GetSchemaElement(SchemaObjectDictionary schemaInfo, XmlQualifiedName elementName)
+        {
+            SchemaObjectInfo? schemaObjectInfo;
+            if (schemaInfo.TryGetValue(elementName, out schemaObjectInfo))
+            {
+                return schemaObjectInfo._element;
+            }
+            return null;
+        }
+
+        internal static XmlSchema? GetSchemaWithGlobalElementDeclaration(XmlSchemaElement element, XmlSchemaSet schemas)
+        {
+            ICollection currentSchemas = schemas.Schemas();
+            foreach (XmlSchema schema in currentSchemas)
+            {
+                foreach (XmlSchemaObject schemaObject in schema.Items)
+                {
+                    if (schemaObject is XmlSchemaElement schemaElement && schemaElement == element)
+                    {
+                        return schema;
+                    }
+                }
+            }
+            return null;
+        }
+
+        internal static XmlQualifiedName? GetGlobalElementDeclaration(XmlSchemaSet schemas, XmlQualifiedName typeQName, out bool isNullable)
+        {
+            ICollection currentSchemas = schemas.Schemas();
+            isNullable = false;
+            foreach (XmlSchema schema in currentSchemas)
+            {
+                foreach (XmlSchemaObject schemaObject in schema.Items)
+                {
+                    if (schemaObject is XmlSchemaElement schemaElement && schemaElement.SchemaTypeName.Equals(typeQName))
+                    {
+                        isNullable = schemaElement.IsNillable;
+                        return new XmlQualifiedName(schemaElement.Name, schema.TargetNamespace);
+                    }
+                }
+            }
+            return null;
+        }
+
+#endif
     }
 }

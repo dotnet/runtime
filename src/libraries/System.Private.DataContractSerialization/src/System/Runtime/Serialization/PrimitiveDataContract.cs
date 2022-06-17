@@ -39,7 +39,7 @@ namespace System.Runtime.Serialization
         internal abstract string WriteMethodName { get; }
         internal abstract string ReadMethodName { get; }
 
-        public override XmlDictionaryString? TopLevelElementNamespace
+        internal override XmlDictionaryString? TopLevelElementNamespace
         {
             get
             { return DictionaryGlobals.SerializationNamespace; }
@@ -52,7 +52,7 @@ namespace System.Runtime.Serialization
 
         internal override bool IsPrimitive => true;
 
-        public override bool IsBuiltInDataContract => true;
+        internal override bool IsBuiltInDataContract => true;
 
         internal MethodInfo XmlFormatWriterMethod
         {
@@ -120,6 +120,18 @@ namespace System.Runtime.Serialization
             {
                 reader.Skip();
                 return true;
+            }
+            return false;
+        }
+
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal override bool Equals(object? other, HashSet<DataContractPairKey> checkedContracts)
+        {
+            if (other is PrimitiveDataContract)
+            {
+                Type thisType = this.GetType();
+                Type otherType = other.GetType();
+                return (thisType.Equals(otherType) || thisType.IsSubclassOf(otherType) || otherType.IsSubclassOf(thisType));
             }
             return false;
         }
@@ -851,7 +863,7 @@ namespace System.Runtime.Serialization
         public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
             object obj;
-            if (XmlReaderDelegator.IsEmptyElement)
+            if (reader.IsEmptyElement)
             {
                 reader.Skip();
                 obj = new object();

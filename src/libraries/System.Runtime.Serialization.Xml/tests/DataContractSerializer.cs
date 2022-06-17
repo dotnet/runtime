@@ -2732,8 +2732,20 @@ public static partial class DataContractSerializerTests
     public static void XsdDataContractExporterTest()
     {
         XsdDataContractExporter exporter = new XsdDataContractExporter();
-        Assert.Throws<PlatformNotSupportedException>(() => exporter.CanExport(typeof(Employee)));
-        Assert.Throws<PlatformNotSupportedException>(() => exporter.Export(typeof(Employee)));
+
+        // NOTE TODO smolloy - More complete tests are needed for schema import/export. But this one already existed to verify exceptions which
+        // are no longer thrown. But if we find the ImportOptions class, that means we've added this functionality back
+        Type? t = typeof(ExportOptions).Assembly.GetType("System.Runtime.Serialization.ImportOptions");
+        if (t == null)
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => exporter.CanExport(typeof(Employee)));
+            Assert.Throws<PlatformNotSupportedException>(() => exporter.Export(typeof(Employee)));
+        }
+        else
+        {
+            Assert.True(exporter.CanExport(typeof(Employee)));
+            exporter.Export(typeof(Employee));  // Does not throw
+        }
     }
 
     [Fact]
@@ -3866,7 +3878,136 @@ public static partial class DataContractSerializerTests
     }
 
 
-#endregion
+    #endregion
+
+    [Fact]
+    public static void DCS_KnownSerializableTypes_KeyValuePair_2()
+    {
+        KeyValuePair<string, int> kvp = new KeyValuePair<string, int>("the_key", 42);
+        Assert.StrictEqual(kvp, DataContractSerializerHelper.SerializeAndDeserialize<KeyValuePair<string, int>>(kvp, "<KeyValuePairOfstringint xmlns=\"http://schemas.datacontract.org/2004/07/System.Collections.Generic\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><key>the_key</key><value>42</value></KeyValuePairOfstringint>"));
+    }
+
+    [Fact]
+    public static void DCS_KnownSerializableTypes_Queue_1()
+    {
+        Queue<string> q = new Queue<string>();
+        q.Enqueue("first");
+        q.Enqueue("second");
+        Queue<string> q2 = DataContractSerializerHelper.SerializeAndDeserialize<Queue<string>>(q, "<QueueOfstring xmlns=\"http://schemas.datacontract.org/2004/07/System.Collections.Generic\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><_array xmlns:a=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"><a:string>first</a:string><a:string>second</a:string><a:string i:nil=\"true\"/><a:string i:nil=\"true\"/></_array><_head>0</_head><_size>2</_size><_tail>2</_tail><_version>3</_version></QueueOfstring>");
+        Assert.Equal(q, q2);
+        Assert.StrictEqual(q.Count, q2.Count);
+        Assert.Equal(q.Dequeue(), q2.Dequeue());
+        Assert.Equal(q.Dequeue(), q2.Dequeue());
+    }
+
+    [Fact]
+    public static void DCS_KnownSerializableTypes_Stack_1()
+    {
+        Stack<string> stk = new Stack<string>();
+        stk.Push("first");
+        stk.Push("last");
+        Stack<string> result = DataContractSerializerHelper.SerializeAndDeserialize<Stack<string>>(stk, "<StackOfstring xmlns=\"http://schemas.datacontract.org/2004/07/System.Collections.Generic\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><_array xmlns:a=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"><a:string>first</a:string><a:string>last</a:string><a:string i:nil=\"true\"/><a:string i:nil=\"true\"/></_array><_size>2</_size><_version>2</_version></StackOfstring>");
+        Assert.Equal(stk, result);
+        Assert.StrictEqual(stk.Count, result.Count);
+        Assert.Equal(stk.Pop(), result.Pop());
+        Assert.Equal(stk.Pop(), result.Pop());
+    }
+
+    [Fact]
+    public static void DCS_KnownSerializableTypes_ReadOnlyCollection_1()
+    {
+        ReadOnlyCollection<string> roc = new ReadOnlyCollection<string>(new string[] { "one", "two", "three", "four" });
+        ReadOnlyCollection<string> result = DataContractSerializerHelper.SerializeAndDeserialize<ReadOnlyCollection<string>>(roc, "<ReadOnlyCollectionOfstring xmlns=\"http://schemas.datacontract.org/2004/07/System.Collections.ObjectModel\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><list xmlns:a=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"><a:string>one</a:string><a:string>two</a:string><a:string>three</a:string><a:string>four</a:string></list></ReadOnlyCollectionOfstring>");
+        Assert.Equal(roc, result);
+        Assert.StrictEqual(roc.Count, result.Count);
+
+        for (int i = 0; i < roc.Count; i++)
+            Assert.Equal(roc[i], result[i]);
+    }
+
+    [Fact]
+    public static void DCS_KnownSerializableTypes_ReadOnlyDictionary_2()
+    {
+        ReadOnlyDictionary<string, int> rod = new ReadOnlyDictionary<string, int>(new Dictionary<string, int> { { "one", 1 }, { "two", 22 }, { "three", 333 }, { "four", 4444 } });
+        ReadOnlyDictionary<string, int> result = DataContractSerializerHelper.SerializeAndDeserialize<ReadOnlyDictionary<string, int>>(rod, "<ReadOnlyDictionaryOfstringint xmlns=\"http://schemas.datacontract.org/2004/07/System.Collections.ObjectModel\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><m_dictionary xmlns:a=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"><a:KeyValueOfstringint><a:Key>one</a:Key><a:Value>1</a:Value></a:KeyValueOfstringint><a:KeyValueOfstringint><a:Key>two</a:Key><a:Value>22</a:Value></a:KeyValueOfstringint><a:KeyValueOfstringint><a:Key>three</a:Key><a:Value>333</a:Value></a:KeyValueOfstringint><a:KeyValueOfstringint><a:Key>four</a:Key><a:Value>4444</a:Value></a:KeyValueOfstringint></m_dictionary></ReadOnlyDictionaryOfstringint>");
+        Assert.Equal(rod, result);
+        Assert.StrictEqual(rod.Count, result.Count);
+
+        foreach (var kvp in rod)
+        {
+            Assert.True(result.ContainsKey(kvp.Key));
+            Assert.Equal(kvp.Value, result[kvp.Key]);
+        }
+    }
+
+    [Fact]
+    public static void DCS_KnownSerializableTypes_Queue()
+    {
+        Queue q = new Queue();
+        q.Enqueue("first");
+        q.Enqueue("second");
+        Queue q2 = DataContractSerializerHelper.SerializeAndDeserialize<Queue>(q, "<Queue xmlns=\"http://schemas.datacontract.org/2004/07/System.Collections\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><_array xmlns:a=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"><a:anyType i:type=\"b:string\" xmlns:b=\"http://www.w3.org/2001/XMLSchema\">first</a:anyType><a:anyType i:type=\"b:string\" xmlns:b=\"http://www.w3.org/2001/XMLSchema\">second</a:anyType><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/></_array><_growFactor>200</_growFactor><_head>0</_head><_size>2</_size><_tail>2</_tail><_version>2</_version></Queue>");
+        Assert.Equal(q, q2);
+        Assert.StrictEqual(q.Count, q2.Count);
+        Assert.StrictEqual(q.Dequeue(), q2.Dequeue());
+        Assert.StrictEqual(q.Dequeue(), q2.Dequeue());
+    }
+
+    [Fact]
+    public static void DCS_KnownSerializableTypes_Stack()
+    {
+        Stack stk = new Stack();
+        stk.Push("first");
+        stk.Push("last");
+        Stack result = DataContractSerializerHelper.SerializeAndDeserialize<Stack>(stk, "<Stack xmlns=\"http://schemas.datacontract.org/2004/07/System.Collections\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><_array xmlns:a=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"><a:anyType i:type=\"b:string\" xmlns:b=\"http://www.w3.org/2001/XMLSchema\">first</a:anyType><a:anyType i:type=\"b:string\" xmlns:b=\"http://www.w3.org/2001/XMLSchema\">last</a:anyType><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/></_array><_size>2</_size><_version>2</_version></Stack>");
+        Assert.Equal(stk, result);
+        Assert.StrictEqual(stk.Count, result.Count);
+        Assert.StrictEqual(stk.Pop(), result.Pop());
+        Assert.StrictEqual(stk.Pop(), result.Pop());
+    }
+
+    [Fact]
+    [ActiveIssue("No issue filed yet. Turns out, CultureInfo is not serialzable, even if it is included in s_knownSerializableTypeInfos")]
+    public static void DCS_KnownSerializableTypes_CultureInfo()
+    {
+        CultureInfo ci = new CultureInfo("pl");
+        Assert.StrictEqual(ci, DataContractSerializerHelper.SerializeAndDeserialize<CultureInfo>(ci, "", null, null, true));
+    }
+
+    [Fact]
+    public static void DCS_KnownSerializableTypes_Version()
+    {
+        Version ver = new Version(5, 4, 3);
+        Assert.StrictEqual(ver, DataContractSerializerHelper.SerializeAndDeserialize<Version>(ver, "<Version xmlns=\"http://schemas.datacontract.org/2004/07/System\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><_Build>3</_Build><_Major>5</_Major><_Minor>4</_Minor><_Revision>-1</_Revision></Version>"));
+    }
+
+    [Fact]
+    public static void DCS_KnownSerializableTypes_Tuples()
+    {
+        Tuple<string> t1 = new Tuple<string>("first");
+        Assert.StrictEqual(t1, DataContractSerializerHelper.SerializeAndDeserialize<Tuple<string>>(t1, "<TupleOfstring xmlns=\"http://schemas.datacontract.org/2004/07/System\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><m_Item1>first</m_Item1></TupleOfstring>"));
+
+        Tuple<string, string> t2 = new Tuple<string, string>("first", "second");
+        Assert.StrictEqual(t2, DataContractSerializerHelper.SerializeAndDeserialize<Tuple<string, string>>(t2, "<TupleOfstringstring xmlns=\"http://schemas.datacontract.org/2004/07/System\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><m_Item1>first</m_Item1><m_Item2>second</m_Item2></TupleOfstringstring>"));
+
+        Tuple<string, string, string> t3 = new Tuple<string, string, string>("first", "second", "third");
+        Assert.StrictEqual(t3, DataContractSerializerHelper.SerializeAndDeserialize<Tuple<string, string, string>>(t3, "<TupleOfstringstringstring xmlns=\"http://schemas.datacontract.org/2004/07/System\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><m_Item1>first</m_Item1><m_Item2>second</m_Item2><m_Item3>third</m_Item3></TupleOfstringstringstring>"));
+
+        Tuple<string, string, string, string> t4 = new Tuple<string, string, string, string>("first", "second", "third", "fourth");
+        Assert.StrictEqual(t4, DataContractSerializerHelper.SerializeAndDeserialize<Tuple<string, string, string, string>>(t4, "<TupleOfstringstringstringstring xmlns=\"http://schemas.datacontract.org/2004/07/System\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><m_Item1>first</m_Item1><m_Item2>second</m_Item2><m_Item3>third</m_Item3><m_Item4>fourth</m_Item4></TupleOfstringstringstringstring>"));
+
+        Tuple<string, string, string, string, string> t5 = new Tuple<string, string, string, string, string>("first", "second", "third", "fourth", "fifth");
+        Assert.StrictEqual(t5, DataContractSerializerHelper.SerializeAndDeserialize<Tuple<string, string, string, string, string>>(t5, "<TupleOfstringstringstringstringstring xmlns=\"http://schemas.datacontract.org/2004/07/System\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><m_Item1>first</m_Item1><m_Item2>second</m_Item2><m_Item3>third</m_Item3><m_Item4>fourth</m_Item4><m_Item5>fifth</m_Item5></TupleOfstringstringstringstringstring>"));
+
+        Tuple<string, string, string, string, string, string> t6 = new Tuple<string, string, string, string, string, string>("first", "second", "third", "fourth", "fifth", "sixth");
+        Assert.StrictEqual(t6, DataContractSerializerHelper.SerializeAndDeserialize<Tuple<string, string, string, string, string, string>>(t6, "<TupleOfstringstringstringstringstringstring xmlns=\"http://schemas.datacontract.org/2004/07/System\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><m_Item1>first</m_Item1><m_Item2>second</m_Item2><m_Item3>third</m_Item3><m_Item4>fourth</m_Item4><m_Item5>fifth</m_Item5><m_Item6>sixth</m_Item6></TupleOfstringstringstringstringstringstring>"));
+
+        Tuple<string, string, string, string, string, string, string> t7 = new Tuple<string, string, string, string, string, string, string>("first", "second", "third", "fourth", "fifth", "sixth", "seventh");
+        Assert.StrictEqual(t7, DataContractSerializerHelper.SerializeAndDeserialize<Tuple<string, string, string, string, string, string, string>>(t7, "<TupleOfstringstringstringstringstringstringstring xmlns=\"http://schemas.datacontract.org/2004/07/System\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><m_Item1>first</m_Item1><m_Item2>second</m_Item2><m_Item3>third</m_Item3><m_Item4>fourth</m_Item4><m_Item5>fifth</m_Item5><m_Item6>sixth</m_Item6><m_Item7>seventh</m_Item7></TupleOfstringstringstringstringstringstringstring>"));
+
+        Tuple<string, string, string, string, string, string, string, Tuple<int, int, string>> t8 = new Tuple<string, string, string, string, string, string, string, Tuple<int, int, string>>("first", "second", "third", "fourth", "fifth", "sixth", "seventh", new Tuple<int, int, string>(8, 9, "tenth"));
+        Assert.StrictEqual(t8, DataContractSerializerHelper.SerializeAndDeserialize<Tuple<string, string, string, string, string, string, string, Tuple<int, int, string>>>(t8, "<TupleOfstringstringstringstringstringstringstringTupleOfintintstringcd6ORBnm xmlns=\"http://schemas.datacontract.org/2004/07/System\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><m_Item1>first</m_Item1><m_Item2>second</m_Item2><m_Item3>third</m_Item3><m_Item4>fourth</m_Item4><m_Item5>fifth</m_Item5><m_Item6>sixth</m_Item6><m_Item7>seventh</m_Item7><m_Rest><m_Item1>8</m_Item1><m_Item2>9</m_Item2><m_Item3>tenth</m_Item3></m_Rest></TupleOfstringstringstringstringstringstringstringTupleOfintintstringcd6ORBnm>"));
+    }
 
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/60462", TestPlatforms.iOS | TestPlatforms.tvOS)]

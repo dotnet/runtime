@@ -24,7 +24,7 @@ namespace System.Runtime.Serialization
             { return _helper.ParameterPosition; }
         }
 
-        public override bool IsBuiltInDataContract
+        internal override bool IsBuiltInDataContract
         {
             get
             {
@@ -52,9 +52,12 @@ namespace System.Runtime.Serialization
             }
         }
 
-        internal DataContract BindGenericParameters(DataContract[] paramContracts, Dictionary<DataContract, DataContract> boundContracts)
+#if smolloy_add_schema_import
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal override DataContract BindGenericParameters(DataContract[] paramContracts, Dictionary<DataContract, DataContract> boundContracts)
         {
             return paramContracts[ParameterPosition];
         }
+#endif
     }
 }

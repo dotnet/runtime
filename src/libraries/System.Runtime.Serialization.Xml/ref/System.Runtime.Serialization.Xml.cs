@@ -75,10 +75,24 @@ namespace System.Runtime.Serialization
         public System.Xml.XmlDictionaryString? RootNamespace { get { throw null; } set { } }
         public bool SerializeReadOnlyTypes { get { throw null; } set { } }
     }
+#if smolloy_add_ext_surrogate
+    public partial interface ISerializationExtendedSurrogateProvider : ISerializationSurrogateProvider
+    {
+        object? GetCustomDataToExport(System.Reflection.MemberInfo memberInfo, Type dataContractType);
+        object? GetCustomDataToExport(Type clrType, Type dataContractType);
+        void GetKnownCustomDataTypes(System.Collections.ObjectModel.Collection<Type> customDataTypes);
+        Type? GetReferencedTypeOnImport(string typeName, string typeNamespace, object? customData);
+        System.CodeDom.CodeTypeDeclaration? ProcessImportedType(System.CodeDom.CodeTypeDeclaration typeDeclaration, System.CodeDom.CodeCompileUnit compileUnit);
+    }
+#endif
     public partial class ExportOptions
     {
         public ExportOptions() { }
         public System.Collections.ObjectModel.Collection<System.Type> KnownTypes { get { throw null; } }
+#if smolloy_add_ext_surrogate
+        // NOTE TODO smolloy WARNING!!!! - This is modifying (adding to) a public API. Would have been great if we could have sealed this class.
+        public ISerializationExtendedSurrogateProvider? SerializationExtendedSurrogateProvider { get { throw null; } set { } }
+#endif
     }
     public sealed partial class ExtensionDataObject
     {

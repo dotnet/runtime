@@ -167,6 +167,7 @@ namespace System.Runtime.Serialization.Json
             {
                 int id = JsonDataContractCriticalHelper.GetId(traditionalDataContract.UnderlyingType.TypeHandle);
                 JsonDataContract dataContract = s_dataContractCache[id];
+
                 if (dataContract == null)
                 {
                     dataContract = CreateJsonDataContract(id, traditionalDataContract);

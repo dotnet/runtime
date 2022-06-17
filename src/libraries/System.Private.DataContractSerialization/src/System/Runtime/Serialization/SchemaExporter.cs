@@ -138,7 +138,11 @@ namespace System.Runtime.Serialization
                 XmlSchemaElement element = new XmlSchemaElement();
                 element.Name = dataMember.Name;
                 XmlElement? actualTypeElement = null;
+#if smolloy_add_ext_surrogate
+                DataContract memberTypeContract = _dataContractSet.GetMemberTypeDataContract(dataMember);
+#else
                 DataContract memberTypeContract = DataContractSet.GetMemberTypeDataContract(dataMember);
+#endif
                 if (CheckIfMemberHasConflict(dataMember))
                 {
                     element.SchemaTypeName = AnytypeQualifiedName;
@@ -338,11 +342,34 @@ namespace System.Runtime.Serialization
             return typeElement;
         }
 
+#if smolloy_add_ext_surrogate
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        private XmlElement? ExportSurrogateData(object key)
+        {
+            object? surrogateData = _dataContractSet.GetSurrogateData(key);
+            if (surrogateData == null)
+                return null;
+            StringWriter stringWriter = new StringWriter(CultureInfo.InvariantCulture);
+            XmlWriterSettings writerSettings = new XmlWriterSettings();
+            writerSettings.OmitXmlDeclaration = true;
+            XmlWriter xmlWriter = XmlWriter.Create(stringWriter, writerSettings);
+            Collection<Type> knownTypes = new Collection<Type>();
+            if (_dataContractSet.SerializationExtendedSurrogateProvider != null)
+                DataContractSurrogateCaller.GetKnownCustomDataTypes(_dataContractSet.SerializationExtendedSurrogateProvider, knownTypes);
+            DataContractSerializer serializer = new DataContractSerializer(Globals.TypeOfObject,
+                SurrogateDataAnnotationName.Name, SurrogateDataAnnotationName.Namespace, knownTypes, int.MaxValue,
+                ignoreExtensionDataObject: false, preserveObjectReferences: true);
+            serializer.WriteObject(xmlWriter, surrogateData);
+            xmlWriter.Flush();
+            return (XmlElement?)XmlDoc.ReadNode(XmlReader.Create(new StringReader(stringWriter.ToString())));
+        }
+#else
         private static XmlElement? ExportSurrogateData(object key)
         {
             // IDataContractSurrogate is not available on NetCore.
             return null;
         }
+#endif
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void ExportCollectionDataContract(CollectionDataContract collectionDataContract, XmlSchema schema)
@@ -372,7 +399,11 @@ namespace System.Runtime.Serialization
                 {
                     XmlSchemaElement keyValueElement = new XmlSchemaElement();
                     keyValueElement.Name = dataMember.Name;
+#if smolloy_add_ext_surrogate
+                    SetElementType(keyValueElement, _dataContractSet.GetMemberTypeDataContract(dataMember), schema);
+#else
                     SetElementType(keyValueElement, DataContractSet.GetMemberTypeDataContract(dataMember), schema);
+#endif
                     SchemaHelper.AddElementForm(keyValueElement, schema);
                     if (dataMember.IsNullable)
                         keyValueElement.IsNillable = true;
@@ -386,7 +417,11 @@ namespace System.Runtime.Serialization
             {
                 if (collectionDataContract.IsItemTypeNullable)
                     element.IsNillable = true;
+#if smolloy_add_ext_surrogate
+                DataContract itemContract = _dataContractSet.GetItemTypeDataContract(collectionDataContract);
+#else
                 DataContract itemContract = DataContractSet.GetItemTypeDataContract(collectionDataContract);
+#endif
                 SetElementType(element, itemContract, schema);
             }
             SchemaHelper.AddElementForm(element, schema);
@@ -405,12 +440,11 @@ namespace System.Runtime.Serialization
             return isDictionaryElement;
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void ExportEnumDataContract(EnumDataContract enumDataContract, XmlSchema schema)
         {
             XmlSchemaSimpleType type = new XmlSchemaSimpleType();
             type.Name = enumDataContract.StableName.Name;
-            // https://github.com/dotnet/runtime/issues/41448 - enumDataContract.BaseContractName is always null, but this method is not reachable
-            Debug.Assert(enumDataContract.BaseContractName != null, "BaseContractName is always null, but this method is not reachable. Suppressing compiler error.");
             XmlElement? actualTypeElement = (enumDataContract.BaseContractName == DefaultEnumBaseTypeName) ? null : ExportActualType(enumDataContract.BaseContractName);
             type.Annotation = GetSchemaAnnotation(actualTypeElement, ExportSurrogateData(enumDataContract));
             schema.Items.Add(type);

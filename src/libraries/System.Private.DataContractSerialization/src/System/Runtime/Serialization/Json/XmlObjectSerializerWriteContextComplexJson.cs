@@ -234,6 +234,7 @@ namespace System.Runtime.Serialization.Json
         internal override void SerializeWithXsiTypeAtTopLevel(DataContract dataContract, XmlWriterDelegator xmlWriter, object obj, RuntimeTypeHandle originalDeclaredTypeHandle, Type graphType)
         {
             bool verifyKnownType = false;
+
             Type declaredType = rootTypeDataContract!.UnderlyingType;
             bool isDeclaredTypeInterface = declaredType.IsInterface;
 
@@ -341,8 +342,7 @@ namespace System.Runtime.Serialization.Json
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static DataContract? GetRevisedItemContract(DataContract oldItemContract)
         {
-            if ((oldItemContract != null) &&
-                oldItemContract.UnderlyingType.IsGenericType &&
+            if ((oldItemContract != null) && oldItemContract.UnderlyingType.IsGenericType &&
                 (oldItemContract.UnderlyingType.GetGenericTypeDefinition() == Globals.TypeOfKeyValue))
             {
                 return DataContract.GetDataContract(oldItemContract.UnderlyingType);

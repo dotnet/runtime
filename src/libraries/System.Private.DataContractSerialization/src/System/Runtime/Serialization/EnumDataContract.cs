@@ -12,6 +12,7 @@ using System.Xml;
 using System.Security;
 using System.Linq;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics;
 
 namespace System.Runtime.Serialization
 {
@@ -19,13 +20,25 @@ namespace System.Runtime.Serialization
     {
         private readonly EnumDataContractCriticalHelper _helper;
 
-        public XmlQualifiedName? BaseContractName { get; set; }
-
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal EnumDataContract(Type type) : base(new EnumDataContractCriticalHelper(type))
         {
             _helper = (base.Helper as EnumDataContractCriticalHelper)!;
         }
+
+#if smolloy_add_schema_import
+        internal static Type? GetBaseType(XmlQualifiedName baseContractName)
+        {
+            return EnumDataContractCriticalHelper.GetBaseType(baseContractName);
+        }
+#endif
+
+        public XmlQualifiedName BaseContractName
+        {
+            get => _helper.BaseContractName;
+            set => _helper.BaseContractName = value;
+        }
+
         public List<DataMember> Members
         {
             get
@@ -51,14 +64,12 @@ namespace System.Runtime.Serialization
         {
             get
             { return _helper.IsULong; }
-            set { _helper.IsULong = value; }
         }
 
         public XmlDictionaryString[]? ChildElementNames
         {
             get
             { return _helper.ChildElementNames; }
-            set { _helper.ChildElementNames = value; }
         }
 
         internal override bool CanContainReferences
@@ -71,6 +82,7 @@ namespace System.Runtime.Serialization
             private static readonly Dictionary<Type, XmlQualifiedName> s_typeToName = new Dictionary<Type, XmlQualifiedName>();
             private static readonly Dictionary<XmlQualifiedName, Type> s_nameToType = new Dictionary<XmlQualifiedName, Type>();
 
+            private XmlQualifiedName _baseContractName;
             private List<DataMember> _members;
             private List<long>? _values;
             private bool _isULong;
@@ -97,6 +109,22 @@ namespace System.Runtime.Serialization
                 s_nameToType.Add(stableName, type);
             }
 
+            internal static XmlQualifiedName GetBaseContractName(Type type)
+            {
+                XmlQualifiedName? retVal;
+                s_typeToName.TryGetValue(type, out retVal);
+
+                Debug.Assert(retVal != null);   // Enums can only have certain base types. We shouldn't come up empty here.
+                return retVal;
+            }
+
+            internal static Type? GetBaseType(XmlQualifiedName baseContractName)
+            {
+                Type? retVal;
+                s_nameToType.TryGetValue(baseContractName, out retVal);
+                return retVal;
+            }
+
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             internal EnumDataContractCriticalHelper(
                 [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]
@@ -104,6 +132,7 @@ namespace System.Runtime.Serialization
             {
                 this.StableName = DataContract.GetStableName(type, out _hasDataContract);
                 Type baseType = Enum.GetUnderlyingType(type);
+                _baseContractName = GetBaseContractName(baseType);
                 ImportBaseType(baseType);
                 IsFlags = type.IsDefined(Globals.TypeOfFlagsAttribute, false);
                 ImportDataMembers();
@@ -128,6 +157,22 @@ namespace System.Runtime.Serialization
                     }
                 }
             }
+
+            internal XmlQualifiedName BaseContractName
+            {
+                get { return _baseContractName; }
+
+                set
+                {
+                    _baseContractName = value;
+                    Type? baseType = GetBaseType(_baseContractName);
+                    if (baseType == null)
+                        ThrowInvalidDataContractException(
+                                SR.Format(SR.InvalidEnumBaseType, value.Name, value.Namespace, StableName.Name, StableName.Namespace));
+                    ImportBaseType(baseType);
+                }
+            }
+
             internal List<DataMember> Members
             {
                 get { return _members; }

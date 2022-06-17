@@ -220,7 +220,7 @@ namespace System.Runtime.Serialization
             if (name == null)
                 return false;
 
-            if (contract.IsBuiltInDataContract || !contract.CanContainReferences)
+            if (contract.IsBuiltInDataContract || !contract.CanContainReferences || contract.IsISerializable)
             {
                 return false;
             }

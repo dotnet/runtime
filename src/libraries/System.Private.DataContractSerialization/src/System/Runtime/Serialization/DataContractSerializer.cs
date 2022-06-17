@@ -34,19 +34,19 @@ namespace System.Runtime.Serialization
         private ISerializationSurrogateProvider? _serializationSurrogateProvider;
         private bool _serializeReadOnlyTypes;
 
-        private static SerializationOption _option = IsReflectionBackupAllowed() ? SerializationOption.ReflectionAsBackup : SerializationOption.CodeGenOnly;
-        private static bool _optionAlreadySet;
+        private static SerializationOption s_option = IsReflectionBackupAllowed() ? SerializationOption.ReflectionAsBackup : SerializationOption.CodeGenOnly;
+        private static bool s_optionAlreadySet;
         internal static SerializationOption Option
         {
-            get { return RuntimeFeature.IsDynamicCodeSupported ? _option : SerializationOption.ReflectionOnly; }
+            get { return RuntimeFeature.IsDynamicCodeSupported ? s_option : SerializationOption.ReflectionOnly; }
             set
             {
-                if (_optionAlreadySet)
+                if (s_optionAlreadySet)
                 {
                     throw new InvalidOperationException(SR.CannotSetTwice);
                 }
-                _optionAlreadySet = true;
-                _option = value;
+                s_optionAlreadySet = true;
+                s_option = value;
             }
         }
 
@@ -61,10 +61,9 @@ namespace System.Runtime.Serialization
         }
 
         public DataContractSerializer(Type type, IEnumerable<Type>? knownTypes)
+            : this(type, knownTypes, int.MaxValue, false, false)
         {
-            Initialize(type, knownTypes, int.MaxValue, false, false, null, false);
         }
-
 
         public DataContractSerializer(Type type, string rootName, string rootNamespace)
             : this(type, rootName, rootNamespace, null)
@@ -72,10 +71,23 @@ namespace System.Runtime.Serialization
         }
 
         public DataContractSerializer(Type type, string rootName, string rootNamespace, IEnumerable<Type>? knownTypes)
+#if smolloy_add_ext_surrogate
+            : this(type, rootName, rootNamespace, knownTypes, int.MaxValue, false, false)
+        {
+        }
+
+        internal DataContractSerializer(Type type, string rootName, string rootNamespace, IEnumerable<Type>? knownTypes, int maxItemsInObjectGraph,
+                bool ignoreExtensionDataObject, bool preserveObjectReferences)
+        {
+            XmlDictionary dictionary = new XmlDictionary(2);
+            Initialize(type, dictionary.Add(rootName), dictionary.Add(DataContract.GetNamespace(rootNamespace)), knownTypes, int.MaxValue, ignoreExtensionDataObject, preserveObjectReferences, null, false);
+        }
+#else
         {
             XmlDictionary dictionary = new XmlDictionary(2);
             Initialize(type, dictionary.Add(rootName), dictionary.Add(DataContract.GetNamespace(rootNamespace)), knownTypes, int.MaxValue, false, false, null, false);
         }
+#endif
 
 
         public DataContractSerializer(Type type, XmlDictionaryString rootName, XmlDictionaryString rootNamespace)
@@ -88,7 +100,7 @@ namespace System.Runtime.Serialization
             Initialize(type, rootName, rootNamespace, knownTypes, int.MaxValue, false, false, null, false);
         }
 
-        internal DataContractSerializer(Type type, IEnumerable<Type> knownTypes, int maxItemsInObjectGraph, bool ignoreExtensionDataObject, bool preserveObjectReferences)
+        internal DataContractSerializer(Type type, IEnumerable<Type>? knownTypes, int maxItemsInObjectGraph, bool ignoreExtensionDataObject, bool preserveObjectReferences)
         {
             Initialize(type, knownTypes, maxItemsInObjectGraph, ignoreExtensionDataObject, preserveObjectReferences, null, false);
         }
@@ -99,7 +111,7 @@ namespace System.Runtime.Serialization
             {
                 settings = new DataContractSerializerSettings();
             }
-            Initialize(type, settings.RootName, settings.RootNamespace, settings.KnownTypes, settings.MaxItemsInObjectGraph, false,
+            Initialize(type, settings.RootName, settings.RootNamespace, settings.KnownTypes, settings.MaxItemsInObjectGraph, settings.IgnoreExtensionDataObject,
                 settings.PreserveObjectReferences, settings.DataContractResolver, settings.SerializeReadOnlyTypes);
         }
 
@@ -197,6 +209,16 @@ namespace System.Runtime.Serialization
             get { return _serializationSurrogateProvider; }
             set { _serializationSurrogateProvider = value; }
         }
+
+#if smolloy_add_ext_surrogate
+        // NOTE TODO smolloy - Seems we only need the extended surrogate provider on DataContractSet. The slimmed down provider is good enough here.
+        //private ISerializationExtendedSurrogateProvider? _serializationExtendedSurrogateProvider;
+        //internal ISerializationExtendedSurrogateProvider? SerializationExtendedSurrogateProvider
+        //{
+        //    get { return _serializationExtendedSurrogateProvider; }
+        //    set { _serializationExtendedSurrogateProvider = value; }
+        //}
+#endif
 
         public bool PreserveObjectReferences
         {
@@ -412,7 +434,7 @@ namespace System.Runtime.Serialization
             }
             else
             {
-                return DataContract.GetDataContract(objectType.TypeHandle, objectType, SerializationMode.SharedContract);
+                return DataContract.GetDataContract(objectType.TypeHandle, objectType);
             }
         }
 

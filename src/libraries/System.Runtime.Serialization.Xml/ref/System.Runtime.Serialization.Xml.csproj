@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <Nullable>enable</Nullable>
+    <DefineConstants>smolloy_add_ext_surrogate;CODEDOM</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -10,7 +12,11 @@
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.NonGeneric\ref\System.Collections.NonGeneric.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Specialized\ref\System.Collections.Specialized.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Primitives\ref\System.Runtime.Serialization.Primitives.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encoding\ref\System.Text.Encoding.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.CodeDom\ref\System.CodeDom.csproj" />
   </ItemGroup>
 </Project>

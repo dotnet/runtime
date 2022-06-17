@@ -13,6 +13,9 @@ namespace System.Runtime.Serialization
         public static void SetSerializationSurrogateProvider(this DataContractSerializer serializer, ISerializationSurrogateProvider? provider)
         {
             serializer.SerializationSurrogateProvider = provider;
+#if smolloy_add_ext_surrogate
+//            serializer.SerializationExtendedSurrogateProvider = provider as ISerializationExtendedSurrogateProvider;
+#endif
         }
     }
 }

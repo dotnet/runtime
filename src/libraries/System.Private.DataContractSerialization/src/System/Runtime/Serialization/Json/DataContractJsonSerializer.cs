@@ -33,6 +33,9 @@ namespace System.Runtime.Serialization.Json
         private XmlDictionaryString? _rootName;
         private bool _rootNameRequiresMapping;
         private Type _rootType;
+#if smolloy_add_json_surrogate
+        private ISerializationSurrogateProvider? _serializationSurrogateProvider;
+#endif
 
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
@@ -95,6 +98,16 @@ namespace System.Runtime.Serialization.Json
             EmitTypeInformation emitTypeInformation = alwaysEmitTypeInformation ? EmitTypeInformation.Always : EmitTypeInformation.AsNeeded;
             Initialize(type, rootName, knownTypes, maxItemsInObjectGraph, ignoreExtensionDataObject, emitTypeInformation, false, null, false);
         }
+
+#if smolloy_add_json_surrogate
+        // NOTE TODO smolloy - Is this being used correctly? It seems like a different design than the Xml surrogate provider. Not sure why they don't both
+        // work the same way. Does this one even work? There was no way to set a surrogate provider before adding this.
+        internal ISerializationSurrogateProvider? SerializationSurrogateProvider
+        {
+            get { return _serializationSurrogateProvider; }
+            set { _serializationSurrogateProvider = value; }
+        }
+#endif
 
         public bool IgnoreExtensionDataObject
         {
@@ -454,6 +467,13 @@ namespace System.Runtime.Serialization.Json
             DataContract contract = RootContract;
             Type declaredType = contract.UnderlyingType;
             Type graphType = (graph == null) ? declaredType : graph.GetType();
+
+#if smolloy_add_json_surrogate
+            if (_serializationSurrogateProvider != null)
+            {
+                graph = DataContractSerializer.SurrogateToDataContractType(_serializationSurrogateProvider, graph, declaredType, ref graphType);
+            }
+#endif
 
             if (graph == null)
             {

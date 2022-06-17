@@ -36,7 +36,11 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_SchemaImporter);
+                XmlSchemaSet schemaSet = GetSchemaSet();
+#if smolloy_add_schema_import
+                SchemaImporter.CompileSchemaSet(schemaSet);
+#endif
+                return schemaSet;
             }
         }
 
@@ -50,6 +54,23 @@ namespace System.Runtime.Serialization
             return _schemas;
         }
 
+#if smolloy_add_schema_import
+        private DataContractSet DataContractSet
+        {
+            get
+            {
+                if (_dataContractSet == null)
+                {
+#if smolloy_add_ext_surrogate
+                    _dataContractSet = new DataContractSet(Options?.GetSurrogate(), null, null);
+#else
+                    _dataContractSet = new DataContractSet(null, null, null);
+#endif
+                }
+                return _dataContractSet;
+            }
+        }
+#else
         private static DataContractSet DataContractSet
         {
             get
@@ -57,9 +78,10 @@ namespace System.Runtime.Serialization
                 // On .NET Framework , we set _dataContractSet = Options.GetSurrogate());
                 // But Options.GetSurrogate() is not available on NetCore because IDataContractSurrogate
                 // is not in NetStandard.
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_IDataContractSurrogate);
+                throw new PlatformNotSupportedException("NOTE TODO smolloy - add this resource back if we don't check in schema import"/*SR.PlatformNotSupported_IDataContractSurrogate*/);
             }
         }
+#endif
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public void Export(ICollection<Assembly> assemblies)
@@ -176,18 +198,28 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type GetSurrogatedType(Type type)
+#if smolloy_add_ext_surrogate
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        private Type GetSurrogatedType(Type type)
         {
-#if SUPPORT_SURROGATE
-            IDataContractSurrogate dataContractSurrogate;
-            if (options != null && (dataContractSurrogate = Options.GetSurrogate()) != null)
+            ISerializationSurrogateProvider? dataContractSurrogate;
+            if (Options != null && (dataContractSurrogate = Options.GetSurrogate()) != null)
                 type = DataContractSurrogateCaller.GetDataContractType(dataContractSurrogate, type);
-#endif
             return type;
         }
+#else
+        private static Type GetSurrogatedType(Type type)
+        {
+            return type;
+        }
+#endif
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+#if smolloy_add_ext_surrogate || smolloy_add_schema_import
+        private void CheckAndAddType(Type type)
+#else
         private static void CheckAndAddType(Type type)
+#endif
         {
             type = GetSurrogatedType(type);
             if (!type.ContainsGenericParameters && DataContract.IsTypeSerializable(type))
@@ -195,7 +227,11 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+#if smolloy_add_schema_import
+        private void AddType(Type type)
+#else
         private static void AddType(Type type)
+#endif
         {
             DataContractSet.Add(type);
         }

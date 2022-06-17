@@ -46,7 +46,7 @@ namespace System.Runtime.Serialization
         internal XmlObjectSerializerContext(DataContractSerializer serializer, DataContract rootTypeDataContract, DataContractResolver? dataContractResolver)
             : this(serializer,
             serializer.MaxItemsInObjectGraph,
-            default(StreamingContext),
+            new StreamingContext(StreamingContextStates.All),
             serializer.IgnoreExtensionDataObject,
             dataContractResolver
             )
@@ -55,18 +55,11 @@ namespace System.Runtime.Serialization
             this.serializerKnownTypeList = serializer.knownTypeList;
         }
 
-
-        internal virtual SerializationMode Mode
-        {
-            get { return SerializationMode.SharedContract; }
-        }
-
         internal virtual bool IsGetOnlyCollection
         {
             get { return false; }
             set { }
         }
-
 
         internal StreamingContext GetStreamingContext()
         {
@@ -118,11 +111,11 @@ namespace System.Runtime.Serialization
         {
             if (IsGetOnlyCollection)
             {
-                return DataContract.GetGetOnlyCollectionDataContract(DataContract.GetId(typeHandle), typeHandle, type, Mode);
+                return DataContract.GetGetOnlyCollectionDataContract(DataContract.GetId(typeHandle), typeHandle, type);
             }
             else
             {
-                return DataContract.GetDataContract(typeHandle, type, Mode);
+                return DataContract.GetDataContract(typeHandle, type);
             }
         }
 
@@ -144,11 +137,11 @@ namespace System.Runtime.Serialization
         {
             if (IsGetOnlyCollection)
             {
-                return DataContract.GetGetOnlyCollectionDataContract(id, typeHandle, null /*type*/, Mode);
+                return DataContract.GetGetOnlyCollectionDataContract(id, typeHandle, null /*type*/);
             }
             else
             {
-                return DataContract.GetDataContract(id, typeHandle, Mode);
+                return DataContract.GetDataContract(id, typeHandle);
             }
         }
 
@@ -236,7 +229,7 @@ namespace System.Runtime.Serialization
         internal Type? ResolveNameFromKnownTypes(XmlQualifiedName typeName)
         {
             DataContract? dataContract = ResolveDataContractFromKnownTypes(typeName);
-            return dataContract == null ? null : dataContract.UnderlyingType;
+            return dataContract == null ? null : dataContract.OriginalUnderlyingType;
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
@@ -301,24 +294,6 @@ namespace System.Runtime.Serialization
                 collectionContract = itemContract as CollectionDataContract;
             }
             return null;
-        }
-
-        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal void PushKnownTypes(DataContract dc)
-        {
-            if (dc != null && dc.KnownDataContracts != null)
-            {
-                scopedKnownTypes.Push(dc.KnownDataContracts);
-            }
-        }
-
-        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal void PopKnownTypes(DataContract dc)
-        {
-            if (dc != null && dc.KnownDataContracts != null)
-            {
-                scopedKnownTypes.Pop();
-            }
         }
     }
 }

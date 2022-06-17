@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+#if smolloy_add_schema_import
 using System.ComponentModel;
+#endif
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -76,8 +78,28 @@ namespace System.Runtime.Serialization
             s_typeOfDateTimeOffset ??= typeof(DateTimeOffset);
 
         private static Type? s_typeOfDateTimeOffsetAdapter;
-        internal static Type TypeOfDateTimeOffsetAdapter =>
-            s_typeOfDateTimeOffsetAdapter ??= typeof(DateTimeOffsetAdapter);
+        internal static Type TypeOfDateTimeOffsetAdapter
+        {
+            get
+            {
+                if (s_typeOfDateTimeOffsetAdapter == null)
+                    s_typeOfDateTimeOffsetAdapter = typeof(DateTimeOffsetAdapter);
+                return s_typeOfDateTimeOffsetAdapter;
+            }
+        }
+
+#if smolloy_add_schema_import
+        private static Type? s_typeOfListGeneric;
+        internal static Type TypeOfListGeneric
+        {
+            get
+            {
+                if (s_typeOfListGeneric == null)
+                    s_typeOfListGeneric = typeof(List<>);
+                return s_typeOfListGeneric;
+            }
+        }
+#endif
 
         private static Type? s_typeOfMemoryStream;
         internal static Type TypeOfMemoryStream =>
@@ -94,6 +116,34 @@ namespace System.Runtime.Serialization
         private static Type? s_typeOfTypeEnumerable;
         internal static Type TypeOfTypeEnumerable =>
             s_typeOfTypeEnumerable ??= typeof(IEnumerable<Type>);
+
+#if smolloy_add_schema_import
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields)]
+        private static Type? s_typeOfSchemaTypePlaceholder;
+        internal static Type TypeOfSchemaTypePlaceholder
+        {
+            [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields)]
+            get
+            {
+                if (s_typeOfSchemaTypePlaceholder == null)
+                {
+                    s_typeOfSchemaTypePlaceholder = typeof(SchemaTypePlaceholder);
+                }
+                return s_typeOfSchemaTypePlaceholder;
+            }
+        }
+
+        private static MemberInfo? s_schemaMemberInfoPlaceholder;
+        internal static MemberInfo SchemaMemberInfoPlaceholder
+        {
+            get
+            {
+                if (s_schemaMemberInfoPlaceholder == null)
+                    s_schemaMemberInfoPlaceholder = TypeOfSchemaTypePlaceholder.GetField("_stableName", BindingFlags.NonPublic | BindingFlags.Instance)!;
+                return s_schemaMemberInfoPlaceholder;
+            }
+        }
+#endif
 
         private static Type? s_typeOfStreamingContext;
         internal static Type TypeOfStreamingContext =>
@@ -159,6 +209,74 @@ namespace System.Runtime.Serialization
         internal static Type TypeOfObjectArray =>
             s_typeOfObjectArray ??= typeof(object[]);
 
+#if smolloy_add_schema_import
+        private static Type? s_typeOfContractNamespaceAttribute;
+        internal static Type TypeOfContractNamespaceAttribute
+        {
+            get
+            {
+                if (s_typeOfContractNamespaceAttribute == null)
+                    s_typeOfContractNamespaceAttribute = typeof(ContractNamespaceAttribute);
+                return s_typeOfContractNamespaceAttribute;
+            }
+        }
+
+        private static Type? s_typeOfSerializableAttribute;
+        internal static Type TypeOfSerializableAttribute
+        {
+            get
+            {
+                if (s_typeOfSerializableAttribute == null)
+                    s_typeOfSerializableAttribute = typeof(SerializableAttribute);
+                return s_typeOfSerializableAttribute;
+            }
+        }
+
+        private static Type? s_typeOfNonSerializedAttribute;
+        internal static Type TypeOfNonSerializedAttribute
+        {
+            get
+            {
+                if (s_typeOfNonSerializedAttribute == null)
+                    s_typeOfNonSerializedAttribute = typeof(NonSerializedAttribute);
+                return s_typeOfNonSerializedAttribute;
+            }
+        }
+
+        private static Type? s_typeOfSerializationInfo;
+        internal static Type TypeOfSerializationInfo
+        {
+            get
+            {
+                if (s_typeOfSerializationInfo == null)
+                    s_typeOfSerializationInfo = typeof(SerializationInfo);
+                return s_typeOfSerializationInfo;
+            }
+        }
+
+        private static Type? s_typeOfSerializationInfoEnumerator;
+        internal static Type TypeOfSerializationInfoEnumerator
+        {
+            get
+            {
+                if (s_typeOfSerializationInfoEnumerator == null)
+                    s_typeOfSerializationInfoEnumerator = typeof(SerializationInfoEnumerator);
+                return s_typeOfSerializationInfoEnumerator;
+            }
+        }
+
+        private static Type? s_typeOfSerializationEntry;
+        internal static Type TypeOfSerializationEntry
+        {
+            get
+            {
+                if (s_typeOfSerializationEntry == null)
+                    s_typeOfSerializationEntry = typeof(SerializationEntry);
+                return s_typeOfSerializationEntry;
+            }
+        }
+#endif
+
         private static Type? s_typeOfOnSerializingAttribute;
         internal static Type TypeOfOnSerializingAttribute =>
             s_typeOfOnSerializingAttribute ??= typeof(OnSerializingAttribute);
@@ -199,6 +317,41 @@ namespace System.Runtime.Serialization
         internal static Type TypeOfXmlSchemaType =>
             s_typeOfXmlSchemaType ??= typeof(XmlSchemaType);
 
+#if smolloy_add_schema_import
+        private static Type? s_typeOfXmlSerializableServices;
+        internal static Type TypeOfXmlSerializableServices
+        {
+            get
+            {
+                if (s_typeOfXmlSerializableServices == null)
+                    s_typeOfXmlSerializableServices = typeof(XmlSerializableServices);
+                return s_typeOfXmlSerializableServices;
+            }
+        }
+
+        private static Type? s_typeOfXmlSchemaSet;
+        internal static Type TypeOfXmlSchemaSet
+        {
+            get
+            {
+                if (s_typeOfXmlSchemaSet == null)
+                    s_typeOfXmlSchemaSet = typeof(XmlSchemaSet);
+                return s_typeOfXmlSchemaSet;
+            }
+        }
+
+        private static Type? s_typeOfIPropertyChange;
+        internal static Type TypeOfIPropertyChange
+        {
+            get
+            {
+                if (s_typeOfIPropertyChange == null)
+                    s_typeOfIPropertyChange = typeof(INotifyPropertyChanged);
+                return s_typeOfIPropertyChange;
+            }
+        }
+#endif
+
         private static Type? s_typeOfIExtensibleDataObject;
         internal static Type TypeOfIExtensibleDataObject =>
             s_typeOfIExtensibleDataObject ??= typeof(IExtensibleDataObject);
@@ -226,6 +379,9 @@ namespace System.Runtime.Serialization
         private static Type? s_typeOfNullable;
         internal static Type TypeOfNullable =>
             s_typeOfNullable ??= typeof(Nullable<>);
+
+        private static Type? s_typeOfReflectionPointer;
+        internal static Type TypeOfReflectionPointer => s_typeOfReflectionPointer ?? (s_typeOfReflectionPointer = typeof(System.Reflection.Pointer));
 
         private static Type? s_typeOfIDictionaryGeneric;
         internal static Type TypeOfIDictionaryGeneric =>
@@ -271,9 +427,18 @@ namespace System.Runtime.Serialization
         internal static Type TypeOfKeyValuePair =>
             s_typeOfKeyValuePair ??= typeof(KeyValuePair<,>);
 
+#if smolloy_keep_kvpadapter
         private static Type? s_typeOfKeyValuePairAdapter;
-        internal static Type TypeOfKeyValuePairAdapter =>
-            s_typeOfKeyValuePairAdapter ??= typeof(KeyValuePairAdapter<,>);
+        internal static Type TypeOfKeyValuePairAdapter
+        {
+            get
+            {
+                if (s_typeOfKeyValuePairAdapter == null)
+                    s_typeOfKeyValuePairAdapter = typeof(KeyValuePairAdapter<,>);
+                return s_typeOfKeyValuePairAdapter;
+            }
+        }
+#endif
 
         private static Type? s_typeOfKeyValue;
         internal static Type TypeOfKeyValue =>
@@ -318,18 +483,6 @@ namespace System.Runtime.Serialization
         internal static Uri DataContractXsdBaseNamespaceUri =>
             s_dataContractXsdBaseNamespaceUri ??= new Uri(DataContractXsdBaseNamespace);
 
-        private static readonly Type? s_typeOfScriptObject;
-
-        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal static ClassDataContract CreateScriptObjectClassDataContract()
-        {
-            Debug.Assert(s_typeOfScriptObject != null);
-            return new ClassDataContract(s_typeOfScriptObject);
-        }
-
-        internal static bool TypeOfScriptObject_IsAssignableFrom(Type type) =>
-            s_typeOfScriptObject != null && s_typeOfScriptObject.IsAssignableFrom(type);
-
         public const bool DefaultIsRequired = false;
         public const bool DefaultEmitDefaultValue = true;
         public const int DefaultOrder = 0;
@@ -341,6 +494,10 @@ namespace System.Runtime.Serialization
         public const string FullSRSInternalsVisiblePattern = @"^[\s]*System\.Runtime\.Serialization[\s]*,[\s]*PublicKey[\s]*=[\s]*(?i:00240000048000009400000006020000002400005253413100040000010001008d56c76f9e8649383049f383c44be0ec204181822a6c31cf5eb7ef486944d032188ea1d3920763712ccb12d75fb77e9811149e6148e5d32fbaab37611c1878ddc19e20ef135d0cb2cff2bfec3d115810c3d9069638fe4be215dbf795861920e5ab6f7db2e2ceef136ac23d5dd2bf031700aec232f6c6b1c785b4305c123b37ab)[\s]*$";
         [RegexGenerator(FullSRSInternalsVisiblePattern)]
         public static partial Regex FullSRSInternalsVisibleRegex();
+        public const char SpaceChar = ' ';
+        public const char OpenBracketChar = '[';
+        public const char CloseBracketChar = ']';
+        public const char CommaChar = ',';
         public const string Space = " ";
         public const string XsiPrefix = "i";
         public const string XsdPrefix = "x";

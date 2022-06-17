@@ -8,18 +8,19 @@ namespace System.Runtime.Serialization
     public class ExportOptions
     {
         private Collection<Type>? _knownTypes;
-#if SUPPORT_SURROGATE
-        private IDataContractSurrogate? _dataContractSurrogate;
+#if smolloy_add_ext_surrogate
+        // NOTE TODO smolloy WARNING!!!! - This is modifying (adding to) a public API. Would have been great if we could have sealed this class.
+        private ISerializationExtendedSurrogateProvider? _serializationExtendedSurrogateProvider;
 
-        public IDataContractSurrogate? DataContractSurrogate
+        public ISerializationExtendedSurrogateProvider? SerializationExtendedSurrogateProvider
         {
-            get { return _dataContractSurrogate; }
-            set { _dataContractSurrogate = value; }
+            get { return _serializationExtendedSurrogateProvider; }
+            set { _serializationExtendedSurrogateProvider = value; }
         }
 
-        internal IDataContractSurrogate? GetSurrogate()
+        internal ISerializationExtendedSurrogateProvider? GetSurrogate()
         {
-            return _dataContractSurrogate;
+            return _serializationExtendedSurrogateProvider;
         }
 #endif
 

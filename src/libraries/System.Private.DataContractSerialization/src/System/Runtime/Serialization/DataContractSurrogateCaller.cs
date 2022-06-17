@@ -40,5 +40,38 @@ namespace System.Runtime.Serialization
                 return obj;
             return surrogateProvider.GetDeserializedObject(obj, memberType);
         }
+
+#if smolloy_add_ext_surrogate
+        internal static object? GetCustomDataToExport(ISerializationExtendedSurrogateProvider surrogateProvider, MemberInfo memberInfo, Type dataContractType)
+        {
+            return surrogateProvider.GetCustomDataToExport(memberInfo, dataContractType);
+        }
+
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal static object? GetCustomDataToExport(ISerializationExtendedSurrogateProvider surrogateProvider, Type clrType, Type dataContractType)
+        {
+            if (DataContract.GetBuiltInDataContract(clrType) != null)
+                return null;
+            return surrogateProvider.GetCustomDataToExport(clrType, dataContractType);
+        }
+
+        internal static void GetKnownCustomDataTypes(ISerializationExtendedSurrogateProvider surrogate, Collection<Type> customDataTypes)
+        {
+            surrogate.GetKnownCustomDataTypes(customDataTypes);
+        }
+
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal static Type? GetReferencedTypeOnImport(ISerializationExtendedSurrogateProvider surrogateProvider, string typeName, string typeNamespace, object? customData)
+        {
+            if (DataContract.GetBuiltInDataContract(typeName, typeNamespace) != null)
+                return null;
+            return surrogateProvider.GetReferencedTypeOnImport(typeName, typeNamespace, customData);
+        }
+
+        internal static CodeTypeDeclaration? ProcessImportedType(ISerializationExtendedSurrogateProvider surrogateProvider, CodeTypeDeclaration typeDeclaration, CodeCompileUnit compileUnit)
+        {
+            return surrogateProvider.ProcessImportedType(typeDeclaration, compileUnit);
+        }
+#endif
     }
 }
