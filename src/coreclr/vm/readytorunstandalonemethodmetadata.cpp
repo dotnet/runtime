@@ -292,7 +292,7 @@ public:
                         StandaloneSigTranslator sigTranslator(&memberRefSigParse, &blob, this);
                         sigTranslator.ParseMemberRefSignature();
                         ULONG strLen = (ULONG)strlen(name); // Cast to ULONG is safe, as the data is held in a PE file
-                        blob.AppendData((ULONG)strlen(name));
+                        blob.AppendData(strLen);
                         blob.AppendBlob((const PVOID)name, strLen);
                         blob.AppendData(MemberRefParentCodedIndex(GetAlternateToken(memberRefParent)));
                         break;
@@ -311,7 +311,7 @@ public:
                         StandaloneSigTranslator sigTranslator(&methodDefSigParse, &blob, this);
                         sigTranslator.ParseMethodSignature();
                         ULONG strLen = (ULONG)strlen(name); // Cast to ULONG is safe, as the data is held in a PE file
-                        blob.AppendData((ULONG)strlen(name));
+                        blob.AppendData(strLen);
                         blob.AppendBlob((const PVOID)name, strLen);
                         blob.AppendData(MemberRefParentCodedIndex(GetAlternateToken(methodDefParent)));
                         break;
@@ -331,7 +331,7 @@ public:
                         StandaloneSigTranslator sigTranslator(&fieldDefSigParse, &blob, this);
                         sigTranslator.ParseFieldSignature();
                         ULONG strLen = (ULONG)strlen(name); // Cast to ULONG is safe, as the data is held in a PE file
-                        blob.AppendData((ULONG)strlen(name));
+                        blob.AppendData(strLen);
                         blob.AppendBlob((const PVOID)name, strLen);
                         blob.AppendData(MemberRefParentCodedIndex(GetAlternateToken(fieldDefParent)));
                         break;

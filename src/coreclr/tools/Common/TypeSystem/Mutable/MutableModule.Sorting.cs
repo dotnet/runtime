@@ -10,7 +10,7 @@ namespace Internal.TypeSystem.Ecma
 {
     partial class MutableModule
     {
-        // This isn't deterministic, but it is functional.
+        // This isn't deterministic, but it is functional. At this time, since only 1 MutableModule is contained in a build, it will be deterministic as it will always return 0.
         static int s_globalIndex = 0;
 
         int _index = Interlocked.Increment(ref s_globalIndex);

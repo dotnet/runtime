@@ -611,22 +611,22 @@ manifest metadata representing the versioning bubble.
 ## ReadyToRunSectionType.CrossModuleInlineInfo (v6.2+)
 The inlining information section captures what methods got inlined into other methods. It consists of a single _Native Format Hashtable_ (described below).
 
-The entries in the hashtable are lists of inliners for each inlinee. One entry in the hashtable corresponds to one inlinee. The hashtable is hashed the version resilient hashcode of the uninstantiated methoddef inlinee.
+The entries in the hashtable are lists of inliners for each inlinee. One entry in the hashtable corresponds to one inlinee. The hashtable is hashed with the version resilient hashcode of the uninstantiated methoddef inlinee.
 
-The entry of the hashtable is a counted sequence of compressed unsigned integers which begins with an InlineeIndex which has flags which then defines how a sequence of inliners may be read from the file.
+The entry of the hashtable is a counted sequence of compressed unsigned integers which begins with an InlineeIndex which combines a 30 bit index with 2 bits of flags which how the sequence of inliners shall be parsed and what table is to be indexed into to find the inlinee.
 
 * InlineeIndex
   * Index with 2 flags field in lowest 2 bits to define the inlinee
-    - If flags & 1 == 0 then index is a MethodDef RID, and if the module is a composite image, a module index of the method follows
-    - If flags & 1 == 1, then index is an index into the ILBody import section
-    - If flags & 2 == 0 then inliner list is:
+    - If (flags & 1) == 0 then index is a MethodDef RID, and if the module is a composite image, a module index of the method follows
+    - If (flags & 1) == 1, then index is an index into the ILBody import section
+    - If (flags & 2) == 0 then inliner list is:
       - Inliner RID deltas - See definition below
-    - if flags & 2 == 2 then what follows is:
+    - if (flags & 2) == 2 then what follows is:
       - count of delta encoded indices into the ILBody import section
       - the sequence of delta encoded indices into the first import section with a type of READYTORUN_IMPORT_SECTION_TYPE_ILBODYFIXUPS
       - Inliner RID deltas - See definition below
 
-* Inliner RID deltas (for multi-module version bubble images (specified by the module having the READYTORUN_FLAG_MULTIMODULE_VERSION_BUBBLE flag set)
+* Inliner RID deltas (for multi-module version bubble images specified by the module having the READYTORUN_FLAG_MULTIMODULE_VERSION_BUBBLE flag set)
   - a sequence of inliner RID deltas with flag in the lowest bit
   - if flag is set, the inliner RID is followed by a module ID
   - otherwise the module is the same as the module of the inlinee method

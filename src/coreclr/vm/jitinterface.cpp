@@ -14042,14 +14042,20 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                     pMDCompare->GetFullMethodInfo(methodName);
                     void* compileTimeTypes = types.OpenRawBuffer();
 
+                    int runtimeMethodDataSize = pMethodMetadata != NULL ? (int)pMethodMetadata->cByteData : 0;
+                    void* runtimeMethodData = pMethodMetadata != NULL ? (void*)pMethodMetadata->pByteData : (void*)NULL;
+
+                    int runtimeTypeCount = pMethodMetadata != NULL ? (int)pMethodMetadata->cTypes : 0;
+                    void* runtimeTypeData = pMethodMetadata != NULL ? (void*)pMethodMetadata->pTypes : (void*)NULL;
+
                     SString fatalErrorString;
                     fatalErrorString.Printf(W("VERIFY_IL_BODY Method '%s' type '%s' does not match IL body expected DEBUGINFO MethodData {%d} {%p} RuntimeMethodData {%d} {%p} Types {%d} {%p} RuntimeTypes {%d} {%p}"),
                         methodName.GetUnicode(),
                         GetFullyQualifiedNameForClassW(pMDCompare->GetMethodTable()),
                         (int)dwBlobSize, pBlobStart,
-                        pMethodMetadata != NULL ? (int)pMethodMetadata->cByteData : 0, pMethodMetadata != NULL ? (void*)pMethodMetadata->pByteData : (void*)NULL,
+                        runtimeMethodDataSize, runtimeMethodData,
                         (int)cTypes, compileTimeTypes,
-                        pMethodMetadata != NULL ? (int)pMethodMetadata->cTypes : 0, pMethodMetadata != NULL ? (void*)pMethodMetadata->pTypes : (void*)NULL
+                        runtimeTypeCount, runtimeTypeData
                         );
 
 #ifdef _DEBUG

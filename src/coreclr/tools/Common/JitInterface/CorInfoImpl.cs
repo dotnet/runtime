@@ -1222,11 +1222,13 @@ namespace Internal.JitInterface
         private bool getMethodInfo(CORINFO_METHOD_STRUCT_* ftn, CORINFO_METHOD_INFO* info)
         {
             MethodDesc method = HandleToObject(ftn);
+#if READYTORUN
             // Add an early CanInline check to see if referring to the IL of the target methods is
             // permitted from within this MethodBeingCompiled, the full CanInline check will be performed
             // later.
             if (!_compilation.CanInline(MethodBeingCompiled, method))
                 return false;
+#endif
             MethodIL methodIL = _compilation.GetMethodIL(method);
             return Get_CORINFO_METHOD_INFO(method, methodIL, info);
         }

@@ -2991,6 +2991,8 @@ ModuleBase::GetAssemblyIfLoaded(
             AppDomain * pAppDomainExamine = AppDomain::GetCurrentDomain();
             _ASSERTE(!"Handle remote load scenarios");
 #ifdef ENABLE_LATER
+            // This (or something like it) will need to be enabled when cross module inlining supports modules other that System.Private.CoreLib.
+
             DomainAssembly * pCurAssemblyInExamineDomain = GetAssembly()->GetDomainAssembly();
             if (pCurAssemblyInExamineDomain == NULL)
             {

@@ -514,7 +514,7 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
     {
         Module* pDefiningModule = GetModule();
         // Lookup in the defining module of the generic (which is where in inputbubble scenarios
-        // that the methods may be placed.
+        // the methods may be placed.
         if (pDefiningModule != pModule && pDefiningModule->IsReadyToRun())
         {
             pCode = pDefiningModule->GetReadyToRunInfo()->GetEntryPoint(this, pConfig, TRUE /* fFixups */);
