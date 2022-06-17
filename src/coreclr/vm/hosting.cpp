@@ -8,7 +8,6 @@
 #include "corhost.h"
 #include "threads.h"
 
-#undef VirtualAlloc
 LPVOID ClrVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect) {
     CONTRACTL
     {
@@ -78,9 +77,7 @@ LPVOID ClrVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, 
     }
 
 }
-#define VirtualAlloc(lpAddress, dwSize, flAllocationType, flProtect) Dont_Use_VirtualAlloc(lpAddress, dwSize, flAllocationType, flProtect)
 
-#undef VirtualFree
 BOOL ClrVirtualFree(LPVOID lpAddress, SIZE_T dwSize, DWORD dwFreeType) {
     CONTRACTL
     {
@@ -91,9 +88,7 @@ BOOL ClrVirtualFree(LPVOID lpAddress, SIZE_T dwSize, DWORD dwFreeType) {
 
     return (BOOL)(BYTE)::VirtualFree (lpAddress, dwSize, dwFreeType);
 }
-#define VirtualFree(lpAddress, dwSize, dwFreeType) Dont_Use_VirtualFree(lpAddress, dwSize, dwFreeType)
 
-#undef VirtualQuery
 SIZE_T ClrVirtualQuery(LPCVOID lpAddress, PMEMORY_BASIC_INFORMATION lpBuffer, SIZE_T dwLength)
 {
     CONTRACTL
@@ -107,7 +102,6 @@ SIZE_T ClrVirtualQuery(LPCVOID lpAddress, PMEMORY_BASIC_INFORMATION lpBuffer, SI
         return ::VirtualQuery(lpAddress, lpBuffer, dwLength);
     }
 }
-#define VirtualQuery(lpAddress, lpBuffer, dwLength) Dont_Use_VirtualQuery(lpAddress, lpBuffer, dwLength)
 
 #if defined(_DEBUG) && !defined(TARGET_UNIX)
 static VolatilePtr<BYTE> s_pStartOfUEFSection = NULL;
@@ -115,7 +109,6 @@ static VolatilePtr<BYTE> s_pEndOfUEFSectionBoundary = NULL;
 static Volatile<DWORD> s_dwProtection = 0;
 #endif // _DEBUG && !TARGET_UNIX
 
-#undef VirtualProtect
 BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWORD lpflOldProtect)
 {
     CONTRACTL
@@ -235,7 +228,6 @@ BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWO
 
     return ::VirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect);
 }
-#define VirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect) Dont_Use_VirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect)
 
 DWORD ClrSleepEx(DWORD dwMilliseconds, BOOL bAlertable)
 {

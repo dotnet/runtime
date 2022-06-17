@@ -6746,11 +6746,7 @@ BOOL Thread::DoesRegionContainGuardPage(UINT_PTR uLowAddress, UINT_PTR uHighAddr
 
     while (uStartOfCurrentRegion < uHighAddress)
     {
-#undef VirtualQuery
-        // This code can run below YieldTask, which means that it must not call back into the host.
-        // The reason is that YieldTask is invoked by the host, and the host needs not be reentrant.
         dwRes = VirtualQuery((const void *)uStartOfCurrentRegion, &meminfo, sizeof(meminfo));
-#define VirtualQuery(lpAddress, lpBuffer, dwLength) Dont_Use_VirtualQuery(lpAddress, lpBuffer, dwLength)
 
         // If the query fails then assume we have no guard page.
         if (sizeof(meminfo) != dwRes)
