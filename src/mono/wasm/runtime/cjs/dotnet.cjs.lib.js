@@ -73,6 +73,10 @@ const linked_functions = [
     "dotnet_browser_can_use_subtle_crypto_impl",
     "dotnet_browser_simple_digest_hash",
     "dotnet_browser_sign",
+
+    /// mono-threads-wasm.c
+    "mono_wasm_pthread_on_pthread_created_main_thread",
+    "mono_wasm_on_pthread_created",
 ];
 
 // -- this javascript file is evaluated by emcc during compilation! --

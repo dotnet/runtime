@@ -74,6 +74,7 @@ import {
     dotnet_browser_simple_digest_hash,
     dotnet_browser_sign
 } from "./crypto-worker";
+import { mono_wasm_on_pthread_created, mono_wasm_pthread_on_pthread_created_main_thread } from "./pthread-channel";
 
 const MONO = {
     // current "public" MONO API
@@ -377,6 +378,10 @@ export const __linker_exports: any = {
     dotnet_browser_can_use_subtle_crypto_impl,
     dotnet_browser_simple_digest_hash,
     dotnet_browser_sign
+
+    // mono-threads-wasm.c
+    mono_wasm_pthread_on_pthread_created_main_thread,
+    mono_wasm_on_pthread_created,
 };
 
 const INTERNAL: any = {
