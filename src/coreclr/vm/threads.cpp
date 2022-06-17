@@ -1006,10 +1006,8 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
     while (m_dwThreadHandleBeingUsed > 0)
     {
         // Another thread is using the handle now.
-#undef Sleep
         // We can not call __SwitchToThread since we can not go back to host.
-        ::Sleep(10);
-#define Sleep(a) Dont_Use_Sleep(a)
+        ClrSleepEx(10, FALSE);
     }
     if (m_WeOwnThreadHandle && m_ThreadHandleForClose == INVALID_HANDLE_VALUE)
     {

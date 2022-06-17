@@ -237,7 +237,6 @@ BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWO
 }
 #define VirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect) Dont_Use_VirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect)
 
-#undef SleepEx
 DWORD ClrSleepEx(DWORD dwMilliseconds, BOOL bAlertable)
 {
     CONTRACTL
@@ -248,16 +247,8 @@ DWORD ClrSleepEx(DWORD dwMilliseconds, BOOL bAlertable)
     }
     CONTRACTL_END;
 
-    DWORD res;
-
-    {
-        res = ::SleepEx(dwMilliseconds, bAlertable);
-    }
-
-    return res;
+    return ::SleepEx(dwMilliseconds, bAlertable);
 }
-#define SleepEx(dwMilliseconds,bAlertable) \
-        Dont_Use_SleepEx(dwMilliseconds,bAlertable)
 
 // non-zero return value if this function causes the OS to switch to another thread
 // See file:spinlock.h#SwitchToThreadSpinning for an explanation of dwSwitchCount
