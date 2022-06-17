@@ -12649,8 +12649,8 @@ SKIP:
 //------------------------------------------------------------------------
 // fgOptimizeRelationalComparisonWithFullRangeConst: optimizes a comparison operation.
 //
-// Recognizes "Always false" comparisons against various full range constant operands and morphs
-// them into zero.
+// Recognizes "Always false"/"Always true" comparisons against various full range constant operands and morphs
+// them into zero/one.
 //
 // Arguments:
 //   cmp - the GT_LT/GT_GT tree to morph.
@@ -12658,7 +12658,7 @@ SKIP:
 // Return Value:
 //   1. The unmodified "cmp" tree.
 //   2. A CNS_INT node containing zero.
-//   3. A GT_COMMA node containing side effects along with a CNS_INT node containing zero
+//   3. A CNS_INT node containing one.
 // Assumptions:
 //   The second operand is an integral constant or the first operand is an integral constant.
 //
@@ -12751,7 +12751,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* c
 
     if (ret != nullptr)
     {
-        ret->SetVNsFromNode(cmp);
+        fgUpdateConstTreeValueNumber(ret);
 
         DEBUG_DESTROY_NODE(cmp);
 
