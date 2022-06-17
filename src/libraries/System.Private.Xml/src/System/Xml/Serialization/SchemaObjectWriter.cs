@@ -95,23 +95,20 @@ namespace System.Xml.Serialization
             {
                 return ((XmlSchemaNotation)o).QualifiedName;
             }
-            else if (o is XmlSchemaSequence)
+            else if (o is XmlSchemaSequence s)
             {
-                XmlSchemaSequence s = (XmlSchemaSequence)o;
                 if (s.Items.Count == 0)
                     return new XmlQualifiedName(".sequence", Namespace(o));
                 return NameOf(s.Items[0]);
             }
-            else if (o is XmlSchemaAll)
+            else if (o is XmlSchemaAll a)
             {
-                XmlSchemaAll a = (XmlSchemaAll)o;
                 if (a.Items.Count == 0)
                     return new XmlQualifiedName(".all", Namespace(o));
                 return NameOf(a.Items);
             }
-            else if (o is XmlSchemaChoice)
+            else if (o is XmlSchemaChoice c)
             {
-                XmlSchemaChoice c = (XmlSchemaChoice)o;
                 if (c.Items.Count == 0)
                     return new XmlQualifiedName(".choice", Namespace(o));
                 return NameOf(c.Items);
