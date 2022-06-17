@@ -12316,7 +12316,10 @@ emit_unwind_info_sections_win32 (MonoAotCompile *acfg, const char *function_star
  * extra methods should be generated for the method.
  * For example: If a method has at least one generic parameter constrained to a reference type (reference_type=TRUE), then REF shared method must be generated.
  * On the other hand, if a method has at least one generic parameters constrained to a value type (reference_type=FALSE), then GSHAREDVT method must be generated.
- * Special case is when there are no constrains specified, then extra methods must be generated.
+ * Special cases when extra methods are always generated: 
+ * 	- method of generic type is generic
+ *  - no constraints specified
+ *  - new() constraint specified
  * 
  * Returns: TRUE - extra method should be generated, otherwise FALSE
  */
@@ -12345,7 +12348,9 @@ should_emit_extra_method_for_generics (MonoMethod *method, gboolean reference_ty
 
 	for (unsigned int i = 0; i < gen_param_count; i++) {
 		gen_param = mono_generic_container_get_param (gen_container, i);
-		if ((gen_param->info.flags & gen_constraint_mask) || (gen_param->info.flags == GENERIC_PARAMETER_ATTRIBUTE_NO_SPECIAL_CONSTRAINT))
+		if (gen_param->info.flags == GENERIC_PARAMETER_ATTRIBUTE_NO_SPECIAL_CONSTRAINT || 
+			gen_param->info.flags == GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT || 
+			(gen_param->info.flags & gen_constraint_mask))
 			return TRUE;
 	}
 	return FALSE;
