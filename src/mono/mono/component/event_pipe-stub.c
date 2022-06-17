@@ -555,6 +555,11 @@ mono_wasm_event_pipe_session_disable (MonoWasmEventPipeSessionID session_id)
 void
 mono_wasm_event_pipe_set_early_startup_callback (mono_wasm_event_pipe_early_startup_cb callback)
 {
+#ifdef HOST_BROWSER
+	EM_ASM({
+			console.log ('in stub early callback\n');
+		});
+#endif
 }
 
 #endif /* HOST_WASM */

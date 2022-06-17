@@ -423,6 +423,9 @@ mono_wasm_event_pipe_set_early_startup_callback (mono_wasm_event_pipe_early_star
 void
 invoke_wasm_early_startup_callback (void)
 {
+	EM_ASM({
+			console.log ('in real invoke early callback\n');
+		});
 	if (wasm_early_startup_callback)
 		wasm_early_startup_callback ();
 }
