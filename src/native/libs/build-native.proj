@@ -6,7 +6,9 @@
     <AssemblyName>.NET Runtime</AssemblyName>
     <_BuildNativeTargetOS>$(TargetOS)</_BuildNativeTargetOS>
     <_BuildNativeTargetOS Condition="'$(TargetsLinuxBionic)' == 'true'">linux-bionic</_BuildNativeTargetOS>
-    <_BuildNativeArgs>$(TargetArchitecture) $(Configuration) outconfig $(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture) -os $(_BuildNativeTargetOS)</_BuildNativeArgs>
+    <_BuildNativeFolder>$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</_BuildNativeFolder>
+    <_BuildNativeFolder Condition="'$(MonoWasmBuildVariant)' != ''">$(_BuildNativeFolder)-$(MonoWasmBuildVariant)</_BuildNativeFolder>
+    <_BuildNativeArgs>$(TargetArchitecture) $(Configuration) outconfig $(_BuildNativeFolder) -os $(_BuildNativeTargetOS)</_BuildNativeArgs>
     <_BuildNativeArgs Condition="'$(OfficialBuildId)' != ''">$(_BuildNativeArgs) /p:OfficialBuildId="$(OfficialBuildId)"</_BuildNativeArgs>
   </PropertyGroup>
 
