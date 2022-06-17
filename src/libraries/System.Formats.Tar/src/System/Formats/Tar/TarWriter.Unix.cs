@@ -16,7 +16,7 @@ namespace System.Formats.Tar
         private readonly Dictionary<uint, string> _groupIdentifiers = new Dictionary<uint, string>();
 
         // Unix specific implementation of the method that reads an entry from disk and writes it into the archive stream.
-        partial void ReadFileFromDiskAndWriteToArchiveStreamAsEntry(string fullPath, string entryName)
+        private void ReadFileFromDiskAndWriteToArchiveStreamAsEntry(string fullPath, string entryName)
         {
             Interop.Sys.FileStatus status = default;
             status.Mode = default;
@@ -104,7 +104,7 @@ namespace System.Formats.Tar
         }
 
         // Unix specific implementation of the method that reads an entry from disk and writes it into the archive stream.
-        private async partial Task ReadFileFromDiskAndWriteToArchiveStreamAsEntryAsync(string fullPath, string entryName, CancellationToken cancellationToken)
+        private async Task ReadFileFromDiskAndWriteToArchiveStreamAsEntryAsync(string fullPath, string entryName, CancellationToken cancellationToken)
         {
             Interop.Sys.FileStatus status = default;
             status.Mode = default;

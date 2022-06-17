@@ -375,11 +375,5 @@ namespace System.Formats.Tar
             await _archiveStream.WriteAsync(emptyRecord, cancellationToken: default).ConfigureAwait(false);
             await _archiveStream.WriteAsync(emptyRecord, cancellationToken: default).ConfigureAwait(false);
         }
-
-        // Partial method for reading an entry from disk and writing it into the archive stream.
-        partial void ReadFileFromDiskAndWriteToArchiveStreamAsEntry(string fullPath, string entryName);
-
-        // Partial method for reading an entry from disk and writing it into the archive stream.
-        private partial Task ReadFileFromDiskAndWriteToArchiveStreamAsEntryAsync(string fullPath, string entryName, CancellationToken cancellationToken);
     }
 }

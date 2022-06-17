@@ -15,7 +15,7 @@ namespace System.Formats.Tar
         private const UnixFileMode DefaultWindowsMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.UserExecute;
 
         // Windows specific implementation of the method that reads an entry from disk and writes it into the archive stream.
-        partial void ReadFileFromDiskAndWriteToArchiveStreamAsEntry(string fullPath, string entryName)
+        private void ReadFileFromDiskAndWriteToArchiveStreamAsEntry(string fullPath, string entryName)
         {
             TarEntryType entryType;
             FileAttributes attributes = File.GetAttributes(fullPath);
@@ -81,7 +81,7 @@ namespace System.Formats.Tar
         }
 
         // Windows specific implementation of the method that asynchronously reads an entry from disk and writes it into the archive stream.
-        private async partial Task ReadFileFromDiskAndWriteToArchiveStreamAsEntryAsync(string fullPath, string entryName, CancellationToken cancellationToken)
+        private async Task ReadFileFromDiskAndWriteToArchiveStreamAsEntryAsync(string fullPath, string entryName, CancellationToken cancellationToken)
         {
             TarEntryType entryType;
             FileAttributes attributes = File.GetAttributes(fullPath);
