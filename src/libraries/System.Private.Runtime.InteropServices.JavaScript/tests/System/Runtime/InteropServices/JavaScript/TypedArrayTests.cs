@@ -34,5 +34,34 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.True(from.Length == 50);
             Assert.Equal("[object Uint8Array]", objectPrototype.Call(from));
         }
+        
+        [Fact]
+        public static void Uint8ArrayToArray()
+        {
+            var factory = new Function("size", "return new Uint8Array(new ArrayBuffer(size));");
+
+            int iterations = 10;
+            int bufferSize = 10 * 1024 * 1024;
+
+            var arrays = new Uint8Array[iterations];
+            for (int i = 0; i < iterations; i++)
+            {
+                arrays[i] = (Uint8Array)factory.Call(null, bufferSize);
+                Assert.Equal(bufferSize, arrays[i].Length);
+            }
+
+            for (int i = 0; i < iterations; i++)
+            {
+                var data = arrays[i].ToArray();
+                Assert.Equal(bufferSize, data.Length);
+            }
+
+            for (int i = 0; i < iterations; i++)
+            {
+                arrays[i].Dispose();
+            }
+
+            Threading.Thread.Sleep(5000);
+        }
     }
 }
