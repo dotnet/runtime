@@ -350,10 +350,6 @@
     <ProjectToBuild Include="$(MonoProjectRoot)monoaotcross.proj" Category="mono" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+mono.wasmvariants+'))">
-    <ProjectToBuild Include="$(MonoProjectRoot)monowasmvariants.proj" Category="mono" />
-  </ItemGroup>
-
   <ItemGroup Condition="$(_subset.Contains('+mono.corelib+'))">
     <ProjectToBuild Include="$(MonoProjectRoot)System.Private.CoreLib\System.Private.CoreLib.csproj" Category="mono" />
   </ItemGroup>
@@ -401,6 +397,10 @@
 
   <ItemGroup Condition="$(_subset.Contains('+mono.wasmruntime+'))">
     <ProjectToBuild Include="$(MonoProjectRoot)wasm\wasm.proj" Category="mono" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+mono.wasmvariants+'))">
+    <ProjectToBuild Include="$(MonoProjectRoot)monowasmvariants.proj" Category="mono" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+libs.pretest+'))">

@@ -6,11 +6,12 @@
     <!-- FIXME: clean up the duplication with libraries Directory.Build.props -->
     <PackageRID>browser-wasm</PackageRID>
     <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NativeBinDir>
+    <NativeBinDir Condition="'$(MonoWasmBuildVariant)' != ''">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)-$(MonoWasmBuildVariant)'))</NativeBinDir>
   </PropertyGroup>
 
   <PropertyGroup>
-    <MonoWasmThreads Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true'">true</MonoWasmThreads>
-    <MonoWasmThreadsNoUser Condition="'$(WasmEnableThreads)' != 'true' and '$(WasmEnablePerfTracing)' == 'true'">true</MonoWasmThreadsNoUser>
+    <MonoWasmThreads Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread' or '$(MonoWasmBuildVariant)' == 'perftrace'">true</MonoWasmThreads>
+    <MonoWasmThreadsNoUser Condition="('$(WasmEnableThreads)' != 'true' and '$(WasmEnablePerfTracing)' == 'true') or '$(MonoWasmBuildVariant)' == 'perftrace'">true</MonoWasmThreadsNoUser>
   </PropertyGroup>
 
   <PropertyGroup>
