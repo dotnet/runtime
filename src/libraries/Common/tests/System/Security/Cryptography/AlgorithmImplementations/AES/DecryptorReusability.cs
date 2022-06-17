@@ -7,11 +7,11 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 {
     using Aes = System.Security.Cryptography.Aes;
 
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public static class DecryptorReusability
     {
         // See https://github.com/dotnet/runtime/issues/21354 for details
         [ConditionalFact(nameof(ShouldDecryptorBeReusable))]
+        [SkipOnPlatform(TestPlatforms.Browser, "PaddingMode.None is not supported on Browser")] // TODO: eerhardt - can this test be re-written for Browser?
         public static void TestDecryptorReusability()
         {
             byte[] expectedPlainText = new byte[]

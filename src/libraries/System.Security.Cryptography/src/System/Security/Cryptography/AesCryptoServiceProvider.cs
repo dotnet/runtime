@@ -12,7 +12,6 @@ namespace System.Security.Cryptography
     {
         private readonly Aes _impl;
 
-        [UnsupportedOSPlatform("browser")]
         public AesCryptoServiceProvider()
         {
             // This class wraps Aes

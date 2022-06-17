@@ -9,7 +9,6 @@ namespace System.Security.Cryptography
 {
     [Obsolete(Obsoletions.RijndaelMessage, DiagnosticId = Obsoletions.RijndaelDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     [EditorBrowsable(EditorBrowsableState.Never)]
-    [UnsupportedOSPlatform("browser")]
     public sealed class RijndaelManaged : Rijndael
     {
         private readonly Aes _impl;
