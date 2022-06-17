@@ -134,5 +134,7 @@ namespace Microsoft.CodeAnalysis.DotnetRuntime.Extensions
             Private = 2,
             Friend = Internal,
         }
+
+
     }
 }
