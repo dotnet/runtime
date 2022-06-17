@@ -62,6 +62,17 @@ PhaseStatus Compiler::optRedundantBranches()
         block->bbFlags &= ~BBF_VISITED;
     }
 
+    // We've made some changes so it makes sense to try
+    // one more time
+    if (visitor.madeChanges)
+    {
+        visitor.WalkTree();
+        for (BasicBlock* const block : Blocks())
+        {
+            block->bbFlags &= ~BBF_VISITED;
+        }
+    }
+
 #if DEBUG
     if (verbose && visitor.madeChanges)
     {
@@ -293,8 +304,27 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                 relopValue == 0 ? "false" : "true");
     }
 
-    while ((relopValue == -1) && (domBlock != nullptr))
+    BasicBlock* speculativeDom = nullptr;
+    while (relopValue == -1)
     {
+        if (domBlock == nullptr)
+        {
+            // It's possible that bbIDom is not up to date at this point due to recent BB modifications
+            // so let's try to quickly calculate new one
+            domBlock = fgGetDomSpeculatively(block);
+            if (domBlock == block->bbIDom || domBlock == speculativeDom)
+            {
+                // We already checked this one
+                break;
+            }
+            speculativeDom = domBlock;
+        }
+
+        if (domBlock == nullptr)
+        {
+            break;
+        }
+
         // Check the current dominator
         //
         if (domBlock->bbJumpKind == BBJ_COND)
@@ -519,7 +549,7 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
         // then we must have already optimized them, and
         // so should not have to duplicate code to thread.
         //
-        BasicBlock* idomBlock = block->bbIDom;
+        BasicBlock* idomBlock = fgGetDomSpeculatively(block);
         while ((idomBlock != nullptr) && (idomBlock != domBlock))
         {
             if (idomBlock->bbJumpKind == BBJ_COND)

@@ -3109,6 +3109,39 @@ BasicBlock* Compiler::fgLastBBInMainFunction()
     return fgLastBB;
 }
 
+//------------------------------------------------------------------------------
+// fgGetDomSpeculatively: Try determine a more accurate dominator than cached bbIDom
+//
+// Arguments:
+//    block - Basic block to get a dominator for
+//
+// Return Value:
+//    Basic block that dominates this block
+//
+BasicBlock* Compiler::fgGetDomSpeculatively(const BasicBlock* block)
+{
+    assert(fgDomsComputed);
+    int         reachablePreds    = 0;
+    BasicBlock* lastReachablePred = nullptr;
+
+    // Check if we have unreachable preds
+    for (BasicBlock* pred : block->PredBlocks())
+    {
+        // We, probably, could use fgReachable(fgFirstBb, pred) here
+        if (pred->countOfInEdges() > 0)
+        {
+            lastReachablePred = pred;
+            reachablePreds++;
+        }
+    }
+    if (reachablePreds == 1)
+    {
+        assert(lastReachablePred != nullptr);
+        return lastReachablePred;
+    }
+    return block->bbIDom;
+}
+
 /*****************************************************************************************************
  *
  *  Function to return the first basic block after the main part of the function. With funclets, it is

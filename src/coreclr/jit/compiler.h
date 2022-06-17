@@ -5168,6 +5168,8 @@ public:
 
     BasicBlock* fgEndBBAfterMainFunction();
 
+    BasicBlock* fgGetDomSpeculatively(const BasicBlock* block);
+
     void fgUnlinkRange(BasicBlock* bBeg, BasicBlock* bEnd);
 
     void fgRemoveBlock(BasicBlock* block, bool unreachable);
