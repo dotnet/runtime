@@ -56,12 +56,12 @@ namespace System.Formats.Tar
 
             if (!destination.CanWrite)
             {
-                throw new IOException(SR.IO_NotSupported_UnwritableStream);
+                return Task.FromException(new IOException(SR.IO_NotSupported_UnwritableStream));
             }
 
             if (!Directory.Exists(sourceDirectoryName))
             {
-                throw new DirectoryNotFoundException(string.Format(SR.IO_PathNotFound_Path, sourceDirectoryName));
+                return Task.FromException(new DirectoryNotFoundException(string.Format(SR.IO_PathNotFound_Path, sourceDirectoryName)));
             }
 
             // Rely on Path.GetFullPath for validation of paths
@@ -115,7 +115,7 @@ namespace System.Formats.Tar
 
             if (!Directory.Exists(sourceDirectoryName))
             {
-                throw new DirectoryNotFoundException(string.Format(SR.IO_PathNotFound_Path, sourceDirectoryName));
+                return Task.FromException(new DirectoryNotFoundException(string.Format(SR.IO_PathNotFound_Path, sourceDirectoryName)));
             }
 
             // Throws if the destination file exists
@@ -173,12 +173,12 @@ namespace System.Formats.Tar
 
             if (!source.CanRead)
             {
-                throw new IOException(SR.IO_NotSupported_UnreadableStream);
+                return Task.FromException(new IOException(SR.IO_NotSupported_UnreadableStream));
             }
 
             if (!Directory.Exists(destinationDirectoryName))
             {
-                throw new DirectoryNotFoundException(string.Format(SR.IO_PathNotFound_Path, destinationDirectoryName));
+                return Task.FromException(new DirectoryNotFoundException(string.Format(SR.IO_PathNotFound_Path, destinationDirectoryName)));
             }
 
             // Rely on Path.GetFullPath for validation of paths
@@ -242,12 +242,12 @@ namespace System.Formats.Tar
 
             if (!File.Exists(sourceFileName))
             {
-                throw new FileNotFoundException(string.Format(SR.IO_FileNotFound, sourceFileName));
+                return Task.FromException(new FileNotFoundException(string.Format(SR.IO_FileNotFound, sourceFileName)));
             }
 
             if (!Directory.Exists(destinationDirectoryName))
             {
-                throw new DirectoryNotFoundException(string.Format(SR.IO_PathNotFound_Path, destinationDirectoryName));
+                return Task.FromException(new DirectoryNotFoundException(string.Format(SR.IO_PathNotFound_Path, destinationDirectoryName)));
             }
 
             using FileStream archive = File.OpenRead(sourceFileName);
