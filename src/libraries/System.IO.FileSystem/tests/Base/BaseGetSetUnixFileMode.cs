@@ -61,8 +61,11 @@ namespace System.IO.Tests
             }
             Assert.True((mode & required) == required);
 
-            // The file should not be writable by others.
-            Assert.Equal(UnixFileMode.None, mode & UnixFileMode.OtherWrite);
+            if (!PlatformDetection.IsBrowser)
+            {
+                // The umask should prevent this file from being writable by others.
+                Assert.Equal(UnixFileMode.None, mode & UnixFileMode.OtherWrite);
+            }
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
