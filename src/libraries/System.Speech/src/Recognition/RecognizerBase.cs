@@ -1762,12 +1762,7 @@ ISpGrammarResourceLoader
             Debug.WriteLine("Raising LoadGrammarCompleted event.");
 
             Grammar grammar = (Grammar)grammarObject;
-            EventHandler<LoadGrammarCompletedEventArgs> loadGrammarCompletedHandler = LoadGrammarCompleted;
-            if (loadGrammarCompletedHandler != null)
-            {
-                // When a LoadGrammarAsync completes all we must do is raise the LoadGrammarCompleted event.
-                loadGrammarCompletedHandler(this, new LoadGrammarCompletedEventArgs(grammar, grammar.LoadException, false, null));
-            }
+            LoadGrammarCompleted?.Invoke(this, new LoadGrammarCompletedEventArgs(grammar, grammar.LoadException, false, null));
         }
 
         // Create a new sapi grammarId and SapiGrammar object.
@@ -2091,11 +2086,7 @@ ISpGrammarResourceLoader
             }
 
             // Now raise RecognizeCompleted event.
-            EventHandler<RecognizeCompletedEventArgs> recognizeCompletedHandler = RecognizeCompleted;
-            if (recognizeCompletedHandler != null)
-            {
-                recognizeCompletedHandler(this, (RecognizeCompletedEventArgs)eventArgs);
-            }
+            RecognizeCompleted?.Invoke(this, (RecognizeCompletedEventArgs)eventArgs);
         }
 
         // This method will be called asynchronously
@@ -2264,11 +2255,7 @@ ISpGrammarResourceLoader
                 {
                     object userToken = GetBookmarkItemAndRemove(bookmarkId);
 
-                    EventHandler<RecognizerUpdateReachedEventArgs> updateHandler = RecognizerUpdateReached;
-                    if (updateHandler != null)
-                    {
-                        updateHandler(this, new RecognizerUpdateReachedEventArgs(userToken, speechEvent.AudioPosition));
-                    }
+                    RecognizerUpdateReached?.Invoke(this, new RecognizerUpdateReachedEventArgs(userToken, speechEvent.AudioPosition));
                 }
             }
             catch (COMException e)

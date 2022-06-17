@@ -976,7 +976,7 @@ namespace System.Security.Cryptography.Xml
                     // This cannot overflow more than once (and back to 0) because bytes are 1 byte
                     // in length, and result is 4 bytes. The OR propagates all set bytes, so the differences
                     // can't add up and overflow a second time.
-                    result = result | (a[i] - b[i]);
+                    result |= (a[i] - b[i]);
             }
 
             return (0 == result);

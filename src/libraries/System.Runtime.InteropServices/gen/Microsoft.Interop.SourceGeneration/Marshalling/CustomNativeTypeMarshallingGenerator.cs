@@ -63,6 +63,18 @@ namespace Microsoft.Interop
                         return _nativeTypeMarshaller.GeneratePinStatements(info, context);
                     }
                     break;
+                case StubCodeContext.Stage.PinnedMarshal:
+                    if (!info.IsManagedReturnPosition && info.RefKind != RefKind.Out)
+                    {
+                        return _nativeTypeMarshaller.GeneratePinnedMarshalStatements(info, context);
+                    }
+                    break;
+                case StubCodeContext.Stage.UnmarshalCapture:
+                    if (info.IsManagedReturnPosition || (info.IsByRef && info.RefKind != RefKind.In))
+                    {
+                        return _nativeTypeMarshaller.GenerateUnmarshalCaptureStatements(info, context);
+                    }
+                    break;
                 case StubCodeContext.Stage.Unmarshal:
                     if (info.IsManagedReturnPosition || (info.IsByRef && info.RefKind != RefKind.In)
                         || (_enableByValueContentsMarshalling && !info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out)))

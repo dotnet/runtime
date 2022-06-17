@@ -1252,9 +1252,8 @@ namespace System.Xml.Serialization
 
         private void GetCurrentPosition(out int lineNumber, out int linePosition)
         {
-            if (Reader is IXmlLineInfo)
+            if (Reader is IXmlLineInfo lineInfo)
             {
-                IXmlLineInfo lineInfo = (IXmlLineInfo)Reader;
                 lineNumber = lineInfo.LineNumber;
                 linePosition = lineInfo.LinePosition;
             }
@@ -3096,18 +3095,18 @@ namespace System.Xml.Serialization
                 {
                     if (m.IsSoap)
                         continue;
-                    if (m is EnumMapping)
+
+                    if (m is EnumMapping enumMapping)
                     {
-                        EnumMapping mapping = (EnumMapping)m;
                         Writer.Write("if (");
-                        WriteQNameEqual("xsiType", mapping.TypeName, mapping.Namespace);
+                        WriteQNameEqual("xsiType", enumMapping.TypeName, enumMapping.Namespace);
                         Writer.WriteLine(") {");
                         Writer.Indent++;
                         Writer.WriteLine("Reader.ReadStartElement();");
-                        string? methodName = ReferenceMapping(mapping);
+                        string? methodName = ReferenceMapping(enumMapping);
 #if DEBUG
                         // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                        if (methodName == null) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorMethod, mapping.TypeDesc!.Name));
+                        if (methodName == null) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorMethod, enumMapping.TypeDesc!.Name));
 #endif
                         Writer.Write("object e = ");
                         Writer.Write(methodName);
@@ -3117,22 +3116,21 @@ namespace System.Xml.Serialization
                         Writer.Indent--;
                         Writer.WriteLine("}");
                     }
-                    else if (m is ArrayMapping)
+                    else if (m is ArrayMapping arrayMapping)
                     {
-                        ArrayMapping mapping = (ArrayMapping)m;
-                        if (mapping.TypeDesc!.HasDefaultConstructor)
+                        if (arrayMapping.TypeDesc!.HasDefaultConstructor)
                         {
                             Writer.Write("if (");
-                            WriteQNameEqual("xsiType", mapping.TypeName, mapping.Namespace);
+                            WriteQNameEqual("xsiType", arrayMapping.TypeName, arrayMapping.Namespace);
                             Writer.WriteLine(") {");
                             Writer.Indent++;
                             MemberMapping memberMapping = new MemberMapping();
-                            memberMapping.TypeDesc = mapping.TypeDesc;
-                            memberMapping.Elements = mapping.Elements;
+                            memberMapping.TypeDesc = arrayMapping.TypeDesc;
+                            memberMapping.Elements = arrayMapping.Elements;
                             Member member = new Member(this, "a", "z", 0, memberMapping);
 
-                            TypeDesc td = mapping.TypeDesc;
-                            string fullTypeName = mapping.TypeDesc.CSharpName;
+                            TypeDesc td = arrayMapping.TypeDesc;
+                            string fullTypeName = arrayMapping.TypeDesc.CSharpName;
                             if (td.UseReflection)
                             {
                                 if (td.IsArray)
@@ -3143,7 +3141,7 @@ namespace System.Xml.Serialization
                             else
                                 Writer.Write(fullTypeName);
                             Writer.Write(" a = ");
-                            if (mapping.TypeDesc.IsValueType)
+                            if (arrayMapping.TypeDesc.IsValueType)
                             {
                                 Writer.Write(RaCodeGen.GetStringForCreateInstance(fullTypeName, td.UseReflection, false, false));
                                 Writer.WriteLine(";");
@@ -3151,7 +3149,7 @@ namespace System.Xml.Serialization
                             else
                                 Writer.WriteLine("null;");
 
-                            WriteArray(member.Source, member.ArrayName, mapping, false, false, -1);
+                            WriteArray(member.Source, member.ArrayName, arrayMapping, false, false, -1);
                             Writer.WriteLine("return a;");
                             Writer.Indent--;
                             Writer.WriteLine("}");
@@ -3803,10 +3801,8 @@ namespace System.Xml.Serialization
         {
             AttributeAccessor attribute = member.Mapping.Attribute!;
 
-            if (attribute.Mapping is SpecialMapping)
+            if (attribute.Mapping is SpecialMapping special)
             {
-                SpecialMapping special = (SpecialMapping)attribute.Mapping;
-
                 if (special.TypeDesc!.Kind == TypeKind.Attribute)
                 {
                     WriteSourceBegin(member.ArraySource);
@@ -4084,9 +4080,8 @@ namespace System.Xml.Serialization
         {
             TextAccessor text = member.Mapping.Text!;
 
-            if (text.Mapping is SpecialMapping)
+            if (text.Mapping is SpecialMapping special)
             {
-                SpecialMapping special = (SpecialMapping)text.Mapping;
                 WriteSourceBeginTyped(member.ArraySource, special.TypeDesc);
                 switch (special.TypeDesc!.Kind)
                 {
@@ -4814,9 +4809,8 @@ namespace System.Xml.Serialization
                     Writer.WriteLine(";");
                 }
             }
-            else if (element.Mapping is SpecialMapping)
+            else if (element.Mapping is SpecialMapping special)
             {
-                SpecialMapping special = (SpecialMapping)element.Mapping;
                 switch (special.TypeDesc!.Kind)
                 {
                     case TypeKind.Node:

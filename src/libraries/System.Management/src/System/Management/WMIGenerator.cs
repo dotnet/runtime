@@ -563,7 +563,7 @@ namespace System.Management
                     {
                         if (bStart == true)
                         {
-                            OriginalNamespace = OriginalNamespace + arrString[i];
+                            OriginalNamespace += arrString[i];
                         }
                         else
                             if (arrString[i] == '\\')
@@ -816,7 +816,7 @@ namespace System.Management
                 }
                 catch (OverflowException)
                 {
-                    strToAdd = strToAdd + "_";
+                    strToAdd += "_";
                     k = 0;
                 }
                 strTemp = inString + strToAdd + k.ToString((IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(int)));
@@ -972,7 +972,7 @@ namespace System.Management
 
             if (isStatic)
             {
-                cmp.Attributes = cmp.Attributes | MemberAttributes.Static;
+                cmp.Attributes |= MemberAttributes.Static;
             }
 
             caa = new CodeAttributeArgument();
@@ -1951,7 +1951,7 @@ namespace System.Management
                         // Now shift 1 more bit so that we can put it for the
                         // next element in the enum
 
-                        bitValue = bitValue << 1;
+                        bitValue <<= 1;
                     }
 
                     if (bZeroFieldInEnum == false)
@@ -1984,11 +1984,11 @@ namespace System.Management
                     cmf.Name = "NULL_ENUM_VALUE";
                     if (BitValues.Count > 30)
                     {
-                        maxBitValue = maxBitValue + 1;
+                        maxBitValue++;
                     }
                     else
                     {
-                        maxBitValue = maxBitValue << 1;
+                        maxBitValue <<= 1;
                     }
                     cmf.InitExpression = new CodePrimitiveExpression((int)(maxBitValue));
                     EnumObj.Members.Add(cmf);
@@ -2048,7 +2048,7 @@ namespace System.Management
             string strPath = OriginalNamespace + ":" + OriginalClassName;
             if (bSingletonClass == true)
             {
-                strPath = strPath + "=@";
+                strPath += "=@";
                 cmm.Statements.Add(new CodeMethodReturnStatement(new CodePrimitiveExpression(strPath)));
             }
             else
@@ -3701,7 +3701,7 @@ namespace System.Management
             cf.Attributes = MemberAttributes.Private | MemberAttributes.Final;
             if (isStatic == true)
             {
-                cf.Attributes = cf.Attributes | MemberAttributes.Static;
+                cf.Attributes |= MemberAttributes.Static;
             }
             cf.Type = new CodeTypeReference(MemberType);
             if (initExpression != null && isStatic == true)
@@ -5012,7 +5012,7 @@ namespace System.Management
                 int Len = bitMap.Length;
                 for (int i = 2; i < Len; i++)
                 {
-                    strTemp = strTemp + arrString[i];
+                    strTemp += arrString[i];
                 }
                 ret = System.Convert.ToInt32(strTemp, (IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(int)));
             }

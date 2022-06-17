@@ -261,9 +261,13 @@ namespace System.Formats.Tar
             Debug.Assert(!string.IsNullOrEmpty(destinationDirectoryPath));
             Debug.Assert(Path.IsPathFullyQualified(destinationDirectoryPath));
 
-            string destinationDirectoryFullPath = destinationDirectoryPath.EndsWith(Path.DirectorySeparatorChar) ? destinationDirectoryPath : destinationDirectoryPath + Path.DirectorySeparatorChar;
+            destinationDirectoryPath = Path.TrimEndingDirectorySeparator(destinationDirectoryPath);
 
-            string fileDestinationPath = GetSanitizedFullPath(destinationDirectoryFullPath, Name, SR.TarExtractingResultsFileOutside);
+            string? fileDestinationPath = GetSanitizedFullPath(destinationDirectoryPath, Name);
+            if (fileDestinationPath == null)
+            {
+                throw new IOException(string.Format(SR.TarExtractingResultsFileOutside, Name, destinationDirectoryPath));
+            }
 
             string? linkTargetPath = null;
             if (EntryType is TarEntryType.SymbolicLink or TarEntryType.HardLink)
@@ -273,7 +277,11 @@ namespace System.Formats.Tar
                     throw new FormatException(SR.TarEntryHardLinkOrSymlinkLinkNameEmpty);
                 }
 
-                linkTargetPath = GetSanitizedFullPath(destinationDirectoryFullPath, LinkName, SR.TarExtractingResultsLinkOutside);
+                linkTargetPath = GetSanitizedFullPath(destinationDirectoryPath, LinkName);
+                if (linkTargetPath == null)
+                {
+                    throw new IOException(string.Format(SR.TarExtractingResultsLinkOutside, LinkName, destinationDirectoryPath));
+                }
             }
 
             if (EntryType == TarEntryType.Directory)
@@ -286,26 +294,15 @@ namespace System.Formats.Tar
                 Directory.CreateDirectory(Path.GetDirectoryName(fileDestinationPath)!);
                 ExtractToFileInternal(fileDestinationPath, linkTargetPath, overwrite);
             }
+        }
 
-            // If the path can be extracted in the specified destination directory, returns the full path with sanitized file name. Otherwise, throws.
-            static string GetSanitizedFullPath(string destinationDirectoryFullPath, string path, string exceptionMessage)
-            {
-                string actualPath = Path.Join(Path.GetDirectoryName(path), ArchivingUtils.SanitizeEntryFilePath(Path.GetFileName(path)));
-
-                if (!Path.IsPathFullyQualified(actualPath))
-                {
-                    actualPath = Path.Combine(destinationDirectoryFullPath, actualPath);
-                }
-
-                actualPath = Path.GetFullPath(actualPath);
-
-                if (!actualPath.StartsWith(destinationDirectoryFullPath, PathInternal.StringComparison))
-                {
-                    throw new IOException(string.Format(exceptionMessage, path, destinationDirectoryFullPath));
-                }
-
-                return actualPath;
-            }
+        // If the path can be extracted in the specified destination directory, returns the full path with sanitized file name. Otherwise, returns null.
+        private static string? GetSanitizedFullPath(string destinationDirectoryFullPath, string path)
+        {
+            string fullyQualifiedPath = Path.IsPathFullyQualified(path) ? path : Path.Combine(destinationDirectoryFullPath, path);
+            string normalizedPath = Path.GetFullPath(fullyQualifiedPath); // Removes relative segments
+            string sanitizedPath = Path.Join(Path.GetDirectoryName(normalizedPath), ArchivingUtils.SanitizeEntryFilePath(Path.GetFileName(normalizedPath)));
+            return sanitizedPath.StartsWith(destinationDirectoryFullPath, PathInternal.StringComparison) ? sanitizedPath : null;
         }
 
         // Extracts the current entry into the filesystem, regardless of the entry type.

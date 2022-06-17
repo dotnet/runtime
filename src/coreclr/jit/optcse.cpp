@@ -2962,9 +2962,9 @@ public:
         do
         {
             /* Process the next node in the list */
-            GenTree*    exp  = lst->tslTree;
-            Statement*  stmt = lst->tslStmt;
-            BasicBlock* blk  = lst->tslBlock;
+            GenTree* const    exp  = lst->tslTree;
+            Statement* const  stmt = lst->tslStmt;
+            BasicBlock* const blk  = lst->tslBlock;
 
             /* Advance to the next node in the list */
             lst = lst->tslNext;
@@ -3212,9 +3212,9 @@ public:
                     noway_assert(asg->AsOp()->gtOp2 == val);
                 }
 
-                // assign the proper Value Numbers
-                asg->gtVNPair.SetBoth(ValueNumStore::VNForVoid()); // The GT_ASG node itself is $VN.Void
-                asg->AsOp()->gtOp1->gtVNPair = val->gtVNPair;      // The dest op is the same as 'val'
+                // Assign the proper Value Numbers.
+                asg->gtVNPair                = ValueNumStore::VNPForVoid(); // The GT_ASG node itself is $VN.Void.
+                asg->AsOp()->gtOp1->gtVNPair = ValueNumStore::VNPForVoid(); // As is the LHS.
 
                 noway_assert(asg->AsOp()->gtOp1->gtOper == GT_LCL_VAR);
 
@@ -3263,7 +3263,7 @@ public:
                         cseUse->SetDoNotCSE();
                     }
                 }
-                cseUse->gtVNPair = val->gtVNPair; // The 'cseUse' is equal to 'val'
+                cseUse->gtVNPair = exp->gtVNPair; // The 'cseUse' is equal to the original expression.
 
                 /* Create a comma node for the CSE assignment */
                 cse           = m_pCompiler->gtNewOperNode(GT_COMMA, expTyp, origAsg, cseUse);
@@ -3584,7 +3584,6 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
 
         case GT_ARR_ELEM:
         case GT_ARR_LENGTH:
-        case GT_LCL_FLD:
             return true;
 
         case GT_LCL_VAR:
@@ -3687,7 +3686,9 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
             return true; // allow Intrinsics to be CSE-ed
 
         case GT_OBJ:
-            return varTypeIsEnregisterable(type); // Allow enregisterable GT_OBJ's to be CSE-ed. (i.e. SIMD types)
+        case GT_LCL_FLD:
+            // TODO-1stClassStructs: support CSE for enregisterable TYP_STRUCTs.
+            return varTypeIsEnregisterable(type);
 
         case GT_COMMA:
             return true; // Allow GT_COMMA nodes to be CSE-ed.

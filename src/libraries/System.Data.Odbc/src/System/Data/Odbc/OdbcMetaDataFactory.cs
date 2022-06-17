@@ -636,19 +636,19 @@ namespace System.Data.Odbc
                 Common.SupportedJoinOperators supportedJoinOperators = Common.SupportedJoinOperators.None;
                 if ((int32Value & (int)ODBC32.SQL_OJ_CAPABILITIES.LEFT) != 0)
                 {
-                    supportedJoinOperators = supportedJoinOperators | Common.SupportedJoinOperators.LeftOuter;
+                    supportedJoinOperators |= Common.SupportedJoinOperators.LeftOuter;
                 }
                 if ((int32Value & (int)ODBC32.SQL_OJ_CAPABILITIES.RIGHT) != 0)
                 {
-                    supportedJoinOperators = supportedJoinOperators | Common.SupportedJoinOperators.RightOuter;
+                    supportedJoinOperators |= Common.SupportedJoinOperators.RightOuter;
                 }
                 if ((int32Value & (int)ODBC32.SQL_OJ_CAPABILITIES.FULL) != 0)
                 {
-                    supportedJoinOperators = supportedJoinOperators | Common.SupportedJoinOperators.FullOuter;
+                    supportedJoinOperators |= Common.SupportedJoinOperators.FullOuter;
                 }
                 if ((int32Value & (int)ODBC32.SQL_OJ_CAPABILITIES.INNER) != 0)
                 {
-                    supportedJoinOperators = supportedJoinOperators | Common.SupportedJoinOperators.Inner;
+                    supportedJoinOperators |= Common.SupportedJoinOperators.Inner;
                 }
 
                 dataSourceInformation[DbMetaDataColumnNames.SupportedJoinOperators] = supportedJoinOperators;

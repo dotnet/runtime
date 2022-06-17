@@ -1379,9 +1379,8 @@ namespace System.Xml.Serialization
                 {
                     for (int i = 0; i < defaultMembers.Length; i++)
                     {
-                        if (defaultMembers[i] is PropertyInfo)
+                        if (defaultMembers[i] is PropertyInfo defaultProp)
                         {
-                            PropertyInfo defaultProp = (PropertyInfo)defaultMembers[i];
                             if (defaultProp.DeclaringType != t) continue;
                             if (!defaultProp.CanRead) continue;
                             MethodInfo getMethod = defaultProp.GetMethod!;
