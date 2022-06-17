@@ -1103,6 +1103,29 @@ namespace System.Tests
         public static void Max_Double_NotNetFramework(double x, double y, double expectedResult)
         {
             AssertEqual(expectedResult, Math.Max(x, y), 0.0);
+
+            if (double.IsNaN(x))
+            {
+                // Toggle the sign of the NaN to validate both +NaN and -NaN behave the same.
+                // Negate should work as well but the JIT may constant fold or do other tricks
+                // and normalize to a single NaN form so we do bitwise tricks to ensure we test
+                // the right thing.
+
+                ulong bits = BitConverter.DoubleToUInt64Bits(x);
+                bits ^= BitConverter.DoubleToUInt64Bits(-0.0);
+                x = BitConverter.UInt64BitsToDouble(bits);
+
+                AssertEqual(expectedResult, Math.Max(x, y), 0.0);
+            }
+
+            if (double.IsNaN(y))
+            {
+                ulong bits = BitConverter.DoubleToUInt64Bits(y);
+                bits ^= BitConverter.DoubleToUInt64Bits(-0.0);
+                y = BitConverter.UInt64BitsToDouble(bits);
+
+                AssertEqual(expectedResult, Math.Max(x, y), 0.0);
+            }
         }
 
         [Fact]
@@ -1161,6 +1184,29 @@ namespace System.Tests
         public static void Max_Single_NotNetFramework(float x, float y, float expectedResult)
         {
             AssertEqual(expectedResult, Math.Max(x, y), 0.0f);
+
+            if (float.IsNaN(x))
+            {
+                // Toggle the sign of the NaN to validate both +NaN and -NaN behave the same.
+                // Negate should work as well but the JIT may constant fold or do other tricks
+                // and normalize to a single NaN form so we do bitwise tricks to ensure we test
+                // the right thing.
+
+                uint bits = BitConverter.SingleToUInt32Bits(x);
+                bits ^= BitConverter.SingleToUInt32Bits(-0.0f);
+                x = BitConverter.UInt32BitsToSingle(bits);
+
+                AssertEqual(expectedResult, Math.Max(x, y), 0.0f);
+            }
+
+            if (float.IsNaN(y))
+            {
+                uint bits = BitConverter.SingleToUInt32Bits(y);
+                bits ^= BitConverter.SingleToUInt32Bits(-0.0f);
+                y = BitConverter.UInt32BitsToSingle(bits);
+
+                AssertEqual(expectedResult, Math.Max(x, y), 0.0f);
+            }
         }
 
         [Fact]
@@ -1226,6 +1272,29 @@ namespace System.Tests
         public static void Min_Double_NotNetFramework(double x, double y, double expectedResult)
         {
             AssertEqual(expectedResult, Math.Min(x, y), 0.0);
+
+            if (double.IsNaN(x))
+            {
+                // Toggle the sign of the NaN to validate both +NaN and -NaN behave the same.
+                // Negate should work as well but the JIT may constant fold or do other tricks
+                // and normalize to a single NaN form so we do bitwise tricks to ensure we test
+                // the right thing.
+
+                ulong bits = BitConverter.DoubleToUInt64Bits(x);
+                bits ^= BitConverter.DoubleToUInt64Bits(-0.0);
+                x = BitConverter.UInt64BitsToDouble(bits);
+
+                AssertEqual(expectedResult, Math.Min(x, y), 0.0);
+            }
+
+            if (double.IsNaN(y))
+            {
+                ulong bits = BitConverter.DoubleToUInt64Bits(y);
+                bits ^= BitConverter.DoubleToUInt64Bits(-0.0);
+                y = BitConverter.UInt64BitsToDouble(bits);
+
+                AssertEqual(expectedResult, Math.Min(x, y), 0.0);
+            }
         }
 
         [Fact]
@@ -1284,6 +1353,29 @@ namespace System.Tests
         public static void Min_Single_NotNetFramework(float x, float y, float expectedResult)
         {
             AssertEqual(expectedResult, Math.Min(x, y), 0.0f);
+
+            if (float.IsNaN(x))
+            {
+                // Toggle the sign of the NaN to validate both +NaN and -NaN behave the same.
+                // Negate should work as well but the JIT may constant fold or do other tricks
+                // and normalize to a single NaN form so we do bitwise tricks to ensure we test
+                // the right thing.
+
+                uint bits = BitConverter.SingleToUInt32Bits(x);
+                bits ^= BitConverter.SingleToUInt32Bits(-0.0f);
+                x = BitConverter.UInt32BitsToSingle(bits);
+
+                AssertEqual(expectedResult, Math.Min(x, y), 0.0f);
+            }
+
+            if (float.IsNaN(y))
+            {
+                uint bits = BitConverter.SingleToUInt32Bits(y);
+                bits ^= BitConverter.SingleToUInt32Bits(-0.0f);
+                y = BitConverter.UInt32BitsToSingle(bits);
+
+                AssertEqual(expectedResult, Math.Min(x, y), 0.0f);
+            }
         }
 
         [Fact]
@@ -2853,6 +2945,29 @@ namespace System.Tests
         public static void MaxMagnitude(double x, double y, double expectedResult)
         {
             AssertEqual(expectedResult, Math.MaxMagnitude(x, y), 0.0);
+
+            if (double.IsNaN(x))
+            {
+                // Toggle the sign of the NaN to validate both +NaN and -NaN behave the same.
+                // Negate should work as well but the JIT may constant fold or do other tricks
+                // and normalize to a single NaN form so we do bitwise tricks to ensure we test
+                // the right thing.
+
+                ulong bits = BitConverter.DoubleToUInt64Bits(x);
+                bits ^= BitConverter.DoubleToUInt64Bits(-0.0);
+                x = BitConverter.UInt64BitsToDouble(bits);
+
+                AssertEqual(expectedResult, Math.MaxMagnitude(x, y), 0.0);
+            }
+
+            if (double.IsNaN(y))
+            {
+                ulong bits = BitConverter.DoubleToUInt64Bits(y);
+                bits ^= BitConverter.DoubleToUInt64Bits(-0.0);
+                y = BitConverter.UInt64BitsToDouble(bits);
+
+                AssertEqual(expectedResult, Math.MaxMagnitude(x, y), 0.0);
+            }
         }
 
         [Theory]
@@ -2866,6 +2981,29 @@ namespace System.Tests
         public static void MinMagnitude(double x, double y, double expectedResult)
         {
             AssertEqual(expectedResult, Math.MinMagnitude(x, y), 0.0);
+
+            if (double.IsNaN(x))
+            {
+                // Toggle the sign of the NaN to validate both +NaN and -NaN behave the same.
+                // Negate should work as well but the JIT may constant fold or do other tricks
+                // and normalize to a single NaN form so we do bitwise tricks to ensure we test
+                // the right thing.
+
+                ulong bits = BitConverter.DoubleToUInt64Bits(x);
+                bits ^= BitConverter.DoubleToUInt64Bits(-0.0);
+                x = BitConverter.UInt64BitsToDouble(bits);
+
+                AssertEqual(expectedResult, Math.MinMagnitude(x, y), 0.0);
+            }
+
+            if (double.IsNaN(y))
+            {
+                ulong bits = BitConverter.DoubleToUInt64Bits(y);
+                bits ^= BitConverter.DoubleToUInt64Bits(-0.0);
+                y = BitConverter.UInt64BitsToDouble(bits);
+
+                AssertEqual(expectedResult, Math.MinMagnitude(x, y), 0.0);
+            }
         }
 
         [Theory]
@@ -2934,7 +3072,7 @@ namespace System.Tests
         [InlineData( 9.267056966972586,        2,                             37.06822786789034,        CrossPlatformMachineEpsilon * 100)]
         [InlineData( 0.5617597462207241,       5,                             17.97631187906317,        CrossPlatformMachineEpsilon * 100)]
         [InlineData( 0.7741522965913037,       6,                             49.545746981843436,       CrossPlatformMachineEpsilon * 100)]
-        [InlineData( -0.6787637026394024,      7,                             -86.88175393784351,       CrossPlatformMachineEpsilon * 100)]        
+        [InlineData( -0.6787637026394024,      7,                             -86.88175393784351,       CrossPlatformMachineEpsilon * 100)]
         [InlineData( -6.531673581913484,       1,                             -13.063347163826968,      CrossPlatformMachineEpsilon * 100)]
         [InlineData( 9.267056966972586,        2,                             37.06822786789034,        CrossPlatformMachineEpsilon * 100)]
         [InlineData( 0.5617597462207241,       5,                             17.97631187906317,        CrossPlatformMachineEpsilon * 100)]
