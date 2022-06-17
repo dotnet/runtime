@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.Logging.Console
         private readonly IOptionsMonitor<ConsoleLoggerOptions> _options;
         private readonly ConcurrentDictionary<string, ConsoleLogger> _loggers;
         private ConcurrentDictionary<string, ConsoleFormatter> _formatters;
-        private ConsoleLoggerProcessor _messageQueue;
+        private readonly ConsoleLoggerProcessor _messageQueue;
 
         private IDisposable? _optionsReloadToken;
         private IExternalScopeProvider _scopeProvider = NullExternalScopeProvider.Instance;
