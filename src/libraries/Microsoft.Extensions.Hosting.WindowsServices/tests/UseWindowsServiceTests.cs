@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.Hosting
 {
     public class UseWindowsServiceTests
     {
-        private static MethodInfo? _useWindowsServiceUncheckedMethod = null;
+        private static MethodInfo? _addWindowsServiceLifetimeMethod = null;
 
         [Fact]
         public void DefaultsToOffOutsideOfService()
@@ -50,7 +50,7 @@ namespace Microsoft.Extensions.Hosting
         {
             var builder = new HostApplicationBuilder();
 
-            // Emulate calling builder.Services.UseWindowsService() from inside a Windows service.
+            // Emulate calling builder.Services.AddWindowsService() from inside a Windows service.
             AddWindowsServiceLifetime(builder.Services);
 
             Assert.Single(builder.Services, serviceDescriptor =>
@@ -68,16 +68,10 @@ namespace Microsoft.Extensions.Hosting
                 ApplicationName = appName,
             }); 
 
-            // Emulate calling builder.Services.UseWindowsService() from inside a Windows service.
+            // Emulate calling builder.Services.AddWindowsService() from inside a Windows service.
             AddWindowsServiceLifetime(builder.Services);
-            // No reason to write event logs in this test. Event log may be unsupported anyway.
+            // No reason to write event logs in this test.
             builder.Logging.ClearProviders();
-
-            // Remove WindowsServiceLifetime descriptor so we can run this test even when SupportsServiceBase is false.
-            var lifetimeDescriptor = Assert.Single(builder.Services, serviceDescriptor =>
-                serviceDescriptor.ServiceType == typeof(IHostLifetime) &&
-                serviceDescriptor.ImplementationType == typeof(WindowsServiceLifetime));
-            builder.Services.Remove(lifetimeDescriptor);
 
             using IHost host = builder.Build();
 
@@ -90,7 +84,7 @@ namespace Microsoft.Extensions.Hosting
         {
             var builder = new HostApplicationBuilder(); 
 
-            // Emulate calling builder.Services.UseWindowsService() from inside a Windows service.
+            // Emulate calling builder.Services.AddWindowsService() from inside a Windows service.
             AddWindowsServiceLifetime(builder.Services);
             // No reason to write event logs in this test.
             builder.Logging.ClearProviders();
@@ -103,12 +97,12 @@ namespace Microsoft.Extensions.Hosting
 
         private void AddWindowsServiceLifetime(IServiceCollection services, Action<WindowsServiceLifetimeOptions> configure = null)
         {
-            _useWindowsServiceUncheckedMethod ??= typeof(WindowsServiceLifetimeHostBuilderExtensions).GetMethod("AddWindowsServiceLifetime",
+            _addWindowsServiceLifetimeMethod ??= typeof(WindowsServiceLifetimeHostBuilderExtensions).GetMethod("AddWindowsServiceLifetime",
                 BindingFlags.Static | BindingFlags.NonPublic, null, new[] { typeof(IServiceCollection), typeof(Action<WindowsServiceLifetimeOptions>) }, null)
                 ?? throw new MissingMethodException();
 
             configure ??= _ => { };
-            _useWindowsServiceUncheckedMethod.Invoke(null, new object[] { services, configure });
+            _addWindowsServiceLifetimeMethod.Invoke(null, new object[] { services, configure });
         }
     }
 }

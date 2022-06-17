@@ -205,7 +205,7 @@ namespace Microsoft.Extensions.Hosting
             // In my testing, both Environment.CurrentDirectory and Environment.GetFolderPath(Environment.SpecialFolder.System) return the path without
             // any trailing directory separator characters. I'm not even sure the casing can ever be different from these APIs, but I think it makes sense to
             // ignore case for Windows path comparisons given the file system is usually (always?) going to be case insensitive for the system path.
-            var cwd = Environment.CurrentDirectory;
+            string cwd = Environment.CurrentDirectory;
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || !string.Equals(cwd, Environment.GetFolderPath(Environment.SpecialFolder.System), StringComparison.OrdinalIgnoreCase))
             {
                 hostConfigBuilder.AddInMemoryCollection(new[]

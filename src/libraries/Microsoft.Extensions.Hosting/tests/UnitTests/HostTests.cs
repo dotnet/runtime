@@ -49,16 +49,16 @@ namespace Microsoft.Extensions.Hosting.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         public void CreateDefaultBuilder_DoesNotChangeContentRootIfCurrentDirectoryIsWindowsSystemDirectory()
         {
-            var originalCwd = Environment.CurrentDirectory;
-            // Let's denormalize the system directory by making it C:\WINDOWS\SYSTEM32\ instead of C:\\Windows\\system32
-            var systemDirectory = Environment.GetFolderPath(Environment.SpecialFolder.System).ToUpper() + "\\";
+            string originalCwd = Environment.CurrentDirectory;
+            // Test that the path gets normalized before comparison. Use C:\WINDOWS\SYSTEM32\ instead of C:\Windows\system32.
+            string systemDirectory = Environment.GetFolderPath(Environment.SpecialFolder.System).ToUpper() + "\\";
 
             try
             {
                 Environment.CurrentDirectory = systemDirectory;
 
-                var builder = Host.CreateDefaultBuilder();
-                using var host = builder.Build();
+                IHostBuilder builder = Host.CreateDefaultBuilder();
+                using IHost host = builder.Build();
 
                 var config = host.Services.GetRequiredService<IConfiguration>();
                 var env = host.Services.GetRequiredService<IHostEnvironment>();
