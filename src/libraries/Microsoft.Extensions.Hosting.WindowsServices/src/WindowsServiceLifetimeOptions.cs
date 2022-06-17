@@ -11,11 +11,5 @@ namespace Microsoft.Extensions.Hosting
         /// The name used to identify the service to the system.
         /// </summary>
         public string ServiceName { get; set; } = string.Empty;
-
-        // Used by the IServiceCollection overload of UseWindowsService to indicate that WindowsServiceLifetime
-        // should verify IHostEnvironment.ContentRootPath = AppContext.BaseDirectory (usually the default).
-        // This should also be the content root for the IHostBuilder overload unless it's been overridden, but
-        // we don't want to break people who might have successfully overridden IHostBuilder's ContentRoot.
-        internal bool ValidateContentRoot { get; set; }
     }
 }
