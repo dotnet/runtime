@@ -324,9 +324,8 @@ namespace System.Xml.Serialization
         {
             foreach (XmlSchemaObject o in schema.Items)
             {
-                if (o is XmlSchemaElement)
+                if (o is XmlSchemaElement e)
                 {
-                    XmlSchemaElement e = (XmlSchemaElement)o;
                     if (e.UnhandledAttributes != null)
                     {
                         foreach (XmlAttribute a in e.UnhandledAttributes)
@@ -491,9 +490,8 @@ namespace System.Xml.Serialization
         {
             while (item.Parent != null)
             {
-                if (item.Parent is XmlSchemaType)
+                if (item.Parent is XmlSchemaType type)
                 {
-                    XmlSchemaType type = (XmlSchemaType)item.Parent;
                     if (type.Name != null && type.Name.Length != 0)
                     {
                         return type.QualifiedName;
@@ -536,9 +534,8 @@ namespace System.Xml.Serialization
             {
                 item = SR.Format(SR.XmlSchemaNamedItem, ns, "group", ((XmlSchemaGroup)o).Name, details);
             }
-            else if (o is XmlSchemaElement)
+            else if (o is XmlSchemaElement e)
             {
-                XmlSchemaElement e = ((XmlSchemaElement)o);
                 if (e.Name == null || e.Name.Length == 0)
                 {
                     XmlQualifiedName parentName = XmlSchemas.GetParentName(o);
@@ -558,9 +555,8 @@ namespace System.Xml.Serialization
             {
                 item = SR.Format(SR.XmlSchemaNamedItem, ns, "attributeGroup", ((XmlSchemaAttributeGroup)o).Name, details);
             }
-            else if (o is XmlSchemaAttribute)
+            else if (o is XmlSchemaAttribute a)
             {
-                XmlSchemaAttribute a = ((XmlSchemaAttribute)o);
                 if (a.Name == null || a.Name.Length == 0)
                 {
                     XmlQualifiedName parentName = XmlSchemas.GetParentName(o);

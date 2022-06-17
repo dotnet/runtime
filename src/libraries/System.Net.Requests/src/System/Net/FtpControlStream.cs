@@ -1039,8 +1039,7 @@ namespace System.Net
                 index--;
 
             int port = Convert.ToByte(parsedList[index--], NumberFormatInfo.InvariantInfo);
-            port = port |
-                   (Convert.ToByte(parsedList[index--], NumberFormatInfo.InvariantInfo) << 8);
+            port |= (Convert.ToByte(parsedList[index--], NumberFormatInfo.InvariantInfo) << 8);
 
             return port;
         }

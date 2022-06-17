@@ -264,6 +264,8 @@ namespace Internal.IL
             var method = (MethodDesc)_canonMethodIL.GetObject(token);
 
             _compilation.TypeSystemContext.EnsureLoadableMethod(method);
+            if ((method.Signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) == MethodSignatureFlags.CallingConventionVarargs)
+                ThrowHelper.ThrowBadImageFormatException();
 
             _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _compilation.NodeFactory, _canonMethodIL, method);
 

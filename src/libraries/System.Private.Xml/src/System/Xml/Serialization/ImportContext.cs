@@ -328,9 +328,8 @@ namespace System.Xml.Serialization
                 XmlSchemaParticle? particle = null;
                 XmlSchemaObjectCollection? attributes = null;
 
-                if (item is XmlSchemaComplexType)
+                if (item is XmlSchemaComplexType ct)
                 {
-                    XmlSchemaComplexType ct = (XmlSchemaComplexType)item;
                     if (ct.ContentModel != null)
                     {
                         XmlSchemaContent? content = ct.ContentModel.Content;
@@ -339,27 +338,24 @@ namespace System.Xml.Serialization
                             baseName = ((XmlSchemaComplexContentRestriction)content).BaseTypeName;
                             attributes = ((XmlSchemaComplexContentRestriction)content).Attributes;
                         }
-                        else if (content is XmlSchemaSimpleContentRestriction)
+                        else if (content is XmlSchemaSimpleContentRestriction restriction)
                         {
-                            XmlSchemaSimpleContentRestriction restriction = (XmlSchemaSimpleContentRestriction)content;
                             if (restriction.BaseType != null)
                                 baseType = restriction.BaseType;
                             else
                                 baseName = restriction.BaseTypeName;
                             attributes = restriction.Attributes;
                         }
-                        else if (content is XmlSchemaComplexContentExtension)
+                        else if (content is XmlSchemaComplexContentExtension complex)
                         {
-                            XmlSchemaComplexContentExtension extension = (XmlSchemaComplexContentExtension)content;
-                            attributes = extension.Attributes;
-                            particle = extension.Particle;
-                            baseName = extension.BaseTypeName;
+                            attributes = complex.Attributes;
+                            particle = complex.Particle;
+                            baseName = complex.BaseTypeName;
                         }
-                        else if (content is XmlSchemaSimpleContentExtension)
+                        else if (content is XmlSchemaSimpleContentExtension simple)
                         {
-                            XmlSchemaSimpleContentExtension extension = (XmlSchemaSimpleContentExtension)content;
-                            attributes = extension.Attributes;
-                            baseName = extension.BaseTypeName;
+                            attributes = simple.Attributes;
+                            baseName = simple.BaseTypeName;
                         }
                     }
                     else
@@ -367,9 +363,8 @@ namespace System.Xml.Serialization
                         attributes = ct.Attributes;
                         particle = ct.Particle;
                     }
-                    if (particle is XmlSchemaGroupRef)
+                    if (particle is XmlSchemaGroupRef refGroup)
                     {
-                        XmlSchemaGroupRef refGroup = (XmlSchemaGroupRef)particle;
                         particle = ((XmlSchemaGroup)_schemas.Find(refGroup.RefName, typeof(XmlSchemaGroup), false)!).Particle;
                     }
                     else if (particle is XmlSchemaGroupBase)
@@ -377,18 +372,16 @@ namespace System.Xml.Serialization
                         particle = (XmlSchemaGroupBase)particle;
                     }
                 }
-                else if (item is XmlSchemaSimpleType)
+                else if (item is XmlSchemaSimpleType simpleType)
                 {
-                    XmlSchemaSimpleType simpleType = (XmlSchemaSimpleType)item;
                     XmlSchemaSimpleTypeContent? content = simpleType.Content;
                     if (content is XmlSchemaSimpleTypeRestriction)
                     {
                         baseType = ((XmlSchemaSimpleTypeRestriction)content).BaseType;
                         baseName = ((XmlSchemaSimpleTypeRestriction)content).BaseTypeName;
                     }
-                    else if (content is XmlSchemaSimpleTypeList)
+                    else if (content is XmlSchemaSimpleTypeList list)
                     {
-                        XmlSchemaSimpleTypeList list = (XmlSchemaSimpleTypeList)content;
                         if (list.ItemTypeName != null && !list.ItemTypeName.IsEmpty)
                             baseName = list.ItemTypeName;
                         if (list.ItemType != null)

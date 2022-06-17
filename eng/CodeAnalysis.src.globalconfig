@@ -1356,7 +1356,7 @@ dotnet_diagnostic.IDE0018.severity = suggestion
 dotnet_diagnostic.IDE0019.severity = suggestion
 
 # IDE0020: Use pattern matching to avoid is check followed by a cast (with variable)
-dotnet_diagnostic.IDE0020.severity = suggestion
+dotnet_diagnostic.IDE0020.severity = warning
 
 # IDE0021: Use expression body for constructors
 dotnet_diagnostic.IDE0021.severity = silent
@@ -1458,7 +1458,7 @@ dotnet_diagnostic.IDE0052.severity = suggestion
 dotnet_diagnostic.IDE0053.severity = silent
 
 # IDE0054: Use compound assignment
-dotnet_diagnostic.IDE0054.severity = suggestion
+dotnet_diagnostic.IDE0054.severity = warning
 
 # IDE0055: Fix formatting
 dotnet_diagnostic.IDE0055.severity = suggestion
@@ -1570,7 +1570,7 @@ dotnet_diagnostic.IDE0160.severity = silent
 dotnet_diagnostic.IDE0161.severity = silent
 
 # IDE1005: Delegate invocation can be simplified.
-dotnet_diagnostic.IDE1005.severity = suggestion
+dotnet_diagnostic.IDE1005.severity = warning
 
 # IDE1006: Naming styles
 dotnet_diagnostic.IDE1006.severity = silent

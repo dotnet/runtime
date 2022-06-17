@@ -262,8 +262,7 @@ namespace System.Xml.Xsl.Runtime
             }
 
             // Notify event listener that attributes have been flushed
-            if (_onRemove != null)
-                _onRemove(_wrapped);
+            _onRemove?.Invoke(_wrapped);
         }
 
         private struct AttrNameVal

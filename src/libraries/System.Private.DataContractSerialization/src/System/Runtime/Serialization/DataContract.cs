@@ -2173,19 +2173,16 @@ namespace System.Runtime.Serialization
             if (!IsTypeVisibleInSerializationModule(member.DeclaringType!))
                 return false;
 
-            if (member is MethodInfo)
+            if (member is MethodInfo method)
             {
-                MethodInfo method = (MethodInfo)member;
                 return (method.IsAssembly || method.IsFamilyOrAssembly);
             }
-            else if (member is FieldInfo)
+            else if (member is FieldInfo field)
             {
-                FieldInfo field = (FieldInfo)member;
                 return (field.IsAssembly || field.IsFamilyOrAssembly) && IsTypeVisible(field.FieldType);
             }
-            else if (member is ConstructorInfo)
+            else if (member is ConstructorInfo constructor)
             {
-                ConstructorInfo constructor = (ConstructorInfo)member;
                 return (constructor.IsAssembly || constructor.IsFamilyOrAssembly);
             }
 
