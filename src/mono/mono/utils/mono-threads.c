@@ -36,6 +36,10 @@
 #include <mono/utils/w32api.h>
 #include <glib.h>
 
+#ifdef HOST_BROWSER
+#include <emscripten/emscripten.h>
+#endif
+
 #include <errno.h>
 #include <mono/utils/mono-errno.h>
 
@@ -509,6 +513,9 @@ register_thread (MonoThreadInfo *info)
 	mono_os_sem_init (&info->resume_semaphore, 0);
 
 #ifdef HOST_BROWSER
+	EM_ASM({
+			console.log ('In register_thread');
+		});
 	mono_threads_wasm_on_thread_attached ();
 #endif
 

@@ -93,9 +93,18 @@ namespace Sample
             return recursiveFib (n - 1) + recursiveFib (n - 2);
         }
 
+            public static void Meth() {
+                    Thread.Sleep (500);
+                    while (!GetCancellationToken().IsCancellationRequested) {
+                            Console.WriteLine ("ping");
+                            Thread.Sleep (500);
+                    }
+            }
+
         public static async Task<double> StartAsyncWork(int N)
         {
             CancellationToken ct = GetCancellationToken();
+            new Thread(new ThreadStart(Meth)).Start();
             await Task.Delay(1);
             long b;
             WasmHelloEventSource.Instance.NewCallsCounter();

@@ -65,7 +65,7 @@ function monoDedicatedChannelMessageFromMainToWorker(event: MessageEvent<string>
 
 /// Called in the worker thread from mono when a new pthread is started
 export function mono_wasm_on_pthread_created(worker_notify_ptr: number): void {
-    console.debug("waiting for main thread to aknowledge us");
+    console.log("waiting for main thread to aknowledge us");
     Atomics.wait(Module.HEAP32, worker_notify_ptr, 0);  // FIXME: any way we can avoid this?
     console.debug("creating a channel");
     const channel = new MessageChannel();
@@ -91,7 +91,7 @@ function monoMessageFromWorkerHandlerForMainThread(event: MessageEvent<MonoMessa
 
 /// Called asynchronously in the main thread from mono when a new pthread is started
 export function mono_wasm_pthread_on_pthread_created_main_thread(pthread_ptr: pthread_ptr, worker_notify_ptr: number): void {
-    console.debug("pthread created");
+    console.log("pthread created");
     const worker = mainThradGetWorkerForPthread(pthread_ptr);
     worker.addEventListener("message", monoMessageFromWorkerHandlerForMainThread);
     // wake the worker
