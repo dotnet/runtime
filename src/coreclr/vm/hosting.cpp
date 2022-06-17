@@ -78,29 +78,16 @@ LPVOID ClrVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, 
 
 }
 
-BOOL ClrVirtualFree(LPVOID lpAddress, SIZE_T dwSize, DWORD dwFreeType) {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
+BOOL ClrVirtualFree(LPVOID lpAddress, SIZE_T dwSize, DWORD dwFreeType)
+{
+    WRAPPER_NO_CONTRACT;
     return (BOOL)(BYTE)::VirtualFree (lpAddress, dwSize, dwFreeType);
 }
 
 SIZE_T ClrVirtualQuery(LPCVOID lpAddress, PMEMORY_BASIC_INFORMATION lpBuffer, SIZE_T dwLength)
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    {
-        return ::VirtualQuery(lpAddress, lpBuffer, dwLength);
-    }
+    WRAPPER_NO_CONTRACT;
+    return ::VirtualQuery(lpAddress, lpBuffer, dwLength);
 }
 
 #if defined(_DEBUG) && !defined(TARGET_UNIX)
@@ -231,14 +218,7 @@ BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWO
 
 DWORD ClrSleepEx(DWORD dwMilliseconds, BOOL bAlertable)
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
+    WRAPPER_NO_CONTRACT;
     return ::SleepEx(dwMilliseconds, bAlertable);
 }
 
