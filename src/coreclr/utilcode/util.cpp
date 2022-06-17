@@ -23,9 +23,14 @@
 
 #ifndef DACCESS_COMPILE
 UINT32 g_nClrInstanceId = 0;
+
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+bool g_atomic_present = false;
+#endif
+
 #endif //!DACCESS_COMPILE
 
-bool g_atomic_present = false;
+
 
 //*****************************************************************************
 // Convert a string of hex digits into a hex value of the specified # of bytes.

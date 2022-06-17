@@ -25,7 +25,11 @@
 #define MAX_CACHE_LINE_SIZE 64
 #endif
 
+#ifndef DACCESS_COMPILE
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
 extern bool g_atomic_present;
+#endif
+#endif
 
 #ifndef TARGET_UNIX
 // Copied from malloc.h: don't want to bring in the whole header file.
