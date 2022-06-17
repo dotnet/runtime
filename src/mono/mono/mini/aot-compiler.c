@@ -14224,6 +14224,9 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 	}
 #endif
 
+	if (acfg->aot_opts.llvm_only)
+		acfg->jit_opts |= MONO_OPT_GSHAREDVT;
+
 	if (acfg->jit_opts & MONO_OPT_GSHAREDVT)
 		mono_set_generic_sharing_vt_supported (TRUE);
 
