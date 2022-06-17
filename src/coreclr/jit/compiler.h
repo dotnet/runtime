@@ -5354,13 +5354,6 @@ public:
                                 void*         pCallBackData = nullptr,
                                 bool          computeStack  = false);
 
-    // An fgWalkPreFn that looks for expressions that have inline throws in
-    // minopts mode. Basically it looks for tress with gtOverflowEx() or
-    // GTF_IND_RNGCHK.  It returns WALK_ABORT if one is found.  It
-    // returns WALK_SKIP_SUBTREES if GTF_EXCEPT is not set (assumes flags
-    // properly propagated to parent trees).  It returns WALK_CONTINUE
-    // otherwise.
-    static fgWalkResult fgChkThrowCB(GenTree** pTree, Compiler::fgWalkData* data);
     static fgWalkResult fgChkLocAllocCB(GenTree** pTree, Compiler::fgWalkData* data);
     static fgWalkResult fgChkQmarkCB(GenTree** pTree, Compiler::fgWalkData* data);
 
@@ -5879,6 +5872,8 @@ private:
     bool gtIsTypeHandleToRuntimeTypeHelper(GenTreeCall* call);
     bool gtIsTypeHandleToRuntimeTypeHandleHelper(GenTreeCall* call, CorInfoHelpFunc* pHelper = nullptr);
     bool gtIsActiveCSE_Candidate(GenTree* tree);
+
+    ExceptionSetFlags gtCollectPreciseExceptions(GenTree* tree);
 
     bool fgIsBigOffset(size_t offset);
 

@@ -735,6 +735,12 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 
     unsigned argCount = CountArgs();
 
+    // Overapproximation of exception flags for previous args that may not
+    // already be evaluated into temps.
+    ExceptionSetFlags nonTempExFlags = ExceptionSetFlags::None;
+
+    CallArg* prevNonTempExceptionThrowingArg = nullptr;
+
     for (CallArg& arg : Args())
     {
         GenTree* argx = arg.GetEarlyNode();
@@ -816,6 +822,11 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
         }
 
         bool treatLikeCall = ((argx->gtFlags & GTF_CALL) != 0);
+
+        // TODO: Keep previous GTF_EXCEPT arg and lazily collect this set instead.
+        ExceptionSetFlags preciseExceptions =
+            treatLikeCall ? ExceptionSetFlags::None : comp->gtCollectPreciseExceptions(argx);
+
 #if FEATURE_FIXED_OUT_ARGS
         // Like calls, if this argument has a tree that will do an inline throw,
         // a call to a jit helper, then we need to treat it like a call (but only
@@ -824,32 +835,34 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
         // conservative, but I want to avoid as much special-case debug-only code
         // as possible, so leveraging the GTF_CALL flag is the easiest.
         //
-        if (!treatLikeCall && (argx->gtFlags & GTF_EXCEPT) && (argCount > 1) && comp->opts.compDbgCode &&
-            (comp->fgWalkTreePre(&argx, Compiler::fgChkThrowCB) == Compiler::WALK_ABORT))
+        if (!treatLikeCall && (argCount > 1) && comp->opts.compDbgCode)
         {
-            for (CallArg& otherArg : Args())
+            if ((preciseExceptions & (ExceptionSetFlags::IndexOutOfRangeException |
+                                      ExceptionSetFlags::OverflowException)) != ExceptionSetFlags::None)
             {
-                if (&otherArg == &arg)
+                for (CallArg& otherArg : Args())
                 {
-                    continue;
-                }
+                    if (&otherArg == &arg)
+                    {
+                        continue;
+                    }
 
-                if (otherArg.AbiInfo.GetRegNum() == REG_STK)
-                {
-                    treatLikeCall = true;
-                    break;
+                    if (otherArg.AbiInfo.GetRegNum() == REG_STK)
+                    {
+                        treatLikeCall = true;
+                        break;
+                    }
                 }
             }
         }
 #endif // FEATURE_FIXED_OUT_ARGS
 
-        /* If it contains a call (GTF_CALL) then itself and everything before the call
-           with a GLOB_EFFECT must eval to temp (this is because everything with SIDE_EFFECT
-           has to be kept in the right order since we will move the call to the first position)
+        // If it contains a call (GTF_CALL) then itself and everything before the call
+        // with a GLOB_EFFECT must eval to temp (this is because everything with SIDE_EFFECT
+        // has to be kept in the right order since we will move the call to the first position)
 
-           For calls we don't have to be quite as conservative as we are with an assignment
-           since the call won't be modifying any non-address taken LclVars.
-         */
+        // For calls we don't have to be quite as conservative as we are with an assignment
+        // since the call won't be modifying any non-address taken LclVars.
 
         if (treatLikeCall)
         {
@@ -893,6 +906,35 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 #endif // FEATURE_ARG_SPLIT
 #endif
             }
+        }
+        else
+        {
+            // If a previous arg may throw a different exception than this arg,
+            // then we evaluate all previous arguments with GTF_EXCEPT to temps
+            // to avoid reordering them in our sort late. The only case we can
+            // avoid this is if all previous args throw the same single
+            // exception as this arg.
+            unsigned numExceptions = genCountBits(static_cast<unsigned>(preciseExceptions));
+            bool     distinctExceptions =
+                (nonTempExFlags != ExceptionSetFlags::None) &&
+                ((numExceptions > 1) || ((numExceptions == 1) && (preciseExceptions != nonTempExFlags)));
+            if (distinctExceptions)
+            {
+                for (CallArg& prevArg : Args())
+                {
+                    if (&prevArg == &arg)
+                    {
+                        break;
+                    }
+
+                    if ((prevArg.GetEarlyNode() != nullptr) && ((prevArg.GetEarlyNode()->gtFlags & GTF_EXCEPT) != 0))
+                    {
+                        SetNeedsTemp(&prevArg);
+                    }
+                }
+            }
+
+            nonTempExFlags |= preciseExceptions;
         }
 
 #if FEATURE_MULTIREG_ARGS
@@ -1786,7 +1828,7 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
 #ifdef DEBUG
     if (comp->verbose)
     {
-        printf("\nShuffled argument table:    ");
+        printf("\nRegister placement order:    ");
         for (CallArg& arg : LateArgs())
         {
             if (arg.AbiInfo.GetRegNum() != REG_STK)

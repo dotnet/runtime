@@ -6351,16 +6351,20 @@ bool GenTree::OperIsImplicitIndir() const
 }
 
 //------------------------------------------------------------------------------
-// OperMayThrow : Check whether the operation may throw.
+// OperPreciseExceptions : Get exception set this tree may throw.
 //
 //
 // Arguments:
 //    comp      -  Compiler instance
 //
 // Return Value:
-//    True if the given operator may cause an exception
-
-bool GenTree::OperMayThrow(Compiler* comp)
+//    A bit set of exceptions this tree may throw.
+//
+// Remarks:
+//    Should not be used on calls given that we can say nothing precise about
+//    those.
+//
+ExceptionSetFlags GenTree::OperPreciseExceptions(Compiler* comp)
 {
     GenTree* op;
 
@@ -6377,26 +6381,40 @@ bool GenTree::OperMayThrow(Compiler* comp)
 
             if (varTypeIsFloating(op->TypeGet()))
             {
-                return false; // Floating point division does not throw.
+                return ExceptionSetFlags::None;
             }
 
             // For integers only division by 0 or by -1 can throw
-            if (op->IsIntegralConst() && !op->IsIntegralConst(0) && !op->IsIntegralConst(-1))
+            if (op->IsIntegralConst())
             {
-                return false;
+                if (op->IsIntegralConst(0))
+                {
+                    return ExceptionSetFlags::DivideByZeroException;
+                }
+                if (op->IsIntegralConst(-1))
+                {
+                    return ExceptionSetFlags::ArithmeticException;
+                }
+
+                return ExceptionSetFlags::None;
             }
-            return true;
+
+            return ExceptionSetFlags::DivideByZeroException | ExceptionSetFlags::ArithmeticException;
 
         case GT_INTRINSIC:
             // If this is an intrinsic that represents the object.GetType(), it can throw an NullReferenceException.
             // Currently, this is the only intrinsic that can throw an exception.
-            return AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType;
+            if (AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType)
+            {
+                return ExceptionSetFlags::NullReferenceException;
+            }
+
+            return ExceptionSetFlags::None;
 
         case GT_CALL:
+            assert(!"Unexpected GT_CALL in OperPreciseExceptions");
 
-            CorInfoHelpFunc helper;
-            helper = comp->eeGetHelperNum(this->AsCall()->gtCallMethHnd);
-            return ((helper == CORINFO_HELP_UNDEF) || !comp->s_helperCallProperties.NoThrow(helper));
+            return static_cast<ExceptionSetFlags>(0xffffffff);
 
         case GT_IND:
         case GT_BLK:
@@ -6404,14 +6422,28 @@ bool GenTree::OperMayThrow(Compiler* comp)
         case GT_NULLCHECK:
         case GT_STORE_BLK:
         case GT_STORE_DYN_BLK:
-            return (((this->gtFlags & GTF_IND_NONFAULTING) == 0) && comp->fgAddrCouldBeNull(this->AsIndir()->Addr()));
+            if (((this->gtFlags & GTF_IND_NONFAULTING) == 0) && comp->fgAddrCouldBeNull(this->AsIndir()->Addr()))
+            {
+                return ExceptionSetFlags::NullReferenceException;
+            }
+
+            return ExceptionSetFlags::None;
 
         case GT_ARR_LENGTH:
-            return (((this->gtFlags & GTF_IND_NONFAULTING) == 0) &&
-                    comp->fgAddrCouldBeNull(this->AsArrLen()->ArrRef()));
+            if (((this->gtFlags & GTF_IND_NONFAULTING) == 0) && comp->fgAddrCouldBeNull(this->AsArrLen()->ArrRef()))
+            {
+                return ExceptionSetFlags::NullReferenceException;
+            }
+
+            return ExceptionSetFlags::None;
 
         case GT_ARR_ELEM:
-            return comp->fgAddrCouldBeNull(this->AsArrElem()->gtArrObj);
+            if (comp->fgAddrCouldBeNull(this->AsArrElem()->gtArrObj))
+            {
+                return ExceptionSetFlags::NullReferenceException;
+            }
+
+            return ExceptionSetFlags::None;
 
         case GT_FIELD:
         {
@@ -6419,19 +6451,28 @@ bool GenTree::OperMayThrow(Compiler* comp)
 
             if (fldObj != nullptr)
             {
-                return comp->fgAddrCouldBeNull(fldObj);
+                if (comp->fgAddrCouldBeNull(fldObj))
+                {
+                    return ExceptionSetFlags::NullReferenceException;
+                }
             }
 
-            return false;
+            return ExceptionSetFlags::None;
         }
 
         case GT_BOUNDS_CHECK:
+        case GT_INDEX_ADDR:
+            return ExceptionSetFlags::IndexOutOfRangeException;
+
         case GT_ARR_INDEX:
         case GT_ARR_OFFSET:
-        case GT_LCLHEAP:
+            return ExceptionSetFlags::NullReferenceException;
+
         case GT_CKFINITE:
-        case GT_INDEX_ADDR:
-            return true;
+            return ExceptionSetFlags::ArithmeticException;
+
+        case GT_LCLHEAP:
+            return ExceptionSetFlags::StackOverflowException;
 
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
@@ -6443,23 +6484,42 @@ bool GenTree::OperMayThrow(Compiler* comp)
                 // This operation contains an implicit indirection
                 //   it could throw a null reference exception.
                 //
-                return true;
+                return ExceptionSetFlags::NullReferenceException;
             }
-            break;
+
+            return ExceptionSetFlags::None;
         }
 #endif // FEATURE_HW_INTRINSICS
         default:
-            break;
+            if (gtOverflowEx())
+            {
+                return ExceptionSetFlags::OverflowException;
+            }
+
+            return ExceptionSetFlags::None;
     }
+}
 
-    /* Overflow arithmetic operations also throw exceptions */
-
-    if (gtOverflowEx())
+//------------------------------------------------------------------------------
+// OperMayThrow : Check whether the operation may throw.
+//
+//
+// Arguments:
+//    comp      -  Compiler instance
+//
+// Return Value:
+//    True if the given operator may cause an exception
+//
+bool GenTree::OperMayThrow(Compiler* comp)
+{
+    if (OperIs(GT_CALL))
     {
-        return true;
+        CorInfoHelpFunc helper;
+        helper = comp->eeGetHelperNum(this->AsCall()->gtCallMethHnd);
+        return ((helper == CORINFO_HELP_UNDEF) || !comp->s_helperCallProperties.NoThrow(helper));
     }
 
-    return false;
+    return OperPreciseExceptions(comp) != ExceptionSetFlags::None;
 }
 
 //-----------------------------------------------------------------------------------
@@ -16133,6 +16193,56 @@ bool Compiler::gtIsTypeHandleToRuntimeTypeHandleHelper(GenTreeCall* call, CorInf
 bool Compiler::gtIsActiveCSE_Candidate(GenTree* tree)
 {
     return (optValnumCSE_phase && IS_CSE_INDEX(tree->gtCSEnum));
+}
+
+ExceptionSetFlags Compiler::gtCollectPreciseExceptions(GenTree* tree)
+{
+    class PreciseExceptionsWalker final : public GenTreeVisitor<PreciseExceptionsWalker>
+    {
+        ExceptionSetFlags m_preciseExceptions = ExceptionSetFlags::None;
+
+    public:
+        PreciseExceptionsWalker(Compiler* comp) : GenTreeVisitor<PreciseExceptionsWalker>(comp)
+        {
+        }
+
+        enum
+        {
+            DoPreOrder = true,
+        };
+
+        ExceptionSetFlags GetFlags()
+        {
+            return m_preciseExceptions;
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* tree = *use;
+            if ((tree->gtFlags & GTF_EXCEPT) == 0)
+            {
+                return WALK_SKIP_SUBTREES;
+            }
+
+            m_preciseExceptions |= tree->OperPreciseExceptions(m_compiler);
+            return WALK_CONTINUE;
+        }
+    };
+
+    // We only expect the caller to ask for precise exceptions for cases where
+    // it may help with disambiguating between exceptions. If the tree contains
+    // a call it can always throw arbitrary exceptions.
+    assert((tree->gtFlags & GTF_CALL) == 0);
+
+    if ((tree->gtFlags & GTF_EXCEPT) == 0)
+    {
+        return ExceptionSetFlags::None;
+    }
+
+    PreciseExceptionsWalker walker(this);
+    walker.WalkTree(&tree, nullptr);
+    assert(walker.GetFlags() != ExceptionSetFlags::None);
+    return walker.GetFlags();
 }
 
 /*****************************************************************************/

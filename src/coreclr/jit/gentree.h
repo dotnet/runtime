@@ -130,6 +130,42 @@ enum gtCallTypes : BYTE
     CT_COUNT // fake entry (must be last)
 };
 
+enum class ExceptionSetFlags
+{
+    None                     = 0x0,
+    OverflowException        = 0x1,
+    DivideByZeroException    = 0x2,
+    ArithmeticException      = 0x4,
+    NullReferenceException   = 0x8,
+    IndexOutOfRangeException = 0x10,
+    StackOverflowException   = 0x20,
+};
+
+inline constexpr ExceptionSetFlags operator~(ExceptionSetFlags a)
+{
+    return (ExceptionSetFlags)(~(unsigned short)a);
+}
+
+inline constexpr ExceptionSetFlags operator|(ExceptionSetFlags a, ExceptionSetFlags b)
+{
+    return (ExceptionSetFlags)((unsigned short)a | (unsigned short)b);
+}
+
+inline constexpr ExceptionSetFlags operator&(ExceptionSetFlags a, ExceptionSetFlags b)
+{
+    return (ExceptionSetFlags)((unsigned short)a & (unsigned short)b);
+}
+
+inline ExceptionSetFlags& operator|=(ExceptionSetFlags& a, ExceptionSetFlags b)
+{
+    return a = (ExceptionSetFlags)((unsigned short)a | (unsigned short)b);
+}
+
+inline ExceptionSetFlags& operator&=(ExceptionSetFlags& a, ExceptionSetFlags b)
+{
+    return a = (ExceptionSetFlags)((unsigned short)a & (unsigned short)b);
+}
+
 #ifdef DEBUG
 /*****************************************************************************
 *
@@ -1810,6 +1846,7 @@ public:
     bool OperRequiresCallFlag(Compiler* comp);
 
     bool OperMayThrow(Compiler* comp);
+    ExceptionSetFlags OperPreciseExceptions(Compiler* comp);
 
     unsigned GetScaleIndexMul();
     unsigned GetScaleIndexShf();
@@ -4578,6 +4615,7 @@ class CallArgs
     void RemovedWellKnownArg(WellKnownArg arg);
     regNumber GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, WellKnownArg arg);
     void SplitArg(CallArg* arg, unsigned numRegs, unsigned numSlots);
+    void SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs);
 
 public:
     CallArgs();
@@ -4622,7 +4660,6 @@ public:
     void AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call);
 
     void ArgsComplete(Compiler* comp, GenTreeCall* call);
-    void SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs);
     void EvalArgsToTemps(Compiler* comp, GenTreeCall* call);
     void SetNeedsTemp(CallArg* arg);
     bool IsNonStandard(Compiler* comp, GenTreeCall* call, CallArg* arg);
