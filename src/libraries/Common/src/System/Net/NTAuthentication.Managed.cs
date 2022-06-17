@@ -282,6 +282,7 @@ namespace System.Net
             _spn = spn;
             _channelBinding = channelBinding;
             _contextFlags = requestedContextFlags;
+            IsServer = isServer;
         }
 
         internal void CloseContext()
@@ -1029,7 +1030,7 @@ namespace System.Net
 
         internal bool IsKerberos => false;
 
-        internal bool IsServer => false;
+        internal bool IsServer { get; set; }
 
         internal bool IsValidContext => true;
 
