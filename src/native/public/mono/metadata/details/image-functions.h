@@ -30,9 +30,9 @@ MONO_API_FUNCTION(int, mono_image_ensure_section_idx, (MonoImage *image, int sec
 
 MONO_API_FUNCTION(uint32_t, mono_image_get_entry_point, (MonoImage *image))
 MONO_API_FUNCTION(const char *, mono_image_get_resource, (MonoImage *image, uint32_t offset, uint32_t *size))
-MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY MonoImage*, mono_image_load_file_for_image, (MonoImage *image, int fileidx))
+MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY MonoImage*, mono_image_load_file_for_image, (MonoImage *image, uint32_t fileidx))
 
-MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY MonoImage*, mono_image_load_module, (MonoImage *image, int idx))
+MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY MonoImage*, mono_image_load_module, (MonoImage *image, uint32_t idx))
 
 MONO_API_FUNCTION(const char*, mono_image_get_name, (MonoImage *image))
 MONO_API_FUNCTION(const char*, mono_image_get_filename, (MonoImage *image))

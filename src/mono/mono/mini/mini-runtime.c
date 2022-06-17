@@ -1867,13 +1867,12 @@ void
 mini_init_gsctx (MonoMemPool *mp, MonoGenericContext *context, MonoGenericSharingContext *gsctx)
 {
 	MonoGenericInst *inst;
-	int i;
 
 	memset (gsctx, 0, sizeof (MonoGenericSharingContext));
 
 	if (context && context->class_inst) {
 		inst = context->class_inst;
-		for (i = 0; i < inst->type_argc; ++i) {
+		for (guint i = 0; i < inst->type_argc; ++i) {
 			MonoType *type = inst->type_argv [i];
 
 			if (mini_is_gsharedvt_gparam (type))
@@ -1883,7 +1882,7 @@ mini_init_gsctx (MonoMemPool *mp, MonoGenericContext *context, MonoGenericSharin
 	if (context && context->method_inst) {
 		inst = context->method_inst;
 
-		for (i = 0; i < inst->type_argc; ++i) {
+		for (guint i = 0; i < inst->type_argc; ++i) {
 			MonoType *type = inst->type_argv [i];
 
 			if (mini_is_gsharedvt_gparam (type))
@@ -2253,8 +2252,7 @@ unlock_compilation_data (void)
 static JitCompilationEntry*
 find_method (MonoMethod *method)
 {
-	int i;
-	for (i = 0; i < compilation_data.in_flight_methods->len; ++i){
+	for (guint i = 0; i < compilation_data.in_flight_methods->len; ++i){
 		JitCompilationEntry *e = (JitCompilationEntry*)compilation_data.in_flight_methods->pdata [i];
 		if (e->method == method)
 			return e;
