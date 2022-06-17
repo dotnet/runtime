@@ -602,7 +602,7 @@ FORCEINLINE AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelper(Thread
         }
 
         LONG newValue = oldValue | tid;
-#if defined(TARGET_ARM64)
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
         if (FastInterlockedCompareExchangeAcquire((LONG*)&m_SyncBlockValue, newValue, oldValue) == oldValue)
 #else   
         if (InterlockedCompareExchangeAcquire((LONG*)&m_SyncBlockValue, newValue, oldValue) == oldValue)
@@ -654,7 +654,7 @@ FORCEINLINE AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelper(Thread
         return AwareLock::EnterHelperResult_UseSlowPath;
     }
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
     if (FastInterlockedCompareExchangeAcquire((LONG*)&m_SyncBlockValue, newValue, oldValue) == oldValue)
 #else
     if (InterlockedCompareExchangeAcquire((LONG*)&m_SyncBlockValue, newValue, oldValue) == oldValue)
@@ -732,7 +732,7 @@ FORCEINLINE AwareLock::LeaveHelperAction ObjHeader::LeaveObjMonitorHelper(Thread
             // We are leaving the lock
             DWORD newValue = (syncBlockValue & (~SBLK_MASK_LOCK_THREADID));
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
             if (FastInterlockedCompareExchangeRelease((LONG*)&m_SyncBlockValue, newValue, syncBlockValue) != (LONG)syncBlockValue)
 #else
             if (InterlockedCompareExchangeRelease((LONG*)&m_SyncBlockValue, newValue, syncBlockValue) != (LONG)syncBlockValue)
@@ -745,7 +745,7 @@ FORCEINLINE AwareLock::LeaveHelperAction ObjHeader::LeaveObjMonitorHelper(Thread
         {
             // recursion and ThinLock
             DWORD newValue = syncBlockValue - SBLK_LOCK_RECLEVEL_INC;
-#if defined(TARGET_ARM64)
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
             if (FastInterlockedCompareExchangeRelease((LONG*)&m_SyncBlockValue, newValue, syncBlockValue) != (LONG)syncBlockValue)
 #else
             if (InterlockedCompareExchangeRelease((LONG*)&m_SyncBlockValue, newValue, syncBlockValue) != (LONG)syncBlockValue)

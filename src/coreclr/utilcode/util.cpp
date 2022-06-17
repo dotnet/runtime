@@ -25,12 +25,12 @@
 UINT32 g_nClrInstanceId = 0;
 
 #if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-bool g_atomic_present = false;
+// Flag to check if atomics feature is available on
+// the machine
+bool g_arm64_atomics_present = false;
 #endif
 
 #endif //!DACCESS_COMPILE
-
-
 
 //*****************************************************************************
 // Convert a string of hex digits into a hex value of the specified # of bytes.

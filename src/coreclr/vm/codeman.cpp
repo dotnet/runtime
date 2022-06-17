@@ -1566,6 +1566,7 @@ void EEJitManager::SetCpuInfo()
     if (IsProcessorFeaturePresent(PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE))
     {
         CPUCompileFlags.Set(InstructionSet_Atomics);
+        g_arm64_atomics_present = true;
     }
 
     // PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE (43)
@@ -1575,10 +1576,6 @@ void EEJitManager::SetCpuInfo()
     }
 
 #endif // HOST_64BIT
-    if (CPUCompileFlags.IsSet(InstructionSet_Atomics))
-    {
-        g_atomic_present = true;
-    }
     if (GetDataCacheZeroIDReg() == 4)
     {
         // DCZID_EL0<4> (DZP) indicates whether use of DC ZVA instructions is permitted (0) or prohibited (1).

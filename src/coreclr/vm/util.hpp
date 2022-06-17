@@ -27,7 +27,9 @@
 
 #ifndef DACCESS_COMPILE
 #if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-extern bool g_atomic_present;
+// Flag to check if atomics feature is available on
+// the machine
+extern bool g_arm64_atomics_present;
 #endif
 #endif
 
@@ -91,7 +93,7 @@ FORCEINLINE LONG  FastInterlockedCompareExchange(
     LONG Exchange,
     LONG Comperand)
 {
-    if (g_atomic_present)
+    if (g_arm64_atomics_present)
     {
         return (LONG) __casal32((unsigned __int32*) Destination, (unsigned  __int32)Comperand, (unsigned __int32)Exchange);
     }
@@ -106,7 +108,7 @@ FORCEINLINE LONGLONG  FastInterlockedCompareExchange64(
     IN LONGLONG Exchange,
     IN LONGLONG Comperand)
 {
-    if (g_atomic_present)
+    if (g_arm64_atomics_present)
     {
         return (LONGLONG) __casal64((unsigned __int64*) Destination, (unsigned  __int64)Comperand, (unsigned __int64)Exchange);
     }
@@ -122,7 +124,7 @@ FORCEINLINE LONG FastInterlockedCompareExchangeAcquire(
   IN LONG Comperand
 )
 {
-    if (g_atomic_present)
+    if (g_arm64_atomics_present)
     {
         return (LONG) __casa32((unsigned __int32*) Destination, (unsigned  __int32)Comperand, (unsigned __int32)Exchange);
     }
@@ -138,7 +140,7 @@ FORCEINLINE LONG FastInterlockedCompareExchangeRelease(
   IN LONG Comperand
 )
 {
-    if (g_atomic_present)
+    if (g_arm64_atomics_present)
     {
         return (LONG) __casl32((unsigned __int32*) Destination, (unsigned  __int32)Comperand, (unsigned __int32)Exchange);
     }
