@@ -1723,21 +1723,14 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
     genTreeOps oper = structVal->OperGet();
     switch (oper)
     {
-        // GT_RETURN and GT_MKREFANY don't capture the handle.
-        case GT_RETURN:
-            break;
+        // GT_MKREFANY is supported directly by args morphing.
         case GT_MKREFANY:
             alreadyNormalized = true;
             break;
 
         case GT_CALL:
-            structVal->AsCall()->gtRetClsHnd = structHnd;
-            makeTemp                         = true;
-            break;
-
         case GT_RET_EXPR:
-            structVal->AsRetExpr()->gtRetClsHnd = structHnd;
-            makeTemp                            = true;
+            makeTemp = true;
             break;
 
         case GT_FIELD:
@@ -1758,7 +1751,6 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
 
         case GT_OBJ:
         case GT_BLK:
-        case GT_ASG:
             // These should already have the appropriate type.
             assert(structVal->gtType == structType);
             alreadyNormalized = true;
@@ -1771,10 +1763,8 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
             break;
 
         case GT_CNS_VEC:
-        {
             assert(varTypeIsSIMD(structVal) && (structVal->gtType == structType));
             break;
-        }
 
 #ifdef FEATURE_SIMD
         case GT_SIMD:
@@ -1938,8 +1928,8 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     }
 
     // Generate the full lookup tree. May be null if we're abandoning an inline attempt.
-    GenTree* result = impLookupToTree(pResolvedToken, &embedInfo.lookup, gtTokenToIconFlags(pResolvedToken->token),
-                                      embedInfo.compileTimeHandle);
+    GenTreeFlags handleType = importParent ? GTF_ICON_CLASS_HDL : gtTokenToIconFlags(pResolvedToken->token);
+    GenTree*     result = impLookupToTree(pResolvedToken, &embedInfo.lookup, handleType, embedInfo.compileTimeHandle);
 
     // If we have a result and it requires runtime lookup, wrap it in a runtime lookup node.
     if ((result != nullptr) && embedInfo.lookup.lookupKind.needsRuntimeLookup)
@@ -8853,9 +8843,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                 // Create the address node.
                 GenTreeFlags handleKind = isBoxedStatic ? GTF_ICON_STATIC_BOX_PTR : GTF_ICON_STATIC_HDL;
                 op1                     = gtNewIconHandleNode((size_t)fldAddr, handleKind, innerFldSeq);
-#ifdef DEBUG
-                op1->AsIntCon()->gtTargetHandle = op1->AsIntCon()->gtIconVal;
-#endif
+                INDEBUG(op1->AsIntCon()->gtTargetHandle = reinterpret_cast<size_t>(pResolvedToken->hField));
 
                 if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
                 {
@@ -19907,8 +19895,8 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
 
             if (pParam->result->IsFailure())
             {
-                // Make sure not to report this one.  It was already reported by the VM.
-                pParam->result->SetReported();
+                // Do not report this as a failure. Instead report as a "VM failure"
+                pParam->result->SetVMFailure();
                 goto _exit;
             }
 
@@ -21201,7 +21189,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
 
     // Since we're not actually inlining yet, and this call site is
     // still just an inline candidate, there's nothing to report.
-    inlineResult.SetReported();
+    inlineResult.SetSuccessResult(INLINE_CHECK_CAN_INLINE_SUCCESS);
 }
 
 /******************************************************************************/

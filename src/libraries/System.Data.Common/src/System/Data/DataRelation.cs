@@ -707,7 +707,7 @@ namespace System.Data
 
                 CheckState();
 
-                _relationName = (relationName == null ? "" : relationName);
+                _relationName = relationName ?? "";
                 _createConstraints = createConstraints;
             }
             finally

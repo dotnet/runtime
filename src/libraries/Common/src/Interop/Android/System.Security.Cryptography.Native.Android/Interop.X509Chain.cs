@@ -98,10 +98,6 @@ internal static partial class Interop
             IntPtr[] customTrustStore,
             int customTrustStoreLen);
 
-        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainSupportsRevocationOptions")]
-        [return:MarshalAs(UnmanagedType.U1)]
-        internal static partial bool X509ChainSupportsRevocationOptions();
-
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainValidate")]
         internal static partial int X509ChainValidate(
             SafeX509ChainContextHandle ctx,

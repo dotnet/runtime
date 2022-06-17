@@ -135,8 +135,7 @@ namespace System.Management
         //Fires IdentifierChanged event
         internal void FireIdentifierChanged()
         {
-            if (IdentifierChanged != null)
-                IdentifierChanged(this, null);
+            IdentifierChanged?.Invoke(this, null);
         }
 
         //Called when IdentifierChanged() event fires
@@ -1296,7 +1295,7 @@ namespace System.Management
         /// </value>
         public string Locale
         {
-            get { return (null != locale) ? locale : string.Empty; }
+            get { return locale ?? string.Empty; }
             set
             {
                 if (locale != value)
@@ -1444,7 +1443,7 @@ namespace System.Management
         /// </remarks>
         public string Authority
         {
-            get { return (null != authority) ? authority : string.Empty; }
+            get { return authority ?? string.Empty; }
             set
             {
                 if (authority != value)

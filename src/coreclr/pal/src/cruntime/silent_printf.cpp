@@ -168,7 +168,7 @@ int Silent_PAL_vfprintf(PAL_FILE *stream, const char *format, va_list aparg)
                     TempInt = va_arg(ap, INT); /* value not used */
                 }
 
-                TempWChar = va_arg(ap, int);
+                TempWChar = (WCHAR)va_arg(ap, int);
                 Length = Silent_WideCharToMultiByte(&TempWChar, 1, TempBuffer, 4);
                 if (!Length)
                 {
@@ -204,7 +204,7 @@ int Silent_PAL_vfprintf(PAL_FILE *stream, const char *format, va_list aparg)
 
                 if (Prefix == PFF_PREFIX_SHORT)
                 {
-                    *(va_arg(ap, short *)) = written;
+                    *(va_arg(ap, short *)) = (short)written;
                 }
                 else
                 {

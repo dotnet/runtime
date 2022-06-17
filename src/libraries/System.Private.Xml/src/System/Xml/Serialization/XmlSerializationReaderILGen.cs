@@ -106,7 +106,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    _arraySource = arraySource == null ? source : arraySource;
+                    _arraySource = arraySource ?? source;
                     _choiceArraySource = _choiceSource;
                 }
                 _mapping = mapping;

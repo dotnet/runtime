@@ -331,10 +331,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public void OnXsltMessageEncountered(string message)
         {
-            XsltMessageEncounteredEventHandler onMessage = (_argList != null) ? _argList.xsltMessageEncountered : null;
-
-            if (onMessage != null)
-                onMessage(this, new XmlILQueryEventArgs(message));
+            _argList?.xsltMessageEncountered?.Invoke(this, new XmlILQueryEventArgs(message));
         }
     }
 

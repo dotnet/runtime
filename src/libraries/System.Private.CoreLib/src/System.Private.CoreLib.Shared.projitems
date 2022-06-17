@@ -18,7 +18,7 @@
     <SupportsX86Intrinsics Condition="'$(Platform)' == 'x64' or ('$(Platform)' == 'x86' and '$(TargetsUnix)' != 'true')">true</SupportsX86Intrinsics>
     <ILLinkSharedDirectory>$(MSBuildThisFileDirectory)ILLink\</ILLinkSharedDirectory>
     <IsBigEndian Condition="'$(Platform)' == 's390x'">true</IsBigEndian>
-    <Is64Bit Condition="'$(Platform)' == 'arm64' or '$(Platform)' == 'x64' or '$(Platform)' == 's390x' or '$(Platform)' == 'loongarch64'">true</Is64Bit>
+    <Is64Bit Condition="'$(Platform)' == 'arm64' or '$(Platform)' == 'x64' or '$(Platform)' == 's390x' or '$(Platform)' == 'loongarch64' or '$(Platform)' == 'ppc64le'">true</Is64Bit>
     <UseMinimalGlobalizationData Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsBrowser)' == 'true'">true</UseMinimalGlobalizationData>
   </PropertyGroup>
   <PropertyGroup>
@@ -1755,12 +1755,6 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.TzSpecificLocalTimeToSystemTime.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.TzSpecificLocalTimeToSystemTime.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.VerifyVersionExW.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.VerifyVersionExW.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.VerSetConditionMask.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.VerSetConditionMask.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.VirtualAlloc_Ptr.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.VirtualAlloc_Ptr.cs</Link>

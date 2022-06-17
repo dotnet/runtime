@@ -88,7 +88,7 @@ namespace Internal.Runtime.TypeLoader
         /// The StaticClassConstructionContext for a type is encoded in the negative space
         /// of the NonGCStatic fields of a type.
         /// </summary>
-        public static unsafe readonly int ClassConstructorOffset = -sizeof(System.Runtime.CompilerServices.StaticClassConstructionContext);
+        public static readonly unsafe int ClassConstructorOffset = -sizeof(System.Runtime.CompilerServices.StaticClassConstructionContext);
 
         private LowLevelList<TypeDesc> _typesThatNeedTypeHandles = new LowLevelList<TypeDesc>();
 

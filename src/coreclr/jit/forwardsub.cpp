@@ -504,12 +504,6 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         return false;
     }
 
-    if (gtGetStructHandleIfPresent(fwdSubNode) != gtGetStructHandleIfPresent(lhsNode))
-    {
-        JITDUMP(" would change struct handle (assignment)\n");
-        return false;
-    }
-
     // If lhs is mulit-reg, rhs must be too.
     //
     if (lhsNode->IsMultiRegNode() && !fwdSubNode->IsMultiRegNode())
@@ -667,10 +661,29 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     //
     // We may sometimes lose or change a type handle. Avoid substituting if so.
     //
-    if (gtGetStructHandleIfPresent(fwdSubNode) != gtGetStructHandleIfPresent(fsv.GetNode()))
+    // However, we allow free substitution of hardware SIMD types.
+    //
+    CORINFO_CLASS_HANDLE fwdHnd = gtGetStructHandleIfPresent(fwdSubNode);
+    CORINFO_CLASS_HANDLE useHnd = gtGetStructHandleIfPresent(fsv.GetNode());
+    if (fwdHnd != useHnd)
     {
-        JITDUMP(" would change struct handle (substitution)\n");
-        return false;
+        if ((fwdHnd == NO_CLASS_HANDLE) || (useHnd == NO_CLASS_HANDLE))
+        {
+            JITDUMP(" would add/remove struct handle (substitution)\n");
+            return false;
+        }
+
+#ifdef FEATURE_SIMD
+        const bool bothHWSIMD = isHWSIMDClass(fwdHnd) && isHWSIMDClass(useHnd);
+#else
+        const bool bothHWSIMD = false;
+#endif
+
+        if (!bothHWSIMD)
+        {
+            JITDUMP(" would change struct handle (substitution)\n");
+            return false;
+        }
     }
 
 #ifdef FEATURE_SIMD

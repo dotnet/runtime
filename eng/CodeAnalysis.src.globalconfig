@@ -1383,7 +1383,7 @@ dotnet_diagnostic.IDE0027.severity = silent
 dotnet_diagnostic.IDE0028.severity = suggestion
 
 # IDE0029: Use coalesce expression
-dotnet_diagnostic.IDE0029.severity = suggestion
+dotnet_diagnostic.IDE0029.severity = warning
 
 # IDE0030: Use coalesce expression
 dotnet_diagnostic.IDE0030.severity = suggestion
@@ -1404,7 +1404,7 @@ dotnet_diagnostic.IDE0034.severity = suggestion
 dotnet_diagnostic.IDE0035.severity = suggestion
 
 # IDE0036: Order modifiers
-dotnet_diagnostic.IDE0036.severity = suggestion
+dotnet_diagnostic.IDE0036.severity = warning
 
 # IDE0037: Use inferred member name
 dotnet_diagnostic.IDE0037.severity = silent
@@ -1458,7 +1458,7 @@ dotnet_diagnostic.IDE0052.severity = suggestion
 dotnet_diagnostic.IDE0053.severity = silent
 
 # IDE0054: Use compound assignment
-dotnet_diagnostic.IDE0054.severity = suggestion
+dotnet_diagnostic.IDE0054.severity = warning
 
 # IDE0055: Fix formatting
 dotnet_diagnostic.IDE0055.severity = suggestion
@@ -1570,7 +1570,7 @@ dotnet_diagnostic.IDE0160.severity = silent
 dotnet_diagnostic.IDE0161.severity = silent
 
 # IDE1005: Delegate invocation can be simplified.
-dotnet_diagnostic.IDE1005.severity = suggestion
+dotnet_diagnostic.IDE1005.severity = warning
 
 # IDE1006: Naming styles
 dotnet_diagnostic.IDE1006.severity = silent

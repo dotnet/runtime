@@ -986,7 +986,7 @@ namespace System.Xml.Schema
             }
             for (int i = 0; i < y; i++)
             {
-                returnValue = returnValue * decimalValue;
+                returnValue *= decimalValue;
             }
             return returnValue;
         }
@@ -1110,7 +1110,7 @@ namespace System.Xml.Schema
             }
             while (decimal.Truncate(value) != value)
             { //Till it has a fraction
-                value = value * 10;
+                value *= 10;
                 powerCnt++;
             }
 

@@ -980,7 +980,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 foreach (KeyValuePair<string, ExtensionCacheValue> kvp in ec.properties)
                 {
-                    Type type = kvp.Value.Type == null ? kvp.Value.Value.GetType() : kvp.Value.Type;
+                    Type type = kvp.Value.Type ?? kvp.Value.Value.GetType();
 
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "ExtensionCacheConverter filter type " + type.ToString());
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "ExtensionCacheConverter match type " + kvp.Value.MatchType.ToString());

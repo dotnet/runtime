@@ -110,7 +110,7 @@ NativeCodeVersionId NativeCodeVersionNode::GetVersionId() const
 BOOL NativeCodeVersionNode::SetNativeCodeInterlocked(PCODE pCode, PCODE pExpected)
 {
     LIMITED_METHOD_CONTRACT;
-    return FastInterlockCompareExchangePointer(&m_pNativeCode,
+    return InterlockedCompareExchangeT(&m_pNativeCode,
         (TADDR&)pCode, (TADDR&)pExpected) == (TADDR&)pExpected;
 }
 #endif

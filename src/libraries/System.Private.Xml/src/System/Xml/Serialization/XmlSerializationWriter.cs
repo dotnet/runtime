@@ -1222,7 +1222,7 @@ namespace System.Xml.Serialization
             }
 
             if (arrayDims.Length > 0)
-                typeName = typeName + arrayDims.ToString();
+                typeName += arrayDims.ToString();
 
             if (_soap12 && name != null && name.Length > 0)
                 WriteStartElement(name, ns, null, false);
@@ -1365,7 +1365,7 @@ namespace System.Xml.Serialization
             {
                 TypeEntry? entry = GetTypeEntry(t);
                 if (entry == null) throw CreateUnknownTypeException(t);
-                WriteStartElement(name.Length == 0 ? entry.typeName! : name!, ns == null ? entry.typeNs : ns, null, true);
+                WriteStartElement(name.Length == 0 ? entry.typeName! : name!, ns ?? entry.typeNs, null, true);
                 WriteId(o, false);
                 if (ambientType != t) WriteXsiType(entry.typeName!, entry.typeNs);
                 entry.callback!(o);

@@ -10,7 +10,7 @@
     <!-- Force System.Private.CoreLib.dll into a special IL output directory -->
     <OutputPath>$(RuntimeBinDir)IL/</OutputPath>
     <Configurations>Debug;Release;Checked</Configurations>
-    <Platforms>x64;x86;arm;armv6;arm64;s390x;wasm</Platforms>
+    <Platforms>x64;x86;arm;armv6;arm64;s390x;wasm;ppc64le</Platforms>
 
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
@@ -74,6 +74,10 @@
   <PropertyGroup Condition="'$(Platform)' == 'wasm'">
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_WASM</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'ppc64le'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DefineConstants>$(DefineConstants);TARGET_POWERPC64</DefineConstants>
   </PropertyGroup>
 
   <!-- Configuration specific properties -->

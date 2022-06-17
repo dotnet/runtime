@@ -1528,7 +1528,7 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
         critSect = info.compCompHnd->getMethodSync(info.compMethodHnd, (void**)&pCrit);
         noway_assert((!critSect) != (!pCrit));
 
-        tree = gtNewIconEmbHndNode(critSect, pCrit, GTF_ICON_METHOD_HDL, info.compMethodHnd);
+        tree = gtNewIconEmbHndNode(critSect, pCrit, GTF_ICON_GLOBAL_PTR, info.compMethodHnd);
     }
     else
     {
@@ -3421,6 +3421,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
     {
         firstColdBlock       = fgFirstBB->bbNext;
         prevToFirstColdBlock = fgFirstBB;
+        JITDUMP("JitStressProcedureSplitting is enabled: Splitting after the first basic block\n");
     }
     else
     {
