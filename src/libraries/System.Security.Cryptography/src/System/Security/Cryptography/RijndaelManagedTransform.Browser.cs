@@ -173,6 +173,8 @@ namespace System.Security.Cryptography
 
         public int PaddingSizeInBytes => 16; // TODO: eerhardt check this
 
+        public bool HandlesPadding => true;
+
         public int Transform(ReadOnlySpan<byte> input, Span<byte> output)
         {
             // TODO: eerhardt change this to make it efficient

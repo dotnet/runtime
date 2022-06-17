@@ -13,5 +13,7 @@ namespace System.Security.Cryptography
 
         int BlockSizeInBytes { get; }
         int PaddingSizeInBytes { get; }
+
+        bool HandlesPadding => false;
     }
 }

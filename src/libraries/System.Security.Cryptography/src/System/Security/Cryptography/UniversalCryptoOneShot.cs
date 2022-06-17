@@ -29,6 +29,13 @@ namespace System.Security.Cryptography
             if (output.Length >= input.Length)
             {
                 int bytesTransformed = cipher.TransformFinal(input, output);
+
+                if (cipher.HandlesPadding)
+                {
+                    bytesWritten = bytesTransformed;
+                    return true;
+                }
+
                 Span<byte> transformBuffer = output.Slice(0, bytesTransformed);
 
                 try
@@ -76,12 +83,21 @@ namespace System.Security.Cryptography
             if (input.Length <= MaxInStackDecryptionBuffer)
             {
                 int stackTransformFinal = cipher.TransformFinal(input, stackBuffer);
-                int depaddedLength = SymmetricPadding.GetPaddingLength(
-                    stackBuffer.Slice(0, stackTransformFinal),
-                    paddingMode,
-                    cipher.BlockSizeInBytes);
-                Span<byte> writtenDepadded = stackBuffer.Slice(0, depaddedLength);
 
+                int depaddedLength;
+                if (cipher.HandlesPadding)
+                {
+                    depaddedLength = stackTransformFinal;
+                }
+                else
+                {
+                    depaddedLength = SymmetricPadding.GetPaddingLength(
+                        stackBuffer.Slice(0, stackTransformFinal),
+                        paddingMode,
+                        cipher.BlockSizeInBytes);
+                }
+
+                Span<byte> writtenDepadded = stackBuffer.Slice(0, depaddedLength);
                 if (output.Length < depaddedLength)
                 {
                     CryptographicOperations.ZeroMemory(writtenDepadded);
@@ -126,11 +142,20 @@ namespace System.Security.Cryptography
                     writtenToOutput = cipher.Transform(unpaddedBlocks, output);
                     finalTransformWritten = cipher.TransformFinal(paddedBlock, stackBuffer);
 
-                    // This will throw on invalid padding.
-                    int depaddedLength = SymmetricPadding.GetPaddingLength(
-                        stackBuffer.Slice(0, finalTransformWritten),
-                        paddingMode,
-                        cipher.BlockSizeInBytes);
+                    int depaddedLength;
+                    if (cipher.HandlesPadding)
+                    {
+                        depaddedLength = finalTransformWritten;
+                    }
+                    else
+                    {
+                        // This will throw on invalid padding.
+                        depaddedLength = SymmetricPadding.GetPaddingLength(
+                            stackBuffer.Slice(0, finalTransformWritten),
+                            paddingMode,
+                            cipher.BlockSizeInBytes);
+                    }
+
                     Span<byte> depaddedFinalTransform = stackBuffer.Slice(0, depaddedLength);
 
                     if (output.Length - writtenToOutput < depaddedLength)
@@ -167,6 +192,13 @@ namespace System.Security.Cryptography
                 {
                     int transformWritten = cipher.TransformFinal(input, buffer);
                     decryptedBuffer = buffer.Slice(0, transformWritten);
+
+                    if (cipher.HandlesPadding)
+                    {
+                        decryptedBuffer.CopyTo(output);
+                        bytesWritten = transformWritten;
+                        return true;
+                    }
 
                     // This intentionally passes in BlockSizeInBytes instead of PaddingSizeInBytes. This is so that
                     // "extra padded" CFB data can still be decrypted. The .NET Framework always padded CFB8 to the
@@ -207,21 +239,29 @@ namespace System.Security.Cryptography
                 return false;
             }
 
-            // Copy the input to the output, and apply padding if required. This will not throw since the
-            // output length has already been checked, and PadBlock will not copy from input to output
-            // until it has checked that it will be able to apply padding correctly.
-            int padWritten = SymmetricPadding.PadBlock(input, output, cipher.PaddingSizeInBytes, paddingMode);
+            if (cipher.HandlesPadding)
+            {
+                bytesWritten = cipher.TransformFinal(input, output);
+                return true;
+            }
+            else
+            {
+                // Copy the input to the output, and apply padding if required. This will not throw since the
+                // output length has already been checked, and PadBlock will not copy from input to output
+                // until it has checked that it will be able to apply padding correctly.
+                int padWritten = SymmetricPadding.PadBlock(input, output, cipher.PaddingSizeInBytes, paddingMode);
 
-            // Do an in-place encrypt. All of our implementations support this, either natively
-            // or making a temporary buffer themselves if in-place is not supported by the native
-            // implementation.
-            Span<byte> paddedOutput = output.Slice(0, padWritten);
-            bytesWritten = cipher.TransformFinal(paddedOutput, paddedOutput);
+                // Do an in-place encrypt. All of our implementations support this, either natively
+                // or making a temporary buffer themselves if in-place is not supported by the native
+                // implementation.
+                Span<byte> paddedOutput = output.Slice(0, padWritten);
+                bytesWritten = cipher.TransformFinal(paddedOutput, paddedOutput);
 
-            // After padding, we should have an even number of blocks, and the same applies
-            // to the transform.
-            Debug.Assert(padWritten == bytesWritten);
-            return true;
+                // After padding, we should have an even number of blocks, and the same applies
+                // to the transform.
+                Debug.Assert(padWritten == bytesWritten);
+                return true;
+            }
         }
     }
 }
