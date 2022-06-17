@@ -12,7 +12,6 @@ namespace System.Net.Http.Headers
         // If you add a new entry here, you need to add it to TryGetKnownHeader below as well.
 
         public static readonly KnownHeader PseudoStatus = new KnownHeader(":status", HttpHeaderType.Response, parser: null);
-        public static readonly KnownHeader PseudoProtocol = new KnownHeader(":protocol", HttpHeaderType.Request, parser: null);
         public static readonly KnownHeader Accept = new KnownHeader("Accept", HttpHeaderType.Request, MediaTypeHeaderParser.MultipleValuesParser, null, H2StaticTable.Accept, H3StaticTable.AcceptAny);
         public static readonly KnownHeader AcceptCharset = new KnownHeader("Accept-Charset", HttpHeaderType.Request, GenericHeaderParser.MultipleValueStringWithQualityParser, null, H2StaticTable.AcceptCharset);
         public static readonly KnownHeader AcceptEncoding = new KnownHeader("Accept-Encoding", HttpHeaderType.Request, GenericHeaderParser.MultipleValueStringWithQualityParser, null, H2StaticTable.AcceptEncoding, H3StaticTable.AcceptEncodingGzipDeflateBr);
@@ -245,12 +244,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 9:
-                    switch (key[0] | 0x20)
-                    {
-                        case ':': return PseudoProtocol; // [:]protocol
-                        case 'e': return ExpectCT; // [E]xpect-CT
-                    }
-                    break;
+                    return ExpectCT; // Expect-CT
 
                 case 10:
                     switch (key[0] | 0x20)

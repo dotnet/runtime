@@ -657,6 +657,7 @@ namespace System.Net.Http.Headers
         public System.DateTimeOffset? IfUnmodifiedSince { get { throw null; } set { } }
         public int? MaxForwards { get { throw null; } set { } }
         public System.Net.Http.Headers.HttpHeaderValueCollection<System.Net.Http.Headers.NameValueHeaderValue> Pragma { get { throw null; } }
+        public string? Protocol { get { throw null; } set { } }
         public System.Net.Http.Headers.AuthenticationHeaderValue? ProxyAuthorization { get { throw null; } set { } }
         public System.Net.Http.Headers.RangeHeaderValue? Range { get { throw null; } set { } }
         public System.Uri? Referrer { get { throw null; } set { } }

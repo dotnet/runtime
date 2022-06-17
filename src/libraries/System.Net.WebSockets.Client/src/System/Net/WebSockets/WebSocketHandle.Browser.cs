@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -34,6 +35,11 @@ namespace System.Net.WebSockets
             var ws = new BrowserWebSocket();
             WebSocket = ws;
             return ws.ConnectAsync(uri, options.RequestedSubProtocols, cancellationToken);
+        }
+
+        public Task ConnectAsync(Uri uri, HttpMessageInvoker handler, CancellationToken cancellationToken, ClientWebSocketOptions options)
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -182,7 +182,7 @@ namespace System.Net.WebSockets
                     }
                     catch (HttpRequestException ex)
                     {
-                        if (request.Version.Major == 2
+                        if ( ex.Data.Contains("SETTINGS_ENABLE_CONNECT_PROTOCOL") && request.Version.Major == 2
                             && (options.Version.Major == 2 && options.VersionPolicy == HttpVersionPolicy.RequestVersionOrLower
                             || options.Version.Major == 1 && options.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher))
                         {
@@ -365,10 +365,8 @@ namespace System.Net.WebSockets
             }
             else if (options.Version == HttpVersion.Version20)
             {
-                request.Headers.TryAddWithoutValidation(":method", "CONNECT");
-                request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.Protocol, "websocket");
-                request.Headers.TryAddWithoutValidation(":scheme", "https");
-                request.Headers.TryAddWithoutValidation(":path", "/chat");
+                request.Method = HttpMethod.Connect;
+                request.Headers.Protocol = "websocket";
                 request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.Origin, request.Headers.Host);
             }
 

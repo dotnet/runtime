@@ -17,7 +17,7 @@ namespace System.Net.WebSockets
         public override System.Threading.Tasks.Task CloseAsync(System.Net.WebSockets.WebSocketCloseStatus closeStatus, string? statusDescription, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override System.Threading.Tasks.Task CloseOutputAsync(System.Net.WebSockets.WebSocketCloseStatus closeStatus, string? statusDescription, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task ConnectAsync(System.Uri uri, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public System.Threading.Tasks.Task ConnectAsync(System.Uri uri, System.Net.Http.HttpMessageInvoker sharedHandler, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task ConnectAsync(System.Uri uri, System.Net.Http.HttpMessageInvoker invoker, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override void Dispose() { }
         public override System.Threading.Tasks.Task<System.Net.WebSockets.WebSocketReceiveResult> ReceiveAsync(System.ArraySegment<byte> buffer, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override System.Threading.Tasks.ValueTask<System.Net.WebSockets.ValueWebSocketReceiveResult> ReceiveAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken) { throw null; }

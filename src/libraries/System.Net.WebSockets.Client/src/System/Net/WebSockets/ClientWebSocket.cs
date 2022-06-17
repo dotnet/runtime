@@ -56,12 +56,12 @@ namespace System.Net.WebSockets
             return ConnectAsyncHelper(uri, null, cancellationToken);
         }
 
-        public Task ConnectAsync(Uri uri, HttpMessageInvoker sharedHandler, CancellationToken cancellationToken)
+        public Task ConnectAsync(Uri uri, HttpMessageInvoker invoker, CancellationToken cancellationToken)
         {
-            return ConnectAsyncHelper(uri, sharedHandler, cancellationToken);
+            return ConnectAsyncHelper(uri, invoker, cancellationToken);
         }
 
-        public Task ConnectAsyncHelper(Uri uri, HttpMessageInvoker? sharedHandler, CancellationToken cancellationToken)
+        private Task ConnectAsyncHelper(Uri uri, HttpMessageInvoker? invoker, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(uri);
 
@@ -88,7 +88,7 @@ namespace System.Net.WebSockets
             }
 
             Options.SetToReadOnly();
-            return ConnectAsyncCore(uri, sharedHandler, cancellationToken);
+            return ConnectAsyncCore(uri, invoker, cancellationToken);
         }
 
         private async Task ConnectAsyncCore(Uri uri, HttpMessageInvoker? sharedHandler, CancellationToken cancellationToken)

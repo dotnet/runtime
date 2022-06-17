@@ -829,7 +829,7 @@ namespace System.Net.Http
                         case SettingId.EnableConnect:
                             if (settingValue == 1)
                             {
-                                IsWebsocketEnabled = true;
+                                IsConnectEnabled = true;
                             }
                             break;
 
@@ -1453,6 +1453,15 @@ namespace System.Net.Http
                 WriteIndexedHeader(H2StaticTable.PathSlash, pathAndQuery, ref headerBuffer);
             }
 
+            if (request.HasHeaders && request.Headers.Protocol != null)
+            {
+                WriteBytes(":protocol", ref headerBuffer);
+                Encoding? protocolEncoding = _pool.Settings._requestHeaderEncodingSelector?.Invoke(":protocol", request);
+                WriteLiteralHeaderValue(request.Headers.Protocol, protocolEncoding, ref headerBuffer);
+
+                request.Headers.Protocol = null;
+            }
+
             if (request.HasHeaders)
             {
                 WriteHeaderCollection(request, request.Headers, ref headerBuffer);
@@ -1896,10 +1905,10 @@ namespace System.Net.Http
             InitialWindowSize = 0x4,
             MaxFrameSize = 0x5,
             MaxHeaderListSize = 0x6,
-            EnableConnect = 0x7
+            EnableConnect = 0x8
         }
 
-        internal bool IsWebsocketEnabled { get; private set; } = true;
+        internal bool IsConnectEnabled { get; private set; }
 
         // Note that this is safe to be called concurrently by multiple threads.
 

@@ -168,18 +168,11 @@ namespace System.Net.Http
 
         internal bool WasRedirected() => (_sendStatus & MessageIsRedirect) != 0;
 
-        internal bool IsWebSocketRequest()
+        internal bool IsWebSocketH2Request()
         {
-            if (Headers.TryGetValues(":protocol", out IEnumerable<string>? values))
+            if (_version.Major == 2 && Headers.Protocol == "websocket")
             {
-                var valuesArray = (string[])values;
-                return valuesArray.Length > 0 && valuesArray[0] == "websocket";
-            }
-
-            if (Headers.TryGetValues("Upgrade", out values))
-            {
-                var valuesArray = (string[])values;
-                return valuesArray.Length > 0 && valuesArray[0] == "websocket";
+                return true;
             }
             return false;
         }

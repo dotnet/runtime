@@ -998,7 +998,7 @@ namespace System.Net.Http
                     // Use HTTP/3 if possible.
                     if (IsHttp3Supported() && // guard to enable trimming HTTP/3 support
                         _http3Enabled &&
-                        !request.IsWebSocketRequest() &&
+                        !request.IsWebSocketH2Request() &&
                         (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)))
                     {
                         Debug.Assert(async);
@@ -1020,9 +1020,18 @@ namespace System.Net.Http
                         {
                             Http2Connection? connection = await GetHttp2ConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
                             Debug.Assert(connection is not null || !_http2Enabled);
-                            if (connection is not null && (!request.IsWebSocketRequest() || connection.IsWebsocketEnabled))
+                            if (connection is not null)
                             {
-                                response = await connection.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
+                                if (!request.IsWebSocketH2Request() || connection.IsConnectEnabled)
+                                {
+                                    response = await connection.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
+                                }
+                                else if (request.IsWebSocketH2Request() && !connection.IsConnectEnabled)
+                                {
+                                    HttpRequestException exception = new("Extended CONNECT is not supported");
+                                    exception.Data["SETTINGS_ENABLE_CONNECT_PROTOCOL"] = false;
+                                    throw exception;
+                                }
                             }
                         }
 

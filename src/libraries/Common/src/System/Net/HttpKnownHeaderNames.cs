@@ -55,7 +55,6 @@ namespace System.Net
         public const string Origin = "Origin";
         public const string P3P = "P3P";
         public const string Pragma = "Pragma";
-        public const string Protocol = ":protocol";
         public const string ProxyAuthenticate = "Proxy-Authenticate";
         public const string ProxyAuthorization = "Proxy-Authorization";
         public const string ProxyConnection = "Proxy-Connection";

@@ -631,7 +631,7 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        if (_response.RequestMessage != null && _response.RequestMessage.IsWebSocketRequest() && statusCode == 200)
+                        if (_response.RequestMessage != null && _response.RequestMessage.IsWebSocketH2Request() && statusCode == 200)
                         {
                             _webSocketEstablished = true;
                         }
