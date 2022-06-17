@@ -78,7 +78,7 @@ internal static partial class Interop
                     CRYPT_OID_INFO* localOidInfo = CryptFindOIDInfo(keyType, rawKey, localGroup);
                     if (localOidInfo != null)
                     {
-                        return *(CRYPT_OID_INFO*)localOidInfo;
+                        return *localOidInfo;
                     }
                 }
 
@@ -86,7 +86,7 @@ internal static partial class Interop
                 CRYPT_OID_INFO* fullOidInfo = CryptFindOIDInfo(keyType, rawKey, group);
                 if (fullOidInfo != null)
                 {
-                    return *(CRYPT_OID_INFO*)fullOidInfo;
+                    return *fullOidInfo;
                 }
 
                 if (fallBackToAllGroups && group != OidGroup.All)
@@ -96,7 +96,7 @@ internal static partial class Interop
                     CRYPT_OID_INFO*  allGroupOidInfo = CryptFindOIDInfo(keyType, rawKey, OidGroup.All);
                     if (allGroupOidInfo != null)
                     {
-                        return *(CRYPT_OID_INFO*)allGroupOidInfo;
+                        return *allGroupOidInfo;
                     }
                 }
 

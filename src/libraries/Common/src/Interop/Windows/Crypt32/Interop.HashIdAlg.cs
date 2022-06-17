@@ -24,7 +24,7 @@ internal static partial class Interop
 
             if (fullOidInfo != null)
             {
-                return *(CRYPT_OID_INFO*)fullOidInfo;
+                return *fullOidInfo;
             }
 
             // Otherwise the lookup failed.
