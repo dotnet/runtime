@@ -920,7 +920,7 @@ OBJECTREF LoaderAllocator::CompareExchangeValueInHandle(LOADERHANDLE handle, OBJ
     {
         OBJECTREF *ptr = (OBJECTREF *)(((UINT_PTR)handle) - 1);
 
-        gc.previous = InterlockedCompareExchangeT(ptr, gc.value, gc.compare);
+        gc.previous = ObjectToOBJECTREF(InterlockedCompareExchangeT((Object **)ptr, OBJECTREFToObject(gc.value), OBJECTREFToObject(gc.compare)));
         if (gc.previous == gc.compare)
         {
             ErectWriteBarrier(ptr, gc.value);
