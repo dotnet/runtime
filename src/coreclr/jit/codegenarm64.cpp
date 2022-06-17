@@ -2178,7 +2178,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
     {
         if (emitter::emitIns_valid_imm_for_mov(imm, size))
         {
-            GetEmitter()->emitIns_R_I(INS_mov, size, reg, imm);
+            GetEmitter()->emitIns_R_I(INS_mov, size, reg, imm, INS_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
         }
         else
         {
@@ -2224,7 +2224,9 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
                         imm16 = ~imm16;
                     }
 
-                    GetEmitter()->emitIns_R_I_I(ins, size, reg, imm16, i, INS_OPTS_LSL);
+                    GetEmitter()->emitIns_R_I_I(ins, size, reg, imm16, i,
+                                                INS_OPTS_LSL DEBUGARG(i == 0 ? targetHandle : 0)
+                                                    DEBUGARG(i == 0 ? gtFlags : GTF_EMPTY));
 
                     // Once the initial movz/movn is emitted the remaining instructions will all use movk
                     ins = INS_movk;
@@ -2258,8 +2260,8 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
     {
         case GT_CNS_INT:
         {
-            GenTreeIntConCommon* con    = tree->AsIntConCommon();
-            ssize_t              cnsVal = con->IconValue();
+            GenTreeIntCon* con    = tree->AsIntCon();
+            ssize_t        cnsVal = con->IconValue();
 
             emitAttr attr = emitActualTypeSize(targetType);
             // TODO-CQ: Currently we cannot do this for all handles because of
@@ -2275,8 +2277,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             }
 
             instGen_Set_Reg_To_Imm(attr, targetReg, cnsVal,
-                                   INS_FLAGS_DONT_CARE DEBUGARG(tree->AsIntCon()->gtTargetHandle)
-                                       DEBUGARG(tree->AsIntCon()->gtFlags));
+                                   INS_FLAGS_DONT_CARE DEBUGARG(con->gtTargetHandle) DEBUGARG(con->gtFlags));
             regSet.verifyRegUsed(targetReg);
         }
         break;
@@ -2324,12 +2325,8 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             switch (tree->TypeGet())
             {
 #if defined(FEATURE_SIMD)
-                case TYP_LONG:
-                case TYP_DOUBLE:
                 case TYP_SIMD8:
                 {
-                    // TODO-1stClassStructs: do not retype SIMD nodes
-
                     if (vecCon->IsAllBitsSet())
                     {
                         emit->emitIns_R_I(INS_mvni, attr, targetReg, 0, INS_OPTS_2S);
@@ -5154,7 +5151,7 @@ void CodeGen::genLoadIndTypeSIMD12(GenTree* treeNode)
 //
 void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 {
-    assert((treeNode->OperGet() == GT_STORE_LCL_FLD) || (treeNode->OperGet() == GT_STORE_LCL_VAR));
+    assert(treeNode->OperIs(GT_STORE_LCL_FLD, GT_STORE_LCL_VAR));
 
     GenTreeLclVarCommon* lclVar = treeNode->AsLclVarCommon();
 
@@ -5177,12 +5174,24 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 
         return;
     }
+
+    regNumber targetReg  = treeNode->GetRegNum();
     regNumber operandReg = genConsumeReg(op1);
 
-    // Need an additional integer register to extract upper 4 bytes from data.
-    regNumber tmpReg = lclVar->GetSingleTempReg();
+    if (targetReg != REG_NA)
+    {
+        assert(GetEmitter()->isVectorRegister(targetReg));
 
-    GetEmitter()->emitStoreSIMD12ToLclOffset(varNum, offs, operandReg, tmpReg);
+        // Simply use mov if we move a SIMD12 reg to another SIMD12 reg
+        inst_Mov(treeNode->TypeGet(), targetReg, operandReg, /* canSkip */ true);
+        genProduceReg(treeNode);
+    }
+    else
+    {
+        // Need an additional integer register to extract upper 4 bytes from data.
+        regNumber tmpReg = lclVar->GetSingleTempReg();
+        GetEmitter()->emitStoreSIMD12ToLclOffset(varNum, offs, operandReg, tmpReg);
+    }
 }
 
 #endif // FEATURE_SIMD
@@ -10273,18 +10282,34 @@ void CodeGen::genCodeForAddEx(GenTreeOp* tree)
 //
 void CodeGen::genCodeForCond(GenTreeOp* tree)
 {
-    assert(tree->OperIs(GT_CSNEG_MI));
-    assert(!(tree->gtFlags & GTF_SET_FLAGS) && (tree->gtFlags & GTF_USE_FLAGS));
+    assert(tree->OperIs(GT_CSNEG_MI, GT_CNEG_LT));
+    assert(!(tree->gtFlags & GTF_SET_FLAGS));
     genConsumeOperands(tree);
 
-    instruction ins;
-    insCond     cond;
     switch (tree->OperGet())
     {
         case GT_CSNEG_MI:
         {
-            ins  = INS_csneg;
-            cond = INS_COND_MI;
+            instruction ins  = INS_csneg;
+            insCond     cond = INS_COND_MI;
+
+            regNumber dstReg = tree->GetRegNum();
+            regNumber op1Reg = tree->gtGetOp1()->GetRegNum();
+            regNumber op2Reg = tree->gtGetOp2()->GetRegNum();
+
+            GetEmitter()->emitIns_R_R_R_COND(ins, emitActualTypeSize(tree), dstReg, op1Reg, op2Reg, cond);
+            break;
+        }
+
+        case GT_CNEG_LT:
+        {
+            instruction ins  = INS_cneg;
+            insCond     cond = INS_COND_LT;
+
+            regNumber dstReg = tree->GetRegNum();
+            regNumber op1Reg = tree->gtGetOp1()->GetRegNum();
+
+            GetEmitter()->emitIns_R_R_COND(ins, emitActualTypeSize(tree), dstReg, op1Reg, cond);
             break;
         }
 
@@ -10292,11 +10317,6 @@ void CodeGen::genCodeForCond(GenTreeOp* tree)
             unreached();
     }
 
-    regNumber dstReg = tree->GetRegNum();
-    regNumber op1Reg = tree->gtGetOp1()->GetRegNum();
-    regNumber op2Reg = tree->gtGetOp2()->GetRegNum();
-
-    GetEmitter()->emitIns_R_R_R_COND(ins, emitActualTypeSize(tree), dstReg, op1Reg, op2Reg, cond);
     genProduceReg(tree);
 }
 

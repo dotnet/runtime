@@ -322,6 +322,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task ProxyTunnelRequest_GetAsync_Success()
         {
             if (IsWinHttpHandler)
@@ -358,6 +359,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task ProxyTunnelRequest_MaxConnectionsSetButDoesNotApplyToProxyConnect_Success()
         {
             if (IsWinHttpHandler)
@@ -415,6 +417,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task ProxyTunnelRequest_OriginServerSendsProxyAuthChallenge_NoProxyAuthPerformed()
         {
             if (IsWinHttpHandler)

@@ -841,16 +841,11 @@ namespace System.IO
                 Debug.Assert(position > 0);
                 Debug.Assert(nameLength >= 0 && (position + nameLength) <= _buffer.Length);
 
-                int lengthWithoutNullTerm = nameLength;
-                for (int i = 0; i < nameLength; i++)
+                int lengthWithoutNullTerm = _buffer.AsSpan(position, nameLength).IndexOf((byte)'\0');
+                if (lengthWithoutNullTerm < 0)
                 {
-                    if (_buffer[position + i] == '\0')
-                    {
-                        lengthWithoutNullTerm = i;
-                        break;
-                    }
+                    lengthWithoutNullTerm = nameLength;
                 }
-                Debug.Assert(lengthWithoutNullTerm <= nameLength); // should be null terminated or empty
 
                 return lengthWithoutNullTerm > 0 ?
                     Encoding.UTF8.GetString(_buffer, position, lengthWithoutNullTerm) :

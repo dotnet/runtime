@@ -61,6 +61,7 @@ void Compiler::fgInit()
 
 #ifdef DEBUG
     fgBBcountAtCodegen = 0;
+    fgBBOrder          = nullptr;
 #endif // DEBUG
 
     fgBBNumMax        = 0;

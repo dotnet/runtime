@@ -109,7 +109,7 @@ COOP_PINVOKE_HELPER(uint32_t, RhGetLoadedOSModules, (Array * pResultArray))
 
 COOP_PINVOKE_HELPER(HANDLE, RhGetOSModuleFromPointer, (PTR_VOID pPointerVal))
 {
-    ICodeManager * pCodeManager = GetRuntimeInstance()->FindCodeManagerByAddress(pPointerVal);
+    ICodeManager * pCodeManager = GetRuntimeInstance()->GetCodeManagerForAddress(pPointerVal);
 
     if (pCodeManager != NULL)
         return (HANDLE)pCodeManager->GetOsModuleHandle();
@@ -393,7 +393,7 @@ EXTERN_C NATIVEAOT_API int32_t __cdecl RhpGetCurrentThreadStackTrace(void* pOutp
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 
-    ThreadStore::GetCurrentThread()->SetupHackPInvokeTunnel();
+    ThreadStore::GetCurrentThread()->DeferTransitionFrame();
 
     return RhpCalculateStackTraceWorker(pOutputBuffer, outputBufferLength, pAddressInCurrentFrame);
 }

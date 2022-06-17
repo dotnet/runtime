@@ -479,18 +479,18 @@ namespace System.DirectoryServices.Protocols.Tests
         public static IEnumerable<object[]> TestCompareRequestTheory_TestData()
         {
             yield return new object[] { "input", "input", ResultCode.CompareTrue };
-            yield return new object[] { "input", Encoding.UTF8.GetBytes("input"), ResultCode.CompareTrue };
+            yield return new object[] { "input", "input"u8.ToArray(), ResultCode.CompareTrue };
 
             yield return new object[] { "input", "false", ResultCode.CompareFalse };
             yield return new object[] { "input", new byte[] { 1, 2, 3, 4, 5 }, ResultCode.CompareFalse };
 
             yield return new object[] { "http://example.com/", "http://example.com/", ResultCode.CompareTrue };
             yield return new object[] { "http://example.com/", new Uri("http://example.com/"), ResultCode.CompareTrue };
-            yield return new object[] { "http://example.com/", Encoding.UTF8.GetBytes("http://example.com/"), ResultCode.CompareTrue };
+            yield return new object[] { "http://example.com/", "http://example.com/"u8.ToArray(), ResultCode.CompareTrue };
 
             yield return new object[] { "http://example.com/", "http://false/", ResultCode.CompareFalse };
             yield return new object[] { "http://example.com/", new Uri("http://false/"), ResultCode.CompareFalse };
-            yield return new object[] { "http://example.com/", Encoding.UTF8.GetBytes("http://false/"), ResultCode.CompareFalse };
+            yield return new object[] { "http://example.com/", "http://false/"u8.ToArray(), ResultCode.CompareFalse };
         }
 
         [ConditionalTheory(nameof(IsLdapConfigurationExist))]

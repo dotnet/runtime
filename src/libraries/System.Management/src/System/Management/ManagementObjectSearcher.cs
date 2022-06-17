@@ -490,9 +490,7 @@ namespace System.Management
                 throw new InvalidOperationException();
 
             //If we're not connected yet, this is the time to do it...
-#pragma warning disable CA2002
             lock (this)
-#pragma warning restore CA2002
             {
                 if (null == scope)
                     scope = ManagementScope._Clone(null);

@@ -1042,18 +1042,6 @@ else ()
         HAVE_GSS_SPNEGO_MECHANISM)
 endif ()
 
-if (HAVE_GSSFW_HEADERS)
-    check_symbol_exists(
-        GSS_KRB5_CRED_NO_CI_FLAGS_X
-        "GSS/GSS.h"
-        HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X)
-else ()
-    check_symbol_exists(
-        GSS_KRB5_CRED_NO_CI_FLAGS_X
-        "gssapi/gssapi_krb5.h"
-        HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X)
-endif ()
-
 check_symbol_exists(getauxval sys/auxv.h HAVE_GETAUXVAL)
 check_include_files(crt_externs.h HAVE_CRT_EXTERNS_H)
 

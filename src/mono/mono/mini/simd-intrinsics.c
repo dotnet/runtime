@@ -775,7 +775,7 @@ emit_vector_create_elementwise (
 	return ins;
 }
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM) 
 
 static int
 type_to_xinsert_op (MonoTypeEnum type)
@@ -4042,6 +4042,23 @@ arch_emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCom
 	if (simd_inst != NULL)
 		cfg->uses_simd_intrinsics |= MONO_CFG_USES_SIMD_INTRINSICS;
 	return simd_inst;
+}
+#elif TARGET_WASM
+static
+MonoInst*
+arch_emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+{
+	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
+		if (!strcmp (class_name, "Vector128"))
+			return emit_sri_vector (cfg, cmethod, fsig, args);
+	}
+
+	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
+		if (!strcmp (class_name, "Vector128`1"))
+			return emit_vector64_vector128_t (cfg, cmethod, fsig, args);
+	}
+
+	return NULL;
 }
 #else
 static

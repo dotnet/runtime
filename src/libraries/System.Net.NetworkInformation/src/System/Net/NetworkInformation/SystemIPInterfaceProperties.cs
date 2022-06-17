@@ -29,7 +29,7 @@ namespace System.Net.NetworkInformation
         internal SystemIPInterfaceProperties(in Interop.IpHlpApi.FIXED_INFO fixedInfo, in Interop.IpHlpApi.IpAdapterAddresses ipAdapterAddresses)
         {
             _adapterFlags = ipAdapterAddresses.flags;
-            _dnsSuffix = ipAdapterAddresses.dnsSuffix;
+            _dnsSuffix = ipAdapterAddresses.DnsSuffix;
             _dnsEnabled = fixedInfo.enableDns;
             _dynamicDnsEnabled = ((ipAdapterAddresses.flags & Interop.IpHlpApi.AdapterFlags.DnsEnabled) > 0);
 
@@ -64,7 +64,7 @@ namespace System.Net.NetworkInformation
             if ((_adapterFlags & Interop.IpHlpApi.AdapterFlags.IPv6Enabled) != 0)
             {
                 _ipv6Properties = new SystemIPv6InterfaceProperties(ipAdapterAddresses.ipv6Index,
-                    ipAdapterAddresses.mtu, ipAdapterAddresses.zoneIndices);
+                    ipAdapterAddresses.mtu, ipAdapterAddresses.ZoneIndices);
             }
         }
 

@@ -320,10 +320,7 @@ namespace System.Xml.Schema
             }
             else if (_schemaType != sinfo.SchemaType)
             {
-                if (eventhandler != null)
-                {
-                    eventhandler(this, new ValidationEventArgs(new XmlSchemaException(SR.Sch_MixSchemaTypes, string.Empty)));
-                }
+                eventhandler?.Invoke(this, new ValidationEventArgs(new XmlSchemaException(SR.Sch_MixSchemaTypes, string.Empty)));
                 return;
             }
 

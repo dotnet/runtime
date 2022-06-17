@@ -30,7 +30,6 @@ BOOL ParamTypeDesc::Verify() {
     STATIC_CONTRACT_DEBUG_ONLY;
     STATIC_CONTRACT_SUPPORTS_DAC;
 
-    _ASSERTE((m_TemplateMT == NULL) || GetTemplateMethodTableInternal()->SanityCheck());
     _ASSERTE(!GetTypeParam().IsNull());
     _ASSERTE(CorTypeInfo::IsModifier_NoThrow(GetInternalCorElementType()) ||
                               GetInternalCorElementType() == ELEMENT_TYPE_VALUETYPE);
@@ -131,26 +130,6 @@ PTR_Module TypeDesc::GetModule() {
     _ASSERTE(GetInternalCorElementType() == ELEMENT_TYPE_FNPTR);
 
     return GetLoaderModule();
-}
-
-BOOL ParamTypeDesc::OwnsTemplateMethodTable()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    CorElementType kind = GetInternalCorElementType();
-
-    // The m_TemplateMT for pointer types is UIntPtr
-    if (!CorTypeInfo::IsArray_NoThrow(kind))
-    {
-        return FALSE;
-    }
-
-    return TRUE;
 }
 
 Assembly* TypeDesc::GetAssembly() {
@@ -527,15 +506,9 @@ OBJECTREF ParamTypeDesc::GetManagedClassObject()
         // Only the winner can set m_hExposedClassObject from NULL.
         LOADERHANDLE hExposedClassObject = pLoaderAllocator->AllocateHandle(refClass);
 
-        if (FastInterlockCompareExchangePointer(&m_hExposedClassObject, hExposedClassObject, static_cast<LOADERHANDLE>(NULL)))
+        if (InterlockedCompareExchangeT(&m_hExposedClassObject, hExposedClassObject, static_cast<LOADERHANDLE>(NULL)))
         {
             pLoaderAllocator->FreeHandle(hExposedClassObject);
-        }
-
-        if (OwnsTemplateMethodTable())
-        {
-            // Set the handle on template methodtable as well to make Object.GetType for arrays take the fast path
-            GetTemplateMethodTableInternal()->GetWriteableDataForWrite()->m_hExposedClassObject = m_hExposedClassObject;
         }
 
         GCPROTECT_END();
@@ -690,20 +663,12 @@ void TypeDesc::DoFullyLoad(Generics::RecursionGraph *pVisited, ClassLoadLevel le
 
         // Fully load the type parameter
         GetTypeParam().DoFullyLoad(&newVisited, level, pPending, &fBailed, pInstContext);
-
-        ParamTypeDesc* pPTD = (ParamTypeDesc*) this;
-
-        // Fully load the template method table
-        if (pPTD->m_TemplateMT != NULL)
-        {
-            pPTD->GetTemplateMethodTableInternal()->DoFullyLoad(&newVisited, level, pPending, &fBailed, pInstContext);
-        }
     }
 
     switch (level)
     {
         case CLASS_DEPENDENCIES_LOADED:
-            FastInterlockOr(&m_typeAndFlags, TypeDesc::enum_flag_DependenciesLoaded);
+            InterlockedOr((LONG*)&m_typeAndFlags, TypeDesc::enum_flag_DependenciesLoaded);
             break;
 
         case CLASS_LOADED:
@@ -1659,7 +1624,7 @@ OBJECTREF TypeVarTypeDesc::GetManagedClassObject()
         // Only the winner can set m_hExposedClassObject from NULL.
         LOADERHANDLE hExposedClassObject = pLoaderAllocator->AllocateHandle(refClass);
 
-        if (FastInterlockCompareExchangePointer(&m_hExposedClassObject, hExposedClassObject, static_cast<LOADERHANDLE>(NULL)))
+        if (InterlockedCompareExchangeT(&m_hExposedClassObject, hExposedClassObject, static_cast<LOADERHANDLE>(NULL)))
         {
             pLoaderAllocator->FreeHandle(hExposedClassObject);
         }
@@ -1721,12 +1686,6 @@ ParamTypeDesc::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;
     DAC_ENUM_DTHIS();
-
-    PTR_MethodTable pTemplateMT = GetTemplateMethodTableInternal();
-    if (pTemplateMT.IsValid())
-    {
-        pTemplateMT->EnumMemoryRegions(flags);
-    }
 
     m_Arg.EnumMemoryRegions(flags);
 }

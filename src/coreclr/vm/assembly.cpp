@@ -22,8 +22,6 @@
 #include "reflectclasswriter.h"
 #include "comdynamic.h"
 
-#include <wincrypt.h>
-#include "urlmon.h"
 #include "sha1.h"
 
 #include "eeconfig.h"
@@ -197,7 +195,7 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
     else
         m_pModule = Module::Create(this, mdFileNil, pPEAssembly, pamTracker);
 
-    FastInterlockIncrement((LONG*)&g_cAssemblies);
+    InterlockedIncrement((LONG*)&g_cAssemblies);
 
     PrepareModuleForAssembly(m_pModule, pamTracker);
 
@@ -314,7 +312,7 @@ void Assembly::Terminate( BOOL signalProfiler )
         m_pClassLoader = NULL;
     }
 
-    FastInterlockDecrement((LONG*)&g_cAssemblies);
+    InterlockedDecrement((LONG*)&g_cAssemblies);
 
 #ifdef PROFILING_SUPPORTED
     if (CORProfilerTrackAssemblyLoads())
@@ -1086,7 +1084,7 @@ void Assembly::PublishModuleIntoAssembly(Module *module)
     CONTRACTL_END
 
     GetModule()->EnsuredStoreFile(module->GetModuleRef(), module);
-    FastInterlockIncrement((LONG*)&m_pClassLoader->m_cUnhashedModules);
+    InterlockedIncrement((LONG*)&m_pClassLoader->m_cUnhashedModules);
 }
 
 

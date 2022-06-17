@@ -1104,11 +1104,10 @@ namespace System.IO.Compression
         /// </summary>
         private static string GetFileName_Unix(string path)
         {
-            int length = path.Length;
-            for (int i = length; --i >= 0;)
-                if (path[i] == '/')
-                    return path.Substring(i + 1);
-            return path;
+            int i = path.LastIndexOf('/');
+            return i >= 0 ?
+                path.Substring(i + 1) :
+                path;
         }
 
         private sealed class DirectToArchiveWriterStream : Stream

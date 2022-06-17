@@ -1431,9 +1431,6 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
         assertion.op2.vn           = ValueNumStore::VNForNull();
         assertion.op2.u1.iconVal   = 0;
         assertion.op2.u1.iconFlags = GTF_EMPTY;
-#ifdef TARGET_64BIT
-        assertion.op2.u1.iconFlags |= GTF_ASSERTION_PROP_LONG; // Signify that this is really TYP_LONG
-#endif                                                         // TARGET_64BIT
     }
     //
     // Are we making an assertion about a local variable?
@@ -1568,13 +1565,6 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
 #endif // TARGET_ARM
                         assertion.op2.u1.iconVal   = op2->AsIntCon()->gtIconVal;
                         assertion.op2.u1.iconFlags = op2->GetIconHandleFlag();
-#ifdef TARGET_64BIT
-                        if (op2->TypeGet() == TYP_LONG || op2->TypeGet() == TYP_BYREF)
-                        {
-                            assertion.op2.u1.iconFlags |=
-                                GTF_ASSERTION_PROP_LONG; // Signify that this is really TYP_LONG
-                        }
-#endif // TARGET_64BIT
                     }
                     else if (op2->gtOper == GT_CNS_LNG)
                     {
@@ -1731,12 +1721,6 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                 /* iconFlags should only contain bits in GTF_ICON_HDL_MASK */
                 assert((iconFlags & ~GTF_ICON_HDL_MASK) == 0);
                 assertion.op2.u1.iconFlags = iconFlags;
-#ifdef TARGET_64BIT
-                if (op2->AsOp()->gtOp1->TypeGet() == TYP_LONG)
-                {
-                    assertion.op2.u1.iconFlags |= GTF_ASSERTION_PROP_LONG; // Signify that this is really TYP_LONG
-                }
-#endif // TARGET_64BIT
             }
             // JIT case
             else if (optIsTreeKnownIntValue(!optLocalAssertionProp, op2, &cnsValue, &iconFlags))
@@ -1749,12 +1733,6 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                 /* iconFlags should only contain bits in GTF_ICON_HDL_MASK */
                 assert((iconFlags & ~GTF_ICON_HDL_MASK) == 0);
                 assertion.op2.u1.iconFlags = iconFlags;
-#ifdef TARGET_64BIT
-                if (op2->TypeGet() == TYP_LONG)
-                {
-                    assertion.op2.u1.iconFlags |= GTF_ASSERTION_PROP_LONG; // Signify that this is really TYP_LONG
-                }
-#endif // TARGET_64BIT
             }
             else
             {
@@ -2047,13 +2025,9 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
         case O2K_IND_CNS_INT:
         case O2K_CONST_INT:
         {
-// The only flags that can be set are those in the GTF_ICON_HDL_MASK, or GTF_ASSERTION_PROP_LONG, which is
-// used to indicate a long constant.
-#ifdef TARGET_64BIT
-            assert((assertion->op2.u1.iconFlags & ~(GTF_ICON_HDL_MASK | GTF_ASSERTION_PROP_LONG)) == 0);
-#else
+            // The only flags that can be set are those in the GTF_ICON_HDL_MASK.
             assert((assertion->op2.u1.iconFlags & ~GTF_ICON_HDL_MASK) == 0);
-#endif
+
             switch (assertion->op1.kind)
             {
                 case O1K_EXACT_TYPE:
@@ -3177,6 +3151,15 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
 
     if (conValTree != nullptr)
     {
+        if (tree->OperIs(GT_LCL_VAR))
+        {
+            if (!optIsProfitableToSubstitute(tree->AsLclVar(), block, conValTree))
+            {
+                // Not profitable to substitute
+                return nullptr;
+            }
+        }
+
         // Were able to optimize.
         conValTree->gtVNPair = vnPair;
         GenTree* sideEffList = optExtractSideEffListFromConst(tree);
@@ -3197,6 +3180,55 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
         // Was not able to optimize.
         return nullptr;
     }
+}
+
+//------------------------------------------------------------------------------
+// optIsProfitableToSubstitute: Checks if value worth substituting to lcl location
+//
+// Arguments:
+//    lcl       - lcl to replace with value if profitable
+//    lclBlock  - Basic block lcl located in
+//    value     - value we plan to substitute to lcl
+//
+// Returns:
+//    False if it's likely not profitable to do substitution, True otherwise
+//
+bool Compiler::optIsProfitableToSubstitute(GenTreeLclVarCommon* lcl, BasicBlock* lclBlock, GenTree* value)
+{
+    // A simple heuristic: If the constant is defined outside of a loop (not far from its head)
+    // and is used inside it - don't propagate.
+
+    // TODO: Extend on more kinds of trees
+    if (!value->OperIs(GT_CNS_VEC, GT_CNS_DBL))
+    {
+        return true;
+    }
+
+    gtPrepareCost(value);
+
+    if ((value->GetCostEx() > 1) && (value->GetCostSz() > 1))
+    {
+        // Try to find the block this constant was originally defined in
+        if (lcl->HasSsaName())
+        {
+            BasicBlock* defBlock = lvaGetDesc(lcl)->GetPerSsaData(lcl->GetSsaNum())->GetBlock();
+            if (defBlock != nullptr)
+            {
+                // Avoid propagating if the weighted use cost is significantly greater than the def cost.
+                // NOTE: this currently does not take "a float living across a call" case into account
+                // where we might end up with spill/restore on ABIs without callee-saved registers
+                const weight_t defBlockWeight = defBlock->getBBWeight(this);
+                const weight_t lclblockWeight = lclBlock->getBBWeight(this);
+
+                if ((defBlockWeight > 0) && ((lclblockWeight / defBlockWeight) >= BB_LOOP_WEIGHT_SCALE))
+                {
+                    JITDUMP("Constant propagation inside loop " FMT_BB " is not profitable\n", lclBlock->bbNum);
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -4326,23 +4358,11 @@ GenTree* Compiler::optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tr
         return nullptr;
     }
 
-    // Check for add of a constant.
-    GenTree* op1 = tree->AsIndir()->Addr();
-    if ((op1->gtOper == GT_ADD) && (op1->AsOp()->gtOp2->gtOper == GT_CNS_INT))
-    {
-        op1 = op1->AsOp()->gtOp1;
-    }
-
-    if (op1->gtOper != GT_LCL_VAR)
-    {
-        return nullptr;
-    }
-
 #ifdef DEBUG
     bool           vnBased = false;
     AssertionIndex index   = NO_ASSERTION_INDEX;
 #endif
-    if (optAssertionIsNonNull(op1, assertions DEBUGARG(&vnBased) DEBUGARG(&index)))
+    if (optAssertionIsNonNull(tree->AsIndir()->Addr(), assertions DEBUGARG(&vnBased) DEBUGARG(&index)))
     {
 #ifdef DEBUG
         if (verbose)
@@ -4388,17 +4408,26 @@ bool Compiler::optAssertionIsNonNull(GenTree*         op,
                                      ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased)
                                          DEBUGARG(AssertionIndex* pIndex))
 {
+    if (op->OperIs(GT_ADD) && op->AsOp()->gtGetOp2()->IsCnsIntOrI() &&
+        !fgIsBigOffset(op->AsOp()->gtGetOp2()->AsIntCon()->IconValue()))
+    {
+        op = op->AsOp()->gtGetOp1();
+    }
+
     bool vnBased = (!optLocalAssertionProp && vnStore->IsKnownNonNull(op->gtVNPair.GetConservative()));
 #ifdef DEBUG
+    *pIndex   = NO_ASSERTION_INDEX;
     *pVnBased = vnBased;
 #endif
 
     if (vnBased)
     {
-#ifdef DEBUG
-        *pIndex = NO_ASSERTION_INDEX;
-#endif
         return true;
+    }
+
+    if (!op->OperIs(GT_LCL_VAR))
+    {
+        return false;
     }
 
     AssertionIndex index = optAssertionIsNonNullInternal(op, assertions DEBUGARG(pVnBased));
@@ -4523,16 +4552,13 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*         op,
  */
 GenTree* Compiler::optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call)
 {
-    if ((call->gtFlags & GTF_CALL_NULLCHECK) == 0)
+    if (!call->NeedsNullCheck())
     {
         return nullptr;
     }
+
     GenTree* op1 = call->gtArgs.GetThisArg()->GetNode();
     noway_assert(op1 != nullptr);
-    if (op1->gtOper != GT_LCL_VAR)
-    {
-        return nullptr;
-    }
 
 #ifdef DEBUG
     bool           vnBased = false;
@@ -4553,6 +4579,7 @@ GenTree* Compiler::optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions, Gen
         noway_assert(call->gtFlags & GTF_SIDE_EFFECT);
         return call;
     }
+
     return nullptr;
 }
 

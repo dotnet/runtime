@@ -1128,7 +1128,7 @@ namespace System.Xml
                     int copyCharsCount = _ps.charsUsed - _ps.charPos;
                     if (copyCharsCount < charsLen - 1)
                     {
-                        _ps.lineStartPos = _ps.lineStartPos - _ps.charPos;
+                        _ps.lineStartPos -= _ps.charPos;
                         if (copyCharsCount > 0)
                         {
                             BlockCopyChars(_ps.chars, _ps.charPos, _ps.chars, 0, copyCharsCount);
@@ -5196,7 +5196,7 @@ namespace System.Xml
 
             if (entityName == null)
             {
-                ThrowWithoutLineInfo(SR.Xml_CannotResolveExternalSubset, new string?[] { (publicId != null ? publicId : string.Empty), systemId }, null);
+                ThrowWithoutLineInfo(SR.Xml_CannotResolveExternalSubset, new string?[] { publicId ?? string.Empty, systemId }, null);
             }
             else
             {

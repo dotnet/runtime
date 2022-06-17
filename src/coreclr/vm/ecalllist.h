@@ -120,7 +120,6 @@ FCFuncStart(gExceptionFuncs)
 FCFuncEnd()
 
 FCFuncStart(gTypedReferenceFuncs)
-    FCFuncElement("InternalToObject", ReflectionInvocation::TypedReferenceToObject)
     FCFuncElement("InternalMakeTypedReference", ReflectionInvocation::MakeTypedReference)
 FCFuncEnd()
 

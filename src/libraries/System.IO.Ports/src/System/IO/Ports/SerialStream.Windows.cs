@@ -765,14 +765,12 @@ namespace System.IO.Ports
                     // If we are disposing synchronize closing with raising SerialPort events
                     if (disposing)
                     {
-#pragma warning disable CA2002
                         lock (this)
                         {
                             _handle.Close();
                             _handle = null;
                             _threadPoolBinding.Dispose();
                         }
-#pragma warning restore CA2002
                     }
                     else
                     {
@@ -853,7 +851,7 @@ namespace System.IO.Ports
         // Async companion to BeginRead.
         // Note, assumed IAsyncResult argument is of derived type SerialStreamAsyncResult,
         // and throws an exception if untrue.
-        public unsafe override int EndRead(IAsyncResult asyncResult)
+        public override unsafe int EndRead(IAsyncResult asyncResult)
         {
             if (!_isAsync)
                 return base.EndRead(asyncResult);
@@ -928,7 +926,7 @@ namespace System.IO.Ports
         // Note, assumed IAsyncResult argument is of derived type SerialStreamAsyncResult,
         // and throws an exception if untrue.
         // Also fails if called in port's break state.
-        public unsafe override void EndWrite(IAsyncResult asyncResult)
+        public override unsafe void EndWrite(IAsyncResult asyncResult)
         {
             if (!_isAsync)
             {
@@ -1282,7 +1280,7 @@ namespace System.IO.Ports
         internal void SetDcbFlag(int whichFlag, int setting)
         {
             uint mask;
-            setting = setting << whichFlag;
+            setting <<= whichFlag;
 
             Debug.Assert(whichFlag >= Interop.Kernel32.DCBFlags.FBINARY && whichFlag <= Interop.Kernel32.DCBFlags.FDUMMY2, "SetDcbFlag needs to fit into enum!");
 
@@ -1707,7 +1705,7 @@ namespace System.IO.Ports
                         return;
                     }
 
-                    errors = errors & ErrorEvents;
+                    errors &= ErrorEvents;
                     // TODO: what about CE_BREAK?  Is this the same as EV_BREAK?  EV_BREAK happens as one of the pin events,
                     //       but CE_BREAK is returned from ClreaCommError.
                     // TODO: what about other error conditions not covered by the enum?  Should those produce some other error?

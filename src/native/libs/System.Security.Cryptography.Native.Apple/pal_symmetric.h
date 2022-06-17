@@ -92,14 +92,6 @@ PALEXPORT int32_t AppleCryptoNative_CryptorUpdate(CCCryptorRef cryptor,
                                                   int32_t* pkCCStatus);
 
 /*
-Shims CCCryptorFinal, updating *pkCCStatus as its output.
-
-Returns 1 on success, 0 on system error, -1 on input error.
-*/
-PALEXPORT int32_t AppleCryptoNative_CryptorFinal(
-    CCCryptorRef cryptor, uint8_t* pbOutput, int32_t cbOutput, int32_t* pcbWritten, int32_t* pkCCStatus);
-
-/*
 Shims CCCryptorReset, updating *pkCCStatus as its output.
 
 Returns 1 on success, 0 on system error, -1 on input error.

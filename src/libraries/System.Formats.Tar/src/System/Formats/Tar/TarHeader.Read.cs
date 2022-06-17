@@ -39,7 +39,7 @@ namespace System.Formats.Tar
                 // Confirms if gnu, or tentatively selects ustar
                 ReadMagicAttribute(buffer);
 
-                if (_format != TarFormat.V7)
+                if (_format != TarEntryFormat.V7)
                 {
                     // Confirms if gnu
                     ReadVersionAttribute(buffer);
@@ -47,12 +47,12 @@ namespace System.Formats.Tar
                     // Fields that ustar, pax and gnu share identically
                     ReadPosixAndGnuSharedAttributes(buffer);
 
-                    Debug.Assert(_format is TarFormat.Ustar or TarFormat.Pax or TarFormat.Gnu);
-                    if (_format == TarFormat.Ustar)
+                    Debug.Assert(_format is TarEntryFormat.Ustar or TarEntryFormat.Pax or TarEntryFormat.Gnu);
+                    if (_format == TarEntryFormat.Ustar)
                     {
                         ReadUstarAttributes(buffer);
                     }
-                    else if (_format == TarFormat.Gnu)
+                    else if (_format == TarEntryFormat.Gnu)
                     {
                         ReadGnuAttributes(buffer);
                     }
@@ -334,12 +334,12 @@ namespace System.Formats.Tar
             _typeFlag = (TarEntryType)buffer[FieldLocations.TypeFlag];
             _linkName = TarHelpers.GetTrimmedUtf8String(buffer.Slice(FieldLocations.LinkName, FieldLengths.LinkName));
 
-            if (_format == TarFormat.Unknown)
+            if (_format == TarEntryFormat.Unknown)
             {
                 _format = _typeFlag switch
                 {
                     TarEntryType.ExtendedAttributes or
-                    TarEntryType.GlobalExtendedAttributes => TarFormat.Pax,
+                    TarEntryType.GlobalExtendedAttributes => TarEntryFormat.Pax,
 
                     TarEntryType.DirectoryList or
                     TarEntryType.LongLink or
@@ -347,14 +347,14 @@ namespace System.Formats.Tar
                     TarEntryType.MultiVolume or
                     TarEntryType.RenamedOrSymlinked or
                     TarEntryType.SparseFile or
-                    TarEntryType.TapeVolume => TarFormat.Gnu,
+                    TarEntryType.TapeVolume => TarEntryFormat.Gnu,
 
                     // V7 is the only one that uses 'V7RegularFile'.
-                    TarEntryType.V7RegularFile => TarFormat.V7,
+                    TarEntryType.V7RegularFile => TarEntryFormat.V7,
 
                     // We can quickly determine the *minimum* possible format if the entry type
                     // is the POSIX 'RegularFile', although later we could upgrade it to PAX or GNU
-                    _ => (_typeFlag == TarEntryType.RegularFile) ? TarFormat.Ustar : TarFormat.V7
+                    _ => (_typeFlag == TarEntryType.RegularFile) ? TarEntryFormat.Ustar : TarEntryFormat.V7
                 };
             }
 
@@ -370,7 +370,7 @@ namespace System.Formats.Tar
             // If at this point the magic value is all nulls, we definitely have a V7
             if (TarHelpers.IsAllNullBytes(magic))
             {
-                _format = TarFormat.V7;
+                _format = TarEntryFormat.V7;
                 return;
             }
 
@@ -379,12 +379,12 @@ namespace System.Formats.Tar
 
             if (_magic == GnuMagic)
             {
-                _format = TarFormat.Gnu;
+                _format = TarEntryFormat.Gnu;
             }
-            else if (_format == TarFormat.V7 && _magic == UstarMagic)
+            else if (_format == TarEntryFormat.V7 && _magic == UstarMagic)
             {
                 // Important: Only change to ustar if we had not changed the format to pax already
-                _format = TarFormat.Ustar;
+                _format = TarEntryFormat.Ustar;
             }
         }
 
@@ -392,7 +392,7 @@ namespace System.Formats.Tar
         // Throws if converting the bytes to string fails or if an unexpected version string is found.
         private void ReadVersionAttribute(Span<byte> buffer)
         {
-            if (_format == TarFormat.V7)
+            if (_format == TarEntryFormat.V7)
             {
                 return;
             }
@@ -402,13 +402,13 @@ namespace System.Formats.Tar
             _version = Encoding.ASCII.GetString(version);
 
             // The POSIX formats have a 6 byte Magic "ustar\0", followed by a 2 byte Version "00"
-            if ((_format is TarFormat.Ustar or TarFormat.Pax) && _version != UstarVersion)
+            if ((_format is TarEntryFormat.Ustar or TarEntryFormat.Pax) && _version != UstarVersion)
             {
                 throw new FormatException(string.Format(SR.TarPosixFormatExpected, _name));
             }
 
             // The GNU format has a Magic+Version 8 byte string "ustar  \0"
-            if (_format == TarFormat.Gnu && _version != GnuVersion)
+            if (_format == TarEntryFormat.Gnu && _version != GnuVersion)
             {
                 throw new FormatException(string.Format(SR.TarGnuFormatExpected, _name));
             }

@@ -177,8 +177,7 @@ namespace System.Data.OleDb
             get
             {
                 OleDbConnectionString? constr = this.OleDbConnectionStringValue;
-                string? value = ((null != constr) ? constr.ConvertValueToString(ODB.Provider, null) : null);
-                return ((null != value) ? value : string.Empty);
+                return constr?.ConvertValueToString(ODB.Provider, null) ?? string.Empty;
             }
         }
 
@@ -218,9 +217,8 @@ namespace System.Data.OleDb
             if (IsOpen)
             {
                 object? value = GetDataSourcePropertyValue(OleDbPropertySetGuid.DataSourceInfo, ODB.DBPROP_CONNECTIONSTATUS);
-                if (value is int)
+                if (value is int connectionStatus)
                 {
-                    int connectionStatus = (int)value;
                     switch (connectionStatus)
                     {
                         case ODB.DBPROPVAL_CS_UNINITIALIZED: // provider closed on us

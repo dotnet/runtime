@@ -608,17 +608,27 @@ private:
         bool hasHiddenStructArg = false;
         if (m_compiler->opts.compJitOptimizeStructHiddenBuffer)
         {
-            if (varTypeIsStruct(varDsc) && varDsc->lvIsTemp)
+            // We will only attempt this optimization for locals that are:
+            // a) Not susceptible to liveness bugs (see "lvaSetHiddenBufferStructArg").
+            // b) Do not later turn into indirections.
+            //
+            bool isSuitableLocal =
+                varTypeIsStruct(varDsc) && varDsc->lvIsTemp && !m_compiler->lvaIsImplicitByRefLocal(val.LclNum());
+#ifdef TARGET_X86
+            if (m_compiler->lvaIsArgAccessedViaVarArgsCookie(val.LclNum()))
             {
-                if ((callTree != nullptr) && callTree->gtArgs.HasRetBuffer() &&
-                    (val.Node() == callTree->gtArgs.GetRetBufferArg()->GetNode()))
-                {
-                    assert(!exposeParentLcl);
+                isSuitableLocal = false;
+            }
+#endif // TARGET_X86
 
-                    m_compiler->lvaSetHiddenBufferStructArg(val.LclNum());
-                    hasHiddenStructArg = true;
-                    callTree->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
-                }
+            if (isSuitableLocal && (callTree != nullptr) && callTree->gtArgs.HasRetBuffer() &&
+                (val.Node() == callTree->gtArgs.GetRetBufferArg()->GetNode()))
+            {
+                assert(!exposeParentLcl);
+
+                m_compiler->lvaSetHiddenBufferStructArg(val.LclNum());
+                hasHiddenStructArg = true;
+                callTree->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
             }
         }
 
@@ -786,17 +796,12 @@ private:
             }
 
             // The LHS may be a LCL_VAR/LCL_FLD, these are not indirections so we need to handle them here.
-            // It can also be a GT_INDEX, this is an indirection but it never applies to lclvar addresses
-            // so it needs to be handled here as well.
-
             switch (indir->OperGet())
             {
                 case GT_LCL_VAR:
                     return m_compiler->lvaGetDesc(indir->AsLclVar())->lvExactSize;
                 case GT_LCL_FLD:
                     return genTypeSize(indir->TypeGet());
-                case GT_INDEX:
-                    return indir->AsIndex()->gtIndElemSize;
                 default:
                     break;
             }
@@ -831,21 +836,12 @@ private:
 
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(val.LclNum());
 
-        if (varDsc->lvPromoted || varDsc->lvIsStructField || m_compiler->lvaIsImplicitByRefLocal(val.LclNum()))
+        if (varDsc->lvPromoted || varDsc->lvIsStructField)
         {
-            // TODO-ADDR: For now we ignore promoted and "implicit by ref" variables,
-            // they require additional changes in subsequent phases.
+            // TODO-ADDR: For now we ignore promoted variables, they require
+            // additional changes in subsequent phases.
             return;
         }
-
-#ifdef TARGET_X86
-        if (m_compiler->info.compIsVarArgs && varDsc->lvIsParam && !varDsc->lvIsRegArg)
-        {
-            // TODO-ADDR: For now we ignore all stack parameters of varargs methods,
-            // fgMorphStackArgForVarArgs does not handle LCL_VAR|FLD_ADDR nodes.
-            return;
-        }
-#endif
 
         GenTree* addr = val.Node();
 
@@ -1021,22 +1017,12 @@ private:
             return IndirTransform::None;
         }
 
-        if (varDsc->lvPromoted || varDsc->lvIsStructField || m_compiler->lvaIsImplicitByRefLocal(val.LclNum()))
+        if (varDsc->lvPromoted || varDsc->lvIsStructField)
         {
-            // TODO-ADDR: For now we ignore promoted and "implicit by ref" variables,
-            // they require additional changes in subsequent phases
-            // (e.g. fgMorphImplicitByRefArgs does not handle LCL_FLD nodes).
+            // TODO-ADDR: For now we ignore promoted variables, they require additional
+            // changes in subsequent phases.
             return IndirTransform::None;
         }
-
-#ifdef TARGET_X86
-        if (m_compiler->info.compIsVarArgs && varDsc->lvIsParam && !varDsc->lvIsRegArg)
-        {
-            // TODO-ADDR: For now we ignore all stack parameters of varargs methods,
-            // fgMorphStackArgForVarArgs does not handle LCL_FLD nodes.
-            return IndirTransform::None;
-        }
-#endif
 
         // As we are only handling non-promoted STRUCT locals right now, the only
         // possible transformation for non-STRUCT indirect uses is LCL_FLD.
@@ -1063,11 +1049,10 @@ private:
             return IndirTransform::None;
         }
 
-        if ((user == nullptr) || !user->OperIs(GT_ASG))
+        if ((user == nullptr) || !user->OperIs(GT_ASG, GT_RETURN))
         {
-            // TODO-ADDR: Skip TYP_STRUCT indirs for now, unless they're used by an ASG.
-            // At least call args will require extra work because currently they must be
-            // wrapped in OBJ nodes so we can't replace those with local nodes.
+            // TODO-ADDR: call args require extra work because currently they must
+            // be wrapped in OBJ nodes so we can't replace those with local nodes.
             return IndirTransform::None;
         }
 
@@ -1113,26 +1098,26 @@ private:
 
         // Current matrix of matches/users/types:
         //
-        // |------------|------|---------|--------|
-        // | STRUCT     | CALL | ASG     | RETURN |
-        // |------------|------|---------|--------|
-        // | Exact      | None | LCL_VAR | None   |
-        // | Compatible | None | LCL_VAR | None   |
-        // | Partial    | None | OBJ     | None   |
-        // |------------|------|---------|--------|
+        // |------------|------|-------------|---------|
+        // | STRUCT     | CALL | ASG         | RETURN  |
+        // |------------|------|-------------|---------|
+        // | Exact      | None | LCL_VAR     | LCL_VAR |
+        // | Compatible | None | LCL_VAR     | LCL_VAR |
+        // | Partial    | None | OBJ/LCL_FLD | LCL_FLD |
+        // |------------|------|-------------|---------|
         //
-        // |------------|------|---------|--------|----------|
-        // | SIMD       | CALL | ASG     | RETURN | HWI/SIMD |
-        // |------------|------|---------|--------|----------|
-        // | Exact      | None | None    | None   | None     |
-        // | Compatible | None | None    | None   | None     |
-        // | Partial    | None | None    | None   | None     |
-        // |------------|------|---------|--------|----------|
+        // |------------|------|------|--------|----------|
+        // | SIMD       | CALL | ASG  | RETURN | HWI/SIMD |
+        // |------------|------|------|--------|----------|
+        // | Exact      | None | None | None   | None     |
+        // | Compatible | None | None | None   | None     |
+        // | Partial    | None | None | None   | None     |
+        // |------------|------|------|--------|----------|
         //
         // TODO-ADDR: delete all the "None" entries and always
         // transform local nodes into LCL_VAR or LCL_FLD.
 
-        assert(user->OperIs(GT_ASG) && indir->TypeIs(TYP_STRUCT));
+        assert(indir->TypeIs(TYP_STRUCT) && user->OperIs(GT_ASG, GT_RETURN));
 
         *pStructLayout = indirLayout;
 
@@ -1141,7 +1126,12 @@ private:
             return IndirTransform::LclVar;
         }
 
-        return IndirTransform::ObjAddrLclFld;
+        if (user->OperIs(GT_ASG) && (indir == user->AsOp()->gtGetOp1()))
+        {
+            return IndirTransform::ObjAddrLclFld;
+        }
+
+        return IndirTransform::LclFld;
     }
 
     //------------------------------------------------------------------------

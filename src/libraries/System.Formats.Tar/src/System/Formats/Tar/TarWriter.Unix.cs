@@ -29,7 +29,7 @@ namespace System.Formats.Tar
                 Interop.Sys.FileTypes.S_IFCHR => TarEntryType.CharacterDevice,
                 Interop.Sys.FileTypes.S_IFIFO => TarEntryType.Fifo,
                 Interop.Sys.FileTypes.S_IFLNK => TarEntryType.SymbolicLink,
-                Interop.Sys.FileTypes.S_IFREG => Format is TarFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile,
+                Interop.Sys.FileTypes.S_IFREG => Format is TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile,
                 Interop.Sys.FileTypes.S_IFDIR => TarEntryType.Directory,
                 _ => throw new IOException(string.Format(SR.TarUnsupportedFile, fullPath)),
             };
@@ -38,10 +38,10 @@ namespace System.Formats.Tar
 
             TarEntry entry = Format switch
             {
-                TarFormat.V7 => new V7TarEntry(entryType, entryName),
-                TarFormat.Ustar => new UstarTarEntry(entryType, entryName),
-                TarFormat.Pax => new PaxTarEntry(entryType, entryName),
-                TarFormat.Gnu => new GnuTarEntry(entryType, entryName),
+                TarEntryFormat.V7 => new V7TarEntry(entryType, entryName),
+                TarEntryFormat.Ustar => new UstarTarEntry(entryType, entryName),
+                TarEntryFormat.Pax => new PaxTarEntry(entryType, entryName),
+                TarEntryFormat.Gnu => new GnuTarEntry(entryType, entryName),
                 _ => throw new FormatException(string.Format(SR.TarInvalidFormat, Format)),
             };
 

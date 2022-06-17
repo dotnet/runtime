@@ -91,11 +91,10 @@ namespace System.Net.NetworkInformation
                         result = Interop.IpHlpApi.GetPerAdapterInfo(index, buffer, &size);
                         if (result == Interop.IpHlpApi.ERROR_SUCCESS)
                         {
-                            Interop.IpHlpApi.IpPerAdapterInfo ipPerAdapterInfo =
-                                Marshal.PtrToStructure<Interop.IpHlpApi.IpPerAdapterInfo>(buffer);
+                            Interop.IpHlpApi.IpPerAdapterInfo* ipPerAdapterInfo = (Interop.IpHlpApi.IpPerAdapterInfo*)buffer;
 
-                            _autoConfigEnabled = ipPerAdapterInfo.autoconfigEnabled;
-                            _autoConfigActive = ipPerAdapterInfo.autoconfigActive;
+                            _autoConfigEnabled = ipPerAdapterInfo->autoconfigEnabled != 0;
+                            _autoConfigActive = ipPerAdapterInfo->autoconfigActive != 0;
                         }
                     }
                     finally

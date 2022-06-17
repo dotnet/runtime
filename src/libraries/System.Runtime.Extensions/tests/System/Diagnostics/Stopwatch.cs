@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Reflection;
 using System.Threading;
 using Xunit;
 
@@ -93,6 +94,20 @@ namespace System.Diagnostics.Tests
                 }
                 break;
             }
+        }
+
+        [Fact]
+        public static void DebuggerAttributesValid()
+        {
+            Stopwatch watch = new Stopwatch();
+            Assert.Equal("00:00:00 (IsRunning = False)", DebuggerAttributes.ValidateDebuggerDisplayReferences(watch));
+            watch.Start();
+            Thread.Sleep(10);
+            Assert.Contains("(IsRunning = True)", DebuggerAttributes.ValidateDebuggerDisplayReferences(watch));
+            Assert.DoesNotContain("00:00:00 ", DebuggerAttributes.ValidateDebuggerDisplayReferences(watch));
+            watch.Stop();
+            Assert.Contains("(IsRunning = False)", DebuggerAttributes.ValidateDebuggerDisplayReferences(watch));
+            Assert.DoesNotContain("00:00:00 ", DebuggerAttributes.ValidateDebuggerDisplayReferences(watch));
         }
 
         [OuterLoop("Sleeps for relatively long periods of time")]

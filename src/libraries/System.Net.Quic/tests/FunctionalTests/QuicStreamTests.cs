@@ -15,7 +15,7 @@ namespace System.Net.Quic.Tests
     public abstract class QuicStreamTests<T> : QuicTestBase<T>
          where T : IQuicImplProviderFactory, new()
     {
-        private static byte[] s_data = Encoding.UTF8.GetBytes("Hello world!");
+        private static byte[] s_data = "Hello world!"u8.ToArray();
         public QuicStreamTests(ITestOutputHelper output) : base(output) { }
 
         [Fact]
@@ -179,7 +179,7 @@ namespace System.Net.Quic.Tests
             {
                 byte[] buffer = new byte[64];
                 QuicStream clientStream = await clientConnection.OpenBidirectionalStreamAsync();
-                ValueTask writeTask = clientStream.WriteAsync(Encoding.UTF8.GetBytes("PING"), endStream: true);
+                ValueTask writeTask = clientStream.WriteAsync("PING"u8.ToArray(), endStream: true);
                 ValueTask<QuicStream> acceptTask = serverConnection.AcceptStreamAsync();
                 await new Task[] { writeTask.AsTask(), acceptTask.AsTask() }.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
                 QuicStream serverStream = acceptTask.Result;
