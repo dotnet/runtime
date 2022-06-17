@@ -5044,17 +5044,18 @@ static MonoArrayHandle
 mono_module_get_types (MonoImage *image, MonoArrayHandleOut exceptions, MonoBoolean exportedOnly, MonoError *error)
 {
 	MonoTableInfo *tdef = &image->tables [MONO_TABLE_TYPEDEF];
-	int rows = mono_metadata_table_num_rows (image, MONO_TABLE_TYPEDEF);
-	int i, count;
+	guint32 rows = mono_metadata_table_num_rows (image, MONO_TABLE_TYPEDEF);
+	guint32 count;
 
 	/* we start the count from 1 because we skip the special type <Module> */
 	if (exportedOnly) {
 		count = 0;
-		for (i = 1; i < rows; ++i) {
+		for (guint32 i = 1; i < rows; ++i) {
 			if (mono_module_type_is_visible (tdef, image, i + 1))
 				count++;
 		}
 	} else {
+		g_assert (rows > 0);
 		count = rows - 1;
 	}
 	MonoArrayHandle res = mono_array_new_handle (mono_defaults.runtimetype_class, count, error);
@@ -5062,7 +5063,7 @@ mono_module_get_types (MonoImage *image, MonoArrayHandleOut exceptions, MonoBool
 	MONO_HANDLE_ASSIGN (exceptions,  mono_array_new_handle (mono_defaults.exception_class, count, error));
 	return_val_if_nok (error, NULL_HANDLE_ARRAY);
 	count = 0;
-	for (i = 1; i < rows; ++i) {
+	for (guint32 i = 1; i < rows; ++i) {
 		if (!exportedOnly || mono_module_type_is_visible (tdef, image, i+1)) {
 			image_get_type (image, tdef, i + 1, count, res, exceptions, exportedOnly, error);
 			return_val_if_nok (error, NULL_HANDLE_ARRAY);
@@ -5430,8 +5431,8 @@ static gboolean
 mono_memberref_is_method (MonoImage *image, guint32 token)
 {
 	if (!image_is_dynamic (image)) {
-		int idx = mono_metadata_token_index (token);
-		if (idx <= 0 || mono_metadata_table_bounds_check (image, MONO_TABLE_MEMBERREF, idx)) {
+		uint32_t idx = mono_metadata_token_index (token);
+		if (idx == 0 || mono_metadata_table_bounds_check (image, MONO_TABLE_MEMBERREF, idx)) {
 			return FALSE;
 		}
 
@@ -5500,7 +5501,7 @@ module_resolve_type_token (MonoImage *image, guint32 token, MonoArrayHandle type
 	MonoType *result = NULL;
 	MonoClass *klass;
 	int table = mono_metadata_token_table (token);
-	int index = mono_metadata_token_index (token);
+	uint32_t index = mono_metadata_token_index (token);
 	MonoGenericContext context;
 
 	*resolve_error = ResolveTokenError_Other;
@@ -5529,7 +5530,7 @@ module_resolve_type_token (MonoImage *image, guint32 token, MonoArrayHandle type
 		goto leave;
 	}
 
-	if ((index <= 0) || mono_metadata_table_bounds_check (image, table, index)) {
+	if ((index == 0) || mono_metadata_table_bounds_check (image, table, index)) {
 		*resolve_error = ResolveTokenError_OutOfRange;
 		goto leave;
 	}
@@ -5558,7 +5559,7 @@ module_resolve_method_token (MonoImage *image, guint32 token, MonoArrayHandle ty
 	HANDLE_FUNCTION_ENTER ();
 	MonoMethod *method = NULL;
 	int table = mono_metadata_token_table (token);
-	int index = mono_metadata_token_index (token);
+	uint32_t index = mono_metadata_token_index (token);
 	MonoGenericContext context;
 
 	*resolve_error = ResolveTokenError_Other;
@@ -5590,7 +5591,7 @@ module_resolve_method_token (MonoImage *image, guint32 token, MonoArrayHandle ty
 		goto leave;
 	}
 
-	if ((index <= 0) || mono_metadata_table_bounds_check (image, table, index)) {
+	if ((index == 0) || mono_metadata_table_bounds_check (image, table, index)) {
 		*resolve_error = ResolveTokenError_OutOfRange;
 		goto leave;
 	}
@@ -5649,7 +5650,7 @@ module_resolve_field_token (MonoImage *image, guint32 token, MonoArrayHandle typ
 	HANDLE_FUNCTION_ENTER ();
 	MonoClass *klass;
 	int table = mono_metadata_token_table (token);
-	int index = mono_metadata_token_index (token);
+	uint32_t index = mono_metadata_token_index (token);
 	MonoGenericContext context;
 	MonoClassField *field = NULL;
 
@@ -5681,7 +5682,7 @@ module_resolve_field_token (MonoImage *image, guint32 token, MonoArrayHandle typ
 		goto leave;
 	}
 
-	if ((index <= 0) || mono_metadata_table_bounds_check (image, table, index)) {
+	if ((index == 0) || mono_metadata_table_bounds_check (image, table, index)) {
 		*resolve_error = ResolveTokenError_OutOfRange;
 		goto leave;
 	}
@@ -5766,7 +5767,7 @@ MonoArrayHandle
 ves_icall_System_Reflection_RuntimeModule_ResolveSignature (MonoImage *image, guint32 token, MonoResolveTokenError *resolve_error, MonoError *error)
 {
 	int table = mono_metadata_token_table (token);
-	int idx = mono_metadata_token_index (token);
+	uint32_t idx = mono_metadata_token_index (token);
 	MonoTableInfo *tables = image->tables;
 	guint32 sig, len;
 	const char *ptr;

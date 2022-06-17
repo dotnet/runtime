@@ -4970,6 +4970,10 @@ mono_class_get_byref_type (MonoClass *klass)
 int
 mono_class_num_fields (MonoClass *klass)
 {
+	MonoImage *image = m_class_get_image (klass);
+	if (G_UNLIKELY (image->has_updates)) {
+		return mono_class_get_field_count (klass) + mono_metadata_update_get_num_fields_added (klass);
+	}
 	return mono_class_get_field_count (klass);
 }
 

@@ -435,4 +435,8 @@ else(CLR_CMAKE_HOST_UNIX)
     )
 endif(CLR_CMAKE_HOST_UNIX)
 
+if(CMAKE_C_COMPILER_ID MATCHES "Clang")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Wno-implicit-int-conversion>)
+endif()
+
 addprefix(LIBUNWIND_SOURCES "${CMAKE_CURRENT_LIST_DIR}/libunwind/src" "${LIBUNWIND_SOURCES_BASE}")

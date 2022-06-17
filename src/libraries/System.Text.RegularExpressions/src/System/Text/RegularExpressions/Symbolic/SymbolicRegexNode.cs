@@ -888,7 +888,8 @@ namespace System.Text.RegularExpressions.Symbolic
                     if (suffix == left)
                     {
                         // We found a split, so store the prefix and return success
-                        prefix = left._builder.CreateConcat(prefixElements);
+                        prefixElements.Reverse();
+                        prefix = left._builder.CreateConcatAlreadyReversed(prefixElements);
                         return true;
                     }
                     else if (suffix._right.Subsumes(left))
@@ -900,7 +901,8 @@ namespace System.Text.RegularExpressions.Symbolic
                     else if (left.Subsumes(suffix))
                     {
                         // If left subsumes the suffix, then due to the loop invariant we have equivalence
-                        prefix = left._builder.CreateConcat(prefixElements);
+                        prefixElements.Reverse();
+                        prefix = left._builder.CreateConcatAlreadyReversed(prefixElements);
                         return true;
                     }
                     else
@@ -1288,7 +1290,8 @@ namespace System.Text.RegularExpressions.Symbolic
                             // so d(R{m,n}) = d(R)R{max(0,m-1),n-1}. Note that n is guaranteed to be greater than zero, since otherwise the
                             // loop would have been simplified to nothing, and int.MaxValue is treated as infinity.
                             int newupper = _upper == int.MaxValue ? int.MaxValue : _upper - 1;
-                            int newlower = _lower == 0 ? 0 : _lower - 1;
+                            // do not decrement the lower bound if it equals int.MaxValue
+                            int newlower = _lower == 0 || _lower == int.MaxValue ? _lower : _lower - 1;
                             // the continued loop becomes epsilon when newlower == newupper == 0
                             // in which case the returned concatenation will be just bodyDerivative
                             derivative = _builder.CreateConcat(bodyDerivative, _builder.CreateLoop(_left, IsLazy, newlower, newupper));
@@ -1675,7 +1678,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         ToStringGrouped(_left, sb);
                         sb.Append('{');
                         sb.Append(_lower);
-                        if (!IsBoundedLoop)
+                        if (_upper == int.MaxValue)
                         {
                             sb.Append(',');
                         }
@@ -1860,7 +1863,7 @@ namespace System.Text.RegularExpressions.Symbolic
         public TSet[] ComputeMinterms()
         {
             HashSet<TSet> sets = GetSets();
-            List<TSet> minterms = _builder._solver.GenerateMinterms(sets);
+            List<TSet> minterms = MintermGenerator<TSet>.GenerateMinterms(_builder._solver, sets);
             minterms.Sort();
             return minterms.ToArray();
         }
@@ -1925,8 +1928,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     return _builder.EndAnchorZReverse;
 
                 case SymbolicRegexNodeKind.EndAnchorZReverse:
-                    // This can potentially only happen if a reversed regex is reversed again.
-                    // Thus, this case is unreachable here, but included for completeness.
+                    Debug.Fail("Should only happen if a reversed regex is reversed again, which isn't expected");
                     return _builder.EndAnchorZ;
 
                 case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
@@ -2027,11 +2029,6 @@ namespace System.Text.RegularExpressions.Symbolic
                     return _builder._solver.Full;
             }
         }
-
-        /// <summary>
-        /// Returns true if this is a loop with an upper bound
-        /// </summary>
-        public bool IsBoundedLoop => _kind == SymbolicRegexNodeKind.Loop && _upper < int.MaxValue;
 
         /// <summary>
         /// Replace anchors that are infeasible by [] wrt the given previous character kind and what continuation is possible.
@@ -2211,6 +2208,96 @@ namespace System.Text.RegularExpressions.Symbolic
                     yield return this;
                     break;
             }
+        }
+
+        /// <summary>
+        /// Let #(this) denote the number of singletons in this node.
+        /// Then the NFA size estimation in terms of state count
+        /// is #(this) if there are no anchors else <see cref="CharKind.CharKindCount"/>x#(this).
+        /// Add 1 for the initial state also.
+        /// </summary>
+        internal int EstimateNfaSize() => Times(_info.ContainsSomeAnchor ? CharKind.CharKindCount : 1, Sum(1, CountSingletons()));
+
+        /// <summary>
+        /// Count the number of Regex Singletons, if all loops with explicit counters
+        /// were eliminated from the node, i.e., as if the repetitions were explicitly unfolded.
+        /// </summary>
+        /// <remarks>
+        /// Let node.CountSingletons() be abbreviated by #(node).
+        /// Ex: #(a{6}) = 6*#(a) = 6
+        /// Ex: #(a+|()) = #(aa*) = 2
+        /// Ex: #(a{3,6}) = 6
+        /// Ex: #(a{6,}) = #(a{6}a*)= 7
+        /// </remarks>
+        internal int CountSingletons()
+        {
+            // Guard against stack overflow due to deep recursion
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            {
+                return StackHelper.CallOnEmptyStack(CountSingletons);
+            }
+
+            switch (_kind)
+            {
+                case SymbolicRegexNodeKind.Singleton:
+                    return 1;
+
+                case SymbolicRegexNodeKind.Concat:
+                case SymbolicRegexNodeKind.Alternate:
+                    Debug.Assert(_left is not null && _right is not null);
+                    // #(this) = #(_left) + #(_right)
+                    return Sum(_left.CountSingletons(), _right.CountSingletons());
+
+                case SymbolicRegexNodeKind.Loop:
+                    Debug.Assert(_left is not null && _right is null);
+                    Debug.Assert(_lower >= 0 && _upper > 0 && _upper >= _lower);
+                    if (_upper == int.MaxValue)
+                    {
+                        if (_lower == 0 || _lower == int.MaxValue)
+                        {
+                            // infinite loop has the same size as a *-loop
+                            return _left.CountSingletons();
+                        }
+
+                        // the upper bound is not being used, so the lower must be non-zero
+                        Debug.Assert(_lower > 0);
+
+                        // The case is R{m,} with R = _left and m = _lower.
+                        // #(this) = (m+1) x #(R)
+                        // Ex: #((ab){4,}) = #((ab)(ab)(ab)(ab)(ab)*) = 5x2 = 10
+                        return Times(_lower + 1, _left.CountSingletons());
+                    }
+
+                    // The general case with both upper and lower bounds is R{m,n} with m =_lower and n = _upper
+                    // #(this) = n x #(R)
+                    // Ex: #((ab){4,6}) = #((ab)(ab)(ab)(ab)(ab)?(ab)?) = 6x2 = 12
+                    return Times(_upper, _left.CountSingletons());
+
+                case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
+                case SymbolicRegexNodeKind.Effect:
+                    Debug.Assert(_left is not null);
+                    return _left.CountSingletons();
+
+                default:
+                    Debug.Assert(_left is null && _right is null);
+                    // All the other nodes contribute 0 to the overall count
+                    // because they contain no children and therefore no singletons
+                    return 0;
+            }
+        }
+
+        // In case of overflow in m+n, return int.MaxValue
+        private static int Sum(int m, int n)
+        {
+            Debug.Assert(m >= 0 && n >= 0);
+            return (int)Math.Min((long)m + n, int.MaxValue);
+        }
+
+        // In case of overflow in m*n return int.MaxValue
+        private static int Times(int m, int n)
+        {
+            Debug.Assert(m >= 0 && n >= 0);
+            return (int)Math.Min((long)m * n, int.MaxValue);
         }
     }
 }

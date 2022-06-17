@@ -628,6 +628,7 @@ namespace System.Text.Json
                 case DataType.DateOnly:
                 case DataType.DateTime:
                 case DataType.DateTimeOffset:
+                case DataType.TimeOnly:
                 case DataType.TimeSpan:
                 case DataType.Guid:
                 case DataType.Version:
@@ -723,6 +724,7 @@ namespace System.Text.Json
         DateOnly,
         DateTime,
         DateTimeOffset,
+        TimeOnly,
         TimeSpan,
         Base64String,
         Guid,

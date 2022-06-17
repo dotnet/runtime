@@ -21,12 +21,12 @@
     <Compile Include="System\Formats\Tar\TarHeader.Write.cs" />
     <Compile Include="System\Formats\Tar\TarHelpers.cs" />
     <Compile Include="System\Formats\Tar\TarEntry.cs" />
+    <Compile Include="System\Formats\Tar\TarEntryFormat.cs" />
     <Compile Include="System\Formats\Tar\UstarTarEntry.cs" />
     <Compile Include="System\Formats\Tar\GnuTarEntry.cs" />
     <Compile Include="System\Formats\Tar\PaxTarEntry.cs" />
     <Compile Include="System\Formats\Tar\TarEntryType.cs" />
     <Compile Include="System\Formats\Tar\TarFile.cs" />
-    <Compile Include="System\Formats\Tar\TarFormat.cs" />
     <Compile Include="System\Formats\Tar\TarReader.cs" />
     <Compile Include="System\Formats\Tar\TarWriter.cs" />
     <Compile Include="System\Formats\Tar\SubReadStream.cs" />
@@ -57,6 +57,9 @@
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs" Link="Common\Interop\Unix\System.Native\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.DeviceFiles.cs" Link="Common\Interop\Unix\System.Native\Interop.DeviceFiles.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FChMod.cs" Link="Common\Interop\Unix\System.Native\Interop.FChMod.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEUid.cs" Link="Common\Interop\Unix\System.Native\Interop.GetEUid.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs" Link="Common\Interop\Unix\System.Native\Interop.GetPwUid.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetGroupName.cs" Link="Common\Interop\Unix\System.Native\Interop.GetGroupName.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Link.cs" Link="Common\Interop\Unix\System.Native\Interop.Link.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MkFifo.cs" Link="Common\Interop\Unix\System.Native\Interop.MkFifo.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Permissions.cs" Link="Common\Interop\Unix\Interop.Permissions.cs" />

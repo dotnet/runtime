@@ -2192,7 +2192,7 @@ void EEClass::GetBestFitMapping(MethodTable * pMT, BOOL *pfBestFitMapping, BOOL 
         if (*pfBestFitMapping) flags |= VMFLAG_BESTFITMAPPING;
         if (*pfThrowOnUnmappableChar) flags |= VMFLAG_THROWONUNMAPPABLECHAR;
 
-        FastInterlockOr(&pClass->m_VMFlags, flags);
+        InterlockedOr((LONG*)&pClass->m_VMFlags, flags);
     }
     else
     {

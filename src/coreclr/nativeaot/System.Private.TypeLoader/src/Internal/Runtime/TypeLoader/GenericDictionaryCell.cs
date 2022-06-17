@@ -23,7 +23,7 @@ namespace Internal.Runtime.TypeLoader
     {
         internal abstract void Prepare(TypeBuilder builder);
         internal abstract IntPtr Create(TypeBuilder builder);
-        internal unsafe virtual void WriteCellIntoDictionary(TypeBuilder typeBuilder, IntPtr* pDictionary, int slotIndex)
+        internal virtual unsafe void WriteCellIntoDictionary(TypeBuilder typeBuilder, IntPtr* pDictionary, int slotIndex)
         {
             pDictionary[slotIndex] = Create(typeBuilder);
         }
@@ -57,7 +57,7 @@ namespace Internal.Runtime.TypeLoader
                 throw new NotSupportedException();
             }
 
-            internal unsafe override void WriteCellIntoDictionary(TypeBuilder typeBuilder, IntPtr* pDictionary, int slotIndex)
+            internal override unsafe void WriteCellIntoDictionary(TypeBuilder typeBuilder, IntPtr* pDictionary, int slotIndex)
             {
                 pDictionary[slotIndex] = new IntPtr(pDictionary + OtherDictionarySlot);
             }
@@ -289,7 +289,7 @@ namespace Internal.Runtime.TypeLoader
         {
             internal InstantiatedMethod GenericMethod;
 
-            internal unsafe override void Prepare(TypeBuilder builder)
+            internal override unsafe void Prepare(TypeBuilder builder)
             {
                 if (GenericMethod.IsCanonicalMethod(CanonicalFormKind.Any))
                     Environment.FailFast("Method dictionaries of canonical methods do not exist");
@@ -312,7 +312,7 @@ namespace Internal.Runtime.TypeLoader
             internal TypeDesc ContainingType;
             internal IntPtr FieldName;
 
-            internal unsafe override void Prepare(TypeBuilder builder)
+            internal override unsafe void Prepare(TypeBuilder builder)
             {
                 if (ContainingType.IsCanonicalSubtype(CanonicalFormKind.Any))
                     Environment.FailFast("Ldtoken is not permitted for a canonical field");
@@ -336,7 +336,7 @@ namespace Internal.Runtime.TypeLoader
             internal IntPtr MethodName;
             internal RuntimeSignature MethodSignature;
 
-            internal unsafe override void Prepare(TypeBuilder builder)
+            internal override unsafe void Prepare(TypeBuilder builder)
             {
                 if (Method.IsCanonicalMethod(CanonicalFormKind.Any))
                     Environment.FailFast("Ldtoken is not permitted for a canonical method");
@@ -532,11 +532,11 @@ namespace Internal.Runtime.TypeLoader
         private class IntPtrCell : GenericDictionaryCell
         {
             internal IntPtr Value;
-            internal unsafe override void Prepare(TypeBuilder builder)
+            internal override unsafe void Prepare(TypeBuilder builder)
             {
             }
 
-            internal unsafe override IntPtr Create(TypeBuilder builder)
+            internal override unsafe IntPtr Create(TypeBuilder builder)
             {
                 return Value;
             }
@@ -567,7 +567,7 @@ namespace Internal.Runtime.TypeLoader
             private MethodDesc _methodToUseForInstantiatingParameters;
             private IntPtr _exactFunctionPointer;
 
-            internal unsafe override void Prepare(TypeBuilder builder)
+            internal override unsafe void Prepare(TypeBuilder builder)
             {
                 _methodToUseForInstantiatingParameters = Method;
 
@@ -761,7 +761,7 @@ namespace Internal.Runtime.TypeLoader
                 return Method.OwningType.IsValueType && !Method.UnboxingStub;
             }
 
-            internal unsafe override IntPtr Create(TypeBuilder builder)
+            internal override unsafe IntPtr Create(TypeBuilder builder)
             {
                 if (_exactFunctionPointer != IntPtr.Zero)
                 {

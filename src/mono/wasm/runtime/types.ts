@@ -180,10 +180,14 @@ export type CoverageProfilerOptions = {
 }
 
 /// Options to configure the event pipe session
+/// The recommended method is to MONO.diagnostics.SesisonOptionsBuilder to create an instance of this type
 export interface EventPipeSessionOptions {
     /// Whether to collect additional details (such as method and type names) at EventPipeSession.stop() time (default: true)
     /// This is required for some use cases, and may allow some tools to better understand the events.
     collectRundownEvents?: boolean;
+    /// The providers that will be used by this session.
+    /// See https://docs.microsoft.com/en-us/dotnet/core/diagnostics/eventpipe#trace-using-environment-variables
+    providers: string;
 }
 
 // how we extended emscripten Module

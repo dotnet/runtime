@@ -15,6 +15,8 @@ using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
+// @TODO medium-to-longer term, we should try to get rid of the special-unicorn-single-file runner in favor of making the real runner work for single file.
+// https://github.com/dotnet/runtime/issues/70432
 public class SingleFileTestRunner : XunitTestFramework
 {
     private SingleFileTestRunner(IMessageSink messageSink)
@@ -43,17 +45,24 @@ public class SingleFileTestRunner : XunitTestFramework
             testsFinished.SetResult();
         };
 
+        var assemblyConfig = new TestAssemblyConfiguration()
+        {
+            // Turn off pre-enumeration of theories, since there is no theory selection UI in this runner
+            PreEnumerateTheories = false,
+        };
+
         var xunitTestFx = new SingleFileTestRunner(diagnosticSink);
         var asmInfo = Reflector.Wrap(asm);
         var asmName = asm.GetName();
 
         var discoverySink = new TestDiscoverySink();
         var discoverer = xunitTestFx.CreateDiscoverer(asmInfo);
-        discoverer.Find(false, discoverySink, TestFrameworkOptions.ForDiscovery());
+        discoverer.Find(false, discoverySink, TestFrameworkOptions.ForDiscovery(assemblyConfig));
         discoverySink.Finished.WaitOne();
 
+        string xmlResultFileName = null;
         XunitFilters filters = new XunitFilters();
-        // Quick hack wo much validation to get no traits passed
+        // Quick hack wo much validation to get args that are passed (notrait, xml)
         Dictionary<string, List<string>> noTraits = new Dictionary<string, List<string>>();
         for (int i = 0; i < args.Length; i++)
         {
@@ -66,6 +75,10 @@ public class SingleFileTestRunner : XunitTestFramework
                 }
                 values.Add(traitKeyValue[1]);
             }
+            if (args[i].Equals("-xml", StringComparison.OrdinalIgnoreCase))
+            {
+                xmlResultFileName=args[i + 1].Trim();
+            }
         }
 
         foreach (KeyValuePair<string, List<string>> kvp in noTraits)
@@ -75,9 +88,15 @@ public class SingleFileTestRunner : XunitTestFramework
 
         var filteredTestCases = discoverySink.TestCases.Where(filters.Filter).ToList();
         var executor = xunitTestFx.CreateExecutor(asmName);
-        executor.RunTests(filteredTestCases, resultsSink, TestFrameworkOptions.ForExecution());
+        executor.RunTests(filteredTestCases, resultsSink, TestFrameworkOptions.ForExecution(assemblyConfig));
 
         resultsSink.Finished.WaitOne();
+
+        // Helix need to see results file in the drive to detect if the test has failed or not
+        if(xmlResultFileName != null)
+        {
+            resultsXmlAssembly.Save(xmlResultFileName);
+        }
 
         var failed = resultsSink.ExecutionSummary.Failed > 0 || resultsSink.ExecutionSummary.Errors > 0;
         return failed ? 1 : 0;

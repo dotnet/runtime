@@ -48,7 +48,6 @@ private:
     HRESULT AddSzArray();
     HRESULT AddArray(DWORD rank);
     HRESULT AddAssemblySpec(LPCWSTR szAssemblySpec);
-    HRESULT ToString(BSTR* pszStringRepresentation);
     HRESULT Clear();
 
 private:

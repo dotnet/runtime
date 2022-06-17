@@ -27,7 +27,7 @@
        flavor is used to decide when to build the hosts and installers. -->
   <PropertyGroup>
     <PrimaryRuntimeFlavor>CoreCLR</PrimaryRuntimeFlavor>
-    <PrimaryRuntimeFlavor Condition="'$(TargetArchitecture)' == 's390x' or '$(TargetArchitecture)' == 'armv6' or '$(TargetsLinuxBionic)' == 'true'">Mono</PrimaryRuntimeFlavor>
+    <PrimaryRuntimeFlavor Condition="'$(TargetArchitecture)' == 's390x' or '$(TargetArchitecture)' == 'ppc64le' or '$(TargetArchitecture)' == 'armv6' or '$(TargetsLinuxBionic)' == 'true'">Mono</PrimaryRuntimeFlavor>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -311,6 +311,8 @@
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.TypeSystem.Tests\ILCompiler.TypeSystem.Tests.csproj"
       Test="true" Category="clr" Condition="'$(DotNetBuildFromSource)' != 'true'"/>
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.Compiler.Tests\ILCompiler.Compiler.Tests.csproj"
+      Test="true" Category="clr" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(NativeAotSupported)' == 'true'"/>
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\Mono.Linker.Tests\Mono.Linker.Tests.csproj"
       Test="true" Category="clr" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(NativeAotSupported)' == 'true'"/>
   </ItemGroup>
 

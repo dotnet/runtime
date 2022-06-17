@@ -1284,6 +1284,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69795", TestRuntimes.Mono)]
         public static void CreateCheckedFromUIntPtrTest()
         {
             if (Environment.Is64BitProcess)
@@ -1572,6 +1573,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69795", TestRuntimes.Mono)]
         public static void CreateSaturatingFromUIntPtrTest()
         {
             if (Environment.Is64BitProcess)
@@ -1860,6 +1862,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69795", TestRuntimes.Mono)]
         public static void CreateTruncatingFromUIntPtrTest()
         {
             if (Environment.Is64BitProcess)

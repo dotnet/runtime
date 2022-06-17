@@ -5,6 +5,7 @@ import { AllAssetEntryTypes, mono_assert, AssetEntry, CharPtrNull, DotnetModule,
 import { ENVIRONMENT_IS_ESM, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, locateFile, Module, MONO, requirePromise, runtimeHelpers } from "./imports";
 import cwraps from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
+import GuardedPromise from "./guarded-promise";
 import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from "./icu";
 import { toBase64StringImpl } from "./base64";
 import { mono_wasm_init_aot_profiler, mono_wasm_init_coverage_profiler } from "./profiler";
@@ -17,9 +18,9 @@ import { mono_on_abort } from "./run";
 import { mono_wasm_new_root } from "./roots";
 import { init_crypto } from "./crypto-worker";
 
-export let runtime_is_initialized_resolve: Function;
-export let runtime_is_initialized_reject: Function;
-export const mono_wasm_runtime_is_initialized = new Promise((resolve, reject) => {
+export let runtime_is_initialized_resolve: () => void;
+export let runtime_is_initialized_reject: (reason?: any) => void;
+export const mono_wasm_runtime_is_initialized = new GuardedPromise<void>((resolve, reject) => {
     runtime_is_initialized_resolve = resolve;
     runtime_is_initialized_reject = reject;
 });
@@ -137,9 +138,7 @@ async function mono_wasm_pre_init(): Promise<void> {
                 await moduleExt.onConfigLoaded(<MonoConfig>runtimeHelpers.config);
             }
             catch (err: any) {
-                Module.printErr("MONO_WASM: onConfigLoaded () failed: " + err);
-                Module.printErr("MONO_WASM: Stacktrace: \n");
-                Module.printErr(err.stack);
+                _print_error("MONO_WASM: onConfigLoaded () failed", err);
                 runtime_is_initialized_reject(err);
                 throw err;
             }
@@ -169,6 +168,13 @@ function mono_wasm_after_runtime_initialized(): void {
     finalize_startup(Module.config);
 }
 
+function _print_error(message: string, err: any): void {
+    Module.printErr(`${message}: ${JSON.stringify(err)}`);
+    if (err.stack) {
+        Module.printErr("MONO_WASM: Stacktrace: \n");
+        Module.printErr(err.stack);
+    }
+}
 
 // Set environment variable NAME to VALUE
 // Should be called before mono_load_runtime_and_bcl () in most cases
@@ -331,9 +337,7 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
             cwraps.mono_wasm_load_runtime("unused", config.debug_level || 0);
             runtimeHelpers.wait_for_debugger = config.wait_for_debugger;
         } catch (err: any) {
-            Module.printErr("MONO_WASM: mono_wasm_load_runtime () failed: " + err);
-            Module.printErr("MONO_WASM: Stacktrace: \n");
-            Module.printErr(err.stack);
+            _print_error("MONO_WASM: mono_wasm_load_runtime () failed", err);
 
             runtime_is_initialized_reject(err);
             if (ENVIRONMENT_IS_SHELL || ENVIRONMENT_IS_NODE) {
@@ -360,9 +364,7 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
                 argsAny.loaded_cb();
             }
             catch (err: any) {
-                Module.printErr("MONO_WASM: loaded_cb () failed: " + err);
-                Module.printErr("MONO_WASM: Stacktrace: \n");
-                Module.printErr(err.stack);
+                _print_error("MONO_WASM: loaded_cb () failed", err);
                 runtime_is_initialized_reject(err);
                 throw err;
             }
@@ -373,9 +375,7 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
                 moduleExt.onDotnetReady();
             }
             catch (err: any) {
-                Module.printErr("MONO_WASM: onDotnetReady () failed: " + err);
-                Module.printErr("MONO_WASM: Stacktrace: \n");
-                Module.printErr(err.stack);
+                _print_error("MONO_WASM: onDotnetReady () failed", err);
                 runtime_is_initialized_reject(err);
                 throw err;
             }
@@ -383,7 +383,7 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
 
         runtime_is_initialized_resolve();
     } catch (err: any) {
-        Module.printErr("MONO_WASM: Error in finalize_startup: " + err);
+        _print_error("MONO_WASM: Error in finalize_startup", err);
         runtime_is_initialized_reject(err);
         throw err;
     }

@@ -216,6 +216,7 @@ typedef struct {
 	GHashTable *jit_callees;
 	LLVMValueRef long_bb_break_var;
 	int *gc_var_indexes;
+	int gc_var_indexes_len;
 	Address *gc_pin_area;
 	LLVMValueRef il_state;
 	LLVMValueRef il_state_ret;
@@ -1988,13 +1989,13 @@ get_aotconst_name (MonoJumpInfoType type, gconstpointer data, int got_offset)
 		name = g_strdup_printf ("%s", mono_ji_type_to_string (type));
 		len = strlen (name);
 		for (size_t i = 0; i < len; ++i)
-			name [i] = tolower (name [i]);
+			name [i] = GINT_TO_CHAR (tolower (name [i]));
 		break;
 	default:
 		name = g_strdup_printf ("%s_%d", mono_ji_type_to_string (type), got_offset);
 		len = strlen (name);
 		for (size_t i = 0; i < len; ++i)
-			name [i] = tolower (name [i]);
+			name [i] = GINT_TO_CHAR (tolower (name [i]));
 		break;
 	}
 
@@ -2247,6 +2248,39 @@ get_callee_llvmonly (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType ty
 	 * All other calls are made through the GOT.
 	 */
 	callee = get_aotconst (ctx, type, data, pointer_type (llvm_sig));
+
+	return callee;
+}
+
+/*
+ * get_callee_module:
+ *
+ *   Return a callee for TYPE/DATA in MODULE.
+ */
+static LLVMValueRef
+get_callee_module (MonoLLVMModule *module, LLVMTypeRef llvm_sig, MonoJumpInfoType type, gconstpointer data)
+{
+	LLVMValueRef callee;
+	char *callee_name;
+	MonoJumpInfo *ji = NULL;
+
+	callee_name = mono_aot_get_plt_symbol (type, data);
+	g_assert (callee_name);
+
+	callee = (LLVMValueRef)g_hash_table_lookup (module->plt_entries, callee_name);
+	if (!callee) {
+		callee = LLVMAddFunction (module->lmodule, callee_name, llvm_sig);
+
+		LLVMSetVisibility (callee, LLVMHiddenVisibility);
+
+		g_hash_table_insert (module->plt_entries, (char*)callee_name, callee);
+	}
+
+	ji = g_new0 (MonoJumpInfo, 1);
+	ji->type = type;
+	ji->data.target = data;
+
+	g_hash_table_insert (module->plt_entries_ji, ji, callee);
 
 	return callee;
 }
@@ -3468,7 +3502,14 @@ emit_icall_cold_wrapper (MonoLLVMModule *module, LLVMModuleRef lmodule, MonoJitI
 	LLVMPositionBuilderAtEnd (builder, entry_bb);
 
 	if (aot) {
-		callee = get_aotconst_module (module, builder, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (icall_id), pointer_type (sig), NULL, NULL);
+		/*
+		 * If the icall has a wrapper, the call needs to be patched, so use get_callee_module () instead of
+		 * get_aotconst_module ().
+		 */
+		if (module->llvm_only)
+			callee = get_aotconst_module (module, builder, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (icall_id), pointer_type (sig), NULL, NULL);
+		else
+			callee = get_callee_module (module, sig, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (icall_id));
 	} else {
 		MonoJitICallInfo * const info = mono_find_jit_icall_info (icall_id);
 		gpointer target = (gpointer)mono_icall_get_wrapper_full (info, TRUE);
@@ -3816,6 +3857,12 @@ emit_unbox_tramp (EmitContext *ctx, const char *method_name, LLVMTypeRef method_
 static void
 emit_gc_pin (EmitContext *ctx, LLVMBuilderRef builder, int vreg)
 {
+	if (ctx->values [vreg] == LLVMConstNull (IntPtrType ()))
+		return;
+	MonoInst *var = get_vreg_to_inst (ctx->cfg, vreg);
+	if (var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT|MONO_INST_IS_DEAD))
+		return;
+	g_assert (vreg < ctx->gc_var_indexes_len);
 	LLVMValueRef index0 = const_int32 (0);
 	LLVMValueRef index1 = const_int32 (ctx->gc_var_indexes [vreg] - 1);
 	LLVMValueRef indexes [] = { index0, index1 };
@@ -3858,6 +3905,14 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		if (vreg_is_ref (cfg, i)) {
 			ctx->gc_var_indexes [i] = ngc_vars + 1;
 			ngc_vars ++;
+			ctx->gc_var_indexes_len = i + 1;
+			/*
+			MonoInst *var = get_vreg_to_inst (ctx->cfg, i);
+			if (!(var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT|MONO_INST_IS_DEAD))) {
+				ctx->gc_var_indexes [i] = ngc_vars + 1;
+				ngc_vars ++;
+			}
+			*/
 		}
 	}
 
@@ -4106,8 +4161,9 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 
 #ifdef TARGET_WASM
 	/*
-	 * Store ref arguments to the pin area.
-	 * FIXME: This might not be needed, since the caller already does it ?
+	 * FIXME:
+	 * Storing ref arguments to the pin area is not needed
+	 * since it's done by the caller.
 	 */
 	for (int i = 0; i < cfg->num_varinfo; ++i) {
 		MonoInst *var = cfg->varinfo [i];
@@ -7690,11 +7746,11 @@ MONO_RESTORE_WARNING
 			break;
 		}
 		case OP_STOREX_MEMBASE: {
-			LLVMTypeRef t = LLVMTypeOf (values [ins->sreg1]);
+			LLVMTypeRef t = LLVMTypeOf (lhs);
 			LLVMValueRef dest;
 
 			dest = convert (ctx, LLVMBuildAdd (builder, convert (ctx, values [ins->inst_destbasereg], IntPtrType ()), LLVMConstInt (IntPtrType (), ins->inst_offset, FALSE), ""), pointer_type (t));
-			mono_llvm_build_aligned_store (builder, values [ins->sreg1], dest, FALSE, 1);
+			mono_llvm_build_aligned_store (builder, lhs, dest, FALSE, 1);
 			break;
 		}
 		case OP_XBINOP:
@@ -11284,7 +11340,8 @@ MONO_RESTORE_WARNING
 			if (!skip_volatile_store)
 				emit_volatile_store (ctx, ins->dreg);
 #ifdef TARGET_WASM
-			if (vreg_is_ref (cfg, ins->dreg) && ctx->values [ins->dreg])
+			//if (vreg_is_ref (cfg, ins->dreg) && ctx->values [ins->dreg])
+			if (vreg_is_ref (cfg, ins->dreg) && ctx->values [ins->dreg] && ins->opcode != OP_MOVE)
 				emit_gc_pin (ctx, builder, ins->dreg);
 #endif
 		}
@@ -11775,12 +11832,13 @@ emit_method_inner (EmitContext *ctx)
 	}
 	ctx->has_safepoints = requires_safepoint;
 
-	if (!cfg->llvm_only && mono_threads_are_safepoints_enabled () && requires_safepoint) {
+	if (requires_safepoint && mini_safepoints_enabled ()) {
 		if (!cfg->compile_aot) {
 			LLVMSetGC (method, "coreclr");
 			emit_gc_safepoint_poll (ctx->module, ctx->lmodule, cfg);
 		} else {
-			LLVMSetGC (method, "coreclr");
+			if (!cfg->llvm_only)
+				LLVMSetGC (method, "coreclr");
 		}
 	}
 	LLVMSetLinkage (method, LLVMPrivateLinkage);
@@ -12526,7 +12584,7 @@ add_intrinsic (LLVMModuleRef module, int id)
 		for (int vw = 0; vw < INTRIN_vectorwidths; ++vw) {
 			for (int ew = 0; ew < INTRIN_elementwidths; ++ew) {
 				llvm_ovr_tag_t vec_bit = INTRIN_vector128 >> ((INTRIN_vectorwidths - 1) - vw);
-				llvm_ovr_tag_t elem_bit = INTRIN_int8 << ew;
+				llvm_ovr_tag_t elem_bit = GINT_TO_UINT16 (INTRIN_int8 << ew);
 				llvm_ovr_tag_t test = vec_bit | elem_bit;
 				if ((spec & test) == test) {
 					uint8_t kind = intrin_kind [id];

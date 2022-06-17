@@ -342,6 +342,18 @@ namespace System.Security.Cryptography.Tests
         {
             get
             {
+                // Keyed Hash Algorithms - supported on all platforms
+                yield return new object[] { "System.Security.Cryptography.HMAC", "System.Security.Cryptography.HMACSHA1", true };
+                yield return new object[] { "System.Security.Cryptography.KeyedHashAlgorithm", "System.Security.Cryptography.HMACSHA1", true };
+                yield return new object[] { "HMACSHA1", "System.Security.Cryptography.HMACSHA1", true };
+                yield return new object[] { "System.Security.Cryptography.HMACSHA1", null, true };
+                yield return new object[] { "HMACSHA256", "System.Security.Cryptography.HMACSHA256", true };
+                yield return new object[] { "System.Security.Cryptography.HMACSHA256", null, true };
+                yield return new object[] { "HMACSHA384", "System.Security.Cryptography.HMACSHA384", true };
+                yield return new object[] { "System.Security.Cryptography.HMACSHA384", null, true };
+                yield return new object[] { "HMACSHA512", "System.Security.Cryptography.HMACSHA512", true };
+                yield return new object[] { "System.Security.Cryptography.HMACSHA512", null, true };
+
                 if (PlatformDetection.IsBrowser)
                 {
                     // Hash functions
@@ -381,19 +393,9 @@ namespace System.Security.Cryptography.Tests
                     yield return new object[] { "SHA-512", typeof(SHA512Managed).FullName, true };
                     yield return new object[] { "System.Security.Cryptography.SHA512", typeof(SHA512Managed).FullName, true };
 
-                    // Keyed Hash Algorithms
-                    yield return new object[] { "System.Security.Cryptography.HMAC", "System.Security.Cryptography.HMACSHA1", true };
-                    yield return new object[] { "System.Security.Cryptography.KeyedHashAlgorithm", "System.Security.Cryptography.HMACSHA1", true };
+                    // Keyed Hash Algorithms - not supported on Browser
                     yield return new object[] { "HMACMD5", "System.Security.Cryptography.HMACMD5", true };
                     yield return new object[] { "System.Security.Cryptography.HMACMD5", null, true };
-                    yield return new object[] { "HMACSHA1", "System.Security.Cryptography.HMACSHA1", true };
-                    yield return new object[] { "System.Security.Cryptography.HMACSHA1", null, true };
-                    yield return new object[] { "HMACSHA256", "System.Security.Cryptography.HMACSHA256", true };
-                    yield return new object[] { "System.Security.Cryptography.HMACSHA256", null, true };
-                    yield return new object[] { "HMACSHA384", "System.Security.Cryptography.HMACSHA384", true };
-                    yield return new object[] { "System.Security.Cryptography.HMACSHA384", null, true };
-                    yield return new object[] { "HMACSHA512", "System.Security.Cryptography.HMACSHA512", true };
-                    yield return new object[] { "System.Security.Cryptography.HMACSHA512", null, true };
 
                     // Asymmetric algorithms
                     yield return new object[] { "RSA", "System.Security.Cryptography.RSACryptoServiceProvider", true };

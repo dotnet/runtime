@@ -294,11 +294,11 @@ Object* GcAllocInternal(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElem
 //  pTransitionFrame-  transition frame to make stack crawable
 // Returns a pointer to the object allocated or NULL on failure.
 
-COOP_PINVOKE_HELPER(void*, RhpGcAlloc, (MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements, void* pTransitionFrame))
+COOP_PINVOKE_HELPER(void*, RhpGcAlloc, (MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements, PInvokeTransitionFrame* pTransitionFrame))
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
 
-    pThread->SetCurrentThreadPInvokeTunnelForGcAlloc(pTransitionFrame);
+    pThread->SetDeferredTransitionFrame(pTransitionFrame);
 
     return GcAllocInternal(pEEType, uFlags, numElements, pThread);
 }
@@ -515,7 +515,8 @@ void RedhawkGCInterface::EnumGcRefs(ICodeManager * pCodeManager,
                                     PTR_VOID safePointAddress,
                                     REGDISPLAY * pRegisterSet,
                                     void * pfnEnumCallback,
-                                    void * pvCallbackData)
+                                    void * pvCallbackData,
+                                    bool   isActiveStackFrame)
 {
     EnumGcRefContext ctx;
     ctx.pCallback = EnumGcRefsCallback;
@@ -526,7 +527,8 @@ void RedhawkGCInterface::EnumGcRefs(ICodeManager * pCodeManager,
     pCodeManager->EnumGcRefs(pMethodInfo,
                              safePointAddress,
                              pRegisterSet,
-                             &ctx);
+                             &ctx,
+                             isActiveStackFrame);
 }
 
 // static

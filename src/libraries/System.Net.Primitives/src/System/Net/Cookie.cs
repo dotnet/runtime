@@ -229,7 +229,7 @@ namespace System.Net
             {
                 if (string.IsNullOrEmpty(value) || !InternalSetName(value))
                 {
-                    throw new CookieException(SR.Format(SR.net_cookie_attribute, "Name", value == null ? "<null>" : value));
+                    throw new CookieException(SR.Format(SR.net_cookie_attribute, "Name", value ?? "<null>"));
                 }
             }
         }
@@ -351,7 +351,7 @@ namespace System.Net
             {
                 if (shouldThrow)
                 {
-                    throw new CookieException(SR.Format(SR.net_cookie_attribute, "Name", m_name == null ? "<null>" : m_name));
+                    throw new CookieException(SR.Format(SR.net_cookie_attribute, "Name", m_name ?? "<null>"));
                 }
                 return false;
             }
@@ -362,7 +362,7 @@ namespace System.Net
             {
                 if (shouldThrow)
                 {
-                    throw new CookieException(SR.Format(SR.net_cookie_attribute, "Value", m_value == null ? "<null>" : m_value));
+                    throw new CookieException(SR.Format(SR.net_cookie_attribute, "Value", m_value ?? "<null>"));
                 }
                 return false;
             }
@@ -413,7 +413,7 @@ namespace System.Net
                     {
                         if (shouldThrow)
                         {
-                            throw new CookieException(SR.Format(SR.net_cookie_attribute, CookieFields.DomainAttributeName, domain == null ? "<null>" : domain));
+                            throw new CookieException(SR.Format(SR.net_cookie_attribute, CookieFields.DomainAttributeName, domain ?? "<null>"));
                         }
                         return false;
                     }

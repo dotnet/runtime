@@ -28,7 +28,7 @@ namespace System.Net.Mail.Tests
         {
             get
             {
-                return _smtp ?? (_smtp = new SmtpClient());
+                return _smtp ??= new SmtpClient();
             }
         }
 

@@ -52,6 +52,14 @@ namespace System.Net
 
         private static readonly byte[] s_workstation = Encoding.Unicode.GetBytes(Environment.MachineName);
 
+        private static SecurityStatusPal SecurityStatusPalOk = new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
+        private static SecurityStatusPal SecurityStatusPalContinueNeeded = new SecurityStatusPal(SecurityStatusPalErrorCode.ContinueNeeded);
+        private static SecurityStatusPal SecurityStatusPalInvalidToken = new SecurityStatusPal(SecurityStatusPalErrorCode.InvalidToken);
+        private static SecurityStatusPal SecurityStatusPalInternalError = new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError);
+        private static SecurityStatusPal SecurityStatusPalPackageNotFound = new SecurityStatusPal(SecurityStatusPalErrorCode.PackageNotFound);
+        private static SecurityStatusPal SecurityStatusPalMessageAltered = new SecurityStatusPal(SecurityStatusPalErrorCode.MessageAltered);
+        private static SecurityStatusPal SecurityStatusPalLogonDenied = new SecurityStatusPal(SecurityStatusPalErrorCode.LogonDenied);
+
         private const Flags s_requiredFlags =
             Flags.NegotiateNtlm2 | Flags.NegotiateNtlm | Flags.NegotiateUnicode | Flags.TargetName |
             Flags.NegotiateVersion | Flags.NegotiateKeyExchange | Flags.Negotiate128 |
@@ -291,7 +299,12 @@ namespace System.Net
             IsCompleted = true;
         }
 
-        internal unsafe string? GetOutgoingBlob(string? incomingBlob)
+        internal string? GetOutgoingBlob(string? incomingBlob)
+        {
+            return GetOutgoingBlob(incomingBlob, throwOnError: true, out _);
+        }
+
+        internal unsafe string? GetOutgoingBlob(string? incomingBlob, bool throwOnError, out SecurityStatusPal statusCode)
         {
             Debug.Assert(!IsCompleted);
 
@@ -311,17 +324,21 @@ namespace System.Net
                 CreateNtlmNegotiateMessage(_negotiateMessage);
 
                 decodedOutgoingBlob = _isSpNego ? CreateSpNegoNegotiateMessage(_negotiateMessage) : _negotiateMessage;
+                statusCode = SecurityStatusPalContinueNeeded;
             }
             else
             {
                 Debug.Assert(decodedIncomingBlob != null);
 
-                if (_isSpNego)
+                if (!_isSpNego)
                 {
                     IsCompleted = true;
+                    decodedOutgoingBlob = ProcessChallenge(decodedIncomingBlob, out statusCode);
                 }
-
-                decodedOutgoingBlob = _isSpNego ? ProcessSpNegoChallenge(decodedIncomingBlob) : ProcessChallenge(decodedIncomingBlob);
+                else
+                {
+                    decodedOutgoingBlob = ProcessSpNegoChallenge(decodedIncomingBlob, out statusCode);
+                }
             }
 
             string? outgoingBlob = null;
@@ -604,7 +621,7 @@ namespace System.Net
         }
 
         // This gets decoded byte blob and returns response in binary form.
-        private unsafe byte[]? ProcessChallenge(byte[] blob)
+        private unsafe byte[]? ProcessChallenge(byte[] blob, out SecurityStatusPal statusCode)
         {
             // TODO: Validate size and offsets
 
@@ -615,6 +632,7 @@ namespace System.Net
             if (challengeMessage.Header.MessageType != MessageType.Challenge ||
                 !NtlmHeader.SequenceEqual(asBytes.Slice(0, NtlmHeader.Length)))
             {
+                statusCode = SecurityStatusPalInvalidToken;
                 return null;
             }
 
@@ -627,6 +645,7 @@ namespace System.Net
             // that is used for MIC.
             if ((flags & s_requiredFlags) != s_requiredFlags)
             {
+                statusCode = SecurityStatusPalInvalidToken;
                 return null;
             }
 
@@ -638,6 +657,7 @@ namespace System.Net
             // Confidentiality is TRUE, then return STATUS_LOGON_FAILURE ([MS-ERREF] section 2.3.1).
             if (!hasNbNames && (flags & (Flags.NegotiateSign | Flags.NegotiateSeal)) != 0)
             {
+                statusCode = SecurityStatusPalInvalidToken;
                 return null;
             }
 
@@ -733,6 +753,7 @@ namespace System.Net
 
             Debug.Assert(payloadOffset == responseBytes.Length);
 
+            statusCode = SecurityStatusPalOk;
             return responseBytes;
         }
 
@@ -834,7 +855,7 @@ namespace System.Net
             return writer.Encode();
         }
 
-        private unsafe byte[] ProcessSpNegoChallenge(byte[] challenge)
+        private unsafe byte[]? ProcessSpNegoChallenge(byte[] challenge, out SecurityStatusPal statusCode)
         {
             NegState state = NegState.Unknown;
             string? mech = null;
@@ -894,9 +915,10 @@ namespace System.Net
 
                 challengeReader.ThrowIfNotEmpty();
             }
-            catch (AsnContentException e)
+            catch (AsnContentException)
             {
-                throw new Win32Exception(NTE_FAIL, e.Message);
+                statusCode = SecurityStatusPalInvalidToken;
+                return null;
             }
 
             if (blob?.Length > 0)
@@ -905,11 +927,19 @@ namespace System.Net
                 // message with the challenge blob.
                 if (!NtlmOid.Equals(mech))
                 {
-                    throw new Win32Exception(NTE_FAIL, SR.Format(SR.net_nego_mechanism_not_supported, mech));
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Server requested unknown mechanism {mech}");
+                    statusCode = SecurityStatusPalPackageNotFound;
+                    return null;
                 }
 
                 // Process decoded NTLM blob.
-                byte[]? response = ProcessChallenge(blob);
+                byte[]? response = ProcessChallenge(blob, out statusCode);
+
+                if (statusCode.ErrorCode != SecurityStatusPalErrorCode.OK)
+                {
+                    return null;
+                }
+
                 if (response?.Length > 0)
                 {
                     AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
@@ -918,33 +948,47 @@ namespace System.Net
                     {
                         using (writer.PushSequence())
                         {
-                            using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenInit.MechToken)))
+                            using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.ResponseToken)))
                             {
                                 writer.WriteOctetString(response);
                             }
 
-                            using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenInit.MechListMIC)))
+                            using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.MechListMIC)))
                             {
                                 writer.WriteOctetString(GetMIC(_spnegoMechList));
                             }
                         }
                     }
 
+                    statusCode = state == NegState.RequestMic ? SecurityStatusPalContinueNeeded : SecurityStatusPalOk;
                     return writer.Encode();
                 }
             }
 
             if (mechListMIC != null)
             {
-                if (_spnegoMechList == null || state != NegState.AcceptCompleted || !VerifyMIC(_spnegoMechList, mechListMIC))
+                if (_spnegoMechList == null || state != NegState.AcceptCompleted)
                 {
-                    throw new Win32Exception(NTE_FAIL);
+                    statusCode = SecurityStatusPalInternalError;
+                    return null;
+                }
+
+                if (!VerifyMIC(_spnegoMechList, mechListMIC))
+                {
+                    statusCode = SecurityStatusPalMessageAltered;
+                    return null;
                 }
             }
 
             IsCompleted = state == NegState.AcceptCompleted || state == NegState.Reject;
+            statusCode = state switch {
+                NegState.AcceptCompleted => SecurityStatusPalOk,
+                NegState.AcceptIncomplete => SecurityStatusPalContinueNeeded,
+                NegState.Reject => SecurityStatusPalLogonDenied,
+                _ => SecurityStatusPalInternalError
+            };
 
-            return Array.Empty<byte>();
+            return null;
         }
     }
 }

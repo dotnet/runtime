@@ -29,15 +29,9 @@ namespace System.Collections.ObjectModel
 
         protected IDictionary<TKey, TValue> Dictionary => m_dictionary;
 
-        public KeyCollection Keys
-        {
-            get => _keys ?? (_keys = new KeyCollection(m_dictionary.Keys));
-        }
+        public KeyCollection Keys => _keys ??= new KeyCollection(m_dictionary.Keys);
 
-        public ValueCollection Values
-        {
-            get => _values ?? (_values = new ValueCollection(m_dictionary.Values));
-        }
+        public ValueCollection Values => _values ??= new ValueCollection(m_dictionary.Values);
 
         public bool ContainsKey(TKey key) => m_dictionary.ContainsKey(key);
 

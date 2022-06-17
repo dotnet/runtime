@@ -6,7 +6,7 @@ namespace System.Numerics
     /// <summary>Defines support for trigonometric functions.</summary>
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
     public interface ITrigonometricFunctions<TSelf>
-        where TSelf : ITrigonometricFunctions<TSelf>
+        where TSelf : ITrigonometricFunctions<TSelf>, INumberBase<TSelf>
     {
         /// <summary>Computes the arc-cosine of a value.</summary>
         /// <param name="x">The value, in radians, whose arc-cosine is to be computed.</param>

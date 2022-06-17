@@ -11,7 +11,7 @@ namespace System.Formats.Tar
     /// <summary>
     /// Abstract class that represents a tar entry from an archive.
     /// </summary>
-    /// <remarks>All the properties exposed by this class are supported by the <see cref="TarFormat.V7"/>, <see cref="TarFormat.Ustar"/>, <see cref="TarFormat.Pax"/> and <see cref="TarFormat.Gnu"/> formats.</remarks>
+    /// <remarks>All the properties exposed by this class are supported by the <see cref="TarEntryFormat.V7"/>, <see cref="TarEntryFormat.Ustar"/>, <see cref="TarEntryFormat.Pax"/> and <see cref="TarEntryFormat.Gnu"/> formats.</remarks>
     public abstract partial class TarEntry
     {
         internal TarHeader _header;
@@ -26,7 +26,7 @@ namespace System.Formats.Tar
         }
 
         // Constructor called when creating a new 'TarEntry*' instance that can be passed to a TarWriter.
-        internal TarEntry(TarEntryType entryType, string entryName, TarFormat format)
+        internal TarEntry(TarEntryType entryType, string entryName, TarEntryFormat format)
         {
             ArgumentException.ThrowIfNullOrEmpty(entryName);
 
@@ -93,7 +93,7 @@ namespace System.Formats.Tar
         /// <summary>
         /// When the <see cref="EntryType"/> indicates an entry that can contain data, this property returns the length in bytes of such data.
         /// </summary>
-        /// <remarks>The entry type that commonly contains data is <see cref="TarEntryType.RegularFile"/> (or <see cref="TarEntryType.V7RegularFile"/> in the <see cref="TarFormat.V7"/> format). Other uncommon entry types that can also contain data are: <see cref="TarEntryType.ContiguousFile"/>, <see cref="TarEntryType.DirectoryList"/>, <see cref="TarEntryType.MultiVolume"/> and <see cref="TarEntryType.SparseFile"/>.</remarks>
+        /// <remarks>The entry type that commonly contains data is <see cref="TarEntryType.RegularFile"/> (or <see cref="TarEntryType.V7RegularFile"/> in the <see cref="TarEntryFormat.V7"/> format). Other uncommon entry types that can also contain data are: <see cref="TarEntryType.ContiguousFile"/>, <see cref="TarEntryType.DirectoryList"/>, <see cref="TarEntryType.MultiVolume"/> and <see cref="TarEntryType.SparseFile"/>.</remarks>
         public long Length => _header._dataStream != null ? _header._dataStream.Length : _header._size;
 
         /// <summary>
@@ -211,7 +211,7 @@ namespace System.Formats.Tar
         /// <value><para>Gets a stream that represents the data section of this entry.</para>
         /// <para>Sets a new stream that represents the data section, if it makes sense for the <see cref="EntryType"/> to contain data; if a stream already existed, the old stream gets disposed before substituting it with the new stream. Setting a <see langword="null"/> stream is allowed.</para></value>
         /// <remarks>If you write data to this data stream, make sure to rewind it to the desired start position before writing this entry into an archive using <see cref="TarWriter.WriteEntry(TarEntry)"/>.</remarks>
-        /// <exception cref="InvalidOperationException">Setting a data section is not supported because the <see cref="EntryType"/> is not <see cref="TarEntryType.RegularFile"/> (or <see cref="TarEntryType.V7RegularFile"/> for an archive of <see cref="TarFormat.V7"/> format).</exception>
+        /// <exception cref="InvalidOperationException">Setting a data section is not supported because the <see cref="EntryType"/> is not <see cref="TarEntryType.RegularFile"/> (or <see cref="TarEntryType.V7RegularFile"/> for an archive of <see cref="TarEntryFormat.V7"/> format).</exception>
         /// <exception cref="IOException"><para>Cannot set an unreadable stream.</para>
         /// <para>-or-</para>
         /// <para>An I/O problem occurred.</para></exception>
@@ -431,7 +431,7 @@ namespace System.Formats.Tar
         {
             Debug.Assert(!Path.Exists(destinationFileName));
 
-            FileStreamOptions fileStreamOptions = new FileStreamOptions()
+            FileStreamOptions fileStreamOptions = new()
             {
                 Access = FileAccess.Write,
                 Mode = FileMode.CreateNew,

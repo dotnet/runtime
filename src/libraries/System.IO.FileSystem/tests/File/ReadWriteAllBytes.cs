@@ -97,11 +97,11 @@ namespace System.IO.Tests
                 // Operation succeeds when being run by the Unix superuser
                 if (PlatformDetection.IsSuperUser)
                 {
-                    File.WriteAllBytes(path, Encoding.UTF8.GetBytes("text"));
-                    Assert.Equal(Encoding.UTF8.GetBytes("text"), File.ReadAllBytes(path));
+                    File.WriteAllBytes(path, "text"u8.ToArray());
+                    Assert.Equal("text"u8.ToArray(), File.ReadAllBytes(path));
                 }
                 else
-                    Assert.Throws<UnauthorizedAccessException>(() => File.WriteAllBytes(path, Encoding.UTF8.GetBytes("text")));
+                    Assert.Throws<UnauthorizedAccessException>(() => File.WriteAllBytes(path, "text"u8.ToArray()));
             }
             finally
             {

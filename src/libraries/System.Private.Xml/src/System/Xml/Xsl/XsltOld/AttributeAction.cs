@@ -34,7 +34,7 @@ namespace System.Xml.Xsl.XsltOld
             PrefixQName qname = new PrefixQName();
             qname.SetQName(name);
 
-            qname.Namespace = nsUri != null ? nsUri : manager!.ResolveXPathNamespace(qname.Prefix);
+            qname.Namespace = nsUri ?? manager!.ResolveXPathNamespace(qname.Prefix);
 
             if (qname.Prefix.StartsWith("xml", StringComparison.Ordinal))
             {

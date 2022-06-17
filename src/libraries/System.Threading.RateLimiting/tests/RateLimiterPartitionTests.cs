@@ -32,8 +32,8 @@ namespace System.Threading.RateLimiting.Tests
             var limiter = factory(1);
             var tokenBucketLimiter = Assert.IsType<TokenBucketRateLimiter>(limiter);
             Assert.Equal(options.TokenLimit, tokenBucketLimiter.GetAvailablePermits());
-            // TODO: Check other properties when ReplenshingRateLimiter is merged
-            // TODO: Check that autoReplenishment: true got changed to false
+            Assert.Equal(options.ReplenishmentPeriod, tokenBucketLimiter.ReplenishmentPeriod);
+            Assert.False(tokenBucketLimiter.IsAutoReplenishing);
         }
 
         [Fact]
@@ -78,6 +78,36 @@ namespace System.Threading.RateLimiting.Tests
             limiter = factory(1);
             var tokenBucketLimiter = Assert.IsType<TokenBucketRateLimiter>(limiter);
             Assert.Equal(1, tokenBucketLimiter.GetAvailablePermits());
+        }
+
+        [Fact]
+        public void Create_FixedWindow()
+        {
+            var options = new FixedWindowRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 10, TimeSpan.FromMinutes(1), true);
+            var partition = RateLimitPartition.CreateFixedWindowLimiter(1, key => options);
+
+            var factoryProperty = typeof(RateLimitPartition<int>).GetField("Factory", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance)!;
+            var factory = (Func<int, RateLimiter>)factoryProperty.GetValue(partition);
+            var limiter = factory(1);
+            var fixedWindowLimiter = Assert.IsType<FixedWindowRateLimiter>(limiter);
+            Assert.Equal(options.PermitLimit, fixedWindowLimiter.GetAvailablePermits());
+            Assert.Equal(options.Window, fixedWindowLimiter.ReplenishmentPeriod);
+            Assert.False(fixedWindowLimiter.IsAutoReplenishing);
+        }
+
+        [Fact]
+        public void Create_SlidingWindow()
+        {
+            var options = new SlidingWindowRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 10, TimeSpan.FromSeconds(33), 3, true);
+            var partition = RateLimitPartition.CreateSlidingWindowLimiter(1, key => options);
+
+            var factoryProperty = typeof(RateLimitPartition<int>).GetField("Factory", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance)!;
+            var factory = (Func<int, RateLimiter>)factoryProperty.GetValue(partition);
+            var limiter = factory(1);
+            var slidingWindowLimiter = Assert.IsType<SlidingWindowRateLimiter>(limiter);
+            Assert.Equal(options.PermitLimit, slidingWindowLimiter.GetAvailablePermits());
+            Assert.Equal(TimeSpan.FromSeconds(11), slidingWindowLimiter.ReplenishmentPeriod);
+            Assert.False(slidingWindowLimiter.IsAutoReplenishing);
         }
     }
 }

@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Hosting.Unit.Tests
             Assert.Equal(message, thrownException.Message);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [InlineData("Test Message")]
         [InlineData(null)]
         public void TestSerialization(string? message)
@@ -55,8 +55,9 @@ namespace Microsoft.Extensions.Hosting.Unit.Tests
             Assert.Null(deserializedException.InnerException);
         }
 
-        [Fact]
-        public void TestSerializationDefaultConstructor() {
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
+        public void TestSerializationDefaultConstructor()
+        {
             var exception = new HostAbortedException();
             using var serializationStream = new MemoryStream();
 
