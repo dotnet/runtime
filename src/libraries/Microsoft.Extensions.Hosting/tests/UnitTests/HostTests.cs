@@ -49,18 +49,28 @@ namespace Microsoft.Extensions.Hosting.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         public void CreateDefaultBuilder_DoesNotChangeContentRootIfCurrentDirectoryIsWindowsSystemDirectory()
         {
+            var originalCwd = Environment.CurrentDirectory;
             // Let's denormalize the system directory by making it C:\WINDOWS\SYSTEM32\ instead of C:\\Windows\\system32
             var systemDirectory = Environment.GetFolderPath(Environment.SpecialFolder.System).ToUpper() + "\\";
-            Directory.SetCurrentDirectory(systemDirectory);
-            var builder = Host.CreateDefaultBuilder();
-            using var host = builder.Build();
 
-            var config = host.Services.GetRequiredService<IConfiguration>();
-            var env = host.Services.GetRequiredService<IHostEnvironment>();
+            try
+            {
+                Environment.CurrentDirectory = systemDirectory;
 
-            Assert.Null(config["ContentRoot"]);
-            Assert.Equal(AppContext.BaseDirectory, env.ContentRootPath);
-            Assert.Equal(AppContext.BaseDirectory, env.ContentRootPath);
+                var builder = Host.CreateDefaultBuilder();
+                using var host = builder.Build();
+
+                var config = host.Services.GetRequiredService<IConfiguration>();
+                var env = host.Services.GetRequiredService<IHostEnvironment>();
+
+                Assert.Null(config["ContentRoot"]);
+                Assert.Equal(AppContext.BaseDirectory, env.ContentRootPath);
+                Assert.Equal(AppContext.BaseDirectory, env.ContentRootPath);
+            }
+            finally
+            {
+                Environment.CurrentDirectory = originalCwd;
+            }
         }
 
         [Fact]
