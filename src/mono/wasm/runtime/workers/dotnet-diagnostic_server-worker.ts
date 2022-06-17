@@ -1,7 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { EventPipeSessionIDImpl, EventPipeSessionDiagnosticServerID, DiagnosticServerControlCommand, DiagnosticServerControlCommandStart, DiagnosticServerControlCommandSetSessionID } from "../diagnostic-server-controller-commands";
+import type {
+    EventPipeSessionIDImpl, EventPipeSessionDiagnosticServerID, DiagnosticServerControlCommand,
+    /*DiagnosticServerControlCommandStart, DiagnosticServerControlCommandSetSessionID*/
+} from "../diagnostic-server-controller-commands";
 
 /// Everything the diagnostic server knows about a connection.
 /// The connection has a server ID and a websocket. If it's an eventpipe session, it will also have an eventpipe ID assigned when the runtime starts an EventPipe session.
@@ -96,7 +99,7 @@ class EventPipeServerConnection implements DiagnosticServerEventPipeConnection {
         }
     }
 
-    private _onMessage(event: MessageEvent) {
+    private _onMessage(/*event: MessageEvent*/) {
         switch (this._state) {
             case ListenerState.AwaitingCommand:
                 /* TODO process command */

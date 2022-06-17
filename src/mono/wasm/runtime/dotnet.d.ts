@@ -254,7 +254,7 @@ declare type DotnetModuleConfigImports = {
 declare type EventPipeSessionID = bigint;
 interface EventPipeSession {
     get sessionID(): EventPipeSessionID;
-    get isIPCStreamingSession(): boolean;
+    readonly isIPCStreamingSession: boolean;
     start(): void;
     stop(): void;
     getTraceBlob(): Blob;
