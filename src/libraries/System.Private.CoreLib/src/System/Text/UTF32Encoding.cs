@@ -1101,7 +1101,10 @@ namespace System.Text
                 charCount /= 2;
             }
 
-            return charCount;
+            if (charCount > 0x7fffffff)
+                throw new ArgumentOutOfRangeException(nameof(byteCount), SR.ArgumentOutOfRange_GetCharCountOverflow);
+
+            return (int)charCount;
         }
 
         public override byte[] GetPreamble()

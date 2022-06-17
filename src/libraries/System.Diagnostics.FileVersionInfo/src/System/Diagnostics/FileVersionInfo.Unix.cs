@@ -31,7 +31,7 @@ namespace System.Diagnostics
             // that this should match for all intents and purposes.  If this ever becomes a problem,
             // we can implement a full-fledged Win32 resource parser; that would also enable support
             // for native Win32 PE files on Unix, but that should also be an extremely rare case.
-            TryLoadManagedAssemblyMetadata();
+            _ = TryLoadManagedAssemblyMetadata();
 
             // If TryLoadManagedAssemblyMetadata returns false, we could try to parse Executable and Linkable
             // Format (ELF) files, but at present for executables they don't store version information, which
