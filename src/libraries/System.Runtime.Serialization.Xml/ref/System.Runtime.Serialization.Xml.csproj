@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <Nullable>enable</Nullable>
     <DefineConstants>smolloy_add_ext_surrogate;CODEDOM</DefineConstants>
   </PropertyGroup>
 

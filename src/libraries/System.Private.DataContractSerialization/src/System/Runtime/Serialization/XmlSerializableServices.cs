@@ -9,6 +9,7 @@ namespace System.Runtime.Serialization
 
     public static class XmlSerializableServices
     {
+        internal static string ReadNodesMethodName = "ReadNodes";
         public static XmlNode[] ReadNodes(XmlReader xmlReader)
         {
             ArgumentNullException.ThrowIfNull(xmlReader);
@@ -52,6 +53,7 @@ namespace System.Runtime.Serialization
                                    xmlReader.LocalName != "xmlns";
         }
 
+        internal static string WriteNodesMethodName = "WriteNodes";
         public static void WriteNodes(XmlWriter xmlWriter, XmlNode?[]? nodes)
         {
             ArgumentNullException.ThrowIfNull(xmlWriter);

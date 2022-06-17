@@ -78,27 +78,13 @@ namespace System.Runtime.Serialization
             s_typeOfDateTimeOffset ??= typeof(DateTimeOffset);
 
         private static Type? s_typeOfDateTimeOffsetAdapter;
-        internal static Type TypeOfDateTimeOffsetAdapter
-        {
-            get
-            {
-                if (s_typeOfDateTimeOffsetAdapter == null)
-                    s_typeOfDateTimeOffsetAdapter = typeof(DateTimeOffsetAdapter);
-                return s_typeOfDateTimeOffsetAdapter;
-            }
-        }
+        internal static Type TypeOfDateTimeOffsetAdapter =>
+            s_typeOfDateTimeOffsetAdapter ??= typeof(DateTimeOffsetAdapter);
 
 #if smolloy_add_schema_import
         private static Type? s_typeOfListGeneric;
-        internal static Type TypeOfListGeneric
-        {
-            get
-            {
-                if (s_typeOfListGeneric == null)
-                    s_typeOfListGeneric = typeof(List<>);
-                return s_typeOfListGeneric;
-            }
-        }
+        internal static Type TypeOfListGeneric =>
+            s_typeOfListGeneric ??= typeof(List<>);
 #endif
 
         private static Type? s_typeOfMemoryStream;
@@ -120,29 +106,13 @@ namespace System.Runtime.Serialization
 #if smolloy_add_schema_import
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields)]
         private static Type? s_typeOfSchemaTypePlaceholder;
-        internal static Type TypeOfSchemaTypePlaceholder
-        {
-            [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields)]
-            get
-            {
-                if (s_typeOfSchemaTypePlaceholder == null)
-                {
-                    s_typeOfSchemaTypePlaceholder = typeof(SchemaTypePlaceholder);
-                }
-                return s_typeOfSchemaTypePlaceholder;
-            }
-        }
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields)]
+        internal static Type TypeOfSchemaTypePlaceholder =>
+            s_typeOfSchemaTypePlaceholder ??= typeof(SchemaTypePlaceholder);
 
         private static MemberInfo? s_schemaMemberInfoPlaceholder;
-        internal static MemberInfo SchemaMemberInfoPlaceholder
-        {
-            get
-            {
-                if (s_schemaMemberInfoPlaceholder == null)
-                    s_schemaMemberInfoPlaceholder = TypeOfSchemaTypePlaceholder.GetField("_stableName", BindingFlags.NonPublic | BindingFlags.Instance)!;
-                return s_schemaMemberInfoPlaceholder;
-            }
-        }
+        internal static MemberInfo SchemaMemberInfoPlaceholder =>
+            s_schemaMemberInfoPlaceholder ??= TypeOfSchemaTypePlaceholder.GetField("_stableName", BindingFlags.NonPublic | BindingFlags.Instance)!;
 #endif
 
         private static Type? s_typeOfStreamingContext;
@@ -211,70 +181,28 @@ namespace System.Runtime.Serialization
 
 #if smolloy_add_schema_import
         private static Type? s_typeOfContractNamespaceAttribute;
-        internal static Type TypeOfContractNamespaceAttribute
-        {
-            get
-            {
-                if (s_typeOfContractNamespaceAttribute == null)
-                    s_typeOfContractNamespaceAttribute = typeof(ContractNamespaceAttribute);
-                return s_typeOfContractNamespaceAttribute;
-            }
-        }
+        internal static Type TypeOfContractNamespaceAttribute =>
+            s_typeOfContractNamespaceAttribute ??= typeof(ContractNamespaceAttribute);
 
         private static Type? s_typeOfSerializableAttribute;
-        internal static Type TypeOfSerializableAttribute
-        {
-            get
-            {
-                if (s_typeOfSerializableAttribute == null)
-                    s_typeOfSerializableAttribute = typeof(SerializableAttribute);
-                return s_typeOfSerializableAttribute;
-            }
-        }
+        internal static Type TypeOfSerializableAttribute =>
+            s_typeOfSerializableAttribute ??= typeof(SerializableAttribute);
 
         private static Type? s_typeOfNonSerializedAttribute;
-        internal static Type TypeOfNonSerializedAttribute
-        {
-            get
-            {
-                if (s_typeOfNonSerializedAttribute == null)
-                    s_typeOfNonSerializedAttribute = typeof(NonSerializedAttribute);
-                return s_typeOfNonSerializedAttribute;
-            }
-        }
+        internal static Type TypeOfNonSerializedAttribute =>
+            s_typeOfNonSerializedAttribute ??= typeof(NonSerializedAttribute);
 
         private static Type? s_typeOfSerializationInfo;
-        internal static Type TypeOfSerializationInfo
-        {
-            get
-            {
-                if (s_typeOfSerializationInfo == null)
-                    s_typeOfSerializationInfo = typeof(SerializationInfo);
-                return s_typeOfSerializationInfo;
-            }
-        }
+        internal static Type TypeOfSerializationInfo =>
+            s_typeOfSerializationInfo ??= typeof(SerializationInfo);
 
         private static Type? s_typeOfSerializationInfoEnumerator;
-        internal static Type TypeOfSerializationInfoEnumerator
-        {
-            get
-            {
-                if (s_typeOfSerializationInfoEnumerator == null)
-                    s_typeOfSerializationInfoEnumerator = typeof(SerializationInfoEnumerator);
-                return s_typeOfSerializationInfoEnumerator;
-            }
-        }
+        internal static Type TypeOfSerializationInfoEnumerator =>
+            s_typeOfSerializationInfoEnumerator ??= typeof(SerializationInfoEnumerator);
 
         private static Type? s_typeOfSerializationEntry;
-        internal static Type TypeOfSerializationEntry
-        {
-            get
-            {
-                if (s_typeOfSerializationEntry == null)
-                    s_typeOfSerializationEntry = typeof(SerializationEntry);
-                return s_typeOfSerializationEntry;
-            }
-        }
+        internal static Type TypeOfSerializationEntry =>
+            s_typeOfSerializationEntry ??= typeof(SerializationEntry);
 #endif
 
         private static Type? s_typeOfOnSerializingAttribute;
@@ -319,37 +247,16 @@ namespace System.Runtime.Serialization
 
 #if smolloy_add_schema_import
         private static Type? s_typeOfXmlSerializableServices;
-        internal static Type TypeOfXmlSerializableServices
-        {
-            get
-            {
-                if (s_typeOfXmlSerializableServices == null)
-                    s_typeOfXmlSerializableServices = typeof(XmlSerializableServices);
-                return s_typeOfXmlSerializableServices;
-            }
-        }
+        internal static Type TypeOfXmlSerializableServices =>
+            s_typeOfXmlSerializableServices ??= typeof(XmlSerializableServices);
 
         private static Type? s_typeOfXmlSchemaSet;
-        internal static Type TypeOfXmlSchemaSet
-        {
-            get
-            {
-                if (s_typeOfXmlSchemaSet == null)
-                    s_typeOfXmlSchemaSet = typeof(XmlSchemaSet);
-                return s_typeOfXmlSchemaSet;
-            }
-        }
+        internal static Type TypeOfXmlSchemaSet =>
+            s_typeOfXmlSchemaSet ??= typeof(XmlSchemaSet);
 
         private static Type? s_typeOfIPropertyChange;
-        internal static Type TypeOfIPropertyChange
-        {
-            get
-            {
-                if (s_typeOfIPropertyChange == null)
-                    s_typeOfIPropertyChange = typeof(INotifyPropertyChanged);
-                return s_typeOfIPropertyChange;
-            }
-        }
+        internal static Type TypeOfIPropertyChange =>
+            s_typeOfIPropertyChange ??= typeof(INotifyPropertyChanged);
 #endif
 
         private static Type? s_typeOfIExtensibleDataObject;
@@ -381,7 +288,8 @@ namespace System.Runtime.Serialization
             s_typeOfNullable ??= typeof(Nullable<>);
 
         private static Type? s_typeOfReflectionPointer;
-        internal static Type TypeOfReflectionPointer => s_typeOfReflectionPointer ?? (s_typeOfReflectionPointer = typeof(System.Reflection.Pointer));
+        internal static Type TypeOfReflectionPointer =>
+            s_typeOfReflectionPointer ??= typeof(System.Reflection.Pointer);
 
         private static Type? s_typeOfIDictionaryGeneric;
         internal static Type TypeOfIDictionaryGeneric =>
@@ -429,15 +337,8 @@ namespace System.Runtime.Serialization
 
 #if smolloy_keep_kvpadapter
         private static Type? s_typeOfKeyValuePairAdapter;
-        internal static Type TypeOfKeyValuePairAdapter
-        {
-            get
-            {
-                if (s_typeOfKeyValuePairAdapter == null)
-                    s_typeOfKeyValuePairAdapter = typeof(KeyValuePairAdapter<,>);
-                return s_typeOfKeyValuePairAdapter;
-            }
-        }
+        internal static Type TypeOfKeyValuePairAdapter =>
+            s_typeOfKeyValuePairAdapter ??= typeof(KeyValuePairAdapter<,>);
 #endif
 
         private static Type? s_typeOfKeyValue;

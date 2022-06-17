@@ -64,7 +64,7 @@ namespace System.Xml
         {
             ArgumentNullException.ThrowIfNull(stream);
 
-            MoveToInitial(quotas, session, null);
+            MoveToInitial(quotas, session, onClose);
             BufferReader.SetBuffer(stream, dictionary, session);
             _buffered = false;
         }

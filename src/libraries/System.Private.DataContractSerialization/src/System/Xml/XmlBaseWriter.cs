@@ -454,7 +454,7 @@ namespace System.Xml
             {
                 text = string.Empty;
             }
-            else if (text.Contains("--") || text.StartsWith('-'))
+            else if (text.Contains("--") || text.EndsWith('-'))
             {
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.XmlInvalidCommentChars, nameof(text)));
             }

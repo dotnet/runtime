@@ -1810,6 +1810,17 @@ namespace System.Runtime.Serialization
 #endif
         }
 
+        // NOTE TODO smolloy - This was there in NetFx, but apparently unused there or here.
+        //internal void DefaultCase()
+        //{
+        //    object stackTop = _blockStack.Peek();
+        //    SwitchState? switchState = stackTop as SwitchState;
+        //    if (switchState == null)
+        //        ThrowMismatchException(stackTop);
+        //    MarkLabel(switchState.DefaultLabel);
+        //    switchState.DefaultDefined = true;
+        //}
+
         internal void EndSwitch()
         {
             object stackTop = _blockStack.Pop();
