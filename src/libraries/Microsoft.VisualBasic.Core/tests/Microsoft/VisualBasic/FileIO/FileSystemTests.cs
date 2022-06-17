@@ -287,6 +287,7 @@ namespace Microsoft.VisualBasic.FileIO.Tests
 
         // Can't get current directory on OSX before setting it.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotOSX))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/70887", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
         public void CurrentDirectoryGet()
         {
             var CurrentDirectory = System.IO.Directory.GetCurrentDirectory();
@@ -299,6 +300,7 @@ namespace Microsoft.VisualBasic.FileIO.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotOSX))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50572", TestPlatforms.Android)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52851", TestPlatforms.MacCatalyst)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/70887", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
         public void CurrentDirectorySet()
         {
             var SavedCurrentDirectory = System.IO.Directory.GetCurrentDirectory();
