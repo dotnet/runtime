@@ -433,7 +433,8 @@ namespace System.IO
                 throw new ArgumentException(SR.Arg_InvalidUnixFileMode, nameof(UnixFileMode));
             }
 
-            if (path is not null)
+            // Use ThrowNotFound to throw the appropriate exception when the file doesn't exist.
+            if (handle is null && path is not null)
             {
                 EnsureCachesInitialized(path);
 
