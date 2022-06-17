@@ -174,7 +174,7 @@ namespace System.Net.Http
 
         private object SyncObject => _httpStreams;
 
-        public async ValueTask SetupAsync()
+        public async ValueTask SetupAsync(CancellationToken cancellationToken)
         {
             try
             {
@@ -208,11 +208,17 @@ namespace System.Net.Http
                 BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, windowUpdateAmount);
                 _outgoingBuffer.Commit(4);
 
-                await _stream.WriteAsync(_outgoingBuffer.ActiveMemory).ConfigureAwait(false);
+                await _stream.WriteAsync(_outgoingBuffer.ActiveMemory, cancellationToken).ConfigureAwait(false);
                 _rttEstimator.OnInitialSettingsSent();
                 _outgoingBuffer.Discard(_outgoingBuffer.ActiveLength);
 
                 _expectingSettingsAck = true;
+            }
+            catch (OperationCanceledException oce) when (oce.CancellationToken == cancellationToken)
+            {
+                Dispose();
+                // Note, AddHttp2ConnectionAsync handles this OCE separately so don't wrap it.
+                throw;
             }
             catch (Exception e)
             {

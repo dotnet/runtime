@@ -1564,7 +1564,13 @@ namespace System.Net.Http
             Http2Connection http2Connection = new Http2Connection(this, stream);
             try
             {
-                await http2Connection.SetupAsync().ConfigureAwait(false);
+                await http2Connection.SetupAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException oce) when (oce.CancellationToken == cancellationToken)
+            {
+                // Note, SetupAsync will dispose the connection if there is an exception.
+                // Note, AddHttp2ConnectionAsync handles this OCE separatly so don't wrap it.
+                throw;
             }
             catch (Exception e)
             {
