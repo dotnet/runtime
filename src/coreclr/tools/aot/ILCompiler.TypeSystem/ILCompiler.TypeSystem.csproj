@@ -509,18 +509,6 @@
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\PInvokeTargetNativeMethod.Sorting.cs">
       <Link>IL\Stubs\PInvokeTargetNativeMethod.Sorting.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\TypeSystem\MetadataEmitter\TypeSystemMetadataEmitter.cs">
-      <Link>MetadataEmitter\TypeSystemMetadataEmitter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Mutable\MutableModule.Sorting.cs">
-      <Link>Mutable\MutableModule.Sorting.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Mutable\MutableModule.Symbols.cs">
-      <Link>Mutable\MutableModule.Symbols.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Mutable\MutableModule.cs">
-      <Link>Mutable\MutableModule.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Serialization\FieldDesc.Serialization.cs">
       <Link>TypeSystem\CodeGen\FieldDesc.Serialization.cs</Link>
     </Compile>
