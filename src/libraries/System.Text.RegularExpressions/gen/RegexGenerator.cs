@@ -16,6 +16,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 
 [assembly: System.Resources.NeutralResourcesLanguage("en-us")]
 
@@ -51,7 +52,11 @@ namespace System.Text.RegularExpressions.Generator
                 context.SyntaxProvider
 
                 // Find all MethodDeclarationSyntax nodes attributed with RegexGenerator and gather the required information.
-                .CreateSyntaxProvider(IsSyntaxTargetForGeneration, GetSemanticTargetForGeneration)
+                .ForAttributeWithMetadataName(
+                    context,
+                    RegexGeneratorAttributeName,
+                    (n, c) => n is MethodDeclarationSyntax,
+                    GetSemanticTargetForGeneration)
                 .Where(static m => m is not null)
 
                 // Generate the RunnerFactory for each regex, if possible.  This is where the bulk of the implementation occurs.

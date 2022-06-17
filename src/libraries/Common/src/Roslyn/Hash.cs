@@ -18,6 +18,8 @@ namespace Roslyn.Utilities
             return unchecked((currentKey * (int)0xA5555529) + newKey);
         }
 
+#if false
+
         internal static int Combine(bool newKeyPart, int currentKey)
         {
             return Combine(currentKey, newKeyPart ? 1 : 0);
@@ -373,5 +375,7 @@ namespace Roslyn.Utilities
         {
             return unchecked((hashCode ^ ch) * Hash.FnvPrime);
         }
+
+#endif
     }
 }
