@@ -44,7 +44,7 @@ namespace System.IO.Tests
             return path;
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
         [Theory]
         [MemberData(nameof(TestUnixFileModes))]
         public void SetThenGet(UnixFileMode mode)
@@ -66,7 +66,7 @@ namespace System.IO.Tests
             Assert.Equal(mode, GetMode(path));
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
         [Theory]
         [MemberData(nameof(TestUnixFileModes))]
         public void SetThenGet_SymbolicLink(UnixFileMode mode)
