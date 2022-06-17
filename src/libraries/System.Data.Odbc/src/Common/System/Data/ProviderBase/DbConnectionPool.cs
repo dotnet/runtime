@@ -546,8 +546,7 @@ namespace System.Data.ProviderBase
             // postcondition
 
             // ensure that the connection was processed
-            Debug.Assert(
-                returnToGeneralPool == true || destroyObject == true);
+            Debug.Assert(returnToGeneralPool || destroyObject);
         }
 
         internal void DestroyObject(DbConnectionInternal obj)

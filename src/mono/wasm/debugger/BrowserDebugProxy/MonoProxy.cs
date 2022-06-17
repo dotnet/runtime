@@ -509,8 +509,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         var loc = SourceLocation.Parse(args?["location"] as JObject);
                         if (loc == null)
                             return false;
-                        var ret = await OnSetNextIP(id, loc, token);
-                        if (ret == true)
+                        bool ret = await OnSetNextIP(id, loc, token);
+                        if (ret)
                             SendResponse(id, Result.OkFromObject(new { }), token);
                         else
                             SendResponse(id, Result.Err("Set next instruction pointer failed."), token);
