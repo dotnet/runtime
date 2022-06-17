@@ -203,18 +203,18 @@ namespace System.Net.NetworkInformation
                 (uint)timeout);
         }
 
-        private PingReply CreatePingReply()
+        private unsafe PingReply CreatePingReply()
         {
             SafeLocalAllocHandle buffer = _replyBuffer!;
 
             // Marshals and constructs new reply.
             if (_ipv6)
             {
-                Interop.IpHlpApi.Icmp6EchoReply icmp6Reply = Marshal.PtrToStructure<Interop.IpHlpApi.Icmp6EchoReply>(buffer.DangerousGetHandle());
+                Interop.IpHlpApi.Icmp6EchoReply icmp6Reply = *(Interop.IpHlpApi.Icmp6EchoReply*)buffer.DangerousGetHandle();
                 return CreatePingReplyFromIcmp6EchoReply(icmp6Reply, buffer.DangerousGetHandle(), _sendSize);
             }
 
-            Interop.IpHlpApi.IcmpEchoReply icmpReply = Marshal.PtrToStructure<Interop.IpHlpApi.IcmpEchoReply>(buffer.DangerousGetHandle());
+            Interop.IpHlpApi.IcmpEchoReply icmpReply = *(Interop.IpHlpApi.IcmpEchoReply*)buffer.DangerousGetHandle();
             return CreatePingReplyFromIcmpEchoReply(icmpReply);
         }
 

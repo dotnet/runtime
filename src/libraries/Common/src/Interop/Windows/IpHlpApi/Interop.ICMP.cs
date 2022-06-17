@@ -54,13 +54,21 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct Ipv6Address
+        internal unsafe struct Ipv6Address
         {
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 6)]
-            internal byte[] Goo;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
+            internal fixed byte Goo[6];
+
             // Replying address.
-            internal byte[] Address;
+            private fixed byte _Address[16];
+            internal byte[] Address
+            {
+                get
+                {
+                    fixed (byte* pAddress = _Address)
+                        return new ReadOnlySpan<byte>(pAddress, 16).ToArray();
+                }
+            }
+
             internal uint ScopeID;
         }
 

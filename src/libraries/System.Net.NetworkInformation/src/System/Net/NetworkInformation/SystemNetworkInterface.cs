@@ -84,7 +84,6 @@ namespace System.Net.NetworkInformation
             AddressFamily family = AddressFamily.Unspecified;
             uint bufferSize = 0;
 
-            ref readonly Interop.IpHlpApi.FIXED_INFO fixedInfo = ref HostInformationPal.FixedInfo;
             List<SystemNetworkInterface> interfaceList = new List<SystemNetworkInterface>();
 
             Interop.IpHlpApi.GetAdaptersAddressesFlags flags =
@@ -113,7 +112,7 @@ namespace System.Net.NetworkInformation
                         while (adapterAddresses != null)
                         {
                             // Traverse the list, marshal in the native structures, and create new NetworkInterfaces.
-                            interfaceList.Add(new SystemNetworkInterface(in fixedInfo, in *adapterAddresses));
+                            interfaceList.Add(new SystemNetworkInterface(in *adapterAddresses));
                             adapterAddresses = adapterAddresses->next;
                         }
                     }
@@ -139,7 +138,7 @@ namespace System.Net.NetworkInformation
             return interfaceList.ToArray();
         }
 
-        internal SystemNetworkInterface(in Interop.IpHlpApi.FIXED_INFO fixedInfo, in Interop.IpHlpApi.IpAdapterAddresses ipAdapterAddresses)
+        internal SystemNetworkInterface(in Interop.IpHlpApi.IpAdapterAddresses ipAdapterAddresses)
         {
             // Store the common API information.
             _id = ipAdapterAddresses.AdapterName;
@@ -157,7 +156,7 @@ namespace System.Net.NetworkInformation
             _ipv6Index = ipAdapterAddresses.ipv6Index;
 
             _adapterFlags = ipAdapterAddresses.flags;
-            _interfaceProperties = new SystemIPInterfaceProperties(fixedInfo, ipAdapterAddresses);
+            _interfaceProperties = new SystemIPInterfaceProperties(ipAdapterAddresses);
         }
 
         public override string Id { get { return _id; } }
