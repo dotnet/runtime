@@ -686,11 +686,9 @@ private:
         }
 #endif // TARGET_64BIT
 
-        // TODO-ADDR: For now use LCL_VAR_ADDR and LCL_FLD_ADDR only as call arguments and assignment sources.
-        // Other usages require more changes. For example, a tree like OBJ(ADD(ADDR(LCL_VAR), 4))
-        // could be changed to OBJ(LCL_FLD_ADDR) but historically DefinesLocalAddr did not recognize
-        // LCL_FLD_ADDR (and there may be other things now as well).
-        if (user->OperIs(GT_CALL, GT_ASG) && !hasHiddenStructArg)
+        // For now, we will maintain the invariant that local address nodes are only used for address-exposed locals.
+        //
+        if (!hasHiddenStructArg)
         {
             MorphLocalAddress(val);
         }
@@ -835,15 +833,7 @@ private:
         assert(m_compiler->lvaVarAddrExposed(val.LclNum()));
 
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(val.LclNum());
-
-        if (varDsc->lvPromoted || varDsc->lvIsStructField)
-        {
-            // TODO-ADDR: For now we ignore promoted variables, they require
-            // additional changes in subsequent phases.
-            return;
-        }
-
-        GenTree* addr = val.Node();
+        GenTree*   addr   = val.Node();
 
         if (val.Offset() > UINT16_MAX)
         {
