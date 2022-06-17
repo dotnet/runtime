@@ -51,23 +51,10 @@ namespace System.Xml
         private Encoding? _encoding;
         private char[]? _chars;
 
-        private static readonly byte[] s_startDecl =
-        {
-            (byte)'<', (byte)'?', (byte)'x', (byte)'m', (byte)'l', (byte)' ',
-            (byte)'v', (byte)'e', (byte)'r', (byte)'s', (byte)'i', (byte)'o', (byte)'n', (byte)'=', (byte)'"', (byte)'1', (byte)'.', (byte)'0', (byte)'"', (byte)' ',
-            (byte)'e', (byte)'n', (byte)'c', (byte)'o', (byte)'d', (byte)'i', (byte)'n', (byte)'g', (byte)'=', (byte)'"',
-        };
-        private static readonly byte[] s_endDecl =
-        {
-            (byte)'"', (byte)'?', (byte)'>'
-        };
-        private static readonly byte[] s_utf8Decl =
-        {
-            (byte)'<', (byte)'?', (byte)'x', (byte)'m', (byte)'l', (byte)' ',
-            (byte)'v', (byte)'e', (byte)'r', (byte)'s', (byte)'i', (byte)'o', (byte)'n', (byte)'=', (byte)'"', (byte)'1', (byte)'.', (byte)'0', (byte)'"', (byte)' ',
-            (byte)'e', (byte)'n', (byte)'c', (byte)'o', (byte)'d', (byte)'i', (byte)'n', (byte)'g', (byte)'=', (byte)'"', (byte)'u', (byte)'t', (byte)'f', (byte)'-', (byte)'8', (byte)'"',
-            (byte)'?', (byte)'>'
-        };
+        private static readonly byte[] s_startDecl = "<?xml version=\"1.0\" encoding=\""u8.ToArray();
+        private static readonly byte[] s_endDecl = "\"?>"u8.ToArray();
+        private static readonly byte[] s_utf8Decl = "<?xml version=\"1.0\" encoding=\"utf-8\"?>"u8.ToArray();
+
         private static ReadOnlySpan<byte> Digits => "0123456789ABCDEF"u8;
 
         private static readonly bool[] s_defaultIsEscapedAttributeChar = new bool[]
