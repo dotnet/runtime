@@ -11,11 +11,10 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
+using SysTx = System.Transactions;
 
 namespace System.Data.ProviderBase
 {
-    using SysTx = Transactions;
-
     internal sealed class DbConnectionPool
     {
         private enum State

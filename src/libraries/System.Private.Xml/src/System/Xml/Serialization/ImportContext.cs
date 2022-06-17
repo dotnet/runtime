@@ -1,18 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.IO;
+using System.Xml;
+using System.Xml.Schema;
+using System.Xml.Serialization;
+using System.Collections;
+using System.Collections.Specialized;
+using System.Reflection;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml.Serialization
 {
-    using System;
-    using System.IO;
-    using System.Xml;
-    using System.Xml.Schema;
-    using System.Xml.Serialization;
-    using System.Collections;
-    using System.Collections.Specialized;
-    using System.Reflection;
-    using System.Diagnostics.CodeAnalysis;
-
     public class ImportContext
     {
         private readonly bool _shareTypes;

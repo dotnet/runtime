@@ -1,20 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.ComponentModel;
+using System.Xml.Serialization;
+using System.Xml.Schema;
+using System.Xml.XPath;
+using System.Diagnostics;
+using System.Collections;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Globalization;
+
 namespace System.Xml.Schema
 {
-    using System;
-    using System.ComponentModel;
-    using System.Xml.Serialization;
-    using System.Xml.Schema;
-    using System.Xml.XPath;
-    using System.Diagnostics;
-    using System.Collections;
-    using System.Text;
-    using System.Text.RegularExpressions;
-    using System.Threading;
-    using System.Globalization;
-
     internal abstract class FacetsChecker
     {
         private struct FacetsCompiler

@@ -3,11 +3,10 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using QilName = System.Xml.Xsl.Qil.QilName;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using QilName = System.Xml.Xsl.Qil.QilName;
-
     // Compiler scope manager keeps track of
     //   Variable declarations
     //   Namespace declarations

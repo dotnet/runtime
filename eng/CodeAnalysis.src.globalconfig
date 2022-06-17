@@ -1492,7 +1492,7 @@ dotnet_diagnostic.IDE0063.severity = silent
 dotnet_diagnostic.IDE0064.severity = silent
 
 # IDE0065: Misplaced using directive
-dotnet_diagnostic.IDE0065.severity = suggestion
+dotnet_diagnostic.IDE0065.severity = warning
 
 # IDE0066: Convert switch statement to expression
 dotnet_diagnostic.IDE0066.severity = suggestion

@@ -3,11 +3,10 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using XPathNodeType = System.Xml.XPath.XPathNodeType;
 
 namespace System.Xml.Xsl.XPath
 {
-    using XPathNodeType = System.Xml.XPath.XPathNodeType;
-
     internal sealed class XPathParser<Node>
     {
         private XPathScanner? _scanner;

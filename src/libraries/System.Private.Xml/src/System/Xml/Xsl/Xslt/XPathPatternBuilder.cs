@@ -10,11 +10,10 @@ using System.Xml.Schema;
 using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.XPath;
 using System.Diagnostics.CodeAnalysis;
+using T = System.Xml.Xsl.XmlQueryTypeFactory;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using T = XmlQueryTypeFactory;
-
     internal sealed class XPathPatternBuilder : XPathPatternParser.IPatternBuilder
     {
         private readonly XPathPredicateEnvironment _predicateEnvironment;
