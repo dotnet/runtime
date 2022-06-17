@@ -51,7 +51,7 @@ namespace Microsoft.Extensions.Hosting
             var builder = new HostApplicationBuilder();
 
             // Emulate calling builder.Services.UseWindowsService() from inside a Windows service.
-            UseWindowsServiceUnchecked(builder.Services);
+            AddWindowsServiceLifetime(builder.Services);
 
             Assert.Single(builder.Services, serviceDescriptor =>
                 serviceDescriptor.ServiceType == typeof(IHostLifetime) &&
@@ -69,7 +69,7 @@ namespace Microsoft.Extensions.Hosting
             }); 
 
             // Emulate calling builder.Services.UseWindowsService() from inside a Windows service.
-            UseWindowsServiceUnchecked(builder.Services);
+            AddWindowsServiceLifetime(builder.Services);
             // No reason to write event logs in this test. Event log may be unsupported anyway.
             builder.Logging.ClearProviders();
 
@@ -91,7 +91,7 @@ namespace Microsoft.Extensions.Hosting
             var builder = new HostApplicationBuilder(); 
 
             // Emulate calling builder.Services.UseWindowsService() from inside a Windows service.
-            UseWindowsServiceUnchecked(builder.Services);
+            AddWindowsServiceLifetime(builder.Services);
             // No reason to write event logs in this test.
             builder.Logging.ClearProviders();
 
@@ -101,9 +101,9 @@ namespace Microsoft.Extensions.Hosting
             Assert.IsType<WindowsServiceLifetime>(lifetime);
         }
 
-        private void UseWindowsServiceUnchecked(IServiceCollection services, Action<WindowsServiceLifetimeOptions> configure = null)
+        private void AddWindowsServiceLifetime(IServiceCollection services, Action<WindowsServiceLifetimeOptions> configure = null)
         {
-            _useWindowsServiceUncheckedMethod ??= typeof(WindowsServiceLifetimeHostBuilderExtensions).GetMethod("UseWindowsServiceUnchecked",
+            _useWindowsServiceUncheckedMethod ??= typeof(WindowsServiceLifetimeHostBuilderExtensions).GetMethod("AddWindowsServiceLifetime",
                 BindingFlags.Static | BindingFlags.NonPublic, null, new[] { typeof(IServiceCollection), typeof(Action<WindowsServiceLifetimeOptions>) }, null)
                 ?? throw new MissingMethodException();
 

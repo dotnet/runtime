@@ -18,8 +18,8 @@ namespace Microsoft.Extensions.Hosting
     public static class WindowsServiceLifetimeHostBuilderExtensions
     {
         /// <summary>
-        /// Sets the host lifetime to <see cref="WindowsServiceLifetime"/>, sets the <see cref="IHostEnvironment.ContentRootPath"/>
-        /// to <see cref="AppContext.BaseDirectory"/>, and enables logging to the event log with the application name as the default source name.
+        /// Sets the host lifetime to <see cref="WindowsServiceLifetime"/> and enables logging to the event log with
+        /// the application name as the default source name.
         /// </summary>
         /// <remarks>
         /// This is context aware and will only activate if it detects the process is running as a Windows Service.
@@ -57,9 +57,8 @@ namespace Microsoft.Extensions.Hosting
 
         /// <summary>
         /// Configures the lifetime of the <see cref="IHost"/> built from <paramref name="services"/> to
-        /// <see cref="WindowsServiceLifetime"/>, verifies the <see cref="IHostEnvironment.ContentRootPath"/>
-        /// is equal to <see cref="AppContext.BaseDirectory"/>, and enables logging to the event log with
-        /// the application name as the default source name.
+        /// <see cref="WindowsServiceLifetime"/> and enables logging to the event log with the application
+        /// name as the default source name.
         /// </summary>
         /// <remarks>
         /// This is context aware and will only activate if it detects the process is running
@@ -78,9 +77,7 @@ namespace Microsoft.Extensions.Hosting
 
         /// <summary>
         /// Configures the lifetime of the <see cref="IHost"/> built from <paramref name="services"/> to
-        /// <see cref="WindowsServiceLifetime"/>, verifies the <see cref="IHostEnvironment.ContentRootPath"/>
-        /// is equal to <see cref="AppContext.BaseDirectory"/>, and enables logging to the event log with
-        /// the application name as the default source name.
+        /// <see cref="WindowsServiceLifetime"/> and enables logging to the event log with the application name as the default source name.
         /// </summary>
         /// <remarks>
         /// This is context aware and will only activate if it detects the process is running
