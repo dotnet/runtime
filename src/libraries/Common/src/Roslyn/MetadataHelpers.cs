@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable disable
 
@@ -13,6 +12,7 @@ using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
 using Microsoft.CodeAnalysis.Collections;
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using Microsoft.CodeAnalysis.PooledObjects;
 using Roslyn.Utilities;
 
@@ -23,7 +23,9 @@ namespace Microsoft.CodeAnalysis
         public const char DotDelimiter = '.';
         public const string DotDelimiterString = ".";
         public const char GenericTypeNameManglingChar = '`';
+#if false
         private const string GenericTypeNameManglingString = "`";
+#endif
         public const int MaxStringLengthForParamSize = 22;
         public const int MaxStringLengthForIntToStringConversion = 22;
         public const string SystemString = "System";
@@ -31,6 +33,8 @@ namespace Microsoft.CodeAnalysis
         // These can appear in the interface name that precedes an explicit interface implementation member.
         public const char MangledNameRegionStartChar = '<';
         public const char MangledNameRegionEndChar = '>';
+
+#if false
 
         internal struct AssemblyQualifiedTypeName
         {
@@ -475,10 +479,11 @@ ExitDecodeTypeName:
             return arity == 0 ? name : name + GetAritySuffix(arity);
         }
 
+#endif
+
         internal static int InferTypeArityFromMetadataName(string emittedTypeName)
         {
-            int suffixStartsAt;
-            return InferTypeArityFromMetadataName(emittedTypeName, out suffixStartsAt);
+            return InferTypeArityFromMetadataName(emittedTypeName, out _);
         }
 
         private static short InferTypeArityFromMetadataName(string emittedTypeName, out int suffixStartsAt)
@@ -536,6 +541,8 @@ ExitDecodeTypeName:
             return emittedTypeName.Substring(0, suffixStartsAt);
         }
 
+#if false
+
         internal static string UnmangleMetadataNameForArity(string emittedTypeName, int arity)
         {
             Debug.Assert(arity > 0);
@@ -549,6 +556,8 @@ ExitDecodeTypeName:
 
             return emittedTypeName;
         }
+
+#endif
 
         /// <summary>
         /// An ImmutableArray representing the single string "System"
@@ -582,7 +591,7 @@ ExitDecodeTypeName:
                 return name == SystemString ? s_splitQualifiedNameSystem : ImmutableArray.Create(name);
             }
 
-            var result = ArrayBuilder<string>.GetInstance(dots + 1);
+            var result = new ValueListBuilder<string>(Span<string>.Empty);
 
             int start = 0;
             for (int i = 0; dots > 0; i++)
@@ -592,11 +601,11 @@ ExitDecodeTypeName:
                     int len = i - start;
                     if (len == 6 && start == 0 && name.StartsWith(SystemString, StringComparison.Ordinal))
                     {
-                        result.Add(SystemString);
+                        result.Append(SystemString);
                     }
                     else
                     {
-                        result.Add(name.Substring(start, len));
+                        result.Append(name.Substring(start, len));
                     }
 
                     dots--;
@@ -604,9 +613,9 @@ ExitDecodeTypeName:
                 }
             }
 
-            result.Add(name.Substring(start));
+            result.Append(name.Substring(start));
 
-            return result.ToImmutableAndFree();
+            return result.AsSpan().ToImmutableArray();
         }
 
         internal static string SplitQualifiedName(
@@ -660,6 +669,8 @@ ExitDecodeTypeName:
 
             return pstrName.Substring(delimiter + 1);
         }
+
+#if false
 
         internal static string BuildQualifiedName(
             string qualifier,
@@ -1011,5 +1022,7 @@ DoneWithSequence:
 
             return pooledStrBuilder.ToStringAndFree();
         }
+
+#endif
     }
 }

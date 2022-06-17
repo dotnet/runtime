@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -20,10 +20,12 @@
   <ItemGroup>
     <!-- Common generator support -->
     <Compile Include="$(CommonPath)Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
+    <Compile Include="$(CommonPath)Roslyn\Hash.cs" Link="Common\Roslyn\Hash.cs" />
     <Compile Include="$(CommonPath)Roslyn\ISyntaxHelper.cs" Link="Common\Roslyn\ISyntaxHelper.cs" />
     <Compile Include="$(CommonPath)Roslyn\CSharpSyntaxHelper.cs" Link="Common\Roslyn\CSharpSyntaxHelper.cs" />
     <Compile Include="$(CommonPath)Roslyn\GlobalAliases.cs" Link="Common\Roslyn\GlobalAliases.cs" />
     <Compile Remove="C:\github\runtime\src\libraries\Common\src\Roslyn\MetadataHelpers.cs" />
+    <Compile Include="$(CommonPath)Roslyn\MetadataHelpers.cs" Link="Common\Roslyn\MetadataHelpers.cs" />
     <Compile Include="$(CommonPath)Roslyn\MetadataTypeName.cs" Link="Common\Roslyn\MetadataTypeName.cs" />
     <Compile Include="$(CommonPath)Roslyn\SyntaxNodeGrouping.cs" Link="Common\Roslyn\SyntaxNodeGrouping.cs" />
     <Compile Include="$(CommonPath)Roslyn\SyntaxValueProvider.ImmutableArrayValueComparer.cs" Link="Common\Roslyn\SyntaxValueProvider.ImmutableArrayValueComparer.cs" />

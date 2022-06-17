@@ -1,14 +1,11 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Immutable;
-using System.Linq;
+using System.Collections.Generic;
+using System.Diagnostics;
 
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-
-using Roslyn.Utilities;
 
 namespace Microsoft.CodeAnalysis.DotnetRuntime.Extensions
 {
@@ -38,19 +35,27 @@ namespace Microsoft.CodeAnalysis.DotnetRuntime.Extensions
         public override bool IsAttributeList(SyntaxNode node)
             => node is AttributeListSyntax;
 
-        public override void AddAttributeTargets(SyntaxNode node, ArrayBuilder<SyntaxNode> targets)
+        public override void AddAttributeTargets(SyntaxNode node, ref ValueListBuilder<SyntaxNode> targets)
         {
             var attributeList = (AttributeListSyntax)node;
             var container = attributeList.Parent;
-            RoslynDebug.AssertNotNull(container);
+            Debug.Assert(container != null);
 
             // For fields/events, the attribute applies to all the variables declared.
             if (container is FieldDeclarationSyntax field)
-                targets.AddRange(field.Declaration.Variables);
+            {
+                foreach (var variable in field.Declaration.Variables)
+                    targets.Append(variable);
+            }
             else if (container is EventFieldDeclarationSyntax ev)
-                targets.AddRange(ev.Declaration.Variables);
+            {
+                foreach (var variable in ev.Declaration.Variables)
+                    targets.Append(variable);
+            }
             else
-                targets.Add(container);
+            {
+                targets.Append(container);
+            }
         }
 
         public override SeparatedSyntaxList<SyntaxNode> GetAttributesOfAttributeList(SyntaxNode node)
@@ -62,23 +67,23 @@ namespace Microsoft.CodeAnalysis.DotnetRuntime.Extensions
         public override SyntaxToken GetUnqualifiedIdentifierOfName(SyntaxNode node)
             => ((NameSyntax)node).GetUnqualifiedName().Identifier;
 
-        public override void AddAliases(SyntaxNode node, ArrayBuilder<(string aliasName, string symbolName)> aliases, bool global)
+        public override void AddAliases(SyntaxNode node, ref ValueListBuilder<(string aliasName, string symbolName)> aliases, bool global)
         {
             if (node is CompilationUnitSyntax compilationUnit)
             {
-                AddAliases(compilationUnit.Usings, aliases, global);
+                AddAliases(compilationUnit.Usings, ref aliases, global);
             }
             else if (node is BaseNamespaceDeclarationSyntax namespaceDeclaration)
             {
-                AddAliases(namespaceDeclaration.Usings, aliases, global);
+                AddAliases(namespaceDeclaration.Usings, ref aliases, global);
             }
             else
             {
-                throw ExceptionUtilities.UnexpectedValue(node.Kind());
+                throw new System.InvalidOperationException("Unreachable");
             }
         }
 
-        private static void AddAliases(SyntaxList<UsingDirectiveSyntax> usings, ArrayBuilder<(string aliasName, string symbolName)> aliases, bool global)
+        private static void AddAliases(SyntaxList<UsingDirectiveSyntax> usings, ref ValueListBuilder<(string aliasName, string symbolName)> aliases, bool global)
         {
             foreach (var usingDirective in usings)
             {
@@ -90,11 +95,11 @@ namespace Microsoft.CodeAnalysis.DotnetRuntime.Extensions
 
                 var aliasName = usingDirective.Alias.Name.Identifier.ValueText;
                 var symbolName = usingDirective.Name.GetUnqualifiedName().Identifier.ValueText;
-                aliases.Add((aliasName, symbolName));
+                aliases.Append((aliasName, symbolName));
             }
         }
 
-        public override void AddAliases(CompilationOptions compilation, ArrayBuilder<(string aliasName, string symbolName)> aliases)
+        public override void AddAliases(CompilationOptions compilation, ref ValueListBuilder<(string aliasName, string symbolName)> aliases)
         {
             // C# doesn't have global aliases at the compilation level.
             return;

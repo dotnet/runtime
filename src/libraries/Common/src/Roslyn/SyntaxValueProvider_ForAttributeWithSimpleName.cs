@@ -2,17 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Transactions;
+
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.PooledObjects;
-using Microsoft.CodeAnalysis.SourceGeneration;
+
 using Roslyn.Utilities;
 
 namespace Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
@@ -21,7 +18,7 @@ using Aliases = ValueListBuilder<(string aliasName, string symbolName)>;
 
 internal static partial class SyntaxValueProviderExtensions
 {
-    private static readonly ObjectPool<Stack<string>> s_stackPool = new(static () => new());
+    // private static readonly ObjectPool<Stack<string>> s_stackPool = new(static () => new());
 
     /// <summary>
     /// Returns all syntax nodes of that match <paramref name="predicate"/> if that node has an attribute on it that
@@ -50,18 +47,18 @@ internal static partial class SyntaxValueProviderExtensions
         // Create a provider that provides (and updates) the global aliases for any particular file when it is edited.
         var individualFileGlobalAliasesProvider = @this.CreateSyntaxProvider(
             static (n, _) => n is ICompilationUnitSyntax,
-            static (context, _) => getGlobalAliasesInCompilationUnit(context.Node)).WithTrackingName("individualFileGlobalAliases_ForAttribute");
+            static (context, _) => getGlobalAliasesInCompilationUnit(context.Node))/*.WithTrackingName("individualFileGlobalAliases_ForAttribute")*/;
 
         // Create an aggregated view of all global aliases across all files.  This should only update when an individual
         // file changes its global aliases or a file is added / removed from the compilation
         var collectedGlobalAliasesProvider = individualFileGlobalAliasesProvider
             .Collect()
             .WithComparer(ImmutableArrayValueComparer<GlobalAliases>.Instance)
-            .WithTrackingName("collectedGlobalAliases_ForAttribute");
+            /*.WithTrackingName("collectedGlobalAliases_ForAttribute")*/;
 
         var allUpGlobalAliasesProvider = collectedGlobalAliasesProvider
             .Select(static (arrays, _) => GlobalAliases.Create(arrays.SelectMany(a => a.AliasAndSymbolNames).ToImmutableArray()))
-            .WithTrackingName("allUpGlobalAliases_ForAttribute");
+            /*.WithTrackingName("allUpGlobalAliases_ForAttribute")*/;
 
 #if false
 
@@ -87,19 +84,19 @@ internal static partial class SyntaxValueProviderExtensions
         // Create a syntax provider for every compilation unit.
         var compilationUnitProvider = @this.CreateSyntaxProvider(
             static (n, _) => n is ICompilationUnitSyntax,
-            static (context, _) => context.Node).WithTrackingName("compilationUnit_ForAttribute");
+            static (context, _) => context.Node)/*.WithTrackingName("compilationUnit_ForAttribute")*/;
 
         // Combine the two providers so that we reanalyze every file if the global aliases change, or we reanalyze a
         // particular file when it's compilation unit changes.
         var compilationUnitAndGlobalAliasesProvider = compilationUnitProvider
             .Combine(allUpGlobalAliasesProvider)
-            .WithTrackingName("compilationUnitAndGlobalAliases_ForAttribute");
+            /*.WithTrackingName("compilationUnitAndGlobalAliases_ForAttribute")*/;
 
         // For each pair of compilation unit + global aliases, walk the compilation unit
         var result = compilationUnitAndGlobalAliasesProvider
             .SelectMany((globalAliasesAndCompilationUnit, cancellationToken) => GetMatchingNodes(
                 syntaxHelper, globalAliasesAndCompilationUnit.Right, globalAliasesAndCompilationUnit.Left, simpleName, predicate, cancellationToken))
-            .WithTrackingName("result_ForAttribute");
+            /*.WithTrackingName("result_ForAttribute")*/;
 
         return result;
 
@@ -111,7 +108,7 @@ internal static partial class SyntaxValueProviderExtensions
 
             CSharpSyntaxHelper.Instance.AddAliases(compilationUnit, ref globalAliases, global: true);
 
-            return GlobalAliases.Create(ImmutableArray.CreateRange( globalAliases.AsSpan());
+            return GlobalAliases.Create(globalAliases.AsSpan().ToImmutableArray());
         }
     }
 
@@ -131,49 +128,46 @@ internal static partial class SyntaxValueProviderExtensions
         // As we walk down the compilation unit and nested namespaces, we may encounter additional using aliases local
         // to this file. Keep track of them so we can determine if they would allow an attribute in code to bind to the
         // attribute being searched for.
-        var localAliases = Aliases.GetInstance();
+        var localAliases = new Aliases(Span<(string, string)>.Empty);
         var nameHasAttributeSuffix = name.HasAttributeSuffix(isCaseSensitive);
 
         // Used to ensure that as we recurse through alias names to see if they could bind to attributeName that we
         // don't get into cycles.
-        var seenNames = s_stackPool.Allocate();
-        var results = ArrayBuilder<SyntaxNode>.GetInstance();
-        var attributeTargets = ArrayBuilder<SyntaxNode>.GetInstance();
+        var seenNames = new ValueListBuilder<string>(Span<string>.Empty);
+        var results = new ValueListBuilder<SyntaxNode>(Span<SyntaxNode>.Empty);
+        var attributeTargets = new ValueListBuilder<SyntaxNode>(Span<SyntaxNode>.Empty);
 
-        try
-        {
-            recurse(compilationUnit);
-        }
-        finally
-        {
-            localAliases.Free();
-            seenNames.Clear();
-            s_stackPool.Free(seenNames);
-            attributeTargets.Free();
-        }
+        recurse(compilationUnit, ref localAliases, ref seenNames, ref results, ref attributeTargets);
 
-        results.RemoveDuplicates();
-        return results.ToImmutableAndFree();
+        if (results.Length == 0)
+            return ImmutableArray<SyntaxNode>.Empty;
 
-        void recurse(SyntaxNode node)
+        return results.AsSpan().ToArray().Distinct().ToImmutableArray();
+
+        void recurse(
+            SyntaxNode node,
+            ref Aliases localAliases,
+            ref ValueListBuilder<string> seenNames,
+            ref ValueListBuilder<SyntaxNode> results,
+            ref ValueListBuilder<SyntaxNode> attributeTargets)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             if (node is ICompilationUnitSyntax)
             {
-                syntaxHelper.AddAliases(node, localAliases, global: false);
+                syntaxHelper.AddAliases(node, ref localAliases, global: false);
 
-                recurseChildren(node);
+                recurseChildren(node, ref localAliases, ref seenNames, ref results, ref attributeTargets);
             }
             else if (syntaxHelper.IsAnyNamespaceBlock(node))
             {
-                var localAliasCount = localAliases.Count;
-                syntaxHelper.AddAliases(node, localAliases, global: false);
+                var localAliasCount = localAliases.Length;
+                syntaxHelper.AddAliases(node, ref localAliases, global: false);
 
-                recurseChildren(node);
+                recurseChildren(node, ref localAliases, ref seenNames, ref results, ref attributeTargets);
 
                 // after recursing into this namespace, dump any local aliases we added from this namespace decl itself.
-                localAliases.Count = localAliasCount;
+                localAliases.Length = localAliasCount;
             }
             else if (syntaxHelper.IsAttributeList(node))
             {
@@ -183,16 +177,16 @@ internal static partial class SyntaxValueProviderExtensions
                     // e.g. if there is [X] then we have to lookup with X and with XAttribute.
                     var simpleAttributeName = syntaxHelper.GetUnqualifiedIdentifierOfName(
                         syntaxHelper.GetNameOfAttribute(attribute)).ValueText;
-                    if (matchesAttributeName(simpleAttributeName, withAttributeSuffix: false) ||
-                        matchesAttributeName(simpleAttributeName, withAttributeSuffix: true))
+                    if (matchesAttributeName(ref localAliases, ref seenNames, simpleAttributeName, withAttributeSuffix: false) ||
+                        matchesAttributeName(ref localAliases, ref seenNames, simpleAttributeName, withAttributeSuffix: true))
                     {
-                        attributeTargets.Clear();
-                        syntaxHelper.AddAttributeTargets(node, attributeTargets);
+                        attributeTargets.Length = 0;
+                        syntaxHelper.AddAttributeTargets(node, ref attributeTargets);
 
-                        foreach (var target in attributeTargets)
+                        foreach (var target in attributeTargets.AsSpan())
                         {
                             if (predicate(target, cancellationToken))
-                                results.Add(target);
+                                results.Append(target);
                         }
 
                         return;
@@ -206,17 +200,22 @@ internal static partial class SyntaxValueProviderExtensions
                 // For any other node, just keep recursing deeper to see if we can find an attribute. Note: we cannot
                 // terminate the search anywhere as attributes may be found on things like local functions, and that
                 // means having to dive deep into statements and expressions.
-                recurseChildren(node);
+                recurseChildren(node, ref localAliases, ref seenNames, ref results, ref attributeTargets);
             }
 
             return;
 
-            void recurseChildren(SyntaxNode node)
+            void recurseChildren(
+                SyntaxNode node,
+                ref Aliases localAliases,
+                ref ValueListBuilder<string> seenNames,
+                ref ValueListBuilder<SyntaxNode> results,
+                ref ValueListBuilder<SyntaxNode> attributeTargets)
             {
                 foreach (var child in node.ChildNodesAndTokens())
                 {
                     if (child.IsNode)
-                        recurse(child.AsNode()!);
+                        recurse(child.AsNode()!, ref localAliases, ref seenNames, ref results, ref attributeTargets);
                 }
             }
         }
@@ -237,7 +236,11 @@ internal static partial class SyntaxValueProviderExtensions
             }
         }
 
-        bool matchesAttributeName(string currentAttributeName, bool withAttributeSuffix)
+        bool matchesAttributeName(
+            ref Aliases localAliases,
+            ref ValueListBuilder<string> seenNames,
+            string currentAttributeName,
+            bool withAttributeSuffix)
         {
             // If the names match, we're done.
             if (withAttributeSuffix)
@@ -259,17 +262,20 @@ internal static partial class SyntaxValueProviderExtensions
             //
             // note: as we recurse up the aliases, we do not want to add the attribute suffix anymore.  aliases must
             // reference the actual real name of the symbol they are aliasing.
-            if (seenNames.Contains(currentAttributeName))
-                return false;
+            foreach (var seenName in seenNames.AsSpan())
+            {
+                if (seenName == currentAttributeName)
+                    return false;
+            }
 
-            seenNames.Push(currentAttributeName);
+            seenNames.Append(currentAttributeName);
 
-            foreach (var (aliasName, symbolName) in localAliases)
+            foreach (var (aliasName, symbolName) in localAliases.AsSpan())
             {
                 // see if user wrote `[SomeAlias]`.  If so, if we find a `using SomeAlias = ...` recurse using the
                 // ... name portion to see if it might bind to the attr name the caller is searching for.
                 if (matchesName(currentAttributeName, aliasName, withAttributeSuffix) &&
-                    matchesAttributeName(symbolName, withAttributeSuffix: false))
+                    matchesAttributeName(ref localAliases, ref seenNames, symbolName, withAttributeSuffix: false))
                 {
                     return true;
                 }
@@ -278,7 +284,7 @@ internal static partial class SyntaxValueProviderExtensions
             foreach (var (aliasName, symbolName) in globalAliases.AliasAndSymbolNames)
             {
                 if (matchesName(currentAttributeName, aliasName, withAttributeSuffix) &&
-                    matchesAttributeName(symbolName, withAttributeSuffix: false))
+                    matchesAttributeName(ref localAliases, ref seenNames, symbolName, withAttributeSuffix: false))
                 {
                     return true;
                 }

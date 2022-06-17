@@ -18,7 +18,7 @@ internal static partial class SyntaxValueProviderExtensions
     /// syntax tree changes, we will always get different nodes (since they point back at the syntax tree).  So we can
     /// just use the syntax tree itself to determine value semantics here.
     /// </summary>
-    private class SyntaxNodeGrouping<TSyntaxNode> : IEquatable<SyntaxNodeGrouping<TSyntaxNode>>
+    private sealed class SyntaxNodeGrouping<TSyntaxNode> : IEquatable<SyntaxNodeGrouping<TSyntaxNode>>
         where TSyntaxNode : SyntaxNode
     {
         public readonly SyntaxTree SyntaxTree;

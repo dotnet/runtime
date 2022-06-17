@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Immutable;
 
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.CodeAnalysis.DotnetRuntime.Extensions
 {
@@ -144,5 +146,26 @@ namespace Microsoft.CodeAnalysis.DotnetRuntime.Extensions
             var comparison = isCaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
             return name.Length > AttributeSuffix.Length && name.EndsWith(AttributeSuffix, comparison);
         }
+
+        public static ImmutableArray<T> ToImmutableArray<T>(this ReadOnlySpan<T> span)
+        {
+            if (span.Length == 0)
+                return ImmutableArray<T>.Empty;
+
+            var builder = ImmutableArray.CreateBuilder<T>(span.Length);
+            foreach (var item in span)
+                builder.Add(item);
+
+            return builder.MoveToImmutable();
+        }
+
+        public static SimpleNameSyntax GetUnqualifiedName(this NameSyntax name)
+            => name switch
+            {
+                AliasQualifiedNameSyntax alias => alias.Name,
+                QualifiedNameSyntax qualified => qualified.Right,
+                SimpleNameSyntax simple => simple,
+                _ => throw new InvalidOperationException("Unreachable"),
+            };
     }
 }

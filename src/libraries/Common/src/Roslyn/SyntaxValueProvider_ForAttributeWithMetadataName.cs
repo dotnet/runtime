@@ -2,22 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Xml.Serialization;
-using Microsoft.CodeAnalysis.PooledObjects;
-using Roslyn.Utilities;
-using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.SourceGeneration;
 using System.Threading;
 
+using Microsoft.CodeAnalysis;
+
+using Roslyn.Utilities;
+
 namespace Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
-
-using Aliases = ValueListBuilder<(string aliasName, string symbolName)>;
-
 internal readonly struct GeneratorAttributeSyntaxContext
 {
     /// <summary>
@@ -63,8 +57,16 @@ internal readonly struct GeneratorAttributeSyntaxContext
 internal static partial class SyntaxValueProviderExtensions
 {
     private static readonly char[] s_nestedTypeNameSeparators = new char[] { '+' };
+
+#if false
+
+    // Deviation from roslyn.  We do not support attributes that are nested or generic.  That's ok as that's not a
+    // scenario that ever arises in our generators.
+
     private static readonly SymbolDisplayFormat s_metadataDisplayFormat =
         SymbolDisplayFormat.QualifiedNameArityFormat.AddCompilerInternalOptions(SymbolDisplayCompilerInternalOptions.UsePlusForNestedTypes);
+
+#endif
 
     /// <summary>
     /// Creates an <see cref="IncrementalValuesProvider{T}"/> that can provide a transform over all <see
@@ -97,7 +99,7 @@ internal static partial class SyntaxValueProviderExtensions
         var collectedNodes = nodesWithAttributesMatchingSimpleName
             .Collect()
             .WithComparer(ImmutableArrayValueComparer<SyntaxNode>.Instance)
-            .WithTrackingName("collectedNodes_ForAttributeWithMetadataName");
+            /*.WithTrackingName("collectedNodes_ForAttributeWithMetadataName")*/;
 
         // Group all the nodes by syntax tree, so we can process a whole syntax tree at a time.  This will let us make
         // the required semantic model for it once, instead of potentially many times (in the rare, but possible case of
@@ -105,11 +107,11 @@ internal static partial class SyntaxValueProviderExtensions
         var groupedNodes = collectedNodes.SelectMany(
             static (array, cancellationToken) =>
                 array.GroupBy(static n => n.SyntaxTree)
-                     .Select(static g => new SyntaxNodeGrouping<SyntaxNode>(g))).WithTrackingName("groupedNodes_ForAttributeWithMetadataName");
+                     .Select(static g => new SyntaxNodeGrouping<SyntaxNode>(g)))/*.WithTrackingName("groupedNodes_ForAttributeWithMetadataName")*/;
 
         var compilationAndGroupedNodesProvider = groupedNodes
             .Combine(context.CompilationProvider)
-            .WithTrackingName("compilationAndGroupedNodes_ForAttributeWithMetadataName");
+            /*.WithTrackingName("compilationAndGroupedNodes_ForAttributeWithMetadataName")*/;
 
         var syntaxHelper = CSharpSyntaxHelper.Instance;
         var finalProvider = compilationAndGroupedNodesProvider.SelectMany((tuple, cancellationToken) =>
@@ -140,8 +142,8 @@ internal static partial class SyntaxValueProviderExtensions
                 }
             }
 
-            return result.ToImmutable();
-        }).WithTrackingName("result_ForAttributeWithMetadataName");
+            return result.AsSpan().ToImmutableArray();
+        })/*.WithTrackingName("result_ForAttributeWithMetadataName")*/;
 
         return finalProvider;
 
@@ -162,7 +164,7 @@ internal static partial class SyntaxValueProviderExtensions
                     addMatchingAttributes(ref result, module.GetAttributes());
             }
 
-            return result.ToImmutableAndFree();
+            return result.AsSpan().ToImmutableArray();
 
             void addMatchingAttributes(
                 ref ValueListBuilder<AttributeData> result,
@@ -174,7 +176,7 @@ internal static partial class SyntaxValueProviderExtensions
                 foreach (var attribute in attributes.Value)
                 {
                     if (attribute.ApplicationSyntaxReference?.SyntaxTree == targetSyntaxTree &&
-                        attribute.AttributeClass?.ToDisplayString(s_metadataDisplayFormat) == fullyQualifiedMetadataName)
+                        attribute.AttributeClass?.ToDisplayString(/*s_metadataDisplayFormat*/) == fullyQualifiedMetadataName)
                     {
                         result.Append(attribute);
                     }

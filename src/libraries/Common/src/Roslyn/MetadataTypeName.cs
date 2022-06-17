@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable disable
 
@@ -62,10 +61,14 @@ namespace Microsoft.CodeAnalysis
         /// </summary>
         private bool _useCLSCompliantNameArityEncoding;
 
+#if false
+
         /// <summary>
         /// Individual parts of qualified namespace name.
         /// </summary>
         private ImmutableArray<string> _namespaceSegments;
+
+#endif
 
         public static MetadataTypeName FromFullName(string fullName, bool useCLSCompliantNameArityEncoding = false, int forcedArity = -1)
         {
@@ -85,10 +88,13 @@ namespace Microsoft.CodeAnalysis
             name._inferredArity = -1;
             name._useCLSCompliantNameArityEncoding = useCLSCompliantNameArityEncoding;
             name._forcedArity = (short)forcedArity;
+#if false
             name._namespaceSegments = default(ImmutableArray<string>);
-
+#endif
             return name;
         }
+
+#if false
 
         public static MetadataTypeName FromNamespaceAndTypeName(
             string namespaceName, string typeName,
@@ -177,6 +183,8 @@ namespace Microsoft.CodeAnalysis
             }
         }
 
+#endif
+
         /// <summary>
         /// Name of the type without namespace prefix, but possibly with generic arity mangling present.
         /// </summary>
@@ -210,6 +218,8 @@ namespace Microsoft.CodeAnalysis
                 return _unmangledTypeName;
             }
         }
+
+#if false
 
         /// <summary>
         /// Arity of the type inferred based on the name mangling. It doesn't have to match the actual
@@ -303,5 +313,7 @@ namespace Microsoft.CodeAnalysis
                 return string.Format("{{{0},{1},{2},{3}}}", NamespaceName, TypeName, UseCLSCompliantNameArityEncoding.ToString(), _forcedArity.ToString());
             }
         }
+
+#endif
     }
 }
