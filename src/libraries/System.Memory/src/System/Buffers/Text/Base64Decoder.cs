@@ -601,7 +601,6 @@ namespace System.Buffers.Text
             Vector128<byte> mask2F = Vector128.Create((byte)'/');
             Vector128<byte> mergeConstant0 = Vector128.Create(0x01400140).AsByte();
             Vector128<short> mergeConstant1 = Vector128.Create(0x00011000).AsInt16();
-            Vector128<byte> zero = Vector128<byte>.Zero;
             Vector128<byte> one = Vector128.Create((byte)1);
             Vector128<byte> f = Vector128.Create((byte)0xf);
 
@@ -611,6 +610,7 @@ namespace System.Buffers.Text
             //while (remaining >= 24)
             do
             {
+                AssertRead<Vector128<sbyte>>(src, srcStart, sourceLength);
                 Vector128<byte> str = Vector128.LoadUnsafe(ref *src);
 
                 // lookup
@@ -648,7 +648,7 @@ namespace System.Buffers.Text
                 else
                 {
                     Vector128<ushort> evens = AdvSimd.ShiftLeftLogicalWideningLower(AdvSimd.Arm64.UnzipEven(str, one).GetLower(), 6);
-                    Vector128<ushort> odds = AdvSimd.Arm64.TransposeOdd(str, zero).AsUInt16();
+                    Vector128<ushort> odds = AdvSimd.Arm64.TransposeOdd(str, Vector128<byte>.Zero).AsUInt16();
                     merge_ab_and_bc = Vector128.Add(evens, odds).AsInt16();
                 }
                 // 0000kkkk LLllllll 0000JJJJ JJjjKKKK
@@ -664,7 +664,7 @@ namespace System.Buffers.Text
                 else
                 {
                     Vector128<int> ievens = AdvSimd.ShiftLeftLogicalWideningLower(AdvSimd.Arm64.UnzipEven(merge_ab_and_bc, one.AsInt16()).GetLower(), 12);
-                    Vector128<int> iodds = AdvSimd.Arm64.TransposeOdd(merge_ab_and_bc, zero.AsInt16()).AsInt32();
+                    Vector128<int> iodds = AdvSimd.Arm64.TransposeOdd(merge_ab_and_bc, Vector128<short>.Zero).AsInt32();
                     output = Vector128.Add(ievens, iodds).AsInt32();
                 }
                 // 00000000 JJJJJJjj KKKKkkkk LLllllll
@@ -679,6 +679,7 @@ namespace System.Buffers.Text
                 // HHHHhhhh GGGGGGgg FFffffff EEEEeeee
                 // DDDDDDdd CCcccccc BBBBbbbb AAAAAAaa
 
+                AssertWrite<Vector128<sbyte>>(dest, destStart, destLength);
                 str.Store(dest);
 
                 src += 16;
