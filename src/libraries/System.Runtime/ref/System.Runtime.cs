@@ -2127,7 +2127,7 @@ namespace System
         public static double Clamp(double value, double min, double max) { throw null; }
         public int CompareTo(double value) { throw null; }
         public int CompareTo(object? value) { throw null; }
-        public static double CopySign(double x, double y) { throw null; }
+        public static double CopySign(double value, double sign) { throw null; }
         public static double Cos(double x) { throw null; }
         public static double Cosh(double x) { throw null; }
         public bool Equals(double obj) { throw null; }
@@ -2142,6 +2142,7 @@ namespace System
         public static double FusedMultiplyAdd(double left, double right, double addend) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
+        public static double Hypot(double x, double y) { throw null; }
         public static double Ieee754Remainder(double left, double right) { throw null; }
         public static int ILogB(double x) { throw null; }
         public static bool IsEvenInteger(double value) { throw null; }
@@ -2188,6 +2189,7 @@ namespace System
         public static double Pow(double x, double y) { throw null; }
         public static double ReciprocalEstimate(double x) { throw null; }
         public static double ReciprocalSqrtEstimate(double x) { throw null; }
+        public static double Root(double x, int n) { throw null; }
         public static double Round(double x) { throw null; }
         public static double Round(double x, int digits) { throw null; }
         public static double Round(double x, int digits, System.MidpointRounding mode) { throw null; }
@@ -2748,7 +2750,7 @@ namespace System
         public static System.Half Clamp(System.Half value, System.Half min, System.Half max) { throw null; }
         public int CompareTo(System.Half other) { throw null; }
         public int CompareTo(object? obj) { throw null; }
-        public static System.Half CopySign(System.Half x, System.Half y) { throw null; }
+        public static System.Half CopySign(System.Half value, System.Half sign) { throw null; }
         public static System.Half Cos(System.Half x) { throw null; }
         public static System.Half Cosh(System.Half x) { throw null; }
         public bool Equals(System.Half other) { throw null; }
@@ -2762,6 +2764,7 @@ namespace System
         public static System.Half Floor(System.Half x) { throw null; }
         public static System.Half FusedMultiplyAdd(System.Half left, System.Half right, System.Half addend) { throw null; }
         public override int GetHashCode() { throw null; }
+        public static System.Half Hypot(System.Half x, System.Half y) { throw null; }
         public static System.Half Ieee754Remainder(System.Half left, System.Half right) { throw null; }
         public static int ILogB(System.Half x) { throw null; }
         public static bool IsEvenInteger(System.Half value) { throw null; }
@@ -2877,6 +2880,7 @@ namespace System
         public static System.Half Pow(System.Half x, System.Half y) { throw null; }
         public static System.Half ReciprocalEstimate(System.Half x) { throw null; }
         public static System.Half ReciprocalSqrtEstimate(System.Half x) { throw null; }
+        public static System.Half Root(System.Half x, int n) { throw null; }
         public static System.Half Round(System.Half x) { throw null; }
         public static System.Half Round(System.Half x, int digits) { throw null; }
         public static System.Half Round(System.Half x, int digits, System.MidpointRounding mode) { throw null; }
@@ -4718,7 +4722,7 @@ namespace System
         public static float Clamp(float value, float min, float max) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public int CompareTo(float value) { throw null; }
-        public static float CopySign(float x, float y) { throw null; }
+        public static float CopySign(float value, float sign) { throw null; }
         public static float Cos(float x) { throw null; }
         public static float Cosh(float x) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
@@ -4733,6 +4737,7 @@ namespace System
         public static float FusedMultiplyAdd(float left, float right, float addend) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
+        public static float Hypot(float x, float y) { throw null; }
         public static float Ieee754Remainder(float left, float right) { throw null; }
         public static int ILogB(float x) { throw null; }
         public static bool IsEvenInteger(float value) { throw null; }
@@ -4779,6 +4784,7 @@ namespace System
         public static float Pow(float x, float y) { throw null; }
         public static float ReciprocalEstimate(float x) { throw null; }
         public static float ReciprocalSqrtEstimate(float x) { throw null; }
+        public static float Root(float x, int n) { throw null; }
         public static float Round(float x) { throw null; }
         public static float Round(float x, int digits) { throw null; }
         public static float Round(float x, int digits, System.MidpointRounding mode) { throw null; }
@@ -10516,6 +10522,8 @@ namespace System.Numerics
     public partial interface IRootFunctions<TSelf> where TSelf : System.Numerics.IRootFunctions<TSelf>, System.Numerics.INumberBase<TSelf>
     {
         static abstract TSelf Cbrt(TSelf x);
+        static abstract TSelf Hypot(TSelf x, TSelf y);
+        static abstract TSelf Root(TSelf x, int n);
         static abstract TSelf Sqrt(TSelf x);
     }
     public partial interface IShiftOperators<TSelf, TResult> where TSelf : System.Numerics.IShiftOperators<TSelf, TResult>
