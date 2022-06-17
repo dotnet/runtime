@@ -48,7 +48,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
-        public void SymLinksReflectTargetReadOnly()
+        public void SymLinksReflectSymLinkAttributes()
         {
             string path = CreateItem();
             string linkPath = GetRandomLinkPath();
@@ -65,6 +65,7 @@ namespace System.IO.Tests
                 }
                 else
                 {
+                    // On Unix, Get/SetAttributes FileAttributes.ReadOnly operates on the target of the link.
                     Assert.Equal(FileAttributes.ReadOnly, FileAttributes.ReadOnly & GetAttributes(linkPath));   
                 }
             }
