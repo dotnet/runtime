@@ -1277,11 +1277,16 @@ bool Compiler::fgCastNeeded(GenTree* tree, var_types toType)
         return false;
     }
     //
-    // If the sign-ness of the two types are different then a cast is necessary
+    // If the sign-ness of the two types are different then a cast is necessary, except for
+    // an unsigned -> signed cast where we already know the sign bit is zero.
     //
     if (varTypeIsUnsigned(toType) != varTypeIsUnsigned(fromType))
     {
-        return true;
+        bool isZeroExtension = varTypeIsUnsigned(fromType) && (genTypeSize(fromType) < genTypeSize(toType));
+        if (!isZeroExtension)
+        {
+            return true;
+        }
     }
     //
     // If the from type is the same size or smaller then an additional cast is not necessary
