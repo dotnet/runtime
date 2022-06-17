@@ -164,7 +164,9 @@ namespace System.Reflection.PortableExecutable
             builder.WriteUInt32(PEHeaders.PESignature);
         }
 
-        private static ReadOnlySpan<byte> DosHeader => new byte[0x80]
+        internal const int DosHeaderSize = 0x80;
+
+        private static ReadOnlySpan<byte> DosHeader => new byte[DosHeaderSize]
         {
             0x4d, 0x5a, 0x90, 0x00, 0x03, 0x00, 0x00, 0x00,
             0x04, 0x00, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00,
@@ -186,8 +188,6 @@ namespace System.Reflection.PortableExecutable
             0x6d, 0x6f, 0x64, 0x65, 0x2e, 0x0d, 0x0d, 0x0a,
             0x24, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
         };
-
-        internal const int DosHeaderSize = 0x80;
 
         private void WriteCoffHeader(BlobBuilder builder, ImmutableArray<SerializedSection> sections, out Blob stampFixup)
         {
