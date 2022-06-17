@@ -68,11 +68,8 @@ namespace System.Xml
             (byte)'e', (byte)'n', (byte)'c', (byte)'o', (byte)'d', (byte)'i', (byte)'n', (byte)'g', (byte)'=', (byte)'"', (byte)'u', (byte)'t', (byte)'f', (byte)'-', (byte)'8', (byte)'"',
             (byte)'?', (byte)'>'
         };
-        private static ReadOnlySpan<byte> Digits => new byte[]
-        {
-            (byte) '0', (byte) '1', (byte) '2', (byte) '3', (byte) '4', (byte) '5', (byte) '6', (byte) '7',
-            (byte) '8', (byte) '9', (byte) 'A', (byte) 'B', (byte) 'C', (byte) 'D', (byte) 'E', (byte) 'F'
-        };
+        private static ReadOnlySpan<byte> Digits => "0123456789ABCDEF"u8;
+
         private static readonly bool[] s_defaultIsEscapedAttributeChar = new bool[]
         {
             true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true,
