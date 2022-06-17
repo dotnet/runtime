@@ -432,10 +432,27 @@ mono_threads_wasm_on_thread_attached (void)
 			console.log ('In mono_threads_wasm_on_thread_attached');
 		});
 #ifdef DISABLE_THREADS
+	EM_ASM({
+			console.log ('In mono_threads_wasm_on_thread_attached: no threads, returning');
+		});
+
 	return;
 #else
-	if (mono_threads_wasm_is_browser_thread ())
+	EM_ASM({
+			console.log ('In mono_threads_wasm_on_thread_attached: yes threads');
+		});
+	
+	if (mono_threads_wasm_is_browser_thread ()) {
+		EM_ASM({
+				console.log ('In mono_threads_wasm_on_thread_attached: main thread, returning');
+		});
+
 		return;
+	}
+	EM_ASM({
+			console.log ('In mono_threads_wasm_on_thread_attached: other pthread, setting up channel');
+		});
+
 
 	// Set up a MessageChannel between the new thread (which might be on a pooled reused WebWorker) and the main thread.
 	
