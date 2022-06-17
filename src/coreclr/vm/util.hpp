@@ -78,7 +78,6 @@ BOOL inline FitsInU4(unsigned __int64 val)
 #define FastInterlockedCompareExchange64 InterlockedCompareExchange64
 #define FastInterlockedCompareExchangeAcquire InterlockedCompareExchangeAcquire
 #define FastInterlockedCompareExchangeRelease InterlockedCompareExchangeRelease
-
 #else
 
 #if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
@@ -88,7 +87,6 @@ FORCEINLINE LONG  FastInterlockedCompareExchange(
     LONG Exchange,
     LONG Comperand)
 {
-    printf("g_atomic_present (FastInterlockedCompareExchange)= %d\n", g_atomic_present);
     if (g_atomic_present)
     {
         return (LONG) __casal32((unsigned __int32*) Destination, (unsigned  __int32)Comperand, (unsigned __int32)Exchange);
@@ -104,7 +102,6 @@ FORCEINLINE LONGLONG  FastInterlockedCompareExchange64(
     IN LONGLONG Exchange,
     IN LONGLONG Comperand)
 {
-    printf("g_atomic_present (FastInterlockedCompareExchange64)= %d\n", g_atomic_present);
     if (g_atomic_present)
     {
         return (LONGLONG) __casal64((unsigned __int64*) Destination, (unsigned  __int64)Comperand, (unsigned __int64)Exchange);
@@ -121,7 +118,6 @@ FORCEINLINE LONG FastInterlockedCompareExchangeAcquire(
   IN LONG Comperand
 )
 {
-    printf("g_atomic_present (FastInterlockedCompareExchangeAcquire)= %d\n", g_atomic_present);
     if (g_atomic_present)
     {
         return (LONG) __casa32((unsigned __int32*) Destination, (unsigned  __int32)Comperand, (unsigned __int32)Exchange);
@@ -138,7 +134,6 @@ FORCEINLINE LONG FastInterlockedCompareExchangeRelease(
   IN LONG Comperand
 )
 {
-    printf("g_atomic_present (FastInterlockedCompareExchangeRelease)= %d\n", g_atomic_present);
     if (g_atomic_present)
     {
         return (LONG) __casl32((unsigned __int32*) Destination, (unsigned  __int32)Comperand, (unsigned __int32)Exchange);
