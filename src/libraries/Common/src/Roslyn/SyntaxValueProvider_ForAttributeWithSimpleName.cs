@@ -1,8 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -10,13 +10,14 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Transactions;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.PooledObjects;
 using Microsoft.CodeAnalysis.SourceGeneration;
 using Roslyn.Utilities;
 
 namespace Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 
-using Aliases = ArrayBuilder<(string aliasName, string symbolName)>;
+using Aliases = ValueListBuilder<(string aliasName, string symbolName)>;
 
 internal static partial class SyntaxValueProviderExtensions
 {
@@ -39,16 +40,17 @@ internal static partial class SyntaxValueProviderExtensions
     /// <c>context.SyntaxProvider.CreateSyntaxProviderForAttribute(nameof(CLSCompliantAttribute), (node, c) => node is ClassDeclarationSyntax)</c>
     /// will find the <c>C</c> class.
     /// </summary>
-    internal IncrementalValuesProvider<SyntaxNode> ForAttributeWithSimpleName(
+    public static IncrementalValuesProvider<SyntaxNode> ForAttributeWithSimpleName(
+        this SyntaxValueProvider @this,
         string simpleName,
         Func<SyntaxNode, CancellationToken, bool> predicate)
     {
-        var syntaxHelper = _context.SyntaxHelper;
+        var syntaxHelper = CSharpSyntaxHelper.Instance;
 
         // Create a provider that provides (and updates) the global aliases for any particular file when it is edited.
-        var individualFileGlobalAliasesProvider = this.CreateSyntaxProvider(
+        var individualFileGlobalAliasesProvider = @this.CreateSyntaxProvider(
             static (n, _) => n is ICompilationUnitSyntax,
-            static (context, _) => getGlobalAliasesInCompilationUnit(context.SyntaxHelper, context.Node)).WithTrackingName("individualFileGlobalAliases_ForAttribute");
+            static (context, _) => getGlobalAliasesInCompilationUnit(context.Node)).WithTrackingName("individualFileGlobalAliases_ForAttribute");
 
         // Create an aggregated view of all global aliases across all files.  This should only update when an individual
         // file changes its global aliases or a file is added / removed from the compilation
@@ -60,6 +62,10 @@ internal static partial class SyntaxValueProviderExtensions
         var allUpGlobalAliasesProvider = collectedGlobalAliasesProvider
             .Select(static (arrays, _) => GlobalAliases.Create(arrays.SelectMany(a => a.AliasAndSymbolNames).ToImmutableArray()))
             .WithTrackingName("allUpGlobalAliases_ForAttribute");
+
+#if false
+
+        // C# does not support global aliases from compilation options.  So we can just ignore this part.
 
         // Regenerate our data if the compilation options changed.  VB can supply global aliases with compilation options,
         // so we have to reanalyze everything if those changed.
@@ -76,8 +82,10 @@ internal static partial class SyntaxValueProviderExtensions
             .Select((tuple, _) => GlobalAliases.Concat(tuple.Left, tuple.Right))
             .WithTrackingName("allUpIncludingCompilationGlobalAliases_ForAttribute");
 
+#endif
+
         // Create a syntax provider for every compilation unit.
-        var compilationUnitProvider = this.CreateSyntaxProvider(
+        var compilationUnitProvider = @this.CreateSyntaxProvider(
             static (n, _) => n is ICompilationUnitSyntax,
             static (context, _) => context.Node).WithTrackingName("compilationUnit_ForAttribute");
 
@@ -87,7 +95,7 @@ internal static partial class SyntaxValueProviderExtensions
             .Combine(allUpGlobalAliasesProvider)
             .WithTrackingName("compilationUnitAndGlobalAliases_ForAttribute");
 
-        // For each pair of compilation unit + global aliases, walk the compilation unit 
+        // For each pair of compilation unit + global aliases, walk the compilation unit
         var result = compilationUnitAndGlobalAliasesProvider
             .SelectMany((globalAliasesAndCompilationUnit, cancellationToken) => GetMatchingNodes(
                 syntaxHelper, globalAliasesAndCompilationUnit.Right, globalAliasesAndCompilationUnit.Left, simpleName, predicate, cancellationToken))
@@ -96,15 +104,14 @@ internal static partial class SyntaxValueProviderExtensions
         return result;
 
         static GlobalAliases getGlobalAliasesInCompilationUnit(
-            ISyntaxHelper syntaxHelper,
             SyntaxNode compilationUnit)
         {
             Debug.Assert(compilationUnit is ICompilationUnitSyntax);
-            var globalAliases = Aliases.GetInstance();
+            var globalAliases = new Aliases(Span<(string aliasName, string symbolName)>.Empty);
 
-            syntaxHelper.AddAliases(compilationUnit, globalAliases, global: true);
+            CSharpSyntaxHelper.Instance.AddAliases(compilationUnit, ref globalAliases, global: true);
 
-            return GlobalAliases.Create(globalAliases.ToImmutableAndFree());
+            return GlobalAliases.Create(ImmutableArray.CreateRange( globalAliases.AsSpan());
         }
     }
 

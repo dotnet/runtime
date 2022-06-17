@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+
 using Microsoft.CodeAnalysis;
 
 namespace Microsoft.CodeAnalysis.DotnetRuntime.Extensions
@@ -135,6 +137,12 @@ namespace Microsoft.CodeAnalysis.DotnetRuntime.Extensions
             Friend = Internal,
         }
 
+        internal static bool HasAttributeSuffix(this string name, bool isCaseSensitive)
+        {
+            const string AttributeSuffix = "Attribute";
 
+            var comparison = isCaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+            return name.Length > AttributeSuffix.Length && name.EndsWith(AttributeSuffix, comparison);
+        }
     }
 }
