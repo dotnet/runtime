@@ -44,6 +44,27 @@ namespace System.IO.Tests
             return path;
         }
 
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [Fact]
+        public void Get()
+        {
+            string path = CreateTestItem();
+
+            UnixFileMode mode = GetMode(path); // Doesn't throw.
+
+            Assert.NotEqual((UnixFileMode)(-1), mode);
+
+            UnixFileMode required = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+            if (IsDirectory)
+            {
+                required = UnixFileMode.UserExecute;
+            }
+            Assert.True((mode & required) == required);
+
+            // The file should not be writable by others.
+            Assert.Equal(UnixFileMode.None, mode & UnixFileMode.OtherWrite);
+        }
+
         [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
         [Theory]
         [MemberData(nameof(TestUnixFileModes))]

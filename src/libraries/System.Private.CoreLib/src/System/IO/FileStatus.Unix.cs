@@ -433,10 +433,13 @@ namespace System.IO
                 throw new ArgumentException(SR.Arg_InvalidUnixFileMode, nameof(UnixFileMode));
             }
 
-            EnsureCachesInitialized(path);
+            if (path is not null)
+            {
+                EnsureCachesInitialized(path);
 
-            if (!EntryExists || IsBrokenLink)
-                FileSystemInfo.ThrowNotFound(path);
+                if (!EntryExists || IsBrokenLink)
+                    FileSystemInfo.ThrowNotFound(path);
+            }
 
             // Linux does not support link permissions.
             // To have consistent cross-platform behavior we operate on the link target.
@@ -454,6 +457,8 @@ namespace System.IO
         // This method should not throw. Instead, we store the results, and we will throw when the user attempts to access any of the properties when there was a failure
         internal void RefreshCaches(SafeFileHandle? handle, ReadOnlySpan<char> path)
         {
+            Debug.Assert(handle is not null || path.Length > 0);
+
 #if !TARGET_BROWSER
             _isReadOnlyCache = -1;
 #endif
