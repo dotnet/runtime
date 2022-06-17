@@ -1493,7 +1493,7 @@ namespace System.Data
                     int i = 0;
                     colName = typeName + "_Text";
                     while (table.Columns[colName] != null)
-                        colName = colName + i++;
+                        colName += i++;
                 }
                 else
                 {
@@ -2003,7 +2003,7 @@ namespace System.Data
                 colName = table.TableName + "_Text";
                 while (table.Columns[colName] != null)
                 {
-                    colName = colName + i++;
+                    colName += i++;
                 }
             }
             else
@@ -2115,7 +2115,7 @@ namespace System.Data
                 colName = table.TableName + "_Text";
                 while (table.Columns[colName] != null)
                 {
-                    colName = colName + i++;
+                    colName += i++;
                 }
             }
             else

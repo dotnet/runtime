@@ -131,7 +131,7 @@ namespace System.Data.Common
                 {
                     // help the user out in the case where there's less data than requested
                     if ((ndataIndex + length) > cbytes)
-                        cbytes = cbytes - ndataIndex;
+                        cbytes -= ndataIndex;
                     else
                         cbytes = length;
                 }
@@ -205,7 +205,7 @@ namespace System.Data.Common
                     // help the user out in the case where there's less data than requested
                     if ((ndataIndex + length) > cchars)
                     {
-                        cchars = cchars - ndataIndex;
+                        cchars -= ndataIndex;
                     }
                     else
                     {

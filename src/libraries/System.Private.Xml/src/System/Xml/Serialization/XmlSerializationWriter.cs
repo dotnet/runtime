@@ -1222,7 +1222,7 @@ namespace System.Xml.Serialization
             }
 
             if (arrayDims.Length > 0)
-                typeName = typeName + arrayDims.ToString();
+                typeName += arrayDims.ToString();
 
             if (_soap12 && name != null && name.Length > 0)
                 WriteStartElement(name, ns, null, false);

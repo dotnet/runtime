@@ -736,7 +736,7 @@ namespace System.ServiceModel.Syndication
                         }
                         else if (reader.IsStartElement(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace))
                         {
-                            feedItems = feedItems ?? new NullNotAllowedCollection<SyndicationItem>();
+                            feedItems ??= new NullNotAllowedCollection<SyndicationItem>();
                             IEnumerable<SyndicationItem> items = ReadItems(reader, result, out areAllItemsRead);
                             foreach (SyndicationItem item in items)
                             {

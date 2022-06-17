@@ -2225,7 +2225,7 @@ namespace System.Data.SqlTypes
                 ulQuotientCur = (uint)(dwlAccum / dwlDivisor);
                 rguiData[iData - 1] = ulQuotientCur;
                 //Remainder to be carried to the next lower significant byte.
-                dwlAccum = dwlAccum % dwlDivisor;
+                dwlAccum %= dwlDivisor;
 
                 // While current part of quotient still 0, reduce length
                 if (fAllZero && (ulQuotientCur == 0))

@@ -1093,7 +1093,7 @@ namespace System.Data
             _fileName = Path.GetFileNameWithoutExtension(fs.Name);
             _fileExt = Path.GetExtension(fs.Name);
             if (!string.IsNullOrEmpty(_filePath))
-                _filePath = _filePath + "\\";
+                _filePath += "\\";
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]

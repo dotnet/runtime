@@ -32,7 +32,7 @@ namespace System.ComponentModel.Composition.Hosting
             Action<ComposablePartCatalogChangeEventArgs>? onChanged,
             Action<ComposablePartCatalogChangeEventArgs>? onChanging)
         {
-            catalogs = catalogs ?? Enumerable.Empty<ComposablePartCatalog>();
+            catalogs ??= Enumerable.Empty<ComposablePartCatalog>();
             _catalogs = new List<ComposablePartCatalog>(catalogs);
             _onChanged = onChanged;
             _onChanging = onChanging;

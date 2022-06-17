@@ -1389,7 +1389,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode("calls ImportSubstitutionGroupMember")]
         private void ImportElementMember(XmlSchemaElement element, string identifier, CodeIdentifiers members, CodeIdentifiers membersScope, INameScope elementsScope, string? ns, bool repeats, ref bool needExplicitOrder, bool allowDuplicates, bool allowUnboundedElements)
         {
-            repeats = repeats | element.IsMultipleOccurrence;
+            repeats |= element.IsMultipleOccurrence;
             XmlSchemaElement? headElement = GetTopLevelElement(element);
             if (headElement != null && ImportSubstitutionGroupMember(headElement, identifier, members, membersScope, ns, repeats, ref needExplicitOrder, allowDuplicates))
             {
