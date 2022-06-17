@@ -3125,15 +3125,24 @@ BasicBlock* Compiler::fgGetDomSpeculatively(const BasicBlock* block)
     BasicBlock* lastReachablePred = nullptr;
 
     // Check if we have unreachable preds
-    for (BasicBlock* pred : block->PredBlocks())
+    for (const flowList* predEdge : block->PredEdges())
     {
-        // We, probably, could use fgReachable(fgFirstBb, pred) here
-        if (pred->countOfInEdges() > 0)
+        BasicBlock* predBlock = predEdge->getBlock();
+        if (predBlock == block)
         {
-            lastReachablePred = pred;
+            // can a block have a predEdge to itself?
+            return block->bbIDom;
+        }
+
+        // We check pred's count of InEdges - it's quite conservative.
+        // We, probably, could use fgReachable(fgFirstBb, pred) here to detect unreachable preds
+        if (predBlock->countOfInEdges() > 0)
+        {
+            lastReachablePred = predBlock;
             reachablePreds++;
         }
     }
+
     if (reachablePreds == 1)
     {
         assert(lastReachablePred != nullptr);

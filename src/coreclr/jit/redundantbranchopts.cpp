@@ -312,7 +312,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
             // It's possible that bbIDom is not up to date at this point due to recent BB modifications
             // so let's try to quickly calculate new one
             domBlock = fgGetDomSpeculatively(block);
-            if (domBlock == block->bbIDom || domBlock == speculativeDom)
+            if ((domBlock == block->bbIDom) || (domBlock == speculativeDom))
             {
                 // We already checked this one
                 break;
@@ -540,7 +540,8 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     // we might need to duplicate a lot of code to thread
     // the jumps. See if that's the case.
     //
-    const bool isIDom = domBlock == block->bbIDom;
+    BasicBlock* idomBlock = fgGetDomSpeculatively(block);
+    const bool  isIDom    = domBlock == idomBlock;
     if (!isIDom)
     {
         // Walk up the dom tree until we hit dom block.
@@ -549,7 +550,6 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
         // then we must have already optimized them, and
         // so should not have to duplicate code to thread.
         //
-        BasicBlock* idomBlock = fgGetDomSpeculatively(block);
         while ((idomBlock != nullptr) && (idomBlock != domBlock))
         {
             if (idomBlock->bbJumpKind == BBJ_COND)
@@ -557,9 +557,10 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
                 JITDUMP(" -- " FMT_BB " not closest branching dom, so no threading\n", idomBlock->bbNum);
                 return false;
             }
+
             JITDUMP(" -- bypassing %sdom " FMT_BB " as it was already optimized\n",
-                    (idomBlock == block->bbIDom) ? "i" : "", idomBlock->bbNum);
-            idomBlock = idomBlock->bbIDom;
+                    (idomBlock == fgGetDomSpeculatively(block)) ? "i" : "", idomBlock->bbNum);
+            idomBlock = fgGetDomSpeculatively(idomBlock);
         }
 
         // If we didn't bail out above, we should have reached domBlock.
