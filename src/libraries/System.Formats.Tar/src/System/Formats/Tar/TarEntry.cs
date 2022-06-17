@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Win32.SafeHandles;
 
 namespace System.Formats.Tar
 {
@@ -594,20 +593,5 @@ namespace System.Formats.Tar
 
             ArchivingUtils.AttemptSetLastWriteTime(destinationFileName, ModificationTime);
         }
-
-        // Abstract method that extracts the current entry when it is a block device.
-        partial void ExtractAsBlockDevice(string destinationFileName);
-
-        // Abstract method that extracts the current entry when it is a character device.
-        partial void ExtractAsCharacterDevice(string destinationFileName);
-
-        // Abstract method that extracts the current entry when it is a fifo file.
-        partial void ExtractAsFifo(string destinationFileName);
-
-        // Abstract method that extracts the current entry when it is a hard link.
-        partial void ExtractAsHardLink(string targetFilePath, string hardLinkFilePath);
-
-        // Abstract method that sets the file permissions of the file.
-        partial void SetModeOnFile(SafeFileHandle handle, string destinationFileName);
     }
 }
