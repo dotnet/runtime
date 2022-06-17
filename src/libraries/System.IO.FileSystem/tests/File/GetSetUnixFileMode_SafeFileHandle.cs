@@ -7,7 +7,6 @@ namespace System.IO.Tests
 {
     public class File_GetSetUnixFileMode_SafeFileHandle : BaseGetSetUnixFileMode
     {
-        protected override bool ApiFollowsLink => true;
         protected override bool GetThrowsWhenDoesntExist => true;
         protected override bool GetModeNeedsReadableFile => true;
 

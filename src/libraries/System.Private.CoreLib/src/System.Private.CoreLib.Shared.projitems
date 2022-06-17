@@ -2061,9 +2061,6 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LChflags.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.LChflags.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LChMod.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.LChMod.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Link.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Link.cs</Link>
     </Compile>
@@ -2199,8 +2196,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Directory.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\File.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStatus.Unix.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStatus.SetUnixFileMode.Linux.cs" Condition="'$(TargetsLinux)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStatus.SetUnixFileMode.NonLinux.cs" Condition="'$(TargetsLinux)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileSystem.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileSystem.Exists.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileSystemInfo.Unix.cs" />

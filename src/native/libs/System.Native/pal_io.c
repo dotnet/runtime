@@ -706,13 +706,6 @@ int32_t SystemNative_FChMod(intptr_t fd, int32_t mode)
     return result;
 }
 
-int32_t SystemNative_LChMod(const char* path, int32_t mode)
-{
-    int32_t result;
-    while ((result = fchmodat(AT_FDCWD, path, (mode_t)mode, AT_SYMLINK_NOFOLLOW)) < 0 && errno == EINTR);
-    return result;
-}
-
 int32_t SystemNative_FSync(intptr_t fd)
 {
     int fileDescriptor = ToFileDescriptor(fd);

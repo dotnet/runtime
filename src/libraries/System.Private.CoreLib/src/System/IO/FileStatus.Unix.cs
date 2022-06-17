@@ -11,6 +11,7 @@ namespace System.IO
     {
         private const int NanosecondsPerTick = 100;
 
+        private const int InitializedExistsBrokenLink = -4;  // target is link with no target.
         private const int InitializedExistsDir = -3;  // target is directory.
         private const int InitializedExistsFile = -2; // target is file.
         private const int InitializedNotExists = -1;  // entry does not exist.
@@ -30,6 +31,8 @@ namespace System.IO
 
         private bool IsDir => _state == InitializedExistsDir;
 
+        private bool IsBrokenLink => _state == InitializedExistsBrokenLink;
+
         // Check if the main path (without following symlinks) has the hidden attribute set.
         private bool HasHiddenFlag
         {
@@ -48,7 +51,7 @@ namespace System.IO
             {
                 Debug.Assert(_state != Uninitialized); // Use this after EnsureCachesInitialized has been called.
 
-                if (!EntryExists)
+                if (!EntryExists || IsBrokenLink)
                 {
                     return false;
                 }
@@ -411,7 +414,7 @@ namespace System.IO
         {
             EnsureCachesInitialized(handle, path, continueOnError);
 
-            if (!EntryExists)
+            if (!EntryExists || IsBrokenLink)
                 return (UnixFileMode)(-1);
 
             return (UnixFileMode)(_fileCache.Mode & (int)FileSystem.ValidUnixFileModes);
@@ -430,8 +433,15 @@ namespace System.IO
                 throw new ArgumentException(SR.Arg_InvalidUnixFileMode, nameof(UnixFileMode));
             }
 
-            int rv = handle is not null ? Interop.Sys.FChMod(handle, (int)mode) :
-                                          ChModNoFollowLink(path!, (int)mode);
+            EnsureCachesInitialized(path);
+
+            if (!EntryExists || IsBrokenLink)
+                FileSystemInfo.ThrowNotFound(path);
+
+            // Linux does not support link permissions.
+            // To have consistent cross-platform behavior we operate on the link target.
+            int rv = handle is not null ? Interop.Sys.FChMod(handle, (int)mode)
+                                        : Interop.Sys.ChMod(path!, (int)mode);
             Interop.CheckIo(rv, path);
 
             InvalidateCaches();
@@ -478,11 +488,23 @@ namespace System.IO
 
             // Check if the main path is a directory, or a link to a directory.
             int fileType = _fileCache.Mode & Interop.Sys.FileTypes.S_IFMT;
-            bool isDirectory = fileType == Interop.Sys.FileTypes.S_IFDIR ||
-                               (handle is null && // Don't follow links for SafeHandle APIs.
-                                fileType == Interop.Sys.FileTypes.S_IFLNK &&
-                                Interop.Sys.Stat(path, out Interop.Sys.FileStatus target) == 0 &&
-                                (target.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR);
+            bool isDirectory = fileType == Interop.Sys.FileTypes.S_IFDIR;
+
+            if (fileType == Interop.Sys.FileTypes.S_IFLNK)
+            {
+                if (Interop.Sys.Stat(path, out Interop.Sys.FileStatus target) == 0)
+                {
+                    isDirectory = (target.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
+
+                    // Make GetUnixFileMode return target permissions.
+                    _fileCache.Mode = Interop.Sys.FileTypes.S_IFLNK | (target.Mode & (int)FileSystem.ValidUnixFileModes);
+                }
+                else
+                {
+                    _state = InitializedExistsBrokenLink;
+                    return;
+                }
+            }
 
             _state = isDirectory ? InitializedExistsDir : InitializedExistsFile;
         }

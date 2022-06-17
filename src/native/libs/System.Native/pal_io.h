@@ -491,13 +491,6 @@ PALEXPORT int32_t SystemNative_ChMod(const char* path, int32_t mode);
 PALEXPORT int32_t SystemNative_FChMod(intptr_t fd, int32_t mode);
 
 /**
-* Change permissions of a file. Implemented as a shim to lchmod(2).
-*
-* Returns 0 for success, -1 for failure. Sets errno for failure.
-*/
-PALEXPORT int32_t SystemNative_LChMod(const char* path, int32_t mode);
-
-/**
  * Flushes all modified data and attribtues of the specified File Descriptor to the storage medium.
  *
  * Returns 0 for success; on fail, -1 is returned and errno is set.

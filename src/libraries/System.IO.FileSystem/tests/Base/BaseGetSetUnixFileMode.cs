@@ -11,23 +11,17 @@ namespace System.IO.Tests
         protected abstract UnixFileMode GetMode(string path);
         protected abstract void SetMode(string path, UnixFileMode mode);
 
-        // When true, the APIs follow the link for Get and Set.
-        protected virtual bool ApiFollowsLink => false;
-
         // When false, the Get API returns (UnixFileMode)(-1) when the file doesn't exist.
         protected virtual bool GetThrowsWhenDoesntExist => false;
 
         // The FileSafeHandle APIs require a readable file to open the handle.
         protected virtual bool GetModeNeedsReadableFile => false;
 
-        // When false, the Get API returns (UnixFileMode)(-1) when the platform is not supported.
+        // When false, the Get API returns (UnixFileMode)(-1) when the platform is not supported (Windows).
         protected virtual bool GetModeThrowsPNSE => true;
 
         // Determines if the derived Test class is for directories or files.
         protected virtual bool IsDirectory => false;
-
-        // Linux doesn't support setting UnixFileMode on links.
-        private bool SetModeSupportsLink => PlatformDetection.IsBsdLike;
 
         // On OSX, directories created under /tmp have same group as /tmp.
         // Because that group is different from the test user's group, chmod
@@ -92,28 +86,10 @@ namespace System.IO.Tests
             string linkPath = GetTestFilePath();
             File.CreateSymbolicLink(linkPath, path);
 
-            if (ApiFollowsLink)
-            {
-                SetMode(linkPath, mode);
+            SetMode(linkPath, mode);
 
-                Assert.Equal(mode, GetMode(linkPath));
-                Assert.Equal(mode, GetMode(path));
-            }
-            else
-            {
-                if (!SetModeSupportsLink)
-                {
-                    Assert.Throws<IOException>(() => SetMode(linkPath, mode));
-                    return;
-                }
-
-                UnixFileMode initialMode = GetMode(path);
-
-                SetMode(linkPath, mode);
-
-                Assert.Equal(mode, GetMode(linkPath));
-                Assert.Equal(initialMode, GetMode(path));
-            }
+            Assert.Equal(mode, GetMode(linkPath));
+            Assert.Equal(mode, GetMode(path));
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
@@ -134,38 +110,22 @@ namespace System.IO.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [Theory]
-        [InlineData(UnixFileMode.UserRead)]
-        public void FileDoesntExist_SymbolicLink(UnixFileMode mode)
+        [Fact]
+        public void FileDoesntExist_SymbolicLink()
         {
             string path = GetTestFilePath();
             string linkPath = GetTestFilePath();
             File.CreateSymbolicLink(linkPath, path);
 
-            if (ApiFollowsLink)
-            {
-                Assert.Throws<FileNotFoundException>(() => SetMode(linkPath, AllAccess));
+            Assert.Throws<FileNotFoundException>(() => SetMode(linkPath, AllAccess));
 
-                if (GetThrowsWhenDoesntExist)
-                {
-                    Assert.Throws<FileNotFoundException>(() => GetMode(path));
-                }
-                else
-                {
-                    Assert.Equal((UnixFileMode)(-1), GetMode(path));
-                }
+            if (GetThrowsWhenDoesntExist)
+            {
+                Assert.Throws<FileNotFoundException>(() => GetMode(path));
             }
             else
             {
-                if (!SetModeSupportsLink)
-                {
-                    Assert.Throws<IOException>(() => SetMode(linkPath, AllAccess));
-                    return;
-                }
-
-                SetMode(linkPath, mode);
-
-                Assert.Equal(mode, GetMode(linkPath));
+                Assert.Equal((UnixFileMode)(-1), GetMode(path));
             }
         }
 

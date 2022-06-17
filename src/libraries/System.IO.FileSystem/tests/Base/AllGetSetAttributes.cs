@@ -48,7 +48,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
-        public void SymLinksReflectSymLinkAttributes()
+        public void SymLinksReflectTargetReadOnly()
         {
             string path = CreateItem();
             string linkPath = GetRandomLinkPath();
@@ -59,7 +59,14 @@ namespace System.IO.Tests
             try
             {
                 Assert.Equal(FileAttributes.ReadOnly, FileAttributes.ReadOnly & GetAttributes(path));
-                Assert.NotEqual(FileAttributes.ReadOnly, FileAttributes.ReadOnly & GetAttributes(linkPath));
+                if (OperatingSystem.IsWindows())
+                {
+                    Assert.NotEqual(FileAttributes.ReadOnly, FileAttributes.ReadOnly & GetAttributes(linkPath));   
+                }
+                else
+                {
+                    Assert.Equal(FileAttributes.ReadOnly, FileAttributes.ReadOnly & GetAttributes(linkPath));   
+                }
             }
             finally
             {
