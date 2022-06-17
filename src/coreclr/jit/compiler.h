@@ -6335,6 +6335,14 @@ protected:
     // unshared with any other loop.  Returns "true" iff the flowgraph has been modified
     bool optCanonicalizeLoop(unsigned char loopInd);
 
+    enum class LoopCanonicalizationOption
+    {
+        Outer,
+        Current
+    };
+
+    bool optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizationOption option);
+
     // Requires "l1" to be a valid loop table index, and not "BasicBlock::NOT_IN_LOOP".
     // Requires "l2" to be a valid loop table index, or else "BasicBlock::NOT_IN_LOOP".
     // Returns true iff "l2" is not NOT_IN_LOOP, and "l1" contains "l2".
