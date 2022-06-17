@@ -46,7 +46,7 @@ namespace System.Net.Security
             const char At = '@';
             const char Backwhack = '\\';
 
-            // any invalid user format will not be mnipulated and passed as it is.
+            // any invalid user format will not be manipulated and passed as it is.
             int index = username.IndexOf(Backwhack);
             if (index > 0 && username.IndexOf(Backwhack, index + 1) < 0 && string.IsNullOrEmpty(domain))
             {
