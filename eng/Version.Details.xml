@@ -138,9 +138,9 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>0920468fa7db4ee8ea8bbcba186421cb92713adf</Sha>
     </Dependency>
-    <Dependency Name="System.Formats.Tar.TestData" Version="7.0.0-beta.22281.1">
+    <Dependency Name="System.Formats.Tar.TestData" Version="7.0.0-beta.22313.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
-      <Sha>0920468fa7db4ee8ea8bbcba186421cb92713adf</Sha>
+      <Sha>371af1f99788b76eae14b96aad4ab7ac9b373938</Sha>
     </Dependency>
     <Dependency Name="System.IO.Compression.TestData" Version="7.0.0-beta.22281.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
