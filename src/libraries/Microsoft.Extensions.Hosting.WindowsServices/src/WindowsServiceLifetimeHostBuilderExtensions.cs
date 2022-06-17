@@ -22,8 +22,7 @@ namespace Microsoft.Extensions.Hosting
         /// to <see cref="AppContext.BaseDirectory"/>, and enables logging to the event log with the application name as the default source name.
         /// </summary>
         /// <remarks>
-        /// This is context aware and will only activate if it detects the process is running
-        /// as a Windows Service.
+        /// This is context aware and will only activate if it detects the process is running as a Windows Service.
         /// </remarks>
         /// <param name="hostBuilder">The <see cref="IHostBuilder"/> to operate on.</param>
         /// <returns>The <paramref name="hostBuilder"/> instance for chaining.</returns>
@@ -33,8 +32,8 @@ namespace Microsoft.Extensions.Hosting
         }
 
         /// <summary>
-        /// Sets the host lifetime to <see cref="WindowsServiceLifetime"/>, sets the <see cref="IHostEnvironment.ContentRootPath"/>
-        /// to <see cref="AppContext.BaseDirectory"/>, and enables logging to the event log with the application name as the default source name.
+        /// Sets the host lifetime to <see cref="WindowsServiceLifetime"/> and enables logging to the event log with the application
+        /// name as the default source name.
         /// </summary>
         /// <remarks>
         /// This is context aware and will only activate if it detects the process is running
@@ -47,8 +46,6 @@ namespace Microsoft.Extensions.Hosting
         {
             if (WindowsServiceHelpers.IsWindowsService())
             {
-                // Host.CreateDefaultBuilder uses CurrentDirectory for VS scenarios, but CurrentDirectory for services is c:\Windows\System32.
-                hostBuilder.UseContentRoot(AppContext.BaseDirectory);
                 hostBuilder.ConfigureServices(services =>
                 {
                     AddWindowsServiceLifetime(services, configure);
@@ -100,21 +97,10 @@ namespace Microsoft.Extensions.Hosting
         {
             if (WindowsServiceHelpers.IsWindowsService())
             {
-                AddWindowsServiceUnchecked(services, configure);
+                AddWindowsServiceLifetime(services, configure);
             }
 
             return services;
-        }
-
-        // This is a separate method for testing.
-        private static void AddWindowsServiceUnchecked(IServiceCollection services, Action<WindowsServiceLifetimeOptions> configure)
-        {
-            services.Configure<WindowsServiceLifetimeOptions>(options =>
-            {
-                // Host.CreateDefaultBuilder uses CurrentDirectory for VS scenarios, but CurrentDirectory for services is c:\Windows\System32.
-                options.ValidateContentRoot = true;
-            });
-            AddWindowsServiceLifetime(services, configure);
         }
 
         private static void AddWindowsServiceLifetime(IServiceCollection services, Action<WindowsServiceLifetimeOptions> configure)
