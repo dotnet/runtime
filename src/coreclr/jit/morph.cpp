@@ -751,6 +751,8 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
         {
             assert(m_hasStackArgs);
 #if !FEATURE_FIXED_OUT_ARGS
+            // Non-register arguments are evaluated and pushed in order; they
+            // should never go in the late arg list.
             canEvalToTemp = false;
 #endif
         }
