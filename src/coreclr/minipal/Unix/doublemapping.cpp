@@ -33,7 +33,7 @@ bool IsProcessTranslated()
    {
       return false;
    }
-   return ret != 0;
+   return ret == 1;
 }
 #endif // TARGET_OSX && TARGET_AMD64
 
