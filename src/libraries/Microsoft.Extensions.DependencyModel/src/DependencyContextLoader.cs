@@ -162,7 +162,9 @@ namespace Microsoft.Extensions.DependencyModel
         [RequiresAssemblyFiles]
         private static string? GetNormalizedCodeBasePath(Assembly assembly)
         {
-            if (Uri.TryCreate(assembly.Location, UriKind.Absolute, out Uri? codeBase)
+#pragma warning disable SYSLIB0012 // CodeBase is obsolete
+            if (Uri.TryCreate(assembly.CodeBase, UriKind.Absolute, out Uri? codeBase)
+#pragma warning restore SYSLIB0012 // CodeBase is obsolete
                 && codeBase.IsFile)
             {
                 return codeBase.LocalPath;
