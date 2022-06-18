@@ -3140,6 +3140,11 @@ BasicBlock* Compiler::fgGetDomSpeculatively(const BasicBlock* block)
         {
             lastReachablePred = predBlock;
             reachablePreds++;
+            if (reachablePreds > 1)
+            {
+                // Too many "reachable" preds - return cached result
+                return block->bbIDom;
+            }
         }
     }
 

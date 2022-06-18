@@ -304,20 +304,20 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                 relopValue == 0 ? "false" : "true");
     }
 
-    BasicBlock* speculativeDom = nullptr;
-    while (relopValue == -1)
+    bool trySpeculativeDom = false;
+    while ((relopValue == -1) && !trySpeculativeDom)
     {
         if (domBlock == nullptr)
         {
             // It's possible that bbIDom is not up to date at this point due to recent BB modifications
             // so let's try to quickly calculate new one
             domBlock = fgGetDomSpeculatively(block);
-            if ((domBlock == block->bbIDom) || (domBlock == speculativeDom))
+            if (domBlock == block->bbIDom)
             {
                 // We already checked this one
                 break;
             }
-            speculativeDom = domBlock;
+            trySpeculativeDom = true;
         }
 
         if (domBlock == nullptr)
@@ -381,6 +381,12 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
 
                     if (trueReaches && falseReaches && rii.canInferFromTrue && rii.canInferFromFalse)
                     {
+                        // Throughput fix - it didn't produce much diffs any way
+                        if (trySpeculativeDom)
+                        {
+                            break;
+                        }
+
                         // Both dominating compare outcomes reach the current block so we can't infer the
                         // value of the relop.
                         //
