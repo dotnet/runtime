@@ -1240,16 +1240,22 @@ interp_generate_mae_throw (TransformData *td, MonoMethod *method, MonoMethod *ta
 	td->last_ins->data [0] = get_data_item_index (td, target_method);
 
 	td->sp -= 2;
-	int *call_args = (int*)mono_mempool_alloc (td->mempool, 3 * sizeof (int));
-	call_args [0] = td->sp [0].local;
-	call_args [1] = td->sp [1].local;
-	call_args [2] = -1;
 
 	interp_add_ins (td, MINT_ICALL_PP_V);
 	interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
 	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
-	td->last_ins->info.call_args = call_args;
 	td->last_ins->flags |= INTERP_INST_FLAG_CALL;
+	if (td->optimized) {
+		int *call_args = (int*)mono_mempool_alloc (td->mempool, 3 * sizeof (int));
+		call_args [0] = td->sp [0].local;
+		call_args [1] = td->sp [1].local;
+		call_args [2] = -1;
+		td->last_ins->info.call_args = call_args;
+	} else {
+		// Unoptimized code needs every call to have a dreg for offset allocation,
+		// even if call is void
+		td->last_ins->dreg = td->sp [0].local;
+	}
 }
 
 static void
@@ -1262,6 +1268,11 @@ interp_generate_void_throw (TransformData *td, MonoJitICallId icall_id)
 	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
 	td->last_ins->info.call_args = NULL;
 	td->last_ins->flags |= INTERP_INST_FLAG_CALL;
+	if (!td->optimized) {
+		push_simple_type (td, STACK_TYPE_I4);
+		td->sp--;
+		td->last_ins->dreg = td->sp [0].local;
+	}
 }
 
 static void
@@ -1277,15 +1288,21 @@ interp_generate_ipe_throw_with_msg (TransformData *td, MonoError *error_msg)
 	td->last_ins->data [0] = get_data_item_index (td, msg);
 
 	td->sp -= 1;
-	int *call_args = (int*)mono_mempool_alloc (td->mempool, 2 * sizeof (int));
-	call_args [0] = td->sp [0].local;
-	call_args [1] = -1;
 
 	interp_add_ins (td, MINT_ICALL_P_V);
 	interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
 	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
-	td->last_ins->info.call_args = call_args;
 	td->last_ins->flags |= INTERP_INST_FLAG_CALL;
+	if (td->optimized) {
+		int *call_args = (int*)mono_mempool_alloc (td->mempool, 2 * sizeof (int));
+		call_args [0] = td->sp [0].local;
+		call_args [1] = -1;
+		td->last_ins->info.call_args = call_args;
+	} else {
+		// Unoptimized code needs every call to have a dreg for offset allocation,
+		// even if call is void
+		td->last_ins->dreg = td->sp [0].local;
+	}
 }
 
 static int
@@ -3179,8 +3196,6 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			td->sp -= num_args;
 			guint32 params_stack_size = get_stack_size (td->sp, num_args);
 
-			int *call_args = create_call_args (td, num_args);
-
 			if (is_virtual) {
 				interp_add_ins (td, MINT_CKNULL);
 				interp_ins_set_sreg (td->last_ins, td->sp->local);
@@ -3196,7 +3211,16 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			td->last_ins->data [0] = get_data_item_index_imethod (td, mono_interp_get_imethod (target_method));
 			td->last_ins->data [1] = GUINT32_TO_UINT16 (params_stack_size);
 			td->last_ins->flags |= INTERP_INST_FLAG_CALL;
-			td->last_ins->info.call_args = call_args;
+
+			if (td->optimized) {
+				int *call_args = create_call_args (td, num_args);
+				td->last_ins->info.call_args = call_args;
+			} else {
+				// Dummy dreg
+				push_simple_type (td, STACK_TYPE_I4);
+				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+				td->sp--;
+			}
 
 			int in_offset = GPTRDIFF_TO_INT (td->ip - td->il_code);
 			if (interp_ip_in_cbb (td, in_offset + 5))
@@ -6892,6 +6916,11 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						mt = mint_type (info->sig->ret);
 						push_simple_type (td, stack_type [mt]);
 						dreg = td->sp [-1].local;
+					} else if (!td->optimized) {
+						// Dummy dreg
+						push_simple_type (td, stack_type [STACK_TYPE_I4]);
+						dreg = td->sp [-1].local;
+						td->sp--;
 					}
 
 					if (jit_icall_id == MONO_JIT_ICALL_mono_threads_attach_coop) {
