@@ -38,15 +38,14 @@ CorJitResult interceptor_ICJC::compileMethod(ICorJitInfo*                comp,  
 {
     // See if we are filtering the collection (currently by simple substring match)
     //
-    char* filter = GetEnvironmentVariableWithDefaultA("SuperPMIShimFilter", "");
-
+    static char* filter = GetEnvironmentVariableWithDefaultA("SuperPMIShimFilter", "");
     if (strlen(filter) > 0)
     {
         bool collect = false;
         const char* className = nullptr;
-        const char* methodName = comp->getMethodName(info->ftn, &className);
-        collect |= strstr(methodName, filter) != nullptr);
-        collect |= strstr(className, filter) != nullptr);
+        const char* methodName = comp->getMethodNameFromMetadata(info->ftn, &className, nullptr, nullptr);
+        collect |= (methodName != nullptr) && strstr(methodName, filter) != nullptr;
+        collect |= (className != nullptr) && strstr(className, filter) != nullptr;
         if (!collect)
         {
             return original_ICorJitCompiler->compileMethod(comp, info, flags, nativeEntry, nativeSizeOfCode);
