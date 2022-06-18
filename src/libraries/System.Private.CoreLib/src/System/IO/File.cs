@@ -236,7 +236,6 @@ namespace System.IO
         /// <summary>Gets the <see cref="T:System.IO.UnixFileMode" /> of the specified file handle.</summary>
         /// <param name="fileHandle">The file handle.</param>
         /// <returns>The <see cref="T:System.IO.UnixFileMode" /> of the file handle.</returns>
-        /// <exception cref="T:System.UnauthorizedAccessException">The caller does not have the required permission.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
         [UnsupportedOSPlatform("windows")]
         public static UnixFileMode GetUnixFileMode(SafeFileHandle fileHandle)
