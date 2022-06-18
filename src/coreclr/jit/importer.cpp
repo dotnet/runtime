@@ -10780,6 +10780,7 @@ DONE_CALL:
                     }
                 }
 
+#ifdef TARGET_X86
                 // For non-candidates we must also spill, since we
                 // might have locals live on the eval stack that this
                 // call can modify.
@@ -10807,6 +10808,7 @@ DONE_CALL:
                 {
                     impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("non-inline candidate call"));
                 }
+#endif
             }
         }
 
