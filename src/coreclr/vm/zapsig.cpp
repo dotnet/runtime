@@ -592,7 +592,7 @@ ModuleBase *ZapSig::DecodeModuleFromIndex(Module *fromModule,
     {
         index -= assemblyRefMax;
 
-        if (fromModule->GetReadyToRunInfo()->IsImageVersionAtLeast(6,2))
+        if (fromModule->GetReadyToRunInfo()->IsImageVersionAtLeast(6,3))
         {
             if (index == 1)
             {
@@ -657,7 +657,7 @@ ModuleBase *ZapSig::DecodeModuleFromIndexIfLoaded(Module *fromModule,
     {
         index -= assemblyRefMax;
 
-        if (fromModule->GetReadyToRunInfo()->IsImageVersionAtLeast(6,2))
+        if (fromModule->GetReadyToRunInfo()->IsImageVersionAtLeast(6,3))
         {
             if (index == 1)
             {

@@ -7,7 +7,7 @@ Revisions:
 * 4.1 - [Tomas Rylek](https://github.com/trylek) - 2020
 * 5.3 - [Tomas Rylek](https://github.com/trylek) - 2021
 * 5.4 - [David Wrighton](https://github.com/davidwrighton) - 2021
-* 6.2 - [David Wrighton](https://github.com/davidwrighton) - 2022
+* 6.3 - [David Wrighton](https://github.com/davidwrighton) - 2022
 
 # Introduction
 
@@ -177,7 +177,7 @@ The following section types are defined and described later in this document:
 | OwnerCompositeExecutable  |   116 | Image (added in V4.1)
 | PgoInstrumentationData    |   117 | Image (added in V5.2)
 | ManifestAssemblyMvids     |   118 | Image (added in V5.3)
-| CrossModuleInlineInfo     |   119 | Image (added in V6.2)
+| CrossModuleInlineInfo     |   119 | Image (added in V6.3)
 
 ## ReadyToRunSectionType.CompilerIdentifier
 
@@ -511,7 +511,7 @@ properly look up methods stored in this section in the composite R2R case.
 
 **TODO**: document profile data encoding
 
-## ReadyToRunSectionType.ManifestMetadata (v2.3+ with changes for v6.2+)
+## ReadyToRunSectionType.ManifestMetadata (v2.3+ with changes for v6.3+)
 
 Manifest metadata is an [ECMA-335] metadata blob containing extra reference assemblies within
 the version bubble introduced by inlining on top of assembly references stored in the input MSIL.
@@ -528,7 +528,7 @@ implementation assemblies.
 
 The module override index translation algorithm is as follows (**ILAR** = *the number of `AssemblyRef` rows in the input MSIL*):
 
-For R2R version 6.1 and below
+For R2R version 6.2 and below
 
 | Module override index (*i*) | Reference assembly
 |:----------------------------|:------------------
@@ -538,7 +538,7 @@ For R2R version 6.1 and below
 
 **Note:** This means that the entry corresponding to *i* = **ILAR** + 1 is actually undefined as it corresponds to the `NULL` entry (ROWID #0) in the manifest metadata AssemblyRef table. The first meaningful index into the manifest metadata, *i* = **ILAR** + 2, corresponding to ROWID #1, is historically filled in by Crossgen with the input assembly info but this shouldn't be depended upon, in fact the input assembly is useless in the manifest metadata as the module override to it can be encoded by using the special index 0.
 
-For R2R version 6.2 and above
+For R2R version 6.3 and above
 | Module override index (*i*) | Reference assembly
 |:----------------------------|:------------------
 | *i* = 0                     | Global context - assembly containing the signature
@@ -608,7 +608,7 @@ Number of assemblies stored in the manifest metadata is equal to the number of M
 MVID records are used at runtime to verify that the assemblies loaded match those referenced by the
 manifest metadata representing the versioning bubble.
 
-## ReadyToRunSectionType.CrossModuleInlineInfo (v6.2+)
+## ReadyToRunSectionType.CrossModuleInlineInfo (v6.3+)
 The inlining information section captures what methods got inlined into other methods. It consists of a single _Native Format Hashtable_ (described below).
 
 The entries in the hashtable are lists of inliners for each inlinee. One entry in the hashtable corresponds to one inlinee. The hashtable is hashed with the version resilient hashcode of the uninstantiated methoddef inlinee.

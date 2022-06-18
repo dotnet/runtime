@@ -1428,7 +1428,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             else
             {
                 int index = refAsmIndex - assemblyRefCount;
-                if (ReadyToRunHeader.MajorVersion > 6 || (ReadyToRunHeader.MajorVersion == 6 && ReadyToRunHeader.MinorVersion >= 2))
+                if (ReadyToRunHeader.MajorVersion > 6 || (ReadyToRunHeader.MajorVersion == 6 && ReadyToRunHeader.MinorVersion >= 3))
                 {
                     if (index == 1)
                     {

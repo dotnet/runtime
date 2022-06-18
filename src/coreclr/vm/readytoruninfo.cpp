@@ -725,7 +725,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         m_entryPointToMethodDescMap.Init(TRUE, &lock);
     }
 
-    if (IsImageVersionAtLeast(6, 2))
+    if (IsImageVersionAtLeast(6, 3))
     {
         IMAGE_DATA_DIRECTORY* pCrossModuleInlineTrackingInfoDir = m_pComposite->FindSection(ReadyToRunSectionType::CrossModuleInlineInfo);
         if (pCrossModuleInlineTrackingInfoDir != NULL)
