@@ -139,7 +139,7 @@ namespace Microsoft.Extensions.DependencyModel
             string depsJsonFile = Path.ChangeExtension(assemblyLocation, DepsJsonExtension);
             bool depsJsonFileExists = _fileSystem.File.Exists(depsJsonFile);
 
-#if !NETSTANDARD2_0
+#if !NETCOREAPP5_0_OR_GREATER && !NETSTANDARD2_0
             if (!depsJsonFileExists)
             {
                 // in some cases (like .NET Framework shadow copy) the Assembly Location
