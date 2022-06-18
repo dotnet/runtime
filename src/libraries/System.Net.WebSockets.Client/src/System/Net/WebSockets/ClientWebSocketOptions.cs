@@ -29,10 +29,10 @@ namespace System.Net.WebSockets
         private Version _version = HttpVersion.Version11;
         private HttpVersionPolicy _versionPolicy = HttpVersionPolicy.RequestVersionOrLower;
 
-        [UnsupportedOSPlatform("browser")]
         public Version Version
         {
-            get { return _version; }
+            get => _version;
+            [UnsupportedOSPlatform("browser")]
             set
             {
                 ArgumentNullException.ThrowIfNull(value);
@@ -40,10 +40,10 @@ namespace System.Net.WebSockets
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         public HttpVersionPolicy VersionPolicy
         {
-            get { return _versionPolicy; }
+            get => _versionPolicy;
+            [UnsupportedOSPlatform("browser")]
             set
             {
                 _versionPolicy = value;

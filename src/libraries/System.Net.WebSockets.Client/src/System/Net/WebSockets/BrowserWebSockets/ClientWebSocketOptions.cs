@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net.Http;
 using System.Runtime.Versioning;
 using System.Security.Cryptography.X509Certificates;
 
@@ -12,6 +13,8 @@ namespace System.Net.WebSockets
     {
         private bool _isReadOnly; // After ConnectAsync is called the options cannot be modified.
         private List<string>? _requestedSubProtocols;
+        private Version _version = HttpVersion.Version11;
+        private HttpVersionPolicy _versionPolicy = HttpVersionPolicy.RequestVersionOrLower;
 
         internal ClientWebSocketOptions()
         { }
@@ -32,17 +35,17 @@ namespace System.Net.WebSockets
             set => throw new PlatformNotSupportedException();
         }
 
-        [UnsupportedOSPlatform("browser")]
         public Version Version
         {
-            get => throw new PlatformNotSupportedException();
+            get => _version;
+            [UnsupportedOSPlatform("browser")]
             set => throw new PlatformNotSupportedException();
         }
 
-        [UnsupportedOSPlatform("browser")]
         public System.Net.Http.HttpVersionPolicy VersionPolicy
         {
-            get => throw new PlatformNotSupportedException();
+            get => _versionPolicy;
+            [UnsupportedOSPlatform("browser")]
             set => throw new PlatformNotSupportedException();
         }
 

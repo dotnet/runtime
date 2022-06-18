@@ -162,14 +162,7 @@ namespace System.Net.Http.Headers
         public string? Protocol
         {
             get { return (string?)GetSingleParsedValue(new HeaderDescriptor(":protocol")); }
-            set
-            {
-                if (value == null)
-                {
-                    throw new FormatException(SR.net_http_headers_invalid_host_header);
-                }
-                SetParsedValue(new HeaderDescriptor(":protocol"), value);
-            }
+            set { SetOrRemoveParsedValue(new HeaderDescriptor(":protocol"), value); }
         }
 
 

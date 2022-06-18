@@ -42,84 +42,9 @@ namespace System.Net.WebSockets
             WebSocket?.Abort();
         }
 
-        public async Task ConnectAsync(Uri uri, CancellationToken cancellationToken, ClientWebSocketOptions options)
+        public async Task ConnectAsync(Uri uri, HttpMessageInvoker? handler, CancellationToken cancellationToken, ClientWebSocketOptions options)
         {
-            SocketsHttpHandler handler = SetupHandler(options);
-            await ConnectAsyncHelper(uri, new HttpMessageInvoker(handler), cancellationToken, options).ConfigureAwait(false);
-        }
-
-        public async Task ConnectAsync(Uri uri, HttpMessageInvoker handler, CancellationToken cancellationToken, ClientWebSocketOptions options)
-        {
-            await ConnectAsyncHelper(uri, handler, cancellationToken, options).ConfigureAwait(false);
-        }
-
-        private static SocketsHttpHandler SetupHandler(ClientWebSocketOptions options)
-        {
-            SocketsHttpHandler? handler;
-            // Create the handler for this request and populate it with all of the options.
-            // Try to use a shared handler rather than creating a new one just for this request, if
-            // the options are compatible.
-            if (options.Credentials == null &&
-                !options.UseDefaultCredentials &&
-                options.Proxy == null &&
-                options.Cookies == null &&
-                options.RemoteCertificateValidationCallback == null &&
-                options._clientCertificates?.Count == 0)
-            {
-                handler = s_defaultHandler;
-                if (handler == null)
-                {
-                    handler = new SocketsHttpHandler()
-                    {
-                        PooledConnectionLifetime = TimeSpan.Zero,
-                        UseProxy = false,
-                        UseCookies = false,
-                    };
-                    if (Interlocked.CompareExchange(ref s_defaultHandler, handler, null) != null)
-                    {
-                        handler.Dispose();
-                        handler = s_defaultHandler;
-                    }
-                }
-            }
-            else
-            {
-                handler = new SocketsHttpHandler();
-                handler.PooledConnectionLifetime = TimeSpan.Zero;
-                handler.CookieContainer = options.Cookies;
-                handler.UseCookies = options.Cookies != null;
-                handler.SslOptions.RemoteCertificateValidationCallback = options.RemoteCertificateValidationCallback;
-
-                if (options.UseDefaultCredentials)
-                {
-                    handler.Credentials = CredentialCache.DefaultCredentials;
-                }
-                else
-                {
-                    handler.Credentials = options.Credentials;
-                }
-
-                if (options.Proxy == null)
-                {
-                    handler.UseProxy = false;
-                }
-                else if (options.Proxy != DefaultWebProxy.Instance)
-                {
-                    handler.Proxy = options.Proxy;
-                }
-
-                if (options._clientCertificates?.Count > 0) // use field to avoid lazily initializing the collection
-                {
-                    Debug.Assert(handler.SslOptions.ClientCertificates == null);
-                    handler.SslOptions.ClientCertificates = new X509Certificate2Collection();
-                    handler.SslOptions.ClientCertificates.AddRange(options.ClientCertificates);
-                }
-            }
-            return handler;
-        }
-
-        private async Task ConnectAsyncHelper(Uri uri, HttpMessageInvoker handler, CancellationToken cancellationToken, ClientWebSocketOptions options)
-        {
+            handler ??= new HttpMessageInvoker(SetupHandler(options));
             HttpResponseMessage? response = null;
 
             // TODO setup to false
@@ -182,7 +107,7 @@ namespace System.Net.WebSockets
                     }
                     catch (HttpRequestException ex)
                     {
-                        if ( ex.Data.Contains("SETTINGS_ENABLE_CONNECT_PROTOCOL") && request.Version.Major == 2
+                        if (ex.Data.Contains("SETTINGS_ENABLE_CONNECT_PROTOCOL") && request.Version.Major == 2
                             && (options.Version.Major == 2 && options.VersionPolicy == HttpVersionPolicy.RequestVersionOrLower
                             || options.Version.Major == 1 && options.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher))
                         {
@@ -278,6 +203,71 @@ namespace System.Net.WebSockets
                     handler?.Dispose();
                 }
             }
+        }
+
+        private static SocketsHttpHandler SetupHandler(ClientWebSocketOptions options)
+        {
+            SocketsHttpHandler? handler;
+            // Create the handler for this request and populate it with all of the options.
+            // Try to use a shared handler rather than creating a new one just for this request, if
+            // the options are compatible.
+            if (options.Credentials == null &&
+                !options.UseDefaultCredentials &&
+                options.Proxy == null &&
+                options.Cookies == null &&
+                options.RemoteCertificateValidationCallback == null &&
+                options._clientCertificates?.Count == 0)
+            {
+                handler = s_defaultHandler;
+                if (handler == null)
+                {
+                    handler = new SocketsHttpHandler()
+                    {
+                        PooledConnectionLifetime = TimeSpan.Zero,
+                        UseProxy = false,
+                        UseCookies = false,
+                    };
+                    if (Interlocked.CompareExchange(ref s_defaultHandler, handler, null) != null)
+                    {
+                        handler.Dispose();
+                        handler = s_defaultHandler;
+                    }
+                }
+            }
+            else
+            {
+                handler = new SocketsHttpHandler();
+                handler.PooledConnectionLifetime = TimeSpan.Zero;
+                handler.CookieContainer = options.Cookies;
+                handler.UseCookies = options.Cookies != null;
+                handler.SslOptions.RemoteCertificateValidationCallback = options.RemoteCertificateValidationCallback;
+
+                if (options.UseDefaultCredentials)
+                {
+                    handler.Credentials = CredentialCache.DefaultCredentials;
+                }
+                else
+                {
+                    handler.Credentials = options.Credentials;
+                }
+
+                if (options.Proxy == null)
+                {
+                    handler.UseProxy = false;
+                }
+                else if (options.Proxy != DefaultWebProxy.Instance)
+                {
+                    handler.Proxy = options.Proxy;
+                }
+
+                if (options._clientCertificates?.Count > 0) // use field to avoid lazily initializing the collection
+                {
+                    Debug.Assert(handler.SslOptions.ClientCertificates == null);
+                    handler.SslOptions.ClientCertificates = new X509Certificate2Collection();
+                    handler.SslOptions.ClientCertificates.AddRange(options.ClientCertificates);
+                }
+            }
+            return handler;
         }
 
         private static WebSocketDeflateOptions ParseDeflateOptions(ReadOnlySpan<char> extension, WebSocketDeflateOptions original)

@@ -97,14 +97,7 @@ namespace System.Net.WebSockets
 
             try
             {
-                if (sharedHandler == null)
-                {
-                    await _innerWebSocket.ConnectAsync(uri, cancellationToken, Options).ConfigureAwait(false);
-                }
-                else
-                {
-                    await _innerWebSocket.ConnectAsync(uri, sharedHandler, cancellationToken, Options).ConfigureAwait(false);
-                }
+                await _innerWebSocket.ConnectAsync(uri, sharedHandler, cancellationToken, Options).ConfigureAwait(false);
             }
             catch
             {
