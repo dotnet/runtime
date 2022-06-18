@@ -1,7 +1,3 @@
-// TODO: elaborate further on many sections   
-// TODO: need a lot more examples. 
-
-
 
 # CLR memory model
 
@@ -9,8 +5,6 @@
 ECMA 335 standard defines a very weak memory model. After two decades the desire to have a flexible model did not result in considerable benefits due to hardware being more strict. On the other hand programming against ECMA model requires extra complexity to handle scenarios that are hard to comprehend and not possible to test.
 
 In the course of multiple releases CLR implementation settled around a memory model that is a practical compromise between what can be implemented efficiently on the current hardware, while staying reasonably approachable by the developers. This document rationalizes the invariants provided and expected by the CLR runtime in its current implementation with expectation of that being carried to future releases.
-
-The memory model is generally the same among different runtime implementations such as .Net FX, CoreCLR, Mono, NativeAOT. When discrepancies do happen they will be called out.
 
 ## Alignment
 When managed by CLR runtime, variables of built-in primitive types are *properly aligned* according to the data type size. This applies to both heap and stack allocated memory.
@@ -23,14 +17,14 @@ Native-sized integer types and pointers have alignment that matches their size o
 Memory accesses to *properly aligned* data of primitive types are always atomic. The value that is observed is always a result of complete read and write operations.
 
 ## Unmanaged memory access. 
-As pointers can point to any addressable memory, operations with pointers may violate guarantees provided by the runtime and expose undefined or platform-specific behavior.  
+As unmanaged pointers can point to any addressable memory, operations with such pointers may violate guarantees provided by the runtime and expose undefined or platform-specific behavior.  
 **Example:** memory accesses through pointers which are *not properly aligned* may be not atomic or cause faults depending on the platform and hardware configuration.   
 
 Although rare, unaligned access is a realistic scenario and thus there is some limited support for unaligned memory accesses, such as:  
 * `.unaligned` IL prefix 
 * `Unsafe.ReadUnaligned`, `Unsafe.WriteUnaligned` and ` Unsafe.CopyBlockUnaligned` helpers.
 
-These facilities ensure fault-free access to potentially unaligned variables, but do not ensure atomicity.
+These facilities ensure fault-free access to potentially unaligned locations, but do not ensure atomicity.
 
 As of this writing there is no specific support for operating with incoherent memory, device memory or similar. Passing non-ordinary memory to the runtime by the means of pointer operations or native interop will result in Undefined Behavior.
 
@@ -41,11 +35,15 @@ As a consequence:
 * Speculative writes are not allowed. 
 * Reads cannot be introduced.
 * Unused reads can be elided.
-* Adjacent reads from the same location can be coalesced.
-* Adjacent writes to the same location can be coalesced.
+* Adjacent nonvolatile reads from the same location can be coalesced.
+* Adjacent nonvolatile writes to the same location can be coalesced.
 
 ## Thread-local memory accesses.
 It may be possible for an optimizing compiler to prove that some data is accessible only by a single thread. In such case it is permitted to perform further optimizations such as duplicating or removal of memory accesses.  
+
+## Cross-thread access to local variables.
+-	There is no type-safe mechanism for accessing locations on one thread’s stack from another thread.
+-	Accessing managed references located on the stack of a different thread by the means of unsafe code will result in Undefiled Behavior.
 
 ## Order of memory operations.
 * **Ordinary memory accesses**  
@@ -64,12 +62,17 @@ The effects of ordinary reads and writes can be reordered as long as that preser
      - `System.Threading.Volatile.Write`
      - `System.Thread.VolatileWrite`
      - Releasing a lock (`System.Threading.Monitor.Exit` or leaving a synchronized method)
+     
+* **.volatile initblk** has "release semantics" - the effects of `.volatile initblk` will not be observable earlier than the effects of preceeding reads and writes.
+   
+* **.volatile cpblk** combines ordering semantics of a volatile read and write with respect to the read and written memory locations. 
+     - The writes performed by `.volatile cpblk` will not be observable earlier than the effects of preceeding reads and writes.
+     - No read or write that is later in the program order may be speculatively executed before the reads performed by `.volatile cpblk`
+     - `cpblk` may be implemented as a sequence of reads and writes. The granularity and mutual order of such reads and writes is unspecified.
 
 Note that volatile semantics does not by itself imply that operation is atomic or has any effect on how soon the operation is committed to the coherent memory. It only specifies the order of effects when they eventually become observable.
 
 `.volatile` and `.unaligned` IL prefixes can be combined where both are permitted.
-
-// TODO: `cpblk` and `initblk`
 
 It may be possible for an optimizing compiler to prove that some data is accessible only by a single thread. In such case it is permitted to omit volatile semantics when accessing such data.
 
@@ -78,11 +81,14 @@ It may be possible for an optimizing compiler to prove that some data is accessi
   Operations with full-fence semantics:
      - `System.Thread.MemoryBarrier`
      - `System.Threading.Interlocked` methods
-
+     
 ## Process-wide barrier
 Process-wide barrier has full-fence semantics with an additional guarantee that each thread in the program effectively performs a full fence at arbitrary point synchronized with the process-wide barrier in such a way that effects of writes that precede both barriers are observable by memory operations that follow the barriers.  
 
 The actual implementation may vary depending on the platform. For example interrupting the execution of every core in the current process' affinity mask could be a suitable implementation.
+
+## Synchronized methods
+Synchronized methods have the same memory access semantics as if a lock is acquired at an entrance to the method and released upon leaving the method.
 
 ## Object assignment
 Object assignment to a location potentially accessible by other threads is a release with respect to write operations to the instance’s fields and metadata.
@@ -99,13 +105,8 @@ CLR does not specify any ordering effects to the instance constructors.
 ## Static constructors
 All side effects of static constructor execution must happen before accessing any member of the type.
 
-//TODO: is this a case when RunClassConstructor is called?
-
-## Exceptions
-//TODO: Synchronous, asynchronous, thread.abort. Anything to do with memory model?
-
 ## Hardware considerations
-Current CoreCLR and libraries implementation makes a few expectations about the hardware memory model. These conditions are present on all currently supported platforms and transparently passed to the user of the runtime. The future supported platforms will likely support these too as the large body of preexisting software will make it burdensome to break common assumptions. 
+Currently supported implementations of CLR and system libraries make a few expectations about the hardware memory model. These conditions are present on all supported platforms and transparently passed to the user of the runtime. The future supported platforms will likely support these too as the large body of preexisting software will make it burdensome to break common assumptions. 
 
 * Naturally aligned reads and writes with sizes up to the platform pointer size are atomic.   
 That applies even for locations targeted by overlapping aligned reads and writes of different sizes.  
@@ -124,3 +125,124 @@ Either the platform defaults to release consistency or stronger (i.e. x64 is TSO
 *	Memory ordering honors data dependency  
 **Example:** reading a field, will not use a cached value fetched from the location of the field prior obtaining a reference to the instance.  
 (Some versions of Alpha processors did not support this, most current architectures do)
+
+## Examples and common patterns:  
+The following examples work correctly on all supported CLR implementations regardless of the target OS or architecture.
+
+*   Constructing an instance and sharing with another thread is safe and does not require explicit fences.
+
+```cs
+
+static MyClass obj;
+
+// thread #1
+void ThreadFunc1()
+{
+    while (true)
+    {
+        obj = new MyClass();   
+    }
+}
+
+// thread #2
+void ThreadFunc1()
+{
+    while (true)
+    {
+        obj = null;   
+    }
+}
+
+// thread #3
+void ThreadFunc2()
+{
+    MyClass localObj = obj;
+    if (localObj != null)
+    {
+        // accessing members of the local object is safe because
+        // - reads cannot be introduced, thus localObj cannot be re-read and become null
+        // - publishing assignment to obj will not become visible earlier than write operations in the MyClass constructor
+        // - indirect accesses via an instance are dependent reads, thus we will see results of constructor's writes
+        System.Console.WriteLine(localObj.ToString());
+    }
+}
+
+```
+
+* Singleton (using a lock)
+
+```cs
+
+private object _lock = new object();
+private MyClass _inst;
+
+public MyClass GetSingleton()
+{
+    if (_inst == null)
+    {
+        lock (_lock)
+        {
+            // taking a lock is an acquire, the read of _inst will happen after taking the lock
+            // releasing a lock is a release, if another thread assigned _inst, the write will be observed no later than the release of the lock
+            // thus if another thread initialized the singleton, the current thread is guaranteed to see that here.
+
+            if (_inst == null)
+            {
+                _inst = new MyClass();
+            }
+        }
+    }
+    
+    return _inst;
+}
+
+```
+
+
+* Singleton (using an interlocked operation)
+
+```cs
+private MyClass _inst;
+
+public MyClass GetSingleton()
+{
+    MyClass localInst = _inst;
+    
+    if (localInst == null)
+    {
+        // unlike the example with the lock, we may construct multiple instances
+        // only one will "win" and become a unique singleton object
+        Interlocked.CompareExchange(ref _inst, new MyClass(), null);
+        
+        // since Interlocked.CompareExchange is a full fence,
+        // we cannot possibly read null or some other spurious instance that is not the singleton
+        localInst = _inst;
+    }
+    
+    return localInst;
+}
+```
+
+* Communicating with another thread by checking a flag. 
+
+```cs
+internal class Program
+{
+    static bool flag;
+
+    static void Main(string[] args)
+    {
+        Task.Run(() => flag = true);
+
+        // the repeated read will eventually see that the value of 'flag' has changed,
+        // but the read must be Volatile to ensure all reads are not coalesced
+        // into one read prior entering the while loop.
+        while (!Volatile.Read(ref flag))
+        {
+        }
+
+        System.Console.WriteLine("done");
+    }
+}
+
+```
