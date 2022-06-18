@@ -186,6 +186,7 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
             JITDUMP("Frame type 5 (save FP/LR at top). #outsz=%d; #framesz=%d; localloc? %s\n",
                     unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, dspBool(compiler->compLocallocUsed));
 
+            assert(genSaveFpLrWithAllCalleeSavedRegisters);
             assert((calleeSaveSpOffset == 0) || (calleeSaveSpOffset == REGSIZE_BYTES));
 
             // Restore sp from fp:
@@ -1721,7 +1722,11 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     unsigned const funcletFrameAlignmentPad = funcletFrameSizeAligned - funcletFrameSize;
     assert((funcletFrameAlignmentPad == 0) || (funcletFrameAlignmentPad == REGSIZE_BYTES));
 
-    if (maxFuncletFrameSizeAligned <= 512)
+    // Are we stressing frame type 5? Don't do it unless we have non-zero outgoing arg space.
+    const bool useFrameType5 =
+        genSaveFpLrWithAllCalleeSavedRegisters && genForceFuncletFrameType5 && (compiler->lvaOutgoingArgSpaceSize > 0);
+
+    if ((maxFuncletFrameSizeAligned <= 512) && !useFrameType5)
     {
         if (genSaveFpLrWithAllCalleeSavedRegisters)
         {
@@ -4530,6 +4535,19 @@ void CodeGen::SetSaveFpLrWithAllCalleeSavedRegisters(bool value)
 {
     JITDUMP("Setting genSaveFpLrWithAllCalleeSavedRegisters to %s\n", dspBool(value));
     genSaveFpLrWithAllCalleeSavedRegisters = value;
+
+    if (genSaveFpLrWithAllCalleeSavedRegisters)
+    {
+        // We'll use frame type 4 or 5. Frame type 5 only occurs if there is a very large outgoing argument
+        // space. This is extremely rare, so under stress force using this frame type. However, frame type 5
+        // isn't used if there is no outgoing argument space; this is checked elsewhere.
+
+        if ((compiler->opts.compJitSaveFpLrWithCalleeSavedRegisters == 3) ||
+            compiler->compStressCompile(Compiler::STRESS_GENERIC_VARN, 50))
+        {
+            genForceFuncletFrameType5 = true;
+        }
+    }
 }
 
 //---------------------------------------------------------------------
