@@ -1848,13 +1848,7 @@ namespace System.Xml.Xsl.Xslt
             string? separator = ParseStringAttribute(1, "separator");
             bool doe = ParseYesNoAttribute(2, /*attName:*/"disable-output-escaping") == TriState.True;
 
-            if (separator == null)
-            {
-                if (!_input.BackwardCompatibility)
-                {
-                }
-            }
-            else
+            if (separator != null)
             {
                 ReportNYI("xsl:value-of/@separator");
             }
