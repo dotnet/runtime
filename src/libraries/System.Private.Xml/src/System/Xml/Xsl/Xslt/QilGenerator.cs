@@ -1620,15 +1620,18 @@ namespace System.Xml.Xsl.Xslt
                         if (!fwdCompat)
                         {
                             // check for qname-but-not-ncname
-                            string prefix, nsUri;
-                            bool isValid = _compiler.ParseQName(dataType, out prefix, out _, (IErrorHelper)this);
-                            nsUri = isValid ? ResolvePrefix(/*ignoreDefaultNs:*/true, prefix) : _compiler.CreatePhantomNamespace();
-
-                            if (nsUri.Length == 0)
+                            if (_compiler.ParseQName(dataType, out string prefix, out _, (IErrorHelper)this))
                             {
-                                // this is a ncname; we might report SR.Xslt_InvalidAttrValue,
-                                // but the following error message is more user friendly
+                                ResolvePrefix(/*ignoreDefaultNs:*/true, prefix);
                             }
+                            else
+                            {
+                                _compiler.CreatePhantomNamespace();
+                            }
+
+                            // If nsUri.Length == 0, this is a ncname; we might report SR.Xslt_InvalidAttrValue,
+                            // but the following error message is more user friendly
+
                             ReportError(/*[XT_034]*/SR.Xslt_BistateAttribute, "data-type", DtText, DtNumber);
                         }
                         // fall through to default case

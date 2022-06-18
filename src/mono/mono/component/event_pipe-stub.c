@@ -129,6 +129,14 @@ event_pipe_stub_write_event_threadpool_worker_thread_wait (
 	uint16_t clr_instance_id);
 
 static bool
+event_pipe_stub_write_event_threadpool_min_max_threads (
+	uint16_t min_worker_threads,
+	uint16_t max_worker_threads,
+	uint16_t min_io_completion_threads,
+	uint16_t max_io_completion_threads,
+	uint16_t clr_instance_id);
+
+static bool
 event_pipe_stub_write_event_threadpool_worker_thread_adjustment_sample (
 	double throughput,
 	uint16_t clr_instance_id);
@@ -213,6 +221,7 @@ static MonoComponentEventPipe fn_table = {
 	&event_pipe_stub_write_event_threadpool_worker_thread_start,
 	&event_pipe_stub_write_event_threadpool_worker_thread_stop,
 	&event_pipe_stub_write_event_threadpool_worker_thread_wait,
+	&event_pipe_stub_write_event_threadpool_min_max_threads,
 	&event_pipe_stub_write_event_threadpool_worker_thread_adjustment_sample,
 	&event_pipe_stub_write_event_threadpool_worker_thread_adjustment_adjustment,
 	&event_pipe_stub_write_event_threadpool_worker_thread_adjustment_stats,
@@ -394,6 +403,17 @@ static bool
 event_pipe_stub_write_event_threadpool_worker_thread_wait (
 	uint32_t active_thread_count,
 	uint32_t retired_worker_thread_count,
+	uint16_t clr_instance_id)
+{
+	return true;
+}
+
+static bool
+event_pipe_stub_write_event_threadpool_min_max_threads (
+	uint16_t min_worker_threads,
+	uint16_t max_worker_threads,
+	uint16_t min_io_completion_threads,
+	uint16_t max_io_completion_threads,
 	uint16_t clr_instance_id)
 {
 	return true;

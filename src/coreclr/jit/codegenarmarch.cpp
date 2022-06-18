@@ -324,6 +324,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_CSNEG_MI:
+        case GT_CNEG_LT:
             genCodeForCond(treeNode->AsOp());
             break;
 #endif // TARGET_ARM64

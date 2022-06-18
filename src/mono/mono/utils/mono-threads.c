@@ -292,7 +292,7 @@ dump_threads (void)
 	g_async_safe_printf ("\t0x6\t- blocking (BAD, unless there's no suspend initiator)\n");
 	g_async_safe_printf ("\t0x?07\t- blocking async suspended (GOOD)\n");
 	g_async_safe_printf ("\t0x?08\t- blocking self suspended (GOOD)\n");
-	g_async_safe_printf ("\t0x?09\t- blocking suspend requested (BAD in coop; GOOD in hybrid)\n");
+	g_async_safe_printf ("\t0x?09\t- blocking suspend requested (GOOD in coop; BAD in hybrid)\n");
 
 	FOREACH_THREAD_SAFE_ALL (info) {
 #ifdef TARGET_MACH

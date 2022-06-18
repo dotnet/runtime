@@ -2117,6 +2117,13 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
             return (MethodDesc*)((FixupPrecode*)pInstr)->GetMethodDesc();
         }
 
+        // Is it an FCALL?
+        MethodDesc* pFCallMD = ECall::MapTargetBackToMethod(entryPoint);
+        if (pFCallMD != NULL)
+        {
+            return pFCallMD;
+        }
+
         return NULL;
     }
 
@@ -2150,11 +2157,6 @@ MethodDesc* Entry2MethodDesc(PCODE entryPoint, MethodTable *pMT)
         RETURN(pMD);
 
     pMD = VirtualCallStubManagerManager::Entry2MethodDesc(entryPoint, pMT);
-    if (pMD != NULL)
-        RETURN(pMD);
-
-    // Is it an FCALL?
-    pMD = ECall::MapTargetBackToMethod(entryPoint);
     if (pMD != NULL)
         RETURN(pMD);
 

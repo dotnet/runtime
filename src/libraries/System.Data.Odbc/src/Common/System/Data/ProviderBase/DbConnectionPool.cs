@@ -557,17 +557,13 @@ namespace System.Data.ProviderBase
             // we simply leave it alone; when the transaction completes, it will
             // come back through PutObjectFromTransactedPool, which will call us
             // again.
-            bool removed = false;
             lock (_objectList)
             {
-                removed = _objectList.Remove(obj);
+                bool removed = _objectList.Remove(obj);
                 Debug.Assert(removed, "attempt to DestroyObject not in list");
                 _totalObjects = _objectList.Count;
             }
 
-            if (removed)
-            {
-            }
             obj.Dispose();
         }
 
@@ -932,9 +928,6 @@ namespace System.Data.ProviderBase
             // following assert to fire, which really mucks up stress against
             //  checked bits.
 
-            if (null != obj)
-            {
-            }
             return (obj);
         }
 

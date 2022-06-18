@@ -66,10 +66,6 @@ namespace System.Xml.Xsl.Xslt
         public QilNode? EndBuild(QilNode? result)
         {
             Debug.Assert(_inTheBuild, "StartBuild() wasn't called");
-            if (result == null)
-            {
-                // Special door to clean builder state in exception handlers
-            }
 
             // All these variables will be positive for "false() and (. = position() + last())"
             // since QilPatternFactory eliminates the right operand of 'and'

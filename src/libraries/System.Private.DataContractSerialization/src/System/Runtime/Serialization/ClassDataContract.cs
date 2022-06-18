@@ -960,10 +960,8 @@ namespace System.Runtime.Serialization
 
                             DataMember memberContract = new DataMember(member);
 
-                            if (member is PropertyInfo)
+                            if (member is PropertyInfo property)
                             {
-                                PropertyInfo property = (PropertyInfo)member;
-
                                 MethodInfo? getMethod = property.GetMethod;
                                 if (getMethod != null && IsMethodOverriding(getMethod))
                                     continue;

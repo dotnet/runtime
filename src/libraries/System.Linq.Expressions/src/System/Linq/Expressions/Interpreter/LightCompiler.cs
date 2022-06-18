@@ -241,7 +241,7 @@ namespace System.Linq.Expressions.Interpreter
                     return null;
                 }
                 //return the last one that is smaller
-                i = i - 1;
+                i--;
             }
 
             return debugInfos[i];

@@ -282,10 +282,7 @@ namespace System.Xml.Schema
             {
                 _errorCount++;
             }
-            if (_eventHandler != null)
-            {
-                _eventHandler(null, new ValidationEventArgs(e, severity));
-            }
+            _eventHandler?.Invoke(null, new ValidationEventArgs(e, severity));
         }
     };
 } // namespace System.Xml
