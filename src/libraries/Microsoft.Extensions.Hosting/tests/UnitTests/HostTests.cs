@@ -9,8 +9,10 @@ using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.UserSecrets;
 using Microsoft.Extensions.DependencyInjection;
@@ -46,36 +48,43 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Equal(expected, env.ContentRootPath);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        public static bool IsWindowsAndRemotExecutorIsSupported => PlatformDetection.IsWindows && RemoteExecutor.IsSupported;
+
+        [ConditionalFact(typeof(HostTests), nameof(IsWindowsAndRemotExecutorIsSupported))]
         public void CreateDefaultBuilder_DoesNotChangeContentRootIfCurrentDirectoryIsWindowsSystemDirectory()
         {
-            string originalCwd = Environment.CurrentDirectory;
-            // Test that the path gets normalized before comparison. Use C:\WINDOWS\SYSTEM32\ instead of C:\Windows\system32.
-            string systemDirectory = Environment.GetFolderPath(Environment.SpecialFolder.System).ToUpper() + "\\";
-
-            try
+            using var _ = RemoteExecutor.Invoke(() =>
             {
-                Environment.CurrentDirectory = systemDirectory;
+                string originalCwd = Environment.CurrentDirectory;
+                // Test that the path gets normalized before comparison. Use C:\WINDOWS\SYSTEM32\ instead of C:\Windows\system32.
+                string systemDirectory = Environment.GetFolderPath(Environment.SpecialFolder.System).ToUpper() + "\\";
 
-                IHostBuilder builder = Host.CreateDefaultBuilder();
-                using IHost host = builder.Build();
-
-                var config = host.Services.GetRequiredService<IConfiguration>();
-                var env = host.Services.GetRequiredService<IHostEnvironment>();
-
-                // Temporary for diagnostics from Windows.Nano.1809.Amd64.Open containers on helix where config["ContentRoot"] is "C:\"
-                if (config["ContentRoot"] is not null)
+                try
                 {
-                    throw new Exception($"ContentRoot: {config["ContentRoot"]}, originalCwd: {originalCwd}, systemDirectory: {systemDirectory}, Environment.CurrentDirectory: {Environment.CurrentDirectory}, Environment.SpecialFolder.System: {Environment.SpecialFolder.System}");
-                }
+                    Environment.CurrentDirectory = systemDirectory;
 
-                Assert.Null(config["ContentRoot"]);
-                Assert.Equal(AppContext.BaseDirectory, env.ContentRootPath);
-            }
-            finally
-            {
-                Environment.CurrentDirectory = originalCwd;
-            }
+                    IHostBuilder builder = Host.CreateDefaultBuilder();
+                    using IHost host = builder.Build();
+
+                    var config = host.Services.GetRequiredService<IConfiguration>();
+                    var env = host.Services.GetRequiredService<IHostEnvironment>();
+
+                    // Temporary for diagnostics from Windows.Nano.1809.Amd64.Open containers on helix where config["ContentRoot"] is C:\.
+                    // Maybe this doesn't happen anymore if the container doesn't support RemoteExecutor.
+                    if (config["ContentRoot"] is not null)
+                    {
+                        throw new Exception($"ContentRoot: {config["ContentRoot"]}, originalCwd: {originalCwd}, systemDirectory: {systemDirectory}, Environment.CurrentDirectory: {Environment.CurrentDirectory}, Environment.SpecialFolder.System: {Environment.SpecialFolder.System}");
+                    }
+
+                    Assert.Null(config["ContentRoot"]);
+                    Assert.Equal(AppContext.BaseDirectory, env.ContentRootPath);
+                }
+                finally
+                {
+                    // I'm guessing that the RemoteExecutor means that this no longer matters, but I'm leaving it to be safe.
+                    Environment.CurrentDirectory = originalCwd;
+                }
+            });
         }
 
         [Fact]

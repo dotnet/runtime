@@ -8,13 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Disable parallelization because CreateDefaultBuilder_DoesNotChangeContentRootIfCurrentDirectoryIsWindowsSystemDirectory changes the CWD. -->
-    <!-- Once https://github.com/dotnet/runtime/issues/34090 is fixed, this should be moved out of process. -->
-    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs"
-         Link="Common\TestUtilities\System\DisableParallelization.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Content Include="testroot\**\*" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="appSettings.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
