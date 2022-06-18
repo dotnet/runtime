@@ -138,20 +138,6 @@ namespace Microsoft.Extensions.DependencyModel
 
             string depsJsonFile = Path.ChangeExtension(assemblyLocation, DepsJsonExtension);
             bool depsJsonFileExists = _fileSystem.File.Exists(depsJsonFile);
-
-            if (!depsJsonFileExists)
-            {
-                // in some cases (like .NET Framework shadow copy) the Assembly Location
-                // and CodeBase will be different, so also try the CodeBase
-                string? assemblyCodeBase = GetNormalizedCodeBasePath(assembly);
-                if (!string.IsNullOrEmpty(assemblyCodeBase) &&
-                    assemblyLocation != assemblyCodeBase)
-                {
-                    depsJsonFile = Path.ChangeExtension(assemblyCodeBase, DepsJsonExtension);
-                    depsJsonFileExists = _fileSystem.File.Exists(depsJsonFile);
-                }
-            }
-
             return depsJsonFileExists ?
                 depsJsonFile :
                 null;
@@ -160,9 +146,7 @@ namespace Microsoft.Extensions.DependencyModel
         [RequiresAssemblyFiles]
         private static string? GetNormalizedCodeBasePath(Assembly assembly)
         {
-#pragma warning disable SYSLIB0012 // CodeBase is obsolete
-            if (Uri.TryCreate(assembly.CodeBase, UriKind.Absolute, out Uri? codeBase)
-#pragma warning restore SYSLIB0012 // CodeBase is obsolete
+            if (Uri.TryCreate(assembly.Location, UriKind.Absolute, out Uri? codeBase)
                 && codeBase.IsFile)
             {
                 return codeBase.LocalPath;
