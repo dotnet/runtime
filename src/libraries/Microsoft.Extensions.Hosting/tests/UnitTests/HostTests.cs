@@ -73,7 +73,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                     // Maybe this doesn't happen anymore if the container doesn't support RemoteExecutor.
                     if (config["ContentRoot"] is not null)
                     {
-                        throw new Exception($"ContentRoot: {config["ContentRoot"]}, originalCwd: {originalCwd}, systemDirectory: {systemDirectory}, Environment.CurrentDirectory: {Environment.CurrentDirectory}, Environment.SpecialFolder.System: {Environment.SpecialFolder.System}");
+                        throw new Exception($"ContentRoot: {config["ContentRoot"]}, originalCwd: {originalCwd}, systemDirectory: {systemDirectory}, Environment.CurrentDirectory: {Environment.CurrentDirectory}, Environment.SpecialFolder.System: {Environment.GetFolderPath(Environment.SpecialFolder.System)}");
                     }
 
                     Assert.Null(config["ContentRoot"]);
