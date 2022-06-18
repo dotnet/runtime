@@ -13063,6 +13063,9 @@ resolve_profile_data (MonoAotCompile *acfg, ProfileData *data, MonoAssembly* cur
 				if (mdata->inst->inst) {
 					MonoGenericContext ctx;
 
+					if (m->is_generic && mono_method_get_generic_container (m)->context.method_inst->type_argc != mdata->inst->inst->type_argc)
+						continue;
+
 					memset (&ctx, 0, sizeof (ctx));
 					ctx.method_inst = mdata->inst->inst;
 
