@@ -16,140 +16,140 @@ namespace System.Text.RegularExpressions.Symbolic
         [ExcludeFromCodeCoverage(Justification = "Currently only used for testing")]
         public override void SaveDGML(TextWriter writer, int maxLabelLength)
         {
-            if (maxLabelLength < 0)
-                maxLabelLength = int.MaxValue;
-
-            Dictionary<(int Source, int Target), (TSet Rule, List<int> NfaTargets)> transitions = GatherTransitions(_builder);
-
-            writer.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
-            writer.WriteLine("<DirectedGraph xmlns=\"http://schemas.microsoft.com/vs/2009/dgml\" ZoomLevel=\"1.5\" GraphDirection=\"TopToBottom\" >");
-            writer.WriteLine("    <Nodes>");
-            writer.WriteLine("        <Node Id=\"dfa\" Label=\" \" Group=\"Collapsed\" Category=\"DFA\" DFAInfo=\"{0}\" />", FormatInfo(_builder, transitions.Count));
-            writer.WriteLine("        <Node Id=\"dfainfo\" Category=\"DFAInfo\" Label=\"{0}\"/>", FormatInfo(_builder, transitions.Count));
-            foreach (DfaMatchingState<TSet> state in _builder._stateCache)
+            lock (this)
             {
-                string info = CharKind.DescribePrev(state.PrevCharKind);
-                string deriv = WebUtility.HtmlEncode(state.Node.ToString());
-                string nodeDgmlView = $"{(info == string.Empty ? info : $"Previous: {info}&#13;")}{(deriv == string.Empty ? "()" : deriv)}";
+                if (maxLabelLength < 0)
+                    maxLabelLength = int.MaxValue;
 
-                writer.WriteLine("        <Node Id=\"{0}\" Label=\"{0}\" Category=\"State\" Group=\"Collapsed\" StateInfo=\"{1}\">", state.Id, nodeDgmlView);
-                if (_builder.GetStateInfo(state.Id).IsInitial)
+                Dictionary<(int Source, int Target), (TSet Rule, List<int> NfaTargets)> transitions = GatherTransitions(this);
+
+                writer.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
+                writer.WriteLine("<DirectedGraph xmlns=\"http://schemas.microsoft.com/vs/2009/dgml\" ZoomLevel=\"1.5\" GraphDirection=\"TopToBottom\" >");
+                writer.WriteLine("    <Nodes>");
+                writer.WriteLine("        <Node Id=\"dfa\" Label=\" \" Group=\"Collapsed\" Category=\"DFA\" DFAInfo=\"{0}\" />", FormatInfo(this, transitions.Count));
+                writer.WriteLine("        <Node Id=\"dfainfo\" Category=\"DFAInfo\" Label=\"{0}\"/>", FormatInfo(this, transitions.Count));
+                foreach (DfaMatchingState<TSet> state in _stateCache.Values)
                 {
-                    writer.WriteLine("            <Category Ref=\"InitialState\" />");
+                    string info = CharKind.DescribePrev(state.PrevCharKind);
+                    string deriv = WebUtility.HtmlEncode(state.Node.ToString());
+                    string nodeDgmlView = $"{(info == string.Empty ? info : $"Previous: {info}&#13;")}{(deriv == string.Empty ? "()" : deriv)}";
+
+                    writer.WriteLine("        <Node Id=\"{0}\" Label=\"{0}\" Category=\"State\" Group=\"Collapsed\" StateInfo=\"{1}\">", state.Id, nodeDgmlView);
+                    if (GetStateInfo(state.Id).IsInitial)
+                    {
+                        writer.WriteLine("            <Category Ref=\"InitialState\" />");
+                    }
+                    if (state.Node.CanBeNullable)
+                    {
+                        writer.WriteLine("            <Category Ref=\"FinalState\" />");
+                    }
+                    writer.WriteLine("        </Node>");
+                    writer.WriteLine("        <Node Id=\"{0}info\" Label=\"{1}\" Category=\"StateInfo\"/>", state.Id, nodeDgmlView);
                 }
-                if (state.Node.CanBeNullable)
+                writer.WriteLine("    </Nodes>");
+                writer.WriteLine("    <Links>");
+                foreach (DfaMatchingState<TSet> initialState in GetInitialStates(this))
                 {
-                    writer.WriteLine("            <Category Ref=\"FinalState\" />");
+                    writer.WriteLine("        <Link Source=\"dfa\" Target=\"{0}\" Label=\"\" Category=\"StartTransition\" />", initialState.Id);
                 }
-                writer.WriteLine("        </Node>");
-                writer.WriteLine("        <Node Id=\"{0}info\" Label=\"{1}\" Category=\"StateInfo\"/>", state.Id, nodeDgmlView);
-            }
-            writer.WriteLine("    </Nodes>");
-            writer.WriteLine("    <Links>");
-            foreach (DfaMatchingState<TSet> initialState in GetInitialStates(this))
-            {
-                Debug.Assert(_builder._stateCache.Contains(initialState));
-                writer.WriteLine("        <Link Source=\"dfa\" Target=\"{0}\" Label=\"\" Category=\"StartTransition\" />", initialState.Id);
-            }
-            writer.WriteLine("        <Link Source=\"dfa\" Target=\"dfainfo\" Label=\"\" Category=\"Contains\" />");
+                writer.WriteLine("        <Link Source=\"dfa\" Target=\"dfainfo\" Label=\"\" Category=\"Contains\" />");
 
-            foreach (KeyValuePair<(int Source, int Target), (TSet Rule, List<int> NfaTargets)> transition in transitions)
-            {
-                string label = DescribeLabel(transition.Value.Rule, _builder);
-                string info = "";
-                if (label.Length > maxLabelLength)
+                foreach (KeyValuePair<(int Source, int Target), (TSet Rule, List<int> NfaTargets)> transition in transitions)
                 {
-                    info = $"FullLabel = \"{label}\" ";
-                    label = string.Concat(label.AsSpan(0, maxLabelLength), "..");
+                    string label = DescribeLabel(transition.Value.Rule, _builder);
+                    string info = "";
+                    if (label.Length > maxLabelLength)
+                    {
+                        info = $"FullLabel = \"{label}\" ";
+                        label = string.Concat(label.AsSpan(0, maxLabelLength), "..");
+                    }
+
+                    writer.WriteLine($"        <Link Source=\"{transition.Key.Source}\" Target=\"{transition.Key.Target}\" Label=\"{label}\" Category=\"NonEpsilonTransition\" {info}/>");
+                    // Render NFA transitions as labelless "epsilon" transitions (i.e. ones that don't consume a character)
+                    // from the target of the DFA transition.
+                    foreach (int nfaTarget in transition.Value.NfaTargets)
+                    {
+                        writer.WriteLine($"        <Link Source=\"{transition.Key.Target}\" Target=\"{nfaTarget}\" Category=\"EpsilonTransition\"/>");
+                    }
                 }
 
-                writer.WriteLine($"        <Link Source=\"{transition.Key.Source}\" Target=\"{transition.Key.Target}\" Label=\"{label}\" Category=\"NonEpsilonTransition\" {info}/>");
-                // Render NFA transitions as labelless "epsilon" transitions (i.e. ones that don't consume a character)
-                // from the target of the DFA transition.
-                foreach (int nfaTarget in transition.Value.NfaTargets)
+                foreach (DfaMatchingState<TSet> state in _stateCache.Values)
                 {
-                    writer.WriteLine($"        <Link Source=\"{transition.Key.Target}\" Target=\"{nfaTarget}\" Category=\"EpsilonTransition\"/>");
+                    writer.WriteLine("        <Link Source=\"{0}\" Target=\"{0}info\" Category=\"Contains\" />", state.Id);
                 }
-            }
 
-            foreach (DfaMatchingState<TSet> state in _builder._stateCache)
-            {
-                writer.WriteLine("        <Link Source=\"{0}\" Target=\"{0}info\" Category=\"Contains\" />", state.Id);
+                writer.WriteLine("    </Links>");
+                writer.WriteLine("    <Categories>");
+                writer.WriteLine("        <Category Id=\"DFA\" Label=\"DFA\" IsTag=\"True\" />");
+                writer.WriteLine("        <Category Id=\"EpsilonTransition\" Label=\"Epsilon transition\" IsTag=\"True\" />");
+                writer.WriteLine("        <Category Id=\"StartTransition\" Label=\"Initial transition\" IsTag=\"True\" />");
+                writer.WriteLine("        <Category Id=\"FinalLabel\" Label=\"Final transition\" IsTag=\"True\" />");
+                writer.WriteLine("        <Category Id=\"FinalState\" Label=\"Final\" IsTag=\"True\" />");
+                writer.WriteLine("        <Category Id=\"SinkState\" Label=\"Sink state\" IsTag=\"True\" />");
+                writer.WriteLine("        <Category Id=\"EpsilonState\" Label=\"Epsilon state\" IsTag=\"True\" />");
+                writer.WriteLine("        <Category Id=\"InitialState\" Label=\"Initial\" IsTag=\"True\" />");
+                writer.WriteLine("        <Category Id=\"NonEpsilonTransition\" Label=\"Nonepsilon transition\" IsTag=\"True\" />");
+                writer.WriteLine("        <Category Id=\"State\" Label=\"State\" IsTag=\"True\" />");
+                writer.WriteLine("    </Categories>");
+                writer.WriteLine("    <Styles>");
+                writer.WriteLine("        <Style TargetType=\"Node\" GroupLabel=\"InitialState\" ValueLabel=\"True\">");
+                writer.WriteLine("            <Condition Expression=\"HasCategory('InitialState')\" />");
+                writer.WriteLine("            <Setter Property=\"Background\" Value=\"lightblue\" />");
+                writer.WriteLine("            <Setter Property=\"MinWidth\" Value=\"0\" />");
+                writer.WriteLine("        </Style>");
+                writer.WriteLine("        <Style TargetType=\"Node\" GroupLabel=\"FinalState\" ValueLabel=\"True\">");
+                writer.WriteLine("            <Condition Expression=\"HasCategory('FinalState')\" />");
+                writer.WriteLine("            <Setter Property=\"Background\" Value=\"lightgreen\" />");
+                writer.WriteLine("            <Setter Property=\"StrokeThickness\" Value=\"4\" />");
+                writer.WriteLine("        </Style>");
+                writer.WriteLine("        <Style TargetType=\"Node\" GroupLabel=\"State\" ValueLabel=\"True\">");
+                writer.WriteLine("            <Condition Expression=\"HasCategory('State')\" />");
+                writer.WriteLine("            <Setter Property=\"Stroke\" Value=\"black\" />");
+                writer.WriteLine("            <Setter Property=\"Background\" Value=\"white\" />");
+                writer.WriteLine("            <Setter Property=\"MinWidth\" Value=\"0\" />");
+                writer.WriteLine("            <Setter Property=\"FontSize\" Value=\"12\" />");
+                writer.WriteLine("            <Setter Property=\"FontFamily\" Value=\"Arial\" />");
+                writer.WriteLine("        </Style>");
+                writer.WriteLine("        <Style TargetType=\"Link\" GroupLabel=\"NonEpsilonTransition\" ValueLabel=\"True\">");
+                writer.WriteLine("            <Condition Expression=\"HasCategory('NonEpsilonTransition')\" />");
+                writer.WriteLine("            <Setter Property=\"FontSize\" Value=\"18\" />");
+                writer.WriteLine("            <Setter Property=\"FontFamily\" Value=\"Arial\" />");
+                writer.WriteLine("        </Style>");
+                writer.WriteLine("        <Style TargetType=\"Link\" GroupLabel=\"StartTransition\" ValueLabel=\"True\">");
+                writer.WriteLine("            <Condition Expression=\"HasCategory('StartTransition')\" />");
+                writer.WriteLine("        </Style>");
+                writer.WriteLine("        <Style TargetType=\"Link\" GroupLabel=\"EpsilonTransition\" ValueLabel=\"True\">");
+                writer.WriteLine("            <Condition Expression=\"HasCategory('EpsilonTransition')\" />");
+                writer.WriteLine("            <Setter Property=\"StrokeDashArray\" Value=\"8 8\" />");
+                writer.WriteLine("        </Style>");
+                writer.WriteLine("        <Style TargetType=\"Link\" GroupLabel=\"FinalLabel\" ValueLabel=\"False\">");
+                writer.WriteLine("            <Condition Expression=\"HasCategory('FinalLabel')\" />");
+                writer.WriteLine("            <Setter Property=\"StrokeDashArray\" Value=\"8 8\" />");
+                writer.WriteLine("        </Style>");
+                writer.WriteLine("        <Style TargetType=\"Node\" GroupLabel=\"StateInfo\" ValueLabel=\"True\">");
+                writer.WriteLine("            <Setter Property=\"Stroke\" Value=\"white\" />");
+                writer.WriteLine("            <Setter Property=\"FontSize\" Value=\"18\" />");
+                writer.WriteLine("            <Setter Property=\"FontFamily\" Value=\"Arial\" />");
+                writer.WriteLine("        </Style>");
+                writer.WriteLine("        <Style TargetType=\"Node\" GroupLabel=\"DFAInfo\" ValueLabel=\"True\">");
+                writer.WriteLine("            <Setter Property=\"Stroke\" Value=\"white\" />");
+                writer.WriteLine("            <Setter Property=\"FontSize\" Value=\"18\" />");
+                writer.WriteLine("            <Setter Property=\"FontFamily\" Value=\"Arial\" />");
+                writer.WriteLine("        </Style>");
+                writer.WriteLine("    </Styles>");
+                writer.WriteLine("</DirectedGraph>");
             }
-
-            writer.WriteLine("    </Links>");
-            writer.WriteLine("    <Categories>");
-            writer.WriteLine("        <Category Id=\"DFA\" Label=\"DFA\" IsTag=\"True\" />");
-            writer.WriteLine("        <Category Id=\"EpsilonTransition\" Label=\"Epsilon transition\" IsTag=\"True\" />");
-            writer.WriteLine("        <Category Id=\"StartTransition\" Label=\"Initial transition\" IsTag=\"True\" />");
-            writer.WriteLine("        <Category Id=\"FinalLabel\" Label=\"Final transition\" IsTag=\"True\" />");
-            writer.WriteLine("        <Category Id=\"FinalState\" Label=\"Final\" IsTag=\"True\" />");
-            writer.WriteLine("        <Category Id=\"SinkState\" Label=\"Sink state\" IsTag=\"True\" />");
-            writer.WriteLine("        <Category Id=\"EpsilonState\" Label=\"Epsilon state\" IsTag=\"True\" />");
-            writer.WriteLine("        <Category Id=\"InitialState\" Label=\"Initial\" IsTag=\"True\" />");
-            writer.WriteLine("        <Category Id=\"NonEpsilonTransition\" Label=\"Nonepsilon transition\" IsTag=\"True\" />");
-            writer.WriteLine("        <Category Id=\"State\" Label=\"State\" IsTag=\"True\" />");
-            writer.WriteLine("    </Categories>");
-            writer.WriteLine("    <Styles>");
-            writer.WriteLine("        <Style TargetType=\"Node\" GroupLabel=\"InitialState\" ValueLabel=\"True\">");
-            writer.WriteLine("            <Condition Expression=\"HasCategory('InitialState')\" />");
-            writer.WriteLine("            <Setter Property=\"Background\" Value=\"lightblue\" />");
-            writer.WriteLine("            <Setter Property=\"MinWidth\" Value=\"0\" />");
-            writer.WriteLine("        </Style>");
-            writer.WriteLine("        <Style TargetType=\"Node\" GroupLabel=\"FinalState\" ValueLabel=\"True\">");
-            writer.WriteLine("            <Condition Expression=\"HasCategory('FinalState')\" />");
-            writer.WriteLine("            <Setter Property=\"Background\" Value=\"lightgreen\" />");
-            writer.WriteLine("            <Setter Property=\"StrokeThickness\" Value=\"4\" />");
-            writer.WriteLine("        </Style>");
-            writer.WriteLine("        <Style TargetType=\"Node\" GroupLabel=\"State\" ValueLabel=\"True\">");
-            writer.WriteLine("            <Condition Expression=\"HasCategory('State')\" />");
-            writer.WriteLine("            <Setter Property=\"Stroke\" Value=\"black\" />");
-            writer.WriteLine("            <Setter Property=\"Background\" Value=\"white\" />");
-            writer.WriteLine("            <Setter Property=\"MinWidth\" Value=\"0\" />");
-            writer.WriteLine("            <Setter Property=\"FontSize\" Value=\"12\" />");
-            writer.WriteLine("            <Setter Property=\"FontFamily\" Value=\"Arial\" />");
-            writer.WriteLine("        </Style>");
-            writer.WriteLine("        <Style TargetType=\"Link\" GroupLabel=\"NonEpsilonTransition\" ValueLabel=\"True\">");
-            writer.WriteLine("            <Condition Expression=\"HasCategory('NonEpsilonTransition')\" />");
-            writer.WriteLine("            <Setter Property=\"FontSize\" Value=\"18\" />");
-            writer.WriteLine("            <Setter Property=\"FontFamily\" Value=\"Arial\" />");
-            writer.WriteLine("        </Style>");
-            writer.WriteLine("        <Style TargetType=\"Link\" GroupLabel=\"StartTransition\" ValueLabel=\"True\">");
-            writer.WriteLine("            <Condition Expression=\"HasCategory('StartTransition')\" />");
-            writer.WriteLine("        </Style>");
-            writer.WriteLine("        <Style TargetType=\"Link\" GroupLabel=\"EpsilonTransition\" ValueLabel=\"True\">");
-            writer.WriteLine("            <Condition Expression=\"HasCategory('EpsilonTransition')\" />");
-            writer.WriteLine("            <Setter Property=\"StrokeDashArray\" Value=\"8 8\" />");
-            writer.WriteLine("        </Style>");
-            writer.WriteLine("        <Style TargetType=\"Link\" GroupLabel=\"FinalLabel\" ValueLabel=\"False\">");
-            writer.WriteLine("            <Condition Expression=\"HasCategory('FinalLabel')\" />");
-            writer.WriteLine("            <Setter Property=\"StrokeDashArray\" Value=\"8 8\" />");
-            writer.WriteLine("        </Style>");
-            writer.WriteLine("        <Style TargetType=\"Node\" GroupLabel=\"StateInfo\" ValueLabel=\"True\">");
-            writer.WriteLine("            <Setter Property=\"Stroke\" Value=\"white\" />");
-            writer.WriteLine("            <Setter Property=\"FontSize\" Value=\"18\" />");
-            writer.WriteLine("            <Setter Property=\"FontFamily\" Value=\"Arial\" />");
-            writer.WriteLine("        </Style>");
-            writer.WriteLine("        <Style TargetType=\"Node\" GroupLabel=\"DFAInfo\" ValueLabel=\"True\">");
-            writer.WriteLine("            <Setter Property=\"Stroke\" Value=\"white\" />");
-            writer.WriteLine("            <Setter Property=\"FontSize\" Value=\"18\" />");
-            writer.WriteLine("            <Setter Property=\"FontFamily\" Value=\"Arial\" />");
-            writer.WriteLine("        </Style>");
-            writer.WriteLine("    </Styles>");
-            writer.WriteLine("</DirectedGraph>");
 
             // This function gathers all transitions in the given builder and groups them by (source,destination) state ID
-            static Dictionary<(int Source, int Target), (TSet Rule, List<int> NfaTargets)> GatherTransitions(SymbolicRegexBuilder<TSet> builder)
+            static Dictionary<(int Source, int Target), (TSet Rule, List<int> NfaTargets)> GatherTransitions(SymbolicRegexMatcher<TSet> matcher)
             {
-                Debug.Assert(builder._delta is not null);
-                Debug.Assert(builder._minterms is not null);
                 Dictionary<(int Source, int Target), (TSet Rule, List<int> NfaTargets)> result = new();
-                foreach (DfaMatchingState<TSet> source in builder._stateCache)
+                foreach (DfaMatchingState<TSet> source in matcher._stateCache.Values)
                 {
                     // Get the span of entries in delta that gives the transitions for the different minterms
-                    Span<int> deltas = builder.GetDeltasFor(source);
-                    Span<int[]?> nfaDeltas = builder.GetNfaDeltasFor(source);
-                    Debug.Assert(deltas.Length == builder._minterms.Length);
+                    Span<int> deltas = matcher.GetDeltasFor(source);
+                    Span<int[]?> nfaDeltas = matcher.GetNfaDeltasFor(source);
+                    Debug.Assert(deltas.Length == matcher._minterms.Length);
                     for (int i = 0; i < deltas.Length; ++i)
                     {
                         // negative entries are transitions not explored yet, so skip them
@@ -160,7 +160,7 @@ namespace System.Text.RegularExpressions.Symbolic
                             (int Source, int Target) key = (source.Id, targetId);
                             if (!result.TryGetValue(key, out (TSet Rule, List<int> NfaTargets) entry))
                             {
-                                entry = (builder._solver.Empty, new List<int>());
+                                entry = (matcher.Solver.Empty, new List<int>());
                             }
                             // If this state has an NFA transition for the same minterm, then associate
                             // those with the transition.
@@ -168,24 +168,24 @@ namespace System.Text.RegularExpressions.Symbolic
                             {
                                 foreach (int nfaTarget in nfaTargets)
                                 {
-                                    entry.NfaTargets.Add(builder._nfaStateArray[nfaTarget]);
+                                    entry.NfaTargets.Add(matcher._nfaStateArray[nfaTarget]);
                                 }
                             }
                             // Expand the rule for this minterm
-                            result[key] = (builder._solver.Or(entry.Rule, builder._minterms[i]), entry.NfaTargets);
+                            result[key] = (matcher.Solver.Or(entry.Rule, matcher._minterms[i]), entry.NfaTargets);
                         }
                     }
                 }
                 return result;
             }
 
-            static string FormatInfo(SymbolicRegexBuilder<TSet> builder, int transitionCount)
+            static string FormatInfo(SymbolicRegexMatcher<TSet> matcher, int transitionCount)
             {
                 StringBuilder sb = new();
-                sb.Append($"States = {builder._stateCache.Count}&#13;");
+                sb.Append($"States = {matcher._stateCache.Count}&#13;");
                 sb.Append($"Transitions = {transitionCount}&#13;");
-                sb.Append($"Min Terms ({builder._solver.GetMinterms()!.Length}) = ").AppendJoin(',',
-                    DescribeLabels(builder._solver.GetMinterms()!, builder));
+                sb.Append($"Min Terms ({matcher.Solver.GetMinterms()!.Length}) = ").AppendJoin(',',
+                    DescribeLabels(matcher.Solver.GetMinterms()!, matcher._builder));
                 return sb.ToString();
             }
 

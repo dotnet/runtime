@@ -17,120 +17,81 @@ namespace System.Text.RegularExpressions.Symbolic
             PrevCharKind = prevCharKind;
         }
 
+        /// <summary>The regular expression that labels this state and gives it its semantics.</summary>
         internal SymbolicRegexNode<TSet> Node { get; }
 
+        /// <summary>
+        /// The kind of the previous character in the input. The <see cref="SymbolicRegexMatcher{TSet}"/> is responsible
+        /// for ensuring that in all uses of this state this invariant holds by both selecting initial states accordingly
+        /// and transitioning on each character to states that match that character's kind.
+        /// </summary>
+        /// <remarks>
+        /// For patterns with no anchors this will always be set to <see cref="CharKind.General"/>, which can reduce the
+        /// number of states created.
+        /// </remarks>
         internal uint PrevCharKind { get; }
 
+        /// <summary>
+        /// A unique identifier for this state, which is used in <see cref="SymbolicRegexMatcher{TSet}"/> to index into
+        /// state information and transition arrays.
+        /// </summary>
         internal int Id { get; set; }
 
-        /// <summary>This is a deadend state</summary>
-        internal bool IsDeadend => Node.IsNothing;
+        /// <summary>Whether this state is known to be a dead end, i.e. no nullable states are reachable from here.</summary>
+        internal bool IsDeadend(ISolver<TSet> solver) => Node.IsNothing(solver);
 
-        /// <summary>The node must be nullable here</summary>
+        /// <summary>
+        /// Returns the fixed length that any match ending with this state must have, or -1 if there is no such
+        /// fixed length, <see cref="SymbolicRegexNode{TSet}.ResolveFixedLength(uint)"/>. The context is defined
+        /// by <see cref="PrevCharKind"/> of this state and the given nextCharKind. The node must be nullable here.
+        /// </summary>
         internal int FixedLength(uint nextCharKind)
         {
-            Debug.Assert(nextCharKind is 0 or CharKind.BeginningEnd or CharKind.Newline or CharKind.WordLetter or CharKind.NewLineS);
+            Debug.Assert(IsNullableFor(nextCharKind));
+            Debug.Assert(CharKind.IsValidCharKind(nextCharKind));
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
             return Node.ResolveFixedLength(context);
         }
-
-        /// <summary>If true then the state is a dead-end, rejects all inputs.</summary>
-        internal bool IsNothing => Node.IsNothing;
 
         /// <summary>If true then state starts with a ^ or $ or \Z</summary>
         internal bool StartsWithLineAnchor => Node._info.StartsWithLineAnchor;
 
         /// <summary>
-        /// Translates a minterm set to a character kind, which is a general categorization of characters used
-        /// for cheaply deciding the nullability of anchors.
-        /// </summary>
-        /// <remarks>
-        /// An empty set is handled as a special case to indicate the very last \n.
-        /// </remarks>
-        /// <param name="minterm">the minterm to translate</param>
-        /// <returns>the character kind of the minterm</returns>
-        private uint GetNextCharKind(ref TSet minterm)
-        {
-            ISolver<TSet> solver = Node._builder._solver;
-            TSet wordLetterPredicate = Node._builder._wordLetterForBoundariesSet;
-            TSet newLinePredicate = Node._builder._newLineSet;
-
-            // minterm == solver.False is used to represent the very last \n
-            uint nextCharKind = CharKind.General;
-            if (solver.Empty.Equals(minterm))
-            {
-                nextCharKind = CharKind.NewLineS;
-                minterm = newLinePredicate;
-            }
-            else if (newLinePredicate.Equals(minterm))
-            {
-                // If the previous state was the start state, mark this as the very FIRST \n.
-                // Essentially, this looks the same as the very last \n and is used to nullify
-                // rev(\Z) in the conext of a reversed automaton.
-                nextCharKind = PrevCharKind == CharKind.BeginningEnd ?
-                    CharKind.NewLineS :
-                    CharKind.Newline;
-            }
-            else if (!solver.IsEmpty(solver.And(wordLetterPredicate, minterm)))
-            {
-                nextCharKind = CharKind.WordLetter;
-            }
-            return nextCharKind;
-        }
-
-        /// <summary>
         /// Compute the target state for the given input minterm.
         /// If <paramref name="minterm"/> is False this means that this is \n and it is the last character of the input.
         /// </summary>
+        /// <param name="builder">the builder that owns <see cref="Node"/></param>
         /// <param name="minterm">minterm corresponding to some input character or False corresponding to last \n</param>
-        internal DfaMatchingState<TSet> Next(TSet minterm)
+        /// <param name="nextCharKind"></param>
+        internal SymbolicRegexNode<TSet> Next(SymbolicRegexBuilder<TSet> builder, TSet minterm, uint nextCharKind)
         {
-            uint nextCharKind = GetNextCharKind(ref minterm);
-
             // Combined character context
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
 
             // Compute the derivative of the node for the given context
-            SymbolicRegexNode<TSet> derivative = Node.CreateDerivativeWithoutEffects(minterm, context);
-
-            // nextCharKind will be the PrevCharKind of the target state
-            // use an existing state instead if one exists already
-            // otherwise create a new new id for it
-            return Node._builder.CreateState(derivative, nextCharKind, capturing: false);
+            return Node.CreateDerivativeWithoutEffects(builder, minterm, context);
         }
 
         /// <summary>
         /// Compute a set of transitions for the given minterm.
         /// </summary>
+        /// <param name="builder">the builder that owns <see cref="Node"/></param>
         /// <param name="minterm">minterm corresponding to some input character or False corresponding to last \n</param>
+        /// <param name="nextCharKind"></param>
         /// <returns>an enumeration of the transitions as pairs of the target state and a list of effects to be applied</returns>
-        internal List<(DfaMatchingState<TSet> State, DerivativeEffect[] Effects)> NfaNextWithEffects(TSet minterm)
+        internal List<(SymbolicRegexNode<TSet> Node, DerivativeEffect[] Effects)> NfaNextWithEffects(SymbolicRegexBuilder<TSet> builder, TSet minterm, uint nextCharKind)
         {
-            uint nextCharKind = GetNextCharKind(ref minterm);
-
             // Combined character context
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
 
             // Compute the transitions for the given context
-            List<(SymbolicRegexNode<TSet>, DerivativeEffect[])> nodesAndEffects = Node.CreateNfaDerivativeWithEffects(minterm, context);
-
-            var list = new List<(DfaMatchingState<TSet> State, DerivativeEffect[] Effects)>();
-            foreach ((SymbolicRegexNode<TSet> node, DerivativeEffect[]? effects) in nodesAndEffects)
-            {
-                // nextCharKind will be the PrevCharKind of the target state
-                // use an existing state instead if one exists already
-                // otherwise create a new new id for it
-                DfaMatchingState<TSet> state = Node._builder.CreateState(node, nextCharKind, capturing: true);
-                if (!state.IsDeadend)
-                    list.Add((state, effects));
-            }
-            return list;
+            return Node.CreateNfaDerivativeWithEffects(builder, minterm, context);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool IsNullableFor(uint nextCharKind)
         {
-            Debug.Assert(nextCharKind is 0 or CharKind.BeginningEnd or CharKind.Newline or CharKind.WordLetter or CharKind.NewLineS);
+            Debug.Assert(CharKind.IsValidCharKind(nextCharKind));
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
             return Node.IsNullableFor(context);
         }

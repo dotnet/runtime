@@ -56,16 +56,7 @@ namespace System.Text.RegularExpressions.Symbolic
         internal TSet _wordLetterForBoundariesSet;
         internal TSet _newLineSet;
 
-        /// <summary>Partition of the input space of sets.</summary>
-        internal TSet[]? _minterms;
-
         private readonly Dictionary<TSet, SymbolicRegexNode<TSet>> _singletonCache = new();
-
-        // states that have been created
-        internal HashSet<DfaMatchingState<TSet>> _stateCache = new();
-
-        // capturing states that have been created
-        internal HashSet<DfaMatchingState<TSet>> _capturingStateCache = new();
 
         /// <summary>
         /// This cache is used in <see cref="SymbolicRegexNode{TSet}.Create"/> to keep all nodes associated with this builder
@@ -84,7 +75,7 @@ namespace System.Text.RegularExpressions.Symbolic
         // matching when simplification rules fail to eliminate the portions being walked over.
 
         /// <summary>
-        /// Cache for <see cref="SymbolicRegexNode{TSet}.CreateDerivative(TSet, uint)"/> keyed by:
+        /// Cache for <see cref="SymbolicRegexNode{TSet}.CreateDerivative(SymbolicRegexBuilder{TSet}, TSet, uint)"/> keyed by:
         ///  -The node to derivate
         ///  -The character or minterm to take the derivative with
         ///  -The surrounding character context
@@ -93,7 +84,7 @@ namespace System.Text.RegularExpressions.Symbolic
         internal readonly Dictionary<(SymbolicRegexNode<TSet>, TSet elem, uint context), SymbolicRegexNode<TSet>> _derivativeCache = new();
 
         /// <summary>
-        /// Cache for <see cref="SymbolicRegexNode{TSet}.PruneLowerPriorityThanNullability(uint)"/> keyed by:
+        /// Cache for <see cref="SymbolicRegexNode{TSet}.PruneLowerPriorityThanNullability(SymbolicRegexBuilder{TSet}, uint)"/> keyed by:
         ///  -The node to prune
         ///  -The surrounding character context
         /// The value is the pruned node.
@@ -101,73 +92,12 @@ namespace System.Text.RegularExpressions.Symbolic
         internal readonly Dictionary<(SymbolicRegexNode<TSet>, uint), SymbolicRegexNode<TSet>> _pruneLowerPriorityThanNullabilityCache = new();
 
         /// <summary>
-        /// Cache for <see cref="SymbolicRegexNode{TSet}.Subsumes(SymbolicRegexNode{TSet}, int)"/> keyed by:
+        /// Cache for <see cref="SymbolicRegexNode{TSet}.Subsumes(SymbolicRegexBuilder{TSet}, SymbolicRegexNode{TSet}, int)"/> keyed by:
         ///  -The node R potentially subsuming S
         ///  -The node S potentially being subsumed by R
         /// The value indicates if subsumption is known to hold.
         /// </summary>
         internal readonly Dictionary<(SymbolicRegexNode<TSet>, SymbolicRegexNode<TSet>), bool> _subsumptionCache = new();
-
-        /// <summary>
-        /// Maps state ids to states, initial capacity is 1024 states.
-        /// Each time more states are needed the length is increased by 1024.
-        /// </summary>
-        internal DfaMatchingState<TSet>[]? _stateArray;
-        internal DfaMatchingState<TSet>[]? _capturingStateArray;
-
-        /// <summary>
-        /// Maps state IDs to context-independent information for all states in <see cref="_stateArray"/>.
-        /// </summary>
-        private ContextIndependentState[] _stateInfo = Array.Empty<ContextIndependentState>();
-
-        /// <summary>Context-independent information available for every state.</summary>
-        [Flags]
-        private enum ContextIndependentState : byte
-        {
-            IsInitial = 1,
-            IsDeadend = 2,
-            IsNullable = 4,
-            CanBeNullable = 8,
-        }
-
-        /// <remarks>
-        /// For these "delta" arrays, technically Volatile.Read should be used to read out an element,
-        /// but in practice that's not needed on the runtimes in use (though that needs to be documented
-        /// via https://github.com/dotnet/runtime/issues/63474), and use of Volatile.Read is
-        /// contributing non-trivial overhead (https://github.com/dotnet/runtime/issues/65789).
-        /// </remarks>
-        internal int[]? _delta;
-        internal List<(DfaMatchingState<TSet>, DerivativeEffect[])>?[]? _capturingDelta;
-        private const int InitialStateLimit = 1024;
-
-        /// <summary>1 + Log2(_minterms.Length), the smallest k s.t. 2^k >= minterms.Length + 1</summary>
-        internal int _mintermsLog;
-
-        /// <summary>
-        /// Maps each NFA state id to the state id of the DfaMatchingState stored in _stateArray.
-        /// This map is used to compactly represent NFA state ids in NFA mode in order to utilize
-        /// the property that all NFA states are small integers in one interval.
-        /// The valid entries are 0 to <see cref="NfaStateCount"/>-1.
-        /// </summary>
-        internal int[] _nfaStateArray = Array.Empty<int>();
-
-        /// <summary>
-        /// Maps the id of a DfaMatchingState to the NFA state id that it is being identifed with in the NFA.
-        /// It is the inverse of used entries in _nfaStateArray.
-        /// The range of this map is 0 to <see cref="NfaStateCount"/>-1.
-        /// </summary>
-        internal readonly Dictionary<int, int> _nfaStateArrayInverse = new();
-
-        /// <summary>Gets <see cref="_nfaStateArrayInverse"/>.Count</summary>
-        internal int NfaStateCount => _nfaStateArrayInverse.Count;
-
-        /// <summary>
-        /// Transition function for NFA transitions in NFA mode.
-        /// Each NFA entry maps to a list of NFA target states.
-        /// Each list of target states is without repetitions.
-        /// If the entry is null then the targets states have not been computed yet.
-        /// </summary>
-        internal int[]?[] _nfaDelta = Array.Empty<int[]>();
 
         /// <summary>Create a new symbolic regex builder.</summary>
         internal SymbolicRegexBuilder(ISolver<TSet> solver, CharSetSolver charSetSolver)
@@ -175,24 +105,6 @@ namespace System.Text.RegularExpressions.Symbolic
             // Solver must be set first, else it will cause null reference exception in the following
             _charSetSolver = charSetSolver;
             _solver = solver;
-
-            // minterms = null if partition of the solver is undefined and returned as null
-            _minterms = solver.GetMinterms();
-            if (_minterms == null)
-            {
-                _mintermsLog = -1;
-            }
-            else
-            {
-                _stateArray = new DfaMatchingState<TSet>[InitialStateLimit];
-                _capturingStateArray = new DfaMatchingState<TSet>[InitialStateLimit];
-                _stateInfo = new ContextIndependentState[InitialStateLimit];
-
-                // the extra +1 slot with id minterms.Length is reserved for \Z (last occurrence of \n)
-                _mintermsLog = BitOperations.Log2((uint)_minterms.Length) + 1;
-                _delta = new int[InitialStateLimit << _mintermsLog];
-                _capturingDelta = new List<(DfaMatchingState<TSet>, DerivativeEffect[])>[InitialStateLimit << _mintermsLog];
-            }
 
             // initialized to False but updated later to the actual condition ony if \b or \B occurs anywhere in the regex
             // this implies that if a regex never uses \b or \B then the character context will never
@@ -211,94 +123,6 @@ namespace System.Text.RegularExpressions.Symbolic
             // --- initialize singletonCache ---
             _singletonCache[_solver.Empty] = _nothing;
             _singletonCache[_solver.Full] = _anyChar;
-        }
-
-        /// <summary>Assign the context-independent information for the given state.</summary>
-        internal void SetStateInfo(int stateId, bool isInitial, bool isDeadend, bool isNullable, bool canBeNullable)
-        {
-            Debug.Assert(stateId > 0);
-            Debug.Assert(!isNullable || canBeNullable);
-
-            ContextIndependentState info = 0;
-
-            if (isInitial)
-            {
-                info |= ContextIndependentState.IsInitial;
-            }
-
-            if (isDeadend)
-            {
-                info |= ContextIndependentState.IsDeadend;
-            }
-
-            if (canBeNullable)
-            {
-                info |= ContextIndependentState.CanBeNullable;
-                if (isNullable)
-                {
-                    info |= ContextIndependentState.IsNullable;
-                }
-            }
-
-            _stateInfo[stateId] = info;
-        }
-
-        /// <summary>Get context-independent information for the given state.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal (bool IsInitial, bool IsDeadend, bool IsNullable, bool CanBeNullable) GetStateInfo(int stateId)
-        {
-            Debug.Assert(stateId > 0);
-
-            ContextIndependentState info = _stateInfo[stateId];
-            return ((info & ContextIndependentState.IsInitial) != 0,
-                    (info & ContextIndependentState.IsDeadend) != 0,
-                    (info & ContextIndependentState.IsNullable) != 0,
-                    (info & ContextIndependentState.CanBeNullable) != 0);
-        }
-
-        /// <summary>Lookup the actual minterm based on its ID.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal TSet GetMinterm(int mintermId)
-        {
-            TSet[]? minterms = _minterms;
-            Debug.Assert(minterms is not null);
-            return (uint)mintermId < (uint)minterms.Length ?
-                minterms[mintermId] :
-                _solver.Empty; // minterm=False represents \Z
-        }
-
-        /// <summary>Returns the span from <see cref="_delta"/> that may contain transitions for the given state</summary>
-        internal Span<int> GetDeltasFor(DfaMatchingState<TSet> state)
-        {
-            if (_delta is null || _minterms is null)
-            {
-                return default;
-            }
-
-            int numMinterms = _minterms.Length;
-            if (state.StartsWithLineAnchor)
-            {
-                numMinterms++;
-            }
-
-            return _delta.AsSpan(state.Id << _mintermsLog, numMinterms);
-        }
-
-        /// <summary>Returns the span from <see cref="_nfaDelta"/> that may contain transitions for the given state</summary>
-        internal Span<int[]?> GetNfaDeltasFor(DfaMatchingState<TSet> state)
-        {
-            if (_nfaDelta is null || _minterms is null || !_nfaStateArrayInverse.TryGetValue(state.Id, out int nfaState))
-            {
-                return default;
-            }
-
-            int numMinterms = _minterms.Length;
-            if (state.StartsWithLineAnchor)
-            {
-                numMinterms++;
-            }
-
-            return _nfaDelta.AsSpan(nfaState << _mintermsLog, numMinterms);
         }
 
         /// <summary>
@@ -507,225 +331,6 @@ namespace System.Text.RegularExpressions.Symbolic
                 default:
                     Debug.Fail($"{nameof(Transform)}:{node._kind}");
                     return null;
-            }
-        }
-
-        /// <summary>
-        /// Create a state with given node and previous character context.
-        /// </summary>
-        /// <param name="node">the pattern that this state will represent</param>
-        /// <param name="prevCharKind">the kind of the character that led to this state</param>
-        /// <param name="capturing">whether to use the separate space of states with capturing transitions or not</param>
-        /// <param name="isInitialState">whether to mark the state as an initial state or not</param>
-        /// <returns></returns>
-        public DfaMatchingState<TSet> CreateState(SymbolicRegexNode<TSet> node, uint prevCharKind, bool capturing = false, bool isInitialState = false)
-        {
-            //first prune the anchors in the node
-            TSet wlbSet = _wordLetterForBoundariesSet;
-            TSet startSet = node.GetStartSet();
-
-            //true if the startset of the node overlaps with some wordletter or the node can be nullable
-            bool contWithWL = node.CanBeNullable || !_solver.IsEmpty(_solver.And(wlbSet, startSet));
-
-            //true if the startset of the node overlaps with some nonwordletter or the node can be nullable
-            bool contWithNWL = node.CanBeNullable || !_solver.IsEmpty(_solver.And(_solver.Not(wlbSet), startSet));
-            SymbolicRegexNode<TSet> pruned_node = node.PruneAnchors(prevCharKind, contWithWL, contWithNWL);
-            var s = new DfaMatchingState<TSet>(pruned_node, prevCharKind);
-            if (!(capturing ? _capturingStateCache : _stateCache).TryGetValue(s, out DfaMatchingState<TSet>? state))
-            {
-                state = MakeNewState(s, capturing, isInitialState);
-            }
-
-            return state;
-        }
-
-        private DfaMatchingState<TSet> MakeNewState(DfaMatchingState<TSet> state, bool capturing, bool isInitialState)
-        {
-            lock (this)
-            {
-                HashSet<DfaMatchingState<TSet>> cache = capturing ? _capturingStateCache : _stateCache;
-                cache.Add(state); // Add to cache first to make 1 the first state ID
-                state.Id = cache.Count;
-
-                Debug.Assert(_stateArray is not null && _capturingStateArray is not null);
-
-                const int GrowthSize = 1024;
-                if (capturing)
-                {
-                    if (state.Id == _capturingStateArray.Length)
-                    {
-                        int newsize = _capturingStateArray.Length + GrowthSize;
-                        Array.Resize(ref _capturingStateArray, newsize);
-                        Array.Resize(ref _capturingDelta, newsize << _mintermsLog);
-                    }
-                    _capturingStateArray[state.Id] = state;
-                }
-                else
-                {
-                    if (state.Id == _stateArray.Length)
-                    {
-                        int newsize = _stateArray.Length + GrowthSize;
-                        Array.Resize(ref _stateArray, newsize);
-                        Array.Resize(ref _delta, newsize << _mintermsLog);
-                        Array.Resize(ref _stateInfo, newsize);
-                    }
-                    _stateArray[state.Id] = state;
-                    SetStateInfo(state.Id, isInitialState, state.IsDeadend, state.Node.IsNullable, state.Node.CanBeNullable);
-                }
-                return state;
-            }
-        }
-
-        /// <summary>
-        /// Make an NFA state for the given node and previous character kind.
-        /// </summary>
-        public int CreateNfaState(SymbolicRegexNode<TSet> node, uint prevCharKind)
-        {
-            Debug.Assert(node.Kind != SymbolicRegexNodeKind.Alternate);
-
-            // First make the underlying core state
-            DfaMatchingState<TSet> coreState = CreateState(node, prevCharKind);
-
-            if (!_nfaStateArrayInverse.TryGetValue(coreState.Id, out int nfaStateId))
-            {
-                nfaStateId = MakeNewNfaState(coreState.Id);
-            }
-
-            return nfaStateId;
-        }
-
-        /// <summary>Critical region that creates a new NFA state for the underlying core state</summary>
-        private int MakeNewNfaState(int coreStateId)
-        {
-            lock (this)
-            {
-                if (NfaStateCount == _nfaStateArray.Length)
-                {
-                    // TBD: is 1024 reasonable?
-                    int newsize = _nfaStateArray.Length + 1024;
-                    Array.Resize(ref _nfaStateArray, newsize);
-                    Array.Resize(ref _nfaDelta, newsize << _mintermsLog);
-                    // TBD: capturing
-                }
-
-                int nfaStateId = NfaStateCount;
-                _nfaStateArray[nfaStateId] = coreStateId;
-                _nfaStateArrayInverse[coreStateId] = nfaStateId;
-                return nfaStateId;
-            }
-        }
-
-        /// <summary>Gets the core state Id corresponding to the NFA state</summary>
-        public int GetCoreStateId(int nfaStateId)
-        {
-            Debug.Assert(_stateArray is not null);
-            Debug.Assert(nfaStateId < _nfaStateArray.Length);
-            Debug.Assert(_nfaStateArray[nfaStateId] < _stateArray.Length);
-            return _nfaStateArray[nfaStateId];
-        }
-
-        /// <summary>Gets the core state corresponding to the NFA state</summary>
-        public DfaMatchingState<TSet> GetCoreState(int nfaStateId)
-        {
-            Debug.Assert(_stateArray is not null);
-            return _stateArray[GetCoreStateId(nfaStateId)];
-        }
-
-        /// <summary>Critical region for defining a new core transition</summary>
-        public DfaMatchingState<TSet> CreateNewTransition(DfaMatchingState<TSet> sourceState, int mintermId, int offset)
-        {
-            TryCreateNewTransition(sourceState, mintermId, offset, checkThreshold: false, out DfaMatchingState<TSet>? nextState);
-            Debug.Assert(nextState is not null);
-            return nextState;
-        }
-
-        /// <summary>Gets or creates a new DFA transition.</summary>
-        public bool TryCreateNewTransition(
-            DfaMatchingState<TSet> sourceState, int mintermId, int offset, bool checkThreshold, [NotNullWhen(true)] out DfaMatchingState<TSet>? nextState)
-        {
-            Debug.Assert(_delta is not null && _stateArray is not null);
-            lock (this)
-            {
-                Debug.Assert(offset < _delta.Length);
-
-                // check if meanwhile delta[offset] has become defined possibly by another thread
-                DfaMatchingState<TSet>? targetState = _stateArray[_delta[offset]];
-                if (targetState is null)
-                {
-                    if (checkThreshold && _stateCache.Count >= SymbolicRegexThresholds.NfaThreshold)
-                    {
-                        nextState = null;
-                        return false;
-                    }
-
-                    targetState = sourceState.Next(GetMinterm(mintermId));
-                    Volatile.Write(ref _delta[offset], targetState.Id);
-                }
-
-                nextState = targetState;
-                return true;
-            }
-        }
-
-        /// <summary>Gets or creates a new NFA transition.</summary>
-        public int[] CreateNewNfaTransition(int nfaStateId, int mintermId, int nfaOffset)
-        {
-            Debug.Assert(_delta is not null && _stateArray is not null);
-            lock (this)
-            {
-                Debug.Assert(nfaOffset < _nfaDelta.Length);
-
-                // check if meanwhile the nfaoffset has become defined possibly by another thread
-                int[]? targets = _nfaDelta[nfaOffset];
-                if (targets is null)
-                {
-                    // Create the underlying transition from the core state corresponding to the nfa state
-                    DfaMatchingState<TSet> coreState = GetCoreState(nfaStateId);
-                    int coreOffset = (coreState.Id << _mintermsLog) | mintermId;
-                    int coreTargetId = _delta[coreOffset];
-                    DfaMatchingState<TSet>? coreTarget = coreTargetId > 0 ?
-                        _stateArray[coreTargetId] : CreateNewTransition(coreState, mintermId, coreOffset);
-
-                    SymbolicRegexNode<TSet> node = coreTarget.Node.Kind == SymbolicRegexNodeKind.DisableBacktrackingSimulation ?
-                        coreTarget.Node._left! : coreTarget.Node;
-                    if (node.Kind == SymbolicRegexNodeKind.Alternate)
-                    {
-                        // Create separate NFA states for all members of a disjunction
-                        // Here duplicate NFA states cannot arise because there are no duplicate nodes in the disjunction
-                        List<SymbolicRegexNode<TSet>> alts = node.ToList(listKind: SymbolicRegexNodeKind.Alternate);
-                        targets = new int[alts.Count];
-                        int targetIndex = 0;
-                        foreach (SymbolicRegexNode<TSet> q in alts)
-                        {
-                            Debug.Assert(!q.IsNothing);
-                            // Re-wrap the element nodes in DisableBacktrackingSimulation if the top level node was too
-                            SymbolicRegexNode<TSet> targetNode = coreTarget.Node.Kind == SymbolicRegexNodeKind.DisableBacktrackingSimulation ?
-                                CreateDisableBacktrackingSimulation(q) : q;
-                            targets[targetIndex++] = CreateNfaState(targetNode, coreTarget.PrevCharKind);
-                        }
-                        Debug.Assert(targetIndex == targets.Length);
-                    }
-                    else if (coreTarget.IsDeadend)
-                    {
-                        // Omit deadend states from the target list of states
-                        // target list being empty means that the NFA state itself is a deadend
-                        targets = Array.Empty<int>();
-                    }
-                    else
-                    {
-                        // Add the single NFA target state correponding to the core target state
-                        if (!_nfaStateArrayInverse.TryGetValue(coreTarget.Id, out int nfaTargetId))
-                        {
-                            nfaTargetId = MakeNewNfaState(coreTarget.Id);
-                        }
-
-                        targets = new[] { nfaTargetId };
-                    }
-
-                    Volatile.Write(ref _nfaDelta[nfaOffset], targets);
-                }
-
-                return targets;
             }
         }
     }

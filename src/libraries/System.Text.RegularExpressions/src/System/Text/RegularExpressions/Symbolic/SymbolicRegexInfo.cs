@@ -14,6 +14,7 @@ namespace System.Text.RegularExpressions.Symbolic
         private const uint StartsWithSomeAnchorMask = 32;
         private const uint IsHighPriorityNullableMask = 64;
         private const uint ContainsEffectMask = 128;
+        private const uint ContainsLineAnchorMask = 256;
 
         private readonly uint _info;
 
@@ -21,7 +22,8 @@ namespace System.Text.RegularExpressions.Symbolic
 
         internal static SymbolicRegexInfo Create(
             bool isAlwaysNullable = false, bool canBeNullable = false,
-            bool startsWithLineAnchor = false, bool startsWithSomeAnchor = false, bool containsSomeAnchor = false,
+            bool startsWithLineAnchor = false, bool containsLineAnchor = false,
+            bool startsWithSomeAnchor = false, bool containsSomeAnchor = false,
             bool isHighPriorityNullable = false, bool containsEffect = false)
         {
             uint i = 0;
@@ -36,13 +38,18 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
             }
 
-            if (containsSomeAnchor || startsWithLineAnchor || startsWithSomeAnchor)
+            if (containsLineAnchor || containsSomeAnchor || startsWithLineAnchor || startsWithSomeAnchor)
             {
                 i |= ContainsSomeAnchorMask;
 
-                if (startsWithLineAnchor)
+                if (containsLineAnchor || startsWithLineAnchor)
                 {
-                    i |= StartsWithLineAnchorMask;
+                    i |= ContainsLineAnchorMask;
+
+                    if (startsWithLineAnchor)
+                    {
+                        i |= StartsWithLineAnchorMask;
+                    }
                 }
 
                 if (startsWithLineAnchor || startsWithSomeAnchor)
@@ -70,6 +77,8 @@ namespace System.Text.RegularExpressions.Symbolic
 
         public bool StartsWithLineAnchor => (_info & StartsWithLineAnchorMask) != 0;
 
+        public bool ContainsLineAnchor => (_info & ContainsLineAnchorMask) != 0;
+
         public bool StartsWithSomeAnchor => (_info & StartsWithSomeAnchorMask) != 0;
 
         public bool ContainsSomeAnchor => (_info & ContainsSomeAnchorMask) != 0;
@@ -90,6 +99,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 isAlwaysNullable: left_info.IsNullable || right_info.IsNullable,
                 canBeNullable: left_info.CanBeNullable || right_info.CanBeNullable,
                 startsWithLineAnchor: left_info.StartsWithLineAnchor || right_info.StartsWithLineAnchor,
+                containsLineAnchor: left_info.ContainsLineAnchor || right_info.ContainsLineAnchor,
                 startsWithSomeAnchor: left_info.StartsWithSomeAnchor || right_info.StartsWithSomeAnchor,
                 containsSomeAnchor: left_info.ContainsSomeAnchor || right_info.ContainsSomeAnchor,
                 isHighPriorityNullable: left_info.IsHighPriorityNullable,
@@ -105,6 +115,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 isAlwaysNullable: left_info.IsNullable && right_info.IsNullable,
                 canBeNullable: left_info.CanBeNullable && right_info.CanBeNullable,
                 startsWithLineAnchor: left_info.StartsWithLineAnchor || (left_info.CanBeNullable && right_info.StartsWithLineAnchor),
+                containsLineAnchor: left_info.ContainsLineAnchor || right_info.ContainsLineAnchor,
                 startsWithSomeAnchor: left_info.StartsWithSomeAnchor || (left_info.CanBeNullable && right_info.StartsWithSomeAnchor),
                 containsSomeAnchor: left_info.ContainsSomeAnchor || right_info.ContainsSomeAnchor,
                 isHighPriorityNullable: left_info.IsHighPriorityNullable && right_info.IsHighPriorityNullable,
