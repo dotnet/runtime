@@ -168,14 +168,7 @@ namespace System.Net.Http
 
         internal bool WasRedirected() => (_sendStatus & MessageIsRedirect) != 0;
 
-        internal bool IsWebSocketH2Request()
-        {
-            if (_version.Major == 2 && Headers.Protocol == "websocket")
-            {
-                return true;
-            }
-            return false;
-        }
+        internal bool IsWebSocketH2Request() => _version.Major == 2 && HasHeaders && Headers.Protocol == "websocket";
 
         #region IDisposable Members
 
