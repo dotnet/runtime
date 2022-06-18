@@ -1431,7 +1431,9 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         }
         else
         {
-            // Nothing to do here; the first SP adjustment will be done by saving the callee-saved registers.
+            assert(genFuncletInfo.fiSpDelta1 < 0);
+            assert(genFuncletInfo.fiSpDelta1 >= -240);
+            genStackPointerAdjustment(genFuncletInfo.fiSpDelta1, REG_NA, nullptr, /* reportUnwindData */ true);
         }
     }
 
