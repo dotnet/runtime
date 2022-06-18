@@ -138,6 +138,22 @@ namespace Microsoft.Extensions.DependencyModel
 
             string depsJsonFile = Path.ChangeExtension(assemblyLocation, DepsJsonExtension);
             bool depsJsonFileExists = _fileSystem.File.Exists(depsJsonFile);
+
+#if !NETSTANDARD2_0
+            if (!depsJsonFileExists)
+            {
+                // in some cases (like .NET Framework shadow copy) the Assembly Location
+                // and CodeBase will be different, so also try the CodeBase
+                string? assemblyCodeBase = GetNormalizedCodeBasePath(assembly);
+                if (!string.IsNullOrEmpty(assemblyCodeBase) &&
+                    assemblyLocation != assemblyCodeBase)
+                {
+                    depsJsonFile = Path.ChangeExtension(assemblyCodeBase, DepsJsonExtension);
+                    depsJsonFileExists = _fileSystem.File.Exists(depsJsonFile);
+                }
+            }
+#endif
+
             return depsJsonFileExists ?
                 depsJsonFile :
                 null;
