@@ -585,6 +585,7 @@ namespace ILCompiler
 
                     List<EcmaModule> inputModules = new List<EcmaModule>();
                     List<EcmaModule> rootingModules = new List<EcmaModule>();
+                    List<EcmaModule> crossModulePgo = new List<EcmaModule>();
 
                     foreach (var inputFile in inFilePaths)
                     {
@@ -605,6 +606,14 @@ namespace ILCompiler
                         EcmaModule module = typeSystemContext.GetModuleFromPath(unrootedInputFile.Value);
                         inputModules.Add(module);
                         versionBubbleModulesHash.Add(module);
+                    }
+
+                    if (_commandLineOptions.CrossModulePgo != null)
+                    {
+                        foreach (var crossModulePgoAssemblyName in _commandLineOptions.CrossModulePgo)
+                        {
+                            crossModulePgo.Add(typeSystemContext.GetModuleForSimpleName(crossModulePgoAssemblyName));
+                        }
                     }
 
                     //
@@ -640,6 +649,8 @@ namespace ILCompiler
                     groupConfig.CompileGenericDependenciesFromVersionBubbleModuleSet = _commandLineOptions.CompileBubbleGenerics;
                     groupConfig.CrossModuleGenericCompilation = _commandLineOptions.CrossModuleGenericCompilation;
                     groupConfig.CrossModuleInlining = _commandLineOptions.CrossModuleInlining;
+                    groupConfig.CrossModuleInlineable = crossModulePgo;
+                    groupConfig.CrossModulePgo = crossModulePgo.Count > 0;
 
                     if (singleMethod != null)
                     {
@@ -673,17 +684,15 @@ namespace ILCompiler
                         _referenceableModules,
                         inputModules,
                         versionBubbleModules,
-                        _commandLineOptions.CompileBubbleGenerics ? inputModules[0] : null,
+                        _commandLineOptions.CompileBubbleGenerics || (crossModulePgo.Count > 0) ? inputModules[0] : null,
                         mibcFiles,
                         jsonProfile,
                         typeSystemContext,
                         compilationGroup,
-                        _commandLineOptions.EmbedPgoData);
+                        _commandLineOptions.EmbedPgoData,
+                        crossModulePgo.Count == 0 ? compilationGroup.VersionsWithMethodBody : compilationGroup.CrossModuleInlineable);
 
-                    if (_commandLineOptions.Partial)
-                        compilationGroup.ApplyProfilerGuidedCompilationRestriction(profileDataManager);
-                    else
-                        compilationGroup.ApplyProfilerGuidedCompilationRestriction(null);
+                    compilationGroup.ApplyProfileGuidedOptimizationData(profileDataManager, _commandLineOptions.Partial);
 
                     if ((singleMethod == null) && !_commandLineOptions.CompileNoMethods)
                     {

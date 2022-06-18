@@ -34,7 +34,8 @@ namespace ILCompiler
                                   CallChainProfile callChainProfile,
                                   CompilerTypeSystemContext context,
                                   ReadyToRunCompilationModuleGroupBase compilationGroup,
-                                  bool embedPgoDataInR2RImage)
+                                  bool embedPgoDataInR2RImage,
+                                  Func<MethodDesc, bool> canBeIncludedInCurrentCompilation)
         {
             EmbedPgoDataInR2RImage = embedPgoDataInR2RImage;
             _ibcParser = new IBCProfileParser(logger, possibleReferenceModules);

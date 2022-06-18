@@ -111,7 +111,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
             }
 
-            _mutableModule = new MutableModule(nodeFactory.TypeSystemContext, "ManifestMetadata", manifestAssemblyFlags, publicKeyBlob, manifestAssemblyVersion, hashAlgorithm);
+            _mutableModule = new MutableModule(nodeFactory.TypeSystemContext,
+                                               "ManifestMetadata",
+                                               manifestAssemblyFlags,
+                                               publicKeyBlob,
+                                               manifestAssemblyVersion,
+                                               hashAlgorithm,
+                                               ModuleToIndexSingleThreadedAndSorted,
+                                               nodeFactory.CompilationModuleGroup);
 
             if (!_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode)
             {
@@ -151,6 +158,26 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         }
 
+        private int ModuleToIndexForInputModulesOnly(ModuleDesc module)
+        {
+            if (!(module is EcmaModule ecmaModule))
+            {
+                return -1;
+            }
+
+            if (!_nodeFactory.CompilationModuleGroup.IsModuleInCompilationGroup(ecmaModule))
+            {
+                return -1;
+            }
+
+#if DEBUG
+            int oldModuleToIndexCount = _assemblyRefToModuleIdMap.Count;
+#endif
+            int index = ModuleToIndexInternal(ecmaModule);
+            Debug.Assert(oldModuleToIndexCount == _assemblyRefToModuleIdMap.Count);
+            return index;
+        }
+
         public void RegisterEmitter(ISignatureEmitter emitter)
         {
             _signatureEmitters.Add(emitter);
@@ -166,6 +193,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             return ModuleToIndexInternal(module);
+        }
+
+        // This function may only be called when all multithreading is disabled, and must only be called in a deterministic fashion.
+        private int ModuleToIndexSingleThreadedAndSorted(ModuleDesc module)
+        {
+            return ModuleToIndexInternal((IEcmaModule)module);
         }
 
         public void EnsureModuleIndexable(ModuleDesc module)
@@ -212,12 +245,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     throw new InvalidOperationException("Adding a new assembly after signatures have been materialized.");
                 }
 
-                // If we're going to add a module to the manifest, it has to be part of the version bubble, otherwise
-                // the verification logic would be broken at runtime.
-                Debug.Assert(_nodeFactory.CompilationModuleGroup.VersionsWithModule(emodule));
-
                 _moduleIdToAssemblyNameMap.Add(assemblyRefIndex, assemblyName);
-                _manifestAssemblyMvids.Add(module.MetadataReader.GetGuid(module.MetadataReader.GetModuleDefinition().Mvid));
+                if (_nodeFactory.CompilationModuleGroup.VersionsWithModule(emodule))
+                {
+                    _manifestAssemblyMvids.Add(module.MetadataReader.GetGuid(module.MetadataReader.GetModuleDefinition().Mvid));
+                }
+                else
+                {
+                    Debug.Assert(_nodeFactory.CompilationModuleGroup.CrossModuleInlineableModule(emodule));
+                    _manifestAssemblyMvids.Add(default(Guid));
+                }
             }
             return assemblyRefIndex;
         }

@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
@@ -26,13 +27,17 @@ namespace ILCompiler
         public bool CrossModuleGenericCompilation;
         public IEnumerable<EcmaModule> CompilationModuleSet;
         public IEnumerable<ModuleDesc> VersionBubbleModuleSet;
+        public IEnumerable<ModuleDesc> CrossModuleInlineable;
         public bool CompileGenericDependenciesFromVersionBubbleModuleSet;
+        public bool CrossModulePgo;
     }
 
     public abstract class ReadyToRunCompilationModuleGroupBase : CompilationModuleGroup
     {
         protected readonly HashSet<EcmaModule> _compilationModuleSet;
         private readonly HashSet<ModuleDesc> _versionBubbleModuleSet;
+        private readonly HashSet<ModuleDesc> _crossModuleInlineableModuleSet = new HashSet<ModuleDesc>();
+        private readonly bool _crossModulePgo;
         private Dictionary<TypeDesc, ModuleToken> _typeRefsInCompilationModuleSet;
         private readonly bool _compileGenericDependenciesFromVersionBubbleModuleSet;
         private readonly bool _isCompositeBuildMode;
@@ -44,8 +49,10 @@ namespace ILCompiler
         private readonly ConcurrentDictionary<TypeDesc, bool> _versionsWithTypeReferenceCache = new ConcurrentDictionary<TypeDesc, bool>();
         private readonly ConcurrentDictionary<MethodDesc, bool> _versionsWithMethodCache = new ConcurrentDictionary<MethodDesc, bool>();
         private readonly ConcurrentDictionary<MethodDesc, bool> _crossModuleInlineableCache = new ConcurrentDictionary<MethodDesc, bool>();
+        private readonly ConcurrentDictionary<TypeDesc, bool> _crossModuleInlineableTypeCache = new ConcurrentDictionary<TypeDesc, bool>();
         private readonly ConcurrentDictionary<MethodDesc, bool> _crossModuleCompilableCache = new ConcurrentDictionary<MethodDesc, bool>();
         private readonly Dictionary<ModuleDesc, CompilationUnitIndex> _moduleCompilationUnits = new Dictionary<ModuleDesc, CompilationUnitIndex>();
+        private ProfileDataManager _profileData;
         private CompilationUnitIndex _nextCompilationUnit = CompilationUnitIndex.FirstDynamicallyAssigned;
         private ModuleTokenResolver _tokenResolver = null;
         private ConcurrentDictionary<EcmaMethod, bool> _tokenTranslationFreeNonVersionable = new ConcurrentDictionary<EcmaMethod, bool>();
@@ -57,11 +64,23 @@ namespace ILCompiler
             _isInputBubble = config.IsInputBubble;
             _crossModuleInlining = config.CrossModuleInlining;
             _crossModuleGenericCompilation = config.CrossModuleGenericCompilation;
+            _crossModulePgo = config.CrossModulePgo;
 
             Debug.Assert(_isCompositeBuildMode || _compilationModuleSet.Count == 1);
 
             _versionBubbleModuleSet = new HashSet<ModuleDesc>(config.VersionBubbleModuleSet);
             _versionBubbleModuleSet.UnionWith(_compilationModuleSet);
+
+            if (config.CrossModuleInlineable.Count() > 0)
+            {
+                _crossModuleInlineableModuleSet.UnionWith(config.CrossModuleInlineable);
+                _crossModuleInlineableModuleSet.UnionWith(_versionBubbleModuleSet);
+            }
+            else
+            {
+                _crossModuleInlineableModuleSet.Add(_versionBubbleModuleSet.First().Context.SystemModule);
+                _crossModuleInlineableModuleSet.UnionWith(_versionBubbleModuleSet);
+            }
 
             _compileGenericDependenciesFromVersionBubbleModuleSet = config.CompileGenericDependenciesFromVersionBubbleModuleSet;
 
@@ -331,6 +350,17 @@ namespace ILCompiler
                 _versionsWithTypeCache.GetOrAdd(typeDesc, ComputeTypeVersionsWithCode);
         }
 
+        public bool CrossModuleInlineableModule(ModuleDesc module)
+        {
+            return _crossModuleInlineableModuleSet.Contains(module);
+        }
+
+        private bool CrossModuleInlineableType(TypeDesc typeDesc)
+        {
+            return typeDesc.GetTypeDefinition() is EcmaType ecmaType &&
+                _crossModuleInlineableTypeCache.GetOrAdd(typeDesc, ComputeCrossModuleInlineableType);
+        }
+
         public sealed override bool VersionsWithTypeReference(TypeDesc typeDesc)
         {
             return _versionsWithTypeReferenceCache.GetOrAdd(typeDesc, ComputeTypeReferenceVersionsWithCode);
@@ -355,7 +385,7 @@ namespace ILCompiler
             if (method == method.GetMethodDefinition())
                 return true;
 
-            return ComputeInstantiationVersionsWithCode(method.Instantiation, method);
+            return ComputeInstantiationVersionsWithCode(method.Instantiation, method, VersionsWithType);
         }
 
         public sealed override bool CanInline(MethodDesc callerMethod, MethodDesc calleeMethod)
@@ -393,6 +423,12 @@ namespace ILCompiler
             // Only allow generics, non-generics should be compiled into the defining module
             if (!(method.HasInstantiation || method.OwningType.HasInstantiation))
                 return false;
+
+            if (_crossModulePgo && _profileData != null)
+            {
+                if (_profileData.IsMethodInProfileData(method))
+                    return true;
+            }
 
             ModuleDesc methodDefiningModule = ((MetadataType)method.OwningType.GetTypeDefinition()).Module;
 
@@ -451,7 +487,7 @@ namespace ILCompiler
                 return false;
             }
             ModuleDesc methodDefiningModule = owningMetadataType.Module;
-            if (method.Context.SystemModule != methodDefiningModule)
+            if (_crossModuleInlineableModuleSet.Contains(methodDefiningModule))
                 return false;
 
             // Where all the generic instantiation details are either:
@@ -468,14 +504,14 @@ namespace ILCompiler
                 foreach (TypeDesc t in method.Instantiation)
                 {
                     bool usesCanon = t.IsCanonicalDefinitionType(CanonicalFormKind.Any);
-                    bool versionsWithType = VersionsWithType(t);
+                    bool versionsWithType = CrossModuleInlineableType(t);
                     if (!versionsWithType && !usesCanon && (t.HasInstantiation && !(t is EcmaType etype && etype.Module != methodDefiningModule)))
                         return false;
                 }
                 foreach (TypeDesc t in method.OwningType.Instantiation)
                 {
                     bool usesCanon = t.IsCanonicalDefinitionType(CanonicalFormKind.Any);
-                    bool versionsWithType = VersionsWithType(t);
+                    bool versionsWithType = CrossModuleInlineableType(t);
                     if (!versionsWithType && !usesCanon && (t.HasInstantiation && !(t is EcmaType etype && etype.Module != methodDefiningModule)))
                         return false;
                 }
@@ -689,7 +725,24 @@ namespace ILCompiler
             if (type == type.GetTypeDefinition())
                 return true;
 
-            return ComputeInstantiationVersionsWithCode(type.Instantiation, type);
+            return ComputeInstantiationVersionsWithCode(type.Instantiation, type, VersionsWithType);
+        }
+
+        private bool ComputeCrossModuleInlineableType(TypeDesc type)
+        {
+            if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                return true;
+
+            if (type is MetadataType mdType)
+            {
+                if (!_crossModuleInlineableModuleSet.Contains(mdType.Module))
+                    return false;
+            }
+
+            if (type == type.GetTypeDefinition())
+                return true;
+
+            return ComputeInstantiationVersionsWithCode(type.Instantiation, type, CrossModuleInlineableType);
         }
 
         private bool ComputeTypeReferenceVersionsWithCode(TypeDesc type)
@@ -760,13 +813,13 @@ namespace ILCompiler
             return false;
         }
 
-        private bool ComputeInstantiationVersionsWithCode(Instantiation inst, TypeSystemEntity entityWithInstantiation)
+        private static bool ComputeInstantiationVersionsWithCode(Instantiation inst, TypeSystemEntity entityWithInstantiation, Func<TypeDesc, bool> versionsWithTypePredicate)
         {
             for (int iInstantiation = 0; iInstantiation < inst.Length; iInstantiation++)
             {
                 TypeDesc instType = inst[iInstantiation];
 
-                if (!ComputeInstantiationTypeVersionsWithCode(this, instType))
+                if (!ComputeInstantiationTypeVersionsWithCode(versionsWithTypePredicate, instType))
                 {
                     if (instType.IsPrimitive || instType.IsObject || instType.IsString)
                     {
@@ -812,24 +865,27 @@ namespace ILCompiler
             }
             return true;
 
-            static bool ComputeInstantiationTypeVersionsWithCode(ReadyToRunCompilationModuleGroupBase compilationGroup, TypeDesc type)
+            static bool ComputeInstantiationTypeVersionsWithCode(Func<TypeDesc, bool> versionsWithTypePredicate, TypeDesc type)
             {
                 if (type == type.Context.CanonType)
                     return true;
 
-                if (compilationGroup.VersionsWithType(type))
+                if (versionsWithTypePredicate(type))
                     return true;
 
                 if (type.IsArray)
-                    return ComputeInstantiationTypeVersionsWithCode(compilationGroup, type.GetParameterType());
+                    return ComputeInstantiationTypeVersionsWithCode(versionsWithTypePredicate, type.GetParameterType());
 
                 if (type.IsPointer)
-                    return ComputeInstantiationTypeVersionsWithCode(compilationGroup, type.GetParameterType());
+                    return ComputeInstantiationTypeVersionsWithCode(versionsWithTypePredicate, type.GetParameterType());
 
                 return false;
             }
         }
 
-        public abstract void ApplyProfilerGuidedCompilationRestriction(ProfileDataManager profileGuidedCompileRestriction);
+        public virtual void ApplyProfileGuidedOptimizationData(ProfileDataManager profileGuidedCompileRestriction, bool makePartial)
+        {
+            _profileData = profileGuidedCompileRestriction;
+        }
     }
 }

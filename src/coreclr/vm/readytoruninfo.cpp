@@ -1314,6 +1314,8 @@ void ReadyToRunInfo::DisableCustomAttributeFilter()
 class NativeManifestModule : public ModuleBase
 {
     IMDInternalImport* m_pMDImport;
+    ReadyToRunInfo *m_pReadyToRunInfo;
+    Module* m_pILModule;
 
     // Mapping of ModuleRef token to Module *
     LookupMap<PTR_Module>           m_ModuleReferencesMap;
@@ -1382,6 +1384,85 @@ public:
         COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
     }
 
+    // Decompose a null terminated moduleName into a pointer to an internal assemblyName, the length of that, and the associate module index
+    // and return true if it can be decomposed.
+    bool DecomposeModuleRef(LPCSTR moduleName, LPCSTR* pAssemblyName, size_t *pAssemblyNameLen, uint32_t *pIndex)
+    {
+        if (moduleName[0] != '#')
+            return false;
+
+        LPCSTR colonAddress = strchr(moduleName, ':');
+        if (colonAddress == NULL)
+            return false;
+
+        uint32_t index = 0;
+        LPCSTR numberCur = colonAddress + 1;
+
+        // Some number must be specified
+        if (numberCur == '\0')
+            return false;
+
+        while (numberCur != '\0')
+        {
+            if (index > 100000)
+                return false; // Check to make sure we stay in a reasonable range for a module index.
+
+            index = index * 10;
+            char numberChar = *numberCur;
+            if (numberChar < '0' || numberChar > '9')
+                return false;
+
+            index += numberChar - '0';
+            numberCur++;
+        }
+
+        *pIndex = index;
+        *pAssemblyNameLen = colonAddress - moduleName - 1;
+        *pAssemblyName = moduleName + 1;
+        return true;
+    }
+
+    // Find the assemblyRef with a given simple name in a module, or return mdTokenNil
+    HRESULT GetAssemblyRefTokenOfIndirectDependency(Module* module, LPCSTR assemblyName, size_t assemblyNameLen, mdToken *pAssemblyRef)
+    {
+        auto pMDImport = module->GetMDImport();
+        //Get the assembly refs.
+        HENUMInternalHolder hEnumTypeRefs(pMDImport);
+        mdToken assemblyRef = mdTokenNil;
+        HRESULT hr;
+
+        hEnumTypeRefs.EnumAllInit(mdtAssemblyRef);
+        while (hEnumTypeRefs.EnumNext(&assemblyRef))
+        {
+            LPCSTR name;
+            IfFailRet(pMDImport->GetAssemblyRefProps(assemblyRef, NULL, NULL, &name, NULL, NULL, NULL, NULL));
+            size_t strIndex = 0;
+            bool nameCompareFailed = false;
+            for (; strIndex < assemblyNameLen; strIndex++)
+            {
+                if (name[strIndex] != assemblyName[strIndex])
+                {
+                    nameCompareFailed = true;
+                    break;
+                }
+            }
+
+            // The loop above checks everything up to the null terminator
+            if (name[strIndex] != '\0')
+                nameCompareFailed = true;
+
+            if (nameCompareFailed)
+            {
+                continue;
+            }
+
+            *pAssemblyRef = assemblyRef;
+            return S_OK;
+        }
+
+        *pAssemblyRef = mdTokenNil;
+        return S_FALSE;
+    }
     Module *GetModuleIfLoaded(mdFile kFile) final
     {
         CONTRACT(Module *)
@@ -1413,27 +1494,109 @@ public:
             RETURN NULL;
         }
 
+        LPCSTR assemblyNameInModuleRef;
+        size_t assemblyNameLen;
+        uint32_t index;
+
         if (strcmp(moduleName, "System.Private.CoreLib") == 0)
         {
             // Special handling for CoreLib
             module = SystemDomain::SystemModule();
-#ifndef DACCESS_COMPILE
-            m_ModuleReferencesMap.TrySetElement(RidFromToken(kFile), module);
-#endif
-            RETURN module;
+        }
+        else if (DecomposeModuleRef(moduleName, &assemblyNameInModuleRef, &assemblyNameLen, &index))
+        {
+            auto moduleBase = m_pILModule->GetModuleFromIndexIfLoaded(index);
+            _ASSERTE(moduleBase == NULL || moduleBase->IsFullModule());
+            module = static_cast<Module*>(moduleBase);
+
+            if (module != NULL)
+            {
+                if (assemblyNameLen != 0) // #:<num> is a direct reference to a module index, #<assemblyName>:<num> is indirect
+                {
+                    mdToken assemblyRef;
+                    if (FAILED(GetAssemblyRefTokenOfIndirectDependency(module, assemblyNameInModuleRef, assemblyNameLen, &assemblyRef)))
+                    {
+                        RETURN NULL;
+                    }
+
+                    if (assemblyRef == mdTokenNil)
+                    {
+                        module = NULL;
+                    }
+                    else
+                    {
+                        auto assemblyOfFinalModule = module->GetAssemblyIfLoaded(assemblyRef);
+                        if (assemblyOfFinalModule != NULL)
+                            module = assemblyOfFinalModule->GetModule();
+                    }
+                }
+            }
         }
 
-        RETURN NULL;
+#ifndef DACCESS_COMPILE
+        if (module != NULL)
+            m_ModuleReferencesMap.TrySetElement(RidFromToken(kFile), module);
+#endif
+        RETURN module;
     }
 
     DomainAssembly *LoadModule(mdFile kFile) final
     {
-        Module* module = GetModuleIfLoaded(kFile);
-        if (module == NULL)
+        // Native manifest module functionality isn't actually multi-module assemblies, and File tokens are not useable
+        if (TypeFromToken(kFile) == mdtFile)
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+
+        _ASSERTE(TypeFromToken(kFile) == mdtModuleRef);
+        Module* module = m_ModuleReferencesMap.GetElement(RidFromToken(kFile));
+        if (module != NULL)
+            return module->GetDomainAssembly();
+
+        LPCSTR moduleName;
+        if (FAILED(GetMDImport()->GetModuleRefProps(kFile, &moduleName)))
         {
-            // Since we can only load via ModuleRef, this should never fail unless the module is improperly formatted
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
         }
+
+        LPCSTR assemblyNameInModuleRef;
+        size_t assemblyNameLen;
+        uint32_t index;
+        if (strcmp(moduleName, "System.Private.CoreLib") == 0)
+        {
+            // Special handling for CoreLib
+            module = SystemDomain::SystemModule();
+        }
+        else if (DecomposeModuleRef(moduleName, &assemblyNameInModuleRef, &assemblyNameLen, &index))
+        {
+            auto moduleBase = m_pILModule->GetModuleFromIndex(index);
+            _ASSERTE(moduleBase == NULL || moduleBase->IsFullModule());
+            module = static_cast<Module*>(moduleBase);
+
+            if (assemblyNameLen != 0) // #:<num> is a direct reference to a module index, #<assemblyName>:<num> is indirect
+            {
+                mdToken assemblyRef;
+                
+                IfFailThrow(GetAssemblyRefTokenOfIndirectDependency(module, assemblyNameInModuleRef, assemblyNameLen, &assemblyRef));
+                if (assemblyRef == mdTokenNil)
+                {
+                    COMPlusThrowHR(COR_E_FILENOTFOUND);
+                }
+                auto domainAssemblyOfFinalModule = module->LoadAssembly(assemblyRef);
+                module = domainAssemblyOfFinalModule->GetModule();
+            }
+            else
+            {
+                COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+            }
+        }
+        else
+        {
+            // Unexpected ModuleRef string format
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+        }
+
+#ifndef DACCESS_COMPILE
+        m_ModuleReferencesMap.TrySetElement(RidFromToken(kFile), module);
+#endif
 
         return module->GetDomainAssembly();
     }

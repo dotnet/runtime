@@ -228,35 +228,45 @@ namespace Internal.IL
             public bool Initialize(MutableModule mutableModule, EcmaMethodIL wrappedMethod)
             {
                 bool failedToReplaceToken = false;
-                var owningMethodHandle = mutableModule.TryGetEntityHandle(wrappedMethod.OwningMethod);
-                if (!owningMethodHandle.HasValue)
-                    return false;
-                _mutableModule = mutableModule;
-                _maxStack = wrappedMethod.MaxStack;
-                _isInitLocals = wrappedMethod.IsInitLocals;
-                _owningMethod = wrappedMethod.OwningMethod;
-                _exceptionRegions = (ILExceptionRegion[])wrappedMethod.GetExceptionRegions().Clone();
-                _ilBytes = (byte[])wrappedMethod.GetILBytes().Clone();
-                _locals = (LocalVariableDefinition[])wrappedMethod.GetLocals();
-
-                for (int i = 0; i < _exceptionRegions.Length; i++)
+                try
                 {
-                    var region = _exceptionRegions[i];
-                    if (region.Kind == ILExceptionRegionKind.Catch)
+                    Debug.Assert(mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences == null);
+                    mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = ((EcmaMethod)wrappedMethod.OwningMethod).Module;
+                    var owningMethodHandle = mutableModule.TryGetEntityHandle(wrappedMethod.OwningMethod);
+                    if (!owningMethodHandle.HasValue)
+                        return false;
+                    _mutableModule = mutableModule;
+                    _maxStack = wrappedMethod.MaxStack;
+                    _isInitLocals = wrappedMethod.IsInitLocals;
+                    _owningMethod = wrappedMethod.OwningMethod;
+                    _exceptionRegions = (ILExceptionRegion[])wrappedMethod.GetExceptionRegions().Clone();
+                    _ilBytes = (byte[])wrappedMethod.GetILBytes().Clone();
+                    _locals = (LocalVariableDefinition[])wrappedMethod.GetLocals();
+
+                    for (int i = 0; i < _exceptionRegions.Length; i++)
                     {
-                        var newHandle = _mutableModule.TryGetHandle((TypeSystemEntity)wrappedMethod.GetObject(region.ClassToken));
-                        if (!newHandle.HasValue)
+                        var region = _exceptionRegions[i];
+                        if (region.Kind == ILExceptionRegionKind.Catch)
                         {
-                            return false;
+                            var newHandle = _mutableModule.TryGetHandle((TypeSystemEntity)wrappedMethod.GetObject(region.ClassToken));
+                            if (!newHandle.HasValue)
+                            {
+                                return false;
+                            }
+                            _exceptionRegions[i] = new ILExceptionRegion(region.Kind, region.TryOffset, region.TryLength, region.HandlerOffset, region.HandlerLength, newHandle.Value, newHandle.Value);
                         }
-                        _exceptionRegions[i] = new ILExceptionRegion(region.Kind, region.TryOffset, region.TryLength, region.HandlerOffset, region.HandlerLength, newHandle.Value, newHandle.Value);
                     }
+
+                    ILTokenReplacer.Replace(_ilBytes, GetMutableModuleToken);
+#if DEBUG
+                    Debug.Assert(ReadyToRunStandaloneMethodMetadata.Compute((EcmaMethod)_owningMethod) != null);
+#endif // DEBUG
+                }
+                finally
+                {
+                    mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = null;
                 }
 
-                ILTokenReplacer.Replace(_ilBytes, GetMutableModuleToken);
-#if DEBUG
-                Debug.Assert(ReadyToRunStandaloneMethodMetadata.Compute((EcmaMethod)_owningMethod) != null);
-#endif // DEBUG
 
                 return !failedToReplaceToken;
 

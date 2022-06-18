@@ -22,6 +22,7 @@ namespace ILCompiler
         public IReadOnlyList<string> UnrootedInputFilePaths;
         public IReadOnlyList<string> ReferenceFilePaths;
         public IReadOnlyList<string> MibcFilePaths;
+        public IReadOnlyList<string> CrossModulePgo;
         public string InstructionSet;
         public string OutputFilePath;
 
@@ -175,6 +176,7 @@ namespace ILCompiler
                 syntax.DefineOption("opt-cross-module-inlining", ref CrossModuleInlining, SR.CrossModuleInlining);
                 syntax.DefineOption("opt-cross-module-generic-compilation", ref CrossModuleGenericCompilation, SR.CrossModuleGenericCompilation);
                 syntax.DefineOption("opt-async-methods", ref AsyncMethodOptimization, SR.AsyncModuleOptimization);
+                syntax.DefineOptionList("opt-cross-module-pgo-module", ref CrossModulePgo, "Generic methods which have some portion of their definition in this module, and found via pgo will be compiled into this module");
 
                 syntax.DefineOption("method-layout", ref MethodLayout, SR.MethodLayoutOption);
                 syntax.DefineOption("file-layout", ref FileLayout, SR.FileLayoutOption);

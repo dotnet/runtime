@@ -25,11 +25,6 @@ namespace ILCompiler
             return false;
         }
 
-        public override void ApplyProfilerGuidedCompilationRestriction(ProfileDataManager profileGuidedCompileRestriction)
-        {
-            return;
-        }
-
         public override ReadyToRunFlags GetReadyToRunFlags()
         {
             // Partial by definition.
