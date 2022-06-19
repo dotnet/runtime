@@ -15,12 +15,11 @@ using System.Text;
 using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.Runtime;
 using System.Xml.Xsl.XPath;
+using ScopeRecord = System.Xml.Xsl.Xslt.CompilerScopeManager<System.Xml.Xsl.Qil.QilIterator>.ScopeRecord;
+using T = System.Xml.Xsl.XmlQueryTypeFactory;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using ScopeRecord = CompilerScopeManager<QilIterator>.ScopeRecord;
-    using T = XmlQueryTypeFactory;
-
     // Everywhere in this code in case of error in the stylesheet we should call ReportError or ReportWarning
 
     internal sealed class ReferenceReplacer : QilReplaceVisitor

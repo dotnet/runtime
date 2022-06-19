@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Diagnostics;
+using System.Runtime.Versioning;
+
 namespace System.Xml.Schema
 {
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Diagnostics;
-    using System.Runtime.Versioning;
-
 #pragma warning disable 618
     internal sealed class SchemaCollectionPreprocessor : BaseProcessor
     {

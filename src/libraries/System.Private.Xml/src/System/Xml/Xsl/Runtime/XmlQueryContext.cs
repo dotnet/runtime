@@ -14,11 +14,10 @@ using System.Xml.XPath;
 using System.Runtime.Versioning;
 using System.Diagnostics.CodeAnalysis;
 using System.Xml.Xsl.Xslt;
+using System.Reflection;
 
 namespace System.Xml.Xsl.Runtime
 {
-    using Reflection;
-
     /// <summary>
     /// The context of a query consists of all user-provided information which influences the operation of the
     /// query. The context manages the following information:
