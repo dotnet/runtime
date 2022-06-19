@@ -4134,7 +4134,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
     //
     // We don't need a copy if this is the last use of an implicit by-ref local.
     //
-    if (opts.OptimizationEnabled())
+    if (opts.OptimizationEnabled() && arg->AbiInfo.PassedByRef)
     {
         GenTreeLclVar* const lcl = argx->IsImplicitByrefParameterValue(this);
 
