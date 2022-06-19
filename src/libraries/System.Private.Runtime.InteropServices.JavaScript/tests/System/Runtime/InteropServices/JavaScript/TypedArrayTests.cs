@@ -66,7 +66,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 }));
             }
 
-            await Task.WaitAll(tasks.ToArray());
+            await Task.WhenAll(tasks.ToArray());
         }
     }
 }
