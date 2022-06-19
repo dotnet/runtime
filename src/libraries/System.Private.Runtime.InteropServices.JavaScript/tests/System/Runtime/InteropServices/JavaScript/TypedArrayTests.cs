@@ -52,29 +52,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 tasks.Add(Task.Run(() => {
                     int bufferSize = 1024 * 1024 * rnd.Next(10);
                     var proxy = (Uint8Array)factory.Call(null, bufferSize);
-                    proxy[0]=42;
-                    proxy[bufferSize-1]=42;
                     Assert.Equal(bufferSize, proxy.Length);
-                    Assert.Equal(0, proxy[1]);
-                    Assert.Equal(0, proxy[bufferSize-2]);
-                    Assert.Equal(42, proxy[0]);
-                    Assert.Equal(42, proxy[bufferSize-1]);
 
                     Thread.Sleep(rnd.Next(100));
 
                     Assert.Equal(bufferSize, proxy.Length);
-                    Assert.Equal(0, proxy[1]);
-                    Assert.Equal(0, proxy[bufferSize-2]);
-                    Assert.Equal(42, proxy[0]);
-                    Assert.Equal(42, proxy[bufferSize-1]);
 
                     var data = proxy.ToArray();
 
                     Assert.Equal(bufferSize, data.Length);
-                    Assert.Equal(0, data[1]);
-                    Assert.Equal(0, data[bufferSize-2]);
-                    Assert.Equal(42, data[0]);
-                    Assert.Equal(42, data[bufferSize-1]);
 
                     proxy.Dispose();
                 }));
