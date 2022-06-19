@@ -1678,6 +1678,9 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     if (compiler->opts.IsOSR() && (PSPSize > 0))
     {
         osrPad = compiler->info.compPatchpointInfo->TotalFrameSize();
+
+        // OSR pad must be already aligned to stack size.
+        assert((osrPad % STACK_ALIGN) == 0);
     }
 
     genFuncletInfo.fiFunction_CallerSP_to_FP_delta = genCallerSPtoFPdelta() - osrPad;
@@ -1708,14 +1711,14 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     assert(compiler->lvaOutgoingArgSpaceSize % REGSIZE_BYTES == 0);
     unsigned const outgoingArgSpaceAligned = roundUp(compiler->lvaOutgoingArgSpaceSize, STACK_ALIGN);
 
-    unsigned const maxFuncletFrameSizeAligned = saveRegsPlusPSPSizeAligned + osrPad + outgoingArgSpaceAligned;
+    unsigned const maxFuncletFrameSizeAligned = osrPad + saveRegsPlusPSPSizeAligned + outgoingArgSpaceAligned;
     assert((maxFuncletFrameSizeAligned % STACK_ALIGN) == 0);
 
     int SP_to_FPLR_save_delta;
     int SP_to_PSP_slot_delta;
     int CallerSP_to_PSP_slot_delta;
 
-    unsigned const funcletFrameSize        = saveRegsPlusPSPSize + osrPad + compiler->lvaOutgoingArgSpaceSize;
+    unsigned const funcletFrameSize        = osrPad + saveRegsPlusPSPSize + compiler->lvaOutgoingArgSpaceSize;
     unsigned const funcletFrameSizeAligned = roundUp(funcletFrameSize, STACK_ALIGN);
     assert(funcletFrameSizeAligned <= maxFuncletFrameSizeAligned);
 
@@ -1764,7 +1767,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     }
     else
     {
-        unsigned saveRegsPlusPSPAlignmentPad = saveRegsPlusPSPSizeAligned - saveRegsPlusPSPSize;
+        unsigned const saveRegsPlusPSPAlignmentPad = saveRegsPlusPSPSizeAligned - saveRegsPlusPSPSize;
         assert((saveRegsPlusPSPAlignmentPad == 0) || (saveRegsPlusPSPAlignmentPad == REGSIZE_BYTES));
 
         if (genSaveFpLrWithAllCalleeSavedRegisters)
@@ -1775,8 +1778,11 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
                 SP_to_FPLR_save_delta -= MAX_REG_ARG * REGSIZE_BYTES;
             }
 
+            unsigned const outgoingArgSpaceAlignmentPad = outgoingArgSpaceAligned - compiler->lvaOutgoingArgSpaceSize;
+            assert((outgoingArgSpaceAlignmentPad == 0) || (outgoingArgSpaceAlignmentPad == REGSIZE_BYTES));
+
             SP_to_PSP_slot_delta =
-                compiler->lvaOutgoingArgSpaceSize + funcletFrameAlignmentPad + saveRegsPlusPSPAlignmentPad;
+                compiler->lvaOutgoingArgSpaceSize + outgoingArgSpaceAlignmentPad + saveRegsPlusPSPAlignmentPad;
             CallerSP_to_PSP_slot_delta = -(int)(osrPad + saveRegsPlusPSPSize);
 
             genFuncletInfo.fiFrameType = 5;
