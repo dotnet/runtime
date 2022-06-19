@@ -2060,13 +2060,30 @@ ves_icall_System_Threading_Thread_Join_internal (MonoThreadObjectHandle thread_h
 	return FALSE;
 }
 
+// this is a bad idea but we're doing it anyway. we need to propagate
+// an exception out of these icalls in some way.
+static size_t
+set_pending_null_reference_exception (void)
+{
+	ERROR_DECL (error);
+	mono_error_set_null_reference (error);
+	mono_error_set_pending_exception (error);
+	return 0;
+}
+
 gint32 ves_icall_System_Threading_Interlocked_Increment_Int (gint32 *location)
 {
+	if (G_UNLIKELY (!location))
+		return (gint32)set_pending_null_reference_exception ();
+
 	return mono_atomic_inc_i32 (location);
 }
 
 gint64 ves_icall_System_Threading_Interlocked_Increment_Long (gint64 *location)
 {
+	if (G_UNLIKELY (!location))
+		return (gint64)set_pending_null_reference_exception ();
+
 #if SIZEOF_VOID_P == 4
 	if (G_UNLIKELY ((size_t)location & 0x7)) {
 		gint64 ret;
@@ -2082,11 +2099,17 @@ gint64 ves_icall_System_Threading_Interlocked_Increment_Long (gint64 *location)
 
 gint32 ves_icall_System_Threading_Interlocked_Decrement_Int (gint32 *location)
 {
+	if (G_UNLIKELY (!location))
+		return (gint32)set_pending_null_reference_exception ();
+
 	return mono_atomic_dec_i32(location);
 }
 
 gint64 ves_icall_System_Threading_Interlocked_Decrement_Long (gint64 * location)
 {
+	if (G_UNLIKELY (!location))
+		return (gint64)set_pending_null_reference_exception ();
+
 #if SIZEOF_VOID_P == 4
 	if (G_UNLIKELY ((size_t)location & 0x7)) {
 		gint64 ret;
@@ -2102,12 +2125,21 @@ gint64 ves_icall_System_Threading_Interlocked_Decrement_Long (gint64 * location)
 
 gint32 ves_icall_System_Threading_Interlocked_Exchange_Int (gint32 *location, gint32 value)
 {
+	if (G_UNLIKELY (!location))
+		return (gint32)set_pending_null_reference_exception ();
+
 	return mono_atomic_xchg_i32(location, value);
 }
 
 void
 ves_icall_System_Threading_Interlocked_Exchange_Object (MonoObject *volatile*location, MonoObject *volatile*value, MonoObject *volatile*res)
 {
+	if (G_UNLIKELY (!location))
+	{
+		(void)set_pending_null_reference_exception ();
+		return;
+	}
+
 	// Coop-equivalency here via pointers to pointers.
 	// value and res are to managed frames, location ought to be (or member or global) but it cannot be guaranteed.
 	//
@@ -2123,6 +2155,8 @@ ves_icall_System_Threading_Interlocked_Exchange_Object (MonoObject *volatile*loc
 gfloat ves_icall_System_Threading_Interlocked_Exchange_Single (gfloat *location, gfloat value)
 {
 	IntFloatUnion val, ret;
+	if (G_UNLIKELY (!location))
+		return (gfloat)set_pending_null_reference_exception ();
 
 	val.fval = value;
 	ret.ival = mono_atomic_xchg_i32((gint32 *) location, val.ival);
@@ -2133,6 +2167,9 @@ gfloat ves_icall_System_Threading_Interlocked_Exchange_Single (gfloat *location,
 gint64
 ves_icall_System_Threading_Interlocked_Exchange_Long (gint64 *location, gint64 value)
 {
+	if (G_UNLIKELY (!location))
+		return (gint64)set_pending_null_reference_exception ();
+
 #if SIZEOF_VOID_P == 4
 	if (G_UNLIKELY ((size_t)location & 0x7)) {
 		gint64 ret;
@@ -2150,6 +2187,8 @@ gdouble
 ves_icall_System_Threading_Interlocked_Exchange_Double (gdouble *location, gdouble value)
 {
 	LongDoubleUnion val, ret;
+	if (G_UNLIKELY (!location))
+		return (gdouble)set_pending_null_reference_exception ();
 
 	val.fval = value;
 	ret.ival = (gint64)mono_atomic_xchg_i64((gint64 *) location, val.ival);
@@ -2159,11 +2198,17 @@ ves_icall_System_Threading_Interlocked_Exchange_Double (gdouble *location, gdoub
 
 gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int(gint32 *location, gint32 value, gint32 comparand)
 {
+	if (G_UNLIKELY (!location))
+		return (gint32)set_pending_null_reference_exception ();
+
 	return mono_atomic_cas_i32(location, value, comparand);
 }
 
 gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int_Success(gint32 *location, gint32 value, gint32 comparand, MonoBoolean *success)
 {
+	if (G_UNLIKELY (!location))
+		return (gint32)set_pending_null_reference_exception ();
+
 	gint32 r = mono_atomic_cas_i32(location, value, comparand);
 	*success = r == comparand;
 	return r;
@@ -2172,6 +2217,12 @@ gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int_Success(gint32
 void
 ves_icall_System_Threading_Interlocked_CompareExchange_Object (MonoObject *volatile*location, MonoObject *volatile*value, MonoObject *volatile*comparand, MonoObject *volatile* res)
 {
+	if (G_UNLIKELY (!location))
+	{
+		(void)set_pending_null_reference_exception ();
+		return;
+	}
+
 	// Coop-equivalency here via pointers to pointers.
 	// value and comparand and res are to managed frames, location ought to be (or member or global) but it cannot be guaranteed.
 	//
@@ -2187,6 +2238,8 @@ ves_icall_System_Threading_Interlocked_CompareExchange_Object (MonoObject *volat
 gfloat ves_icall_System_Threading_Interlocked_CompareExchange_Single (gfloat *location, gfloat value, gfloat comparand)
 {
 	IntFloatUnion val, ret, cmp;
+	if (G_UNLIKELY (!location))
+		return (gfloat)set_pending_null_reference_exception ();
 
 	val.fval = value;
 	cmp.fval = comparand;
@@ -2198,6 +2251,9 @@ gfloat ves_icall_System_Threading_Interlocked_CompareExchange_Single (gfloat *lo
 gdouble
 ves_icall_System_Threading_Interlocked_CompareExchange_Double (gdouble *location, gdouble value, gdouble comparand)
 {
+	if (G_UNLIKELY (!location))
+		return (gdouble)set_pending_null_reference_exception ();
+
 #if SIZEOF_VOID_P == 8
 	LongDoubleUnion val, comp, ret;
 
@@ -2222,6 +2278,9 @@ ves_icall_System_Threading_Interlocked_CompareExchange_Double (gdouble *location
 gint64
 ves_icall_System_Threading_Interlocked_CompareExchange_Long (gint64 *location, gint64 value, gint64 comparand)
 {
+	if (G_UNLIKELY (!location))
+		return (gint64)set_pending_null_reference_exception ();
+
 #if SIZEOF_VOID_P == 4
 	if (G_UNLIKELY ((size_t)location & 0x7)) {
 		gint64 old;
@@ -2239,12 +2298,18 @@ ves_icall_System_Threading_Interlocked_CompareExchange_Long (gint64 *location, g
 gint32
 ves_icall_System_Threading_Interlocked_Add_Int (gint32 *location, gint32 value)
 {
+	if (G_UNLIKELY (!location))
+		return (gint32)set_pending_null_reference_exception ();
+
 	return mono_atomic_add_i32 (location, value);
 }
 
 gint64
 ves_icall_System_Threading_Interlocked_Add_Long (gint64 *location, gint64 value)
 {
+	if (G_UNLIKELY (!location))
+		return (gint64)set_pending_null_reference_exception ();
+
 #if SIZEOF_VOID_P == 4
 	if (G_UNLIKELY ((size_t)location & 0x7)) {
 		gint64 ret;
@@ -2261,6 +2326,9 @@ ves_icall_System_Threading_Interlocked_Add_Long (gint64 *location, gint64 value)
 gint64
 ves_icall_System_Threading_Interlocked_Read_Long (gint64 *location)
 {
+	if (G_UNLIKELY (!location))
+		return (gint64)set_pending_null_reference_exception ();
+
 #if SIZEOF_VOID_P == 4
 	if (G_UNLIKELY ((size_t)location & 0x7)) {
 		gint64 ret;

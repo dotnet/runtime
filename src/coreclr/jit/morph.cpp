@@ -2347,30 +2347,9 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             GenTree* actualArg = argx->gtEffectiveVal(true /* Commas only */);
 
             // Here we look at "actualArg" to avoid calling "getClassSize".
-            if (actualArg->TypeGet() == TYP_STRUCT)
-            {
-                switch (actualArg->OperGet())
-                {
-                    case GT_OBJ:
-                        structSize = actualArg->AsObj()->Size();
-                        break;
-                    case GT_LCL_VAR:
-                        structSize = comp->lvaGetDesc(actualArg->AsLclVarCommon())->lvExactSize;
-                        break;
-                    case GT_MKREFANY:
-                        structSize = comp->info.compCompHnd->getClassSize(argSigClass);
-                        break;
-                    default:
-                        BADCODE("illegal argument tree: cannot determine size for ABI handling");
-                        break;
-                }
-            }
-            else
-            {
-                structSize = genTypeSize(actualArg);
-            }
+            structSize = actualArg->TypeIs(TYP_STRUCT) ? actualArg->GetLayout(comp)->GetSize() : genTypeSize(actualArg);
 
-            assert(structSize = comp->info.compCompHnd->getClassSize(argSigClass));
+            assert(structSize == comp->info.compCompHnd->getClassSize(argSigClass));
         }
 #if defined(TARGET_AMD64)
 #ifdef UNIX_AMD64_ABI
@@ -3190,15 +3169,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             unsigned originalSize;
             if (argObj->TypeGet() == TYP_STRUCT)
             {
-                if (argObj->OperIs(GT_OBJ))
-                {
-                    originalSize = argObj->AsObj()->Size();
-                }
-                else
-                {
-                    // Must be LCL_VAR: we have a BADCODE assert for this in AddFinalArgsAndDetermineABIInfo.
-                    originalSize = lvaGetDesc(argObj->AsLclVar())->lvExactSize;
-                }
+                assert(argObj->OperIs(GT_OBJ, GT_LCL_VAR, GT_LCL_FLD));
+                originalSize = argObj->GetLayout(this)->GetSize();
             }
             else
             {
@@ -4134,7 +4106,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
     //
     // We don't need a copy if this is the last use of an implicit by-ref local.
     //
-    if (opts.OptimizationEnabled())
+    if (opts.OptimizationEnabled() && arg->AbiInfo.PassedByRef)
     {
         GenTreeLclVar* const lcl = argx->IsImplicitByrefParameterValue(this);
 
@@ -6724,9 +6696,11 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
                                              (call->gtCallType == CT_USER_FUNC) ? call->gtCallMethHnd : nullptr,
                                              call->IsTailPrefixedCall(), tailCallResult, nullptr);
 
-    // Are we currently planning to expand the gtControlExpr as an early virtual call target?
+    // Do some profitability checks for whether we should expand a vtable call
+    // target early. Note that we may already have expanded it due to GDV at
+    // this point, so make sure we do not undo that work.
     //
-    if (call->IsExpandedEarly() && call->IsVirtualVtable())
+    if (call->IsExpandedEarly() && call->IsVirtualVtable() && (call->gtControlExpr == nullptr))
     {
         assert(call->gtArgs.HasThisPointer());
         // It isn't alway profitable to expand a virtual call early
@@ -8497,18 +8471,18 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
     //
     if (call->IsExpandedEarly() && call->IsVirtualVtable())
     {
-        // We only expand the Vtable Call target once in the global morph phase
-        if (fgGlobalMorph)
+        // We expand the Vtable Call target either in the global morph phase or
+        // in guarded devirt if we need it for the guard.
+        if (fgGlobalMorph && (call->gtControlExpr == nullptr))
         {
-            assert(call->gtControlExpr == nullptr); // We only call this method and assign gtControlExpr once
             call->gtControlExpr = fgExpandVirtualVtableCallTarget(call);
         }
         // We always have to morph or re-morph the control expr
         //
         call->gtControlExpr = fgMorphTree(call->gtControlExpr);
 
-        // Propagate any gtFlags into the call
-        call->gtFlags |= call->gtControlExpr->gtFlags;
+        // Propagate any side effect flags into the call
+        call->gtFlags |= call->gtControlExpr->gtFlags & GTF_ALL_EFFECT;
     }
 
     // Morph stelem.ref helper call to store a null value, into a store into an array without the helper.
@@ -11356,6 +11330,21 @@ DONE_MORPHING_CHILDREN:
                 assert(op2 == tree->AsOp()->gtGetOp2());
             }
 
+            if (opts.OptimizationEnabled() && fgGlobalMorph)
+            {
+                if (op2->IsIntegralConst() || op1->IsIntegralConst())
+                {
+                    if (tree->OperIs(GT_GT, GT_LT, GT_LE, GT_GE))
+                    {
+                        tree = fgOptimizeRelationalComparisonWithFullRangeConst(tree->AsOp());
+                        if (tree->OperIs(GT_CNS_INT))
+                        {
+                            return tree;
+                        }
+                    }
+                }
+            }
+
         COMPARE:
 
             noway_assert(tree->OperIsCompare());
@@ -12556,6 +12545,123 @@ SKIP:
 
         // Finally we replace the comparand.
         op2->BashToConst(static_cast<int32_t>(op2->LngValue()));
+    }
+
+    return cmp;
+}
+
+//------------------------------------------------------------------------
+// fgOptimizeRelationalComparisonWithFullRangeConst: optimizes a comparison operation.
+//
+// Recognizes "Always false"/"Always true" comparisons against various full range constant operands and morphs
+// them into zero/one.
+//
+// Arguments:
+//   cmp - the GT_LT/GT_GT tree to morph.
+//
+// Return Value:
+//   1. The unmodified "cmp" tree.
+//   2. A CNS_INT node containing zero.
+//   3. A CNS_INT node containing one.
+// Assumptions:
+//   The second operand is an integral constant or the first operand is an integral constant.
+//
+GenTree* Compiler::fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* cmp)
+{
+    if (gtTreeHasSideEffects(cmp, GTF_SIDE_EFFECT))
+    {
+        return cmp;
+    }
+
+    int64_t lhsMin;
+    int64_t lhsMax;
+    if (cmp->gtGetOp1()->IsIntegralConst())
+    {
+        lhsMin = cmp->gtGetOp1()->AsIntConCommon()->IntegralValue();
+        lhsMax = lhsMin;
+    }
+    else
+    {
+        IntegralRange lhsRange = IntegralRange::ForNode(cmp->gtGetOp1(), this);
+        lhsMin                 = IntegralRange::SymbolicToRealValue(lhsRange.GetLowerBound());
+        lhsMax                 = IntegralRange::SymbolicToRealValue(lhsRange.GetUpperBound());
+    }
+
+    int64_t rhsMin;
+    int64_t rhsMax;
+    if (cmp->gtGetOp2()->IsIntegralConst())
+    {
+        rhsMin = cmp->gtGetOp2()->AsIntConCommon()->IntegralValue();
+        rhsMax = rhsMin;
+    }
+    else
+    {
+        IntegralRange rhsRange = IntegralRange::ForNode(cmp->gtGetOp2(), this);
+        rhsMin                 = IntegralRange::SymbolicToRealValue(rhsRange.GetLowerBound());
+        rhsMax                 = IntegralRange::SymbolicToRealValue(rhsRange.GetUpperBound());
+    }
+
+    genTreeOps op = cmp->gtOper;
+    if ((op != GT_LT) && (op != GT_LE))
+    {
+        op = GenTree::SwapRelop(op);
+        std::swap(lhsMin, rhsMin);
+        std::swap(lhsMax, rhsMax);
+    }
+
+    GenTree* ret = nullptr;
+
+    if (cmp->IsUnsigned())
+    {
+        if ((lhsMin < 0) && (lhsMax >= 0))
+        {
+            // [0, (uint64_t)lhsMax] U [(uint64_t)lhsMin, MaxValue]
+            lhsMin = 0;
+            lhsMax = -1;
+        }
+
+        if ((rhsMin < 0) && (rhsMax >= 0))
+        {
+            // [0, (uint64_t)rhsMax] U [(uint64_t)rhsMin, MaxValue]
+            rhsMin = 0;
+            rhsMax = -1;
+        }
+
+        if (((op == GT_LT) && ((uint64_t)lhsMax < (uint64_t)rhsMin)) ||
+            ((op == GT_LE) && ((uint64_t)lhsMax <= (uint64_t)rhsMin)))
+        {
+            ret = gtNewOneConNode(TYP_INT);
+        }
+        else if (((op == GT_LT) && ((uint64_t)lhsMin >= (uint64_t)rhsMax)) ||
+                 ((op == GT_LE) && ((uint64_t)lhsMin > (uint64_t)rhsMax)))
+        {
+            ret = gtNewZeroConNode(TYP_INT);
+        }
+    }
+    else
+    {
+        //  [x0, x1] <  [y0, y1] is false if x0 >= y1
+        //  [x0, x1] <= [y0, y1] is false if x0 > y1
+        if (((op == GT_LT) && (lhsMin >= rhsMax)) || (((op == GT_LE) && (lhsMin > rhsMax))))
+        {
+            ret = gtNewZeroConNode(TYP_INT);
+        }
+        // [x0, x1] < [y0, y1] is true if x1 < y0
+        else if ((op == GT_LT) && (lhsMax < rhsMin))
+        {
+            ret = gtNewOneConNode(TYP_INT);
+        }
+    }
+
+    if (ret != nullptr)
+    {
+        fgUpdateConstTreeValueNumber(ret);
+
+        DEBUG_DESTROY_NODE(cmp);
+
+        INDEBUG(ret->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+        return ret;
     }
 
     return cmp;

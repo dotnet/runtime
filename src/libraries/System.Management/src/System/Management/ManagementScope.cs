@@ -32,7 +32,7 @@ namespace System.Management
                     {
                         if (s_allowManagementObjectQI == 0)
                         {
-                            s_allowManagementObjectQI = GetSwitchValueFromRegistry() == true ? 1 : -1;
+                            s_allowManagementObjectQI = GetSwitchValueFromRegistry() ? 1 : -1;
                         }
                     }
                 }

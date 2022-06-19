@@ -1,21 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Security;
+using System.Text.RegularExpressions;
+using System.Xml;
+using System.Xml.Schema;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml.Serialization
 {
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.Reflection;
-    using System.Reflection.Emit;
-    using System.Security;
-    using System.Text.RegularExpressions;
-    using System.Xml;
-    using System.Xml.Schema;
-    using System.Diagnostics.CodeAnalysis;
-
     internal sealed partial class XmlSerializationReaderILGen : XmlSerializationILGen
     {
         private readonly Dictionary<string, string> _idNames = new Dictionary<string, string>();

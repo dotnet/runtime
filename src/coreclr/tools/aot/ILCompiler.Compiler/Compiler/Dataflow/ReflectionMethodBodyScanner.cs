@@ -625,7 +625,7 @@ namespace ILCompiler.Dataflow
                                 && !systemTypeValue.RepresentedType.Type.IsGenericDefinition
                                 && !systemTypeValue.RepresentedType.Type.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true))
                             {
-                                if (systemTypeValue.RepresentedType.Type.IsDefType)
+                                if (systemTypeValue.RepresentedType.Type.IsDelegate)
                                 {
                                     _reflectionMarker.Dependencies.Add(_factory.DelegateMarshallingData((DefType)systemTypeValue.RepresentedType.Type), "Marshal API");
                                 }

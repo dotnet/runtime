@@ -983,7 +983,7 @@ namespace System.Data
                                 break;
                             }
 
-                            if ((bool)vLeft == true)
+                            if ((bool)vLeft)
                             {
                                 value = true;
                                 break;
