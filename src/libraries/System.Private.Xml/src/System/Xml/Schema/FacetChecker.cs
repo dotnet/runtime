@@ -152,7 +152,7 @@ namespace System.Xml.Schema
             internal void CompilePatternFacet(XmlSchemaPatternFacet facet)
             {
                 CheckProhibitedFlag(facet, RestrictionFlags.Pattern, SR.Sch_PatternFacetProhibited);
-                if (_firstPattern == true)
+                if (_firstPattern)
                 {
                     _regStr = new StringBuilder();
                     _regStr.Append('(');

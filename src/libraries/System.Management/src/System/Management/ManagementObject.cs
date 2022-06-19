@@ -2573,7 +2573,7 @@ namespace System.Management
                 }
 
                 //Have we already got this object
-                if (!IsBound && (getObject == true))
+                if (!IsBound && getObject)
                     needToGetObject = true;
 
                 if (null == scope)
@@ -2613,7 +2613,7 @@ namespace System.Management
                         scope.Initialize();
 
                         // If we have just connected, make sure we get the object
-                        if (getObject == true)
+                        if (getObject)
                         {
                             needToGetObject = true;
                         }

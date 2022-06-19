@@ -144,7 +144,7 @@ namespace System.IO.Ports
             set
             {
                 int fNullFlag = GetDcbFlag(Interop.Kernel32.DCBFlags.FNULL);
-                if (value == true && fNullFlag == 0 || value == false && fNullFlag == 1)
+                if (value && fNullFlag == 0 || !value && fNullFlag == 1)
                 {
                     int fNullOld = fNullFlag;
                     SetDcbFlag(Interop.Kernel32.DCBFlags.FNULL, value ? 1 : 0);
@@ -880,7 +880,7 @@ namespace System.IO.Ports
                 try
                 {
                     wh.WaitOne();
-                    Debug.Assert(afsar._isComplete == true, "SerialStream::EndRead - AsyncFSCallback didn't set _isComplete to true!");
+                    Debug.Assert(afsar._isComplete, "SerialStream::EndRead - AsyncFSCallback didn't set _isComplete to true!");
 
                     // InfiniteTimeout is not something native to the underlying serial device,
                     // we specify the timeout to be a very large value (MAXWORD-1) to achieve
@@ -958,7 +958,7 @@ namespace System.IO.Ports
                 try
                 {
                     wh.WaitOne();
-                    Debug.Assert(afsar._isComplete == true, "SerialStream::EndWrite - AsyncFSCallback didn't set _isComplete to true!");
+                    Debug.Assert(afsar._isComplete, "SerialStream::EndWrite - AsyncFSCallback didn't set _isComplete to true!");
                 }
                 finally
                 {

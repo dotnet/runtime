@@ -188,7 +188,7 @@ namespace System.DirectoryServices.AccountManagement
                     // opposite order and the other thread woke up before we inserted the PrincipalContext, it would
                     // just block as soon as it tries to acquire the tableLock that we're currently holding.)
                     bool f = placeHolder.contextReadyEvent.Set();
-                    Debug.Assert(f == true);
+                    Debug.Assert(f);
                 }
 
                 return ctx;

@@ -193,7 +193,7 @@ namespace System.Xml
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void BindForLoad()
         {
-            Debug.Assert(_ignoreXmlEvents == true);
+            Debug.Assert(_ignoreXmlEvents);
             _ignoreDataSetEvents = true;
             _mapper.SetupMapping(this, _dataSet);
             if (_dataSet.Tables.Count > 0)
@@ -252,7 +252,7 @@ namespace System.Xml
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void UnBindSpecialListeners()
         {
-            Debug.Assert(_fDataRowCreatedSpecial == true);
+            Debug.Assert(_fDataRowCreatedSpecial);
             _dataSet.DataRowCreated -= new DataRowCreatedEventHandler(OnDataRowCreatedSpecial);
             _fDataRowCreatedSpecial = false;
         }
@@ -504,7 +504,7 @@ namespace System.Xml
         private XmlElement DemoteDocumentElement()
         {
             // Changes of Xml here should not affect ROM
-            Debug.Assert(_ignoreXmlEvents == true);
+            Debug.Assert(_ignoreXmlEvents);
             // There should be no reason to call this function if docElem is not a rowElem
             Debug.Assert(GetRowFromElement(DocumentElement) != null);
 
@@ -1005,8 +1005,8 @@ namespace System.Xml
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private XmlNode CloneTreeInternal(DataPointer other)
         {
-            Debug.Assert(_ignoreDataSetEvents == true);
-            Debug.Assert(_ignoreXmlEvents == true);
+            Debug.Assert(_ignoreDataSetEvents);
+            Debug.Assert(_ignoreXmlEvents);
             Debug.Assert(IsFoliationEnabled == false);
 
             // Create the diconnected tree based on the other navigator
@@ -1392,7 +1392,7 @@ namespace System.Xml
         private void OnAddRow(DataRow row)
         {
             // Xml operations in this func should not trigger ROM operations
-            Debug.Assert(_ignoreXmlEvents == true);
+            Debug.Assert(_ignoreXmlEvents);
 
             XmlBoundElement rowElement = (XmlBoundElement)(GetElementFromRow(row));
             Debug.Assert(rowElement != null);
@@ -1665,7 +1665,7 @@ namespace System.Xml
         private void OnDeleteRow(DataRow row, XmlBoundElement rowElement)
         {
             // IgnoreXmlEvents s/b on since we are manipulating the XML tree and we not want this to reflect in ROM view.
-            Debug.Assert(_ignoreXmlEvents == true);
+            Debug.Assert(_ignoreXmlEvents);
             // Special case when rowElem is document element: we create a new docElem, move the current one as a child of
             // the new created docElem, then process as if the docElem is not a rowElem
             if (rowElement == DocumentElement)
@@ -1742,7 +1742,7 @@ namespace System.Xml
         {
             Debug.Assert(child.Element == childElement && childElement.Row == child);
             // This function is (and s/b) called as a result of ROM changes, therefore XML changes done here should not be sync-ed to ROM
-            Debug.Assert(_ignoreXmlEvents == true);
+            Debug.Assert(_ignoreXmlEvents);
 #if DEBUG
             // In order to check that this move does not change the connected/disconnected state of the node
             bool fChildElementConnected = IsConnected(childElement);
@@ -1831,7 +1831,7 @@ namespace System.Xml
         {
             if (_ignoreXmlEvents)
                 return;
-            if (DataSet.EnforceConstraints != false)
+            if (DataSet.EnforceConstraints)
                 throw new InvalidOperationException(SR.DataDom_EnforceConstraintsShouldBeOff);
         }
 
@@ -1886,7 +1886,7 @@ namespace System.Xml
         {
             if (_ignoreXmlEvents)
                 return;
-            if (DataSet.EnforceConstraints != false)
+            if (DataSet.EnforceConstraints)
                 throw new InvalidOperationException(SR.DataDom_EnforceConstraintsShouldBeOff);
         }
 
@@ -1938,7 +1938,7 @@ namespace System.Xml
         {
             if (_ignoreXmlEvents)
                 return;
-            if (DataSet.EnforceConstraints != false)
+            if (DataSet.EnforceConstraints)
                 throw new InvalidOperationException(SR.DataDom_EnforceConstraintsShouldBeOff);
         }
 
@@ -2286,7 +2286,7 @@ namespace System.Xml
             // prevSibling must have a parent, since we want to add a sibling to it
             Debug.Assert(prevSibling.ParentNode != null);
             Debug.Assert(IsFoliationEnabled == false);
-            Debug.Assert(IgnoreXmlEvents == true);
+            Debug.Assert(IgnoreXmlEvents);
             // Should not insert after docElem node
             Debug.Assert(prevSibling != DocumentElement);
 

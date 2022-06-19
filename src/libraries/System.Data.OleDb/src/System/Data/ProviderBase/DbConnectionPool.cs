@@ -880,7 +880,7 @@ namespace System.Data.ProviderBase
             // postcondition
 
             // ensure that the connection was processed
-            Debug.Assert(rootTxn == true || returnToGeneralPool == true || destroyObject == true);
+            Debug.Assert(rootTxn || returnToGeneralPool || destroyObject);
 
             // TODO: BID trace processing state?
         }
