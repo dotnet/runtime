@@ -4,7 +4,19 @@
 /// <reference lib="webworker" />
 
 import { Module } from "../../imports";
-import { makeChannelCreatedMonoMessage } from "../shared";
+import { makeChannelCreatedMonoMessage, pthread_ptr } from "../shared";
+
+export type ThreadCreatedCallback = (pthread_ptr: pthread_ptr, main_port: MessagePort) => void;
+
+const threadCreatedCallbacks = Array<ThreadCreatedCallback>();
+
+/// Adds a callback to be called when a new pthread is created.
+/// It is passed a MessagePort that can be used to communicate with the main thread by adding an event listener to it using addEventListener("message", ...)
+///
+/// FIXME: when do we want this to get called? has to be early in the worker lifecycle
+export function addThreadCreatedCallback(fn: ThreadCreatedCallback): void {
+    threadCreatedCallbacks.push(fn);
+}
 
 function monoDedicatedChannelMessageFromMainToWorker(event: MessageEvent<string>): void {
     console.debug("got message from main on the dedicated channel", event.data);
@@ -20,5 +32,7 @@ export function mono_wasm_on_pthread_created(worker_notify_ptr: number): void {
     const mainPort = channel.port2;
     workerPort.addEventListener("message", monoDedicatedChannelMessageFromMainToWorker);
     self.postMessage(makeChannelCreatedMonoMessage(mainPort), [mainPort]);
+    for (const fn of threadCreatedCallbacks) {
+        fn(/*pthread_ptr*/ 0, workerPort); // FIXME: pass pthread_self() from native
+    }
 }
-
