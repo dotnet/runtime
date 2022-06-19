@@ -1073,8 +1073,8 @@ dotnet_diagnostic.SA1204.severity = none
 # SA1205: Partial elements should declare an access modifier
 dotnet_diagnostic.SA1205.severity = warning
 
-# SA1206: Keyword ordering
-dotnet_diagnostic.SA1206.severity = warning
+# SA1206: Keyword ordering - TODO Re-enable as warning after https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3527
+dotnet_diagnostic.SA1206.severity = suggestion
 
 # SA1208: Using directive ordering
 dotnet_diagnostic.SA1208.severity = none
