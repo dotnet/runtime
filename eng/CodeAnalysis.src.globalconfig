@@ -1501,7 +1501,7 @@ dotnet_diagnostic.IDE0066.severity = suggestion
 dotnet_diagnostic.IDE0070.severity = suggestion
 
 # IDE0071: Simplify interpolation
-dotnet_diagnostic.IDE0071.severity = suggestion
+dotnet_diagnostic.IDE0071.severity = warning
 
 # IDE0072: Add missing cases
 dotnet_diagnostic.IDE0072.severity = silent
