@@ -79,7 +79,7 @@ namespace Microsoft.CodeAnalysis.DotnetRuntime.Extensions
             }
             else
             {
-                throw new System.InvalidOperationException("Unreachable");
+                Debug.Assert(false, "This should not be reachable.  Caller already checked we had a compilation unit or namespace.");
             }
         }
 
