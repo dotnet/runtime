@@ -462,7 +462,7 @@ namespace System.Buffers.Text
                 // 00000000 00eeeeFF 00000000 00DDDDDD
                 // 00000000 00bbbbCC 00000000 00AAAAAA
 
-                Vector128<short> t3 = Vector128.Multiply(t2.AsInt16(), shiftBB);
+                Vector128<short> t3 = t2.AsInt16() * shiftBB;
                 // 00llllll 00000000 00jjKKKK 00000000
                 // 00iiiiii 00000000 00ggHHHH 00000000
                 // 00ffffff 00000000 00ddEEEE 00000000
