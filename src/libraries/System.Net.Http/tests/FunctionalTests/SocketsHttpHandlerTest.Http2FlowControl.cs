@@ -19,7 +19,7 @@ namespace System.Net.Http.Functional.Tests
     [ConditionalClass(typeof(SocketsHttpHandler_Http2FlowControl_Test), nameof(IsSupported))]
     public sealed class SocketsHttpHandler_Http2FlowControl_Test : HttpClientHandlerTestBase
     {
-        public static readonly bool IsSupported = PlatformDetection.SupportsAlpn && PlatformDetection.IsNotBrowser;
+        public static readonly bool IsSupported = PlatformDetection.SupportsAlpn && SocketsHttpHandler.IsSupported;
 
         protected override Version UseVersion => HttpVersion20.Value;
 
@@ -30,7 +30,6 @@ namespace System.Net.Http.Functional.Tests
         private static Http2Options NoAutoPingResponseHttp2Options => new Http2Options() { EnableTransparentPingResponse = false };
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task InitialHttp2StreamWindowSize_SentInSettingsFrame()
         {
             const int WindowSize = 123456;
@@ -50,7 +49,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(0)] // Invalid PING payload
         [InlineData(1)] // Unexpected PING response
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public Task BadRttPingResponse_RequestShouldFail(int mode)
         {
             return Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -86,7 +84,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Runs long")]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task HighBandwidthDelayProduct_ClientStreamReceiveWindowWindowScalesUp()
         {
             int maxCredit = await TestClientWindowScalingAsync(
@@ -101,7 +98,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Runs long")]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public void DisableDynamicWindowScaling_HighBandwidthDelayProduct_WindowRemainsConstant()
         {
             static async Task RunTest()
@@ -122,7 +118,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Runs long")]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public void MaxStreamWindowSize_WhenSet_WindowDoesNotScaleAboveMaximum()
         {
             const int MaxWindow = 654321;
@@ -146,7 +141,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Runs long")]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public void StreamWindowScaleThresholdMultiplier_HighValue_WindowScalesSlower()
         {
             static async Task RunTest()
@@ -168,7 +162,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Runs long")]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public void StreamWindowScaleThresholdMultiplier_LowValue_WindowScalesFaster()
         {
             static async Task RunTest()
@@ -188,13 +181,38 @@ namespace System.Net.Http.Functional.Tests
             RemoteExecutor.Invoke(RunTest, options).Dispose();
         }
 
+        [OuterLoop("Runs long")]
+        [Fact]
+        public async Task DoesNotSendTooManyPingsBetweenOtherFrames()
+        {
+            int dataCnt = -1;
+
+            TimeSpan GetDelay()
+            {
+                dataCnt++;
+                return dataCnt < 4 ? TimeSpan.Zero : TimeSpan.FromMilliseconds(2100);
+            }
+
+            int maxCredit = await TestClientWindowScalingAsync(
+                TimeSpan.Zero,
+                TimeSpan.Zero,
+                768,
+                _output,
+                dataFrameSize: 64,
+                getDelayBetweenDataFrames: GetDelay);
+
+            _output.WriteLine($"maxCredit: {maxCredit}");
+        }
+
         private static async Task<int> TestClientWindowScalingAsync(
             TimeSpan networkDelay,
             TimeSpan slowBandwidthSimDelay,
             int bytesToDownload,
             ITestOutputHelper output = null,
             int maxWindowForPingStopValidation = int.MaxValue, // set to actual maximum to test if we stop sending PING when window reached maximum
-            Action<SocketsHttpHandler> configureHandler = null)
+            Action<SocketsHttpHandler> configureHandler = null,
+            int dataFrameSize = 16384,
+            Func<TimeSpan> getDelayBetweenDataFrames = null)
         {
             TimeSpan timeout = TimeSpan.FromSeconds(30);
             CancellationTokenSource timeoutCts = new CancellationTokenSource(timeout);
@@ -233,12 +251,13 @@ namespace System.Net.Http.Functional.Tests
             int remainingBytes = bytesToDownload;
 
             bool pingReceivedAfterReachingMaxWindow = false;
+            bool tooManyPingsWithoutWindowUpdate = false;
             bool unexpectedFrameReceived = false;
             CancellationTokenSource stopFrameProcessingCts = new CancellationTokenSource();
             
             CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(stopFrameProcessingCts.Token, timeoutCts.Token);
             Task processFramesTask = ProcessIncomingFramesAsync(linkedCts.Token);
-            byte[] buffer = new byte[16384];
+            byte[] buffer = new byte[dataFrameSize];
 
             while (remainingBytes > 0)
             {
@@ -257,6 +276,13 @@ namespace System.Net.Http.Functional.Tests
                 output?.WriteLine($"Sent {bytesToSend}, credit reduced to: {credit}");
 
                 remainingBytes = nextRemainingBytes;
+
+                if (getDelayBetweenDataFrames != null)
+                {
+                    TimeSpan delay = getDelayBetweenDataFrames();
+                    if (delay != TimeSpan.Zero)
+                        await Task.Delay(delay);
+                }
             }
 
             using HttpResponseMessage response = await clientTask;
@@ -267,6 +293,7 @@ namespace System.Net.Http.Functional.Tests
             int dataReceived = (await response.Content.ReadAsByteArrayAsync()).Length;
             Assert.Equal(bytesToDownload, dataReceived);
             Assert.False(pingReceivedAfterReachingMaxWindow, "Server received a PING after reaching max window");
+            Assert.False(tooManyPingsWithoutWindowUpdate, "The server received too many PING-s without WINDOW_UPDATE");
             Assert.False(unexpectedFrameReceived, "Server received an unexpected frame, see test output for more details.");
 
             return maxCredit;
@@ -277,6 +304,12 @@ namespace System.Net.Http.Functional.Tests
                 // We should not receive any more RTT PING's after this point
                 int maxWindowCreditThreshold = (int) (0.9 * maxWindowForPingStopValidation);
                 output?.WriteLine($"maxWindowCreditThreshold: {maxWindowCreditThreshold} maxWindowForPingStopValidation: {maxWindowForPingStopValidation}");
+
+                // Some proxy servers limit PINGs based on what is received.
+                // We should not send more than 4 PINGs without sending DATA, HEADERS or WINDOW_UPDATE.
+                // There is no DATA being sent by this test, so we reset he counter on WINDOW_UPDATE only.
+                const int MaxPingsWithoutWindowUpdate = 4;
+                int pingsWithoutWindowUpdate = 0;
 
                 try
                 {
@@ -289,7 +322,17 @@ namespace System.Net.Http.Functional.Tests
                             // Simulate network delay for RTT PING
                             Wait(networkDelay);
 
-                            output?.WriteLine($"Received PING ({pingFrame.Data})");
+                            pingsWithoutWindowUpdate++;
+                            output?.WriteLine($"Received PING ({pingFrame.Data}). unsolicitedPings: {pingsWithoutWindowUpdate}");
+
+                            if (pingsWithoutWindowUpdate > MaxPingsWithoutWindowUpdate)
+                            {
+                                Volatile.Write(ref tooManyPingsWithoutWindowUpdate, true);
+                                await writeSemaphore.WaitAsync(cancellationToken);
+                                await connection.SendGoAway(streamId, ProtocolErrors.ENHANCE_YOUR_CALM);
+                                writeSemaphore.Release();
+                                break;
+                            }
 
                             if (maxCredit > maxWindowCreditThreshold)
                             {
@@ -305,6 +348,8 @@ namespace System.Net.Http.Functional.Tests
                         {
                             // Ignore connection window:
                             if (windowUpdateFrame.StreamId != streamId) continue;
+
+                            pingsWithoutWindowUpdate = 0;
 
                             int currentCredit = Interlocked.Add(ref credit, windowUpdateFrame.UpdateSize);
                             maxCredit = Math.Max(currentCredit, maxCredit); // Detect if client grows the window
