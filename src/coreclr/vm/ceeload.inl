@@ -17,7 +17,11 @@ TYPE LookupMap<TYPE>::GetValueAt(PTR_TADDR pValue, TADDR* pFlags, TADDR supporte
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
+#ifndef DACCESS_COMPILE
+    TYPE value = dac_cast<TYPE>(VolatileLoadWithoutBarrier(pValue)); // LookupMap's hold pointers, so we can use a data dependency instead of an explicit barrier here.
+#else
     TYPE value = dac_cast<TYPE>(*pValue);
+#endif
 
     if (pFlags)
         *pFlags = dac_cast<TADDR>(value) & supportedFlags;
@@ -35,7 +39,7 @@ void LookupMap<TYPE>::SetValueAt(PTR_TADDR pValue, TYPE value, TADDR flags)
 
     value = dac_cast<TYPE>((dac_cast<TADDR>(value) | flags));
 
-    *(dac_cast<DPTR(TYPE)>(pValue)) = value;
+    VolatileStore(pValue, dac_cast<TADDR>(value));
 }
 
 //
@@ -47,7 +51,7 @@ SIZE_T LookupMap<SIZE_T>::GetValueAt(PTR_TADDR pValue, TADDR* pFlags, TADDR supp
 {
     WRAPPER_NO_CONTRACT;
 
-    TADDR value = *pValue;
+    TADDR value = VolatileLoadWithoutBarrier(pValue); // LookupMap's hold pointers, so we can use a data dependency instead of an explicit barrier here.
 
     if (pFlags)
         *pFlags = value & supportedFlags;
@@ -60,7 +64,7 @@ inline
 void LookupMap<SIZE_T>::SetValueAt(PTR_TADDR pValue, SIZE_T value, TADDR flags)
 {
     WRAPPER_NO_CONTRACT;
-    *pValue = value | flags;
+    VolatileStore(pValue, value | flags);
 }
 #endif // DACCESS_COMPILE
 
@@ -122,7 +126,7 @@ BOOL LookupMap<TYPE>::TrySetElement(DWORD rid, TYPE value, TADDR flags)
 
 // Stores an association in a map. Grows the map as necessary.
 template<typename TYPE>
-void LookupMap<TYPE>::AddElement(Module * pModule, DWORD rid, TYPE value, TADDR flags)
+void LookupMap<TYPE>::AddElement(ModuleBase * pModule, DWORD rid, TYPE value, TADDR flags)
 {
     CONTRACTL
     {
@@ -275,12 +279,12 @@ inline MethodDesc *Module::LookupMemberRefAsMethod(mdMemberRef token)
     LIMITED_METHOD_DAC_CONTRACT;
 
     _ASSERTE(TypeFromToken(token) == mdtMemberRef);
-    BOOL flags = FALSE;
-    PTR_MemberRef pMemberRef = m_pMemberRefToDescHashTable->GetValue(token, &flags);
-    return flags ? dac_cast<PTR_MethodDesc>(pMemberRef) : NULL;
+    TADDR flags = FALSE;
+    TADDR pMemberRef = m_MemberRefMap.GetElementAndFlags(RidFromToken(token), &flags);
+    return (flags & IS_FIELD_MEMBER_REF) ? NULL : dac_cast<PTR_MethodDesc>(pMemberRef);
 }
 
-inline Assembly *Module::LookupAssemblyRef(mdAssemblyRef token)
+inline Assembly *ModuleBase::LookupAssemblyRef(mdAssemblyRef token)
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
@@ -453,12 +457,6 @@ BOOL Module::FixupDelayListAux(TADDR pFixupList,
     } // Done with all entries in this table
 
     return TRUE;
-}
-
-inline PTR_LoaderAllocator Module::GetLoaderAllocator()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return GetAssembly()->GetLoaderAllocator();
 }
 
 inline MethodTable* Module::GetDynamicClassMT(DWORD dynamicClassID)
