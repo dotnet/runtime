@@ -539,6 +539,8 @@ done:
     return result;
 }
 
+#define CHECK_CACHE_SIZE(CACHE_LEVEL) if (size > cacheSize) { cacheSize = size; cacheLevel = CACHE_LEVEL; }
+
 size_t
 PALAPI
 PAL_GetLogicalProcessorCacheSizeFromOS()
@@ -652,7 +654,7 @@ PAL_GetLogicalProcessorCacheSizeFromOS()
             || sysctlbyname("hw.l1dcachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0;
         if (success)
         {
-            assert(cacheSizeFromSysctl > 0);
+            _ASSERTE(cacheSizeFromSysctl > 0);
             cacheSize = ( size_t) cacheSizeFromSysctl;
         }
     }
