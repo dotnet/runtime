@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting.Systemd;
 using Microsoft.Extensions.Logging.Console;
@@ -31,6 +32,8 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The <paramref name="hostBuilder"/> instance for chaining.</returns>
         public static IHostBuilder UseSystemd(this IHostBuilder hostBuilder)
         {
+            ThrowHelper.ThrowIfNull(hostBuilder);
+
             if (SystemdHelpers.IsSystemdService())
             {
                 hostBuilder.ConfigureServices((hostContext, services) =>
@@ -64,6 +67,8 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The <paramref name="services"/> instance for chaining.</returns>
         public static IServiceCollection AddSystemd(this IServiceCollection services)
         {
+            ThrowHelper.ThrowIfNull(services);
+
             if (SystemdHelpers.IsSystemdService())
             {
                 AddSystemdLifetime(services);

@@ -17,6 +17,7 @@ namespace Microsoft.Extensions.Hosting
                 .Build();
 
             var lifetime = host.Services.GetRequiredService<IHostLifetime>();
+            Assert.NotNull(lifetime);
             Assert.IsNotType<SystemdLifetime>(lifetime);
         }
 
@@ -33,6 +34,7 @@ namespace Microsoft.Extensions.Hosting
             using IHost host = builder.Build();
 
             var lifetime = host.Services.GetRequiredService<IHostLifetime>();
+            Assert.NotNull(lifetime);
             Assert.IsNotType<SystemdLifetime>(lifetime);
         }
     }

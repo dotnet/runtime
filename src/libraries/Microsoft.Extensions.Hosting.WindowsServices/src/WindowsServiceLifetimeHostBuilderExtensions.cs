@@ -44,6 +44,8 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The <paramref name="hostBuilder"/> instance for chaining.</returns>
         public static IHostBuilder UseWindowsService(this IHostBuilder hostBuilder, Action<WindowsServiceLifetimeOptions> configure)
         {
+            ThrowHelper.ThrowIfNull(hostBuilder);
+
             if (WindowsServiceHelpers.IsWindowsService())
             {
                 hostBuilder.ConfigureServices(services =>
@@ -92,6 +94,8 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The <paramref name="services"/> instance for chaining.</returns>
         public static IServiceCollection AddWindowsService(this IServiceCollection services, Action<WindowsServiceLifetimeOptions> configure)
         {
+            ThrowHelper.ThrowIfNull(services);
+
             if (WindowsServiceHelpers.IsWindowsService())
             {
                 AddWindowsServiceLifetime(services, configure);
