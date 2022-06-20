@@ -6875,6 +6875,8 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
             tree->gtFlags |= GTF_IND_NONFAULTING;
             // String literal objects are also ok to model as invariant.
             tree->gtFlags |= GTF_IND_INVARIANT;
+            // ..and they are never null.
+            tree->gtFlags |= GTF_IND_NONNULL;
             break;
 
         default:
