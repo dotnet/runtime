@@ -79,7 +79,7 @@ namespace System.Tests
                 && PlatformDetection.IsWindows)
             {
                 // Currently fallback command line is only implemented on Windows coreclr
-                RemoteExecutor.Invoke(CheckCommandLineArgsFallback);
+                RemoteExecutor.Invoke(CheckCommandLineArgsFallback).Dispose();
             }
         }
 
