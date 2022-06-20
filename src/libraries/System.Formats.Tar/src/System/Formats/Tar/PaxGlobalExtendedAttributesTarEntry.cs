@@ -8,7 +8,7 @@ using System.Diagnostics;
 namespace System.Formats.Tar
 {
     /// <summary>
-    /// Represents a Global Extended Attributes tar entry from an archive of the PAX format.
+    /// Represents a Global Extended Attributes TAR entry from an archive of the PAX format.
     /// </summary>
     public sealed class PaxGlobalExtendedAttributesTarEntry : PosixTarEntry
     {

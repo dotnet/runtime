@@ -112,10 +112,10 @@ namespace System.Formats.Tar.Tests
 
             TarEntry directory = reader.GetNextEntry();
 
-            VerifyDirectoryEntry(directory, format, "földër/");
+            VerifyDirectoryEntry(directory, format, "f\u00f6ld\u00ebr/"); //földër
 
             TarEntry file = reader.GetNextEntry();
-            VerifyRegularFileEntry(file, format, "földër/áöñ.txt", $"Hello {testCaseName}");
+            VerifyRegularFileEntry(file, format, "f\u00f6ld\u00ebr/\u00e1\u00f6\u00f1.txt", $"Hello {testCaseName}"); // földër/áöñ.txt
 
             Assert.Null(reader.GetNextEntry());
         }
