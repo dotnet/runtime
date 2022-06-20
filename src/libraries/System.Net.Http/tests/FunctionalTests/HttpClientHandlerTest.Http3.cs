@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Quic;
 using System.Net.Security;
+using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Reflection;
 using System.Text;
@@ -613,9 +614,17 @@ namespace System.Net.Http.Functional.Tests
                 VersionPolicy = HttpVersionPolicy.RequestVersionOrLower
             })
             {
-                using HttpResponseMessage responseA = await client.SendAsync(requestA).WaitAsync(TimeSpan.FromSeconds(20));
-                Assert.Equal(HttpStatusCode.OK, responseA.StatusCode);
-                Assert.NotEqual(3, responseA.Version.Major);
+                try
+                {
+                    using HttpResponseMessage responseA = await client.SendAsync(requestA).WaitAsync(TimeSpan.FromSeconds(20));
+                    Assert.Equal(HttpStatusCode.OK, responseA.StatusCode);
+                    Assert.NotEqual(3, responseA.Version.Major);
+                }
+                catch (HttpRequestException ex) when (ex.InnerException is SocketException se && se.SocketErrorCode == SocketError.NetworkUnreachable)
+                {
+                    _output.WriteLine($"Unable to establish non-H/3 connection to {uri}: {ex}");
+                    return;
+                }
             }
 
             // Second request uses HTTP/3.
