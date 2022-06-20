@@ -162,25 +162,22 @@ namespace System.Formats.Tar
         private void AddNewAccessAndChangeTimestampsIfNotExist(bool useMTime)
         {
             Debug.Assert(!useMTime || (useMTime && _header._mTime != default));
+            Debug.Assert(_header._extendedAttributes != null);
+            bool containsATime = _header._extendedAttributes.ContainsKey(TarHeader.PaxEaATime);
+            bool containsCTime = _header._extendedAttributes.ContainsKey(TarHeader.PaxEaCTime);
 
-            if (_header._extendedAttributes != null)
+            if (!containsATime || !containsCTime)
             {
-                bool containsATime = _header._extendedAttributes.ContainsKey(TarHeader.PaxEaATime);
-                bool containsCTime = _header._extendedAttributes.ContainsKey(TarHeader.PaxEaCTime);
+                string secondsFromEpochString = TarHelpers.GetTimestampStringFromDateTimeOffset(useMTime ? _header._mTime : DateTimeOffset.UtcNow);
 
-                if (!containsATime || !containsCTime)
+                if (!containsATime)
                 {
-                    string secondsFromEpochString = TarHelpers.GetTimestampStringFromDateTimeOffset(useMTime ? _header._mTime : DateTimeOffset.UtcNow);
+                    _header._extendedAttributes[TarHeader.PaxEaATime] = secondsFromEpochString;
+                }
 
-                    if (!containsATime)
-                    {
-                        _header._extendedAttributes[TarHeader.PaxEaATime] = secondsFromEpochString;
-                    }
-
-                    if (!containsCTime)
-                    {
-                        _header._extendedAttributes[TarHeader.PaxEaCTime] = secondsFromEpochString;
-                    }
+                if (!containsCTime)
+                {
+                    _header._extendedAttributes[TarHeader.PaxEaCTime] = secondsFromEpochString;
                 }
             }
         }
