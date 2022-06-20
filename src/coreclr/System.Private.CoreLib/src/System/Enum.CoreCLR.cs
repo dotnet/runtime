@@ -16,14 +16,8 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern object InternalBoxEnum(RuntimeType enumType, long value);
 
-        private unsafe CorElementType InternalGetCorElementType()
-        {
-            // MethodTable::GetVerifierCorElementType has unnecessary overhead for enums
-            MethodTable* pMT = RuntimeHelpers.GetMethodTable(this);
-            CorElementType result = pMT->GetEEClassCorElementType();
-            GC.KeepAlive(this);
-            return result;
-        }
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private extern CorElementType InternalGetCorElementType();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern RuntimeType InternalGetUnderlyingType(RuntimeType enumType);
