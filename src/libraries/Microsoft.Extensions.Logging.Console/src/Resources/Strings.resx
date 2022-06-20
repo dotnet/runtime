@@ -120,4 +120,7 @@
   <data name="BufferMaximumSizeExceeded" xml:space="preserve">
     <value>Cannot allocate a buffer of size {0}.</value>
   </data>
+  <data name="BufferModeNotSupported" xml:space="preserve">
+    <value>{0} is not a supported buffer mode value.</value>
+  </data>
 </root>

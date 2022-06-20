@@ -75,7 +75,7 @@ namespace Microsoft.Extensions.Logging.Console
             {
                 if (value != ConsoleLoggerBufferFullMode.Wait && value != ConsoleLoggerBufferFullMode.DropWrite)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, $"{nameof(value)} is not a supported buffer mode value.");
+                    throw new ArgumentOutOfRangeException(SR.Format(SR.BufferModeNotSupported, nameof(value)));
                 }
                 _bufferFullMode = value;
             }

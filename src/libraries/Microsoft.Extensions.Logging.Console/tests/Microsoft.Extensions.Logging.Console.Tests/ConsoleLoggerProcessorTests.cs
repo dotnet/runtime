@@ -7,7 +7,6 @@ using System.IO;
 using System.Linq;
 using Microsoft.Extensions.Logging.Test.Console;
 using Xunit;
-#pragma warning disable CS0618
 
 namespace Microsoft.Extensions.Logging.Console.Test
 {
@@ -154,6 +153,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
 
         private static void UpdateFormatterOptions(ConsoleFormatter formatter, ConsoleLoggerOptions deprecatedFromOptions)
         {
+#pragma warning disable CS0618
             // kept for deprecated apis:
             if (formatter is SimpleConsoleFormatter defaultFormatter)
             {
@@ -170,7 +170,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 systemdFormatter.FormatterOptions.TimestampFormat = deprecatedFromOptions.TimestampFormat;
                 systemdFormatter.FormatterOptions.UseUtcTimestamp = deprecatedFromOptions.UseUtcTimestamp;
             }
+#pragma warning restore CS0618
         }
     }
 }
-#pragma warning restore CS0618
