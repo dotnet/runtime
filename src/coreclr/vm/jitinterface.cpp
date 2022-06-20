@@ -9062,7 +9062,6 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
 
     if (!ftn->IsFCall() && ftn->IsVersionableWithPrecode() && (ftn->GetPrecodeType() == PRECODE_FIXUP) && !ftn->IsPointingToStableNativeCode())
     {
-        bool skipPrecode = false;
         bool profilerPresent = false;
 
 #ifdef PROFILING_SUPPORTED
@@ -9079,12 +9078,11 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
             if (activeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier::OptimizationTier1)
             {
                 ret = (void*)activeCodeVersion.GetNativeCode();
-                skipPrecode = true;
                 accessType = IAT_VALUE;
             }
         }
 
-        if (!skipPrecode)
+        if (ret == nullptr)
         {
             ret = ((FixupPrecode*)ftn->GetOrCreatePrecode())->GetTargetSlot();
             accessType = IAT_PVALUE;
