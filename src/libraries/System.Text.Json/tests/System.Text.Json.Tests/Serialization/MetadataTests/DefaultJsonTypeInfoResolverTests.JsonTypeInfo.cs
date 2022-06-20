@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization.Metadata;
@@ -19,13 +20,16 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(int))]
         [InlineData(typeof(string))]
         [InlineData(typeof(SomeClass))]
-        //[InlineData(typeof(StructWithFourArgs))] // TODO redesign test to accommodate JsonConstructor metadata handling
+        [InlineData(typeof(StructWithFourArgs))]
         [InlineData(typeof(Dictionary<string, int>))]
         [InlineData(typeof(DictionaryWrapper))]
         [InlineData(typeof(List<int>))]
         [InlineData(typeof(ListWrapper))]
         public static void TypeInfoPropertiesDefaults(Type type)
         {
+            bool usingParametrizedConstructor = type.GetConstructors()
+                .FirstOrDefault(ctor => ctor.GetParameters().Length != 0 && ctor.GetCustomAttribute<JsonConstructorAttribute>() != null) != null;
+
             DefaultJsonTypeInfoResolver r = new();
             JsonSerializerOptions o = new();
             o.Converters.Add(new CustomThrowingConverter<SomeClass>());
@@ -35,7 +39,14 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Same(o, ti.Options);
             Assert.NotNull(ti.Properties);
 
-            if (ti.Kind == JsonTypeInfoKind.None)
+            if (ti.Kind == JsonTypeInfoKind.Object && usingParametrizedConstructor)
+            {
+                Assert.Null(ti.CreateObject);
+                Func<object> createObj = () => Activator.CreateInstance(type);
+                ti.CreateObject = createObj;
+                Assert.Same(createObj, ti.CreateObject);
+            }
+            else if (ti.Kind == JsonTypeInfoKind.None)
             {
                 Assert.Null(ti.CreateObject);
                 Assert.Throws<InvalidOperationException>(() => ti.CreateObject = () => Activator.CreateInstance(type));
