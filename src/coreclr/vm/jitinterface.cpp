@@ -9078,16 +9078,17 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
                 .GetActiveNativeCodeVersion(ftn);
             if (activeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier::OptimizationTier1)
             {
-                ret = (void*)ftn->GetAddrOfNativeCodeSlot();
+                ret = (void*)activeCodeVersion.GetNativeCode();
                 skipPrecode = true;
+                accessType = IAT_VALUE;
             }
         }
 
         if (!skipPrecode)
         {
             ret = ((FixupPrecode*)ftn->GetOrCreatePrecode())->GetTargetSlot();
+            accessType = IAT_PVALUE;
         }
-        accessType = IAT_PVALUE;
     }
     else
     {
