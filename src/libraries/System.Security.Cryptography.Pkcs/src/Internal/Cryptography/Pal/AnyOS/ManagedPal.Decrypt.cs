@@ -147,6 +147,13 @@ namespace Internal.Cryptography.Pal.AnyOS
             {
                 exception = null;
 
+                // Windows compat: If the encrypted content is completely empty, even where it does not make sense for the
+                // mode and padding (e.g. CBC + PKCS7), produce an empty plaintext.
+                if (encryptedContent.IsEmpty)
+                {
+                    return Array.Empty<byte>();
+                }
+
 #if NET
                 try
                 {
