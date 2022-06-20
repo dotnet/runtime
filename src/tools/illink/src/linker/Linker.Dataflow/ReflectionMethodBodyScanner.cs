@@ -17,7 +17,7 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 
 namespace Mono.Linker.Dataflow
 {
-	class ReflectionMethodBodyScanner : MethodBodyScanner
+	sealed class ReflectionMethodBodyScanner : MethodBodyScanner
 	{
 		readonly MarkStep _markStep;
 		MessageOrigin _origin;

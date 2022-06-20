@@ -7,7 +7,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	class CompilerGeneratedCallGraph
+	sealed class CompilerGeneratedCallGraph
 	{
 		readonly Dictionary<IMemberDefinition, HashSet<IMemberDefinition>> callGraph;
 

@@ -9,9 +9,9 @@ using Mono.Cecil.Cil;
 
 namespace TLens.Analyzers
 {
-	class UserOperatorCalledForNullCheckAnalyzer : Analyzer
+	sealed class UserOperatorCalledForNullCheckAnalyzer : Analyzer
 	{
-		class Counters
+		sealed class Counters
 		{
 			public int Total;
 			public int Redundant;

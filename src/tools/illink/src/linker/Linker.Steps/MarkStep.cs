@@ -1421,7 +1421,7 @@ namespace Mono.Linker.Steps
 			TypeReferenceMarker.MarkTypeReferences (assembly, MarkingHelpers);
 		}
 
-		class TypeReferenceMarker : TypeReferenceWalker
+		sealed class TypeReferenceMarker : TypeReferenceWalker
 		{
 
 			readonly MarkingHelpers markingHelpers;

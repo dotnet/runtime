@@ -51,7 +51,7 @@ namespace ILLink.Tasks
 		[Required]
 		public ITaskItem RuntimeRootDescriptorFilePath { get; set; }
 
-		class ClassMembers
+		sealed class ClassMembers
 		{
 			public bool keepAllFields;
 			public HashSet<string> methods;
@@ -483,7 +483,7 @@ namespace ILLink.Tasks
 				defineConstants.Add (item.ItemSpec.Trim ());
 		}
 
-		class DefineTracker
+		sealed class DefineTracker
 		{
 			readonly HashSet<string> defineConstants;
 			readonly TaskLoggingHelper log;

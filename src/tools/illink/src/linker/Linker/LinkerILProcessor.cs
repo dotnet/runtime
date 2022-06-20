@@ -8,7 +8,7 @@ using Mono.Cecil.Cil;
 namespace Mono.Linker
 {
 #pragma warning disable RS0030
-	class LinkerILProcessor
+	sealed class LinkerILProcessor
 	{
 		readonly ILProcessor _ilProcessor;
 

@@ -9,7 +9,7 @@ using Mono.Cecil.Cil;
 
 namespace TLens.Analyzers
 {
-	class UnnecessaryFieldsAssignmentAnalyzer : Analyzer
+	sealed class UnnecessaryFieldsAssignmentAnalyzer : Analyzer
 	{
 		[Flags]
 		enum Access

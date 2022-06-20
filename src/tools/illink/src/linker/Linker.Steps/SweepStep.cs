@@ -555,7 +555,7 @@ namespace Mono.Linker.Steps
 		{
 		}
 
-		class AssemblyReferencesCorrector : TypeReferenceWalker
+		sealed class AssemblyReferencesCorrector : TypeReferenceWalker
 		{
 			readonly DefaultMetadataImporter importer;
 

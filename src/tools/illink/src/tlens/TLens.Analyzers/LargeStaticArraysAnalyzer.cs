@@ -9,7 +9,7 @@ using Mono.Cecil.Cil;
 
 namespace TLens.Analyzers
 {
-	class LargeStaticArraysAnalyzer : Analyzer
+	sealed class LargeStaticArraysAnalyzer : Analyzer
 	{
 		readonly List<(int, MethodDefinition)> methods = new List<(int, MethodDefinition)> ();
 

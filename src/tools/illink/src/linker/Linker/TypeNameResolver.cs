@@ -12,7 +12,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	internal class TypeNameResolver
+	internal sealed class TypeNameResolver
 	{
 		readonly LinkContext _context;
 

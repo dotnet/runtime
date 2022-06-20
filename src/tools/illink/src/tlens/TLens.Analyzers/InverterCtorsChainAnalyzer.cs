@@ -9,7 +9,7 @@ using Mono.Cecil.Cil;
 
 namespace TLens.Analyzers
 {
-	class InverterCtorsChainAnalyzer : Analyzer
+	sealed class InverterCtorsChainAnalyzer : Analyzer
 	{
 		readonly List<(MethodDefinition, MethodDefinition)> ctors = new List<(MethodDefinition, MethodDefinition)> ();
 
