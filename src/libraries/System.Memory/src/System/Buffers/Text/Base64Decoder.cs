@@ -574,29 +574,10 @@ namespace System.Buffers.Text
             // 1111 0x10 andlut     0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10
 
             // The JIT won't hoist these "constants", so help it
-            Vector128<byte> lutHi = Vector128.Create(
-                0x10, 0x10, 0x01, 0x02,
-                0x04, 0x08, 0x04, 0x08,
-                0x10, 0x10, 0x10, 0x10,
-                0x10, 0x10, 0x10, 0x10).AsByte();
-
-            Vector128<byte> lutLo = Vector128.Create(
-                0x15, 0x11, 0x11, 0x11,
-                0x11, 0x11, 0x11, 0x11,
-                0x11, 0x11, 0x13, 0x1A,
-                0x1B, 0x1B, 0x1B, 0x1A).AsByte();
-
-            Vector128<sbyte> lutShift = Vector128.Create(
-                0, 16, 19, 4,
-                -65, -65, -71, -71,
-                0, 0, 0, 0,
-                0, 0, 0, 0);
-
-            Vector128<sbyte> packBytesMask = Vector128.Create(
-                2, 1, 0, 6,
-                5, 4, 10, 9,
-                8, 14, 13, 12,
-                -1, -1, -1, -1);
+            Vector128<byte> lutHi = Vector128.Create(0x02011010, 0x08040804, 0x10101010, 0x10101010).AsByte();
+            Vector128<byte> lutLo = Vector128.Create(0x11111115, 0x11111111, 0x1A131111, 0x1A1B1B1B).AsByte();
+            Vector128<sbyte> lutShift = Vector128.Create(0x04131000, 0xb9b9bfbf, 0x00000000, 0x00000000).AsSByte();
+            Vector128<sbyte> packBytesMask = Vector128.Create(0x06000102, 0x090A0405, 0x0C0D0E08, 0xffffffff).AsSByte();
 
             Vector128<byte> mask2F = Vector128.Create((byte)'/');
             Vector128<byte> mergeConstant0 = Vector128.Create(0x01400140).AsByte();
@@ -618,21 +599,21 @@ namespace System.Buffers.Text
                 if (Ssse3.IsSupported)
                 {
                     // Ensure the high bits are masked off for the shuffle.
-                    hiNibbles = Vector128.BitwiseAnd(hiNibbles, mask2F);
+                    hiNibbles &= mask2F;
                 }
                 Vector128<byte> hi = SimdShuffle(lutHi, hiNibbles, f);
                 Vector128<byte> lo = SimdShuffle(lutLo, str, f);
 
                 // Check for invalid input: if any "and" values from lo and hi are not zero,
                 // fall back on bytewise code to do error checking and reporting:
-                if (Vector128.BitwiseAnd(lo, hi).AsUInt64().ToScalar() != 0)
+                if ((lo & hi) != Vector128<byte>.Zero)
                     break;
 
                 Vector128<byte> eq2F = Vector128.Equals(str, mask2F);
-                Vector128<byte> shift = SimdShuffle(lutShift.AsByte(), Vector128.Add(eq2F, hiNibbles), f);
+                Vector128<byte> shift = SimdShuffle(lutShift.AsByte(), (eq2F + hiNibbles), f);
 
                 // Now simply add the delta values to the input:
-                str = Vector128.Add(str, shift);
+                str += shift;
 
                 // in, bits, upper case are most significant bits, lower case are least significant bits
                 // 00llllll 00kkkkLL 00jjKKKK 00JJJJJJ
