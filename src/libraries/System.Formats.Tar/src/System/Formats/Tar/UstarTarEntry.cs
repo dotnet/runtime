@@ -43,6 +43,10 @@ namespace System.Formats.Tar
             {
                 _header._prefix = other._header._prefix;
             }
+            else
+            {
+                _header._prefix = string.Empty;
+            }
         }
 
         // Determines if the current instance's entry type supports setting a data stream.
