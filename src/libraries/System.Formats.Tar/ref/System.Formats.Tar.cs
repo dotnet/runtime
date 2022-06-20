@@ -42,6 +42,14 @@ namespace System.Formats.Tar
         public void ExtractToFile(string destinationFileName, bool overwrite) { }
         public override string ToString() { throw null; }
     }
+    public enum TarEntryFormat
+    {
+        Unknown = 0,
+        V7 = 1,
+        Ustar = 2,
+        Pax = 3,
+        Gnu = 4,
+    }
     public enum TarEntryType : byte
     {
         V7RegularFile = (byte)0,
@@ -87,18 +95,10 @@ namespace System.Formats.Tar
         GroupSpecial = 1024,
         UserSpecial = 2048,
     }
-    public enum TarFormat
-    {
-        Unknown = 0,
-        V7 = 1,
-        Ustar = 2,
-        Pax = 3,
-        Gnu = 4,
-    }
     public sealed partial class TarReader : System.IDisposable
     {
         public TarReader(System.IO.Stream archiveStream, bool leaveOpen = false) { }
-        public System.Formats.Tar.TarFormat Format { get { throw null; } }
+        public System.Formats.Tar.TarEntryFormat Format { get { throw null; } }
         public System.Collections.Generic.IReadOnlyDictionary<string, string>? GlobalExtendedAttributes { get { throw null; } }
         public void Dispose() { }
         public System.Formats.Tar.TarEntry? GetNextEntry(bool copyData = false) { throw null; }
@@ -106,8 +106,8 @@ namespace System.Formats.Tar
     public sealed partial class TarWriter : System.IDisposable
     {
         public TarWriter(System.IO.Stream archiveStream, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>? globalExtendedAttributes = null, bool leaveOpen = false) { }
-        public TarWriter(System.IO.Stream archiveStream, System.Formats.Tar.TarFormat archiveFormat, bool leaveOpen = false) { }
-        public System.Formats.Tar.TarFormat Format { get { throw null; } }
+        public TarWriter(System.IO.Stream archiveStream, System.Formats.Tar.TarEntryFormat archiveFormat, bool leaveOpen = false) { }
+        public System.Formats.Tar.TarEntryFormat Format { get { throw null; } }
         public void Dispose() { }
         public void WriteEntry(System.Formats.Tar.TarEntry entry) { }
         public void WriteEntry(string fileName, string? entryName) { }

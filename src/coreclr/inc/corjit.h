@@ -330,7 +330,8 @@ public:
 
     // Data structure for a single class probe using 32-bit count.
     //
-    // CLASS_FLAG and INTERFACE_FLAG are placed into the Other field in the schema
+    // CLASS_FLAG, INTERFACE_FLAG and DELEGATE_FLAG are placed into the Other field in the schema.
+    // If CLASS_FLAG is set the handle table consists of type handles, and otherwise method handles.
     //
     // Count is the number of times a call was made at that call site.
     //
@@ -338,8 +339,8 @@ public:
     //
     // SAMPLE_INTERVAL must be >= SIZE. SAMPLE_INTERVAL / SIZE
     // gives the average number of calls between table updates.
-    //
-    struct ClassProfile32
+    // 
+    struct HandleHistogram32
     {
         enum
         {
@@ -347,17 +348,18 @@ public:
             SAMPLE_INTERVAL = 32,
             CLASS_FLAG     = 0x80000000,
             INTERFACE_FLAG = 0x40000000,
-            OFFSET_MASK    = 0x3FFFFFFF
+            DELEGATE_FLAG  = 0x20000000,
+            OFFSET_MASK    = 0x0FFFFFFF
         };
 
         uint32_t Count;
-        CORINFO_CLASS_HANDLE ClassTable[SIZE];
+        void* HandleTable[SIZE];
     };
 
-    struct ClassProfile64
+    struct HandleHistogram64
     {
         uint64_t Count;
-        CORINFO_CLASS_HANDLE ClassTable[ClassProfile32::SIZE];
+        void* HandleTable[HandleHistogram32::SIZE];
     };
 
     enum class PgoInstrumentationKind
@@ -387,7 +389,7 @@ public:
         Done = None, // All instrumentation schemas must end with a record which is "Done"
         BasicBlockIntCount = (DescriptorMin * 1) | FourByte, // basic block counter using unsigned 4 byte int
         BasicBlockLongCount = (DescriptorMin * 1) | EightByte, // basic block counter using unsigned 8 byte int
-        HandleHistogramIntCount = (DescriptorMin * 2) | FourByte | AlignPointer, // 4 byte counter that is part of a type histogram. Aligned to match ClassProfile32's alignment.
+        HandleHistogramIntCount = (DescriptorMin * 2) | FourByte | AlignPointer, // 4 byte counter that is part of a type histogram. Aligned to match HandleHistogram32's alignment.
         HandleHistogramLongCount = (DescriptorMin * 2) | EightByte, // 8 byte counter that is part of a type histogram
         HandleHistogramTypes = (DescriptorMin * 3) | TypeHandle, // Histogram of type handles
         HandleHistogramMethods = (DescriptorMin * 3) | MethodHandle, // Histogram of method handles
@@ -396,6 +398,7 @@ public:
         EdgeIntCount = (DescriptorMin * 6) | FourByte, // edge counter using unsigned 4 byte int
         EdgeLongCount = (DescriptorMin * 6) | EightByte, // edge counter using unsigned 8 byte int
         GetLikelyClass = (DescriptorMin * 7) | TypeHandle, // Compressed get likely class data
+        GetLikelyMethod = (DescriptorMin * 7) | MethodHandle, // Compressed get likely method data
     };
 
     struct PgoInstrumentationSchema
@@ -418,7 +421,7 @@ public:
         Sampling= 6,    // PGO data derived from sampling
     };
 
-#define DEFAULT_UNKNOWN_TYPEHANDLE 1
+#define DEFAULT_UNKNOWN_HANDLE 1
 #define UNKNOWN_HANDLE_MIN 1
 #define UNKNOWN_HANDLE_MAX 33
 
@@ -494,12 +497,6 @@ public:
         CORJIT_FLAGS* flags,       /* IN: Points to a buffer that will hold the extended flags. */
         uint32_t        sizeInBytes   /* IN: The size of the buffer. Note that this is effectively a
                                           version number for the CORJIT_FLAGS value. */
-        ) = 0;
-
-    // Checks if a field belongs to a given class.
-    virtual bool doesFieldBelongToClass(
-        CORINFO_FIELD_HANDLE fldHnd, /* IN: the field that we are checking */
-        CORINFO_CLASS_HANDLE cls     /* IN: the class that we are checking */
         ) = 0;
 };
 

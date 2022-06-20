@@ -28,6 +28,7 @@ import {
     mono_wasm_symbolicate_string,
     mono_wasm_stringify_as_error_with_stack,
     mono_wasm_debugger_attached,
+    mono_wasm_set_entrypoint_breakpoint,
 } from "./debug";
 import { ENVIRONMENT_IS_WEB, ExitStatusError, runtimeHelpers, setImportsAndExports } from "./imports";
 import { DotnetModuleConfigImports, DotnetModule, is_nullish } from "./types";
@@ -342,6 +343,7 @@ export const __linker_exports: any = {
     mono_wasm_invoke_js,
     mono_wasm_invoke_js_blazor,
     mono_wasm_trace_logger,
+    mono_wasm_set_entrypoint_breakpoint,
 
     // also keep in sync with corebindings.c
     mono_wasm_invoke_js_with_args_ref,

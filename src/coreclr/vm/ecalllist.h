@@ -120,7 +120,6 @@ FCFuncStart(gExceptionFuncs)
 FCFuncEnd()
 
 FCFuncStart(gTypedReferenceFuncs)
-    FCFuncElement("InternalToObject", ReflectionInvocation::TypedReferenceToObject)
     FCFuncElement("InternalMakeTypedReference", ReflectionInvocation::MakeTypedReference)
 FCFuncEnd()
 
@@ -370,9 +369,7 @@ FCFuncEnd()
 
 FCFuncStart(gThreadFuncs)
     FCFuncElement("InternalGetCurrentThread", GetThread)
-#undef Sleep
     FCFuncElement("SleepInternal", ThreadNative::Sleep)
-#define Sleep(a) Dont_Use_Sleep(a)
     FCFuncElement("Initialize", ThreadNative::Initialize)
     FCFuncElement("SpinWaitInternal", ThreadNative::SpinWait)
     FCFuncElement("GetCurrentThreadNative", ThreadNative::GetCurrentThread)

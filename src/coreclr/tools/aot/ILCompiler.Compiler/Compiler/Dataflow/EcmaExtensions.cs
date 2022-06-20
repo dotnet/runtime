@@ -22,7 +22,7 @@ namespace ILCompiler.Dataflow
         public static bool IsPublic(this FieldDesc field)
         {
             return field.GetTypicalFieldDefinition() is EcmaField ecmaField
-                && (ecmaField.Attributes & FieldAttributes.FieldAccessMask) == FieldAttributes.Public;  
+                && (ecmaField.Attributes & FieldAttributes.FieldAccessMask) == FieldAttributes.Public;
         }
 
         public static bool IsPrivate(this MethodDesc method)

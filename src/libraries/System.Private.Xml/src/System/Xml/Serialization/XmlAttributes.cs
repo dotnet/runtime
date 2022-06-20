@@ -95,9 +95,8 @@ namespace System.Xml.Serialization
                 {
                     _xmlArrayItems.Add((XmlArrayItemAttribute)attrs[i]);
                 }
-                else if (attrs[i] is XmlAnyElementAttribute)
+                else if (attrs[i] is XmlAnyElementAttribute any)
                 {
-                    XmlAnyElementAttribute any = (XmlAnyElementAttribute)attrs[i];
                     if ((any.Name == null || any.Name.Length == 0) && any.GetNamespaceSpecified() && any.Namespace == null)
                     {
                         // ignore duplicate wildcards

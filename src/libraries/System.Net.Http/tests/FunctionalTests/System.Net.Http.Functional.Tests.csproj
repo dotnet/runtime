@@ -345,12 +345,14 @@
     <Compile Include="HPackTest.cs" />
     <Compile Include="HttpClientHandlerTest.Http1.cs" />
     <Compile Include="HttpClientHandlerTest.Http2.cs" />
+    <Compile Include="HttpClientHandlerTest.Url.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.AcceptAllCerts.cs"
              Link="Common\System\Net\Http\HttpClientHandlerTest.AcceptAllCerts.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.Decompression.cs"
              Link="Common\System\Net\Http\HttpClientHandlerTest.Decompression.cs" />
     <Compile Include="HttpClientMiniStressTest.cs" />
     <Compile Include="NtAuthTests.cs" />
+    <Compile Include="NtAuthTests.FakeServer.cs" />
     <Compile Include="ReadOnlyMemoryContentTest.cs" />
     <Compile Include="SocketsHttpHandlerTest.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\Http2Frames.cs"
@@ -377,6 +379,17 @@
              Link="Common\System\Net\Http\HuffmanEncoder.cs" />
     <Compile Include="LoopbackSocksServer.cs" />
     <Compile Include="SocksProxyTest.cs" />
+  </ItemGroup>
+  <!-- NTLM/Negotiate authentication fakes -->
+  <ItemGroup>
+    <Compile Include="$(CommonPath)System\Net\Security\MD4.cs"
+             Link="Common\System\Net\Security\MD4.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\RC4.cs"
+             Link="Common\System\Net\Security\RC4.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Security\FakeNtlmServer.cs"
+             Link="Common\System\Net\Security\FakeNtlmServer.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Security\FakeNegotiateServer.cs"
+             Link="Common\System\Net\Security\FakeNegotiateServer.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="SelectedSitesTest.txt">

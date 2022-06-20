@@ -654,6 +654,7 @@ bool Compiler::fgRemoveDeadBlocks()
     JITDUMP("\n*************** In fgRemoveDeadBlocks()");
 
     jitstd::list<BasicBlock*> worklist(jitstd::allocator<void>(getAllocator(CMK_Reachability)));
+
     worklist.push_back(fgFirstBB);
 
     // Do not remove handler blocks
@@ -713,16 +714,43 @@ bool Compiler::fgRemoveDeadBlocks()
         }
     }
 
+    // Track if there is any unreachable block. Even if it is marked with
+    // BBF_DONT_REMOVE, fgRemoveUnreachableBlocks() still removes the code
+    // inside the block. So this variable tracks if we ever found such blocks
+    // or not.
+    bool hasUnreachableBlock = false;
+
     // A block is unreachable if no path was found from
     // any of the fgFirstBB, handler, filter or BBJ_ALWAYS (Arm) blocks.
     auto isBlockRemovable = [&](BasicBlock* block) -> bool {
-        return !BlockSetOps::IsMember(this, visitedBlocks, block->bbNum);
+        bool isVisited   = BlockSetOps::IsMember(this, visitedBlocks, block->bbNum);
+        bool isRemovable = (!isVisited || block->bbRefs == 0);
+
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+        isRemovable &=
+            !block->isBBCallAlwaysPairTail(); // can't remove the BBJ_ALWAYS of a BBJ_CALLFINALLY / BBJ_ALWAYS pair
+#endif
+        hasUnreachableBlock |= isRemovable;
+
+        return isRemovable;
     };
 
-    bool changed = fgRemoveUnreachableBlocks(isBlockRemovable);
+    bool     changed        = false;
+    unsigned iterationCount = 1;
+    do
+    {
+        JITDUMP("\nRemoving unreachable blocks for fgRemoveDeadBlocks iteration #%u\n", iterationCount);
+
+        // Just to be paranoid, avoid infinite loops; fall back to minopts.
+        if (iterationCount++ > 10)
+        {
+            noway_assert(!"Too many unreachable block removal loops");
+        }
+        changed = fgRemoveUnreachableBlocks(isBlockRemovable);
+    } while (changed);
 
 #ifdef DEBUG
-    if (verbose && changed)
+    if (verbose && hasUnreachableBlock)
     {
         printf("\nAfter dead block removal:\n");
         fgDispBasicBlocks(verboseTrees);
@@ -732,7 +760,7 @@ bool Compiler::fgRemoveDeadBlocks()
     fgVerifyHandlerTab();
     fgDebugCheckBBlist(false);
 #endif // DEBUG
-    return changed;
+    return hasUnreachableBlock;
 }
 
 //-------------------------------------------------------------
@@ -3193,8 +3221,10 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         if (verbose)
         {
             printf("\nConverting a switch (" FMT_BB ") with only one significant clause besides a default target to a "
-                   "conditional branch\n",
+                   "conditional branch. Before:\n",
                    block->bbNum);
+
+            gtDispTree(switchTree);
         }
 #endif // DEBUG
 
@@ -3218,6 +3248,9 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
 
         block->bbJumpDest = block->bbJumpSwt->bbsDstTab[0];
         block->bbJumpKind = BBJ_COND;
+
+        JITDUMP("After:\n");
+        DISPNODE(switchTree);
 
         return true;
     }

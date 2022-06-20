@@ -364,7 +364,6 @@ set(VM_SOURCES_WKS
     runtimehandles.cpp
     safehandle.cpp
     simplerwlock.cpp
-    sourceline.cpp
     stackingallocator.cpp
     stringliteralmap.cpp
     stubcache.cpp
@@ -465,7 +464,6 @@ set(VM_HEADERS_WKS
     reflectioninvocation.h
     runtimehandles.h
     simplerwlock.hpp
-    sourceline.h
     stackingallocator.h
     stringliteralmap.h
     stubcache.h

@@ -828,7 +828,7 @@ namespace System.Net.Http
         private async ValueTask<Http3Connection> GetHttp3ConnectionAsync(HttpRequestMessage request, HttpAuthority authority, CancellationToken cancellationToken)
         {
             Debug.Assert(_kind == HttpConnectionKind.Https);
-            Debug.Assert(_http3Enabled == true);
+            Debug.Assert(_http3Enabled);
 
             Http3Connection? http3Connection = Volatile.Read(ref _http3Connection);
 
@@ -1414,7 +1414,7 @@ namespace System.Net.Http
                 {
                     if (NetEventSource.Log.IsEnabled())
                     {
-                        Trace($"Connected with custom SslStream: alpn='${sslStream.NegotiatedApplicationProtocol.ToString()}'");
+                        Trace($"Connected with custom SslStream: alpn='${sslStream.NegotiatedApplicationProtocol}'");
                     }
                 }
                 transportContext = sslStream.TransportContext;

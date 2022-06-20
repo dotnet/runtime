@@ -265,6 +265,62 @@ void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*
                       arg1, arg2);
 }
 
+#ifdef TARGET_ARM64
+// RewriteSubLshDiv: Possibly rewrite a SubLshDiv node into a Mod.
+//
+// Arguments:
+//    use - A use of a node.
+//
+// Transform: a - (a / cns) << shift  =>  a % cns
+//            where cns is a signed integer constant that is a power of 2.
+// We do this transformation because Lowering has a specific optimization
+// for 'a % cns' that is not easily reduced by other means.
+//
+void Rationalizer::RewriteSubLshDiv(GenTree** use)
+{
+    if (!comp->opts.OptimizationEnabled())
+        return;
+
+    GenTree* const node = *use;
+
+    if (!node->OperIs(GT_SUB))
+        return;
+
+    GenTree* op1 = node->gtGetOp1();
+    GenTree* op2 = node->gtGetOp2();
+
+    if (!(node->TypeIs(TYP_INT, TYP_LONG) && op1->OperIs(GT_LCL_VAR)))
+        return;
+
+    if (!op2->OperIs(GT_LSH))
+        return;
+
+    GenTree* lsh   = op2;
+    GenTree* div   = lsh->gtGetOp1();
+    GenTree* shift = lsh->gtGetOp2();
+    if (div->OperIs(GT_DIV) && shift->IsIntegralConst())
+    {
+        GenTree* a   = div->gtGetOp1();
+        GenTree* cns = div->gtGetOp2();
+        if (a->OperIs(GT_LCL_VAR) && cns->IsIntegralConstPow2() &&
+            op1->AsLclVar()->GetLclNum() == a->AsLclVar()->GetLclNum())
+        {
+            size_t shiftValue = shift->AsIntConCommon()->IntegralValue();
+            size_t cnsValue   = cns->AsIntConCommon()->IntegralValue();
+            if ((cnsValue >> shiftValue) == 1)
+            {
+                node->ChangeOper(GT_MOD);
+                node->AsOp()->gtOp2 = cns;
+                BlockRange().Remove(lsh);
+                BlockRange().Remove(div);
+                BlockRange().Remove(a);
+                BlockRange().Remove(shift);
+            }
+        }
+    }
+}
+#endif
+
 #ifdef DEBUG
 
 void Rationalizer::ValidateStatement(Statement* stmt, BasicBlock* block)
@@ -556,13 +612,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             RewriteAssignment(use);
             break;
 
-        case GT_BOX:
-        case GT_ARR_ADDR:
-            // BOX/ARR_ADDR at this level are just NOPs.
-            use.ReplaceWith(node->gtGetOp1());
-            BlockRange().Remove(node);
-            break;
-
         case GT_ADDR:
             RewriteAddress(use);
             break;
@@ -594,9 +643,11 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             break;
 
         case GT_NOP:
-            // fgMorph sometimes inserts NOP nodes between defs and uses
-            // supposedly 'to prevent constant folding'. In this case, remove the
-            // NOP.
+        case GT_BOX:
+        case GT_ARR_ADDR:
+            // "optNarrowTree" sometimes inserts NOP nodes between defs and uses.
+            // In this case, remove the NOP. BOX/ARR_ADDR are such "passthrough"
+            // nodes by design, and at this point we no longer need them.
             if (node->gtGetOp1() != nullptr)
             {
                 use.ReplaceWith(node->gtGetOp1());
@@ -670,16 +721,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             unsigned     simdSize = simdNode->GetSimdSize();
             var_types    simdType = comp->getSIMDTypeForSize(simdSize);
 
-            // TODO-1stClassStructs: This should be handled more generally for enregistered or promoted
-            // structs that are passed or returned in a different register type than their enregistered
-            // type(s).
-            if (simdNode->gtType == TYP_I_IMPL && simdNode->GetSimdSize() == TARGET_POINTER_SIZE)
-            {
-                // This happens when it is consumed by a GT_RET_EXPR.
-                // It can only be a Vector2f or Vector2i.
-                assert(genTypeSize(simdNode->GetSimdBaseType()) == 4);
-                simdNode->gtType = TYP_SIMD8;
-            }
             // Certain SIMD trees require rationalizing.
             if (simdNode->AsSIMD()->GetSIMDIntrinsicId() == SIMDIntrinsicInitArray)
             {
@@ -700,73 +741,8 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
                 DISPTREERANGE(BlockRange(), use.Def());
                 JITDUMP("\n");
             }
-            else
-            {
-                // This code depends on the fact that NONE of the SIMD intrinsics take vector operands
-                // of a different width.  If that assumption changes, we will EITHER have to make these type
-                // transformations during importation, and plumb the types all the way through the JIT,
-                // OR add a lot of special handling here.
-
-                // TODO-Review: the comment above seems outdated. TYP_SIMDs have been "plumbed through" the Jit.
-                // It may be that this code is actually dead.
-                for (GenTree* operand : simdNode->Operands())
-                {
-                    if (operand->TypeIs(TYP_STRUCT))
-                    {
-                        operand->ChangeType(simdType);
-                    }
-                }
-            }
         }
         break;
-#endif // FEATURE_SIMD
-
-#ifdef FEATURE_HW_INTRINSICS
-        case GT_HWINTRINSIC:
-        {
-            GenTreeHWIntrinsic* hwIntrinsicNode = node->AsHWIntrinsic();
-
-            if (!hwIntrinsicNode->isSIMD())
-            {
-                break;
-            }
-
-            // TODO-1stClassStructs: This should be handled more generally for enregistered or promoted
-            // structs that are passed or returned in a different register type than their enregistered
-            // type(s).
-            if ((hwIntrinsicNode->gtType == TYP_I_IMPL) && (hwIntrinsicNode->GetSimdSize() == TARGET_POINTER_SIZE))
-            {
-#ifdef TARGET_ARM64
-                // Special case for GetElement/ToScalar because they take Vector64<T> and return T
-                // and T can be long or ulong.
-                if (!((hwIntrinsicNode->GetHWIntrinsicId() == NI_Vector64_GetElement) ||
-                      (hwIntrinsicNode->GetHWIntrinsicId() == NI_Vector64_ToScalar)))
-#endif
-                {
-                    // This happens when it is consumed by a GT_RET_EXPR.
-                    // It can only be a Vector2f or Vector2i.
-                    assert(genTypeSize(hwIntrinsicNode->GetSimdBaseType()) == 4);
-                    hwIntrinsicNode->gtType = TYP_SIMD8;
-                }
-            }
-            break;
-        }
-#endif // FEATURE_HW_INTRINSICS
-
-#if defined(FEATURE_SIMD)
-        case GT_CNS_VEC:
-        {
-            GenTreeVecCon* vecCon = node->AsVecCon();
-
-            // TODO-1stClassStructs: do not retype SIMD nodes
-
-            if ((vecCon->TypeIs(TYP_I_IMPL)) && (vecCon->GetSimdSize() == TARGET_POINTER_SIZE))
-            {
-                assert(genTypeSize(vecCon->GetSimdBaseType()) == 4);
-                vecCon->gtType = TYP_SIMD8;
-            }
-            break;
-        }
 #endif // FEATURE_SIMD
 
         default:
@@ -854,6 +830,13 @@ PhaseStatus Rationalizer::DoPhase()
             {
                 m_rationalizer.RewriteIntrinsicAsUserCall(use, this->m_ancestors);
             }
+
+#ifdef TARGET_ARM64
+            if (node->OperIs(GT_SUB))
+            {
+                m_rationalizer.RewriteSubLshDiv(use);
+            }
+#endif
 
             return Compiler::WALK_CONTINUE;
         }

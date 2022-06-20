@@ -478,7 +478,11 @@ namespace Internal.JitInterface
     }
     public enum CorInfoInline
     {
-        INLINE_PASS = 0,    // Inlining OK
+        INLINE_PASS = 0,   // Inlining OK
+        INLINE_PREJIT_SUCCESS = 1,   // Inline check for prejit checking usage succeeded
+        INLINE_CHECK_CAN_INLINE_SUCCESS = 2,   // JIT detected it is permitted to try to actually inline
+        INLINE_CHECK_CAN_INLINE_VMFAIL = 3,   // VM specified that inline must fail via the CanInline api
+
 
         // failures are negative
         INLINE_FAIL = -1,   // Inlining not OK for this case only

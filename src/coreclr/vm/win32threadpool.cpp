@@ -1274,14 +1274,14 @@ void ThreadpoolMgr::EnsureGateThreadRunning()
             // Prevent the gate thread from exiting, if it hasn't already done so.  If it has, we'll create it on the next iteration of
             // this loop.
             //
-            FastInterlockCompareExchange(&GateThreadStatus, GATE_THREAD_STATUS_REQUESTED, GATE_THREAD_STATUS_WAITING_FOR_REQUEST);
+            InterlockedCompareExchange(&GateThreadStatus, GATE_THREAD_STATUS_REQUESTED, GATE_THREAD_STATUS_WAITING_FOR_REQUEST);
             break;
 
         case GATE_THREAD_STATUS_NOT_RUNNING:
             //
             // We need to create a new gate thread
             //
-            if (FastInterlockCompareExchange(&GateThreadStatus, GATE_THREAD_STATUS_REQUESTED, GATE_THREAD_STATUS_NOT_RUNNING) == GATE_THREAD_STATUS_NOT_RUNNING)
+            if (InterlockedCompareExchange(&GateThreadStatus, GATE_THREAD_STATUS_REQUESTED, GATE_THREAD_STATUS_NOT_RUNNING) == GATE_THREAD_STATUS_NOT_RUNNING)
             {
                 if (!CreateGateThread())
                 {
@@ -1324,7 +1324,7 @@ bool ThreadpoolMgr::ShouldGateThreadKeepRunning()
     //
     // Switch to WAITING_FOR_REQUEST, and see if we had a request since the last check.
     //
-    LONG previousStatus = FastInterlockExchange(&GateThreadStatus, GATE_THREAD_STATUS_WAITING_FOR_REQUEST);
+    LONG previousStatus = InterlockedExchange(&GateThreadStatus, GATE_THREAD_STATUS_WAITING_FOR_REQUEST);
 
     if (previousStatus == GATE_THREAD_STATUS_WAITING_FOR_REQUEST)
     {
@@ -1361,7 +1361,7 @@ bool ThreadpoolMgr::ShouldGateThreadKeepRunning()
             // It looks like we shouldn't be running.  But another thread may now tell us to run.  If so, they will set GateThreadStatus
             // back to GATE_THREAD_STATUS_REQUESTED.
             //
-            previousStatus = FastInterlockCompareExchange(&GateThreadStatus, GATE_THREAD_STATUS_NOT_RUNNING, GATE_THREAD_STATUS_WAITING_FOR_REQUEST);
+            previousStatus = InterlockedCompareExchange(&GateThreadStatus, GATE_THREAD_STATUS_NOT_RUNNING, GATE_THREAD_STATUS_WAITING_FOR_REQUEST);
             if (previousStatus == GATE_THREAD_STATUS_WAITING_FOR_REQUEST)
                 return false;
         }
@@ -2456,15 +2456,7 @@ DWORD WINAPI ThreadpoolMgr::WaitThreadStart(LPVOID lpArgs)
 
             if (threadCB->NumActiveWaits == 0)
             {
-
-#undef SleepEx
-                // <TODO>@TODO Consider doing a sleep for an idle period and terminating the thread if no activity</TODO>
-        //We use SleepEx instead of CLRSLeepEx because CLRSleepEx calls into SQL(or other hosts) in hosted
-        //scenarios. SQL does not deliver APC's, and the waithread wait insertion/deletion logic depends on
-        //APC's being delivered.
-                status = SleepEx(INFINITE,TRUE);
-#define SleepEx(a,b) Dont_Use_SleepEx(a,b)
-
+                status = ClrSleepEx(INFINITE,TRUE);
                 _ASSERTE(status == WAIT_IO_COMPLETION);
             }
             else if (IsWaitThreadAPCPending())
@@ -2474,15 +2466,7 @@ DWORD WINAPI ThreadpoolMgr::WaitThreadStart(LPVOID lpArgs)
                 //allow the thread to enter alertable wait and thus cause the APC to fire.
 
                 ResetWaitThreadAPCPending();
-
-                //We use SleepEx instead of CLRSLeepEx because CLRSleepEx calls into SQL(or other hosts) in hosted
-                //scenarios. SQL does not deliver APC's, and the waithread wait insertion/deletion logic depends on
-                //APC's being delivered.
-
-                #undef SleepEx
-                status = SleepEx(0,TRUE);
-                #define SleepEx(a,b) Dont_Use_SleepEx(a,b)
-
+                status = ClrSleepEx(0,TRUE);
                 continue;
             }
             else
@@ -4480,10 +4464,7 @@ void ThreadpoolMgr::TimerThreadFire()
 
     EX_TRY {
         DWORD timeout = FireTimers();
-
-#undef SleepEx
-        SleepEx(timeout, TRUE);
-#define SleepEx(a,b) Dont_Use_SleepEx(a,b)
+        ClrSleepEx(timeout, TRUE);
 
         // the thread could wake up either because an APC completed or the sleep timeout
         // in both case, we need to sweep the timer queue, firing timers, and readjusting

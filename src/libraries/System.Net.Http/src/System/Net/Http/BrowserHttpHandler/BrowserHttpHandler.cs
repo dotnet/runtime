@@ -239,7 +239,7 @@ namespace System.Net.Http
                     using var args = new System.Runtime.InteropServices.JavaScript.Array();
                     if (request.RequestUri != null)
                     {
-                        args.Push(request.RequestUri.ToString());
+                        args.Push(request.RequestUri.IsAbsoluteUri ? request.RequestUri.AbsoluteUri : request.RequestUri.ToString());
                         args.Push(requestObject);
                     }
 

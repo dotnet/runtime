@@ -1494,7 +1494,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     bool bShouldUpdateProlog = true;
     if (gcCover->doingEpilogChecks) {
         if (offset == 0) {
-            if ((gcCover->callerThread == 0) && (FastInterlockCompareExchangePointer(&gcCover->callerThread, pThread, 0) == 0)) {
+            if ((gcCover->callerThread == 0) && (InterlockedCompareExchangeT(&gcCover->callerThread, pThread, 0) == 0)) {
                 gcCover->callerRegs = *regs;
                 gcCover->gcCount = GCHeapUtilities::GetGCHeap()->GetGcCount();
                 bShouldUpdateProlog = false;

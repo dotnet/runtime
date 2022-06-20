@@ -67,14 +67,16 @@ echo XHARNESS_ARGS=$XHARNESS_ARGS
 function set_env_vars()
 {
     if [ "x$TEST_USING_WORKLOADS" = "xtrue" ]; then
-        export PATH=$BASE_DIR/dotnet-workload:$PATH
+        cp -r $BASE_DIR/dotnet-workload $EXECUTION_DIR
+        export PATH=$EXECUTION_DIR/dotnet-workload:$PATH
         export SDK_HAS_WORKLOAD_INSTALLED=true
-        export SDK_FOR_WORKLOAD_TESTING_PATH=$BASE_DIR/dotnet-workload
+        export SDK_FOR_WORKLOAD_TESTING_PATH=$EXECUTION_DIR/dotnet-workload
         export AppRefDir=$BASE_DIR/microsoft.netcore.app.ref
     else
-        export PATH=$BASE_DIR/sdk-no-workload:$PATH
+        cp -r $BASE_DIR/sdk-no-workload $EXECUTION_DIR
+        export PATH=$EXECUTION_DIR/sdk-no-workload:$PATH
         export SDK_HAS_WORKLOAD_INSTALLED=false
-        export SDK_FOR_WORKLOAD_TESTING_PATH=$BASE_DIR/sdk-no-workload
+        export SDK_FOR_WORKLOAD_TESTING_PATH=$EXECUTION_DIR/sdk-no-workload
         export AppRefDir=$BASE_DIR/microsoft.netcore.app.ref
     fi
 }

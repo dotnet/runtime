@@ -8,9 +8,6 @@
 #include "ex.h"
 #include "pedecoder.h"
 
-#include <wininet.h>
-#include <urlmon.h>
-
 DWORD
 GetFileVersionInfoSizeW_NoThrow(
         LPCWSTR lptstrFilename, /* Filename of version stamped file */

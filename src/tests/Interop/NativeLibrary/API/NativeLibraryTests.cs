@@ -47,6 +47,22 @@ public class NativeLibraryTests : IDisposable
     }
 
     [Fact]
+    public void LoadLibraryRelativePaths_NameOnly()
+    {
+        {
+            string libName = Path.Combine("..", NativeLibraryToLoad.InvalidName, NativeLibraryToLoad.GetLibraryFileName(NativeLibraryToLoad.InvalidName));
+            EXPECT(LoadLibrary_NameOnly(libName), TestResult.DllNotFound);
+            EXPECT(TryLoadLibrary_NameOnly(libName), TestResult.ReturnFailure);
+        }
+
+        {
+            string libName = Path.Combine("..", nameof(NativeLibraryTests), NativeLibraryToLoad.GetLibraryFileName(NativeLibraryToLoad.Name));
+            EXPECT(LoadLibrary_NameOnly(libName), TestResult.Success);
+            EXPECT(TryLoadLibrary_NameOnly(libName), TestResult.Success);
+        }
+    }
+
+    [Fact]
     public void LoadLibraryFullPath_WithAssembly()
     {
         string libName = libFullPath;

@@ -71,6 +71,7 @@ const linked_functions = [
     "mono_wasm_fire_debugger_agent_message",
     "mono_wasm_debugger_log",
     "mono_wasm_add_dbg_command_received",
+    "mono_wasm_set_entrypoint_breakpoint",
 
     // mono-threads-wasm.c
     "schedule_background_exec",

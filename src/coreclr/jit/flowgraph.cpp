@@ -1528,7 +1528,7 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
         critSect = info.compCompHnd->getMethodSync(info.compMethodHnd, (void**)&pCrit);
         noway_assert((!critSect) != (!pCrit));
 
-        tree = gtNewIconEmbHndNode(critSect, pCrit, GTF_ICON_METHOD_HDL, info.compMethodHnd);
+        tree = gtNewIconEmbHndNode(critSect, pCrit, GTF_ICON_GLOBAL_PTR, info.compMethodHnd);
     }
     else
     {
@@ -3421,6 +3421,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
     {
         firstColdBlock       = fgFirstBB->bbNext;
         prevToFirstColdBlock = fgFirstBB;
+        JITDUMP("JitStressProcedureSplitting is enabled: Splitting after the first basic block\n");
     }
     else
     {
@@ -4152,10 +4153,9 @@ void Compiler::fgSetBlockOrder(BasicBlock* block)
             }
             break;
 
-        case GT_INDEX:
         case GT_INDEX_ADDR:
-            // These two call CORINFO_HELP_RNGCHKFAIL for Debug code
-            if (tree->gtFlags & GTF_INX_RNGCHK)
+            // This calls CORINFO_HELP_RNGCHKFAIL for Debug code.
+            if (tree->AsIndexAddr()->IsBoundsChecked())
             {
                 return Compiler::WALK_ABORT;
             }

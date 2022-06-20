@@ -43,11 +43,13 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/assembly-internals.h>
+#include <mono/metadata/image-internals.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mempool-internals.h>
+#include <mono/metadata/mono-basic-block.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/custom-attrs-internals.h>
@@ -186,6 +188,7 @@ typedef struct MonoAotOptions {
 	char *llvm_outfile;
 	char *data_outfile;
 	GList *profile_files;
+	GList *mibc_profile_files;
 	gboolean save_temps;
 	gboolean write_symbols;
 	gboolean metadata_only;
@@ -3026,7 +3029,7 @@ encode_value (gint32 value, guint8 *buf, guint8 **endbuf)
 		p [1] = value & 0xff;
 		p += 2;
 	} else if ((value >= 0) && (value <= 0x1fffffff)) {
-		p [0] = (value >> 24) | 0xc0;
+		p [0] = GINT32_TO_UINT8 ((value >> 24) | 0xc0);
 		p [1] = (value >> 16) & 0xff;
 		p [2] = (value >> 8) & 0xff;
 		p [3] = value & 0xff;
@@ -5487,7 +5490,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 		if (acfg->aot_opts.log_generics)
 			aot_printf (acfg, "%*sAdding method %s.\n", depth, "", mono_method_get_full_name (method));
 
-		add_method (acfg, method);
+		add_extra_method_with_depth (acfg, method, 0);
 	}
 
 	/* Add superclasses */
@@ -8522,6 +8525,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->profile_files = g_list_append (opts->profile_files, g_strdup (arg + strlen ("profile=")));
 		} else if (!strcmp (arg, "profile-only")) {
 			opts->profile_only = TRUE;
+		} else if (str_begins_with (arg, "mibc-profile=")) {
+			opts->mibc_profile_files = g_list_append (opts->mibc_profile_files, g_strdup (arg + strlen ("mibc-profile=")));
 		} else if (!strcmp (arg, "verbose")) {
 			opts->verbose = TRUE;
 		} else if (!strcmp (arg, "allow-errors")) {
@@ -13132,6 +13137,70 @@ add_profile_method (MonoAotCompile *acfg, MonoMethod *m)
 	add_extra_method (acfg, m);
 }
 
+//---------------------------------------------------------------------------------------
+//
+// add_single_profile_method filters MonoMethods to be added for AOT compilation.
+// The filter logic is extracted from add_profile_instances and comments are retained
+// from there.
+//
+// Arguments:
+// 	* acfg - MonoAotCompiler instance
+//	* method - MonoMethod to attempt to add for AOT compilation
+//
+// Return Value:
+//	int pertaining whether or not the method was added to be AOT'd
+//
+
+static int
+add_single_profile_method (MonoAotCompile *acfg, MonoMethod *method)
+{
+	if (!method)
+		return 0;
+
+	/*
+	* Add methods referenced by the profile and
+	* Add fully shared version of method instances 'related' to this assembly to the AOT image.
+	*/
+	if (!method->is_inflated || mono_method_is_generic_sharable_full (method, FALSE, FALSE, FALSE)) {
+		if (!acfg->aot_opts.profile_only)
+			return 0;
+		if (m_class_get_image (method->klass) != acfg->image)
+			return 0;
+		add_profile_method (acfg, method);
+		return 1;
+	}
+
+	/* Add all instances from the profile */
+	if (acfg->aot_opts.dedup_include) {
+		add_profile_method (acfg, method);
+		return 1;
+	}
+
+	MonoGenericContext *ctx = mono_method_get_context (method);
+	/* For simplicity, add instances which reference the assembly we are compiling */
+	if ((ctx->class_inst && inst_references_image (ctx->class_inst, acfg->image)) ||
+		(ctx->method_inst && inst_references_image (ctx->method_inst, acfg->image))) {
+		add_profile_method (acfg, method);
+		return 1;
+	}
+
+	/* Add instances where the gtd is in the assembly and its inflated with types from this assembly or corlib */
+	if (m_class_get_image (method->klass) == acfg->image &&
+		((ctx->class_inst && is_local_inst (ctx->class_inst, acfg->image)) ||
+		(ctx->method_inst && is_local_inst (ctx->method_inst, acfg->image)))) {
+		add_profile_method (acfg, method);
+		return 1;
+	}
+
+	/*
+	* FIXME: We might skip some instances, for example:
+	* Foo<Bar> won't be compiled when compiling Foo's assembly since it doesn't match the first case,
+	* and it won't be compiled when compiling Bar's assembly if Foo's assembly is not loaded.
+	*/
+
+	return 0;
+}
+
 static void
 add_profile_instances (MonoAotCompile *acfg, ProfileData *data)
 {
@@ -13142,77 +13211,169 @@ add_profile_instances (MonoAotCompile *acfg, ProfileData *data)
 	if (!data)
 		return;
 
-	if (acfg->aot_opts.profile_only) {
-		/* Add methods referenced by the profile */
-		g_hash_table_iter_init (&iter, data->methods);
-		while (g_hash_table_iter_next (&iter, &key, &value)) {
-			MethodProfileData *mdata = (MethodProfileData*)value;
-			MonoMethod *m = mdata->method;
-
-			if (!m)
-				continue;
-			if (m->is_inflated)
-				continue;
-			if (m_class_get_image (m->klass) != acfg->image)
-				continue;
-			add_profile_method (acfg, m);
-			count ++;
-		}
-	}
-
-	/*
-	 * Add method instances 'related' to this assembly to the AOT image.
-	 */
 	g_hash_table_iter_init (&iter, data->methods);
 	while (g_hash_table_iter_next (&iter, &key, &value)) {
 		MethodProfileData *mdata = (MethodProfileData*)value;
 		MonoMethod *m = mdata->method;
-		MonoGenericContext *ctx;
-
-		if (!m)
-			continue;
-		if (!m->is_inflated)
-			continue;
-		if (mono_method_is_generic_sharable_full (m, FALSE, FALSE, FALSE)) {
-			if (acfg->aot_opts.profile_only && m_class_get_image (m->klass) == acfg->image) {
-				// Add the fully shared version to its home image
-				add_profile_method (acfg, m);
-				count ++;
-			}
-			continue;
-		}
-
-		if (acfg->aot_opts.dedup_include) {
-			/* Add all instances from the profile */
-			add_profile_method (acfg, m);
-			count ++;
-		} else {
-			ctx = mono_method_get_context (m);
-			/* For simplicity, add instances which reference the assembly we are compiling */
-			if (((ctx->class_inst && inst_references_image (ctx->class_inst, acfg->image)) ||
-				 (ctx->method_inst && inst_references_image (ctx->method_inst, acfg->image)))) {
-				//printf ("%s\n", mono_method_full_name (m, TRUE));
-				add_profile_method (acfg, m);
-				count ++;
-			} else if (m_class_get_image (m->klass) == acfg->image &&
-					   ((ctx->class_inst && is_local_inst (ctx->class_inst, acfg->image)) ||
-						(ctx->method_inst && is_local_inst (ctx->method_inst, acfg->image)))) {
-				/* Add instances where the gtd is in the assembly and its inflated with types from this assembly or corlib */
-				//printf ("%s\n", mono_method_full_name (m, TRUE));
-				add_profile_method (acfg, m);
-				count ++;
-			} else {
-				//printf ("SKIP: %s (%s)\n", mono_method_get_full_name (m), acfg->image->name);
-			}
-			/*
-			 * FIXME: We might skip some instances, for example:
-			 * Foo<Bar> won't be compiled when compiling Foo's assembly since it doesn't match the first case,
-			 * and it won't be compiled when compiling Bar's assembly if Foo's assembly is not loaded.
-			 */
-		}
+		count += add_single_profile_method (acfg, m);
 	}
 
 	printf ("Added %d methods from profile.\n", count);
+}
+
+typedef enum {
+	FIND_METHOD_TYPE_ENTRY_START,
+	FIND_METHOD_TYPE_ENTRY_END,
+} MibcGroupMethodEntryState;
+
+//---------------------------------------------------------------------------------------
+//
+// add_mibc_group_method_methods iterates over a mibcGroupMethod MonoMethod to obtain
+// each method/type entry in that group. Each entry begins with LDTOKEN opcode, followed
+// by a series of instructions including another LDTOKEN opcode but excluding a POP opcode
+// ending with a POP opcode to denote the end of the entry. To iterate over entries,
+// a MibcGroupMethodEntryState state is tracked, identifying whether we are looking for
+// an entry starting LDTOKEN opcode or entry ending POP opcode. Each LDTOKEN opcode's
+// argument denotes a methodref or methodspec. Before ultimately adding the entry's method
+// for AOT compilation, checks for the method's class and image are used to skip methods
+// whose class and images cannot be resolved.
+//
+// Sample mibcGroupMethod format
+//
+// Method 'Assemblies_HelloWorld;_1' (#11b) (0x06000001)
+// {
+//   IL_0000:  ldtoken    0x0A0002B5 // Method/Type Entry token
+//   IL_0005:  pop
+// }
+//
+// Arguments:
+// 	* acfg - MonoAotCompiler instance
+//	* mibcGroupMethod - MonoMethod representing the group of assemblies that
+//				describes each Method/Type entry with the .mibc file
+//	* image - MonoImage representing the .mibc file
+//	* mibcModuleClass - MonoClass containing the AssemblyDictionary
+//	* context - MonoGenericContext of the AssemblyDictionary MonoMethod
+//
+// Return Value:
+//	int pertaining to the number of methods added within the mibcGroupMethod
+//
+
+static int
+add_mibc_group_method_methods (MonoAotCompile *acfg, MonoMethod *mibcGroupMethod, MonoImage *image, MonoClass *mibcModuleClass, MonoGenericContext *context)
+{
+	ERROR_DECL (error);
+
+	MonoMethodHeader *mibcGroupMethodHeader = mono_method_get_header_internal (mibcGroupMethod, error);
+	mono_error_assert_ok (error);
+
+	int count = 0;
+	MibcGroupMethodEntryState state = FIND_METHOD_TYPE_ENTRY_START;
+	uint8_t *cur = (uint8_t*)mibcGroupMethodHeader->code;
+	uint8_t *end = (uint8_t*)mibcGroupMethodHeader->code + mibcGroupMethodHeader->code_size;
+	while (cur < end) {
+		MonoOpcodeEnum il_op;
+		const unsigned char *opcodeIp = (unsigned char*)cur;
+		const unsigned char *opcodeEnd = (unsigned char*)end;
+		cur += mono_opcode_value_and_size (&opcodeIp, opcodeEnd, &il_op);
+
+		if (state == FIND_METHOD_TYPE_ENTRY_END) {
+			if (il_op == MONO_CEE_POP)
+				state = FIND_METHOD_TYPE_ENTRY_START;
+			continue;
+		}
+		g_assert (il_op == MONO_CEE_LDTOKEN);
+		state = FIND_METHOD_TYPE_ENTRY_END;
+
+		g_assert (opcodeIp + 4 < opcodeEnd);
+		guint32 mibcGroupMethodEntryToken = read32 (opcodeIp + 1);
+		g_assertf ((mono_metadata_token_table (mibcGroupMethodEntryToken) == MONO_TABLE_MEMBERREF || mono_metadata_token_table (mibcGroupMethodEntryToken) == MONO_TABLE_METHODSPEC), "token %x is not MemberRef or MethodSpec.\n", mibcGroupMethodEntryToken);
+
+		MonoMethod *methodEntry = mono_get_method_checked (image, mibcGroupMethodEntryToken, mibcModuleClass, context, error);
+		mono_error_assert_ok (error);
+
+		MonoClass *method_class = mono_method_get_class (methodEntry);
+		if (!method_class)
+			continue;
+
+		MonoImage *method_image = mono_class_get_image (method_class);
+		if (!method_image)
+			continue;
+
+		count += add_single_profile_method (acfg, methodEntry);
+	}
+	return count;
+}
+
+//---------------------------------------------------------------------------------------
+//
+// add_mibc_profile_methods is the overarching method that adds methods within a .mibc
+// profile file to be compiled ahead of time. .mibc is a portable executable with
+// methods grouped under mibcGroupMethods, which are summarized within the global
+// function AssemblyDictionary. This method obtains the AssemblyDictionary and iterates
+// over il opcodes and arguments to retrieve mibcGroupMethods and thereafter calls
+// add_mibc_group_method_methods.
+//
+// Sample AssemblyDictionary format
+//
+// Method 'AssemblyDictionary' (#2f67) (0x06000006)
+// {
+//   IL_0000:  ldstr      0x70000001
+//   IL_0005:  ldtoken    0x06000001 // mibcGroupMethod
+//   IL_000a:  pop
+//   ...
+// }
+//
+// Arguments:
+// 	* acfg - MonoAotCompiler instance
+//	* filename - the .mibc profile file containing the methods to AOT compile
+//
+
+static void
+add_mibc_profile_methods (MonoAotCompile *acfg, char *filename)
+{
+	MonoImageOpenStatus status = MONO_IMAGE_OK;
+	MonoImageOpenOptions options = {0, };
+	options.not_executable = 1;
+	MonoImage *image = mono_image_open_a_lot (mono_alc_get_default (), filename, &status, &options);
+	g_assert (image != NULL);
+	g_assert (status == MONO_IMAGE_OK);
+
+	ERROR_DECL (error);
+
+	MonoClass *mibcModuleClass = mono_class_from_name_checked (image, "", "<Module>", error);
+	mono_error_assert_ok (error);
+
+	MonoMethod *assemblyDictionary = mono_class_get_method_from_name_checked (mibcModuleClass, "AssemblyDictionary", 0, 0, error);
+	MonoGenericContext *context = mono_method_get_context (assemblyDictionary);
+	mono_error_assert_ok (error);
+
+	MonoMethodHeader *header = mono_method_get_header_internal (assemblyDictionary, error);
+	mono_error_assert_ok (error);
+
+	int count = 0;
+	uint8_t *cur = (uint8_t*)header->code;
+	uint8_t *end = (uint8_t*)header->code + header->code_size;
+	while (cur < end) {
+		MonoOpcodeEnum il_op;
+		const unsigned char *opcodeIp = (unsigned char*)cur;
+		const unsigned char *opcodeEnd = (unsigned char*)end;
+		cur += mono_opcode_value_and_size (&opcodeIp, opcodeEnd, &il_op);
+		// opcodeIp gets moved to point at end of opcode
+		// il opcode arg is opcodeIp + 1
+		// we only care about args of ldtoken's, which are 32bits/4bytes
+		if (il_op != MONO_CEE_LDTOKEN)
+			continue;
+
+		g_assert (opcodeIp + 4 < opcodeEnd);
+		guint32 token = read32 (opcodeIp + 1);
+
+		MonoMethod *mibcGroupMethod = mono_get_method_checked (image, token, mibcModuleClass, context, error);
+		mono_error_assert_ok (error);
+
+		count += add_mibc_group_method_methods (acfg, mibcGroupMethod, image, mibcModuleClass, context);
+	}
+
+	printf ("Added %d methods from mibc profile.\n", count);
 }
 
 static void
@@ -14199,6 +14360,14 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 			resolve_profile_data (acfg, (ProfileData*)l->data, ass);
 		for (l = acfg->profile_data; l; l = l->next)
 			add_profile_instances (acfg, (ProfileData*)l->data);
+	}
+
+	if (acfg->aot_opts.mibc_profile_files) {
+		GList *l;
+
+		for (l = acfg->aot_opts.mibc_profile_files; l; l = l->next) {
+			add_mibc_profile_methods (acfg, (char*)l->data);
+		}
 	}
 
 	/* PLT offset 0 is reserved for the PLT trampoline */

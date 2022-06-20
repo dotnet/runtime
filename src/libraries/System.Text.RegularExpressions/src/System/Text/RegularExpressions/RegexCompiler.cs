@@ -3811,20 +3811,13 @@ namespace System.Text.RegularExpressions
                     Sub();
                     Stloc(iterationCount);
 
-                    if (expressionHasCaptures)
-                    {
-                        // capturepos = base.runstack[--stackpos];
-                        // while (base.Crawlpos() > capturepos) base.Uncapture();
-                        using RentedLocalBuilder poppedCrawlPos = RentInt32Local();
-                        EmitStackPop();
-                        Stloc(poppedCrawlPos);
-                        EmitUncaptureUntil(poppedCrawlPos);
-                    }
-
+                    // poppedCrawlPos = base.runstack[--stackpos];
+                    // while (base.Crawlpos() > poppedCrawlPos) base.Uncapture();
                     // sawEmpty = base.runstack[--stackpos];
                     // startingPos = base.runstack[--stackpos];
                     // pos = base.runstack[--stackpos];
                     // slice = inputSpan.Slice(pos);
+                    EmitUncaptureUntilPopped();
                     if (iterationMayBeEmpty)
                     {
                         EmitStackPop();
@@ -3889,7 +3882,7 @@ namespace System.Text.RegularExpressions
                     // base.runstack[stackpos++] = startingPos;
                     // base.runstack[stackpos++] = sawEmpty;
                     bool isInLoop = analysis.IsInLoop(node);
-                    EmitStackResizeIfNeeded(1 + (isInLoop ? 1 + (iterationMayBeEmpty ? 2 : 0) : 0));
+                    EmitStackResizeIfNeeded(1 + (isInLoop ? 1 + (iterationMayBeEmpty ? 2 : 0) : 0) + (expressionHasCaptures ? 1 : 0));
                     EmitStackPush(() => Ldloc(pos));
                     if (isInLoop)
                     {
@@ -3899,6 +3892,10 @@ namespace System.Text.RegularExpressions
                             EmitStackPush(() => Ldloc(startingPos!));
                             EmitStackPush(() => Ldloc(sawEmpty!));
                         }
+                    }
+                    if (expressionHasCaptures)
+                    {
+                        EmitStackPush(() => { Ldthis(); Call(s_crawlposMethod); });
                     }
 
                     Label skipBacktrack = DefineLabel();
@@ -3911,6 +3908,10 @@ namespace System.Text.RegularExpressions
 
                     // We're backtracking.  Check the timeout.
                     EmitTimeoutCheckIfNeeded();
+
+                    // int poppedCrawlPos = base.runstack[--stackpos];
+                    // while (base.Crawlpos() > poppedCrawlPos) base.Uncapture();
+                    EmitUncaptureUntilPopped();
 
                     if (isInLoop)
                     {
@@ -4749,24 +4750,20 @@ namespace System.Text.RegularExpressions
                 BltFar(originalDoneLabel);
 
                 // pos = base.runstack[--stackpos];
+                // slice = inputSpan.Slice(pos);
                 // startingPos = base.runstack[--stackpos];
+                // int poppedCrawlPos = base.runstack[--stackpos];
+                // while (base.Crawlpos() > poppedCrawlPos) base.Uncapture();
                 EmitStackPop();
                 Stloc(pos);
+                SliceInputSpan();
                 if (startingPos is not null)
                 {
                     EmitStackPop();
                     Stloc(startingPos);
                 }
-                if (expressionHasCaptures)
-                {
-                    // int poppedCrawlPos = base.runstack[--stackpos];
-                    // while (base.Crawlpos() > poppedCrawlPos) base.Uncapture();
-                    using RentedLocalBuilder poppedCrawlPos = RentInt32Local();
-                    EmitStackPop();
-                    Stloc(poppedCrawlPos);
-                    EmitUncaptureUntil(poppedCrawlPos);
-                }
-                SliceInputSpan();
+                EmitUncaptureUntilPopped();
+
 
                 // If there's a required minimum iteration count, validate now that we've processed enough iterations.
                 if (minIterations > 0)
@@ -4888,6 +4885,23 @@ namespace System.Text.RegularExpressions
                         doneLabel = backtrack;
                         MarkLabel(backtrackingEnd);
                     }
+                }
+            }
+
+            // <summary>
+            // If the expression contains captures, pops a crawl position from the stack and uncaptures
+            // until that position is reached.
+            // </summary>
+            void EmitUncaptureUntilPopped()
+            {
+                if (expressionHasCaptures)
+                {
+                    // poppedCrawlPos = base.runstack[--stackpos];
+                    // while (base.Crawlpos() > poppedCrawlPos) base.Uncapture();
+                    using RentedLocalBuilder poppedCrawlPos = RentInt32Local();
+                    EmitStackPop();
+                    Stloc(poppedCrawlPos);
+                    EmitUncaptureUntil(poppedCrawlPos);
                 }
             }
 

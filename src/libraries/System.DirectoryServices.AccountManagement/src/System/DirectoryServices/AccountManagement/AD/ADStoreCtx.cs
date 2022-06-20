@@ -364,8 +364,8 @@ namespace System.DirectoryServices.AccountManagement
         {
             try
             {
-                Debug.Assert(p.unpersisted == true);
-                Debug.Assert(p.fakePrincipal == false);
+                Debug.Assert(p.unpersisted);
+                Debug.Assert(!p.fakePrincipal);
 
                 // Insert the principal into the store
                 SDSUtils.InsertPrincipal(
@@ -795,8 +795,8 @@ namespace System.DirectoryServices.AccountManagement
         internal override void InitializeUserAccountControl(AuthenticablePrincipal p)
         {
             Debug.Assert(p != null);
-            Debug.Assert(p.fakePrincipal == false);
-            Debug.Assert(p.unpersisted == true); // should only ever be called for new principals
+            Debug.Assert(!p.fakePrincipal);
+            Debug.Assert(p.unpersisted); // should only ever be called for new principals
 
             // set the userAccountControl bits on the underlying directory entry
             DirectoryEntry de = (DirectoryEntry)p.UnderlyingObject;
@@ -1445,7 +1445,7 @@ namespace System.DirectoryServices.AccountManagement
                         }
                     }
 
-                    ds = new DirectorySearcher((fspContainer != null) ? fspContainer : ((dncContainer != null ? dncContainer : this.ctxBase)));
+                    ds = new DirectorySearcher(fspContainer ?? dncContainer ?? this.ctxBase);
 
                     // Pick some reasonable default values
                     ds.PageSize = 256;
@@ -1619,7 +1619,7 @@ namespace System.DirectoryServices.AccountManagement
 
             try
             {
-                if (true == ADUtils.VerifyOutboundTrust(this.DnsDomainName, (this.credentials == null ? null : this.credentials.UserName), (this.credentials == null ? null : this.credentials.Password)))
+                if (ADUtils.VerifyOutboundTrust(this.DnsDomainName, this.credentials?.UserName, this.credentials?.Password))
                 {
                     return new AuthZSet(sid, this.credentials, this.contextOptions, this.FlatDomainName, this, this.ctxBase);
                 }
