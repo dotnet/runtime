@@ -133,5 +133,11 @@ namespace System.Text.Json.Serialization
 
             throw new InvalidOperationException();
         }
+
+        internal sealed override JsonConverter<TTarget> CreateCastingConverter<TTarget>()
+        {
+            ThrowHelper.ThrowInvalidOperationException_ConverterCanConvertMultipleTypes(typeof(TTarget), this);
+            return null!;
+        }
     }
 }

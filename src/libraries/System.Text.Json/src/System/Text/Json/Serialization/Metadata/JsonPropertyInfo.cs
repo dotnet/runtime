@@ -27,7 +27,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// - for reflection we store the original value since we need it in order to construct typed JsonPropertyInfo
         /// - for source gen it remains null, we will initialize it only if someone used resolver to remove CustomConverter
         /// </summary>
-        internal JsonConverter? NonCustomConverter { get; set; }
+        internal JsonConverter? DefaultConverterForType { get; set; }
 
         /// <summary>
         /// Converter after applying CustomConverter (i.e. JsonConverterAttribute)
@@ -153,7 +153,7 @@ namespace System.Text.Json.Serialization.Metadata
                 return;
             }
 
-            SetEffectiveConverter();
+            DetermineEffectiveConverter();
             ConverterStrategy = EffectiveConverter.ConverterStrategy;
 
             if (IsForTypeInfo)
@@ -173,7 +173,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        internal abstract void SetEffectiveConverter();
+        internal abstract void DetermineEffectiveConverter();
 
         internal void GetPolicies()
         {
@@ -372,7 +372,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (numberHandlingIsApplicable)
             {
-                // Priority 1: Get handling from attribute on property/field, it's parent class type or property type.
+                // Priority 1: Get handling from attribute on property/field, its parent class type or property type.
                 JsonNumberHandling? handling = NumberHandling ?? DeclaringTypeNumberHandling ?? JsonTypeInfo.NumberHandling;
 
                 // Priority 2: Get handling from JsonSerializerOptions instance.
@@ -466,7 +466,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonIgnoreCondition? ignoreCondition,
             JsonSerializerOptions options,
             JsonTypeInfo? jsonTypeInfo = null,
-            bool isCustomProperty = false);
+            bool isUserDefinedProperty = false);
 
         internal bool IgnoreDefaultValuesOnRead { get; private set; }
         internal bool IgnoreDefaultValuesOnWrite { get; private set; }
@@ -483,7 +483,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         /// <summary>
         /// The name of the property.
-        /// It's either the actual CLR property name,
+        /// It is either the actual .NET property name,
         /// the value specified in JsonPropertyNameAttribute,
         /// or the value returned from PropertyNamingPolicy.
         /// </summary>

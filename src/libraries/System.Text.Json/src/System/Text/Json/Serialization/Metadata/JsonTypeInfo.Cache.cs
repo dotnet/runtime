@@ -61,7 +61,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonIgnoreCondition? ignoreCondition = null,
             JsonTypeInfo? jsonTypeInfo = null,
             JsonConverter? customConverter = null,
-            bool isCustomProperty = false)
+            bool isUserDefinedProperty = false)
         {
             // Create the JsonPropertyInfo instance.
             JsonPropertyInfo jsonPropertyInfo = converter.CreateJsonPropertyInfo();
@@ -76,7 +76,7 @@ namespace System.Text.Json.Serialization.Metadata
                 ignoreCondition,
                 options,
                 jsonTypeInfo,
-                isCustomProperty: isCustomProperty);
+                isUserDefinedProperty: isUserDefinedProperty);
 
             jsonPropertyInfo.CustomConverter = customConverter;
 

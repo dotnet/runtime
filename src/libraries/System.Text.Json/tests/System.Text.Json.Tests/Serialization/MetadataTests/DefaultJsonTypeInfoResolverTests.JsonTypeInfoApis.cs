@@ -14,8 +14,6 @@ namespace System.Text.Json.Serialization.Tests
     public static partial class DefaultJsonTypeInfoResolverTests
     {
         [Theory]
-        [InlineData("value", @"""value""")]
-        [InlineData(5, @"5")]
         [MemberData(nameof(JsonSerializerSerializeWithTypeInfoOfT_TestData))]
         public static void JsonSerializerSerializeWithTypeInfoOfT<T>(T testObj, string expectedJson)
         {
@@ -29,6 +27,8 @@ namespace System.Text.Json.Serialization.Tests
 
         public static IEnumerable<object[]> JsonSerializerSerializeWithTypeInfoOfT_TestData()
         {
+            yield return new object[] { "value", @"""value""" };
+            yield return new object[] { 5, @"5" };
             yield return new object[] { new SomeClass() { IntProp = 15, ObjProp = 17m }, @"{""ObjProp"":17,""IntProp"":15}" };
         }
     }

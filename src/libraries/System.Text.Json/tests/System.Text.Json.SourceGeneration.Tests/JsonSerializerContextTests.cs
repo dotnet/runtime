@@ -101,7 +101,6 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public static void CombiningContexts_ResolveJsonTypeInfo()
         {
-            // Basic smoke test establishing combination of JsonSerializerContext classes.
             IJsonTypeInfoResolver combined = JsonTypeInfoResolver.Combine(NestedContext.Default, PersonJsonContext.Default);
             var options = new JsonSerializerOptions { TypeInfoResolver = combined };
 
@@ -142,7 +141,6 @@ namespace System.Text.Json.SourceGeneration.Tests
         [MemberData(nameof(GetCombiningContextsData))]
         public static void CombiningContexts_Serialization<T>(T value, string expectedJson)
         {
-            // Basic smoke test establishing combination of JsonSerializerContext classes.
             IJsonTypeInfoResolver combined = JsonTypeInfoResolver.Combine(NestedContext.Default, PersonJsonContext.Default);
             var options = new JsonSerializerOptions { TypeInfoResolver = combined };
 

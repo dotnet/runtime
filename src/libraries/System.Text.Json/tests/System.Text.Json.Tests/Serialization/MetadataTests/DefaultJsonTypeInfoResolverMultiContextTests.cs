@@ -34,7 +34,10 @@ namespace System.Text.Json.Serialization.Tests
             o.TypeInfoResolver = resolver;
 
             string json = """{"StringProperty":"test"}""";
+            await TestMultiContextDeserialization<Poco>(json, new Poco() { StringProperty = "test" });
             await TestMultiContextDeserialization<Poco>(json, options: o, expectedExceptionType: typeof(NotSupportedException));
+
+            Assert.Throws<InvalidOperationException>(() => resolver.Modifiers.Add(ti => { }));
         }
 
         private class Poco

@@ -83,7 +83,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
             private protected set
             {
-                CheckMutable();
+                Debug.Assert(!_isConfigured, "We should not mutate configured JsonTypeInfo");
                 _serialize = value;
                 HasSerialize = value != null;
             }

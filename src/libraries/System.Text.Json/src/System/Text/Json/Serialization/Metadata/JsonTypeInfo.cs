@@ -199,7 +199,7 @@ namespace System.Text.Json.Serialization.Metadata
             // while NonCustomConverter always contains final converter.
             // This property can be used before JsonTypeInfo is configured (especially in SourceGen case)
             // therefore it's safer to return NonCustomConverter rather than EffectiveConverter.
-            => PropertyInfoForTypeInfo.NonCustomConverter!;
+            => PropertyInfoForTypeInfo.DefaultConverterForType!;
 
         /// <summary>
         /// Determines the kind of contract metadata current JsonTypeInfo instance is customizing
@@ -285,7 +285,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        private volatile bool _isConfigured;
+        private protected volatile bool _isConfigured;
         private readonly object _configureLock = new object();
 
         internal void EnsureConfigured()
@@ -450,7 +450,7 @@ namespace System.Text.Json.Serialization.Metadata
                 isVirtual: false,
                 converter: converter,
                 options: Options,
-                isCustomProperty: true);
+                isUserDefinedProperty: true);
 
             propertyInfo.Name = name;
 

@@ -71,12 +71,7 @@ namespace System.Text.Json.Serialization
 
         internal abstract JsonParameterInfo CreateJsonParameterInfo();
 
-        internal virtual JsonConverter<TargetType> CreateCastingConverter<TargetType>()
-        {
-            // This can only happen for factory converters and we should always expand factory here.
-            ThrowHelper.ThrowInvalidOperationException_ConverterCanConvertMultipleTypes(typeof(TargetType), this);
-            return null!;
-        }
+        internal abstract JsonConverter<TTarget> CreateCastingConverter<TTarget>();
 
         internal abstract Type? ElementType { get; }
 

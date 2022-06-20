@@ -92,7 +92,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal override object? DefaultValue => default(T);
 
-        internal JsonConverter<T> TypedEffectiveConverter { get; set; } = null!;
+        internal JsonConverter<T> TypedEffectiveConverter { get; private set; } = null!;
 
         internal override void Initialize(
             Type declaringType,
@@ -104,7 +104,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonIgnoreCondition? ignoreCondition,
             JsonSerializerOptions options,
             JsonTypeInfo? jsonTypeInfo = null,
-            bool isCustomProperty = false)
+            bool isUserDefinedProperty = false)
         {
             Debug.Assert(converter != null);
 
@@ -117,7 +117,7 @@ namespace System.Text.Json.Serialization.Metadata
                 JsonTypeInfo = jsonTypeInfo;
             }
 
-            NonCustomConverter = converter;
+            DefaultConverterForType = converter;
             Options = options;
             DeclaringType = declaringType;
             MemberInfo = memberInfo;
@@ -178,7 +178,7 @@ namespace System.Text.Json.Serialization.Metadata
 
                 GetPolicies();
             }
-            else if (!isCustomProperty)
+            else if (!isUserDefinedProperty)
             {
                 IsForTypeInfo = true;
             }
@@ -210,12 +210,12 @@ namespace System.Text.Json.Serialization.Metadata
                 name = options.PropertyNamingPolicy.ConvertName(ClrName);
             }
 
+            // Compat: We need to do validation before we assign Name so that we get InvalidOperationException rather than ArgumentNullException
             if (name == null)
             {
                 ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameNull(DeclaringType, this);
             }
 
-            // Compat: We need to do validation before we assign this so that we get InvalidOperationException rather than ArgumentNullException
             Name = name;
 
             SrcGen_IsPublic = propertyInfo.IsPublic;
@@ -232,7 +232,7 @@ namespace System.Text.Json.Serialization.Metadata
             CustomConverter = typedCustomConverter;
 
             JsonConverter<T>? typedNonCustomConverter = propertyTypeInfo?.Converter as JsonConverter<T>;
-            NonCustomConverter = typedNonCustomConverter;
+            DefaultConverterForType = typedNonCustomConverter;
 
             IsIgnored = propertyInfo.IgnoreCondition == JsonIgnoreCondition.Always;
             if (!IsIgnored)
@@ -263,7 +263,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        internal override void SetEffectiveConverter()
+        internal override void DetermineEffectiveConverter()
         {
             JsonConverter? customConverter = CustomConverter;
             if (customConverter != null)
@@ -272,7 +272,7 @@ namespace System.Text.Json.Serialization.Metadata
                 JsonSerializerOptions.CheckConverterNullabilityIsSameAsPropertyType(customConverter, PropertyType);
             }
 
-            JsonConverter effectiveConverter = customConverter ?? NonCustomConverter ?? Options.GetConverterFromTypeInfo(PropertyType);
+            JsonConverter effectiveConverter = customConverter ?? DefaultConverterForType ?? Options.GetConverterFromTypeInfo(PropertyType);
             if (effectiveConverter.TypeToConvert == PropertyType)
             {
                 EffectiveConverter = effectiveConverter;
@@ -359,14 +359,11 @@ namespace System.Text.Json.Serialization.Metadata
                 }
             }
 
-            if (ShouldSerialize != null)
+            if (ShouldSerialize?.Invoke(obj, value) == false)
             {
-                if (!ShouldSerialize(obj, value))
-                {
-                    // We return true here.
-                    // False means that there is not enough data.
-                    return true;
-                }
+                // We return true here.
+                // False means that there is not enough data.
+                return true;
             }
 
             if (value == null)
@@ -412,14 +409,11 @@ namespace System.Text.Json.Serialization.Metadata
             bool success;
             T value = Get!(obj);
 
-            if (ShouldSerialize != null)
+            if (ShouldSerialize?.Invoke(obj, value) == false)
             {
-                if (!ShouldSerialize(obj, value))
-                {
-                    // We return true here.
-                    // False means that there is not enough data.
-                    return true;
-                }
+                // We return true here.
+                // False means that there is not enough data.
+                return true;
             }
 
             if (value == null)

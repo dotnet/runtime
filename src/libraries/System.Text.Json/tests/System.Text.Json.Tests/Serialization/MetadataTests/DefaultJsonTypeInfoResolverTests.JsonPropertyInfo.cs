@@ -52,6 +52,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             JsonSerializerOptions options = new();
             JsonTypeInfo typeInfo = options.TypeInfoResolver.GetTypeInfo(typeof(MyClass), options);
+            Assert.Equal(2, typeInfo.Properties.Count);
             JsonPropertyInfo propertyInfo = typeInfo.Properties[0];
             Assert.Equal(typeof(string), propertyInfo.PropertyType);
         }
@@ -79,6 +80,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             JsonSerializerOptions options = new();
             JsonTypeInfo typeInfo = options.TypeInfoResolver.GetTypeInfo(typeof(MyClass), options);
+            Assert.Equal(2, typeInfo.Properties.Count);
             JsonPropertyInfo propertyInfo = typeInfo.Properties[0];
 
             Assert.Equal(nameof(MyClass.Value), propertyInfo.Name);
@@ -95,6 +97,7 @@ namespace System.Text.Json.Serialization.Tests
             JsonSerializerOptions options = new();
             options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
             JsonTypeInfo typeInfo = options.TypeInfoResolver.GetTypeInfo(typeof(MyClass), options);
+            Assert.Equal(2, typeInfo.Properties.Count);
             JsonPropertyInfo propertyInfo = typeInfo.Properties[0];
 
             Assert.Equal(nameof(MyClass.Value).ToLowerInvariant(), propertyInfo.Name);
@@ -119,6 +122,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             JsonSerializerOptions options = new();
             JsonTypeInfo typeInfo = options.TypeInfoResolver.GetTypeInfo(typeof(TestClassWithCustomConverterOnProperty), options);
+            Assert.Equal(1, typeInfo.Properties.Count);
             JsonPropertyInfo propertyInfo = typeInfo.Properties[0];
 
             Assert.NotNull(propertyInfo.CustomConverter);
@@ -134,6 +138,7 @@ namespace System.Text.Json.Serialization.Tests
             {
                 if (ti.Type == typeof(TestClassWithCustomConverterOnProperty))
                 {
+                    Assert.Equal(1, ti.Properties.Count);
                     JsonPropertyInfo propertyInfo = ti.Properties[0];
                     Assert.NotNull(propertyInfo.CustomConverter);
                     Assert.IsType<MyClassConverterOriginal>(propertyInfo.CustomConverter);
@@ -233,6 +238,7 @@ namespace System.Text.Json.Serialization.Tests
             {
                 if (ti.Type == typeof(TestClassWithCustomConverterOnProperty))
                 {
+                    Assert.Equal(1, ti.Properties.Count);
                     JsonPropertyInfo propertyInfo = ti.Properties[0];
                     propertyInfo.Get = null;
                 }
@@ -273,6 +279,7 @@ namespace System.Text.Json.Serialization.Tests
             {
                 if (ti.Type == typeof(TestClassWithCustomConverterOnProperty))
                 {
+                    Assert.Equal(1, ti.Properties.Count);
                     JsonPropertyInfo propertyInfo = ti.Properties[0];
                     if (!useCustomConverter)
                     {
@@ -328,6 +335,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             JsonSerializerOptions options = new();
             JsonTypeInfo typeInfo = options.TypeInfoResolver.GetTypeInfo(typeof(TestClassWithCustomConverterOnProperty), options);
+            Assert.Equal(1, typeInfo.Properties.Count);
             JsonPropertyInfo propertyInfo = typeInfo.Properties[0];
 
             Assert.NotNull(propertyInfo.Set);
@@ -362,6 +370,7 @@ namespace System.Text.Json.Serialization.Tests
             {
                 if (ti.Type == typeof(TestClassWithCustomConverterOnProperty))
                 {
+                    Assert.Equal(1, ti.Properties.Count);
                     JsonPropertyInfo propertyInfo = ti.Properties[0];
                     Assert.NotNull(propertyInfo.Set);
                     propertyInfo.Set = null;
@@ -402,6 +411,7 @@ namespace System.Text.Json.Serialization.Tests
             {
                 if (ti.Type == typeof(TestClassWithCustomConverterOnProperty))
                 {
+                    Assert.Equal(1, ti.Properties.Count);
                     JsonPropertyInfo propertyInfo = ti.Properties[0];
                     if (!useCustomConverter)
                     {
@@ -452,6 +462,7 @@ namespace System.Text.Json.Serialization.Tests
             {
                 if (ti.Type == typeof(TestClassWithNumber))
                 {
+                    Assert.Equal(1, ti.Properties.Count);
                     Assert.Null(ti.Properties[0].NumberHandling);
                     ti.Properties[0].NumberHandling = JsonNumberHandling.WriteAsString | JsonNumberHandling.AllowReadingFromString;
                     Assert.Equal(JsonNumberHandling.WriteAsString | JsonNumberHandling.AllowReadingFromString, ti.Properties[0].NumberHandling);
@@ -488,6 +499,7 @@ namespace System.Text.Json.Serialization.Tests
             {
                 if (ti.Type == typeof(TestClassWithNumberHandlingOnProperty))
                 {
+                    Assert.Equal(1, ti.Properties.Count);
                     Assert.Equal(JsonNumberHandling.WriteAsString | JsonNumberHandling.AllowReadingFromString, ti.Properties[0].NumberHandling);
                     ti.Properties[0].NumberHandling = numberHandling;
                     Assert.Equal(numberHandling, ti.Properties[0].NumberHandling);
@@ -523,6 +535,7 @@ namespace System.Text.Json.Serialization.Tests
             {
                 if (ti.Type == typeof(TestClassWithNumberHandling))
                 {
+                    Assert.Equal(1, ti.Properties.Count);
                     Assert.Null(ti.Properties[0].NumberHandling);
                     ti.Properties[0].NumberHandling = JsonNumberHandling.Strict;
                     Assert.Equal(JsonNumberHandling.Strict, ti.Properties[0].NumberHandling);
@@ -611,6 +624,7 @@ namespace System.Text.Json.Serialization.Tests
             {
                 if (ti.Type == typeof(TestClassWithNumber))
                 {
+                    Assert.Equal(1, ti.Properties.Count);
                     Assert.Null(ti.Properties[0].ShouldSerialize);
                     ti.Properties[0].ShouldSerialize = (o, val) =>
                     {
@@ -648,6 +662,7 @@ namespace System.Text.Json.Serialization.Tests
             {
                 if (ti.Type == typeof(TestClassWithNumberAndIgnoreConditionOnProperty))
                 {
+                    Assert.Equal(1, ti.Properties.Count);
                     Assert.NotNull(ti.Properties[0].ShouldSerialize);
                     Assert.False(ti.Properties[0].ShouldSerialize(null, 0));
                     Assert.True(ti.Properties[0].ShouldSerialize(null, 1));
@@ -712,6 +727,7 @@ namespace System.Text.Json.Serialization.Tests
             {
                 if (ti.Type == typeof(TestClassWithNumber))
                 {
+                    Assert.Equal(1, ti.Properties.Count);
                     Assert.Null(ti.Properties[0].ShouldSerialize);
                     ti.Properties[0].ShouldSerialize = (o, val) =>
                     {
@@ -740,7 +756,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void DefaultIgnoreConditionFromOptionsIsRespectedWhenShouldSerializePropertIsAssignedAndCleared()
+        public static void DefaultIgnoreConditionFromOptionsIsRespectedWhenShouldSerializePropertyIsAssignedAndCleared()
         {
             TestClassWithNumberAndIgnoreConditionOnProperty obj = new()
             {
@@ -752,6 +768,7 @@ namespace System.Text.Json.Serialization.Tests
             {
                 if (ti.Type == typeof(TestClassWithNumber))
                 {
+                    Assert.Equal(1, ti.Properties.Count);
                     Assert.Null(ti.Properties[0].ShouldSerialize);
                     ti.Properties[0].ShouldSerialize = (o, val) =>
                     {

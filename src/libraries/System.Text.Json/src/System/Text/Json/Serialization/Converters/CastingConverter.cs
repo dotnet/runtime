@@ -32,43 +32,39 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         public override TargetType? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-            => ConvertToTarget(_sourceConverter.Read(ref reader, typeToConvert, options));
+            => Cast<SourceType, TargetType>(_sourceConverter.Read(ref reader, typeToConvert, options));
 
         public override void Write(Utf8JsonWriter writer, TargetType value, JsonSerializerOptions options)
-            => _sourceConverter.Write(writer, ConvertToSource(value), options);
+            => _sourceConverter.Write(writer, Cast<TargetType, SourceType>(value), options);
 
         internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out TargetType? value)
         {
             bool ret = _sourceConverter.OnTryRead(ref reader, typeToConvert, options, ref state, out SourceType? sourceValue);
-            value = ConvertToTarget(sourceValue);
+            value = Cast<SourceType, TargetType>(sourceValue);
             return ret;
         }
 
         internal override bool OnTryWrite(Utf8JsonWriter writer, TargetType value, JsonSerializerOptions options, ref WriteStack state)
-            => _sourceConverter.OnTryWrite(writer, ConvertToSource(value), options, ref state);
+            => _sourceConverter.OnTryWrite(writer, Cast<TargetType, SourceType>(value), options, ref state);
 
         public override TargetType ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-            => ConvertToTarget(_sourceConverter.ReadAsPropertyName(ref reader, typeToConvert, options));
+            => Cast<SourceType, TargetType>(_sourceConverter.ReadAsPropertyName(ref reader, typeToConvert, options));
 
         internal override TargetType ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-            => ConvertToTarget(_sourceConverter.ReadAsPropertyNameCore(ref reader, typeToConvert, options));
+            => Cast<SourceType, TargetType>(_sourceConverter.ReadAsPropertyNameCore(ref reader, typeToConvert, options));
 
         public override void WriteAsPropertyName(Utf8JsonWriter writer, TargetType value, JsonSerializerOptions options)
-            => _sourceConverter.WriteAsPropertyName(writer, ConvertToSource(value), options);
+            => _sourceConverter.WriteAsPropertyName(writer, Cast<TargetType, SourceType>(value), options);
 
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, TargetType value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
-            => _sourceConverter.WriteAsPropertyNameCore(writer, ConvertToSource(value), options, isWritingExtensionDataProperty);
+            => _sourceConverter.WriteAsPropertyNameCore(writer, Cast<TargetType, SourceType>(value), options, isWritingExtensionDataProperty);
 
         internal override TargetType ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling, JsonSerializerOptions options)
-            => ConvertToTarget(_sourceConverter.ReadNumberWithCustomHandling(ref reader, handling, options));
+            => Cast<SourceType, TargetType>(_sourceConverter.ReadNumberWithCustomHandling(ref reader, handling, options));
 
         internal override void WriteNumberWithCustomHandling(Utf8JsonWriter writer, TargetType value, JsonNumberHandling handling)
-            => _sourceConverter.WriteNumberWithCustomHandling(writer, ConvertToSource(value), handling);
+            => _sourceConverter.WriteNumberWithCustomHandling(writer, Cast<TargetType, SourceType>(value), handling);
 
-        private static SourceType ConvertToSource(TargetType? targetValue)
-            => (SourceType)(object?)targetValue!;
-
-        private static TargetType ConvertToTarget(SourceType? sourceValue)
-            => (TargetType)(object?)sourceValue!;
+        private static TTarget Cast<TSource, TTarget>(TSource? source) => (TTarget)(object?)source!;
     }
 }

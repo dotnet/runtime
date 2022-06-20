@@ -23,6 +23,8 @@ namespace System.Text.Json.Serialization
 
         internal JsonConverter(bool initialize)
         {
+            // Initialize uses abstract members, in order for them to be initialized correctly
+            // without throwing we need to delay call to Initialize
             if (initialize)
             {
                 Initialize();
@@ -77,9 +79,9 @@ namespace System.Text.Json.Serialization
             return new JsonParameterInfo<T>();
         }
 
-        internal sealed override JsonConverter<TargetType> CreateCastingConverter<TargetType>()
+        internal sealed override JsonConverter<TTarget> CreateCastingConverter<TTarget>()
         {
-            return new CastingConverter<TargetType, T>(this);
+            return new CastingConverter<TTarget, T>(this);
         }
 
         internal override Type? KeyType => null;
