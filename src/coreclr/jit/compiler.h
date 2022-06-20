@@ -7646,7 +7646,7 @@ public:
 
     // ICorJitInfo wrappers
 
-    void eeAllocMem(AllocMemArgs* args);
+    void eeAllocMem(AllocMemArgs* args, const UNATIVE_OFFSET roDataSectionAlignment);
 
     void eeReserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSize);
 

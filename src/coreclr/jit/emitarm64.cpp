@@ -8437,8 +8437,7 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
     {
         case INS_bl_local:
             idjShort = true;
-            fmt = IF_BI_0A;
-            break;
+            FALLTHROUGH;
         case INS_b:
             // Unconditional jump is a single form.
             // Assume is long in case we cross hot/cold sections.
@@ -9841,9 +9840,6 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
                 // Special case: emit add + ld1 instructions for loading 16-byte data into vector register.
                 if (isVectorRegister(dstReg) && (opSize == EA_16BYTE))
                 {
-                    // Low 4 bits should be 0 -- 16-byte JIT data should be aligned on 16 bytes.
-                    assert((imm12 & 15) == 0);
-
                     const emitAttr elemSize = EA_1BYTE;
                     const insOpts  opt      = optMakeArrangement(opSize, elemSize);
 

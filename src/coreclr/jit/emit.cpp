@@ -6304,38 +6304,13 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     AllocMemArgs args;
     memset(&args, 0, sizeof(args));
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
-    // For arm64/LoongArch64, we want to allocate JIT data always adjacent to code similar to what native compiler does.
-    // This way allows us to use a single `ldr` to access such data like float constant/jmp table.
-
-    const UNATIVE_OFFSET roDataAlignmentDelta =
-        (UNATIVE_OFFSET)ALIGN_UP(emitTotalHotCodeSize, emitConsDsc.alignment) - emitTotalHotCodeSize;
-
-    args.hotCodeSize  = emitTotalHotCodeSize + roDataAlignmentDelta + emitConsDsc.dsdOffs;
-    args.coldCodeSize = emitTotalColdCodeSize;
-    args.roDataSize   = 0;
-    args.xcptnsCount  = xcptnsCount;
-    args.flag         = allocMemFlag;
-
-    emitComp->eeAllocMem(&args);
-
-    codeBlock       = (BYTE*)args.hotCodeBlock;
-    codeBlockRW     = (BYTE*)args.hotCodeBlockRW;
-    coldCodeBlock   = (BYTE*)args.coldCodeBlock;
-    coldCodeBlockRW = (BYTE*)args.coldCodeBlockRW;
-
-    consBlock   = codeBlock + emitTotalHotCodeSize + roDataAlignmentDelta;
-    consBlockRW = codeBlockRW + emitTotalHotCodeSize + roDataAlignmentDelta;
-
-#else
-
     args.hotCodeSize  = emitTotalHotCodeSize;
     args.coldCodeSize = emitTotalColdCodeSize;
     args.roDataSize   = emitConsDsc.dsdOffs;
     args.xcptnsCount  = xcptnsCount;
     args.flag         = allocMemFlag;
 
-    emitComp->eeAllocMem(&args);
+    emitComp->eeAllocMem(&args, emitConsDsc.alignment);
 
     codeBlock       = (BYTE*)args.hotCodeBlock;
     codeBlockRW     = (BYTE*)args.hotCodeBlockRW;
@@ -6343,8 +6318,6 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     coldCodeBlockRW = (BYTE*)args.coldCodeBlockRW;
     consBlock       = (BYTE*)args.roDataBlock;
     consBlockRW     = (BYTE*)args.roDataBlockRW;
-
-#endif
 
 #ifdef DEBUG
     if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
