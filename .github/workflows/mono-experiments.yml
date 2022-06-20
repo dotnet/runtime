@@ -5,7 +5,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-11
+    runs-on: macos-10
 
     steps:
 
