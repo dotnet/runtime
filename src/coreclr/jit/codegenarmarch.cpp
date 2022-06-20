@@ -4657,7 +4657,7 @@ void CodeGen::genPushCalleeSavedRegisters()
     //      |-----------------------|
     //      |Callee saved registers | // not including FP/LR; multiple of 8 bytes
     //      |-----------------------|
-    //      |    MonitorAcquired    |
+    //      |    MonitorAcquired    | // 8 bytes; for synchronized methods
     //      |-----------------------|
     //      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
     //      |-----------------------|
@@ -4690,7 +4690,7 @@ void CodeGen::genPushCalleeSavedRegisters()
     //      |-----------------------|
     //      |Callee saved registers | // not including FP/LR; multiple of 8 bytes
     //      |-----------------------|
-    //      |    MonitorAcquired    |
+    //      |    MonitorAcquired    | // 8 bytes; for synchronized methods
     //      |-----------------------|
     //      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
     //      |-----------------------|
