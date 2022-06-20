@@ -53,9 +53,7 @@ namespace
             LIMITED_METHOD_CONTRACT;
             m_hr = E_FAIL;
             m_priorityOfLastError = 0;
-#ifdef TARGET_UNIX
-            m_messageWritten = false;
-#endif
+            m_message = SString(SString::Utf8, "");
         }
 
         VOID TrackErrorCode()
@@ -141,14 +139,14 @@ namespace
         void SetMessage(LPCSTR message)
         {
 #ifdef TARGET_UNIX
-            if (m_messageWritten)
+            //Append dlerror() messages of all attempts
+            SString new_message = SString(SString::Utf8, message);
+            SString::Iterator i = m_message.Begin();
+
+            if (!m_message.Find(i, new_message))
             {
-                m_message = SString(SString::Utf8, (LPCSTR)"");
-            }
-            else
-            {
-                m_message = SString(SString::Utf8, message);
-                m_messageWritten = true;
+                m_message += new_message;
+                m_message += SString(SString::Utf8, " ");
             }
 #else
             m_message = SString(SString::Utf8, message);
@@ -158,9 +156,6 @@ namespace
         HRESULT m_hr;
         DWORD   m_priorityOfLastError;
         SString  m_message;
-#ifdef TARGET_UNIX
-        bool m_messageWritten;
-#endif
     };  // class LoadLibErrorTracker
 
     // Load the library directly and return the raw system handle
