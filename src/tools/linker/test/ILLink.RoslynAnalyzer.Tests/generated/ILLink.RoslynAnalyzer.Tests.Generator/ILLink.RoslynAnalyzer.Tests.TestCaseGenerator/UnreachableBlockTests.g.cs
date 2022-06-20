@@ -20,6 +20,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task DataFlowRelated ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task DeadVariables ()
 		{
 			return RunTest (allowMissingWarnings: true);
