@@ -345,7 +345,7 @@ namespace System.Runtime.Serialization
 
         internal class DataContractCriticalHelper
         {
-            private static readonly ConcurrentDictionary<TypeHandleRef, Lazy<int>> s_typeToIDCache = new(new TypeHandleRefEqualityComparer());
+            private static readonly ConcurrentDictionary<RuntimeTypeHandle, Lazy<int>> s_typeToIDCache = new();
             private static DataContract[] s_dataContractCache = new DataContract[32];
             private static int s_dataContractID;
             private static ConcurrentDictionary<Type, DataContract?> s_typeToBuiltInContract = new();
@@ -353,8 +353,6 @@ namespace System.Runtime.Serialization
             private static Dictionary<string, string>? s_namespaces;
             private static Dictionary<string, XmlDictionaryString>? s_clrTypeStrings;
             private static XmlDictionary? s_clrTypeStringsDictionary;
-            [ThreadStatic]
-            private static TypeHandleRef? s_typeHandleRef;
 
             private static readonly object s_cacheLock = new object();
             private static readonly object s_createDataContractLock = new object();
@@ -378,13 +376,6 @@ namespace System.Runtime.Serialization
             /// Critical - in deserialization, we initialize an object instance passing this Type to GetUninitializedObject method
             /// </SecurityNote>
             private Type _typeForInitialization;
-
-            private static TypeHandleRef GetThreadLocalTypeHandleRef(RuntimeTypeHandle runtimeTypeHandle)
-            {
-                var typeHandleRef = (s_typeHandleRef ??= new TypeHandleRef());
-                typeHandleRef.Value = GetDataContractAdapterTypeHandle(runtimeTypeHandle);
-                return typeHandleRef;
-            }
 
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             internal static DataContract GetDataContractSkipValidation(int id, RuntimeTypeHandle typeHandle, Type? type)
@@ -449,11 +440,11 @@ namespace System.Runtime.Serialization
 
             internal static int GetId(RuntimeTypeHandle typeHandle)
             {
-                TypeHandleRef typeHandleRef = GetThreadLocalTypeHandleRef(typeHandle);
+                typeHandle = GetDataContractAdapterTypeHandle(typeHandle);
 
                 try
                 {
-                    Lazy<int> lazy = s_typeToIDCache.GetOrAdd(typeHandleRef, static (key) =>
+                    Lazy<int> lazy = s_typeToIDCache.GetOrAdd(typeHandle, static (key) =>
                     {
                         // Lazy is used to ensure we only ever allocate a single slot from s_dataContractCache per handle
                         return new Lazy<int>(() =>
@@ -1017,10 +1008,10 @@ namespace System.Runtime.Serialization
             {
                 if (type != null)
                 {
-                    TypeHandleRef typeHandleRef = GetThreadLocalTypeHandleRef(type.TypeHandle);
+                    var typeHandle = GetDataContractAdapterTypeHandle(type.TypeHandle);
                     try
                     {
-                        s_typeToIDCache.TryRemove(typeHandleRef, out var _);
+                        s_typeToIDCache.TryRemove(typeHandle, out var _);
                     }
                     catch (Exception ex)
                     {
