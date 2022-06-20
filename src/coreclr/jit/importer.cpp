@@ -4503,6 +4503,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Math_Log:
             case NI_System_Math_Log2:
             case NI_System_Math_Log10:
+            {
+                retNode = impMathIntrinsic(method, sig, callType, ni, tailCall);
+                break;
+            }
 #if defined(TARGET_ARM64)
             // ARM64 has fmax/fmin which are IEEE754:2019 minimum/maximum compatible
             // TODO-XARCH-CQ: Enable this for XARCH when one of the arguments is a constant
@@ -4516,9 +4520,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Math_Min:
             {
                 assert(varTypeIsFloating(callType));
-
-                if (sig->numArgs != 2)
-                    break;
+                assert(sig->numArgs == 2);
 
                 GenTreeDblCon* cnsNode   = nullptr;
                 GenTree*       otherNode = nullptr;
@@ -4547,8 +4549,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 {
                     // both are constant, we can fold this operation completely. Pop both peeked values
 
-                    impPopStack().val;
-                    impPopStack().val;
+                    DEBUG_DESTROY_NODE(impPopStack().val);
+                    DEBUG_DESTROY_NODE(impPopStack().val);
 
                     if (ni == NI_System_Math_Max)
                     {

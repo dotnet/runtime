@@ -8319,7 +8319,7 @@ inline bool GenTree::IsFloatNaN() const
 }
 
 //-------------------------------------------------------------------
-// IsFloatPositiveZero: returns true if this is exactly a const float value of negative zero (-0.0)
+// IsFloatNegativeZero: returns true if this is exactly a const float value of negative zero (-0.0)
 //
 // Returns:
 //     True if this represents a const floating-point value of exactly negative zero (-0.0).
