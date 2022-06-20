@@ -416,7 +416,7 @@ extern void
 mono_wasm_pthread_on_pthread_created_main_thread (gpointer pthread_id, gpointer notify_ptr);
 
 extern void
-mono_wasm_on_pthread_created (gpointer notify_ptr);
+mono_wasm_pthread_on_pthread_created (gpointer pthread_id, gpointer notify_ptr);
 
 static void
 call_pthread_created (gpointer pthread_id, gpointer notify_ptr)
@@ -428,41 +428,22 @@ call_pthread_created (gpointer pthread_id, gpointer notify_ptr)
 void
 mono_threads_wasm_on_thread_attached (void)
 {
-	EM_ASM({
-			console.log ('In mono_threads_wasm_on_thread_attached');
-		});
 #ifdef DISABLE_THREADS
-	EM_ASM({
-			console.log ('In mono_threads_wasm_on_thread_attached: no threads, returning');
-		});
-
 	return;
 #else
-	EM_ASM({
-			console.log ('In mono_threads_wasm_on_thread_attached: yes threads');
-		});
-	
 	if (mono_threads_wasm_is_browser_thread ()) {
-		EM_ASM({
-				console.log ('In mono_threads_wasm_on_thread_attached: main thread, returning');
-		});
-
 		return;
 	}
-	EM_ASM({
-			console.log ('In mono_threads_wasm_on_thread_attached: other pthread, setting up channel');
-		});
-
-
 	// Set up a MessageChannel between the new thread (which might be on a pooled reused WebWorker) and the main thread.
 	
 	/* A pointer to this address is passed to both the new worker (this thread) and the main
 	 * browser thread, and is used to make the worker wait until the runtime sets up the
 	 * communication channel */
 	int32_t notify_word;
+	pthread_t id = pthread_self ();
 
-	mono_threads_wasm_async_run_in_main_thread_vii (call_pthread_created, pthread_self(), &notify_word);
-	mono_wasm_on_pthread_created (&notify_word);
+	mono_threads_wasm_async_run_in_main_thread_vii (call_pthread_created, id, &notify_word);
+	mono_wasm_pthread_on_pthread_created (id, &notify_word);
 #endif
 }
 

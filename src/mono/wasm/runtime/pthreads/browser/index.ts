@@ -12,8 +12,10 @@ export interface Thread {
     readonly port: MessagePort;
 }
 
-function addThread(pthread_ptr: pthread_ptr, worker: Worker, port: MessagePort): void {
-    threads.set(pthread_ptr, { pthread_ptr, worker, port });
+function addThread(pthread_ptr: pthread_ptr, worker: Worker, port: MessagePort): Thread {
+    const thread = { pthread_ptr, worker, port };
+    threads.set(pthread_ptr, thread);
+    return thread;
 }
 
 function removeThread(pthread_ptr: pthread_ptr): void {
@@ -39,13 +41,20 @@ export function getThread(pthread_ptr: pthread_ptr): Thread | undefined {
 /// Returns all the threads we know about
 export const getThreadIds = (): IterableIterator<pthread_ptr> => threads.keys();
 
-// handler that runs in the main thread when a message is received from a pthread
+function monoDedicatedChannelMessageFromWorkerToMain(event: MessageEvent<unknown>, thread: Thread): void {
+    // TODO: add callbacks that will be called from here
+    console.debug("got message from worker on the dedicated channel", event.data, thread);
+}
+
+// handler that runs in the main thread when a message is received from a pthread worker
 function monoWorkerMessageHandler(pthread_ptr: pthread_ptr, worker: Worker, ev: MessageEvent<MonoWorkerMessageChannelCreated<MessagePort>>): void {
     /// N.B. important to ignore messages we don't recognize - Emscripten uses the message event to send internal messages
     if (isMonoWorkerMessage(ev.data)) {
         const port = getPortFromMonoWorkerMessage(ev.data);
         if (port !== undefined) {
-            addThread(pthread_ptr, worker, port);
+            const thread = addThread(pthread_ptr, worker, port);
+            port.addEventListener("message", (ev) => monoDedicatedChannelMessageFromWorkerToMain(ev, thread));
+            port.start();
         }
     }
 }

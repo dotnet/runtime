@@ -74,7 +74,7 @@ import {
     dotnet_browser_simple_digest_hash,
     dotnet_browser_sign
 } from "./crypto-worker";
-import { mono_wasm_on_pthread_created } from "./pthreads/worker";
+import { mono_wasm_pthread_on_pthread_created } from "./pthreads/worker";
 import { mono_wasm_pthread_on_pthread_created_main_thread } from "./pthreads/browser";
 
 const MONO = {
@@ -382,7 +382,7 @@ export const __linker_exports: any = {
 
     // mono-threads-wasm.c
     mono_wasm_pthread_on_pthread_created_main_thread,
-    mono_wasm_on_pthread_created,
+    mono_wasm_pthread_on_pthread_created,
 };
 
 const INTERNAL: any = {

@@ -76,7 +76,7 @@ const linked_functions = [
 
     /// mono-threads-wasm.c
     "mono_wasm_pthread_on_pthread_created_main_thread",
-    "mono_wasm_on_pthread_created",
+    "mono_wasm_pthread_on_pthread_created",
 ];
 
 // -- this javascript file is evaluated by emcc during compilation! --
