@@ -217,7 +217,7 @@ namespace System.Xml
                     break;
                 if (blockSize < 65536 && bytesRead == blockSize)
                 {
-                    blockSize = blockSize * 16;
+                    blockSize *= 16;
                     block = new byte[blockSize];
                 }
             }

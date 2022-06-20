@@ -56,14 +56,14 @@ namespace Wasm.Build.Tests
             string projectName = $"AppUsingSkiaSharp";
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs,
-                            extraProperties: @"
-                                <EmccExtraLDFlags>-sERROR_ON_UNDEFINED_SYMBOLS=0</EmccExtraLDFlags>
-                            ",
+                            // FIXME: temporary, till `main` is either completely on 3.1.7, or 3.1.12
+                            extraProperties: "<EmccExtraLDFlags>-s ERROR_ON_UNDEFINED_SYMBOLS=0</EmccExtraLDFlags>",
                             extraItems: @$"
-                                <PackageReference Include=""SkiaSharp"" Version=""2.80.3"" />
-                                <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.80.3"" />
+                                <PackageReference Include=""SkiaSharp"" Version=""2.88.1-preview.63"" />
+                                <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.88.1-preview.63"" />
 
-                                <NativeFileReference Include=""$(SkiaSharpStaticLibraryPath)\2.0.9\*.a"" />
+                                <NativeFileReference Include=""$(SkiaSharpStaticLibraryPath)\3.1.7\*.a"" />
+
                                 <WasmFilesToIncludeInFileSystem Include=""{Path.Combine(BuildEnvironment.TestAssetsPath, "mono.png")}"" />
                             ");
 

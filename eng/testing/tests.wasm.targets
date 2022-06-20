@@ -303,4 +303,8 @@
       <RunScriptCommands Include="if /I [%SCENARIO%]==[WasmTestOnNodeJS] ( call npm ci )" />
     </ItemGroup>
   </Target>
+
+  <Target Name="DeployHelixTargetsFile" AfterTargets="ArchiveTests" Condition="'$(HelixTargetsFile)' != ''">
+    <Copy SourceFiles="$(HelixTargetsFile)" DestinationFiles="$(TestArchiveTestsDir)$(TestProjectName).helix.targets" SkipUnchangedFiles="true" />
+  </Target>
 </Project>

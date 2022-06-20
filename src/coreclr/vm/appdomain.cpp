@@ -1039,6 +1039,10 @@ void SystemDomain::Attach()
     // Each domain gets its own ReJitManager, and ReJitManager has its own static
     // initialization to run
     ReJitManager::InitStatic();
+
+#ifdef FEATURE_READYTORUN
+    InitReadyToRunStandaloneMethodMetadata();
+#endif // FEATURE_READYTORUN
 }
 
 

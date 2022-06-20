@@ -25,22 +25,6 @@
 #define MAX_CACHE_LINE_SIZE 64
 #endif
 
-//========================================================================
-// More convenient names for integer types of a guaranteed size.
-//========================================================================
-
-typedef __int8              I1;
-typedef ArrayDPTR(I1)       PTR_I1;
-typedef unsigned __int8     U1;
-typedef __int16             I2;
-typedef unsigned __int16    U2;
-typedef __int32             I4;
-typedef unsigned __int32    U4;
-typedef __int64             I8;
-typedef unsigned __int64    U8;
-typedef float               R4;
-typedef double              R8;
-
 #ifndef TARGET_UNIX
 // Copied from malloc.h: don't want to bring in the whole header file.
 void * __cdecl _alloca(size_t);
@@ -704,6 +688,7 @@ private:
 
 class MethodDesc;
 class Module;
+class ModuleBase;
 
 class DACNotify
 {

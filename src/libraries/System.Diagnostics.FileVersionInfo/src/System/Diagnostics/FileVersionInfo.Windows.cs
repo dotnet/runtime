@@ -68,11 +68,11 @@ namespace System.Diagnostics
             return value.ToString("X8");
         }
 
-        private static Interop.Version.VS_FIXEDFILEINFO GetFixedFileInfo(IntPtr memPtr)
+        private static unsafe Interop.Version.VS_FIXEDFILEINFO GetFixedFileInfo(IntPtr memPtr)
         {
             if (Interop.Version.VerQueryValue(memPtr, "\\", out IntPtr memRef, out _))
             {
-                return (Interop.Version.VS_FIXEDFILEINFO)Marshal.PtrToStructure<Interop.Version.VS_FIXEDFILEINFO>(memRef);
+                return *(Interop.Version.VS_FIXEDFILEINFO*)memRef;
             }
 
             return default;

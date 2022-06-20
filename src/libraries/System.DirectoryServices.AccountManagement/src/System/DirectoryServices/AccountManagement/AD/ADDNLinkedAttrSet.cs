@@ -816,7 +816,7 @@ namespace System.DirectoryServices.AccountManagement
 
         private bool ExpandForeignGroupEnumerator()
         {
-            Debug.Assert(_recursive == true);
+            Debug.Assert(_recursive);
             GlobalDebug.WriteLineIf(GlobalDebug.Info,
                                     "ADDNLinkedAttrSet",
                                     "ExpandForeignGroupEnumerator: there are {0} foreignGroups",
@@ -846,7 +846,7 @@ namespace System.DirectoryServices.AccountManagement
 
         private bool ExpandForeignGroupSearcher()
         {
-            Debug.Assert(_recursive == true);
+            Debug.Assert(_recursive);
             GlobalDebug.WriteLineIf(GlobalDebug.Info,
                                     "ADDNLinkedAttrSet",
                                     "ExpandForeignGroupSearcher: there are {0} foreignGroups",

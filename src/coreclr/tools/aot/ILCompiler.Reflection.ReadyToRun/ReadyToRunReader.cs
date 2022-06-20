@@ -113,6 +113,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         private MetadataReader _manifestReader;
         private List<AssemblyReferenceHandle> _manifestReferences;
         private Dictionary<string, int> _manifestReferenceAssemblies;
+        private IAssemblyMetadata _manifestAssemblyMetadata;
 
         // ExceptionInfo
         private Dictionary<int, EHInfo> _runtimeFunctionToEHInfo;
@@ -140,6 +141,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// Byte array containing the ReadyToRun image
         /// </summary>
         public byte[] Image { get; private set; }
+        private PinningReference ImagePin;
 
         /// <summary>
         /// Name of the image file
@@ -353,6 +355,15 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
         }
 
+        internal IAssemblyMetadata R2RManifestMetadata
+        {
+            get
+            {
+                EnsureManifestReferences();
+                return _manifestAssemblyMetadata;
+            }
+        }
+
         /// <summary>
         /// Initializes the fields of the R2RHeader and R2RMethods
         /// </summary>
@@ -396,6 +407,20 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
         }
 
+        class PinningReference
+        {
+            GCHandle _pinnedObject;
+            public PinningReference(object o)
+            {
+                _pinnedObject = GCHandle.Alloc(o, GCHandleType.Pinned);
+            }
+
+            ~PinningReference()
+            {
+                if (_pinnedObject.IsAllocated)
+                    _pinnedObject.Free();
+            }
+        }
         private unsafe void Initialize(IAssemblyMetadata metadata)
         {
             _assemblyCache = new List<IAssemblyMetadata>();
@@ -404,6 +429,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 byte[] image = File.ReadAllBytes(Filename);
                 Image = image;
+                ImagePin = new PinningReference(image);
 
                 CompositeReader = new PEReader(Unsafe.As<byte[], ImmutableArray<byte>>(ref image));
             }
@@ -411,6 +437,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 ImmutableArray<byte> content = CompositeReader.GetEntireImage().GetContent();
                 Image = Unsafe.As<ImmutableArray<byte>, byte[]>(ref content);
+                ImagePin = new PinningReference(Image);
             }
 
             if (metadata == null && CompositeReader.HasMetadata)
@@ -645,6 +672,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 fixed (byte* image = Image)
                 {
                     _manifestReader = new MetadataReader(image + GetOffset(manifestMetadata.RelativeVirtualAddress), manifestMetadata.Size);
+                    _manifestAssemblyMetadata = new ManifestAssemblyMetadata(CompositeReader, _manifestReader);
                     int assemblyRefCount = _manifestReader.GetTableRowCount(TableIndex.AssemblyRef);
                     for (int assemblyRefIndex = 1; assemblyRefIndex <= assemblyRefCount; assemblyRefIndex++)
                     {
@@ -842,19 +870,36 @@ namespace ILCompiler.Reflection.ReadyToRun
             while (!curParser.IsNull())
             {
                 IAssemblyMetadata mdReader = GetGlobalMetadata();
+                bool updateMDReaderFromOwnerType = true;
                 SignatureFormattingOptions dummyOptions = new SignatureFormattingOptions();
                 SignatureDecoder decoder = new SignatureDecoder(_assemblyResolver, dummyOptions, mdReader?.MetadataReader, this, (int)curParser.Offset);
 
                 string owningType = null;
 
                 uint methodFlags = decoder.ReadUInt();
+
+                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UpdateContext) != 0)
+                {
+                    int moduleIndex = (int)decoder.ReadUInt();
+                    mdReader = OpenReferenceAssembly(moduleIndex);
+
+                    decoder = new SignatureDecoder(_assemblyResolver, dummyOptions, mdReader.MetadataReader, this, (int)curParser.Offset);
+
+                    decoder.ReadUInt(); // Skip past methodFlags
+                    decoder.ReadUInt(); // And moduleIndex
+                    updateMDReaderFromOwnerType = false;
+                }
+
                 if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType) != 0)
                 {
-                    mdReader = decoder.GetMetadataReaderFromModuleOverride() ?? mdReader;
-                    if ((_composite) && mdReader == null)
+                    if (updateMDReaderFromOwnerType)
                     {
-                        // The only types that don't have module overrides on them in composite images are primitive types within the system module
-                        mdReader = GetSystemModuleMetadataReader();
+                        mdReader = decoder.GetMetadataReaderFromModuleOverride() ?? mdReader;
+                        if ((_composite) && mdReader == null)
+                        {
+                            // The only types that don't have module overrides on them in composite images are primitive types within the system module
+                            mdReader = GetSystemModuleMetadataReader();
+                        }
                     }
                     owningType = decoder.ReadTypeSignatureNoEmit();
                 }
@@ -1372,18 +1417,32 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             Debug.Assert(refAsmIndex != 0);
 
-            int assemblyRefCount = (_composite ? 0 : _assemblyCache[0].MetadataReader.GetTableRowCount(TableIndex.AssemblyRef) + 1);
-            AssemblyReferenceHandle assemblyReferenceHandle;
-            if (refAsmIndex < assemblyRefCount)
+            int assemblyRefCount = (_composite ? 0 : _assemblyCache[0].MetadataReader.GetTableRowCount(TableIndex.AssemblyRef));
+            AssemblyReferenceHandle assemblyReferenceHandle = default(AssemblyReferenceHandle);
+            metadataReader = null;
+            if (refAsmIndex <= (assemblyRefCount))
             {
                 metadataReader = _assemblyCache[0].MetadataReader;
                 assemblyReferenceHandle = MetadataTokens.AssemblyReferenceHandle(refAsmIndex);
             }
             else
             {
-                metadataReader = ManifestReader;
-                assemblyReferenceHandle = ManifestReferences[refAsmIndex - assemblyRefCount - 1];
-            }
+                int index = refAsmIndex - assemblyRefCount;
+                if (ReadyToRunHeader.MajorVersion > 6 || (ReadyToRunHeader.MajorVersion == 6 && ReadyToRunHeader.MinorVersion >= 3))
+                {
+                    if (index == 1)
+                    {
+                        metadataReader = ManifestReader;
+                        assemblyReferenceHandle = default(AssemblyReferenceHandle);
+                    }
+                    index--;
+                }
+                if (index > 0)
+                {
+                    metadataReader = ManifestReader;
+                    assemblyReferenceHandle = ManifestReferences[index - 1];
+                }
+             }
 
             return assemblyReferenceHandle;
         }
@@ -1391,7 +1450,11 @@ namespace ILCompiler.Reflection.ReadyToRun
         internal string GetReferenceAssemblyName(int refAsmIndex)
         {
             AssemblyReferenceHandle handle = GetAssemblyAtIndex(refAsmIndex, out MetadataReader reader);
-            return reader.GetString(reader.GetAssemblyReference(handle).Name);
+
+            if (handle.IsNil)
+                return reader.GetString(reader.GetAssemblyDefinition().Name);
+
+            return reader.GetString(reader.GetAssemblyReference((AssemblyReferenceHandle)handle).Name);
         }
 
         /// <summary>
@@ -1406,11 +1469,18 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 AssemblyReferenceHandle assemblyReferenceHandle = GetAssemblyAtIndex(refAsmIndex, out MetadataReader metadataReader);
 
-                result = _assemblyResolver.FindAssembly(metadataReader, assemblyReferenceHandle, Filename);
-                if (result == null)
+                if (assemblyReferenceHandle.IsNil)
                 {
-                    string name = metadataReader.GetString(metadataReader.GetAssemblyReference(assemblyReferenceHandle).Name);
-                    throw new Exception($"Missing reference assembly: {name}");
+                    result = R2RManifestMetadata;
+                }
+                else
+                {
+                    result = _assemblyResolver.FindAssembly(metadataReader, assemblyReferenceHandle, Filename);
+                    if (result == null)
+                    {
+                        string name = metadataReader.GetString(metadataReader.GetAssemblyReference(assemblyReferenceHandle).Name);
+                        throw new Exception($"Missing reference assembly: {name}");
+                    }
                 }
                 while (_assemblyCache.Count <= refAsmIndex)
                 {

@@ -121,7 +121,7 @@ namespace Internal.Runtime
             while ((alignment & 1) == 0)
             {
                 alignmentLog2++;
-                alignment = alignment >> 1;
+                alignment >>= 1;
             }
             Debug.Assert(alignment == 1);
 

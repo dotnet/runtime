@@ -2962,9 +2962,9 @@ public:
         do
         {
             /* Process the next node in the list */
-            GenTree*    exp  = lst->tslTree;
-            Statement*  stmt = lst->tslStmt;
-            BasicBlock* blk  = lst->tslBlock;
+            GenTree* const    exp  = lst->tslTree;
+            Statement* const  stmt = lst->tslStmt;
+            BasicBlock* const blk  = lst->tslBlock;
 
             /* Advance to the next node in the list */
             lst = lst->tslNext;
@@ -3212,9 +3212,9 @@ public:
                     noway_assert(asg->AsOp()->gtOp2 == val);
                 }
 
-                // assign the proper Value Numbers
-                asg->gtVNPair.SetBoth(ValueNumStore::VNForVoid()); // The GT_ASG node itself is $VN.Void
-                asg->AsOp()->gtOp1->gtVNPair = val->gtVNPair;      // The dest op is the same as 'val'
+                // Assign the proper Value Numbers.
+                asg->gtVNPair                = ValueNumStore::VNPForVoid(); // The GT_ASG node itself is $VN.Void.
+                asg->AsOp()->gtOp1->gtVNPair = ValueNumStore::VNPForVoid(); // As is the LHS.
 
                 noway_assert(asg->AsOp()->gtOp1->gtOper == GT_LCL_VAR);
 
@@ -3263,7 +3263,7 @@ public:
                         cseUse->SetDoNotCSE();
                     }
                 }
-                cseUse->gtVNPair = val->gtVNPair; // The 'cseUse' is equal to 'val'
+                cseUse->gtVNPair = exp->gtVNPair; // The 'cseUse' is equal to the original expression.
 
                 /* Create a comma node for the CSE assignment */
                 cse           = m_pCompiler->gtNewOperNode(GT_COMMA, expTyp, origAsg, cseUse);

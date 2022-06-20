@@ -221,7 +221,7 @@ namespace System.Speech.Internal.Synthesis
                     if (sample > uCLIP) sample = uCLIP;   // clip the magnitude
 
                     // Convert from 16 bit linear to ULaw.
-                    sample = sample + uBIAS;
+                    sample += uBIAS;
                     exponent = s_exp_lut_linear2ulaw[(sample >> 7) & 0xFF];
                     mantissa = (sample >> (exponent + 3)) & 0x0F;
 
