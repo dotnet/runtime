@@ -47,6 +47,7 @@ namespace System.Net.Quic.Tests
         {
             await Task.Run(async () =>
             {
+                // QuicListener has special behavior for IPv6Any (listening on all IP addresses, i.e. including IPv4).
                 // Don't use the static IPAddress.IPv6Any instance to check if the address is detected reliably.
                 IPAddress IPv6Any = new IPAddress((ReadOnlySpan<byte>)new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0);
 
