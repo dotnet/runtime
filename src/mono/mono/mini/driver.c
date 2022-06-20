@@ -488,7 +488,7 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 	g_timer_start (timer);
 	if (mini_stats_fd)
 		fprintf (mini_stats_fd, "[");
-	for (guint32 i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
+	for (guint32 i = 0; i < table_info_get_rows (&image->tables [MONO_TABLE_METHOD]); ++i) {
 		ERROR_DECL (error);
 		MonoMethod *method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, error);
 		if (!method) {
@@ -619,7 +619,7 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 	}
 
 	/* load the metadata */
-	for (guint32 i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
+	for (guint32 i = 0; i < table_info_get_rows (&image->tables [MONO_TABLE_METHOD]); ++i) {
 		ERROR_DECL (error);
 		method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, error);
 		if (!method) {
@@ -739,7 +739,7 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 	mini_get_interp_callbacks ()->invalidate_transformed ();
 
 	g_timer_start (timer);
-	for (guint32 i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
+	for (guint32 i = 0; i < table_info_get_rows (&image->tables [MONO_TABLE_METHOD]); ++i) {
 		ERROR_DECL (error);
 		MonoMethod *method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, error);
 		if (!method) {
@@ -803,7 +803,7 @@ interp_regression (MonoImage *image, int verbose, int *total_run)
 	int total;
 
 	/* load the metadata */
-	for (guint32 i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
+	for (guint32 i = 0; i < table_info_get_rows (&image->tables [MONO_TABLE_METHOD]); ++i) {
 		ERROR_DECL (error);
 		method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, error);
 		if (!method) {
@@ -1204,7 +1204,7 @@ compile_all_methods_thread_main_inner (CompileAllThreadArgs *args)
 	MonoCompile *cfg;
 	int count = 0, fail_count = 0;
 
-	for (guint32 i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
+	for (guint32 i = 0; i < table_info_get_rows (&image->tables [MONO_TABLE_METHOD]); ++i) {
 		ERROR_DECL (error);
 		guint32 token = MONO_TOKEN_METHOD_DEF | (i + 1);
 		MonoMethodSignature *sig;

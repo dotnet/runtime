@@ -940,7 +940,7 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta)
 	}
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "================================");
 
-	guint32 rows = mono_image_get_table_rows (image_base, MONO_TABLE_TYPEREF);
+	guint32 rows = table_info_get_rows (&image_base->tables [MONO_TABLE_TYPEREF]);
 	for (guint32 i = 1; i <= rows; ++i) {
 		guint32 cols [MONO_TYPEREF_SIZE];
 		mono_metadata_decode_row (&image_base->tables [MONO_TABLE_TYPEREF], i - 1, cols, MONO_TYPEREF_SIZE);
@@ -958,7 +958,7 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta)
 	if (!image_dmeta->minimal_delta) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "--------------------------------");
 
-		rows = mono_image_get_table_rows (image_dmeta, MONO_TABLE_TYPEREF);
+		rows = table_info_get_rows (&image_dmeta->tables [MONO_TABLE_TYPEREF]);
 		for (guint32 i = 1; i <= rows; ++i) {
 			guint32 cols [MONO_TYPEREF_SIZE];
 			mono_metadata_decode_row (&image_dmeta->tables [MONO_TABLE_TYPEREF], i - 1, cols, MONO_TYPEREF_SIZE);
@@ -970,7 +970,7 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta)
 	}
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "================================");
 
-	rows = mono_image_get_table_rows (image_dmeta, MONO_TABLE_TYPEDEF);
+	rows = table_info_get_rows (&image_dmeta->tables [MONO_TABLE_TYPEDEF]);
 	for (guint32 i = 1; i <= rows; ++i) {
 		guint32 cols [MONO_TYPEDEF_SIZE];
 		mono_metadata_decode_row (&image_dmeta->tables [MONO_TABLE_TYPEDEF], i - 1, cols, MONO_TYPEDEF_SIZE);
@@ -981,7 +981,7 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta)
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "================================");
 
-	rows = mono_image_get_table_rows (image_base, MONO_TABLE_METHOD);
+	rows = table_info_get_rows (&image_base->tables [MONO_TABLE_METHOD]);
 	for (guint32 i = 1; i <= rows ; ++i) {
 		guint32 cols [MONO_METHOD_SIZE];
 		mono_metadata_decode_row_raw (&image_base->tables [MONO_TABLE_METHOD], i - 1, cols, MONO_METHOD_SIZE);
@@ -991,7 +991,7 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta)
 	}
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "--------------------------------");
 
-	rows = mono_image_get_table_rows (image_dmeta, MONO_TABLE_METHOD);
+	rows = table_info_get_rows (&image_dmeta->tables [MONO_TABLE_METHOD]);
 	for (guint32 i = 1; i <= rows ; ++i) {
 		guint32 cols [MONO_METHOD_SIZE];
 		mono_metadata_decode_row_raw (&image_dmeta->tables [MONO_TABLE_METHOD], i - 1, cols, MONO_METHOD_SIZE);
@@ -1001,7 +1001,7 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta)
 	}
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "================================");
 
-	rows = mono_image_get_table_rows (image_base, MONO_TABLE_STANDALONESIG);
+	rows = table_info_get_rows (&image_base->tables [MONO_TABLE_STANDALONESIG]);
 	for (guint32 i = 1; i <= rows; ++i) {
 		guint32 cols [MONO_STAND_ALONE_SIGNATURE_SIZE];
 		mono_metadata_decode_row (&image_base->tables [MONO_TABLE_STANDALONESIG], i - 1, cols, MONO_STAND_ALONE_SIGNATURE_SIZE);
@@ -1011,7 +1011,7 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta)
 	if (!image_dmeta->minimal_delta) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "--------------------------------");
 
-		rows = mono_image_get_table_rows (image_dmeta, MONO_TABLE_STANDALONESIG);
+		rows = table_info_get_rows (&image_dmeta->tables [MONO_TABLE_STANDALONESIG]);
 		for (guint32 i = 1; i <= rows; ++i) {
 			guint32 cols [MONO_STAND_ALONE_SIGNATURE_SIZE];
 			mono_metadata_decode_row_raw (&image_dmeta->tables [MONO_TABLE_STANDALONESIG], i - 1, cols, MONO_STAND_ALONE_SIGNATURE_SIZE);

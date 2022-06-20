@@ -30,9 +30,9 @@ MONO_API_FUNCTION(int, mono_image_ensure_section_idx, (MonoImage *image, int sec
 
 MONO_API_FUNCTION(uint32_t, mono_image_get_entry_point, (MonoImage *image))
 MONO_API_FUNCTION(const char *, mono_image_get_resource, (MonoImage *image, uint32_t offset, uint32_t *size))
-MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY MonoImage*, mono_image_load_file_for_image, (MonoImage *image, uint32_t fileidx))
+MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY MonoImage*, mono_image_load_file_for_image, (MonoImage *image, int fileidx))
 
-MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY MonoImage*, mono_image_load_module, (MonoImage *image, uint32_t idx))
+MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY MonoImage*, mono_image_load_module, (MonoImage *image, int idx))
 
 MONO_API_FUNCTION(const char*, mono_image_get_name, (MonoImage *image))
 MONO_API_FUNCTION(const char*, mono_image_get_filename, (MonoImage *image))
@@ -42,8 +42,8 @@ MONO_API_FUNCTION(mono_bool, mono_image_is_dynamic, (MonoImage *image))
 MONO_API_FUNCTION(char*, mono_image_rva_map, (MonoImage *image, uint32_t rva))
 
 MONO_API_FUNCTION(const MonoTableInfo *, mono_image_get_table_info, (MonoImage *image, int table_id))
-MONO_API_FUNCTION(uint32_t, mono_image_get_table_rows, (MonoImage *image, int table_id))
-MONO_API_FUNCTION(uint32_t, mono_table_info_get_rows, (const MonoTableInfo *table))
+MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY int, mono_image_get_table_rows, (MonoImage *image, int table_id))
+MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY int, mono_table_info_get_rows, (const MonoTableInfo *table))
 
 /* This actually returns a MonoPEResourceDataEntry *, but declaring it
  * causes an include file loop.

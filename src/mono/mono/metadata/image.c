@@ -717,7 +717,7 @@ mono_image_load_module_checked (MonoImage *image, uint32_t idx, MonoError *error
  * mono_image_load_module:
  */
 MonoImage*
-mono_image_load_module (MonoImage *image, uint32_t idx)
+mono_image_load_module (MonoImage *image, int idx)
 {
 	ERROR_DECL (error);
 	MonoImage *result = mono_image_load_module_checked (image, idx, error);
@@ -2626,7 +2626,7 @@ done:
  * mono_image_load_file_for_image:
  */
 MonoImage*
-mono_image_load_file_for_image (MonoImage *image, uint32_t fileidx)
+mono_image_load_file_for_image (MonoImage *image, int fileidx)
 {
 	ERROR_DECL (error);
 	MonoImage *result = mono_image_load_file_for_image_checked (image, fileidx, error);
@@ -2770,7 +2770,7 @@ mono_image_get_table_info (MonoImage *image, int table_id)
 /**
  * mono_image_get_table_rows:
  */
-guint32
+int
 mono_image_get_table_rows (MonoImage *image, int table_id)
 {
 	if (table_id < 0 || table_id >= MONO_TABLE_NUM)
@@ -2781,7 +2781,7 @@ mono_image_get_table_rows (MonoImage *image, int table_id)
 /**
  * mono_table_info_get_rows:
  */
-guint32
+int
 mono_table_info_get_rows (const MonoTableInfo *table)
 {
 	return table_info_get_rows (table);

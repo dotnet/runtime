@@ -613,7 +613,7 @@ mono_method_desc_search_in_image (MonoMethodDesc *desc, MonoImage *image)
 	/* FIXME: Is this call necessary?  We don't use its result. */
 	mono_image_get_table_info (image, MONO_TABLE_TYPEDEF);
 	methods = mono_image_get_table_info (image, MONO_TABLE_METHOD);
-	for (guint32 i = 0; i < mono_table_info_get_rows (methods); ++i) {
+	for (guint32 i = 0; i < table_info_get_rows (methods); ++i) {
 		ERROR_DECL (error);
 		guint32 token = mono_metadata_decode_row_col (methods, i, MONO_METHOD_NAME);
 		const char *n = mono_metadata_string_heap (image, token);

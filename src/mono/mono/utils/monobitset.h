@@ -38,7 +38,7 @@ enum {
 			if (__set->data [__i]) { \
 				for (gsize __j = 0; __j < MONO_BITSET_BITS_PER_CHUNK; __j++) { \
 					if (__set->data [__i] & ((gsize) 1 << __j)) { \
-						guint idx = __j + __i * MONO_BITSET_BITS_PER_CHUNK; \
+						gsize idx = __j + __i * MONO_BITSET_BITS_PER_CHUNK; \
 						__VA_ARGS__; \
 					} \
 				} \
