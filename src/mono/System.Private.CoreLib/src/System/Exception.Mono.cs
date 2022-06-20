@@ -48,6 +48,8 @@ namespace System
 
         private bool HasBeenThrown => _traceIPs != null;
 
+        private readonly object frameLock = new object();
+
         public MethodBase? TargetSite
         {
             get
@@ -72,9 +74,22 @@ namespace System
 
                 if (foreignExceptionsFrames != null)
                 {
-                    var combinedStackFrames = new MonoStackFrame[stackFrames.Length + foreignExceptionsFrames.Length];
-                    Array.Copy(foreignExceptionsFrames, 0, combinedStackFrames, 0, foreignExceptionsFrames.Length);
-                    Array.Copy(stackFrames, 0, combinedStackFrames, foreignExceptionsFrames.Length, stackFrames.Length);
+                    MonoStackFrame[] combinedStackFrames;
+                    int fefLength;
+
+                    // Make sure foreignExceptionFrames does not change at this point.
+                    // Otherwise, the Array.Copy into combinedStackFrames can fail due to size differences
+                    //
+                    // See https://github.com/dotnet/runtime/issues/70081
+                    lock(frameLock)
+                    {
+                        fefLength = foreignExceptionsFrames.Length;
+
+                        combinedStackFrames = new MonoStackFrame[stackFrames.Length + fefLength];
+                        Array.Copy(foreignExceptionsFrames, 0, combinedStackFrames, 0, fefLength);
+                    }
+
+                    Array.Copy(stackFrames, 0, combinedStackFrames, fefLength, stackFrames.Length);
 
                     stackFrames = combinedStackFrames;
                 }
@@ -89,9 +104,14 @@ namespace System
 
         internal void RestoreDispatchState(in DispatchState state)
         {
-            foreignExceptionsFrames = state.StackFrames;
-
-            _stackTraceString = null;
+            // Isolate so we can safely update foreignExceptionFrames and CaptureDispatchState can read the correct values
+            //
+            // See https://github.com/dotnet/runtime/issues/70081
+            lock(frameLock)
+            {
+                foreignExceptionsFrames = state.StackFrames;
+                _stackTraceString = null;
+            }
         }
 
         // Returns true if setting the _remoteStackTraceString field is legal, false if not (immutable exception).
