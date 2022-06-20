@@ -656,4 +656,7 @@
   <data name="JsonTypeInfoOperationNotPossibleForKindNone" xml:space="preserve">
     <value>Operation is not possible when Kind is JsonTypeKind.None.</value>
   </data>
+  <data name="CombineOneOfResolversIsNull" xml:space="preserve">
+    <value>One of the provided resolvers is null.</value>
+  </data>
 </root>

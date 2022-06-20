@@ -172,6 +172,7 @@
     <Compile Include="Serialization\JsonSerializerApiValidation.cs" />
     <Compile Include="Serialization\JsonSerializerWrapper.Reflection.cs" />
     <Compile Include="Serialization\MetadataTests\DefaultJsonTypeInfoResolverMultiContextTests.cs" />
+    <Compile Include="Serialization\MetadataTests\JsonTypeInfoResolverTests.cs" />
     <Compile Include="Serialization\MetadataTests\DefaultJsonTypeInfoResolverTests.JsonPropertyInfo.cs" />
     <Compile Include="Serialization\MetadataTests\DefaultJsonTypeInfoResolverTests.JsonTypeInfoApis.cs" />
     <Compile Include="Serialization\MetadataTests\DefaultJsonTypeInfoResolverTests.JsonTypeInfo.cs" />
@@ -179,6 +180,7 @@
     <Compile Include="Serialization\MetadataTests\MetadataTests.cs" />
     <Compile Include="Serialization\MetadataTests\MetadataTests.JsonSerializer.cs" />
     <Compile Include="Serialization\MetadataTests\MetadataTests.Options.cs" />
+    <Compile Include="Serialization\MetadataTests\TestResolver.cs" />
     <Compile Include="Serialization\NodeInteropTests.cs" />
     <Compile Include="Serialization\Null.ReadTests.cs" />
     <Compile Include="Serialization\Null.WriteTests.cs" />

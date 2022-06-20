@@ -24,6 +24,19 @@ namespace System.Text.Json.Serialization.Metadata
         /// </remarks>
         public static IJsonTypeInfoResolver Combine(params IJsonTypeInfoResolver[] resolvers)
         {
+            if (resolvers == null)
+            {
+                throw new ArgumentNullException(nameof(resolvers));
+            }
+
+            foreach (var resolver in resolvers)
+            {
+                if (resolver == null)
+                {
+                    throw new ArgumentNullException(nameof(resolvers), SR.CombineOneOfResolversIsNull);
+                }
+            }
+
             return new CombiningJsonTypeInfoResolver(resolvers);
         }
 

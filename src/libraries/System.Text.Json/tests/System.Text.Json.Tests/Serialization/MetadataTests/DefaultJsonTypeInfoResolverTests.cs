@@ -209,20 +209,5 @@ namespace System.Text.Json.Serialization.Tests
             public int IntProp { get; set; }
             public SomeRecursiveClass RecursiveProperty { get; set; }
         }
-
-        private class TestResolver : IJsonTypeInfoResolver
-        {
-            private Func<Type, JsonSerializerOptions, JsonTypeInfo> _getTypeInfo;
-
-            public TestResolver(Func<Type, JsonSerializerOptions, JsonTypeInfo> getTypeInfo)
-            {
-                _getTypeInfo = getTypeInfo;
-            }
-
-            public JsonTypeInfo GetTypeInfo(Type type, JsonSerializerOptions options)
-            {
-                return _getTypeInfo(type, options);
-            }
-        }
     }
 }

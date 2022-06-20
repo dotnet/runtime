@@ -504,18 +504,6 @@ namespace System.Text.Json.Serialization.Tests
             public string TestField;
         }
 
-        internal class TestResolver : IJsonTypeInfoResolver
-        {
-            private Func<Type, JsonSerializerOptions, JsonTypeInfo?> _getTypeInfo;
-
-            public TestResolver(Func<Type, JsonSerializerOptions, JsonTypeInfo?> getTypeInfo)
-            {
-                _getTypeInfo = getTypeInfo;
-            }
-
-            public JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options) => _getTypeInfo(type, options);
-        }
-
         // adds one on write, subtracts one on read
         internal class PlusOneConverter : JsonConverter<int>
         {
