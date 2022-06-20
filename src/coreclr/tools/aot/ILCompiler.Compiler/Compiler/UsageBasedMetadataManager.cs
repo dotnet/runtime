@@ -533,6 +533,29 @@ namespace ILCompiler
             }
         }
 
+        public override bool HasConditionalDependenciesDueToMethodGenericDictionary(MethodDesc method)
+        {
+            return !IsReflectionBlocked(method);
+        }
+
+        public override void GetConditionalDependenciesDueToMethodGenericDictionary(ref CombinedDependencyList dependencies, NodeFactory factory, MethodDesc method)
+        {
+            if ((_generationOptions & UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts) == 0
+                && !IsReflectionBlocked(method))
+            {
+                // Ensure that if SomeMethod<T> is considered reflectable, SomeMethod<ConcreteType> is also reflectable.
+                // We only need this because there's a file format limitation in the reflection mapping tables that
+                // requires generic methods to be concrete (i.e. SomeMethod<__Canon> can never be in the mapping table).
+                // If we ever lift this limitation, this code can be deleted: the reflectability is going to be covered
+                // by GetConditionalDependenciesDueToMethodCodePresence below (we get that callback for SomeMethod<__Canon>).
+                MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
+
+                dependencies ??= new CombinedDependencyList();
+                dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
+                    factory.ReflectableMethod(method), factory.ReflectableMethod(typicalMethod), "Reflectability of methods is same across genericness"));
+            }
+        }
+
         public override void GetConditionalDependenciesDueToMethodCodePresence(ref CombinedDependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
             MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
