@@ -369,8 +369,18 @@ namespace System
             return Unsafe.Add(ref RuntimeHelpers.GetMultiDimensionalArrayBounds(this), rank + dimension);
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern CorElementType GetCorElementTypeOfElementType();
+        internal unsafe CorElementType GetCorElementTypeOfElementType()
+        {
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(this);
+            TypeHandle arrayElementTypeHandle = pMT->GetArrayElementTypeHandle();
+
+            CorElementType result = arrayElementTypeHandle.IsTypeDesc
+                ? arrayElementTypeHandle.AsTypeDesc()->InternalCorElementType
+                : arrayElementTypeHandle.AsMethodTable()->GetVerifierCorElementType();
+
+            GC.KeepAlive(this);
+            return result;
+        }
 
         private unsafe bool IsValueOfElementType(object value)
         {

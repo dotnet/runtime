@@ -447,7 +447,6 @@ FCFuncStart(gCastHelpers)
 FCFuncEnd()
 
 FCFuncStart(gArrayFuncs)
-    FCFuncElement("GetCorElementTypeOfElementType", ArrayNative::GetCorElementTypeOfElementType)
     FCFuncElement("Initialize", ArrayNative::Initialize)
     FCFuncElement("IsSimpleCopy", ArrayNative::IsSimpleCopy)
     FCFuncElement("CopySlow", ArrayNative::CopySlow)
