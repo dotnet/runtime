@@ -12,7 +12,7 @@ const DotnetSupportLib = {
     $DOTNET__postset: `
 let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require, updateGlobalBufferAndViews};
 let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
-    { isESM:false, isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile, quit_, ExitStatus, requirePromise:Promise.resolve(require)},
+    { isESM:false, isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, isPThread:ENVIRONMENT_IS_PTHREAD, locateFile, quit_, ExitStatus, requirePromise:Promise.resolve(require)},
     { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
     __dotnet_replacements);
 updateGlobalBufferAndViews = __dotnet_replacements.updateGlobalBufferAndViews;

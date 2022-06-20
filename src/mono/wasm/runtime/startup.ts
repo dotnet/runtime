@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { AllAssetEntryTypes, mono_assert, AssetEntry, CharPtrNull, DotnetModule, GlobalizationMode, MonoConfig, MonoConfigError, wasm_type_symbol, MonoObject } from "./types";
-import { ENVIRONMENT_IS_ESM, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, locateFile, Module, MONO, requirePromise, runtimeHelpers } from "./imports";
+import { ENVIRONMENT_IS_ESM, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_PTHREAD, ENVIRONMENT_IS_SHELL, INTERNAL, locateFile, Module, MONO, requirePromise, runtimeHelpers } from "./imports";
 import cwraps from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import GuardedPromise from "./guarded-promise";
@@ -17,6 +17,7 @@ import { DotnetPublicAPI } from "./exports";
 import { mono_on_abort } from "./run";
 import { mono_wasm_new_root } from "./roots";
 import { init_crypto } from "./crypto-worker";
+import * as pthreads_worker from "./pthreads/worker";
 
 export let runtime_is_initialized_resolve: () => void;
 export let runtime_is_initialized_reject: (reason?: any) => void;
@@ -105,6 +106,10 @@ export function configure_emscripten_startup(module: DotnetModule, exportedAPI: 
 
     }
     // Otherwise startup sequence is up to user code, like Blazor
+
+    if (ENVIRONMENT_IS_PTHREAD) {
+        mono_wasm_pthread_worker_init();
+    }
 
     if (!module.onAbort) {
         module.onAbort = () => mono_on_abort;
@@ -746,4 +751,18 @@ export type DownloadAssetsContext = {
     resolved_promises: (MonoInitFetchResult | undefined)[] | null;
     loaded_files: { url?: string, file: string }[],
     loaded_assets: { [id: string]: [VoidPtr, number] },
+}
+
+/// Called when dotnet.worker.js receives an emscripten "load" event from the main thread.
+///
+/// Notes:
+/// 1. Emscripten skips a lot of initialization on the pthread workers, Module may not have everything you expect.
+/// 2. Emscripten does not run the preInit or preRun functions in the workers.
+/// 3. At the point when this executes there is no pthread assigned to the worker yet.
+async function mono_wasm_pthread_worker_init(): Promise<void> {
+    // This is a good place to attach listeners for the pthread MessagePorts using pthreads_worker.addThreadCreatedCallback();
+    console.debug("mono_wasm_pthread_worker_init");
+    pthreads_worker.addThreadCreatedCallback((thread_id) => {
+        console.debug("thread created", thread_id);
+    });
 }

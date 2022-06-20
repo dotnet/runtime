@@ -15,7 +15,7 @@ In the main thread, `pthreads/browser` provides a `getThread` function that retu
 
 ## Worker thread API
 
-In the worker threads, `pthread/worker` provides `addThreadCreatedCallback ((pthread_ptr, main_port: MessagePort) => {...} )` that can be used from `startup.ts` to add a callback that will be called whenever a new pthread is created - it is passed the thread id, and a channel to the main thread.
+In the worker threads, `pthread/worker` provides `addThreadCreatedCallback ((pthread_ptr, main_port: MessagePort) => {...} )` that can be used from `startup.ts` (see `mono_wasm_pthread_worker_init`) to add a callback that will be called whenever a new pthread is created - it is passed the thread id, and a channel to the main thread.
 
 ## Implementation
 

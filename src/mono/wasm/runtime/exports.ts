@@ -191,7 +191,7 @@ let exportedAPI: DotnetPublicAPI;
 // At runtime this will be referred to as 'createDotnetRuntime'
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 function initializeImportsAndExports(
-    imports: { isESM: boolean, isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, locateFile: Function, quit_: Function, ExitStatus: ExitStatusError, requirePromise: Promise<Function> },
+    imports: { isESM: boolean, isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, isPThread: boolean, locateFile: Function, quit_: Function, ExitStatus: ExitStatusError, requirePromise: Promise<Function> },
     exports: { mono: any, binding: any, internal: any, module: any },
     replacements: { fetch: any, readAsync: any, require: any, requireOut: any, noExitRuntime: boolean, updateGlobalBufferAndViews: Function },
 ): DotnetPublicAPI {
