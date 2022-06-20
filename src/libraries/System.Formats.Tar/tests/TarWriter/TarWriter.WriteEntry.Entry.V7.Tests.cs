@@ -16,7 +16,7 @@ namespace System.Formats.Tar.Tests
         public void Write_RegularFileEntry_As_V7RegularFileEntry(TarEntryFormat entryFormat)
         {
             using MemoryStream archive = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archive, archiveFormat: TarEntryFormat.V7, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archive, format: TarEntryFormat.V7, leaveOpen: true))
             {
                 TarEntry entry = entryFormat switch
                 {

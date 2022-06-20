@@ -47,14 +47,14 @@ namespace System.Formats.Tar
         /// this instance, and can optionally specify the format when writing entries using the <see cref="WriteEntry(string, string?)"/> method.
         /// </summary>
         /// <param name="archiveStream">The stream to write to.</param>
-        /// <param name="archiveFormat">The format to use when calling <see cref="WriteEntry(string, string?)"/>. The default value is <see cref="TarEntryFormat.Pax"/>.</param>
+        /// <param name="format">The format to use when calling <see cref="WriteEntry(string, string?)"/>. The default value is <see cref="TarEntryFormat.Pax"/>.</param>
         /// <param name="leaveOpen"><see langword="false"/> to dispose the <paramref name="archiveStream"/> when this instance is disposed;
         /// <see langword="true"/> to leave the stream open. The default is <see langword="false"/>.</param>
         /// <remarks>The recommended format is <see cref="TarEntryFormat.Pax"/> for its flexibility.</remarks>
         /// <exception cref="ArgumentNullException"><paramref name="archiveStream"/> is <see langword="null"/>.</exception>
         /// <exception cref="IOException"><paramref name="archiveStream"/> is unwritable.</exception>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="archiveFormat"/> is either <see cref="TarEntryFormat.Unknown"/>, or not one of the other enum values.</exception>
-        public TarWriter(Stream archiveStream, TarEntryFormat archiveFormat = TarEntryFormat.Pax, bool leaveOpen = false)
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is either <see cref="TarEntryFormat.Unknown"/>, or not one of the other enum values.</exception>
+        public TarWriter(Stream archiveStream, TarEntryFormat format = TarEntryFormat.Pax, bool leaveOpen = false)
         {
             ArgumentNullException.ThrowIfNull(archiveStream);
 
@@ -63,13 +63,13 @@ namespace System.Formats.Tar
                 throw new IOException(SR.IO_NotSupported_UnwritableStream);
             }
 
-            if (archiveFormat is not TarEntryFormat.V7 and not TarEntryFormat.Ustar and not TarEntryFormat.Pax and not TarEntryFormat.Gnu)
+            if (format is not TarEntryFormat.V7 and not TarEntryFormat.Ustar and not TarEntryFormat.Pax and not TarEntryFormat.Gnu)
             {
-                throw new ArgumentOutOfRangeException(nameof(archiveFormat));
+                throw new ArgumentOutOfRangeException(nameof(format));
             }
 
             _archiveStream = archiveStream;
-            Format = archiveFormat;
+            Format = format;
             _leaveOpen = leaveOpen;
             _isDisposed = false;
             _wroteEntries = false;

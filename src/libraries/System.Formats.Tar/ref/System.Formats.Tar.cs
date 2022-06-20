@@ -109,7 +109,7 @@ namespace System.Formats.Tar
     {
         public TarWriter(System.IO.Stream archiveStream) { }
         public TarWriter(System.IO.Stream archiveStream, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>? globalExtendedAttributes = null, bool leaveOpen = false) { }
-        public TarWriter(System.IO.Stream archiveStream, System.Formats.Tar.TarEntryFormat archiveFormat = System.Formats.Tar.TarEntryFormat.Pax, bool leaveOpen = false) { }
+        public TarWriter(System.IO.Stream archiveStream, System.Formats.Tar.TarEntryFormat format = System.Formats.Tar.TarEntryFormat.Pax, bool leaveOpen = false) { }
         public System.Formats.Tar.TarEntryFormat Format { get { throw null; } }
         public void Dispose() { }
         public void WriteEntry(System.Formats.Tar.TarEntry entry) { }

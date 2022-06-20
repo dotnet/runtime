@@ -13,7 +13,7 @@ namespace System.Formats.Tar.Tests
         public void Write_V7RegularFileEntry_As_RegularFileEntry()
         {
             using MemoryStream archive = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archive, archiveFormat: TarEntryFormat.Gnu, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archive, format: TarEntryFormat.Gnu, leaveOpen: true))
             {
                 V7TarEntry entry = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
 
