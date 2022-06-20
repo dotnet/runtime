@@ -10,11 +10,9 @@ using System.Threading;
 
 using Microsoft.CodeAnalysis;
 
-using Roslyn.Utilities;
+using Aliases = System.Collections.Generic.ValueListBuilder<(string aliasName, string symbolName)>;
 
 namespace Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
-
-using Aliases = ValueListBuilder<(string aliasName, string symbolName)>;
 
 internal static partial class SyntaxValueProviderExtensions
 {
