@@ -15,13 +15,54 @@ namespace System.Threading.RateLimiting.Tests
         [Fact]
         public void ThrowsWhenNoLimitersProvided()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => PartitionedRateLimiter.CreateChained<string>());
+            Assert.Throws<ArgumentException>(() => PartitionedRateLimiter.CreateChained<string>());
+            Assert.Throws<ArgumentException>(() => PartitionedRateLimiter.CreateChained<string>(new PartitionedRateLimiter<string>[0]));
         }
 
         [Fact]
         public void ThrowsWhenNullPassedIn()
         {
             Assert.Throws<ArgumentNullException>(() => PartitionedRateLimiter.CreateChained<string>(null));
+        }
+
+        [Fact]
+        public async Task DisposeMakesMethodsThrow()
+        {
+            using var limiter1 = PartitionedRateLimiter.Create<string, int>(resource =>
+            {
+                return RateLimitPartition.CreateConcurrencyLimiter(1, _ => new ConcurrencyLimiterOptions(1, QueueProcessingOrder.NewestFirst, 0));
+            });
+            using var limiter2 = PartitionedRateLimiter.Create<string, int>(resource =>
+            {
+                return RateLimitPartition.CreateConcurrencyLimiter(1, _ => new ConcurrencyLimiterOptions(1, QueueProcessingOrder.NewestFirst, 0));
+            });
+            var chainedLimiter = PartitionedRateLimiter.CreateChained<string>(limiter1, limiter2);
+
+            chainedLimiter.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => chainedLimiter.GetAvailablePermits(""));
+            Assert.Throws<ObjectDisposedException>(() => chainedLimiter.Acquire(""));
+            await Assert.ThrowsAsync<ObjectDisposedException>(async () => await chainedLimiter.WaitAsync(""));
+        }
+
+        [Fact]
+        public async Task DisposeAsyncMakesMethodsThrow()
+        {
+            using var limiter1 = PartitionedRateLimiter.Create<string, int>(resource =>
+            {
+                return RateLimitPartition.CreateConcurrencyLimiter(1, _ => new ConcurrencyLimiterOptions(1, QueueProcessingOrder.NewestFirst, 0));
+            });
+            using var limiter2 = PartitionedRateLimiter.Create<string, int>(resource =>
+            {
+                return RateLimitPartition.CreateConcurrencyLimiter(1, _ => new ConcurrencyLimiterOptions(1, QueueProcessingOrder.NewestFirst, 0));
+            });
+            var chainedLimiter = PartitionedRateLimiter.CreateChained<string>(limiter1, limiter2);
+
+            await chainedLimiter.DisposeAsync();
+
+            Assert.Throws<ObjectDisposedException>(() => chainedLimiter.GetAvailablePermits(""));
+            Assert.Throws<ObjectDisposedException>(() => chainedLimiter.Acquire(""));
+            await Assert.ThrowsAsync<ObjectDisposedException>(async () => await chainedLimiter.WaitAsync(""));
         }
 
         [Fact]
@@ -344,9 +385,7 @@ namespace System.Threading.RateLimiting.Tests
             });
 
             using var chainedLimiter = PartitionedRateLimiter.CreateChained<string>(limiter1, limiter2);
-            var ex = Assert.Throws<AggregateException>(() => chainedLimiter.Acquire(""));
-            Assert.Single(ex.InnerExceptions);
-            Assert.IsType<NotImplementedException>(ex.InnerException);
+            Assert.Throws<NotImplementedException>(() => chainedLimiter.Acquire(""));
             Assert.Equal(1, concurrencyLimiter.GetAvailablePermits());
         }
 
@@ -364,9 +403,7 @@ namespace System.Threading.RateLimiting.Tests
             });
 
             using var chainedLimiter = PartitionedRateLimiter.CreateChained<string>(limiter1, limiter2);
-            var ex = await Assert.ThrowsAsync<AggregateException>(async () => await chainedLimiter.WaitAsync(""));
-            Assert.Single(ex.InnerExceptions);
-            Assert.IsType<NotImplementedException>(ex.InnerException);
+            await Assert.ThrowsAsync<NotImplementedException>(async () => await chainedLimiter.WaitAsync(""));
             Assert.Equal(1, concurrencyLimiter.GetAvailablePermits());
         }
 
@@ -379,9 +416,7 @@ namespace System.Threading.RateLimiting.Tests
             });
 
             using var chainedLimiter = PartitionedRateLimiter.CreateChained<string>(limiter1);
-            var ex = Assert.Throws<AggregateException>(() => chainedLimiter.Acquire(""));
-            Assert.Single(ex.InnerExceptions);
-            Assert.IsType<NotImplementedException>(ex.InnerException);
+            Assert.Throws<NotImplementedException>(() => chainedLimiter.Acquire(""));
         }
 
         [Fact]
@@ -393,9 +428,7 @@ namespace System.Threading.RateLimiting.Tests
             });
 
             using var chainedLimiter = PartitionedRateLimiter.CreateChained<string>(limiter1);
-            var ex = await Assert.ThrowsAsync<AggregateException>(async () => await chainedLimiter.WaitAsync(""));
-            Assert.Single(ex.InnerExceptions);
-            Assert.IsType<NotImplementedException>(ex.InnerException);
+            await Assert.ThrowsAsync<NotImplementedException>(async () => await chainedLimiter.WaitAsync(""));
         }
 
         internal sealed class ThrowDisposeLease : RateLimitLease
@@ -729,9 +762,7 @@ namespace System.Threading.RateLimiting.Tests
             var task = chainedLimiter.WaitAsync("", 1, cts.Token);
 
             cts.Cancel();
-            var ex = await Assert.ThrowsAsync<AggregateException>(async () => await task);
-            Assert.Equal(1, ex.InnerExceptions.Count);
-            Assert.IsType<TaskCanceledException>(ex.InnerException);
+             await Assert.ThrowsAsync<TaskCanceledException>(async () => await task);
         }
 
         [Fact]
@@ -757,9 +788,7 @@ namespace System.Threading.RateLimiting.Tests
 
             Assert.Equal(0, concurrencyLimiter.GetAvailablePermits());
             cts.Cancel();
-            var ex = await Assert.ThrowsAsync<AggregateException>(async () => await task);
-            Assert.Equal(1, ex.InnerExceptions.Count);
-            Assert.IsType<TaskCanceledException>(ex.InnerException);
+            await Assert.ThrowsAsync<TaskCanceledException>(async () => await task);
             Assert.Equal(1, concurrencyLimiter.GetAvailablePermits());
         }
 
@@ -859,9 +888,7 @@ namespace System.Threading.RateLimiting.Tests
             };
             customizableLimiter2.AcquireCoreImpl = _ => customizableLease2;
 
-            var ex = Assert.Throws<AggregateException>(() => chainedLimiter.Acquire(""));
-            Assert.Single(ex.InnerExceptions);
-            Assert.IsType<NotImplementedException>(ex.InnerException);
+            Assert.Throws<NotImplementedException>(() => chainedLimiter.Acquire(""));
         }
 
         [Fact]
@@ -898,9 +925,161 @@ namespace System.Threading.RateLimiting.Tests
             };
             customizableLimiter2.WaitAsyncCoreImpl = (_, _) => new ValueTask<RateLimitLease>(customizableLease2);
 
-            var ex = await Assert.ThrowsAsync<AggregateException>(async () => await chainedLimiter.WaitAsync(""));
-            Assert.Single(ex.InnerExceptions);
-            Assert.IsType<NotImplementedException>(ex.InnerException);
+            await Assert.ThrowsAsync<NotImplementedException>(async () => await chainedLimiter.WaitAsync(""));
+        }
+
+        [Fact]
+        public void MetadataIsCombined()
+        {
+            var customizableLimiter1 = new CustomizableLimiter();
+            customizableLimiter1.AcquireCoreImpl = _ => new CustomizableLease()
+            {
+                MetadataNamesImpl = () =>
+                {
+                    return new[] { "1", "2" };
+                },
+                TryGetMetadataImpl = (string name, out object? metadata) =>
+                {
+                    if (name == "1")
+                    {
+                        metadata = new DateTime();
+                        return true;
+                    }
+                    if (name == "2")
+                    {
+                        metadata = new TimeSpan();
+                        return true;
+                    }
+                    metadata = null;
+                    return false;
+                }
+            };
+            var customizableLimiter2 = new CustomizableLimiter();
+            customizableLimiter2.AcquireCoreImpl = _ => new CustomizableLease()
+            {
+                MetadataNamesImpl = () =>
+                {
+                    return new[] { "3", "4" };
+                },
+                TryGetMetadataImpl = (string name, out object? metadata) =>
+                {
+                    if (name == "3")
+                    {
+                        metadata = new Exception();
+                        return true;
+                    }
+                    if (name == "4")
+                    {
+                        metadata = new List<int>();
+                        return true;
+                    }
+                    metadata = null;
+                    return false;
+                }
+            };
+            using var limiter1 = PartitionedRateLimiter.Create<string, int>(resource =>
+            {
+                return RateLimitPartition.Create(1, key => customizableLimiter1);
+            });
+            using var limiter2 = PartitionedRateLimiter.Create<string, int>(resource =>
+            {
+                return RateLimitPartition.Create(1, key => customizableLimiter2);
+            });
+            using var chainedLimiter = PartitionedRateLimiter.CreateChained<string>(limiter1, limiter2);
+
+            var lease = chainedLimiter.Acquire("");
+
+            var metaDataNames = lease.MetadataNames.ToArray();
+            Assert.Equal(4, metaDataNames.Length);
+            Assert.Contains("1", metaDataNames);
+            Assert.Contains("2", metaDataNames);
+            Assert.Contains("3", metaDataNames);
+            Assert.Contains("4", metaDataNames);
+
+            Assert.True(lease.TryGetMetadata("1", out var obj));
+            Assert.IsType<DateTime>(obj);
+            Assert.True(lease.TryGetMetadata("2", out obj));
+            Assert.IsType<TimeSpan>(obj);
+            Assert.True(lease.TryGetMetadata("3", out obj));
+            Assert.IsType<Exception>(obj);
+            Assert.True(lease.TryGetMetadata("4", out obj));
+            Assert.IsType<List<int>>(obj);
+        }
+
+        [Fact]
+        public void DuplicateMetadataUsesFirstOne()
+        {
+            var customizableLimiter1 = new CustomizableLimiter();
+            customizableLimiter1.AcquireCoreImpl = _ => new CustomizableLease()
+            {
+                MetadataNamesImpl = () =>
+                {
+                    return new[] { "1", "2" };
+                },
+                TryGetMetadataImpl = (string name, out object? metadata) =>
+                {
+                    if (name == "1")
+                    {
+                        metadata = new DateTime();
+                        return true;
+                    }
+                    if (name == "2")
+                    {
+                        metadata = new TimeSpan();
+                        return true;
+                    }
+                    metadata = null;
+                    return false;
+                }
+            };
+            var customizableLimiter2 = new CustomizableLimiter();
+            customizableLimiter2.AcquireCoreImpl = _ => new CustomizableLease()
+            {
+                MetadataNamesImpl = () =>
+                {
+                    return new[] { "1", "3" };
+                },
+                TryGetMetadataImpl = (string name, out object? metadata) =>
+                {
+                    // duplicate metadata name, previous one will win
+                    if (name == "1")
+                    {
+                        metadata = new Exception();
+                        return true;
+                    }
+                    if (name == "3")
+                    {
+                        metadata = new List<int>();
+                        return true;
+                    }
+                    metadata = null;
+                    return false;
+                }
+            };
+            using var limiter1 = PartitionedRateLimiter.Create<string, int>(resource =>
+            {
+                return RateLimitPartition.Create(1, key => customizableLimiter1);
+            });
+            using var limiter2 = PartitionedRateLimiter.Create<string, int>(resource =>
+            {
+                return RateLimitPartition.Create(1, key => customizableLimiter2);
+            });
+            using var chainedLimiter = PartitionedRateLimiter.CreateChained<string>(limiter1, limiter2);
+
+            var lease = chainedLimiter.Acquire("");
+
+            var metadataNames = lease.MetadataNames.ToArray();
+            Assert.Equal(3, metadataNames.Length);
+            Assert.Contains("1", metadataNames);
+            Assert.Contains("2", metadataNames);
+            Assert.Contains("3", metadataNames);
+
+            Assert.True(lease.TryGetMetadata("1", out var obj));
+            Assert.IsType<DateTime>(obj);
+            Assert.True(lease.TryGetMetadata("2", out obj));
+            Assert.IsType<TimeSpan>(obj);
+            Assert.True(lease.TryGetMetadata("3", out obj));
+            Assert.IsType<List<int>>(obj);
         }
     }
 }

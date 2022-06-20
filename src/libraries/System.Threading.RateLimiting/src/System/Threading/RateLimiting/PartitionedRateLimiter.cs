@@ -31,14 +31,24 @@ namespace System.Threading.RateLimiting
         }
 
         /// <summary>
-        /// Creates a single <see cref="PartitionedRateLimiter{TResource}"/> that wraps the passed in <see cref="PartitionedRateLimiter{TResource}"/>s. Methods will iterate over the passing in <paramref name="limiters"/> in the order given.
-        /// TODO TODO TODO
+        /// Creates a single <see cref="PartitionedRateLimiter{TResource}"/> that wraps the passed in <see cref="PartitionedRateLimiter{TResource}"/>s.
         /// </summary>
-        /// <typeparam name="TResource"></typeparam>
-        /// <param name="limiters"></param>
+        /// <remarks>
+        /// <para>
+        /// Methods on the returned <see cref="PartitionedRateLimiter{TResource}"/> will iterate over the passed in <paramref name="limiters"/> in the order given.
+        /// </para>
+        /// <para>
+        /// <see cref="PartitionedRateLimiter{TResource}.GetAvailablePermits(TResource)"/> will return the lowest value of all the <paramref name="limiters"/>.
+        /// </para>
+        /// <para>
+        /// <see cref="RateLimitLease"/>s returned will aggregate metadata and for duplicates use the value of the first lease with the same metadata name.
+        /// </para>
+        /// </remarks>
+        /// <typeparam name="TResource">The resource type that is being rate limited.</typeparam>
+        /// <param name="limiters">The <see cref="PartitionedRateLimiter{TResource}"/>s that will be called in order when acquiring resources.</param>
         /// <returns></returns>
-        /// <exception cref="ArgumentNullException"></exception>
-        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentNullException"><paramref name="limiters"/> is a null parameter.</exception>
+        /// <exception cref="ArgumentException"><paramref name="limiters"/> is an empty array.</exception>
         public static PartitionedRateLimiter<TResource> CreateChained<TResource>(
             params PartitionedRateLimiter<TResource>[] limiters)
         {
@@ -48,7 +58,7 @@ namespace System.Threading.RateLimiting
             }
             if (limiters.Length == 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(limiters), "Must pass in at least 1 limiter.");
+                throw new ArgumentException("Must pass in at least 1 limiter.", nameof(limiters));
             }
             return new ChainedPartitionedRateLimiter<TResource>(limiters);
         }

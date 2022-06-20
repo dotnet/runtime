@@ -211,9 +211,16 @@ namespace System.Threading.RateLimiting.Tests
         public Func<bool> IsAcquiredImpl = () => true;
         public override bool IsAcquired => IsAcquiredImpl();
 
-        public override IEnumerable<string> MetadataNames => throw new NotImplementedException();
+        public Func<IEnumerable<string>> MetadataNamesImpl = () => Enumerable.Empty<string>();
+        public override IEnumerable<string> MetadataNames => MetadataNamesImpl();
 
-        public override bool TryGetMetadata(string metadataName, out object? metadata) => throw new NotImplementedException();
+        public delegate bool TryGetMetadataDelegate(string metadataName, out object? metadata);
+        public TryGetMetadataDelegate TryGetMetadataImpl = (string name, out object? metadata) =>
+            {
+                metadata = null;
+                return false;
+            };
+        public override bool TryGetMetadata(string metadataName, out object? metadata) => TryGetMetadataImpl(metadataName, out metadata);
 
         public Action<bool> DisposeImpl = _ => { };
         protected override void Dispose(bool disposing) => DisposeImpl(disposing);

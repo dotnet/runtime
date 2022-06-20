@@ -12,6 +12,7 @@ namespace System.Threading.RateLimiting
     internal sealed class ChainedPartitionedRateLimiter<TResource> : PartitionedRateLimiter<TResource>
     {
         private readonly PartitionedRateLimiter<TResource>[] _limiters;
+        private bool _disposed;
 
         public ChainedPartitionedRateLimiter(PartitionedRateLimiter<TResource>[] limiters)
         {
@@ -20,6 +21,7 @@ namespace System.Threading.RateLimiting
 
         public override int GetAvailablePermits(TResource resourceID)
         {
+            ThrowIfDisposed();
             int lowestPermitCount = int.MaxValue;
             foreach (PartitionedRateLimiter<TResource> limiter in _limiters)
             {
@@ -36,36 +38,25 @@ namespace System.Threading.RateLimiting
 
         protected override RateLimitLease AcquireCore(TResource resourceID, int permitCount)
         {
+            ThrowIfDisposed();
             RateLimitLease[]? leases = null;
             for (int i = 0; i < _limiters.Length; i++)
             {
-                RateLimitLease lease;
+                RateLimitLease? lease = null;
+                Exception? exception = null;
                 try
                 {
                     lease = _limiters[i].Acquire(resourceID, permitCount);
                 }
                 catch (Exception ex)
                 {
-                    Exception? innerEx = CommonDispose(leases, i);
-                    if (innerEx is AggregateException aggregateException)
-                    {
-                        Exception[] exceptions = new Exception[aggregateException.InnerExceptions.Count + 1];
-                        aggregateException.InnerExceptions.CopyTo(exceptions, 0);
-                        exceptions[exceptions.Length - 1] = ex;
-                        throw new AggregateException(exceptions);
-                    }
-                    // REVIEW: Chose consistent exception type here, but could be convinced to just throw the original exception as is
-                    throw new AggregateException(ex);
+                    exception = ex;
                 }
-
-                if (!lease.IsAcquired)
+                RateLimitLease? notAcquiredLease = CommonAcquireLogic(exception, lease, ref leases, i, _limiters.Length);
+                if (notAcquiredLease is not null)
                 {
-                    Exception? ex = CommonDispose(leases, i);
-                    return ex is not null ? throw ex : lease;
+                    return notAcquiredLease;
                 }
-
-                leases ??= new RateLimitLease[_limiters.Length];
-                leases[i] = lease;
             }
 
             return new CombinedRateLimitLease(leases!);
@@ -73,46 +64,70 @@ namespace System.Threading.RateLimiting
 
         protected override async ValueTask<RateLimitLease> WaitAsyncCore(TResource resourceID, int permitCount, CancellationToken cancellationToken)
         {
+            ThrowIfDisposed();
             RateLimitLease[]? leases = null;
             for (int i = 0; i < _limiters.Length; i++)
             {
-                RateLimitLease lease;
+                RateLimitLease? lease = null;
+                Exception? exception = null;
                 try
                 {
                     lease = await _limiters[i].WaitAsync(resourceID, permitCount, cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
-                    Exception? innerEx = CommonDispose(leases, i);
-                    if (innerEx is AggregateException aggregateException)
-                    {
-                        Exception[] exceptions = new Exception[aggregateException.InnerExceptions.Count + 1];
-                        aggregateException.InnerExceptions.CopyTo(exceptions, 0);
-                        exceptions[exceptions.Length - 1] = ex;
-                        throw new AggregateException(exceptions);
-                    }
-                    // REVIEW: Chose consistent exception type here, but could be convinced to just throw the original exception as is
-                    throw new AggregateException(ex);
+                    exception = ex;
                 }
-                if (!lease.IsAcquired)
+                RateLimitLease? notAcquiredLease = CommonAcquireLogic(exception, lease, ref leases, i, _limiters.Length);
+                if (notAcquiredLease is not null)
                 {
-                    Exception? ex = CommonDispose(leases, i);
-                    return ex is not null ? throw ex : lease;
+                    return notAcquiredLease;
                 }
-
-                leases ??= new RateLimitLease[_limiters.Length];
-                leases[i] = lease;
             }
 
             return new CombinedRateLimitLease(leases!);
         }
 
-        // REVIEW: Do we dispose the inner limiters? Or just mark the object as disposed and throw in all the methods
-        protected override void Dispose(bool disposing) => base.Dispose(disposing);
-        protected override ValueTask DisposeAsyncCore() => base.DisposeAsyncCore();
+        protected override void Dispose(bool disposing)
+        {
+            _disposed = true;
+        }
 
-        // Common dispose logic for leases when calling Acquire or WaitAsync and one of the limiters throws or can't be acquired at this time
-        private static Exception? CommonDispose(RateLimitLease[]? leases, int i)
+        private void ThrowIfDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(ChainedPartitionedRateLimiter<TResource>));
+            }
+        }
+
+        private static RateLimitLease? CommonAcquireLogic(Exception? ex, RateLimitLease? lease, ref RateLimitLease[]? leases, int index, int length)
+        {
+            if (ex is not null)
+            {
+                AggregateException? innerEx = CommonDispose(leases, index);
+                if (innerEx is not null)
+                {
+                    Exception[] exceptions = new Exception[innerEx.InnerExceptions.Count + 1];
+                    innerEx.InnerExceptions.CopyTo(exceptions, 0);
+                    exceptions[exceptions.Length - 1] = ex;
+                    throw new AggregateException(exceptions);
+                }
+                throw ex;
+            }
+
+            if (!lease!.IsAcquired)
+            {
+                AggregateException? innerEx = CommonDispose(leases, index);
+                return innerEx is not null ? throw innerEx : lease;
+            }
+
+            leases ??= new RateLimitLease[length];
+            leases[index] = lease;
+            return null;
+        }
+
+        private static AggregateException? CommonDispose(RateLimitLease[]? leases, int i)
         {
             List<Exception>? exceptions = null;
             while (i > 0)
@@ -140,6 +155,7 @@ namespace System.Threading.RateLimiting
         private sealed class CombinedRateLimitLease : RateLimitLease
         {
             private RateLimitLease[]? _leases;
+            private HashSet<string>? _metadataNames;
 
             public CombinedRateLimitLease(RateLimitLease[] leases)
             {
@@ -148,9 +164,46 @@ namespace System.Threading.RateLimiting
 
             public override bool IsAcquired => true;
 
-            public override IEnumerable<string> MetadataNames => throw new NotImplementedException();
+            public override IEnumerable<string> MetadataNames
+            {
+                get
+                {
+                    if (_leases is null)
+                    {
+                        return Enumerable.Empty<string>();
+                    }
 
-            public override bool TryGetMetadata(string metadataName, out object? metadata) => throw new NotImplementedException();
+                    if (_metadataNames is null)
+                    {
+                        _metadataNames = new HashSet<string>();
+                        foreach (RateLimitLease lease in _leases)
+                        {
+                            foreach (string metadataName in lease.MetadataNames)
+                            {
+                                _metadataNames.Add(metadataName);
+                            }
+                        }
+                    }
+                    return _metadataNames;
+                }
+            }
+
+            public override bool TryGetMetadata(string metadataName, out object? metadata)
+            {
+                if (_leases is not null)
+                {
+                    foreach (RateLimitLease lease in _leases)
+                    {
+                        if (lease.TryGetMetadata(metadataName, out metadata))
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                metadata = null;
+                return false;
+            }
 
             protected override void Dispose(bool disposing)
             {
