@@ -3323,7 +3323,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     }
 #endif // UNIX_AMD64_ABI
 #elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
-                    if ((passingSize != structSize) && (lclVar == nullptr))
+                    if ((passingSize != structSize) && !argIsLocal)
                     {
                         makeOutArgCopy = true;
                     }
@@ -3789,10 +3789,10 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
             {
                 argNode = fgMorphLclArgToFieldlist(lcl);
             }
-#ifndef TARGET_XARCH
+#ifdef TARGET_LOONGARCH64
             else if (argNode->TypeGet() == TYP_STRUCT)
             {
-                // ARM/ARM64/LoongArch64 backends do not support local nodes as sources of some stack args.
+                // LoongArch64 backend does not support local nodes as sources of some stack args.
                 if (!actualArg->OperIs(GT_OBJ))
                 {
                     // Create an Obj of the temp to use it as a call argument.
@@ -3802,7 +3802,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
                 // Its fields will need to be accessed by address.
                 lvaSetVarDoNotEnregister(lcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::IsStructArg));
             }
-#endif // !TARGET_XARCH
+#endif // TARGET_LOONGARCH64
         }
 
         return argNode;
