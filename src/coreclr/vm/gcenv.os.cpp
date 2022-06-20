@@ -588,6 +588,7 @@ SYSTEM_LOGICAL_PROCESSOR_INFORMATION *IsGLPISupported( PDWORD nEntries )
 size_t GetLogicalProcessorCacheSizeFromOS()
 {
     size_t cache_size = 0;
+    size_t cache_level = 0;
     DWORD nEntries = 0;
 
     // Try to use GetLogicalProcessorInformation API and get a valid pointer to the SLPI array if successful.  Returns NULL
@@ -608,9 +609,10 @@ size_t GetLogicalProcessorCacheSizeFromOS()
 
         for (DWORD i=0; i < nEntries; i++)
         {
-            if (pslpi[i].Relationship == RelationCache)
+            if (last_cache_size < pslpi[i].Cache.Size)
             {
-                last_cache_size = max(last_cache_size, pslpi[i].Cache.Size);
+                last_cache_size = pslpi[i].Cache.Size;
+                cache_level = pslpi[i].Cache.Level;
             }
         }
         cache_size = last_cache_size;
@@ -619,6 +621,36 @@ size_t GetLogicalProcessorCacheSizeFromOS()
 Exit:
     if(pslpi)
         delete[] pslpi;  // release the memory allocated for the SLPI array.
+
+#if defined(TARGET_ARM64)
+    if (cache_level != 3)
+    {
+        // We expect to get the L3 cache size for Arm64 but currently expected to be missing that info
+        // from most of the machines.
+        // Hence, just use the following heuristics at best depending on the CPU count
+        // 1 ~ 4   :  4 MB
+        // 5 ~ 16  :  8 MB
+        // 17 ~ 64 : 16 MB
+        // 65+     : 32 MB
+        uint32_t logicalCPUs = GetTotalProcessorCount();
+        if (logicalCPUs < 5)
+        {
+            cacheSize = 4;
+        }
+        else if (logicalCPUs < 17)
+        {
+            cacheSize = 8;
+        }
+        else if (logicalCPUs < 65)
+        {
+            cacheSize = 16;
+        }
+        else
+        {
+            cacheSize = 32;
+        }
+    }
+#endif // TARGET_ARM64
 
     return cache_size;
 }
@@ -645,11 +677,6 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
     size_t maxSize, maxTrueSize;
 
     maxSize = maxTrueSize = GetLogicalProcessorCacheSizeFromOS() ; // Returns the size of the highest level processor cache
-
-#if defined(TARGET_ARM64)
-    // Bigger gen0 size helps arm64 targets
-    maxSize = maxTrueSize * 3;
-#endif
 
     s_maxSize = maxSize;
     s_maxTrueSize = maxTrueSize;
