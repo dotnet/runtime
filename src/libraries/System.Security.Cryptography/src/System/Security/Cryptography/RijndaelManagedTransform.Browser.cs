@@ -710,7 +710,7 @@ namespace System.Security.Cryptography
                     if (i % m_Nk == 0)
                     {
                         iTemp = SubWord(rot3(iTemp));
-                        iTemp = iTemp ^ s_Rcon[(i / m_Nk) - 1];
+                        iTemp ^= s_Rcon[(i / m_Nk) - 1];
                     }
 
                     m_encryptKeyExpansion[i] = m_encryptKeyExpansion[i - m_Nk] ^ iTemp;
@@ -725,7 +725,7 @@ namespace System.Security.Cryptography
                     if (i % m_Nk == 0)
                     {
                         iTemp = SubWord(rot3(iTemp));
-                        iTemp = iTemp ^ s_Rcon[(i / m_Nk) - 1];
+                        iTemp ^= s_Rcon[(i / m_Nk) - 1];
                     }
                     else if (i % m_Nk == 4)
                     {
