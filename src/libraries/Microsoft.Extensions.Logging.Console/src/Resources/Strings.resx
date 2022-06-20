@@ -123,4 +123,7 @@
   <data name="BufferModeNotSupported" xml:space="preserve">
     <value>{0} is not a supported buffer mode value.</value>
   </data>
+  <data name="WarningMessageOnDrop" xml:space="preserve">
+    <value> message(s) dropped because of queue size limit. Increase the queue size or decrease logging verbosity to avoid this. You may change `ConsoleLoggerBufferFullMode` to stop dropping messages.</value>
+  </data>
 </root>

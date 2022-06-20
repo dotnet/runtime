@@ -14,7 +14,6 @@ namespace Microsoft.Extensions.Logging.Console
     [UnsupportedOSPlatform("browser")]
     internal class ConsoleLoggerProcessor : IDisposable
     {
-        private const string WarningMessageOnDrop = " message(s) dropped because of queue size limit. Increase the queue size or decrease logging verbosity to avoid this. You may change `ConsoleLoggerBufferFullMode` to stop dropping messages.";
         private readonly Queue<LogMessageEntry> _messageQueue;
         private int _messagesDropped;
         private bool _isAddingCompleted;
@@ -127,7 +126,7 @@ namespace Microsoft.Extensions.Logging.Console
                     if (_messagesDropped > 0)
                     {
                         _messageQueue.Enqueue(new LogMessageEntry(
-                            message: _messagesDropped + WarningMessageOnDrop + Environment.NewLine,
+                            message: _messagesDropped + SR.WarningMessageOnDrop + Environment.NewLine,
                             logAsError: true
                         ));
 
