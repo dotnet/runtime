@@ -23,6 +23,6 @@ jobs:
        echo '<package id="Microsoft.Win32.Primitives" version="4.3.0" targetFramework="net461" />' >> packages.config
        echo '</packages>' >> packages.config
 
-    - run: nuget restore packages.config
+    - run: nuget restore packages.config -PackagesDirectory packs
 
     - run: cat ~/.config/NuGet/NuGet.Config
