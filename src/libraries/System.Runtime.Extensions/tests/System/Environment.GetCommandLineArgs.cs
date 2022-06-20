@@ -85,6 +85,8 @@ namespace System.Tests
 
         public static int CheckCommandLineArgsFallback()
         {
+            string[] oldArgs = Environment.GetCommandLineArgs();
+
             // Clear the command line args set for managed entry point
             var field = typeof(Environment).GetField("s_commandLineArgs", BindingFlags.Static | BindingFlags.NonPublic);
             Assert.NotNull(field);
@@ -92,6 +94,12 @@ namespace System.Tests
 
             string[] args = Environment.GetCommandLineArgs();
             Assert.NotEmpty(args);
+
+            // The native command line should be superset of managed command line
+            foreach (string arg in oldArgs)
+            {
+                Assert.Contains(arg, args);
+            }
 
             return RemoteExecutor.SuccessExitCode;
         }
