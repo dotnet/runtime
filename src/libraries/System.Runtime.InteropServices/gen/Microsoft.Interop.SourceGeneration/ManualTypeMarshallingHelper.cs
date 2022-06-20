@@ -14,7 +14,7 @@ namespace Microsoft.Interop
 
     public static class ShapeMemberNames
     {
-        public abstract class Value
+        public abstract class Value_V1
         {
             public const string ToNativeValue = nameof(ToNativeValue);
             public const string FromNativeValue = nameof(FromNativeValue);
@@ -23,7 +23,7 @@ namespace Microsoft.Interop
             public const string ToManaged = nameof(ToManaged);
         }
 
-        public abstract class LinearCollection : Value
+        public abstract class LinearCollection_V1 : Value_V1
         {
             public const string GetManagedValuesDestination = nameof(GetManagedValuesDestination);
             public const string GetManagedValuesSource = nameof(GetManagedValuesSource);
@@ -190,7 +190,7 @@ namespace Microsoft.Interop
 
         public static bool HasToManagedMethod(ITypeSymbol nativeType, ITypeSymbol managedType)
         {
-            return nativeType.GetMembers(ShapeMemberNames.Value.ToManaged)
+            return nativeType.GetMembers(ShapeMemberNames.Value_V1.ToManaged)
                     .OfType<IMethodSymbol>()
                     .Any(m => m.Parameters.IsEmpty
                         && !m.ReturnsByRef
@@ -256,7 +256,7 @@ namespace Microsoft.Interop
             // fixed statement. We aren't supporting a GetPinnableReference extension method
             // (which is apparently supported in the compiler).
             // https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-7.3/pattern-based-fixed
-            return type.GetMembers(ShapeMemberNames.Value.GetPinnableReference)
+            return type.GetMembers(ShapeMemberNames.Value_V1.GetPinnableReference)
                 .OfType<IMethodSymbol>()
                 .FirstOrDefault(m => m is { Parameters.Length: 0 } and
                     ({ ReturnsByRef: true } or { ReturnsByRefReadonly: true }));
@@ -264,21 +264,21 @@ namespace Microsoft.Interop
 
         public static bool HasFreeNativeMethod(ITypeSymbol type)
         {
-            return type.GetMembers(ShapeMemberNames.Value.FreeNative)
+            return type.GetMembers(ShapeMemberNames.Value_V1.FreeNative)
                 .OfType<IMethodSymbol>()
                 .Any(m => m is { IsStatic: false, Parameters.Length: 0, ReturnType.SpecialType: SpecialType.System_Void });
         }
 
         public static IMethodSymbol? FindToNativeValueMethod(ITypeSymbol type)
         {
-            return type.GetMembers(ShapeMemberNames.Value.ToNativeValue)
+            return type.GetMembers(ShapeMemberNames.Value_V1.ToNativeValue)
                 .OfType<IMethodSymbol>()
                 .FirstOrDefault(m => m is { IsStatic: false, Parameters.Length: 0 });
         }
 
         public static IMethodSymbol? FindFromNativeValueMethod(ITypeSymbol type)
         {
-            return type.GetMembers(ShapeMemberNames.Value.FromNativeValue)
+            return type.GetMembers(ShapeMemberNames.Value_V1.FromNativeValue)
                 .OfType<IMethodSymbol>()
                 .FirstOrDefault(m => m is { IsStatic: false, Parameters.Length: 1, ReturnType.SpecialType: SpecialType.System_Void });
         }
@@ -298,7 +298,7 @@ namespace Microsoft.Interop
         public static IMethodSymbol? FindGetManagedValuesSourceMethod(ITypeSymbol type, ITypeSymbol readOnlySpanOfT)
         {
             return type
-                .GetMembers(ShapeMemberNames.LinearCollection.GetManagedValuesSource)
+                .GetMembers(ShapeMemberNames.LinearCollection_V1.GetManagedValuesSource)
                 .OfType<IMethodSymbol>()
                 .FirstOrDefault(m => m is { IsStatic: false, ReturnsByRef: false, ReturnsByRefReadonly: false, Parameters.Length: 0, ReturnType: INamedTypeSymbol { ConstructedFrom: INamedTypeSymbol returnType } }
                     && SymbolEqualityComparer.Default.Equals(returnType, readOnlySpanOfT));
@@ -307,7 +307,7 @@ namespace Microsoft.Interop
         public static IMethodSymbol? FindGetManagedValuesDestinationMethod(ITypeSymbol type, ITypeSymbol spanOfT)
         {
             return type
-                .GetMembers(ShapeMemberNames.LinearCollection.GetManagedValuesDestination)
+                .GetMembers(ShapeMemberNames.LinearCollection_V1.GetManagedValuesDestination)
                 .OfType<IMethodSymbol>()
                 .FirstOrDefault(m => m is { IsStatic: false, ReturnsByRef: false, ReturnsByRefReadonly: false, Parameters.Length: 1, ReturnType: INamedTypeSymbol { ConstructedFrom: INamedTypeSymbol returnType } }
                     && m.Parameters[0].Type.SpecialType == SpecialType.System_Int32
@@ -317,7 +317,7 @@ namespace Microsoft.Interop
         public static IMethodSymbol? FindGetNativeValuesDestinationMethod(ITypeSymbol type, ITypeSymbol spanOfByte)
         {
             return type
-                .GetMembers(ShapeMemberNames.LinearCollection.GetNativeValuesDestination)
+                .GetMembers(ShapeMemberNames.LinearCollection_V1.GetNativeValuesDestination)
                 .OfType<IMethodSymbol>()
                 .FirstOrDefault(m => m is { IsStatic: false, ReturnsByRef: false, ReturnsByRefReadonly: false, Parameters.Length: 0, ReturnType: INamedTypeSymbol returnType }
                     && SymbolEqualityComparer.Default.Equals(returnType, spanOfByte));
@@ -326,7 +326,7 @@ namespace Microsoft.Interop
         public static IMethodSymbol? FindGetNativeValuesSourceMethod(ITypeSymbol type, ITypeSymbol readOnlySpanOfByte)
         {
             return type
-                .GetMembers(ShapeMemberNames.LinearCollection.GetNativeValuesSource)
+                .GetMembers(ShapeMemberNames.LinearCollection_V1.GetNativeValuesSource)
                 .OfType<IMethodSymbol>()
                 .FirstOrDefault(m => m is { IsStatic: false, ReturnsByRef: false, ReturnsByRefReadonly: false, Parameters.Length: 1, ReturnType: INamedTypeSymbol returnType }
                     && m.Parameters[0].Type.SpecialType == SpecialType.System_Int32

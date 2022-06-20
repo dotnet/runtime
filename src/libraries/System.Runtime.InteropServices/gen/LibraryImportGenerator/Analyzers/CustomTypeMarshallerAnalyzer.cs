@@ -660,7 +660,7 @@ namespace Microsoft.Interop.Analyzers
                             OutRequiresToManagedRule,
                             ImmutableDictionary<string, string>.Empty.Add(
                                 MissingMemberNames.Key,
-                                ShapeMemberNames.Value.ToManaged),
+                                ShapeMemberNames.Value_V1.ToManaged),
                             marshallerType.ToDisplayString()));
                 }
 
@@ -674,9 +674,9 @@ namespace Microsoft.Interop.Analyzers
                     {
                         var missingMembers = (getManagedValuesSourceMethod, getNativeValuesDestinationMethod) switch
                         {
-                            (null, not null) => ShapeMemberNames.LinearCollection.GetManagedValuesSource,
-                            (not null, null) => ShapeMemberNames.LinearCollection.GetNativeValuesDestination,
-                            (null, null) => $"{ShapeMemberNames.LinearCollection.GetManagedValuesSource}{MissingMemberNames.Delimiter}{ShapeMemberNames.LinearCollection.GetNativeValuesDestination}",
+                            (null, not null) => ShapeMemberNames.LinearCollection_V1.GetManagedValuesSource,
+                            (not null, null) => ShapeMemberNames.LinearCollection_V1.GetNativeValuesDestination,
+                            (null, null) => $"{ShapeMemberNames.LinearCollection_V1.GetManagedValuesSource}{MissingMemberNames.Delimiter}{ShapeMemberNames.LinearCollection_V1.GetNativeValuesDestination}",
                             (not null, not null) => string.Empty
                         };
                         context.ReportDiagnostic(
@@ -692,9 +692,9 @@ namespace Microsoft.Interop.Analyzers
                     {
                         var missingMembers = (getNativeValuesSourceMethod, getManagedValuesDestinationMethod) switch
                         {
-                            (not null, null) => ShapeMemberNames.LinearCollection.GetNativeValuesSource,
-                            (null, not null) => ShapeMemberNames.LinearCollection.GetManagedValuesDestination,
-                            (null, null) => $"{ShapeMemberNames.LinearCollection.GetNativeValuesSource}{MissingMemberNames.Delimiter}{ShapeMemberNames.LinearCollection.GetManagedValuesDestination}",
+                            (not null, null) => ShapeMemberNames.LinearCollection_V1.GetNativeValuesSource,
+                            (null, not null) => ShapeMemberNames.LinearCollection_V1.GetManagedValuesDestination,
+                            (null, null) => $"{ShapeMemberNames.LinearCollection_V1.GetNativeValuesSource}{MissingMemberNames.Delimiter}{ShapeMemberNames.LinearCollection_V1.GetManagedValuesDestination}",
                             (not null, not null) => string.Empty
                         };
                         context.ReportDiagnostic(
@@ -743,7 +743,7 @@ namespace Microsoft.Interop.Analyzers
                             UnmanagedResourcesRequiresFreeNativeRule,
                             ImmutableDictionary<string, string>.Empty.Add(
                                 MissingMemberNames.Key,
-                                ShapeMemberNames.Value.FreeNative),
+                                ShapeMemberNames.Value_V1.FreeNative),
                             marshallerType.ToDisplayString(),
                             type.ToDisplayString()));
                 }
@@ -771,7 +771,7 @@ namespace Microsoft.Interop.Analyzers
                             InTwoStageMarshallingRequiresToNativeValueRule,
                             ImmutableDictionary<string, string>.Empty.Add(
                                 MissingMemberNames.Key,
-                                ShapeMemberNames.Value.ToNativeValue),
+                                ShapeMemberNames.Value_V1.ToNativeValue),
                             marshallerType.ToDisplayString()));
                     }
                     if (marshallerData.Direction.HasFlag(CustomTypeMarshallerDirection.Out) && fromNativeValueMethod is null)
@@ -780,7 +780,7 @@ namespace Microsoft.Interop.Analyzers
                             OutTwoStageMarshallingRequiresFromNativeValueRule,
                             ImmutableDictionary<string, string>.Empty.Add(
                                 MissingMemberNames.Key,
-                                ShapeMemberNames.Value.FromNativeValue),
+                                ShapeMemberNames.Value_V1.FromNativeValue),
                             marshallerType.ToDisplayString()));
                     }
 

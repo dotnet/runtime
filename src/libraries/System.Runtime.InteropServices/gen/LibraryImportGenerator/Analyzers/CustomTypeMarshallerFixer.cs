@@ -321,21 +321,21 @@ namespace Microsoft.Interop.Analyzers
                             accessibility: Accessibility.Public,
                             statements: throwNotImplementedStatements));
                         break;
-                    case ShapeMemberNames.Value.ToManaged:
+                    case ShapeMemberNames.Value_V1.ToManaged:
                         updatedDeclaration = gen.AddMembers(updatedDeclaration, gen.MethodDeclaration(
-                            ShapeMemberNames.Value.ToManaged,
+                            ShapeMemberNames.Value_V1.ToManaged,
                             returnType: gen.TypeExpression(managedType),
                             accessibility: Accessibility.Public,
                             statements: throwNotImplementedStatements));
                         break;
-                    case ShapeMemberNames.Value.FreeNative:
-                        updatedDeclaration = gen.AddMembers(updatedDeclaration, gen.MethodDeclaration(ShapeMemberNames.Value.FreeNative,
+                    case ShapeMemberNames.Value_V1.FreeNative:
+                        updatedDeclaration = gen.AddMembers(updatedDeclaration, gen.MethodDeclaration(ShapeMemberNames.Value_V1.FreeNative,
                             accessibility: Accessibility.Public,
                             statements: throwNotImplementedStatements));
                         break;
-                    case ShapeMemberNames.Value.FromNativeValue:
+                    case ShapeMemberNames.Value_V1.FromNativeValue:
                         updatedDeclaration = gen.AddMembers(updatedDeclaration, gen.MethodDeclaration(
-                            ShapeMemberNames.Value.FromNativeValue,
+                            ShapeMemberNames.Value_V1.FromNativeValue,
                             parameters: new[]
                             {
                                 gen.ParameterDeclaration("value",
@@ -344,33 +344,33 @@ namespace Microsoft.Interop.Analyzers
                             accessibility: Accessibility.Public,
                             statements: throwNotImplementedStatements));
                         break;
-                    case ShapeMemberNames.Value.ToNativeValue:
+                    case ShapeMemberNames.Value_V1.ToNativeValue:
                         updatedDeclaration = gen.AddMembers(updatedDeclaration, gen.MethodDeclaration(
-                            ShapeMemberNames.Value.ToNativeValue,
+                            ShapeMemberNames.Value_V1.ToNativeValue,
                             returnType: gen.TypeExpression(fromNativeValueMethod?.Parameters[0].Type ?? @byte),
                             accessibility: Accessibility.Public,
                             statements: throwNotImplementedStatements));
                         break;
-                    case ShapeMemberNames.LinearCollection.GetManagedValuesSource:
+                    case ShapeMemberNames.LinearCollection_V1.GetManagedValuesSource:
                         INamedTypeSymbol? getManagedValuesDestinationReturnType = (INamedTypeSymbol?)getManagedValuesDestinationMethod?.ReturnType;
                         updatedDeclaration = gen.AddMembers(updatedDeclaration, gen.MethodDeclaration(
-                            ShapeMemberNames.LinearCollection.GetManagedValuesSource,
+                            ShapeMemberNames.LinearCollection_V1.GetManagedValuesSource,
                             returnType: gen.TypeExpression(
                                 readOnlySpanOfT.Construct(
                                     getManagedValuesDestinationReturnType?.TypeArguments[0] ?? @object)),
                             accessibility: Accessibility.Public,
                             statements: throwNotImplementedStatements));
                         break;
-                    case ShapeMemberNames.LinearCollection.GetNativeValuesDestination:
+                    case ShapeMemberNames.LinearCollection_V1.GetNativeValuesDestination:
                         updatedDeclaration = gen.AddMembers(updatedDeclaration, gen.MethodDeclaration(
-                            ShapeMemberNames.LinearCollection.GetNativeValuesDestination,
+                            ShapeMemberNames.LinearCollection_V1.GetNativeValuesDestination,
                             returnType: gen.TypeExpression(spanOfByte),
                             accessibility: Accessibility.Public,
                             statements: throwNotImplementedStatements));
                         break;
-                    case ShapeMemberNames.LinearCollection.GetNativeValuesSource:
+                    case ShapeMemberNames.LinearCollection_V1.GetNativeValuesSource:
                         updatedDeclaration = gen.AddMembers(updatedDeclaration, gen.MethodDeclaration(
-                            ShapeMemberNames.LinearCollection.GetNativeValuesSource,
+                            ShapeMemberNames.LinearCollection_V1.GetNativeValuesSource,
                             parameters: new[]
                             {
                                 gen.ParameterDeclaration("numElements", type: gen.TypeExpression(int32))
@@ -379,10 +379,10 @@ namespace Microsoft.Interop.Analyzers
                             accessibility: Accessibility.Public,
                             statements: throwNotImplementedStatements));
                         break;
-                    case ShapeMemberNames.LinearCollection.GetManagedValuesDestination:
+                    case ShapeMemberNames.LinearCollection_V1.GetManagedValuesDestination:
                         INamedTypeSymbol? getManagedValuesSourceReturnType = (INamedTypeSymbol?)getManagedValuesSourceMethod?.ReturnType;
                         updatedDeclaration = gen.AddMembers(updatedDeclaration, gen.MethodDeclaration(
-                            ShapeMemberNames.LinearCollection.GetNativeValuesDestination,
+                            ShapeMemberNames.LinearCollection_V1.GetNativeValuesDestination,
                             parameters: new[]
                             {
                                 gen.ParameterDeclaration("numElements", type: gen.TypeExpression(int32))
