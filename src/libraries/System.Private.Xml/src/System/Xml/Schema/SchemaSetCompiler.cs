@@ -2166,7 +2166,7 @@ namespace System.Xml.Schema
 
         private void CompileLocalAttributes(XmlSchemaComplexType? baseType, XmlSchemaComplexType derivedType, XmlSchemaObjectCollection attributes, XmlSchemaAnyAttribute? anyAttribute, XmlSchemaDerivationMethod derivedBy)
         {
-            XmlSchemaAnyAttribute? baseAttributeWildcard = baseType != null ? baseType.AttributeWildcard : null;
+            XmlSchemaAnyAttribute? baseAttributeWildcard = baseType?.AttributeWildcard;
             for (int i = 0; i < attributes.Count; ++i)
             {
                 XmlSchemaAttribute? attr = attributes[i] as XmlSchemaAttribute;

@@ -772,7 +772,7 @@ namespace System.Xml.Schema
 
         public override object? FindId(string name)
         {
-            return _IDs == null ? null : _IDs[name];
+            return _IDs?[name];
         }
 
         public bool IsXSDRoot(string localName, string ns)

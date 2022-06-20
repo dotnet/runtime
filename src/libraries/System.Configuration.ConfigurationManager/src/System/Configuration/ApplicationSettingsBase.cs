@@ -716,7 +716,7 @@ namespace System.Configuration
                 // on an infinite recursion when calling Properties[propertyName] as that calls this.
                 _ = base[propertyName];
                 SettingsProperty setting = Properties[propertyName];
-                SettingsProvider provider = setting != null ? setting.Provider : null;
+                SettingsProvider provider = setting?.Provider;
 
                 Debug.Assert(provider != null, "Could not determine provider from which settings were loaded");
 

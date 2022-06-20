@@ -195,7 +195,7 @@ namespace System.Xml.Schema
             get
             {
                 XmlSchemaCollectionNode? node = (XmlSchemaCollectionNode?)_collection[ns ?? string.Empty];
-                return (node != null) ? node.Schema : null;
+                return node?.Schema;
             }
         }
 
@@ -279,7 +279,7 @@ namespace System.Xml.Schema
         internal SchemaInfo? GetSchemaInfo(string? ns)
         {
             XmlSchemaCollectionNode? node = (XmlSchemaCollectionNode?)_collection[ns ?? string.Empty];
-            return (node != null) ? node.SchemaInfo : null;
+            return node?.SchemaInfo;
         }
 
         internal SchemaNames GetSchemaNames(XmlNameTable nt)

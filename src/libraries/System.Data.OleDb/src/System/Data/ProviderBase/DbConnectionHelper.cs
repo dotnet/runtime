@@ -56,7 +56,7 @@ namespace System.Data.OleDb
             get
             {
                 System.Data.ProviderBase.DbConnectionPoolGroup? poolGroup = PoolGroup;
-                return ((null != poolGroup) ? poolGroup.ConnectionOptions : null);
+                return poolGroup?.ConnectionOptions;
             }
         }
 
@@ -249,7 +249,7 @@ namespace System.Data.OleDb
             Debug.Assert(DbConnectionClosedConnecting.SingletonInstance == _innerConnection, "not connecting");
 
             System.Data.ProviderBase.DbConnectionPoolGroup? poolGroup = PoolGroup;
-            DbConnectionOptions? connectionOptions = ((null != poolGroup) ? poolGroup.ConnectionOptions : null);
+            DbConnectionOptions? connectionOptions = poolGroup?.ConnectionOptions;
             if ((null == connectionOptions) || connectionOptions.IsEmpty)
             {
                 throw ADP.NoConnectionString();
