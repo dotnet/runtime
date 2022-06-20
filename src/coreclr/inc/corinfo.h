@@ -886,7 +886,7 @@ enum CORINFO_ACCESS_FLAGS
     CORINFO_ACCESS_SET        = 0x0200, // Field set (stfld)
     CORINFO_ACCESS_ADDRESS    = 0x0400, // Field address (ldflda)
     CORINFO_ACCESS_INIT_ARRAY = 0x0800, // Field use for InitializeArray
-    // UNUSED                 = 0x4000,
+    CORINFO_ACCESS_DIRECT     = 0x4000,
     CORINFO_ACCESS_INLINECHECK= 0x8000, // Return fieldFlags and fieldAccessor only. Used by JIT64 during inlining.
 };
 
