@@ -4,8 +4,10 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Test.Console;
@@ -411,6 +413,36 @@ namespace Microsoft.Extensions.Logging.Console.Test
             write = sink.Writes[1];
             Assert.Equal(TestConsole.DefaultBackgroundColor, write.BackgroundColor);
             Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
+        }
+
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        public void AddConsole_IsOutputRedirected_ColorDisabled()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                // Arrange
+                var sink = new ConsoleSink();
+                var console = new TestConsole(sink);
+                var loggerOptions = new ConsoleLoggerOptions();
+                var consoleLoggerProcessor = new TestLoggerProcessor(console, null!);
+
+                var loggerProvider = new ServiceCollection()
+                    .AddLogging(builder => builder
+                        .AddConsole()
+                    )
+                    .BuildServiceProvider()
+                    .GetRequiredService<ILoggerProvider>();
+
+                var consoleLoggerProvider = Assert.IsType<ConsoleLoggerProvider>(loggerProvider);
+                var logger = (ConsoleLogger)consoleLoggerProvider.CreateLogger("Category");
+
+                // Assert
+                Assert.True(System.Console.IsOutputRedirected);
+                Assert.Null(logger.Options.FormatterName);
+                var formatter = Assert.IsType<SimpleConsoleFormatter>(logger.Formatter);
+                Assert.Equal(LoggerColorBehavior.Default, formatter.FormatterOptions.ColorBehavior);
+
+            }, new RemoteInvokeOptions { StartInfo = new ProcessStartInfo() { RedirectStandardOutput = true } }).Dispose();
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -1365,6 +1397,9 @@ namespace Microsoft.Extensions.Logging.Console.Test
                     throw new ArgumentOutOfRangeException(nameof(format));
             }
         }
+
+        public static bool IsThreadingAndRemoteExecutorSupported =>
+            PlatformDetection.IsThreadingSupported && RemoteExecutor.IsSupported;
     }
 
     internal class TestLoggerProcessor : ConsoleLoggerProcessor
