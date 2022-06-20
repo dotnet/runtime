@@ -53,7 +53,7 @@ namespace
             LIMITED_METHOD_CONTRACT;
             m_hr = E_FAIL;
             m_priorityOfLastError = 0;
-            m_message = SString(SString::Utf8, "");
+            m_message = SString(SString::Utf8, "\n");
         }
 
         VOID TrackErrorCode()
@@ -139,14 +139,14 @@ namespace
         void SetMessage(LPCSTR message)
         {
 #ifdef TARGET_UNIX
-            //Append dlerror() messages of all attempts
+            //Append dlerror() messages
             SString new_message = SString(SString::Utf8, message);
             SString::Iterator i = m_message.Begin();
-
             if (!m_message.Find(i, new_message))
             {
-                m_message += new_message;
                 m_message += SString(SString::Utf8, " ");
+                m_message += new_message;
+                m_message += SString(SString::Utf8, "\n");
             }
 #else
             m_message = SString(SString::Utf8, message);
