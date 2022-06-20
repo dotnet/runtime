@@ -15,4 +15,14 @@ jobs:
 
     - run: nuget
       
+    - run: rm ~/.config/NuGet/NuGet.Config
+    
+    - run: |
+       echo '<?xml version="1.0" encoding="utf-8"?>' > packages.config
+       echo '<packages>' >> packages.config
+       echo '<package id="Microsoft.Win32.Primitives" version="4.3.0" targetFramework="net461" />' >> packages.config
+       echo '</packages>' >> packages.config
+
+    - run: nuget restore packages.config
+
     - run: cat ~/.config/NuGet/NuGet.Config
