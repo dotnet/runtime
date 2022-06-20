@@ -463,7 +463,6 @@ FCIMPL2(FC_BOOL_RET, ThreadNative::Join, ThreadBaseObject* pThisUNSAFE, INT32 Ti
 }
 FCIMPLEND
 
-#undef Sleep
 FCIMPL1(void, ThreadNative::Sleep, INT32 iTime)
 {
     FCALL_CONTRACT;
@@ -475,8 +474,6 @@ FCIMPL1(void, ThreadNative::Sleep, INT32 iTime)
     HELPER_METHOD_FRAME_END();
 }
 FCIMPLEND
-
-#define Sleep(dwMilliseconds) Dont_Use_Sleep(dwMilliseconds)
 
 extern "C" void QCALLTYPE ThreadNative_UninterruptibleSleep0()
 {

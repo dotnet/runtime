@@ -7,11 +7,10 @@ using System.Globalization;
 using System.IO;
 using System.Xml.Schema;
 using System.Xml.XPath;
+using TF = System.Xml.Xsl.XmlQueryTypeFactory;
 
 namespace System.Xml.Xsl
 {
-    using TF = XmlQueryTypeFactory;
-
     /// <summary>
     /// This class is the only way to create concrete instances of the abstract XmlQueryType class.
     /// Once basic types have been created, they can be combined and transformed in various ways.

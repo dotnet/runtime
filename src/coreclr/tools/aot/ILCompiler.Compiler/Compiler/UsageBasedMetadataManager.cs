@@ -683,13 +683,21 @@ namespace ILCompiler
                 var genericParameter = (GenericParameterDesc)typicalInstantiation[i];
                 if (FlowAnnotations.GetGenericParameterAnnotation(genericParameter) != default)
                 {
-                    var deps = ILCompiler.Dataflow.ReflectionMethodBodyScanner.ProcessGenericArgumentDataFlow(factory, FlowAnnotations, Logger, genericParameter, instantiation[i], source);
-                    if (deps.Count > 0)
+                    try
                     {
-                        if (dependencies == null)
-                            dependencies = deps;
-                        else
-                            dependencies.AddRange(deps);
+                        var deps = ILCompiler.Dataflow.ReflectionMethodBodyScanner.ProcessGenericArgumentDataFlow(factory, FlowAnnotations, Logger, genericParameter, instantiation[i], source);
+                        if (deps.Count > 0)
+                        {
+                            if (dependencies == null)
+                                dependencies = deps;
+                            else
+                                dependencies.AddRange(deps);
+                        }
+                    }
+                    catch (TypeSystemException)
+                    {
+                        // Wasn't able to do dataflow because of missing references or something like that.
+                        // This likely won't compile either, so we don't care about missing dependencies.
                     }
                 }
             }

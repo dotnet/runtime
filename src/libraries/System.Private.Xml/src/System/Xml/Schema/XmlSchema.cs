@@ -1,17 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
+using System.Collections;
+using System.ComponentModel;
+using System.Xml.Serialization;
+using System.Threading;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml.Schema
 {
-    using System.IO;
-    using System.Collections;
-    using System.ComponentModel;
-    using System.Xml.Serialization;
-    using System.Threading;
-    using System.Diagnostics;
-    using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
-
     [XmlRoot("schema", Namespace = XmlSchema.Namespace)]
     public class XmlSchema : XmlSchemaObject
     {

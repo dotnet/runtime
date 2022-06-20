@@ -3114,6 +3114,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/generics/Pointers/**">
             <Issue>Doesn't compile with LLVM AOT.</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/invalid_operations/**">
+            <Issue>Doesn't compile with LLVM AOT.</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmfullaot' or '$(RuntimeVariant)' == 'llvmaot') and '$(TargetArchitecture)' == 'arm64'">
@@ -3290,6 +3293,9 @@
             <Issue>https://github.com/dotnet/runtime/issues/54122</Issue>
         </ExcludeList>
 
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/invalid_operations/**">
+            <Issue>Function mismatch</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/threading/DeadThreads/DeadThreads/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
         </ExcludeList>

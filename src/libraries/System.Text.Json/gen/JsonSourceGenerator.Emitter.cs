@@ -718,7 +718,7 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerC
 
                     TypeGenerationSpec memberTypeMetadata = memberMetadata.TypeGenerationSpec;
 
-                    string clrPropertyName = memberMetadata.ClrName;
+                    string nameSpecifiedInSourceCode = memberMetadata.NameSpecifiedInSourceCode;
 
                     string declaringTypeCompilableName = memberMetadata.DeclaringTypeRef;
 
@@ -733,9 +733,9 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerC
                     string getterValue = memberMetadata switch
                     {
                         { DefaultIgnoreCondition: JsonIgnoreCondition.Always } => "null",
-                        { CanUseGetter: true } => $"static (obj) => (({declaringTypeCompilableName})obj).{clrPropertyName}{(memberMetadata.TypeGenerationSpec.CanContainNullableReferenceAnnotations ? "!" : "")}",
+                        { CanUseGetter: true } => $"static (obj) => (({declaringTypeCompilableName})obj).{nameSpecifiedInSourceCode}{(memberMetadata.TypeGenerationSpec.CanContainNullableReferenceAnnotations ? "!" : "")}",
                         { CanUseGetter: false, HasJsonInclude: true }
-                            => @$"static (obj) => throw new {InvalidOperationExceptionTypeRef}(""{string.Format(ExceptionMessages.InaccessibleJsonIncludePropertiesNotSupported, typeGenerationSpec.Type.Name, memberMetadata.ClrName)}"")",
+                            => @$"static (obj) => throw new {InvalidOperationExceptionTypeRef}(""{string.Format(ExceptionMessages.InaccessibleJsonIncludePropertiesNotSupported, typeGenerationSpec.Type.Name, nameSpecifiedInSourceCode)}"")",
                         _ => "null"
                     };
 
@@ -745,9 +745,9 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerC
                         { CanUseSetter: true, IsInitOnlySetter: true }
                             => @$"static (obj, value) => throw new {InvalidOperationExceptionTypeRef}(""{ExceptionMessages.InitOnlyPropertyDeserializationNotSupported}"")",
                         { CanUseSetter: true } when typeGenerationSpec.IsValueType
-                            => $@"static (obj, value) => {UnsafeTypeRef}.Unbox<{declaringTypeCompilableName}>(obj).{clrPropertyName} = value!",
+                            => $@"static (obj, value) => {UnsafeTypeRef}.Unbox<{declaringTypeCompilableName}>(obj).{nameSpecifiedInSourceCode} = value!",
                         { CanUseSetter: true }
-                            => @$"static (obj, value) => (({declaringTypeCompilableName})obj).{clrPropertyName} = value!",
+                            => @$"static (obj, value) => (({declaringTypeCompilableName})obj).{nameSpecifiedInSourceCode} = value!",
                         { CanUseSetter: false, HasJsonInclude: true }
                             => @$"static (obj, value) => throw new {InvalidOperationExceptionTypeRef}(""{string.Format(ExceptionMessages.InaccessibleJsonIncludePropertiesNotSupported, typeGenerationSpec.Type.Name, memberMetadata.ClrName)}"")",
                         _ => "null",
@@ -781,7 +781,7 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerC
         HasJsonInclude = {FormatBool(memberMetadata.HasJsonInclude)},
         IsExtensionData = {FormatBool(memberMetadata.IsExtensionData)},
         NumberHandling = {GetNumberHandlingAsStr(memberMetadata.NumberHandling)},
-        PropertyName = ""{clrPropertyName}"",
+        PropertyName = ""{memberMetadata.ClrName}"",
         JsonPropertyName = {jsonPropertyNameValue}
     }};
 
@@ -894,7 +894,7 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
 
                     Type propertyType = propertyTypeSpec.Type;
                     string? objectRef = castingRequiredForProps ? $"(({propertyGenSpec.DeclaringTypeRef}){ValueVarName})" : ValueVarName;
-                    string propValue = $"{objectRef}.{propertyGenSpec.ClrName}";
+                    string propValue = $"{objectRef}.{propertyGenSpec.NameSpecifiedInSourceCode}";
                     string methodArgs = $"{propVarName}, {propValue}";
 
                     string? methodToCall = GetWriterMethod(propertyType);

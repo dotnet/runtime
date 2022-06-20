@@ -9,6 +9,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Reflection;
@@ -31,6 +32,7 @@ internal static class ReflectionTest
         TestVirtualDelegateTargets.Run();
         TestRunClassConstructor.Run();
         TestFieldMetadata.Run();
+        TestLinqInvocation.Run();
 #if !OPTIMIZED_MODE_WITHOUT_SCANNER
         TestContainment.Run();
         TestInterfaceMethod.Run();
@@ -1856,6 +1858,19 @@ internal static class ReflectionTest
                 throw new Exception();
 #endif
             static Type GetAtom3() => typeof(Atom3);
+        }
+    }
+
+    class TestLinqInvocation
+    {
+        delegate void RunMeDelegate();
+
+        static void RunMe() { }
+
+        public static void Run()
+        {
+            Expression<Action<RunMeDelegate>> ex = (RunMeDelegate m) => m();
+            ex.Compile()(RunMe);
         }
     }
 
