@@ -478,11 +478,8 @@ namespace System.Buffers.Text
         }
 
         // This can be replaced once https://github.com/dotnet/runtime/issues/63331 is implemented.
-        // Note that for performance reasons this is not functionally identical on SSE3 and Arm64. On both, the input
-        // right is truncated to 4bits per lane. In addition on SSE3, the shuffle will return 0 for each input in right
-        // where the top bit is set. On Arm64 the top bit will be ignored.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector128<byte> SimdShuffle(Vector128<byte> left, Vector128<byte> right, Vector128<byte> maskf)
+        private static Vector128<byte> SimdShuffle(Vector128<byte> left, Vector128<byte> right, Vector128<byte> mask8F)
         {
             Debug.Assert((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian);
 
@@ -492,7 +489,7 @@ namespace System.Buffers.Text
             }
             else
             {
-                return AdvSimd.Arm64.VectorTableLookup(left, Vector128.BitwiseAnd(right, maskf));
+                return AdvSimd.Arm64.VectorTableLookup(left, Vector128.BitwiseAnd(right, mask8F));
             }
         }
 
@@ -574,16 +571,15 @@ namespace System.Buffers.Text
             // 1111 0x10 andlut     0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10
 
             // The JIT won't hoist these "constants", so help it
-            Vector128<byte> lutHi = Vector128.Create(0x02011010, 0x08040804, 0x10101010, 0x10101010).AsByte();
-            Vector128<byte> lutLo = Vector128.Create(0x11111115, 0x11111111, 0x1A131111, 0x1A1B1B1B).AsByte();
+            Vector128<byte>  lutHi = Vector128.Create(0x02011010, 0x08040804, 0x10101010, 0x10101010).AsByte();
+            Vector128<byte>  lutLo = Vector128.Create(0x11111115, 0x11111111, 0x1A131111, 0x1A1B1B1B).AsByte();
             Vector128<sbyte> lutShift = Vector128.Create(0x04131000, 0xb9b9bfbf, 0x00000000, 0x00000000).AsSByte();
             Vector128<sbyte> packBytesMask = Vector128.Create(0x06000102, 0x090A0405, 0x0C0D0E08, 0xffffffff).AsSByte();
-
-            Vector128<byte> mask2F = Vector128.Create((byte)'/');
-            Vector128<byte> mergeConstant0 = Vector128.Create(0x01400140).AsByte();
+            Vector128<byte>  mergeConstant0 = Vector128.Create(0x01400140).AsByte();
             Vector128<short> mergeConstant1 = Vector128.Create(0x00011000).AsInt16();
-            Vector128<byte> one = Vector128.Create((byte)1);
-            Vector128<byte> f = Vector128.Create((byte)0xf);
+            Vector128<byte>  one = Vector128.Create((byte)1);
+            Vector128<byte>  mask2F = Vector128.Create((byte)'/');
+            Vector128<byte>  mask8F = Vector128.Create((byte)0x8F);
 
             byte* src = srcBytes;
             byte* dest = destBytes;
@@ -595,14 +591,9 @@ namespace System.Buffers.Text
                 Vector128<byte> str = Vector128.LoadUnsafe(ref *src);
 
                 // lookup
-                Vector128<byte> hiNibbles = Vector128.ShiftRightLogical(str.AsInt32(), 4).AsByte();
-                if (Ssse3.IsSupported)
-                {
-                    // Ensure the high bits are masked off for the shuffle.
-                    hiNibbles &= mask2F;
-                }
-                Vector128<byte> hi = SimdShuffle(lutHi, hiNibbles, f);
-                Vector128<byte> lo = SimdShuffle(lutLo, str, f);
+                Vector128<byte> hiNibbles = Vector128.ShiftRightLogical(str.AsInt32(), 4).AsByte() & mask2F;
+                Vector128<byte> hi = SimdShuffle(lutHi, hiNibbles, mask8F);
+                Vector128<byte> lo = SimdShuffle(lutLo, str, mask8F);
 
                 // Check for invalid input: if any "and" values from lo and hi are not zero,
                 // fall back on bytewise code to do error checking and reporting:
@@ -610,7 +601,7 @@ namespace System.Buffers.Text
                     break;
 
                 Vector128<byte> eq2F = Vector128.Equals(str, mask2F);
-                Vector128<byte> shift = SimdShuffle(lutShift.AsByte(), (eq2F + hiNibbles), f);
+                Vector128<byte> shift = SimdShuffle(lutShift.AsByte(), (eq2F + hiNibbles), mask8F);
 
                 // Now simply add the delta values to the input:
                 str += shift;
@@ -654,7 +645,7 @@ namespace System.Buffers.Text
                 // 00000000 AAAAAAaa BBBBbbbb CCcccccc
 
                 // Pack bytes together:
-                str = SimdShuffle(output.AsByte(), packBytesMask.AsByte(), f);
+                str = SimdShuffle(output.AsByte(), packBytesMask.AsByte(), mask8F);
                 // 00000000 00000000 00000000 00000000
                 // LLllllll KKKKkkkk JJJJJJjj IIiiiiii
                 // HHHHhhhh GGGGGGgg FFffffff EEEEeeee

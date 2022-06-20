@@ -406,15 +406,15 @@ namespace System.Buffers.Text
             // 0 0 0 0 l k j i h g f e d c b a
 
             // The JIT won't hoist these "constants", so help it
-            Vector128<byte> shuffleVec = Vector128.Create(0x01020001, 0x04050304, 0x07080607, 0x0A0B090A).AsByte();
-            Vector128<byte> lut = Vector128.Create(0xFCFC4741, 0xFCFCFCFC, 0xFCFCFCFC, 0x0000F0ED).AsByte();
-            Vector128<byte> maskAC = Vector128.Create(0x0fc0fc00).AsByte();
-            Vector128<byte> maskBB = Vector128.Create(0x003f03f0).AsByte();
+            Vector128<byte>   shuffleVec = Vector128.Create(0x01020001, 0x04050304, 0x07080607, 0x0A0B090A).AsByte();
+            Vector128<byte>   lut = Vector128.Create(0xFCFC4741, 0xFCFCFCFC, 0xFCFCFCFC, 0x0000F0ED).AsByte();
+            Vector128<byte>   maskAC = Vector128.Create(0x0fc0fc00).AsByte();
+            Vector128<byte>   maskBB = Vector128.Create(0x003f03f0).AsByte();
             Vector128<ushort> shiftAC = Vector128.Create(0x04000040).AsUInt16();
-            Vector128<short> shiftBB = Vector128.Create(0x01000010).AsInt16();
-            Vector128<byte> const51 = Vector128.Create((byte)51);
-            Vector128<sbyte> const25 = Vector128.Create((sbyte)25);
-            Vector128<byte> f = Vector128.Create((byte)0xf);
+            Vector128<short>  shiftBB = Vector128.Create(0x01000010).AsInt16();
+            Vector128<byte>   const51 = Vector128.Create((byte)51);
+            Vector128<sbyte>  const25 = Vector128.Create((sbyte)25);
+            Vector128<byte>   mask8F = Vector128.Create((byte)0x8F);
 
             byte* src = srcBytes;
             byte* dest = destBytes;
@@ -426,7 +426,7 @@ namespace System.Buffers.Text
                 Vector128<byte> str = Vector128.LoadUnsafe(ref *src);
 
                 // Reshuffle
-                str = SimdShuffle(str, shuffleVec, f);
+                str = SimdShuffle(str, shuffleVec, mask8F);
                 // str, bytes MSB to LSB:
                 // k l j k
                 // h i g h
@@ -503,7 +503,7 @@ namespace System.Buffers.Text
                 Vector128<sbyte> tmp = indices.AsSByte() - mask;
 
                 // Add offsets to input values:
-                str += SimdShuffle(lut, tmp.AsByte(), f);
+                str += SimdShuffle(lut, tmp.AsByte(), mask8F);
 
                 AssertWrite<Vector128<sbyte>>(dest, destStart, destLength);
                 str.Store(dest);
