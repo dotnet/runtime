@@ -389,7 +389,7 @@ namespace System.Reflection.Metadata.Tests
                 Assert.Equal("", block.PeekUtf8NullTerminated(4, null, stringDecoder, out bytesRead));
                 Assert.Equal(0, bytesRead);
 
-                byte[] helloPrefix = Encoding.UTF8.GetBytes("Hello");
+                byte[] helloPrefix = "Hello"u8.ToArray();
 
                 Assert.Equal("Hello\u0001", block.PeekUtf8NullTerminated(1, helloPrefix, stringDecoder, out bytesRead));
                 Assert.Equal(2, bytesRead);

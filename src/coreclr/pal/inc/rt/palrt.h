@@ -315,13 +315,6 @@ typedef const OLECHAR* LPCOLESTR;
 
 typedef WCHAR *BSTR;
 
-STDAPI_VIS(DLLEXPORT, BSTR) SysAllocString(const OLECHAR*);
-STDAPI_VIS(DLLEXPORT, BSTR) SysAllocStringLen(const OLECHAR*, UINT);
-STDAPI_VIS(DLLEXPORT, BSTR) SysAllocStringByteLen(const char *, UINT);
-STDAPI_VIS(DLLEXPORT, void) SysFreeString(BSTR);
-STDAPI_VIS(DLLEXPORT, UINT) SysStringLen(BSTR);
-STDAPI_VIS(DLLEXPORT, UINT) SysStringByteLen(BSTR);
-
 typedef double DATE;
 
 typedef union tagCY {
@@ -930,44 +923,6 @@ typedef JIT_DEBUG_INFO JIT_DEBUG_INFO64, *LPJIT_DEBUG_INFO64;
 #define RT_RCDATA           MAKEINTRESOURCE(10)
 #define RT_VERSION          MAKEINTRESOURCE(16)
 
-/******************* SAFEARRAY ************************/
-
-#define	FADF_VARIANT	( 0x800 )
-
-typedef struct tagSAFEARRAYBOUND
-    {
-    ULONG cElements;
-    LONG lLbound;
-    } 	SAFEARRAYBOUND;
-
-typedef struct tagSAFEARRAYBOUND *LPSAFEARRAYBOUND;
-
-typedef struct tagSAFEARRAY
-    {
-    USHORT cDims;
-    USHORT fFeatures;
-    ULONG cbElements;
-    ULONG cLocks;
-    PVOID pvData;
-    SAFEARRAYBOUND rgsabound[ 1 ];
-    } 	SAFEARRAY;
-
-typedef SAFEARRAY *LPSAFEARRAY;
-
-
-STDAPI_(SAFEARRAY *) SafeArrayCreateVector(VARTYPE vt, LONG lLbound, ULONG cElements);
-STDAPI_(UINT) SafeArrayGetDim(SAFEARRAY * psa);
-STDAPI SafeArrayGetElement(SAFEARRAY * psa, LONG * rgIndices, void * pv);
-STDAPI SafeArrayGetLBound(SAFEARRAY * psa, UINT nDim, LONG * plLbound);
-STDAPI SafeArrayGetUBound(SAFEARRAY * psa, UINT nDim, LONG * plUbound);
-STDAPI SafeArrayGetVartype(SAFEARRAY * psa, VARTYPE * pvt);
-STDAPI SafeArrayPutElement(SAFEARRAY * psa, LONG * rgIndices, void * pv);
-STDAPI SafeArrayDestroy(SAFEARRAY * psa);
-
-EXTERN_C void * _stdcall _lfind(const void *, const void *, unsigned int *, unsigned int,
-        int (__cdecl *)(const void *, const void *));
-
-
 /*<TODO>****************** clean this up ***********************</TODO>*/
 
 
@@ -1189,6 +1144,14 @@ typedef struct _DISPATCHER_CONTEXT {
 
 typedef struct _DISPATCHER_CONTEXT {
     // S390X does not build the VM or JIT at this point,
+    // so we only provide a dummy definition.
+    DWORD Reserved;
+} DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
+
+#elif defined(HOST_POWERPC64)
+
+typedef struct _DISPATCHER_CONTEXT {
+    // PPC64LE does not build the VM or JIT at this point,
     // so we only provide a dummy definition.
     DWORD Reserved;
 } DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;

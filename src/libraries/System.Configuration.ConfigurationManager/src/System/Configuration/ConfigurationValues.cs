@@ -43,7 +43,7 @@ namespace System.Configuration
             => _containsInvalidValue ? new InvalidValuesCollection(this) : EmptyCollectionInstance;
 
         private static IEnumerable EmptyCollectionInstance
-            => s_emptyCollection ?? (s_emptyCollection = new EmptyCollection());
+            => s_emptyCollection ??= new EmptyCollection();
 
         internal void AssociateContext(BaseConfigurationRecord configRecord)
         {

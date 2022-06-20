@@ -461,7 +461,7 @@ namespace System.Management
             if ((null != propertyValue) && propertyValue.GetType().IsArray)
             {
                 isArray = true;
-                wmiCimType = (wmiCimType | (int)tag_CIMTYPE_ENUMERATION.CIM_FLAG_ARRAY);
+                wmiCimType |= (int)tag_CIMTYPE_ENUMERATION.CIM_FLAG_ARRAY;
             }
 
             object wmiValue = PropertyData.MapValueToWmiValue(propertyValue, propertyType, isArray);
@@ -500,7 +500,7 @@ namespace System.Management
             int wmiCimType = (int)propertyType;
 
             if (isArray)
-                wmiCimType = (wmiCimType | (int)tag_CIMTYPE_ENUMERATION.CIM_FLAG_ARRAY);
+                wmiCimType |= (int)tag_CIMTYPE_ENUMERATION.CIM_FLAG_ARRAY;
 
             object dummyObj = System.DBNull.Value;
 

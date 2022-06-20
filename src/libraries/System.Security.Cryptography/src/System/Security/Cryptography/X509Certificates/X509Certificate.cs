@@ -376,7 +376,7 @@ namespace System.Security.Cryptography.X509Certificates
         // Only use for internal purposes when the returned byte[] will not be mutated
         private byte[] GetRawCertHash()
         {
-            return _lazyCertHash ?? (_lazyCertHash = Pal!.Thumbprint);
+            return _lazyCertHash ??= Pal!.Thumbprint;
         }
 
         public virtual string GetEffectiveDateString()

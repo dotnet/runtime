@@ -61,9 +61,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void FailFast(string? message, Exception? exception, string? errorMessage);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern string[] GetCommandLineArgsNative();
-
         public static string[] GetCommandLineArgs()
         {
             // There are multiple entry points to a hosted app. The host could

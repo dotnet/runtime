@@ -71,6 +71,40 @@ bool GetVersionResilientTypeHashCode(IMDInternalImport *pMDImport, mdExportedTyp
     return true;
 }
 
+bool GetVersionResilientMethodDefHashCode(IMDInternalImport *pMDImport, mdMethodDef token, int * pdwHashCode)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        PRECONDITION(CheckPointer(pdwHashCode));
+    }
+    CONTRACTL_END
+
+    _ASSERTE(TypeFromToken(token) == mdtMethodDef);
+    _ASSERTE(!IsNilToken(token));
+
+    LPCUTF8 szName;
+
+    if (FAILED(pMDImport->GetNameOfMethodDef(token, &szName)))
+        return false;
+
+    mdTypeDef tkTypeDef;
+
+    if (FAILED(pMDImport->GetParentToken(token, &tkTypeDef)))
+        return false;
+
+    int hashCode;
+    if (!GetVersionResilientTypeHashCode(pMDImport, tkTypeDef, &hashCode))
+        return false;
+
+    hashCode ^= ComputeNameHashCode(szName);
+
+    *pdwHashCode = hashCode;
+    return true;
+}
+
 #ifndef DACCESS_COMPILE
 int GetVersionResilientTypeHashCode(TypeHandle type)
 {

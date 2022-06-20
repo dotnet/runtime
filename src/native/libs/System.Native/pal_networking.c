@@ -1440,7 +1440,10 @@ int32_t SystemNative_Send(intptr_t socket, void* buffer, int32_t bufferLen, int3
     ssize_t res;
 #if defined(__APPLE__) && __APPLE__
     // possible OSX kernel bug: https://github.com/dotnet/runtime/issues/27221
-    while ((res = send(fd, buffer, (size_t)bufferLen, socketFlags)) < 0 && (errno == EINTR || errno == EPROTOTYPE));
+    // According to https://github.com/dotnet/runtime/issues/63291 the EPROTOTYPE may be
+    // permanent so we need to limit retries.
+    int maxProtoRetry = 4;
+    while ((res = send(fd, buffer, (size_t)bufferLen, socketFlags)) < 0 && (errno == EINTR || (errno == EPROTOTYPE && --maxProtoRetry > 0)));
 #else
     while ((res = send(fd, buffer, (size_t)bufferLen, socketFlags)) < 0 && errno == EINTR);
 #endif
@@ -1476,7 +1479,10 @@ int32_t SystemNative_SendMessage(intptr_t socket, MessageHeader* messageHeader, 
     ssize_t res;
 #if defined(__APPLE__) && __APPLE__
     // possible OSX kernel bug: https://github.com/dotnet/runtime/issues/27221
-    while ((res = sendmsg(fd, &header, socketFlags)) < 0 && (errno == EINTR || errno == EPROTOTYPE));
+    // According to https://github.com/dotnet/runtime/issues/63291 the EPROTOTYPE may be
+    // permanent so we need to limit retries.
+    int maxProtoRetry = 4;
+    while ((res = sendmsg(fd, &header, socketFlags)) < 0 && (errno == EINTR || (errno == EPROTOTYPE && --maxProtoRetry > 0)));
 #else
     while ((res = sendmsg(fd, &header, socketFlags)) < 0 && errno == EINTR);
 #endif
@@ -3126,6 +3132,7 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
     int outfd = ToFileDescriptor(out_fd);
     int infd = ToFileDescriptor(in_fd);
     off_t offtOffset = (off_t)offset;
+    int savedErrno;
 
 #if HAVE_SENDFILE_4
     ssize_t res;
@@ -3245,7 +3252,7 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
     return Error_SUCCESS;
 
 error:
-    int savedErrno = errno;
+    savedErrno = errno;
     free(buffer);
     return SystemNative_ConvertErrorPlatformToPal(savedErrno);
 

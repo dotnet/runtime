@@ -172,8 +172,9 @@ namespace System.Net.Http
                         {
                             while (true)
                             {
-                                string? challengeResponse = authContext.GetOutgoingBlob(challengeData);
-                                if (challengeResponse == null)
+                                SecurityStatusPal statusCode;
+                                string? challengeResponse = authContext.GetOutgoingBlob(challengeData, throwOnError: false, out statusCode);
+                                if (statusCode.ErrorCode > SecurityStatusPalErrorCode.TryAgain || challengeResponse == null)
                                 {
                                     // Response indicated denial even after login, so stop processing and return current response.
                                     break;
@@ -195,7 +196,13 @@ namespace System.Net.Http
                                 if (!IsAuthenticationChallenge(response, isProxyAuth))
                                 {
                                     // Tail response for Negoatiate on successful authentication. Validate it before we proceed.
-                                    authContext.GetOutgoingBlob(challengeData);
+                                    authContext.GetOutgoingBlob(challengeData, throwOnError: false, out statusCode);
+                                    if (statusCode.ErrorCode != SecurityStatusPalErrorCode.OK)
+                                    {
+                                        isNewConnection = false;
+                                        connection.Dispose();
+                                        throw new HttpRequestException(SR.Format(SR.net_http_authvalidationfailure, statusCode.ErrorCode), null, HttpStatusCode.Unauthorized);
+                                    }
                                     break;
                                 }
 

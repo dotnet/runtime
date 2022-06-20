@@ -70,12 +70,12 @@ namespace System.Numerics
         /// <summary>Computes an estimate of the reciprocal of a value.</summary>
         /// <param name="x">The value whose estimate of the reciprocal is to be computed.</param>
         /// <returns>An estimate of the reciprocal of <paramref name="x" />.</returns>
-        static abstract TSelf ReciprocalEstimate(TSelf x);
+        static virtual TSelf ReciprocalEstimate(TSelf x) => TSelf.One / x;
 
         /// <summary>Computes an estimate of the reciprocal square root of a value.</summary>
         /// <param name="x">The value whose estimate of the reciprocal square root is to be computed.</param>
         /// <returns>An estimate of the reciprocal square root of <paramref name="x" />.</returns>
-        static abstract TSelf ReciprocalSqrtEstimate(TSelf x);
+        static virtual TSelf ReciprocalSqrtEstimate(TSelf x) => TSelf.One / TSelf.Sqrt(x);
 
         /// <summary>Computes the product of a value and its base-radix raised to the specified power.</summary>
         /// <param name="x">The value which base-radix raised to the power of <paramref name="n" /> multiplies.</param>

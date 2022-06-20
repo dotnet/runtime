@@ -1,1 +1,2 @@
-C:System.Net.Quic.QuicImplementationProviders
+P:System.Net.Quic.QuicConnection.IsSupported
+P:System.Net.Quic.QuicListener.IsSupported

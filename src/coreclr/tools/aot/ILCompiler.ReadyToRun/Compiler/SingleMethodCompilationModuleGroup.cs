@@ -17,19 +17,9 @@ namespace ILCompiler
         private MethodDesc _method;
 
         public SingleMethodCompilationModuleGroup(
-            CompilerTypeSystemContext context,
-            bool isCompositeBuildMode,
-            bool isInputBubble,
-            IEnumerable<EcmaModule> compilationModuleSet,
-            IEnumerable<ModuleDesc> versionBubbleModuleSet,
-            bool compileGenericDependenciesFromVersionBubbleModuleSet,
+            ReadyToRunCompilationModuleGroupConfig config,
             MethodDesc method) :
-                base(context,
-                     isCompositeBuildMode,
-                     isInputBubble,
-                     compilationModuleSet,
-                     versionBubbleModuleSet,
-                     compileGenericDependenciesFromVersionBubbleModuleSet)
+                base(config)
         {
             _method = method;
         }
@@ -48,7 +38,7 @@ namespace ILCompiler
         public override ReadyToRunFlags GetReadyToRunFlags()
         {
             // Partial by definition.
-            return ReadyToRunFlags.READYTORUN_FLAG_Partial;
+            return base.GetReadyToRunFlags() | ReadyToRunFlags.READYTORUN_FLAG_Partial;
         }
     }
 }

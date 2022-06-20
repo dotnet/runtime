@@ -105,7 +105,30 @@ function set_exit_code(exit_code, reason) {
         }
 
     } else if (App && App.INTERNAL) {
-        App.INTERNAL.mono_wasm_exit(exit_code);
+        if (is_node) {
+            let _flush = function(_stream) {
+                return new Promise((resolve, reject) => {
+                    if (!_stream.write('')) {
+                        _stream.on('drain', () => resolve());
+                        setTimeout(reject, 3000);
+                    } else {
+                        resolve();
+                    }
+                });
+            };
+            let stderrFlushed = _flush(process.stderr);
+            let stdoutFlushed = _flush(process.stdout);
+
+            Promise.all([ stdoutFlushed, stderrFlushed ])
+                    .then(
+                        () => App.INTERNAL.mono_wasm_exit(exit_code),
+                        reason => {
+                            console.error(`flushing std* streams failed: ${reason}`);
+                            App.INTERNAL.mono_wasm_exit(123);
+                        });
+        } else {
+            App.INTERNAL.mono_wasm_exit(exit_code);
+        }
     }
 }
 

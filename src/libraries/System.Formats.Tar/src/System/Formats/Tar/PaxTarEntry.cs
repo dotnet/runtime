@@ -50,7 +50,7 @@ namespace System.Formats.Tar
         /// </list>
         /// </remarks>
         public PaxTarEntry(TarEntryType entryType, string entryName)
-            : base(entryType, entryName, TarFormat.Pax)
+            : base(entryType, entryName, TarEntryFormat.Pax)
         {
         }
 
@@ -84,7 +84,7 @@ namespace System.Formats.Tar
         /// </list>
         /// </remarks>
         public PaxTarEntry(TarEntryType entryType, string entryName, IEnumerable<KeyValuePair<string, string>> extendedAttributes)
-            : base(entryType, entryName, TarFormat.Pax)
+            : base(entryType, entryName, TarEntryFormat.Pax)
         {
             ArgumentNullException.ThrowIfNull(extendedAttributes);
             _header.ReplaceNormalAttributesWithExtended(extendedAttributes);
