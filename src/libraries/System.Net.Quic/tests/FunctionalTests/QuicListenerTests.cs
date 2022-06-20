@@ -47,7 +47,10 @@ namespace System.Net.Quic.Tests
         {
             await Task.Run(async () =>
             {
-                using QuicListener listener = CreateQuicListener(new IPEndPoint(IPAddress.IPv6Any, 0));
+                // Don't use the static IPAddress.IPv6Any instance to check if the address is detected reliably.
+                IPAddress IPv6Any = new IPAddress((ReadOnlySpan<byte>)new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0);
+
+                using QuicListener listener = CreateQuicListener(new IPEndPoint(IPv6Any, 0));
 
                 using QuicConnection clientConnection = CreateQuicConnection(new IPEndPoint(IPAddress.Loopback, listener.ListenEndPoint.Port));
                 var clientStreamTask = clientConnection.ConnectAsync();
