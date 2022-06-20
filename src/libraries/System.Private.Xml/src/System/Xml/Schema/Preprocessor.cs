@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.IO;
+using System.Threading;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Runtime.Versioning;
+using System.Reflection;
+
 namespace System.Xml.Schema
 {
-    using System.Collections;
-    using System.IO;
-    using System.Threading;
-    using System.Diagnostics;
-    using System.Collections.Generic;
-    using System.Runtime.Versioning;
-    using System.Reflection;
-
     internal enum Compositor
     {
         Root,
@@ -1721,10 +1721,8 @@ namespace System.Xml.Schema
                 SetParent(complexType.ContentModel, complexType); //SimpleContent / complexCotent
                 PreprocessAnnotation(complexType.ContentModel);
 
-                if (complexType.Particle != null || complexType.Attributes != null)
-                {
-                    // this is illegal
-                }
+                // "complexType.Particle != null || complexType.Attributes != null" is illegal
+
                 if (complexType.ContentModel is XmlSchemaSimpleContent)
                 {
                     XmlSchemaSimpleContent content = (XmlSchemaSimpleContent)complexType.ContentModel;

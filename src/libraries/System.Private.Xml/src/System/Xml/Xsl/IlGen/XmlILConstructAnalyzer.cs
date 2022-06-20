@@ -65,7 +65,7 @@ namespace System.Xml.Xsl.IlGen
         public static XmlILConstructInfo Read(QilNode nd)
         {
             XmlILAnnotation? ann = nd.Annotation as XmlILAnnotation;
-            XmlILConstructInfo? constrInfo = (ann != null) ? ann.ConstructInfo : null;
+            XmlILConstructInfo? constrInfo = ann?.ConstructInfo;
 
             if (constrInfo == null)
             {

@@ -1031,7 +1031,7 @@ namespace System.Text
                     // escape, so use 0x8e00 as katakana lead byte and keep same trail byte.
                     // 0x2a lead byte range is normally unused in JIS 0208, so shouldn't have
                     // any weird compatibility issues.
-                    if ((b2Bytes == true) && ((iBytes & 0xff00) == 0x2a00))
+                    if (b2Bytes && ((iBytes & 0xff00) == 0x2a00))
                     {
                         iBytes = (ushort)(iBytes & 0xff);
                         iBytes |= (LEADBYTE_HALFWIDTH << 8);   // Put us in the halfwidth katakana range

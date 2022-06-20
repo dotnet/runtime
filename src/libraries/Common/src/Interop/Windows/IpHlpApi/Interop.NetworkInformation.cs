@@ -157,14 +157,7 @@ internal static partial class Interop
 
             private fixed byte _address[MAX_ADAPTER_ADDRESS_LENGTH];
             private uint _addressLength;
-            internal byte[] Address
-            {
-                get
-                {
-                    fixed (byte* pAddress = _address)
-                        return new ReadOnlySpan<byte>(pAddress, (int)_addressLength).ToArray();
-                }
-            }
+            internal byte[] Address => MemoryMarshal.CreateReadOnlySpan<byte>(ref _address[0], (int)_addressLength).ToArray();
 
             internal AdapterFlags flags;
             internal uint mtu;
@@ -173,14 +166,7 @@ internal static partial class Interop
             internal uint ipv6Index;
 
             private fixed uint _zoneIndices[16];
-            internal uint[] ZoneIndices
-            {
-                get
-                {
-                    fixed (uint* pZoneIndices = _zoneIndices)
-                        return new ReadOnlySpan<uint>(pZoneIndices, 16).ToArray();
-                }
-            }
+            internal uint[] ZoneIndices => MemoryMarshal.CreateReadOnlySpan<uint>(ref _zoneIndices[0], 16).ToArray();
 
             internal IntPtr firstPrefix;
 

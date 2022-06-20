@@ -1,19 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Reflection;
+using System;
+using System.Globalization;
+using System.Xml.Schema;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Threading;
+using System.Xml;
+using System.Xml.Serialization;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml.Serialization
 {
-    using System.Reflection;
-    using System;
-    using System.Globalization;
-    using System.Xml.Schema;
-    using System.Collections.Generic;
-    using System.ComponentModel;
-    using System.Threading;
-    using System.Xml;
-    using System.Xml.Serialization;
-    using System.Diagnostics.CodeAnalysis;
-
     public class SoapReflectionImporter
     {
         private readonly TypeScope _typeScope;

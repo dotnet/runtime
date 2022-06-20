@@ -697,7 +697,7 @@ namespace System.Xml.Schema
             if (schemaInfo != null)
             {
                 schemaInfo.SchemaAttribute = localAttribute;
-                schemaInfo.SchemaType = localAttribute == null ? null : localAttribute.AttributeSchemaType;
+                schemaInfo.SchemaType = localAttribute?.AttributeSchemaType;
                 schemaInfo.MemberType = localMemberType;
                 schemaInfo.IsDefault = false;
                 schemaInfo.Validity = localValidity;
@@ -2035,7 +2035,7 @@ namespace System.Xml.Schema
 
         private object? FindId(string name)
         {
-            return _IDs == null ? null : _IDs[name];
+            return _IDs?[name];
         }
 
         private void CheckForwardRefs()
