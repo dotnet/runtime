@@ -616,17 +616,22 @@ namespace System.Runtime.CompilerServices
             // Corresponding to MethodTable::GetSignatureCorElementType
             // DOES NOT convert enum to underlying type
 
-            return (Flags & enum_flag_Category_ElementTypeMask) switch
+            // switch expression causes suboptimal codegen
+            switch (Flags & enum_flag_Category_ElementTypeMask)
             {
-                enum_flag_Category_Array => CorElementType.ELEMENT_TYPE_ARRAY,
-                enum_flag_Category_Array | enum_flag_Category_IfArrayThenSzArray => CorElementType.ELEMENT_TYPE_SZARRAY,
-                enum_flag_Category_ValueType => CorElementType.ELEMENT_TYPE_VALUETYPE,
-                enum_flag_Category_PrimitiveValueType =>
-                    (Flags & enum_flag_Category_Mask) == enum_flag_Category_TruePrimitive
+                case enum_flag_Category_Array:
+                    return CorElementType.ELEMENT_TYPE_ARRAY;
+                case enum_flag_Category_Array | enum_flag_Category_IfArrayThenSzArray:
+                    return CorElementType.ELEMENT_TYPE_SZARRAY;
+                case enum_flag_Category_ValueType:
+                    return CorElementType.ELEMENT_TYPE_VALUETYPE;
+                case enum_flag_Category_PrimitiveValueType:
+                    return (Flags & enum_flag_Category_Mask) == enum_flag_Category_TruePrimitive
                         ? GetEEClassCorElementType()
-                        : CorElementType.ELEMENT_TYPE_VALUETYPE,
-                _ => CorElementType.ELEMENT_TYPE_CLASS,
-            };
+                        : CorElementType.ELEMENT_TYPE_VALUETYPE;
+                default:
+                    return CorElementType.ELEMENT_TYPE_CLASS;
+            }
         }
 
         public CorElementType GetVerifierCorElementType()
@@ -634,17 +639,22 @@ namespace System.Runtime.CompilerServices
             // Corresponding to MethodTable::GetVerifierCorElementType
             // DOES convert enum to underlying type
 
-            return (Flags & enum_flag_Category_ElementTypeMask) switch
+            // switch expression causes suboptimal codegen
+            switch (Flags & enum_flag_Category_ElementTypeMask)
             {
-                enum_flag_Category_Array => CorElementType.ELEMENT_TYPE_ARRAY,
-                enum_flag_Category_Array | enum_flag_Category_IfArrayThenSzArray => CorElementType.ELEMENT_TYPE_SZARRAY,
-                enum_flag_Category_ValueType => CorElementType.ELEMENT_TYPE_VALUETYPE,
-                enum_flag_Category_PrimitiveValueType =>
-                    ((Flags & enum_flag_Category_Mask) == enum_flag_Category_TruePrimitive) || IsEnum()
+                case enum_flag_Category_Array:
+                    return CorElementType.ELEMENT_TYPE_ARRAY;
+                case enum_flag_Category_Array | enum_flag_Category_IfArrayThenSzArray:
+                    return CorElementType.ELEMENT_TYPE_SZARRAY;
+                case enum_flag_Category_ValueType:
+                    return CorElementType.ELEMENT_TYPE_VALUETYPE;
+                case enum_flag_Category_PrimitiveValueType:
+                    return ((Flags & enum_flag_Category_Mask) == enum_flag_Category_TruePrimitive) || IsEnum()
                         ? GetEEClassCorElementType()
-                        : CorElementType.ELEMENT_TYPE_VALUETYPE,
-                _ => CorElementType.ELEMENT_TYPE_CLASS,
-            };
+                        : CorElementType.ELEMENT_TYPE_VALUETYPE;
+                default:
+                    return CorElementType.ELEMENT_TYPE_CLASS;
+            }
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -730,7 +740,11 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         private readonly uint m_typeAndFlags;
 
-        public CorElementType InternalCorElementType => (CorElementType)(m_typeAndFlags & 0xFF);
+        public CorElementType InternalCorElementType
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (CorElementType)(m_typeAndFlags & 0xFF);
+        }
     }
 
     // Helper structs used for tail calls via helper.
