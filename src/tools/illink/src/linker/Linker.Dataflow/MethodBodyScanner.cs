@@ -258,9 +258,12 @@ namespace Mono.Linker.Dataflow
 			// are the same set of methods that we discovered and scanned above.
 			if (_context.CompilerGeneratedState.TryGetCompilerGeneratedCalleesForUserMethod (methodBody.Method, out List<IMemberDefinition>? compilerGeneratedCallees)) {
 				var calleeMethods = compilerGeneratedCallees.OfType<MethodDefinition> ();
-				Debug.Assert (methodsInGroup.Count () == 1 + calleeMethods.Count ());
-				foreach (var method in calleeMethods)
-					Debug.Assert (methodsInGroup.Contains (method));
+
+				// https://github.com/dotnet/linker/issues/2845
+				// Disabled asserts due to a bug
+				//Debug.Assert (methodsInGroup.Count () == 1 + calleeMethods.Count ());
+				//foreach (var method in calleeMethods)
+				//	Debug.Assert (methodsInGroup.Contains (method));
 			} else {
 				Debug.Assert (methodsInGroup.Count () == 1);
 			}
