@@ -61,8 +61,12 @@ namespace System.Formats.Tar.Tests
         [Fact]
         public void Constructor_ConversionFromGnu_CharacterDevice() => TestConstructionConversion(TarEntryType.CharacterDevice, TarEntryFormat.Gnu, TarEntryFormat.Pax);
 
-        [Fact]
-        public void Constructor_ConversionFromV7_From_UnseekableTarReader()
+        [Theory]
+        [InlineData(TarEntryFormat.V7)]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void Constructor_ConversionFromV7_From_UnseekableTarReader(TarEntryFormat writerFormat)
         {
             using MemoryStream source = GetTarMemoryStream(CompressionMethod.Uncompressed, TestTarFormat.v7, "file");
             using WrappedStream wrappedSource = new WrappedStream(source, canRead: true, canWrite: false, canSeek: false);
@@ -72,7 +76,7 @@ namespace System.Formats.Tar.Tests
             PaxTarEntry paxEntry = new PaxTarEntry(other: v7Entry); // Convert, and avoid advancing wrappedSource position
 
             using MemoryStream destination = new MemoryStream();
-            using (TarWriter writer = new TarWriter(destination, TarEntryFormat.Pax, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(destination, writerFormat, leaveOpen: true))
             {
                 writer.WriteEntry(paxEntry); // Write DataStream exactly where the wrappedSource position was left
             }
@@ -89,8 +93,12 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        [Fact]
-        public void Constructor_ConversionFromUstar_From_UnseekableTarReader()
+        [Theory]
+        [InlineData(TarEntryFormat.V7)]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void Constructor_ConversionFromUstar_From_UnseekableTarReader(TarEntryFormat writerFormat)
         {
             using MemoryStream source = GetTarMemoryStream(CompressionMethod.Uncompressed, TestTarFormat.ustar, "file");
             using WrappedStream wrappedSource = new WrappedStream(source, canRead: true, canWrite: false, canSeek: false);
@@ -100,7 +108,7 @@ namespace System.Formats.Tar.Tests
             PaxTarEntry paxEntry = new PaxTarEntry(other: ustarEntry); // Convert, and avoid advancing wrappedSource position
 
             using MemoryStream destination = new MemoryStream();
-            using (TarWriter writer = new TarWriter(destination, TarEntryFormat.Pax, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(destination, writerFormat, leaveOpen: true))
             {
                 writer.WriteEntry(paxEntry); // Write DataStream exactly where the wrappedSource position was left
             }
@@ -117,8 +125,12 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        [Fact]
-        public void Constructor_ConversionFromGnu_From_UnseekableTarReader()
+        [Theory]
+        [InlineData(TarEntryFormat.V7)]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void Constructor_ConversionFromGnu_From_UnseekableTarReader(TarEntryFormat writerFormat)
         {
             using MemoryStream source = GetTarMemoryStream(CompressionMethod.Uncompressed, TestTarFormat.gnu, "file");
             using WrappedStream wrappedSource = new WrappedStream(source, canRead: true, canWrite: false, canSeek: false);
@@ -128,7 +140,7 @@ namespace System.Formats.Tar.Tests
             PaxTarEntry paxEntry = new PaxTarEntry(other: gnuEntry); // Convert, and avoid advancing wrappedSource position
 
             using MemoryStream destination = new MemoryStream();
-            using (TarWriter writer = new TarWriter(destination, TarEntryFormat.Pax, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(destination, writerFormat, leaveOpen: true))
             {
                 writer.WriteEntry(paxEntry); // Write DataStream exactly where the wrappedSource position was left
             }

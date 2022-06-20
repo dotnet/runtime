@@ -73,8 +73,12 @@ namespace System.Formats.Tar.Tests
         [Fact]
         public void Constructor_ConversionFromGnu_HardLink() => TestConstructionConversion(TarEntryType.HardLink, TarEntryFormat.Gnu, TarEntryFormat.V7);
 
-        [Fact]
-        public void Constructor_ConversionFromUstar_From_UnseekableTarReader()
+        [Theory]
+        [InlineData(TarEntryFormat.V7)]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void Constructor_ConversionFromUstar_From_UnseekableTarReader(TarEntryFormat writerFormat)
         {
             using MemoryStream source = GetTarMemoryStream(CompressionMethod.Uncompressed, TestTarFormat.ustar, "file");
             using WrappedStream wrappedSource = new WrappedStream(source, canRead: true, canWrite: false, canSeek: false);
@@ -84,7 +88,7 @@ namespace System.Formats.Tar.Tests
             V7TarEntry v7Entry = new V7TarEntry(other: ustarEntry); // Convert, and avoid advancing wrappedSource position
 
             using MemoryStream destination = new MemoryStream();
-            using (TarWriter writer = new TarWriter(destination, TarEntryFormat.V7, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(destination, writerFormat, leaveOpen: true))
             {
                 writer.WriteEntry(v7Entry); // Write DataStream exactly where the wrappedSource position was left
             }
@@ -101,8 +105,12 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        [Fact]
-        public void Constructor_ConversionFromPax_From_UnseekableTarReader()
+        [Theory]
+        [InlineData(TarEntryFormat.V7)]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void Constructor_ConversionFromPax_From_UnseekableTarReader(TarEntryFormat writerFormat)
         {
             using MemoryStream source = GetTarMemoryStream(CompressionMethod.Uncompressed, TestTarFormat.pax, "file");
             using WrappedStream wrappedSource = new WrappedStream(source, canRead: true, canWrite: false, canSeek: false);
@@ -112,7 +120,7 @@ namespace System.Formats.Tar.Tests
             V7TarEntry v7Entry = new V7TarEntry(other: paxEntry); // Convert, and avoid advancing wrappedSource position
 
             using MemoryStream destination = new MemoryStream();
-            using (TarWriter writer = new TarWriter(destination, TarEntryFormat.V7, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(destination, writerFormat, leaveOpen: true))
             {
                 writer.WriteEntry(v7Entry); // Write DataStream exactly where the wrappedSource position was left
             }
@@ -129,8 +137,12 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        [Fact]
-        public void Constructor_ConversionFromGnu_From_UnseekableTarReader()
+        [Theory]
+        [InlineData(TarEntryFormat.V7)]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void Constructor_ConversionFromGnu_From_UnseekableTarReader(TarEntryFormat writerFormat)
         {
             using MemoryStream source = GetTarMemoryStream(CompressionMethod.Uncompressed, TestTarFormat.gnu, "file");
             using WrappedStream wrappedSource = new WrappedStream(source, canRead: true, canWrite: false, canSeek: false);
@@ -140,7 +152,7 @@ namespace System.Formats.Tar.Tests
             V7TarEntry v7Entry = new V7TarEntry(other: gnuEntry); // Convert, and avoid advancing wrappedSource position
 
             using MemoryStream destination = new MemoryStream();
-            using (TarWriter writer = new TarWriter(destination, TarEntryFormat.V7, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(destination, writerFormat, leaveOpen: true))
             {
                 writer.WriteEntry(v7Entry); // Write DataStream exactly where the wrappedSource position was left
             }
