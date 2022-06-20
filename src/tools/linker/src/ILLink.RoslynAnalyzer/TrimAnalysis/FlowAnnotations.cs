@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	partial class FlowAnnotations
+	sealed partial class FlowAnnotations
 	{
 		// In the analyzer there's no stateful data the flow annotations need to store
 		// so we just create a singleton on demand.

@@ -8,7 +8,7 @@ using Mono.Cecil;
 
 namespace TLens
 {
-	class AssemlyReferenceResolver : IAssemblyResolver
+	sealed class AssemlyReferenceResolver : IAssemblyResolver
 	{
 		readonly string[] additionalFolders;
 		readonly Dictionary<string, AssemblyDefinition> resolved = new ();

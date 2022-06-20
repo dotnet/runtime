@@ -8,7 +8,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	class TypeHierarchyCache
+	sealed class TypeHierarchyCache
 	{
 		[Flags]
 		private enum HierarchyFlags

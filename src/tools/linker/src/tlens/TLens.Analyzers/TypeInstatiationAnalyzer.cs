@@ -9,7 +9,7 @@ using Mono.Cecil.Cil;
 
 namespace TLens.Analyzers
 {
-	class TypeInstatiationAnalyzer : Analyzer
+	sealed class TypeInstatiationAnalyzer : Analyzer
 	{
 		readonly Dictionary<TypeDefinition, List<MethodDefinition>> types = new Dictionary<TypeDefinition, List<MethodDefinition>> ();
 

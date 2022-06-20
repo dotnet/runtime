@@ -8,7 +8,7 @@ using Mono.Cecil;
 
 namespace TLens.Analyzers
 {
-	class LargeStaticCtorAnalyzer : Analyzer
+	sealed class LargeStaticCtorAnalyzer : Analyzer
 	{
 		readonly List<MethodDefinition> cctors = new List<MethodDefinition> ();
 

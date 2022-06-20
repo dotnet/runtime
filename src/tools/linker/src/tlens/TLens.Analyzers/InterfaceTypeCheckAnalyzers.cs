@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace TLens.Analyzers
 {
-	class InterfaceTypeCheckAnalyzers : InterfacesAnalyzer
+	sealed class InterfaceTypeCheckAnalyzers : InterfacesAnalyzer
 	{
 		public override void PrintResults (int maxCount)
 		{

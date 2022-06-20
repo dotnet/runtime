@@ -9,7 +9,7 @@ using Mono.Cecil.Cil;
 
 namespace TLens.Analyzers
 {
-	class DuplicatedCodeAnalyzer : Analyzer
+	sealed class DuplicatedCodeAnalyzer : Analyzer
 	{
 		readonly Dictionary<string, List<MethodDefinition>> strings = new Dictionary<string, List<MethodDefinition>> ();
 

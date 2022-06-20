@@ -3,7 +3,7 @@
 
 namespace Mono.Linker
 {
-	class CompilerGeneratedNames
+	sealed class CompilerGeneratedNames
 	{
 		internal static bool IsGeneratedMemberName (string memberName)
 		{

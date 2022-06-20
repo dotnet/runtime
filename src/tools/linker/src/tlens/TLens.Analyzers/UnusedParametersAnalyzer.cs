@@ -10,7 +10,7 @@ using Mono.Cecil.Cil;
 
 namespace TLens.Analyzers
 {
-	class UnusedParametersAnalyzer : Analyzer
+	sealed class UnusedParametersAnalyzer : Analyzer
 	{
 		readonly List<(MethodDefinition, int)> methods = new List<(MethodDefinition, int)> ();
 

@@ -11,7 +11,7 @@ using TLens.Analyzers;
 
 namespace TLens
 {
-	class Driver
+	sealed class Driver
 	{
 		static int Main (string[] args)
 		{

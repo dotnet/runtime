@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis;
 
 namespace ILLink.RoslynAnalyzer
 {
-	class ImmutableArrayOperations
+	sealed class ImmutableArrayOperations
 	{
 		internal static bool Contains<T, TComp> (ImmutableArray<T> list, T elem, TComp comparer)
 					where TComp : IEqualityComparer<T>

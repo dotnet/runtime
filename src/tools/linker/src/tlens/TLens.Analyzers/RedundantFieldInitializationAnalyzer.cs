@@ -9,7 +9,7 @@ using Mono.Cecil.Cil;
 
 namespace TLens.Analyzers
 {
-	class RedundantFieldInitializationAnalyzer : Analyzer
+	sealed class RedundantFieldInitializationAnalyzer : Analyzer
 	{
 		readonly Dictionary<MethodDefinition, List<FieldDefinition>> ctors = new Dictionary<MethodDefinition, List<FieldDefinition>> ();
 

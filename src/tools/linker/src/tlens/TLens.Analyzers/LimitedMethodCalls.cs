@@ -9,7 +9,7 @@ using Mono.Cecil.Cil;
 
 namespace TLens.Analyzers
 {
-	class LimitedMethodCalls : Analyzer
+	sealed class LimitedMethodCalls : Analyzer
 	{
 		readonly Dictionary<MethodDefinition, List<MethodDefinition>> methods = new Dictionary<MethodDefinition, List<MethodDefinition>> ();
 

@@ -8,7 +8,7 @@ using TLens.Analyzers;
 
 namespace TLens
 {
-	class Runner
+	sealed class Runner
 	{
 		readonly List<Analyzer> analyzers = new List<Analyzer> ();
 
