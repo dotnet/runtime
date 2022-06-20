@@ -876,21 +876,29 @@ done:
     return result;
 }
 
+#define CHECK_CACHE_SIZE(CACHE_LEVEL) if (size > cacheSize) { cacheSize = size; cacheLevel = CACHE_LEVEL; }
+
 static size_t GetLogicalProcessorCacheSizeFromOS()
 {
+    size_t cacheLevel = 0;
     size_t cacheSize = 0;
+    size_t size;
 
 #ifdef _SC_LEVEL1_DCACHE_SIZE
-    cacheSize = std::max(cacheSize, ( size_t) sysconf(_SC_LEVEL1_DCACHE_SIZE));
+    size = ( size_t) sysconf(_SC_LEVEL1_DCACHE_SIZE);
+    CHECK_CACHE_SIZE(1)
 #endif
 #ifdef _SC_LEVEL2_CACHE_SIZE
-    cacheSize = std::max(cacheSize, ( size_t) sysconf(_SC_LEVEL2_CACHE_SIZE));
+    size = ( size_t) sysconf(_SC_LEVEL2_CACHE_SIZE);
+    CHECK_CACHE_SIZE(2)
 #endif
 #ifdef _SC_LEVEL3_CACHE_SIZE
-    cacheSize = std::max(cacheSize, ( size_t) sysconf(_SC_LEVEL3_CACHE_SIZE));
+    size = ( size_t) sysconf(_SC_LEVEL3_CACHE_SIZE);
+    CHECK_CACHE_SIZE(3)
 #endif
 #ifdef _SC_LEVEL4_CACHE_SIZE
-    cacheSize = std::max(cacheSize, ( size_t) sysconf(_SC_LEVEL4_CACHE_SIZE));
+    size = ( size_t) sysconf(_SC_LEVEL4_CACHE_SIZE);
+    CHECK_CACHE_SIZE(4)
 #endif
 
 #if defined(TARGET_LINUX) && !defined(HOST_ARM) && !defined(HOST_X86)
@@ -901,25 +909,30 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         // for the platform. Currently musl and arm64 should be only cases to use
         // this method to determine cache size.
         //
-        size_t size;
-
-        if (ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index0/size", &size))
-            cacheSize = std::max(cacheSize, size);
-        if (ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index1/size", &size))
-            cacheSize = std::max(cacheSize, size);
-        if (ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index2/size", &size))
-            cacheSize = std::max(cacheSize, size);
-        if (ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index3/size", &size))
-            cacheSize = std::max(cacheSize, size);
-        if (ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index4/size", &size))
-            cacheSize = std::max(cacheSize, size);
+        size_t level;
+        for (int i = 0; i < 5; i++)
+        {
+            string path_to_index = "/sys/devices/system/cpu/cpu0/cache/index" + to_string(i);
+            if (ReadMemoryValueFromFile((path_to_index + "/size").c_str(), &size))
+            {
+                if (ReadMemoryValueFromFile((path_to_index + "/level").c_str(), &level))
+                {
+                    CHECK_CACHE_SIZE(level)
+                }
+                else
+                {
+                    cacheSize = std::max(cacheSize, size);
+                }
+            }
+        }
     }
 #endif
 
-#if defined(HOST_ARM64) && !defined(TARGET_OSX)
-    if (cacheSize == 0)
+#if (defined(HOST_ARM64) || defined(HOST_LOONGARCH64)) && !defined(TARGET_OSX)
+    if ((cacheSize == 0) || (cacheLevel != 3))
     {
-        // It is currently expected to be missing cache size info
+        // We expect to get the L3 cache size for Arm64 but currently expected to be missing that info
+        // from most of the machines.
         //
         // _SC_LEVEL*_*CACHE_SIZE is not yet present.  Work is in progress to enable this for arm64
         //
@@ -934,12 +947,30 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         // If we use recent high core count chips as a guide for state of the art, we find
         // total L3 cache to be 1-2MB/core.  As always, there are exceptions.
 
-        // Estimate cache size based on CPU count
-        // Assume lower core count are lighter weight parts which are likely to have smaller caches
-        // Assume L3$/CPU grows linearly from 256K to 1.5M/CPU as logicalCPUs grows from 2 to 12 CPUs
+        // Hence, just use the following heuristics at best depending on the CPU count
+        // 1 ~ 4   :  4 MB
+        // 5 ~ 16  :  8 MB
+        // 17 ~ 64 : 16 MB
+        // 65+     : 32 MB
         DWORD logicalCPUs = g_totalCpuCount;
+        if (logicalCPUs < 5)
+        {
+            cacheSize = 4;
+        }
+        else if (logicalCPUs < 17)
+        {
+            cacheSize = 8;
+        }
+        else if (logicalCPUs < 65)
+        {
+            cacheSize = 16;
+        }
+        else
+        {
+            cacheSize = 32;
+        }
 
-        cacheSize = logicalCPUs * std::min(1536, std::max(256, (int)logicalCPUs * 128)) * 1024;
+        cacheSize = cacheSize * 1024;
     }
 #endif
 
@@ -1036,11 +1067,6 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 
     size_t maxSize, maxTrueSize;
     maxSize = maxTrueSize = GetLogicalProcessorCacheSizeFromOS(); // Returns the size of the highest level processor cache
-
-#if defined(HOST_ARM64)
-    // Bigger gen0 size helps arm64 targets
-    maxSize = maxTrueSize * 3;
-#endif
 
     s_maxSize = maxSize;
     s_maxTrueSize = maxTrueSize;
