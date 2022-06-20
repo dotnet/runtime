@@ -20,6 +20,8 @@ namespace Roslyn.Utilities
 
 #if false
 
+        // Disabled as these helpers are not currently needed in the polyfill of 
+
         internal static int Combine(bool newKeyPart, int currentKey)
         {
             return Combine(currentKey, newKeyPart ? 1 : 0);

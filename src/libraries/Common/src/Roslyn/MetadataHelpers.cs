@@ -36,6 +36,8 @@ namespace Microsoft.CodeAnalysis
 
 #if false
 
+        // Disabled as these helpers are not currently needed in the polyfill of SyntaxValueProvider.ForAttributeWithMetadataName
+
         internal struct AssemblyQualifiedTypeName
         {
             internal readonly string TopLevelType;
