@@ -195,7 +195,8 @@ namespace System.Formats.Tar
                     case TarEntryFormat.Gnu:
                         entry._header.WriteAsGnu(_archiveStream, buffer);
                         break;
-                    case TarEntryFormat.Unknown:
+                    default:
+                        Debug.Assert(entry.Format == TarEntryFormat.Unknown, "Missing format handler");
                         throw new FormatException(string.Format(SR.TarInvalidFormat, Format));
                 }
             }
