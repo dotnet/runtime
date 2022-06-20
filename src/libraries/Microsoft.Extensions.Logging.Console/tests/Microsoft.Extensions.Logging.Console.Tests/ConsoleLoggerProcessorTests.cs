@@ -63,7 +63,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [OuterLoop]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public void CheckForNotificationWhenQueueIsFull(bool okToDrop)
@@ -73,7 +73,8 @@ namespace Microsoft.Extensions.Logging.Console.Test
             var console = new TestConsole(sink);
             var errorConsole = new TimesWriteCalledConsole();
             string queueName = nameof(CheckForNotificationWhenQueueIsFull) + (okToDrop ? "InDropWriteMode" : "InWaitMode");
-            var processor = new ConsoleLoggerProcessor(console, errorConsole, ConsoleLoggerBufferFullMode.Wait, 1024);
+            var fullMode = okToDrop ? ConsoleLoggerBufferFullMode.DropWrite : ConsoleLoggerBufferFullMode.Wait;
+            var processor = new ConsoleLoggerProcessor(console, errorConsole, fullMode, maxQueueLength: 1);
             var formatter = new SimpleConsoleFormatter(new TestFormatterOptionsMonitor<SimpleConsoleFormatterOptions>(
                 new SimpleConsoleFormatterOptions()));
 
@@ -84,8 +85,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
             object[] messageParams = Enumerable.Range(1, 100).Select(x => (object)x).ToArray();
 
             // Act
-            processor.MaxQueueLength = 1;
-            processor.FullMode = okToDrop ? ConsoleLoggerBufferFullMode.DropWrite : ConsoleLoggerBufferFullMode.Wait;
             for (int i = 0; i < 20000; i++)
             {
                 logger.LogInformation(messageTemplate, messageParams);
