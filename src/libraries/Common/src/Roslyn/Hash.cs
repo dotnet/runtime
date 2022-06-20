@@ -20,7 +20,7 @@ namespace Roslyn.Utilities
 
 #if false
 
-        // Disabled as these helpers are not currently needed in the polyfill of 
+        // Disabled as these helpers are not currently needed in the polyfill of SyntaxValueProvider.ForAttributeWithMetadataName
 
         internal static int Combine(bool newKeyPart, int currentKey)
         {

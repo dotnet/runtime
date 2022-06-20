@@ -545,6 +545,8 @@ ExitDecodeTypeName:
 
 #if false
 
+        // Disabled as these helpers are not currently needed in the polyfill of SyntaxValueProvider.ForAttributeWithMetadataName
+
         internal static string UnmangleMetadataNameForArity(string emittedTypeName, int arity)
         {
             Debug.Assert(arity > 0);
@@ -673,6 +675,8 @@ ExitDecodeTypeName:
         }
 
 #if false
+
+        // Disabled as these helpers are not currently needed in the polyfill of SyntaxValueProvider.ForAttributeWithMetadataName
 
         internal static string BuildQualifiedName(
             string qualifier,

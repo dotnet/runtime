@@ -63,6 +63,8 @@ namespace Microsoft.CodeAnalysis
 
 #if false
 
+        // Disabled as these helpers are not currently needed in the polyfill of SyntaxValueProvider.ForAttributeWithMetadataName
+
         /// <summary>
         /// Individual parts of qualified namespace name.
         /// </summary>
@@ -95,6 +97,8 @@ namespace Microsoft.CodeAnalysis
         }
 
 #if false
+
+        // Disabled as these helpers are not currently needed in the polyfill of SyntaxValueProvider.ForAttributeWithMetadataName
 
         public static MetadataTypeName FromNamespaceAndTypeName(
             string namespaceName, string typeName,
@@ -220,6 +224,8 @@ namespace Microsoft.CodeAnalysis
         }
 
 #if false
+
+        // Disabled as these helpers are not currently needed in the polyfill of SyntaxValueProvider.ForAttributeWithMetadataName
 
         /// <summary>
         /// Arity of the type inferred based on the name mangling. It doesn't have to match the actual
