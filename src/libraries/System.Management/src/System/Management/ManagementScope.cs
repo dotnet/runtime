@@ -617,7 +617,7 @@ namespace System.Management
         }
 
         internal ManagementScope(ManagementPath path, ManagementScope scope)
-            : this(path, (null != scope) ? scope.options : null) { }
+            : this(path, scope?.options) { }
 
         internal static ManagementScope _Clone(ManagementScope scope)
         {

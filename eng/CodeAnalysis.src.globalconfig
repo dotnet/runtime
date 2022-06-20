@@ -1389,7 +1389,7 @@ dotnet_diagnostic.IDE0029.severity = warning
 dotnet_diagnostic.IDE0030.severity = warning
 
 # IDE0031: Use null propagation
-dotnet_diagnostic.IDE0031.severity = silent
+dotnet_diagnostic.IDE0031.severity = warning
 
 # IDE0032: Use auto property
 dotnet_diagnostic.IDE0032.severity = silent

@@ -115,7 +115,7 @@ namespace System.Xml.Xsl.XsltOld
             get
             {
                 ActionFrame? frame = (ActionFrame?)_actionStack.Peek();
-                return frame != null ? frame.Node : null;
+                return frame?.Node;
             }
         }
 
