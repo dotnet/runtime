@@ -77,7 +77,6 @@ extern "C" void QCALLTYPE ReflectionSerialization_GetUninitializedObject(QCall::
 class ReflectionEnum {
 public:
     static FCDECL1(Object *, InternalGetEnumUnderlyingType, ReflectClassBaseObject *target);
-    static FCDECL1(INT32, InternalGetCorElementType, Object *pRefThis);
     static FCDECL2_IV(Object*, InternalBoxEnum, ReflectClassBaseObject* pEnumType, INT64 value);
 };
 
