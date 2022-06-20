@@ -1213,7 +1213,7 @@ namespace System.Runtime.InteropServices
         public static NFloat Clamp(NFloat value, NFloat min, NFloat max) => new NFloat(NativeType.Clamp(value._value, min._value, max._value));
 
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
-        public static NFloat CopySign(NFloat x, NFloat y) => new NFloat(NativeType.CopySign(x._value, y._value));
+        public static NFloat CopySign(NFloat value, NFloat sign) => new NFloat(NativeType.CopySign(value._value, sign._value));
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static NFloat Max(NFloat x, NFloat y) => new NFloat(NativeType.Max(x._value, y._value));
@@ -1700,14 +1700,14 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="IRootFunctions{TSelf}.Cbrt(TSelf)" />
         public static NFloat Cbrt(NFloat x) => new NFloat(NativeType.Cbrt(x._value));
 
-        // /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
-        // public static NFloat Hypot(NFloat x, NFloat y) => new NFloat(NativeType.Hypot(x._value, y._value));
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
+        public static NFloat Hypot(NFloat x, NFloat y) => new NFloat(NativeType.Hypot(x._value, y._value));
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Root(TSelf, int)" />
+        public static NFloat Root(NFloat x, int n) => new NFloat(NativeType.Root(x._value, n));
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
         public static NFloat Sqrt(NFloat x) => new NFloat(NativeType.Sqrt(x._value));
-
-        // /// <inheritdoc cref="IRootFunctions{TSelf}.Root(TSelf, TSelf)" />
-        // public static NFloat Root(NFloat x, NFloat n) => new NFloat(NativeType.Root(x._value, n._value));
 
         //
         // ISignedNumber
