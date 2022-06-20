@@ -9,6 +9,8 @@ jobs:
 
     steps:
 
+    - run: cat ~/.config/NuGet/NuGet.Config
+
     - run: mono --version
 
     - run: nuget
