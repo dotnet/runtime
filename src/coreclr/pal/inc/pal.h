@@ -3447,7 +3447,8 @@ BitScanReverse64(
 
 FORCEINLINE void PAL_ArmInterlockedOperationBarrier()
 {
-#ifdef HOST_ARM64
+#if defined(HOST_ARM64) || defined(HOST_LOONGARCH64)
+    #if !defined(HOST_OSX)
     // On arm64, most of the __sync* functions generate a code sequence like:
     //   loop:
     //     ldaxr (load acquire exclusive)
@@ -3460,10 +3461,10 @@ FORCEINLINE void PAL_ArmInterlockedOperationBarrier()
     // require the load to occur after the store. This memory barrier should be used following a call to a __sync* function to
     // prevent that reordering. Code generated for arm32 includes a 'dmb' after 'cbnz', so no issue there at the moment.
     __sync_synchronize();
-#endif // HOST_ARM64
-#ifdef HOST_LOONGARCH64
-    __sync_synchronize();
-#endif
+    #else
+    // For OSX Arm64, the default Arm architecture is v8.1 which uses atomic instructions that don't need a full barrier.
+    #endif // !HOST_OSX
+#endif// HOST_ARM64 || HOST_LOONGARCH64
 }
 
 /*++

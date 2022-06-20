@@ -13,13 +13,12 @@
 #ifndef _MSC_VER
 __forceinline void Interlocked::ArmInterlockedOperationBarrier()
 {
-#ifdef HOST_ARM64
+#if defined(HOST_ARM64) || defined(HOST_LOONGARCH64)
+    #if !defined(HOST_OSX)
     // See PAL_ArmInterlockedOperationBarrier() in the PAL
     __sync_synchronize();
-#endif // HOST_ARM64
-#ifdef HOST_LOONGARCH64
-    __sync_synchronize();
-#endif //HOST_LOONGARCH64
+    #endif // !HOST_OSX
+#endif // HOST_ARM64 || HOST_LOONGARCH64
 }
 #endif // !_MSC_VER
 
