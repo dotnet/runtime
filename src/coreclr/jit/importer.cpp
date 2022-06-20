@@ -12152,39 +12152,29 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         // Check if this cast helper have some profile data
         if (impIsCastHelperMayHaveProfileData(helper))
         {
-            bool                    doRandomDevirt   = false;
             const int               maxLikelyClasses = 32;
-            int                     likelyClassCount = 0;
             LikelyClassMethodRecord likelyClasses[maxLikelyClasses];
-#ifdef DEBUG
-            // Optional stress mode to pick a random known class, rather than
-            // the most likely known class.
-            doRandomDevirt = JitConfig.JitRandomGuardedDevirtualization() != 0;
-
-            if (doRandomDevirt)
-            {
-                // Reuse the random inliner's random state.
-                CLRRandom* const random =
-                    impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
-                CORINFO_CLASS_HANDLE  clsGuess;
-                CORINFO_METHOD_HANDLE methGuess;
-                getRandomGDV(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, random, &clsGuess, &methGuess);
-                if (clsGuess != NO_CLASS_HANDLE)
-                {
-                    likelyClasses[0].likelihood = 100;
-                    likelyClasses[0].handle     = (intptr_t)clsGuess;
-                    likelyClassCount            = 1;
-                }
-            }
-            else
-#endif
-            {
-                likelyClassCount = getLikelyClasses(likelyClasses, maxLikelyClasses, fgPgoSchema, fgPgoSchemaCount,
-                                                    fgPgoData, ilOffset);
-            }
+            unsigned                likelyClassCount =
+                getLikelyClasses(likelyClasses, maxLikelyClasses, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
 
             if (likelyClassCount > 0)
             {
+#ifdef DEBUG
+                // Optional stress mode to pick a random known class, rather than
+                // the most likely known class.
+                if (JitConfig.JitRandomGuardedDevirtualization() != 0)
+                {
+                    // Reuse the random inliner's random state.
+                    CLRRandom* const random =
+                        impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
+
+                    unsigned index          = static_cast<unsigned>(random->Next(static_cast<int>(likelyClassCount)));
+                    likelyClasses[0].handle = likelyClasses[index].handle;
+                    likelyClasses[0].likelihood = 100;
+                    likelyClassCount            = 1;
+                }
+#endif
+
                 LikelyClassMethodRecord likelyClass = likelyClasses[0];
                 CORINFO_CLASS_HANDLE    likelyCls   = (CORINFO_CLASS_HANDLE)likelyClass.handle;
 
@@ -22423,16 +22413,18 @@ void Compiler::pickGDV(GenTreeCall*           call,
         //
         CLRRandom* const random =
             impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
-        // TODO-GDV: This can be simplified to just use likelyClasses and
-        // likelyMethods now that we have multiple candidates here.
-        getRandomGDV(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, random, classGuess, methodGuess);
-        if (*classGuess != NO_CLASS_HANDLE)
+        unsigned index = static_cast<unsigned>(random->Next(static_cast<int>(numberOfClasses + numberOfMethods)));
+        if (index < numberOfClasses)
         {
+            *classGuess = (CORINFO_CLASS_HANDLE)likelyClasses[index].handle;
+            *likelihood = 100;
             JITDUMP("Picked random class for GDV: %p (%s)\n", *classGuess, eeGetClassName(*classGuess));
             return;
         }
-        if (*methodGuess != NO_METHOD_HANDLE)
+        else
         {
+            *methodGuess = (CORINFO_METHOD_HANDLE)likelyMethods[index - numberOfClasses].handle;
+            *likelihood  = 100;
             JITDUMP("Picked random method for GDV: %p (%s)\n", *methodGuess, eeGetMethodFullName(*methodGuess));
             return;
         }
