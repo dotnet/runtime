@@ -1226,7 +1226,7 @@ namespace System.DirectoryServices.Protocols
                 var controlList = new ArrayList();
                 foreach (DirectoryControl col in controls)
                 {
-                    if (serverControl == true)
+                    if (serverControl)
                     {
                         if (col.ServerSide)
                         {

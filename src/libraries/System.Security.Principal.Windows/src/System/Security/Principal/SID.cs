@@ -1034,8 +1034,8 @@ namespace System.Security.Principal
 
                     for (int i = 0; i < rdl.Entries; i++)
                     {
-                        Interop.LSA_TRUST_INFORMATION ti = (Interop.LSA_TRUST_INFORMATION)Marshal.PtrToStructure<Interop.LSA_TRUST_INFORMATION>(new IntPtr((long)rdl.Domains + i * Marshal.SizeOf<Interop.LSA_TRUST_INFORMATION>()));
-                        ReferencedDomains[i] = Marshal.PtrToStringUni(ti.Name.Buffer, ti.Name.Length / sizeof(char));
+                        Interop.LSA_TRUST_INFORMATION* ti = (Interop.LSA_TRUST_INFORMATION*)rdl.Domains + i;
+                        ReferencedDomains[i] = Marshal.PtrToStringUni(ti->Name.Buffer, ti->Name.Length / sizeof(char));
                     }
 
                     Interop.LSA_TRANSLATED_NAME[] translatedNames = new Interop.LSA_TRANSLATED_NAME[sourceSids.Count];

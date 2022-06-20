@@ -144,7 +144,7 @@ ULONG PEImage::Release()
         CrstHolder holder(&s_hashLock);
 
         // Decrement and check the refcount - if we hit 0, remove it from the hash and delete it.
-        result=FastInterlockDecrement(&m_refCount);
+        result=InterlockedDecrement(&m_refCount);
         if (result == 0 )
         {
             LOG((LF_LOADER, LL_INFO100, "PEImage: Closing Image %S\n", (LPCWSTR) m_path));
@@ -348,7 +348,7 @@ void PEImage::OpenNativeMDImport()
                                                  IID_IMDInternalImport,
                                                  (void **) &m_pNewImport));
 
-        if(FastInterlockCompareExchangePointer(&m_pNativeMDImport, m_pNewImport, NULL))
+        if(InterlockedCompareExchangeT(&m_pNativeMDImport, m_pNewImport, NULL))
             m_pNewImport->Release();
     }
     _ASSERTE(m_pNativeMDImport);
@@ -390,7 +390,7 @@ void PEImage::OpenMDImport()
                                                  IID_IMDInternalImport,
                                                  (void **) &m_pNewImport));
 
-        if(FastInterlockCompareExchangePointer(&m_pMDImport, m_pNewImport, NULL))
+        if(InterlockedCompareExchangeT(&m_pMDImport, m_pNewImport, NULL))
         {
             m_pNewImport->Release();
         }
@@ -507,7 +507,7 @@ LoaderHeap *PEImage::IJWFixupData::GetThunkHeap()
             ThunkHeapStubManager::g_pManager->GetRangeList(),
             UnlockedLoaderHeap::HeapKind::Executable);
 
-        if (FastInterlockCompareExchangePointer((PVOID*)&m_DllThunkHeap, (VOID*)pNewHeap, (VOID*)0) != 0)
+        if (InterlockedCompareExchangeT((PVOID*)&m_DllThunkHeap, (VOID*)pNewHeap, (VOID*)0) != 0)
         {
             delete pNewHeap;
         }

@@ -1701,7 +1701,7 @@ namespace System.Speech.Internal.Synthesis
                             float percent = (float)value / 100f;
                             if (sNumber[0] != '+' && sNumber[0] != '-')
                             {
-                                number.Number = number.Number * percent;
+                                number.Number *= percent;
                             }
                             else
                             {

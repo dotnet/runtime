@@ -104,6 +104,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             case GT_LE:
             case GT_GE:
             case GT_GT:
+            case GT_CMP:
             case GT_BOUNDS_CHECK:
                 return emitter::emitIns_valid_imm_for_cmp(immVal, size);
             case GT_AND:
@@ -575,6 +576,44 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
 }
 
 //------------------------------------------------------------------------
+// LowerPutArgStk: Lower a GT_PUTARG_STK.
+//
+// Arguments:
+//    putArgStk - The node to lower
+//
+void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
+{
+    GenTree* src = putArgStk->Data();
+
+    if (src->TypeIs(TYP_STRUCT))
+    {
+        // STRUCT args (FIELD_LIST / OBJ / LCL_VAR / LCL_FLD) will always be contained.
+        MakeSrcContained(putArgStk, src);
+
+        // TODO-ADDR: always perform this transformation in local morph and delete this code.
+        if (src->OperIs(GT_OBJ) && src->AsObj()->Addr()->OperIsLocalAddr())
+        {
+            GenTreeLclVarCommon* lclAddrNode = src->AsObj()->Addr()->AsLclVarCommon();
+            unsigned             lclNum      = lclAddrNode->GetLclNum();
+            unsigned             lclOffs     = lclAddrNode->GetLclOffs();
+            ClassLayout*         layout      = src->AsObj()->GetLayout();
+
+            src->ChangeOper(GT_LCL_FLD);
+            src->AsLclFld()->SetLclNum(lclNum);
+            src->AsLclFld()->SetLclOffs(lclOffs);
+            src->AsLclFld()->SetLayout(layout);
+
+            BlockRange().Remove(lclAddrNode);
+        }
+        else if (src->OperIs(GT_LCL_VAR))
+        {
+            // TODO-1stClassStructs: support struct enregistration here by retyping "src" to its register type.
+            comp->lvaSetVarDoNotEnregister(src->AsLclVar()->GetLclNum() DEBUGARG(DoNotEnregisterReason::IsStructArg));
+        }
+    }
+}
+
+//------------------------------------------------------------------------
 // LowerCast: Lower GT_CAST(srcType, DstType) nodes.
 //
 // Arguments:
@@ -661,19 +700,7 @@ void Lowering::LowerRotate(GenTree* tree)
 // Arguments:
 //    tree - the node to lower
 //
-// Return Value:
-//    A new tree node if it changed.
-//
 // Notes:
-//     {expr} % {cns}
-//     Logically turns into:
-//         let a = {expr}
-//         if a > 0 then (a & ({cns} - 1)) else -(-a & ({cns} - 1))
-//     which then turns into:
-//         and   reg1, reg0, #({cns} - 1)
-//         negs  reg0, reg0
-//         and   reg0, reg0, #({cns} - 1)
-//         csneg reg0, reg1, reg0, mi
 //     TODO: We could do this optimization in morph but we do not have
 //           a conditional select op in HIR. At some point, we may
 //           introduce such an op.
@@ -684,12 +711,15 @@ void Lowering::LowerModPow2(GenTree* node)
     GenTree*   dividend = mod->gtGetOp1();
     GenTree*   divisor  = mod->gtGetOp2();
 
+    JITDUMP("Lower: optimize X MOD POW2");
+
     assert(divisor->IsIntegralConstPow2());
 
     const var_types type = mod->TypeGet();
     assert((type == TYP_INT) || (type == TYP_LONG));
 
-    ssize_t cnsValue = static_cast<ssize_t>(divisor->AsIntConCommon()->IntegralValue()) - 1;
+    ssize_t divisorCnsValue         = static_cast<ssize_t>(divisor->AsIntConCommon()->IntegralValue());
+    ssize_t divisorCnsValueMinusOne = divisorCnsValue - 1;
 
     BlockRange().Remove(divisor);
 
@@ -701,31 +731,62 @@ void Lowering::LowerModPow2(GenTree* node)
     GenTree* dividend2 = comp->gtClone(dividend);
     BlockRange().InsertAfter(dividend, dividend2);
 
-    GenTreeIntCon* cns = comp->gtNewIconNode(cnsValue, type);
+    GenTreeIntCon* cns = comp->gtNewIconNode(divisorCnsValueMinusOne, type);
     BlockRange().InsertAfter(dividend2, cns);
 
     GenTree* const trueExpr = comp->gtNewOperNode(GT_AND, type, dividend, cns);
     BlockRange().InsertAfter(cns, trueExpr);
     LowerNode(trueExpr);
 
-    GenTree* const neg = comp->gtNewOperNode(GT_NEG, type, dividend2);
-    neg->gtFlags |= GTF_SET_FLAGS;
-    BlockRange().InsertAfter(trueExpr, neg);
+    if (divisorCnsValue == 2)
+    {
+        // {expr} % 2
+        // Logically turns into:
+        //     let a = {expr}
+        //     if a < 0 then -(a & 1) else (a & 1)
+        // which then turns into:
+        //     and   reg1, reg0, #1
+        //     cmp   reg0, #0
+        //     cneg  reg0, reg1, lt
 
-    GenTreeIntCon* cns2 = comp->gtNewIconNode(cnsValue, type);
-    BlockRange().InsertAfter(neg, cns2);
+        GenTreeIntCon* cnsZero = comp->gtNewIconNode(0, type);
+        BlockRange().InsertAfter(trueExpr, cnsZero);
 
-    GenTree* const falseExpr = comp->gtNewOperNode(GT_AND, type, neg, cns2);
-    BlockRange().InsertAfter(cns2, falseExpr);
-    LowerNode(falseExpr);
+        GenTree* const cmp = comp->gtNewOperNode(GT_CMP, type, dividend2, cnsZero);
+        cmp->gtFlags |= GTF_SET_FLAGS;
+        BlockRange().InsertAfter(cnsZero, cmp);
+        LowerNode(cmp);
 
-    mod->ChangeOper(GT_CSNEG_MI);
-    mod->gtOp1 = trueExpr;
-    mod->gtOp2 = falseExpr;
-    mod->gtFlags |= GTF_USE_FLAGS;
+        mod->ChangeOper(GT_CNEG_LT);
+        mod->gtOp1 = trueExpr;
+    }
+    else
+    {
+        // {expr} % {cns}
+        // Logically turns into:
+        //     let a = {expr}
+        //     if a > 0 then (a & ({cns} - 1)) else -(-a & ({cns} - 1))
+        // which then turns into:
+        //     and   reg1, reg0, #({cns} - 1)
+        //     negs  reg0, reg0
+        //     and   reg0, reg0, #({cns} - 1)
+        //     csneg reg0, reg1, reg0, mi
 
-    JITDUMP("Lower: optimize X MOD POW2");
-    DISPNODE(mod);
+        GenTree* const neg = comp->gtNewOperNode(GT_NEG, type, dividend2);
+        neg->gtFlags |= GTF_SET_FLAGS;
+        BlockRange().InsertAfter(trueExpr, neg);
+
+        GenTreeIntCon* cns2 = comp->gtNewIconNode(divisorCnsValueMinusOne, type);
+        BlockRange().InsertAfter(neg, cns2);
+
+        GenTree* const falseExpr = comp->gtNewOperNode(GT_AND, type, neg, cns2);
+        BlockRange().InsertAfter(cns2, falseExpr);
+        LowerNode(falseExpr);
+
+        mod->ChangeOper(GT_CSNEG_MI);
+        mod->gtOp1 = trueExpr;
+        mod->gtOp2 = falseExpr;
+    }
 
     ContainCheckNode(mod);
 }

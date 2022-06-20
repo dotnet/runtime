@@ -38,7 +38,7 @@ namespace System.Data.Common
                         }
                         if (min >= 0)
                         {
-                            for (i = i + 1; i < recordNos.Length; i++)
+                            for (i++; i < recordNos.Length; i++)
                             {
                                 if (IsNull(recordNos[i]))
                                     continue;
@@ -63,7 +63,7 @@ namespace System.Data.Common
                         }
                         if (max >= 0)
                         {
-                            for (i = i + 1; i < recordNos.Length; i++)
+                            for (i++; i < recordNos.Length; i++)
                             {
                                 if (Compare(max, recordNos[i]) < 0)
                                 {

@@ -217,7 +217,7 @@ namespace System.Runtime
 
             int thunkIndex = (int)(((nuint)(nint)nextAvailableThunkPtr) - ((nuint)(nint)nextAvailableThunkPtr & ~Constants.PageSizeMask));
             Debug.Assert((thunkIndex % Constants.ThunkDataSize) == 0);
-            thunkIndex = thunkIndex / Constants.ThunkDataSize;
+            thunkIndex /= Constants.ThunkDataSize;
 
             IntPtr thunkAddress = InternalCalls.RhpGetThunkStubsBlockAddress(nextAvailableThunkPtr) + thunkIndex * Constants.ThunkCodeSize;
 

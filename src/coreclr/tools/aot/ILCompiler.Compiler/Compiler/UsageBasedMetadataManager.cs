@@ -187,7 +187,7 @@ namespace ILCompiler
             return category;
         }
 
-        protected override bool AllMethodsCanBeReflectable => (_generationOptions & UsageBasedMetadataGenerationOptions.ReflectedMembersOnly) == 0;
+        protected override bool AllMethodsCanBeReflectable => (_generationOptions & UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts) != 0;
 
         protected override void ComputeMetadata(NodeFactory factory,
             out byte[] metadataBlob,
@@ -527,7 +527,7 @@ namespace ILCompiler
             }
 
             // Presence of code might trigger the reflectability dependencies.
-            if ((_generationOptions & UsageBasedMetadataGenerationOptions.ReflectedMembersOnly) == 0)
+            if ((_generationOptions & UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts) != 0)
             {
                 GetDependenciesDueToReflectability(ref dependencies, factory, method);
             }
@@ -538,7 +538,7 @@ namespace ILCompiler
             MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
 
             // Ensure methods with genericness have the same reflectability by injecting a conditional dependency.
-            if ((_generationOptions & UsageBasedMetadataGenerationOptions.ReflectedMembersOnly) != 0
+            if ((_generationOptions & UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts) == 0
                 && method != typicalMethod)
             {
                 dependencies ??= new CombinedDependencyList();
@@ -549,7 +549,7 @@ namespace ILCompiler
 
         public override void GetDependenciesDueToVirtualMethodReflectability(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
-            if ((_generationOptions & UsageBasedMetadataGenerationOptions.ReflectedMembersOnly) == 0)
+            if ((_generationOptions & UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts) != 0)
             {
                 // If we have a use of an abstract method, GetDependenciesDueToReflectability is not going to see the method
                 // as being used since there's no body. We inject a dependency on a new node that serves as a logical method body
@@ -600,8 +600,40 @@ namespace ILCompiler
                 dependencies.Add(factory.DataflowAnalyzedMethod(methodIL.GetMethodILDefinition()), "Access to interesting field");
             }
 
-            if ((_generationOptions & UsageBasedMetadataGenerationOptions.ReflectedMembersOnly) == 0
-                && !IsReflectionBlocked(writtenField))
+            string reason = "Use of a field";
+
+            bool generatesMetadata = false;
+            if (!IsReflectionBlocked(writtenField))
+            {
+                if ((_generationOptions & UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts) != 0)
+                {
+                    // If access to the field should trigger metadata generation, we should generate the field
+                    generatesMetadata = true;
+                }
+                else
+                {
+                    // There's an invalid suppression in the CoreLib that assumes used fields on attributes will be kept.
+                    // It's used in the reflection-based implementation of Attribute.Equals and Attribute.GetHashCode.
+                    // .NET Native used to have a non-reflection based implementation of Equals/GetHashCode to get around
+                    // this problem. We could explore that as well, but for now, emulate the fact that accessed fields
+                    // on custom attributes will be visible in reflection metadata.
+                    MetadataType currentType = (MetadataType)writtenField.OwningType.BaseType;
+                    while (currentType != null)
+                    {
+                        if (currentType.Module == factory.TypeSystemContext.SystemModule
+                            && currentType.Name == "Attribute" && currentType.Namespace == "System")
+                        {
+                            generatesMetadata = true;
+                            reason = "Field of an attribute";
+                            break;
+                        }
+
+                        currentType = currentType.MetadataBaseType;
+                    }
+                }
+            }
+
+            if (generatesMetadata)
             {
                 FieldDesc fieldToReport = writtenField;
 
@@ -619,7 +651,7 @@ namespace ILCompiler
                 }
 
                 dependencies = dependencies ?? new DependencyList();
-                dependencies.Add(factory.ReflectableField(fieldToReport), "Use of a field");
+                dependencies.Add(factory.ReflectableField(fieldToReport), reason);
             }
         }
 
@@ -651,13 +683,21 @@ namespace ILCompiler
                 var genericParameter = (GenericParameterDesc)typicalInstantiation[i];
                 if (FlowAnnotations.GetGenericParameterAnnotation(genericParameter) != default)
                 {
-                    var deps = ILCompiler.Dataflow.ReflectionMethodBodyScanner.ProcessGenericArgumentDataFlow(factory, FlowAnnotations, Logger, genericParameter, instantiation[i], source);
-                    if (deps.Count > 0)
+                    try
                     {
-                        if (dependencies == null)
-                            dependencies = deps;
-                        else
-                            dependencies.AddRange(deps);
+                        var deps = ILCompiler.Dataflow.ReflectionMethodBodyScanner.ProcessGenericArgumentDataFlow(factory, FlowAnnotations, Logger, genericParameter, instantiation[i], source);
+                        if (deps.Count > 0)
+                        {
+                            if (dependencies == null)
+                                dependencies = deps;
+                            else
+                                dependencies.AddRange(deps);
+                        }
+                    }
+                    catch (TypeSystemException)
+                    {
+                        // Wasn't able to do dataflow because of missing references or something like that.
+                        // This likely won't compile either, so we don't care about missing dependencies.
                     }
                 }
             }
@@ -1039,9 +1079,9 @@ namespace ILCompiler
         ReflectionILScanning = 4,
 
         /// <summary>
-        /// Only members that were seen as reflected on will be reflectable.
+        /// Consider all native artifacts (native method bodies, etc) visible from reflection.
         /// </summary>
-        ReflectedMembersOnly = 8,
+        CreateReflectableArtifacts = 8,
 
         /// <summary>
         /// Fully root used assemblies that are not marked IsTrimmable in metadata.

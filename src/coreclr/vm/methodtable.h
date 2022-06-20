@@ -886,7 +886,7 @@ public:
         PRECONDITION(!HasApproxParent());
         PRECONDITION(IsRestored_NoLogging());
 
-        FastInterlockAnd(&GetWriteableDataForWrite()->m_dwFlags, ~MethodTableWriteableData::enum_flag_IsNotFullyLoaded);
+        InterlockedAnd((LONG*)&GetWriteableDataForWrite()->m_dwFlags, ~MethodTableWriteableData::enum_flag_IsNotFullyLoaded);
     }
 
     // Equivalent to GetLoadLevel() == CLASS_LOADED
@@ -911,7 +911,7 @@ public:
         if (canCompare)
         {
             // Set checked and canCompare flags in one interlocked operation.
-            FastInterlockOr(&GetWriteableDataForWrite_NoLogging()->m_dwFlags,
+            InterlockedOr((LONG*)&GetWriteableDataForWrite_NoLogging()->m_dwFlags,
                 MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode | MethodTableWriteableData::enum_flag_CanCompareBitsOrUseFastGetHashCode);
         }
         else
@@ -929,7 +929,7 @@ public:
     inline void SetHasCheckedCanCompareBitsOrUseFastGetHashCode()
     {
         WRAPPER_NO_CONTRACT;
-        FastInterlockOr(&GetWriteableDataForWrite_NoLogging()->m_dwFlags, MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
+        InterlockedOr((LONG*)&GetWriteableDataForWrite_NoLogging()->m_dwFlags, MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
     }
 
     inline void SetIsDependenciesLoaded()
@@ -945,7 +945,7 @@ public:
         PRECONDITION(!HasApproxParent());
         PRECONDITION(IsRestored_NoLogging());
 
-        FastInterlockOr(&GetWriteableDataForWrite()->m_dwFlags, MethodTableWriteableData::enum_flag_DependenciesLoaded);
+        InterlockedOr((LONG*)&GetWriteableDataForWrite()->m_dwFlags, MethodTableWriteableData::enum_flag_DependenciesLoaded);
     }
 
     inline ClassLoadLevel GetLoadLevel()
@@ -1747,7 +1747,7 @@ public:
     inline void SetHasExactParent()
     {
         WRAPPER_NO_CONTRACT;
-        FastInterlockAnd(&(GetWriteableDataForWrite()->m_dwFlags), ~MethodTableWriteableData::enum_flag_HasApproxParent);
+        InterlockedAnd((LONG*)&GetWriteableDataForWrite()->m_dwFlags, ~MethodTableWriteableData::enum_flag_HasApproxParent);
     }
 
 

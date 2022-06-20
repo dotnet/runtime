@@ -669,7 +669,7 @@ namespace System.DirectoryServices.AccountManagement
                 if (!isSAM && de.Properties["msDS-User-Account-Control-Computed"].Count > 0)
                 {
                     Debug.Assert(de.Properties["msDS-User-Account-Control-Computed"].Count == 1);
-                    uacValue = uacValue | (int)de.Properties["msDS-User-Account-Control-Computed"][0];
+                    uacValue |= (int)de.Properties["msDS-User-Account-Control-Computed"][0];
                 }
             }
             else

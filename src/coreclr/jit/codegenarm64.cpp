@@ -10282,18 +10282,34 @@ void CodeGen::genCodeForAddEx(GenTreeOp* tree)
 //
 void CodeGen::genCodeForCond(GenTreeOp* tree)
 {
-    assert(tree->OperIs(GT_CSNEG_MI));
-    assert(!(tree->gtFlags & GTF_SET_FLAGS) && (tree->gtFlags & GTF_USE_FLAGS));
+    assert(tree->OperIs(GT_CSNEG_MI, GT_CNEG_LT));
+    assert(!(tree->gtFlags & GTF_SET_FLAGS));
     genConsumeOperands(tree);
 
-    instruction ins;
-    insCond     cond;
     switch (tree->OperGet())
     {
         case GT_CSNEG_MI:
         {
-            ins  = INS_csneg;
-            cond = INS_COND_MI;
+            instruction ins  = INS_csneg;
+            insCond     cond = INS_COND_MI;
+
+            regNumber dstReg = tree->GetRegNum();
+            regNumber op1Reg = tree->gtGetOp1()->GetRegNum();
+            regNumber op2Reg = tree->gtGetOp2()->GetRegNum();
+
+            GetEmitter()->emitIns_R_R_R_COND(ins, emitActualTypeSize(tree), dstReg, op1Reg, op2Reg, cond);
+            break;
+        }
+
+        case GT_CNEG_LT:
+        {
+            instruction ins  = INS_cneg;
+            insCond     cond = INS_COND_LT;
+
+            regNumber dstReg = tree->GetRegNum();
+            regNumber op1Reg = tree->gtGetOp1()->GetRegNum();
+
+            GetEmitter()->emitIns_R_R_COND(ins, emitActualTypeSize(tree), dstReg, op1Reg, cond);
             break;
         }
 
@@ -10301,11 +10317,6 @@ void CodeGen::genCodeForCond(GenTreeOp* tree)
             unreached();
     }
 
-    regNumber dstReg = tree->GetRegNum();
-    regNumber op1Reg = tree->gtGetOp1()->GetRegNum();
-    regNumber op2Reg = tree->gtGetOp2()->GetRegNum();
-
-    GetEmitter()->emitIns_R_R_R_COND(ins, emitActualTypeSize(tree), dstReg, op1Reg, op2Reg, cond);
     genProduceReg(tree);
 }
 

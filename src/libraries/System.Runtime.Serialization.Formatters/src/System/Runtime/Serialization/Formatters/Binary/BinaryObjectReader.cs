@@ -483,7 +483,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 int sum = 1;
                 for (int i = 0; i < pr._rank; i++)
                 {
-                    sum = sum * pr._lengthA[i];
+                    sum *= pr._lengthA[i];
                 }
                 pr._indexMap = new int[pr._rank];
                 pr._rectangularMap = new int[pr._rank];

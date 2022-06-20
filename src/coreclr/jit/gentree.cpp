@@ -568,13 +568,49 @@ void Compiler::fgWalkAllTreesPre(fgWalkPreFn* visitor, void* pCallBackData)
 }
 
 //-----------------------------------------------------------
+// GetLayout: Get the struct layout for this node.
+//
+// Arguments:
+//     compiler - The Compiler instance
+//
+// Return Value:
+//     The struct layout of this node; it must have one.
+//
+// Notes:
+//     This is the "general" method for getting the layout,
+//     the more efficient node-specific ones should be used
+//     in case the node's oper is known.
+//
+ClassLayout* GenTree::GetLayout(Compiler* compiler) const
+{
+    assert(varTypeIsStruct(TypeGet()));
+
+    switch (OperGet())
+    {
+        case GT_LCL_VAR:
+            return compiler->lvaGetDesc(AsLclVar())->GetLayout();
+
+        case GT_LCL_FLD:
+            return AsLclFld()->GetLayout();
+
+        case GT_OBJ:
+        case GT_BLK:
+            return AsBlk()->GetLayout();
+
+        case GT_MKREFANY:
+            return compiler->typGetObjLayout(compiler->impGetRefAnyClass());
+
+        default:
+            unreached();
+    }
+}
+
+//-----------------------------------------------------------
 // CopyReg: Copy the _gtRegNum/gtRegTag fields.
 //
 // Arguments:
 //     from   -  GenTree node from which to copy
 //
-// Return Value:
-//     None
 void GenTree::CopyReg(GenTree* from)
 {
     _gtRegNum = from->_gtRegNum;
@@ -4646,6 +4682,11 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 {
                     costEx += 1;
                     costSz += 1;
+                }
+                else if (tree->TypeIs(TYP_STRUCT))
+                {
+                    costEx += IND_COST_EX;
+                    costSz += 2;
                 }
                 break;
 
@@ -9123,7 +9164,10 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             m_state = -1;
             return;
 
-        // Standard unary operators
+// Standard unary operators
+#ifdef TARGET_ARM64
+        case GT_CNEG_LT:
+#endif // TARGET_ARM64
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
         case GT_NOT:
@@ -16415,7 +16459,7 @@ const GenTreeLclVarCommon* GenTree::IsLocalAddrExpr() const
 //
 GenTreeLclVar* GenTree::IsImplicitByrefParameterValue(Compiler* compiler)
 {
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if FEATURE_IMPLICIT_BYREFS && !defined(TARGET_LOONGARCH64) // TODO-LOONGARCH64-CQ: enable this.
 
     GenTreeLclVar* lcl = nullptr;
 
@@ -16447,7 +16491,7 @@ GenTreeLclVar* GenTree::IsImplicitByrefParameterValue(Compiler* compiler)
         return lcl;
     }
 
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#endif // FEATURE_IMPLICIT_BYREFS && !defined(TARGET_LOONGARCH64)
 
     return nullptr;
 }
@@ -18419,14 +18463,16 @@ var_types GenTreeJitIntrinsic::GetSimdBaseType() const
     return JitType2PreciseVarType(simdBaseJitType);
 }
 
-// Returns true for the SIMD Intrinsic instructions that have MemoryLoad semantics, false otherwise
+//------------------------------------------------------------------------
+// OperIsMemoryLoad: Does this SIMD intrinsic have memory load semantics?
+//
+// Return Value:
+//    Whether this intrinsic may throw NullReferenceException if the
+//    address is "null".
+//
 bool GenTreeSIMD::OperIsMemoryLoad() const
 {
-    if (GetSIMDIntrinsicId() == SIMDIntrinsicInitArray)
-    {
-        return true;
-    }
-    return false;
+    return GetSIMDIntrinsicId() == SIMDIntrinsicInitArray;
 }
 
 // TODO-Review: why are layouts not compared here?
@@ -22425,26 +22471,56 @@ GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(
                            /* isSimdAsHWIntrinsic */ false, op1, op2, op3);
 }
 
-// Returns true for the HW Intrinsic instructions that have MemoryLoad semantics, false otherwise
-bool GenTreeHWIntrinsic::OperIsMemoryLoad() const
+//------------------------------------------------------------------------
+// OperIsMemoryLoad: Does this HWI node have memory load semantics?
+//
+// Arguments:
+//    pAddr - optional [out] parameter for the address
+//
+// Return Value:
+//    Whether this intrinsic may throw NullReferenceException if the
+//    address is "null".
+//
+bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
 {
+    GenTree* addr = nullptr;
+
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     NamedIntrinsic      intrinsicId = GetHWIntrinsicId();
     HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
 
     if (category == HW_Category_MemoryLoad)
     {
-        return true;
+        switch (intrinsicId)
+        {
+#ifdef TARGET_XARCH
+            case NI_SSE_LoadLow:
+            case NI_SSE_LoadHigh:
+            case NI_SSE2_LoadLow:
+            case NI_SSE2_LoadHigh:
+                addr = Op(2);
+                break;
+#endif // TARGET_XARCH
+
+#ifdef TARGET_ARM64
+            case NI_AdvSimd_LoadAndInsertScalar:
+                addr = Op(3);
+                break;
+#endif // TARGET_ARM64
+
+            default:
+                addr = Op(1);
+                break;
+        }
     }
 #ifdef TARGET_XARCH
-    else if (HWIntrinsicInfo::MaybeMemoryLoad(GetHWIntrinsicId()))
+    else if (HWIntrinsicInfo::MaybeMemoryLoad(intrinsicId))
     {
         // Some intrinsics (without HW_Category_MemoryLoad) also have MemoryLoad semantics
         // This is generally because they have both vector and pointer overloads, e.g.,
         // * Vector128<byte> BroadcastScalarToVector128(Vector128<byte> value)
         // * Vector128<byte> BroadcastScalarToVector128(byte* source)
-        // So, we need to check the argument's type is memory-reference or Vector128
-
+        //
         if ((category == HW_Category_SimpleSIMD) || (category == HW_Category_SIMDScalar))
         {
             assert(GetOperandCount() == 1);
@@ -22459,53 +22535,91 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad() const
                 case NI_AVX2_ConvertToVector256Int16:
                 case NI_AVX2_ConvertToVector256Int32:
                 case NI_AVX2_ConvertToVector256Int64:
-                {
-                    CorInfoType auxiliaryType = GetAuxiliaryJitType();
-
-                    if (auxiliaryType == CORINFO_TYPE_PTR)
+                    if (GetAuxiliaryJitType() == CORINFO_TYPE_PTR)
                     {
-                        return true;
+                        addr = Op(1);
                     }
-
-                    assert(auxiliaryType == CORINFO_TYPE_UNDEF);
-                    return false;
-                }
+                    else
+                    {
+                        assert(GetAuxiliaryJitType() == CORINFO_TYPE_UNDEF);
+                    }
+                    break;
 
                 default:
-                {
                     unreached();
-                }
             }
         }
         else if (category == HW_Category_IMM)
         {
-            // Do we have less than 3 operands?
-            if (GetOperandCount() < 3)
+            switch (intrinsicId)
             {
-                return false;
-            }
-            else if (HWIntrinsicInfo::isAVX2GatherIntrinsic(GetHWIntrinsicId()))
-            {
-                return true;
+                case NI_AVX2_GatherVector128:
+                case NI_AVX2_GatherVector256:
+                    addr = Op(1);
+                    break;
+
+                case NI_AVX2_GatherMaskVector128:
+                case NI_AVX2_GatherMaskVector256:
+                    addr = Op(2);
+                    break;
+
+                default:
+                    break;
             }
         }
     }
 #endif // TARGET_XARCH
 #endif // TARGET_XARCH || TARGET_ARM64
+
+    if (pAddr != nullptr)
+    {
+        *pAddr = addr;
+    }
+
+    if (addr != nullptr)
+    {
+        assert(varTypeIsI(addr));
+        return true;
+    }
+
     return false;
 }
 
-// Returns true for the HW Intrinsic instructions that have MemoryStore semantics, false otherwise
-bool GenTreeHWIntrinsic::OperIsMemoryStore() const
+//------------------------------------------------------------------------
+// OperIsMemoryLoad: Does this HWI node have memory store semantics?
+//
+// Arguments:
+//    pAddr - optional [out] parameter for the address
+//
+// Return Value:
+//    Whether this intrinsic may mutate heap state and/or throw a
+//    NullReferenceException if the address is "null".
+//
+bool GenTreeHWIntrinsic::OperIsMemoryStore(GenTree** pAddr) const
 {
+    GenTree* addr = nullptr;
+
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(GetHWIntrinsicId());
+    NamedIntrinsic      intrinsicId = GetHWIntrinsicId();
+    HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
+
     if (category == HW_Category_MemoryStore)
     {
-        return true;
+        switch (intrinsicId)
+        {
+#ifdef TARGET_XARCH
+            case NI_SSE2_MaskMove:
+                addr = Op(3);
+                break;
+#endif // TARGET_XARCH
+
+            default:
+                addr = Op(1);
+                break;
+        }
     }
 #ifdef TARGET_XARCH
-    else if (HWIntrinsicInfo::MaybeMemoryStore(GetHWIntrinsicId()) &&
+    else if (HWIntrinsicInfo::MaybeMemoryStore(intrinsicId) &&
              (category == HW_Category_IMM || category == HW_Category_Scalar))
     {
         // Some intrinsics (without HW_Category_MemoryStore) also have MemoryStore semantics
@@ -22516,29 +22630,44 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore() const
         // So, the 3-argument form is MemoryStore
         if (GetOperandCount() == 3)
         {
-            switch (GetHWIntrinsicId())
+            switch (intrinsicId)
             {
                 case NI_BMI2_MultiplyNoFlags:
                 case NI_BMI2_X64_MultiplyNoFlags:
-                    return true;
+                    addr = Op(3);
+                    break;
+
                 default:
-                    return false;
+                    break;
             }
         }
     }
 #endif // TARGET_XARCH
 #endif // TARGET_XARCH || TARGET_ARM64
+
+    if (pAddr != nullptr)
+    {
+        *pAddr = addr;
+    }
+
+    if (addr != nullptr)
+    {
+        assert(varTypeIsI(addr));
+        return true;
+    }
+
     return false;
 }
 
-// Returns true for the HW Intrinsic instructions that have MemoryLoad or MemoryStore semantics, false otherwise
+//------------------------------------------------------------------------
+// OperIsMemoryLoadOrStore: Does this HWI node have memory load or store semantics?
+//
+// Return Value:
+//    Whether "this" is "OperIsMemoryLoad" or "OperIsMemoryStore".
+//
 bool GenTreeHWIntrinsic::OperIsMemoryLoadOrStore() const
 {
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     return OperIsMemoryLoad() || OperIsMemoryStore();
-#else
-    return false;
-#endif
 }
 
 NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicId() const

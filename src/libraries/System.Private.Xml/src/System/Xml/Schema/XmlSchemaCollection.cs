@@ -1,16 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Threading;
+using System.Collections;
+using System.Xml.Schema;
+using System.Runtime.Versioning;
+
 namespace System.Xml.Schema
 {
-    using System;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Threading;
-    using System.Collections;
-    using System.Xml.Schema;
-    using System.Runtime.Versioning;
-
-
     /// <summary>
     /// The XmlSchemaCollection contains a set of namespace URI's.
     /// Each namespace also have an associated private data cache

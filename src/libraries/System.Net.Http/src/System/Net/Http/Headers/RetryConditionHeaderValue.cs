@@ -138,8 +138,8 @@ namespace System.Net.Http.Headers
                     return 0;
                 }
 
-                current = current + deltaLength;
-                current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+                current += deltaLength;
+                current += HttpRuleParser.GetWhitespaceLength(input, current);
 
                 // RetryConditionHeaderValue only allows 1 value. There must be no delimiter/other chars after 'delta'
                 if (current != input.Length)

@@ -211,7 +211,7 @@ namespace System.Xml.Xsl.XsltOld
             PopElementScope();
             _popScope = (state & StateMachine.PopScope) != 0;
 
-            if ((state & StateMachine.EmptyTag) != 0 && _mainNode.IsEmptyTag == true)
+            if ((state & StateMachine.EmptyTag) != 0 && _mainNode.IsEmptyTag)
             {
                 return Processor.OutputResult.Continue;
             }
