@@ -236,7 +236,7 @@ namespace System.Runtime.Serialization
         internal Type? ResolveNameFromKnownTypes(XmlQualifiedName typeName)
         {
             DataContract? dataContract = ResolveDataContractFromKnownTypes(typeName);
-            return dataContract == null ? null : dataContract.UnderlyingType;
+            return dataContract?.UnderlyingType;
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]

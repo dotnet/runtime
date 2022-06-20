@@ -426,7 +426,7 @@ namespace System.Runtime.Serialization
 
         internal virtual Type? GetSerializeType(object? graph)
         {
-            return (graph == null) ? null : graph.GetType();
+            return graph?.GetType();
         }
 
         internal virtual Type? GetDeserializeType()

@@ -134,23 +134,6 @@ void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
         addr->gtType = simdType;
         use.ReplaceWith(addr);
     }
-    else if (addr->OperIs(GT_ADDR))
-    {
-        GenTree* location = addr->AsUnOp()->gtGetOp1();
-
-        if (location->OperIsSimdOrHWintrinsic() || location->IsCnsVec())
-        {
-            // If we have IND(ADDR(SIMD)) then we can keep only the SIMD node.
-            // This is a special tree created by impNormStructVal to preserve the class layout
-            // needed by call morphing on an OBJ node. This information is no longer needed at
-            // this point (and the address of a SIMD node can't be obtained anyway).
-
-            BlockRange().Remove(indir);
-            BlockRange().Remove(addr);
-
-            use.ReplaceWith(addr->AsUnOp()->gtGetOp1());
-        }
-    }
 #endif // FEATURE_SIMD
 }
 
@@ -579,6 +562,10 @@ void Rationalizer::RewriteAddress(LIR::Use& use)
         BlockRange().Remove(address);
 
         JITDUMP("Rewriting GT_ADDR(GT_IND(X)) to X:\n");
+    }
+    else
+    {
+        unreached();
     }
 
     DISPTREERANGE(BlockRange(), use.Def());

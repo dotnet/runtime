@@ -262,7 +262,7 @@ namespace System.Xml.Serialization
 
             if (root == null)
                 root = a.XmlRoot;
-            string? ns = root == null ? null : root.Namespace;
+            string? ns = root?.Namespace;
             if (ns == null) ns = defaultNamespace;
             if (ns == null) ns = _defaultNs;
 
