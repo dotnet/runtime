@@ -1,23 +1,23 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System;
+using System.Globalization;
+using System.ComponentModel;
+using System.Xml.Serialization;
+using System.Xml.Schema;
+using System.Diagnostics;
+using System.Threading;
+using System.Security;
+using System.Net;
+using System.Reflection;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml.Serialization
 {
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.IO;
-    using System;
-    using System.Globalization;
-    using System.ComponentModel;
-    using System.Xml.Serialization;
-    using System.Xml.Schema;
-    using System.Diagnostics;
-    using System.Threading;
-    using System.Security;
-    using System.Net;
-    using System.Reflection;
-    using System.Diagnostics.CodeAnalysis;
-
     public class XmlSchemas : CollectionBase, IEnumerable<XmlSchema>
     {
         private XmlSchemaSet? _schemaSet;
