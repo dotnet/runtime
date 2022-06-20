@@ -46,7 +46,12 @@ namespace Microsoft.Extensions.Logging.Console
                     throw new ArgumentOutOfRangeException(nameof(value), value, $"{nameof(value)} is not a supported buffer mode value.");
                 }
 
-                _fullMode = value;
+                lock (_messageQueue)
+                {
+                    // _fullMode is used inside the lock and is safer to guard setter with lock as well
+                    // this set is not expected to happen frequently
+                    _fullMode = value;
+                }
             }
         }
         private readonly Thread _outputThread;
@@ -95,12 +100,9 @@ namespace Microsoft.Extensions.Logging.Console
 
         private void ProcessLogQueue()
         {
-            while (!_isAddingCompleted || _messageQueue.Count > 0)
+            while (TryDequeue(out LogMessageEntry message))
             {
-                if (TryDequeue(out LogMessageEntry message))
-                {
-                    WriteMessage(message);
-                }
+                WriteMessage(message);
             }
         }
 
@@ -162,7 +164,7 @@ namespace Microsoft.Extensions.Logging.Console
                     Monitor.Wait(_messageQueue);
                 }
 
-                if (_messageQueue.Count > 0)
+                if (_messageQueue.Count > 0 && !_isAddingCompleted)
                 {
                     item = _messageQueue.Dequeue();
                     if (_messageQueue.Count == MaxQueueLength - 1)
