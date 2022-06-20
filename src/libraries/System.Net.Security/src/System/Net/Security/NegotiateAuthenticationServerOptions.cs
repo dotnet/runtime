@@ -28,7 +28,7 @@ namespace System.Net.Security
         public ChannelBinding? Binding { get; set; }
 
         /// <summary>
-        /// Indicates the requires level of protection of the authentication exchange
+        /// Indicates the required level of protection of the authentication exchange
         /// and any further data exchange. Default value is None.
         /// </summary>
         public ProtectionLevel RequiredProtectionLevel { get; set; } = ProtectionLevel.None;
