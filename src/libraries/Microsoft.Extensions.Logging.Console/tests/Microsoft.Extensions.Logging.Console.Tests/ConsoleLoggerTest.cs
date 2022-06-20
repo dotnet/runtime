@@ -52,7 +52,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
 
             ConsoleFormatter? formatter = null;
             var loggerOptions = options ?? new ConsoleLoggerOptions();
-            var consoleLoggerProcessor = new TestLoggerProcessor(console, errorConsole, loggerOptions.BufferFullMode, loggerOptions.MaxQueueLength);
+            var consoleLoggerProcessor = new TestLoggerProcessor(console, errorConsole, loggerOptions.QueueFullMode, loggerOptions.MaxQueueLength);
             Func<LogLevel, string> levelAsString;
             int writesPerMsg;
             switch (loggerOptions.Format)
@@ -424,7 +424,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 var sink = new ConsoleSink();
                 var console = new TestConsole(sink);
                 var loggerOptions = new ConsoleLoggerOptions();
-                var consoleLoggerProcessor = new TestLoggerProcessor(console, null!);
+                var consoleLoggerProcessor = new TestLoggerProcessor(console, null!, loggerOptions.QueueFullMode, loggerOptions.MaxQueueLength);
 
                 var loggerProvider = new ServiceCollection()
                     .AddLogging(builder => builder
@@ -1184,7 +1184,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void ConsoleLoggerOptions_SetInvalidBufferMode_Throws()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ConsoleLoggerOptions() { BufferFullMode = (ConsoleLoggerBufferFullMode)10 });
+            Assert.Throws<ArgumentOutOfRangeException>(() => new ConsoleLoggerOptions() { QueueFullMode = (ConsoleLoggerBufferFullMode)10 });
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -1303,13 +1303,13 @@ namespace Microsoft.Extensions.Logging.Console.Test
             var logger = (ConsoleLogger)loggerProvider.CreateLogger("Name");
 
             // Act & Assert
-            Assert.Equal(ConsoleLoggerBufferFullMode.Wait, logger.Options.BufferFullMode);
+            Assert.Equal(ConsoleLoggerBufferFullMode.Wait, logger.Options.QueueFullMode);
             Assert.Equal(ConsoleLoggerOptions.DefaultMaxQueueLengthValue, logger.Options.MaxQueueLength);
             monitor.Set(new ConsoleLoggerOptions() {
-                BufferFullMode = ConsoleLoggerBufferFullMode.DropWrite,
+                QueueFullMode = ConsoleLoggerBufferFullMode.DropWrite,
                 MaxQueueLength = 10
             });
-            Assert.Equal(ConsoleLoggerBufferFullMode.DropWrite, logger.Options.BufferFullMode);
+            Assert.Equal(ConsoleLoggerBufferFullMode.DropWrite, logger.Options.QueueFullMode);
             Assert.Equal(10, logger.Options.MaxQueueLength);
         }
 

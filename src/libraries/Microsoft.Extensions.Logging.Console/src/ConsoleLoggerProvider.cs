@@ -58,7 +58,7 @@ namespace Microsoft.Extensions.Logging.Console
             _messageQueue = new ConsoleLoggerProcessor(
                 console,
                 errorConsole,
-                options.CurrentValue.BufferFullMode,
+                options.CurrentValue.QueueFullMode,
                 options.CurrentValue.MaxQueueLength);
 
             ReloadLoggerOptions(options.CurrentValue);
@@ -126,7 +126,7 @@ namespace Microsoft.Extensions.Logging.Console
 #pragma warning restore CS0618
             }
 
-            _messageQueue.FullMode = options.BufferFullMode;
+            _messageQueue.FullMode = options.QueueFullMode;
             _messageQueue.MaxQueueLength = options.MaxQueueLength;
 
             foreach (KeyValuePair<string, ConsoleLogger> logger in _loggers)

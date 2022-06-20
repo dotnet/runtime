@@ -68,7 +68,7 @@ namespace Microsoft.Extensions.Logging.Console
         /// <summary>
         /// Gets or sets the desired console logger behavior when buffer becomes full. Defaults to <c>Wait</c>.
         /// </summary>
-        public ConsoleLoggerBufferFullMode BufferFullMode
+        public ConsoleLoggerBufferFullMode QueueFullMode
         {
             get => _bufferFullMode;
             set
