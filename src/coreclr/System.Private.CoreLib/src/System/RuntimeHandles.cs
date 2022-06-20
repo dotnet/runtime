@@ -348,8 +348,13 @@ namespace System
             return m_type;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern CorElementType GetCorElementType(RuntimeType type);
+        internal static CorElementType GetCorElementType(RuntimeType type)
+        {
+            TypeHandle typeHandle = new TypeHandle((void*)type.m_handle);
+            return typeHandle.IsTypeDesc
+                ? typeHandle.AsTypeDesc()->InternalCorElementType
+                : typeHandle.AsMethodTable()->GetSignatureCorElementType();
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern RuntimeAssembly GetAssembly(RuntimeType type);
