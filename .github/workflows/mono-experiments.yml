@@ -1,0 +1,16 @@
+name: Mono experiments
+
+on:
+ workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-11
+
+    steps:
+
+    - run: mono --version
+
+    - run: nuget
+      
+    - run: cat ~/.config/NuGet/NuGet.Config
