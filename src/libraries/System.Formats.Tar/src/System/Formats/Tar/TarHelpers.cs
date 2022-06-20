@@ -144,7 +144,7 @@ namespace System.Formats.Tar
         internal static string GetTimestampStringFromDateTimeOffset(DateTimeOffset timestamp)
         {
             double secondsSinceEpoch = GetSecondsSinceEpochFromDateTimeOffset(timestamp);
-            return secondsSinceEpoch.ToString("F6", CultureInfo.InvariantCulture); // 6 decimals, no commas
+            return secondsSinceEpoch.ToString("F9", CultureInfo.InvariantCulture); // 6 decimals, no commas
         }
 
         // If the specified fieldName is found in the provided dictionary and is a valid string representation of a number, returns true and sets the value in 'baseTenInteger'.

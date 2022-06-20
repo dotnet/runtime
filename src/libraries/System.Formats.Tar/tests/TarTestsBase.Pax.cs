@@ -106,7 +106,7 @@ namespace System.Formats.Tar.Tests
         protected string GetTimestampStringFromDateTimeOffset(DateTimeOffset timestamp)
         {
             double secondsSinceEpoch = GetSecondsSinceEpochFromDateTimeOffset(timestamp);
-            return secondsSinceEpoch.ToString("F6", CultureInfo.InvariantCulture);
+            return secondsSinceEpoch.ToString("F9", CultureInfo.InvariantCulture);
         }
 
         protected void VerifyExtendedAttributeTimestamp(PaxTarEntry paxEntry, string fieldName, DateTimeOffset minimumTime)
