@@ -43,10 +43,10 @@ namespace System.Net.WebSockets
         public System.Net.Security.RemoteCertificateValidationCallback? RemoteCertificateValidationCallback { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool UseDefaultCredentials { get { throw null; } set { } }
-        public System.Version Version { get { throw null; }
+        public System.Version HttpVersion { get { throw null; }
             [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
             set { } }
-        public System.Net.Http.HttpVersionPolicy VersionPolicy { get { throw null; }
+        public System.Net.Http.HttpVersionPolicy HttpVersionPolicy { get { throw null; }
             [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
             set { } }
         public void AddSubProtocol(string subProtocol) { }

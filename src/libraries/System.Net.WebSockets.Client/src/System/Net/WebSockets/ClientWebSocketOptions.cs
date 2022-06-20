@@ -26,10 +26,10 @@ namespace System.Net.WebSockets
         internal X509CertificateCollection? _clientCertificates;
         internal WebHeaderCollection? _requestHeaders;
         internal List<string>? _requestedSubProtocols;
-        private Version _version = HttpVersion.Version11;
+        private Version _version = Net.HttpVersion.Version11;
         private HttpVersionPolicy _versionPolicy = HttpVersionPolicy.RequestVersionOrLower;
 
-        public Version Version
+        public Version HttpVersion
         {
             get => _version;
             [UnsupportedOSPlatform("browser")]
@@ -40,7 +40,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        public HttpVersionPolicy VersionPolicy
+        public HttpVersionPolicy HttpVersionPolicy
         {
             get => _versionPolicy;
             [UnsupportedOSPlatform("browser")]

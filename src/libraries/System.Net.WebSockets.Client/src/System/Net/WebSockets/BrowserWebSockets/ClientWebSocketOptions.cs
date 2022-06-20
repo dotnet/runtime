@@ -13,7 +13,7 @@ namespace System.Net.WebSockets
     {
         private bool _isReadOnly; // After ConnectAsync is called the options cannot be modified.
         private List<string>? _requestedSubProtocols;
-        private Version _version = HttpVersion.Version11;
+        private Version _version = Net.HttpVersion.Version11;
         private HttpVersionPolicy _versionPolicy = HttpVersionPolicy.RequestVersionOrLower;
 
         internal ClientWebSocketOptions()
@@ -35,14 +35,14 @@ namespace System.Net.WebSockets
             set => throw new PlatformNotSupportedException();
         }
 
-        public Version Version
+        public Version HttpVersion
         {
             get => _version;
             [UnsupportedOSPlatform("browser")]
             set => throw new PlatformNotSupportedException();
         }
 
-        public System.Net.Http.HttpVersionPolicy VersionPolicy
+        public System.Net.Http.HttpVersionPolicy HttpVersionPolicy
         {
             get => _versionPolicy;
             [UnsupportedOSPlatform("browser")]

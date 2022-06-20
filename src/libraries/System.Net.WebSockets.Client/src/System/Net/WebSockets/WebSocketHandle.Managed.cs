@@ -51,13 +51,13 @@ namespace System.Net.WebSockets
             bool disposeHandler = true;
             try
             {
-                if (options.Version.Major >= 3 && options.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+                if (options.HttpVersion.Major >= 3 && options.HttpVersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
                 {
                     throw new Exception();
                 }
 
                 var request = new HttpRequestMessage(HttpMethod.Get, uri);
-                if (options.Version.Major >= 2 || (options.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher))
+                if (options.HttpVersion.Major >= 2 || (options.HttpVersionPolicy == HttpVersionPolicy.RequestVersionOrHigher))
                 {
                     request.Version = new Version(2, 0);
                 }
@@ -108,8 +108,8 @@ namespace System.Net.WebSockets
                     catch (HttpRequestException ex)
                     {
                         if (ex.Data.Contains("SETTINGS_ENABLE_CONNECT_PROTOCOL") && request.Version.Major == 2
-                            && (options.Version.Major == 2 && options.VersionPolicy == HttpVersionPolicy.RequestVersionOrLower
-                            || options.Version.Major == 1 && options.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher))
+                            && (options.HttpVersion.Major == 2 && options.HttpVersionPolicy == HttpVersionPolicy.RequestVersionOrLower
+                            || options.HttpVersion.Major == 1 && options.HttpVersionPolicy == HttpVersionPolicy.RequestVersionOrHigher))
                         {
                             request.Version = new Version(1, 1);
                         }
@@ -343,17 +343,17 @@ namespace System.Net.WebSockets
         /// <param name="options">The options controlling the request.</param>
         private static void AddWebSocketHeaders(HttpRequestMessage request, string secKey, ClientWebSocketOptions options)
         {
-            request.Version = options.Version;
+            request.Version = options.HttpVersion;
             // always exact because we handle downgrade here
             request.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
 
-            if (options.Version == HttpVersion.Version11)
+            if (options.HttpVersion == HttpVersion.Version11)
             {
                 request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.Connection, HttpKnownHeaderNames.Upgrade);
                 request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.Upgrade, "websocket");
                 request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.SecWebSocketKey, secKey);
             }
-            else if (options.Version == HttpVersion.Version20)
+            else if (options.HttpVersion == HttpVersion.Version20)
             {
                 request.Method = HttpMethod.Connect;
                 request.Headers.Protocol = "websocket";
@@ -408,7 +408,7 @@ namespace System.Net.WebSockets
 
         private static void ValidateResponse(HttpResponseMessage response, string secValue, ClientWebSocketOptions options)
         {
-            if (options.Version == HttpVersion.Version11)
+            if (options.HttpVersion == HttpVersion.Version11)
             {
                 if (response.StatusCode != HttpStatusCode.SwitchingProtocols)
                 {
@@ -420,7 +420,7 @@ namespace System.Net.WebSockets
                 ValidateHeader(response.Headers, HttpKnownHeaderNames.Upgrade, "websocket");
                 ValidateHeader(response.Headers, HttpKnownHeaderNames.SecWebSocketAccept, secValue);
             }
-            else if (options.Version == HttpVersion.Version20)
+            else if (options.HttpVersion == HttpVersion.Version20)
             {
                 if (response.StatusCode != HttpStatusCode.OK)
                 {
