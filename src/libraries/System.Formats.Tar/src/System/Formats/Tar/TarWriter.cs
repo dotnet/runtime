@@ -43,11 +43,13 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
-        /// Initializes a <see cref="TarWriter"/> instance that can write tar entries to the specified stream, optionally leaves the stream open upon disposal of this instance, and can optionally specify the preferred default format when writing entries using the <see cref="WriteEntry(string, string?)"/> method.
+        /// Initializes a <see cref="TarWriter"/> instance that can write tar entries to the specified stream, optionally leaves the stream open upon disposal of
+        /// this instance, and can optionally specify the format when writing entries using the <see cref="WriteEntry(string, string?)"/> method.
         /// </summary>
         /// <param name="archiveStream">The stream to write to.</param>
         /// <param name="archiveFormat">The format to use when calling <see cref="WriteEntry(string, string?)"/>. The default value is <see cref="TarEntryFormat.Pax"/>.</param>
-        /// <param name="leaveOpen"><see langword="false"/> to dispose the <paramref name="archiveStream"/> when this instance is disposed; <see langword="true"/> to leave the stream open. The default is <see langword="false"/>.</param>
+        /// <param name="leaveOpen"><see langword="false"/> to dispose the <paramref name="archiveStream"/> when this instance is disposed;
+        /// <see langword="true"/> to leave the stream open. The default is <see langword="false"/>.</param>
         /// <remarks>The recommended format is <see cref="TarEntryFormat.Pax"/> for its flexibility.</remarks>
         /// <exception cref="ArgumentNullException"><paramref name="archiveStream"/> is <see langword="null"/>.</exception>
         /// <exception cref="IOException"><paramref name="archiveStream"/> is unwritable.</exception>
@@ -76,7 +78,7 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
-        /// The preferred default format of the entries when writing entries to the archive using the <see cref="WriteEntry(string, string?)"/> method.
+        /// The format of the entries when writing entries to the archive using the <see cref="WriteEntry(string, string?)"/> method.
         /// </summary>
         public TarEntryFormat Format { get; private set; }
 
