@@ -1469,7 +1469,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        internal async Task<DebugStore> LoadStore(SessionId sessionId, bool tryUseDebugerProtocol, CancellationToken token)
+        internal async Task<DebugStore> LoadStore(SessionId sessionId, bool tryUseDebuggerProtocol, CancellationToken token)
         {
             ExecutionContext context = GetContext(sessionId);
 
@@ -1486,7 +1486,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 else
                 {
                     var useDebuggerProtocol = false;
-                    if (tryUseDebugerProtocol)
+                    if (tryUseDebuggerProtocol)
                     {
                         (int MajorVersion, int MinorVersion) = await context.SdbAgent.GetVMVersion(token);
                         if (MajorVersion == 2 && MinorVersion >= 61)
