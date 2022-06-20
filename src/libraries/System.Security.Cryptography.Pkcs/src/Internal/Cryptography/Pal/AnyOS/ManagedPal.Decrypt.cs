@@ -146,8 +146,41 @@ namespace Internal.Cryptography.Pal.AnyOS
                 out Exception? exception)
             {
                 exception = null;
+
+#if NET
+                try
+                {
+                    using (SymmetricAlgorithm alg = OpenAlgorithm(contentEncryptionAlgorithm))
+                    {
+                        try
+                        {
+                            alg.Key = cek;
+                        }
+                        catch (CryptographicException ce)
+                        {
+                            exception = new CryptographicException(SR.Cryptography_Cms_InvalidSymmetricKey, ce);
+                            return null;
+                        }
+
+                        return alg.DecryptCbc(encryptedContent.Span, alg.IV);
+                    }
+                }
+                catch (CryptographicException ce)
+                {
+                    exception = ce;
+                    return null;
+                }
+                catch (NotSupportedException)
+                {
+                    Debug.Fail("Internal algorithm instances should implement symmetric one-shots");
+                    // If we get a NotSupportedException then the algorithm instance does not support one shots, so
+                    // fall through. We don't expect this to happen since OpenAlgorithm always returns internal
+                    // implementations and they should have one shots implemented.
+                }
+#endif
+
                 int encryptedContentLength = encryptedContent.Length;
-                byte[]? encryptedContentArray = CryptoPool.Rent(encryptedContentLength);
+                byte[] encryptedContentArray = CryptoPool.Rent(encryptedContentLength);
 
                 try
                 {
@@ -165,7 +198,8 @@ namespace Internal.Cryptography.Pal.AnyOS
                         {
                             // Decrypting or deriving the symmetric key with the wrong key may still succeed
                             // but produce a symmetric key that is not the correct length.
-                            throw new CryptographicException(SR.Cryptography_Cms_InvalidSymmetricKey, ae);
+                            exception = new CryptographicException(SR.Cryptography_Cms_InvalidSymmetricKey, ae);
+                            return null;
                         }
 
                         using (decryptor)
