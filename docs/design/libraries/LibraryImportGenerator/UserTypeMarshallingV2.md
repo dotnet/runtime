@@ -693,3 +693,27 @@ static class TMarshaller<T, U, V..., [ElementUnmanagedType] TUnmanagedElement> w
     }
 }
 ```
+
+## Optional Members In Shapes
+
+There's a few optional members in the above shapes. This section explains what these members do and why they're optional.
+
+### Free method
+
+The `Free` method on each shape supports releasing any unmanaged (or managed in the stateful shapes) resources. This method is optional as the `Free` method is required to be called in a `finally` clause and emitting a `try-finally` block with only method calls to empty methods puts a lot of stress on the JIT to inline all of the methods and realize that they are no-ops to remove the `finally` clause. Additionally, just having the `try-finally` block wrapping the main code can cause some de-optimizations.
+
+### NotifyInvokeSucceeded method
+
+This method is called after a stub successfully invokes the target code (unmanaged code in a P/Invoke scenario, managed code in a Reverse P/Invoke scenario). As this method would be called in a very large majority of cases in P/Invoke-style scenarios and has only limited utility (its main use is to provide a good place to call `GC.KeepAlive` that does not require a `try-finally` block), we decided to make it optional.
+
+### Instance GetPinnableReference method on stateful shapes
+
+The non-static `GetPinnableReference` method on stateful shapes is provided to enable pinning a managed value as part of the marshalling process. As some types don't have values that need to be pinned to help with marshalling and pinning has some overhead, this member is optional to make the overhead pay-for-play.
+
+### Static GetPinnableReference method
+
+The static GetPinnableReference method provides a mechanism to pin a managed value and pass down the pinned value directly to native code. This allows us to provide massive performance benefits and to match built-in interop semantics. Unlike the previous design that used the `GetPinnableReference` method on the managed type in some scenarios, this design allows the "interop" pinning rules to not match the easier-to-use `GetPinnableReference` instance method, which may have differing semantics (`Span<T>` and arrays being a prime example here). As many types aren't marshallable via only pinning, the generator does not require this method on every marshaller.
+
+### `-Generated` method variants
+
+These method variants provide a mechanism for a marshaller to state that it needs to be called during the "Generated Unmarshal" phase in the `finally` block to ensure that resources are not leaked. This feature is required only by the SafeHandle marshaller, so it is an optional extension to the model instead of being a required feature.
