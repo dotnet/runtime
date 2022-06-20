@@ -133,8 +133,8 @@ namespace System.Formats.Tar.Tests
                 }
                 else if (originalEntry.Format is TarEntryFormat.Ustar or TarEntryFormat.V7)
                 {
-                    AssertExtensions.GreaterThanOrEqualTo(actualAccessTime, initialNow);
-                    AssertExtensions.GreaterThanOrEqualTo(actualChangeTime, initialNow);
+                    CompareDateTimeOffsets(initialNow, actualAccessTime);
+                    CompareDateTimeOffsets(initialNow, actualChangeTime);
                 }
             }
 
@@ -149,8 +149,8 @@ namespace System.Formats.Tar.Tests
                 }
                 else if (originalEntry.Format is TarEntryFormat.Ustar or TarEntryFormat.V7)
                 {
-                    AssertExtensions.GreaterThanOrEqualTo(gnuEntry.AccessTime, initialNow);
-                    AssertExtensions.GreaterThanOrEqualTo(gnuEntry.ChangeTime, initialNow);
+                    CompareDateTimeOffsets(initialNow, gnuEntry.AccessTime);
+                    CompareDateTimeOffsets(initialNow, gnuEntry.ChangeTime);
                 }
             }
 
