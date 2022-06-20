@@ -435,7 +435,7 @@ mono_threads_wasm_on_thread_attached (void)
 		return;
 	}
 	// Set up a MessageChannel between the new thread (which might be on a pooled reused WebWorker) and the main thread.
-	
+
 	/* A pointer to this address is passed to both the new worker (this thread) and the main
 	 * browser thread, and is used to make the worker wait until the runtime sets up the
 	 * communication channel */

@@ -12,8 +12,6 @@ const threadCreatedCallbacks = Array<ThreadCreatedCallback>();
 
 /// Adds a callback to be called when a new pthread is created.
 /// It is passed a MessagePort that can be used to communicate with the main thread by adding an event listener to it using addEventListener("message", ...)
-///
-/// FIXME: when do we want this to get called? has to be early in the worker lifecycle
 export function addThreadCreatedCallback(fn: ThreadCreatedCallback): void {
     threadCreatedCallbacks.push(fn);
 }

@@ -46,7 +46,7 @@ mono_threads_wasm_async_run_in_main_thread_vii (void (*func)(gpointer, gpointer)
 
 // Called from the start wrapper when the runtime creates a thread.
 void
-mono_threads_wasm_on_thread_attached(void);
+mono_threads_wasm_on_thread_attached (void);
 
 #endif /* HOST_WASM*/
 
