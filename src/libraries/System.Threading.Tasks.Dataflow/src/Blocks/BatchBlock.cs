@@ -68,7 +68,7 @@ namespace System.Threading.Tasks.Dataflow
                 onItemsRemoved, itemCountingFunc);
 
             // Initialize target
-            _target = new BatchBlockTargetCore(this, batchSize, batch => _source.AddMessage(batch), dataflowBlockOptions);
+            _target = new BatchBlockTargetCore(this, batchSize, _source.AddMessage, dataflowBlockOptions);
 
             // When the target is done, let the source know it won't be getting any more data
             _target.Completion.ContinueWith(delegate { _source.Complete(); },

@@ -701,7 +701,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// </exception>
         public ECDiffieHellman? GetECDiffieHellmanPublicKey()
         {
-            return this.GetPublicKey<ECDiffieHellman>(cert => HasECDiffieHellmanKeyUsage(cert));
+            return this.GetPublicKey<ECDiffieHellman>(HasECDiffieHellmanKeyUsage);
         }
 
         /// <summary>
@@ -716,7 +716,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// </exception>
         public ECDiffieHellman? GetECDiffieHellmanPrivateKey()
         {
-            return this.GetPrivateKey<ECDiffieHellman>(cert => HasECDiffieHellmanKeyUsage(cert));
+            return this.GetPrivateKey<ECDiffieHellman>(HasECDiffieHellmanKeyUsage);
         }
 
         /// <summary>

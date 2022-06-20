@@ -443,7 +443,7 @@ namespace System.Formats.Asn1
                 source,
                 ruleSet,
                 tmpDest,
-                (value, lastByte, dest) => CopyBitStringValue(value, lastByte, dest),
+                CopyBitStringValue,
                 isIndefinite,
                 out unusedBitCount,
                 out bytesRead);

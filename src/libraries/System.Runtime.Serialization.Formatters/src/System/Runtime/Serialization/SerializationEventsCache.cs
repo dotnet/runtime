@@ -99,7 +99,7 @@ namespace System.Runtime.Serialization
 
         internal static SerializationEvents GetSerializationEventsForType(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type t) =>
-            s_cache.GetOrAdd(t, type => CreateSerializationEvents(type));
+            s_cache.GetOrAdd(t, CreateSerializationEvents);
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
             Justification = "The Type is annotated correctly, it just can't pass through the lambda method.")]

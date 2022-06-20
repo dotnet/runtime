@@ -36,8 +36,8 @@ namespace Microsoft.Extensions.Options
             void RegisterSource(IOptionsChangeTokenSource<TOptions> source)
             {
                 IDisposable registration = ChangeToken.OnChange(
-                          () => source.GetChangeToken(),
-                          (name) => InvokeChanged(name),
+                          source.GetChangeToken,
+                          InvokeChanged,
                           source.Name);
 
                 _registrations.Add(registration);
