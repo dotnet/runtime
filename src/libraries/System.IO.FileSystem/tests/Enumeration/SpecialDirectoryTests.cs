@@ -61,7 +61,7 @@ namespace System.IO.Tests.Enumeration
             // Files that begin with periods are considered hidden on Unix
             string[] paths = GetNames(TestDirectory, new EnumerationOptions { ReturnSpecialDirectories = true, AttributesToSkip = 0 });
 
-            if (!PlatformDetection.IsWindows10Version22000OrGreater)
+            if (!PlatformDetection.IsWindows10Version20348OrGreater)
             {
                 // Sometimes this is not returned - presumably an OS bug.
                 // This occurs often on Windows 11, very rarely otherwise.
