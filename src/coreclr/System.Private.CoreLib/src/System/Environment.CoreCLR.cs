@@ -81,6 +81,22 @@ namespace System
                 GetCommandLineArgsNative();
         }
 
+        private static unsafe string[] InitializeCommandLineArgs(char* exePath, int argc, char** argv) // invoked from VM
+        {
+            string[] commandLineArgs = new string[argc + 1];
+            string[] mainMethodArgs = new string[argc];
+
+            commandLineArgs[0] = new string(exePath);
+
+            for (int i = 0; i < mainMethodArgs.Length; i++)
+            {
+                 commandLineArgs[i + 1] = mainMethodArgs[i] = new string(argv[i]);
+            }
+
+            s_commandLineArgs = commandLineArgs;
+            return mainMethodArgs;
+        }
+
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_GetProcessorCount")]
         private static partial int GetProcessorCount();
 

@@ -70,5 +70,10 @@ namespace System
             Debug.Assert(s_commandLineArgs != null, "VM did not properly setup application.");
             return (string[])s_commandLineArgs.Clone();
         }
+
+        internal static void SetCommandLineArgs(string[] cmdLineArgs)
+        {
+            s_commandLineArgs = cmdLineArgs;
+        }
     }
 }
