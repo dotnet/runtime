@@ -149,14 +149,20 @@ namespace Microsoft.CodeAnalysis.DotnetRuntime.Extensions
 
         public static ImmutableArray<T> ToImmutableArray<T>(this ReadOnlySpan<T> span)
         {
-            if (span.Length == 0)
-                return ImmutableArray<T>.Empty;
+            switch (span.Length)
+            {
+                case 0: return ImmutableArray<T>.Empty;
+                case 1: return ImmutableArray.Create(span[0]);
+                case 2: return ImmutableArray.Create(span[0], span[1]);
+                case 3: return ImmutableArray.Create(span[0], span[1], span[2]);
+                case 4: return ImmutableArray.Create(span[0], span[1], span[2], span[3]);
+                default:
+                    var builder = ImmutableArray.CreateBuilder<T>(span.Length);
+                    foreach (var item in span)
+                        builder.Add(item);
 
-            var builder = ImmutableArray.CreateBuilder<T>(span.Length);
-            foreach (var item in span)
-                builder.Add(item);
-
-            return builder.MoveToImmutable();
+                    return builder.MoveToImmutable();
+            }
         }
 
         public static SimpleNameSyntax GetUnqualifiedName(this NameSyntax name)
