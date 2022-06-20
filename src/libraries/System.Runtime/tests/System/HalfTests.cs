@@ -1121,8 +1121,8 @@ namespace System.Tests
             yield return new object[] { Half.MinValue, Half.MaxValue, Half.MaxValue };
             yield return new object[] { Half.MaxValue, Half.MinValue, Half.MaxValue };
             yield return new object[] { Half.NaN, Half.NaN, Half.NaN };
-            yield return new object[] { Half.NaN, (Half)1.0f, (Half)1.0f };
-            yield return new object[] { (Half)1.0f, Half.NaN, (Half)1.0f };
+            yield return new object[] { Half.NaN, (Half)Half.One, (Half)Half.One };
+            yield return new object[] { (Half)Half.One, Half.NaN, (Half)Half.One };
             yield return new object[] { Half.PositiveInfinity, Half.NaN, Half.PositiveInfinity };
             yield return new object[] { Half.NegativeInfinity, Half.NaN, Half.NegativeInfinity };
             yield return new object[] { Half.NaN, Half.PositiveInfinity, Half.PositiveInfinity };
@@ -1149,8 +1149,8 @@ namespace System.Tests
             yield return new object[] { Half.MinValue, Half.MaxValue, Half.MaxValue };
             yield return new object[] { Half.MaxValue, Half.MinValue, Half.MaxValue };
             yield return new object[] { Half.NaN, Half.NaN, Half.NaN };
-            yield return new object[] { Half.NaN, (Half)1.0f, (Half)1.0f };
-            yield return new object[] { (Half)1.0f, Half.NaN, (Half)1.0f };
+            yield return new object[] { Half.NaN, (Half)Half.One, (Half)Half.One };
+            yield return new object[] { (Half)Half.One, Half.NaN, (Half)Half.One };
             yield return new object[] { Half.PositiveInfinity, Half.NaN, Half.PositiveInfinity };
             yield return new object[] { Half.NegativeInfinity, Half.NaN, Half.NegativeInfinity };
             yield return new object[] { Half.NaN, Half.PositiveInfinity, Half.PositiveInfinity };
@@ -1177,8 +1177,8 @@ namespace System.Tests
             yield return new object[] { Half.MinValue, Half.MaxValue, Half.MinValue };
             yield return new object[] { Half.MaxValue, Half.MinValue, Half.MinValue };
             yield return new object[] { Half.NaN, Half.NaN, Half.NaN };
-            yield return new object[] { Half.NaN, (Half)1.0f, (Half)1.0f };
-            yield return new object[] { (Half)1.0f, Half.NaN, (Half)1.0f };
+            yield return new object[] { Half.NaN, (Half)Half.One, (Half)Half.One };
+            yield return new object[] { (Half)Half.One, Half.NaN, (Half)Half.One };
             yield return new object[] { Half.PositiveInfinity, Half.NaN, Half.PositiveInfinity };
             yield return new object[] { Half.NegativeInfinity, Half.NaN, Half.NegativeInfinity };
             yield return new object[] { Half.NaN, Half.PositiveInfinity, Half.PositiveInfinity };
@@ -1205,8 +1205,8 @@ namespace System.Tests
             yield return new object[] { Half.MinValue, Half.MaxValue, Half.MinValue };
             yield return new object[] { Half.MaxValue, Half.MinValue, Half.MinValue };
             yield return new object[] { Half.NaN, Half.NaN, Half.NaN };
-            yield return new object[] { Half.NaN, (Half)1.0f, (Half)1.0f };
-            yield return new object[] { (Half)1.0f, Half.NaN, (Half)1.0f };
+            yield return new object[] { Half.NaN, (Half)Half.One, (Half)Half.One };
+            yield return new object[] { (Half)Half.One, Half.NaN, (Half)Half.One };
             yield return new object[] { Half.PositiveInfinity, Half.NaN, Half.PositiveInfinity };
             yield return new object[] { Half.NegativeInfinity, Half.NaN, Half.NegativeInfinity };
             yield return new object[] { Half.NaN, Half.PositiveInfinity, Half.PositiveInfinity };
@@ -1228,7 +1228,7 @@ namespace System.Tests
 
         public static IEnumerable<object[]> ExpM1_TestData()
         {
-            yield return new object[] {  Half.NegativeInfinity, (Half)(-1.0f),                  CrossPlatformMachineEpsilon * (Half)10 };
+            yield return new object[] {  Half.NegativeInfinity, (Half)(-Half.One),                  CrossPlatformMachineEpsilon * (Half)10 };
             yield return new object[] { (Half)(-3.14159265f),   (Half)(-0.956786082f),          CrossPlatformMachineEpsilon };             // value: -(pi)
             yield return new object[] { (Half)(-2.71828183f),   (Half)(-0.934011964f),          CrossPlatformMachineEpsilon };             // value: -(e)
             yield return new object[] { (Half)(-2.30258509f),   (Half)(-0.9f),                  CrossPlatformMachineEpsilon };             // value: -(ln(10))
@@ -1236,7 +1236,7 @@ namespace System.Tests
             yield return new object[] { (Half)(-1.44269504f),   (Half)(-0.763709912f),          CrossPlatformMachineEpsilon };             // value: -(log2(e))
             yield return new object[] { (Half)(-1.41421356f),   (Half)(-0.756883266f),          CrossPlatformMachineEpsilon };             // value: -(sqrt(2))
             yield return new object[] { (Half)(-1.12837917f),   (Half)(-0.676442736f),          CrossPlatformMachineEpsilon };             // value: -(2 / sqrt(pi))
-            yield return new object[] { (Half)(-1.0f),          (Half)(-0.632120559f),          CrossPlatformMachineEpsilon };
+            yield return new object[] { (Half)(-Half.One),          (Half)(-0.632120559f),          CrossPlatformMachineEpsilon };
             yield return new object[] { (Half)(-0.785398163f),  (Half)(-0.544061872f),          CrossPlatformMachineEpsilon };             // value: -(pi / 4)
             yield return new object[] { (Half)(-0.707106781f),  (Half)(-0.506931309f),          CrossPlatformMachineEpsilon };             // value: -(1 / sqrt(2))
             yield return new object[] { (Half)(-0.693147181f),  (Half)(-0.5f),                  CrossPlatformMachineEpsilon };             // value: -(ln(2))
@@ -1249,10 +1249,10 @@ namespace System.Tests
             yield return new object[] { (Half)( 0.318309886f),  (Half)( 0.374802227f),          CrossPlatformMachineEpsilon };             // value:  (1 / pi)
             yield return new object[] { (Half)( 0.434294482f),  (Half)( 0.543873444f),          CrossPlatformMachineEpsilon };             // value:  (log10(e))
             yield return new object[] { (Half)( 0.636619772f),  (Half)( 0.890081165f),          CrossPlatformMachineEpsilon };             // value:  (2 / pi)
-            yield return new object[] { (Half)( 0.693147181f),  (Half)( 1.0f),                  CrossPlatformMachineEpsilon * (Half)10 };  // value:  (ln(2))
+            yield return new object[] { (Half)( 0.693147181f),  (Half)( Half.One),                  CrossPlatformMachineEpsilon * (Half)10 };  // value:  (ln(2))
             yield return new object[] { (Half)( 0.707106781f),  (Half)( 1.02811498f),           CrossPlatformMachineEpsilon * (Half)10 };  // value:  (1 / sqrt(2))
             yield return new object[] { (Half)( 0.785398163f),  (Half)( 1.19328005f),           CrossPlatformMachineEpsilon * (Half)10 };  // value:  (pi / 4)
-            yield return new object[] { (Half)( 1.0f),          (Half)( 1.71828183f),           CrossPlatformMachineEpsilon * (Half)10 };
+            yield return new object[] { (Half)( Half.One),          (Half)( 1.71828183f),           CrossPlatformMachineEpsilon * (Half)10 };
             yield return new object[] { (Half)( 1.12837917f),   (Half)( 2.09064302f),           CrossPlatformMachineEpsilon * (Half)10 };  // value:  (2 / sqrt(pi))
             yield return new object[] { (Half)( 1.41421356f),   (Half)( 3.11325038f),           CrossPlatformMachineEpsilon * (Half)10 };  // value:  (sqrt(2))
             yield return new object[] { (Half)( 1.44269504f),   (Half)( 3.23208611f),           CrossPlatformMachineEpsilon * (Half)10 };  // value:  (log2(e))
@@ -1280,23 +1280,23 @@ namespace System.Tests
             yield return new object[] { (Half)(-1.44269504f),   (Half)(0.367879441f),   CrossPlatformMachineEpsilon };        // value: -(log2(e))
             yield return new object[] { (Half)(-1.41421356f),   (Half)(0.375214227f),   CrossPlatformMachineEpsilon };        // value: -(sqrt(2))
             yield return new object[] { (Half)(-1.12837917f),   (Half)(0.457429347f),   CrossPlatformMachineEpsilon };        // value: -(2 / sqrt(pi))
-            yield return new object[] { (Half)(-1.0f),          (Half)(0.5f),           CrossPlatformMachineEpsilon };
+            yield return new object[] { (Half)(-Half.One),          (Half)(0.5f),           CrossPlatformMachineEpsilon };
             yield return new object[] { (Half)(-0.785398163f),  (Half)(0.580191810f),   CrossPlatformMachineEpsilon };        // value: -(pi / 4)
             yield return new object[] { (Half)(-0.707106781f),  (Half)(0.612547327f),   CrossPlatformMachineEpsilon };        // value: -(1 / sqrt(2))
             yield return new object[] { (Half)(-0.693147181f),  (Half)(0.618503138f),   CrossPlatformMachineEpsilon };        // value: -(ln(2))
             yield return new object[] { (Half)(-0.636619772f),  (Half)(0.643218242f),   CrossPlatformMachineEpsilon };        // value: -(2 / pi)
             yield return new object[] { (Half)(-0.434294482f),  (Half)(0.740055574f),   CrossPlatformMachineEpsilon };        // value: -(log10(e))
             yield return new object[] { (Half)(-0.318309886f),  (Half)(0.802008879f),   CrossPlatformMachineEpsilon };        // value: -(1 / pi)
-            yield return new object[] { (Half)(-0.0f),          (Half)(1.0f),           (Half)0.0f };
+            yield return new object[] { (Half)(-0.0f),          (Half)(Half.One),           (Half)0.0f };
             yield return new object[] {  Half.NaN,               Half.NaN,              (Half)0.0f };
-            yield return new object[] { (Half)( 0.0f),          (Half)(1.0f),           (Half)0.0f };
+            yield return new object[] { (Half)( 0.0f),          (Half)(Half.One),           (Half)0.0f };
             yield return new object[] { (Half)( 0.318309886f),  (Half)(1.24686899f),    CrossPlatformMachineEpsilon * (Half)10 };   // value:  (1 / pi)
             yield return new object[] { (Half)( 0.434294482f),  (Half)(1.35124987f),    CrossPlatformMachineEpsilon * (Half)10 };   // value:  (log10(e))
             yield return new object[] { (Half)( 0.636619772f),  (Half)(1.55468228f),    CrossPlatformMachineEpsilon * (Half)10 };   // value:  (2 / pi)
             yield return new object[] { (Half)( 0.693147181f),  (Half)(1.61680667f),    CrossPlatformMachineEpsilon * (Half)10 };   // value:  (ln(2))
             yield return new object[] { (Half)( 0.707106781f),  (Half)(1.63252692f),    CrossPlatformMachineEpsilon * (Half)10 };   // value:  (1 / sqrt(2))
             yield return new object[] { (Half)( 0.785398163f),  (Half)(1.72356793f),    CrossPlatformMachineEpsilon * (Half)10 };   // value:  (pi / 4)
-            yield return new object[] { (Half)( 1.0f),          (Half)(2.0f),           CrossPlatformMachineEpsilon * (Half)10 };
+            yield return new object[] { (Half)( Half.One),          (Half)(2.0f),           CrossPlatformMachineEpsilon * (Half)10 };
             yield return new object[] { (Half)( 1.12837917f),   (Half)(2.18612996f),    CrossPlatformMachineEpsilon * (Half)10 };   // value:  (2 / sqrt(pi))
             yield return new object[] { (Half)( 1.41421356f),   (Half)(2.66514414f),    CrossPlatformMachineEpsilon * (Half)10 };   // value:  (sqrt(2))
             yield return new object[] { (Half)( 1.44269504f),   (Half)(2.71828183f),    CrossPlatformMachineEpsilon * (Half)10 };   // value:  (log2(e))
@@ -1316,7 +1316,7 @@ namespace System.Tests
 
         public static IEnumerable<object[]> Exp2M1_TestData()
         {
-            yield return new object[] {  Half.NegativeInfinity, (Half)(-1.0f),          (Half)0.0f };
+            yield return new object[] {  Half.NegativeInfinity, (Half)(-Half.One),          (Half)0.0f };
             yield return new object[] { (Half)(-3.14159265f),   (Half)(-0.886685268f),  CrossPlatformMachineEpsilon };            // value: -(pi)
             yield return new object[] { (Half)(-2.71828183f),   (Half)(-0.848044777f),  CrossPlatformMachineEpsilon };            // value: -(e)
             yield return new object[] { (Half)(-2.30258509f),   (Half)(-0.797300434f),  CrossPlatformMachineEpsilon };            // value: -(ln(10))
@@ -1324,7 +1324,7 @@ namespace System.Tests
             yield return new object[] { (Half)(-1.44269504f),   (Half)(-0.632120559f),  CrossPlatformMachineEpsilon };            // value: -(log2(e))
             yield return new object[] { (Half)(-1.41421356f),   (Half)(-0.624785773f),  CrossPlatformMachineEpsilon };            // value: -(sqrt(2))
             yield return new object[] { (Half)(-1.12837917f),   (Half)(-0.542570653f),  CrossPlatformMachineEpsilon };            // value: -(2 / sqrt(pi))
-            yield return new object[] { (Half)(-1.0f),          (Half)(-0.5f),          CrossPlatformMachineEpsilon };
+            yield return new object[] { (Half)(-Half.One),          (Half)(-0.5f),          CrossPlatformMachineEpsilon };
             yield return new object[] { (Half)(-0.785398163f),  (Half)(-0.419808190f),  CrossPlatformMachineEpsilon };            // value: -(pi / 4)
             yield return new object[] { (Half)(-0.707106781f),  (Half)(-0.387452673f),  CrossPlatformMachineEpsilon };            // value: -(1 / sqrt(2))
             yield return new object[] { (Half)(-0.693147181f),  (Half)(-0.381496862f),  CrossPlatformMachineEpsilon };            // value: -(ln(2))
@@ -1340,7 +1340,7 @@ namespace System.Tests
             yield return new object[] { (Half)( 0.693147181f),  (Half)( 0.616806672f),  CrossPlatformMachineEpsilon };            // value:  (ln(2))
             yield return new object[] { (Half)( 0.707106781f),  (Half)( 0.632526919f),  CrossPlatformMachineEpsilon };            // value:  (1 / sqrt(2))
             yield return new object[] { (Half)( 0.785398163f),  (Half)( 0.723567934f),  CrossPlatformMachineEpsilon };            // value:  (pi / 4)
-            yield return new object[] { (Half)( 1.0f),          (Half)( 1.0f),          CrossPlatformMachineEpsilon * (Half)10 };
+            yield return new object[] { (Half)( Half.One),          (Half)( Half.One),          CrossPlatformMachineEpsilon * (Half)10 };
             yield return new object[] { (Half)( 1.12837917f),   (Half)( 1.18612996f),   CrossPlatformMachineEpsilon * (Half)10 }; // value:  (2 / sqrt(pi))
             yield return new object[] { (Half)( 1.41421356f),   (Half)( 1.66514414f),   CrossPlatformMachineEpsilon * (Half)10 }; // value:  (sqrt(2))
             yield return new object[] { (Half)( 1.44269504f),   (Half)( 1.71828183f),   CrossPlatformMachineEpsilon * (Half)10 }; // value:  (log2(e))
@@ -1368,23 +1368,23 @@ namespace System.Tests
             yield return new object[] { (Half)(-1.44269504f),   (Half)0.0360831928f,    CrossPlatformMachineEpsilon / (Half)10 };    // value: -(log2(e))
             yield return new object[] { (Half)(-1.41421356f),   (Half)0.0385288847f,    CrossPlatformMachineEpsilon / (Half)10 };    // value: -(sqrt(2))
             yield return new object[] { (Half)(-1.12837917f),   (Half)0.0744082059f,    CrossPlatformMachineEpsilon / (Half)10 };    // value: -(2 / sqrt(pi))
-            yield return new object[] { (Half)(-1.0f),          (Half)0.1f,             CrossPlatformMachineEpsilon };
+            yield return new object[] { (Half)(-Half.One),          (Half)0.1f,             CrossPlatformMachineEpsilon };
             yield return new object[] { (Half)(-0.785398163f),  (Half)0.163908636f,     CrossPlatformMachineEpsilon };         // value: -(pi / 4)
             yield return new object[] { (Half)(-0.707106781f),  (Half)0.196287760f,     CrossPlatformMachineEpsilon };         // value: -(1 / sqrt(2))
             yield return new object[] { (Half)(-0.693147181f),  (Half)0.202699566f,     CrossPlatformMachineEpsilon };         // value: -(ln(2))
             yield return new object[] { (Half)(-0.636619772f),  (Half)0.230876765f,     CrossPlatformMachineEpsilon };         // value: -(2 / pi)
             yield return new object[] { (Half)(-0.434294482f),  (Half)0.367879441f,     CrossPlatformMachineEpsilon };         // value: -(log10(e))
             yield return new object[] { (Half)(-0.318309886f),  (Half)0.480496373f,     CrossPlatformMachineEpsilon };         // value: -(1 / pi)
-            yield return new object[] { (Half)(-0.0f),          (Half)1.0f,             (Half)0.0f };
+            yield return new object[] { (Half)(-0.0f),          (Half)Half.One,             (Half)0.0f };
             yield return new object[] {  Half.NaN,               Half.NaN,              (Half)0.0f };
-            yield return new object[] { (Half)( 0.0f),          (Half)1.0f,             (Half)0.0f };
+            yield return new object[] { (Half)( 0.0f),          (Half)Half.One,             (Half)0.0f };
             yield return new object[] { (Half)( 0.318309886f),  (Half)2.08118116f,      CrossPlatformMachineEpsilon * (Half)10 };    // value:  (1 / pi)
             yield return new object[] { (Half)( 0.434294482f),  (Half)2.71828183f,      CrossPlatformMachineEpsilon * (Half)10 };    // value:  (log10(e))
             yield return new object[] { (Half)( 0.636619772f),  (Half)4.33131503f,      CrossPlatformMachineEpsilon * (Half)10 };    // value:  (2 / pi)
             yield return new object[] { (Half)( 0.693147181f),  (Half)4.93340967f,      CrossPlatformMachineEpsilon * (Half)10 };    // value:  (ln(2))
             yield return new object[] { (Half)( 0.707106781f),  (Half)5.09456117f,      CrossPlatformMachineEpsilon * (Half)10 };    // value:  (1 / sqrt(2))
             yield return new object[] { (Half)( 0.785398163f),  (Half)6.10095980f,      CrossPlatformMachineEpsilon * (Half)10 };    // value:  (pi / 4)
-            yield return new object[] { (Half)( 1.0f),          (Half)10.0f,            CrossPlatformMachineEpsilon * (Half)100 };
+            yield return new object[] { (Half)( Half.One),          (Half)10.0f,            CrossPlatformMachineEpsilon * (Half)100 };
             yield return new object[] { (Half)( 1.12837917f),   (Half)13.4393779f,      CrossPlatformMachineEpsilon * (Half)100 };   // value:  (2 / sqrt(pi))
             yield return new object[] { (Half)( 1.41421356f),   (Half)25.9545535f,      CrossPlatformMachineEpsilon * (Half)100 };   // value:  (sqrt(2))
             yield return new object[] { (Half)( 1.44269504f),   (Half)27.7137338f,      CrossPlatformMachineEpsilon * (Half)100 };   // value:  (log2(e))
@@ -1404,7 +1404,7 @@ namespace System.Tests
 
         public static IEnumerable<object[]> Exp10M1_TestData()
         {
-            yield return new object[] {  Half.NegativeInfinity, (Half)(-1.0f),          (Half)0.0f };
+            yield return new object[] {  Half.NegativeInfinity, (Half)(-Half.One),          (Half)0.0f };
             yield return new object[] { (Half)(-3.14159265f),   (Half)(-0.999278216f),  CrossPlatformMachineEpsilon };               // value: -(pi)
             yield return new object[] { (Half)(-2.71828183f),   (Half)(-0.998086986f),  CrossPlatformMachineEpsilon };               // value: -(e)
             yield return new object[] { (Half)(-2.30258509f),   (Half)(-0.995017872f),  CrossPlatformMachineEpsilon };               // value: -(ln(10))
@@ -1412,7 +1412,7 @@ namespace System.Tests
             yield return new object[] { (Half)(-1.44269504f),   (Half)(-0.963916807f),  CrossPlatformMachineEpsilon };               // value: -(log2(e))
             yield return new object[] { (Half)(-1.41421356f),   (Half)(-0.961471115f),  CrossPlatformMachineEpsilon };               // value: -(sqrt(2))
             yield return new object[] { (Half)(-1.12837917f),   (Half)(-0.925591794f),  CrossPlatformMachineEpsilon };               // value: -(2 / sqrt(pi))
-            yield return new object[] { (Half)(-1.0f),          (Half)(-0.9f),          CrossPlatformMachineEpsilon };
+            yield return new object[] { (Half)(-Half.One),          (Half)(-0.9f),          CrossPlatformMachineEpsilon };
             yield return new object[] { (Half)(-0.785398163f),  (Half)(-0.836091364f),  CrossPlatformMachineEpsilon };               // value: -(pi / 4)
             yield return new object[] { (Half)(-0.707106781f),  (Half)(-0.803712240f),  CrossPlatformMachineEpsilon };               // value: -(1 / sqrt(2))
             yield return new object[] { (Half)(-0.693147181f),  (Half)(-0.797300434f),  CrossPlatformMachineEpsilon };               // value: -(ln(2))
@@ -1428,7 +1428,7 @@ namespace System.Tests
             yield return new object[] { (Half)( 0.693147181f),  (Half)( 3.93340967f),   CrossPlatformMachineEpsilon * (Half)10 };    // value:  (ln(2))
             yield return new object[] { (Half)( 0.707106781f),  (Half)( 4.09456117f),   CrossPlatformMachineEpsilon * (Half)10 };    // value:  (1 / sqrt(2))
             yield return new object[] { (Half)( 0.785398163f),  (Half)( 5.10095980f),   CrossPlatformMachineEpsilon * (Half)10 };    // value:  (pi / 4)
-            yield return new object[] { (Half)( 1.0f),          (Half)( 9.0f),          CrossPlatformMachineEpsilon * (Half)10 };
+            yield return new object[] { (Half)( Half.One),          (Half)( 9.0f),          CrossPlatformMachineEpsilon * (Half)10 };
             yield return new object[] { (Half)( 1.12837917f),   (Half)( 12.4393779f),   CrossPlatformMachineEpsilon * (Half)100 };   // value:  (2 / sqrt(pi))
             yield return new object[] { (Half)( 1.41421356f),   (Half)( 24.9545535f),   CrossPlatformMachineEpsilon * (Half)100 };   // value:  (sqrt(2))
             yield return new object[] { (Half)( 1.44269504f),   (Half)( 26.7137338f),   CrossPlatformMachineEpsilon * (Half)100 };   // value:  (log2(e))
@@ -1453,7 +1453,7 @@ namespace System.Tests
             yield return new object[] { (Half)(-2.71828183f),    Half.NaN,              (Half)0.0f };                              //                              value: -(e)
             yield return new object[] { (Half)(-1.41421356f),    Half.NaN,              (Half)0.0f };                              //                              value: -(sqrt(2))
             yield return new object[] {  Half.NaN,               Half.NaN,              (Half)0.0f };
-            yield return new object[] { (Half)(-1.0f),           Half.NegativeInfinity, (Half)0.0f };
+            yield return new object[] { (Half)(-Half.One),           Half.NegativeInfinity, (Half)0.0f };
             yield return new object[] { (Half)(-0.956786082f),  (Half)(-3.14159265f),   CrossPlatformMachineEpsilon * (Half)10 };  // expected: -(pi)
             yield return new object[] { (Half)(-0.934011964f),  (Half)(-2.71828183f),   CrossPlatformMachineEpsilon * (Half)10 };  // expected: -(e)
             yield return new object[] { (Half)(-0.9f),          (Half)(-2.30258509f),   CrossPlatformMachineEpsilon * (Half)10 };  // expected: -(ln(10))
@@ -1461,7 +1461,7 @@ namespace System.Tests
             yield return new object[] { (Half)(-0.763709912f),  (Half)(-1.44269504f),   CrossPlatformMachineEpsilon * (Half)10 };  // expected: -(log2(e))
             yield return new object[] { (Half)(-0.756883266f),  (Half)(-1.41421356f),   CrossPlatformMachineEpsilon * (Half)10 };  // expected: -(sqrt(2))
             yield return new object[] { (Half)(-0.676442736f),  (Half)(-1.12837917f),   CrossPlatformMachineEpsilon * (Half)10 };  // expected: -(2 / sqrt(pi))
-            yield return new object[] { (Half)(-0.632120559f),  (Half)(-1.0f),          CrossPlatformMachineEpsilon * (Half)10 };
+            yield return new object[] { (Half)(-0.632120559f),  (Half)(-Half.One),          CrossPlatformMachineEpsilon * (Half)10 };
             yield return new object[] { (Half)(-0.544061872f),  (Half)(-0.785398163f),  CrossPlatformMachineEpsilon };             // expected: -(pi / 4)
             yield return new object[] { (Half)(-0.506931309f),  (Half)(-0.707106781f),  CrossPlatformMachineEpsilon };             // expected: -(1 / sqrt(2))
             yield return new object[] { (Half)(-0.5f),          (Half)(-0.693147181f),  CrossPlatformMachineEpsilon };             // expected: -(ln(2))
@@ -1471,10 +1471,10 @@ namespace System.Tests
             yield return new object[] { (Half)( 0.374802227f),  (Half)( 0.318309886f),  CrossPlatformMachineEpsilon };             // expected:  (1 / pi)
             yield return new object[] { (Half)( 0.543873444f),  (Half)( 0.434294482f),  CrossPlatformMachineEpsilon };             // expected:  (log10(e))
             yield return new object[] { (Half)( 0.890081165f),  (Half)( 0.636619772f),  CrossPlatformMachineEpsilon };             // expected:  (2 / pi)
-            yield return new object[] { (Half)( 1.0f),          (Half)( 0.693147181f),  CrossPlatformMachineEpsilon };             // expected:  (ln(2))
+            yield return new object[] { (Half)( Half.One),          (Half)( 0.693147181f),  CrossPlatformMachineEpsilon };             // expected:  (ln(2))
             yield return new object[] { (Half)( 1.02811498f),   (Half)( 0.707106781f),  CrossPlatformMachineEpsilon };             // expected:  (1 / sqrt(2))
             yield return new object[] { (Half)( 1.19328005f),   (Half)( 0.785398163f),  CrossPlatformMachineEpsilon };             // expected:  (pi / 4)
-            yield return new object[] { (Half)( 1.71828183f),   (Half)( 1.0f),          CrossPlatformMachineEpsilon * (Half)10 };
+            yield return new object[] { (Half)( 1.71828183f),   (Half)( Half.One),          CrossPlatformMachineEpsilon * (Half)10 };
             yield return new object[] { (Half)( 2.09064302f),   (Half)( 1.12837917f),   CrossPlatformMachineEpsilon * (Half)10 };  // expected:  (2 / sqrt(pi))
             yield return new object[] { (Half)( 3.11325038f),   (Half)( 1.41421356f),   CrossPlatformMachineEpsilon * (Half)10 };  // expected:  (sqrt(2))
             yield return new object[] { (Half)( 3.23208611f),   (Half)( 1.44269504f),   CrossPlatformMachineEpsilon * (Half)10 };  // expected:  (log2(e))
@@ -1496,7 +1496,7 @@ namespace System.Tests
         {
             yield return new object[] {  Half.NegativeInfinity,  Half.NaN,              (Half)0.0f };
             yield return new object[] {  Half.NaN,               Half.NaN,              (Half)0.0f };
-            yield return new object[] { (Half)(-1.0f),           Half.NegativeInfinity, (Half)0.0f };
+            yield return new object[] { (Half)(-Half.One),           Half.NegativeInfinity, (Half)0.0f };
             yield return new object[] { (Half)(-0.886685268f),  (Half)(-3.14159265f),   CrossPlatformMachineEpsilon * (Half)10 };  // expected: -(pi)
             yield return new object[] { (Half)(-0.848044777f),  (Half)(-2.71828183f),   CrossPlatformMachineEpsilon * (Half)10 };  // expected: -(e)
             yield return new object[] { (Half)(-0.797300434f),  (Half)(-2.30258509f),   CrossPlatformMachineEpsilon * (Half)10 };  // expected: -(ln(10))
@@ -1504,7 +1504,7 @@ namespace System.Tests
             yield return new object[] { (Half)(-0.632120559f),  (Half)(-1.44269504f),   CrossPlatformMachineEpsilon * (Half)10 };  // expected: -(log2(e))
             yield return new object[] { (Half)(-0.624785773f),  (Half)(-1.41421356f),   CrossPlatformMachineEpsilon * (Half)10 };  // expected: -(sqrt(2))
             yield return new object[] { (Half)(-0.542570653f),  (Half)(-1.12837917f),   CrossPlatformMachineEpsilon * (Half)10 };  // expected: -(2 / sqrt(pi))
-            yield return new object[] { (Half)(-0.5f),          (Half)(-1.0f),          CrossPlatformMachineEpsilon * (Half)10 };
+            yield return new object[] { (Half)(-0.5f),          (Half)(-Half.One),          CrossPlatformMachineEpsilon * (Half)10 };
             yield return new object[] { (Half)(-0.419808190f),  (Half)(-0.785398163f),  CrossPlatformMachineEpsilon };             // expected: -(pi / 4)
             yield return new object[] { (Half)(-0.387452673f),  (Half)(-0.707106781f),  CrossPlatformMachineEpsilon };             // expected: -(1 / sqrt(2))
             yield return new object[] { (Half)(-0.381496862f),  (Half)(-0.693147181f),  CrossPlatformMachineEpsilon };             // expected: -(ln(2))
@@ -1519,7 +1519,7 @@ namespace System.Tests
             yield return new object[] { (Half)( 0.616806672f),  (Half)( 0.693147181f),  CrossPlatformMachineEpsilon };             // expected:  (ln(2))
             yield return new object[] { (Half)( 0.632526919f),  (Half)( 0.707106781f),  CrossPlatformMachineEpsilon };             // expected:  (1 / sqrt(2))
             yield return new object[] { (Half)( 0.723567934f),  (Half)( 0.785398163f),  CrossPlatformMachineEpsilon };             // expected:  (pi / 4)
-            yield return new object[] { (Half)( 1.0f),          (Half)( 1.0f),          CrossPlatformMachineEpsilon * (Half)10 };
+            yield return new object[] { (Half)( Half.One),          (Half)( Half.One),          CrossPlatformMachineEpsilon * (Half)10 };
             yield return new object[] { (Half)( 1.18612996f),   (Half)( 1.12837917f),   CrossPlatformMachineEpsilon * (Half)10 };  // expected:  (2 / sqrt(pi))
             yield return new object[] { (Half)( 1.66514414f),   (Half)( 1.41421356f),   CrossPlatformMachineEpsilon * (Half)10 };  // expected:  (sqrt(2))
             yield return new object[] { (Half)( 1.71828183f),   (Half)( 1.44269504f),   CrossPlatformMachineEpsilon * (Half)10 };  // expected:  (log2(e))
@@ -1544,14 +1544,14 @@ namespace System.Tests
             yield return new object[] { (Half)(-2.71828183f),    Half.NaN,              (Half)0.0f };                              //                              value: -(e)
             yield return new object[] { (Half)(-1.41421356f),    Half.NaN,              (Half)0.0f };                              //                              value: -(sqrt(2))
             yield return new object[] {  Half.NaN,               Half.NaN,              (Half)0.0f };
-            yield return new object[] { (Half)(-1.0f),           Half.NegativeInfinity, (Half)0.0f };
+            yield return new object[] { (Half)(-Half.One),           Half.NegativeInfinity, (Half)0.0f };
             yield return new object[] { (Half)(-0.998086986f),  (Half)(-2.71828183f),   CrossPlatformMachineEpsilon * (Half)10 };  // expected: -(e)
             yield return new object[] { (Half)(-0.995017872f),  (Half)(-2.30258509f),   CrossPlatformMachineEpsilon * (Half)10 };  // expected: -(ln(10))
             yield return new object[] { (Half)(-0.973133959f),  (Half)(-1.57079633f),   CrossPlatformMachineEpsilon * (Half)10 };  // expected: -(pi / 2)
             yield return new object[] { (Half)(-0.963916807f),  (Half)(-1.44269504f),   CrossPlatformMachineEpsilon * (Half)10 };  // expected: -(log2(e))
             yield return new object[] { (Half)(-0.961471115f),  (Half)(-1.41421356f),   CrossPlatformMachineEpsilon * (Half)10 };  // expected: -(sqrt(2))
             yield return new object[] { (Half)(-0.925591794f),  (Half)(-1.12837917f),   CrossPlatformMachineEpsilon * (Half)10 };  // expected: -(2 / sqrt(pi))
-            yield return new object[] { (Half)(-0.9f),           (Half)(-1.0f),          CrossPlatformMachineEpsilon * (Half)10 };
+            yield return new object[] { (Half)(-0.9f),           (Half)(-Half.One),          CrossPlatformMachineEpsilon * (Half)10 };
             yield return new object[] { (Half)(-0.836091364f),  (Half)(-0.785398163f),  CrossPlatformMachineEpsilon };             // expected: -(pi / 4)
             yield return new object[] { (Half)(-0.803712240f),  (Half)(-0.707106781f),  CrossPlatformMachineEpsilon };             // expected: -(1 / sqrt(2))
             yield return new object[] { (Half)(-0.797300434f),  (Half)(-0.693147181f),  CrossPlatformMachineEpsilon };             // expected: -(ln(2))
@@ -1566,7 +1566,7 @@ namespace System.Tests
             yield return new object[] { (Half)( 3.93340967f),   (Half)( 0.693147181f),  CrossPlatformMachineEpsilon };             // expected:  (ln(2))
             yield return new object[] { (Half)( 4.09456117f),   (Half)( 0.707106781f),  CrossPlatformMachineEpsilon };             // expected:  (1 / sqrt(2))
             yield return new object[] { (Half)( 5.10095980f),   (Half)( 0.785398163f),  CrossPlatformMachineEpsilon };             // expected:  (pi / 4)
-            yield return new object[] { (Half)( 9.0f),          (Half)( 1.0f),          CrossPlatformMachineEpsilon * (Half)10 };
+            yield return new object[] { (Half)( 9.0f),          (Half)( Half.One),          CrossPlatformMachineEpsilon * (Half)10 };
             yield return new object[] { (Half)( 12.4393779f),   (Half)( 1.12837917f),   CrossPlatformMachineEpsilon * (Half)10 };  // expected:  (2 / sqrt(pi))
             yield return new object[] { (Half)( 24.9545535f),   (Half)( 1.41421356f),   CrossPlatformMachineEpsilon * (Half)10 };  // expected:  (sqrt(2))
             yield return new object[] { (Half)( 26.7137338f),   (Half)( 1.44269504f),   CrossPlatformMachineEpsilon * (Half)10 };  // expected:  (log2(e))
@@ -1582,6 +1582,182 @@ namespace System.Tests
         public static void Log10P1Test(Half value, Half expectedResult, Half allowedVariance)
         {
             AssertExtensions.Equal(expectedResult, Half.Log10P1(value), allowedVariance);
+        }
+
+        public static IEnumerable<object[]> Hypot_TestData()
+        {
+            yield return new object[] { Half.NaN,              Half.NaN,              Half.NaN,              Half.Zero };
+            yield return new object[] { Half.NaN,              Half.Zero,             Half.NaN,              Half.Zero };
+            yield return new object[] { Half.NaN,              Half.One,              Half.NaN,              Half.Zero };
+            yield return new object[] { Half.NaN,              Half.E,                Half.NaN,              Half.Zero };
+            yield return new object[] { Half.NaN,              (Half)10.0f,           Half.NaN,              Half.Zero };
+            yield return new object[] { Half.Zero,             Half.Zero,             Half.Zero,             Half.Zero };
+            yield return new object[] { Half.Zero,             Half.One,              Half.One,              Half.Zero };
+            yield return new object[] { Half.Zero,             (Half)1.57079633f,     (Half)1.57079633f,     Half.Zero };
+            yield return new object[] { Half.Zero,             (Half)2.0f,            (Half)2.0f,            Half.Zero };
+            yield return new object[] { Half.Zero,             Half.E,                Half.E,                Half.Zero };
+            yield return new object[] { Half.Zero,             (Half)3.0f,            (Half)3.0f,            Half.Zero };
+            yield return new object[] { Half.Zero,             (Half)10.0f,           (Half)10.0f,           Half.Zero };
+            yield return new object[] { Half.One,              Half.One,              (Half)1.41421356f,     CrossPlatformMachineEpsilon * (Half)10 };
+            yield return new object[] { Half.E,                (Half)0.318309886f,    (Half)2.73685536f,     CrossPlatformMachineEpsilon * (Half)10 };   // x: (e)   y: (1 / pi)
+            yield return new object[] { Half.E,                (Half)0.434294482f,    (Half)2.75275640f,     CrossPlatformMachineEpsilon * (Half)10 };   // x: (e)   y: (log10(e))
+            yield return new object[] { Half.E,                (Half)0.636619772f,    (Half)2.79183467f,     CrossPlatformMachineEpsilon * (Half)10 };   // x: (e)   y: (2 / pi)
+            yield return new object[] { Half.E,                (Half)0.693147181f,    (Half)2.80526454f,     CrossPlatformMachineEpsilon * (Half)10 };   // x: (e)   y: (ln(2))
+            yield return new object[] { Half.E,                (Half)0.707106781f,    (Half)2.80874636f,     CrossPlatformMachineEpsilon * (Half)10 };   // x: (e)   y: (1 / sqrt(2))
+            yield return new object[] { Half.E,                (Half)0.785398163f,    (Half)2.82947104f,     CrossPlatformMachineEpsilon * (Half)10 };   // x: (e)   y: (pi / 4)
+            yield return new object[] { Half.E,                Half.One,              (Half)2.89638673f,     CrossPlatformMachineEpsilon * (Half)10 };   // x: (e)
+            yield return new object[] { Half.E,                (Half)1.12837917f,     (Half)2.94317781f,     CrossPlatformMachineEpsilon * (Half)10 };   // x: (e)   y: (2 / sqrt(pi))
+            yield return new object[] { Half.E,                (Half)1.41421356f,     (Half)3.06415667f,     CrossPlatformMachineEpsilon * (Half)10 };   // x: (e)   y: (sqrt(2))
+            yield return new object[] { Half.E,                (Half)1.44269504f,     (Half)3.07740558f,     CrossPlatformMachineEpsilon * (Half)10 };   // x: (e)   y: (log2(e))
+            yield return new object[] { Half.E,                (Half)1.57079633f,     (Half)3.13949951f,     CrossPlatformMachineEpsilon * (Half)10 };   // x: (e)   y: (pi / 2)
+            yield return new object[] { Half.E,                (Half)2.30258509f,     (Half)3.56243656f,     CrossPlatformMachineEpsilon * (Half)10 };   // x: (e)   y: (ln(10))
+            yield return new object[] { Half.E,                Half.E,                (Half)3.84423103f,     CrossPlatformMachineEpsilon * (Half)10 };   // x: (e)   y: (e)
+            yield return new object[] { Half.E,                (Half)3.14159265f,     (Half)4.15435440f,     CrossPlatformMachineEpsilon * (Half)10 };   // x: (e)   y: (pi)
+            yield return new object[] { (Half)10.0f,           (Half)0.318309886f,    (Half)10.0050648f,     CrossPlatformMachineEpsilon * (Half)100 };  //          y: (1 / pi)
+            yield return new object[] { (Half)10.0f,           (Half)0.434294482f,    (Half)10.0094261f,     CrossPlatformMachineEpsilon * (Half)100 };  //          y: (log10(e))
+            yield return new object[] { (Half)10.0f,           (Half)0.636619772f,    (Half)10.0202437f,     CrossPlatformMachineEpsilon * (Half)100 };  //          y: (2 / pi)
+            yield return new object[] { (Half)10.0f,           (Half)0.693147181f,    (Half)10.0239939f,     CrossPlatformMachineEpsilon * (Half)100 };  //          y: (ln(2))
+            yield return new object[] { (Half)10.0f,           (Half)0.707106781f,    (Half)10.0249688f,     CrossPlatformMachineEpsilon * (Half)100 };  //          y: (1 / sqrt(2))
+            yield return new object[] { (Half)10.0f,           (Half)0.785398163f,    (Half)10.0307951f,     CrossPlatformMachineEpsilon * (Half)100 };  //          y: (pi / 4)
+            yield return new object[] { (Half)10.0f,           Half.One,              (Half)10.0498756f,     CrossPlatformMachineEpsilon * (Half)100 };  //       
+            yield return new object[] { (Half)10.0f,           (Half)1.12837917f,     (Half)10.0634606f,     CrossPlatformMachineEpsilon * (Half)100 };  //          y: (2 / sqrt(pi))
+            yield return new object[] { (Half)10.0f,           (Half)1.41421356f,     (Half)10.0995049f,     CrossPlatformMachineEpsilon * (Half)100 };  //          y: (sqrt(2))
+            yield return new object[] { (Half)10.0f,           (Half)1.44269504f,     (Half)10.1035325f,     CrossPlatformMachineEpsilon * (Half)100 };  //          y: (log2(e))
+            yield return new object[] { (Half)10.0f,           (Half)1.57079633f,     (Half)10.1226183f,     CrossPlatformMachineEpsilon * (Half)100 };  //          y: (pi / 2)
+            yield return new object[] { (Half)10.0f,           (Half)2.30258509f,     (Half)10.2616713f,     CrossPlatformMachineEpsilon * (Half)100 };  //          y: (ln(10))
+            yield return new object[] { (Half)10.0f,           Half.E,                (Half)10.3628691f,     CrossPlatformMachineEpsilon * (Half)100 };  //          y: (e)
+            yield return new object[] { (Half)10.0f,           (Half)3.14159265f,     (Half)10.4818703f,     CrossPlatformMachineEpsilon * (Half)100 };  //          y: (pi)
+            yield return new object[] { Half.PositiveInfinity, Half.NaN,              Half.PositiveInfinity, Half.Zero };
+            yield return new object[] { Half.PositiveInfinity, Half.Zero,             Half.PositiveInfinity, Half.Zero };
+            yield return new object[] { Half.PositiveInfinity, Half.One,              Half.PositiveInfinity, Half.Zero };
+            yield return new object[] { Half.PositiveInfinity, Half.E,                Half.PositiveInfinity, Half.Zero };
+            yield return new object[] { Half.PositiveInfinity, 10.0f,                 Half.PositiveInfinity, Half.Zero };
+            yield return new object[] { Half.PositiveInfinity, Half.PositiveInfinity, Half.PositiveInfinity, Half.Zero };
+        }
+
+        [Theory]
+        [MemberData(nameof(Hypot_TestData))]
+        public static void Hypot(float x, float y, float expectedResult, float allowedVariance)
+        {
+            AssertExtensions.Equal(expectedResult, float.Hypot(-x, -y), allowedVariance);
+            AssertExtensions.Equal(expectedResult, float.Hypot(-x, +y), allowedVariance);
+            AssertExtensions.Equal(expectedResult, float.Hypot(+x, -y), allowedVariance);
+            AssertExtensions.Equal(expectedResult, float.Hypot(+x, +y), allowedVariance);
+
+            AssertExtensions.Equal(expectedResult, float.Hypot(-y, -x), allowedVariance);
+            AssertExtensions.Equal(expectedResult, float.Hypot(-y, +x), allowedVariance);
+            AssertExtensions.Equal(expectedResult, float.Hypot(+y, -x), allowedVariance);
+            AssertExtensions.Equal(expectedResult, float.Hypot(+y, +x), allowedVariance);
+        }
+
+        public static IEnumerable<object[]> Root_TestData()
+        {
+            yield return new object[] { Half.NegativeInfinity, -5, -Half.Zero,             Half.Zero };
+            yield return new object[] { Half.NegativeInfinity, -4,  Half.NaN,              Half.Zero };
+            yield return new object[] { Half.NegativeInfinity, -3, -Half.Zero,             Half.Zero };
+            yield return new object[] { Half.NegativeInfinity, -2,  Half.NaN,              Half.Zero };
+            yield return new object[] { Half.NegativeInfinity, -1, -Half.Zero,             Half.Zero };
+            yield return new object[] { Half.NegativeInfinity,  0,  Half.NaN,              Half.Zero };
+            yield return new object[] { Half.NegativeInfinity,  1,  Half.NegativeInfinity, Half.Zero };
+            yield return new object[] { Half.NegativeInfinity,  2,  Half.NaN,              Half.Zero };
+            yield return new object[] { Half.NegativeInfinity,  3,  Half.NegativeInfinity, Half.Zero };
+            yield return new object[] { Half.NegativeInfinity,  4,  Half.NaN,              Half.Zero };
+            yield return new object[] { Half.NegativeInfinity,  5,  Half.NegativeInfinity, Half.Zero };
+            yield return new object[] {-Half.E,                -5, -(Half)0.81873075f,     CrossPlatformMachineEpsilon * (Half)10 };
+            yield return new object[] {-Half.E,                -4,  Half.NaN,              Half.Zero };
+            yield return new object[] {-Half.E,                -3, -(Half)0.71653131f,     CrossPlatformMachineEpsilon * (Half)10 };
+            yield return new object[] {-Half.E,                -2,  Half.NaN,              Half.Zero };
+            yield return new object[] {-Half.E,                -1, -(Half)0.36787944f,     CrossPlatformMachineEpsilon * (Half)10 };
+            yield return new object[] {-Half.E,                 0,  Half.NaN,              Half.Zero };
+            yield return new object[] {-Half.E,                 1, -Half.E,                CrossPlatformMachineEpsilon * (Half)10 };
+            yield return new object[] {-Half.E,                 2,  Half.NaN,              Half.Zero };
+            yield return new object[] {-Half.E,                 3, -(Half)1.39561243f,     CrossPlatformMachineEpsilon * (Half)10 };
+            yield return new object[] {-Half.E,                 4,  Half.NaN,              Half.Zero };
+            yield return new object[] {-Half.E,                 5, -(Half)1.22140276f,     CrossPlatformMachineEpsilon * (Half)10 };
+            yield return new object[] {-Half.One,              -5, -Half.One,              Half.Zero };
+            yield return new object[] {-Half.One,              -4,  Half.NaN,              Half.Zero };
+            yield return new object[] {-Half.One,              -3, -Half.One,              Half.Zero };
+            yield return new object[] {-Half.One,              -2,  Half.NaN,              Half.Zero };
+            yield return new object[] {-Half.One,              -1, -Half.One,              Half.Zero };
+            yield return new object[] {-Half.One,               0,  Half.NaN,              Half.Zero };
+            yield return new object[] {-Half.One,               1, -Half.One,              Half.Zero };
+            yield return new object[] {-Half.One,               2,  Half.NaN,              Half.Zero };
+            yield return new object[] {-Half.One,               3, -Half.One,              Half.Zero };
+            yield return new object[] {-Half.One,               4,  Half.NaN,              Half.Zero };
+            yield return new object[] {-Half.One,               5, -Half.One,              Half.Zero };
+            yield return new object[] {-Half.Zero,             -5,  Half.NegativeInfinity, Half.Zero };
+            yield return new object[] {-Half.Zero,             -4,  Half.PositiveInfinity, Half.Zero };
+            yield return new object[] {-Half.Zero,             -3,  Half.NegativeInfinity, Half.Zero };
+            yield return new object[] {-Half.Zero,             -2,  Half.PositiveInfinity, Half.Zero };
+            yield return new object[] {-Half.Zero,             -1,  Half.NegativeInfinity, Half.Zero };
+            yield return new object[] {-Half.Zero,              0,  Half.NaN,              Half.Zero };
+            yield return new object[] {-Half.Zero,              1, -Half.Zero,             Half.Zero };
+            yield return new object[] {-Half.Zero,              2,  Half.Zero,             Half.Zero };
+            yield return new object[] {-Half.Zero,              3, -Half.Zero,             Half.Zero };
+            yield return new object[] {-Half.Zero,              4,  Half.Zero,             Half.Zero };
+            yield return new object[] {-Half.Zero,              5, -Half.Zero,             Half.Zero };                                  
+            yield return new object[] { Half.NaN,              -5,  Half.NaN,              Half.Zero };
+            yield return new object[] { Half.NaN,              -4,  Half.NaN,              Half.Zero };
+            yield return new object[] { Half.NaN,              -3,  Half.NaN,              Half.Zero };
+            yield return new object[] { Half.NaN,              -2,  Half.NaN,              Half.Zero };
+            yield return new object[] { Half.NaN,              -1,  Half.NaN,              Half.Zero };
+            yield return new object[] { Half.NaN,               0,  Half.NaN,              Half.Zero };
+            yield return new object[] { Half.NaN,               1,  Half.NaN,              Half.Zero };
+            yield return new object[] { Half.NaN,               2,  Half.NaN,              Half.Zero };
+            yield return new object[] { Half.NaN,               3,  Half.NaN,              Half.Zero };
+            yield return new object[] { Half.NaN,               4,  Half.NaN,              Half.Zero };
+            yield return new object[] { Half.NaN,               5,  Half.NaN,              Half.Zero };
+            yield return new object[] { Half.Zero,             -5,  Half.PositiveInfinity, Half.Zero };
+            yield return new object[] { Half.Zero,             -4,  Half.PositiveInfinity, Half.Zero };
+            yield return new object[] { Half.Zero,             -3,  Half.PositiveInfinity, Half.Zero };
+            yield return new object[] { Half.Zero,             -2,  Half.PositiveInfinity, Half.Zero };
+            yield return new object[] { Half.Zero,             -1,  Half.PositiveInfinity, Half.Zero };
+            yield return new object[] { Half.Zero,              0,  Half.NaN,              Half.Zero };
+            yield return new object[] { Half.Zero,              1,  Half.Zero,             Half.Zero };
+            yield return new object[] { Half.Zero,              2,  Half.Zero,             Half.Zero };
+            yield return new object[] { Half.Zero,              3,  Half.Zero,             Half.Zero };
+            yield return new object[] { Half.Zero,              4,  Half.Zero,             Half.Zero };
+            yield return new object[] { Half.Zero,              5,  Half.Zero,             Half.Zero };
+            yield return new object[] { Half.One,              -5,  Half.One,              Half.Zero };
+            yield return new object[] { Half.One,              -4,  Half.One,              Half.Zero };
+            yield return new object[] { Half.One,              -3,  Half.One,              Half.Zero };
+            yield return new object[] { Half.One,              -2,  Half.One,              Half.Zero };
+            yield return new object[] { Half.One,              -1,  Half.One,              Half.Zero };
+            yield return new object[] { Half.One,               0,  Half.NaN,              Half.Zero };
+            yield return new object[] { Half.One,               1,  Half.One,              Half.Zero };
+            yield return new object[] { Half.One,               2,  Half.One,              Half.Zero };
+            yield return new object[] { Half.One,               3,  Half.One,              Half.Zero };
+            yield return new object[] { Half.One,               4,  Half.One,              Half.Zero };
+            yield return new object[] { Half.One,               5,  Half.One,              Half.Zero };
+            yield return new object[] { Half.E,                -5,  (Half)0.81873075f,     CrossPlatformMachineEpsilon * (Half)10 };
+            yield return new object[] { Half.E,                -4,  (Half)0.77880078f,     CrossPlatformMachineEpsilon * (Half)10 };
+            yield return new object[] { Half.E,                -3,  (Half)0.71653131f,     CrossPlatformMachineEpsilon * (Half)10 };
+            yield return new object[] { Half.E,                -2,  (Half)0.60653066f,     CrossPlatformMachineEpsilon * (Half)10 };
+            yield return new object[] { Half.E,                -1,  (Half)0.36787944f,     CrossPlatformMachineEpsilon * (Half)10 };
+            yield return new object[] { Half.E,                 0,  Half.NaN,              Half.Zero };
+            yield return new object[] { Half.E,                 1,  Half.E,                Half.Zero };
+            yield return new object[] { Half.E,                 2,  (Half)1.64872127f,     CrossPlatformMachineEpsilon * (Half)10 };
+            yield return new object[] { Half.E,                 3,  (Half)1.39561243f,     CrossPlatformMachineEpsilon * (Half)10 };
+            yield return new object[] { Half.E,                 4,  (Half)1.28402542f,     CrossPlatformMachineEpsilon * (Half)10 };
+            yield return new object[] { Half.E,                 5,  (Half)1.22140276f,     CrossPlatformMachineEpsilon * (Half)10 };
+            yield return new object[] { Half.PositiveInfinity, -5,  Half.Zero,             Half.Zero };
+            yield return new object[] { Half.PositiveInfinity, -4,  Half.Zero,             Half.Zero };
+            yield return new object[] { Half.PositiveInfinity, -3,  Half.Zero,             Half.Zero };
+            yield return new object[] { Half.PositiveInfinity, -2,  Half.Zero,             Half.Zero };
+            yield return new object[] { Half.PositiveInfinity, -1,  Half.Zero,             Half.Zero };
+            yield return new object[] { Half.PositiveInfinity,  0,  Half.NaN,              Half.Zero };
+            yield return new object[] { Half.PositiveInfinity,  1,  Half.PositiveInfinity, Half.Zero };
+            yield return new object[] { Half.PositiveInfinity,  2,  Half.PositiveInfinity, Half.Zero };
+            yield return new object[] { Half.PositiveInfinity,  3,  Half.PositiveInfinity, Half.Zero };
+            yield return new object[] { Half.PositiveInfinity,  4,  Half.PositiveInfinity, Half.Zero };
+            yield return new object[] { Half.PositiveInfinity,  5,  Half.PositiveInfinity, Half.Zero };
+        }
+
+        [Theory]
+        [MemberData(nameof(Root_TestData))]
+        public static void Root(Half x, int n, Half expectedResult, Half allowedVariance)
+        {
+            AssertExtensions.Equal(expectedResult, Half.Root(x, n), allowedVariance);
         }
     }
 }
