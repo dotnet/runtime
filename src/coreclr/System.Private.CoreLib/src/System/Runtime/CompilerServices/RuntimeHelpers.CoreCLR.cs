@@ -493,7 +493,13 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_HasComponentSize = 0x80000000;
         private const uint enum_flag_HasTypeEquivalence = 0x02000000;
         private const uint enum_flag_Category_ValueType = 0x00040000;
+        private const uint enum_flag_Category_PrimitiveValueType = 0x00060000; // sub-category of ValueType, Enum or primitive value type
+        private const uint enum_flag_Category_TruePrimitive = 0x00070000; // sub-category of ValueType, Primitive (ELEMENT_TYPE_I, etc.)
+        private const uint enum_flag_Category_Array = 0x00080000;
+        private const uint enum_flag_Category_IfArrayThenSzArray = 0x00020000; // sub-category of Array
         private const uint enum_flag_Category_ValueType_Mask = 0x000C0000;
+        private const uint enum_flag_Category_ElementTypeMask = 0x000E0000;
+        private const uint enum_flag_Category_Mask = 0x000F0000;
         // Types that require non-trivial interface cast have this bit set in the category
         private const uint enum_flag_NonTrivialInterfaceCast = 0x00080000 // enum_flag_Category_Array
                                                              | 0x40000000 // enum_flag_ComObject
@@ -604,6 +610,49 @@ namespace System.Runtime.CompilerServices
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern uint GetNumInstanceFieldBytes();
+
+        public CorElementType GetSignatureCorElementType()
+        {
+            // Corresponding to MethodTable::GetSignatureCorElementType
+            // DOES NOT convert enum to underlying type
+
+            return (Flags & enum_flag_Category_ElementTypeMask) switch
+            {
+                enum_flag_Category_Array => CorElementType.ELEMENT_TYPE_ARRAY,
+                enum_flag_Category_Array | enum_flag_Category_IfArrayThenSzArray => CorElementType.ELEMENT_TYPE_SZARRAY,
+                enum_flag_Category_ValueType => CorElementType.ELEMENT_TYPE_VALUETYPE,
+                enum_flag_Category_PrimitiveValueType =>
+                    (Flags & enum_flag_Category_Mask) == enum_flag_Category_TruePrimitive
+                        ? GetEEClassCorElementType()
+                        : CorElementType.ELEMENT_TYPE_VALUETYPE,
+                _ => CorElementType.ELEMENT_TYPE_CLASS,
+            };
+        }
+
+        public CorElementType GetVerifierCorElementType()
+        {
+            // Corresponding to MethodTable::GetVerifierCorElementType
+            // DOES convert enum to underlying type
+
+            return (Flags & enum_flag_Category_ElementTypeMask) switch
+            {
+                enum_flag_Category_Array => CorElementType.ELEMENT_TYPE_ARRAY,
+                enum_flag_Category_Array | enum_flag_Category_IfArrayThenSzArray => CorElementType.ELEMENT_TYPE_SZARRAY,
+                enum_flag_Category_ValueType => CorElementType.ELEMENT_TYPE_VALUETYPE,
+                enum_flag_Category_PrimitiveValueType =>
+                    ((Flags & enum_flag_Category_Mask) == enum_flag_Category_TruePrimitive) || IsEnum()
+                        ? GetEEClassCorElementType()
+                        : CorElementType.ELEMENT_TYPE_VALUETYPE,
+                _ => CorElementType.ELEMENT_TYPE_CLASS,
+            };
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern bool IsEnum();
+
+        // Corresponding to GetClass()->GetInternalCorElementType()
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern CorElementType GetEEClassCorElementType();
     }
 
     /// <summary>

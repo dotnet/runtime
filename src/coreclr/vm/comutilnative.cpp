@@ -1911,6 +1911,20 @@ FCIMPL1(UINT32, MethodTableNative::GetNumInstanceFieldBytes, MethodTable* mt)
 }
 FCIMPLEND
 
+FCIMPL1(FC_BOOL_RET, MethodTableNative::IsEnum, MethodTable* mt)
+{
+    FCALL_CONTRACT;
+    FC_RETURN_BOOL(mt->IsEnum());
+}
+FCIMPLEND
+
+FCIMPL1(INT32, MethodTableNative::GetEEClassCorElementType, MethodTable* mt)
+{
+    FCALL_CONTRACT;
+    return mt->GetClass_NoLogging()->GetInternalCorElementType();
+}
+FCIMPLEND
+
 extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb)
 {
     QCALL_CONTRACT;
