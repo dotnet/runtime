@@ -656,7 +656,7 @@ namespace System.Runtime.CompilerServices
     }
 
     /// <summary>
-    /// A type handle, which can wrap either a pointer to a <c>TypeDesc</c> or to a <see cref="MethodTable"/>.
+    /// A type handle, which can wrap either a pointer to a <see cref="TypeDesc"/> or to a <see cref="MethodTable"/>.
     /// </summary>
     internal unsafe struct TypeHandle
     {
@@ -699,6 +699,38 @@ namespace System.Runtime.CompilerServices
 
             return (MethodTable*)m_asTAddr;
         }
+
+        /// <summary>
+        /// Gets the <see cref="TypeDesc"/> pointer wrapped by the current instance.
+        /// </summary>
+        /// <remarks>This is only safe to call if <see cref="IsTypeDesc"/> returned <see langword="true"/>.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public TypeDesc* AsTypeDesc()
+        {
+            Debug.Assert(IsTypeDesc);
+
+            return (TypeDesc*)((nint)m_asTAddr - 2);
+        }
+    }
+
+    /// <summary>
+    /// TypeDesc is a discriminated union of all types that can not be directly
+    /// represented by a simple <see cref="MethodTable"/>*.   The discrimintor of the union at the present
+    /// time is the CorElementType numeration.  The subclass of TypeDesc are
+    /// the possible variants of the union.
+    /// </summary>
+    internal struct TypeDesc
+    {
+        // subset of src\vm\typedesc.h
+
+        /// <summary>
+        /// Low-order 8 bits of this flag are used to store the CorElementType, which
+        /// discriminates what kind of TypeDesc we are.
+        /// The remaining bits are available for flags.
+        /// </summary>
+        private readonly uint m_typeAndFlags;
+
+        public CorElementType InternalCorElementType => (CorElementType)(m_typeAndFlags & 0xFF);
     }
 
     // Helper structs used for tail calls via helper.
