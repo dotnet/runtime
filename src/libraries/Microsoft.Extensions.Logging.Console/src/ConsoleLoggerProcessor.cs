@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Logging.Console
     internal class ConsoleLoggerProcessor : IDisposable
     {
         private readonly Queue<LogMessageEntry> _messageQueue;
-        private int _messagesDropped;
+        private volatile int _messagesDropped;
         private bool _isAddingCompleted;
         private int _maxQueuedMessages = ConsoleLoggerOptions.DefaultMaxQueueLengthValue;
         public int MaxQueueLength
@@ -79,7 +79,7 @@ namespace Microsoft.Extensions.Logging.Console
             }
         }
 
-        // for testing
+        // internal for testing
         internal void WriteMessage(LogMessageEntry entry)
         {
             try
@@ -87,7 +87,7 @@ namespace Microsoft.Extensions.Logging.Console
                 IConsole console = entry.LogAsError ? ErrorConsole : Console;
                 console.Write(entry.Message);
             }
-            catch (Exception)
+            catch
             {
                 CompleteAdding();
             }
@@ -120,8 +120,9 @@ namespace Microsoft.Extensions.Logging.Console
                     Monitor.Wait(_messageQueue);
                 }
 
-                if (_messageQueue.Count < MaxQueueLength && !_isAddingCompleted)
+                if (!_isAddingCompleted)
                 {
+                    Debug.Assert(_messageQueue.Count < MaxQueueLength);
                     bool startedEmpty = _messageQueue.Count == 0;
                     if (_messagesDropped > 0)
                     {
