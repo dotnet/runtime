@@ -158,8 +158,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                         }
                         catch (CryptographicException ce)
                         {
-                            exception = new CryptographicException(SR.Cryptography_Cms_InvalidSymmetricKey, ce);
-                            return null;
+                            throw new CryptographicException(SR.Cryptography_Cms_InvalidSymmetricKey, ce);
                         }
 
                         return alg.DecryptCbc(encryptedContent.Span, alg.IV);
@@ -198,8 +197,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                         {
                             // Decrypting or deriving the symmetric key with the wrong key may still succeed
                             // but produce a symmetric key that is not the correct length.
-                            exception = new CryptographicException(SR.Cryptography_Cms_InvalidSymmetricKey, ae);
-                            return null;
+                            throw new CryptographicException(SR.Cryptography_Cms_InvalidSymmetricKey, ae);
                         }
 
                         using (decryptor)
