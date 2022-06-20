@@ -4,6 +4,8 @@ As part of the new source-generated direction for .NET Interop, we are looking a
 
 These types pose an interesting problem for a number of reasons listed below. With a few constraints, I believe we can create a system that will enable users to use their own user-defined types and pass them by-value to native code.
 
+> NOTE: These design docs are kept for historical purposes. The designs in this file are supersceded by the designs in [UserTypeMarshallingV2.md](UserTypeMarshallingV2.md).
+
 ## Problems
 
 - What types require marshalling and what types can be passed as-is to native code?
