@@ -55,35 +55,26 @@ namespace Microsoft.Extensions.Hosting.Tests
         {
             using var _ = RemoteExecutor.Invoke(() =>
             {
-                string originalCwd = Environment.CurrentDirectory;
+                string systemDirectory = Environment.GetFolderPath(Environment.SpecialFolder.System);
+                if (string.IsNullOrEmpty(systemDirectory))
+                {
+                    // Skip the environments (like Nano Server) where Environment.SpecialFolder.System returns empty - https://github.com/dotnet/runtime/issues/21430
+                    return;
+                }
+
                 // Test that the path gets normalized before comparison. Use C:\WINDOWS\SYSTEM32\ instead of C:\Windows\system32.
-                string systemDirectory = Environment.GetFolderPath(Environment.SpecialFolder.System).ToUpper() + "\\";
+                systemDirectory = systemDirectory.ToUpper() + "\\";
 
-                try
-                {
-                    Environment.CurrentDirectory = systemDirectory;
+                Environment.CurrentDirectory = systemDirectory;
 
-                    IHostBuilder builder = Host.CreateDefaultBuilder();
-                    using IHost host = builder.Build();
+                IHostBuilder builder = Host.CreateDefaultBuilder();
+                using IHost host = builder.Build();
 
-                    var config = host.Services.GetRequiredService<IConfiguration>();
-                    var env = host.Services.GetRequiredService<IHostEnvironment>();
+                var config = host.Services.GetRequiredService<IConfiguration>();
+                var env = host.Services.GetRequiredService<IHostEnvironment>();
 
-                    // Temporary for diagnostics from Windows.Nano.1809.Amd64.Open containers on helix where config["ContentRoot"] is C:\.
-                    // Maybe this doesn't happen anymore if the container doesn't support RemoteExecutor.
-                    if (config["ContentRoot"] is not null)
-                    {
-                        throw new Exception($"ContentRoot: {config["ContentRoot"]}, originalCwd: {originalCwd}, systemDirectory: {systemDirectory}, Environment.CurrentDirectory: {Environment.CurrentDirectory}, Environment.SpecialFolder.System: {Environment.GetFolderPath(Environment.SpecialFolder.System)}");
-                    }
-
-                    Assert.Null(config["ContentRoot"]);
-                    Assert.Equal(AppContext.BaseDirectory, env.ContentRootPath);
-                }
-                finally
-                {
-                    // I'm guessing that the RemoteExecutor means that this no longer matters, but I'm leaving it to be safe.
-                    Environment.CurrentDirectory = originalCwd;
-                }
+                Assert.Null(config[HostDefaults.ContentRootKey]);
+                Assert.Equal(AppContext.BaseDirectory, env.ContentRootPath);
             });
         }
 
