@@ -4,6 +4,14 @@
 
 "use strict";
 
+const isPThread =
+#if USE_PTHREADS
+`ENVIRONMENT_IS_PTHREAD`
+#else
+`false`
+#endif
+;
+
 const DotnetSupportLib = {
     $DOTNET: {},
     // this line will be placed early on emscripten runtime creation, passing import and export objects into __dotnet_runtime IFFE
@@ -49,7 +57,7 @@ if (ENVIRONMENT_IS_NODE) {
     }
 }
 let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
-    { isESM:true, isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, isPThread:ENVIRONMENT_IS_PTHREAD, locateFile, quit_, ExitStatus, requirePromise:__dotnet_replacements.requirePromise },
+    { isESM:true, isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, isPThread:${isPThread}, locateFile, quit_, ExitStatus, requirePromise:__dotnet_replacements.requirePromise },
     { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
     __dotnet_replacements);
 updateGlobalBufferAndViews = __dotnet_replacements.updateGlobalBufferAndViews;
@@ -112,8 +120,10 @@ const linked_functions = [
     "dotnet_browser_sign",
 
     /// mono-threads-wasm.c
+    #if USE_PTHREADS
     "mono_wasm_pthread_on_pthread_created_main_thread",
     "mono_wasm_pthread_on_pthread_created",
+    #endif
 ];
 
 // -- this javascript file is evaluated by emcc during compilation! --

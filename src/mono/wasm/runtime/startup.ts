@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import MonoWasmThreads from "consts:monoWasmThreads";
 import { AllAssetEntryTypes, mono_assert, AssetEntry, CharPtrNull, DotnetModule, GlobalizationMode, MonoConfig, MonoConfigError, wasm_type_symbol, MonoObject } from "./types";
 import { ENVIRONMENT_IS_ESM, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_PTHREAD, ENVIRONMENT_IS_SHELL, INTERNAL, locateFile, Module, MONO, requirePromise, runtimeHelpers } from "./imports";
 import cwraps from "./cwraps";
@@ -107,7 +108,7 @@ export function configure_emscripten_startup(module: DotnetModule, exportedAPI: 
     }
     // Otherwise startup sequence is up to user code, like Blazor
 
-    if (ENVIRONMENT_IS_PTHREAD) {
+    if (MonoWasmThreads && ENVIRONMENT_IS_PTHREAD) {
         mono_wasm_pthread_worker_init();
     }
 

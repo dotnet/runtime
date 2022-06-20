@@ -3,6 +3,7 @@
 
 import ProductVersion from "consts:productVersion";
 import Configuration from "consts:configuration";
+import MonoWasmThreads from "consts:monoWasmThreads";
 
 import {
     mono_wasm_new_root, mono_wasm_release_roots, mono_wasm_new_external_root,
@@ -381,8 +382,10 @@ export const __linker_exports: any = {
     dotnet_browser_sign
 
     // mono-threads-wasm.c
-    mono_wasm_pthread_on_pthread_created_main_thread,
-    mono_wasm_pthread_on_pthread_created,
+    ...(MonoWasmThreads) && {
+        mono_wasm_pthread_on_pthread_created_main_thread,
+        mono_wasm_pthread_on_pthread_created,
+    },
 };
 
 const INTERNAL: any = {
