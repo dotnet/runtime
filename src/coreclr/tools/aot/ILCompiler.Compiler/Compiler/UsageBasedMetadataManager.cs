@@ -744,6 +744,12 @@ namespace ILCompiler
                     GetFlowDependenciesForInstantiation(ref dependencies, factory, owningType.Instantiation, owningType.GetTypeDefinition().Instantiation, method);
                 }
             }
+
+            // Presence of code might trigger the reflectability dependencies.
+            if ((_generationOptions & UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts) != 0)
+            {
+                GetDependenciesDueToReflectability(ref dependencies, factory, method);
+            }
         }
 
         public override void GetDependenciesForGenericDictionary(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)

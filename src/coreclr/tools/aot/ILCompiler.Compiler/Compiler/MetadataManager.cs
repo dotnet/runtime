@@ -221,6 +221,9 @@ namespace ILCompiler
             if (dictionaryNode != null)
             {
                 _genericDictionariesGenerated.Add(dictionaryNode);
+
+                if (dictionaryNode.OwningEntity is MethodDesc method && AllMethodsCanBeReflectable)
+                    _reflectableMethods.Add(method);
             }
 
             if (obj is StructMarshallingDataNode structMarshallingDataNode)
