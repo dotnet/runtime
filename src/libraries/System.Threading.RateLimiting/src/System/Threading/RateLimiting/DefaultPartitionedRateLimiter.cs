@@ -238,6 +238,7 @@ namespace System.Threading.RateLimiting
                         }
                     }
                 }
+                // We know the limiter can be replenished so let's attempt to replenish tokens
                 else if (rateLimiter.Value.Value is ReplenishingRateLimiter replenishingRateLimiter)
                 {
                     try
