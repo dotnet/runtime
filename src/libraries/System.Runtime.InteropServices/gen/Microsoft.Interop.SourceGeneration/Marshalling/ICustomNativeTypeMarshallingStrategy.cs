@@ -74,7 +74,7 @@ namespace Microsoft.Interop
                     InvocationExpression(
                         MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                             IdentifierName(nativeIdentifier),
-                            IdentifierName(ShapeMemberNames.Value_V1.ToManaged)))));
+                            IdentifierName(ShapeMemberNames_V1.Value.ToManaged)))));
         }
 
         public IEnumerable<StatementSyntax> GenerateUnmarshalCaptureStatements(TypePositionInfo info, StubCodeContext context)
@@ -190,7 +190,7 @@ namespace Microsoft.Interop
                     InvocationExpression(
                         MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                             IdentifierName(subContext.GetIdentifiers(info).native),
-                            IdentifierName(ShapeMemberNames.Value_V1.ToNativeValue)),
+                            IdentifierName(ShapeMemberNames_V1.Value.ToNativeValue)),
                         ArgumentList())));
         }
 
@@ -201,7 +201,7 @@ namespace Microsoft.Interop
                 InvocationExpression(
                     MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                         IdentifierName(subContext.GetIdentifiers(info).native),
-                        IdentifierName(ShapeMemberNames.Value_V1.FromNativeValue)),
+                        IdentifierName(ShapeMemberNames_V1.Value.FromNativeValue)),
                     ArgumentList(SingletonSeparatedList(Argument(IdentifierName(context.GetIdentifiers(info).native))))));
         }
 
@@ -397,7 +397,7 @@ namespace Microsoft.Interop
                 InvocationExpression(
                         MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                             IdentifierName(context.GetIdentifiers(info).native),
-                            IdentifierName(ShapeMemberNames.Value_V1.FreeNative))));
+                            IdentifierName(ShapeMemberNames_V1.Value.FreeNative))));
         }
 
         public IEnumerable<StatementSyntax> GenerateMarshalStatements(TypePositionInfo info, StubCodeContext context, IEnumerable<ArgumentSyntax> nativeTypeConstructorArguments)
@@ -668,7 +668,7 @@ namespace Microsoft.Interop
                                 MemberAccessExpression(
                                     SyntaxKind.SimpleMemberAccessExpression,
                                     IdentifierName(nativeIdentifier),
-                                    IdentifierName(ShapeMemberNames.LinearCollection_V1.GetNativeValuesDestination)),
+                                    IdentifierName(ShapeMemberNames_V1.LinearCollection.GetNativeValuesDestination)),
                                 ArgumentList()),
                             IdentifierName("Clear"))));
                 yield break;
@@ -683,7 +683,7 @@ namespace Microsoft.Interop
                             MemberAccessExpression(
                                 SyntaxKind.SimpleMemberAccessExpression,
                                 IdentifierName(nativeIdentifier),
-                                IdentifierName(ShapeMemberNames.LinearCollection_V1.GetManagedValuesSource)),
+                                IdentifierName(ShapeMemberNames_V1.LinearCollection.GetManagedValuesSource)),
                         ArgumentList()),
                         IdentifierName("CopyTo")))
                 .AddArgumentListArguments(
@@ -708,7 +708,7 @@ namespace Microsoft.Interop
                                     MemberAccessExpression(
                                         SyntaxKind.SimpleMemberAccessExpression,
                                         IdentifierName(nativeIdentifier),
-                                        IdentifierName(ShapeMemberNames.LinearCollection_V1.GetNativeValuesDestination)),
+                                        IdentifierName(ShapeMemberNames_V1.LinearCollection.GetNativeValuesDestination)),
                                     ArgumentList()))))));
         }
 
@@ -746,7 +746,7 @@ namespace Microsoft.Interop
                     MemberAccessExpression(
                         SyntaxKind.SimpleMemberAccessExpression,
                         IdentifierName(nativeIdentifier),
-                        IdentifierName(ShapeMemberNames.LinearCollection_V1.GetNativeValuesDestination)));
+                        IdentifierName(ShapeMemberNames_V1.LinearCollection.GetNativeValuesDestination)));
 
                 // MemoryMarshal.CreateSpan(ref MemoryMarshal.GetReference(<nativeIdentifier>.GetManagedValuesSource()), <nativeIdentifier>.GetManagedValuesSource().Length)
                 copyDestination = InvocationExpression(
@@ -767,7 +767,7 @@ namespace Microsoft.Interop
                                             InvocationExpression(
                                                 MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                                                     IdentifierName(nativeIdentifier),
-                                                    IdentifierName(ShapeMemberNames.LinearCollection_V1.GetManagedValuesSource))))))))
+                                                    IdentifierName(ShapeMemberNames_V1.LinearCollection.GetManagedValuesSource))))))))
                                 .WithRefKindKeyword(
                                     Token(SyntaxKind.RefKeyword)),
                             Argument(
@@ -775,7 +775,7 @@ namespace Microsoft.Interop
                                     InvocationExpression(
                                         MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                                             IdentifierName(nativeIdentifier),
-                                            IdentifierName(ShapeMemberNames.LinearCollection_V1.GetManagedValuesSource))),
+                                            IdentifierName(ShapeMemberNames_V1.LinearCollection.GetManagedValuesSource))),
                                     IdentifierName("Length")))
                         })));
 
@@ -793,7 +793,7 @@ namespace Microsoft.Interop
                     MemberAccessExpression(
                         SyntaxKind.SimpleMemberAccessExpression,
                         IdentifierName(nativeIdentifier),
-                        IdentifierName(ShapeMemberNames.LinearCollection_V1.GetNativeValuesSource)),
+                        IdentifierName(ShapeMemberNames_V1.LinearCollection.GetNativeValuesSource)),
                     ArgumentList(SingletonSeparatedList(Argument(IdentifierName(numElementsIdentifier)))));
 
                 // <nativeIdentifier>.GetManagedValuesDestination(<numElements>)
@@ -801,7 +801,7 @@ namespace Microsoft.Interop
                     MemberAccessExpression(
                         SyntaxKind.SimpleMemberAccessExpression,
                         IdentifierName(nativeIdentifier),
-                        IdentifierName(ShapeMemberNames.LinearCollection_V1.GetManagedValuesDestination)),
+                        IdentifierName(ShapeMemberNames_V1.LinearCollection.GetManagedValuesDestination)),
                     ArgumentList(SingletonSeparatedList(Argument(IdentifierName(numElementsIdentifier)))));
             }
 
@@ -900,7 +900,7 @@ namespace Microsoft.Interop
                                 InvocationExpression(
                                     MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                                         IdentifierName(nativeIdentifier),
-                                        IdentifierName(ShapeMemberNames.LinearCollection_V1.GetNativeValuesDestination)),
+                                        IdentifierName(ShapeMemberNames_V1.LinearCollection.GetNativeValuesDestination)),
                                     ArgumentList()))))))));
         }
 
@@ -936,7 +936,7 @@ namespace Microsoft.Interop
                                 InvocationExpression(
                                     MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                                         IdentifierName(nativeIdentifier),
-                                        IdentifierName(ShapeMemberNames.LinearCollection_V1.GetNativeValuesSource)),
+                                        IdentifierName(ShapeMemberNames_V1.LinearCollection.GetNativeValuesSource)),
                                     ArgumentList(SingletonSeparatedList(Argument(IdentifierName(numElementsIdentifier))))))))))));
         }
 
@@ -956,7 +956,7 @@ namespace Microsoft.Interop
                         InvocationExpression(
                             MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                                 IdentifierName(nativeIdentifier),
-                                IdentifierName(ShapeMemberNames.LinearCollection_V1.GetManagedValuesSource)),
+                                IdentifierName(ShapeMemberNames_V1.LinearCollection.GetManagedValuesSource)),
                             ArgumentList()))))));
         }
 
@@ -976,7 +976,7 @@ namespace Microsoft.Interop
                         InvocationExpression(
                             MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                                 IdentifierName(nativeIdentifier),
-                                IdentifierName(ShapeMemberNames.LinearCollection_V1.GetManagedValuesDestination)),
+                                IdentifierName(ShapeMemberNames_V1.LinearCollection.GetManagedValuesDestination)),
                             ArgumentList(SingletonSeparatedList(Argument(IdentifierName(numElementsIdentifier))))))))));
         }
 
@@ -1072,7 +1072,7 @@ namespace Microsoft.Interop
                                 MemberAccessExpression(
                                     SyntaxKind.SimpleMemberAccessExpression,
                                     IdentifierName(nativeIdentifier),
-                                    IdentifierName(ShapeMemberNames.LinearCollection_V1.GetNativeValuesDestination)),
+                                    IdentifierName(ShapeMemberNames_V1.LinearCollection.GetNativeValuesDestination)),
                                 ArgumentList()),
                             IdentifierName("Clear"))));
                 yield break;
@@ -1132,7 +1132,7 @@ namespace Microsoft.Interop
                                 InvocationExpression(
                                     MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                                         IdentifierName(nativeIdentifier),
-                                        IdentifierName(ShapeMemberNames.LinearCollection_V1.GetManagedValuesSource)),
+                                        IdentifierName(ShapeMemberNames_V1.LinearCollection.GetManagedValuesSource)),
                                     ArgumentList()),
                                 IdentifierName("Length")))))));
 
@@ -1168,7 +1168,7 @@ namespace Microsoft.Interop
                                                             InvocationExpression(
                                                                 MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                                                                     IdentifierName(nativeIdentifier),
-                                                                    IdentifierName(ShapeMemberNames.LinearCollection_V1.GetManagedValuesSource)),
+                                                                    IdentifierName(ShapeMemberNames_V1.LinearCollection.GetManagedValuesSource)),
                                                                 ArgumentList()),
                                                             IdentifierName("GetPinnableReference")),
                                                             ArgumentList()))
