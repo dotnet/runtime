@@ -57,7 +57,7 @@ namespace System.IO
                 }
 
 #if TARGET_BROWSER
-                var mode = (UnixFileMode)(_fileCache.Mode & (int)FileSystem.ValidUnixFileModes);
+                var mode = ((UnixFileMode)_fileCache.Mode & FileSystem.ValidUnixFileModes);
                 bool isUserReadOnly = (mode & UnixFileMode.UserRead) != 0 && // has read permission
                                       (mode & UnixFileMode.UserWrite) == 0;  // but not write permission
                 return isUserReadOnly;
@@ -87,7 +87,7 @@ namespace System.IO
 
         private bool IsModeReadOnlyCore()
         {
-            var mode = (UnixFileMode)(_fileCache.Mode & (int)FileSystem.ValidUnixFileModes);
+            var mode = ((UnixFileMode)_fileCache.Mode & FileSystem.ValidUnixFileModes);
 
             bool isUserReadOnly = (mode & UnixFileMode.UserRead) != 0 &&    // has read permission
                                   (mode & UnixFileMode.UserWrite) == 0;     // but not write permission
