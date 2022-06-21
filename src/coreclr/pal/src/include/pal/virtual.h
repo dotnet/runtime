@@ -188,14 +188,14 @@ private:
     // is not necessary for the calculations.
     static const int32_t CoreClrLibrarySize = 16 * 1024 * 1024;
 
-#ifdef TARGET_XARCH
     // This constant represent the max size of the virtual memory that this allocator
     // will try to reserve during initialization. We want all JIT-ed code and the
-    // entire libcoreclr to be located in a 2GB range.
-    static const int32_t MaxExecutableMemorySize = 0x7FFF0000;
-#else
+    // entire libcoreclr to be located in a 2GB range on x86
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
     // It seems to be more difficult to reserve a 2Gb chunk on arm so we'll try smaller one
     static const int32_t MaxExecutableMemorySize = 1024 * 1024 * 1024;
+#else
+    static const int32_t MaxExecutableMemorySize = 0x7FFF0000;
 #endif
 
     static const int32_t MaxExecutableMemorySizeNearCoreClr = MaxExecutableMemorySize - CoreClrLibrarySize;
