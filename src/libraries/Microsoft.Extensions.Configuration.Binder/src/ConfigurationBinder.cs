@@ -204,7 +204,7 @@ namespace Microsoft.Extensions.Configuration
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static void BindNonScalar(this IConfiguration configuration, object instance, BinderOptions options)
         {
-            PropertyInfo[] modelProperties = GetAllProperties(instance.GetType());
+            List<PropertyInfo> modelProperties = GetAllProperties(instance.GetType());
 
             if (options.ErrorOnUnknownConfiguration)
             {
@@ -451,7 +451,7 @@ namespace Microsoft.Extensions.Configuration
                 }
 
 
-                PropertyInfo[] properties = GetAllProperties(type);
+                List<PropertyInfo> properties = GetAllProperties(type);
 
                 if (!DoAllParametersHaveEquivalentProperties(parameters, properties, out string nameOfInvalidParameters))
                 {
@@ -482,7 +482,7 @@ namespace Microsoft.Extensions.Configuration
         }
 
         private static bool DoAllParametersHaveEquivalentProperties(ParameterInfo[] parameters,
-            PropertyInfo[] properties, out string missing)
+            List<PropertyInfo> properties, out string missing)
         {
             HashSet<string> propertyNames = new(StringComparer.OrdinalIgnoreCase);
             foreach (PropertyInfo prop in properties)
@@ -752,8 +752,48 @@ namespace Microsoft.Extensions.Configuration
             return null;
         }
 
-        private static PropertyInfo[] GetAllProperties([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
-            => type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+        private static List<PropertyInfo> GetAllProperties([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
+        {
+            var allProperties = new List<PropertyInfo>();
+            HashSet<string>? virtualProperties = null;
+
+            Type baseType = type;
+            do
+            {
+                PropertyInfo[] properties = baseType.GetProperties(DeclaredOnlyLookup);
+
+                allProperties.Capacity = allProperties.Count + properties.Length; // No overriden properties should be common case
+                foreach (PropertyInfo property in properties)
+                {
+                    if (!IsOverriddenSetPropertyMethod(property, ref virtualProperties))
+                    {
+                        allProperties.Add(property);
+                    }
+                }
+
+                baseType = baseType.BaseType!;
+            }
+            while (baseType != typeof(object));
+
+            return allProperties;
+        }
+
+        private static bool IsOverriddenSetPropertyMethod(PropertyInfo property, ref HashSet<string>? virtualProperties)
+        {
+            MethodInfo? setMethod = property.GetSetMethod(true);
+            if (setMethod is null || !setMethod.IsVirtual)
+            {
+                return false;
+            }
+
+            if (setMethod.Equals(setMethod.GetBaseDefinition())) // take care of 'new virtual': it is the last virtual layer of current virtual property, need to reset 'virtualProperties' for this property name.
+            {
+                return virtualProperties is not null && virtualProperties.Remove(property.Name);
+            }
+
+            virtualProperties ??= new();
+            return !virtualProperties.Add(property.Name);
+        }
 
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static object? BindParameter(ParameterInfo parameter, Type type, IConfiguration config,

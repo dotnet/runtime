@@ -1765,6 +1765,20 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("1", Assert.Single(test.Test));
         }
 
+        [Fact]
+        public void CanBindPrivatePropertiesFromBaseClass()
+        {
+            ConfigurationBuilder configurationBuilder = new();
+            configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                { "PrivateProperty", "a" }
+            });
+            IConfiguration config = configurationBuilder.Build();
+
+            var test = new ClassOverridingVirtualProperty();
+            config.Bind(test, b => b.BindNonPublicProperties = true);
+            Assert.Equal("a", test.ExposePrivatePropertyValue());
+        }
 
         private interface ISomeInterface
         {
@@ -1845,7 +1859,10 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
         public class BaseClassWithVirtualProperty
         {
+            private string? PrivateProperty { get; set; }
             public virtual string[] Test { get; set; } = System.Array.Empty<string>();
+
+            public string? ExposePrivatePropertyValue() => PrivateProperty;
         }
 
         public class ClassOverridingVirtualProperty : BaseClassWithVirtualProperty
