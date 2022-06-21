@@ -489,7 +489,7 @@ extern "C" UINT64 __stdcall COMToCLRWorker(Thread *pThread, ComMethodFrame* pFra
     // idea is that we needn't really do this work either in static assembly code nor in dynamically
     // generated code since the benefit/cost ratio is low.  There are some minor differences in the below
     // code, compared to x86.  First, the reentrancy and loader lock checks are optionally compiled into the
-    // stub on x86, depending on whether or not the corresponding MDAs are active at stub-generation time.
+    // stub on x86 at stub-generation time.
     // We must check each time at runtime here because we're using static code.
     //
     HRESULT hr = S_OK;
@@ -508,12 +508,12 @@ extern "C" UINT64 __stdcall COMToCLRWorker(Thread *pThread, ComMethodFrame* pFra
     if (pThread->PreemptiveGCDisabled())
     {
         EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(
-            COR_E_FAILFAST,
-            W("Thread invoking a COM method from non-preemptive GC state. The transition to preemptive mode was missed."));
+            COR_E_EXECUTIONENGINE,
+            W("Invalid Program: attempted to call a COM method from managed code."));
     }
 
     // Attempt to switch GC modes.  Note that this is performed manually just like in the x86 stub because
-    // we have additional checks for shutdown races, MDAs, and thread abort that are performed only when
+    // we have additional checks for shutdown races and thread abort that are performed only when
     // g_TrapReturningThreads is set.
     pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
     if (g_TrapReturningThreads.LoadWithoutBarrier())
