@@ -876,7 +876,7 @@ done:
     return result;
 }
 
-#define CHECK_CACHE_SIZE(CACHE_LEVEL) if (size > cacheSize) { cacheSize = size; cacheLevel = CACHE_LEVEL; }
+#define UPDATE_CACHE_SIZE_AND_LEVEL(CACHE_LEVEL) if (size > cacheSize) { cacheSize = size; cacheLevel = CACHE_LEVEL; }
 
 static size_t GetLogicalProcessorCacheSizeFromOS()
 {
@@ -886,19 +886,19 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
 
 #ifdef _SC_LEVEL1_DCACHE_SIZE
     size = ( size_t) sysconf(_SC_LEVEL1_DCACHE_SIZE);
-    CHECK_CACHE_SIZE(1)
+    UPDATE_CACHE_SIZE_AND_LEVEL(1)
 #endif
 #ifdef _SC_LEVEL2_CACHE_SIZE
     size = ( size_t) sysconf(_SC_LEVEL2_CACHE_SIZE);
-    CHECK_CACHE_SIZE(2)
+    UPDATE_CACHE_SIZE_AND_LEVEL(2)
 #endif
 #ifdef _SC_LEVEL3_CACHE_SIZE
     size = ( size_t) sysconf(_SC_LEVEL3_CACHE_SIZE);
-    CHECK_CACHE_SIZE(3)
+    UPDATE_CACHE_SIZE_AND_LEVEL(3)
 #endif
 #ifdef _SC_LEVEL4_CACHE_SIZE
     size = ( size_t) sysconf(_SC_LEVEL4_CACHE_SIZE);
-    CHECK_CACHE_SIZE(4)
+    UPDATE_CACHE_SIZE_AND_LEVEL(4)
 #endif
 
 #if defined(TARGET_LINUX) && !defined(HOST_ARM) && !defined(HOST_X86)
@@ -926,7 +926,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
 
                 if (ReadMemoryValueFromFile(path_to_level_file, &level))
                 {
-                    CHECK_CACHE_SIZE(level)
+                    UPDATE_CACHE_SIZE_AND_LEVEL(level)
                 }
                 else
                 {
