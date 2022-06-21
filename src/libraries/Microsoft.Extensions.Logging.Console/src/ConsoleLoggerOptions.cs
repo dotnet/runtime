@@ -66,7 +66,7 @@ namespace Microsoft.Extensions.Logging.Console
 
         private ConsoleLoggerQueueFullMode _bufferFullMode = ConsoleLoggerQueueFullMode.Wait;
         /// <summary>
-        /// Gets or sets the desired console logger behavior when buffer becomes full. Defaults to <c>Wait</c>.
+        /// Gets or sets the desired console logger behavior when the queue becomes full. Defaults to <c>Wait</c>.
         /// </summary>
         public ConsoleLoggerQueueFullMode QueueFullMode
         {
