@@ -594,7 +594,7 @@ PAL_GetLogicalProcessorCacheSizeFromOS()
 #endif
 
 #if (defined(HOST_ARM64) || defined(HOST_LOONGARCH64)) && !defined(TARGET_OSX)
-    if ((cacheSize == 0) || (cacheLevel != 3))
+    if (cacheSize == 0)
     {
         // We expect to get the L3 cache size for Arm64 but  currently expected to be missing that info
         // from most of the machines with an exceptions on some machines.
@@ -612,30 +612,12 @@ PAL_GetLogicalProcessorCacheSizeFromOS()
         // If we use recent high core count chips as a guide for state of the art, we find
         // total L3 cache to be 1-2MB/core.  As always, there are exceptions.
 
-        // Hence, just use the following heuristics at best depending on the CPU count
-        // 1 ~ 4   :  4 MB
-        // 5 ~ 16  :  8 MB
-        // 17 ~ 64 : 16 MB
-        // 65+     : 32 MB
+        // Estimate cache size based on CPU count
+        // Assume lower core count are lighter weight parts which are likely to have smaller caches
+        // Assume L3$/CPU grows linearly from 256K to 1.5M/CPU as logicalCPUs grows from 2 to 12 CPUs
         DWORD logicalCPUs = PAL_GetLogicalCpuCountFromOS();
-        if (logicalCPUs < 5)
-        {
-            cacheSize = 4;
-        }
-        else if (logicalCPUs < 17)
-        {
-            cacheSize = 8;
-        }
-        else if (logicalCPUs < 65)
-        {
-            cacheSize = 16;
-        }
-        else
-        {
-            cacheSize = 32;
-        }
 
-        cacheSize = cacheSize * 1024;
+        cacheSize = logicalCPUs*std::min(1536, std::max(256, (int)logicalCPUs*128))*1024;
     }
 #endif
 
@@ -657,6 +639,38 @@ PAL_GetLogicalProcessorCacheSizeFromOS()
             _ASSERTE(cacheSizeFromSysctl > 0);
             cacheSize = ( size_t) cacheSizeFromSysctl;
         }
+    }
+#endif
+
+#if (defined(HOST_ARM64) || defined(HOST_LOONGARCH64)) && !defined(TARGET_OSX)
+    if (cacheLevel != 3)
+    {
+        // We expect to get the L3 cache size for Arm64 but currently expected to be missing that info
+        // from most of the machines.
+        // Hence, just use the following heuristics at best depending on the CPU count
+        // 1 ~ 4   :  4 MB
+        // 5 ~ 16  :  8 MB
+        // 17 ~ 64 : 16 MB
+        // 65+     : 32 MB
+        DWORD logicalCPUs = g_totalCpuCount;
+        if (logicalCPUs < 5)
+        {
+            cacheSize = 4;
+        }
+        else if (logicalCPUs < 17)
+        {
+            cacheSize = 8;
+        }
+        else if (logicalCPUs < 65)
+        {
+            cacheSize = 16;
+        }
+        else
+        {
+            cacheSize = 32;
+        }
+
+        cacheSize *= (1024 * 1024);
     }
 #endif
 

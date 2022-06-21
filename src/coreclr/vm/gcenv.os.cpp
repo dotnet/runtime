@@ -589,6 +589,7 @@ size_t GetLogicalProcessorCacheSizeFromOS()
 {
     size_t cache_size = 0;
     size_t cache_level = 0;
+    uint32_t totalCPUCount = 0;
     DWORD nEntries = 0;
 
     // Try to use GetLogicalProcessorInformation API and get a valid pointer to the SLPI array if successful.  Returns NULL
@@ -609,10 +610,17 @@ size_t GetLogicalProcessorCacheSizeFromOS()
 
         for (DWORD i=0; i < nEntries; i++)
         {
-            if (last_cache_size < pslpi[i].Cache.Size)
+            if (pslpi[i].Relationship == RelationCache)
             {
-                last_cache_size = pslpi[i].Cache.Size;
-                cache_level = pslpi[i].Cache.Level;
+                if (last_cache_size < pslpi[i].Cache.Size)
+                {
+                    last_cache_size = pslpi[i].Cache.Size;
+                    cache_level = pslpi[i].Cache.Level;
+                }
+            }
+            else if (pslpi[i].Relationship == RelationProcessorCore)
+            {
+                totalCPUCount++;
             }
         }
         cache_size = last_cache_size;
@@ -632,25 +640,24 @@ Exit:
         // 5 ~ 16  :  8 MB
         // 17 ~ 64 : 16 MB
         // 65+     : 32 MB
-        uint32_t logicalCPUs = GetTotalProcessorCount();
-        if (logicalCPUs < 5)
+        if (totalCPUCount < 5)
         {
-            cacheSize = 4;
+            cache_size = 4;
         }
-        else if (logicalCPUs < 17)
+        else if (totalCPUCount < 17)
         {
-            cacheSize = 8;
+            cache_size = 8;
         }
-        else if (logicalCPUs < 65)
+        else if (totalCPUCount < 65)
         {
-            cacheSize = 16;
+            cache_size = 16;
         }
         else
         {
-            cacheSize = 32;
+            cache_size = 32;
         }
 
-        cacheSize *= 1024;
+        cache_size *= (1024 * 1024);
     }
 #endif // TARGET_ARM64
 
@@ -683,7 +690,7 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
     s_maxSize = maxSize;
     s_maxTrueSize = maxTrueSize;
 
-    // printf("GetCacheSizePerLogicalCpu returns %d, adjusted size %d\n", maxSize, maxTrueSize);
+    // printf("GetCacheSizePerLogicalCpu returns %zu, adjusted size %zu\n", maxSize, maxTrueSize);
     return trueSize ? maxTrueSize : maxSize;
 }
 

@@ -929,7 +929,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
 #endif
 
 #if (defined(HOST_ARM64) || defined(HOST_LOONGARCH64)) && !defined(TARGET_OSX)
-    if ((cacheSize == 0) || (cacheLevel != 3))
+    if (cacheSize == 0)
     {
         // We expect to get the L3 cache size for Arm64 but currently expected to be missing that info
         // from most of the machines.
@@ -947,6 +947,41 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         // If we use recent high core count chips as a guide for state of the art, we find
         // total L3 cache to be 1-2MB/core.  As always, there are exceptions.
 
+        // Estimate cache size based on CPU count
+        // Assume lower core count are lighter weight parts which are likely to have smaller caches
+        // Assume L3$/CPU grows linearly from 256K to 1.5M/CPU as logicalCPUs grows from 2 to 12 CPUs
+        DWORD logicalCPUs = g_totalCpuCount;
+
+        cacheSize = logicalCPUs * std::min(1536, std::max(256, (int)logicalCPUs * 128)) * 1024;
+    }
+#endif
+
+#if HAVE_SYSCTLBYNAME
+    if (cacheSize == 0)
+    {
+        int64_t cacheSizeFromSysctl = 0;
+        size_t sz = sizeof(cacheSizeFromSysctl);
+        const bool success = false
+            // macOS-arm64: Since macOS 12.0, Apple added ".perflevelX." to determinate cache sizes for efficiency
+            // and performance cores separately. "perflevel0" stands for "performance"
+            || sysctlbyname("hw.perflevel0.l2cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
+            // macOS-arm64: these report cache sizes for efficiency cores only:
+            || sysctlbyname("hw.l3cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
+            || sysctlbyname("hw.l2cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
+            || sysctlbyname("hw.l1dcachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0;
+        if (success)
+        {
+            assert(cacheSizeFromSysctl > 0);
+            cacheSize = ( size_t) cacheSizeFromSysctl;
+        }
+    }
+#endif
+
+#if (defined(HOST_ARM64) || defined(HOST_LOONGARCH64)) && !defined(TARGET_OSX)
+    if (cacheLevel != 3)
+    {
+        // We expect to get the L3 cache size for Arm64 but currently expected to be missing that info
+        // from most of the machines.
         // Hence, just use the following heuristics at best depending on the CPU count
         // 1 ~ 4   :  4 MB
         // 5 ~ 16  :  8 MB
@@ -970,28 +1005,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
             cacheSize = 32;
         }
 
-        cacheSize = cacheSize * 1024;
-    }
-#endif
-
-#if HAVE_SYSCTLBYNAME
-    if (cacheSize == 0)
-    {
-        int64_t cacheSizeFromSysctl = 0;
-        size_t sz = sizeof(cacheSizeFromSysctl);
-        const bool success = false
-            // macOS-arm64: Since macOS 12.0, Apple added ".perflevelX." to determinate cache sizes for efficiency
-            // and performance cores separately. "perflevel0" stands for "performance"
-            || sysctlbyname("hw.perflevel0.l2cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
-            // macOS-arm64: these report cache sizes for efficiency cores only:
-            || sysctlbyname("hw.l3cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
-            || sysctlbyname("hw.l2cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
-            || sysctlbyname("hw.l1dcachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0;
-        if (success)
-        {
-            assert(cacheSizeFromSysctl > 0);
-            cacheSize = ( size_t) cacheSizeFromSysctl;
-        }
+        cacheSize *= (1024 * 1024);
     }
 #endif
 
@@ -1071,7 +1085,7 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
     s_maxSize = maxSize;
     s_maxTrueSize = maxTrueSize;
 
-    //    printf("GetCacheSizePerLogicalCpu returns %d, adjusted size %d\n", maxSize, maxTrueSize);
+    // printf("GetCacheSizePerLogicalCpu returns %zu, adjusted size %zu\n", maxSize, maxTrueSize);
     return trueSize ? maxTrueSize : maxSize;
 }
 
