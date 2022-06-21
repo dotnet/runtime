@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.Logging.Console
             {
                 if (value <= 0)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, $"{nameof(value)} must be larger than zero.");
+                    throw new ArgumentOutOfRangeException(SR.Format(SR.MaxQueueLengthBadValue, nameof(value)));
                 }
 
                 lock (_messageQueue)
@@ -43,7 +43,7 @@ namespace Microsoft.Extensions.Logging.Console
             {
                 if (value != ConsoleLoggerQueueFullMode.Wait && value != ConsoleLoggerQueueFullMode.DropWrite)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, $"{nameof(value)} is not a supported buffer mode value.");
+                    throw new ArgumentOutOfRangeException(SR.Format(SR.QueueModeNotSupported, nameof(value)));
                 }
 
                 lock (_messageQueue)
@@ -129,7 +129,7 @@ namespace Microsoft.Extensions.Logging.Console
                     if (_messagesDropped > 0)
                     {
                         _messageQueue.Enqueue(new LogMessageEntry(
-                            message: _messagesDropped + SR.WarningMessageOnDrop + Environment.NewLine,
+                            message: SR.Format(SR.WarningMessageOnDrop + Environment.NewLine, _messagesDropped),
                             logAsError: true
                         ));
 
