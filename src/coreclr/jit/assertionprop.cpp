@@ -1559,7 +1559,6 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                         if (varTypeIsIntegral(lclVar) && genActualType(lclVar) != genActualType(op2) && genTypeSize(lclVar) < genTypeSize(op2))
                         {
                             iconVal = genCastIconVal(iconVal, genActualType(lclVar));
-                        //    goto DONE_ASSERTION; // Don't make an assertion
                         }
 #ifdef TARGET_ARM
                         // Do not Constant-Prop large constants for ARM
@@ -1571,7 +1570,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                         }
 #endif // TARGET_ARM
 
-                        assertion.op2.u1.iconVal   = op2->AsIntCon()->gtIconVal;
+                        assertion.op2.u1.iconVal   = iconVal;
                         assertion.op2.u1.iconFlags = op2->GetIconHandleFlag();
                     }
                     else if (op2->gtOper == GT_CNS_LNG)
