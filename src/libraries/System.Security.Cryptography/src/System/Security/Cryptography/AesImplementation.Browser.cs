@@ -27,7 +27,7 @@ namespace System.Security.Cryptography
                 blockSize,
                 feedbackSize,
                 PaddingMode.PKCS7, // todo: eerhardt verify
-                encrypting ? RijndaelManagedTransformMode.Encrypt : RijndaelManagedTransformMode.Decrypt);
+                encrypting);
         }
 
         private static ILiteSymmetricCipher CreateLiteCipher(
@@ -48,7 +48,7 @@ namespace System.Security.Cryptography
                 blockSize,
                 feedbackSize,
                 PaddingMode.PKCS7, // todo: eerhardt verify
-                encrypting ? RijndaelManagedTransformMode.Encrypt : RijndaelManagedTransformMode.Decrypt);
+                encrypting);
         }
     }
 }

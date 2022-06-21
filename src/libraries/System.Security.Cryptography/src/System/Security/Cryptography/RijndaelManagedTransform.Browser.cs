@@ -6,17 +6,11 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Security.Cryptography
 {
-    internal enum RijndaelManagedTransformMode
-    {
-        Encrypt = 0,
-        Decrypt = 1
-    }
-
     internal sealed class RijndaelManagedTransform : ICryptoTransform, ILiteSymmetricCipher
     {
         private readonly CipherMode _cipherMode;
         private readonly PaddingMode _paddingValue;
-        private readonly RijndaelManagedTransformMode _transformMode;
+        private readonly bool _encrypting;
 
         private readonly int _blockSizeBytes;
         private readonly int _inputBlockSize;
@@ -42,7 +36,7 @@ namespace System.Security.Cryptography
                                         int blockSize,
                                         int feedbackSize,
                                         PaddingMode PaddingValue,
-                                        RijndaelManagedTransformMode transformMode)
+                                        bool encrypting)
         {
             if (rgbKey == null)
                 throw new ArgumentNullException(nameof(rgbKey));
@@ -53,7 +47,7 @@ namespace System.Security.Cryptography
             _blockSizeBytes = blockSize;
             _cipherMode = mode;
             _paddingValue = PaddingValue;
-            _transformMode = transformMode;
+            _encrypting = encrypting;
             _Nr = GetNumberOfRounds(blockSize, rgbKey);
             _Nb = blockSize / 4;
             _Nk = rgbKey.Length / 4;
@@ -195,7 +189,7 @@ namespace System.Security.Cryptography
             if (inputCount <= 0 || (inputCount % InputBlockSize != 0) || (inputCount > inputBuffer.Length)) throw new ArgumentException(SR.GetResourceString("Argument_InvalidValue"));
             if ((inputBuffer.Length - inputCount) < inputOffset) throw new ArgumentException(SR.GetResourceString("Argument_InvalidOffLen"));
 
-            if (_transformMode == RijndaelManagedTransformMode.Encrypt)
+            if (_encrypting)
             {
                 // if we're encrypting we can always push out the bytes because no padding mode
                 // removes bytes during encryption
@@ -267,7 +261,7 @@ namespace System.Security.Cryptography
             if (inputCount < 0 || (inputCount > inputBuffer.Length)) throw new ArgumentException(SR.GetResourceString("Argument_InvalidValue"));
             if ((inputBuffer.Length - inputCount) < inputOffset) throw new ArgumentException(SR.GetResourceString("Argument_InvalidOffLen"));
 
-            if (_transformMode == RijndaelManagedTransformMode.Encrypt)
+            if (_encrypting)
             {
                 // If we're encrypting we can alway return what we compute because there's no m_depadBuffer
                 byte[]? transformedBytes = null;
