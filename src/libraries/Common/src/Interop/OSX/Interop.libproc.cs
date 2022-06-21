@@ -240,9 +240,6 @@ internal static partial class Interop
             // Negative PIDs are invalid
             ArgumentOutOfRangeException.ThrowIfNegative(pid);
 
-            // Negative TIDs are invalid
-            ArgumentOutOfRangeException.ThrowIfNegative(thread);
-
             // Get the thread information for the specified thread in the specified process
             int size = sizeof(proc_threadinfo);
             proc_threadinfo info = default(proc_threadinfo);
