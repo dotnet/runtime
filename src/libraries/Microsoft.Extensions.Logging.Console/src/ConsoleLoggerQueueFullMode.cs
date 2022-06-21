@@ -6,7 +6,7 @@ namespace Microsoft.Extensions.Logging.Console
     /// <summary>
     /// Determines the console logger behavior when buffer becomes full.
     /// </summary>
-    public enum ConsoleLoggerBufferFullMode
+    public enum ConsoleLoggerQueueFullMode
     {
         /// <summary>
         /// Blocks the logging threads once the buffer limit is reached.

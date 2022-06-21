@@ -1184,7 +1184,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void ConsoleLoggerOptions_SetInvalidBufferMode_Throws()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ConsoleLoggerOptions() { QueueFullMode = (ConsoleLoggerBufferFullMode)10 });
+            Assert.Throws<ArgumentOutOfRangeException>(() => new ConsoleLoggerOptions() { QueueFullMode = (ConsoleLoggerQueueFullMode)10 });
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -1303,13 +1303,13 @@ namespace Microsoft.Extensions.Logging.Console.Test
             var logger = (ConsoleLogger)loggerProvider.CreateLogger("Name");
 
             // Act & Assert
-            Assert.Equal(ConsoleLoggerBufferFullMode.Wait, logger.Options.QueueFullMode);
+            Assert.Equal(ConsoleLoggerQueueFullMode.Wait, logger.Options.QueueFullMode);
             Assert.Equal(ConsoleLoggerOptions.DefaultMaxQueueLengthValue, logger.Options.MaxQueueLength);
             monitor.Set(new ConsoleLoggerOptions() {
-                QueueFullMode = ConsoleLoggerBufferFullMode.DropWrite,
+                QueueFullMode = ConsoleLoggerQueueFullMode.DropWrite,
                 MaxQueueLength = 10
             });
-            Assert.Equal(ConsoleLoggerBufferFullMode.DropWrite, logger.Options.QueueFullMode);
+            Assert.Equal(ConsoleLoggerQueueFullMode.DropWrite, logger.Options.QueueFullMode);
             Assert.Equal(10, logger.Options.MaxQueueLength);
         }
 
@@ -1417,7 +1417,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
 
     internal class TestLoggerProcessor : ConsoleLoggerProcessor
     {
-        public TestLoggerProcessor(IConsole console, IConsole errorConsole, ConsoleLoggerBufferFullMode fullMode, int maxQueueLength)
+        public TestLoggerProcessor(IConsole console, IConsole errorConsole, ConsoleLoggerQueueFullMode fullMode, int maxQueueLength)
             : base(console, errorConsole, fullMode, maxQueueLength)
         {
         }

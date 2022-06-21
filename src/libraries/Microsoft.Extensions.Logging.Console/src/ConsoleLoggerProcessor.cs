@@ -35,13 +35,13 @@ namespace Microsoft.Extensions.Logging.Console
                 }
             }
         }
-        private ConsoleLoggerBufferFullMode _fullMode = ConsoleLoggerBufferFullMode.Wait;
-        public ConsoleLoggerBufferFullMode FullMode
+        private ConsoleLoggerQueueFullMode _fullMode = ConsoleLoggerQueueFullMode.Wait;
+        public ConsoleLoggerQueueFullMode FullMode
         {
             get => _fullMode;
             set
             {
-                if (value != ConsoleLoggerBufferFullMode.Wait && value != ConsoleLoggerBufferFullMode.DropWrite)
+                if (value != ConsoleLoggerQueueFullMode.Wait && value != ConsoleLoggerQueueFullMode.DropWrite)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), value, $"{nameof(value)} is not a supported buffer mode value.");
                 }
@@ -59,7 +59,7 @@ namespace Microsoft.Extensions.Logging.Console
         public IConsole Console { get; }
         public IConsole ErrorConsole { get; }
 
-        public ConsoleLoggerProcessor(IConsole console, IConsole errorConsole, ConsoleLoggerBufferFullMode fullMode, int maxQueueLength)
+        public ConsoleLoggerProcessor(IConsole console, IConsole errorConsole, ConsoleLoggerQueueFullMode fullMode, int maxQueueLength)
         {
             _messageQueue = new Queue<LogMessageEntry>();
             FullMode = fullMode;
@@ -112,13 +112,13 @@ namespace Microsoft.Extensions.Logging.Console
             {
                 while (_messageQueue.Count >= MaxQueueLength && !_isAddingCompleted)
                 {
-                    if (FullMode == ConsoleLoggerBufferFullMode.DropWrite)
+                    if (FullMode == ConsoleLoggerQueueFullMode.DropWrite)
                     {
                         _messagesDropped++;
                         return true;
                     }
 
-                    Debug.Assert(FullMode == ConsoleLoggerBufferFullMode.Wait);
+                    Debug.Assert(FullMode == ConsoleLoggerQueueFullMode.Wait);
                     Monitor.Wait(_messageQueue);
                 }
 

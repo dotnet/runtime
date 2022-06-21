@@ -64,16 +64,16 @@ namespace Microsoft.Extensions.Logging.Console
         [System.ObsoleteAttribute("ConsoleLoggerOptions.UseUtcTimestamp has been deprecated. Use ConsoleFormatterOptions.UseUtcTimestamp instead.")]
         public bool UseUtcTimestamp { get; set; }
 
-        private ConsoleLoggerBufferFullMode _bufferFullMode = ConsoleLoggerBufferFullMode.Wait;
+        private ConsoleLoggerQueueFullMode _bufferFullMode = ConsoleLoggerQueueFullMode.Wait;
         /// <summary>
         /// Gets or sets the desired console logger behavior when buffer becomes full. Defaults to <c>Wait</c>.
         /// </summary>
-        public ConsoleLoggerBufferFullMode QueueFullMode
+        public ConsoleLoggerQueueFullMode QueueFullMode
         {
             get => _bufferFullMode;
             set
             {
-                if (value != ConsoleLoggerBufferFullMode.Wait && value != ConsoleLoggerBufferFullMode.DropWrite)
+                if (value != ConsoleLoggerQueueFullMode.Wait && value != ConsoleLoggerQueueFullMode.DropWrite)
                 {
                     throw new ArgumentOutOfRangeException(SR.Format(SR.BufferModeNotSupported, nameof(value)));
                 }
