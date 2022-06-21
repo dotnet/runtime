@@ -3894,39 +3894,33 @@ void emitter::emitDispJumpList()
     unsigned int jmpCount = 0;
     for (instrDescJmp* jmp = emitJumpList; jmp != nullptr; jmp = jmp->idjNext)
     {
+        printf("IG%02u IN%04x %3s[%u]", jmp->idjIG->igNum, jmp->idDebugOnlyInfo()->idNum,
+               codeGen->genInsDisplayName(jmp), jmp->idCodeSize());
+
         if (!jmp->idIsBound())
         {
 
 #if defined(TARGET_ARM64)
             if ((jmp->idInsFmt() == IF_LARGEADR) || (jmp->idInsFmt() == IF_LARGELDC))
             {
-                printf("IG%02u IN%04x %3s[%u] -> %s\n", jmp->idjIG->igNum, jmp->idDebugOnlyInfo()->idNum,
-                       codeGen->genInsDisplayName(jmp), jmp->idCodeSize(), getRegName(jmp->idReg1()));
+                printf(" -> %s", getRegName(jmp->idReg1()));
             }
             else
             {
-                printf("IG%02u IN%04x %3s[%u] -> IG%02u\n", jmp->idjIG->igNum, jmp->idDebugOnlyInfo()->idNum,
-                       codeGen->genInsDisplayName(jmp), jmp->idCodeSize(),
-                       ((insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel))->igNum);
+                printf(" -> IG%02u", ((insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel))->igNum);
             }
 #else
-            printf("IG%02u IN%04x %3s[%u] -> IG%02u %s\n", jmp->idjIG->igNum, jmp->idDebugOnlyInfo()->idNum,
-                   codeGen->genInsDisplayName(jmp), jmp->idCodeSize(),
-                   ((insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel))->igNum,
-#if defined(TARGET_XARCH)
-                   jmp->idjIsRemovableJmpCandidate ? " ; removal candidate" : ""
-#else
-                   ""
-#endif
-                   );
-#endif
-        }
-        else
-        {
-            printf("IG%02u IN%04x %3s[%u]\n", jmp->idjIG->igNum, jmp->idDebugOnlyInfo()->idNum,
-                   codeGen->genInsDisplayName(jmp), jmp->idCodeSize());
-        }
+            printf(" -> IG%02u", ((insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel))->igNum);
 
+#if defined(TARGET_XARCH)
+            if (jmp->idjIsRemovableJmpCandidate)
+            {
+                printf(" ; removal candidate");
+            }
+#endif // TARGET_XARCH
+#endif // !TARGET_ARM64
+        }
+        printf("\n");
         jmpCount += 1;
     }
     printf("  total jump count: %u\n", jmpCount);
