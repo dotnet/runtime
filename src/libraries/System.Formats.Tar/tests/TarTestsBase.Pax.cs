@@ -99,7 +99,7 @@ namespace System.Formats.Tar.Tests
             // But as extended attributes, they should always be saved as doubles with decimal precision
             Assert.Contains(".", value);
 
-            Assert.True(decimal.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal secondsSinceEpoch), $"Extended attributes field '{fieldName}' is not a valid double.");
+            Assert.True(decimal.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal secondsSinceEpoch), $"Extended attributes field '{fieldName}' is not a valid decimal number.");
             return GetDateTimeOffsetFromSecondsSinceEpoch(secondsSinceEpoch);
         }
 
