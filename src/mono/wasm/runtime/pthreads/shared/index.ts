@@ -19,15 +19,17 @@ export interface MonoWorkerMessage {
 export interface MonoWorkerMessageChannelCreated<TPort> extends MonoWorkerMessage {
     [monoSymbol]: {
         mono_cmd: "channel_created";
+        thread_id: pthread_ptr;
         port: TPort;
     };
 }
 
-export function makeChannelCreatedMonoMessage<TPort>(port: TPort): MonoWorkerMessageChannelCreated<TPort> {
+export function makeChannelCreatedMonoMessage<TPort>(thread_id: pthread_ptr, port: TPort): MonoWorkerMessageChannelCreated<TPort> {
     return {
         [monoSymbol]: {
             mono_cmd: "channel_created",
-            port: port
+            thread_id,
+            port
         }
     };
 }
@@ -36,12 +38,12 @@ export function isMonoWorkerMessage(message: unknown): message is MonoWorkerMess
     return message !== undefined && typeof message === "object" && message !== null && monoSymbol in message;
 }
 
-export function getPortFromMonoWorkerMessage<TPort>(message: MonoWorkerMessageChannelCreated<TPort>): TPort | undefined {
+export function isMonoWorkerMessageChannelCreated<TPort>(message: MonoWorkerMessageChannelCreated<TPort>): message is MonoWorkerMessageChannelCreated<TPort> {
     if (isMonoWorkerMessage(message)) {
         const monoMessage = message[monoSymbol];
         if (monoMessage.mono_cmd === "channel_created") {
-            return monoMessage.port;
+            return true;
         }
     }
-    return undefined;
+    return false;
 }

@@ -413,16 +413,7 @@ mono_threads_platform_stw_defer_initial_suspend (MonoThreadInfo *info)
 
 #ifndef DISABLE_THREADS
 extern void
-mono_wasm_pthread_on_pthread_created_main_thread (gpointer pthread_id, gpointer notify_ptr);
-
-extern void
-mono_wasm_pthread_on_pthread_created (gpointer pthread_id, gpointer notify_ptr);
-
-static void
-call_pthread_created (gpointer pthread_id, gpointer notify_ptr)
-{
-	mono_wasm_pthread_on_pthread_created_main_thread (pthread_id, notify_ptr);
-}
+mono_wasm_pthread_on_pthread_created (gpointer pthread_id);
 #endif
 
 void
@@ -435,15 +426,8 @@ mono_threads_wasm_on_thread_attached (void)
 		return;
 	}
 	// Set up a MessageChannel between the new thread (which might be on a pooled reused WebWorker) and the main thread.
-
-	/* A pointer to this address is passed to both the new worker (this thread) and the main
-	 * browser thread, and is used to make the worker wait until the runtime sets up the
-	 * communication channel */
-	int32_t notify_word;
 	pthread_t id = pthread_self ();
-
-	mono_threads_wasm_async_run_in_main_thread_vii (call_pthread_created, id, &notify_word);
-	mono_wasm_pthread_on_pthread_created (id, &notify_word);
+	mono_wasm_pthread_on_pthread_created (id);
 #endif
 }
 

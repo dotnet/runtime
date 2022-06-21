@@ -27,24 +27,15 @@ In the worker threads, `pthread/worker` provides `addThreadCreatedCallback ((pth
 
    This is how we set it up:
 
-   1. Something in the runtime calls mono_thread_create_internal()
-   2. the runtime creates a 32-bit integer location on the new thread's stack (worker_notify_ptr) that we can use to synchronize
-   3. the runtime thread start routine calls mono_wasm_on_pthread_created in the new thread
-      - that function immediately blocks on worker_notify_ptr using Atomics.wait
-   4. the runtime posts an async function to the main thread to run mono_wasm_pthread_on_pthread_created_main_thread
-     - that function adds does worker.addEventHandler("message", monoMessageFromWorkerHandlerForMainThread)
-     - that handler's only job is to receive a "channel_created" message from the worker.
-     - the main thread wakes the worker by doing Atomics.store and Atomics.notify
-   5. the worker wakes up and posts a "channel_created" message to the main thread
-   6. our custom message handler runs on the main thread and receives the MessagePort
-   7. now the main thread and the worker have a dedicated communication channel
+   1. We replace emscripten's `PThread.loadWasmModuleToWorker` method with our own that calls `afterLoadWasmModuleToWorker`.
+   2. When Emscripten creates a worker that will run pthreads, we install an additional message handler.
+   3. Something in the runtime calls mono_thread_create_internal()
+   4. A pthread is created and emscripten sends a command to a worker to create a pthread.
+   5. the runtime thread start routine calls mono_wasm_on_pthread_created in the new thread running on the worker.
+   6. the worker wakes posts a "channel_created" message to the main thread on the worker message event handler
+   7. our custom message handler runs on the main thread and receives the MessagePort
+   8. now the main thread and the worker have a dedicated communication channel
 
   This could get better if the following things changed in Emscripten:
 
-  1. There was some hook on Module.Pthread.loadWasmModuleToWorker so that we could add our own message handler at the same time that Emscripten adds its own.
-     That would let us eliminate queuing async work on the main thread and block the worker until it's done.
-     This is because we can't easily add a handler to _every_ new worker as it is added to the pthread worker pool.
-
-  2. If we could have a way to avoid collisions with Emscripten's own message handlers entirely, we wouldn't need a MessageChannel at all, we could just piggyback on the normal worker communication.
-
-**FIXME**: we really need to hook deeper - if a third party library creates a thread we need to attach it when it attaches to the runtime.
+   1. If we could have a way to avoid collisions with Emscripten's own message handlers entirely, we wouldn't need a MessageChannel at all, we could just piggyback on the normal worker communication.

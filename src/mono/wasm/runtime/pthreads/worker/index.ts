@@ -3,7 +3,6 @@
 
 /// <reference lib="webworker" />
 
-import { Module } from "../../imports";
 import { makeChannelCreatedMonoMessage, pthread_ptr } from "../shared";
 
 export type ThreadCreatedCallback = (pthread_ptr: pthread_ptr, main_port: MessagePort) => void;
@@ -21,16 +20,14 @@ function monoDedicatedChannelMessageFromMainToWorker(event: MessageEvent<string>
 }
 
 /// Called in the worker thread from mono when a new pthread is started
-export function mono_wasm_pthread_on_pthread_created(pthread_id: pthread_ptr, worker_notify_ptr: number): void {
-    console.log("waiting for main thread to aknowledge us");
-    Atomics.wait(Module.HEAP32, worker_notify_ptr, 0);  // FIXME: any way we can avoid this?
-    console.debug("creating a channel");
+export function mono_wasm_pthread_on_pthread_created(pthread_id: pthread_ptr): void {
+    console.debug("creating a channel", pthread_id);
     const channel = new MessageChannel();
     const workerPort = channel.port1;
     const mainPort = channel.port2;
     workerPort.addEventListener("message", monoDedicatedChannelMessageFromMainToWorker);
     workerPort.start();
-    self.postMessage(makeChannelCreatedMonoMessage(mainPort), [mainPort]);
+    self.postMessage(makeChannelCreatedMonoMessage(pthread_id, mainPort), [mainPort]);
     for (const fn of threadCreatedCallbacks) {
         fn(pthread_id, workerPort);
     }

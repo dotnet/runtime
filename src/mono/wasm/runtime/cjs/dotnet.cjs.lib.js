@@ -88,7 +88,6 @@ const linked_functions = [
 
     /// mono-threads-wasm.c
     #if USE_PTHREADS
-    "mono_wasm_pthread_on_pthread_created_main_thread",
     "mono_wasm_pthread_on_pthread_created",
     #endif
 ];

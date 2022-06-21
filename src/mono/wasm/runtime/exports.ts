@@ -76,7 +76,7 @@ import {
     dotnet_browser_sign
 } from "./crypto-worker";
 import { mono_wasm_pthread_on_pthread_created } from "./pthreads/worker";
-import { mono_wasm_pthread_on_pthread_created_main_thread, afterLoadWasmModuleToWorker } from "./pthreads/browser";
+import { afterLoadWasmModuleToWorker } from "./pthreads/browser";
 
 const MONO = {
     // current "public" MONO API
@@ -391,7 +391,6 @@ export const __linker_exports: any = {
 
     // mono-threads-wasm.c
     ...(MonoWasmThreads) && {
-        mono_wasm_pthread_on_pthread_created_main_thread,
         mono_wasm_pthread_on_pthread_created,
     },
 };

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { Module } from "../../imports";
-import { isMonoWorkerMessage, getPortFromMonoWorkerMessage, pthread_ptr, MonoWorkerMessageChannelCreated } from "../shared";
+import { pthread_ptr, MonoWorkerMessageChannelCreated, isMonoWorkerMessageChannelCreated, monoSymbol } from "../shared";
 
 const threads: Map<pthread_ptr, Thread> = new Map();
 
@@ -47,33 +47,24 @@ function monoDedicatedChannelMessageFromWorkerToMain(event: MessageEvent<unknown
 }
 
 // handler that runs in the main thread when a message is received from a pthread worker
-function monoWorkerMessageHandler(pthread_ptr: pthread_ptr, worker: Worker, ev: MessageEvent<MonoWorkerMessageChannelCreated<MessagePort>>): void {
+function monoWorkerMessageHandler(worker: Worker, ev: MessageEvent<MonoWorkerMessageChannelCreated<MessagePort>>): void {
     /// N.B. important to ignore messages we don't recognize - Emscripten uses the message event to send internal messages
-    if (isMonoWorkerMessage(ev.data)) {
-        const port = getPortFromMonoWorkerMessage(ev.data);
-        if (port !== undefined) {
-            const thread = addThread(pthread_ptr, worker, port);
-            port.addEventListener("message", (ev) => monoDedicatedChannelMessageFromWorkerToMain(ev, thread));
-            port.start();
-        }
+    const data = ev.data;
+    if (isMonoWorkerMessageChannelCreated(data)) {
+        console.debug("received the channel created message", data, worker);
+        const port = data[monoSymbol].port;
+        const pthread_id = data[monoSymbol].thread_id;
+        const thread = addThread(pthread_id, worker, port);
+        port.addEventListener("message", (ev) => monoDedicatedChannelMessageFromWorkerToMain(ev, thread));
+        port.start();
     }
 }
 
 /// Called by Emscripten internals when a new pthread worker is created and added to the pthread worker pool.
 /// At this point the worker doesn't have any pthread assigned to it, yet.
 export function afterLoadWasmModuleToWorker(worker: Worker): void {
-    console.debug("afterLoadWasmModuleToWorker", worker);
-    //worker.addEventListener("message", (ev) => monoWorkerMessageHandler2(worker, ev));
-}
-
-/// Called asynchronously in the main thread from mono when a new pthread is started
-export function mono_wasm_pthread_on_pthread_created_main_thread(pthread_ptr: pthread_ptr, worker_notify_ptr: number): void {
-    console.log("pthread created");
-    const worker = Internals.getWorker(pthread_ptr);
-    worker.addEventListener("message", (ev) => monoWorkerMessageHandler(pthread_ptr, worker, ev));
-    // wake the worker
-    Atomics.store(Module.HEAP32, worker_notify_ptr, 1);
-    Atomics.notify(Module.HEAP32, worker_notify_ptr, 1);
+    worker.addEventListener("message", (ev) => monoWorkerMessageHandler(worker, ev));
+    console.debug("afterLoadWasmModuleToWorker added message event handler", worker);
 }
 
 /// These utility functions dig into Emscripten internals
