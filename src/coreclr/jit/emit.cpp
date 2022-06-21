@@ -6263,7 +6263,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     // This restricts the data alignment to: 4, 8, 16, or 32 bytes
     // Alignments greater than 32 would require VM support in ICorJitInfo::allocMem
     uint32_t dataAlignment = emitConsDsc.alignment;
-    assert((dataSection::MIN_DATA_ALIGN <= dataAlignment) && (dataAlignment <= dataSection::MAX_DATA_ALIGN) && isPow2(dataAlignment));
+    assert((dataSection::MIN_DATA_ALIGN <= dataAlignment) && (dataAlignment <= dataSection::MAX_DATA_ALIGN) &&
+           isPow2(dataAlignment));
 
     uint32_t codeAlignment = TARGET_POINTER_SIZE;
 
@@ -6401,6 +6402,9 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     {
         assert(((size_t)codeBlock & 31) == 0);
     }
+#if 0
+    // TODO: we should be able to assert the following, but it appears crossgen2 doesn't respect them,
+    // or maybe it respects them in the written image but not in the buffer pointer given to the JIT.
     if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
     {
         assert(((size_t)codeBlock & 15) == 0);
@@ -6413,6 +6417,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     {
         assert(((size_t)consBlock & 15) == 0);
     }
+#endif // 0
 #endif
 
     // if (emitConsDsc.dsdOffs)
