@@ -735,9 +735,11 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 
     unsigned argCount = CountArgs();
 
-    // Overapproximation of exception flags for previous args that may not
-    // already be evaluated into temps.
-    ExceptionSetFlags nonTempExFlags = ExceptionSetFlags::None;
+    // Previous argument with GTF_EXCEPT
+    GenTree* prevExceptionTree = nullptr;
+    // Exceptions previous tree with GTF_EXCEPT may throw (computed lazily, may
+    // be empty)
+    ExceptionSetFlags prevExceptionFlags = ExceptionSetFlags::None;
 
     CallArg* prevNonTempExceptionThrowingArg = nullptr;
 
@@ -823,10 +825,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 
         bool treatLikeCall = ((argx->gtFlags & GTF_CALL) != 0);
 
-        // TODO: Keep previous GTF_EXCEPT arg and lazily collect this set instead.
-        ExceptionSetFlags preciseExceptions =
-            treatLikeCall ? ExceptionSetFlags::None : comp->gtCollectPreciseExceptions(argx);
-
+        ExceptionSetFlags exceptionFlags = ExceptionSetFlags::None;
 #if FEATURE_FIXED_OUT_ARGS
         // Like calls, if this argument has a tree that will do an inline throw,
         // a call to a jit helper, then we need to treat it like a call (but only
@@ -837,8 +836,9 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
         //
         if (!treatLikeCall && (argCount > 1) && comp->opts.compDbgCode)
         {
-            if ((preciseExceptions & (ExceptionSetFlags::IndexOutOfRangeException |
-                                      ExceptionSetFlags::OverflowException)) != ExceptionSetFlags::None)
+            exceptionFlags = comp->gtCollectExceptions(argx);
+            if ((exceptionFlags & (ExceptionSetFlags::IndexOutOfRangeException |
+                                   ExceptionSetFlags::OverflowException)) != ExceptionSetFlags::None)
             {
                 for (CallArg& otherArg : Args())
                 {
@@ -907,34 +907,54 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 #endif
             }
         }
-        else
+        else if ((argx->gtFlags & GTF_EXCEPT) != 0)
         {
-            // If a previous arg may throw a different exception than this arg,
+            // If a previous arg may throw a different exception than this arg
             // then we evaluate all previous arguments with GTF_EXCEPT to temps
-            // to avoid reordering them in our sort later. The only case we can
-            // avoid this is if all previous args throw the same single
-            // exception as this arg.
-            unsigned numExceptions = genCountBits(static_cast<unsigned>(preciseExceptions));
-            bool     distinctExceptions =
-                (nonTempExFlags != ExceptionSetFlags::None) &&
-                ((numExceptions > 1) || ((numExceptions == 1) && (preciseExceptions != nonTempExFlags)));
-            if (distinctExceptions)
+            // to avoid reordering them in our sort later.
+            if (prevExceptionTree != nullptr)
             {
-                for (CallArg& prevArg : Args())
+                if (prevExceptionFlags == ExceptionSetFlags::None)
                 {
-                    if (&prevArg == &arg)
-                    {
-                        break;
-                    }
+                    prevExceptionFlags = comp->gtCollectExceptions(prevExceptionTree);
+                }
 
-                    if ((prevArg.GetEarlyNode() != nullptr) && ((prevArg.GetEarlyNode()->gtFlags & GTF_EXCEPT) != 0))
+                if (exceptionFlags == ExceptionSetFlags::None)
+                {
+                    exceptionFlags = comp->gtCollectExceptions(argx);
+                }
+
+                if ((genCountBits(static_cast<unsigned>(exceptionFlags)) >= 2) ||
+                    (exceptionFlags != prevExceptionFlags))
+                {
+                    JITDUMP("Exception set for arg [%06u] interferes with previous tree [%06u]; must evaluate previous "
+                            "trees with exceptions to temps",
+                            Compiler::dspTreeID(argx), Compiler::dspTreeID(prevExceptionTree));
+
+                    for (CallArg& prevArg : Args())
                     {
-                        SetNeedsTemp(&prevArg);
+                        if (&prevArg == &arg)
+                        {
+                            break;
+                        }
+
+                        // Invariant here is that all nodes that were not
+                        // already evaluated into temps and that throw
+                        // GTF_EXCEPT can only be throwing the same single
+                        // exception as the previous tree, so all of them
+                        // interfere in the same way with the current arg and
+                        // must be evaluated early.
+                        if ((prevArg.GetEarlyNode() != nullptr) &&
+                            ((prevArg.GetEarlyNode()->gtFlags & GTF_EXCEPT) != 0))
+                        {
+                            SetNeedsTemp(&prevArg);
+                        }
                     }
                 }
             }
 
-            nonTempExFlags |= preciseExceptions;
+            prevExceptionTree  = argx;
+            prevExceptionFlags = exceptionFlags;
         }
 
 #if FEATURE_MULTIREG_ARGS
