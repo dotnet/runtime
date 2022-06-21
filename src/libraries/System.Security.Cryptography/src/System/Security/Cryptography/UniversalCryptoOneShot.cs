@@ -20,6 +20,10 @@ namespace System.Security.Cryptography
             if (input.Length % cipher.PaddingSizeInBytes != 0)
                 throw new CryptographicException(SR.Cryptography_PartialBlock);
 
+            bool cipherHandlesPadding = cipher.HandlesPadding;
+            if (cipherHandlesPadding)
+                cipher.ValidatePaddingMode(paddingMode);
+
             // The internal implementation of the one-shots are never expected to create
             // a plaintext larger than the ciphertext. If the buffer supplied is large enough
             // to do the transform, use it directly.
@@ -30,7 +34,7 @@ namespace System.Security.Cryptography
             {
                 int bytesTransformed = cipher.TransformFinal(input, output);
 
-                if (cipher.HandlesPadding)
+                if (cipherHandlesPadding)
                 {
                     bytesWritten = bytesTransformed;
                     return true;
@@ -85,7 +89,7 @@ namespace System.Security.Cryptography
                 int stackTransformFinal = cipher.TransformFinal(input, stackBuffer);
 
                 int depaddedLength;
-                if (cipher.HandlesPadding)
+                if (cipherHandlesPadding)
                 {
                     depaddedLength = stackTransformFinal;
                 }
@@ -143,7 +147,7 @@ namespace System.Security.Cryptography
                     finalTransformWritten = cipher.TransformFinal(paddedBlock, stackBuffer);
 
                     int depaddedLength;
-                    if (cipher.HandlesPadding)
+                    if (cipherHandlesPadding)
                     {
                         depaddedLength = finalTransformWritten;
                     }
@@ -193,7 +197,7 @@ namespace System.Security.Cryptography
                     int transformWritten = cipher.TransformFinal(input, buffer);
                     decryptedBuffer = buffer.Slice(0, transformWritten);
 
-                    if (cipher.HandlesPadding)
+                    if (cipherHandlesPadding)
                     {
                         decryptedBuffer.CopyTo(output);
                         bytesWritten = transformWritten;
@@ -241,6 +245,8 @@ namespace System.Security.Cryptography
 
             if (cipher.HandlesPadding)
             {
+                cipher.ValidatePaddingMode(paddingMode);
+
                 bytesWritten = cipher.TransformFinal(input, output);
                 return true;
             }

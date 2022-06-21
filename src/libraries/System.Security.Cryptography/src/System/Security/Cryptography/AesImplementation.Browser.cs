@@ -18,16 +18,13 @@ namespace System.Security.Cryptography
             int feedbackSize,
             bool encrypting)
         {
-            // todo: eerhardt validate cipherMode and paddingMode
+            ValidateCipherMode(cipherMode);
+            ValidatePaddingMode(paddingMode);
 
-            return new RijndaelManagedTransform(
-                key,
-                cipherMode,
-                iv,
-                blockSize,
-                feedbackSize,
-                PaddingMode.PKCS7, // todo: eerhardt verify
-                encrypting);
+            Debug.Assert(blockSize == RijndaelManagedTransform.BlockSizeBytes);
+            Debug.Assert(paddingSize == blockSize);
+
+            return new RijndaelManagedTransform(key, iv, encrypting);
         }
 
         private static ILiteSymmetricCipher CreateLiteCipher(
@@ -39,16 +36,24 @@ namespace System.Security.Cryptography
             int feedbackSize,
             bool encrypting)
         {
-            // todo: eerhardt validate cipherMode and paddingMode
+            ValidateCipherMode(cipherMode);
 
-            return new RijndaelManagedTransform(
-                key.ToArray(), // todo: eerhardt is this OK?
-                cipherMode,
-                iv,
-                blockSize,
-                feedbackSize,
-                PaddingMode.PKCS7, // todo: eerhardt verify
-                encrypting);
+            Debug.Assert(blockSize == RijndaelManagedTransform.BlockSizeBytes);
+            Debug.Assert(paddingSize == blockSize);
+
+            return new RijndaelManagedTransform(key, iv, encrypting);
+        }
+
+        private static void ValidateCipherMode(CipherMode cipherMode)
+        {
+            if (cipherMode != CipherMode.CBC)
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_CipherModeBrowser);
+        }
+
+        internal static void ValidatePaddingMode(PaddingMode paddingMode)
+        {
+            if (paddingMode != PaddingMode.PKCS7)
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_PaddingModeBrowser);
         }
     }
 }
