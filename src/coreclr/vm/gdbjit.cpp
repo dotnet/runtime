@@ -1301,8 +1301,8 @@ void FunctionMember::DumpLinkageName(char* ptr, int& offset)
     namespaceOrClassName.ConvertToUTF8(utf8namespaceOrClassName);
     methodName.ConvertToUTF8(utf8methodName);
 
-    const char *nspace = utf8namespaceOrClassName.GetUTF8NoConvert();
-    const char *mname = utf8methodName.GetUTF8NoConvert();
+    const char *nspace = utf8namespaceOrClassName.GetUTF8();
+    const char *mname = utf8methodName.GetUTF8();
 
     if (!nspace || !mname)
     {

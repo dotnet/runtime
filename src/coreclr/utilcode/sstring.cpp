@@ -778,6 +778,39 @@ void SString::ConvertToUnicode(const CIterator &i) const
 }
 
 //-----------------------------------------------------------------------------
+// Convert the internal representation for this String to Unicode.
+//-----------------------------------------------------------------------------
+void SString::ConvertToUTF8() const
+{
+    CONTRACT_VOID
+    {
+        POSTCONDITION(IsRepresentation(REPRESENTATION_UTF8));
+        if (IsRepresentation(REPRESENTATION_UTF8)) NOTHROW; else THROWS;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC_HOST_ONLY;
+    }
+    CONTRACT_END;
+
+    if (!IsRepresentation(REPRESENTATION_UTF8))
+    {
+        if (IsRepresentation(REPRESENTATION_ASCII))
+        {
+            // ASCII is a subset of UTF8, so we can just set the representation.
+            (const_cast<SString*>(this))->SetRepresentation(REPRESENTATION_UTF8);
+        }
+        else
+        {
+            StackSString s;
+            ConvertToUTF8(s);
+            PREFIX_ASSUME(!s.IsImmutable());
+            (const_cast<SString*>(this))->Set(s);
+        }
+    }
+
+    RETURN;
+}
+
+//-----------------------------------------------------------------------------
 // Set s to be a copy of this string's contents, but in the unicode format.
 //-----------------------------------------------------------------------------
 void SString::ConvertToUnicode(SString &s) const
@@ -1825,26 +1858,6 @@ const UTF8 *SString::GetUTF8(AbstractScratchBuffer &scratch, COUNT_T *pcbUtf8) c
 
     *pcbUtf8 = ConvertToUTF8((SString&)scratch);
     RETURN ((SString&)scratch).GetRawUTF8();
-}
-
-//-----------------------------------------------------------------------------
-// Get a const pointer to the internal buffer which must already be a UTF8 string.
-// This avoids the need to create a scratch buffer we know will never be used.
-//-----------------------------------------------------------------------------
-const UTF8 *SString::GetUTF8NoConvert() const
-{
-    CONTRACT(const UTF8 *)
-    {
-        INSTANCE_CHECK_NULL;
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACT_END;
-
-    if (IsRepresentation(REPRESENTATION_UTF8))
-        RETURN GetRawUTF8();
-
-    ThrowHR(E_INVALIDARG);
 }
 
 //-----------------------------------------------------------------------------

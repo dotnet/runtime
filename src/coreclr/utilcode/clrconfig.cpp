@@ -205,10 +205,10 @@ namespace
                 SString valueAsUTF8;
                 temp.ConvertToUTF8(valueAsUTF8);
 
-                CLRConfigNoCache nonCache = CLRConfigNoCache::Get(nameAsUTF8.GetUTF8NoConvert(), noPrefix);
+                CLRConfigNoCache nonCache = CLRConfigNoCache::Get(nameAsUTF8.GetUTF8(), noPrefix);
                 LPCSTR valueNoCache = nonCache.AsString();
 
-                _ASSERTE(SString::_stricmp(valueNoCache, valueAsUTF8.GetUTF8NoConvert()) == 0);
+                _ASSERTE(SString::_stricmp(valueNoCache, valueAsUTF8.GetUTF8()) == 0);
 #endif // defined(DEBUG) && !defined(SELF_NO_HOST)
             }
         }

@@ -109,7 +109,7 @@ void ILStubLinker::DumpIL_FormatToken(mdToken token, SString &strTokenFormatting
             SString typeNameUtf8;
             typeName.ConvertToUTF8(typeNameUtf8);
             SString strFieldName(SString::Utf8, pFD->GetName());
-            strTokenFormatting.Printf("%s::%s", typeNameUtf8.GetUTF8NoConvert(), strFieldName.GetUTF8NoConvert());
+            strTokenFormatting.Printf("%s::%s", typeNameUtf8.GetUTF8(), strFieldName.GetUTF8());
         }
         else if (TypeFromToken(token) == mdtModule)
         {
@@ -550,13 +550,13 @@ ILStubLinker::LogILInstruction(
     //
     if (pDumpILStubCode)
     {
-        pDumpILStubCode->AppendPrintf("%s /*(%2d)*/ %s %s %s\n", strLabel.GetUTF8NoConvert(), iCurStack, strOpcode.GetUTF8NoConvert(),
-            strArgument.GetUTF8NoConvert(), strTokenName.GetUTF8NoConvert());
+        pDumpILStubCode->AppendPrintf("%s /*(%2d)*/ %s %s %s\n", strLabel.GetUTF8(), iCurStack, strOpcode.GetUTF8(),
+            strArgument.GetUTF8(), strTokenName.GetUTF8());
     }
     else
     {
-        LOG((LF_STUBS, LL_INFO1000, "%s (%2d) %s %s %s\n", strLabel.GetUTF8NoConvert(), iCurStack, \
-            strOpcode.GetUTF8NoConvert(), strArgument.GetUTF8NoConvert(), strTokenName.GetUTF8NoConvert()));
+        LOG((LF_STUBS, LL_INFO1000, "%s (%2d) %s %s %s\n", strLabel.GetUTF8(), iCurStack, \
+            strOpcode.GetUTF8(), strArgument.GetUTF8(), strTokenName.GetUTF8()));
     }
 } // ILStubLinker::LogILInstruction
 

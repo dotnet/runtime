@@ -1010,7 +1010,7 @@ public:
 
         strILStubCode.AppendPrintf("// Code size\t%d (0x%04x)\n", cbCode, cbCode);
         strILStubCode.AppendPrintf(".maxstack %d \n", maxStack);
-        strILStubCode.AppendPrintf(".locals %s\n", strLocalSig.GetUTF8NoConvert());
+        strILStubCode.AppendPrintf(".locals %s\n", strLocalSig.GetUTF8());
 
         m_slIL.LogILStub(jitFlags, &strILStubCode);
 

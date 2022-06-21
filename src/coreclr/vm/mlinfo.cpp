@@ -916,7 +916,7 @@ CustomMarshalerHelper *EEMarshalingData::GetCustomMarshalerHelper(Assembly *pAss
 
         // Load the custom marshaler class.
         BOOL fNameIsAsmQualified = FALSE;
-        hndCustomMarshalerType = TypeName::GetTypeUsingCASearchRules(strCMMarshalerTypeName.GetUTF8NoConvert(), pAssembly, &fNameIsAsmQualified);
+        hndCustomMarshalerType = TypeName::GetTypeUsingCASearchRules(strCMMarshalerTypeName.GetUTF8(), pAssembly, &fNameIsAsmQualified);
 
         if (hndCustomMarshalerType.IsGenericTypeDefinition())
         {

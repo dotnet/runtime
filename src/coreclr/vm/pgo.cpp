@@ -871,7 +871,7 @@ HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, BYTE** pAlloca
                                                     TypeHandle th = TypeName::GetTypeManaged(typeString.GetUnicode(), NULL, FALSE, FALSE, FALSE, NULL, NULL);
                                                     if (!th.IsNull())
                                                     {
-                                                        MethodDesc* pMD = MemberLoader::FindMethodByName(th.GetMethodTable(), methodString.GetUTF8NoConvert());
+                                                        MethodDesc* pMD = MemberLoader::FindMethodByName(th.GetMethodTable(), methodString.GetUTF8());
                                                         newPtr = (INT_PTR)pMD;
                                                     }
                                                 }

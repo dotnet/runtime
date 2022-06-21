@@ -651,6 +651,25 @@ inline const WCHAR *SString::GetUnicode() const
     SS_RETURN GetRawUnicode();
 }
 
+// Get a const pointer to the internal buffer as a UTF8 string.
+inline const UTF8 *SString::GetUTF8() const
+{
+    SS_CONTRACT(const UTF8 *)
+    {
+        GC_NOTRIGGER;
+        PRECONDITION(CheckPointer(this));
+        SS_POSTCONDITION(CheckPointer(RETVAL));
+        if (IsRepresentation(REPRESENTATION_UTF8)) NOTHROW; else THROWS;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+    }
+    SS_CONTRACT_END;
+
+    ConvertToUTF8();
+
+    SS_RETURN GetRawUTF8();
+}
+
 // Normalize the string to unicode.  This will make many operations nonfailing.
 inline void SString::Normalize() const
 {

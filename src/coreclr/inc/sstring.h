@@ -553,8 +553,9 @@ private:
     const UTF8 *GetUTF8(AbstractScratchBuffer &scratch, COUNT_T *pcbUtf8) const;
     const ANSI *GetANSI(AbstractScratchBuffer &scratch) const;
 
-    // Used when the representation is known, throws if the representation doesn't match
-    const UTF8 *GetUTF8NoConvert() const;
+    // You can always get a UTF8 string.  This will force a conversion
+    // if necessary.
+    const UTF8 *GetUTF8() const;
 
     // Converts/copies into the given output string
     void ConvertToUnicode(SString &dest) const;
@@ -779,6 +780,7 @@ public:
     void ConvertASCIIToUnicode(SString &dest) const;
     void ConvertToUnicode() const;
     void ConvertToUnicode(const CIterator &i) const;
+    void ConvertToUTF8() const;
 
     const SString &GetCompatibleString(const SString &s, SString &scratch) const;
     const SString &GetCompatibleString(const SString &s, SString &scratch, const CIterator &i) const;

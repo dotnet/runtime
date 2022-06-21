@@ -75,8 +75,7 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* p
     if (pAssemblyNameParts->_pName == NULL)
         COMPlusThrow(kArgumentException, W("Format_StringZeroLength"));
 
-    StackSString ssName;
-    SString(SString::Literal, pAssemblyNameParts->_pName).ConvertToUTF8(ssName);
+    StackSString ssName(SString::Literal, pAssemblyNameParts->_pName);
 
     AssemblyMetaDataInternal asmInfo;
 
@@ -87,11 +86,11 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* p
 
     SmallStackSString ssLocale;
     if (pAssemblyNameParts->_pCultureName != NULL)
-        SString(SString::Literal, pAssemblyNameParts->_pCultureName).ConvertToUTF8(ssLocale);
-    asmInfo.szLocale = (pAssemblyNameParts->_pCultureName != NULL) ? ssLocale.GetUTF8NoConvert() : NULL;
+        ssLocale.SetLiteral(pAssemblyNameParts->_pCultureName);
+    asmInfo.szLocale = (pAssemblyNameParts->_pCultureName != NULL) ? ssLocale.GetUTF8() : NULL;
 
     // Initialize spec
-    spec.Init(ssName.GetUTF8NoConvert(), &asmInfo,
+    spec.Init(ssName.GetUTF8(), &asmInfo,
         pAssemblyNameParts->_pPublicKeyOrToken, pAssemblyNameParts->_cbPublicKeyOrToken, pAssemblyNameParts->_flags);
 
     if (pParentAssembly != NULL)

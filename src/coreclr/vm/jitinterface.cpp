@@ -12937,7 +12937,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
                                  (unsigned)(methodJitTimeStop.QuadPart - methodJitTimeStart.QuadPart), //cycle count
                                  methodInfo.ILCodeSize //il size
                                 );
-                OutputDebugStringUtf8(codeBase.GetUTF8NoConvert());
+                OutputDebugStringUtf8(codeBase.GetUTF8());
             }
 #endif // PERF_TRACK_METHOD_JITTIMES
 
