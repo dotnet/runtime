@@ -25,10 +25,10 @@ static UErrorCode GetLocaleInfoDecimalFormatSymbol(const char* locale,
     UErrorCode status = U_ZERO_ERROR;
     UNumberFormat* pFormat = unum_open(UNUM_DECIMAL, NULL, 0, locale, NULL, &status);
 
-    int32_t l =  unum_getSymbol(pFormat, symbol, value, valueLength, &status);
+    int32_t lengthResult =  unum_getSymbol(pFormat, symbol, value, valueLength, &status);
     if (symbolLength != NULL)
     {
-        *symbolLength = l;
+        *symbolLength = lengthResult;
     }
     unum_close(pFormat);
     return status;
@@ -293,13 +293,12 @@ int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
             break;
         case LocaleString_Digits:
             {
-                // Native digit can be more than one character (e.g. ccp-Cakm-BD locale which using surrogate pairs to represent the native digit).
+                // Native digit can be more than one 16-bit character (e.g. ccp-Cakm-BD locale which using surrogate pairs to represent the native digit).
                 // We'll separate the native digits in the returned buffer by the character '\uFFFF'.
-                int charIndex = 0;
-                int symbolLength = 0;
-
+                int32_t symbolLength = 0;
                 status = GetDigitSymbol(locale, status, UNUM_ZERO_DIGIT_SYMBOL, 0, value, valueLength, &symbolLength);
-                charIndex += symbolLength;
+
+                int32_t charIndex = symbolLength;
 
                 if (U_SUCCESS(status) && (uint32_t)charIndex < (uint32_t)valueLength)
                 {
