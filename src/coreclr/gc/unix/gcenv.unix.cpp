@@ -910,12 +910,16 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         // this method to determine cache size.
         //
         size_t level;
+        char path_to_size_file[] =  "/sys/devices/system/cpu/cpu0/cache/index-/size";
+        char path_to_level_file[] =  "/sys/devices/system/cpu/cpu0/cache/index-/level";
+        int index = 40;
         for (int i = 0; i < 5; i++)
         {
-            string path_to_index = "/sys/devices/system/cpu/cpu0/cache/index" + to_string(i);
-            if (ReadMemoryValueFromFile((path_to_index + "/size").c_str(), &size))
+            path_to_size_file[index] = (char)(48 + i);
+            if (ReadMemoryValueFromFile(path_to_size_file, &size))
             {
-                if (ReadMemoryValueFromFile((path_to_index + "/level").c_str(), &level))
+                path_to_level_file[index] = (char)(48 + i);
+                if (ReadMemoryValueFromFile(path_to_level_file, &level))
                 {
                     CHECK_CACHE_SIZE(level)
                 }
