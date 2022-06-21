@@ -4,16 +4,16 @@
 namespace Microsoft.Extensions.Logging.Console
 {
     /// <summary>
-    /// Determines the console logger behavior when buffer becomes full.
+    /// Determines the console logger behavior when the queue becomes full.
     /// </summary>
     public enum ConsoleLoggerBufferFullMode
     {
         /// <summary>
-        /// Blocks the logging threads once the buffer limit is reached.
+        /// Blocks the logging threads once the queue limit is reached.
         /// </summary>
         Wait,
         /// <summary>
-        /// Drops new log messages when the buffer is full
+        /// Drops new log messages when the queue is full.
         /// </summary>
         DropWrite
     }
