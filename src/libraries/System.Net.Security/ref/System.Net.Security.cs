@@ -39,6 +39,7 @@ namespace System.Net.Security
     {
         public NegotiateAuthentication(System.Net.Security.NegotiateAuthenticationClientOptions clientOptions) { }
         public NegotiateAuthentication(System.Net.Security.NegotiateAuthenticationServerOptions serverOptions) { }
+        public System.Security.Principal.TokenImpersonationLevel ImpersonationLevel { get { throw null; } }
         public bool IsAuthenticated { get { throw null; } }
         public bool IsEncrypted { get { throw null; } }
         public bool IsMutuallyAuthenticated { get { throw null; } }
@@ -58,10 +59,12 @@ namespace System.Net.Security
     public partial class NegotiateAuthenticationClientOptions
     {
         public NegotiateAuthenticationClientOptions() { }
+        public System.Security.Principal.TokenImpersonationLevel AllowedImpersonationLevel { get { throw null; } set { } }
         public System.Security.Authentication.ExtendedProtection.ChannelBinding? Binding { get { throw null; } set { } }
         public System.Net.NetworkCredential Credential { get { throw null; } set { } }
         public string Package { get { throw null; } set { } }
         public System.Net.Security.ProtectionLevel RequiredProtectionLevel { get { throw null; } set { } }
+        public bool RequireMutualAuthentication { get { throw null; } set { } }
         public string? TargetName { get { throw null; } set { } }
     }
     public partial class NegotiateAuthenticationServerOptions
@@ -70,6 +73,8 @@ namespace System.Net.Security
         public System.Security.Authentication.ExtendedProtection.ChannelBinding? Binding { get { throw null; } set { } }
         public System.Net.NetworkCredential Credential { get { throw null; } set { } }
         public string Package { get { throw null; } set { } }
+        public System.Security.Authentication.ExtendedProtection.ExtendedProtectionPolicy? Policy { get { throw null; } set { } }
+        public System.Security.Principal.TokenImpersonationLevel RequiredImpersonationLevel { get { throw null; } set { } }
         public System.Net.Security.ProtectionLevel RequiredProtectionLevel { get { throw null; } set { } }
     }
     public enum NegotiateAuthenticationStatusCode
@@ -87,6 +92,9 @@ namespace System.Net.Security
         UnknownCredentials = 10,
         QopNotSupported = 11,
         OutOfSequence = 12,
+        SecurityQosFailed = 13,
+        TargetUnknown = 14,
+        ImpersonationValidationFailed = 15,
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
     public partial class NegotiateStream : System.Net.Security.AuthenticatedStream

@@ -5,6 +5,7 @@ using System.Buffers;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Security.Principal;
+using System.Security.Authentication.ExtendedProtection;
 
 namespace System.Net.Security
 {
@@ -18,6 +19,10 @@ namespace System.Net.Security
         private readonly string _requestedPackage;
         private readonly bool _isServer;
         private IIdentity? _remoteIdentity;
+        private TokenImpersonationLevel _requiredImpersonationLevel;
+        private ProtectionLevel _requiredProtectionLevel;
+        private ExtendedProtectionPolicy? _extendedProtectionPolicy;
+        private bool _isSecureConnection;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="NegotiateAuthentication"/>
@@ -28,15 +33,28 @@ namespace System.Net.Security
         {
             ArgumentNullException.ThrowIfNull(clientOptions);
 
-            ContextFlagsPal contextFlags = clientOptions.RequiredProtectionLevel switch
+            ContextFlagsPal contextFlags = ContextFlagsPal.Connection;
+
+            contextFlags |= clientOptions.RequiredProtectionLevel switch
             {
                 ProtectionLevel.Sign => ContextFlagsPal.InitIntegrity,
                 ProtectionLevel.EncryptAndSign => ContextFlagsPal.InitIntegrity | ContextFlagsPal.Confidentiality,
                 _ => 0
-            } | ContextFlagsPal.Connection;
+            };
+
+            contextFlags |= clientOptions.RequireMutualAuthentication ? ContextFlagsPal.MutualAuth : 0;
+
+            contextFlags |= clientOptions.AllowedImpersonationLevel switch
+            {
+                TokenImpersonationLevel.Identification => ContextFlagsPal.InitIdentify,
+                TokenImpersonationLevel.Delegation => ContextFlagsPal.Delegate,
+                _ => 0
+            };
 
             _isServer = false;
             _requestedPackage = clientOptions.Package;
+            _requiredImpersonationLevel = TokenImpersonationLevel.None;
+            _requiredProtectionLevel = clientOptions.RequiredProtectionLevel;
             try
             {
                 _ntAuthentication = new NTAuthentication(
@@ -74,8 +92,26 @@ namespace System.Net.Security
                 _ => 0
             } | ContextFlagsPal.Connection;
 
+            if (serverOptions.Policy is not null)
+            {
+                if (serverOptions.Policy.PolicyEnforcement == PolicyEnforcement.WhenSupported)
+                {
+                    contextFlags |= ContextFlagsPal.AllowMissingBindings;
+                }
+
+                if (serverOptions.Policy.PolicyEnforcement != PolicyEnforcement.Never &&
+                    serverOptions.Policy.ProtectionScenario == ProtectionScenario.TrustedProxy)
+                {
+                    contextFlags |= ContextFlagsPal.ProxyBindings;
+                }
+            }
+
             _isServer = true;
             _requestedPackage = serverOptions.Package;
+            _requiredImpersonationLevel = serverOptions.RequiredImpersonationLevel;
+            _requiredProtectionLevel = serverOptions.RequiredProtectionLevel;
+            _extendedProtectionPolicy = serverOptions.Policy;
+            _isSecureConnection = serverOptions.Binding != null;
             try
             {
                 _ntAuthentication = new NTAuthentication(
@@ -216,6 +252,22 @@ namespace System.Net.Security
         }
 
         /// <summary>
+        /// One of the <see cref="TokenImpersonationLevel" /> values, indicating the negotiated
+        /// level of impresonation.
+        /// </summary>
+        public System.Security.Principal.TokenImpersonationLevel ImpersonationLevel
+        {
+            get
+            {
+                // We should suppress the delegate flag in NTLM case.
+                return
+                    _ntAuthentication!.IsDelegationFlag && _ntAuthentication.ProtocolName != NegotiationInfoClass.NTLM ? TokenImpersonationLevel.Delegation :
+                    _ntAuthentication.IsIdentifyFlag ? TokenImpersonationLevel.Identification :
+                    TokenImpersonationLevel.Impersonation;
+            }
+        }
+
+        /// <summary>
         /// Evaluates an authentication token sent by the other party and returns a token in response.
         /// </summary>
         /// <param name="incomingBlob">Incoming authentication token, or empty value when initiating the authentication exchange.</param>
@@ -285,6 +337,23 @@ namespace System.Net.Security
 
                 _ => NegotiateAuthenticationStatusCode.GenericFailure,
             };
+
+            // Additional policy validation
+            if (statusCode == NegotiateAuthenticationStatusCode.Completed)
+            {
+                if (IsServer && _extendedProtectionPolicy != null && !CheckSpn())
+                {
+                    statusCode = NegotiateAuthenticationStatusCode.TargetUnknown;
+                }
+                else if (_requiredImpersonationLevel != TokenImpersonationLevel.None && ImpersonationLevel < _requiredImpersonationLevel)
+                {
+                    statusCode = NegotiateAuthenticationStatusCode.ImpersonationValidationFailed;
+                }
+                else if (_requiredProtectionLevel != ProtectionLevel.None && ProtectionLevel < _requiredProtectionLevel)
+                {
+                    statusCode = NegotiateAuthenticationStatusCode.SecurityQosFailed;
+                }
+            }
 
             return blob;
         }
@@ -405,6 +474,82 @@ namespace System.Net.Security
             }
 
             return _ntAuthentication.UnwrapInPlace(input, out unwrappedOffset, out unwrappedLength, out wasEncrypted);
+        }
+
+        private bool CheckSpn()
+        {
+            Debug.Assert(_ntAuthentication != null);
+            Debug.Assert(_extendedProtectionPolicy != null);
+
+            if (_ntAuthentication.IsKerberos)
+            {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, SR.net_log_listener_no_spn_kerberos);
+                return true;
+            }
+
+            if (_extendedProtectionPolicy.PolicyEnforcement == PolicyEnforcement.Never)
+            {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, SR.net_log_listener_no_spn_disabled);
+                return true;
+            }
+
+            if (_isSecureConnection &&  _extendedProtectionPolicy.ProtectionScenario == ProtectionScenario.TransportSelected)
+            {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, SR.net_log_listener_no_spn_cbt);
+                return true;
+            }
+
+            if (_extendedProtectionPolicy.CustomServiceNames == null)
+            {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, SR.net_log_listener_no_spns);
+                return true;
+            }
+
+            string? clientSpn = _ntAuthentication.ClientSpecifiedSpn;
+
+            if (string.IsNullOrEmpty(clientSpn))
+            {
+                if (_extendedProtectionPolicy.PolicyEnforcement == PolicyEnforcement.WhenSupported)
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, SR.net_log_listener_no_spn_whensupported);
+                    return true;
+                }
+                else
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, SR.net_log_listener_spn_failed_always);
+                    return false;
+                }
+            }
+
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, SR.net_log_listener_spn, clientSpn);
+            bool found = _extendedProtectionPolicy.CustomServiceNames.Contains(clientSpn);
+
+            if (NetEventSource.Log.IsEnabled())
+            {
+                if (found)
+                {
+                    NetEventSource.Info(this, SR.net_log_listener_spn_passed);
+                }
+                else
+                {
+                    NetEventSource.Info(this, SR.net_log_listener_spn_failed);
+
+                    if (_extendedProtectionPolicy.CustomServiceNames.Count == 0)
+                    {
+                        NetEventSource.Info(this, SR.net_log_listener_spn_failed_empty);
+                    }
+                    else
+                    {
+                        NetEventSource.Info(this, SR.net_log_listener_spn_failed_dump);
+                        foreach (string serviceName in _extendedProtectionPolicy.CustomServiceNames)
+                        {
+                            NetEventSource.Info(this, "\t" + serviceName);
+                        }
+                    }
+                }
+            }
+
+            return found;
         }
     }
 }
