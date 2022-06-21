@@ -90,8 +90,6 @@ namespace System
             return ExpandEnvironmentVariablesCore(name);
         }
 
-        private static string[]? s_commandLineArgs;
-
         public static string GetFolderPath(SpecialFolder folder) => GetFolderPath(folder, SpecialFolderOption.None);
 
         public static string GetFolderPath(SpecialFolder folder, SpecialFolderOption option)

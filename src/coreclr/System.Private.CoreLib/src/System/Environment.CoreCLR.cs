@@ -61,6 +61,8 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void FailFast(string? message, Exception? exception, string? errorMessage);
 
+        private static string[]? s_commandLineArgs;
+
         public static string[] GetCommandLineArgs()
         {
             // There are multiple entry points to a hosted app. The host could
