@@ -66,37 +66,31 @@ namespace System
         {
             MonoStackFrame[]? stackFrames;
 
-            if (_traceIPs != null)
+            // Make sure foreignExceptionFrames does not change at this point.
+            // Otherwise, the Array.Copy into combinedStackFrames can fail due to size differences
+            //
+            // See https://github.com/dotnet/runtime/issues/70081
+            lock(frameLock)
             {
-                stackFrames = Diagnostics.StackTrace.get_trace(this, 0, true);
-                if (stackFrames.Length > 0)
-                    stackFrames[stackFrames.Length - 1].isLastFrameFromForeignException = true;
-
-                if (foreignExceptionsFrames != null)
+                if (_traceIPs != null)
                 {
-                    MonoStackFrame[] combinedStackFrames;
-                    int fefLength;
+                    stackFrames = Diagnostics.StackTrace.get_trace(this, 0, true);
+                    if (stackFrames.Length > 0)
+                        stackFrames[stackFrames.Length - 1].isLastFrameFromForeignException = true;
 
-                    // Make sure foreignExceptionFrames does not change at this point.
-                    // Otherwise, the Array.Copy into combinedStackFrames can fail due to size differences
-                    //
-                    // See https://github.com/dotnet/runtime/issues/70081
-                    lock(frameLock)
+                    if (foreignExceptionsFrames != null)
                     {
-                        fefLength = foreignExceptionsFrames.Length;
+                        var combinedStackFrames = new MonoStackFrame[stackFrames.Length + foreignExceptionsFrames.Length];
+                        Array.Copy(foreignExceptionsFrames, 0, combinedStackFrames, 0, foreignExceptionsFrames.Length);
+                        Array.Copy(stackFrames, 0, combinedStackFrames, foreignExceptionsFrames.Length, stackFrames.Length);
 
-                        combinedStackFrames = new MonoStackFrame[stackFrames.Length + fefLength];
-                        Array.Copy(foreignExceptionsFrames, 0, combinedStackFrames, 0, fefLength);
+                        stackFrames = combinedStackFrames;
                     }
-
-                    Array.Copy(stackFrames, 0, combinedStackFrames, fefLength, stackFrames.Length);
-
-                    stackFrames = combinedStackFrames;
                 }
-            }
-            else
-            {
-                stackFrames = foreignExceptionsFrames;
+                else
+                {
+                    stackFrames = foreignExceptionsFrames;
+                }
             }
 
             return new DispatchState(stackFrames);
