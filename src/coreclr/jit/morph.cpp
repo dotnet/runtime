@@ -937,11 +937,11 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                         }
 
                         // Invariant here is that all nodes that were not
-                        // already evaluated into temps and that throw
-                        // GTF_EXCEPT can only be throwing the same single
-                        // exception as the previous tree, so all of them
-                        // interfere in the same way with the current arg and
-                        // must be evaluated early.
+                        // already evaluated into temps and that throw can only
+                        // be throwing the same single exception as the
+                        // previous tree, so all of them interfere in the same
+                        // way with the current arg and must be evaluated
+                        // early.
                         if ((prevArg.GetEarlyNode() != nullptr) &&
                             ((prevArg.GetEarlyNode()->gtFlags & GTF_EXCEPT) != 0))
                         {
