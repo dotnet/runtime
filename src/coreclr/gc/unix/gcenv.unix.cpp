@@ -913,16 +913,17 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         char path_to_size_file[] =  "/sys/devices/system/cpu/cpu0/cache/index-/size";
         char path_to_level_file[] =  "/sys/devices/system/cpu/cpu0/cache/index-/level";
         int index = 40;
+        assert(path_to_size_file[index] == '-');
+        assert(path_to_level_file[index] == '-');
+
         for (int i = 0; i < 5; i++)
         {
-            assert(path_to_size_file[index] == '-');
             path_to_size_file[index] = (char)(48 + i);
 
             if (ReadMemoryValueFromFile(path_to_size_file, &size))
             {
-                assert(path_to_level_file[index] == '-');
                 path_to_level_file[index] = (char)(48 + i);
-                
+
                 if (ReadMemoryValueFromFile(path_to_level_file, &level))
                 {
                     CHECK_CACHE_SIZE(level)
