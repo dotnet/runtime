@@ -505,6 +505,13 @@ extern "C" UINT64 __stdcall COMToCLRWorker(Thread *pThread, ComMethodFrame* pFra
         }
     }
 
+    if (pThread->PreemptiveGCDisabled())
+    {
+        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(
+            COR_E_FAILFAST,
+            W("Thread invoking a COM method from non-preemptive GC state. The transition to preemptive mode was missed."));
+    }
+
     // Attempt to switch GC modes.  Note that this is performed manually just like in the x86 stub because
     // we have additional checks for shutdown races, MDAs, and thread abort that are performed only when
     // g_TrapReturningThreads is set.
