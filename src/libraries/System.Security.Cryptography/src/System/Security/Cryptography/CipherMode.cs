@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
@@ -14,9 +15,14 @@ namespace System.Security.Cryptography
     public enum CipherMode
     {
         CBC = 1,
+        [UnsupportedOSPlatform("browser")]
         ECB = 2,
-        [EditorBrowsable(EditorBrowsableState.Never)] OFB = 3,
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [UnsupportedOSPlatformAttribute("browser")]
+        OFB = 3,
+        [UnsupportedOSPlatform("browser")]
         CFB = 4,
+        [UnsupportedOSPlatform("browser")]
         CTS = 5
     }
 }

@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
@@ -262,6 +263,7 @@ namespace System.Security.Cryptography
         ///   is not a whole number of blocks.
         ///   </para>
         /// </exception>
+        [UnsupportedOSPlatform("browser")]
         public int GetCiphertextLengthEcb(int plaintextLength, PaddingMode paddingMode) =>
             GetCiphertextLengthBlockAligned(plaintextLength, paddingMode);
 
@@ -322,6 +324,7 @@ namespace System.Security.Cryptography
             int blockSizeBytes = blockSizeBits >> 3;
             int wholeBlocks = Math.DivRem(plaintextLength, blockSizeBytes, out int remainder) * blockSizeBytes;
 
+#pragma warning disable CA1416 // All PaddingModes except PKCS7 are unsupported on Browser. Callers will get a warning.
             switch (paddingMode)
             {
                 case PaddingMode.None when remainder != 0:
@@ -342,6 +345,7 @@ namespace System.Security.Cryptography
                 default:
                     throw new ArgumentOutOfRangeException(nameof(paddingMode), SR.Cryptography_InvalidPaddingMode);
             }
+#pragma warning restore CA1416
         }
 
         /// <summary>
@@ -391,6 +395,7 @@ namespace System.Security.Cryptography
         /// <paramref name="feedbackSizeInBits" /> accepts any value that is a valid feedback size, regardless if the algorithm
         /// supports the specified feedback size.
         /// </remarks>
+        [UnsupportedOSPlatform("browser")]
         public int GetCiphertextLengthCfb(int plaintextLength, PaddingMode paddingMode = PaddingMode.None, int feedbackSizeInBits = 8)
         {
             if (plaintextLength < 0)
@@ -445,6 +450,7 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryDecryptEcbCore" />.
         /// </remarks>
+        [UnsupportedOSPlatform("browser")]
         public byte[] DecryptEcb(byte[] ciphertext, PaddingMode paddingMode)
         {
             ArgumentNullException.ThrowIfNull(ciphertext);
@@ -468,6 +474,7 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryDecryptEcbCore" />.
         /// </remarks>
+        [UnsupportedOSPlatform("browser")]
         public byte[] DecryptEcb(ReadOnlySpan<byte> ciphertext, PaddingMode paddingMode)
         {
             CheckPaddingMode(paddingMode);
@@ -510,6 +517,7 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryDecryptEcbCore" />.
         /// </remarks>
+        [UnsupportedOSPlatform("browser")]
         public int DecryptEcb(ReadOnlySpan<byte> ciphertext, Span<byte> destination, PaddingMode paddingMode)
         {
             CheckPaddingMode(paddingMode);
@@ -539,6 +547,7 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryDecryptEcbCore" />.
         /// </remarks>
+        [UnsupportedOSPlatform("browser")]
         public bool TryDecryptEcb(ReadOnlySpan<byte> ciphertext, Span<byte> destination, PaddingMode paddingMode, out int bytesWritten)
         {
             CheckPaddingMode(paddingMode);
@@ -563,6 +572,7 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryEncryptEcbCore" />.
         /// </remarks>
+        [UnsupportedOSPlatform("browser")]
         public byte[] EncryptEcb(byte[] plaintext, PaddingMode paddingMode)
         {
             ArgumentNullException.ThrowIfNull(plaintext);
@@ -586,6 +596,7 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryEncryptEcbCore" />.
         /// </remarks>
+        [UnsupportedOSPlatform("browser")]
         public byte[] EncryptEcb(ReadOnlySpan<byte> plaintext, PaddingMode paddingMode)
         {
             CheckPaddingMode(paddingMode);
@@ -628,6 +639,7 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryEncryptEcbCore" />.
         /// </remarks>
+        [UnsupportedOSPlatform("browser")]
         public int EncryptEcb(ReadOnlySpan<byte> plaintext, Span<byte> destination, PaddingMode paddingMode)
         {
             CheckPaddingMode(paddingMode);
@@ -657,6 +669,7 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryEncryptEcbCore" />.
         /// </remarks>
+        [UnsupportedOSPlatform("browser")]
         public bool TryEncryptEcb(ReadOnlySpan<byte> plaintext, Span<byte> destination, PaddingMode paddingMode, out int bytesWritten)
         {
             CheckPaddingMode(paddingMode);
@@ -1013,6 +1026,7 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryDecryptCfbCore" />.
         /// </remarks>
+        [UnsupportedOSPlatform("browser")]
         public byte[] DecryptCfb(byte[] ciphertext, byte[] iv, PaddingMode paddingMode = PaddingMode.None, int feedbackSizeInBits = 8)
         {
             ArgumentNullException.ThrowIfNull(ciphertext);
@@ -1063,6 +1077,7 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryDecryptCfbCore" />.
         /// </remarks>
+        [UnsupportedOSPlatform("browser")]
         public byte[] DecryptCfb(
             ReadOnlySpan<byte> ciphertext,
             ReadOnlySpan<byte> iv,
@@ -1139,6 +1154,7 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryDecryptCfbCore" />.
         /// </remarks>
+        [UnsupportedOSPlatform("browser")]
         public int DecryptCfb(
             ReadOnlySpan<byte> ciphertext,
             ReadOnlySpan<byte> iv,
@@ -1198,6 +1214,7 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryDecryptCfbCore" />.
         /// </remarks>
+        [UnsupportedOSPlatform("browser")]
         public bool TryDecryptCfb(
             ReadOnlySpan<byte> ciphertext,
             ReadOnlySpan<byte> iv,
@@ -1253,6 +1270,7 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryEncryptCfbCore" />.
         /// </remarks>
+        [UnsupportedOSPlatform("browser")]
         public byte[] EncryptCfb(
             byte[] plaintext,
             byte[] iv,
@@ -1303,6 +1321,7 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryEncryptCfbCore" />.
         /// </remarks>
+        [UnsupportedOSPlatform("browser")]
         public byte[] EncryptCfb(
             ReadOnlySpan<byte> plaintext,
             ReadOnlySpan<byte> iv,
@@ -1371,6 +1390,7 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryEncryptCfbCore" />.
         /// </remarks>
+        [UnsupportedOSPlatform("browser")]
         public int EncryptCfb(
             ReadOnlySpan<byte> plaintext,
             ReadOnlySpan<byte> iv,
@@ -1430,6 +1450,7 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryEncryptCfbCore" />.
         /// </remarks>
+        [UnsupportedOSPlatform("browser")]
         public bool TryEncryptCfb(
             ReadOnlySpan<byte> plaintext,
             ReadOnlySpan<byte> iv,
@@ -1465,6 +1486,7 @@ namespace System.Security.Cryptography
         ///      and report that via <paramref name="bytesWritten"/>.
         ///   </para>
         /// </remarks>
+        [UnsupportedOSPlatform("browser")]
         protected virtual bool TryEncryptEcbCore(
             ReadOnlySpan<byte> plaintext,
             Span<byte> destination,
@@ -1489,6 +1511,7 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   Derived classes must override this and provide an implementation.
         /// </remarks>
+        [UnsupportedOSPlatform("browser")]
         protected virtual bool TryDecryptEcbCore(
             ReadOnlySpan<byte> ciphertext,
             Span<byte> destination,
@@ -1573,6 +1596,7 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   Derived classes must override this and provide an implementation.
         /// </remarks>
+        [UnsupportedOSPlatform("browser")]
         protected virtual bool TryDecryptCfbCore(
             ReadOnlySpan<byte> ciphertext,
             ReadOnlySpan<byte> iv,
@@ -1606,6 +1630,7 @@ namespace System.Security.Cryptography
         ///      bytes to <paramref name="destination"/> and report that via <paramref name="bytesWritten"/>.
         ///   </para>
         /// </remarks>
+        [UnsupportedOSPlatform("browser")]
         protected virtual bool TryEncryptCfbCore(
             ReadOnlySpan<byte> plaintext,
             ReadOnlySpan<byte> iv,

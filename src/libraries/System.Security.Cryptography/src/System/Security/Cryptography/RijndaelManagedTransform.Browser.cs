@@ -91,15 +91,9 @@ namespace System.Security.Cryptography
 
             switch (m_cipherMode)
             {
-                case CipherMode.ECB:
                 case CipherMode.CBC:
                     m_inputBlockSize = m_blockSizeBytes;
                     m_outputBlockSize = m_blockSizeBytes;
-                    break;
-
-                case CipherMode.CFB:
-                    m_inputBlockSize = feedbackSize / 8;
-                    m_outputBlockSize = feedbackSize / 8;
                     break;
 
                 default:
