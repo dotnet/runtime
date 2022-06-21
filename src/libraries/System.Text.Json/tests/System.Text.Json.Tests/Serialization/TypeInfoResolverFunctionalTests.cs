@@ -1,6 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using Xunit;
 
@@ -496,6 +500,125 @@ namespace System.Text.Json.Serialization.Tests
             deserialized = JsonSerializer.Deserialize<TestClass>(json, options);
             Assert.Equal(originalObj.TestField, deserialized.TestField);
             Assert.Equal(originalObj.TestProperty, deserialized.TestProperty);
+        }
+
+        [Fact]
+        public static void DataContractResolverScenario()
+        {
+            var options = new JsonSerializerOptions { TypeInfoResolver = new DataContractResolver() };
+
+            var value = new DataContractResolver.TestClass { String = "str", Boolean = true, Int = 42, Ignored = "ignored" };
+            string json = JsonSerializer.Serialize(value, options);
+            Assert.Equal("""{"intValue":42,"boolValue":true,"stringValue":"str"}""", json);
+
+            DataContractResolver.TestClass result = JsonSerializer.Deserialize<DataContractResolver.TestClass>(json, options);
+            Assert.Equal("str", result.String);
+            Assert.Equal(42, result.Int);
+            Assert.True(result.Boolean);
+        }
+
+        internal class DataContractResolver : DefaultJsonTypeInfoResolver
+        {
+            [DataContract]
+            public class TestClass
+            {
+                [JsonIgnore] // ignored by the custom resolver
+                [DataMember(Name = "stringValue", Order = 2)]
+                public string String { get; set; }
+
+                [JsonPropertyName("BOOL_VALUE")] // ignored by the custom resolver
+                [DataMember(Name = "boolValue", Order = 1)]
+                public bool Boolean { get; set; }
+
+                [JsonPropertyOrder(int.MaxValue)] // ignored by the custom resolver
+                [DataMember(Name = "intValue", Order = 0)]
+                public int Int { get; set; }
+
+                [IgnoreDataMember]
+                public string Ignored { get; set; }
+            }
+
+            public override JsonTypeInfo GetTypeInfo(Type type, JsonSerializerOptions options)
+            {
+                JsonTypeInfo jsonTypeInfo = base.GetTypeInfo(type, options);
+
+                if (jsonTypeInfo.Kind == JsonTypeInfoKind.Object &&
+                    type.GetCustomAttribute<DataContractAttribute>() is not null)
+                {
+                    jsonTypeInfo.Properties.Clear();
+
+                    IEnumerable<(PropertyInfo propInfo, DataMemberAttribute attr)> properties = type
+                        .GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                        .Where(propInfo => propInfo.GetCustomAttribute<IgnoreDataMemberAttribute>() is null)
+                        .Select(propInfo => (propInfo, attr: propInfo.GetCustomAttribute<DataMemberAttribute>()))
+                        .OrderBy(entry => entry.attr?.Order ?? 0);
+
+                    foreach ((PropertyInfo propertyInfo, DataMemberAttribute? attr) in properties)
+                    {
+                        JsonPropertyInfo jsonPropertyInfo = jsonTypeInfo.CreateJsonPropertyInfo(propertyInfo.PropertyType, attr?.Name ?? propertyInfo.Name);
+                        jsonPropertyInfo.Get =
+                            propertyInfo.CanRead
+                            ? propertyInfo.GetValue
+                            : null;
+
+                        jsonPropertyInfo.Set = propertyInfo.CanWrite
+                            ? propertyInfo.SetValue
+                            : null;
+
+                        jsonTypeInfo.Properties.Add(jsonPropertyInfo);
+                    }
+                }
+
+                return jsonTypeInfo;
+            }
+        }
+
+        [Fact]
+        public static void SpecifiedContractResolverScenario()
+        {
+            var options = new JsonSerializerOptions { TypeInfoResolver = new SpecifiedContractResolver() };
+
+            var value = new SpecifiedContractResolver.TestClass { String = "str", Int = 42 };
+            string json = JsonSerializer.Serialize(value, options);
+            Assert.Equal("""{}""", json);
+
+            value.IntSpecified = true;
+            json = JsonSerializer.Serialize(value, options);
+            Assert.Equal("""{"Int":42}""", json);
+
+            value.StringSpecified = true;
+            json = JsonSerializer.Serialize(value, options);
+            Assert.Equal("""{"String":"str","Int":42}""", json);
+        }
+
+        internal class SpecifiedContractResolver : DefaultJsonTypeInfoResolver
+        {
+            public class TestClass
+            {
+                public string String { get; set; }
+                [JsonIgnore]
+                public bool StringSpecified { get; set; }
+
+                public int Int { get; set; }
+                [JsonIgnore]
+                public bool IntSpecified { get; set; }
+            }
+            public override JsonTypeInfo GetTypeInfo(Type type, JsonSerializerOptions options)
+            {
+                JsonTypeInfo jsonTypeInfo = base.GetTypeInfo(type, options);
+
+                foreach (JsonPropertyInfo property in jsonTypeInfo.Properties)
+                {
+                    PropertyInfo? specifiedProperty = type.GetProperty(property.Name + "Specified", BindingFlags.Instance | BindingFlags.Public);
+
+                    if (specifiedProperty != null && specifiedProperty.CanRead && specifiedProperty.PropertyType == typeof(bool))
+                    {
+                        property.ShouldSerialize = (obj, _) => (bool)specifiedProperty.GetValue(obj);
+                    }
+                }
+
+                return jsonTypeInfo;
+            }
         }
 
         internal class TestClass
