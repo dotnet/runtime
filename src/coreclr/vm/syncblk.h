@@ -382,13 +382,21 @@ private:
         LockState CompareExchange(LockState toState, LockState fromState)
         {
             LIMITED_METHOD_CONTRACT;
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+            return (UINT32)FastInterlockedCompareExchange((LONG *)&m_state, (LONG)toState, (LONG)fromState);
+#else
             return (UINT32)InterlockedCompareExchange((LONG *)&m_state, (LONG)toState, (LONG)fromState);
+#endif
         }
 
         LockState CompareExchangeAcquire(LockState toState, LockState fromState)
         {
             LIMITED_METHOD_CONTRACT;
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+            return (UINT32)FastInterlockedCompareExchangeAcquire((LONG *)&m_state, (LONG)toState, (LONG)fromState);
+#else
             return (UINT32)InterlockedCompareExchangeAcquire((LONG *)&m_state, (LONG)toState, (LONG)fromState);
+#endif
         }
 
     public:
