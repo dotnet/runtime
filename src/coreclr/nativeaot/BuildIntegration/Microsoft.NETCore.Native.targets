@@ -272,6 +272,15 @@ The .NET Foundation licenses this file to you under the MIT license.
     <!-- Trick ILLinker into not actually running -->
     <MakeDir Condition="$([MSBuild]::VersionLessThan('$(NETCoreSdkVersion)', '7.0.0'))" Directories="$(IntermediateLinkDir)" />
     <Touch Condition="$([MSBuild]::VersionLessThan('$(NETCoreSdkVersion)', '7.0.0'))" Files="$(_LinkSemaphore)" AlwaysCreate="true" />
+
+    <!-- 
+      NativeAOT apps do not require deps.json and runtimeconfig.json files and should only be activated during publish step
+      Setting the properties in a target that will only be invoked during publish and not on build
+    -->
+    <PropertyGroup>
+        <GenerateRuntimeConfigurationFiles>false</GenerateRuntimeConfigurationFiles>
+        <GenerateDependencyFile>false</GenerateDependencyFile>
+    </PropertyGroup>
   </Target>
 
   <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Windows.props" Condition="'$(TargetOS)' == 'windows'" />
