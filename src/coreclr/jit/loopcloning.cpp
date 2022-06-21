@@ -1724,6 +1724,25 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
         return false;
     }
 
+    // Reject cloning if this is a mid-entry loop and the entry has non-loop predecessors other than its head.
+    // This loop may be part of a larger looping construct that we didn't recognize.
+    //
+    // We should really fix this in optCanonicalizeLoop.
+    //
+    if (!loop.lpIsTopEntry())
+    {
+        for (BasicBlock* const entryPred : loop.lpEntry->PredBlocks())
+        {
+            if ((entryPred != loop.lpHead) && !loop.lpContains(entryPred))
+            {
+                JITDUMP("Loop cloning: rejecting loop " FMT_LP
+                        ". Is not top entry, and entry has multiple non-loop preds.\n",
+                        loopInd);
+                return false;
+            }
+        }
+    }
+
     // We've previously made a decision whether to have separate return epilogs, or branch to one.
     // There's a GCInfo limitation in the x86 case, so that there can be no more than SET_EPILOGCNT_MAX separate
     // epilogs.  Other architectures have a limit of 4 here for "historical reasons", but this should be revisited

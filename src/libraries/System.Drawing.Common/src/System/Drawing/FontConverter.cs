@@ -300,25 +300,25 @@ namespace System.Drawing
 
             if ((value = propertyValues["Bold"]) != null)
             {
-                if ((bool)value == true)
+                if ((bool)value)
                     style |= FontStyle.Bold;
             }
 
             if ((value = propertyValues["Italic"]) != null)
             {
-                if ((bool)value == true)
+                if ((bool)value)
                     style |= FontStyle.Italic;
             }
 
             if ((value = propertyValues["Strikeout"]) != null)
             {
-                if ((bool)value == true)
+                if ((bool)value)
                     style |= FontStyle.Strikeout;
             }
 
             if ((value = propertyValues["Underline"]) != null)
             {
-                if ((bool)value == true)
+                if ((bool)value)
                     style |= FontStyle.Underline;
             }
 

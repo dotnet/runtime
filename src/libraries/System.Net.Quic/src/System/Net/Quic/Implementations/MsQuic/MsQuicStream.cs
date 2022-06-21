@@ -15,7 +15,7 @@ using static Microsoft.Quic.MsQuic;
 
 namespace System.Net.Quic.Implementations.MsQuic
 {
-    internal sealed class MsQuicStream : QuicStreamProvider
+    internal sealed class MsQuicStream : IAsyncDisposable, IDisposable
     {
         // The state is passed to msquic and then it's passed back by msquic to the callback handler.
         private readonly State _state = new State();
@@ -201,17 +201,19 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        internal override bool CanRead => _disposed == 0 && _canRead;
+        internal bool CanRead => _disposed == 0 && _canRead;
 
-        internal override bool CanWrite => _disposed == 0 && _canWrite;
+        internal bool CanWrite => _disposed == 0 && _canWrite;
 
-        internal override bool ReadsCompleted => _state.ReadState == ReadState.ReadsCompleted;
+        internal bool ReadsCompleted => _state.ReadState == ReadState.ReadsCompleted;
 
-        internal override bool CanTimeout => true;
+#pragma warning disable CA1822
+        internal bool CanTimeout => true;
+#pragma warning restore CA1822
 
         private int _readTimeout = Timeout.Infinite;
 
-        internal override int ReadTimeout
+        internal int ReadTimeout
         {
             get
             {
@@ -230,7 +232,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         }
 
         private int _writeTimeout = Timeout.Infinite;
-        internal override int WriteTimeout
+        internal int WriteTimeout
         {
             get
             {
@@ -248,7 +250,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        internal override long StreamId
+        internal long StreamId
         {
             get
             {
@@ -258,32 +260,32 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        internal override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        internal ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             return WriteAsync(buffer, endStream: false, cancellationToken);
         }
 
-        internal override ValueTask WriteAsync(ReadOnlySequence<byte> buffers, CancellationToken cancellationToken = default)
+        internal ValueTask WriteAsync(ReadOnlySequence<byte> buffers, CancellationToken cancellationToken = default)
         {
             return WriteAsync(buffers, endStream: false, cancellationToken);
         }
 
-        internal override ValueTask WriteAsync(ReadOnlySequence<byte> buffers, bool endStream, CancellationToken cancellationToken = default)
+        internal ValueTask WriteAsync(ReadOnlySequence<byte> buffers, bool endStream, CancellationToken cancellationToken = default)
         {
             return WriteAsync(static (state, buffers) => state.SendBuffers.Initialize(buffers), buffers, buffers.IsEmpty, endStream, cancellationToken);
         }
 
-        internal override ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, CancellationToken cancellationToken = default)
+        internal ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, CancellationToken cancellationToken = default)
         {
             return WriteAsync(buffers, endStream: false, cancellationToken);
         }
 
-        internal override ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, bool endStream, CancellationToken cancellationToken = default)
+        internal ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, bool endStream, CancellationToken cancellationToken = default)
         {
             return WriteAsync(static (state, buffers) => state.SendBuffers.Initialize(buffers), buffers, buffers.IsEmpty, endStream, cancellationToken);
         }
 
-        internal override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool endStream, CancellationToken cancellationToken = default)
+        internal ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool endStream, CancellationToken cancellationToken = default)
         {
             return WriteAsync(static (state, buffer) => state.SendBuffers.Initialize(buffer), buffer, buffer.IsEmpty, endStream, cancellationToken);
         }
@@ -429,7 +431,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return _state.SendResettableCompletionSource.GetTypelessValueTask();
         }
 
-        internal override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
+        internal async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
         {
             //
             // If MsQuic indicated that some data were received (QUIC_STREAM_EVENT_RECEIVE), we use it to complete the request
@@ -609,7 +611,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return originalDestinationLength - destinationBuffer.Length;
         }
 
-        internal override void AbortRead(long errorCode)
+        internal void AbortRead(long errorCode)
         {
             if (_disposed == 1)
             {
@@ -632,7 +634,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_RECEIVE, errorCode);
         }
 
-        internal override void AbortWrite(long errorCode)
+        internal void AbortWrite(long errorCode)
         {
             if (_disposed == 1)
             {
@@ -688,7 +690,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 (uint)errorCode), "StreamShutdown failed");
         }
 
-        internal override async ValueTask ShutdownCompleted(CancellationToken cancellationToken = default)
+        internal async ValueTask ShutdownCompleted(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
 
@@ -723,7 +725,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             await _state.ShutdownCompletionSource.Task.ConfigureAwait(false);
         }
 
-        internal override ValueTask WaitForWriteCompletionAsync(CancellationToken cancellationToken = default)
+        internal ValueTask WaitForWriteCompletionAsync(CancellationToken cancellationToken = default)
         {
             // TODO: What should happen if this is called for a unidirectional stream and there are no writes?
 
@@ -740,7 +742,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return new ValueTask(_state.ShutdownWriteCompletionSource.Task.WaitAsync(cancellationToken));
         }
 
-        internal override void Shutdown()
+        internal void Shutdown()
         {
             ThrowIfDisposed();
 
@@ -757,7 +759,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         }
 
         // TODO consider removing sync-over-async with blocking calls.
-        internal override int Read(Span<byte> buffer)
+        internal int Read(Span<byte> buffer)
         {
             ThrowIfDisposed();
             byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length);
@@ -784,7 +786,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        internal override void Write(ReadOnlySpan<byte> buffer)
+        internal void Write(ReadOnlySpan<byte> buffer)
         {
             ThrowIfDisposed();
             CancellationTokenSource? cts = null;
@@ -812,20 +814,20 @@ namespace System.Net.Quic.Implementations.MsQuic
         }
 
         // MsQuic doesn't support explicit flushing
-        internal override void Flush()
+        internal void Flush()
         {
             ThrowIfDisposed();
         }
 
         // MsQuic doesn't support explicit flushing
-        internal override Task FlushAsync(CancellationToken cancellationToken = default)
+        internal Task FlushAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
 
             return Task.CompletedTask;
         }
 
-        public override ValueTask DisposeAsync()
+        public ValueTask DisposeAsync()
         {
             // TODO: perform a graceful shutdown and wait for completion?
 
@@ -833,7 +835,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return default;
         }
 
-        public override void Dispose()
+        public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);

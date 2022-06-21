@@ -1725,9 +1725,13 @@ public:
         // Thus, we have to be very careful and after entry discovery check that it is indeed
         // the only place we enter the loop (especially for non-reducible flow graphs).
 
+        JITDUMP("FindLoop: checking head:" FMT_BB " top:" FMT_BB " bottom:" FMT_BB "\n", head->bbNum, top->bbNum,
+                bottom->bbNum);
+
         if (top->bbNum > bottom->bbNum) // is this a backward edge? (from BOTTOM to TOP)
         {
             // Edge from BOTTOM to TOP is not a backward edge
+            JITDUMP("    " FMT_BB "->" FMT_BB " is not a backedge\n", bottom->bbNum, top->bbNum);
             return false;
         }
 
@@ -1735,11 +1739,13 @@ public:
         {
             // Not a true back-edge; bottom is a block added to reconnect fall-through during
             // loop processing, so its block number does not reflect its position.
+            JITDUMP("    " FMT_BB "->" FMT_BB " is not a true backedge\n", bottom->bbNum, top->bbNum);
             return false;
         }
 
         if (bottom->KindIs(BBJ_EHFINALLYRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET, BBJ_CALLFINALLY, BBJ_SWITCH))
         {
+            JITDUMP("    bottom odd jump kind\n");
             // BBJ_EHFINALLYRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET, and BBJ_CALLFINALLY can never form a loop.
             // BBJ_SWITCH that has a backward jump appears only for labeled break.
             return false;
@@ -1759,6 +1765,7 @@ public:
         if (entry == nullptr)
         {
             // For now, we only recognize loops where HEAD has some successor ENTRY in the loop.
+            JITDUMP("    can't find entry\n");
             return false;
         }
 
@@ -1773,12 +1780,14 @@ public:
         if (!HasSingleEntryCycle())
         {
             // There isn't actually a loop between TOP and BOTTOM
+            JITDUMP("    not single entry cycle\n");
             return false;
         }
 
         if (!loopBlocks.IsMember(top->bbNum))
         {
             // The "back-edge" we identified isn't actually part of the flow cycle containing ENTRY
+            JITDUMP("    top not in loop\n");
             return false;
         }
 
@@ -1828,6 +1837,7 @@ public:
         if (!MakeCompactAndFindExits())
         {
             // Unable to preserve well-formed loop during compaction.
+            JITDUMP("    can't compact\n");
             return false;
         }
 
@@ -1928,6 +1938,7 @@ private:
             }
             else if (!comp->fgDominate(entry, block))
             {
+                JITDUMP("   (find cycle) entry:" FMT_BB " does not dominate " FMT_BB "\n", entry->bbNum, block->bbNum);
                 return false;
             }
 
@@ -1960,6 +1971,8 @@ private:
                     }
 
                     // There are multiple entries to this loop, don't consider it.
+
+                    JITDUMP("   (find cycle) multiple entry:" FMT_BB "\n", block->bbNum);
                     return false;
                 }
 
@@ -1967,6 +1980,7 @@ private:
                 if (predBlock == entry)
                 {
                     // We have indeed found a cycle in the flow graph.
+                    JITDUMP("   (find cycle) found cycle\n");
                     isFirstVisit = !foundCycle;
                     foundCycle   = true;
                     assert(loopBlocks.IsMember(predBlock->bbNum));
@@ -2664,6 +2678,9 @@ NO_MORE_LOOPS:
 
     // Make sure that loops are canonical: that every loop has a unique "top", by creating an empty "nop"
     // one, if necessary, for loops containing others that share a "top."
+    //
+    // Also make sure that no loop's "bottom" is another loop's "head".
+    //
     for (unsigned char loopInd = 0; loopInd < optLoopCount; loopInd++)
     {
         // Traverse the outermost loops as entries into the loop nest; so skip non-outermost.
@@ -2885,14 +2902,18 @@ bool Compiler::optIsLoopEntry(BasicBlock* block) const
 //
 // Notes:
 //   For loopInd and all contained loops, ensures each loop top's back edges
-//   do not come from nested loops.
+//   only come from this loop.
 //
 //   Will split top blocks and redirect edges if needed.
 //
 bool Compiler::optCanonicalizeLoopNest(unsigned char loopInd)
 {
+    // First canonicalize the loop.
+    //
     bool modified = optCanonicalizeLoop(loopInd);
 
+    // Then any children.
+    //
     for (unsigned char child = optLoopTable[loopInd].lpChild; //
          child != BasicBlock::NOT_IN_LOOP;                    //
          child = optLoopTable[child].lpSibling)
@@ -2904,8 +2925,8 @@ bool Compiler::optCanonicalizeLoopNest(unsigned char loopInd)
 }
 
 //-----------------------------------------------------------------------------
-// optCanonicalizeLoop: ensure that each loop top's back edges do not come
-//   from nested loops.
+// optCanonicalizeLoop: ensure that each loop top's back edges come only from
+//   blocks in the same loop, and that no loop head/bottom blocks coincide.
 //
 // Arguments:
 //   loopInd - index of the loop to consider
@@ -2913,21 +2934,186 @@ bool Compiler::optCanonicalizeLoopNest(unsigned char loopInd)
 // Returns:
 //   true if flow changes were made
 //
+// Notes:
+//
+// Back edges incident on loop top fall into one three groups:
+//
+// (1) Outer non-loop backedges (preds dominated by entry where pred is not in loop)
+// (2) The canonical backedge (pred == bottom)
+// (3) Nested loop backedges or nested non-loop backedges
+//     (preds dominated by entry, where pred is in loop, pred != bottom)
+//
+// We assume dominance has already been established by loop recognition (that is,
+// anything classified as a loop will have all backedges dominated by loop entry,
+// so the only possible non-backedge predecessor of top will be head).
+//
+// We cannot check dominance here as the flow graph is being modified.
+//
+// If either set (1) or (3) is non-empty the loop is not canonical.
+//
+// This method will split the loop top into two or three blocks depending on
+// whether (1) or (3) is non-empty, and redirect the edges accordingly.
+//
+// Loops are canoncalized outer to inner, so inner loops should never see outer loop
+// non-backedges, as the parent loop canonicalization should have handled them.
+//
 bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
 {
-    // Is the top uniquely part of the current loop?
-    BasicBlock* const t = optLoopTable[loopInd].lpTop;
+    bool              modified = false;
+    BasicBlock* const b        = optLoopTable[loopInd].lpBottom;
+    BasicBlock* const t        = optLoopTable[loopInd].lpTop;
+    BasicBlock* const h        = optLoopTable[loopInd].lpHead;
+    BasicBlock* const e        = optLoopTable[loopInd].lpEntry;
 
-    if (t->bbNatLoopNum == loopInd)
+    // Look for case (1)
+    //
+    bool doOuterCanon = false;
+
+    for (BasicBlock* const topPredBlock : t->PredBlocks())
     {
-        return false;
+        const bool predIsInLoop = (t->bbNum <= topPredBlock->bbNum) && (topPredBlock->bbNum <= b->bbNum);
+        if (predIsInLoop || (topPredBlock == h))
+        {
+            // no action needed
+        }
+        else
+        {
+            JITDUMP("in optCanonicalizeLoop: " FMT_LP " top " FMT_BB " (entry " FMT_BB " bottom " FMT_BB
+                    ") %shas a non-loop backedge from " FMT_BB "%s\n",
+                    loopInd, t->bbNum, e->bbNum, b->bbNum, doOuterCanon ? "also " : "", topPredBlock->bbNum,
+                    doOuterCanon ? "" : ": need to canonicalize non-loop backedges");
+            doOuterCanon = true;
+        }
     }
 
-    JITDUMP("in optCanonicalizeLoop: " FMT_LP " has top " FMT_BB " (bottom " FMT_BB ") with natural loop number " FMT_LP
-            ": need to canonicalize\n",
-            loopInd, t->bbNum, optLoopTable[loopInd].lpBottom->bbNum, t->bbNatLoopNum);
+    if (doOuterCanon)
+    {
+        const bool didCanon = optCanonicalizeLoopCore(loopInd, LoopCanonicalizationOption::Outer);
+        assert(didCanon);
+        modified |= didCanon;
+    }
 
-    // Otherwise, the top of this loop is also part of a nested loop.
+    // Look for case (3)
+    //
+    // Outer canon should not update loop top.
+    //
+    assert(t == optLoopTable[loopInd].lpTop);
+    if (t->bbNatLoopNum != loopInd)
+    {
+        JITDUMP("in optCanonicalizeLoop: " FMT_LP " has top " FMT_BB " (entry " FMT_BB " bottom " FMT_BB
+                ") with natural loop number " FMT_LP ": need to canonicalize nested inner loop backedges\n",
+                loopInd, t->bbNum, e->bbNum, b->bbNum, t->bbNatLoopNum);
+
+        const bool didCanon = optCanonicalizeLoopCore(loopInd, LoopCanonicalizationOption::Current);
+        assert(didCanon);
+        modified |= didCanon;
+    }
+
+    // Check if this loopInd head is also the bottom of some sibling.
+    // If so, add a block in between to serve as the new head.
+    //
+    auto repairLoop = [this](unsigned char loopInd, unsigned char sibling) {
+
+        BasicBlock* const h        = optLoopTable[loopInd].lpHead;
+        BasicBlock* const siblingB = optLoopTable[sibling].lpBottom;
+
+        if (h == siblingB)
+        {
+            // We have
+            //
+            //   sibling.B (== loopInd.H) -e-> loopInd.T
+            //
+            // where e is a "critical edge", that is
+            // * sibling.B has other successors (notably sibling.T),
+            // * loopInd.T has other predecessors (notably loopInd.B)
+            //
+            // turn this into
+            //
+            //  sibling.B -> newH (== loopInd.H) -> loopInd.T
+            //
+            // Ideally we'd just call fgSplitEdge, but we are
+            // not keeping pred lists in good shape.
+            //
+            BasicBlock* const t = optLoopTable[loopInd].lpTop;
+            assert(siblingB->bbJumpKind == BBJ_COND);
+            assert(siblingB->bbNext == t);
+
+            JITDUMP(FMT_LP " head " FMT_BB " is also " FMT_LP " bottom\n", loopInd, h->bbNum, sibling);
+
+            BasicBlock* const newH = fgNewBBbefore(BBJ_NONE, t, /*extendRegion*/ true);
+
+            // Anything that flows into sibling will flow here.
+            // So we use sibling.H as our best guess for weight.
+            //
+            newH->inheritWeight(optLoopTable[sibling].lpHead);
+            newH->bbNatLoopNum = optLoopTable[loopInd].lpParent;
+            optUpdateLoopHead(loopInd, h, newH);
+
+            return true;
+        }
+        return false;
+    };
+
+    if (optLoopTable[loopInd].lpParent == BasicBlock::NOT_IN_LOOP)
+    {
+        // check against all other top-level loops
+        //
+        for (unsigned char sibling = 0; sibling < optLoopCount; sibling++)
+        {
+            if (optLoopTable[sibling].lpParent != BasicBlock::NOT_IN_LOOP)
+            {
+                continue;
+            }
+
+            modified |= repairLoop(loopInd, sibling);
+        }
+    }
+    else
+    {
+        // check against all other sibling loops
+        //
+        const unsigned char parentLoop = optLoopTable[loopInd].lpParent;
+
+        for (unsigned char sibling = optLoopTable[parentLoop].lpChild; //
+             sibling != BasicBlock::NOT_IN_LOOP;                       //
+             sibling = optLoopTable[sibling].lpSibling)
+        {
+            if (sibling == loopInd)
+            {
+                continue;
+            }
+
+            modified |= repairLoop(loopInd, sibling);
+        }
+    }
+
+    if (modified)
+    {
+        JITDUMP("Done canonicalizing " FMT_LP "\n\n", loopInd);
+    }
+
+    return modified;
+}
+
+//-----------------------------------------------------------------------------
+// optCanonicalizeLoopCore: ensure that each loop top's back edges come do not
+//   come from outer/inner loops.
+//
+// Arguments:
+//   loopInd - index of the loop to consider
+//   option - which set of edges to move when canonicalizing
+//
+// Returns:
+//   true if flow changes were made
+//
+// Notes:
+//   option ::Outer retargets all backedges that do not come from loops in the block.
+//   option ::Current retargets the canonical backedge (from bottom)
+//
+bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizationOption option)
+{
+    // Otherwise, the top of this loop is also part of a nested loop or has
+    // non-loop backedges.
     //
     // Insert a new unique top for this loop. We must be careful to put this new
     // block in the correct EH region. Note that t->bbPrev might be in a different
@@ -3003,9 +3189,10 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
     // want to copy the EH region of the back edge, since that would create a block
     // outside of and disjoint with the "try" region of the back edge. However, to
     // simplify things, we disqualify this type of loop, so we should never see this here.
-
-    BasicBlock* const h = optLoopTable[loopInd].lpHead;
+    //
     BasicBlock* const b = optLoopTable[loopInd].lpBottom;
+    BasicBlock* const t = optLoopTable[loopInd].lpTop;
+    BasicBlock* const h = optLoopTable[loopInd].lpHead;
 
     // The loop must be entirely contained within a single handler region.
     assert(BasicBlock::sameHndRegion(t, b));
@@ -3028,8 +3215,15 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
 
     // If the bottom block is in the same "try" region, then we extend the EH
     // region. Otherwise, we add the new block outside the "try" region.
-    const bool  extendRegion = BasicBlock::sameTryRegion(t, b);
-    BasicBlock* newT         = fgNewBBbefore(BBJ_NONE, t, extendRegion);
+    //
+    const bool        extendRegion = BasicBlock::sameTryRegion(t, b);
+    BasicBlock* const newT         = fgNewBBbefore(BBJ_NONE, t, extendRegion);
+
+    // Initially give newT the same weight as t; we will subtract from
+    // this for each edge that does not move from t to newT.
+    //
+    newT->inheritWeight(t);
+
     if (!extendRegion)
     {
         // We need to set the EH region manually. Set it to be the same
@@ -3037,73 +3231,95 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
         newT->copyEHRegion(b);
     }
 
+    // NewT will be the target for the outer/current loop's backedge(s).
+    //
+    BlockToBlockMap* const blockMap = new (getAllocator(CMK_LoopOpt)) BlockToBlockMap(getAllocator(CMK_LoopOpt));
+    blockMap->Set(t, newT);
+
     // The new block can reach the same set of blocks as the old one, but don't try to reflect
     // that in its reachability set here -- creating the new block may have changed the BlockSet
     // representation from short to long, and canonicalizing loops is immediately followed by
     // a call to fgUpdateChangedFlowGraph which will recompute the reachability sets anyway.
 
-    // Redirect the "bottom" of the current loop to "newT".
-    BlockToBlockMap* const blockMap = new (getAllocator(CMK_LoopOpt)) BlockToBlockMap(getAllocator(CMK_LoopOpt));
-    blockMap->Set(t, newT);
-    optRedirectBlock(b, blockMap);
-    JITDUMP("in optCanonicalizeLoop: redirecting bottom->top backedge " FMT_BB " -> " FMT_BB " to " FMT_BB " -> " FMT_BB
-            "\n",
-            b->bbNum, t->bbNum, b->bbNum, newT->bbNum);
-
-    // Redirect non-loop preds of "t" to also go to "newT". Inner loops that also branch to "t" should continue
-    // to do so. However, there maybe be other predecessors from outside the loop nest that need to be updated
-    // to point to "newT". This normally wouldn't happen, since they too would be part of the loop nest. However,
-    // they might have been prevented from participating in the loop nest due to different EH nesting, or some
-    // other reason.
-    //
-    // Note that optRedirectBlock doesn't update the predecessors list. So, if the same 't' block is processed
-    // multiple times while canonicalizing multiple loop nests, we'll attempt to redirect a predecessor multiple times.
-    // This is ok, because after the first redirection, the topPredBlock branch target will no longer match the source
-    // edge of the blockMap, so nothing will happen.
     bool firstPred = true;
     for (BasicBlock* const topPredBlock : t->PredBlocks())
     {
-        // Skip if topPredBlock is in the loop.
-        // Note that this uses block number to detect membership in the loop. We are adding blocks during
-        // canonicalization, and those block numbers will be new, and larger than previous blocks. However, we work
-        // outside-in, so we shouldn't encounter the new blocks at the loop boundaries, or in the predecessor lists.
-        if (t->bbNum <= topPredBlock->bbNum && topPredBlock->bbNum <= b->bbNum)
+        // We set profile weight of newT assuming all edges would
+        // be redirected there. So, if we don't redirect this edge,
+        // this is how much we'll have to adjust newT's weight.
+        //
+        weight_t weightAdjust = BB_ZERO_WEIGHT;
+
+        if (option == LoopCanonicalizationOption::Current)
         {
-            // Note we've already redirected b->t above.
+            // Redirect the (one and only) true backedge of this loop.
             //
-            if (topPredBlock->bbNum != b->bbNum)
+            if (topPredBlock != b)
             {
-                JITDUMP("in optCanonicalizeLoop: in-loop 'top' predecessor " FMT_BB " is in the range of " FMT_LP
-                        " (" FMT_BB ".." FMT_BB "); not redirecting its bottom edge\n",
-                        topPredBlock->bbNum, loopInd, t->bbNum, b->bbNum);
-            }
-            continue;
-        }
-
-        JITDUMP("in optCanonicalizeLoop: redirect top predecessor " FMT_BB " to " FMT_BB "\n", topPredBlock->bbNum,
-                newT->bbNum);
-        optRedirectBlock(topPredBlock, blockMap);
-
-        // When we have profile data then the 'newT' block will inherit topPredBlock profile weight
-        if (topPredBlock->hasProfileWeight())
-        {
-            // This corrects an issue when the topPredBlock has a profile based weight
-            //
-            if (firstPred)
-            {
-                JITDUMP("in optCanonicalizeLoop: block " FMT_BB " will inheritWeight from " FMT_BB "\n", newT->bbNum,
-                        topPredBlock->bbNum);
-
-                newT->inheritWeight(topPredBlock);
-                firstPred = false;
+                if ((topPredBlock != h) && topPredBlock->hasProfileWeight())
+                {
+                    // Note this may overstate the adjustment, if topPredBlock is BBJ_COND.
+                    //
+                    weightAdjust = topPredBlock->bbWeight;
+                }
             }
             else
             {
-                JITDUMP("in optCanonicalizeLoop: block " FMT_BB " will also contribute to the weight of " FMT_BB "\n",
-                        newT->bbNum, topPredBlock->bbNum);
+                JITDUMP("in optCanonicalizeLoop (current): redirect bottom->top backedge " FMT_BB " -> " FMT_BB
+                        " to " FMT_BB " -> " FMT_BB "\n",
+                        topPredBlock->bbNum, t->bbNum, topPredBlock->bbNum, newT->bbNum);
+                optRedirectBlock(b, blockMap);
+            }
+        }
+        else if (option == LoopCanonicalizationOption::Outer)
+        {
+            // Redirect non-loop preds of "t" to go to "newT". Inner loops that also branch to "t" should continue
+            // to do so. However, there maybe be other predecessors from outside the loop nest that need to be updated
+            // to point to "newT". This normally wouldn't happen, since they too would be part of the loop nest.
+            // However,
+            // they might have been prevented from participating in the loop nest due to different EH nesting, or some
+            // other reason.
+            //
+            // Skip if topPredBlock is in the loop.
+            // Note that this uses block number to detect membership in the loop. We are adding blocks during
+            // canonicalization, and those block numbers will be new, and larger than previous blocks. However, we work
+            // outside-in, so we shouldn't encounter the new blocks at the loop boundaries, or in the predecessor lists.
+            //
+            if ((t->bbNum <= topPredBlock->bbNum) && (topPredBlock->bbNum <= b->bbNum))
+            {
+                if (topPredBlock->hasProfileWeight())
+                {
+                    // Note this may overstate the adjustment, if topPredBlock is BBJ_COND.
+                    //
+                    weightAdjust = topPredBlock->bbWeight;
+                }
+            }
+            else
+            {
+                JITDUMP("in optCanonicalizeLoop (outer): redirect %s->top %sedge " FMT_BB " -> " FMT_BB " to " FMT_BB
+                        " -> " FMT_BB "\n",
+                        topPredBlock == h ? "head" : "nonloop", topPredBlock == h ? "" : "back", topPredBlock->bbNum,
+                        t->bbNum, topPredBlock->bbNum, newT->bbNum);
+                optRedirectBlock(topPredBlock, blockMap);
+            }
+        }
+        else
+        {
+            unreached();
+        }
 
-                weight_t newWeight = newT->getBBWeight(this) + topPredBlock->getBBWeight(this);
-                newT->setBBProfileWeight(newWeight);
+        if (weightAdjust > BB_ZERO_WEIGHT)
+        {
+            JITDUMP("in optCanonicalizeLoop: removing block " FMT_BB " weight " FMT_WT " from " FMT_BB "\n",
+                    topPredBlock->bbNum, weightAdjust, newT->bbNum);
+
+            if (newT->bbWeight >= weightAdjust)
+            {
+                newT->setBBProfileWeight(newT->bbWeight - weightAdjust);
+            }
+            else if (newT->bbWeight > BB_ZERO_WEIGHT)
+            {
+                newT->setBBProfileWeight(BB_ZERO_WEIGHT);
             }
         }
     }
@@ -3111,39 +3327,58 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
     assert(h->bbNext == newT);
     assert(newT->bbNext == t);
 
-    // If loopInd is a do-while loop (top == entry), update entry as well.
+    // With the Option::Current we are changing which block is loop top.
+    // Make suitable updates.
     //
-    BasicBlock* const origE = optLoopTable[loopInd].lpEntry;
-    if (optLoopTable[loopInd].lpTop == origE)
+    if (option == LoopCanonicalizationOption::Current)
     {
-        optLoopTable[loopInd].lpEntry = newT;
-    }
-    optLoopTable[loopInd].lpTop = newT;
+        JITDUMP("in optCanonicalizeLoop (current): " FMT_BB " is now the top of loop " FMT_LP "\n", newT->bbNum,
+                loopInd);
 
-    newT->bbNatLoopNum = loopInd;
+        optLoopTable[loopInd].lpTop = newT;
+        newT->bbNatLoopNum          = loopInd;
 
-    JITDUMP("in optCanonicalizeLoop: made new block " FMT_BB " [%p] the new unique top of loop %d.\n", newT->bbNum,
-            dspPtr(newT), loopInd);
-
-    // If any loops nested in "loopInd" have the same head and entry as "loopInd",
-    // it must be the case that they were also do-while's (since "h" fell through to the entry).
-    // The new node "newT" becomes the head of such loops.
-    //
-    for (unsigned char childLoop = optLoopTable[loopInd].lpChild; //
-         childLoop != BasicBlock::NOT_IN_LOOP;                    //
-         childLoop = optLoopTable[childLoop].lpSibling)
-    {
-        if (optLoopTable[childLoop].lpEntry == origE && optLoopTable[childLoop].lpHead == h &&
-            newT->bbJumpKind == BBJ_NONE && newT->bbNext == origE)
+        // If loopInd was a do-while loop (top == entry), update entry, as well.
+        //
+        BasicBlock* const origE = optLoopTable[loopInd].lpEntry;
+        if (origE == t)
         {
-            optUpdateLoopHead(childLoop, h, newT);
+            JITDUMP("updating entry of " FMT_LP " to " FMT_BB "\n", loopInd, newT->bbNum);
+            optLoopTable[loopInd].lpEntry = newT;
+        }
 
-            // Fix pred list here, so when we walk preds of child loop tops
-            // we see the right blocks.
-            //
-            fgReplacePred(optLoopTable[childLoop].lpTop, h, newT);
+        // If any loops nested in "loopInd" have the same head and entry as "loopInd",
+        // it must be the case that they were do-while's (since "h" fell through to the entry).
+        // The new node "newT" becomes the head of such loops.
+        for (unsigned char childLoop = optLoopTable[loopInd].lpChild; //
+             childLoop != BasicBlock::NOT_IN_LOOP;                    //
+             childLoop = optLoopTable[childLoop].lpSibling)
+        {
+            if ((optLoopTable[childLoop].lpEntry == origE) && (optLoopTable[childLoop].lpHead == h) &&
+                (newT->bbJumpKind == BBJ_NONE) && (newT->bbNext == origE))
+            {
+                optUpdateLoopHead(childLoop, h, newT);
+
+                // Fix pred list here, so when we walk preds of child loop tops
+                // we see the right blocks.
+                //
+                fgReplacePred(optLoopTable[childLoop].lpTop, h, newT);
+            }
         }
     }
+    else if (option == LoopCanonicalizationOption::Outer)
+    {
+        JITDUMP("in optCanonicalizeLoop (outer): " FMT_BB " is outside of loop " FMT_LP "\n", newT->bbNum, loopInd);
+
+        // If we are lifting outer backeges, then newT belongs to our parent loop
+        //
+        newT->bbNatLoopNum = optLoopTable[loopInd].lpParent;
+
+        // newT is now the header of this loop
+        //
+        optUpdateLoopHead(loopInd, h, newT);
+    }
+
     return true;
 }
 
