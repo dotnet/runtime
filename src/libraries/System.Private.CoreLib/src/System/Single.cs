@@ -11,6 +11,7 @@
 ===========================================================*/
 
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
@@ -900,7 +901,7 @@ namespace System
         public static float Clamp(float value, float min, float max) => Math.Clamp(value, min, max);
 
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
-        public static float CopySign(float x, float y) => MathF.CopySign(x, y);
+        public static float CopySign(float value, float sign) => MathF.CopySign(value, sign);
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static float Max(float x, float y) => MathF.Max(x, y);
@@ -1336,14 +1337,185 @@ namespace System
         /// <inheritdoc cref="IRootFunctions{TSelf}.Cbrt(TSelf)" />
         public static float Cbrt(float x) => MathF.Cbrt(x);
 
-        // /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
-        // public static float Hypot(float x, float y) => MathF.Hypot(x, y);
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
+        public static float Hypot(float x, float y)
+        {
+            // This code is based on `hypotf` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2020 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            float result;
+
+            if (IsFinite(x) && IsFinite(y))
+            {
+                float ax = Abs(x);
+                float ay = Abs(y);
+
+                if (ax == 0.0f)
+                {
+                    result = ay;
+                }
+                else if (ay == 0.0f)
+                {
+                    result = ax;
+                }
+                else
+                {
+                    double xx = ax;
+                    xx *= xx;
+
+                    double yy = ay;
+                    yy *= yy;
+
+                    result = (float)double.Sqrt(xx + yy);
+                }
+            }
+            else if (IsInfinity(x) || IsInfinity(y))
+            {
+                // IEEE 754 requires that we return +Infinity
+                // even if one of the inputs is NaN
+
+                result = PositiveInfinity;
+            }
+            else
+            {
+                // IEEE 754 requires that we return NaN
+                // if either input is NaN and neither is Infinity
+
+                Debug.Assert(IsNaN(x) || IsNaN(y));
+                result = NaN;
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Root(TSelf, int)" />
+        public static float Root(float x, int n)
+        {
+            float result;
+
+            if (n > 0)
+            {
+                if (n == 2)
+                {
+                    result = (x != 0.0f) ? Sqrt(x) : 0.0f;
+                }
+                else if (n == 3)
+                {
+                    result = Cbrt(x);
+                }
+                else
+                {
+                    result = PositiveN(x, n);
+                }
+            }
+            else if (n < 0)
+            {
+                result = NegativeN(x, n);
+            }
+            else
+            {
+                Debug.Assert(n == 0);
+                result = NaN;
+            }
+
+            return result;
+
+            static float PositiveN(float x, int n)
+            {
+                float result;
+
+                if (IsFinite(x))
+                {
+                    if (x != 0)
+                    {
+                        if ((x > 0) || IsOddInteger(n))
+                        {
+                            result = (float)double.Pow(Abs(x), 1.0 / n);
+                            result = CopySign(result, x);
+                        }
+                        else
+                        {
+                            result = NaN;
+                        }
+                    }
+                    else if (IsEvenInteger(n))
+                    {
+                        result = 0.0f;
+                    }
+                    else
+                    {
+                        result = CopySign(0.0f, x);
+                    }
+                }
+                else if (IsNaN(x))
+                {
+                    result = NaN;
+                }
+                else if (x > 0)
+                {
+                    Debug.Assert(IsPositiveInfinity(x));
+                    result = PositiveInfinity;
+                }
+                else
+                {
+                    Debug.Assert(IsNegativeInfinity(x));
+                    result = int.IsOddInteger(n) ? NegativeInfinity : NaN;
+                }
+
+                return result;
+            }
+
+            static float NegativeN(float x, int n)
+            {
+                float result;
+
+                if (IsFinite(x))
+                {
+                    if (x != 0)
+                    {
+                        if ((x > 0) || IsOddInteger(n))
+                        {
+                            result = (float)double.Pow(Abs(x), 1.0 / n);
+                            result = CopySign(result, x);
+                        }
+                        else
+                        {
+                            result = NaN;
+                        }
+                    }
+                    else if (IsEvenInteger(n))
+                    {
+                        result = PositiveInfinity;
+                    }
+                    else
+                    {
+                        result = CopySign(PositiveInfinity, x);
+                    }
+                }
+                else if (IsNaN(x))
+                {
+                    result = NaN;
+                }
+                else if (x > 0)
+                {
+                    Debug.Assert(IsPositiveInfinity(x));
+                    result = 0.0f;
+                }
+                else
+                {
+                    Debug.Assert(IsNegativeInfinity(x));
+                    result = int.IsOddInteger(n) ? -0.0f : NaN;
+                }
+
+                return result;
+            }
+        }
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
         public static float Sqrt(float x) => MathF.Sqrt(x);
-
-        // /// <inheritdoc cref="IRootFunctions{TSelf}.Root(TSelf, TSelf)" />
-        // public static float Root(float x, float n) => MathF.Root(x, n);
 
         //
         // ISignedNumber

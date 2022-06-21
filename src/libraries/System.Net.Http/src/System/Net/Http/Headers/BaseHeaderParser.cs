@@ -66,7 +66,7 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            current = current + length;
+            current += length;
             current = HeaderUtilities.GetNextNonEmptyOrWhitespaceIndex(value, current, SupportsMultipleValues,
                 out separatorFound);
 

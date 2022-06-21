@@ -4508,12 +4508,14 @@ void emitter::emitIns_R_R(
         case INS_str:
         case INS_strb:
         case INS_strh:
-
-        case INS_cmp:
         case INS_cmn:
         case INS_tst:
             assert(insOptsNone(opt));
             emitIns_R_R_I(ins, attr, reg1, reg2, 0, INS_OPTS_NONE);
+            return;
+
+        case INS_cmp:
+            emitIns_R_R_I(ins, attr, reg1, reg2, 0, opt);
             return;
 
         case INS_staddb:

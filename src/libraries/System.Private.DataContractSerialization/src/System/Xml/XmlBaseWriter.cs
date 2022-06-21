@@ -300,7 +300,7 @@ namespace System.Xml
 
         public override void WriteStartAttribute(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri)
         {
-            StartAttribute(ref prefix, (localName != null ? localName.Value : null)!, (namespaceUri != null ? namespaceUri.Value : null), namespaceUri);
+            StartAttribute(ref prefix, localName?.Value!, namespaceUri?.Value, namespaceUri);
             if (!_isXmlnsAttribute)
             {
                 _writer.WriteStartAttribute(prefix, localName!);
@@ -604,7 +604,7 @@ namespace System.Xml
 
         public override void WriteStartElement(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri)
         {
-            StartElement(ref prefix, localName.Value, (namespaceUri != null ? namespaceUri.Value : null), namespaceUri);
+            StartElement(ref prefix, localName.Value, namespaceUri?.Value, namespaceUri);
             _writer.WriteStartElement(prefix, localName);
         }
 

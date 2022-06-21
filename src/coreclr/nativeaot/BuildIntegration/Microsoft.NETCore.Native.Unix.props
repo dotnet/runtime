@@ -89,7 +89,6 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="-ldl" />
       <LinkerArg Include="-lm" />
       <LinkerArg Include="-lz" />
-      <LinkerArg Include="-static" Condition="'$(StaticallyLinked)' == 'true'" />
       <LinkerArg Include="-lrt" Condition="'$(TargetOS)' != 'OSX'" />
       <LinkerArg Include="-licucore" Condition="'$(TargetOS)' == 'OSX'" />
       <LinkerArg Include="-dynamiclib" Condition="'$(TargetOS)' == 'OSX' and '$(NativeLib)' == 'Shared'" />

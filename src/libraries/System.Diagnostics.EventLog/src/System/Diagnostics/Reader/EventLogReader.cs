@@ -218,7 +218,7 @@ namespace System.Diagnostics.Eventing.Reader
             // fact that we've already read some events in our buffer that the user
             // hasn't seen yet.
             //
-            offset = offset - (_eventCount - _currentIndex);
+            offset -= (_eventCount - _currentIndex);
 
             SeekReset();
 
