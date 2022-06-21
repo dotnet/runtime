@@ -926,7 +926,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                     (exceptionFlags != prevExceptionFlags))
                 {
                     JITDUMP("Exception set for arg [%06u] interferes with previous tree [%06u]; must evaluate previous "
-                            "trees with exceptions to temps",
+                            "trees with exceptions to temps\n",
                             Compiler::dspTreeID(argx), Compiler::dspTreeID(prevExceptionTree));
 
                     for (CallArg& prevArg : Args())
