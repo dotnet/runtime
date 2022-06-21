@@ -5878,7 +5878,7 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
 
         frame.Pop(pThread);
 
-        // TODO: Windows - Raise thread abort exception if ready for abort
+        pThread->HandleThreadAbort();
     }
     else
     {
