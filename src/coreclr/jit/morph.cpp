@@ -959,6 +959,14 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                             break;
                         }
 
+#if !FEATURE_FIXED_OUT_ARGS
+                        if (prevArg.AbiInfo.GetRegNum() == REG_STK)
+                        {
+                            // All stack args are already evaluated and placed in order
+                            // in this case.
+                            break;
+                        }
+#endif
                         // Invariant here is that all nodes that were not
                         // already evaluated into temps and that throw can only
                         // be throwing the same single exception as the
