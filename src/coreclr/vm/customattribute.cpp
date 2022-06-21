@@ -33,9 +33,8 @@ TypeHandle Attribute::GetTypeForEnum(LPCUTF8 szEnumName, COUNT_T cbEnumName, Dom
     }
     CONTRACTL_END;
 
-    StackScratchBuffer buff;
     StackSString sszEnumName(SString::Utf8, szEnumName, cbEnumName);
-    return TypeName::GetTypeUsingCASearchRules(sszEnumName.GetUTF8(buff), pDomainAssembly->GetAssembly());
+    return TypeName::GetTypeUsingCASearchRules(sszEnumName.GetUTF8(), pDomainAssembly->GetAssembly());
 }
 
 /*static*/

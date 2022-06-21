@@ -925,8 +925,7 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
 
     // get the name in UTF8 format
     SString wszName(SString::Literal, gc.methodName->GetBuffer());
-    StackScratchBuffer utf8Name;
-    LPCUTF8 szNameStr = wszName.GetUTF8(utf8Name);
+    LPCUTF8 szNameStr = wszName.GetUTF8();
 
     // pick a proper compare function
     typedef int (__cdecl *UTF8StringCompareFuncPtr)(const char *, const char *);

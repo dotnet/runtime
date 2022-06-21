@@ -232,9 +232,8 @@ static void LookupOrCreateInPitchingCandidate(MethodDesc* pMD, ULONG sizeOfCode)
             SString className, methodName, methodSig;
             pMD->GetMethodInfo(className, methodName, methodSig);
 
-            StackScratchBuffer scratch;
-            const char* szClassName = className.GetUTF8(scratch);
-            const char* szMethodSig = methodSig.GetUTF8(scratch);
+            const char* szClassName = className.GetUTF8();
+            const char* szMethodSig = methodSig.GetUTF8();
 
             printf("Candidate %lu %s :: %s %s\n",
                    sizeOfCode, szClassName, pMD->GetName(), szMethodSig);

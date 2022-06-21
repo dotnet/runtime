@@ -707,8 +707,7 @@ namespace
                 SString moduleName(SString::Utf8, szLibName);
                 moduleName.LowerCase();
 
-                StackScratchBuffer buffer;
-                szLibName = (LPSTR)moduleName.GetUTF8(buffer);
+                szLibName = (LPSTR)moduleName.GetUTF8();
 
                 Assembly *pAssembly = spec.LoadAssembly(FILE_LOADED);
                 Module *pModule = pAssembly->FindModuleByName(szLibName);

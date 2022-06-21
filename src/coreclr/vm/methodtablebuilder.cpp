@@ -1349,8 +1349,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
     {
         StackSString debugName(SString::Utf8, GetDebugClassName());
         TypeString::AppendInst(debugName, bmtGenerics->GetInstantiation(), TypeString::FormatBasic);
-        StackScratchBuffer buff;
-        const char* pDebugNameUTF8 = debugName.GetUTF8(buff);
+        const char* pDebugNameUTF8 = debugName.GetUTF8();
         S_SIZE_T safeLen = S_SIZE_T(strlen(pDebugNameUTF8)) + S_SIZE_T(1);
         if(safeLen.IsOverflow())
             COMPlusThrowHR(COR_E_OVERFLOW);

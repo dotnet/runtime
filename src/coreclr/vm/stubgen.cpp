@@ -106,10 +106,7 @@ void ILStubLinker::DumpIL_FormatToken(mdToken token, SString &strTokenFormatting
             SString typeName;
             TypeString::AppendType(typeName, TypeHandle(pFD->GetApproxEnclosingMethodTable()));
 
-            SString typeNameUtf8;
-            typeName.ConvertToUTF8(typeNameUtf8);
-            SString strFieldName(SString::Utf8, pFD->GetName());
-            strTokenFormatting.Printf("%s::%s", typeNameUtf8.GetUTF8(), strFieldName.GetUTF8());
+            strTokenFormatting.Printf("%s::%s", typeName.GetUTF8(), pFD->GetName());
         }
         else if (TypeFromToken(token) == mdtModule)
         {

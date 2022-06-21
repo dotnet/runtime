@@ -12928,11 +12928,10 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
                 SString moduleName;
                 ftn->GetModule()->GetDomainAssembly()->GetPEAssembly()->GetPathOrCodeBase(moduleName);
-                MAKE_UTF8PTR_FROMWIDE(moduleNameUtf8, moduleName.GetUnicode());
 
                 SString codeBase;
                 codeBase.AppendPrintf("%s,0x%x,%d,%d\n",
-                                 moduleNameUtf8, //module name
+                                 moduleName.GetUTF8(), //module name
                                  ftn->GetMemberDef(), //method token
                                  (unsigned)(methodJitTimeStop.QuadPart - methodJitTimeStart.QuadPart), //cycle count
                                  methodInfo.ILCodeSize //il size
