@@ -248,7 +248,6 @@ namespace System.Configuration
             if (assembly != null && !isSingleFile)
             {
                 AssemblyName assemblyName = assembly.GetName();
-                Uri codeBase = new Uri(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, assembly.ManifestModule.Name));
 
                 try
                 {
@@ -265,9 +264,12 @@ namespace System.Configuration
                 {
                     try
                     {
-                        // Certain platforms may not have support for crypto
-                        hash = IdentityHelper.GetNormalizedUriHash(codeBase);
-                        typeName = UrlDesc;
+                        if (Uri.TryCreate(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, assembly.ManifestModule.Name), UriKind.RelativeOrAbsolute, out Uri codeBase))
+                        {
+                            // Certain platforms may not have support for crypto
+                            hash = IdentityHelper.GetNormalizedUriHash(codeBase);
+                            typeName = UrlDesc;
+                        }
                     }
                     catch (PlatformNotSupportedException) { }
                 }
