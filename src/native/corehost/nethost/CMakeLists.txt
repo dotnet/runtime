@@ -38,6 +38,16 @@ install(FILES ../hostfxr.h DESTINATION corehost)
 install(FILES nethost.h DESTINATION corehost)
 install_with_stripped_symbols(nethost TARGETS corehost)
 
+if (MSVC)
+    # We ship libnethost.lib as a static library for external consumption, so
+    # LTCG must be disabled to ensure that non-MSVC toolchains can work with it.
+
+    target_compile_options(libnethost PRIVATE /GL-)
+
+    string(REPLACE "/LTCG" "" CMAKE_STATIC_LINKER_FLAGS_RELEASE ${CMAKE_STATIC_LINKER_FLAGS_RELEASE})
+    string(REPLACE "/LTCG" "" CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO ${CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO})
+endif()
+
 # Only Windows creates a symbols file for static libs.
 if (WIN32)
     install_with_stripped_symbols(libnethost TARGETS corehost)
