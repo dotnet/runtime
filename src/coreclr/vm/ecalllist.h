@@ -598,8 +598,8 @@ FCFuncEnd()
 
 FCFuncStart(gMethodTableFuncs)
     FCFuncElement("GetNumInstanceFieldBytes", MethodTableNative::GetNumInstanceFieldBytes)
-    FCFuncElement("IsEnum", MethodTableNative::IsEnum)
-    FCFuncElement("GetEEClassCorElementType", MethodTableNative::GetEEClassCorElementType)
+    FCFuncElement("GetSignatureCorElementType", MethodTableNative::GetSignatureCorElementType)
+    FCFuncElement("GetVerifierCorElementType", MethodTableNative::GetVerifierCorElementType)
 FCFuncEnd()
 
 FCFuncStart(gMngdFixedArrayMarshalerFuncs)

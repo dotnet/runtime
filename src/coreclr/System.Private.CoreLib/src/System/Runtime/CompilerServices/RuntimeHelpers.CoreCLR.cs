@@ -611,58 +611,15 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern uint GetNumInstanceFieldBytes();
 
-        public CorElementType GetSignatureCorElementType()
-        {
-            // Corresponding to MethodTable::GetSignatureCorElementType
-            // DOES NOT convert enum to underlying type
-
-            // switch expression causes suboptimal codegen
-            switch (Flags & enum_flag_Category_ElementTypeMask)
-            {
-                case enum_flag_Category_Array:
-                    return CorElementType.ELEMENT_TYPE_ARRAY;
-                case enum_flag_Category_Array | enum_flag_Category_IfArrayThenSzArray:
-                    return CorElementType.ELEMENT_TYPE_SZARRAY;
-                case enum_flag_Category_ValueType:
-                    return CorElementType.ELEMENT_TYPE_VALUETYPE;
-                case enum_flag_Category_PrimitiveValueType:
-                    return (Flags & enum_flag_Category_Mask) == enum_flag_Category_TruePrimitive
-                        ? GetEEClassCorElementType()
-                        : CorElementType.ELEMENT_TYPE_VALUETYPE;
-                default:
-                    return CorElementType.ELEMENT_TYPE_CLASS;
-            }
-        }
-
-        public CorElementType GetVerifierCorElementType()
-        {
-            // Corresponding to MethodTable::GetVerifierCorElementType
-            // DOES convert enum to underlying type
-
-            // switch expression causes suboptimal codegen
-            switch (Flags & enum_flag_Category_ElementTypeMask)
-            {
-                case enum_flag_Category_Array:
-                    return CorElementType.ELEMENT_TYPE_ARRAY;
-                case enum_flag_Category_Array | enum_flag_Category_IfArrayThenSzArray:
-                    return CorElementType.ELEMENT_TYPE_SZARRAY;
-                case enum_flag_Category_ValueType:
-                    return CorElementType.ELEMENT_TYPE_VALUETYPE;
-                case enum_flag_Category_PrimitiveValueType:
-                    return ((Flags & enum_flag_Category_Mask) == enum_flag_Category_TruePrimitive) || IsEnum()
-                        ? GetEEClassCorElementType()
-                        : CorElementType.ELEMENT_TYPE_VALUETYPE;
-                default:
-                    return CorElementType.ELEMENT_TYPE_CLASS;
-            }
-        }
-
+        // Corresponding to MethodTable::GetSignatureCorElementType
+        // DOES NOT convert enum to underlying type
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public extern bool IsEnum();
+        public extern CorElementType GetSignatureCorElementType();
 
-        // Corresponding to GetClass()->GetInternalCorElementType()
+        // Corresponding to MethodTable::GetVerifierCorElementType
+        // DOES convert enum to underlying type
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public extern CorElementType GetEEClassCorElementType();
+        public extern CorElementType GetVerifierCorElementType();
     }
 
     /// <summary>

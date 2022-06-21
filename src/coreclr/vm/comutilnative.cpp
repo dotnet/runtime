@@ -1911,17 +1911,17 @@ FCIMPL1(UINT32, MethodTableNative::GetNumInstanceFieldBytes, MethodTable* mt)
 }
 FCIMPLEND
 
-FCIMPL1(FC_BOOL_RET, MethodTableNative::IsEnum, MethodTable* mt)
+FCIMPL1(INT32, MethodTableNative::GetSignatureCorElementType, MethodTable* mt)
 {
     FCALL_CONTRACT;
-    FC_RETURN_BOOL(mt->IsEnum());
+    return mt->GetSignatureCorElementType();
 }
 FCIMPLEND
 
-FCIMPL1(INT32, MethodTableNative::GetEEClassCorElementType, MethodTable* mt)
+FCIMPL1(INT32, MethodTableNative::GetVerifierCorElementType, MethodTable* mt)
 {
     FCALL_CONTRACT;
-    return mt->GetClass_NoLogging()->GetInternalCorElementType();
+    return mt->GetVerifierCorElementType();
 }
 FCIMPLEND
 
