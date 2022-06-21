@@ -22,8 +22,15 @@ namespace System.Text.Unicode
         {
             // Parameter checking: the first code point and last code point must
             // lie within the BMP. See https://unicode.org/faq/blocks_ranges.html for more info.
-            ArgumentOutOfRangeException.ThrowIfNotBetween(firstCodePoint, 0, 0xFFFF);
-            ArgumentOutOfRangeException.ThrowIf(length < 0 || ((long)firstCodePoint + (long)length > 0x10000));
+            if (firstCodePoint < 0 || firstCodePoint > 0xFFFF)
+            {
+                throw new ArgumentOutOfRangeException(nameof(firstCodePoint));
+            }
+            
+            if (length < 0 || ((long)firstCodePoint + (long)length > 0x10000))
+            {
+                throw new ArgumentOutOfRangeException(nameof(length));
+            }
 
             FirstCodePoint = firstCodePoint;
             Length = length;
@@ -47,7 +54,10 @@ namespace System.Text.Unicode
         /// <returns>The <see cref="UnicodeRange"/> representing this span.</returns>
         public static UnicodeRange Create(char firstCharacter, char lastCharacter)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(lastCharacter, firstCharacter);
+            if (lastCharacter < firstCharacter)
+            {
+                throw new ArgumentOutOfRangeException(nameof(lastCharacter));
+            }
 
             return new UnicodeRange(firstCharacter, 1 + (int)(lastCharacter - firstCharacter));
         }
