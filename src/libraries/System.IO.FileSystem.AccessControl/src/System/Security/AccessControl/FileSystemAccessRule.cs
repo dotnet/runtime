@@ -109,7 +109,7 @@ namespace System.Security.AccessControl
         // make the model look asymmetrical from a purist point of view.
         internal static int AccessMaskFromRights(FileSystemRights fileSystemRights, AccessControlType controlType)
         {
-            ArgumentOutOfRangeException.ThrowIfNotBetween(fileSystemRights, 0, FileSystemRights.FullControl);
+            ArgumentOutOfRangeException.ThrowIf(fileSystemRights < 0 || fileSystemRights > FileSystemRights.FullControl);
 
             if (controlType == AccessControlType.Allow)
             {

@@ -91,7 +91,7 @@ namespace System.Net.WebSockets
 
             ArgumentOutOfRangeException.ThrowIfGreaterThan(sendBufferSize, MaxBufferSize);
 
-            ArgumentOutOfRangeException.ThrowIfLessThan(keepAliveInterval, Timeout.InfiniteTimeSpan);
+            ArgumentOutOfRangeException.ThrowIf(keepAliveInterval < Timeout.InfiniteTimeSpan);
         }
 
         internal const int MinSendBufferSize = 16;

@@ -46,7 +46,7 @@ namespace System.Xml
 
                     ArgumentOutOfRangeException.ThrowIf(index != 0);
 
-                    return _field;
+                    return _field!;
                 }
             }
 

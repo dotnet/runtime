@@ -309,8 +309,8 @@ namespace System.Net.Sockets
             {
                 if (!_buffer.Equals(default))
                 {
-                    ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)offset, _buffer.Length);
-                    ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)count, (_buffer.Length - offset));
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, _buffer.Length);
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(count, (_buffer.Length - offset));
                     if (!_bufferIsExplicitArray)
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_BufferNotExplicitArray);
@@ -365,8 +365,8 @@ namespace System.Net.Sockets
 
                     // Offset and count can't be negative and the
                     // combination must be in bounds of the array.
-                    ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)offset, buffer.Length);
-                    ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)count, (buffer.Length - offset));
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, buffer.Length);
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(count, (buffer.Length - offset));
 
                     _buffer = buffer;
                     _offset = offset;

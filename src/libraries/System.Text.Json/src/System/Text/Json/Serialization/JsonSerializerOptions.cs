@@ -501,7 +501,7 @@ namespace System.Text.Json
                 VerifyMutable();
 
                 Debug.Assert(value >= 0);
-                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, JsonCommentHandling.Skip);
+                ArgumentOutOfRangeException.ThrowIf(value > JsonCommentHandling.Skip);
 
                 _readCommentHandling = value;
             }

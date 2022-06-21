@@ -38,7 +38,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         public ComposablePartExportProvider(CompositionOptions compositionOptions)
         {
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(compositionOptions, (CompositionOptions.DisableSilentRejection | CompositionOptions.IsThreadSafe | CompositionOptions.ExportCompositionService));
+            ArgumentOutOfRangeException.ThrowIf(compositionOptions > (CompositionOptions.DisableSilentRejection | CompositionOptions.IsThreadSafe | CompositionOptions.ExportCompositionService));
 
             _compositionOptions = compositionOptions;
             _lock = new CompositionLock(compositionOptions.HasFlag(CompositionOptions.IsThreadSafe));

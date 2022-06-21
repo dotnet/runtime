@@ -159,7 +159,7 @@ namespace System.IO
             ArgumentOutOfRangeException.ThrowIfNegative(capacity);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(length, capacity);
             // Check for wraparound.
-            ArgumentOutOfRangeException.ThrowIfLessThan(((byte*)((long)pointer + capacity)), pointer);
+            ArgumentOutOfRangeException.ThrowIf(((byte*)((long)pointer + capacity)) < pointer);
             ArgumentOutOfRangeException.ThrowIf(access < FileAccess.Read || access > FileAccess.ReadWrite);
             if (_isOpen)
                 throw new InvalidOperationException(SR.InvalidOperation_CalledTwice);

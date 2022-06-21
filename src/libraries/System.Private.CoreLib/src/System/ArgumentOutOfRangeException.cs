@@ -69,7 +69,7 @@ namespace System
         public static void ThrowIf(bool condition)
         {
             if (condition)
-                throw new ArgumentOutOfRangeException(paramName);
+                throw new ArgumentOutOfRangeException(nameof(condition));
         }
 
         public static void ThrowIfZero<T>(T value, [CallerArgumentExpression("value")] string? paramName = null)
@@ -93,10 +93,24 @@ namespace System
                 throw new ArgumentOutOfRangeException(paramName);
         }
 
+        public static void ThrowIfGreaterThanOrEqual<T>(T value, T other, [CallerArgumentExpression("value")] string? paramName = null)
+            where T : struct, IComparisonOperators<T, T>
+        {
+            if (value >= other)
+                throw new ArgumentOutOfRangeException(paramName);
+        }
+
         public static void ThrowIfLessThan<T>(T value, T other, [CallerArgumentExpression("value")] string? paramName = null)
             where T : struct, IComparisonOperators<T, T>
         {
             if (value < other)
+                throw new ArgumentOutOfRangeException(paramName);
+        }
+
+        public static void ThrowIfLessThanOrEqual<T>(T value, T other, [CallerArgumentExpression("value")] string? paramName = null)
+            where T : struct, IComparisonOperators<T, T>
+        {
+            if (value <= other)
                 throw new ArgumentOutOfRangeException(paramName);
         }
 

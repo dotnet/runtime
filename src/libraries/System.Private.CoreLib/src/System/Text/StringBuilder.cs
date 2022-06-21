@@ -452,7 +452,7 @@ namespace System.Text
                 StringBuilder? chunk = this;
                 while (true)
                 {
-                    int indexInBlock = index - chunk.m_ChunkOffset;
+                    int indexInBlock = index - chunk!.m_ChunkOffset;
                     if (indexInBlock >= 0)
                     {
                         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(indexInBlock, chunk.m_ChunkLength);

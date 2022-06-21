@@ -262,7 +262,7 @@ namespace System.Diagnostics
                 throw new ArgumentNullException(nameof(array));
             }
 
-            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)arrayIndex, array.Length);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)arrayIndex, (uint)array.Length);
 
             CopyTo(array.AsSpan().Slice(arrayIndex));
         }

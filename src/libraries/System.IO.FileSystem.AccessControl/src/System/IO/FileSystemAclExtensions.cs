@@ -140,7 +140,7 @@ namespace System.IO
 
             ArgumentOutOfRangeException.ThrowIf(mode < FileMode.CreateNew || mode > FileMode.Append);
 
-            ArgumentOutOfRangeException.ThrowIfNotBetween(tempshare, FileShare.None, (FileShare.ReadWrite | FileShare.Delete));
+            ArgumentOutOfRangeException.ThrowIf(tempshare < FileShare.None || tempshare > (FileShare.ReadWrite | FileShare.Delete));
 
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
 
@@ -238,7 +238,7 @@ namespace System.IO
                 access |= FileAccess.Write;
             }
 
-            ArgumentOutOfRangeException.ThrowIfZero(access);
+            ArgumentOutOfRangeException.ThrowIfZero((int)access);
 
             return access;
         }

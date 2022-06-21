@@ -45,7 +45,7 @@ namespace System.Composition.Hosting.Core
         public CompositionContract(Type contractType, string contractName, IDictionary<string, object> metadataConstraints)
         {
             if (contractType == null) throw new ArgumentNullException(nameof(contractType));
-            ArgumentOutOfRangeException.ThrowIfZero(metadataConstraints?.Count);
+            ArgumentOutOfRangeException.ThrowIf(metadataConstraints?.Count == 0);
 
             _contractType = contractType;
             _contractName = contractName;

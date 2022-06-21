@@ -89,7 +89,10 @@ namespace {ec.Namespace}
 
         private static void CheckName(string? name)
         {
-            ArgumentOutOfRangeException.ThrowIf(name != null && 0 <= name.IndexOf('\0'));
+            if (name != null && 0 <= name.IndexOf('\0'))
+            {
+                throw new ArgumentOutOfRangeException(nameof(name));
+            }
         }
     }
 }

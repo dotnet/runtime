@@ -136,7 +136,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// </exception>
         public CompositionContainer(ComposablePartCatalog? catalog, CompositionOptions compositionOptions, params ExportProvider[]? providers)
         {
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(compositionOptions, (CompositionOptions.DisableSilentRejection | CompositionOptions.IsThreadSafe | CompositionOptions.ExportCompositionService));
+            ArgumentOutOfRangeException.ThrowIf(compositionOptions > (CompositionOptions.DisableSilentRejection | CompositionOptions.IsThreadSafe | CompositionOptions.ExportCompositionService));
             _compositionOptions = compositionOptions;
 
             // We always create the mutable provider

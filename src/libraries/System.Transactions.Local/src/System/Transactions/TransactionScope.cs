@@ -1139,7 +1139,7 @@ namespace System.Transactions
         // Scope timeouts are not governed by MaxTimeout and therefore need a special validate function
         private static void ValidateScopeTimeout(string? paramName, TimeSpan scopeTimeout)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(scopeTimeout, TimeSpan.Zero);
+            ArgumentOutOfRangeException.ThrowIf(scopeTimeout < TimeSpan.Zero);
         }
 
         private void ValidateAndSetAsyncFlowOption(TransactionScopeAsyncFlowOption asyncFlowOption)

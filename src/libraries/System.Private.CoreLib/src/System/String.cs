@@ -142,7 +142,7 @@ namespace System
             char* pStart = ptr + startIndex;
 
             // overflow check
-            ArgumentOutOfRangeException.ThrowIfLessThan(pStart, ptr);
+            ArgumentOutOfRangeException.ThrowIf(pStart < ptr);
 
             if (length == 0)
                 return Empty;
@@ -197,7 +197,7 @@ namespace System
             byte* pStart = (byte*)(value + startIndex);
 
             // overflow check
-            ArgumentOutOfRangeException.ThrowIfLessThan(pStart, value);
+            ArgumentOutOfRangeException.ThrowIf(pStart < value);
 
             return CreateStringForSByteConstructor(pStart, length);
         }
@@ -254,7 +254,7 @@ namespace System
             byte* pStart = (byte*)(value + startIndex);
 
             // overflow check
-            ArgumentOutOfRangeException.ThrowIfLessThan(pStart, value);
+            ArgumentOutOfRangeException.ThrowIf(pStart < value);
 
             return enc.GetString(new ReadOnlySpan<byte>(pStart, length));
         }

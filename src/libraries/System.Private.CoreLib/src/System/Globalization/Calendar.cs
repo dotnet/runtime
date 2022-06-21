@@ -682,7 +682,7 @@ namespace System.Globalization
         internal static long TimeToTicks(int hour, int minute, int second, int millisecond)
         {
             ArgumentOutOfRangeException.ThrowIf((uint)hour >= 24 || (uint)minute >= 60 || (uint)second >= 60);
-            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)millisecond, MillisPerSecond);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(millisecond, MillisPerSecond);
 
             int totalSeconds = hour * 3600 + minute * 60 + second;
             return totalSeconds * TicksPerSecond + millisecond * TicksPerMillisecond;

@@ -392,7 +392,7 @@ namespace System.Transactions
         /// </param>
         internal static TimeSpan ValidateTimeout(TimeSpan transactionTimeout)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(transactionTimeout, TimeSpan.Zero);
+            ArgumentOutOfRangeException.ThrowIf(transactionTimeout < TimeSpan.Zero);
 
             if (MaximumTimeout != TimeSpan.Zero)
             {

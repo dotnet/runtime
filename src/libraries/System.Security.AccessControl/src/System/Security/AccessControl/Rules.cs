@@ -44,9 +44,9 @@ namespace System.Security.AccessControl
                 throw new ArgumentException(SR.Argument_ArgumentZero, nameof(accessMask));
             }
 
-            ArgumentOutOfRangeException.ThrowIfNotBetween(inheritanceFlags, InheritanceFlags.None, (InheritanceFlags.ObjectInherit | InheritanceFlags.ContainerInherit));
+            ArgumentOutOfRangeException.ThrowIf(inheritanceFlags < InheritanceFlags.None || inheritanceFlags > (InheritanceFlags.ObjectInherit | InheritanceFlags.ContainerInherit));
 
-            ArgumentOutOfRangeException.ThrowIfNotBetween(propagationFlags, PropagationFlags.None, (PropagationFlags.NoPropagateInherit | PropagationFlags.InheritOnly));
+            ArgumentOutOfRangeException.ThrowIf(propagationFlags < PropagationFlags.None || propagationFlags > (PropagationFlags.NoPropagateInherit | PropagationFlags.InheritOnly));
 
             if (identity.IsValidTargetType(typeof(SecurityIdentifier)) == false)
             {
@@ -125,9 +125,9 @@ namespace System.Security.AccessControl
             ArgumentOutOfRangeException.ThrowIf(type != AccessControlType.Allow &&
                 type != AccessControlType.Deny);
 
-            ArgumentOutOfRangeException.ThrowIfNotBetween(inheritanceFlags, InheritanceFlags.None, (InheritanceFlags.ObjectInherit | InheritanceFlags.ContainerInherit));
+            ArgumentOutOfRangeException.ThrowIf(inheritanceFlags < InheritanceFlags.None || inheritanceFlags > (InheritanceFlags.ObjectInherit | InheritanceFlags.ContainerInherit));
 
-            ArgumentOutOfRangeException.ThrowIfNotBetween(propagationFlags, PropagationFlags.None, (PropagationFlags.NoPropagateInherit | PropagationFlags.InheritOnly));
+            ArgumentOutOfRangeException.ThrowIf(propagationFlags < PropagationFlags.None || propagationFlags > (PropagationFlags.NoPropagateInherit | PropagationFlags.InheritOnly));
 
             _type = type;
         }

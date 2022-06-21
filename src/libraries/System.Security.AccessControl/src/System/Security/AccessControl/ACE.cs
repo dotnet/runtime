@@ -718,7 +718,7 @@ namespace System.Security.AccessControl
         public CustomAce(AceType type, AceFlags flags, byte[]? opaque)
             : base(type, flags)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(type, AceType.MaxDefinedAceType);
+            ArgumentOutOfRangeException.ThrowIf(type <= AceType.MaxDefinedAceType);
 
             SetOpaque(opaque);
         }

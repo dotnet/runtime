@@ -293,7 +293,7 @@ namespace System.IO.Ports
             }
             set
             {
-                ArgumentOutOfRangeException.ThrowIfNotBetween(value, Handshake.None, Handshake.RequestToSendXOnXOff);
+                ArgumentOutOfRangeException.ThrowIf(value < Handshake.None || value > Handshake.RequestToSendXOnXOff);
 
                 if (IsOpen)
                     _internalSerialStream.Handshake = value;

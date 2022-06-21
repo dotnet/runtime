@@ -22,7 +22,7 @@ namespace System.Configuration
         {
             ArgumentOutOfRangeException.ThrowIfNegative(resolutionInSeconds);
 
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(minValue, maxValue);
+            ArgumentOutOfRangeException.ThrowIf(minValue > maxValue);
 
             _minValue = minValue;
             _maxValue = maxValue;

@@ -43,7 +43,7 @@ namespace Microsoft.Extensions.Caching.Memory
             }
             set
             {
-                ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(value, TimeSpan.Zero);
+                ArgumentOutOfRangeException.ThrowIf(value <= TimeSpan.Zero);
 
                 _absoluteExpirationRelativeToNow = value;
             }
@@ -61,7 +61,7 @@ namespace Microsoft.Extensions.Caching.Memory
             }
             set
             {
-                ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(value, TimeSpan.Zero);
+                ArgumentOutOfRangeException.ThrowIf(value <= TimeSpan.Zero);
                 _slidingExpiration = value;
             }
         }
@@ -91,7 +91,7 @@ namespace Microsoft.Extensions.Caching.Memory
             get => _size;
             set
             {
-                ArgumentOutOfRangeException.ThrowIfNegative(value);
+                ArgumentOutOfRangeException.ThrowIf(value < 0);
 
                 _size = value;
             }

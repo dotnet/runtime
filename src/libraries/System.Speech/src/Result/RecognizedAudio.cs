@@ -74,9 +74,9 @@ namespace System.Speech.Recognition
         {
             ArgumentOutOfRangeException.ThrowIfNegative(audioPosition.Ticks);
             ArgumentOutOfRangeException.ThrowIfNegative(duration.Ticks);
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(audioPosition, _audioDuration);
+            ArgumentOutOfRangeException.ThrowIf(audioPosition > _audioDuration);
 
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(duration, audioPosition + _audioDuration);
+            ArgumentOutOfRangeException.ThrowIf(duration > audioPosition + _audioDuration);
 
             // Get the position and length in bytes offset and bytes length.
             int startPosition = (int)((_audioFormat.BitsPerSample * _audioFormat.SamplesPerSecond * audioPosition.Ticks) / (TimeSpan.TicksPerSecond * 8));

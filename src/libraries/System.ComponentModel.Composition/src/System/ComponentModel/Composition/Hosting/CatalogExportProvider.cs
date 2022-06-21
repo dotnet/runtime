@@ -72,7 +72,7 @@ namespace System.ComponentModel.Composition.Hosting
         public CatalogExportProvider(ComposablePartCatalog catalog, CompositionOptions compositionOptions)
         {
             Requires.NotNull(catalog, nameof(catalog));
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(compositionOptions, (CompositionOptions.DisableSilentRejection | CompositionOptions.IsThreadSafe | CompositionOptions.ExportCompositionService));
+            ArgumentOutOfRangeException.ThrowIf(compositionOptions > (CompositionOptions.DisableSilentRejection | CompositionOptions.IsThreadSafe | CompositionOptions.ExportCompositionService));
 
             _catalog = catalog;
             _compositionOptions = compositionOptions;

@@ -693,7 +693,7 @@ namespace System
 
         private static decimal Round(ref decimal d, int decimals, MidpointRounding mode)
         {
-            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)decimals, 28);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(decimals, 28);
             if ((uint)mode > (uint)MidpointRounding.ToPositiveInfinity)
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, nameof(MidpointRounding)), nameof(mode));
 
