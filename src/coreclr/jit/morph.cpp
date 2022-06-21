@@ -741,8 +741,6 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
     // be empty)
     ExceptionSetFlags prevExceptionFlags = ExceptionSetFlags::None;
 
-    CallArg* prevNonTempExceptionThrowingArg = nullptr;
-
     for (CallArg& arg : Args())
     {
         GenTree* argx = arg.GetEarlyNode();
