@@ -181,7 +181,7 @@ async function sign(type, key, data) {
         key = new Uint8Array([0]);
     }
 
-    const cryptoKey = await crypto.subtle.importKey("raw", key, {name: "HMAC", hash: hash_name}, false, ["sign"]);
+    const cryptoKey = await crypto.subtle.importKey("raw", key, {name: "HMAC", hash: hash_name}, false /* extractable */, ["sign"]);
     const signResult = await crypto.subtle.sign("HMAC", cryptoKey, data);
     return Array.from(new Uint8Array(signResult));
 }
