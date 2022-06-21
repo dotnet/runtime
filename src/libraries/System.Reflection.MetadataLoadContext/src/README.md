@@ -12,7 +12,7 @@ For more information, see the documentation:
 
 The following example shows how print the list of types defined in an assembly.
 
-```
+```cs
 using System;
 using System.Reflection;
 
