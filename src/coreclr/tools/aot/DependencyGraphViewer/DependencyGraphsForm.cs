@@ -87,7 +87,7 @@ Nodes View
 
 Single Node Exploration
 Once the interesting node(s) have been identified in the dependency graph window, select one of them, and then select Explore.
-  - In the Node Explorer window, the Dependent nodes (the ones which dependend on the current node are the nodes displayed above), and the Dependee nodes (the nodes that this node depends on) are displayed below. Each node in the list is paired with a textual reason as to why that edge in the graph exists.
+  - In the Node Explorer window, the Dependent nodes (the ones which depende on the current node) are displayed above, and the Dependee nodes (the nodes that this node depends on) are displayed below. Each node in the list is paired with a textual reason as to why that edge in the graph exists.
   - Select a node to explore further.
 ";
             MessageBox.Show(helpMessage);
@@ -100,6 +100,7 @@ Once the interesting node(s) have been identified in the dependency graph window
 #nullable enable
         private void OpenFile(string? argPath = null)
         {
+            GraphCollection collection = GraphCollection.Singleton;
 
             if (currentFile is null)
             {
@@ -111,6 +112,10 @@ Once the interesting node(s) have been identified in the dependency graph window
                     _fileCount -= 1;
                     dgml.Complete += (fileID) =>
                     {
+                        lock (collection)
+                        {
+                            collection.AddGraph(dgml.g);
+                        }
                         Debug.Assert(fileID == currentFile.FileID);
                         currentFile = null;
                     };

@@ -15,6 +15,8 @@ using System.Threading;
 using System.Xml;
 using System.IO;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using System.Security.Cryptography;
+using System.Xml.Linq;
 
 namespace DependencyLogViewer
 {
@@ -59,12 +61,8 @@ namespace DependencyLogViewer
 
         public List<Graph> Graphs = new List<Graph>();
 
-        public void AddGraph(int pid, int id, string name)
+        public void AddGraph(Graph g)
         {
-            Graph g = new Graph();
-            g.ID = id;
-            g.PID = pid;
-            g.Name = name;
             Graphs.Add(g);
 
             if (DependencyGraphsUI != null)
@@ -84,9 +82,12 @@ namespace DependencyLogViewer
             return null;
         }
 
-        public void AddNodeToGraph(int pid, int id, int index, string name)
+        public void AddNodeToGraph(int pid, int id, int index, string name, Graph g = null)
         {
-            Graph g = GetGraph(pid, id);
+            if (g == null)
+            {
+                g = GetGraph(pid, id);
+            }
             if (g == null)
                 return;
 
@@ -94,9 +95,12 @@ namespace DependencyLogViewer
             g.Nodes.Add(index, n);
         }
 
-        public void AddEdgeToGraph(int pid, int id, int source, int target, string reason)
+        public void AddEdgeToGraph(int pid, int id, int source, int target, string reason, Graph g = null)
         {
-            Graph g = GetGraph(pid, id);
+            if (g == null)
+            {
+                g = GetGraph(pid, id);
+            }
             if (g == null)
                 return;
 
@@ -107,9 +111,12 @@ namespace DependencyLogViewer
             dependee.Dependents.Add(new KeyValuePair<Node, string>(dependent, reason));
         }
 
-        public void AddConditionalEdgeToGraph(int pid, int id, int reason1, int reason2, int target, string reason)
+        public void AddConditionalEdgeToGraph(int pid, int id, int reason1, int reason2, int target, string reason, Graph g = null)
         {
-            Graph g = GetGraph(pid, id);
+            if (g == null)
+            {
+                g = GetGraph(pid, id);
+            }
             if (g == null)
                 return;
 
@@ -157,10 +164,12 @@ namespace DependencyLogViewer
 
         public delegate void OnCompleted(int currFileID);
         public event OnCompleted Complete;
+        public Graph g = null;
 
         public DGMLGraphProcessing(int file)
         {
             FileID = file;
+            Graph g = new Graph();
         }
         public int FileID
         {
@@ -216,6 +225,8 @@ namespace DependencyLogViewer
             XmlReaderSettings settings = new XmlReaderSettings();
             settings.IgnoreWhitespace = true;
 
+            g = new Graph();
+
             using (XmlReader reader = XmlReader.Create(fileContents, settings))
             {
                 while (reader.Read())
@@ -232,17 +243,20 @@ namespace DependencyLogViewer
                                 if (reader.Name == "Node")
                                 {
                                     int id = int.Parse(reader.GetAttribute("Id"));
-                                    collection.AddNodeToGraph(FileID, FileID, id, reader.GetAttribute("Label"));
+                                    collection.AddNodeToGraph(FileID, FileID, id, reader.GetAttribute("Label"), g);
                                 }
                                 else if (reader.Name == "Link")
                                 {
                                     int source = int.Parse(reader.GetAttribute("Source"));
                                     int target = int.Parse(reader.GetAttribute("Target"));
-                                    collection.AddEdgeToGraph(FileID, FileID, source, target, reader.GetAttribute("Reason"));
+                                    collection.AddEdgeToGraph(FileID, FileID, source, target, reader.GetAttribute("Reason"), g);
                                 }
                                 else if (reader.Name == "DirectedGraph")
                                 {
-                                    collection.AddGraph(FileID, FileID, fileContents.Name);
+                                    g.ID = FileID;
+                                    g.PID = FileID;
+                                    g.Name = fileContents.Name;
+
                                     break;
                                 }
                                 break;
@@ -302,7 +316,11 @@ namespace DependencyLogViewer
                                     collection.AddNodeToGraph(eventRead.Pid, eventRead.Id, eventRead.Num1, eventRead.Str);
                                     break;
                                 case GraphEventType.NewGraph:
-                                    collection.AddGraph(eventRead.Pid, eventRead.Id, eventRead.Str);
+                                    Graph g = new Graph();
+                                    g.PID = eventRead.Pid;
+                                    g.ID = eventRead.Id;
+                                    g.Name = eventRead.Str;
+                                    collection.AddGraph(g);
                                     break;
                                 case GraphEventType.NewConditionalEdge:
                                     collection.AddConditionalEdgeToGraph(eventRead.Pid, eventRead.Id, eventRead.Num1, eventRead.Num2, eventRead.Num3, eventRead.Str);
