@@ -38,7 +38,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             get
             {
-                return _lazyDocumentName ?? (_lazyDocumentName = Decode(RawData));
+                return _lazyDocumentName ??= Decode(RawData);
             }
         }
 

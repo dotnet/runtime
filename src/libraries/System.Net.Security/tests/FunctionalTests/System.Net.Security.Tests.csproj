@@ -3,7 +3,6 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS</TargetFrameworks>
-    <Nullable>annotations</Nullable>
     <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>

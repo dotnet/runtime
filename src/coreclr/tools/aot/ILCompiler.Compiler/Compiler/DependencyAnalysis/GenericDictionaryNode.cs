@@ -7,6 +7,8 @@ using System.Diagnostics;
 using Internal.Text;
 using Internal.TypeSystem;
 
+using CombinedDependencyList = System.Collections.Generic.List<ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry>;
+
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
@@ -196,6 +198,13 @@ namespace ILCompiler.DependencyAnalysis
         protected override TypeSystemContext Context => _owningMethod.Context;
         public override TypeSystemEntity OwningEntity => _owningMethod;
         public MethodDesc OwningMethod => _owningMethod;
+        public override bool HasConditionalStaticDependencies => true;
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        {
+            CombinedDependencyList list = null;
+            factory.MetadataManager.GetConditionalDependenciesDueToMethodGenericDictionary(ref list, factory, _owningMethod);
+            return list ?? (IEnumerable<CombinedDependencyListEntry>)System.Array.Empty<CombinedDependencyListEntry>();
+        }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {

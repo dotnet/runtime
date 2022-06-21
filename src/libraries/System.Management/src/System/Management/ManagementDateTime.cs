@@ -248,12 +248,12 @@ namespace System.Management
 
             string dmtfDateTime = date.Year.ToString(frmInt32).PadLeft(4, '0');
 
-            dmtfDateTime = (dmtfDateTime + date.Month.ToString(frmInt32).PadLeft(2, '0'));
-            dmtfDateTime = (dmtfDateTime + date.Day.ToString(frmInt32).PadLeft(2, '0'));
-            dmtfDateTime = (dmtfDateTime + date.Hour.ToString(frmInt32).PadLeft(2, '0'));
-            dmtfDateTime = (dmtfDateTime + date.Minute.ToString(frmInt32).PadLeft(2, '0'));
-            dmtfDateTime = (dmtfDateTime + date.Second.ToString(frmInt32).PadLeft(2, '0'));
-            dmtfDateTime = (dmtfDateTime + ".");
+            dmtfDateTime += date.Month.ToString(frmInt32).PadLeft(2, '0');
+            dmtfDateTime += date.Day.ToString(frmInt32).PadLeft(2, '0');
+            dmtfDateTime += date.Hour.ToString(frmInt32).PadLeft(2, '0');
+            dmtfDateTime += date.Minute.ToString(frmInt32).PadLeft(2, '0');
+            dmtfDateTime += date.Second.ToString(frmInt32).PadLeft(2, '0');
+            dmtfDateTime += ".";
 
             // Construct a DateTime with the precision to Second as same as the passed DateTime and so get
             // the ticks difference so that the microseconds can be calculated
@@ -266,9 +266,9 @@ namespace System.Management
             {
                 strMicrosec = strMicrosec.Substring(0, 6);
             }
-            dmtfDateTime = dmtfDateTime + strMicrosec.PadLeft(6, '0');
+            dmtfDateTime += strMicrosec.PadLeft(6, '0');
             // adding the UTC offset
-            dmtfDateTime = dmtfDateTime + UtcString;
+            dmtfDateTime += UtcString;
 
             return dmtfDateTime;
         }
@@ -358,7 +358,7 @@ namespace System.Management
             // Get a timepan for the additional ticks obtained for the microsecond part of DMTF time interval
             // and then add it to the original timespan
             TimeSpan tsTemp = System.TimeSpan.FromTicks(ticks);
-            timespan = timespan + tsTemp;
+            timespan += tsTemp;
 
             return timespan;
         }
@@ -405,10 +405,10 @@ namespace System.Management
                 throw new System.ArgumentOutOfRangeException(nameof(timespan));
             }
 
-            dmtftimespan = (dmtftimespan + timespan.Hours.ToString(frmInt32).PadLeft(2, '0'));
-            dmtftimespan = (dmtftimespan + timespan.Minutes.ToString(frmInt32).PadLeft(2, '0'));
-            dmtftimespan = (dmtftimespan + timespan.Seconds.ToString(frmInt32).PadLeft(2, '0'));
-            dmtftimespan = (dmtftimespan + ".");
+            dmtftimespan += timespan.Hours.ToString(frmInt32).PadLeft(2, '0');
+            dmtftimespan += timespan.Minutes.ToString(frmInt32).PadLeft(2, '0');
+            dmtftimespan += timespan.Seconds.ToString(frmInt32).PadLeft(2, '0');
+            dmtftimespan += ".";
 
             // Construct a DateTime with the precision to Second as same as the passed DateTime and so get
             // the ticks difference so that the microseconds can be calculated
@@ -421,9 +421,9 @@ namespace System.Management
             {
                 strMicrosec = strMicrosec.Substring(0, 6);
             }
-            dmtftimespan = dmtftimespan + strMicrosec.PadLeft(6, '0');
+            dmtftimespan += strMicrosec.PadLeft(6, '0');
 
-            dmtftimespan = dmtftimespan + ":000";
+            dmtftimespan += ":000";
 
             return dmtftimespan;
         }

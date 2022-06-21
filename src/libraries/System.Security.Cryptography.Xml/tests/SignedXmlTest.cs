@@ -1447,7 +1447,7 @@ namespace System.Security.Cryptography.Xml.Tests
 ";
                 SignedXml sign = GetSignedXml(string.Format(xml, bits));
                 // only multiple of 8 bits are supported
-                sign.CheckSignature(new HMACSHA1(Encoding.ASCII.GetBytes("secret")));
+                sign.CheckSignature(new HMACSHA1("secret"u8.ToArray()));
             }
 
             for (int i = 1; i < 160; i++)
@@ -1483,10 +1483,10 @@ namespace System.Security.Cryptography.Xml.Tests
 ";
             SignedXml sign = GetSignedXml(xml);
 
-            CheckErratum(sign, new HMACSHA1(Encoding.ASCII.GetBytes("no clue")), "1");
+            CheckErratum(sign, new HMACSHA1("no clue"u8.ToArray()), "1");
             CheckErratum(sign, new HMACSHA1(Encoding.ASCII.GetBytes("")), "2");
-            CheckErratum(sign, new HMACSHA1(Encoding.ASCII.GetBytes("oops")), "3");
-            CheckErratum(sign, new HMACSHA1(Encoding.ASCII.GetBytes("secret")), "4");
+            CheckErratum(sign, new HMACSHA1("oops"u8.ToArray()), "3");
+            CheckErratum(sign, new HMACSHA1("secret"u8.ToArray()), "4");
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20429")]
@@ -1496,7 +1496,7 @@ namespace System.Security.Cryptography.Xml.Tests
             // 72 is a multiple of 8 but smaller than the minimum of 80 bits
             string xml = @"<Signature xmlns=""http://www.w3.org/2000/09/xmldsig#""><SignedInfo><CanonicalizationMethod Algorithm=""http://www.w3.org/TR/2001/REC-xml-c14n-20010315"" /><SignatureMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#hmac-sha1""><HMACOutputLength>72</HMACOutputLength></SignatureMethod><Reference URI=""#object""><DigestMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#sha1"" /><DigestValue>nz4GS0NbH2SrWlD/4fX313CoTzc=</DigestValue></Reference></SignedInfo><SignatureValue>2dimB+P5Aw5K</SignatureValue><Object Id=""object"">some other text</Object></Signature>";
             SignedXml sign = GetSignedXml(xml);
-            CheckErratum(sign, new HMACSHA1(Encoding.ASCII.GetBytes("secret")), "72");
+            CheckErratum(sign, new HMACSHA1("secret"u8.ToArray()), "72");
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20429")]
@@ -1506,7 +1506,7 @@ namespace System.Security.Cryptography.Xml.Tests
             // 80 bits is the minimum (and the half-size of HMACSHA1)
             string xml = @"<Signature xmlns=""http://www.w3.org/2000/09/xmldsig#""><SignedInfo><CanonicalizationMethod Algorithm=""http://www.w3.org/TR/2001/REC-xml-c14n-20010315"" /><SignatureMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#hmac-sha1""><HMACOutputLength>80</HMACOutputLength></SignatureMethod><Reference URI=""#object""><DigestMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#sha1"" /><DigestValue>nz4GS0NbH2SrWlD/4fX313CoTzc=</DigestValue></Reference></SignedInfo><SignatureValue>jVQPtLj61zNYjw==</SignatureValue><Object Id=""object"">some other text</Object></Signature>";
             SignedXml sign = GetSignedXml(xml);
-            Assert.True(sign.CheckSignature(new HMACSHA1(Encoding.ASCII.GetBytes("secret"))));
+            Assert.True(sign.CheckSignature(new HMACSHA1("secret"u8.ToArray())));
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20429")]
@@ -1516,7 +1516,7 @@ namespace System.Security.Cryptography.Xml.Tests
             // 80bits is smaller than the half-size of HMACSHA256
             string xml = @"<Signature xmlns=""http://www.w3.org/2000/09/xmldsig#""><SignedInfo><CanonicalizationMethod Algorithm=""http://www.w3.org/TR/2001/REC-xml-c14n-20010315"" /><SignatureMethod Algorithm=""http://www.w3.org/2001/04/xmldsig-more#hmac-sha256""><HMACOutputLength>80</HMACOutputLength></SignatureMethod><Reference URI=""#object""><DigestMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#sha1"" /><DigestValue>nz4GS0NbH2SrWlD/4fX313CoTzc=</DigestValue></Reference></SignedInfo><SignatureValue>vPtw7zKVV/JwQg==</SignatureValue><Object Id=""object"">some other text</Object></Signature>";
             SignedXml sign = GetSignedXml(xml);
-            CheckErratum(sign, new HMACSHA256(Encoding.ASCII.GetBytes("secret")), "80");
+            CheckErratum(sign, new HMACSHA256("secret"u8.ToArray()), "80");
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20429")]
@@ -1526,7 +1526,7 @@ namespace System.Security.Cryptography.Xml.Tests
             // 128 is the half-size of HMACSHA256
             string xml = @"<Signature xmlns=""http://www.w3.org/2000/09/xmldsig#""><SignedInfo><CanonicalizationMethod Algorithm=""http://www.w3.org/TR/2001/REC-xml-c14n-20010315"" /><SignatureMethod Algorithm=""http://www.w3.org/2001/04/xmldsig-more#hmac-sha256""><HMACOutputLength>128</HMACOutputLength></SignatureMethod><Reference URI=""#object""><DigestMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#sha1"" /><DigestValue>nz4GS0NbH2SrWlD/4fX313CoTzc=</DigestValue></Reference></SignedInfo><SignatureValue>aegpvkAwOL8gN/CjSnW6qw==</SignatureValue><Object Id=""object"">some other text</Object></Signature>";
             SignedXml sign = GetSignedXml(xml);
-            Assert.True(sign.CheckSignature(new HMACSHA256(Encoding.ASCII.GetBytes("secret"))));
+            Assert.True(sign.CheckSignature(new HMACSHA256("secret"u8.ToArray())));
         }
 
         [Fact]
@@ -1534,7 +1534,7 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             string xml = @"<Signature xmlns=""http://www.w3.org/2000/09/xmldsig#""><SignedInfo><CanonicalizationMethod Algorithm=""http://www.w3.org/TR/2001/REC-xml-c14n-20010315"" /><SignatureMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#hmac-sha1"" /><Reference URI=""#object""><DigestMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#sha1"" /><DigestValue>7/XTsHaBSOnJ/jXD5v0zL6VKYsk=</DigestValue></Reference></SignedInfo><SignatureValue>a0goL9esBUKPqtFYgpp2KST4huk=</SignatureValue><Object Id=""object"">some text</Object></Signature>";
             SignedXml sign = GetSignedXml(xml);
-            Assert.True(sign.CheckSignature(new HMACSHA1(Encoding.ASCII.GetBytes("secret"))));
+            Assert.True(sign.CheckSignature(new HMACSHA1("secret"u8.ToArray())));
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20429")]
@@ -1559,7 +1559,7 @@ namespace System.Security.Cryptography.Xml.Tests
 </Signature>
 ";
             SignedXml sign = GetSignedXml(xml);
-            Assert.Throws<CryptographicException>(() => sign.CheckSignature(new HMACSHA1(Encoding.ASCII.GetBytes("no clue"))));
+            Assert.Throws<CryptographicException>(() => sign.CheckSignature(new HMACSHA1("no clue"u8.ToArray())));
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20429")]
@@ -1584,7 +1584,7 @@ namespace System.Security.Cryptography.Xml.Tests
 </Signature>
 ";
             SignedXml sign = GetSignedXml(xml);
-            Assert.Throws<FormatException>(() => sign.CheckSignature(new HMACSHA1(Encoding.ASCII.GetBytes("no clue"))));
+            Assert.Throws<FormatException>(() => sign.CheckSignature(new HMACSHA1("no clue"u8.ToArray())));
         }
 
         [Fact]

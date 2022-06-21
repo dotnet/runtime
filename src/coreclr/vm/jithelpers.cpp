@@ -2691,6 +2691,10 @@ HCIMPL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* unboxedData)
     GCPROTECT_BEGININTERIOR(unboxedData);
     HELPER_METHOD_POLL();
 
+    // A null can be passed for boxing of a null ref.
+    if (unboxedData == NULL)
+        COMPlusThrow(kNullReferenceException);
+
     TypeHandle clsHnd(type);
 
     _ASSERTE(!clsHnd.IsTypeDesc());  // boxable types have method tables
@@ -3146,7 +3150,7 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
         if (pMTDictionary != pDeclaringMTDictionary)
         {
             TypeHandle** pPerInstInfo = (TypeHandle**)pMT->GetPerInstInfo();
-            FastInterlockExchangePointer(pPerInstInfo + dictionaryIndex, (TypeHandle*)pDeclaringMTDictionary);
+            InterlockedExchangeT(pPerInstInfo + dictionaryIndex, (TypeHandle*)pDeclaringMTDictionary);
         }
     }
 
@@ -4753,7 +4757,7 @@ HCIMPL0(VOID, JIT_StressGC)
         BYTE* retInstrs = ((BYTE*) *__ms->pRetAddr()) - 4;
         _ASSERTE(retInstrs[-1] == 0xE8);                // it is a call instruction
                 // Wack it to point to the JITStressGCNop instead
-        FastInterlockExchange((LONG*) retInstrs), (LONG) JIT_StressGC_NOP);
+        InterlockedExchange((LONG*) retInstrs), (LONG) JIT_StressGC_NOP);
 #endif // _X86
 
     HELPER_METHOD_FRAME_END();
@@ -5328,7 +5332,7 @@ void JIT_PartialCompilationPatchpoint(int* counter, int ilOffset)
 
 #endif // FEATURE_ON_STACK_REPLACEMENT
 
-static unsigned ClassProfileRand()
+static unsigned HandleHistogramProfileRand()
 {
     // generate a random number (xorshift32)
     //
@@ -5345,7 +5349,43 @@ static unsigned ClassProfileRand()
     return x;
 }
 
-HCIMPL2(void, JIT_ClassProfile32, Object *obj, void* tableAddress)
+template<typename T>
+static int CheckSample(T index)
+{
+    const unsigned S = ICorJitInfo::HandleHistogram32::SIZE;
+    const unsigned N = ICorJitInfo::HandleHistogram32::SAMPLE_INTERVAL;
+    static_assert_no_msg(N >= S);
+    static_assert_no_msg((std::is_same<T, uint32_t>::value || std::is_same<T, uint64_t>::value));
+
+    // If table is not yet full, just add entries in.
+    //
+    if (index < S)
+    {
+        return static_cast<int>(index);
+    }
+
+    unsigned x = HandleHistogramProfileRand();
+    // N is the sampling window size,
+    // it should be larger than the table size.
+    //
+    // If we let N == count then we are building an entire
+    // run sample -- probability of update decreases over time.
+    // Would be a good strategy for an AOT profiler.
+    //
+    // But for TieredPGO we would prefer something that is more
+    // weighted to recent observations.
+    //
+    // For S=4, N=128, we'll sample (on average) every 32nd call.
+    //
+    if ((x % N) >= S)
+    {
+        return -1;
+    }
+
+    return static_cast<int>(x % S);
+}
+
+HCIMPL2(void, JIT_ClassProfile32, Object *obj, ICorJitInfo::HandleHistogram32* classProfile)
 {
     FCALL_CONTRACT;
     FC_GC_POLL_NOT_NEEDED();
@@ -5353,12 +5393,14 @@ HCIMPL2(void, JIT_ClassProfile32, Object *obj, void* tableAddress)
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     VALIDATEOBJECTREF(objRef);
 
-    ICorJitInfo::ClassProfile32* const classProfile = (ICorJitInfo::ClassProfile32*) tableAddress;
     volatile unsigned* pCount = (volatile unsigned*) &classProfile->Count;
-    const unsigned count = (*pCount)++;
-    const unsigned S = ICorJitInfo::ClassProfile32::SIZE;
-    const unsigned N = ICorJitInfo::ClassProfile32::SAMPLE_INTERVAL;
-    _ASSERTE(N >= S);
+    const unsigned callIndex = (*pCount)++;
+
+    int sampleIndex = CheckSample(callIndex);
+    if (sampleIndex == -1)
+    {
+        return;
+    }
 
     if (objRef == NULL)
     {
@@ -5373,7 +5415,7 @@ HCIMPL2(void, JIT_ClassProfile32, Object *obj, void* tableAddress)
     //
     if (pMT->GetLoaderAllocator()->IsCollectible())
     {
-        pMT = (MethodTable*)DEFAULT_UNKNOWN_TYPEHANDLE;
+        pMT = (MethodTable*)DEFAULT_UNKNOWN_HANDLE;
     }
 
 #ifdef _DEBUG
@@ -5381,39 +5423,12 @@ HCIMPL2(void, JIT_ClassProfile32, Object *obj, void* tableAddress)
     PgoManager::VerifyAddress(classProfile + 1);
 #endif
 
-    // If table is not yet full, just add entries in.
-    //
-    if (count < S)
-    {
-        classProfile->ClassTable[count] = (CORINFO_CLASS_HANDLE)pMT;
-    }
-    else
-    {
-        unsigned x = ClassProfileRand();
-
-        // N is the sampling window size,
-        // it should be larger than the table size.
-        //
-        // If we let N == count then we are building an entire
-        // run sample -- probability of update decreases over time.
-        // Would be a good strategy for an AOT profiler.
-        //
-        // But for TieredPGO we would prefer something that is more
-        // weighted to recent observations.
-        //
-        // For S=4, N=128, we'll sample (on average) every 32nd call.
-        //
-        if ((x % N) < S)
-        {
-            unsigned i = x % S;
-            classProfile->ClassTable[i] = (CORINFO_CLASS_HANDLE)pMT;
-        }
-    }
+    classProfile->HandleTable[sampleIndex] = (CORINFO_CLASS_HANDLE)pMT;
 }
 HCIMPLEND
 
 // Version of helper above used when the count is 64-bit
-HCIMPL2(void, JIT_ClassProfile64, Object *obj, void* tableAddress)
+HCIMPL2(void, JIT_ClassProfile64, Object *obj, ICorJitInfo::HandleHistogram64* classProfile)
 {
     FCALL_CONTRACT;
     FC_GC_POLL_NOT_NEEDED();
@@ -5421,12 +5436,14 @@ HCIMPL2(void, JIT_ClassProfile64, Object *obj, void* tableAddress)
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     VALIDATEOBJECTREF(objRef);
 
-    ICorJitInfo::ClassProfile64* const classProfile = (ICorJitInfo::ClassProfile64*) tableAddress;
     volatile uint64_t* pCount = (volatile uint64_t*) &classProfile->Count;
-    const uint64_t count = (*pCount)++;
-    const unsigned S = ICorJitInfo::ClassProfile32::SIZE;
-    const unsigned N = ICorJitInfo::ClassProfile32::SAMPLE_INTERVAL;
-    _ASSERTE(N >= S);
+    const uint64_t callIndex = (*pCount)++;
+
+    int sampleIndex = CheckSample(callIndex);
+    if (sampleIndex == -1)
+    {
+        return;
+    }
 
     if (objRef == NULL)
     {
@@ -5437,7 +5454,7 @@ HCIMPL2(void, JIT_ClassProfile64, Object *obj, void* tableAddress)
 
     if (pMT->GetLoaderAllocator()->IsCollectible())
     {
-        pMT = (MethodTable*)DEFAULT_UNKNOWN_TYPEHANDLE;
+        pMT = (MethodTable*)DEFAULT_UNKNOWN_HANDLE;
     }
 
 #ifdef _DEBUG
@@ -5445,20 +5462,230 @@ HCIMPL2(void, JIT_ClassProfile64, Object *obj, void* tableAddress)
     PgoManager::VerifyAddress(classProfile + 1);
 #endif
 
-    if (count < S)
-    {
-        classProfile->ClassTable[count] = (CORINFO_CLASS_HANDLE)pMT;
-    }
-    else
-    {
-        unsigned x = ClassProfileRand();
+    classProfile->HandleTable[sampleIndex] = (CORINFO_CLASS_HANDLE)pMT;
+}
+HCIMPLEND
 
-        if ((x % N) < S)
+HCIMPL2(void, JIT_DelegateProfile32, Object *obj, ICorJitInfo::HandleHistogram32* methodProfile)
+{
+    FCALL_CONTRACT;
+    FC_GC_POLL_NOT_NEEDED();
+
+    OBJECTREF objRef = ObjectToOBJECTREF(obj);
+    VALIDATEOBJECTREF(objRef);
+
+    volatile unsigned* pMethodCount = (volatile unsigned*) &methodProfile->Count;
+    const unsigned methodCallIndex = (*pMethodCount)++;
+    int methodSampleIndex = CheckSample(methodCallIndex);
+
+    if (methodSampleIndex == -1)
+    {
+        return;
+    }
+
+    if (objRef == NULL)
+    {
+        return;
+    }
+
+    MethodTable* pMT = objRef->GetMethodTable();
+
+    _ASSERTE(pMT->IsDelegate());
+
+    // Resolve method. We handle only the common "direct" delegate as that is
+    // in any case the only one we can reasonably do GDV for. For instance,
+    // open delegates are filtered out here, and many cases with inner
+    // "complicated" logic as well (e.g. static functions, multicast, unmanaged
+    // functions).
+    //
+    MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
+    DELEGATEREF del = (DELEGATEREF)objRef;
+    if ((del->GetInvocationCount() == 0) && (del->GetMethodPtrAux() == NULL))
+    {
+        MethodDesc* pMD = NonVirtualEntry2MethodDesc(del->GetMethodPtr());
+        if ((pMD != nullptr) && !pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
         {
-            unsigned i = x % S;
-            classProfile->ClassTable[i] = (CORINFO_CLASS_HANDLE)pMT;
+            pRecordedMD = pMD;
         }
     }
+
+#ifdef _DEBUG
+    PgoManager::VerifyAddress(methodProfile);
+    PgoManager::VerifyAddress(methodProfile + 1);
+#endif
+
+    // If table is not yet full, just add entries in.
+    //
+    methodProfile->HandleTable[methodSampleIndex] = (CORINFO_METHOD_HANDLE)pRecordedMD;
+}
+HCIMPLEND
+
+// Version of helper above used when the count is 64-bit
+HCIMPL3(void, JIT_DelegateProfile64, Object *obj, CORINFO_METHOD_HANDLE baseMethod, ICorJitInfo::HandleHistogram64* methodProfile)
+{
+    FCALL_CONTRACT;
+    FC_GC_POLL_NOT_NEEDED();
+
+    OBJECTREF objRef = ObjectToOBJECTREF(obj);
+    VALIDATEOBJECTREF(objRef);
+
+    volatile uint64_t* pMethodCount = (volatile uint64_t*) &methodProfile->Count;
+    const uint64_t methodCallIndex = (*pMethodCount)++;
+    int methodSampleIndex = CheckSample(methodCallIndex);
+
+    if (methodSampleIndex == -1)
+    {
+        return;
+    }
+
+    if (objRef == NULL)
+    {
+        return;
+    }
+
+    MethodTable* pMT = objRef->GetMethodTable();
+
+    _ASSERTE(pMT->IsDelegate());
+
+    // Resolve method. We handle only the common "direct" delegate as that is
+    // in any case the only one we can reasonably do GDV for. For instance,
+    // open delegates are filtered out here, and many cases with inner
+    // "complicated" logic as well (e.g. static functions, multicast, unmanaged
+    // functions).
+    //
+    MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
+    DELEGATEREF del = (DELEGATEREF)objRef;
+    if ((del->GetInvocationCount() == 0) && (del->GetMethodPtrAux() == NULL))
+    {
+        MethodDesc* pMD = NonVirtualEntry2MethodDesc(del->GetMethodPtr());
+        if ((pMD != nullptr) && !pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
+        {
+            pRecordedMD = pMD;
+        }
+    }
+
+#ifdef _DEBUG
+    PgoManager::VerifyAddress(methodProfile);
+    PgoManager::VerifyAddress(methodProfile + 1);
+#endif
+
+    // If table is not yet full, just add entries in.
+    //
+    methodProfile->HandleTable[methodSampleIndex] = (CORINFO_METHOD_HANDLE)pRecordedMD;
+}
+HCIMPLEND
+
+HCIMPL3(void, JIT_VTableProfile32, Object* obj, CORINFO_METHOD_HANDLE baseMethod, ICorJitInfo::HandleHistogram32* methodProfile)
+{
+    FCALL_CONTRACT;
+    FC_GC_POLL_NOT_NEEDED();
+
+    OBJECTREF objRef = ObjectToOBJECTREF(obj);
+    VALIDATEOBJECTREF(objRef);
+
+    volatile unsigned* pMethodCount = (volatile unsigned*) &methodProfile->Count;
+    const unsigned methodCallIndex = (*pMethodCount)++;
+    int methodSampleIndex = CheckSample(methodCallIndex);
+
+    if (methodSampleIndex == -1)
+    {
+        return;
+    }
+
+    if (objRef == NULL)
+    {
+        return;
+    }
+
+    MethodDesc* pBaseMD = GetMethod(baseMethod);
+
+    // Method better be virtual
+    _ASSERTE(pBaseMD->IsVirtual());
+
+    // We do not expect to see interface methods here as we cannot efficiently
+    // use method handle information for these anyway.
+    _ASSERTE(!pBaseMD->IsInterface());
+
+    // Shouldn't be doing this for instantiated methods as they live elsewhere
+    _ASSERTE(!pBaseMD->HasMethodInstantiation());
+
+    MethodTable* pMT = objRef->GetMethodTable();
+
+    // Resolve method
+    WORD slot = pBaseMD->GetSlot();
+    _ASSERTE(slot < pBaseMD->GetMethodTable()->GetNumVirtuals());
+
+    MethodDesc* pMD = pMT->GetMethodDescForSlot(slot);
+
+    MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
+    if (!pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
+    {
+        pRecordedMD = pMD;
+    }
+
+#ifdef _DEBUG
+    PgoManager::VerifyAddress(methodProfile);
+    PgoManager::VerifyAddress(methodProfile + 1);
+#endif
+
+    methodProfile->HandleTable[methodSampleIndex] = (CORINFO_METHOD_HANDLE)pRecordedMD;
+}
+HCIMPLEND
+
+HCIMPL3(void, JIT_VTableProfile64, Object* obj, CORINFO_METHOD_HANDLE baseMethod, ICorJitInfo::HandleHistogram64* methodProfile)
+{
+    FCALL_CONTRACT;
+    FC_GC_POLL_NOT_NEEDED();
+
+    OBJECTREF objRef = ObjectToOBJECTREF(obj);
+    VALIDATEOBJECTREF(objRef);
+
+    volatile uint64_t* pMethodCount = (volatile uint64_t*) &methodProfile->Count;
+    const uint64_t methodCallIndex = (*pMethodCount)++;
+    int methodSampleIndex = CheckSample(methodCallIndex);
+
+    if (methodSampleIndex == -1)
+    {
+        return;
+    }
+
+    if (objRef == NULL)
+    {
+        return;
+    }
+
+    MethodDesc* pBaseMD = GetMethod(baseMethod);
+
+    // Method better be virtual
+    _ASSERTE(pBaseMD->IsVirtual());
+
+    // We do not expect to see interface methods here as we cannot efficiently
+    // use method handle information for these anyway.
+    _ASSERTE(!pBaseMD->IsInterface());
+
+    // Shouldn't be doing this for instantiated methods as they live elsewhere
+    _ASSERTE(!pBaseMD->HasMethodInstantiation());
+
+    MethodTable* pMT = objRef->GetMethodTable();
+
+    // Resolve method
+    WORD slot = pBaseMD->GetSlot();
+    _ASSERTE(slot < pBaseMD->GetMethodTable()->GetNumVirtuals());
+
+    MethodDesc* pMD = pMT->GetMethodDescForSlot(slot);
+
+    MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
+    if (!pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
+    {
+        pRecordedMD = pMD;
+    }
+
+#ifdef _DEBUG
+    PgoManager::VerifyAddress(methodProfile);
+    PgoManager::VerifyAddress(methodProfile + 1);
+#endif
+
+    methodProfile->HandleTable[methodSampleIndex] = (CORINFO_METHOD_HANDLE)pRecordedMD;
 }
 HCIMPLEND
 

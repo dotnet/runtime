@@ -704,9 +704,9 @@ namespace System.IO.Ports
             if (_dataReceived != null)
             {
                 ThreadPool.QueueUserWorkItem(s => {
-                        var thisRef = (SerialStream)s;
-                        thisRef._dataReceived?.Invoke(thisRef, new SerialDataReceivedEventArgs(SerialData.Chars));
-                    }, this);
+                    var thisRef = (SerialStream)s;
+                    thisRef._dataReceived?.Invoke(thisRef, new SerialDataReceivedEventArgs(SerialData.Chars));
+                }, this);
             }
         }
 
@@ -715,9 +715,9 @@ namespace System.IO.Ports
             if (_pinChanged != null)
             {
                 ThreadPool.QueueUserWorkItem(s => {
-                        var thisRef = (SerialStream)s;
-                        thisRef._pinChanged?.Invoke(thisRef, new SerialPinChangedEventArgs(pinChanged));
-                    }, this);
+                    var thisRef = (SerialStream)s;
+                    thisRef._pinChanged?.Invoke(thisRef, new SerialPinChangedEventArgs(pinChanged));
+                }, this);
             }
         }
 
@@ -726,13 +726,9 @@ namespace System.IO.Ports
             if (_dataReceived != null)
             {
                 ThreadPool.QueueUserWorkItem(s => {
-                        var thisRef = (SerialStream)s;
-                        SerialDataReceivedEventHandler dataReceived = thisRef._dataReceived;
-                        if (dataReceived != null)
-                        {
-                            dataReceived(thisRef, new SerialDataReceivedEventArgs(SerialData.Eof));
-                        }
-                    }, this);
+                    var thisRef = (SerialStream)s;
+                    thisRef._dataReceived?.Invoke(thisRef, new SerialDataReceivedEventArgs(SerialData.Eof));
+                }, this);
             }
         }
 

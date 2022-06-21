@@ -1009,7 +1009,7 @@ namespace System.Threading.Tasks
                             int nToExclusiveLocal;
 
                             if (currentWorker.FindNewWork32(out nFromInclusiveLocal, out nToExclusiveLocal) == false ||
-                                sharedPStateFlags.ShouldExitLoop(nFromInclusiveLocal) == true)
+                                sharedPStateFlags.ShouldExitLoop(nFromInclusiveLocal))
                             {
                                 return; // no need to run
                             }
@@ -1271,7 +1271,7 @@ namespace System.Threading.Tasks
                             long nToExclusiveLocal;
 
                             if (currentWorker.FindNewWork(out nFromInclusiveLocal, out nToExclusiveLocal) == false ||
-                                sharedPStateFlags.ShouldExitLoop(nFromInclusiveLocal) == true)
+                                sharedPStateFlags.ShouldExitLoop(nFromInclusiveLocal))
                             {
                                 return; // no need to run
                             }

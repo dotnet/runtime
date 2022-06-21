@@ -1117,32 +1117,11 @@ namespace System
         }
 
         //
-        // IAdditionOperators
-        //
-
-        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
-        static decimal IAdditionOperators<decimal, decimal, decimal>.operator checked +(decimal left, decimal right) => left + right;
-
-        //
         // IAdditiveIdentity
         //
 
         /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
         static decimal IAdditiveIdentity<decimal, decimal>.AdditiveIdentity => AdditiveIdentity;
-
-        //
-        // IDecrementOperators
-        //
-
-        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_CheckedDecrement(TSelf)" />
-        static decimal IDecrementOperators<decimal>.operator checked --(decimal value) => --value;
-
-        //
-        // IDivisionOperators
-        //
-
-        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        static decimal IDivisionOperators<decimal, decimal, decimal>.operator checked /(decimal left, decimal right) => left / right;
 
         //
         // IFloatingPoint
@@ -1259,13 +1238,6 @@ namespace System
         }
 
         //
-        // IIncrementOperators
-        //
-
-        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
-        static decimal IIncrementOperators<decimal>.operator checked ++(decimal value) => ++value;
-
-        //
         // IMinMaxValue
         //
 
@@ -1281,13 +1253,6 @@ namespace System
 
         /// <inheritdoc cref="IMultiplicativeIdentity{TSelf, TResult}.MultiplicativeIdentity" />
         static decimal IMultiplicativeIdentity<decimal, decimal>.MultiplicativeIdentity => MultiplicativeIdentity;
-
-        //
-        // IMultiplyOperators
-        //
-
-        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
-        public static decimal operator checked *(decimal left, decimal right) => left * right;
 
         //
         // INumber
@@ -1790,19 +1755,5 @@ namespace System
 
         /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out decimal result) => TryParse(s, NumberStyles.Number, provider, out result);
-
-        //
-        // ISubtractionOperators
-        //
-
-        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
-        static decimal ISubtractionOperators<decimal, decimal, decimal>.operator checked -(decimal left, decimal right) => left - right;
-
-        //
-        // IUnaryNegationOperators
-        //
-
-        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
-        static decimal IUnaryNegationOperators<decimal, decimal>.operator checked -(decimal value) => -value;
     }
 }

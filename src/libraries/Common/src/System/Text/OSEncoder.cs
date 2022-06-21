@@ -72,7 +72,7 @@ namespace System.Text
             return result;
         }
 
-        public unsafe override int GetByteCount(char* chars, int count, bool flush)
+        public override unsafe int GetByteCount(char* chars, int count, bool flush)
         {
             ArgumentNullException.ThrowIfNull(chars);
 
@@ -128,7 +128,7 @@ namespace System.Text
             }
         }
 
-        public unsafe override int GetBytes(char* chars, int charCount, byte* bytes, int byteCount, bool flush)
+        public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount, bool flush)
         {
             ArgumentNullException.ThrowIfNull(chars);
             ArgumentNullException.ThrowIfNull(bytes);

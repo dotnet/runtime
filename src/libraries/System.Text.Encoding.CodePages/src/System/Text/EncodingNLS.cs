@@ -34,10 +34,10 @@ namespace System.Text
         {
         }
 
-        public unsafe abstract int GetByteCount(char* chars, int count, EncoderNLS? encoder);
-        public unsafe abstract int GetBytes(char* chars, int charCount, byte* bytes, int byteCount, EncoderNLS? encoder);
-        public unsafe abstract int GetCharCount(byte* bytes, int count, DecoderNLS? decoder);
-        public unsafe abstract int GetChars(byte* bytes, int byteCount, char* chars, int charCount, DecoderNLS? decoder);
+        public abstract unsafe int GetByteCount(char* chars, int count, EncoderNLS? encoder);
+        public abstract unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount, EncoderNLS? encoder);
+        public abstract unsafe int GetCharCount(byte* bytes, int count, DecoderNLS? decoder);
+        public abstract unsafe int GetChars(byte* bytes, int byteCount, char* chars, int charCount, DecoderNLS? decoder);
 
         // Returns the number of bytes required to encode a range of characters in
         // a character array.
@@ -265,7 +265,7 @@ namespace System.Text
 
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
         // So if you fix this, fix the others.
-        public unsafe override int GetChars(byte* bytes, int byteCount, char* chars, int charCount)
+        public override unsafe int GetChars(byte* bytes, int byteCount, char* chars, int charCount)
         {
             if (bytes is null)
                 throw new ArgumentNullException(nameof(bytes));

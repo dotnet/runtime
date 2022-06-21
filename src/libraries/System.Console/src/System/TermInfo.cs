@@ -498,9 +498,8 @@ namespace System
             /// <summary>Finds the null-terminator for a string that begins at the specified position.</summary>
             private static int FindNullTerminator(byte[] buffer, int pos)
             {
-                int termPos = pos;
-                while (termPos < buffer.Length && buffer[termPos] != '\0') termPos++;
-                return termPos;
+                int i = buffer.AsSpan(pos).IndexOf((byte)'\0');
+                return i >= 0 ? pos + i : buffer.Length;
             }
         }
 
@@ -903,12 +902,12 @@ namespace System
                 if (char.IsAsciiLetterUpper(c))
                 {
                     index = c - 'A';
-                    return staticVars ?? (staticVars = new FormatParam[26]); // one slot for each letter of alphabet
+                    return staticVars ??= new FormatParam[26]; // one slot for each letter of alphabet
                 }
                 else if (char.IsAsciiLetterLower(c))
                 {
                     index = c - 'a';
-                    return dynamicVars ?? (dynamicVars = new FormatParam[26]); // one slot for each letter of alphabet
+                    return dynamicVars ??= new FormatParam[26]; // one slot for each letter of alphabet
                 }
                 else throw new InvalidOperationException(SR.IO_TermInfoInvalid);
             }

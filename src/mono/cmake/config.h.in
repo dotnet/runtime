@@ -10,7 +10,6 @@
 #pragma warning(disable:4152) // W4: nonstandard extension, function/data pointer conversion in expression
 #pragma warning(disable:4201) // W4: nonstandard extension used: nameless struct/union
 #pragma warning(disable:4210) // W4: nonstandard extension used: function given file scope
-#pragma warning(disable:4244) // W2: integer conversion, possible loss of data
 #pragma warning(disable:4245) // W4: signed/unsigned mismatch
 #pragma warning(disable:4389) // W4: signed/unsigned mismatch
 #pragma warning(disable:4505) // W4: unreferenced function with internal linkage has been removed
@@ -705,9 +704,6 @@
 
 /* ... */
 #cmakedefine TARGET_PS3 1
-
-/* ... */
-#cmakedefine __mono_ppc64__ 1
 
 /* ... */
 #cmakedefine TARGET_XBOX360 1

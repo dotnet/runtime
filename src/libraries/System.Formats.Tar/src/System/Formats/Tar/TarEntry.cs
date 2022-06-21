@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using Microsoft.Win32.SafeHandles;
@@ -15,42 +14,72 @@ namespace System.Formats.Tar
     public abstract partial class TarEntry
     {
         internal TarHeader _header;
+
         // Used to access the data section of this entry in an unseekable file
         private TarReader? _readerOfOrigin;
 
-        // Constructor used when reading an existing archive.
-        internal TarEntry(TarHeader header, TarReader readerOfOrigin)
+        // Constructor called when reading a TarEntry from a TarReader.
+        internal TarEntry(TarHeader header, TarReader readerOfOrigin, TarEntryFormat format)
         {
+            // This constructor is called after reading a header from the archive,
+            // and we should've already detected the format of the header.
+            Debug.Assert(header._format == format);
             _header = header;
             _readerOfOrigin = readerOfOrigin;
         }
 
-        // Constructor called when creating a new 'TarEntry*' instance that can be passed to a TarWriter.
+        // Constructor called when the user creates a TarEntry instance from scratch.
         internal TarEntry(TarEntryType entryType, string entryName, TarEntryFormat format)
         {
             ArgumentException.ThrowIfNullOrEmpty(entryName);
-
-            // Throws if format is unknown or out of range
-            TarHelpers.VerifyEntryTypeIsSupported(entryType, format, forWriting: false);
-
-            _readerOfOrigin = null;
+            TarHelpers.ThrowIfEntryTypeNotSupported(entryType, format);
 
             _header = default;
+            _header._format = format;
 
-            _header._extendedAttributes = new Dictionary<string, string>();
-
+            // Default values for fields shared by all supported formats
             _header._name = entryName;
-            _header._linkName = string.Empty;
-            _header._typeFlag = entryType;
             _header._mode = (int)TarHelpers.DefaultMode;
+            _header._mTime = DateTimeOffset.UtcNow;
+            _header._typeFlag = entryType;
+            _header._linkName = string.Empty;
+        }
 
-            _header._gName = string.Empty;
-            _header._uName = string.Empty;
+        // Constructor called when converting an entry to the selected format.
+        internal TarEntry(TarEntry other, TarEntryFormat format)
+        {
+            TarEntryType compatibleEntryType;
+            if (other.Format is TarEntryFormat.V7 && other.EntryType is TarEntryType.V7RegularFile && format is TarEntryFormat.Ustar or TarEntryFormat.Pax or TarEntryFormat.Gnu)
+            {
+                compatibleEntryType = TarEntryType.RegularFile;
+            }
+            else if (other.Format is TarEntryFormat.Ustar or TarEntryFormat.Pax or TarEntryFormat.Gnu && other.EntryType is TarEntryType.RegularFile && format is TarEntryFormat.V7)
+            {
+                compatibleEntryType = TarEntryType.V7RegularFile;
+            }
+            else
+            {
+                compatibleEntryType = other.EntryType;
+            }
 
-            DateTimeOffset now = DateTimeOffset.Now;
-            _header._mTime = now;
-            _header._aTime = now;
-            _header._cTime = now;
+            TarHelpers.ThrowIfEntryTypeNotSupported(compatibleEntryType, format);
+
+            _readerOfOrigin = other._readerOfOrigin;
+
+            _header = default;
+            _header._format = format;
+
+            _header._name = other._header._name;
+            _header._mode = other._header._mode;
+            _header._uid = other._header._uid;
+            _header._gid = other._header._gid;
+            _header._size = other._header._size;
+            _header._mTime = other._header._mTime;
+            _header._checksum = 0;
+            _header._typeFlag = compatibleEntryType;
+            _header._linkName = other._header._linkName;
+
+            _header._dataStream = other._header._dataStream;
         }
 
         /// <summary>
@@ -62,6 +91,11 @@ namespace System.Formats.Tar
         /// The type of filesystem object represented by this entry.
         /// </summary>
         public TarEntryType EntryType => _header._typeFlag;
+
+        /// <summary>
+        /// The format of the entry.
+        /// </summary>
+        public TarEntryFormat Format => _header._format;
 
         /// <summary>
         /// The ID of the group that owns the file represented by this entry.
@@ -255,9 +289,13 @@ namespace System.Formats.Tar
             Debug.Assert(!string.IsNullOrEmpty(destinationDirectoryPath));
             Debug.Assert(Path.IsPathFullyQualified(destinationDirectoryPath));
 
-            string destinationDirectoryFullPath = destinationDirectoryPath.EndsWith(Path.DirectorySeparatorChar) ? destinationDirectoryPath : destinationDirectoryPath + Path.DirectorySeparatorChar;
+            destinationDirectoryPath = Path.TrimEndingDirectorySeparator(destinationDirectoryPath);
 
-            string fileDestinationPath = GetSanitizedFullPath(destinationDirectoryFullPath, Name, SR.TarExtractingResultsFileOutside);
+            string? fileDestinationPath = GetSanitizedFullPath(destinationDirectoryPath, Name);
+            if (fileDestinationPath == null)
+            {
+                throw new IOException(string.Format(SR.TarExtractingResultsFileOutside, Name, destinationDirectoryPath));
+            }
 
             string? linkTargetPath = null;
             if (EntryType is TarEntryType.SymbolicLink or TarEntryType.HardLink)
@@ -267,7 +305,11 @@ namespace System.Formats.Tar
                     throw new FormatException(SR.TarEntryHardLinkOrSymlinkLinkNameEmpty);
                 }
 
-                linkTargetPath = GetSanitizedFullPath(destinationDirectoryFullPath, LinkName, SR.TarExtractingResultsLinkOutside);
+                linkTargetPath = GetSanitizedFullPath(destinationDirectoryPath, LinkName);
+                if (linkTargetPath == null)
+                {
+                    throw new IOException(string.Format(SR.TarExtractingResultsLinkOutside, LinkName, destinationDirectoryPath));
+                }
             }
 
             if (EntryType == TarEntryType.Directory)
@@ -280,26 +322,15 @@ namespace System.Formats.Tar
                 Directory.CreateDirectory(Path.GetDirectoryName(fileDestinationPath)!);
                 ExtractToFileInternal(fileDestinationPath, linkTargetPath, overwrite);
             }
+        }
 
-            // If the path can be extracted in the specified destination directory, returns the full path with sanitized file name. Otherwise, throws.
-            static string GetSanitizedFullPath(string destinationDirectoryFullPath, string path, string exceptionMessage)
-            {
-                string actualPath = Path.Join(Path.GetDirectoryName(path), ArchivingUtils.SanitizeEntryFilePath(Path.GetFileName(path)));
-
-                if (!Path.IsPathFullyQualified(actualPath))
-                {
-                    actualPath = Path.Combine(destinationDirectoryFullPath, actualPath);
-                }
-
-                actualPath = Path.GetFullPath(actualPath);
-
-                if (!actualPath.StartsWith(destinationDirectoryFullPath, PathInternal.StringComparison))
-                {
-                    throw new IOException(string.Format(exceptionMessage, path, destinationDirectoryFullPath));
-                }
-
-                return actualPath;
-            }
+        // If the path can be extracted in the specified destination directory, returns the full path with sanitized file name. Otherwise, returns null.
+        private static string? GetSanitizedFullPath(string destinationDirectoryFullPath, string path)
+        {
+            string fullyQualifiedPath = Path.IsPathFullyQualified(path) ? path : Path.Combine(destinationDirectoryFullPath, path);
+            string normalizedPath = Path.GetFullPath(fullyQualifiedPath); // Removes relative segments
+            string sanitizedPath = Path.Join(Path.GetDirectoryName(normalizedPath), ArchivingUtils.SanitizeEntryFilePath(Path.GetFileName(normalizedPath)));
+            return sanitizedPath.StartsWith(destinationDirectoryFullPath, PathInternal.StringComparison) ? sanitizedPath : null;
         }
 
         // Extracts the current entry into the filesystem, regardless of the entry type.

@@ -888,8 +888,8 @@ namespace System
             // This matches the IEEE 754:2019 `maximum` function
             //
             // It propagates NaN inputs back to the caller and
-            // otherwise returns the larger of the inputs. It
-            // treats +0 as larger than -0 as per the specification.
+            // otherwise returns the greater of the inputs. It
+            // treats +0 as greater than -0 as per the specification.
 
             if (val1 != val2)
             {
@@ -946,8 +946,8 @@ namespace System
             // This matches the IEEE 754:2019 `maximum` function
             //
             // It propagates NaN inputs back to the caller and
-            // otherwise returns the larger of the inputs. It
-            // treats +0 as larger than -0 as per the specification.
+            // otherwise returns the greater of the inputs. It
+            // treats +0 as greater than -0 as per the specification.
 
             if (val1 != val2)
             {
@@ -999,8 +999,8 @@ namespace System
             // This matches the IEEE 754:2019 `maximumMagnitude` function
             //
             // It propagates NaN inputs back to the caller and
-            // otherwise returns the input with a larger magnitude.
-            // It treats +0 as larger than -0 as per the specification.
+            // otherwise returns the input with a greater magnitude.
+            // It treats +0 as greater than -0 as per the specification.
 
             double ax = Abs(x);
             double ay = Abs(y);
@@ -1037,12 +1037,17 @@ namespace System
             // This matches the IEEE 754:2019 `minimum` function
             //
             // It propagates NaN inputs back to the caller and
-            // otherwise returns the larger of the inputs. It
-            // treats +0 as larger than -0 as per the specification.
+            // otherwise returns the lesser of the inputs. It
+            // treats +0 as lesser than -0 as per the specification.
 
-            if (val1 != val2 && !double.IsNaN(val1))
+            if (val1 != val2)
             {
-                return val1 < val2 ? val1 : val2;
+                if (!double.IsNaN(val1))
+                {
+                    return val1 < val2 ? val1 : val2;
+                }
+
+                return val1;
             }
 
             return double.IsNegative(val1) ? val1 : val2;
@@ -1090,12 +1095,17 @@ namespace System
             // This matches the IEEE 754:2019 `minimum` function
             //
             // It propagates NaN inputs back to the caller and
-            // otherwise returns the larger of the inputs. It
-            // treats +0 as larger than -0 as per the specification.
+            // otherwise returns the lesser of the inputs. It
+            // treats +0 as lesser than -0 as per the specification.
 
-            if (val1 != val2 && !float.IsNaN(val1))
+            if (val1 != val2)
             {
-                return val1 < val2 ? val1 : val2;
+                if (!float.IsNaN(val1))
+                {
+                    return val1 < val2 ? val1 : val2;
+                }
+
+                return val1;
             }
 
             return float.IsNegative(val1) ? val1 : val2;
@@ -1138,8 +1148,8 @@ namespace System
             // This matches the IEEE 754:2019 `minimumMagnitude` function
             //
             // It propagates NaN inputs back to the caller and
-            // otherwise returns the input with a larger magnitude.
-            // It treats +0 as larger than -0 as per the specification.
+            // otherwise returns the input with a lesser magnitude.
+            // It treats +0 as lesser than -0 as per the specification.
 
             double ax = Abs(x);
             double ay = Abs(y);

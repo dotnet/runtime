@@ -1179,9 +1179,9 @@ namespace System.Threading.Tasks.Dataflow
                 /// <summary>Gets the messages waiting to be processed.</summary>
                 public IEnumerable<T> InputQueue { get { return _target._messages.ToList(); } }
                 /// <summary>Gets the task being used for input processing.</summary>
-                public Task? TaskForInputProcessing { get { return _target._nonGreedyState != null ? _target._nonGreedyState.TaskForInputProcessing : null; } }
+                public Task? TaskForInputProcessing { get { return _target._nonGreedyState?.TaskForInputProcessing; } }
                 /// <summary>Gets the collection of postponed messages.</summary>
-                public QueuedMap<ISourceBlock<T>, DataflowMessageHeader>? PostponedMessages { get { return _target._nonGreedyState != null ? _target._nonGreedyState.PostponedMessages : null; } }
+                public QueuedMap<ISourceBlock<T>, DataflowMessageHeader>? PostponedMessages { get { return _target._nonGreedyState?.PostponedMessages; } }
                 /// <summary>Gets whether the block is declining further messages.</summary>
                 public bool IsDecliningPermanently { get { return _target._decliningPermanently; } }
                 /// <summary>Gets the DataflowBlockOptions used to configure this block.</summary>

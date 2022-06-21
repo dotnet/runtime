@@ -5136,7 +5136,7 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(keySelector);
 
             // comparer may be null, in which case we use the default comparer.
-            comparer = comparer ?? EqualityComparer<TKey>.Default;
+            comparer ??= EqualityComparer<TKey>.Default;
 
             ParallelQuery<IGrouping<TKey, TSource>> groupings = source.GroupBy(keySelector, comparer);
 
@@ -5223,7 +5223,7 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(elementSelector);
 
             // comparer may be null, in which case we use the default comparer.
-            comparer = comparer ?? EqualityComparer<TKey>.Default;
+            comparer ??= EqualityComparer<TKey>.Default;
 
             ParallelQuery<IGrouping<TKey, TElement>> groupings = source.GroupBy(keySelector, elementSelector, comparer);
 

@@ -47,7 +47,7 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException"><typeparamref name="TOther" /> is not supported.</exception>
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <typeparamref name="TSelf" />.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static virtual TSelf CreateChecked<TOther>(TOther value)
+        static virtual TSelf CreateChecked<TOther>(TOther value)
             where TOther : INumberBase<TOther>
         {
             TSelf? result;
@@ -70,7 +70,7 @@ namespace System.Numerics
         /// <returns>An instance of <typeparamref name="TSelf" /> created from <paramref name="value" />, saturating if <paramref name="value" /> falls outside the representable range of <typeparamref name="TSelf" />.</returns>
         /// <exception cref="NotSupportedException"><typeparamref name="TOther" /> is not supported.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static virtual TSelf CreateSaturating<TOther>(TOther value)
+        static virtual TSelf CreateSaturating<TOther>(TOther value)
             where TOther : INumberBase<TOther>
         {
             TSelf? result;
@@ -93,7 +93,7 @@ namespace System.Numerics
         /// <returns>An instance of <typeparamref name="TSelf" /> created from <paramref name="value" />, truncating if <paramref name="value" /> falls outside the representable range of <typeparamref name="TSelf" />.</returns>
         /// <exception cref="NotSupportedException"><typeparamref name="TOther" /> is not supported.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static virtual TSelf CreateTruncating<TOther>(TOther value)
+        static virtual TSelf CreateTruncating<TOther>(TOther value)
             where TOther : INumberBase<TOther>
         {
             TSelf? result;

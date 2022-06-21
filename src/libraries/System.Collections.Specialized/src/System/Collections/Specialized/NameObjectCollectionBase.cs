@@ -43,7 +43,7 @@ namespace System.Collections.Specialized
 
         protected NameObjectCollectionBase(IEqualityComparer? equalityComparer)
         {
-            _keyComparer = (equalityComparer == null) ? s_defaultComparer : equalityComparer;
+            _keyComparer = equalityComparer ?? s_defaultComparer;
             Reset();
         }
 
@@ -275,7 +275,7 @@ namespace System.Collections.Specialized
         protected object? BaseGet(string? name)
         {
             NameObjectEntry? e = FindEntry(name);
-            return (e != null) ? e.Value : null;
+            return e?.Value;
         }
 
         /// <devdoc>

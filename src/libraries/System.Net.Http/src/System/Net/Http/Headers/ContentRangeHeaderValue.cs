@@ -125,7 +125,7 @@ namespace System.Net.Http.Headers
 
             if (HasLength)
             {
-                result = result ^ _length.GetHashCode();
+                result ^= _length.GetHashCode();
             }
 
             return result;
@@ -209,7 +209,7 @@ namespace System.Net.Http.Headers
                 return 0;
             }
 
-            current = current + separatorLength;
+            current += separatorLength;
 
             if (current == input.Length)
             {
@@ -233,7 +233,7 @@ namespace System.Net.Http.Headers
             }
 
             current++; // Skip '/' separator
-            current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+            current += HttpRuleParser.GetWhitespaceLength(input, current);
 
             if (current == input.Length)
             {
@@ -275,10 +275,10 @@ namespace System.Net.Http.Headers
                     return false;
                 }
 
-                current = current + lengthLength;
+                current += lengthLength;
             }
 
-            current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+            current += HttpRuleParser.GetWhitespaceLength(input, current);
             return true;
         }
 
@@ -305,8 +305,8 @@ namespace System.Net.Http.Headers
                     return false;
                 }
 
-                current = current + fromLength;
-                current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+                current += fromLength;
+                current += HttpRuleParser.GetWhitespaceLength(input, current);
 
                 // After the first value, the '-' character must follow.
                 if ((current == input.Length) || (input[current] != '-'))
@@ -316,7 +316,7 @@ namespace System.Net.Http.Headers
                 }
 
                 current++; // skip the '-' character
-                current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+                current += HttpRuleParser.GetWhitespaceLength(input, current);
 
                 if (current == input.Length)
                 {
@@ -332,10 +332,10 @@ namespace System.Net.Http.Headers
                     return false;
                 }
 
-                current = current + toLength;
+                current += toLength;
             }
 
-            current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+            current += HttpRuleParser.GetWhitespaceLength(input, current);
             return true;
         }
 

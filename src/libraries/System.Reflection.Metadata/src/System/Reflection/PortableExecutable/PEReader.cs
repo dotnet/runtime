@@ -762,7 +762,7 @@ namespace System.Reflection.PortableExecutable
             }
             catch (Exception e) when (e is BadImageFormatException || e is IOException)
             {
-                errorToReport = errorToReport ?? e;
+                errorToReport ??= e;
                 return false;
             }
 
@@ -826,7 +826,7 @@ namespace System.Reflection.PortableExecutable
             }
             catch (Exception e) when (e is BadImageFormatException || e is IOException)
             {
-                errorToReport = errorToReport ?? e;
+                errorToReport ??= e;
                 return false;
             }
             finally

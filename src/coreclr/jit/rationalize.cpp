@@ -134,23 +134,6 @@ void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
         addr->gtType = simdType;
         use.ReplaceWith(addr);
     }
-    else if (addr->OperIs(GT_ADDR))
-    {
-        GenTree* location = addr->AsUnOp()->gtGetOp1();
-
-        if (location->OperIsSimdOrHWintrinsic() || location->IsCnsVec())
-        {
-            // If we have IND(ADDR(SIMD)) then we can keep only the SIMD node.
-            // This is a special tree created by impNormStructVal to preserve the class layout
-            // needed by call morphing on an OBJ node. This information is no longer needed at
-            // this point (and the address of a SIMD node can't be obtained anyway).
-
-            BlockRange().Remove(indir);
-            BlockRange().Remove(addr);
-
-            use.ReplaceWith(addr->AsUnOp()->gtGetOp1());
-        }
-    }
 #endif // FEATURE_SIMD
 }
 
@@ -264,6 +247,62 @@ void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*
 #endif
                       arg1, arg2);
 }
+
+#ifdef TARGET_ARM64
+// RewriteSubLshDiv: Possibly rewrite a SubLshDiv node into a Mod.
+//
+// Arguments:
+//    use - A use of a node.
+//
+// Transform: a - (a / cns) << shift  =>  a % cns
+//            where cns is a signed integer constant that is a power of 2.
+// We do this transformation because Lowering has a specific optimization
+// for 'a % cns' that is not easily reduced by other means.
+//
+void Rationalizer::RewriteSubLshDiv(GenTree** use)
+{
+    if (!comp->opts.OptimizationEnabled())
+        return;
+
+    GenTree* const node = *use;
+
+    if (!node->OperIs(GT_SUB))
+        return;
+
+    GenTree* op1 = node->gtGetOp1();
+    GenTree* op2 = node->gtGetOp2();
+
+    if (!(node->TypeIs(TYP_INT, TYP_LONG) && op1->OperIs(GT_LCL_VAR)))
+        return;
+
+    if (!op2->OperIs(GT_LSH))
+        return;
+
+    GenTree* lsh   = op2;
+    GenTree* div   = lsh->gtGetOp1();
+    GenTree* shift = lsh->gtGetOp2();
+    if (div->OperIs(GT_DIV) && shift->IsIntegralConst())
+    {
+        GenTree* a   = div->gtGetOp1();
+        GenTree* cns = div->gtGetOp2();
+        if (a->OperIs(GT_LCL_VAR) && cns->IsIntegralConstPow2() &&
+            op1->AsLclVar()->GetLclNum() == a->AsLclVar()->GetLclNum())
+        {
+            size_t shiftValue = shift->AsIntConCommon()->IntegralValue();
+            size_t cnsValue   = cns->AsIntConCommon()->IntegralValue();
+            if ((cnsValue >> shiftValue) == 1)
+            {
+                node->ChangeOper(GT_MOD);
+                node->AsOp()->gtOp2 = cns;
+                BlockRange().Remove(lsh);
+                BlockRange().Remove(div);
+                BlockRange().Remove(a);
+                BlockRange().Remove(shift);
+            }
+        }
+    }
+}
+#endif
 
 #ifdef DEBUG
 
@@ -524,6 +563,10 @@ void Rationalizer::RewriteAddress(LIR::Use& use)
 
         JITDUMP("Rewriting GT_ADDR(GT_IND(X)) to X:\n");
     }
+    else
+    {
+        unreached();
+    }
 
     DISPTREERANGE(BlockRange(), use.Def());
     JITDUMP("\n");
@@ -554,13 +597,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
     {
         case GT_ASG:
             RewriteAssignment(use);
-            break;
-
-        case GT_BOX:
-        case GT_ARR_ADDR:
-            // BOX/ARR_ADDR at this level are just NOPs.
-            use.ReplaceWith(node->gtGetOp1());
-            BlockRange().Remove(node);
             break;
 
         case GT_ADDR:
@@ -594,9 +630,11 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             break;
 
         case GT_NOP:
-            // fgMorph sometimes inserts NOP nodes between defs and uses
-            // supposedly 'to prevent constant folding'. In this case, remove the
-            // NOP.
+        case GT_BOX:
+        case GT_ARR_ADDR:
+            // "optNarrowTree" sometimes inserts NOP nodes between defs and uses.
+            // In this case, remove the NOP. BOX/ARR_ADDR are such "passthrough"
+            // nodes by design, and at this point we no longer need them.
             if (node->gtGetOp1() != nullptr)
             {
                 use.ReplaceWith(node->gtGetOp1());
@@ -779,6 +817,13 @@ PhaseStatus Rationalizer::DoPhase()
             {
                 m_rationalizer.RewriteIntrinsicAsUserCall(use, this->m_ancestors);
             }
+
+#ifdef TARGET_ARM64
+            if (node->OperIs(GT_SUB))
+            {
+                m_rationalizer.RewriteSubLshDiv(use);
+            }
+#endif
 
             return Compiler::WALK_CONTINUE;
         }

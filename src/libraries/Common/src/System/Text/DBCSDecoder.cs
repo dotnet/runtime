@@ -93,7 +93,7 @@ namespace System.Text
             return result;
         }
 
-        public unsafe override int GetCharCount(byte* bytes, int count, bool flush)
+        public override unsafe int GetCharCount(byte* bytes, int count, bool flush)
         {
             ArgumentNullException.ThrowIfNull(bytes);
 
@@ -154,7 +154,7 @@ namespace System.Text
             }
         }
 
-        public unsafe override int GetChars(byte* bytes, int byteCount, char* chars, int charCount, bool flush)
+        public override unsafe int GetChars(byte* bytes, int byteCount, char* chars, int charCount, bool flush)
         {
             ArgumentNullException.ThrowIfNull(bytes);
             ArgumentNullException.ThrowIfNull(chars);
@@ -230,7 +230,7 @@ namespace System.Text
             }
         }
 
-        public unsafe override void Convert(byte* bytes, int byteCount,
+        public override unsafe void Convert(byte* bytes, int byteCount,
                                               char* chars, int charCount, bool flush,
                                               out int bytesUsed, out int charsUsed, out bool completed)
         {

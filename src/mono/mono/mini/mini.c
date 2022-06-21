@@ -3758,6 +3758,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		cfg->init_method_rgctx_ins = NULL;
 		cfg->init_method_rgctx_ins_arg->opcode = OP_PCONST;
 		cfg->init_method_rgctx_ins_arg->inst_p0 = NULL;
+		MONO_INST_NULLIFY_SREGS (cfg->init_method_rgctx_ins_arg);
 	}
 
 	if (cfg->got_var) {
