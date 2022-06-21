@@ -44,7 +44,7 @@ namespace System.Net.WebSockets
 
         public async Task ConnectAsync(Uri uri, HttpMessageInvoker? invoker, CancellationToken cancellationToken, ClientWebSocketOptions options)
         {
-            handler ??= new HttpMessageInvoker(SetupHandler(options));
+            invoker ??= new HttpMessageInvoker(SetupHandler(options));
             HttpResponseMessage? response = null;
 
             // TODO setup to false
@@ -99,7 +99,7 @@ namespace System.Net.WebSockets
 
                         using (linkedCancellation)
                         {
-                            response = await handler.SendAsync(request, externalAndAbortCancellation.Token).ConfigureAwait(false);
+                            response = await invoker.SendAsync(request, externalAndAbortCancellation.Token).ConfigureAwait(false);
                             externalAndAbortCancellation.Token.ThrowIfCancellationRequested(); // poll in case sends/receives in request/response didn't observe cancellation
                         }
                         ValidateResponse(response, secKeyAndSecWebSocketAccept.Value, options);
@@ -200,7 +200,7 @@ namespace System.Net.WebSockets
                 // Disposing the handler will not affect any active stream wrapped in the WebSocket.
                 if (disposeHandler)
                 {
-                    handler?.Dispose();
+                    invoker?.Dispose();
                 }
             }
         }
@@ -347,13 +347,13 @@ namespace System.Net.WebSockets
             // always exact because we handle downgrade here
             request.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
 
-            if (options.HttpVersion == HttpVersion.Version11)
+            if (request.Version == HttpVersion.Version11)
             {
                 request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.Connection, HttpKnownHeaderNames.Upgrade);
                 request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.Upgrade, "websocket");
                 request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.SecWebSocketKey, secKey);
             }
-            else if (options.HttpVersion == HttpVersion.Version20)
+            else if (request.Version == HttpVersion.Version20)
             {
                 request.Method = HttpMethod.Connect;
                 request.Headers.Protocol = "websocket";
@@ -408,7 +408,7 @@ namespace System.Net.WebSockets
 
         private static void ValidateResponse(HttpResponseMessage response, string secValue, ClientWebSocketOptions options)
         {
-            if (options.HttpVersion == HttpVersion.Version11)
+            if (response.Version == HttpVersion.Version11)
             {
                 if (response.StatusCode != HttpStatusCode.SwitchingProtocols)
                 {
@@ -420,7 +420,7 @@ namespace System.Net.WebSockets
                 ValidateHeader(response.Headers, HttpKnownHeaderNames.Upgrade, "websocket");
                 ValidateHeader(response.Headers, HttpKnownHeaderNames.SecWebSocketAccept, secValue);
             }
-            else if (options.HttpVersion == HttpVersion.Version20)
+            else if (response.Version == HttpVersion.Version20)
             {
                 if (response.StatusCode != HttpStatusCode.OK)
                 {
