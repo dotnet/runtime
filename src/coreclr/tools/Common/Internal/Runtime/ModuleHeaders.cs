@@ -15,7 +15,7 @@ namespace Internal.Runtime
         public const uint Signature = 0x00525452; // 'RTR'
 
         public const ushort CurrentMajorVersion = 6;
-        public const ushort CurrentMinorVersion = 3;
+        public const ushort CurrentMinorVersion = 2;
     }
 
 #pragma warning disable 0169
@@ -67,7 +67,6 @@ namespace Internal.Runtime
         OwnerCompositeExecutable = 116, // Added in 4.1
         PgoInstrumentationData = 117, // Added in 5.2
         ManifestAssemblyMvids = 118, // Added in 5.3
-        CrossModuleInlineInfo = 119, // Added in 6.2
 
         //
         // NativeAOT ReadyToRun sections

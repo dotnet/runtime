@@ -2431,7 +2431,7 @@ OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken meta
     _ASSERTE(TypeFromToken(metaTok) == mdtString);
 
     Module* module = GetModule(scopeHnd);
-    return module->ResolveStringRef(metaTok);
+    return module->ResolveStringRef(metaTok, module->GetAssembly()->Parent());
 }
 
 /*********************************************************************/

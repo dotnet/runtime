@@ -124,7 +124,7 @@ class NameHandle
     LPCUTF8 m_nameSpace;
     LPCUTF8 m_name;
 
-    PTR_ModuleBase m_pTypeScope;
+    PTR_Module m_pTypeScope;
     mdToken m_mdType;
     mdToken m_mdTokenNotToLoad;
     NameHandleTable m_WhichTable;
@@ -163,9 +163,18 @@ public:
         SUPPORTS_DAC;
     }
 
-    NameHandle(ModuleBase* pModule, mdToken token);
-
-    NameHandle(Module* pModule, mdToken token);
+    NameHandle(Module* pModule, mdToken token) :
+        m_nameSpace(NULL),
+        m_name(NULL),
+        m_pTypeScope(pModule),
+        m_mdType(token),
+        m_mdTokenNotToLoad(tdNoTypes),
+        m_WhichTable(nhCaseSensitive),
+        m_Bucket()
+    {
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+    }
 
     NameHandle(const NameHandle & p)
     {
@@ -209,16 +218,14 @@ public:
         return m_nameSpace;
     }
 
-#ifndef DACCESS_COMPILE
     void SetTypeToken(Module* pModule, mdToken mdToken)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pTypeScope = dac_cast<PTR_ModuleBase>(pModule);
+        m_pTypeScope = dac_cast<PTR_Module>(pModule);
         m_mdType = mdToken;
     }
-#endif
 
-    PTR_ModuleBase GetTypeModule() const
+    PTR_Module GetTypeModule() const
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
@@ -658,7 +665,7 @@ public:
                                           ClassLoadLevel level = CLASS_LOADED,
                                           Instantiation * pTargetInstantiation = NULL /* used to verify arity of the loaded type */);
 
-    static TypeHandle LoadTypeDefOrRefThrowing(ModuleBase *pModule,
+    static TypeHandle LoadTypeDefOrRefThrowing(Module *pModule,
                                                mdToken typeRefOrDef,
                                                NotFoundAction fNotFound = ThrowIfNotFound,
                                                PermitUninstantiatedFlag fUninstantiated = FailIfUninstDefOrRef,
@@ -711,7 +718,7 @@ public:
     // (Just a no-op on TypeDefs)
     // Return FALSE if operation failed (e.g. type does not exist)
     // *pfUsesTypeForwarder is set to TRUE if a type forwarder is found. It is never set to FALSE.
-    static BOOL ResolveTokenToTypeDefThrowing(ModuleBase *     pTypeRefModule,
+    static BOOL ResolveTokenToTypeDefThrowing(Module *         pTypeRefModule,
                                               mdTypeRef        typeRefToken,
                                               Module **        ppTypeDefModule,
                                               mdTypeDef *      pTypeDefToken,
@@ -742,7 +749,7 @@ public:
 public:
     // Looks up class in the local module table, if it is there it succeeds,
     // Otherwise it fails, This is meant only for optimizations etc
-    static TypeHandle LookupTypeDefOrRefInModule(ModuleBase *pModule, mdToken cl, ClassLoadLevel *pLoadLevel = NULL);
+    static TypeHandle LookupTypeDefOrRefInModule(Module *pModule, mdToken cl, ClassLoadLevel *pLoadLevel = NULL);
 
 private:
 
@@ -904,7 +911,7 @@ private:
 
 
     BOOL IsNested(const NameHandle* pName, mdToken *mdEncloser);
-    static BOOL IsNested(ModuleBase *pModude, mdToken typeDefOrRef, mdToken *mdEncloser);
+    static BOOL IsNested(Module *pModude, mdToken typeDefOrRef, mdToken *mdEncloser);
 
 public:
     // Helpers for FindClassModule()
