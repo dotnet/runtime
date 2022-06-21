@@ -2148,31 +2148,45 @@ namespace System.Globalization
                 return result;
             }
 
-            // Try to check if the digits are all ASCII so we can avoid the array allocation and use the static array NumberFormatInfo.s_asciiDigits instead.
-            // If we have non-ASCII digits, we should exit the loop very quickly.
-            int i = 0;
-            while (i < NumberFormatInfo.s_asciiDigits.Length)
-            {
-                if (digits[i] != NumberFormatInfo.s_asciiDigits[i][0])
-                {
-                    break;
-                }
-                i++;
-            }
+            // In ICU we separate the digits with the '\uFFFF' character
 
-            if (i >= NumberFormatInfo.s_asciiDigits.Length)
+            if (digits.StartsWith("0\uFFFF1\uFFFF2\uFFFF3\uFFFF4\uFFFF5\uFFFF6\uFFFF7\uFFFF8\uFFFF9\uFFFF", StringComparison.Ordinal) ||  // ICU common cases
+                digits.StartsWith("0123456789", StringComparison.Ordinal))  // NLS common cases
             {
                 return result;
             }
 
-            // we have non-ASCII digits
+            // None ASCII digits
+
+            // Check if values coming from ICU separated by 0xFFFF
+            int ffffPos = digits.IndexOf('\uFFFF');
+
             result = new string[10];
-            for (i = 0; i < result.Length; i++)
+            if (ffffPos < 0) // NLS case
             {
-                result[i] = char.ToString(digits[i]);
+                for (int i = 0; i < result.Length; i++)
+                {
+                    result[i] = char.ToString(digits[i]);
+                }
+
+                return result;
             }
 
-            return result;
+            int start = 0;
+            int index = 0;
+
+            do
+            {
+                result[index++] = digits.Substring(start, ffffPos - start);
+                start = ++ffffPos;
+                while (ffffPos < digits.Length && digits[ffffPos] != '\uFFFF')
+                {
+                    ffffPos++;
+                }
+
+            } while (ffffPos < digits.Length && index < 10);
+
+            return index < 10 ? NumberFormatInfo.s_asciiDigits : result;
         }
 
         internal void GetNFIValues(NumberFormatInfo nfi)
