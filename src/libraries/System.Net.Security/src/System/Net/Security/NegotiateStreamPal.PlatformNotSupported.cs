@@ -12,7 +12,6 @@ namespace System.Net.Security
     // It encapsulates security context and does the real work in authentication and
     // user data encryption with NEGO SSPI package.
     //
-    [UnsupportedOSPlatform("tvos")]
     internal static partial class NegotiateStreamPal
     {
 #pragma warning disable IDE0060

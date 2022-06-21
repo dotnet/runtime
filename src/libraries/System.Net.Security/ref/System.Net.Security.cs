@@ -98,7 +98,6 @@ namespace System.Net.Security
         TargetUnknown = 14,
         ImpersonationValidationFailed = 15,
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
     public partial class NegotiateStream : System.Net.Security.AuthenticatedStream
     {
         public NegotiateStream(System.IO.Stream innerStream) : base (default(System.IO.Stream), default(bool)) { }

@@ -164,6 +164,16 @@ namespace System.Net
             return NegotiateStreamPal.UnwrapInPlace(_securityContext!, input, out unwrappedOffset, out unwrappedLength, out wasEncrypted);
         }
 
+        internal bool VerifyMIC(ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature)
+        {
+            return NegotiateStreamPal.VerifyMIC(_securityContext!, (_contextFlags & ContextFlagsPal.Confidentiality) != 0, message, signature);
+        }
+
+        internal void GetMIC(ReadOnlySpan<byte> message, IBufferWriter<byte> signature)
+        {
+            NegotiateStreamPal.GetMIC(_securityContext!, (_contextFlags & ContextFlagsPal.Confidentiality) != 0, message, signature);
+        }
+
         internal string? GetOutgoingBlob(string? incomingBlob)
         {
             return GetOutgoingBlob(incomingBlob, throwOnError: true, out _);
@@ -328,26 +338,6 @@ namespace System.Net
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"The client specified SPN is [{spn}]");
 
             return spn;
-        }
-
-        internal int Encrypt(ReadOnlySpan<byte> buffer, [NotNull] ref byte[]? output)
-        {
-            return NegotiateStreamPal.Encrypt(
-                _securityContext!,
-                buffer,
-                (_contextFlags & ContextFlagsPal.Confidentiality) != 0,
-                IsNTLM,
-                ref output);
-        }
-
-        internal int Decrypt(Span<byte> payload, out int newOffset)
-        {
-            return NegotiateStreamPal.Decrypt(
-                _securityContext!,
-                payload,
-                (_contextFlags & ContextFlagsPal.Confidentiality) != 0,
-                IsNTLM,
-                out newOffset);
         }
     }
 }
