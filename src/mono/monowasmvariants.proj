@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <MonoWasmTargets>multithread;perftrace</MonoWasmTargets>
+    <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NativeBinDir>
   </PropertyGroup>
 
   <ItemGroup>
@@ -45,13 +46,19 @@
              Properties="RealTargetOS=$(TargetOS);RealTargetArchitecture=$(TargetArchitecture);TargetArchitecture=$(TargetArchitecture);TargetOS=$(TargetOS);MonoWasmBuildVariant=$(MonoWasmBuildVariant);MonoOverridePath=$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'mono', '$(TargetOS).$(TargetArchitecture).$(MonoConfiguration).$(MonoWasmBuildVariant)'))" />
 
     <ItemGroup>
-      <_MonoWasmFiles Include="$(ArtifactsBinDir)mono\$(TargetOS).$(TargetArchitecture).$(Configuration).$(MonoWasmBuildVariant.ToLower())\**" />
-      <_MonoWasmFiles Include="$(ArtifactsBinDir)native\$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)-$(MonoWasmBuildVariant.ToLower())\**" />
+      <_MonoWasmRuntimeFiles Include="$(ArtifactsBinDir)mono\$(TargetOS).$(TargetArchitecture).$(Configuration).$(MonoWasmBuildVariant.ToLower())\**" />
+      <_MonoWasmNativeFiles Include="$(ArtifactsBinDir)native\$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)-$(MonoWasmBuildVariant.ToLower())\**" />
     </ItemGroup>
 
-    <Message Text="Copying @(_MonoWasmFiles) to $(RealRuntimeBinDir)wasm\$(MonoWasmBuildVariant.ToLower())" Importance="High" />
+    <Message Text="Copying @(_MonoWasmRuntimeFiles) to $(RealRuntimeBinDir)wasm\$(MonoWasmBuildVariant.ToLower())" Importance="High" />
 
-    <Copy SourceFiles="@(_MonoWasmFiles)" DestinationFolder="$(RealRuntimeBinDir)wasm\$(MonoWasmBuildVariant.ToLower())">
+    <Copy SourceFiles="@(_MonoWasmRuntimeFiles)" DestinationFolder="$(RealRuntimeBinDir)wasm\$(MonoWasmBuildVariant.ToLower())">
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
+    </Copy>
+
+    <Message Text="Copying @(_MonoWasmNativeFiles) to $(NativeBinDir)wasm\$(MonoWasmBuildVariant.ToLower())" Importance="High" />
+
+    <Copy SourceFiles="@(_MonoWasmNativeFiles)" DestinationFolder="$(NativeBinDir)wasm\$(MonoWasmBuildVariant.ToLower())">
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
     </Copy>
   </Target>
