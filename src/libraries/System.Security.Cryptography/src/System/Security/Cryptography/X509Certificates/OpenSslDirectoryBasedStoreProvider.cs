@@ -372,10 +372,10 @@ namespace System.Security.Cryptography.X509Certificates
         private static void EnsureFilePermissions(FileStream stream, uint userId)
         {
             // Verify that we're creating files with u+rw and g-rw, o-rw.
-            const UnixFileMode requiredPermissions =
+            const UnixFileMode RequiredPermissions =
                 UnixFileMode.UserRead | UnixFileMode.UserWrite;
 
-            const UnixFileMode forbiddenPermissions =
+            const UnixFileMode ForbiddenPermissions =
                 UnixFileMode.GroupRead | UnixFileMode.GroupWrite |
                 UnixFileMode.OtherRead | UnixFileMode.OtherWrite;
 
@@ -393,10 +393,10 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new CryptographicException(SR.Format(SR.Cryptography_OwnerNotCurrentUser, stream.Name));
             }
 
-            if ((stat.Mode & (int)requiredPermissions) != (int)requiredPermissions ||
-                (stat.Mode & (int)forbiddenPermissions) != 0)
+            if ((stat.Mode & (int)RequiredPermissions) != (int)RequiredPermissions ||
+                (stat.Mode & (int)ForbiddenPermissions) != 0)
             {
-                if (Interop.Sys.FChMod(stream.SafeFileHandle, (int)requiredPermissions) < 0)
+                if (Interop.Sys.FChMod(stream.SafeFileHandle, (int)RequiredPermissions) < 0)
                 {
                     Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
                     throw new CryptographicException(
@@ -413,8 +413,8 @@ namespace System.Security.Cryptography.X509Certificates
                         new IOException(error.GetErrorMessage(), error.RawErrno));
                 }
 
-                if ((stat.Mode & (int)requiredPermissions) != (int)requiredPermissions ||
-                    (stat.Mode & (int)forbiddenPermissions) != 0)
+                if ((stat.Mode & (int)RequiredPermissions) != (int)RequiredPermissions ||
+                    (stat.Mode & (int)ForbiddenPermissions) != 0)
                 {
                     throw new CryptographicException(SR.Format(SR.Cryptography_InvalidFilePermissions, stream.Name));
                 }

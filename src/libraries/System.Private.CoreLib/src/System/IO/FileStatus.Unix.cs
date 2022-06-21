@@ -18,7 +18,7 @@ namespace System.IO
         private const int Uninitialized = 0;          // uninitialized, '0' to make default(FileStatus) uninitialized.
 
         // Tracks the initialization state.
-        // < 0 : initialized succesfully. Value is InitializedNotExists, InitializedExistsFile or InitializedExistsDir.
+        // < 0 : initialized succesfully. Value is InitializedNotExists, InitializedExistsFile, InitializedExistsDir or InitializedExistsBrokenLink.
         //   0 : uninitialized.
         // > 0 : initialized with error. Value is raw errno.
         private int _state;
@@ -463,16 +463,9 @@ namespace System.IO
 #if !TARGET_BROWSER
             _isReadOnlyCache = -1;
 #endif
-            int rv;
-            if (handle is not null)
-            {
-                rv = Interop.Sys.FStat(handle, out _fileCache);
-            }
-            else
-            {
-                path = Path.TrimEndingDirectorySeparator(path);
-                rv = Interop.Sys.LStat(path, out _fileCache);
-            }
+            int rv = handle is not null ?
+                Interop.Sys.FStat(handle, out _fileCache) :
+                Interop.Sys.LStat(Path.TrimEndingDirectorySeparator(path), out _fileCache);
 
             if (rv < 0)
             {

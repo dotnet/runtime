@@ -763,12 +763,12 @@ namespace System.Diagnostics
                 return false;
             }
 
-            const UnixFileMode allExecute = UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
+            const UnixFileMode AllExecute = UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
 
-            UnixFileMode permissions = ((UnixFileMode)fileinfo.Mode) & allExecute;
+            UnixFileMode permissions = ((UnixFileMode)fileinfo.Mode) & AllExecute;
 
             // Avoid checking user/group when permission.
-            if (permissions == allExecute)
+            if (permissions == AllExecute)
             {
                 return true;
             }

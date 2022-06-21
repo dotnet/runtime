@@ -75,7 +75,7 @@ namespace System.IO
             _fileStatus.RefreshCaches(FullPath);
         }
 
-        internal static void ThrowNotFound(string? path)
+        internal static void ThrowNotFound(string path)
         {
             // Windows distinguishes between whether the directory or the file isn't found,
             // and throws a different exception in these cases.  We attempt to approximate that
@@ -85,7 +85,7 @@ namespace System.IO
             // being manipulated concurrently with these checks) is that we throw a
             // FileNotFoundException instead of DirectoryNotFoundException.
 
-            bool directoryError = path is not null && !FileSystem.DirectoryExists(Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(path.AsSpan())));
+            bool directoryError = !Directory.Exists(Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(path)));
             throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(Interop.Error.ENOENT), path, directoryError);
         }
 
