@@ -54,8 +54,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             if (!_materializedSignature)
             {
-                _signatureList.MergeSortAllowDuplicates(new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance));
-
                 foreach (Signature signature in _signatureList)
                 {
                     signature.GetData(r2rFactory, relocsOnly: false);

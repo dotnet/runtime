@@ -128,7 +128,7 @@ struct LookupMapBase
     }
 
     PTR_TADDR GetElementPtr(DWORD rid);
-    PTR_TADDR GrowMap(ModuleBase * pModule, DWORD rid);
+    PTR_TADDR GrowMap(Module * pModule, DWORD rid);
 
     // Get number of RIDs that this table can store
     DWORD GetSize();
@@ -152,7 +152,7 @@ struct LookupMap : LookupMapBase
     TYPE GetElement(DWORD rid, TADDR* pFlags);
     void SetElement(DWORD rid, TYPE value, TADDR flags);
     BOOL TrySetElement(DWORD rid, TYPE value, TADDR flags);
-    void AddElement(ModuleBase * pModule, DWORD rid, TYPE value, TADDR flags);
+    void AddElement(Module * pModule, DWORD rid, TYPE value, TADDR flags);
     void EnsureElementCanBeStored(Module * pModule, DWORD rid);
     DWORD Find(TYPE value, TADDR* flags);
 
@@ -249,14 +249,14 @@ public:
     //
     // Stores an association in a map. Grows the map as necessary.
     //
-    void AddElement(ModuleBase * pModule, DWORD rid, TYPE value)
+    void AddElement(Module * pModule, DWORD rid, TYPE value)
     {
         WRAPPER_NO_CONTRACT;
 
         AddElement(pModule, rid, value, 0);
     }
 
-    void AddElementWithFlags(ModuleBase * pModule, DWORD rid, TYPE value, TADDR flags)
+    void AddElementWithFlags(Module * pModule, DWORD rid, TYPE value, TADDR flags)
     {
         WRAPPER_NO_CONTRACT;
 
@@ -429,159 +429,46 @@ public:
 typedef SHash<DynamicILBlobTraits> DynamicILBlobTable;
 typedef DPTR(DynamicILBlobTable) PTR_DynamicILBlobTable;
 
+//Hash for MemberRef to Desc tables (fieldDesc or MethodDesc)
+typedef DPTR(struct MemberRefToDescHashEntry) PTR_MemberRefToDescHashEntry;
+
+struct MemberRefToDescHashEntry
+{
+    TADDR m_value;
+};
+
+typedef DPTR(class MemberRefToDescHashTable) PTR_MemberRefToDescHashTable;
+
+#define MEMBERREF_MAP_INITIAL_SIZE 10
+
+class MemberRefToDescHashTable: public DacEnumerableHashTable<MemberRefToDescHashTable, MemberRefToDescHashEntry, 2>
+{
+#ifndef DACCESS_COMPILE
+
+private:
+    MemberRefToDescHashTable(Module *pModule, LoaderHeap *pHeap, DWORD cInitialBuckets):
+       DacEnumerableHashTable<MemberRefToDescHashTable, MemberRefToDescHashEntry, 2>(pModule, pHeap, cInitialBuckets)
+    { LIMITED_METHOD_CONTRACT; }
+
+public:
+
+    static MemberRefToDescHashTable* Create(Module *pModule, DWORD cInitialBuckets, AllocMemTracker *pamTracker);
+
+    MemberRefToDescHashEntry* Insert(mdMemberRef token, MethodDesc *value);
+    MemberRefToDescHashEntry* Insert(mdMemberRef token , FieldDesc *value);
+#endif //!DACCESS_COMPILE
+
+public:
+    typedef DacEnumerableHashTable<MemberRefToDescHashTable, MemberRefToDescHashEntry, 2>::LookupContext LookupContext;
+
+    PTR_MemberRef GetValue(mdMemberRef token, BOOL *pfIsMethod);
+};
+
 #ifdef FEATURE_READYTORUN
 typedef DPTR(class ReadyToRunInfo)      PTR_ReadyToRunInfo;
 #endif
 
 struct ThreadLocalModule;
-
-// A ModuleBase represents the ability to reference code via tokens
-// This abstraction exists to allow the R2R manifest metadata to have
-// tokens which can be resolved at runtime.
-class ModuleBase
-{
-#ifdef DACCESS_COMPILE
-    friend class ClrDataAccess;
-    friend class NativeImageDumper;
-#endif
-
-    friend class DataImage;
-
-    VPTR_BASE_VTABLE_CLASS(ModuleBase)
-
-protected:
-    // Linear mapping from TypeRef token to TypeHandle *
-    LookupMap<PTR_TypeRef>          m_TypeRefToMethodTableMap;
-    // Mapping of AssemblyRef token to Module *
-    LookupMap<PTR_Module>           m_ManifestModuleReferencesMap;
-
-    // mapping from MemberRef token to MethodDesc*, FieldDesc*
-    LookupMap<TADDR>                m_MemberRefMap;
-
-    // For protecting additions to the heap
-    CrstExplicitInit        m_LookupTableCrst;
-
-    PTR_LoaderAllocator     m_loaderAllocator;
-
-    // The vtable needs to match between DAC and non-DAC, but we don't want any use of IsSigInIL in the DAC
-    virtual BOOL IsSigInILImpl(PCCOR_SIGNATURE signature) { return FALSE; } // ModuleBase doesn't have a PE image to examine
-    // The vtable needs to match between DAC and non-DAC, but we don't want any use of LoadAssembly in the DAC
-    virtual DomainAssembly * LoadAssemblyImpl(mdAssemblyRef kAssemblyRef) = 0;
-
-    // The vtable needs to match between DAC and non-DAC, but we don't want any use of ThrowTypeLoadException in the DAC
-    virtual void DECLSPEC_NORETURN ThrowTypeLoadExceptionImpl(IMDInternalImport *pInternalImport,
-                                                  mdToken token,
-                                                  UINT resIDWhy)
-#ifndef DACCESS_COMPILE
-                                                   = 0;
-#else
-                                                ;
-#endif
-
-public:
-    ModuleBase() = default;
-
-    virtual LPCWSTR GetPathForErrorMessages();
-
-    CrstBase *GetLookupTableCrst()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_LookupTableCrst;
-    }
-
-    PTR_LoaderAllocator GetLoaderAllocator()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_loaderAllocator;
-    }
-
-    FORCEINLINE TADDR LookupMemberRef(mdMemberRef token, BOOL *pfIsMethod)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        _ASSERTE(TypeFromToken(token) == mdtMemberRef);
-
-        TADDR flags;
-        TADDR pResult = m_MemberRefMap.GetElementAndFlags(RidFromToken(token), &flags);
-        *pfIsMethod = !(flags & IS_FIELD_MEMBER_REF);
-
-        return pResult;
-    }
-#ifndef DACCESS_COMPILE
-    void StoreMemberRef(mdMemberRef token, FieldDesc *value)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        _ASSERTE(TypeFromToken(token) == mdtMemberRef);
-        m_MemberRefMap.AddElementWithFlags(this, RidFromToken(token), (TADDR)value, IS_FIELD_MEMBER_REF);
-    }
-    void StoreMemberRef(mdMemberRef token, MethodDesc *value)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        _ASSERTE(TypeFromToken(token) == mdtMemberRef);
-        m_MemberRefMap.AddElementWithFlags(this, RidFromToken(token), (TADDR)value, 0);
-    }
-#endif // !DACCESS_COMPILE
-
-    TypeHandle LookupTypeRef(mdTypeRef token);
-    virtual IMDInternalImport *GetMDImport() const = 0;
-    virtual bool IsFullModule() const { return false; }
-
-
-    void StoreTypeRef(mdTypeRef token, TypeHandle value)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        _ASSERTE(TypeFromToken(token) == mdtTypeRef);
-
-        // The TypeRef cache is strictly a lookaside cache. If we get an OOM trying to grow the table,
-        // we cannot abort the load. (This will cause fatal errors during gc promotion.)
-        m_TypeRefToMethodTableMap.TrySetElement(RidFromToken(token),
-            dac_cast<PTR_TypeRef>(value.AsTAddr()));
-    }
-    virtual PTR_Module LookupModule(mdToken kFile) { return NULL; }; //wrapper over GetModuleIfLoaded, takes modulerefs as well
-    virtual Module *GetModuleIfLoaded(mdFile kFile) { return NULL; };
-#ifndef DACCESS_COMPILE
-    virtual DomainAssembly *LoadModule(mdFile kFile);
-#endif
-    DWORD GetAssemblyRefFlags(mdAssemblyRef tkAssemblyRef);
-
-    Assembly *LookupAssemblyRef(mdAssemblyRef token);
-    // Module/Assembly traversal
-    virtual Assembly * GetAssemblyIfLoaded(
-            mdAssemblyRef       kAssemblyRef,
-            IMDInternalImport * pMDImportOverride = NULL,
-            BOOL                fDoNotUtilizeExtraChecks = FALSE,
-            AssemblyBinder      *pBinderForLoadedAssembly = NULL
-            );
-
-
-#ifndef DACCESS_COMPILE
-    // The vtable needs to match between DAC and non-DAC, but we don't want any use of ThrowTypeLoadException in the DAC
-    void DECLSPEC_NORETURN ThrowTypeLoadException(IMDInternalImport *pInternalImport,
-                                                  mdToken token,
-                                                  UINT resIDWhy)
-    {
-        ThrowTypeLoadExceptionImpl(pInternalImport, token, resIDWhy);
-    }
-
-    // The vtable needs to match between DAC and non-DAC, but we don't want any use of IsSigInIL in the DAC
-    BOOL IsSigInIL(PCCOR_SIGNATURE signature) { return IsSigInILImpl(signature); }
-    DomainAssembly * LoadAssembly(mdAssemblyRef kAssemblyRef)
-    {
-        WRAPPER_NO_CONTRACT;
-        return LoadAssemblyImpl(kAssemblyRef);
-    }
-
-    // Resolving
-    OBJECTHANDLE ResolveStringRef(DWORD Token);
-private:
-    // string helper
-    void InitializeStringData(DWORD token, EEStringData *pstrData, CQuickBytes *pqb);
-#endif
-
-};
 
 // A code:Module represents a DLL or EXE file loaded from the disk. It could either be a IL module or a
 // Native code (NGEN module). A module live in a code:Assembly
@@ -594,7 +481,8 @@ private:
 //        for all the types in the module
 //
 // See file:..\inc\corhdr.h#ManagedHeader for more on the layout of managed exectuable files.
-class Module : public ModuleBase
+
+class Module
 {
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
@@ -603,7 +491,7 @@ class Module : public ModuleBase
 
     friend class DataImage;
 
-    VPTR_VTABLE_CLASS(Module, ModuleBase)
+    VPTR_BASE_CONCRETE_VTABLE_CLASS(Module)
 
 private:
     PTR_CUTF8               m_pSimpleName; // Cached simple name for better performance and easier diagnostics
@@ -717,6 +605,9 @@ private:
     // Debugger may retrieve this from out-of-process.
     PTR_CGrowableStream     m_pIStreamSym;
 
+    // For protecting additions to the heap
+    CrstExplicitInit        m_LookupTableCrst;
+
     #define TYPE_DEF_MAP_ALL_FLAGS                    NO_MAP_FLAGS
 
     #define TYPE_REF_MAP_ALL_FLAGS                    NO_MAP_FLAGS
@@ -747,12 +638,18 @@ private:
     // For generic types, IsGenericTypeDefinition() is true i.e. instantiation at formals
     LookupMap<PTR_MethodTable>      m_TypeDefToMethodTableMap;
 
+    // Linear mapping from TypeRef token to TypeHandle *
+    LookupMap<PTR_TypeRef>          m_TypeRefToMethodTableMap;
+
     // Linear mapping from MethodDef token to MethodDesc *
     // For generic methods, IsGenericTypeDefinition() is true i.e. instantiation at formals
     LookupMap<PTR_MethodDesc>       m_MethodDefToDescMap;
 
     // Linear mapping from FieldDef token to FieldDesc*
     LookupMap<PTR_FieldDesc>        m_FieldDefToDescMap;
+
+    // mapping from MemberRef token to MethodDesc*, FieldDesc*
+    PTR_MemberRefToDescHashTable        m_pMemberRefToDescHashTable;
 
     // Linear mapping from GenericParam token to TypeVarTypeDesc*
     LookupMap<PTR_TypeVarTypeDesc>  m_GenericParamToDescMap;
@@ -765,6 +662,9 @@ private:
 
     // Mapping from File token to Module *
     LookupMap<PTR_Module>           m_FileReferencesMap;
+
+    // Mapping of AssemblyRef token to Module *
+    LookupMap<PTR_Module>           m_ManifestModuleReferencesMap;
 
     // Mapping from MethodDef token to pointer-sized value encoding property information
     LookupMap<SIZE_T>           m_MethodDefToPropertyInfoMap;
@@ -808,7 +708,6 @@ public:
     // 2) Needs to be here for ngen
     DWORD                   m_dwDebuggerJMCProbeCount;
 
-    bool IsFullModule() const final { return true; }
     // We can skip the JMC probes if we know that a module has no JMC stuff
     // inside. So keep a strict count of all functions inside us.
     bool HasAnyJMCFunctions();
@@ -896,6 +795,8 @@ protected:
 #ifndef DACCESS_COMPILE
     virtual void Destruct();
 #endif
+
+    PTR_LoaderAllocator GetLoaderAllocator();
 
     PTR_PEAssembly GetPEAssembly() const { LIMITED_METHOD_DAC_CONTRACT; return m_pPEAssembly; }
 
@@ -1034,7 +935,7 @@ protected:
         return GetMDImport()->GetCustomAttributeByName(parentToken, GetWellKnownAttributeName(attribute), ppData, pcbData);
     }
 
-    IMDInternalImport *GetMDImport() const final
+    IMDInternalImport *GetMDImport() const
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
@@ -1066,12 +967,14 @@ protected:
     HRESULT GetReadablePublicMetaDataInterface(DWORD dwOpenFlags, REFIID riid, LPVOID * ppvInterface);
 #endif // !DACCESS_COMPILE
 
+    BOOL IsInCurrentVersionBubble();
+
 #if defined(FEATURE_READYTORUN)
     BOOL IsInSameVersionBubble(Module *target);
 #endif // FEATURE_READYTORUN
 
 
-    LPCWSTR GetPathForErrorMessages() final;
+    LPCWSTR GetPathForErrorMessages();
 
 
 #ifdef FEATURE_ISYM_READER
@@ -1196,6 +1099,12 @@ protected:
     // the class load, which avoids the need for a 'being loaded' list
     MethodTable* CreateArrayMethodTable(TypeHandle elemType, CorElementType kind, unsigned rank, class AllocMemTracker *pamTracker);
 
+    // string helper
+    void InitializeStringData(DWORD token, EEStringData *pstrData, CQuickBytes *pqb);
+
+    // Resolving
+    OBJECTHANDLE ResolveStringRef(DWORD Token, BaseDomain *pDomain);
+
     CHECK CheckStringRef(RVA rva);
 
     // Module/Assembly traversal
@@ -1204,19 +1113,15 @@ protected:
             IMDInternalImport * pMDImportOverride = NULL,
             BOOL                fDoNotUtilizeExtraChecks = FALSE,
             AssemblyBinder      *pBinderForLoadedAssembly = NULL
-            ) final;
+            );
 
-protected:
-#ifndef DACCESS_COMPILE
-    void DECLSPEC_NORETURN ThrowTypeLoadExceptionImpl(IMDInternalImport *pInternalImport,
-                                                  mdToken token,
-                                                  UINT resIDWhy) final;
-#endif
-
-    DomainAssembly * LoadAssemblyImpl(mdAssemblyRef kAssemblyRef) final;
 public:
-    PTR_Module LookupModule(mdToken kFile) final;
-    Module *GetModuleIfLoaded(mdFile kFile) final;
+
+    DomainAssembly * LoadAssembly(mdAssemblyRef kAssemblyRef);
+    Module *GetModuleIfLoaded(mdFile kFile);
+    DomainAssembly *LoadModule(AppDomain *pDomain, mdFile kFile);
+    PTR_Module LookupModule(mdToken kFile); //wrapper over GetModuleIfLoaded, takes modulerefs as well
+    DWORD GetAssemblyRefFlags(mdAssemblyRef tkAssemblyRef);
 
     // RID maps
     TypeHandle LookupTypeDef(mdTypeDef token, ClassLoadLevel *pLoadLevel = NULL)
@@ -1225,7 +1130,8 @@ public:
 
         BAD_FORMAT_NOTHROW_ASSERT(TypeFromToken(token) == mdtTypeDef);
 
-        TypeHandle th = TypeHandle(m_TypeDefToMethodTableMap.GetElement(RidFromToken(token)));
+        TADDR flags;
+        TypeHandle th = TypeHandle(m_TypeDefToMethodTableMap.GetElementAndFlags(RidFromToken(token), &flags));
 
         if (pLoadLevel && !th.IsNull())
         {
@@ -1241,7 +1147,8 @@ public:
 
         BAD_FORMAT_NOTHROW_ASSERT(TypeFromToken(token) == mdtTypeDef);
 
-        TypeHandle th = TypeHandle(m_GenericTypeDefToCanonMethodTableMap.GetElement(RidFromToken(token)));
+        TADDR flags;
+        TypeHandle th = TypeHandle(m_GenericTypeDefToCanonMethodTableMap.GetElementAndFlags(RidFromToken(token), &flags));
 
         if (pLoadLevel && !th.IsNull())
         {
@@ -1268,6 +1175,8 @@ public:
 
 #endif // !DACCESS_COMPILE
 
+    TypeHandle LookupTypeRef(mdTypeRef token);
+
 #ifndef DACCESS_COMPILE
     //
     // Increase the size of the TypeRef-to-MethodTable LookupMap to make sure the specified token
@@ -1283,6 +1192,18 @@ public:
 
         _ASSERTE(TypeFromToken(token) == mdtTypeRef);
         m_TypeRefToMethodTableMap.EnsureElementCanBeStored(this, RidFromToken(token));
+    }
+
+    void StoreTypeRef(mdTypeRef token, TypeHandle value)
+    {
+        WRAPPER_NO_CONTRACT;
+
+        _ASSERTE(TypeFromToken(token) == mdtTypeRef);
+
+        // The TypeRef cache is strictly a lookaside cache. If we get an OOM trying to grow the table,
+        // we cannot abort the load. (This will cause fatal errors during gc promotion.)
+        m_TypeRefToMethodTableMap.TrySetElement(RidFromToken(token),
+            dac_cast<PTR_TypeRef>(value.AsTAddr()));
     }
 #endif // !DACCESS_COMPILE
 
@@ -1333,7 +1254,34 @@ public:
     }
 #endif // !DACCESS_COMPILE
 
+    FORCEINLINE TADDR LookupMemberRef(mdMemberRef token, BOOL *pfIsMethod)
+    {
+        WRAPPER_NO_CONTRACT;
+
+        _ASSERTE(TypeFromToken(token) == mdtMemberRef);
+
+        TADDR pResult = dac_cast<TADDR>(m_pMemberRefToDescHashTable->GetValue(token, pfIsMethod));
+        return pResult;
+    }
     MethodDesc *LookupMemberRefAsMethod(mdMemberRef token);
+#ifndef DACCESS_COMPILE
+    void StoreMemberRef(mdMemberRef token, FieldDesc *value)
+    {
+        WRAPPER_NO_CONTRACT;
+
+        _ASSERTE(TypeFromToken(token) == mdtMemberRef);
+        CrstHolder ch(this->GetLookupTableCrst());
+        m_pMemberRefToDescHashTable->Insert(token, value);
+    }
+    void StoreMemberRef(mdMemberRef token, MethodDesc *value)
+    {
+        WRAPPER_NO_CONTRACT;
+
+        _ASSERTE(TypeFromToken(token) == mdtMemberRef);
+        CrstHolder ch(this->GetLookupTableCrst());
+        m_pMemberRefToDescHashTable->Insert(token, value);
+    }
+#endif // !DACCESS_COMPILE
 
     PTR_TypeVarTypeDesc LookupGenericParam(mdGenericParam token)
     {
@@ -1408,6 +1356,8 @@ public:
 
     DWORD GetFileMax() { LIMITED_METHOD_DAC_CONTRACT;  return m_FileReferencesMap.GetSize(); }
 
+    Assembly *LookupAssemblyRef(mdAssemblyRef token);
+
 #ifndef DACCESS_COMPILE
     //
     // Increase the size of the AssemblyRef-to-Module LookupMap to make sure the specified token
@@ -1435,7 +1385,7 @@ public:
 
 #endif // !DACCESS_COMPILE
 
-    DWORD GetAssemblyRefMax() {LIMITED_METHOD_CONTRACT;  return m_ManifestModuleReferencesMap.GetSize() - 1; }
+    DWORD GetAssemblyRefMax() {LIMITED_METHOD_CONTRACT;  return m_ManifestModuleReferencesMap.GetSize(); }
 
     MethodDesc *FindMethodThrowing(mdToken pMethod);
     MethodDesc *FindMethod(mdToken pMethod);
@@ -1521,11 +1471,7 @@ public:
     UINT32 GetFieldTlsOffset(DWORD field);
     UINT32 GetTlsIndex();
 
-protected:
-#ifndef DACCESS_COMPILE
-    BOOL IsSigInILImpl(PCCOR_SIGNATURE signature) final;
-#endif
-public:
+    BOOL IsSigInIL(PCCOR_SIGNATURE signature);
 
     mdToken GetEntryPointToken();
 
@@ -1577,8 +1523,8 @@ public:
     void RunEagerFixups();
     void RunEagerFixupsUnlocked();
 
-    ModuleBase *GetModuleFromIndex(DWORD ix);
-    ModuleBase *GetModuleFromIndexIfLoaded(DWORD ix);
+    Module *GetModuleFromIndex(DWORD ix);
+    Module *GetModuleFromIndexIfLoaded(DWORD ix);
 
     BOOL IsReadyToRun() const
     {
@@ -1807,6 +1753,12 @@ protected:
     void                    InitializeDynamicILCrst();
 
 public:
+
+    CrstBase *GetLookupTableCrst()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_LookupTableCrst;
+    }
 
 private:
 

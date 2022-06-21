@@ -80,7 +80,7 @@ void DECLSPEC_NORETURN MemberLoader::ThrowMissingFieldException(MethodTable* pMT
     EX_THROW(EEMessageException, (kMissingFieldException, IDS_EE_MISSING_FIELD, szwFullName));
 }
 
-void DECLSPEC_NORETURN MemberLoader::ThrowMissingMethodException(MethodTable* pMT, LPCSTR szMember, ModuleBase *pModule, PCCOR_SIGNATURE pSig,DWORD cSig,const SigTypeContext *pTypeContext)
+void DECLSPEC_NORETURN MemberLoader::ThrowMissingMethodException(MethodTable* pMT, LPCSTR szMember, Module *pModule, PCCOR_SIGNATURE pSig,DWORD cSig,const SigTypeContext *pTypeContext)
 {
     CONTRACTL
     {
@@ -106,9 +106,9 @@ void DECLSPEC_NORETURN MemberLoader::ThrowMissingMethodException(MethodTable* pM
         szClassName = "?";
     };
 
-    if (pSig && cSig && pModule && pModule->IsFullModule())
+    if (pSig && cSig && pModule)
     {
-        MetaSig tmp(pSig, cSig, static_cast<Module*>(pModule), pTypeContext);
+        MetaSig tmp(pSig, cSig, pModule, pTypeContext);
         SigFormat sf(tmp, szMember ? szMember : "?", szClassName, NULL);
         MAKE_WIDEPTR_FROMUTF8(szwFullName, sf.GetCString());
         EX_THROW(EEMessageException, (kMissingMethodException, IDS_EE_MISSING_METHOD, szwFullName));
@@ -121,7 +121,7 @@ void DECLSPEC_NORETURN MemberLoader::ThrowMissingMethodException(MethodTable* pM
 
 //---------------------------------------------------------------------------------------
 //
-void MemberLoader::GetDescFromMemberRef(ModuleBase * pModule,
+void MemberLoader::GetDescFromMemberRef(Module * pModule,
                                         mdToken MemberRef,
                                         MethodDesc ** ppMD,
                                         FieldDesc ** ppFD,
@@ -191,41 +191,30 @@ void MemberLoader::GetDescFromMemberRef(ModuleBase * pModule,
             return;
         }
 
-        MethodDesc *pMethodDef = NULL;
-        
-        if (pModule->IsFullModule())
+        MethodDesc *pMethodDef = pModule->LookupMethodDef(parent);
+        if (!pMethodDef)
         {
-            Module* pNormalModule = static_cast<Module*>(pModule);
-            pMethodDef = pNormalModule->LookupMethodDef(parent);
-            if (!pMethodDef)
+            // There is no value for this def so we haven't yet loaded the class.
+            mdTypeDef typeDef;
+            IfFailThrow(pInternalImport->GetParentToken(parent, &typeDef));
+
+            // Make sure it is a typedef
+            if (TypeFromToken(typeDef) != mdtTypeDef)
             {
-                // There is no value for this def so we haven't yet loaded the class.
-                mdTypeDef typeDef;
-                IfFailThrow(pInternalImport->GetParentToken(parent, &typeDef));
-
-                // Make sure it is a typedef
-                if (TypeFromToken(typeDef) != mdtTypeDef)
-                {
-                    COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_METHODDEF_WO_TYPEDEF_PARENT);
-                }
-
-                // load the class
-
-                TypeHandle th = ClassLoader::LoadTypeDefThrowing(
-                    pNormalModule,
-                    typeDef,
-                    ClassLoader::ThrowIfNotFound,
-                    strictMetadataChecks ?
-                        ClassLoader::FailIfUninstDefOrRef : ClassLoader::PermitUninstDefOrRef);
-
-                // the class has been loaded and the method should be in the rid map!
-                pMethodDef = pNormalModule->LookupMethodDef(parent);
+                COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_METHODDEF_WO_TYPEDEF_PARENT);
             }
-        }
-        else
-        {
-            // Only normal modules may have MethodDefs
-            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+
+            // load the class
+
+            TypeHandle th = ClassLoader::LoadTypeDefThrowing(
+                pModule,
+                typeDef,
+                ClassLoader::ThrowIfNotFound,
+                strictMetadataChecks ?
+                    ClassLoader::FailIfUninstDefOrRef : ClassLoader::PermitUninstDefOrRef);
+
+            // the class has been loaded and the method should be in the rid map!
+            pMethodDef = pModule->LookupMethodDef(parent);
         }
 
         LPCUTF8 szMember;
@@ -288,7 +277,7 @@ void MemberLoader::GetDescFromMemberRef(ModuleBase * pModule,
     {
     case mdtModuleRef:
         {
-            DomainAssembly *pTargetModule = pModule->LoadModule(parent);
+            DomainAssembly *pTargetModule = pModule->LoadModule(GetAppDomain(), parent);
             if (pTargetModule == NULL)
                 COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
             typeHnd = TypeHandle(pTargetModule->GetModule()->GetGlobalMethodTable());
@@ -449,7 +438,7 @@ void MemberLoader::GetDescFromMemberRef(ModuleBase * pModule,
 
 //---------------------------------------------------------------------------------------
 //
-MethodDesc * MemberLoader::GetMethodDescFromMemberRefAndType(ModuleBase * pModule,
+MethodDesc * MemberLoader::GetMethodDescFromMemberRefAndType(Module * pModule,
                                                              mdToken MemberRef,
                                                              MethodTable * pMT)
 {
@@ -519,7 +508,7 @@ MethodDesc * MemberLoader::GetMethodDescFromMemberRefAndType(ModuleBase * pModul
 
 //---------------------------------------------------------------------------------------
 //
-FieldDesc * MemberLoader::GetFieldDescFromMemberRefAndType(ModuleBase * pModule,
+FieldDesc * MemberLoader::GetFieldDescFromMemberRefAndType(Module * pModule,
                                                            mdToken MemberRef,
                                                            MethodTable * pMT)
 {
@@ -1034,7 +1023,7 @@ BOOL MemberLoader::FM_ShouldSkipMethod(DWORD dwAttrs, FM_Flags flags)
 BOOL CompareMethodSigWithCorrectSubstitution(
             PCCOR_SIGNATURE pSignature,
             DWORD       cSignature,
-            ModuleBase* pModule,
+            Module*     pModule,
             MethodDesc *pCurDeclMD,
             const Substitution *pDefSubst,
             MethodTable *pCurMT
@@ -1081,7 +1070,7 @@ MemberLoader::FindMethod(
     MethodTable * pMT,
     LPCUTF8 pszName,
     PCCOR_SIGNATURE pSignature, DWORD cSignature,
-    ModuleBase* pModule,
+    Module* pModule,
     FM_Flags flags,                       // = FM_Default
     const Substitution *pDefSubst)        // = NULL
 {
@@ -1470,7 +1459,7 @@ MemberLoader::FindConstructor(MethodTable * pMT, PCCOR_SIGNATURE pSignature,DWOR
 #endif // DACCESS_COMPILE
 
 FieldDesc *
-MemberLoader::FindField(MethodTable * pMT, LPCUTF8 pszName, PCCOR_SIGNATURE pSignature, DWORD cSignature, ModuleBase* pModule, BOOL bCaseSensitive)
+MemberLoader::FindField(MethodTable * pMT, LPCUTF8 pszName, PCCOR_SIGNATURE pSignature, DWORD cSignature, Module* pModule, BOOL bCaseSensitive)
 {
     CONTRACTL
     {

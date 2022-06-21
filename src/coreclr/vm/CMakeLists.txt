@@ -107,7 +107,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     pgo.cpp
     precode.cpp
     prestub.cpp
-    readytorunstandalonemethodmetadata.cpp
     rejit.cpp
     sigformat.cpp
     siginfo.cpp
