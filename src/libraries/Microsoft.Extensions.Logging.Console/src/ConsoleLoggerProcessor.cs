@@ -51,6 +51,7 @@ namespace Microsoft.Extensions.Logging.Console
                     // _fullMode is used inside the lock and is safer to guard setter with lock as well
                     // this set is not expected to happen frequently
                     _fullMode = value;
+                    Monitor.PulseAll(_messageQueue);
                 }
             }
         }
@@ -196,8 +197,8 @@ namespace Microsoft.Extensions.Logging.Console
         {
             lock (_messageQueue)
             {
-                Monitor.PulseAll(_messageQueue);
                 _isAddingCompleted = true;
+                Monitor.PulseAll(_messageQueue);
             }
         }
     }
