@@ -578,8 +578,8 @@ PAL_GetLogicalProcessorCacheSizeFromOS()
         char path_to_size_file[] =  "/sys/devices/system/cpu/cpu0/cache/index-/size";
         char path_to_level_file[] =  "/sys/devices/system/cpu/cpu0/cache/index-/level";
         int index = 40;
-        assert(path_to_size_file[index] == '-');
-        assert(path_to_level_file[index] == '-');
+        _ASSERTE(path_to_size_file[index] == '-');
+        _ASSERTE(path_to_level_file[index] == '-');
 
         for (int i = 0; i < 5; i++)
         {
