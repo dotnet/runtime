@@ -427,7 +427,9 @@ mono_threads_wasm_on_thread_attached (void)
 	}
 	// Set up a MessageChannel between the new thread (which might be on a pooled reused WebWorker) and the main thread.
 	pthread_t id = pthread_self ();
+	MONO_ENTER_GC_SAFE;
 	mono_wasm_pthread_on_pthread_created (id);
+	MONO_EXIT_GC_SAFE;
 #endif
 }
 
