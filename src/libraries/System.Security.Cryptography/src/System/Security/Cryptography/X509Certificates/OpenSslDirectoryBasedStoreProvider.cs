@@ -176,7 +176,8 @@ namespace System.Security.Cryptography.X509Certificates
                 FileStreamOptions options = new()
                 {
                     Mode = FileMode.CreateNew,
-                    UnixCreateMode = UserReadWrite
+                    UnixCreateMode = UserReadWrite,
+                    Access = FileAccess.Write
                 };
 
                 if (existingFilename != null)
