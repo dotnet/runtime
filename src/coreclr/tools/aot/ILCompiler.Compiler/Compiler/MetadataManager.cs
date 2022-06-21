@@ -468,11 +468,6 @@ namespace ILCompiler
             GetDependenciesDueToMethodCodePresenceInternal(ref dependencies, factory, method, methodIL);
         }
 
-        public virtual bool HasConditionalDependenciesDueToMethodGenericDictionary(MethodDesc method)
-        {
-            return false;
-        }
-
         public virtual void GetConditionalDependenciesDueToMethodGenericDictionary(ref CombinedDependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
             // MetadataManagers can override this to provide additional dependencies caused by the presence of

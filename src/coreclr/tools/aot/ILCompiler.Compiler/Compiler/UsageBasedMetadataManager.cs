@@ -533,13 +533,10 @@ namespace ILCompiler
             }
         }
 
-        public override bool HasConditionalDependenciesDueToMethodGenericDictionary(MethodDesc method)
-        {
-            return !IsReflectionBlocked(method);
-        }
-
         public override void GetConditionalDependenciesDueToMethodGenericDictionary(ref CombinedDependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
+            Debug.Assert(!method.IsSharedByGenericInstantiations && method.HasInstantiation && method.GetCanonMethodTarget(CanonicalFormKind.Specific) != method);
+
             if ((_generationOptions & UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts) == 0
                 && !IsReflectionBlocked(method))
             {
