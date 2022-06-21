@@ -141,6 +141,9 @@ hot_reload_get_num_fields_added (MonoClass *klass);
 static uint32_t
 hot_reload_get_num_methods_added (MonoClass *klass);
 
+static const char *
+hot_reload_get_capabilities (void);
+
 static MonoClassMetadataUpdateField *
 metadata_update_field_setup_basic_info_and_resolve (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t fielddef_token, uint32_t field_flags, MonoError *error);
 
@@ -175,7 +178,8 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_added_methods_iter,
 	&hot_reload_added_fields_iter,
 	&hot_reload_get_num_fields_added,
-	&hot_reload_get_num_methods_added
+	&hot_reload_get_num_methods_added,
+	&hot_reload_get_capabilities
 };
 
 MonoComponentHotReload *
@@ -3140,4 +3144,10 @@ hot_reload_get_num_methods_added (MonoClass *klass)
 		count++;
 	}
 	return count;
+}
+
+static const char *
+hot_reload_get_capabilities (void)
+{
+	return "Baseline AddMethodToExistingType AddStaticFieldToExistingType NewTypeDefinition ChangeCustomAttributes";
 }

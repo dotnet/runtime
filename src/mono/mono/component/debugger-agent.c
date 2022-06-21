@@ -7052,7 +7052,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		break;
 	}
 	case MDBGPROT_CMD_GET_ENC_CAPABILITIES: {
-		buffer_add_string (buf, "Baseline AddMethodToExistingType AddStaticFieldToExistingType NewTypeDefinition ChangeCustomAttributes");
+		buffer_add_string (buf, mono_enc_capabilities ());
 		break;
 	}
 	default:

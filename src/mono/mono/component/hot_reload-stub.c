@@ -107,6 +107,9 @@ hot_reload_get_num_fields_added (MonoClass *klass);
 static uint32_t
 hot_reload_get_num_methods_added (MonoClass *klass);
 
+static const char *
+hot_reload_get_capabilities (void);
+
 static MonoComponentHotReload fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &hot_reload_stub_available },
 	&hot_reload_stub_set_fastpath_data,
@@ -138,7 +141,8 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_stub_added_methods_iter,
 	&hot_reload_stub_added_fields_iter,
 	&hot_reload_get_num_fields_added,
-	&hot_reload_get_num_methods_added
+	&hot_reload_get_num_methods_added,
+	&hot_reload_get_capabilities
 };
 
 static bool
@@ -331,6 +335,12 @@ static uint32_t
 hot_reload_get_num_methods_added (MonoClass *klass)
 {
 	return 0;
+}
+
+static const char *
+hot_reload_get_capabilities (void)
+{
+	return "";
 }
 
 MONO_COMPONENT_EXPORT_ENTRYPOINT

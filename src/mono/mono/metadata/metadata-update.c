@@ -76,6 +76,12 @@ mono_image_load_enc_delta (int origin, MonoImage *base_image, gconstpointer dmet
 	}
 }
 
+const char*
+mono_enc_capabilities (void)
+{
+	return mono_component_hot_reload ()->get_capabilities();
+}
+
 static void
 mono_image_close_except_pools_all_list (GList *images)
 {
