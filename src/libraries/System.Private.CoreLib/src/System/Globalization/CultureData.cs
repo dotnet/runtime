@@ -2138,7 +2138,7 @@ namespace System.Globalization
         {
             string[] result = NumberFormatInfo.s_asciiDigits;
 
-            // LOCALE_SNATIVEDIGITS (array of 10 single character strings).
+            // NLS LOCALE_SNATIVEDIGITS (array of 10 single character strings). In case of ICU, the buffer can be longer.
             string digits = GetLocaleInfoCoreUserOverride(LocaleStringData.Digits);
 
             // if digits.Length < NumberFormatInfo.s_asciiDigits.Length means the native digits setting is messed up in the host machine.
@@ -2156,7 +2156,7 @@ namespace System.Globalization
                 return result;
             }
 
-            // None ASCII digits
+            // Non-ASCII digits
 
             // Check if values coming from ICU separated by 0xFFFF
             int ffffPos = digits.IndexOf('\uFFFF');
@@ -2171,6 +2171,8 @@ namespace System.Globalization
 
                 return result;
             }
+
+            // ICU case
 
             int start = 0;
             int index = 0;
