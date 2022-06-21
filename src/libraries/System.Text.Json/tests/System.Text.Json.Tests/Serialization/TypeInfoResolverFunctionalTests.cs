@@ -545,7 +545,7 @@ namespace System.Text.Json.Serialization.Tests
                 if (jsonTypeInfo.Kind == JsonTypeInfoKind.Object &&
                     type.GetCustomAttribute<DataContractAttribute>() is not null)
                 {
-                    jsonTypeInfo.Properties.Clear();
+                    jsonTypeInfo.Properties.Clear(); // TODO should not require clearing
 
                     IEnumerable<(PropertyInfo propInfo, DataMemberAttribute attr)> properties = type
                         .GetProperties(BindingFlags.Instance | BindingFlags.Public)
@@ -614,6 +614,64 @@ namespace System.Text.Json.Serialization.Tests
                     if (specifiedProperty != null && specifiedProperty.CanRead && specifiedProperty.PropertyType == typeof(bool))
                     {
                         property.ShouldSerialize = (obj, _) => (bool)specifiedProperty.GetValue(obj);
+                    }
+                }
+
+                return jsonTypeInfo;
+            }
+        }
+
+        [Fact]
+        public static void FieldContractResolverScenario()
+        {
+            var options = new JsonSerializerOptions { TypeInfoResolver = new FieldContractResolver() };
+
+            var value = FieldContractResolver.TestClass.Create("str", 42, true);
+            string json = JsonSerializer.Serialize(value, options);
+            Assert.Equal("""{"_string":"str","_int":42,"_bool":true}""", json);
+
+            FieldContractResolver.TestClass result = JsonSerializer.Deserialize<FieldContractResolver.TestClass>(json, options);
+            Assert.Equal(value, result);
+        }
+
+        internal class FieldContractResolver : DefaultJsonTypeInfoResolver
+        {
+            public class TestClass
+            {
+                private string _string;
+                private int _int;
+                private bool _bool;
+
+                public static TestClass Create(string @string, int @int, bool @bool)
+                    => new TestClass { _string = @string, _int = @int, _bool = @bool };
+
+                // Should be ignored by the serializer
+                public bool Boolean
+                {
+                    get => _bool;
+                    set => throw new NotSupportedException();
+                }
+
+                public override int GetHashCode() => (_string, _int, _bool).GetHashCode();
+                public override bool Equals(object? other)
+                    => other is TestClass tc && (_string, _int, _bool) == (tc._string, tc._int, tc._bool);
+            }
+
+            public override JsonTypeInfo GetTypeInfo(Type type, JsonSerializerOptions options)
+            {
+                JsonTypeInfo jsonTypeInfo = base.GetTypeInfo(type, options);
+
+                if (jsonTypeInfo.Kind == JsonTypeInfoKind.Object)
+                {
+                    jsonTypeInfo.Properties.Clear();
+
+                    foreach (FieldInfo field in type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+                    {
+                        JsonPropertyInfo jsonPropertyInfo = jsonTypeInfo.CreateJsonPropertyInfo(field.FieldType, field.Name);
+                        jsonPropertyInfo.Get = field.GetValue;
+                        jsonPropertyInfo.Set = field.SetValue;
+
+                        jsonTypeInfo.Properties.Add(jsonPropertyInfo);
                     }
                 }
 
