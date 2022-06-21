@@ -123,7 +123,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "ur-IN",  new string[] { "\u06F0", "\u06F1", "\u06F2", "\u06F3", "\u06F4", "\u06F5", "\u06F6", "\u06F7", "\u06F8", "\u06F9" }};
         }
 
-        public static bool FullICUPlatform => PlatformDetection.IsIcuGlobalization && PlatformDetection.IsNotBrowser;
+        public static bool FullICUPlatform => PlatformDetection.ICUVersion.Major >= 66 && PlatformDetection.IsNotBrowser;
 
         [ConditionalTheory(nameof(FullICUPlatform))]
         [MemberData(nameof(NativeDigitTestData))]
