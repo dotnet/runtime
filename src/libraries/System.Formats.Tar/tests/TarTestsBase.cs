@@ -300,18 +300,6 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        // Compares date, hour, minutes, seconds and offset from two DateTimeOffset instances.
-        // Milliseconds and smaller units are ignored, since this comparer is used for when converting
-        // to and from double (Unix Epoch) and some precision is lost.
-        protected void CompareDateTimeOffsets(DateTimeOffset expected, DateTimeOffset actual)
-        {
-            Assert.Equal(expected.Date, actual.Date);
-            Assert.Equal(expected.Hour, actual.Hour);
-            Assert.Equal(expected.Minute, actual.Minute);
-            Assert.Equal(expected.Second, actual.Second);
-            Assert.Equal(expected.Offset, actual.Offset);
-        }
-
         protected Type GetTypeForFormat(TarEntryFormat expectedFormat)
         {
             return expectedFormat switch

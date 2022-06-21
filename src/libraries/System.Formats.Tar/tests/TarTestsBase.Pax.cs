@@ -85,11 +85,11 @@ namespace System.Formats.Tar.Tests
             VerifyPosixFifo(fifo);
         }
 
-        private DateTimeOffset GetDateTimeOffsetFromSecondsSinceEpoch(double secondsSinceUnixEpoch) =>
+        private DateTimeOffset GetDateTimeOffsetFromSecondsSinceEpoch(decimal secondsSinceUnixEpoch) =>
             new DateTimeOffset((long)(secondsSinceUnixEpoch * TimeSpan.TicksPerSecond) + DateTime.UnixEpoch.Ticks, TimeSpan.Zero);
 
-        private double GetSecondsSinceEpochFromDateTimeOffset(DateTimeOffset value) =>
-            ((double)(value.UtcDateTime - DateTime.UnixEpoch).Ticks) / TimeSpan.TicksPerSecond;
+        private decimal GetSecondsSinceEpochFromDateTimeOffset(DateTimeOffset value) =>
+            ((decimal)(value.UtcDateTime - DateTime.UnixEpoch).Ticks) / TimeSpan.TicksPerSecond;
 
         protected DateTimeOffset GetDateTimeOffsetFromTimestampString(IReadOnlyDictionary<string, string> ea, string fieldName)
         {
@@ -99,13 +99,13 @@ namespace System.Formats.Tar.Tests
             // But as extended attributes, they should always be saved as doubles with decimal precision
             Assert.Contains(".", value);
 
-            Assert.True(double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out double secondsSinceEpoch), $"Extended attributes field '{fieldName}' is not a valid double.");
+            Assert.True(decimal.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal secondsSinceEpoch), $"Extended attributes field '{fieldName}' is not a valid double.");
             return GetDateTimeOffsetFromSecondsSinceEpoch(secondsSinceEpoch);
         }
 
         protected string GetTimestampStringFromDateTimeOffset(DateTimeOffset timestamp)
         {
-            double secondsSinceEpoch = GetSecondsSinceEpochFromDateTimeOffset(timestamp);
+            decimal secondsSinceEpoch = GetSecondsSinceEpochFromDateTimeOffset(timestamp);
             return secondsSinceEpoch.ToString("F9", CultureInfo.InvariantCulture);
         }
 
