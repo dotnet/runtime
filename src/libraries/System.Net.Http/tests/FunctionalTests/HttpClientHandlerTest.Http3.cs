@@ -555,7 +555,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop]
-        [ConditionalTheory(nameof(IsQuicSupported))]
+        [Theory]
         [MemberData(nameof(InteropUris))]
         public async Task Public_Interop_ExactVersion_Success(string uri)
         {
@@ -574,7 +574,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop]
-        [ConditionalTheory(nameof(IsQuicSupported))]
+        [Theory]
         [MemberData(nameof(InteropUrisWithContent))]
         public async Task Public_Interop_ExactVersion_BufferContent_Success(string uri)
         {
@@ -596,13 +596,13 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop]
-        [ConditionalTheory(nameof(IsQuicSupported))]
+        [Theory]
         [MemberData(nameof(InteropUris))]
         public async Task Public_Interop_Upgrade_Success(string uri)
         {
             // Create the handler manually without passing in useVersion = Http3 to avoid using VersionHttpClientHandler,
             // because it overrides VersionPolicy on each request with RequestVersionExact (bypassing Alt-Svc code path completely).
-            using HttpClient client = CreateHttpClient(CreateHttpClientHandler());
+            using HttpClient client = CreateHttpClient(CreateHttpClientHandler(useVersion: null));
 
             // First request uses HTTP/1 or HTTP/2 and receives an Alt-Svc either by header or (with HTTP/2) by frame.
 
@@ -650,7 +650,7 @@ namespace System.Net.Http.Functional.Tests
             CancellationToken
         }
 
-        [ConditionalTheory(nameof(IsQuicSupported))]
+        [Theory]
         [InlineData(CancellationType.Dispose)]
         [InlineData(CancellationType.CancellationToken)]
         public async Task ResponseCancellation_ServerReceivesCancellation(CancellationType type)
@@ -814,7 +814,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsQuicSupported))]
+        [Fact]
         public async Task Alpn_H3_Success()
         {
             var options = new Http3Options() { Alpn = SslApplicationProtocol.Http3.ToString() };
@@ -848,7 +848,7 @@ namespace System.Net.Http.Functional.Tests
             connection.Dispose();
         }
 
-        [ConditionalFact(nameof(IsQuicSupported))]
+        [Fact]
         public async Task Alpn_NonH3_NegotiationFailure()
         {
             var options = new Http3Options() { Alpn = "h3-29" }; // anything other than "h3"
@@ -912,7 +912,7 @@ namespace System.Net.Http.Functional.Tests
             return (SslApplicationProtocol)alpn;
         }
 
-        [ConditionalTheory(nameof(IsQuicSupported))]
+        [Theory]
         [MemberData(nameof(StatusCodesTestData))]
         public async Task StatusCodes_ReceiveSuccess(HttpStatusCode statusCode, bool qpackEncode)
         {
@@ -1038,7 +1038,7 @@ namespace System.Net.Http.Functional.Tests
             connection.Dispose();
         }
 
-        [ConditionalFact(nameof(IsQuicSupported))]
+        [Fact]
         [OuterLoop("Uses Task.Delay")]
         public async Task RequestContentStreaming_Timeout_BothClientAndServerReceiveCancellation()
         {
@@ -1103,7 +1103,7 @@ namespace System.Net.Http.Functional.Tests
             connection.Dispose();
         }
 
-        [ConditionalFact(nameof(IsQuicSupported))]
+        [Fact]
         public async Task RequestContentStreaming_Cancellation_BothClientAndServerReceiveCancellation()
         {
             var message = new byte[1024];
@@ -1168,7 +1168,7 @@ namespace System.Net.Http.Functional.Tests
             connection.Dispose();
         }
 
-        [ConditionalFact(nameof(IsQuicSupported))]
+        [Fact]
         public async Task DuplexStreaming_RequestCTCancellation_DoesNotApply()
         {
             var message = new byte[1024];
@@ -1249,7 +1249,7 @@ namespace System.Net.Http.Functional.Tests
             connection.Dispose();
         }
 
-        [ConditionalTheory(nameof(IsQuicSupported))]
+        [Theory]
         [InlineData(true)]
         [InlineData(false)]
         public async Task DuplexStreaming_AbortByServer_StreamingCancelled(bool graceful)
