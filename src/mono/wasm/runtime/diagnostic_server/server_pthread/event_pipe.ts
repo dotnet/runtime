@@ -4,7 +4,7 @@
 import type {
     EventPipeSessionIDImpl, EventPipeSessionDiagnosticServerID, DiagnosticServerControlCommand,
     /*DiagnosticServerControlCommandStart, DiagnosticServerControlCommandSetSessionID*/
-} from "../diagnostic-server-controller-commands";
+} from "./controller-commands";
 
 /// Everything the diagnostic server knows about a connection.
 /// The connection has a server ID and a websocket. If it's an eventpipe session, it will also have an eventpipe ID assigned when the runtime starts an EventPipe session.
@@ -190,7 +190,7 @@ function startServer(url: string): SessionManager {
 
 let sessionManager: SessionManager | null = null;
 
-function controlCommandReceived(event: MessageEvent<DiagnosticServerControlCommand>): void {
+export function controlCommandReceived(event: MessageEvent<DiagnosticServerControlCommand>): void {
     console.debug("get in loser, we're going to vegas", event.data);
     const cmd = event.data;
     if (cmd.type === undefined) {
@@ -214,9 +214,3 @@ function controlCommandReceived(event: MessageEvent<DiagnosticServerControlComma
             break;
     }
 }
-
-function workerMain() {
-    self.addEventListener("message", controlCommandReceived);
-}
-
-workerMain();

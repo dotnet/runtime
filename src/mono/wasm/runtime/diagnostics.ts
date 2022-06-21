@@ -6,7 +6,7 @@ import cwraps from "./cwraps";
 import type { DiagnosticOptions, EventPipeSession, EventPipeStreamingSession, EventPipeSessionOptions, EventPipeSessionIPCOptions, EventPipeSessionDiagnosticServerID, EventPipeSessionAutoStopOptions } from "./types";
 import { mono_assert } from "./types";
 import type { VoidPtr } from "./types/emscripten";
-import { getController } from "./diagnostic-server-controller";
+import { getController } from "./diagnostic_server/browser/controller";
 import * as memory from "./memory";
 
 const sizeOfInt32 = 4;

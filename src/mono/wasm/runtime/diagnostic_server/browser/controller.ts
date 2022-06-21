@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { DiagnosticOptions, EventPipeSessionOptions, EventPipeSessionIPCOptions, EventPipeSessionDiagnosticServerID } from "./types";
-import type { EventPipeSessionIDImpl } from "./diagnostic-server-controller-commands";
+import type { DiagnosticOptions, EventPipeSessionOptions, EventPipeSessionIPCOptions, EventPipeSessionDiagnosticServerID } from "../../types";
+import type { EventPipeSessionIDImpl } from "../server_pthread/controller-commands";
 
 
 

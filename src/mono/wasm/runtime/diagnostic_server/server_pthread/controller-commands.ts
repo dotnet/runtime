@@ -1,7 +1,7 @@
 
-import type { EventPipeSessionDiagnosticServerID } from "./types";
+import type { EventPipeSessionDiagnosticServerID } from "../../types";
 
-export type { EventPipeSessionDiagnosticServerID } from "./types";
+export type { EventPipeSessionDiagnosticServerID } from "../../types";
 
 
 export type EventPipeSessionIDImpl = number;

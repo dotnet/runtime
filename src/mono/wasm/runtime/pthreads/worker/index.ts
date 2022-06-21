@@ -23,6 +23,29 @@ export {
     WorkerThreadEventTarget,
 } from "./events";
 
+export interface PThreadSelf {
+    readonly pthread_id: pthread_ptr;
+    postMessage: <T = object>(message: T, transfer?: Transferable[]) => void;
+    addEventListener: <T>(listener: (event: MessageEvent<T>) => void) => void;
+}
+
+class WorkerSelf implements PThreadSelf {
+    readonly port: MessagePort;
+    readonly pthread_id: pthread_ptr;
+    constructor(pthread_id: pthread_ptr, port: MessagePort) {
+        this.port = port;
+        this.pthread_id = pthread_id;
+    }
+    postMessage<T = object>(message: T, transfer?: Transferable[]) {
+        this.port.postMessage(message, transfer);
+    }
+    addEventListener<T>(listener: (event: MessageEvent<T>) => void) {
+        this.port.addEventListener("message", listener);
+    }
+}
+
+export let pthread_self: PThreadSelf | null = null;
+
 /// This is the "public internal" API for runtime subsystems that wish to be notified about
 /// pthreads that are running on the current worker.
 /// Example:
@@ -46,6 +69,7 @@ function setupChannelToMainThread(pthread_ptr: pthread_ptr): MessagePort {
     workerPort.addEventListener("message", monoDedicatedChannelMessageFromMainToWorker);
     workerPort.start();
     portToMain = workerPort;
+    pthread_self = new WorkerSelf(pthread_ptr, workerPort);
     self.postMessage(makeChannelCreatedMonoMessage(pthread_ptr, mainPort), [mainPort]);
     return workerPort;
 }

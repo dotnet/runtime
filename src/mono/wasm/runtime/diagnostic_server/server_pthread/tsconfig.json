@@ -1,0 +1,9 @@
+{
+    "compilerOptions": {
+        "lib": [
+            "esnext",
+            "webworker"
+        ],
+    ]
+}
+}
