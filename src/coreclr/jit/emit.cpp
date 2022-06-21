@@ -6259,7 +6259,13 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
     coldCodeBlock = nullptr;
 
-    CorJitAllocMemFlag allocMemFlag = CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN;
+    // This restricts the data alignment to: 4, 8, 16, or 32 bytes
+    // Alignments greater than 32 would require VM support in ICorJitInfo::allocMem
+    uint32_t dataAlignment = emitConsDsc.alignment;
+    assert((dataSection::MIN_DATA_ALIGN <= dataAlignment) && (dataAlignment <= dataSection::MAX_DATA_ALIGN) &&
+           isPow2(dataAlignment));
+
+    uint32_t codeAlignment = TARGET_POINTER_SIZE;
 
 #ifdef TARGET_X86
     //
@@ -6279,14 +6285,14 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
         const weight_t scenarioHotWeight = 256.0;
         if (emitComp->fgCalledCount > (scenarioHotWeight * emitComp->fgProfileRunsCount()))
         {
-            allocMemFlag = CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN;
+            codeAlignment = 16;
         }
     }
     else
     {
         if (emitTotalHotCodeSize <= 16)
         {
-            allocMemFlag = CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN;
+            codeAlignment = 16;
         }
     }
 #endif
@@ -6298,22 +6304,43 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     if (emitComp->opts.OptimizationEnabled() && !emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) &&
         (emitTotalHotCodeSize > 16) && emitComp->fgHasLoops)
     {
-        allocMemFlag = CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN;
+        codeAlignment = 32;
     }
 #endif
 
-    // This restricts the emitConsDsc.alignment to: 1, 2, 4, 8, 16, or 32 bytes
-    // Alignments greater than 32 would require VM support in ICorJitInfo::allocMem
-    assert(isPow2(emitConsDsc.alignment) && (emitConsDsc.alignment <= 32));
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+    // For arm64/LoongArch64, we're going to put the data in the code section. So make sure the code section has
+    // adequate alignment.
+    if (emitConsDsc.dsdOffs > 0)
+    {
+        codeAlignment = max(codeAlignment, dataAlignment);
+    }
+#endif
 
-    if (emitConsDsc.alignment == 16)
+    // Note that we don't support forcing code alignment of 8 bytes on 32-bit platforms; an omission?
+    assert((TARGET_POINTER_SIZE <= codeAlignment) && (codeAlignment <= 32) && isPow2(codeAlignment));
+
+    CorJitAllocMemFlag allocMemFlagCodeAlign = CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN;
+    if (codeAlignment == 32)
     {
-        allocMemFlag = static_cast<CorJitAllocMemFlag>(allocMemFlag | CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN);
+        allocMemFlagCodeAlign = CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN;
     }
-    else if (emitConsDsc.alignment == 32)
+    else if (codeAlignment == 16)
     {
-        allocMemFlag = static_cast<CorJitAllocMemFlag>(allocMemFlag | CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN);
+        allocMemFlagCodeAlign = CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN;
     }
+
+    CorJitAllocMemFlag allocMemFlagDataAlign = static_cast<CorJitAllocMemFlag>(0);
+    if (dataAlignment == 16)
+    {
+        allocMemFlagDataAlign = CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN;
+    }
+    else if (dataAlignment == 32)
+    {
+        allocMemFlagDataAlign = CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN;
+    }
+
+    CorJitAllocMemFlag allocMemFlag = static_cast<CorJitAllocMemFlag>(allocMemFlagCodeAlign | allocMemFlagDataAlign);
 
     AllocMemArgs args;
     memset(&args, 0, sizeof(args));
@@ -6338,6 +6365,22 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     {
         assert(((size_t)codeBlock & 31) == 0);
     }
+#if 0
+    // TODO: we should be able to assert the following, but it appears crossgen2 doesn't respect them,
+    // or maybe it respects them in the written image but not in the buffer pointer given to the JIT.
+    if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
+    {
+        assert(((size_t)codeBlock & 15) == 0);
+    }
+    if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
+    {
+        assert(((size_t)consBlock & 31) == 0);
+    }
+    if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
+    {
+        assert(((size_t)consBlock & 15) == 0);
+    }
+#endif // 0
 #endif
 
     // if (emitConsDsc.dsdOffs)

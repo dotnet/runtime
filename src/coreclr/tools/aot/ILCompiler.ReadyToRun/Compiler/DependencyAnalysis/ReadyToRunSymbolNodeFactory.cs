@@ -6,7 +6,6 @@ using ILCompiler.DependencyAnalysis.ReadyToRun;
 
 using Internal.JitInterface;
 using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
 using Internal.ReadyToRunConstants;
 
 namespace ILCompiler.DependencyAnalysis
@@ -141,8 +140,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new PrecodeHelperImport(_codegenNodeFactory, key);
             });
-
-            _ilBodyFixupsCache = new NodeCache<ILBodyFixupSignature, Import>(key => new PrecodeHelperImport(_codegenNodeFactory.ILBodyPrecodeImports, key));
 
             _genericLookupHelpers = new NodeCache<GenericLookupKey, ISymbolNode>(key =>
             {
@@ -458,14 +455,6 @@ namespace ILCompiler.DependencyAnalysis
             return _virtualFunctionOverrideCache.GetOrAdd(_codegenNodeFactory.VirtualResolutionFixupSignature(
                 _verifyTypeAndFieldLayout ? ReadyToRunFixupKind.Verify_VirtualFunctionOverride : ReadyToRunFixupKind.Check_VirtualFunctionOverride,
                 declMethod, implType, implMethod));
-        }
-
-        private NodeCache<ILBodyFixupSignature, Import> _ilBodyFixupsCache;
-        public Import CheckILBodyFixupSignature(EcmaMethod method)
-        {
-            return _ilBodyFixupsCache.GetOrAdd(_codegenNodeFactory.ILBodyFixupSignature(
-                _verifyTypeAndFieldLayout ? ReadyToRunFixupKind.Verify_IL_Body : ReadyToRunFixupKind.Check_IL_Body,
-                method));
         }
 
         struct MethodAndCallSite : IEquatable<MethodAndCallSite>

@@ -503,33 +503,21 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
 
     PCODE pCode = NULL;
 #ifdef FEATURE_READYTORUN
-    Module * pModule = GetLoaderModule();
+    Module * pModule = GetModule();
     if (pModule->IsReadyToRun())
     {
         pCode = pModule->GetReadyToRunInfo()->GetEntryPoint(this, pConfig, TRUE /* fFixups */);
     }
 
-    //  Generics may be located in several places
-    if (pCode == NULL && HasClassOrMethodInstantiation())
+    // Lookup in the entry point assembly for a R2R entrypoint (generics with large version bubble enabled)
+    if (pCode == NULL && HasClassOrMethodInstantiation() && SystemDomain::System()->DefaultDomain()->GetRootAssembly() != NULL)
     {
-        Module* pDefiningModule = GetModule();
-        // Lookup in the defining module of the generic (which is where in inputbubble scenarios
-        // the methods may be placed.
-        if (pDefiningModule != pModule && pDefiningModule->IsReadyToRun())
-        {
-            pCode = pDefiningModule->GetReadyToRunInfo()->GetEntryPoint(this, pConfig, TRUE /* fFixups */);
-        }
+        pModule = SystemDomain::System()->DefaultDomain()->GetRootAssembly()->GetModule();
+        _ASSERT(pModule != NULL);
 
-        // Lookup in the entry point assembly for a R2R entrypoint (generics with large version bubble enabled)
-        if (pCode == NULL && (SystemDomain::System()->DefaultDomain()->GetRootAssembly() != NULL))
+        if (pModule->IsReadyToRun() && pModule->IsInSameVersionBubble(GetModule()))
         {
-            pModule = SystemDomain::System()->DefaultDomain()->GetRootAssembly()->GetModule();
-            _ASSERT(pModule != NULL);
-
-            if (pModule->IsReadyToRun() && pModule->IsInSameVersionBubble(GetModule()))
-            {
-                pCode = pModule->GetReadyToRunInfo()->GetEntryPoint(this, pConfig, TRUE /* fFixups */);
-            }
+            pCode = pModule->GetReadyToRunInfo()->GetEntryPoint(this, pConfig, TRUE /* fFixups */);
         }
     }
 #endif
@@ -2441,7 +2429,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 
         BYTE kind = *pBlob++;
 
-        ModuleBase * pInfoModule = pModule;
+        Module * pInfoModule = pModule;
         if (kind & ENCODE_MODULE_OVERRIDE)
         {
             DWORD moduleIndex = CorSigUncompressData(pBlob);
@@ -2458,8 +2446,6 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
                                             pInfoModule,
                                             pBlob);
 
-                _ASSERTE(!pMD->GetMethodTable()->IsGenericTypeDefinition() || pMD->GetMethodTable()->GetNumGenericArgs() == 0);
-
                 if (pModule->IsReadyToRun())
                 {
                     // We do not emit activation fixups for version resilient references. Activate the target explicitly.
@@ -2472,8 +2458,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
         case ENCODE_METHOD_ENTRY_DEF_TOKEN:
             {
                 mdToken MethodDef = TokenFromRid(CorSigUncompressData(pBlob), mdtMethodDef);
-                _ASSERTE(pInfoModule->IsFullModule());
-                pMD = MemberLoader::GetMethodDescFromMethodDef(static_cast<Module*>(pInfoModule), MethodDef, FALSE);
+                pMD = MemberLoader::GetMethodDescFromMethodDef(pInfoModule, MethodDef, FALSE);
 
                 pMD->PrepareForUseAsADependencyOfANativeImage();
 
@@ -2532,8 +2517,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
         case ENCODE_VIRTUAL_ENTRY_DEF_TOKEN:
             {
                 mdToken MethodDef = TokenFromRid(CorSigUncompressData(pBlob), mdtMethodDef);
-                _ASSERTE(pInfoModule->IsFullModule());
-                pMD = MemberLoader::GetMethodDescFromMethodDef(static_cast<Module*>(pInfoModule), MethodDef, FALSE);
+                pMD = MemberLoader::GetMethodDescFromMethodDef(pInfoModule, MethodDef, FALSE);
 
                 goto VirtualEntry;
             }
@@ -2832,7 +2816,7 @@ TADDR GetFirstArgumentRegisterValuePtr(TransitionBlock * pTransitionBlock)
 
 void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock,
                                     Module *                    pModule,
-                                    ModuleBase *                pInfoModule,
+                                    Module *                    pInfoModule,
                                     BYTE                        kind,
                                     PCCOR_SIGNATURE             pBlob,
                                     PCCOR_SIGNATURE             pBlobStart,
@@ -2995,7 +2979,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
     BYTE kind = *pBlob++;
 
-    ModuleBase * pInfoModule = pModule;
+    Module * pInfoModule = pModule;
     if (kind & ENCODE_MODULE_OVERRIDE)
     {
         DWORD moduleIndex = CorSigUncompressData(pBlob);

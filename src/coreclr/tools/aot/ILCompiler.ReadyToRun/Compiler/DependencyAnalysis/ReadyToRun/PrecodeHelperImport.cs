@@ -17,11 +17,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
         }
 
-        public PrecodeHelperImport(ImportSectionNode section, Signature signature)
-            : base(section, signature)
-        {
-        }
-
         protected override string GetName(NodeFactory factory)
         {
             return "PrecodeHelperImport->" + ImportSignature.GetMangledName(factory.NameMangler);
