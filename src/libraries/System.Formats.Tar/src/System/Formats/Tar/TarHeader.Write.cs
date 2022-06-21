@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Text;
 
@@ -391,7 +390,7 @@ namespace System.Formats.Tar
             _extendedAttributes.Add(PaxEaName, _name);
 
             bool containsATime = _extendedAttributes.ContainsKey(PaxEaATime);
-            bool containsCTime = _extendedAttributes.ContainsKey(PaxEaATime);
+            bool containsCTime = _extendedAttributes.ContainsKey(PaxEaCTime);
             if (!containsATime || !containsCTime)
             {
                 DateTimeOffset now = DateTimeOffset.UtcNow;
