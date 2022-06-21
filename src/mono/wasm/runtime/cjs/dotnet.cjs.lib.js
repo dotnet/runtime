@@ -4,20 +4,22 @@
 
 "use strict";
 
-const isPThread =
 #if USE_PTHREADS
-`ENVIRONMENT_IS_PTHREAD`
+const usePThreads = `true`;
+const isPThread = `ENVIRONMENT_IS_PTHREAD`;
 #else
-`false`
+const usePThreads = `false`;
+const isPThread = `false`;
 #endif
-;
+
 const DotnetSupportLib = {
     $DOTNET: {},
     // these lines will be placed early on emscripten runtime creation, passing import and export objects into __dotnet_runtime IFFE
     // we replace implementation of readAsync and fetch
     // replacement of require is there for consistency with ES6 code
     $DOTNET__postset: `
-let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require, updateGlobalBufferAndViews};
+let __dotnet_replacement_PThread_loadWasmModuleToWorker = ${usePThreads} ? PThread.loadWasmModuleToWorker : null;
+let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require, updateGlobalBufferAndViews, loadWasmModuleToWorker: __dotnet_replacement_PThread_loadWasmModuleToWorker};
 let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
     { isESM:false, isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, isPThread:${isPThread}, locateFile, quit_, ExitStatus, requirePromise:Promise.resolve(require)},
     { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
@@ -27,6 +29,9 @@ readAsync = __dotnet_replacements.readAsync;
 var fetch = __dotnet_replacements.fetch;
 require = __dotnet_replacements.requireOut;
 var noExitRuntime = __dotnet_replacements.noExitRuntime;
+if (${usePThreads}) {
+    PThread.loadWasmModuleToWorker = __dotnet_replacements.loadWasmModuleToWorker;
+}
 `,
 };
 

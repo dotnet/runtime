@@ -59,6 +59,13 @@ function monoWorkerMessageHandler(pthread_ptr: pthread_ptr, worker: Worker, ev: 
     }
 }
 
+/// Called by Emscripten internals when a new pthread worker is created and added to the pthread worker pool.
+/// At this point the worker doesn't have any pthread assigned to it, yet.
+export function afterLoadWasmModuleToWorker(worker: Worker): void {
+    console.debug("afterLoadWasmModuleToWorker", worker);
+    //worker.addEventListener("message", (ev) => monoWorkerMessageHandler2(worker, ev));
+}
+
 /// Called asynchronously in the main thread from mono when a new pthread is started
 export function mono_wasm_pthread_on_pthread_created_main_thread(pthread_ptr: pthread_ptr, worker_notify_ptr: number): void {
     console.log("pthread created");

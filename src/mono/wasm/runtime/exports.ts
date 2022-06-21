@@ -76,7 +76,7 @@ import {
     dotnet_browser_sign
 } from "./crypto-worker";
 import { mono_wasm_pthread_on_pthread_created } from "./pthreads/worker";
-import { mono_wasm_pthread_on_pthread_created_main_thread } from "./pthreads/browser";
+import { mono_wasm_pthread_on_pthread_created_main_thread, afterLoadWasmModuleToWorker } from "./pthreads/browser";
 
 const MONO = {
     // current "public" MONO API
@@ -194,7 +194,7 @@ let exportedAPI: DotnetPublicAPI;
 function initializeImportsAndExports(
     imports: { isESM: boolean, isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, isPThread: boolean, locateFile: Function, quit_: Function, ExitStatus: ExitStatusError, requirePromise: Promise<Function> },
     exports: { mono: any, binding: any, internal: any, module: any },
-    replacements: { fetch: any, readAsync: any, require: any, requireOut: any, noExitRuntime: boolean, updateGlobalBufferAndViews: Function },
+    replacements: { fetch: any, readAsync: any, require: any, requireOut: any, noExitRuntime: boolean, updateGlobalBufferAndViews: Function, loadWasmModuleToWorker: Function },
 ): DotnetPublicAPI {
     const module = exports.module as DotnetModule;
     const globalThisAny = globalThis as any;
@@ -258,6 +258,14 @@ function initializeImportsAndExports(
     };
 
     replacements.noExitRuntime = ENVIRONMENT_IS_WEB;
+
+    if (replacements.loadWasmModuleToWorker) {
+        const originalLoadWasmModuleToWorker = replacements.loadWasmModuleToWorker;
+        replacements.loadWasmModuleToWorker = (worker: Worker, onFinishedLoading: Function): void => {
+            originalLoadWasmModuleToWorker(worker, onFinishedLoading);
+            afterLoadWasmModuleToWorker(worker);
+        };
+    }
 
     if (typeof module.disableDotnet6Compatibility === "undefined") {
         module.disableDotnet6Compatibility = imports.isESM;

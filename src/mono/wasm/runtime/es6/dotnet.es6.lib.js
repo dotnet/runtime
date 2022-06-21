@@ -4,13 +4,13 @@
 
 "use strict";
 
-const isPThread =
 #if USE_PTHREADS
-`ENVIRONMENT_IS_PTHREAD`
+const usePThreads = `true`;
+const isPThread = `ENVIRONMENT_IS_PTHREAD`;
 #else
-`false`
+const usePThreads = `false`;
+const isPThread = `false`;
 #endif
-;
 
 const DotnetSupportLib = {
     $DOTNET: {},
@@ -22,7 +22,8 @@ const DotnetSupportLib = {
     // Emscripten's getBinaryPromise is not async for NodeJs, but we would like to have it async, so we replace it.
     // We also replace implementation of readAsync and fetch
     $DOTNET__postset: `
-let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require, updateGlobalBufferAndViews};
+let __dotnet_replacement_PThread_loadWasmModuleToWorker = ${usePThreads} ? PThread.loadWasmModuleToWorker : null;
+let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require, updateGlobalBufferAndViews, loadWasmModuleToWorker: __dotnet_replacement_PThread_loadWasmModuleToWorker};
 if (ENVIRONMENT_IS_NODE) {
     __dotnet_replacements.requirePromise = import('module').then(mod => {
         const require = mod.createRequire(import.meta.url);
@@ -65,6 +66,9 @@ readAsync = __dotnet_replacements.readAsync;
 var fetch = __dotnet_replacements.fetch;
 require = __dotnet_replacements.requireOut;
 var noExitRuntime = __dotnet_replacements.noExitRuntime;
+if (${usePThreads}) {
+    PThread.loadWasmModuleToWorker = __dotnet_replacements.loadWasmModuleToWorker;
+}
 `,
 };
 
