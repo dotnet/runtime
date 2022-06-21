@@ -1556,7 +1556,8 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     {
                         ssize_t iconVal = op2->AsIntCon()->gtIconVal;
 
-                        if (varTypeIsIntegral(lclVar) && genActualType(lclVar) != genActualType(op2) && genTypeSize(lclVar) < genTypeSize(op2))
+                        if (varTypeIsIntegral(lclVar) && genActualType(lclVar) != genActualType(op2) &&
+                            genTypeSize(lclVar) < genTypeSize(op2))
                         {
                             iconVal = genCastIconVal(iconVal, genActualType(lclVar));
                         }
