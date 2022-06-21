@@ -23,6 +23,10 @@ namespace System.Diagnostics.Tests
 {
     public partial class ProcessTests : ProcessTestBase
     {
+        const UnixFileMode ExecutablePermissions = UnixFileMode.UserRead | UnixFileMode.UserExecute | UnixFileMode.UserWrite |
+                                                   UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
+                                                   UnixFileMode.GroupRead | UnixFileMode.GroupExecute;
+
         private class FinalizingProcess : Process
         {
             public static volatile bool WasFinalized;

@@ -22,10 +22,6 @@ namespace System.Diagnostics.Tests
     {
         private static bool IsRemoteExecutorSupportedAndOnUnixAndSuperUser => RemoteExecutor.IsSupported && PlatformDetection.IsUnixAndSuperUser;
 
-        const UnixFileMode ExecutablePermissions = UnixFileMode.UserRead | UnixFileMode.UserExecute | UnixFileMode.UserWrite |
-                                                   UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
-                                                   UnixFileMode.GroupRead | UnixFileMode.GroupExecute;
-
         [Fact]
         private void TestWindowApisUnix()
         {
