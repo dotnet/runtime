@@ -39,15 +39,15 @@ public enum UnixFileMode
     /// </summary>
     GroupRead = 32,
     /// <summary>
-    /// Execute permission for user.
+    /// Execute permission for owner.
     /// </summary>
     UserExecute = 64,
     /// <summary>
-    /// Write permission for user.
+    /// Write permission for owner.
     /// </summary>
     UserWrite = 128,
     /// <summary>
-    /// Read permission for user.
+    /// Read permission for owner.
     /// </summary>
     UserRead = 256,
     /// <summary>
