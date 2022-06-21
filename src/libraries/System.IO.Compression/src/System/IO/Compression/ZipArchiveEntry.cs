@@ -1096,14 +1096,10 @@ namespace System.IO.Compression
         /// </summary>
         private static string GetFileName_Windows(string path)
         {
-            int length = path.Length;
-            for (int i = length; --i >= 0;)
-            {
-                char ch = path[i];
-                if (ch == '\\' || ch == '/' || ch == ':')
-                    return path.Substring(i + 1);
-            }
-            return path;
+            int i = path.AsSpan().LastIndexOfAny('\\', '/', ':');
+            return i >= 0 ?
+                path.Substring(i + 1) :
+                path;
         }
 
         /// <summary>
