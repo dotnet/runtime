@@ -103,7 +103,7 @@ namespace System.Net.Test.Common
                 await _connectionStream.WriteAsync("HTTP/2.0 400 Bad Request\r\n\r\n"u8.ToArray());
                 _connectionSocket.Shutdown(SocketShutdown.Send);
                 // If WinHTTP doesn't support streaming a request without a length then it will fallback
-                // to HTTP/1.1. Throwing an exception to detect this case in WinHttpHandler tests. 
+                // to HTTP/1.1. Throwing an exception to detect this case in WinHttpHandler tests.
                 throw new Exception("HTTP/1.1 request sent to HTTP/2 connection.");
             }
         }
