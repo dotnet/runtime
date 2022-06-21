@@ -2804,8 +2804,8 @@ hot_reload_field_parent (MonoImage *base_image, uint32_t field_token)
 
 /* HACK - keep in sync with locator_t in metadata/metadata.c */
 typedef struct {
-	int idx;			/* The index that we are trying to locate */
-	int col_idx;		/* The index in the row where idx may be stored */
+	guint32 idx;			/* The index that we are trying to locate */
+	guint32 col_idx;		/* The index in the row where idx may be stored */
 	MonoTableInfo *t;	/* pointer to the table */
 	guint32 result;
 } upd_locator_t;
