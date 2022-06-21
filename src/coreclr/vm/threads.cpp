@@ -8353,6 +8353,7 @@ void Thread::InitializeSpecialUserModeApc()
 
 #endif // FEATURE_SPECIAL_USER_MODE_APC
 
+#if !(defined(TARGET_WINDOWS) && defined(TARGET_X86))
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
 EXTERN_C void STDCALL ClrRestoreNonvolatileContextWorker(PCONTEXT ContextRecord, DWORD64 ssp);
 #endif
@@ -8367,7 +8368,7 @@ void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord)
     RtlRestoreContext(ContextRecord, NULL);
 #endif
 }
-
+#endif // !(TARGET_WINDOWS && TARGET_X86)
 #endif // #ifndef DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE

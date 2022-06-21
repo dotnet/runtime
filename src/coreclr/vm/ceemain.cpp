@@ -416,7 +416,7 @@ void InitializeOptionalWindowsAPIPointers()
     g_pfnInitializeContext2 = (PINITIALIZECONTEXT2)GetProcAddress(hm, "InitializeContext2");
 
 #ifdef TARGET_X86
-    HMODULE hm = GetModuleHandleW(_T("ntdll.dll"));
+    hm = GetModuleHandleW(_T("ntdll.dll"));
     g_pfnRtlRestoreContext = (PRTLRESTORECONTEXT)GetProcAddress(hm, "RtlRestoreContext");
 #endif //TARGET_X86
 }
