@@ -2,7 +2,7 @@
 
 As part of the exit criteria for the LibraryImportGenerator experiment, we have decided to introduce support for marshalling `System.Span<T>` and `System.ReadOnlySpan<T>` into the LibraryImportGenerator-generated stubs. This document describes design decisions made during the implementation of these marshallers.
 
-> NOTE: These design docs are kept for historical purposes. The designs in this file are supersceded by the designs in [UserTypeMarshallingV2.md](UserTypeMarshallingV2.md).
+> NOTE: These design docs are kept for historical purposes. The designs in this file are superseded by the designs in [UserTypeMarshallingV2.md](UserTypeMarshallingV2.md).
 
 ## Design 1: "Intrinsic" support for `(ReadOnly)Span<T>`
 
