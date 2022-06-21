@@ -37,6 +37,10 @@
     <IlcSetupPropertiesDependsOn>ImportRuntimeIlcPackageTarget</IlcSetupPropertiesDependsOn>
     <IlcDynamicBuildPropertyDependencies>SetupProperties</IlcDynamicBuildPropertyDependencies>
 
+    <!-- NativeAOT apps do not require deps.json and runtimeconfig.json files -->
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <GenerateRuntimeConfigurationFiles>false</GenerateRuntimeConfigurationFiles>
+
   </PropertyGroup>
 
   <!-- Locate the runtime package according to the current target runtime -->
