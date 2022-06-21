@@ -624,7 +624,7 @@ bool GetStackTraceAtContext(SString & s, CONTEXT * pContext)
         // If we have a supplied context, then don't skip any frames. Else we'll
         // be using the current context, so skip this frame.
         const int cSkip = (pContext == NULL) ? 1 : 0;
-        char * szString = s.OpenANSIBuffer(cchMaxAssertStackLevelStringLen * cTotal);
+        char * szString = s.OpenUTF8Buffer(cchMaxAssertStackLevelStringLen * cTotal);
         GetStringFromStackLevels(cSkip, cTotal, szString, pContext);
         s.CloseBuffer((COUNT_T) strlen(szString));
 

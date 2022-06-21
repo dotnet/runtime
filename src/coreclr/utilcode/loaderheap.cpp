@@ -1617,8 +1617,7 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
                 LoaderHeapSniffer::PitchSniffer(&message);
             }
 
-            StackScratchBuffer scratch;
-            DbgAssertDialog(szFile, lineNum, (char*) message.GetANSI(scratch));
+            DbgAssertDialog(szFile, lineNum, (char*) message.GetUTF8());
 
         }
     }
@@ -2231,8 +2230,7 @@ void LoaderHeapSniffer::ValidateFreeList(UnlockedLoaderHeap *pHeap)
 
         }
 
-        StackScratchBuffer scratch;
-        DbgAssertDialog(__FILE__, __LINE__, (char*) message.GetANSI(scratch));
+        DbgAssertDialog(__FILE__, __LINE__, (char*) message.GetUTF8());
 
     }
 

@@ -8038,7 +8038,7 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
         {
             const char * str = (reason ? reason : "");
             SString strReason;
-            strReason.SetANSI(str);
+            strReason.SetUTF8(str);
 
 
             FireEtwMethodJitInliningFailed(methodBeingCompiledNames[0].GetUnicode(),
@@ -8287,7 +8287,7 @@ void CEEInfo::reportTailCallDecision (CORINFO_METHOD_HANDLE callerHnd,
         {
             const char * str = (reason ? reason : "");
             SString strReason;
-            strReason.SetANSI(str);
+            strReason.SetUTF8(str);
 
             FireEtwMethodJitTailCallFailed(methodBeingCompiledNames[0].GetUnicode(),
                                            methodBeingCompiledNames[1].GetUnicode(),
