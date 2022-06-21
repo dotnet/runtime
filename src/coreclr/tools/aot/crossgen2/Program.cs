@@ -17,6 +17,7 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using ILCompiler.Reflection.ReadyToRun;
+using ILCompiler.DependencyAnalysis;
 
 namespace ILCompiler
 {
@@ -637,6 +638,8 @@ namespace ILCompiler
                     groupConfig.CompilationModuleSet = inputModules;
                     groupConfig.VersionBubbleModuleSet = versionBubbleModules;
                     groupConfig.CompileGenericDependenciesFromVersionBubbleModuleSet = _commandLineOptions.CompileBubbleGenerics;
+                    groupConfig.CrossModuleGenericCompilation = _commandLineOptions.CrossModuleGenericCompilation;
+                    groupConfig.CrossModuleInlining = _commandLineOptions.CrossModuleInlining;
 
                     if (singleMethod != null)
                     {
@@ -729,10 +732,13 @@ namespace ILCompiler
                     string compilationUnitPrefix = "";
                     builder.UseCompilationUnitPrefix(compilationUnitPrefix);
 
-                    ILProvider ilProvider = new ReadyToRunILProvider();
+                    ILProvider ilProvider = new ReadyToRunILProvider(compilationGroup);
 
                     DependencyTrackingLevel trackingLevel = _commandLineOptions.DgmlLogFileName == null ?
                         DependencyTrackingLevel.None : (_commandLineOptions.GenerateFullDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
+
+                    NodeFactoryOptimizationFlags nodeFactoryFlags = new NodeFactoryOptimizationFlags();
+                    nodeFactoryFlags.OptimizeAsyncMethods = _commandLineOptions.AsyncMethodOptimization;
 
                     builder
                         .UseMapFile(_commandLineOptions.Map)
@@ -741,6 +747,7 @@ namespace ILCompiler
                         .UsePerfMapFile(_commandLineOptions.PerfMap, _commandLineOptions.PerfMapPath, _commandLineOptions.PerfMapFormatVersion)
                         .UseProfileFile(jsonProfile != null)
                         .UseProfileData(profileDataManager)
+                        .UseNodeFactoryOptimizationFlags(nodeFactoryFlags)
                         .FileLayoutAlgorithms(_methodLayout, _fileLayout)
                         .UseCompositeImageSettings(compositeImageSettings)
                         .UseJitPath(_commandLineOptions.JitPath)
