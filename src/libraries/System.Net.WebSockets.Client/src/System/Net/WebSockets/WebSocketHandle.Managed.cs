@@ -42,7 +42,7 @@ namespace System.Net.WebSockets
             WebSocket?.Abort();
         }
 
-        public async Task ConnectAsync(Uri uri, HttpMessageInvoker? handler, CancellationToken cancellationToken, ClientWebSocketOptions options)
+        public async Task ConnectAsync(Uri uri, HttpMessageInvoker? invoker, CancellationToken cancellationToken, ClientWebSocketOptions options)
         {
             handler ??= new HttpMessageInvoker(SetupHandler(options));
             HttpResponseMessage? response = null;

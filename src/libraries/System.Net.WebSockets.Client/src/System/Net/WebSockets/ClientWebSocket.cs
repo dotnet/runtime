@@ -91,7 +91,7 @@ namespace System.Net.WebSockets
             return ConnectAsyncCore(uri, invoker, cancellationToken);
         }
 
-        private async Task ConnectAsyncCore(Uri uri, HttpMessageInvoker? sharedHandler, CancellationToken cancellationToken)
+        private async Task ConnectAsyncCore(Uri uri, HttpMessageInvoker? invoker, CancellationToken cancellationToken)
         {
             _innerWebSocket = new WebSocketHandle();
 
