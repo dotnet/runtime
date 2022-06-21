@@ -80,7 +80,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public async Task<(JObject containerObject, ArraySegment<string> remaining)> ResolveStaticMembersInStaticTypes(ArraySegment<string> parts, CancellationToken token)
         {
             string classNameToFind = "";
-            var store = await proxy.LoadStore(sessionId, token);
+            var store = await proxy.LoadStore(sessionId, false, token);
             var methodInfo = context.CallStack.FirstOrDefault(s => s.Id == scopeId)?.Method?.Info;
 
             if (methodInfo == null)

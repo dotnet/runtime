@@ -137,6 +137,7 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
 
 #ifdef TARGET_ARM64
     genSaveFpLrWithAllCalleeSavedRegisters = false;
+    genForceFuncletFrameType5              = false;
 #endif // TARGET_ARM64
 }
 

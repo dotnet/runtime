@@ -208,6 +208,13 @@ namespace System.Formats.Asn1
             _span = _span.Slice(consumed);
             return ret;
         }
+
+        internal TEnum ReadEnumeratedValue<TEnum>(Asn1Tag? expectedTag = null) where TEnum : Enum
+        {
+            TEnum ret = AsnDecoder.ReadEnumeratedValue<TEnum>(_span, _ruleSet, out int consumed, expectedTag);
+            _span = _span.Slice(consumed);
+            return ret;
+        }
     }
 
     internal static class AsnWriterExtensions

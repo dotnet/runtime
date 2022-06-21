@@ -324,6 +324,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_CSNEG_MI:
+        case GT_CNEG_LT:
             genCodeForCond(treeNode->AsOp());
             break;
 #endif // TARGET_ARM64
@@ -4656,7 +4657,7 @@ void CodeGen::genPushCalleeSavedRegisters()
     //      |-----------------------|
     //      |Callee saved registers | // not including FP/LR; multiple of 8 bytes
     //      |-----------------------|
-    //      |    MonitorAcquired    |
+    //      |    MonitorAcquired    | // 8 bytes; for synchronized methods
     //      |-----------------------|
     //      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
     //      |-----------------------|
@@ -4689,7 +4690,7 @@ void CodeGen::genPushCalleeSavedRegisters()
     //      |-----------------------|
     //      |Callee saved registers | // not including FP/LR; multiple of 8 bytes
     //      |-----------------------|
-    //      |    MonitorAcquired    |
+    //      |    MonitorAcquired    | // 8 bytes; for synchronized methods
     //      |-----------------------|
     //      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
     //      |-----------------------|

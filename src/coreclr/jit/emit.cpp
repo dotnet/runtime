@@ -7275,7 +7275,12 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(unsigned size, unsigned alignment, var_ty
     }
 
     assert((secOffs % alignment) == 0);
-    emitConsDsc.alignment = max(emitConsDsc.alignment, alignment);
+    if (emitConsDsc.alignment < alignment)
+    {
+        JITDUMP("Increasing data section alignment from %u to %u for type %s\n", emitConsDsc.alignment, alignment,
+                varTypeName(dataType));
+        emitConsDsc.alignment = alignment;
+    }
 
     /* Advance the current offset */
     emitConsDsc.dsdOffs += size;
@@ -7673,7 +7678,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
 
     if (emitComp->opts.disAsm)
     {
-        emitDispDataSec(sec);
+        emitDispDataSec(sec, dst);
     }
 
     unsigned secNum = 0;
@@ -7794,13 +7799,14 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
 //
 // Arguments:
 //    section - the data section description
+//    dst     - address of the data section
 //
 // Notes:
 //    The output format attempts to mirror typical assembler syntax.
 //    Data section entries lack type information so float/double entries
 //    are displayed as if they are integers/longs.
 //
-void emitter::emitDispDataSec(dataSecDsc* section)
+void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
 {
     printf("\n");
 
@@ -7808,11 +7814,17 @@ void emitter::emitDispDataSec(dataSecDsc* section)
 
     for (dataSection* data = section->dsdList; data != nullptr; data = data->dsNext)
     {
+        if (emitComp->opts.disAddr)
+        {
+            printf("; @" FMT_ADDR "\n", DBG_ADDR(dst));
+        }
+
         const char* labelFormat = "%-7s";
         char        label[64];
         sprintf_s(label, ArrLen(label), "RWD%02u", offset);
         printf(labelFormat, label);
         offset += data->dsSize;
+        dst += data->dsSize;
 
         if ((data->dsType == dataSection::blockRelative32) || (data->dsType == dataSection::blockAbsoluteAddr))
         {

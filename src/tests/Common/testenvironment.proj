@@ -60,6 +60,8 @@
       COMPlus_JitObjectStackAllocation;
       COMPlus_JitInlinePolicyProfile;
       COMPlus_JitClassProfiling;
+      COMPlus_JitDelegateProfiling;
+      COMPlus_JitVTableProfiling;
       COMPlus_JitEdgeProfiling;
       COMPlus_JitRandomGuardedDevirtualization;
       COMPlus_JitRandomEdgeCounts;
@@ -187,7 +189,6 @@
     <TestEnvironment Include="gcstress0xc_jitstress2" GCStress="0xC" JitStress="2" />
     <TestEnvironment Include="gcstress0xc_tailcallstress" GCStress="0xC" TailcallStress="1" />
     <TestEnvironment Include="gcstress0xc_jitminopts_heapverify1" GCStress="0xC" JITMinOpts="1" HeapVerify="1" />
-    <TestEnvironment Include="jitosr" TC_OnStackReplacement="1" TC_QuickJitForLoops="1" TieredCompilation="1" />
     <TestEnvironment Include="jitosr_stress" TC_OnStackReplacement="1" TC_QuickJitForLoops="1" TC_OnStackReplacement_InitialCounter="1" OSR_HitLimit="1" TieredCompilation="1" />
     <TestEnvironment Include="jitosr_stress_random" TC_OnStackReplacement="1" TC_QuickJitForLoops="1" TC_OnStackReplacement_InitialCounter="1" OSR_HitLimit="2" TieredCompilation="1" JitRandomOnStackReplacement="15"/>
     <TestEnvironment Include="jit_stress_splitting" JitFakeProcedureSplitting="1" JitStressProcedureSplitting="1" />
@@ -207,7 +208,9 @@
     <TestEnvironment Include="defaultpgo" TieredPGO="1" TieredCompilation="1" />
     <TestEnvironment Include="dynamicpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" />
     <TestEnvironment Include="fullpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0"/>
+    <TestEnvironment Include="fullpgo_methodprofiling" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitDelegateProfiling="1" JitVTableProfiling="1" />
     <TestEnvironment Include="fullpgo_random_gdv" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomGuardedDevirtualization="1"/>
+    <TestEnvironment Include="fullpgo_random_gdv_methodprofiling_only" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomGuardedDevirtualization="1" JitClassProfiling="0" JitDelegateProfiling="1" JitVTableProfiling="1" />
     <TestEnvironment Include="fullpgo_random_edge" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomEdgeCounts="1"/>
     <TestEnvironment Include="fullpgo_random_gdv_edge" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomGuardedDevirtualization="1" JitRandomEdgeCounts="1"/>
     <TestEnvironment Include="gcstandalone" Condition="'$(TargetsWindows)' == 'true'" GCName="clrgc.dll"/>

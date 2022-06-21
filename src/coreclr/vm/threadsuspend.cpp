@@ -5198,17 +5198,15 @@ BOOL ThreadCaughtInKernelModeExceptionHandling(Thread *pThread, CONTEXT *ctx)
     // still has page guard bit set. We can't hit the race in such case so we just leave. Besides, we can't access the
     // memory with page guard flag or not committed.
     MEMORY_BASIC_INFORMATION mbi;
-#undef VirtualQuery
-    // This code can run below YieldTask, which means that it must not call back into the host.
-    // The reason is that YieldTask is invoked by the host, and the host needs not be reentrant.
     if (VirtualQuery((LPCVOID)(UINT_PTR)ctx->Esp, &mbi, sizeof(mbi)) == sizeof(mbi))
     {
         if (!(mbi.State & MEM_COMMIT) || (mbi.Protect & PAGE_GUARD))
             return FALSE;
     }
     else
+    {
         STRESS_LOG0 (LF_SYNC, ERROR, "VirtualQuery failed!");
-#define VirtualQuery(lpAddress, lpBuffer, dwLength) Dont_Use_VirtualQuery(lpAddress, lpBuffer, dwLength)
+    }
 
     // The first two values on the stack should be a pointer to the EXCEPTION_RECORD and a pointer to the CONTEXT.
     UINT_PTR Esp = (UINT_PTR)ctx->Esp;
@@ -5880,7 +5878,7 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
 
         frame.Pop(pThread);
 
-        // TODO: Windows - Raise thread abort exception if ready for abort
+        pThread->HandleThreadAbort();
     }
     else
     {

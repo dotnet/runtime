@@ -281,11 +281,11 @@ void PgoManager::WritePgoData()
                             MethodDesc* md = reinterpret_cast<MethodDesc*>(methodHandleData);
                             if (md == nullptr)
                             {
-                                fprintf(pgoDataFile, "MethodHandle: NULL");
+                                fprintf(pgoDataFile, "MethodHandle: NULL\n");
                             }
                             else if (ICorJitInfo::IsUnknownHandle(methodHandleData))
                             {
-                                fprintf(pgoDataFile, "MethodHandle: UNKNOWN");
+                                fprintf(pgoDataFile, "MethodHandle: UNKNOWN\n");
                             }
                             else
                             {
@@ -297,13 +297,13 @@ void PgoManager::WritePgoData()
                                 // MethodName|@|fully_qualified_type_name
                                 if (tTypeName.GetCount() + 1 + tMethodName.GetCount() > 8192)
                                 {
-                                    fprintf(pgoDataFile, "MethodHandle: UNKNOWN");
+                                    fprintf(pgoDataFile, "MethodHandle: UNKNOWN\n");
                                 }
                                 else
                                 {
                                     StackScratchBuffer methodNameBuffer;
                                     StackScratchBuffer typeBuffer;
-                                    fprintf(pgoDataFile, "MethodHandle: %s|@|%s", tMethodName.GetUTF8(methodNameBuffer), tTypeName.GetUTF8(typeBuffer));
+                                    fprintf(pgoDataFile, "MethodHandle: %s|@|%s\n", tMethodName.GetUTF8(methodNameBuffer), tTypeName.GetUTF8(typeBuffer));
                                 }
                             }
                             break;

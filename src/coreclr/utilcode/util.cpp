@@ -23,6 +23,13 @@
 
 #ifndef DACCESS_COMPILE
 UINT32 g_nClrInstanceId = 0;
+
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+// Flag to check if atomics feature is available on
+// the machine
+bool g_arm64_atomics_present = false;
+#endif
+
 #endif //!DACCESS_COMPILE
 
 //*****************************************************************************

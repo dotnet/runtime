@@ -83,7 +83,7 @@ namespace System.IO
             {
                 File.SetLastWriteTime(destinationFileName, lastWriteTime.DateTime);
             }
-            catch (UnauthorizedAccessException)
+            catch
             {
                 // Some OSes like Android (#35374) might not support setting the last write time, the extraction should not fail because of that
             }

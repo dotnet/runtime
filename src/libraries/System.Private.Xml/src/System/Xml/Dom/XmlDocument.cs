@@ -1646,18 +1646,15 @@ namespace System.Xml
                 switch (args.Action)
                 {
                     case XmlNodeChangedAction.Insert:
-                        if (_onNodeInsertingDelegate != null)
-                            _onNodeInsertingDelegate(this, args);
+                        _onNodeInsertingDelegate?.Invoke(this, args);
                         break;
 
                     case XmlNodeChangedAction.Remove:
-                        if (_onNodeRemovingDelegate != null)
-                            _onNodeRemovingDelegate(this, args);
+                        _onNodeRemovingDelegate?.Invoke(this, args);
                         break;
 
                     case XmlNodeChangedAction.Change:
-                        if (_onNodeChangingDelegate != null)
-                            _onNodeChangingDelegate(this, args);
+                        _onNodeChangingDelegate?.Invoke(this, args);
                         break;
                 }
             }
@@ -1670,18 +1667,15 @@ namespace System.Xml
                 switch (args.Action)
                 {
                     case XmlNodeChangedAction.Insert:
-                        if (_onNodeInsertedDelegate != null)
-                            _onNodeInsertedDelegate(this, args);
+                        _onNodeInsertedDelegate?.Invoke(this, args);
                         break;
 
                     case XmlNodeChangedAction.Remove:
-                        if (_onNodeRemovedDelegate != null)
-                            _onNodeRemovedDelegate(this, args);
+                        _onNodeRemovedDelegate?.Invoke(this, args);
                         break;
 
                     case XmlNodeChangedAction.Change:
-                        if (_onNodeChangedDelegate != null)
-                            _onNodeChangedDelegate(this, args);
+                        _onNodeChangedDelegate?.Invoke(this, args);
                         break;
                 }
             }

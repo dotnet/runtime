@@ -120,7 +120,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 throw new Exception("MaxBidirectionalStreams overflow.");
             }
 
-            if ((flags & QUIC_CREDENTIAL_FLAGS.CLIENT) == 0)
+            bool isServer = (flags & QUIC_CREDENTIAL_FLAGS.CLIENT) == 0;
+            if (isServer)
             {
                 if (certificate == null && certificateContext == null)
                 {
@@ -241,9 +242,9 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 }
 
 #if TARGET_WINDOWS
-                if ((Interop.SECURITY_STATUS)status == Interop.SECURITY_STATUS.AlgorithmMismatch && MsQuicApi.Tls13MayBeDisabled)
+                if ((Interop.SECURITY_STATUS)status == Interop.SECURITY_STATUS.AlgorithmMismatch && (isServer ? MsQuicApi.Tls13ServerMayBeDisabled : MsQuicApi.Tls13ClientMayBeDisabled))
                 {
-                    throw new MsQuicException(status, SR.net_ssl_app_protocols_invalid);
+                    throw new MsQuicException(status, SR.net_quic_tls_version_notsupported);
                 }
 #endif
 

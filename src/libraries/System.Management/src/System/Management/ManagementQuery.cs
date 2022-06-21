@@ -31,8 +31,7 @@ namespace System.Management
         //Fires IdentifierChanged event
         internal void FireIdentifierChanged()
         {
-            if (IdentifierChanged != null)
-                IdentifierChanged(this, null);
+            IdentifierChanged?.Invoke(this, null);
         }
 
         private string queryLanguage;
@@ -933,7 +932,7 @@ namespace System.Management
                         s = s + selectedProperties[i] + ((i == (count - 1)) ? " " : ",");
                 }
                 else
-                    s = s + "* ";
+                    s += "* ";
 
                 //From clause
                 s = s + "from " + className;
@@ -2994,7 +2993,7 @@ namespace System.Management
                 if ((null != groupByPropertyList) && (0 < groupByPropertyList.Count))
                 {
                     int count = groupByPropertyList.Count;
-                    s = s + " by ";
+                    s += " by ";
 
                     for (int i = 0; i < count; i++)
                         s = s + groupByPropertyList[i] + (i == (count - 1) ? "" : ",");
