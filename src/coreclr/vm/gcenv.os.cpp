@@ -649,6 +649,8 @@ Exit:
         {
             cacheSize = 32;
         }
+
+        cacheSize *= 1024;
     }
 #endif // TARGET_ARM64
 
@@ -681,7 +683,7 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
     s_maxSize = maxSize;
     s_maxTrueSize = maxTrueSize;
 
-    //    printf("GetCacheSizePerLogicalCpu returns %d, adjusted size %d\n", maxSize, maxTrueSize);
+    // printf("GetCacheSizePerLogicalCpu returns %d, adjusted size %d\n", maxSize, maxTrueSize);
     return trueSize ? maxTrueSize : maxSize;
 }
 
