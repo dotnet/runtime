@@ -960,7 +960,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
         if (!SourceId.TryParse(script_id, out SourceId id))
             return false;
 
-        SourceFile src_file = (await LoadStore(msg_id, token)).GetFileById(id);
+        SourceFile src_file = (await LoadStore(msg_id, false, token)).GetFileById(id);
 
         await SendEvent(msg_id, "", JObject.FromObject(new { lines = src_file.BreakableLines.ToArray(), from = script_id }), token);
         return true;
@@ -971,7 +971,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
         if (!SourceId.TryParse(script_id, out SourceId id))
             return false;
 
-        SourceFile src_file = (await LoadStore(msg_id, token)).GetFileById(id);
+        SourceFile src_file = (await LoadStore(msg_id, false, token)).GetFileById(id);
 
         try
         {

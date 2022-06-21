@@ -1212,13 +1212,21 @@ namespace System.Text.Json.SourceGeneration
                     out bool setterIsVirtual,
                     out bool setterIsInitOnly);
 
+                bool needsAtSign = memberInfo switch
+                {
+                    PropertyInfoWrapper prop => prop.NeedsAtSign,
+                    FieldInfoWrapper field => field.NeedsAtSign,
+                    _ => false
+                };
+
                 string clrName = memberInfo.Name;
                 string runtimePropertyName = DetermineRuntimePropName(clrName, jsonPropertyName, _currentContextNamingPolicy);
                 string propertyNameVarName = DeterminePropNameIdentifier(runtimePropertyName);
 
                 return new PropertyGenerationSpec
                 {
-                    ClrName = clrName,
+                    NameSpecifiedInSourceCode = needsAtSign ? "@" + memberInfo.Name : memberInfo.Name,
+                    ClrName = memberInfo.Name,
                     IsProperty = memberInfo.MemberType == MemberTypes.Property,
                     IsPublic = isPublic,
                     IsVirtual = isVirtual,

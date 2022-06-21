@@ -100,9 +100,8 @@ namespace Internal.Runtime.TypeLoader
 
             public override bool Equals(object obj)
             {
-                if (obj is RuntimeFieldHandleKey)
+                if (obj is RuntimeFieldHandleKey other)
                 {
-                    RuntimeFieldHandleKey other = (RuntimeFieldHandleKey)obj;
                     return Equals(other);
                 }
                 return false;
@@ -145,9 +144,8 @@ namespace Internal.Runtime.TypeLoader
 
             public override bool Equals(object obj)
             {
-                if (obj is RuntimeMethodHandleKey)
+                if (obj is RuntimeMethodHandleKey other)
                 {
-                    RuntimeMethodHandleKey other = (RuntimeMethodHandleKey)obj;
                     return Equals(other);
                 }
                 return false;

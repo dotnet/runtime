@@ -19,7 +19,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return HostInformationPal.FixedInfo.hostName;
+                return HostInformationPal.GetHostName();
             }
         }
 
@@ -28,7 +28,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return HostInformationPal.FixedInfo.domainName;
+                return HostInformationPal.GetDomainName();
             }
         }
 
@@ -48,7 +48,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return (NetBiosNodeType)HostInformationPal.FixedInfo.nodeType;
+                return (NetBiosNodeType)HostInformationPal.GetNodeType();
             }
         }
 
@@ -57,7 +57,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return HostInformationPal.FixedInfo.scopeId;
+                return HostInformationPal.GetScopeId();
             }
         }
 
@@ -66,7 +66,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return (HostInformationPal.FixedInfo.enableProxy);
+                return HostInformationPal.GetEnableProxy();
             }
         }
 

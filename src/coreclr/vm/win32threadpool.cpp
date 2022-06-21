@@ -2456,15 +2456,7 @@ DWORD WINAPI ThreadpoolMgr::WaitThreadStart(LPVOID lpArgs)
 
             if (threadCB->NumActiveWaits == 0)
             {
-
-#undef SleepEx
-                // <TODO>@TODO Consider doing a sleep for an idle period and terminating the thread if no activity</TODO>
-        //We use SleepEx instead of CLRSLeepEx because CLRSleepEx calls into SQL(or other hosts) in hosted
-        //scenarios. SQL does not deliver APC's, and the waithread wait insertion/deletion logic depends on
-        //APC's being delivered.
-                status = SleepEx(INFINITE,TRUE);
-#define SleepEx(a,b) Dont_Use_SleepEx(a,b)
-
+                status = ClrSleepEx(INFINITE,TRUE);
                 _ASSERTE(status == WAIT_IO_COMPLETION);
             }
             else if (IsWaitThreadAPCPending())
@@ -2474,15 +2466,7 @@ DWORD WINAPI ThreadpoolMgr::WaitThreadStart(LPVOID lpArgs)
                 //allow the thread to enter alertable wait and thus cause the APC to fire.
 
                 ResetWaitThreadAPCPending();
-
-                //We use SleepEx instead of CLRSLeepEx because CLRSleepEx calls into SQL(or other hosts) in hosted
-                //scenarios. SQL does not deliver APC's, and the waithread wait insertion/deletion logic depends on
-                //APC's being delivered.
-
-                #undef SleepEx
-                status = SleepEx(0,TRUE);
-                #define SleepEx(a,b) Dont_Use_SleepEx(a,b)
-
+                status = ClrSleepEx(0,TRUE);
                 continue;
             }
             else
@@ -4480,10 +4464,7 @@ void ThreadpoolMgr::TimerThreadFire()
 
     EX_TRY {
         DWORD timeout = FireTimers();
-
-#undef SleepEx
-        SleepEx(timeout, TRUE);
-#define SleepEx(a,b) Dont_Use_SleepEx(a,b)
+        ClrSleepEx(timeout, TRUE);
 
         // the thread could wake up either because an APC completed or the sleep timeout
         // in both case, we need to sweep the timer queue, firing timers, and readjusting

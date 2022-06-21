@@ -19,7 +19,7 @@ using static Microsoft.Quic.MsQuic;
 
 namespace System.Net.Quic.Implementations.MsQuic
 {
-    internal sealed class MsQuicListener : QuicListenerProvider, IDisposable
+    internal sealed class MsQuicListener : IDisposable
     {
         private readonly State _state;
         private GCHandle _stateHandle;
@@ -118,7 +118,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        internal override IPEndPoint ListenEndPoint
+        internal IPEndPoint ListenEndPoint
         {
             get
             {
@@ -126,7 +126,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        internal override async ValueTask<QuicConnectionProvider> AcceptConnectionAsync(CancellationToken cancellationToken = default)
+        internal async ValueTask<MsQuicConnection> AcceptConnectionAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
 
@@ -140,7 +140,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        public override void Dispose()
+        public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);

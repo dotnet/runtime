@@ -2830,7 +2830,7 @@ namespace System.Data.SqlTypes
 
         private static void CheckValidPrecScale(byte bPrec, byte bScale)
         {
-            if (bPrec < 1 || bPrec > MaxPrecision || bScale < 0 || bScale > MaxScale || bScale > bPrec)
+            if (bPrec < 1 || bPrec > MaxPrecision || bScale > MaxScale || bScale > bPrec)
                 throw new SqlTypeException(SQLResource.InvalidPrecScaleMessage);
         }
 

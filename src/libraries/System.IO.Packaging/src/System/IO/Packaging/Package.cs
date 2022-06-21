@@ -993,7 +993,7 @@ namespace System.IO.Packaging
         //Throw if the object is in a disposed state
         private void ThrowIfObjectDisposed()
         {
-            if (_disposed == true)
+            if (_disposed)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed);
         }
 

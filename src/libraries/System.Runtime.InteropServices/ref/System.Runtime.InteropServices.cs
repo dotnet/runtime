@@ -850,7 +850,7 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat Clamp(System.Runtime.InteropServices.NFloat value, System.Runtime.InteropServices.NFloat min, System.Runtime.InteropServices.NFloat max) { throw null; }
         public int CompareTo(object? obj) { throw null; }
         public int CompareTo(System.Runtime.InteropServices.NFloat other) { throw null; }
-        public static System.Runtime.InteropServices.NFloat CopySign(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
+        public static System.Runtime.InteropServices.NFloat CopySign(System.Runtime.InteropServices.NFloat value, System.Runtime.InteropServices.NFloat sign) { throw null; }
         public static System.Runtime.InteropServices.NFloat Cos(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat Cosh(System.Runtime.InteropServices.NFloat x) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
@@ -864,6 +864,7 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat Floor(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat FusedMultiplyAdd(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right, System.Runtime.InteropServices.NFloat addend) { throw null; }
         public override int GetHashCode() { throw null; }
+        public static System.Runtime.InteropServices.NFloat Hypot(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
         public static System.Runtime.InteropServices.NFloat Ieee754Remainder(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
         public static int ILogB(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static bool IsEvenInteger(System.Runtime.InteropServices.NFloat value) { throw null; }
@@ -984,6 +985,7 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat Pow(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
         public static System.Runtime.InteropServices.NFloat ReciprocalEstimate(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat ReciprocalSqrtEstimate(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Root(System.Runtime.InteropServices.NFloat x, int n) { throw null; }
         public static System.Runtime.InteropServices.NFloat Round(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat Round(System.Runtime.InteropServices.NFloat x, int digits) { throw null; }
         public static System.Runtime.InteropServices.NFloat Round(System.Runtime.InteropServices.NFloat x, int digits, System.MidpointRounding mode) { throw null; }

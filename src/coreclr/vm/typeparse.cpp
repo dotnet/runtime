@@ -1363,7 +1363,7 @@ TypeName::GetTypeHaveAssemblyHelper(
                 if (pManifestModule->LookupFile(mdFile))
                     continue;
 
-                pManifestModule->LoadModule(GetAppDomain(), mdFile);
+                pManifestModule->LoadModule(mdFile);
 
                 th = GetTypeHaveAssemblyHelper(pAssembly, bThrowIfNotFound, bIgnoreCase, NULL, FALSE);
 
