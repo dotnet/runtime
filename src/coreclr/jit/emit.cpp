@@ -6330,11 +6330,9 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     }
 
     UNATIVE_OFFSET roDataAlignmentDelta = 0;
-    if (emitConsDsc.dsdOffs && (emitConsDsc.alignment == TARGET_POINTER_SIZE))
+    if (emitConsDsc.dsdOffs > 0)
     {
-        UNATIVE_OFFSET roDataAlignment = TARGET_POINTER_SIZE; // 8 Byte align by default.
-        roDataAlignmentDelta = (UNATIVE_OFFSET)ALIGN_UP(emitTotalHotCodeSize, roDataAlignment) - emitTotalHotCodeSize;
-        assert((roDataAlignmentDelta == 0) || (roDataAlignmentDelta == 4));
+        roDataAlignmentDelta = AlignmentPad(emitTotalHotCodeSize, emitConsDsc.alignment);
     }
 
     args.hotCodeSize  = emitTotalHotCodeSize + roDataAlignmentDelta + emitConsDsc.dsdOffs;
