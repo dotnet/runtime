@@ -1155,12 +1155,7 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
 {
     assert(m_argsComplete);
 
-#ifdef DEBUG
-    if (comp->verbose)
-    {
-        printf("\nSorting the arguments:\n");
-    }
-#endif
+    JITDUMP("\nSorting the arguments:\n");
 
     // Shuffle the arguments around before we build the late args list. The
     // idea is to move all "simple" arguments like constants and local vars to

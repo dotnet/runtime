@@ -139,6 +139,9 @@ enum class ExceptionSetFlags : uint32_t
     NullReferenceException   = 0x8,
     IndexOutOfRangeException = 0x10,
     StackOverflowException   = 0x20,
+
+    All = OverflowException | DivideByZeroException | ArithmeticException | NullReferenceException |
+          IndexOutOfRangeException | StackOverflowException,
 };
 
 inline constexpr ExceptionSetFlags operator~(ExceptionSetFlags a)
@@ -1846,7 +1849,7 @@ public:
     bool OperRequiresCallFlag(Compiler* comp);
 
     bool OperMayThrow(Compiler* comp);
-    ExceptionSetFlags OperPreciseExceptions(Compiler* comp);
+    ExceptionSetFlags OperExceptions(Compiler* comp);
 
     unsigned GetScaleIndexMul();
     unsigned GetScaleIndexShf();

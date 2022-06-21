@@ -5873,7 +5873,7 @@ private:
     bool gtIsTypeHandleToRuntimeTypeHandleHelper(GenTreeCall* call, CorInfoHelpFunc* pHelper = nullptr);
     bool gtIsActiveCSE_Candidate(GenTree* tree);
 
-    ExceptionSetFlags gtCollectPreciseExceptions(GenTree* tree);
+    ExceptionSetFlags gtCollectExceptions(GenTree* tree);
 
     bool fgIsBigOffset(size_t offset);
 

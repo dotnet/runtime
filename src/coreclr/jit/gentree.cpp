@@ -6351,7 +6351,7 @@ bool GenTree::OperIsImplicitIndir() const
 }
 
 //------------------------------------------------------------------------------
-// OperPreciseExceptions : Get exception set this tree may throw.
+// OperExceptions : Get exception set this tree may throw.
 //
 //
 // Arguments:
@@ -6364,7 +6364,7 @@ bool GenTree::OperIsImplicitIndir() const
 //    Should not be used on calls given that we can say nothing precise about
 //    those.
 //
-ExceptionSetFlags GenTree::OperPreciseExceptions(Compiler* comp)
+ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 {
     GenTree* op;
 
@@ -6412,9 +6412,9 @@ ExceptionSetFlags GenTree::OperPreciseExceptions(Compiler* comp)
             return ExceptionSetFlags::None;
 
         case GT_CALL:
-            assert(!"Unexpected GT_CALL in OperPreciseExceptions");
+            assert(!"Unexpected GT_CALL in OperExceptions");
 
-            return static_cast<ExceptionSetFlags>(0xffffffff);
+            return ExceptionSetFlags::All;
 
         case GT_IND:
         case GT_BLK:
@@ -6519,7 +6519,7 @@ bool GenTree::OperMayThrow(Compiler* comp)
         return ((helper == CORINFO_HELP_UNDEF) || !comp->s_helperCallProperties.NoThrow(helper));
     }
 
-    return OperPreciseExceptions(comp) != ExceptionSetFlags::None;
+    return OperExceptions(comp) != ExceptionSetFlags::None;
 }
 
 //-----------------------------------------------------------------------------------
@@ -16168,7 +16168,7 @@ bool Compiler::gtIsTypeHandleToRuntimeTypeHelper(GenTreeCall* call)
 //
 // Return Value:
 //    True if so
-
+//
 bool Compiler::gtIsTypeHandleToRuntimeTypeHandleHelper(GenTreeCall* call, CorInfoHelpFunc* pHelper)
 {
     CorInfoHelpFunc helper = CORINFO_HELP_UNDEF;
@@ -16195,14 +16195,24 @@ bool Compiler::gtIsActiveCSE_Candidate(GenTree* tree)
     return (optValnumCSE_phase && IS_CSE_INDEX(tree->gtCSEnum));
 }
 
-ExceptionSetFlags Compiler::gtCollectPreciseExceptions(GenTree* tree)
+//------------------------------------------------------------------------
+// gtCollectExceptions: walk a tree collecting a bit set of exceptions the tree
+// may throw.
+//
+// Arguments:
+//    tree - tree to examine
+//
+// Return Value:
+//    Bit set of exceptions the tree may throw.
+//
+ExceptionSetFlags Compiler::gtCollectExceptions(GenTree* tree)
 {
-    class PreciseExceptionsWalker final : public GenTreeVisitor<PreciseExceptionsWalker>
+    class ExceptionsWalker final : public GenTreeVisitor<ExceptionsWalker>
     {
         ExceptionSetFlags m_preciseExceptions = ExceptionSetFlags::None;
 
     public:
-        PreciseExceptionsWalker(Compiler* comp) : GenTreeVisitor<PreciseExceptionsWalker>(comp)
+        ExceptionsWalker(Compiler* comp) : GenTreeVisitor<ExceptionsWalker>(comp)
         {
         }
 
@@ -16224,7 +16234,7 @@ ExceptionSetFlags Compiler::gtCollectPreciseExceptions(GenTree* tree)
                 return WALK_SKIP_SUBTREES;
             }
 
-            m_preciseExceptions |= tree->OperPreciseExceptions(m_compiler);
+            m_preciseExceptions |= tree->OperExceptions(m_compiler);
             return WALK_CONTINUE;
         }
     };
@@ -16234,14 +16244,9 @@ ExceptionSetFlags Compiler::gtCollectPreciseExceptions(GenTree* tree)
     // a call it can always throw arbitrary exceptions.
     assert((tree->gtFlags & GTF_CALL) == 0);
 
-    if ((tree->gtFlags & GTF_EXCEPT) == 0)
-    {
-        return ExceptionSetFlags::None;
-    }
-
-    PreciseExceptionsWalker walker(this);
+    ExceptionsWalker walker(this);
     walker.WalkTree(&tree, nullptr);
-    assert(walker.GetFlags() != ExceptionSetFlags::None);
+    assert(((tree->gtFlags & GTF_EXCEPT) == 0) || (walker.GetFlags() != ExceptionSetFlags::None));
     return walker.GetFlags();
 }
 
