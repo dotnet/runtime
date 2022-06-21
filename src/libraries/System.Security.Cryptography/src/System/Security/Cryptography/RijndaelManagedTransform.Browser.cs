@@ -14,27 +14,27 @@ namespace System.Security.Cryptography
 
     internal sealed class RijndaelManagedTransform : ICryptoTransform, ILiteSymmetricCipher
     {
-        private CipherMode m_cipherMode;
-        private PaddingMode m_paddingValue;
-        private RijndaelManagedTransformMode m_transformMode;
+        private readonly CipherMode _cipherMode;
+        private readonly PaddingMode _paddingValue;
+        private readonly RijndaelManagedTransformMode _transformMode;
 
-        private int m_blockSizeBytes;
-        private int m_inputBlockSize;
-        private int m_outputBlockSize;
+        private readonly int _blockSizeBytes;
+        private readonly int _inputBlockSize;
+        private readonly int _outputBlockSize;
 
-        private int[] m_encryptKeyExpansion;
-        private int[] m_decryptKeyExpansion;
+        private int[] _encryptKeyExpansion;
+        private int[] _decryptKeyExpansion;
 
-        private int m_Nr;
-        private int m_Nb;
-        private int m_Nk;
+        private readonly int _Nr;
+        private readonly int _Nb;
+        private readonly int _Nk;
 
-        private int[] m_encryptindex;
-        private int[] m_decryptindex;
+        private readonly int[] _encryptindex;
+        private readonly int[] _decryptindex;
 
-        private int[] m_IV;
-        private int[] m_lastBlockBuffer;
-        private byte[]? m_depadBuffer;
+        private int[] _IV;
+        private int[] _lastBlockBuffer;
+        private byte[]? _depadBuffer;
 
         public RijndaelManagedTransform(byte[] rgbKey,
                                         CipherMode mode,
@@ -50,50 +50,51 @@ namespace System.Security.Cryptography
             Debug.Assert(mode == CipherMode.CBC, "CipherMode is unsupported");
             Debug.Assert(PaddingValue == PaddingMode.PKCS7, "PaddingMode is unsupported");
 
-            m_blockSizeBytes = blockSize;
-            m_cipherMode = mode;
-            m_paddingValue = PaddingValue;
-            m_transformMode = transformMode;
-            m_Nb = blockSize / 4;
-            m_Nk = rgbKey.Length / 4;
+            _blockSizeBytes = blockSize;
+            _cipherMode = mode;
+            _paddingValue = PaddingValue;
+            _transformMode = transformMode;
+            _Nr = GetNumberOfRounds(blockSize, rgbKey);
+            _Nb = blockSize / 4;
+            _Nk = rgbKey.Length / 4;
 
-            int S1 = m_Nb > 6 ? 3 : 2;
-            int S2 = m_Nb > 6 ? 4 : 3;
+            int S1 = _Nb > 6 ? 3 : 2;
+            int S2 = _Nb > 6 ? 4 : 3;
 
             // Precompute the modulus operations: these are performance killers when called frequently
-            int[] encryptindex1 = new int[m_Nb];
-            int[] encryptindex2 = new int[m_Nb];
-            int[] encryptindex3 = new int[m_Nb];
+            int[] encryptindex1 = new int[_Nb];
+            int[] encryptindex2 = new int[_Nb];
+            int[] encryptindex3 = new int[_Nb];
 
-            int[] decryptindex1 = new int[m_Nb];
-            int[] decryptindex2 = new int[m_Nb];
-            int[] decryptindex3 = new int[m_Nb];
+            int[] decryptindex1 = new int[_Nb];
+            int[] decryptindex2 = new int[_Nb];
+            int[] decryptindex3 = new int[_Nb];
 
-            for (int j = 0; j < m_Nb; j++)
+            for (int j = 0; j < _Nb; j++)
             {
-                encryptindex1[j] = (j + 1) % m_Nb;
-                encryptindex2[j] = (j + S1) % m_Nb;
-                encryptindex3[j] = (j + S2) % m_Nb;
-                decryptindex1[j] = (j - 1 + m_Nb) % m_Nb;
-                decryptindex2[j] = (j - S1 + m_Nb) % m_Nb;
-                decryptindex3[j] = (j - S2 + m_Nb) % m_Nb;
+                encryptindex1[j] = (j + 1) % _Nb;
+                encryptindex2[j] = (j + S1) % _Nb;
+                encryptindex3[j] = (j + S2) % _Nb;
+                decryptindex1[j] = (j - 1 + _Nb) % _Nb;
+                decryptindex2[j] = (j - S1 + _Nb) % _Nb;
+                decryptindex3[j] = (j - S2 + _Nb) % _Nb;
             }
 
-            m_encryptindex = new int[m_Nb * 3];
-            Array.Copy(encryptindex1, 0, m_encryptindex, 0, m_Nb);
-            Array.Copy(encryptindex2, 0, m_encryptindex, m_Nb, m_Nb);
-            Array.Copy(encryptindex3, 0, m_encryptindex, m_Nb * 2, m_Nb);
+            _encryptindex = new int[_Nb * 3];
+            Array.Copy(encryptindex1, 0, _encryptindex, 0, _Nb);
+            Array.Copy(encryptindex2, 0, _encryptindex, _Nb, _Nb);
+            Array.Copy(encryptindex3, 0, _encryptindex, _Nb * 2, _Nb);
 
-            m_decryptindex = new int[m_Nb * 3];
-            Array.Copy(decryptindex1, 0, m_decryptindex, 0, m_Nb);
-            Array.Copy(decryptindex2, 0, m_decryptindex, m_Nb, m_Nb);
-            Array.Copy(decryptindex3, 0, m_decryptindex, m_Nb * 2, m_Nb);
+            _decryptindex = new int[_Nb * 3];
+            Array.Copy(decryptindex1, 0, _decryptindex, 0, _Nb);
+            Array.Copy(decryptindex2, 0, _decryptindex, _Nb, _Nb);
+            Array.Copy(decryptindex3, 0, _decryptindex, _Nb * 2, _Nb);
 
-            switch (m_cipherMode)
+            switch (_cipherMode)
             {
                 case CipherMode.CBC:
-                    m_inputBlockSize = m_blockSizeBytes;
-                    m_outputBlockSize = m_blockSizeBytes;
+                    _inputBlockSize = _blockSizeBytes;
+                    _outputBlockSize = _blockSizeBytes;
                     break;
 
                 default:
@@ -101,53 +102,53 @@ namespace System.Security.Cryptography
             }
 
             // we only support CBC mode
-            if (rgbIV.Length / 4 != m_Nb)
+            if (rgbIV.Length / 4 != _Nb)
                 throw new CryptographicException(SR.GetResourceString("Cryptography_InvalidIVSize"));
 
-            m_IV = new int[m_Nb];
+            _IV = new int[_Nb];
             int index = 0;
-            for (int i = 0; i < m_Nb; ++i)
+            for (int i = 0; i < _Nb; ++i)
             {
                 int i0 = rgbIV[index++];
                 int i1 = rgbIV[index++];
                 int i2 = rgbIV[index++];
                 int i3 = rgbIV[index++];
-                m_IV[i] = i3 << 24 | i2 << 16 | i1 << 8 | i0;
+                _IV[i] = i3 << 24 | i2 << 16 | i1 << 8 | i0;
             }
 
             GenerateKeyExpansion(rgbKey);
 
-            m_lastBlockBuffer = new int[m_Nb];
-            Buffer.BlockCopy(m_IV, 0, m_lastBlockBuffer, 0, m_blockSizeBytes);
+            _lastBlockBuffer = new int[_Nb];
+            Buffer.BlockCopy(_IV, 0, _lastBlockBuffer, 0, _blockSizeBytes);
         }
 
         public void Dispose()
         {
             // We need to always zeroize the following fields because they contain sensitive data
-            if (m_IV != null)
+            if (_IV != null)
             {
-                Array.Clear(m_IV, 0, m_IV.Length);
-                m_IV = null!;
+                Array.Clear(_IV, 0, _IV.Length);
+                _IV = null!;
             }
-            if (m_lastBlockBuffer != null)
+            if (_lastBlockBuffer != null)
             {
-                Array.Clear(m_lastBlockBuffer, 0, m_lastBlockBuffer.Length);
-                m_lastBlockBuffer = null!;
+                Array.Clear(_lastBlockBuffer, 0, _lastBlockBuffer.Length);
+                _lastBlockBuffer = null!;
             }
-            if (m_encryptKeyExpansion != null)
+            if (_encryptKeyExpansion != null)
             {
-                Array.Clear(m_encryptKeyExpansion, 0, m_encryptKeyExpansion.Length);
-                m_encryptKeyExpansion = null!;
+                Array.Clear(_encryptKeyExpansion, 0, _encryptKeyExpansion.Length);
+                _encryptKeyExpansion = null!;
             }
-            if (m_decryptKeyExpansion != null)
+            if (_decryptKeyExpansion != null)
             {
-                Array.Clear(m_decryptKeyExpansion, 0, m_decryptKeyExpansion.Length);
-                m_decryptKeyExpansion = null!;
+                Array.Clear(_decryptKeyExpansion, 0, _decryptKeyExpansion.Length);
+                _decryptKeyExpansion = null!;
             }
-            if (m_depadBuffer != null)
+            if (_depadBuffer != null)
             {
-                Array.Clear(m_depadBuffer, 0, m_depadBuffer.Length);
-                m_depadBuffer = null;
+                Array.Clear(_depadBuffer, 0, _depadBuffer.Length);
+                _depadBuffer = null;
             }
         }
 
@@ -155,15 +156,15 @@ namespace System.Security.Cryptography
         // ICryptoTransform methods and properties.
         //
 
-        public int InputBlockSize => m_inputBlockSize;
+        public int InputBlockSize => _inputBlockSize;
 
-        public int OutputBlockSize => m_outputBlockSize;
+        public int OutputBlockSize => _outputBlockSize;
 
         public bool CanTransformMultipleBlocks => true;
 
         public bool CanReuseTransform => true;
 
-        public int BlockSizeInBytes => m_blockSizeBytes;
+        public int BlockSizeInBytes => _blockSizeBytes;
 
         public int PaddingSizeInBytes => 16; // TODO: eerhardt check this
 
@@ -194,7 +195,7 @@ namespace System.Security.Cryptography
             if (inputCount <= 0 || (inputCount % InputBlockSize != 0) || (inputCount > inputBuffer.Length)) throw new ArgumentException(SR.GetResourceString("Argument_InvalidValue"));
             if ((inputBuffer.Length - inputCount) < inputOffset) throw new ArgumentException(SR.GetResourceString("Argument_InvalidOffLen"));
 
-            if (m_transformMode == RijndaelManagedTransformMode.Encrypt)
+            if (_transformMode == RijndaelManagedTransformMode.Encrypt)
             {
                 // if we're encrypting we can always push out the bytes because no padding mode
                 // removes bytes during encryption
@@ -203,45 +204,45 @@ namespace System.Security.Cryptography
                                    inputCount,
                                    ref outputBuffer,
                                    outputOffset,
-                                   m_paddingValue,
+                                   _paddingValue,
                                    false);
             }
             else
             {
                 // OK, now we're in the special case.  Check to see if this is the *first* block we've seen
                 // If so, buffer it and return null zero bytes
-                if (m_depadBuffer == null)
+                if (_depadBuffer == null)
                 {
-                    m_depadBuffer = new byte[InputBlockSize];
+                    _depadBuffer = new byte[InputBlockSize];
                     // copy the last InputBlockSize bytes to m_depadBuffer everything else gets processed and returned
                     int inputToProcess = inputCount - InputBlockSize;
-                    Buffer.BlockCopy(inputBuffer, inputOffset + inputToProcess, m_depadBuffer, 0, InputBlockSize);
+                    Buffer.BlockCopy(inputBuffer, inputOffset + inputToProcess, _depadBuffer, 0, InputBlockSize);
                     return DecryptData(inputBuffer,
                                        inputOffset,
                                        inputToProcess,
                                        ref outputBuffer,
                                        outputOffset,
-                                       m_paddingValue,
+                                       _paddingValue,
                                        false);
                 }
                 else
                 {
                     // we already have a depad buffer, so we need to decrypt that info first & copy it out
-                    DecryptData(m_depadBuffer,
-                                0, m_depadBuffer.Length,
+                    DecryptData(_depadBuffer,
+                                0, _depadBuffer.Length,
                                 ref outputBuffer,
                                 outputOffset,
-                                m_paddingValue,
+                                _paddingValue,
                                 false);
                     outputOffset += OutputBlockSize;
                     int inputToProcess = inputCount - InputBlockSize;
-                    Buffer.BlockCopy(inputBuffer, inputOffset + inputToProcess, m_depadBuffer, 0, InputBlockSize);
+                    Buffer.BlockCopy(inputBuffer, inputOffset + inputToProcess, _depadBuffer, 0, InputBlockSize);
                     int r = DecryptData(inputBuffer,
                                     inputOffset,
                                     inputToProcess,
                                     ref outputBuffer,
                                     outputOffset,
-                                    m_paddingValue,
+                                    _paddingValue,
                                     false);
                     return (OutputBlockSize + r);
                 }
@@ -266,7 +267,7 @@ namespace System.Security.Cryptography
             if (inputCount < 0 || (inputCount > inputBuffer.Length)) throw new ArgumentException(SR.GetResourceString("Argument_InvalidValue"));
             if ((inputBuffer.Length - inputCount) < inputOffset) throw new ArgumentException(SR.GetResourceString("Argument_InvalidOffLen"));
 
-            if (m_transformMode == RijndaelManagedTransformMode.Encrypt)
+            if (_transformMode == RijndaelManagedTransformMode.Encrypt)
             {
                 // If we're encrypting we can alway return what we compute because there's no m_depadBuffer
                 byte[]? transformedBytes = null;
@@ -275,7 +276,7 @@ namespace System.Security.Cryptography
                             inputCount,
                             ref transformedBytes,
                             0,
-                            m_paddingValue,
+                            _paddingValue,
                             true);
                 Reset();
                 return transformedBytes;
@@ -285,7 +286,7 @@ namespace System.Security.Cryptography
                 if (inputCount % InputBlockSize != 0)
                     throw new CryptographicException(SR.GetResourceString("Cryptography_SSD_InvalidDataSize"));
 
-                if (m_depadBuffer == null)
+                if (_depadBuffer == null)
                 {
                     byte[]? transformedBytes = null;
                     DecryptData(inputBuffer,
@@ -293,23 +294,23 @@ namespace System.Security.Cryptography
                                 inputCount,
                                 ref transformedBytes,
                                 0,
-                                m_paddingValue,
+                                _paddingValue,
                                 true);
                     Reset();
                     return transformedBytes;
                 }
                 else
                 {
-                    byte[] temp = new byte[m_depadBuffer.Length + inputCount];
-                    Buffer.BlockCopy(m_depadBuffer, 0, temp, 0, m_depadBuffer.Length);
-                    Buffer.BlockCopy(inputBuffer, inputOffset, temp, m_depadBuffer.Length, inputCount);
+                    byte[] temp = new byte[_depadBuffer.Length + inputCount];
+                    Buffer.BlockCopy(_depadBuffer, 0, temp, 0, _depadBuffer.Length);
+                    Buffer.BlockCopy(inputBuffer, inputOffset, temp, _depadBuffer.Length, inputCount);
                     byte[]? transformedBytes = null;
                     DecryptData(temp,
                                 0,
                                 temp.Length,
                                 ref transformedBytes,
                                 0,
-                                m_paddingValue,
+                                _paddingValue,
                                 true);
                     Reset();
                     return transformedBytes;
@@ -325,8 +326,8 @@ namespace System.Security.Cryptography
 
         private void Reset()
         {
-            m_depadBuffer = null;
-            Buffer.BlockCopy(m_IV, 0, m_lastBlockBuffer, 0, m_blockSizeBytes);
+            _depadBuffer = null;
+            Buffer.BlockCopy(_IV, 0, _lastBlockBuffer, 0, _blockSizeBytes);
         }
 
         //
@@ -346,14 +347,14 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.GetResourceString("Cryptography_InsufficientBuffer"));
 
             int padSize = 0;
-            int lonelyBytes = inputCount % m_inputBlockSize;
+            int lonelyBytes = inputCount % _inputBlockSize;
 
             // Check the padding mode and make sure we have enough outputBuffer to handle any padding we have to do.
             byte[]? padBytes = null;
             int workBaseIndex = inputOffset, index = 0;
             if (fLast)
             {
-                padSize = m_inputBlockSize - lonelyBytes;
+                padSize = _inputBlockSize - lonelyBytes;
 
                 if (padSize != 0)
                 {
@@ -374,27 +375,27 @@ namespace System.Security.Cryptography
                     throw new ArgumentOutOfRangeException(nameof(outputOffset), SR.Argument_InvalidOffLen);
             }
 
-            fixed (int* encryptindex = m_encryptindex)
+            fixed (int* encryptindex = _encryptindex)
             {
-                fixed (int* encryptKeyExpansion = m_encryptKeyExpansion)
+                fixed (int* encryptKeyExpansion = _encryptKeyExpansion)
                 {
                     fixed (int* T = s_T)
                     {
                         fixed (int* TF = s_TF)
                         {
-                            int* work = stackalloc int[m_Nb];
-                            int* temp = stackalloc int[m_Nb];
+                            int* work = stackalloc int[_Nb];
+                            int* temp = stackalloc int[_Nb];
 
-                            int iNumBlocks = (inputCount + padSize) / m_inputBlockSize;
+                            int iNumBlocks = (inputCount + padSize) / _inputBlockSize;
                             int transformCount = outputOffset;
                             for (int blockNum = 0; blockNum < iNumBlocks; ++blockNum)
                             {
                                 if (blockNum != iNumBlocks - 1 || padSize == 0)
                                 {
-                                    Debug.Assert(m_blockSizeBytes <= m_Nb * sizeof(int), "m_blockSizeBytes <= m_Nb * sizeof(int)");
+                                    Debug.Assert(_blockSizeBytes <= _Nb * sizeof(int), "m_blockSizeBytes <= m_Nb * sizeof(int)");
                                     fixed (byte* pInputBuffer = inputBuffer)
                                     {
-                                        Buffer.MemoryCopy(pInputBuffer + workBaseIndex, (byte*)work, m_blockSizeBytes, m_blockSizeBytes);
+                                        Buffer.MemoryCopy(pInputBuffer + workBaseIndex, (byte*)work, _blockSizeBytes, _blockSizeBytes);
                                     }
                                 }
                                 else
@@ -403,7 +404,7 @@ namespace System.Security.Cryptography
 
                                     int padIndex = 0;
                                     index = workBaseIndex;
-                                    for (int i = 0; i < m_Nb; ++i)
+                                    for (int i = 0; i < _Nb; ++i)
                                     {
                                         int i0 = (index >= workBaseIndex + lonelyBytes) ? padBytes[padIndex++] : inputBuffer[index++];
                                         int i1 = (index >= workBaseIndex + lonelyBytes) ? padBytes[padIndex++] : inputBuffer[index++];
@@ -413,15 +414,15 @@ namespace System.Security.Cryptography
                                     }
                                 }
 
-                                for (int i = 0; i < m_Nb; ++i)
+                                for (int i = 0; i < _Nb; ++i)
                                 {
                                     // XOR with the last encrypted block
-                                    work[i] ^= m_lastBlockBuffer[i];
+                                    work[i] ^= _lastBlockBuffer[i];
                                 }
 
                                 Enc(encryptindex, encryptKeyExpansion, T, TF, work, temp);
 
-                                for (int i = 0; i < m_Nb; ++i)
+                                for (int i = 0; i < _Nb; ++i)
                                 {
                                     outputBuffer[transformCount++] = (byte)(temp[i] & 0xFF);
                                     outputBuffer[transformCount++] = (byte)(temp[i] >> 8 & 0xFF);
@@ -429,12 +430,12 @@ namespace System.Security.Cryptography
                                     outputBuffer[transformCount++] = (byte)(temp[i] >> 24 & 0xFF);
                                 }
 
-                                fixed (int* pLastBlockBuffer = m_lastBlockBuffer)
+                                fixed (int* pLastBlockBuffer = _lastBlockBuffer)
                                 {
-                                    Debug.Assert(m_blockSizeBytes <= m_lastBlockBuffer.Length * sizeof(int), "m_blockSizeBytes <= m_lastBlockBuffer.Length * sizeof(int)");
-                                    Buffer.MemoryCopy((byte*)temp, (byte*)pLastBlockBuffer, m_blockSizeBytes, m_blockSizeBytes);
+                                    Debug.Assert(_blockSizeBytes <= _lastBlockBuffer.Length * sizeof(int), "m_blockSizeBytes <= m_lastBlockBuffer.Length * sizeof(int)");
+                                    Buffer.MemoryCopy((byte*)temp, (byte*)pLastBlockBuffer, _blockSizeBytes, _blockSizeBytes);
                                 }
-                                workBaseIndex += m_inputBlockSize;
+                                workBaseIndex += _inputBlockSize;
                             }
                         }
                     }
@@ -472,13 +473,13 @@ namespace System.Security.Cryptography
                     throw new ArgumentOutOfRangeException(nameof(outputOffset), SR.Argument_InvalidOffLen);
             }
 
-            fixed (int* encryptindex = m_encryptindex)
+            fixed (int* encryptindex = _encryptindex)
             {
-                fixed (int* encryptKeyExpansion = m_encryptKeyExpansion)
+                fixed (int* encryptKeyExpansion = _encryptKeyExpansion)
                 {
-                    fixed (int* decryptindex = m_decryptindex)
+                    fixed (int* decryptindex = _decryptindex)
                     {
-                        fixed (int* decryptKeyExpansion = m_decryptKeyExpansion)
+                        fixed (int* decryptKeyExpansion = _decryptKeyExpansion)
                         {
                             fixed (int* T = s_T)
                             {
@@ -488,15 +489,15 @@ namespace System.Security.Cryptography
                                     {
                                         fixed (int* iTF = s_iTF)
                                         {
-                                            int* work = stackalloc int[m_Nb];
-                                            int* temp = stackalloc int[m_Nb];
+                                            int* work = stackalloc int[_Nb];
+                                            int* temp = stackalloc int[_Nb];
 
-                                            int iNumBlocks = inputCount / m_inputBlockSize;
+                                            int iNumBlocks = inputCount / _inputBlockSize;
                                             int workBaseIndex = inputOffset, index = 0, transformCount = outputOffset;
                                             for (int blockNum = 0; blockNum < iNumBlocks; ++blockNum)
                                             {
                                                 index = workBaseIndex;
-                                                for (int i = 0; i < m_Nb; ++i)
+                                                for (int i = 0; i < _Nb; ++i)
                                                 {
                                                     int i0 = inputBuffer[index++];
                                                     int i1 = inputBuffer[index++];
@@ -508,18 +509,18 @@ namespace System.Security.Cryptography
                                                 Dec(decryptindex, decryptKeyExpansion, iT, iTF, work, temp);
 
                                                 index = workBaseIndex;
-                                                for (int i = 0; i < m_Nb; ++i)
+                                                for (int i = 0; i < _Nb; ++i)
                                                 {
-                                                    temp[i] ^= m_lastBlockBuffer[i];
+                                                    temp[i] ^= _lastBlockBuffer[i];
                                                     // save the input buffer
                                                     int i0 = inputBuffer[index++];
                                                     int i1 = inputBuffer[index++];
                                                     int i2 = inputBuffer[index++];
                                                     int i3 = inputBuffer[index++];
-                                                    m_lastBlockBuffer[i] = i3 << 24 | i2 << 16 | i1 << 8 | i0;
+                                                    _lastBlockBuffer[i] = i3 << 24 | i2 << 16 | i1 << 8 | i0;
                                                 }
 
-                                                for (int i = 0; i < m_Nb; ++i)
+                                                for (int i = 0; i < _Nb; ++i)
                                                 {
                                                     outputBuffer[transformCount++] = (byte)(temp[i] & 0xFF);
                                                     outputBuffer[transformCount++] = (byte)(temp[i] >> 8 & 0xFF);
@@ -527,7 +528,7 @@ namespace System.Security.Cryptography
                                                     outputBuffer[transformCount++] = (byte)(temp[i] >> 24 & 0xFF);
                                                 }
 
-                                                workBaseIndex += m_inputBlockSize;
+                                                workBaseIndex += _inputBlockSize;
                                             }
 
                                             if (fLast == false)
@@ -563,40 +564,40 @@ namespace System.Security.Cryptography
         //
         private unsafe void Enc(int* encryptindex, int* encryptKeyExpansion, int* T, int* TF, int* work, int* temp)
         {
-            for (int i = 0; i < m_Nb; ++i)
+            for (int i = 0; i < _Nb; ++i)
             {
                 work[i] ^= encryptKeyExpansion[i];
             }
 
             int* _encryptindex;
-            int* _encryptKeyExpansion = &encryptKeyExpansion[m_Nb];
-            for (int r = 1; r < m_Nr; ++r)
+            int* _encryptKeyExpansion = &encryptKeyExpansion[_Nb];
+            for (int r = 1; r < _Nr; ++r)
             {
                 _encryptindex = encryptindex;
-                for (int i = 0; i < m_Nb; ++i)
+                for (int i = 0; i < _Nb; ++i)
                 {
                     temp[i] = T[0 + (work[i] & 0xFF)] ^
                               T[256 + ((work[_encryptindex[0]] >> 8) & 0xFF)] ^
-                              T[512 + ((work[_encryptindex[m_Nb]] >> 16) & 0xFF)] ^
-                              T[768 + ((work[_encryptindex[m_Nb * 2]] >> 24) & 0xFF)] ^
+                              T[512 + ((work[_encryptindex[_Nb]] >> 16) & 0xFF)] ^
+                              T[768 + ((work[_encryptindex[_Nb * 2]] >> 24) & 0xFF)] ^
                               *_encryptKeyExpansion;
                     _encryptindex++;
                     _encryptKeyExpansion++;
                 }
 
-                for (int i = 0; i < m_Nb; ++i)
+                for (int i = 0; i < _Nb; ++i)
                 {
                     work[i] = temp[i];
                 }
             }
 
             _encryptindex = encryptindex;
-            for (int i = 0; i < m_Nb; ++i)
+            for (int i = 0; i < _Nb; ++i)
             {
                 temp[i] = TF[0 + (work[i] & 0xFF)] ^
                           TF[256 + ((work[_encryptindex[0]] >> 8) & 0xFF)] ^
-                          TF[512 + ((work[_encryptindex[m_Nb]] >> 16) & 0xFF)] ^
-                          TF[768 + ((work[_encryptindex[m_Nb * 2]] >> 24) & 0xFF)] ^
+                          TF[512 + ((work[_encryptindex[_Nb]] >> 16) & 0xFF)] ^
+                          TF[768 + ((work[_encryptindex[_Nb * 2]] >> 24) & 0xFF)] ^
                           *_encryptKeyExpansion;
                 _encryptindex++;
                 _encryptKeyExpansion++;
@@ -609,8 +610,8 @@ namespace System.Security.Cryptography
 
         private unsafe void Dec(int* decryptindex, int* decryptKeyExpansion, int* iT, int* iTF, int* work, int* temp)
         {
-            int keyIndex = m_Nb * m_Nr;
-            for (int i = 0; i < m_Nb; ++i)
+            int keyIndex = _Nb * _Nr;
+            for (int i = 0; i < _Nb; ++i)
             {
                 work[i] ^= decryptKeyExpansion[keyIndex];
                 keyIndex++;
@@ -618,23 +619,23 @@ namespace System.Security.Cryptography
 
             int* _decryptindex;
             int* _decryptKeyExpansion;
-            for (int r = 1; r < m_Nr; ++r)
+            for (int r = 1; r < _Nr; ++r)
             {
-                keyIndex -= 2 * m_Nb;
+                keyIndex -= 2 * _Nb;
                 _decryptindex = decryptindex;
                 _decryptKeyExpansion = &decryptKeyExpansion[keyIndex];
-                for (int i = 0; i < m_Nb; ++i)
+                for (int i = 0; i < _Nb; ++i)
                 {
                     temp[i] = iT[0 + ((work[i]) & 0xFF)] ^
                               iT[256 + ((work[_decryptindex[0]] >> 8) & 0xFF)] ^
-                              iT[512 + ((work[_decryptindex[m_Nb]] >> 16) & 0xFF)] ^
-                              iT[768 + ((work[_decryptindex[m_Nb * 2]] >> 24) & 0xFF)] ^
+                              iT[512 + ((work[_decryptindex[_Nb]] >> 16) & 0xFF)] ^
+                              iT[768 + ((work[_decryptindex[_Nb * 2]] >> 24) & 0xFF)] ^
                               *_decryptKeyExpansion;
                     keyIndex++;
                     _decryptindex++;
                     _decryptKeyExpansion++;
                 }
-                for (int i = 0; i < m_Nb; ++i)
+                for (int i = 0; i < _Nb; ++i)
                 {
                     work[i] = temp[i];
                 }
@@ -643,107 +644,100 @@ namespace System.Security.Cryptography
             keyIndex = 0;
             _decryptindex = decryptindex;
             _decryptKeyExpansion = &decryptKeyExpansion[keyIndex];
-            for (int i = 0; i < m_Nb; ++i)
+            for (int i = 0; i < _Nb; ++i)
             {
                 temp[i] = iTF[0 + ((work[i]) & 0xFF)] ^
                           iTF[256 + ((work[_decryptindex[0]] >> 8) & 0xFF)] ^
-                          iTF[512 + ((work[_decryptindex[m_Nb]] >> 16) & 0xFF)] ^
-                          iTF[768 + ((work[_decryptindex[m_Nb * 2]] >> 24) & 0xFF)] ^
+                          iTF[512 + ((work[_decryptindex[_Nb]] >> 16) & 0xFF)] ^
+                          iTF[768 + ((work[_decryptindex[_Nb * 2]] >> 24) & 0xFF)] ^
                           *_decryptKeyExpansion;
                 _decryptindex++;
                 _decryptKeyExpansion++;
             }
         }
 
+        private static int GetNumberOfRounds(int blockSize, byte[] rgbKey)
+        {
+            return (blockSize > rgbKey.Length ? blockSize : rgbKey.Length) switch
+            {
+                16 => 10, // 128 bits
+                24 => 12, // 192 bits
+                32 => 14, // 256 bits
+                _ => throw new CryptographicException(SR.GetResourceString("Cryptography_InvalidKeySize"))
+            };
+        }
+
         //
         // Key expansion routine.
         //
 
-        [MemberNotNull(nameof(m_encryptKeyExpansion))]
-        [MemberNotNull(nameof(m_decryptKeyExpansion))]
+        [MemberNotNull(nameof(_encryptKeyExpansion))]
+        [MemberNotNull(nameof(_decryptKeyExpansion))]
         private void GenerateKeyExpansion(byte[] rgbKey)
         {
-            switch (m_blockSizeBytes > rgbKey.Length ? m_blockSizeBytes : rgbKey.Length)
-            {
-                case 16: // 128 bits
-                    m_Nr = 10;
-                    break;
-
-                case 24: // 192 bits
-                    m_Nr = 12;
-                    break;
-
-                case 32: // 256 bits
-                    m_Nr = 14;
-                    break;
-
-                default:
-                    throw new CryptographicException(SR.GetResourceString("Cryptography_InvalidKeySize"));
-            }
-
-            m_encryptKeyExpansion = new int[m_Nb * (m_Nr + 1)];
-            m_decryptKeyExpansion = new int[m_Nb * (m_Nr + 1)];
+            _encryptKeyExpansion = new int[_Nb * (_Nr + 1)];
+            _decryptKeyExpansion = new int[_Nb * (_Nr + 1)];
             int iTemp;
 
             int index = 0;
-            for (int i = 0; i < m_Nk; ++i)
+            for (int i = 0; i < _Nk; ++i)
             {
                 int i0 = rgbKey[index++];
                 int i1 = rgbKey[index++];
                 int i2 = rgbKey[index++];
                 int i3 = rgbKey[index++];
-                m_encryptKeyExpansion[i] = i3 << 24 | i2 << 16 | i1 << 8 | i0;
+                _encryptKeyExpansion[i] = i3 << 24 | i2 << 16 | i1 << 8 | i0;
             }
 
-            if (m_Nk <= 6)
+            if (_Nk <= 6)
             {
-                for (int i = m_Nk; i < m_Nb * (m_Nr + 1); ++i)
+                for (int i = _Nk; i < _Nb * (_Nr + 1); ++i)
                 {
-                    iTemp = m_encryptKeyExpansion[i - 1];
+                    iTemp = _encryptKeyExpansion[i - 1];
 
-                    if (i % m_Nk == 0)
+                    if (i % _Nk == 0)
                     {
                         iTemp = SubWord(rot3(iTemp));
-                        iTemp ^= s_Rcon[(i / m_Nk) - 1];
+                        iTemp ^= s_Rcon[(i / _Nk) - 1];
                     }
 
-                    m_encryptKeyExpansion[i] = m_encryptKeyExpansion[i - m_Nk] ^ iTemp;
+                    _encryptKeyExpansion[i] = _encryptKeyExpansion[i - _Nk] ^ iTemp;
                 }
             }
             else
             {
-                for (int i = m_Nk; i < m_Nb * (m_Nr + 1); ++i)
+                for (int i = _Nk; i < _Nb * (_Nr + 1); ++i)
                 {
-                    iTemp = m_encryptKeyExpansion[i - 1];
+                    iTemp = _encryptKeyExpansion[i - 1];
 
-                    if (i % m_Nk == 0)
+                    if (i % _Nk == 0)
                     {
                         iTemp = SubWord(rot3(iTemp));
-                        iTemp ^= s_Rcon[(i / m_Nk) - 1];
+                        iTemp ^= s_Rcon[(i / _Nk) - 1];
                     }
-                    else if (i % m_Nk == 4)
+                    else if (i % _Nk == 4)
                     {
                         iTemp = SubWord(iTemp);
                     }
 
-                    m_encryptKeyExpansion[i] = m_encryptKeyExpansion[i - m_Nk] ^ iTemp;
+                    _encryptKeyExpansion[i] = _encryptKeyExpansion[i - _Nk] ^ iTemp;
                 }
             }
 
-            for (int i = 0; i < m_Nb; ++i)
+            for (int i = 0; i < _Nb; ++i)
             {
-                m_decryptKeyExpansion[i] = m_encryptKeyExpansion[i];
-                m_decryptKeyExpansion[m_Nb * m_Nr + i] = m_encryptKeyExpansion[m_Nb * m_Nr + i];
+                _decryptKeyExpansion[i] = _encryptKeyExpansion[i];
+                _decryptKeyExpansion[_Nb * _Nr + i] = _encryptKeyExpansion[_Nb * _Nr + i];
             }
 
-            for (int i = m_Nb; i < m_Nb * m_Nr; ++i)
+            for (int i = _Nb; i < _Nb * _Nr; ++i)
             {
-                int key = m_encryptKeyExpansion[i];
+                int key = _encryptKeyExpansion[i];
                 int mul02 = MulX(key);
                 int mul04 = MulX(mul02);
                 int mul08 = MulX(mul04);
                 int mul09 = key ^ mul08;
-                m_decryptKeyExpansion[i] = mul02 ^ mul04 ^ mul08 ^ rot3(mul02 ^ mul09) ^ rot2(mul04 ^ mul09) ^ rot1(mul09);
+                _decryptKeyExpansion[i] = mul02 ^ mul04 ^ mul08 ^ rot3(mul02 ^ mul09) ^ rot2(mul04 ^ mul09) ^ rot1(mul09);
             }
         }
 
