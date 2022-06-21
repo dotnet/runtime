@@ -493,13 +493,7 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_HasComponentSize = 0x80000000;
         private const uint enum_flag_HasTypeEquivalence = 0x02000000;
         private const uint enum_flag_Category_ValueType = 0x00040000;
-        private const uint enum_flag_Category_PrimitiveValueType = 0x00060000; // sub-category of ValueType, Enum or primitive value type
-        private const uint enum_flag_Category_TruePrimitive = 0x00070000; // sub-category of ValueType, Primitive (ELEMENT_TYPE_I, etc.)
-        private const uint enum_flag_Category_Array = 0x00080000;
-        private const uint enum_flag_Category_IfArrayThenSzArray = 0x00020000; // sub-category of Array
         private const uint enum_flag_Category_ValueType_Mask = 0x000C0000;
-        private const uint enum_flag_Category_ElementTypeMask = 0x000E0000;
-        private const uint enum_flag_Category_Mask = 0x000F0000;
         // Types that require non-trivial interface cast have this bit set in the category
         private const uint enum_flag_NonTrivialInterfaceCast = 0x00080000 // enum_flag_Category_Array
                                                              | 0x40000000 // enum_flag_ComObject
