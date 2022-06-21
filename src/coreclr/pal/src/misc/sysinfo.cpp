@@ -652,7 +652,7 @@ PAL_GetLogicalProcessorCacheSizeFromOS()
         // 5 ~ 16  :  8 MB
         // 17 ~ 64 : 16 MB
         // 65+     : 32 MB
-        DWORD logicalCPUs = g_totalCpuCount;
+        DWORD logicalCPUs = PAL_GetLogicalCpuCountFromOS();
         if (logicalCPUs < 5)
         {
             cacheSize = 4;
