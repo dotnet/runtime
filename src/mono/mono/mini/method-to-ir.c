@@ -8912,6 +8912,8 @@ calli_end:
 				break;
 			}
 
+			if (!(ins_flag & MONO_INST_NONULLCHECK))
+				MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg, FALSE);
 			ins = mini_emit_memory_load (cfg, m_class_get_byval_arg (klass), sp [0], 0, ins_flag);
 			*sp++ = ins;
 

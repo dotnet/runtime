@@ -35,7 +35,7 @@ namespace System.Formats.Tar.Tests
                 Assert.NotNull(entry.DataStream);
                 entry.DataStream.ReadByte(); // Advance one byte, now the expected string would be "ello file"
 
-                using (TarWriter writer = new TarWriter(destination, TarFormat.Ustar, leaveOpen: true))
+                using (TarWriter writer = new TarWriter(destination, TarEntryFormat.Ustar, leaveOpen: true))
                 {
                     writer.WriteEntry(entry);
                 }
@@ -53,6 +53,36 @@ namespace System.Formats.Tar.Tests
                     string contents = streamReader.ReadLine();
                     Assert.Equal("ello file", contents);
                 }
+            }
+        }
+
+        [Theory]
+        [InlineData(TarEntryFormat.V7)]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void WriteEntry_RespectDefaultWriterFormat(TarEntryFormat expectedFormat)
+        {
+            using TempDirectory root = new TempDirectory();
+
+            string path = Path.Join(root.Path, "file.txt");
+            File.Create(path).Dispose();
+
+            using MemoryStream archiveStream = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archiveStream, expectedFormat, leaveOpen: true))
+            {
+                writer.WriteEntry(path, "file.txt");
+            }
+
+            archiveStream.Position = 0;
+            using (TarReader reader = new TarReader(archiveStream, leaveOpen: false))
+            {
+                TarEntry entry = reader.GetNextEntry();
+                Assert.Equal(expectedFormat, entry.Format);
+
+                Type expectedType = GetTypeForFormat(expectedFormat);
+
+                Assert.Equal(expectedType, entry.GetType());
             }
         }
     }

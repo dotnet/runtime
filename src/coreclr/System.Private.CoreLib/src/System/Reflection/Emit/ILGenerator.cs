@@ -1026,7 +1026,7 @@ namespace System.Reflection.Emit
             m_curDepth = 1;
         }
 
-        public virtual void BeginCatchBlock(Type exceptionType)
+        public virtual void BeginCatchBlock(Type? exceptionType)
         {
             // Begins a catch block.  Emits a branch instruction to the end of the current exception block.
 

@@ -55,8 +55,7 @@ namespace System.Xml.Linq
         {
             get
             {
-                XNode? last = LastNode;
-                return last != null ? last.next : null;
+                return LastNode?.next;
             }
         }
 

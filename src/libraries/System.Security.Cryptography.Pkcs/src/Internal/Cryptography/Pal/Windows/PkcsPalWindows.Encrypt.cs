@@ -19,7 +19,7 @@ namespace Internal.Cryptography.Pal.Windows
 {
     internal sealed partial class PkcsPalWindows : PkcsPal
     {
-        public sealed unsafe override byte[] Encrypt(CmsRecipientCollection recipients, ContentInfo contentInfo, AlgorithmIdentifier contentEncryptionAlgorithm, X509Certificate2Collection originatorCerts, CryptographicAttributeObjectCollection unprotectedAttributes)
+        public sealed override unsafe byte[] Encrypt(CmsRecipientCollection recipients, ContentInfo contentInfo, AlgorithmIdentifier contentEncryptionAlgorithm, X509Certificate2Collection originatorCerts, CryptographicAttributeObjectCollection unprotectedAttributes)
         {
             using (SafeCryptMsgHandle hCryptMsg = EncodeHelpers.CreateCryptMsgHandleToEncode(recipients, contentInfo.ContentType, contentEncryptionAlgorithm, originatorCerts, unprotectedAttributes))
             {

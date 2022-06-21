@@ -41,19 +41,13 @@ namespace System.Formats.Tar
 
             _previouslyReadEntry = null;
             GlobalExtendedAttributes = null;
-            Format = TarFormat.Unknown;
             _isDisposed = false;
             _readFirstEntry = false;
             _reachedEndMarkers = false;
         }
 
         /// <summary>
-        /// The format of the archive. It is initially <see cref="TarFormat.Unknown"/>. The archive format is detected after the first call to <see cref="GetNextEntry(bool)"/>.
-        /// </summary>
-        public TarFormat Format { get; private set; }
-
-        /// <summary>
-        /// <para>If the archive format is <see cref="TarFormat.Pax"/>, returns a read-only dictionary containing the string key-value pairs of the Global Extended Attributes in the first entry of the archive.</para>
+        /// <para>If the archive format is <see cref="TarEntryFormat.Pax"/>, returns a read-only dictionary containing the string key-value pairs of the Global Extended Attributes in the first entry of the archive.</para>
         /// <para>If there is no Global Extended Attributes entry at the beginning of the archive, this returns an empty read-only dictionary.</para>
         /// <para>If the first entry has not been read by calling <see cref="GetNextEntry(bool)"/>, this returns <see langword="null"/>.</para>
         /// </summary>
@@ -89,9 +83,9 @@ namespace System.Formats.Tar
         /// <para>-or-</para>
         /// <para>The archive contains entries in different formats.</para>
         /// <para>-or-</para>
-        /// <para>More than one Global Extended Attributes Entry was found in the current <see cref="TarFormat.Pax"/> archive.</para>
+        /// <para>More than one Global Extended Attributes Entry was found in the current <see cref="TarEntryFormat.Pax"/> archive.</para>
         /// <para>-or-</para>
-        /// <para>Two or more Extended Attributes entries were found consecutively in the current <see cref="TarFormat.Pax"/> archive.</para></exception>
+        /// <para>Two or more Extended Attributes entries were found consecutively in the current <see cref="TarEntryFormat.Pax"/> archive.</para></exception>
         /// <exception cref="IOException">An I/O problem occurred.</exception>
         public TarEntry? GetNextEntry(bool copyData = false)
         {
@@ -115,21 +109,15 @@ namespace System.Formats.Tar
             {
                 if (!_readFirstEntry)
                 {
-                    Debug.Assert(Format == TarFormat.Unknown);
-                    Format = header._format;
                     _readFirstEntry = true;
                 }
-                else if (header._format != Format)
-                {
-                    throw new FormatException(string.Format(SR.TarEntriesInDifferentFormats, header._format, Format));
-                }
 
-                TarEntry entry = Format switch
+                TarEntry entry = header._format switch
                 {
-                    TarFormat.Pax => new PaxTarEntry(header, this),
-                    TarFormat.Gnu => new GnuTarEntry(header, this),
-                    TarFormat.Ustar => new UstarTarEntry(header, this),
-                    TarFormat.V7 or TarFormat.Unknown or _ => new V7TarEntry(header, this),
+                    TarEntryFormat.Pax => new PaxTarEntry(header, this),
+                    TarEntryFormat.Gnu => new GnuTarEntry(header, this),
+                    TarEntryFormat.Ustar => new UstarTarEntry(header, this),
+                    TarEntryFormat.V7 or TarEntryFormat.Unknown or _ => new V7TarEntry(header, this),
                 };
 
                 _previouslyReadEntry = entry;
@@ -228,11 +216,6 @@ namespace System.Formats.Tar
 
             header = default;
 
-            // Set the initial format that is expected to be retrieved when calling TarHeader.TryReadAttributes.
-            // If the archive format is set to unknown here, it means this is the first entry we read and the value will be changed as fields get discovered.
-            // If the archive format is initially detected as pax, then any subsequent entries detected as ustar will be assumed to be pax.
-            header._format = Format;
-
             if (!header.TryGetNextHeader(_archiveStream, copyData))
             {
                 return false;
@@ -250,7 +233,7 @@ namespace System.Formats.Tar
                 GlobalExtendedAttributes = header._extendedAttributes?.AsReadOnly();
 
                 header = default;
-                header._format = TarFormat.Pax;
+                header._format = TarEntryFormat.Pax;
                 try
                 {
                     if (!header.TryGetNextHeader(_archiveStream, copyData))
@@ -261,7 +244,6 @@ namespace System.Formats.Tar
                 catch (EndOfStreamException)
                 {
                     // Edge case: The only entry in the archive was a Global Extended Attributes entry
-                    Format = TarFormat.Pax;
                     return false;
                 }
                 if (header._typeFlag == TarEntryType.GlobalExtendedAttributes)
@@ -305,38 +287,33 @@ namespace System.Formats.Tar
             return true;
         }
 
-        private bool TryProcessExtendedAttributesHeader(TarHeader firstHeader, bool copyData, out TarHeader secondHeader)
+        private bool TryProcessExtendedAttributesHeader(TarHeader extendedAttributesHeader, bool copyData, out TarHeader actualHeader)
         {
-            secondHeader = default;
-            secondHeader._format = TarFormat.Pax;
+            actualHeader = default;
+            actualHeader._format = TarEntryFormat.Pax;
 
             // Now get the actual entry
-            if (!secondHeader.TryGetNextHeader(_archiveStream, copyData))
+            if (!actualHeader.TryGetNextHeader(_archiveStream, copyData))
             {
                 return false;
             }
 
             // Should never read a GEA entry at this point
-            if (secondHeader._typeFlag == TarEntryType.GlobalExtendedAttributes)
+            if (actualHeader._typeFlag == TarEntryType.GlobalExtendedAttributes)
             {
                 throw new FormatException(SR.TarTooManyGlobalExtendedAttributesEntries);
             }
 
-            // Can't have two metadata entries in a row, no matter the archive format
-            if (secondHeader._typeFlag is TarEntryType.ExtendedAttributes)
+            // Can't have two extended attribute metadata entries in a row
+            if (actualHeader._typeFlag is TarEntryType.ExtendedAttributes)
             {
                 throw new FormatException(string.Format(SR.TarUnexpectedMetadataEntry, TarEntryType.ExtendedAttributes, TarEntryType.ExtendedAttributes));
             }
 
-            Debug.Assert(firstHeader._extendedAttributes != null);
-            if (GlobalExtendedAttributes != null)
-            {
-                // First, replace some of the entry's standard attributes with the global ones
-                secondHeader.ReplaceNormalAttributesWithGlobalExtended(GlobalExtendedAttributes);
-            }
-            // Then replace all the standard attributes with the extended attributes ones,
-            // overwriting the previous global replacements if needed
-            secondHeader.ReplaceNormalAttributesWithExtended(firstHeader._extendedAttributes);
+            Debug.Assert(extendedAttributesHeader._extendedAttributes != null);
+
+            // Replace all the standard attributes with the extended attributes ones,
+            actualHeader.ReplaceNormalAttributesWithExtended(extendedAttributesHeader._extendedAttributes);
 
             return true;
         }
@@ -346,7 +323,7 @@ namespace System.Formats.Tar
             finalHeader = default;
 
             TarHeader secondHeader = default;
-            secondHeader._format = TarFormat.Gnu;
+            secondHeader._format = TarEntryFormat.Gnu;
 
             // Get the second entry, which is the actual entry
             if (!secondHeader.TryGetNextHeader(_archiveStream, copyData))
@@ -365,7 +342,7 @@ namespace System.Formats.Tar
                 (header._typeFlag is TarEntryType.LongPath && secondHeader._typeFlag is TarEntryType.LongLink))
             {
                 TarHeader thirdHeader = default;
-                thirdHeader._format = TarFormat.Gnu;
+                thirdHeader._format = TarEntryFormat.Gnu;
 
                 // Get the third entry, which is the actual entry
                 if (!thirdHeader.TryGetNextHeader(_archiveStream, copyData))

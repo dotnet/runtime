@@ -12,11 +12,11 @@ namespace System.Formats.Tar
     // Writes header attributes of a tar archive entry.
     internal partial struct TarHeader
     {
-        private static ReadOnlySpan<byte> PaxMagicBytes => new byte[] { 0x75, 0x73, 0x74, 0x61, 0x72, 0x0 }; // "ustar\0"
-        private static ReadOnlySpan<byte> PaxVersionBytes => new byte[] { TarHelpers.ZeroChar, TarHelpers.ZeroChar }; // "00"
+        private static ReadOnlySpan<byte> PaxMagicBytes => "ustar\0"u8;
+        private static ReadOnlySpan<byte> PaxVersionBytes => "00"u8;
 
-        private static ReadOnlySpan<byte> GnuMagicBytes => new byte[] { 0x75, 0x73, 0x74, 0x61, 0x72, TarHelpers.SpaceChar }; // "ustar "
-        private static ReadOnlySpan<byte> GnuVersionBytes => new byte[] { TarHelpers.SpaceChar, 0x0 }; // " \0"
+        private static ReadOnlySpan<byte> GnuMagicBytes => "ustar "u8;
+        private static ReadOnlySpan<byte> GnuVersionBytes => " \0"u8;
 
         // Extended Attribute entries have a special format in the Name field:
         // "{dirName}/PaxHeaders.{processId}/{fileName}{trailingSeparator}"
@@ -48,7 +48,7 @@ namespace System.Formats.Tar
         internal void WriteAsV7(Stream archiveStream, Span<byte> buffer)
         {
             long actualLength = GetTotalDataBytesToWrite();
-            TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarFormat.V7);
+            TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.V7);
 
             int checksum = WriteName(buffer, out _);
             checksum += WriteCommonFields(buffer, actualLength, actualEntryType);
@@ -66,7 +66,7 @@ namespace System.Formats.Tar
         internal void WriteAsUstar(Stream archiveStream, Span<byte> buffer)
         {
             long actualLength = GetTotalDataBytesToWrite();
-            TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarFormat.Ustar);
+            TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.Ustar);
 
             int checksum = WritePosixName(buffer);
             checksum += WriteCommonFields(buffer, actualLength, actualEntryType);
@@ -90,7 +90,7 @@ namespace System.Formats.Tar
             TarHeader extendedAttributesHeader = default;
             // Fill the current header's dict
             CollectExtendedAttributesFromStandardFieldsIfNeeded();
-            // And pass them to the extended attributes header for writing
+            Debug.Assert(_extendedAttributes != null);
             extendedAttributesHeader.WriteAsPaxExtendedAttributes(archiveStream, buffer, _extendedAttributes, isGea: false);
 
             buffer.Clear(); // Reset it to reuse it
@@ -153,7 +153,7 @@ namespace System.Formats.Tar
             _gnuUnusedBytes ??= new byte[FieldLengths.AllGnuUnused];
 
             long actualLength = GetTotalDataBytesToWrite();
-            TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarFormat.Gnu);
+            TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.Gnu);
 
             int checksum = WriteName(buffer, out _);
             checksum += WriteCommonFields(buffer, actualLength, actualEntryType);
@@ -194,7 +194,7 @@ namespace System.Formats.Tar
         private void WriteAsPaxInternal(Stream archiveStream, Span<byte> buffer)
         {
             long actualLength = GetTotalDataBytesToWrite();
-            TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarFormat.Pax);
+            TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.Pax);
 
             int checksum = WritePosixName(buffer);
             checksum += WriteCommonFields(buffer, actualLength, actualEntryType);
@@ -275,9 +275,9 @@ namespace System.Formats.Tar
         // When writing an entry that came from an archive of a different format, if its entry type happens to
         // be an incompatible regular file entry type, convert it to the compatible one.
         // No change for all other entry types.
-        private TarEntryType GetCorrectTypeFlagForFormat(TarFormat format)
+        private TarEntryType GetCorrectTypeFlagForFormat(TarEntryFormat format)
         {
-            if (format is TarFormat.V7)
+            if (format is TarEntryFormat.V7)
             {
                 if (_typeFlag is TarEntryType.RegularFile)
                 {
@@ -393,11 +393,27 @@ namespace System.Formats.Tar
         // extended attributes. They get collected and saved in that dictionary, with no restrictions.
         private void CollectExtendedAttributesFromStandardFieldsIfNeeded()
         {
+            _extendedAttributes ??= new Dictionary<string, string>();
             _extendedAttributes.Add(PaxEaName, _name);
 
-            AddTimestampAsUnixSeconds(_extendedAttributes, PaxEaATime, _aTime);
-            AddTimestampAsUnixSeconds(_extendedAttributes, PaxEaCTime, _cTime);
-            AddTimestampAsUnixSeconds(_extendedAttributes, PaxEaMTime, _mTime);
+            bool containsATime = _extendedAttributes.ContainsKey(PaxEaATime);
+            bool containsCTime = _extendedAttributes.ContainsKey(PaxEaATime);
+            if (!containsATime || !containsCTime)
+            {
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+                if (!containsATime)
+                {
+                    AddTimestampAsUnixSeconds(_extendedAttributes, PaxEaATime, now);
+                }
+                if (!containsCTime)
+                {
+                    AddTimestampAsUnixSeconds(_extendedAttributes, PaxEaCTime, now);
+                }
+            }
+            if (!_extendedAttributes.ContainsKey(PaxEaMTime))
+            {
+                AddTimestampAsUnixSeconds(_extendedAttributes, PaxEaMTime, _mTime);
+            }
             TryAddStringField(_extendedAttributes, PaxEaGName, _gName, FieldLengths.GName);
             TryAddStringField(_extendedAttributes, PaxEaUName, _uName, FieldLengths.UName);
 
@@ -414,12 +430,7 @@ namespace System.Formats.Tar
             // Adds the specified datetime to the dictionary as a decimal number.
             static void AddTimestampAsUnixSeconds(Dictionary<string, string> extendedAttributes, string key, DateTimeOffset value)
             {
-                // Avoid overwriting if the user already added it before
-                if (!extendedAttributes.ContainsKey(key))
-                {
-                    double unixTimeSeconds = ((double)(value.UtcDateTime - DateTime.UnixEpoch).Ticks) / TimeSpan.TicksPerSecond;
-                    extendedAttributes.Add(key, unixTimeSeconds.ToString("F6", CultureInfo.InvariantCulture)); // 6 decimals, no commas
-                }
+                extendedAttributes.Add(key, TarHelpers.GetTimestampStringFromDateTimeOffset(value));
             }
 
             // Adds the specified string to the dictionary if it's longer than the specified max byte length.

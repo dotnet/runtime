@@ -144,7 +144,7 @@ namespace System.IO.Ports
             set
             {
                 int fNullFlag = GetDcbFlag(Interop.Kernel32.DCBFlags.FNULL);
-                if (value == true && fNullFlag == 0 || value == false && fNullFlag == 1)
+                if (value && fNullFlag == 0 || !value && fNullFlag == 1)
                 {
                     int fNullOld = fNullFlag;
                     SetDcbFlag(Interop.Kernel32.DCBFlags.FNULL, value ? 1 : 0);
@@ -765,14 +765,12 @@ namespace System.IO.Ports
                     // If we are disposing synchronize closing with raising SerialPort events
                     if (disposing)
                     {
-#pragma warning disable CA2002
                         lock (this)
                         {
                             _handle.Close();
                             _handle = null;
                             _threadPoolBinding.Dispose();
                         }
-#pragma warning restore CA2002
                     }
                     else
                     {
@@ -853,7 +851,7 @@ namespace System.IO.Ports
         // Async companion to BeginRead.
         // Note, assumed IAsyncResult argument is of derived type SerialStreamAsyncResult,
         // and throws an exception if untrue.
-        public unsafe override int EndRead(IAsyncResult asyncResult)
+        public override unsafe int EndRead(IAsyncResult asyncResult)
         {
             if (!_isAsync)
                 return base.EndRead(asyncResult);
@@ -882,7 +880,7 @@ namespace System.IO.Ports
                 try
                 {
                     wh.WaitOne();
-                    Debug.Assert(afsar._isComplete == true, "SerialStream::EndRead - AsyncFSCallback didn't set _isComplete to true!");
+                    Debug.Assert(afsar._isComplete, "SerialStream::EndRead - AsyncFSCallback didn't set _isComplete to true!");
 
                     // InfiniteTimeout is not something native to the underlying serial device,
                     // we specify the timeout to be a very large value (MAXWORD-1) to achieve
@@ -928,7 +926,7 @@ namespace System.IO.Ports
         // Note, assumed IAsyncResult argument is of derived type SerialStreamAsyncResult,
         // and throws an exception if untrue.
         // Also fails if called in port's break state.
-        public unsafe override void EndWrite(IAsyncResult asyncResult)
+        public override unsafe void EndWrite(IAsyncResult asyncResult)
         {
             if (!_isAsync)
             {
@@ -960,7 +958,7 @@ namespace System.IO.Ports
                 try
                 {
                     wh.WaitOne();
-                    Debug.Assert(afsar._isComplete == true, "SerialStream::EndWrite - AsyncFSCallback didn't set _isComplete to true!");
+                    Debug.Assert(afsar._isComplete, "SerialStream::EndWrite - AsyncFSCallback didn't set _isComplete to true!");
                 }
                 finally
                 {
@@ -1282,7 +1280,7 @@ namespace System.IO.Ports
         internal void SetDcbFlag(int whichFlag, int setting)
         {
             uint mask;
-            setting = setting << whichFlag;
+            setting <<= whichFlag;
 
             Debug.Assert(whichFlag >= Interop.Kernel32.DCBFlags.FBINARY && whichFlag <= Interop.Kernel32.DCBFlags.FDUMMY2, "SetDcbFlag needs to fit into enum!");
 
@@ -1707,7 +1705,7 @@ namespace System.IO.Ports
                         return;
                     }
 
-                    errors = errors & ErrorEvents;
+                    errors &= ErrorEvents;
                     // TODO: what about CE_BREAK?  Is this the same as EV_BREAK?  EV_BREAK happens as one of the pin events,
                     //       but CE_BREAK is returned from ClreaCommError.
                     // TODO: what about other error conditions not covered by the enum?  Should those produce some other error?

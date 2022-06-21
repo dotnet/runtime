@@ -2746,7 +2746,7 @@ ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addr
 
         if ((cur_block != NULL) && (cur_block->used < counter_block::MAX_COUNTER_ENTRIES))
         {
-            counter_index = FastInterlockIncrement((LONG*)&cur_block->used) - 1;
+            counter_index = InterlockedIncrement((LONG*)&cur_block->used) - 1;
             if (counter_index < counter_block::MAX_COUNTER_ENTRIES)
             {
                 // Typical case we allocate the next free counter in the block
@@ -3151,7 +3151,7 @@ BOOL Prober::GrabEntry(size_t entryValue)
 {
     LIMITED_METHOD_CONTRACT;
 
-    return FastInterlockCompareExchangePointer(&base[index],
+    return InterlockedCompareExchangeT(&base[index],
         entryValue, static_cast<size_t>(CALL_STUB_EMPTY_ENTRY)) == CALL_STUB_EMPTY_ENTRY;
 }
 
@@ -3165,7 +3165,7 @@ inline void FastTable::IncrementCount()
     // at the same time and one increment is lost, then the size will be inaccurate and
     // BucketTable::GetMoreSpace will never succeed, resulting in an infinite loop trying
     // to add a new entry.
-    FastInterlockIncrement((LONG *)&contents[CALL_STUB_COUNT_INDEX]);
+    InterlockedIncrement((LONG *)&contents[CALL_STUB_COUNT_INDEX]);
 }
 
 size_t FastTable::Add(size_t entry, Prober* probe)
@@ -3251,7 +3251,7 @@ BOOL BucketTable::GetMoreSpace(const Prober* p)
     // replacing the entry, then we will just put the new bucket we just created in the
     // dead list instead of risking a race condition which would put a duplicate of the old
     // bucket in the dead list (and even possibly cause a cyclic list).
-    if (FastInterlockCompareExchangePointer(reinterpret_cast<FastTable * volatile *>(&buckets[index]), newBucket, oldBucket) != oldBucket)
+    if (InterlockedCompareExchangeT(reinterpret_cast<FastTable * volatile *>(&buckets[index]), newBucket, oldBucket) != oldBucket)
         oldBucket = newBucket;
 
     // Link the old onto the "to be reclaimed" list.
@@ -3260,7 +3260,7 @@ BOOL BucketTable::GetMoreSpace(const Prober* p)
     do {
         list = VolatileLoad(&dead);
         oldBucket->contents[CALL_STUB_DEAD_LINK] = (size_t) list;
-    } while (FastInterlockCompareExchangePointer(&dead, oldBucket, list) != list);
+    } while (InterlockedCompareExchangeT(&dead, oldBucket, list) != list);
 
 #ifdef _DEBUG
     {
@@ -3318,7 +3318,7 @@ void BucketTable::Reclaim()
     //We are assuming that we are assuming the actually having to do anything is rare
     //so that the interlocked overhead is acceptable.  If this is not true, then
     //we need to examine exactly how and when we may be called during shutdown.
-    if (FastInterlockCompareExchangePointer(&dead, NULL, list) != list)
+    if (InterlockedCompareExchangeT(&dead, NULL, list) != list)
         return;
 
 #ifdef _DEBUG
@@ -3393,7 +3393,7 @@ BOOL BucketTable::SetUpProber(size_t keyA, size_t keyB, Prober *prober)
 
         // Doing an interlocked exchange here ensures that if someone has raced and beaten us to
         // replacing the entry, then we will free the new bucket we just created.
-        bucket = FastInterlockCompareExchangePointer(&buckets[index], reinterpret_cast<size_t>(newBucket), static_cast<size_t>(CALL_STUB_EMPTY_ENTRY));
+        bucket = InterlockedCompareExchangeT(&buckets[index], reinterpret_cast<size_t>(newBucket), static_cast<size_t>(CALL_STUB_EMPTY_ENTRY));
         if (bucket == CALL_STUB_EMPTY_ENTRY)
         {
             // We successfully wrote newBucket into buckets[index], overwritting the CALL_STUB_EMPTY_ENTRY value

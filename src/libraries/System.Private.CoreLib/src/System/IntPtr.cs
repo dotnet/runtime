@@ -421,9 +421,6 @@ namespace System
         /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
         static nint IDivisionOperators<nint, nint, nint>.operator /(nint left, nint right) => left / right;
 
-        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        static nint IDivisionOperators<nint, nint, nint>.operator checked /(nint left, nint right) => left / right;
-
         //
         // IIncrementOperators
         //

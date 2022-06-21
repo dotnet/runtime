@@ -49,7 +49,7 @@
       InputDirectory="$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))"
       OutputFileName="$(TimeZonesDataPath)" />
   </Target>
-  
+
   <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <Target Name="GenerateManagedToNative" DependsOnTargets="CheckEnv;ResolveLibrariesFromLocalBuild">
     <PropertyGroup>
@@ -72,7 +72,7 @@
     </MSBuild>
 
     <MakeDir Directories="$(WasmObjDir)" Condition="!Exists('$(WasmObjDir)')" />
-    
+
     <ManagedToNativeGenerator
       Assemblies="@(WasmPInvokeAssembly)"
       PInvokeModules="@(WasmPInvokeModule)"
@@ -110,27 +110,6 @@
            Condition="'$(_EmccVersion)' == '' or '$(_EmccVersionHash)' == ''" />
 
     <PropertyGroup>
-      <_EmccPropsJson>
-<![CDATA[
-{
-  "items": {
-    "EmccProperties": [
-      { "identity": "RuntimeEmccVersion",     "value": "$(_EmccVersion)" },
-      { "identity": "RuntimeEmccVersionRaw",  "value": "$(_EmccVersionRaw)" },
-      { "identity": "RuntimeEmccVersionHash", "value": "$(_EmccVersionHash)" }
-    ]
-  }
-}
-]]>
-      </_EmccPropsJson>
-    </PropertyGroup>
-
-    <WriteLinesToFile File="$(NativeBinDir)src\emcc-props.json"
-                      Lines="$(_EmccPropsJson)"
-                      Overwrite="true"
-                      WriteOnlyWhenDifferent="true" />
-
-    <PropertyGroup>
       <_DefaultExportedFunctions Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_EmccVersion)', '3.1.7'))"
                                 >_malloc,stackSave,stackRestore,stackAlloc,_memalign,_memset,_htons,_ntohs,_free</_DefaultExportedFunctions>
 
@@ -160,6 +139,10 @@
       <_EmccLinkFlags Include="-s ENVIRONMENT=&quot;web,webview,worker,node,shell&quot;" />
     </ItemGroup>
 
+    <ItemGroup Condition="'$(MonoWasmThreads)' == 'true'">
+      <WasmOptConfigurationFlags Include="--enable-threads;--enable-bulk-memory;--enable-sign-ext" />
+    </ItemGroup>
+
     <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
       <_EmccLinkFlags Include="--profiling-funcs" />
       <_EmccFlags Include="@(_EmccCommonFlags)" />
@@ -168,6 +151,31 @@
     <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
       <_EmccFlags Include="@(_EmccCommonFlags)" />
     </ItemGroup>
+
+    <PropertyGroup>
+      <_WasmOptConfigurationFlags>@(WasmOptConfigurationFlags, '%3B ') </_WasmOptConfigurationFlags>
+      <_EmccPropsJson>
+<![CDATA[
+{
+  "items": {
+    "EmccProperties": [
+      { "identity": "RuntimeEmccVersion",     "value": "$(_EmccVersion)" },
+      { "identity": "RuntimeEmccVersionRaw",  "value": "$(_EmccVersionRaw)" },
+      { "identity": "RuntimeEmccVersionHash", "value": "$(_EmccVersionHash)" }
+    ],
+    "WasmOptConfigurationFlags": [
+      { "identity": "WasmOptConfigurationFlags", "value": "$(_WasmOptConfigurationFlags)" }
+    ]
+  }
+}
+]]>
+      </_EmccPropsJson>
+    </PropertyGroup>
+
+    <WriteLinesToFile File="$(NativeBinDir)src\emcc-props.json"
+                      Lines="$(_EmccPropsJson)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
 
     <WriteLinesToFile File="$(_EmccDefaultsRspPath)"
                       Lines="@(_EmccFlags)"
@@ -190,7 +198,8 @@
 
     <ItemGroup>
       <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
-                                  $(ICULibDir)/libicui18n.a" />
+                                  $(ICULibDir)/libicui18n.a;
+                                  $(ICULibDir)/libicudata.a" />
       <ICULibFiles Include="$(ICULibDir)/*.dat" />
     </ItemGroup>
     <PropertyGroup>
@@ -210,6 +219,7 @@
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCMAKE_BUILD_TYPE=$(Configuration)</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_EMCC_FLAGS=&quot;$(CMakeConfigurationEmccFlags)&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_LINK_FLAGS=&quot;$(CMakeConfigurationLinkFlags)&quot;</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_WASM_OPT_FLAGS=&quot;@(WasmOptConfigurationFlags, ';')&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DMONO_INCLUDES=&quot;$(MonoArtifactsPath)include/mono-2.0&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DMONO_OBJ_INCLUDES=&quot;$(MonoObjDir.TrimEnd('\/'))&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DICU_LIB_DIR=&quot;$(ICULibDir.TrimEnd('\/'))&quot;</CMakeBuildRuntimeConfigureCmd>
@@ -240,7 +250,6 @@
     <Copy SourceFiles="runtime/driver.c;
                        runtime/pinvoke.c;
                        runtime/corebindings.c;
-                       runtime/dotnet-crypto-worker.js;
                        $(SharedNativeRoot)libs\System.Native\pal_random.lib.js;"
           DestinationFolder="$(NativeBinDir)src"
           SkipUnchangedFiles="true" />
@@ -337,6 +346,8 @@
 
   <ItemGroup>
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/*.ts"/>
+    <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/workers/**/*.js"/>
+    <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/workers/**/*.ts"/>
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/types/*.ts"/>
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtimetypes/*.d.ts"/>
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/*.json"/>

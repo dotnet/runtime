@@ -15,20 +15,21 @@ namespace System.Formats.Tar.Tests
         public void Write_V7RegularFileEntry_As_RegularFileEntry()
         {
             using MemoryStream archive = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archive, archiveFormat: TarFormat.Pax, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archive, format: TarEntryFormat.Pax, leaveOpen: true))
             {
                 V7TarEntry entry = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
 
-                // Should be written as RegularFile
+                // Should be written in the format of the entry
                 writer.WriteEntry(entry);
             }
 
             archive.Seek(0, SeekOrigin.Begin);
             using (TarReader reader = new TarReader(archive))
             {
-                PaxTarEntry entry = reader.GetNextEntry() as PaxTarEntry;
+                TarEntry entry = reader.GetNextEntry();
                 Assert.NotNull(entry);
-                Assert.Equal(TarEntryType.RegularFile, entry.EntryType);
+                Assert.Equal(TarEntryFormat.V7, entry.Format);
+                Assert.True(entry is V7TarEntry);
 
                 Assert.Null(reader.GetNextEntry());
             }
@@ -38,7 +39,7 @@ namespace System.Formats.Tar.Tests
         public void WriteRegularFile()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Pax, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true))
             {
                 PaxTarEntry regularFile = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName);
                 SetRegularFile(regularFile);
@@ -58,7 +59,7 @@ namespace System.Formats.Tar.Tests
         public void WriteHardLink()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Pax, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true))
             {
                 PaxTarEntry hardLink = new PaxTarEntry(TarEntryType.HardLink, InitialEntryName);
                 SetHardLink(hardLink);
@@ -78,7 +79,7 @@ namespace System.Formats.Tar.Tests
         public void WriteSymbolicLink()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Pax, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true))
             {
                 PaxTarEntry symbolicLink = new PaxTarEntry(TarEntryType.SymbolicLink, InitialEntryName);
                 SetSymbolicLink(symbolicLink);
@@ -98,7 +99,7 @@ namespace System.Formats.Tar.Tests
         public void WriteDirectory()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Pax, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true))
             {
                 PaxTarEntry directory = new PaxTarEntry(TarEntryType.Directory, InitialEntryName);
                 SetDirectory(directory);
@@ -118,7 +119,7 @@ namespace System.Formats.Tar.Tests
         public void WriteCharacterDevice()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Pax, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true))
             {
                 PaxTarEntry charDevice = new PaxTarEntry(TarEntryType.CharacterDevice, InitialEntryName);
                 SetCharacterDevice(charDevice);
@@ -138,7 +139,7 @@ namespace System.Formats.Tar.Tests
         public void WriteBlockDevice()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Pax, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true))
             {
                 PaxTarEntry blockDevice = new PaxTarEntry(TarEntryType.BlockDevice, InitialEntryName);
                 SetBlockDevice(blockDevice);
@@ -158,7 +159,7 @@ namespace System.Formats.Tar.Tests
         public void WriteFifo()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Pax, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true))
             {
                 PaxTarEntry fifo = new PaxTarEntry(TarEntryType.Fifo, InitialEntryName);
                 SetFifo(fifo);
@@ -184,7 +185,7 @@ namespace System.Formats.Tar.Tests
             extendedAttributes.Add(expectedKey, expectedValue);
 
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Pax, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true))
             {
                 PaxTarEntry regularFile = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName, extendedAttributes);
                 SetRegularFile(regularFile);
@@ -201,12 +202,12 @@ namespace System.Formats.Tar.Tests
                 Assert.NotNull(regularFile.ExtendedAttributes);
 
                 // path, mtime, atime and ctime are always collected by default
-                Assert.True(regularFile.ExtendedAttributes.Count >= 5);
+                AssertExtensions.GreaterThanOrEqualTo(regularFile.ExtendedAttributes.Count, 5);
 
-                Assert.Contains("path", regularFile.ExtendedAttributes);
-                Assert.Contains("mtime", regularFile.ExtendedAttributes);
-                Assert.Contains("atime", regularFile.ExtendedAttributes);
-                Assert.Contains("ctime", regularFile.ExtendedAttributes);
+                Assert.Contains(PaxEaName, regularFile.ExtendedAttributes);
+                Assert.Contains(PaxEaMTime, regularFile.ExtendedAttributes);
+                Assert.Contains(PaxEaATime, regularFile.ExtendedAttributes);
+                Assert.Contains(PaxEaCTime, regularFile.ExtendedAttributes);
 
                 Assert.Contains(expectedKey, regularFile.ExtendedAttributes);
                 Assert.Equal(expectedValue, regularFile.ExtendedAttributes[expectedKey]);
@@ -214,18 +215,13 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
-        public void WritePaxAttributes_Timestamps()
+        public void WritePaxAttributes_Timestamps_AutomaticallyAdded()
         {
-            Dictionary<string, string> extendedAttributes = new();
-            extendedAttributes.Add("atime", ConvertDateTimeOffsetToDouble(TestAccessTime).ToString("F6", CultureInfo.InvariantCulture));
-            extendedAttributes.Add("ctime", ConvertDateTimeOffsetToDouble(TestChangeTime).ToString("F6", CultureInfo.InvariantCulture));
-
+            DateTimeOffset minimumTime = DateTimeOffset.UtcNow - TimeSpan.FromHours(1);
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Pax, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true))
             {
-                PaxTarEntry regularFile = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName, extendedAttributes);
-                SetRegularFile(regularFile);
-                VerifyRegularFile(regularFile, isWritable: true);
+                PaxTarEntry regularFile = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName);
                 writer.WriteEntry(regularFile);
             }
 
@@ -233,15 +229,38 @@ namespace System.Formats.Tar.Tests
             using (TarReader reader = new TarReader(archiveStream))
             {
                 PaxTarEntry regularFile = reader.GetNextEntry() as PaxTarEntry;
-                VerifyRegularFile(regularFile, isWritable: false);
 
-                Assert.NotNull(regularFile.ExtendedAttributes);
-                Assert.True(regularFile.ExtendedAttributes.Count >= 4);
+                AssertExtensions.GreaterThanOrEqualTo(regularFile.ExtendedAttributes.Count, 4);
+                VerifyExtendedAttributeTimestamp(regularFile, PaxEaMTime, minimumTime);
+                VerifyExtendedAttributeTimestamp(regularFile, PaxEaATime, minimumTime);
+                VerifyExtendedAttributeTimestamp(regularFile, PaxEaCTime, minimumTime);
+            }
+        }
 
-                Assert.Contains("path", regularFile.ExtendedAttributes);
-                VerifyExtendedAttributeTimestamp(regularFile, "mtime", TestModificationTime);
-                VerifyExtendedAttributeTimestamp(regularFile, "atime", TestAccessTime);
-                VerifyExtendedAttributeTimestamp(regularFile, "ctime", TestChangeTime);
+        [Fact]
+        public void WritePaxAttributes_Timestamps_UserProvided()
+        {
+            Dictionary<string, string> extendedAttributes = new();
+            extendedAttributes.Add(PaxEaATime, GetTimestampStringFromDateTimeOffset(TestAccessTime));
+            extendedAttributes.Add(PaxEaCTime, GetTimestampStringFromDateTimeOffset(TestChangeTime));
+
+            using MemoryStream archiveStream = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true))
+            {
+                PaxTarEntry regularFile = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName, extendedAttributes);
+                regularFile.ModificationTime = TestModificationTime;
+                writer.WriteEntry(regularFile);
+            }
+
+            archiveStream.Position = 0;
+            using (TarReader reader = new TarReader(archiveStream))
+            {
+                PaxTarEntry regularFile = reader.GetNextEntry() as PaxTarEntry;
+
+                AssertExtensions.GreaterThanOrEqualTo(regularFile.ExtendedAttributes.Count, 4);
+                VerifyExtendedAttributeTimestamp(regularFile, PaxEaMTime, TestModificationTime);
+                VerifyExtendedAttributeTimestamp(regularFile, PaxEaATime, TestAccessTime);
+                VerifyExtendedAttributeTimestamp(regularFile, PaxEaCTime, TestChangeTime);
             }
         }
 
@@ -252,7 +271,7 @@ namespace System.Formats.Tar.Tests
             string groupName = "IAmAGroupNameWhoseLengthIsWayBeyondTheThirtyTwoByteLimit";
 
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Pax, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true))
             {
                 PaxTarEntry regularFile = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName);
                 SetRegularFile(regularFile);
@@ -271,22 +290,83 @@ namespace System.Formats.Tar.Tests
                 Assert.NotNull(regularFile.ExtendedAttributes);
 
                 // path, mtime, atime and ctime are always collected by default
-                Assert.True(regularFile.ExtendedAttributes.Count >= 6);
+                AssertExtensions.GreaterThanOrEqualTo(regularFile.ExtendedAttributes.Count, 6);
 
-                Assert.Contains("path", regularFile.ExtendedAttributes);
-                Assert.Contains("mtime", regularFile.ExtendedAttributes);
-                Assert.Contains("atime", regularFile.ExtendedAttributes);
-                Assert.Contains("ctime", regularFile.ExtendedAttributes);
+                Assert.Contains(PaxEaName, regularFile.ExtendedAttributes);
+                Assert.Contains(PaxEaMTime, regularFile.ExtendedAttributes);
+                Assert.Contains(PaxEaATime, regularFile.ExtendedAttributes);
+                Assert.Contains(PaxEaCTime, regularFile.ExtendedAttributes);
 
-                Assert.Contains("uname", regularFile.ExtendedAttributes);
-                Assert.Equal(userName, regularFile.ExtendedAttributes["uname"]);
+                Assert.Contains(PaxEaUName, regularFile.ExtendedAttributes);
+                Assert.Equal(userName, regularFile.ExtendedAttributes[PaxEaUName]);
 
-                Assert.Contains("gname", regularFile.ExtendedAttributes);
-                Assert.Equal(groupName, regularFile.ExtendedAttributes["gname"]);
+                Assert.Contains(PaxEaGName, regularFile.ExtendedAttributes);
+                Assert.Equal(groupName, regularFile.ExtendedAttributes[PaxEaGName]);
 
                 // They should also get exposed via the regular properties
                 Assert.Equal(groupName, regularFile.GroupName);
                 Assert.Equal(userName, regularFile.UserName);
+            }
+        }
+
+        [Fact]
+        public void WritePaxAttributes_Name_AutomaticallyAdded()
+        {
+            using MemoryStream archiveStream = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true))
+            {
+                PaxTarEntry regularFile = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName);
+                writer.WriteEntry(regularFile);
+            }
+
+            archiveStream.Position = 0;
+            using (TarReader reader = new TarReader(archiveStream))
+            {
+                PaxTarEntry regularFile = reader.GetNextEntry() as PaxTarEntry;
+
+                AssertExtensions.GreaterThanOrEqualTo(regularFile.ExtendedAttributes.Count, 4);
+                Assert.Contains(PaxEaName, regularFile.ExtendedAttributes);
+            }
+        }
+
+        [Fact]
+        public void WritePaxAttributes_LongLinkName_AutomaticallyAdded()
+        {
+            using MemoryStream archiveStream = new MemoryStream();
+
+            string longSymbolicLinkName = new string('a', 101);
+            string longHardLinkName = new string('b', 101);
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true))
+            {
+                PaxTarEntry symlink = new PaxTarEntry(TarEntryType.SymbolicLink, "symlink");
+                symlink.LinkName = longSymbolicLinkName;
+                writer.WriteEntry(symlink);
+
+                PaxTarEntry hardlink = new PaxTarEntry(TarEntryType.HardLink, "hardlink");
+                hardlink.LinkName = longHardLinkName;
+                writer.WriteEntry(hardlink);
+            }
+
+            archiveStream.Position = 0;
+            using (TarReader reader = new TarReader(archiveStream))
+            {
+                PaxTarEntry symlink = reader.GetNextEntry() as PaxTarEntry;
+
+                AssertExtensions.GreaterThanOrEqualTo(symlink.ExtendedAttributes.Count, 5);
+
+                Assert.Contains(PaxEaName, symlink.ExtendedAttributes);
+                Assert.Equal("symlink", symlink.ExtendedAttributes[PaxEaName]);
+                Assert.Contains(PaxEaLinkName, symlink.ExtendedAttributes);
+                Assert.Equal(longSymbolicLinkName, symlink.ExtendedAttributes[PaxEaLinkName]);
+
+                PaxTarEntry hardlink = reader.GetNextEntry() as PaxTarEntry;
+
+                AssertExtensions.GreaterThanOrEqualTo(hardlink.ExtendedAttributes.Count, 5);
+
+                Assert.Contains(PaxEaName, hardlink.ExtendedAttributes);
+                Assert.Equal("hardlink", hardlink.ExtendedAttributes[PaxEaName]);
+                Assert.Contains(PaxEaLinkName, hardlink.ExtendedAttributes);
+                Assert.Equal(longHardLinkName, hardlink.ExtendedAttributes[PaxEaLinkName]);
             }
         }
     }

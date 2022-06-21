@@ -1,25 +1,48 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+
 namespace System.Formats.Tar
 {
     /// <summary>
-    /// Abstract class that represents a tar entry from an archive of a format that is based on the POSIX IEEE P1003.1 standard from 1988. This includes the formats <see cref="TarFormat.Ustar"/> (represented by the <see cref="UstarTarEntry"/> class), <see cref="TarFormat.Pax"/> (represented by the <see cref="PaxTarEntry"/> class) and <see cref="TarFormat.Gnu"/> (represented by the <see cref="GnuTarEntry"/> class).
+    /// Abstract class that represents a tar entry from an archive of a format that is based on the POSIX IEEE P1003.1 standard from 1988. This includes the formats <see cref="TarEntryFormat.Ustar"/> (represented by the <see cref="UstarTarEntry"/> class), <see cref="TarEntryFormat.Pax"/> (represented by the <see cref="PaxTarEntry"/> class) and <see cref="TarEntryFormat.Gnu"/> (represented by the <see cref="GnuTarEntry"/> class).
     /// </summary>
     /// <remarks>Formats that implement the POSIX IEEE P1003.1 standard from 1988, support the following header fields: <c>devmajor</c>, <c>devminor</c>, <c>gname</c> and <c>uname</c>.
-    /// Even though the <see cref="TarFormat.Gnu"/> format is not POSIX compatible, it implements and supports the Unix-specific fields that were defined in that POSIX standard.</remarks>
+    /// Even though the <see cref="TarEntryFormat.Gnu"/> format is not POSIX compatible, it implements and supports the Unix-specific fields that were defined in that POSIX standard.</remarks>
     public abstract partial class PosixTarEntry : TarEntry
     {
-        // Constructor used when reading an existing archive.
-        internal PosixTarEntry(TarHeader header, TarReader readerOfOrigin)
-            : base(header, readerOfOrigin)
+        // Constructor called when reading a TarEntry from a TarReader.
+        internal PosixTarEntry(TarHeader header, TarReader readerOfOrigin, TarEntryFormat format)
+            : base(header, readerOfOrigin, format)
         {
         }
 
-        // Constructor called when creating a new 'TarEntry*' instance that can be passed to a TarWriter.
-        internal PosixTarEntry(TarEntryType entryType, string entryName, TarFormat format)
+        // Constructor called when the user creates a TarEntry instance from scratch.
+        internal PosixTarEntry(TarEntryType entryType, string entryName, TarEntryFormat format)
             : base(entryType, entryName, format)
         {
+            _header._uName = string.Empty;
+            _header._gName = string.Empty;
+            _header._devMajor = 0;
+            _header._devMinor = 0;
+        }
+
+        // Constructor called when converting an entry to the selected format.
+        internal PosixTarEntry(TarEntry other, TarEntryFormat format)
+            : base(other, format)
+        {
+            if (other is PosixTarEntry)
+            {
+                Debug.Assert(other._header._uName != null);
+                Debug.Assert(other._header._gName != null);
+                _header._uName = other._header._uName;
+                _header._gName = other._header._gName;
+                _header._devMajor = other._header._devMajor;
+                _header._devMinor = other._header._devMinor;
+            }
+            _header._uName ??= string.Empty;
+            _header._gName ??= string.Empty;
         }
 
         /// <summary>

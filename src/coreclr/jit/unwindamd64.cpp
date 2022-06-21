@@ -656,11 +656,21 @@ void Compiler::unwindReserve()
 //
 void Compiler::unwindReserveFunc(FuncInfoDsc* func)
 {
-    unwindReserveFuncHelper(func, true);
-
-    if (fgFirstColdBlock != nullptr)
+#ifdef DEBUG
+    if (JitConfig.JitFakeProcedureSplitting() && (fgFirstColdBlock != nullptr))
     {
-        unwindReserveFuncHelper(func, false);
+        assert(func->funKind == FUNC_ROOT); // No fake-splitting of funclets.
+        unwindReserveFuncHelper(func, true);
+    }
+    else
+#endif // DEBUG
+    {
+        unwindReserveFuncHelper(func, true);
+
+        if (fgFirstColdBlock != nullptr)
+        {
+            unwindReserveFuncHelper(func, false);
+        }
     }
 }
 
@@ -880,12 +890,43 @@ void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode
     static_assert_no_msg(FUNC_HANDLER == (FuncKind)CORJIT_FUNC_HANDLER);
     static_assert_no_msg(FUNC_FILTER == (FuncKind)CORJIT_FUNC_FILTER);
 
-    unwindEmitFuncHelper(func, pHotCode, pColdCode, true);
-
-    if (pColdCode != nullptr)
+#ifdef DEBUG
+    if (JitConfig.JitFakeProcedureSplitting() && (pColdCode != nullptr))
     {
-        unwindEmitFuncHelper(func, pHotCode, pColdCode, false);
+        fakeUnwindEmitFuncHelper(func, pHotCode);
+    }
+    else
+#endif // DEBUG
+    {
+        unwindEmitFuncHelper(func, pHotCode, pColdCode, true);
+
+        if (pColdCode != nullptr)
+        {
+            unwindEmitFuncHelper(func, pHotCode, pColdCode, false);
+        }
     }
 }
+
+#ifdef DEBUG
+void Compiler::fakeUnwindEmitFuncHelper(FuncInfoDsc* func, void* pHotCode)
+{
+    assert(fgFirstColdBlock != nullptr);
+    assert(func->funKind == FUNC_ROOT); // No fake-splitting of funclets.
+
+    const UNATIVE_OFFSET startOffset     = 0;
+    const UNATIVE_OFFSET endOffset       = info.compNativeCodeSize;
+    const DWORD          unwindCodeBytes = sizeof(func->unwindCodes) - func->unwindCodeSlot;
+    BYTE*                pUnwindBlock    = &func->unwindCodes[func->unwindCodeSlot];
+
+    if (opts.dspUnwind)
+    {
+        DumpUnwindInfo(true, startOffset, endOffset, (const UNWIND_INFO* const)pUnwindBlock);
+    }
+
+    // Pass pColdCode = nullptr; VM allocs unwind info for combined hot/cold section
+    eeAllocUnwindInfo((BYTE*)pHotCode, nullptr, startOffset, endOffset, unwindCodeBytes, pUnwindBlock,
+                      (CorJitFuncKind)func->funKind);
+}
+#endif // DEBUG
 
 #endif // TARGET_AMD64
