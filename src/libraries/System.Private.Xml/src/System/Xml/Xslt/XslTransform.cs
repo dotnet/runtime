@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Xml.XPath;
+using System.Xml.Xsl.XsltOld;
+using System.Xml.Xsl.XsltOld.Debugger;
+
 namespace System.Xml.Xsl
 {
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
-    using System.IO;
-    using System.Xml.XPath;
-    using System.Xml.Xsl.XsltOld;
-    using System.Xml.Xsl.XsltOld.Debugger;
-
     public sealed class XslTransform
     {
         private XmlResolver? _documentResolver;

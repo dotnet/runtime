@@ -1237,7 +1237,7 @@ namespace System.Security.AccessControl
                         continue;
                     }
 
-                    if (true == MergeAces(ref thisAce, nextAce))
+                    if (MergeAces(ref thisAce, nextAce))
                     {
                         _acl.RemoveAce(i + 1);
                     }
@@ -1630,7 +1630,7 @@ namespace System.Security.AccessControl
                     if ((ObjectTypesMatch(ace, newAce)) &&
                          (AceFlagsAreMergeable(ace, newAce)))
                     {
-                        if (true == MergeInheritanceBits(ace.AceFlags, newAce.AceFlags, IsDS, out merged))
+                        if (MergeInheritanceBits(ace.AceFlags, newAce.AceFlags, IsDS, out merged))
                         {
                             ace.AceFlags = (merged | (ace.AceFlags & AceFlags.AuditFlags));
                             return true;
@@ -1639,7 +1639,7 @@ namespace System.Security.AccessControl
                 }
                 else
                 {
-                    if (true == MergeInheritanceBits(ace.AceFlags, newAce.AceFlags, IsDS, out merged))
+                    if (MergeInheritanceBits(ace.AceFlags, newAce.AceFlags, IsDS, out merged))
                     {
                         ace.AceFlags = (merged | (ace.AceFlags & AceFlags.AuditFlags));
                         return true;
@@ -1881,7 +1881,7 @@ namespace System.Security.AccessControl
                     // Avoid inserting meaningless ACEs
                     //
 
-                    if (true == InspectAce(ref ace, isDacl))
+                    if (InspectAce(ref ace, isDacl))
                     {
                         _acl.InsertAce(_acl.Count, ace);
                     }
@@ -1892,7 +1892,7 @@ namespace System.Security.AccessControl
             // See whether the ACL is canonical to begin with
             //
 
-            if (true == CanonicalCheck(isDacl))
+            if (CanonicalCheck(isDacl))
             {
                 //
                 // Sort and compact the array
@@ -2024,7 +2024,7 @@ namespace System.Security.AccessControl
                     continue;
                 }
 
-                if (true == MergeAces(ref ace, (QualifiedAce)newAce))
+                if (MergeAces(ref ace, (QualifiedAce)newAce))
                 {
                     aceMerged = true;
                     break;
@@ -3062,7 +3062,7 @@ namespace System.Security.AccessControl
         //
 
         internal DiscretionaryAcl(bool isContainer, bool isDS, RawAcl? rawAcl, bool trusted)
-            : base(isContainer, isDS, rawAcl == null ? new RawAcl(isDS ? AclRevisionDS : AclRevision, 0) : rawAcl, trusted, true)
+            : base(isContainer, isDS, rawAcl ?? new RawAcl(isDS ? AclRevisionDS : AclRevision, 0), trusted, true)
         {
         }
 

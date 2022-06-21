@@ -5,12 +5,13 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 namespace System.Buffers.Text
 {
     // AVX2 version based on https://github.com/aklomp/base64/tree/e516d769a2a432c08404f1981e73b431566057be/lib/arch/avx2
-    // SSSE3 version based on https://github.com/aklomp/base64/tree/e516d769a2a432c08404f1981e73b431566057be/lib/arch/ssse3
+    // Vector128 version based on https://github.com/aklomp/base64/tree/e516d769a2a432c08404f1981e73b431566057be/lib/arch/ssse3
 
     public static partial class Base64
     {
@@ -74,9 +75,9 @@ namespace System.Buffers.Text
                     }
 
                     end = srcMax - 24;
-                    if (Ssse3.IsSupported && (end >= src))
+                    if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian && (end >= src))
                     {
-                        Ssse3Decode(ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
+                        Vector128Decode(ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
 
                         if (src == srcEnd)
                             goto DoneExit;
@@ -476,10 +477,28 @@ namespace System.Buffers.Text
             destBytes = dest;
         }
 
+        // This can be replaced once https://github.com/dotnet/runtime/issues/63331 is implemented.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe void Ssse3Decode(ref byte* srcBytes, ref byte* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, byte* destStart)
+        private static Vector128<byte> SimdShuffle(Vector128<byte> left, Vector128<byte> right, Vector128<byte> mask8F)
         {
-            // If we have SSSE3 support, pick off 16 bytes at a time for as long as we can,
+            Debug.Assert((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian);
+
+            if (Ssse3.IsSupported)
+            {
+                return Ssse3.Shuffle(left, right);
+            }
+            else
+            {
+                return AdvSimd.Arm64.VectorTableLookup(left, Vector128.BitwiseAnd(right, mask8F));
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe void Vector128Decode(ref byte* srcBytes, ref byte* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, byte* destStart)
+        {
+            Debug.Assert((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian);
+
+            // If we have Vector128 support, pick off 16 bytes at a time for as long as we can,
             // but make sure that we quit before seeing any == markers at the end of the
             // string. Also, because we write four zeroes at the end of the output, ensure
             // that there are at least 6 valid bytes of input data remaining to close the
@@ -552,34 +571,15 @@ namespace System.Buffers.Text
             // 1111 0x10 andlut     0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10
 
             // The JIT won't hoist these "constants", so help it
-            Vector128<sbyte> lutHi = Vector128.Create(
-                0x10, 0x10, 0x01, 0x02,
-                0x04, 0x08, 0x04, 0x08,
-                0x10, 0x10, 0x10, 0x10,
-                0x10, 0x10, 0x10, 0x10);
-
-            Vector128<sbyte> lutLo = Vector128.Create(
-                0x15, 0x11, 0x11, 0x11,
-                0x11, 0x11, 0x11, 0x11,
-                0x11, 0x11, 0x13, 0x1A,
-                0x1B, 0x1B, 0x1B, 0x1A);
-
-            Vector128<sbyte> lutShift = Vector128.Create(
-                0, 16, 19, 4,
-                -65, -65, -71, -71,
-                0, 0, 0, 0,
-                0, 0, 0, 0);
-
-            Vector128<sbyte> packBytesMask = Vector128.Create(
-                2, 1, 0, 6,
-                5, 4, 10, 9,
-                8, 14, 13, 12,
-                -1, -1, -1, -1);
-
-            Vector128<sbyte> mask2F = Vector128.Create((sbyte)'/');
-            Vector128<sbyte> mergeConstant0 = Vector128.Create(0x01400140).AsSByte();
+            Vector128<byte>  lutHi = Vector128.Create(0x02011010, 0x08040804, 0x10101010, 0x10101010).AsByte();
+            Vector128<byte>  lutLo = Vector128.Create(0x11111115, 0x11111111, 0x1A131111, 0x1A1B1B1B).AsByte();
+            Vector128<sbyte> lutShift = Vector128.Create(0x04131000, 0xb9b9bfbf, 0x00000000, 0x00000000).AsSByte();
+            Vector128<sbyte> packBytesMask = Vector128.Create(0x06000102, 0x090A0405, 0x0C0D0E08, 0xffffffff).AsSByte();
+            Vector128<byte>  mergeConstant0 = Vector128.Create(0x01400140).AsByte();
             Vector128<short> mergeConstant1 = Vector128.Create(0x00011000).AsInt16();
-            Vector128<sbyte> zero = Vector128<sbyte>.Zero;
+            Vector128<byte>  one = Vector128.Create((byte)1);
+            Vector128<byte>  mask2F = Vector128.Create((byte)'/');
+            Vector128<byte>  mask8F = Vector128.Create((byte)0x8F);
 
             byte* src = srcBytes;
             byte* dest = destBytes;
@@ -588,24 +588,23 @@ namespace System.Buffers.Text
             do
             {
                 AssertRead<Vector128<sbyte>>(src, srcStart, sourceLength);
-                Vector128<sbyte> str = Sse2.LoadVector128(src).AsSByte();
+                Vector128<byte> str = Vector128.LoadUnsafe(ref *src);
 
                 // lookup
-                Vector128<sbyte> hiNibbles = Sse2.And(Sse2.ShiftRightLogical(str.AsInt32(), 4).AsSByte(), mask2F);
-                Vector128<sbyte> loNibbles = Sse2.And(str, mask2F);
-                Vector128<sbyte> hi = Ssse3.Shuffle(lutHi, hiNibbles);
-                Vector128<sbyte> lo = Ssse3.Shuffle(lutLo, loNibbles);
+                Vector128<byte> hiNibbles = Vector128.ShiftRightLogical(str.AsInt32(), 4).AsByte() & mask2F;
+                Vector128<byte> hi = SimdShuffle(lutHi, hiNibbles, mask8F);
+                Vector128<byte> lo = SimdShuffle(lutLo, str, mask8F);
 
                 // Check for invalid input: if any "and" values from lo and hi are not zero,
                 // fall back on bytewise code to do error checking and reporting:
-                if (Sse2.MoveMask(Sse2.CompareGreaterThan(Sse2.And(lo, hi), zero)) != 0)
+                if ((lo & hi) != Vector128<byte>.Zero)
                     break;
 
-                Vector128<sbyte> eq2F = Sse2.CompareEqual(str, mask2F);
-                Vector128<sbyte> shift = Ssse3.Shuffle(lutShift, Sse2.Add(eq2F, hiNibbles));
+                Vector128<byte> eq2F = Vector128.Equals(str, mask2F);
+                Vector128<byte> shift = SimdShuffle(lutShift.AsByte(), (eq2F + hiNibbles), mask8F);
 
                 // Now simply add the delta values to the input:
-                str = Sse2.Add(str, shift);
+                str += shift;
 
                 // in, bits, upper case are most significant bits, lower case are least significant bits
                 // 00llllll 00kkkkLL 00jjKKKK 00JJJJJJ
@@ -613,27 +612,47 @@ namespace System.Buffers.Text
                 // 00ffffff 00eeeeFF 00ddEEEE 00DDDDDD
                 // 00cccccc 00bbbbCC 00aaBBBB 00AAAAAA
 
-                Vector128<short> merge_ab_and_bc = Ssse3.MultiplyAddAdjacent(str.AsByte(), mergeConstant0);
+                Vector128<short> merge_ab_and_bc;
+                if (Ssse3.IsSupported)
+                {
+                    merge_ab_and_bc = Ssse3.MultiplyAddAdjacent(str.AsByte(), mergeConstant0.AsSByte());
+                }
+                else
+                {
+                    Vector128<ushort> evens = AdvSimd.ShiftLeftLogicalWideningLower(AdvSimd.Arm64.UnzipEven(str, one).GetLower(), 6);
+                    Vector128<ushort> odds = AdvSimd.Arm64.TransposeOdd(str, Vector128<byte>.Zero).AsUInt16();
+                    merge_ab_and_bc = Vector128.Add(evens, odds).AsInt16();
+                }
                 // 0000kkkk LLllllll 0000JJJJ JJjjKKKK
                 // 0000hhhh IIiiiiii 0000GGGG GGggHHHH
                 // 0000eeee FFffffff 0000DDDD DDddEEEE
                 // 0000bbbb CCcccccc 0000AAAA AAaaBBBB
 
-                Vector128<int> output = Sse2.MultiplyAddAdjacent(merge_ab_and_bc, mergeConstant1);
+                Vector128<int> output;
+                if (Ssse3.IsSupported)
+                {
+                    output = Sse2.MultiplyAddAdjacent(merge_ab_and_bc, mergeConstant1);
+                }
+                else
+                {
+                    Vector128<int> ievens = AdvSimd.ShiftLeftLogicalWideningLower(AdvSimd.Arm64.UnzipEven(merge_ab_and_bc, one.AsInt16()).GetLower(), 12);
+                    Vector128<int> iodds = AdvSimd.Arm64.TransposeOdd(merge_ab_and_bc, Vector128<short>.Zero).AsInt32();
+                    output = Vector128.Add(ievens, iodds).AsInt32();
+                }
                 // 00000000 JJJJJJjj KKKKkkkk LLllllll
                 // 00000000 GGGGGGgg HHHHhhhh IIiiiiii
                 // 00000000 DDDDDDdd EEEEeeee FFffffff
                 // 00000000 AAAAAAaa BBBBbbbb CCcccccc
 
                 // Pack bytes together:
-                str = Ssse3.Shuffle(output.AsSByte(), packBytesMask);
+                str = SimdShuffle(output.AsByte(), packBytesMask.AsByte(), mask8F);
                 // 00000000 00000000 00000000 00000000
                 // LLllllll KKKKkkkk JJJJJJjj IIiiiiii
                 // HHHHhhhh GGGGGGgg FFffffff EEEEeeee
                 // DDDDDDdd CCcccccc BBBBbbbb AAAAAAaa
 
                 AssertWrite<Vector128<sbyte>>(dest, destStart, destLength);
-                Sse2.Store(dest, str.AsByte());
+                str.Store(dest);
 
                 src += 16;
                 dest += 12;

@@ -50,7 +50,7 @@ namespace System.ComponentModel.Design
         /// Our collection of services. The service collection is demand
         /// created here.
         /// </summary>
-        private ServiceCollection<object?> Services => _services ?? (_services = new ServiceCollection<object?>());
+        private ServiceCollection<object?> Services => _services ??= new ServiceCollection<object?>();
 
         /// <summary>
         /// Adds the given service to the service container.

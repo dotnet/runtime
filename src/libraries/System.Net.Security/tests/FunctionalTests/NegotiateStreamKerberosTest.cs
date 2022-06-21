@@ -157,7 +157,7 @@ namespace System.Net.Security.Tests
                     Assert.True(auth.IsSigned);
 
                     // Send a message to the server. Encode the test data into a byte array.
-                    byte[] message = Encoding.UTF8.GetBytes("Hello from the client.");
+                    byte[] message = "Hello from the client."u8.ToArray();
                     await auth.WriteAsync(message, 0, message.Length);
                 }
             }

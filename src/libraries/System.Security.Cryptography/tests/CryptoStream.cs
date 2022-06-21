@@ -304,7 +304,7 @@ namespace System.Security.Cryptography.Tests
                 var memoryStream = new MemoryStream();
                 using (var cryptoStream = new CryptoStream(memoryStream, aes.CreateEncryptor(), CryptoStreamMode.Write, leaveOpen: true))
                 {
-                    cryptoStream.Write(Encoding.ASCII.GetBytes("Sample string that's bigger than cryptoAlg.BlockSize"));
+                    cryptoStream.Write("Sample string that's bigger than cryptoAlg.BlockSize"u8);
                     cryptoStream.FlushFinalBlock();
                 }
 

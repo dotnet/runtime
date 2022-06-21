@@ -54,14 +54,11 @@ LoadLibraryExWrapper(
 
     EX_TRY
     {
-
         LongPathString path(LongPathString::Literal, lpLibFileName);
 
         if (LongFile::IsPathNotFullyQualified(path) || SUCCEEDED(LongFile::NormalizePath(path)))
         {
 #ifdef HOST_WINDOWS
-            //Adding the assert to ensure relative paths which are not just filenames are not used for LoadLibrary Calls
-            _ASSERTE(!LongFile::IsPathNotFullyQualified(path) || !LongFile::ContainsDirectorySeparator(path));
             LongFile::NormalizeDirectorySeparators(path);
 #endif //HOST_WINDOWS
 

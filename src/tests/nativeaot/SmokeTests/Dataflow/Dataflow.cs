@@ -108,8 +108,8 @@ class Program
             Assert.NotNull(typeof(TestType1).GetMethod(nameof(TestType1.TestMethod)));
             Assert.Equal(1, typeof(TestType1).CountMethods());
 
-            //Assert.NotNull(typeof(TestType1).GetField(nameof(TestType1.TestField)));
-            //Assert.Equal(1, typeof(TestType1).CountFields());
+            Assert.NotNull(typeof(TestType1).GetField(nameof(TestType1.TestField)));
+            Assert.Equal(1, typeof(TestType1).CountFields());
 
             Assert.NotNull(typeof(TestType2).GetProperty(nameof(TestType2.TestProperty)));
             Assert.NotNull(typeof(TestType2).GetProperty(nameof(TestType2.TestProperty)).GetGetMethod());
@@ -389,7 +389,10 @@ class Program
             Assert.Equal(1, typeof(TypeWithSpecificMethodKept).CountMethods());
             Assert.Equal(1, typeof(TypeWithSpecificOverloadKept).CountMethods());
             Assert.Equal(2, typeof(TypeWithAllOverloadsKept).CountMethods());
-            Assert.Equal(2, typeof(TestDynamicDependency).CountMethods());
+
+            // We only expect DependentMethod. We specifically don't expect to see the Run method (current method).
+            Assert.Equal(1, typeof(TestDynamicDependency).CountMethods());
+
             Assert.Equal(1, typeof(TypeWithPublicPropertiesKept).CountProperties());
         }
     }

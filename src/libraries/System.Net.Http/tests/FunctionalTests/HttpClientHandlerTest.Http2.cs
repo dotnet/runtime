@@ -2096,7 +2096,7 @@ namespace System.Net.Http.Functional.Tests
                 }
                 catch (System.OperationCanceledException) { };
                 Assert.Null(frame);    // Make sure we do not get any frames after getting Rst.
-                await connection.SendResponseBodyAsync(streamId, Encoding.ASCII.GetBytes("final"), isFinal: true);
+                await connection.SendResponseBodyAsync(streamId, "final"u8.ToArray(), isFinal: true);
                 await connection.WaitForConnectionShutdownAsync();
             });
         }
@@ -2265,7 +2265,7 @@ namespace System.Net.Http.Functional.Tests
                 }
                 await connection.ReadBodyAsync();
                 await connection.SendResponseHeadersAsync(streamId, endStream: false, HttpStatusCode.OK);
-                await connection.SendResponseBodyAsync(streamId, Encoding.ASCII.GetBytes("OK"));
+                await connection.SendResponseBodyAsync(streamId, "OK"u8.ToArray());
                 await connection.ShutdownIgnoringErrorsAsync(streamId);
             });
         }
@@ -2406,7 +2406,7 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PostAsyncDuplex_ClientSendsEndStream_Success()
         {
-            byte[] contentBytes = Encoding.UTF8.GetBytes("Hello world");
+            byte[] contentBytes = "Hello world"u8.ToArray();
 
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             {
@@ -2467,7 +2467,7 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PostAsyncDuplex_ServerSendsEndStream_Success()
         {
-            byte[] contentBytes = Encoding.UTF8.GetBytes("Hello world");
+            byte[] contentBytes = "Hello world"u8.ToArray();
 
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             {
@@ -2528,7 +2528,7 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PostAsyncDuplex_RequestContentException_ResetsStream()
         {
-            byte[] contentBytes = Encoding.UTF8.GetBytes("Hello world");
+            byte[] contentBytes = "Hello world"u8.ToArray();
 
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             {
@@ -2586,7 +2586,7 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PostAsyncDuplex_RequestContentExceptionAfterResponseEndReceivedButBeforeConsumed_ResetsStreamAndThrowsOnResponseStreamRead()
         {
-            byte[] contentBytes = Encoding.UTF8.GetBytes("Hello world");
+            byte[] contentBytes = "Hello world"u8.ToArray();
 
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             {
@@ -2651,7 +2651,7 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PostAsyncDuplex_CancelledBeforeResponseHeadersReceived_ResetsStream()
         {
-            byte[] contentBytes = Encoding.UTF8.GetBytes("Hello world");
+            byte[] contentBytes = "Hello world"u8.ToArray();
 
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             {
@@ -2708,7 +2708,7 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PostAsyncDuplex_ServerResetsStream_Throws()
         {
-            byte[] contentBytes = Encoding.UTF8.GetBytes("Hello world");
+            byte[] contentBytes = "Hello world"u8.ToArray();
 
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             {
@@ -2770,7 +2770,7 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PostAsyncDuplex_DisposeResponseBodyBeforeEnd_ResetsStreamAndThrowsOnRequestStreamWriteAndResponseStreamRead()
         {
-            byte[] contentBytes = Encoding.UTF8.GetBytes("Hello world");
+            byte[] contentBytes = "Hello world"u8.ToArray();
 
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             {
@@ -2838,7 +2838,7 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PostAsyncDuplex_DisposeResponseBodyAfterEndReceivedButBeforeConsumed_ResetsStreamAndThrowsOnRequestStreamWriteAndResponseStreamRead()
         {
-            byte[] contentBytes = Encoding.UTF8.GetBytes("Hello world");
+            byte[] contentBytes = "Hello world"u8.ToArray();
 
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             {
@@ -2912,7 +2912,7 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PostAsyncDuplex_FinishRequestBodyAndDisposeResponseBodyAfterEndReceivedButBeforeConsumed_DoesNotResetStream()
         {
-            byte[] contentBytes = Encoding.UTF8.GetBytes("Hello world");
+            byte[] contentBytes = "Hello world"u8.ToArray();
 
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             {
@@ -2983,7 +2983,7 @@ namespace System.Net.Http.Functional.Tests
             // We should stop sending the request body, but treat the request as successful and
             // return the completed response body to the user.
 
-            byte[] contentBytes = Encoding.UTF8.GetBytes("Hello world");
+            byte[] contentBytes = "Hello world"u8.ToArray();
 
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             {
@@ -3053,7 +3053,7 @@ namespace System.Net.Http.Functional.Tests
             // We should stop sending the request body, but treat the request as successful and
             // return the completed response body to the user.
 
-            byte[] contentBytes = Encoding.UTF8.GetBytes("Hello world");
+            byte[] contentBytes = "Hello world"u8.ToArray();
 
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             {
@@ -3316,7 +3316,7 @@ namespace System.Net.Http.Functional.Tests
                         await sslStream.AuthenticateAsServerAsync(options, CancellationToken.None).ConfigureAwait(false);
 
                         // Send back HTTP/1.1 response
-                        await sslStream.WriteAsync(Encoding.ASCII.GetBytes("HTTP/1.1 400 Unrecognized request\r\n\r\n"), CancellationToken.None);
+                        await sslStream.WriteAsync("HTTP/1.1 400 Unrecognized request\r\n\r\n"u8.ToArray(), CancellationToken.None);
                     });
 
                     Exception e = await Assert.ThrowsAsync<HttpRequestException>(() => requestTask);
@@ -3375,7 +3375,7 @@ namespace System.Net.Http.Functional.Tests
                 Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
                 int streamId = await connection.ReadRequestHeaderAsync();
                 await connection.SendDefaultResponseHeadersAsync(streamId);
-                await connection.SendResponseDataAsync(streamId, Encoding.ASCII.GetBytes("hello"), endStream: false);
+                await connection.SendResponseDataAsync(streamId, "hello"u8.ToArray(), endStream: false);
                 await connection.SendResponseHeadersAsync(streamId, endStream : true, isTrailingHeader : true, headers: headers);
 
                 await Assert.ThrowsAsync<HttpRequestException>(() => sendTask);

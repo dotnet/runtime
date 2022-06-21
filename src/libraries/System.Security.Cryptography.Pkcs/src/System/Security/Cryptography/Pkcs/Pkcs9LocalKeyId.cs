@@ -31,7 +31,7 @@ namespace System.Security.Cryptography.Pkcs
         }
 
         public ReadOnlyMemory<byte> KeyId =>
-            _lazyKeyId ?? (_lazyKeyId = Decode(RawData));
+            _lazyKeyId ??= Decode(RawData);
 
         public override void CopyFrom(AsnEncodedData asnEncodedData)
         {

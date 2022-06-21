@@ -998,9 +998,6 @@ namespace System
         /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
         public static Half operator +(Half left, Half right) => (Half)((float)left + (float)right);
 
-        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
-        static Half IAdditionOperators<Half, Half, Half>.operator checked +(Half left, Half right) => left + right;
-
         //
         // IAdditiveIdentity
         //
@@ -1072,18 +1069,12 @@ namespace System
             return (Half)tmp;
         }
 
-        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_CheckedDecrement(TSelf)" />
-        static Half IDecrementOperators<Half>.operator checked --(Half value) => --value;
-
         //
         // IDivisionOperators
         //
 
         /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
         public static Half operator /(Half left, Half right) => (Half)((float)left / (float)right);
-
-        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        static Half IDivisionOperators<Half, Half, Half>.operator checked /(Half left, Half right) => left / right;
 
         //
         // IExponentialFunctions
@@ -1317,9 +1308,6 @@ namespace System
             return (Half)tmp;
         }
 
-        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
-        static Half IIncrementOperators<Half>.operator checked ++(Half value) => ++value;
-
         //
         // ILogarithmicFunctions
         //
@@ -1363,9 +1351,6 @@ namespace System
         /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_Multiply(TSelf, TOther)" />
         public static Half operator *(Half left, Half right) => (Half)((float)left * (float)right);
 
-        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
-        static Half IMultiplyOperators<Half, Half, Half>.operator checked *(Half left, Half right) => left * right;
-
         //
         // INumber
         //
@@ -1374,7 +1359,7 @@ namespace System
         public static Half Clamp(Half value, Half min, Half max) => (Half)Math.Clamp((float)value, (float)min, (float)max);
 
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
-        public static Half CopySign(Half x, Half y) => (Half)MathF.CopySign((float)x, (float)y);
+        public static Half CopySign(Half value, Half sign) => (Half)MathF.CopySign((float)value, (float)sign);
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static Half Max(Half x, Half y) => (Half)MathF.Max((float)x, (float)y);
@@ -1803,14 +1788,14 @@ namespace System
         /// <inheritdoc cref="IRootFunctions{TSelf}.Cbrt(TSelf)" />
         public static Half Cbrt(Half x) => (Half)MathF.Cbrt((float)x);
 
-        // /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
-        // public static Half Hypot(Half x, Half y) => (Half)MathF.Hypot((float)x, (float)y);
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
+        public static Half Hypot(Half x, Half y) => (Half)float.Hypot((float)x, (float)y);
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Root(TSelf, int)" />
+        public static Half Root(Half x, int n) => (Half)float.Root((float)x, n);
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
         public static Half Sqrt(Half x) => (Half)MathF.Sqrt((float)x);
-
-        // /// <inheritdoc cref="IRootFunctions{TSelf}.Root(TSelf, TSelf)" />
-        // public static Half Root(Half x, Half n) => (Half)MathF.Root((float)x, (float)n);
 
         //
         // ISignedNumber
@@ -1835,9 +1820,6 @@ namespace System
 
         /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_Subtraction(TSelf, TOther)" />
         public static Half operator -(Half left, Half right) => (Half)((float)left - (float)right);
-
-        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
-        static Half ISubtractionOperators<Half, Half, Half>.operator checked -(Half left, Half right) => left - right;
 
         //
         // ITrigonometricFunctions
@@ -1898,9 +1880,6 @@ namespace System
 
         /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_UnaryNegation(TSelf)" />
         public static Half operator -(Half value) => (Half)(-(float)value);
-
-        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
-        static Half IUnaryNegationOperators<Half, Half>.operator checked -(Half value) => -value;
 
         //
         // IUnaryPlusOperators

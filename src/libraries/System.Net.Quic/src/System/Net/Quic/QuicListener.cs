@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net.Quic.Implementations;
+using System.Net.Quic.Implementations.MsQuic;
+using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Security;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,37 +12,23 @@ namespace System.Net.Quic
 {
     public sealed class QuicListener : IDisposable
     {
-        private readonly QuicListenerProvider _provider;
+        public static bool IsSupported => MsQuicApi.IsQuicSupported;
 
-        /// <summary>
-        /// Create a QUIC listener.
-        /// </summary>
-        /// <param name="listenEndPoint">The local endpoint to listen on.</param>
-        /// <param name="sslServerAuthenticationOptions">TLS options for the listener.</param>
-        public QuicListener(IPEndPoint listenEndPoint, SslServerAuthenticationOptions sslServerAuthenticationOptions)
-            : this(QuicImplementationProviders.Default, listenEndPoint, sslServerAuthenticationOptions)
+        public static ValueTask<QuicListener> ListenAsync(QuicListenerOptions options, CancellationToken cancellationToken = default)
         {
+            if (!IsSupported)
+            {
+                throw new PlatformNotSupportedException(SR.SystemNetQuic_PlatformNotSupported);
+            }
+
+            return ValueTask.FromResult(new QuicListener(new MsQuicListener(options)));
         }
 
-        /// <summary>
-        /// Create a QUIC listener.
-        /// </summary>
-        /// <param name="options">The listener options.</param>
-        public QuicListener(QuicListenerOptions options)
-            : this(QuicImplementationProviders.Default, options)
-        {
-        }
+        private readonly MsQuicListener _provider;
 
-        // !!! TEMPORARY: Remove or make internal before shipping
-        public QuicListener(QuicImplementationProvider implementationProvider, IPEndPoint listenEndPoint, SslServerAuthenticationOptions sslServerAuthenticationOptions)
-            : this(implementationProvider, new QuicListenerOptions() { ListenEndPoint = listenEndPoint, ServerAuthenticationOptions = sslServerAuthenticationOptions })
+        internal QuicListener(MsQuicListener provider)
         {
-        }
-
-        // !!! TEMPORARY: Remove or make internal before shipping
-        public QuicListener(QuicImplementationProvider implementationProvider, QuicListenerOptions options)
-        {
-            _provider = implementationProvider.CreateListener(options);
+            _provider = provider;
         }
 
         public IPEndPoint ListenEndPoint => _provider.ListenEndPoint;

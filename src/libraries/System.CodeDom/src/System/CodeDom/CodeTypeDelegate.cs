@@ -24,7 +24,7 @@ namespace System.CodeDom
 
         public CodeTypeReference ReturnType
         {
-            get => _returnType ?? (_returnType = new CodeTypeReference(""));
+            get => _returnType ??= new CodeTypeReference("");
             set => _returnType = value;
         }
 

@@ -108,7 +108,7 @@ namespace System.Xml.XmlResolver.Tests
         [Fact]
         public void XmlResolverGetEntityAsyncWithValidUserSuppliedData()
         {
-            byte[] inpData = Encoding.ASCII.GetBytes("hello world");
+            byte[] inpData = "hello world"u8.ToArray();
             var xmlResolver = new XmlPreloadedResolver(XmlKnownDtds.Xhtml10);
             xmlResolver.Add(new Uri("-//W3C//DTD FAKE 1.0 Not Real//EN", UriKind.RelativeOrAbsolute), inpData);
             Task<object> output = xmlResolver.GetEntityAsync(new Uri("-//W3C//DTD FAKE 1.0 Not Real//EN",

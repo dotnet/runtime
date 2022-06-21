@@ -44,7 +44,7 @@ namespace System.Runtime.Serialization
         }
 
         internal ObjectHolderList SpecialFixupObjects =>
-            _specialFixupObjects ?? (_specialFixupObjects = new ObjectHolderList());
+            _specialFixupObjects ??= new ObjectHolderList();
 
         internal ObjectHolder? FindObjectHolder(long objectID)
         {
