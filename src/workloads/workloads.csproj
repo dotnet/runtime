@@ -8,8 +8,7 @@
     <MicrosoftDotNetBuildTasksInstallersTaskAssembly>$(NuGetPackageRoot)microsoft.dotnet.build.tasks.installers\$(MicrosoftDotNetBuildTasksInstallersVersion)\tools\$(MicrosoftDotNetBuildTasksInstallersTaskTargetFramework)\Microsoft.DotNet.Build.Tasks.Installers.dll</MicrosoftDotNetBuildTasksInstallersTaskAssembly>
   </PropertyGroup>
 
-  <UsingTask AssemblyFile="$(PkgMicrosoft_DotNet_Build_Tasks_Workloads)\tools\net472\Microsoft.DotNet.Build.Tasks.Workloads.dll" TaskName="GenerateManifestMsi" />
-  <UsingTask AssemblyFile="$(PkgMicrosoft_DotNet_Build_Tasks_Workloads)\tools\net472\Microsoft.DotNet.Build.Tasks.Workloads.dll" TaskName="GenerateVisualStudioWorkload" />
+  <UsingTask AssemblyFile="$(PkgMicrosoft_DotNet_Build_Tasks_Workloads)\tools\net472\Microsoft.DotNet.Build.Tasks.Workloads.dll" TaskName="CreateVisualStudioWorkload" />
   <UsingTask TaskName="GenerateMsiVersion" AssemblyFile="$(MicrosoftDotNetBuildTasksInstallersTaskAssembly)" />
   <UsingTask TaskName="CreateLightCommandPackageDrop" AssemblyFile="$(MicrosoftDotNetBuildTasksInstallersTaskAssembly)" />
 
@@ -48,6 +47,12 @@
 
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
 
+  <ItemDefinitionGroup>
+    <!-- Visual Studio components must be versioned. Build tasks will fall back to cobbling a version number from
+         the manifest information unless it's overridden. -->
+    <ComponentResources Version="$(FileVersion)" />
+  </ItemDefinitionGroup>
+
   <Target Name="Build" DependsOnTargets="GetAssemblyVersion;_GetVersionProps;_GenerateMsiVersionString">
     <ItemGroup>
       <!-- Overrides for Visual Studio setup generation. If the workload definition IDs change,
@@ -74,20 +79,6 @@
                           Description=".NET runtime components for Mac Catalyst execution."/>
       <ComponentResources Include="runtimes-windows" Title=".NET Windows Runtimes"
                           Description=".NET runtime components for Windows execution."/>
-
-      <!-- Visual Studio components must be versioned. Build tasks will fall back to cobbling a version number from
-           the manifest information unless it's overridden. -->
-      <ComponentVersions Include="microsoft-net-runtime-mono-tooling" Version="$(FileVersion)" />
-      <ComponentVersions Include="wasm-tools" Version="$(FileVersion)" />
-      <ComponentVersions Include="microsoft-net-runtime-android" Version="$(FileVersion)" />
-      <ComponentVersions Include="microsoft-net-runtime-android-aot" Version="$(FileVersion)" />
-      <ComponentVersions Include="microsoft-net-runtime-ios" Version="$(FileVersion)" />
-      <ComponentVersions Include="microsoft-net-runtime-tvos" Version="$(FileVersion)" />
-      <ComponentVersions Include="microsoft-net-runtime-maccatalyst" Version="$(FileVersion)" />
-      <ComponentVersions Include="runtimes-ios" Version="$(FileVersion)" />
-      <ComponentVersions Include="runtimes-tvos" Version="$(FileVersion)" />
-      <ComponentVersions Include="runtimes-maccatalyst" Version="$(FileVersion)" />
-      <ComponentVersions Include="runtimes-windows" Version="$(FileVersion)" />
     </ItemGroup>
 
     <!-- BAR requires having version information in blobs -->
@@ -106,49 +97,28 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ManifestPackages Include="$(PackageSource)Microsoft.NET.Workload.Mono.ToolChain.Manifest-*.nupkg" />
+      <ManifestPackages Include="$(PackageSource)Microsoft.NET.Workload.Mono.ToolChain.Manifest-*.nupkg" MsiVersion="$(MsiVersion)"/>
     </ItemGroup>
 
-    <GenerateManifestMsi
-        IntermediateBaseOutputPath="$(IntermediateOutputPath)"
-        OutputPath="$(OutputPath)"
-        MsiVersion="$(MsiVersion)"
-        WixToolsetPath="$(WixToolsetPath)"
-        WorkloadManifestPackage="%(ManifestPackages.Identity)"
-        ShortNames="@(ShortNames)" >
-      <Output TaskParameter="Msis" ItemName="ManifestMsis" />
-    </GenerateManifestMsi>
-
-    <GenerateVisualStudioWorkload IntermediateBaseOutputPath="$(WorkloadIntermediateOutputPath)"
-                                  WixToolsetPath="$(WixToolsetPath)"
-                                  GenerateMsis="true"
-                                  ComponentVersions="@(ComponentVersions)"
-                                  OutputPath="$(WorkloadOutputPath)"
-                                  PackagesPath="$(PackageSource)"
-                                  ShortNames="@(ShortNames)"
-                                  WorkloadPackages="@(ManifestPackages)">
+    <CreateVisualStudioWorkload BaseIntermediateOutputPath="$(WorkloadIntermediateOutputPath)"
+                                BaseOutputPath="$(WorkloadOutputPath)"
+                                ComponentResources="$(ComponentResources)"
+                                PackageSource="$(PackageSource)"
+                                ShortNames="@(ShortNames)"
+                                WorkloadManifestPackageFiles="@(ManifestPackages)"
+                                WixToolsetPath="$(WixToolsetPath)">
       <Output TaskParameter="SwixProjects" ItemName="SwixProjects" />
       <Output TaskParameter="Msis" ItemName="Msis" />
-    </GenerateVisualStudioWorkload>
+    </CreateVisualStudioWorkload>
 
     <!-- Build all the SWIX projects. This requires full framework MSBuild-->
-    <MSBuild Projects="%(ManifestMsis.SwixProject)" Properties="SwixBuildTargets=$(SwixBuildTargets);ManifestOutputPath=$(VersionedVisualStudioSetupInsertionPath)" />
-    <MSBuild Projects="@(SwixProjects)" Properties="SwixBuildTargets=$(SwixBuildTargets);ManifestOutputPath=$(VersionedVisualStudioSetupInsertionPath)" />
+    <MSBuild Projects="@(SwixProjects)" Properties="SwixBuildTargets=$(SwixBuildTargets);ManifestOutputPath=$(VersionedVisualStudioSetupInsertionPath)%(SwixProjects.SdkFeatureBand)" />
 
     <!-- Gather .wixobj files for post-build signing. We'll have to batch since we generated multiple MSIs in the previous step. -->
-    <MSBuild Projects="$(MSBuildProjectFile)" Properties="_WixObjDir=%(ManifestMsis.WixObj);_Msi=%(ManifestMsis.Identity)" Targets="CreateWixPack" />
     <MSBuild Projects="$(MSBuildProjectFile)" Properties="_WixObjDir=%(Msis.WixObj);_Msi=%(Msis.Identity)" Targets="CreateWixPack" />
-
-    <!-- Build the Visual Studio manifest project. -->
-    <ItemGroup>
-      <VisualStudioManifestProjects Include="mono_wasm_mobile.vsmanproj" />
-    </ItemGroup>
-
-    <MSBuild Projects="@(VisualStudioManifestProjects)" Properties="SwixBuildTargets=$(SwixBuildTargets);ManifestOutputPath=$(VersionedVisualStudioSetupInsertionPath);OutputPath=$(VersionedVisualStudioSetupInsertionPath)" />
 
     <!-- Build all the MSI payload packages for NuGet. -->
     <ItemGroup>
-      <MsiPackageProjects Include="%(ManifestMsis.PackageProject)" />
       <MsiPackageProjects Include="%(Msis.PackageProject)" />
     </ItemGroup>
 
