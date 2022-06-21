@@ -274,7 +274,7 @@ namespace System.Configuration
                 {
                     try
                     {
-                        if (Uri.TryCreate(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, assembly.ManifestModule.Name), UriKind.RelativeOrAbsolute, out Uri codeBase))
+                        if (Uri.TryCreate(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, assembly.ManifestModule.Name), UriKind.Absolute, out Uri codeBase))
                         {
                             // Certain platforms may not have support for crypto
                             hash = IdentityHelper.GetNormalizedUriHash(codeBase);
