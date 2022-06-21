@@ -320,17 +320,9 @@ namespace System
             ref byte pos = ref MemoryMarshal.GetReference(value);
             ref byte end = ref Unsafe.Add(ref pos, value.Length);
 
-            if ((nint)Unsafe.ByteOffset(ref pos, ref end) < sizeof(int) * 4)
+            if (Unsafe.ByteOffset(ref pos, ref end) < (sizeof(int) * 4))
             {
                 goto Small;
-            }
-
-            // If we have more than 16 bytes to hash, we can add them in 16-byte batches,
-            // but we first have to add enough data to flush any queued values.
-            while (_length % 4 != 0 && (nint)Unsafe.ByteOffset(ref pos, ref end) >= sizeof(int))
-            {
-                Add(Unsafe.ReadUnaligned<int>(ref pos));
-                pos = ref Unsafe.Add(ref pos, sizeof(int));
             }
 
             // Usually Add calls Initialize but if we haven't used HashCode before it won't have been called.
@@ -338,16 +330,43 @@ namespace System
             {
                 Initialize(out _v1, out _v2, out _v3, out _v4);
             }
+            else
+            {
+                // If we have more than 16 bytes to hash, we can add them in 16-byte batches,
+                // but we first have to add enough data to flush any queued values.
+                switch (_length % 4)
+                {
+                    case 1:
+                        Add(Unsafe.ReadUnaligned<int>(ref pos));
+                        pos = ref Unsafe.Add(ref pos, sizeof(int));
+                        goto case 2;
+                    case 2:
+                        Add(Unsafe.ReadUnaligned<int>(ref pos));
+                        pos = ref Unsafe.Add(ref pos, sizeof(int));
+                        goto case 3;
+                    case 3:
+                        Add(Unsafe.ReadUnaligned<int>(ref pos));
+                        pos = ref Unsafe.Add(ref pos, sizeof(int));
+                        break;
+                }
+            }
 
             // With the queue clear, we add sixteen bytes at a time until the input has fewer than sixteen bytes remaining.
-            while ((nint)Unsafe.ByteOffset(ref pos, ref end) >= sizeof(int) * 4)
+            // We first have to round the end pointer to the nearest 16-byte block from the offset. This makes the loop's condition simpler.
+            ref byte blockEnd = ref Unsafe.Subtract(ref end, Unsafe.ByteOffset(ref pos, ref end) % (sizeof(int) * 4));
+            Debug.Assert(Unsafe.ByteOffset(ref pos, ref blockEnd) >= (sizeof(int) * 4));
+            while (Unsafe.IsAddressLessThan(ref pos, ref blockEnd))
             {
                 uint v1 = Unsafe.ReadUnaligned<uint>(ref pos);
+                _v1 = Round(_v1, v1);
                 uint v2 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref pos, sizeof(int) * 1));
+                _v2 = Round(_v2, v2);
                 uint v3 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref pos, sizeof(int) * 2));
+                _v3 = Round(_v3, v3);
                 uint v4 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref pos, sizeof(int) * 3));
+                _v4 = Round(_v4, v4);
 
-                UnsafeAddMany(v1, v2, v3, v4);
+                _length += 4;
                 pos = ref Unsafe.Add(ref pos, sizeof(int) * 4);
             }
 
@@ -415,19 +434,6 @@ namespace System
                 _v3 = Round(_v3, _queue3);
                 _v4 = Round(_v4, val);
             }
-        }
-
-        private void UnsafeAddMany(uint v1, uint v2, uint v3, uint v4)
-        {
-            // We update all four state values at once, but the queue must be empty.
-            // Also the caller must ensure the state is initialized; we can't check that.
-            Debug.Assert(_length % 4 == 0);
-
-            _length += 4;
-            _v1 = Round(_v1, v1);
-            _v2 = Round(_v2, v2);
-            _v3 = Round(_v3, v3);
-            _v4 = Round(_v4, v4);
         }
 
         public int ToHashCode()
