@@ -282,7 +282,7 @@ namespace System.Text.Json
             }
         }
 
-        private bool TryAddValue(string propertyName, T? value)
+        internal bool TryAddValue(string propertyName, T? value)
         {
             if (IsReadOnly)
             {
@@ -319,7 +319,7 @@ namespace System.Text.Json
             }
         }
 
-        private bool ContainsValue(T? value)
+        internal bool ContainsValue(T? value)
         {
             foreach (T? item in GetValueCollection())
             {

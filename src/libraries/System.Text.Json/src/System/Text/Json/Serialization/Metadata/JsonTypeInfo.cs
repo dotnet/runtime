@@ -21,7 +21,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal delegate T ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>(TArg0 arg0, TArg1 arg1, TArg2 arg2, TArg3 arg3);
 
-        private JsonPropertyDictionary<JsonPropertyInfo>.ValueList? _properties;
+        private JsonPropertyInfoDictionaryValueList? _properties;
 
         /// <summary>
         /// Object constructor. If set to null type is not deserializable.
@@ -60,15 +60,8 @@ namespace System.Text.Json.Serialization.Metadata
 
                 PropertyCache ??= CreatePropertyCache(capacity: 0);
 
-                if (_isConfigured || Kind != JsonTypeInfoKind.Object)
-                {
-                    // We do not pass getKey to ensure list is read-only
-                    _properties = PropertyCache.CreateValueList(getKey: null);
-                }
-                else
-                {
-                    _properties = PropertyCache.CreateValueList(getKey: (prop) => prop.Name);
-                }
+                bool isReadOnly = _isConfigured || Kind != JsonTypeInfoKind.Object;
+                _properties = new JsonPropertyInfoDictionaryValueList(PropertyCache, this, isReadOnly);
 
                 return _properties;
             }
@@ -308,7 +301,8 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(Monitor.IsEntered(_configureLock), "Configure called directly, use EnsureConfigured which locks this method");
 
-            PropertyInfoForTypeInfo.EnsureConfigured(this);
+            PropertyInfoForTypeInfo.EnsureChildOf(this);
+            PropertyInfoForTypeInfo.EnsureConfigured();
 
             JsonConverter converter = Converter;
             Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == Converter.ConverterStrategy,
@@ -336,7 +330,11 @@ namespace System.Text.Json.Serialization.Metadata
                 LateAddProperties();
             }
 
-            DataExtensionProperty?.EnsureConfigured(this);
+            if (DataExtensionProperty != null)
+            {
+                DataExtensionProperty.EnsureChildOf(this);
+                DataExtensionProperty.EnsureConfigured();
+            }
 
             if (converter.ConverterStrategy == ConverterStrategy.Object)
             {
@@ -345,7 +343,9 @@ namespace System.Text.Json.Serialization.Metadata
                 foreach (var jsonPropertyInfoKv in PropertyCache.List)
                 {
                     JsonPropertyInfo jsonPropertyInfo = jsonPropertyInfoKv.Value!;
-                    jsonPropertyInfo.EnsureConfigured(this);
+
+                    jsonPropertyInfo.EnsureChildOf(this);
+                    jsonPropertyInfo.EnsureConfigured();
                 }
 
                 if (converter.ConstructorIsParameterized)

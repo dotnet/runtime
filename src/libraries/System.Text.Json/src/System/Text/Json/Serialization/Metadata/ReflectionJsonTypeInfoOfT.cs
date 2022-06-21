@@ -209,7 +209,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        private static JsonPropertyInfo? AddProperty(
+        private JsonPropertyInfo? AddProperty(
             MemberInfo memberInfo,
             Type memberType,
             Type parentClassType,

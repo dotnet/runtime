@@ -40,9 +40,34 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<InvalidOperationException>(() => resolver.Modifiers.Add(ti => { }));
         }
 
+        [Theory]
+        [MemberData(nameof(JsonSerializerSerializeWithTypeInfoOfT_TestData))]
+        public async Task JsonSerializerSerializeWithTypeInfoOfT<T>(T testObj, string expectedJson)
+        {
+            DefaultJsonTypeInfoResolver r = new();
+            JsonSerializerOptions o = new();
+            o.TypeInfoResolver = r;
+            JsonTypeInfo<T> typeInfo = (JsonTypeInfo<T>)r.GetTypeInfo(typeof(T), o);
+            string json = await Serializer.SerializeWrapper(testObj, typeInfo);
+            Assert.Equal(expectedJson, json);
+        }
+
+        public static IEnumerable<object[]> JsonSerializerSerializeWithTypeInfoOfT_TestData()
+        {
+            yield return new object[] { "value", @"""value""" };
+            yield return new object[] { 5, @"5" };
+            yield return new object[] { new SomeClass() { IntProp = 15, ObjProp = 17m }, @"{""ObjProp"":17,""IntProp"":15}" };
+        }
+
         private class Poco
         {
             public string StringProperty { get; set; }
+        }
+
+        private class SomeClass
+        {
+            public object ObjProp { get; set; }
+            public int IntProp { get; set; }
         }
     }
 }

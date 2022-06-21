@@ -51,7 +51,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal Func<JsonParameterInfoValues[]>? CtorParamInitFunc;
 
-        internal static JsonPropertyInfo CreateProperty(
+        internal JsonPropertyInfo CreateProperty(
             Type declaredPropertyType,
             MemberInfo? memberInfo,
             Type parentClassType,
@@ -64,7 +64,7 @@ namespace System.Text.Json.Serialization.Metadata
             bool isUserDefinedProperty = false)
         {
             // Create the JsonPropertyInfo instance.
-            JsonPropertyInfo jsonPropertyInfo = converter.CreateJsonPropertyInfo();
+            JsonPropertyInfo jsonPropertyInfo = converter.CreateJsonPropertyInfo(parentTypeInfo: this);
 
             jsonPropertyInfo.Initialize(
                 parentClassType,
@@ -87,7 +87,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// Create a <see cref="JsonPropertyInfo"/> for a given Type.
         /// See <seealso cref="PropertyInfoForTypeInfo"/>.
         /// </summary>
-        private static JsonPropertyInfo CreatePropertyInfoForTypeInfo(
+        private JsonPropertyInfo CreatePropertyInfoForTypeInfo(
             Type declaredPropertyType,
             JsonConverter converter,
             JsonSerializerOptions options,

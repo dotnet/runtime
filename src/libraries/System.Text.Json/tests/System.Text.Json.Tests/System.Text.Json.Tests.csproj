@@ -174,7 +174,6 @@
     <Compile Include="Serialization\MetadataTests\DefaultJsonTypeInfoResolverMultiContextTests.cs" />
     <Compile Include="Serialization\MetadataTests\JsonTypeInfoResolverTests.cs" />
     <Compile Include="Serialization\MetadataTests\DefaultJsonTypeInfoResolverTests.JsonPropertyInfo.cs" />
-    <Compile Include="Serialization\MetadataTests\DefaultJsonTypeInfoResolverTests.JsonTypeInfoApis.cs" />
     <Compile Include="Serialization\MetadataTests\DefaultJsonTypeInfoResolverTests.JsonTypeInfo.cs" />
     <Compile Include="Serialization\MetadataTests\DefaultJsonTypeInfoResolverTests.cs" />
     <Compile Include="Serialization\MetadataTests\MetadataTests.cs" />

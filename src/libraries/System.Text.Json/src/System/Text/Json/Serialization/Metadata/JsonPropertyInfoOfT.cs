@@ -30,6 +30,10 @@ namespace System.Text.Json.Serialization.Metadata
         private Func<object, T>? _typedGet;
         private Action<object, T>? _typedSet;
 
+        internal JsonPropertyInfo(JsonTypeInfo? parentTypeInfo) : base(parentTypeInfo)
+        {
+        }
+
         internal new Func<object, T>? Get
         {
             get => _typedGet;
@@ -253,9 +257,9 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        internal override void Configure(JsonTypeInfo typeInfo)
+        internal override void Configure()
         {
-            base.Configure(typeInfo);
+            base.Configure();
 
             if (!IsForTypeInfo && !IsIgnored)
             {

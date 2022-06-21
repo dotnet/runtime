@@ -48,7 +48,7 @@ namespace System.Text.Json.Serialization.Metadata
                 throw new InvalidOperationException(SR.Format(SR.FieldCannotBeVirtual, nameof(propertyInfo.IsProperty), nameof(propertyInfo.IsVirtual)));
             }
 
-            JsonPropertyInfo<T> jsonPropertyInfo = new JsonPropertyInfo<T>();
+            JsonPropertyInfo<T> jsonPropertyInfo = new JsonPropertyInfo<T>(parentTypeInfo: null);
             jsonPropertyInfo.InitializeForSourceGen(options, propertyInfo);
             return jsonPropertyInfo;
         }

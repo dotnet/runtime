@@ -191,6 +191,71 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void JsonPropertyInfoCustomConverterFactoryIsNotExpanded()
+        {
+            JsonSerializerOptions options = new();
+            DefaultJsonTypeInfoResolver r = new();
+            JsonConverter? expectedConverter = null;
+            r.Modifiers.Add(ti =>
+            {
+                if (ti.Type == typeof(TestClassWithCustomConverterFactoryOnProperty))
+                {
+                    JsonPropertyInfo propertyInfo = ti.Properties[0];
+                    Assert.NotNull(propertyInfo.CustomConverter);
+                    Assert.IsType<MyClassCustomConverterFactory>(propertyInfo.CustomConverter);
+                    expectedConverter = ((MyClassCustomConverterFactory)propertyInfo.CustomConverter).ConverterInstance;
+                }
+            });
+
+            options.TypeInfoResolver = r;
+
+            TestClassWithCustomConverterFactoryOnProperty obj = new()
+            {
+                MyClassProperty = new MyClass() { Value = "SomeValue" },
+            };
+
+            string json = JsonSerializer.Serialize(obj, options);
+            Assert.Equal("""{"MyClassProperty":"test_SomeValue"}""", json);
+            Assert.NotNull(expectedConverter);
+            Assert.IsType<MyClassCustomConverter>(expectedConverter);
+
+            TestClassWithCustomConverterFactoryOnProperty deserialized = JsonSerializer.Deserialize<TestClassWithCustomConverterFactoryOnProperty>(json, options);
+            Assert.Equal(obj.MyClassProperty.Value, deserialized.MyClassProperty.Value);
+        }
+
+        [Fact]
+        public static void JsonPropertyInfoCustomConverterFactoryIsNotExpandedWhenSetInResolver()
+        {
+            JsonSerializerOptions options = new();
+            DefaultJsonTypeInfoResolver r = new();
+            MyClassCustomConverterFactory converterFactory = new();
+            r.Modifiers.Add(ti =>
+            {
+                if (ti.Type == typeof(TestClassWithProperty))
+                {
+                    JsonPropertyInfo propertyInfo = ti.Properties[0];
+                    Assert.Null(propertyInfo.CustomConverter);
+                    propertyInfo.CustomConverter = converterFactory;
+                    Assert.Same(converterFactory, propertyInfo.CustomConverter);
+                }
+            });
+
+            options.TypeInfoResolver = r;
+
+            TestClassWithProperty obj = new()
+            {
+                MyClassProperty = new MyClass() { Value = "SomeValue" },
+            };
+
+            string json = JsonSerializer.Serialize(obj, options);
+            Assert.Equal("""{"MyClassProperty":"test_SomeValue"}""", json);
+
+            TestClassWithProperty deserialized = JsonSerializer.Deserialize<TestClassWithProperty>(json, options);
+            Assert.Equal(obj.MyClassProperty.Value, deserialized.MyClassProperty.Value);
+        }
+
+
+        [Fact]
         public static void JsonPropertyInfoGetIsNullAndMutableWhenUsingCreateJsonPropertyInfo()
         {
             JsonSerializerOptions options = new();
@@ -1013,9 +1078,20 @@ namespace System.Text.Json.Serialization.Tests
             public string Property { get; set; }
         }
 
+        private class TestClassWithProperty
+        {
+            public MyClass MyClassProperty { get; set; }
+        }
+
         private class TestClassWithCustomConverterOnProperty
         {
             [JsonConverter(typeof(MyClassConverterOriginal))]
+            public MyClass MyClassProperty { get; set; }
+        }
+
+        private class TestClassWithCustomConverterFactoryOnProperty
+        {
+            [JsonConverter(typeof(MyClassCustomConverterFactory))]
             public MyClass MyClassProperty { get; set; }
         }
 
@@ -1059,6 +1135,18 @@ namespace System.Text.Json.Serialization.Tests
             public override void Write(Utf8JsonWriter writer, MyClass value, JsonSerializerOptions options)
             {
                 writer.WriteStringValue(_prefix + value.Value);
+            }
+        }
+
+        private class MyClassCustomConverterFactory : JsonConverterFactory
+        {
+            internal JsonConverter<MyClass> ConverterInstance { get; } = new MyClassCustomConverter("test_");
+            public override bool CanConvert(Type typeToConvert) => typeToConvert == typeof(MyClass);
+
+            public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
+            {
+                Assert.Equal(typeof(MyClass), typeToConvert);
+                return ConverterInstance;
             }
         }
     }

@@ -509,6 +509,77 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize<MyClass>(obj, o));
         }
 
+        [Fact]
+        public static void AddJsonPropertyInfoCreatedFromDifferentJsonTypeInfoInstance()
+        {
+            DefaultJsonTypeInfoResolver resolver = new();
+            JsonSerializerOptions options = new();
+            JsonTypeInfo[] typeInfos = new[]
+            {
+                // we add double so that we check between instances of the same internal type as well
+                JsonTypeInfo.CreateJsonTypeInfo<SomeClass>(options),
+                JsonTypeInfo.CreateJsonTypeInfo<SomeClass>(options),
+                JsonTypeInfo.CreateJsonTypeInfo<SomeOtherClass>(options),
+                resolver.GetTypeInfo(typeof(SomeClass), options),
+                resolver.GetTypeInfo(typeof(SomeClass), options),
+                resolver.GetTypeInfo(typeof(SomeOtherClass), options),
+                ((IJsonTypeInfoResolver)new SomeClassContext()).GetTypeInfo(typeof(SomeClass), options),
+                ((IJsonTypeInfoResolver)new SomeClassContext()).GetTypeInfo(typeof(SomeClass), options),
+                ((IJsonTypeInfoResolver)new SomeClassContext()).GetTypeInfo(typeof(SomeOtherClass), options),
+                new SomeClassContext(options).SomeClass // this binds to options and therefore we cannot add more of these
+            };
+
+            foreach (var typeInfo1 in typeInfos)
+            {
+                foreach (var typeInfo2 in typeInfos)
+                {
+                    if (ReferenceEquals(typeInfo1, typeInfo2))
+                        continue;
+
+                    Assert.Throws<InvalidOperationException>(() => typeInfo1.Properties.Add(typeInfo2.CreateJsonPropertyInfo(typeof(int), "test")));
+                }
+            }
+        }
+
+        [Fact]
+        public static void AddJsonPropertyInfoFromMetadataServices()
+        {
+            JsonSerializerOptions options = new();
+            JsonTypeInfo typeInfo1 = JsonTypeInfo.CreateJsonTypeInfo<SomeClass>(options);
+            JsonTypeInfo typeInfo2 = JsonTypeInfo.CreateJsonTypeInfo<SomeClass>(options);
+
+            JsonPropertyInfo propertyInfo = JsonMetadataServices.CreatePropertyInfo<int>(
+                options,
+                new JsonPropertyInfoValues<int>()
+                {
+                    DeclaringType = typeof(SomeClass),
+                    PropertyName = "test",
+                });
+
+            typeInfo1.Properties.Add(propertyInfo);
+            Assert.Equal(1, typeInfo1.Properties.Count);
+            Assert.Same(propertyInfo, typeInfo1.Properties[0]);
+
+            Assert.Throws<InvalidOperationException>(() => typeInfo2.Properties.Add(propertyInfo));
+            Assert.Equal(0, typeInfo2.Properties.Count);
+        }
+
+        [Fact]
+        public static void AddingNullJsonPropertyInfoIsNotPossible()
+        {
+            JsonSerializerOptions options = new();
+            JsonTypeInfo typeInfo = JsonTypeInfo.CreateJsonTypeInfo<SomeClass>(options);
+            Assert.Throws<ArgumentNullException>(() => typeInfo.Properties.Add(null));
+            Assert.Empty(typeInfo.Properties);
+            Assert.Throws<ArgumentNullException>(() => typeInfo.Properties.Insert(0, null));
+            Assert.Empty(typeInfo.Properties);
+
+            typeInfo.Properties.Add(typeInfo.CreateJsonPropertyInfo(typeof(int), "test"));
+            Assert.Throws<ArgumentNullException>(() => typeInfo.Properties[0] = null);
+            Assert.Equal(1, typeInfo.Properties.Count);
+            Assert.NotNull(typeInfo.Properties[0]);
+        }
+
         [Theory]
         [InlineData(typeof(object))]
         [InlineData(typeof(string))]

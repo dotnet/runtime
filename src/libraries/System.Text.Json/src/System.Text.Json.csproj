@@ -61,7 +61,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\JsonHelpers.cs" />
     <Compile Include="System\Text\Json\JsonHelpers.Date.cs" />
     <Compile Include="System\Text\Json\JsonHelpers.Escaping.cs" />
-    <Compile Include="System\Text\Json\JsonPropertyDictionary.ValueList.cs" />
+    <Compile Include="System\Text\Json\JsonPropertyInfoDictionaryValueList.cs" />
     <Compile Include="System\Text\Json\JsonPropertyDictionary.cs" />
     <Compile Include="System\Text\Json\JsonPropertyDictionary.KeyCollection.cs" />
     <Compile Include="System\Text\Json\JsonPropertyDictionary.ValueCollection.cs" />
@@ -319,7 +319,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.UnsignedNumber.cs" />
     <Compile Include="System\ReflectionExtensions.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
-    <None Include="README.md" Pack="true" PackagePath="\"/>
+    <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

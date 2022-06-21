@@ -69,9 +69,9 @@ namespace System.Text.Json.Serialization
 
         internal override ConverterStrategy ConverterStrategy => ConverterStrategy.Value;
 
-        internal sealed override JsonPropertyInfo CreateJsonPropertyInfo()
+        internal sealed override JsonPropertyInfo CreateJsonPropertyInfo(JsonTypeInfo parentTypeInfo)
         {
-            return new JsonPropertyInfo<T>();
+            return new JsonPropertyInfo<T>(parentTypeInfo);
         }
 
         internal sealed override JsonParameterInfo CreateJsonParameterInfo()

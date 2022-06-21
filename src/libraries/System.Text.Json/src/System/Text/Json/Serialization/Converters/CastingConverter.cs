@@ -10,9 +10,9 @@ namespace System.Text.Json.Serialization.Converters
     /// <summary>
     /// Converter wrapper which casts SourceType into TargetType
     /// </summary>
-    internal sealed class CastingConverter<TargetType, SourceType> : JsonConverter<TargetType>
+    internal sealed class CastingConverter<TTarget, TSource> : JsonConverter<TTarget>
     {
-        private JsonConverter<SourceType> _sourceConverter;
+        private JsonConverter<TSource> _sourceConverter;
 
         internal override Type? KeyType => _sourceConverter.KeyType;
         internal override Type? ElementType => _sourceConverter.ElementType;
@@ -20,7 +20,7 @@ namespace System.Text.Json.Serialization.Converters
         public override bool HandleNull => _sourceConverter.HandleNull;
         internal override ConverterStrategy ConverterStrategy => _sourceConverter.ConverterStrategy;
 
-        internal CastingConverter(JsonConverter<SourceType> sourceConverter) : base(initialize: false)
+        internal CastingConverter(JsonConverter<TSource> sourceConverter) : base(initialize: false)
         {
             _sourceConverter = sourceConverter;
             Initialize();
@@ -31,40 +31,40 @@ namespace System.Text.Json.Serialization.Converters
             CanUseDirectReadOrWrite = sourceConverter.CanUseDirectReadOrWrite;
         }
 
-        public override TargetType? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-            => Cast<SourceType, TargetType>(_sourceConverter.Read(ref reader, typeToConvert, options));
+        public override TTarget? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            => Cast<TSource, TTarget>(_sourceConverter.Read(ref reader, typeToConvert, options));
 
-        public override void Write(Utf8JsonWriter writer, TargetType value, JsonSerializerOptions options)
-            => _sourceConverter.Write(writer, Cast<TargetType, SourceType>(value), options);
+        public override void Write(Utf8JsonWriter writer, TTarget value, JsonSerializerOptions options)
+            => _sourceConverter.Write(writer, Cast<TTarget, TSource>(value), options);
 
-        internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out TargetType? value)
+        internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out TTarget? value)
         {
-            bool ret = _sourceConverter.OnTryRead(ref reader, typeToConvert, options, ref state, out SourceType? sourceValue);
-            value = Cast<SourceType, TargetType>(sourceValue);
-            return ret;
+            bool result = _sourceConverter.OnTryRead(ref reader, typeToConvert, options, ref state, out TSource? sourceValue);
+            value = Cast<TSource, TTarget>(sourceValue);
+            return result;
         }
 
-        internal override bool OnTryWrite(Utf8JsonWriter writer, TargetType value, JsonSerializerOptions options, ref WriteStack state)
-            => _sourceConverter.OnTryWrite(writer, Cast<TargetType, SourceType>(value), options, ref state);
+        internal override bool OnTryWrite(Utf8JsonWriter writer, TTarget value, JsonSerializerOptions options, ref WriteStack state)
+            => _sourceConverter.OnTryWrite(writer, Cast<TTarget, TSource>(value), options, ref state);
 
-        public override TargetType ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-            => Cast<SourceType, TargetType>(_sourceConverter.ReadAsPropertyName(ref reader, typeToConvert, options));
+        public override TTarget ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            => Cast<TSource, TTarget>(_sourceConverter.ReadAsPropertyName(ref reader, typeToConvert, options));
 
-        internal override TargetType ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-            => Cast<SourceType, TargetType>(_sourceConverter.ReadAsPropertyNameCore(ref reader, typeToConvert, options));
+        internal override TTarget ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            => Cast<TSource, TTarget>(_sourceConverter.ReadAsPropertyNameCore(ref reader, typeToConvert, options));
 
-        public override void WriteAsPropertyName(Utf8JsonWriter writer, TargetType value, JsonSerializerOptions options)
-            => _sourceConverter.WriteAsPropertyName(writer, Cast<TargetType, SourceType>(value), options);
+        public override void WriteAsPropertyName(Utf8JsonWriter writer, TTarget value, JsonSerializerOptions options)
+            => _sourceConverter.WriteAsPropertyName(writer, Cast<TTarget, TSource>(value), options);
 
-        internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, TargetType value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
-            => _sourceConverter.WriteAsPropertyNameCore(writer, Cast<TargetType, SourceType>(value), options, isWritingExtensionDataProperty);
+        internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, TTarget value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
+            => _sourceConverter.WriteAsPropertyNameCore(writer, Cast<TTarget, TSource>(value), options, isWritingExtensionDataProperty);
 
-        internal override TargetType ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling, JsonSerializerOptions options)
-            => Cast<SourceType, TargetType>(_sourceConverter.ReadNumberWithCustomHandling(ref reader, handling, options));
+        internal override TTarget ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling, JsonSerializerOptions options)
+            => Cast<TSource, TTarget>(_sourceConverter.ReadNumberWithCustomHandling(ref reader, handling, options));
 
-        internal override void WriteNumberWithCustomHandling(Utf8JsonWriter writer, TargetType value, JsonNumberHandling handling)
-            => _sourceConverter.WriteNumberWithCustomHandling(writer, Cast<TargetType, SourceType>(value), handling);
+        internal override void WriteNumberWithCustomHandling(Utf8JsonWriter writer, TTarget value, JsonNumberHandling handling)
+            => _sourceConverter.WriteNumberWithCustomHandling(writer, Cast<TTarget, TSource>(value), handling);
 
-        private static TTarget Cast<TSource, TTarget>(TSource? source) => (TTarget)(object?)source!;
+        private static TCastTarget Cast<TCastSource, TCastTarget>(TCastSource? source) => (TCastTarget)(object?)source!;
     }
 }

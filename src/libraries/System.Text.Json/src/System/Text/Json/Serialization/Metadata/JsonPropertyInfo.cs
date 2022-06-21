@@ -18,6 +18,7 @@ namespace System.Text.Json.Serialization.Metadata
     {
         internal static readonly JsonPropertyInfo s_missingProperty = GetPropertyPlaceholder();
 
+        internal JsonTypeInfo? ParentTypeInfo { get; private set; }
         private JsonTypeInfo? _jsonTypeInfo;
 
         internal ConverterStrategy ConverterStrategy;
@@ -95,13 +96,15 @@ namespace System.Text.Json.Serialization.Metadata
         private protected Func<object, object?, bool>? _shouldSerialize;
         private bool _shouldSerializeIsExplicitlySet;
 
-        internal JsonPropertyInfo()
+        internal JsonPropertyInfo(JsonTypeInfo? parentTypeInfo)
         {
+            // null parentTypeInfo means it's not tied yet
+            ParentTypeInfo = parentTypeInfo;
         }
 
         internal static JsonPropertyInfo GetPropertyPlaceholder()
         {
-            JsonPropertyInfo info = new JsonPropertyInfo<object>();
+            JsonPropertyInfo info = new JsonPropertyInfo<object>(parentTypeInfo: null);
 
             Debug.Assert(!info.IsForTypeInfo);
             Debug.Assert(!info.CanDeserialize);
@@ -127,21 +130,22 @@ namespace System.Text.Json.Serialization.Metadata
 
         private bool _isConfigured;
 
-        internal void EnsureConfigured(JsonTypeInfo typeInfo)
+        internal void EnsureConfigured()
         {
             if (_isConfigured)
             {
                 return;
             }
 
-            Configure(typeInfo);
+            Configure();
 
             _isConfigured = true;
         }
 
-        internal virtual void Configure(JsonTypeInfo typeInfo)
+        internal virtual void Configure()
         {
-            DeclaringTypeNumberHandling = typeInfo.NumberHandling;
+            Debug.Assert(ParentTypeInfo != null, "We should have ensured parent is assigned in JsonTypeInfo");
+            DeclaringTypeNumberHandling = ParentTypeInfo.NumberHandling;
 
             if (!IsForTypeInfo)
             {
@@ -608,6 +612,18 @@ namespace System.Text.Json.Serialization.Metadata
 
             value = jsonElement;
             return true;
+        }
+
+        internal void EnsureChildOf(JsonTypeInfo parent)
+        {
+            if (ParentTypeInfo == null)
+            {
+                ParentTypeInfo = parent;
+            }
+            else if (ParentTypeInfo != parent)
+            {
+                ThrowHelper.ThrowInvalidOperationException_JsonPropertyInfoIsBoundToDifferentJsonTypeInfo(this);
+            }
         }
 
         internal Type DeclaringType { get; set; } = null!;

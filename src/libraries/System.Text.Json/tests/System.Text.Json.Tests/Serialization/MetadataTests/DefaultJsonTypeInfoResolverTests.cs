@@ -192,6 +192,18 @@ namespace System.Text.Json.Serialization.Tests
             public int IntProp { get; set; }
         }
 
+        private class SomeOtherClass
+        {
+            public object ObjProp { get; set; }
+            public int IntProp { get; set; }
+        }
+
+        [JsonSerializable(typeof(SomeClass))]
+        [JsonSerializable(typeof(SomeOtherClass))]
+        private partial class SomeClassContext : JsonSerializerContext
+        {
+        }
+
         private class CustomThrowingConverter<T> : JsonConverter<T>
         {
             public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotImplementedException();

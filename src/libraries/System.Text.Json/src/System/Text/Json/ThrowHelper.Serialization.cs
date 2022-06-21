@@ -615,6 +615,13 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_JsonPropertyInfoIsBoundToDifferentJsonTypeInfo(JsonPropertyInfo propertyInfo)
+        {
+            Debug.Assert(propertyInfo.ParentTypeInfo != null, "We should not throw this exception when ParentTypeInfo is null");
+            throw new InvalidOperationException(SR.Format(SR.JsonPropertyInfoBoundToDifferentParent, propertyInfo.Name, propertyInfo.ParentTypeInfo.Type.FullName));
+        }
+
+        [DoesNotReturn]
         internal static void ThrowUnexpectedMetadataException(
             ReadOnlySpan<byte> propertyName,
             ref Utf8JsonReader reader,
