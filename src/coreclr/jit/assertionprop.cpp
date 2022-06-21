@@ -1554,6 +1554,13 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
 
                     if (op2->gtOper == GT_CNS_INT)
                     {
+                        ssize_t iconVal = op2->AsIntCon()->gtIconVal;
+
+                        if (varTypeIsIntegral(lclVar) && genActualType(lclVar) != genActualType(op2) && genTypeSize(lclVar) < genTypeSize(op2))
+                        {
+                            iconVal = genCastIconVal(iconVal, genActualType(lclVar));
+                        //    goto DONE_ASSERTION; // Don't make an assertion
+                        }
 #ifdef TARGET_ARM
                         // Do not Constant-Prop large constants for ARM
                         // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had
@@ -1563,15 +1570,20 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                             goto DONE_ASSERTION; // Don't make an assertion
                         }
 #endif // TARGET_ARM
+
                         assertion.op2.u1.iconVal   = op2->AsIntCon()->gtIconVal;
                         assertion.op2.u1.iconFlags = op2->GetIconHandleFlag();
                     }
                     else if (op2->gtOper == GT_CNS_LNG)
                     {
+                        assert(genActualType(lclVar) == genActualType(op2));
+
                         assertion.op2.lconVal = op2->AsLngCon()->gtLconVal;
                     }
                     else
                     {
+                        assert(genActualType(lclVar) == genActualType(op2));
+
                         noway_assert(op2->gtOper == GT_CNS_DBL);
                         /* If we have an NaN value then don't record it */
                         if (_isnan(op2->AsDblCon()->gtDconVal))

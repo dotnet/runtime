@@ -599,6 +599,46 @@ inline bool isRegParamType(var_types type)
 #endif // !TARGET_X86
 }
 
+inline ssize_t genCastIconVal(ssize_t iconVal, var_types castToType)
+{
+    switch (castToType)
+    {
+        case TYP_BYTE:
+            iconVal = INT8(iconVal);
+            break;
+
+        case TYP_SHORT:
+            iconVal = INT16(iconVal);
+            break;
+
+        case TYP_USHORT:
+            iconVal = UINT16(iconVal);
+            break;
+
+        case TYP_BOOL:
+        case TYP_UBYTE:
+            iconVal = UINT8(iconVal);
+            break;
+
+        case TYP_UINT:
+        case TYP_INT:
+            break;
+
+        case TYP_ULONG:
+            iconVal = UINT64(iconVal);
+            break;
+
+        case TYP_LONG:
+            iconVal = INT64(iconVal);
+            break;
+
+        default:
+            unreached();
+    }
+
+    return iconVal;
+}
+
 #if defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
 /*****************************************************************************/
 // Returns true if 'type' is a struct that can be enregistered for call args
