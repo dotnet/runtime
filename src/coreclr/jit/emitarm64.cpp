@@ -12256,8 +12256,121 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
     }
 }
 
+/*****************************************************************************
+ *
+ *  Handles printing of LARGEJMP pseudo-instruction.
+ */
+
+void emitter::emitDispLargeJmp(
+    instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig)
+{
+    // Note: don't touch the actual instrDesc. If we accidentally messed it up, it would create a very
+    // difficult-to-find bug.
+
+    instrDescJmp  idJmp;
+    instrDescJmp* pidJmp = &idJmp;
+
+    memset(&idJmp, 0, sizeof(idJmp));
+
+    const instruction ins = id->idIns();
+    instruction       reverseIns;
+    insFormat         reverseFmt;
+
+    // Reverse the conditional instruction.
+    switch (ins)
+    {
+        case INS_cbz:
+            reverseIns = INS_cbnz;
+            reverseFmt = IF_BI_1A;
+            break;
+        case INS_cbnz:
+            reverseIns = INS_cbz;
+            reverseFmt = IF_BI_1A;
+            break;
+        case INS_tbz:
+            reverseIns = INS_tbnz;
+            reverseFmt = IF_BI_1B;
+            break;
+        case INS_tbnz:
+            reverseIns = INS_tbz;
+            reverseFmt = IF_BI_1B;
+            break;
+        default:
+            reverseIns = emitJumpKindToIns(emitReverseJumpKind(emitInsToJumpKind(ins)));
+            reverseFmt = IF_BI_0B;
+    }
+
+    pidJmp->idIns(reverseIns);
+    pidJmp->idInsFmt(reverseFmt);
+    pidJmp->idOpSize(id->idOpSize());
+    pidJmp->idAddr()->iiaSetInstrCount(1);
+    pidJmp->idDebugOnlyInfo(id->idDebugOnlyInfo()); // Share the idDebugOnlyInfo() field.
+
+    const size_t bcondSizeOrZero = (pCode == NULL) ? 0 : 4; // Branch is 4 bytes.
+    emitDispInsHelp(pidJmp, false, doffs, asmfm, offset, pCode, bcondSizeOrZero,
+                    NULL /* force display of pc-relative branch */);
+
+    pCode += bcondSizeOrZero;
+    offset += 4;
+
+    // Next, display the unconditional branch.
+
+    // Reset the local instrDesc.
+    memset(&idJmp, 0, sizeof(idJmp));
+
+    pidJmp->idIns(INS_b);
+    pidJmp->idInsFmt(IF_LARGEJMP);
+
+    if (id->idIsBound())
+    {
+        pidJmp->idSetIsBound();
+        pidJmp->idAddr()->iiaIGlabel = id->idAddr()->iiaIGlabel;
+    }
+    else
+    {
+        pidJmp->idAddr()->iiaBBlabel = id->idAddr()->iiaBBlabel;
+    }
+
+    pidJmp->idDebugOnlyInfo(id->idDebugOnlyInfo()); // Share the idDebugOnlyInfo() field.
+
+    const size_t brSizeOrZero = (pCode == NULL) ? 0 : 4; // Unconditional branch is 4 bytes.
+    emitDispInsHelp(pidJmp, isNew, doffs, asmfm, offset, pCode, brSizeOrZero, ig);
+}
+
+/*****************************************************************************
+ *
+ *  Wrapper for emitter::emitDispInsHelp() that handles special large jump
+ *  pseudo-instruction.
+ */
+
+void emitter::emitDispIns(
+    instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig)
+{
+    // Special case: IF_LARGEJMP
+
+    if ((id->idInsFmt() == IF_LARGEJMP) && id->idIsBound())
+    {
+        // This is a pseudo-instruction format representing a large conditional branch. See the comment
+        // in emitter::emitOutputLJ() for the full description.
+        //
+        // For this pseudo-instruction, we will actually generate:
+        //
+        //      b<!cond> L_not  // 4 bytes. Note that we reverse the condition.
+        //      b L_target      // 4 bytes.
+        //   L_not:
+        //
+        // These instructions don't exist in the actual instruction stream, so we need to fake them
+        // up to display them.
+        emitDispLargeJmp(id, isNew, doffs, asmfm, offset, pCode, sz, ig);
+    }
+    else
+    {
+        emitDispInsHelp(id, isNew, doffs, asmfm, offset, pCode, sz, ig);
+    }
+}
+
 //--------------------------------------------------------------------
-// emitDispIns: Dump the given instruction to jitstdout.
+// emitDispInsHelp: Dump the given instruction to jitstdout.
 //
 // Arguments:
 //   id - The instruction
@@ -12272,7 +12385,7 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 //   sz - The size of the instruction, used to display the encoded bytes.
 //   ig - The instruction group containing the instruction.
 //
-void emitter::emitDispIns(
+void emitter::emitDispInsHelp(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig)
 {
     if (EMITVERBOSE)
@@ -12284,7 +12397,9 @@ void emitter::emitDispIns(
     }
 
     if (pCode == NULL)
+    {
         sz = 0;
+    }
 
     if (!isNew && !asmfm && sz)
     {
@@ -12394,23 +12509,34 @@ void emitter::emitDispIns(
             break;
 
         case IF_BI_1A: // BI_1A   ......iiiiiiiiii iiiiiiiiiiittttt      Rt       simm19:00
-            assert(insOptsNone(id->idInsOpt()));
-            emitDispReg(id->idReg1(), size, true);
-            if (id->idIsBound())
-            {
-                emitPrintLabel(id->idAddr()->iiaIGlabel);
-            }
-            else
-            {
-                printf("L_M%03u_" FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
-            }
-            break;
-
         case IF_BI_1B: // BI_1B   B.......bbbbbiii iiiiiiiiiiittttt      Rt imm6, simm14:00
+        {
             assert(insOptsNone(id->idInsOpt()));
             emitDispReg(id->idReg1(), size, true);
-            emitDispImm(emitGetInsSC(id), true);
-            if (id->idIsBound())
+
+            if (fmt == IF_BI_1B)
+            {
+                emitDispImm(emitGetInsSC(id), true);
+            }
+
+            if (id->idAddr()->iiaHasInstrCount())
+            {
+                int instrCount = id->idAddr()->iiaGetInstrCount();
+
+                if (ig == nullptr)
+                {
+                    printf("pc%s%d instructions", (instrCount >= 0) ? "+" : "", instrCount);
+                }
+                else
+                {
+                    unsigned       insNum  = emitFindInsNum(ig, id);
+                    UNATIVE_OFFSET srcOffs = ig->igOffs + emitFindOffset(ig, insNum + 1);
+                    UNATIVE_OFFSET dstOffs = ig->igOffs + emitFindOffset(ig, insNum + 1 + instrCount);
+                    ssize_t        relOffs = (ssize_t)(emitOffsetToPtr(dstOffs) - emitOffsetToPtr(srcOffs));
+                    printf("pc%s%d (%d instructions)", (relOffs >= 0) ? "+" : "", relOffs, instrCount);
+                }
+            }
+            else if (id->idIsBound())
             {
                 emitPrintLabel(id->idAddr()->iiaIGlabel);
             }
@@ -12418,7 +12544,8 @@ void emitter::emitDispIns(
             {
                 printf("L_M%03u_" FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
             }
-            break;
+        }
+        break;
 
         case IF_BR_1A: // BR_1A   ................ ......nnnnn.....         Rn
             assert(insOptsNone(id->idInsOpt()));
