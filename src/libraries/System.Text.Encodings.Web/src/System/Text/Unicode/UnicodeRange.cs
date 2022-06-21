@@ -26,7 +26,7 @@ namespace System.Text.Unicode
             {
                 throw new ArgumentOutOfRangeException(nameof(firstCodePoint));
             }
-            
+
             if (length < 0 || ((long)firstCodePoint + (long)length > 0x10000))
             {
                 throw new ArgumentOutOfRangeException(nameof(length));
