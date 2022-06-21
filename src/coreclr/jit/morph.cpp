@@ -3690,21 +3690,9 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
                 if (arg.AbiInfo.IsHfaRegArg())
                 {
                     var_types hfaType = arg.AbiInfo.GetHfaType();
-                    unsigned  structSize;
-                    if (argx->OperIs(GT_OBJ))
-                    {
-                        structSize = argx->AsObj()->GetLayout()->GetSize();
-                    }
-                    else if (varTypeIsSIMD(argx))
-                    {
-                        structSize = genTypeSize(argx);
-                    }
-                    else
-                    {
-                        assert(argx->OperIs(GT_LCL_VAR));
-                        structSize = lvaGetDesc(argx->AsLclVar())->lvExactSize;
-                    }
-                    assert(structSize > 0);
+                    unsigned  structSize =
+                        argx->TypeIs(TYP_STRUCT) ? argx->GetLayout(this)->GetSize() : genTypeSize(argx);
+
                     if (structSize == genTypeSize(hfaType))
                     {
                         if (argx->OperIs(GT_OBJ))
