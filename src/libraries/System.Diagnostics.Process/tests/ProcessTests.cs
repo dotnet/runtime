@@ -2193,7 +2193,7 @@ namespace System.Diagnostics.Tests
                 // Instead of using sleep directly, we wrap it with a script.
                 sleepPath = GetTestFilePath();
                 File.WriteAllText(sleepPath, $"#!/bin/sh\nsleep 600\n"); // sleep 10 min.
-                ChMod(sleepPath, "744");
+                File.SetUnixFileMode(sleepPath, ExecutablePermissions);
             }
             else
             {
