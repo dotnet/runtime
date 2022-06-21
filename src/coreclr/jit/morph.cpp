@@ -746,15 +746,14 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
             continue;
         }
 
+        bool canEvalToTemp = true;
         if (arg.AbiInfo.GetRegNum() == REG_STK)
         {
             assert(m_hasStackArgs);
 #if !FEATURE_FIXED_OUT_ARGS
-            // On x86 we use push instructions to pass arguments:
-            //   The non-register arguments are evaluated and pushed in order
-            //   and they are never evaluated into temps
-            //
-            continue;
+            // Non-register arguments are evaluated and pushed in order; they
+            // should never go in the late arg list.
+            canEvalToTemp = false;
 #endif
         }
 #if FEATURE_ARG_SPLIT
@@ -787,16 +786,19 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 
         if (argx->gtFlags & GTF_ASG)
         {
-            // If this is not the only argument, or it's a copyblk, or it already evaluates the expression to
-            // a tmp, then we need a temp in the late arg list.
-            if ((argCount > 1) || argx->OperIsCopyBlkOp()
-#ifdef FEATURE_FIXED_OUT_ARGS
-                || arg.m_isTmp // Protect this by "FEATURE_FIXED_OUT_ARGS" to preserve the property
-                               // that we only have late non-register args when that feature is on.
-#endif
-                )
+            // If this is not the only argument, or it's a copyblk, or it
+            // already evaluates the expression to a tmp then we need a temp in
+            // the late arg list.
+            // In the latter case this might not even be a value;
+            // fgMakeOutgoingStructArgCopy will leave the copying nodes here
+            // for FEATURE_FIXED_OUT_ARGS.
+            if (canEvalToTemp && ((argCount > 1) || argx->OperIsCopyBlkOp() || (FEATURE_FIXED_OUT_ARGS && arg.m_isTmp)))
             {
                 SetNeedsTemp(&arg);
+            }
+            else
+            {
+                assert(argx->IsValue());
             }
 
             // For all previous arguments, unless they are a simple constant
@@ -807,6 +809,16 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                 {
                     break;
                 }
+
+#if !FEATURE_FIXED_OUT_ARGS
+                if (prevArg.AbiInfo.GetRegNum() == REG_STK)
+                {
+                    // All stack args are already evaluated and placed in order
+                    // in this case; we only need to check this for register
+                    // args.
+                    break;
+                }
+#endif
 
                 if ((prevArg.GetEarlyNode() != nullptr) && !prevArg.GetEarlyNode()->IsInvariant())
                 {
@@ -853,14 +865,17 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 
         if (treatLikeCall)
         {
-            if (argCount > 1) // If this is not the only argument
+            if (canEvalToTemp)
             {
-                SetNeedsTemp(&arg);
-            }
-            else if (varTypeIsFloating(argx->TypeGet()) && (argx->OperGet() == GT_CALL))
-            {
-                // Spill all arguments that are floating point calls
-                SetNeedsTemp(&arg);
+                if (argCount > 1) // If this is not the only argument
+                {
+                    SetNeedsTemp(&arg);
+                }
+                else if (varTypeIsFloating(argx->TypeGet()) && (argx->OperGet() == GT_CALL))
+                {
+                    // Spill all arguments that are floating point calls
+                    SetNeedsTemp(&arg);
+                }
             }
 
             // All previous arguments may need to be evaluated into temps
@@ -871,6 +886,15 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                     break;
                 }
 
+#if !FEATURE_FIXED_OUT_ARGS
+                if (prevArg.AbiInfo.GetRegNum() == REG_STK)
+                {
+                    // All stack args are already evaluated and placed in order
+                    // in this case.
+                    break;
+                }
+#endif
+
                 // For all previous arguments, if they have any GTF_ALL_EFFECT
                 //  we require that they be evaluated into a temp
                 if ((prevArg.GetEarlyNode() != nullptr) && ((prevArg.GetEarlyNode()->gtFlags & GTF_ALL_EFFECT) != 0))
@@ -879,8 +903,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                 }
 #if FEATURE_FIXED_OUT_ARGS
                 // Or, if they are stored into the FIXED_OUT_ARG area
-                // we require that they be moved to the gtCallLateArgs
-                // and replaced with a placeholder node
+                // we require that they be moved to the late list
                 else if (prevArg.AbiInfo.GetRegNum() == REG_STK)
                 {
                     prevArg.m_needPlace = true;
