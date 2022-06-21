@@ -1359,7 +1359,7 @@ namespace System
         public static Half Clamp(Half value, Half min, Half max) => (Half)Math.Clamp((float)value, (float)min, (float)max);
 
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
-        public static Half CopySign(Half x, Half y) => (Half)MathF.CopySign((float)x, (float)y);
+        public static Half CopySign(Half value, Half sign) => (Half)MathF.CopySign((float)value, (float)sign);
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static Half Max(Half x, Half y) => (Half)MathF.Max((float)x, (float)y);
@@ -1788,14 +1788,14 @@ namespace System
         /// <inheritdoc cref="IRootFunctions{TSelf}.Cbrt(TSelf)" />
         public static Half Cbrt(Half x) => (Half)MathF.Cbrt((float)x);
 
-        // /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
-        // public static Half Hypot(Half x, Half y) => (Half)MathF.Hypot((float)x, (float)y);
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
+        public static Half Hypot(Half x, Half y) => (Half)float.Hypot((float)x, (float)y);
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Root(TSelf, int)" />
+        public static Half Root(Half x, int n) => (Half)float.Root((float)x, n);
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
         public static Half Sqrt(Half x) => (Half)MathF.Sqrt((float)x);
-
-        // /// <inheritdoc cref="IRootFunctions{TSelf}.Root(TSelf, TSelf)" />
-        // public static Half Root(Half x, Half n) => (Half)MathF.Root((float)x, (float)n);
 
         //
         // ISignedNumber

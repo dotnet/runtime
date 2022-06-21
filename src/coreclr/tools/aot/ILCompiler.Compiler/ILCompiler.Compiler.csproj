@@ -194,9 +194,6 @@
     <Compile Include="..\..\Common\Internal\Text\Utf8StringBuilder.cs">
       <Link>Common\Utf8StringBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Ecma\EcmaSignatureEncoder.cs">
-      <Link>Ecma\EcmaSignatureEncoder.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\NativeAotILProvider.cs">
       <Link>IL\NativeAotILProvider.cs</Link>
     </Compile>
@@ -300,6 +297,8 @@
     <Compile Include="Compiler\AnalysisBasedInteropStubManager.cs" />
     <Compile Include="Compiler\AnalysisBasedMetadataManager.cs" />
     <Compile Include="Compiler\BlockedInternalsBlockingPolicy.cs" />
+    <Compile Include="Compiler\BodySubstitution.cs" />
+    <Compile Include="Compiler\BodySubstitutionParser.cs" />
     <Compile Include="Compiler\CompilationBuilder.Aot.cs" />
     <Compile Include="Compiler\CompilationModuleGroup.Aot.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.Aot.cs" />
@@ -519,7 +518,6 @@
     <Compile Include="Compiler\LazyGenericsPolicy.cs" />
     <Compile Include="Compiler\LibraryRootProvider.cs" />
     <Compile Include="Compiler\MainMethodRootProvider.cs" />
-    <Compile Include="Compiler\ManagedBinaryEmitter.cs" />
     <Compile Include="Compiler\MetadataManager.cs" />
     <Compile Include="Compiler\InteropStubManager.cs" />
     <Compile Include="Compiler\MultiFileCompilationModuleGroup.cs" />

@@ -80,13 +80,6 @@ static gss_OID_desc gss_mech_ntlm_OID_desc = {.length = STRING_LENGTH(gss_ntlm_o
     PER_FUNCTION_BLOCK(GSS_C_NT_USER_NAME) \
     PER_FUNCTION_BLOCK(GSS_C_NT_HOSTBASED_SERVICE)
 
-#if HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
-
-#define FOR_ALL_GSS_FUNCTIONS FOR_ALL_GSS_FUNCTIONS \
-    PER_FUNCTION_BLOCK(gss_set_cred_option)
-
-#endif //HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
-
 // define indirection pointers for all functions, like
 // static TYPEOF(gss_accept_sec_context)* gss_accept_sec_context_ptr;
 #define PER_FUNCTION_BLOCK(fn) \
@@ -115,11 +108,6 @@ static void* volatile s_gssLib = NULL;
 #define gss_release_oid_set(...)            gss_release_oid_set_ptr(__VA_ARGS__)
 #define gss_unwrap(...)                     gss_unwrap_ptr(__VA_ARGS__)
 #define gss_wrap(...)                       gss_wrap_ptr(__VA_ARGS__)
-
-#if HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
-#define gss_set_cred_option(...)            gss_set_cred_option_ptr(__VA_ARGS__)
-#endif //HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
-
 
 #define GSS_C_NT_USER_NAME                  (*GSS_C_NT_USER_NAME_ptr)
 #define GSS_C_NT_HOSTBASED_SERVICE          (*GSS_C_NT_HOSTBASED_SERVICE_ptr)
@@ -180,15 +168,6 @@ static uint32_t AcquireCredSpNego(uint32_t* minorStatus,
 #endif
     uint32_t majorStatus = gss_acquire_cred(
         minorStatus, desiredName, 0, &gss_mech_spnego_OID_set_desc, credUsage, outputCredHandle, NULL, NULL);
-
-    // call gss_set_cred_option with GSS_KRB5_CRED_NO_CI_FLAGS_X to support Kerberos Sign Only option from *nix client against a windows server
-#if HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
-    if (majorStatus == GSS_S_COMPLETE)
-    {
-        GssBuffer emptyBuffer = GSS_C_EMPTY_BUFFER;
-        majorStatus = gss_set_cred_option(minorStatus, outputCredHandle, GSS_KRB5_CRED_NO_CI_FLAGS_X, &emptyBuffer);
-    }
-#endif
 
     return majorStatus;
 }
@@ -603,15 +582,6 @@ static uint32_t AcquireCredWithPassword(uint32_t* minorStatus,
     GssBuffer passwordBuffer = {.length = passwdLen, .value = password};
     uint32_t majorStatus = gss_acquire_cred_with_password(
         minorStatus, desiredName, &passwordBuffer, 0, desiredMech, credUsage, outputCredHandle, NULL, NULL);
-
-    // call gss_set_cred_option with GSS_KRB5_CRED_NO_CI_FLAGS_X to support Kerberos Sign Only option from *nix client against a windows server
-#if HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
-    if (majorStatus == GSS_S_COMPLETE)
-    {
-        GssBuffer emptyBuffer = GSS_C_EMPTY_BUFFER;
-        majorStatus = gss_set_cred_option(minorStatus, outputCredHandle, GSS_KRB5_CRED_NO_CI_FLAGS_X, &emptyBuffer);
-    }
-#endif
 
     return majorStatus;
 }

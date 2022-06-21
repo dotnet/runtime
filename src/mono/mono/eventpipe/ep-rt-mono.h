@@ -2289,6 +2289,14 @@ ep_rt_write_event_threadpool_worker_thread_wait (
 	uint16_t clr_instance_id);
 
 bool
+ep_rt_write_event_threadpool_min_max_threads (
+	uint16_t min_worker_threads,
+	uint16_t max_worker_threads,
+	uint16_t min_io_completion_threads,
+	uint16_t max_io_completion_threads,
+	uint16_t clr_instance_id);
+
+bool
 ep_rt_write_event_threadpool_worker_thread_adjustment_sample (
 	double throughput,
 	uint16_t clr_instance_id);

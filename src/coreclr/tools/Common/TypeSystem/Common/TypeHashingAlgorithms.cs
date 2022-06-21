@@ -125,7 +125,7 @@ namespace Internal.NativeFormat
             while (arg != 0)
             {
                 sb.Append((char)('0' + (arg % 10)));
-                arg = arg / 10;
+                arg /= 10;
             }
 
             // Reverse the string

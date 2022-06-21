@@ -200,7 +200,7 @@ namespace System.Net
             }
             set
             {
-                if (value == true)
+                if (value)
                 {
                     m_expires = DateTime.Now;
                 }
@@ -392,7 +392,7 @@ namespace System.Net
             // Check/set domain
             //
             // If domain is implicit => assume a) uri is valid, b) just set domain to uri hostname.
-            if (setDefault && m_domain_implicit == true)
+            if (setDefault && m_domain_implicit)
             {
                 m_domain = host;
             }
@@ -491,7 +491,7 @@ namespace System.Net
             }
 
             // Check/Set Path
-            if (setDefault && m_path_implicit == true)
+            if (setDefault && m_path_implicit)
             {
                 // This code assumes that the URI path is always valid and contains at least one '/'.
                 switch (m_cookieVariant)

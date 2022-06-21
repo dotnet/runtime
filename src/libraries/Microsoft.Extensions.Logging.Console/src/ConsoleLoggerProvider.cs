@@ -162,7 +162,7 @@ namespace Microsoft.Extensions.Logging.Console
             {
                 defaultFormatter.FormatterOptions = new SimpleConsoleFormatterOptions()
                 {
-                    ColorBehavior = deprecatedFromOptions.DisableColors ? LoggerColorBehavior.Disabled : LoggerColorBehavior.Enabled,
+                    ColorBehavior = deprecatedFromOptions.DisableColors ? LoggerColorBehavior.Disabled : LoggerColorBehavior.Default,
                     IncludeScopes = deprecatedFromOptions.IncludeScopes,
                     TimestampFormat = deprecatedFromOptions.TimestampFormat,
                     UseUtcTimestamp = deprecatedFromOptions.UseUtcTimestamp,

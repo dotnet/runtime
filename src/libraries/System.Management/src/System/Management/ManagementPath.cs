@@ -83,8 +83,7 @@ namespace System.Management
         //Fires IdentifierChanged event
         private void FireIdentifierChanged()
         {
-            if (IdentifierChanged != null)
-                IdentifierChanged(this, null);
+            IdentifierChanged?.Invoke(this, null);
         }
 
         //internal factory
@@ -272,7 +271,7 @@ namespace System.Management
                 //  this is because in the case of "root", the path parser cannot tell whether
                 //  this is a namespace name or a class name
                 if (string.Equals(path, "root", StringComparison.OrdinalIgnoreCase))
-                    flags = flags | (uint)tag_WBEM_PATH_CREATE_FLAG.WBEMPATH_TREAT_SINGLE_IDENT_AS_NS;
+                    flags |= (uint)tag_WBEM_PATH_CREATE_FLAG.WBEMPATH_TREAT_SINGLE_IDENT_AS_NS;
 
                 int status = wbemPath.SetText_(flags, path);
 

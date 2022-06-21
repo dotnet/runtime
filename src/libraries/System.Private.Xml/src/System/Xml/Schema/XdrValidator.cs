@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
+using System.Text;
+using System.Collections;
+using System.Diagnostics;
+using System.Globalization;
+using System.Runtime.Versioning;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml.Schema
 {
-    using System.IO;
-    using System.Text;
-    using System.Collections;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.Runtime.Versioning;
-    using System.Diagnostics.CodeAnalysis;
-
 #pragma warning disable 618
     internal sealed class XdrValidator : BaseValidator
     {
@@ -651,7 +651,7 @@ namespace System.Xml.Schema
 
         public override object? FindId(string name)
         {
-            return _IDs == null ? null : _IDs[name];
+            return _IDs?[name];
         }
 
         private void Push(XmlQualifiedName elementName)
