@@ -758,7 +758,7 @@ namespace Microsoft.Extensions.Configuration
             HashSet<string>? virtualProperties = null;
 
             Type baseType = type;
-            do
+            while (baseType != typeof(object))
             {
                 PropertyInfo[] properties = baseType.GetProperties(DeclaredOnlyLookup);
 
@@ -773,7 +773,6 @@ namespace Microsoft.Extensions.Configuration
 
                 baseType = baseType.BaseType!;
             }
-            while (baseType != typeof(object));
 
             return allProperties;
         }
