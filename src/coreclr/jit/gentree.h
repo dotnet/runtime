@@ -130,7 +130,7 @@ enum gtCallTypes : BYTE
     CT_COUNT // fake entry (must be last)
 };
 
-enum class ExceptionSetFlags
+enum class ExceptionSetFlags : uint32_t
 {
     None                     = 0x0,
     OverflowException        = 0x1,
@@ -143,27 +143,27 @@ enum class ExceptionSetFlags
 
 inline constexpr ExceptionSetFlags operator~(ExceptionSetFlags a)
 {
-    return (ExceptionSetFlags)(~(unsigned short)a);
+    return (ExceptionSetFlags)(~(uint32_t)a);
 }
 
 inline constexpr ExceptionSetFlags operator|(ExceptionSetFlags a, ExceptionSetFlags b)
 {
-    return (ExceptionSetFlags)((unsigned short)a | (unsigned short)b);
+    return (ExceptionSetFlags)((uint32_t)a | (uint32_t)b);
 }
 
 inline constexpr ExceptionSetFlags operator&(ExceptionSetFlags a, ExceptionSetFlags b)
 {
-    return (ExceptionSetFlags)((unsigned short)a & (unsigned short)b);
+    return (ExceptionSetFlags)((uint32_t)a & (uint32_t)b);
 }
 
 inline ExceptionSetFlags& operator|=(ExceptionSetFlags& a, ExceptionSetFlags b)
 {
-    return a = (ExceptionSetFlags)((unsigned short)a | (unsigned short)b);
+    return a = (ExceptionSetFlags)((uint32_t)a | (uint32_t)b);
 }
 
 inline ExceptionSetFlags& operator&=(ExceptionSetFlags& a, ExceptionSetFlags b)
 {
-    return a = (ExceptionSetFlags)((unsigned short)a & (unsigned short)b);
+    return a = (ExceptionSetFlags)((uint32_t)a & (uint32_t)b);
 }
 
 #ifdef DEBUG

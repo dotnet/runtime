@@ -911,7 +911,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
         {
             // If a previous arg may throw a different exception than this arg,
             // then we evaluate all previous arguments with GTF_EXCEPT to temps
-            // to avoid reordering them in our sort late. The only case we can
+            // to avoid reordering them in our sort later. The only case we can
             // avoid this is if all previous args throw the same single
             // exception as this arg.
             unsigned numExceptions = genCountBits(static_cast<unsigned>(preciseExceptions));
