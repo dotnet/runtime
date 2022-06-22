@@ -60,7 +60,8 @@ namespace System.Formats.Tar
 
             entry._header._mTime = info.LastWriteTimeUtc;
             entry._header._aTime = info.LastAccessTimeUtc;
-            entry._header._cTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(status.CTime);
+            // FileSystemInfo does not have ChangeTime, but LastWriteTime and LastAccessTime make sure to add nanoseconds, so we should do the same here
+            entry._header._cTime = DateTimeOffset.FromUnixTimeSeconds(status.CTime).AddTicks(status.CTimeNsec / 100 /* nanoseconds per tick */);
 
             entry._header._mode = (status.Mode & 4095); // First 12 bits
 
