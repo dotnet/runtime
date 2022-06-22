@@ -147,7 +147,7 @@ namespace Wasm.Build.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/70985", TestPlatforms.Linux)]
         public void WithNativeReference_AOTInProjectFile(string config)
         {
-            string id = $"blz_nativeref_aot_{config}";
+            string id = $"blz_nativeref_aot_pf_{config}";
             string projectFile = CreateProjectWithNativeReference(id);
             AddItemsPropertiesToProject(projectFile, extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>");
 
@@ -165,7 +165,7 @@ namespace Wasm.Build.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/70985", TestPlatforms.Linux)]
         public void WithNativeReference_AOTOnCommandLine(string config)
         {
-            string id = $"blz_nativeref_aot_{config}";
+            string id = $"blz_nativeref_aot_cl_{config}";
             CreateProjectWithNativeReference(id);
 
             BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
