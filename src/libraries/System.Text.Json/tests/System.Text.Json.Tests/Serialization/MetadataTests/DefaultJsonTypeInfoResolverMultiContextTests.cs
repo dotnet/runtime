@@ -52,6 +52,67 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(expectedJson, json);
         }
 
+        [Fact]
+        public async Task SerializationWithJsonTypeInfoWithoutSettingTypeInfoResolverThrows()
+        {
+            JsonSerializerOptions o = new();
+            DefaultJsonTypeInfoResolver r = new();
+            // note: TypeInfoResolver not set
+            JsonTypeInfo<SomeClass> ti = (JsonTypeInfo<SomeClass>)r.GetTypeInfo(typeof(SomeClass), o);
+            SomeClass obj = new()
+            {
+                ObjProp = "test",
+                IntProp = 42,
+            };
+
+            // TODO: reassess if this is expected behavior
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(obj, ti));
+        }
+
+        [Fact]
+        public async Task DeserializationWithJsonTypeInfoWithoutSettingTypeInfoResolverThrows()
+        {
+            JsonSerializerOptions o = new();
+            DefaultJsonTypeInfoResolver r = new();
+            // note: TypeInfoResolver not set
+            JsonTypeInfo<SomeClass> ti = (JsonTypeInfo<SomeClass>)r.GetTypeInfo(typeof(SomeClass), o);
+
+            // TODO: reassess if this is expected behavior
+            string json = """{"ObjProp":"test","IntProp":42}""";
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.DeserializeWrapper(json, ti));
+        }
+
+        [Fact]
+        public async Task SerializationWithJsonTypeInfoWhenTypeInfoResolverSetIsPossible()
+        {
+            JsonSerializerOptions o = new();
+            DefaultJsonTypeInfoResolver r = new();
+            o.TypeInfoResolver = r;
+            JsonTypeInfo<SomeClass> ti = (JsonTypeInfo<SomeClass>)r.GetTypeInfo(typeof(SomeClass), o);
+            SomeClass obj = new()
+            {
+                ObjProp = "test",
+                IntProp = 42,
+            };
+
+            string json = await Serializer.SerializeWrapper(obj, ti);
+            Assert.Equal("""{"ObjProp":"test","IntProp":42}""", json);
+        }
+
+        [Fact]
+        public async Task DeserializationWithJsonTypeInfoWhenTypeInfoResolverSetIsPossible()
+        {
+            JsonSerializerOptions o = new();
+            DefaultJsonTypeInfoResolver r = new();
+            o.TypeInfoResolver = r;
+            JsonTypeInfo<SomeClass> ti = (JsonTypeInfo<SomeClass>)r.GetTypeInfo(typeof(SomeClass), o);
+            string json = """{"ObjProp":"test","IntProp":42}""";
+            SomeClass deserialized = await Serializer.DeserializeWrapper(json, ti);
+            Assert.IsType<JsonElement>(deserialized.ObjProp);
+            Assert.Equal("test", ((JsonElement)deserialized.ObjProp).GetString());
+            Assert.Equal(42, deserialized.IntProp);
+        }
+
         public static IEnumerable<object[]> JsonSerializerSerializeWithTypeInfoOfT_TestData()
         {
             yield return new object[] { "value", @"""value""" };

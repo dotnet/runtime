@@ -605,10 +605,10 @@ namespace System.Text.Json.Serialization.Tests
 
             static void TestCreateJsonTypeInfo(Func<JsonSerializerOptions, JsonTypeInfo<T>> getTypeInfo)
             {
-                JsonSerializerOptions o = new();
+                JsonSerializerOptions o = new() { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
                 TestCreateJsonTypeInfoInstance(o, getTypeInfo(o));
 
-                o = new JsonSerializerOptions();
+                o = new JsonSerializerOptions() { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
                 var conv = new DummyConverter<T>();
                 o.Converters.Add(conv);
                 JsonTypeInfo<T> ti = getTypeInfo(o);

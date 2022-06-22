@@ -652,15 +652,22 @@ namespace System.Text.Json
             IsInitializedForReflectionSerializer = true;
         }
 
-        private JsonTypeInfo? GetTypeInfoInternal(Type type)
+        internal bool IsInitializedForMetadataGeneration { get; private set; }
+        internal void InitializeForMetadataGeneration()
         {
             IJsonTypeInfoResolver? resolver = _effectiveJsonTypeInfoResolver ?? _typeInfoResolver;
-
             if (resolver == null)
             {
                 ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoUsedButTypeInfoResolverNotSet();
             }
 
+            _isLockedInstance = true;
+            IsInitializedForMetadataGeneration = true;
+        }
+
+        private JsonTypeInfo? GetTypeInfoInternal(Type type)
+        {
+            IJsonTypeInfoResolver? resolver = _effectiveJsonTypeInfoResolver ?? _typeInfoResolver;
             JsonTypeInfo? info = resolver?.GetTypeInfo(type, this);
 
             if (info != null)
