@@ -40,12 +40,21 @@
 
 #include "common.h"
 
+
 #include "gcenv.h"
 
 #include "gc.h"
 #include "objecthandle.h"
 
 #include "gcdesc.h"
+
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+// Flag to check if atomics feature is available on
+// the machine
+// #ifdef BUILD_AS_STANDALONE
+bool g_arm64_atomics_present = false;
+// #endif
+#endif
 
 //
 // The fast paths for object allocation and write barriers is performance critical. They are often
