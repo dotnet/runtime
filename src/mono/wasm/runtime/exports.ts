@@ -387,7 +387,7 @@ export const __linker_exports: any = {
     // pal_crypto_webworker.c
     dotnet_browser_can_use_subtle_crypto_impl,
     dotnet_browser_simple_digest_hash,
-    dotnet_browser_sign
+    dotnet_browser_sign,
 
     // mono-threads-wasm.c
     ...(MonoWasmThreads) && {
