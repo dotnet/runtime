@@ -86,8 +86,7 @@ namespace System.Text.Json.Nodes.Tests
             Assert.Equal(new Guid("1B33498A-7B7D-4DDA-9C13-F6AA4AB449A6"), (Guid)jObject["MyGuid"]);
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69800", TestPlatforms.Android)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroid), nameof(PlatformDetection.IsNotX86Process))]
         public static void ExplicitOperators_FromValues()
         {
             Assert.Equal(1, (short)(JsonNode)(short)1);
