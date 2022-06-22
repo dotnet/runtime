@@ -95,7 +95,7 @@ internal static partial class SyntaxValueProviderExtensions
             ? MetadataTypeName.FromFullName(fullyQualifiedMetadataName.Split(s_nestedTypeNameSeparators).Last())
             : MetadataTypeName.FromFullName(fullyQualifiedMetadataName);
 
-        var nodesWithAttributesMatchingSimpleName = @this.ForAttributeWithSimpleName(metadataName.UnmangledTypeName, predicate);
+        var nodesWithAttributesMatchingSimpleName = @this.ForAttributeWithSimpleName(context, metadataName.UnmangledTypeName, predicate);
 
         var collectedNodes = nodesWithAttributesMatchingSimpleName
             .Collect()
