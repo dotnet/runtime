@@ -41,7 +41,7 @@ emit_fill_call_ctx (MonoCompile *cfg, MonoInst *method, MonoInst *ret)
 	MONO_ADD_INS (cfg->cbb, args_alloc);
 	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, alloc->dreg, MONO_STRUCT_OFFSET (MonoProfilerCallContext, args), args_alloc->dreg);
 
-	for (int i = 0; i < sig->hasthis + sig->param_count; ++i) {
+	for (guint i = 0; i < sig->hasthis + sig->param_count; ++i) {
 		NEW_VARLOADA (cfg, ins, cfg->args [i], cfg->args [i]->inst_vtype);
 		MONO_ADD_INS (cfg->cbb, ins);
 

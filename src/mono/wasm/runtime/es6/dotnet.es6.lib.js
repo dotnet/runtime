@@ -107,8 +107,9 @@ const linked_functions = [
     "mono_wasm_get_icudt_name",
 
     // pal_crypto_webworker.c
+    "dotnet_browser_can_use_subtle_crypto_impl",
     "dotnet_browser_simple_digest_hash",
-    "dotnet_browser_can_use_simple_digest_hash",
+    "dotnet_browser_sign",
 ];
 
 // -- this javascript file is evaluated by emcc during compilation! --

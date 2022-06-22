@@ -78,7 +78,7 @@ namespace System.Xml.Serialization
         {
             get
             {
-                return _namespaces == null ? null : _namespaces.NamespaceList;
+                return _namespaces?.NamespaceList;
             }
             set
             {

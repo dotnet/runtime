@@ -31,8 +31,8 @@ namespace System.Formats.Tar
         private const string PaxEaUName = "uname";
         private const string PaxEaGid = "gid";
         private const string PaxEaUid = "uid";
-        private const string PaxEaATime = "atime";
-        private const string PaxEaCTime = "ctime";
+        internal const string PaxEaATime = "atime";
+        internal const string PaxEaCTime = "ctime";
         private const string PaxEaMTime = "mtime";
         private const string PaxEaSize = "size";
         private const string PaxEaDevMajor = "devmajor";
@@ -72,7 +72,7 @@ namespace System.Formats.Tar
 
         // PAX attributes
 
-        internal Dictionary<string, string> _extendedAttributes;
+        internal Dictionary<string, string>? _extendedAttributes;
 
         // GNU attributes
 

@@ -1570,7 +1570,7 @@ namespace System.Data.Common
                             if ((null != command) && (null == command.Connection))
                             {
                                 DbDataAdapter? adapter = DataAdapter;
-                                DbCommand? select = ((null != adapter) ? adapter.SelectCommand : null);
+                                DbCommand? select = adapter?.SelectCommand;
                                 if (null != select)
                                 {
                                     command.Connection = select.Connection;

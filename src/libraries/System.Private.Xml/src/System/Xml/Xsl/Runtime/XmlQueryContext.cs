@@ -93,7 +93,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public XmlNameTable DefaultNameTable
         {
-            get { return _defaultDataSource != null ? _defaultDataSource.NameTable : null; }
+            get { return _defaultDataSource?.NameTable; }
         }
 
         /// <summary>
@@ -170,7 +170,7 @@ namespace System.Xml.Xsl.Runtime
             if (stream != null)
             {
                 // Create document from stream
-                XmlReader reader = _readerSettings.CreateReader(stream, uriResolved != null ? uriResolved.ToString() : null);
+                XmlReader reader = _readerSettings.CreateReader(stream, uriResolved?.ToString());
 
                 try
                 {
@@ -212,7 +212,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public object GetParameter(string localName, string namespaceUri)
         {
-            return (_argList != null) ? _argList.GetParam(localName, namespaceUri) : null;
+            return _argList?.GetParam(localName, namespaceUri);
         }
 
 
@@ -227,7 +227,7 @@ namespace System.Xml.Xsl.Runtime
             Justification = XsltArgumentList.ExtensionObjectSuppresion)]
         public object GetLateBoundObject(string namespaceUri)
         {
-            return (_argList != null) ? _argList.GetExtensionObject(namespaceUri) : null;
+            return _argList?.GetExtensionObject(namespaceUri);
         }
 
         /// <summary>
@@ -262,7 +262,7 @@ namespace System.Xml.Xsl.Runtime
             object objRet;
 
             // Get external object instance from argument list (throw if either the list or the instance doesn't exist)
-            instance = (_argList != null) ? _argList.GetExtensionObject(namespaceUri) : null;
+            instance = _argList?.GetExtensionObject(namespaceUri);
             if (instance == null)
                 throw new XslTransformException(SR.XmlIl_UnknownExtObj, namespaceUri);
 

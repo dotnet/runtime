@@ -3857,10 +3857,7 @@ public:
 
     var_types impNormStructType(CORINFO_CLASS_HANDLE structHnd, CorInfoType* simdBaseJitType = nullptr);
 
-    GenTree* impNormStructVal(GenTree*             structVal,
-                              CORINFO_CLASS_HANDLE structHnd,
-                              unsigned             curLevel,
-                              bool                 forceNormalization = false);
+    GenTree* impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE structHnd, unsigned curLevel);
 
     GenTree* impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                               bool*                   pRuntimeLookup    = nullptr,
@@ -5457,14 +5454,6 @@ protected:
     PhaseStatus fgIncorporateProfileData();
     void        fgIncorporateBlockCounts();
     void        fgIncorporateEdgeCounts();
-
-    void getRandomGDV(ICorJitInfo::PgoInstrumentationSchema* schema,
-                      UINT32                                 countSchemaItems,
-                      BYTE*                                  pInstrumentationData,
-                      int32_t                                ilOffset,
-                      CLRRandom*                             random,
-                      CORINFO_CLASS_HANDLE*                  classGuess,
-                      CORINFO_METHOD_HANDLE*                 methodGuess);
 
 public:
     const char*                            fgPgoFailReason;

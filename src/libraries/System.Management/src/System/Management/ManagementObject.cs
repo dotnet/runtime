@@ -2308,7 +2308,7 @@ namespace System.Management
                 {
                     securityHandler = scope.GetSecurityHandler();
 
-                    IWbemClassObjectFreeThreaded inParams = (null == inParameters) ? null : inParameters.wbemObject;
+                    IWbemClassObjectFreeThreaded inParams = inParameters?.wbemObject;
                     IWbemClassObjectFreeThreaded outParams = null;
 
                     status = scope.GetSecuredIWbemServicesHandler(scope.GetIWbemServices()).ExecMethod_(
