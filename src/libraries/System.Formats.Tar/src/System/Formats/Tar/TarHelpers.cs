@@ -181,6 +181,14 @@ namespace System.Formats.Tar
             return string.IsNullOrEmpty(str) ? 0 : Convert.ToInt32(str, fromBase: 8);
         }
 
+        // Receives a byte array that represents an ASCII string containing a number in octal base.
+        // Converts the array to an octal base number, then transforms it to ten base and returns it.
+        internal static long GetTenBaseLongFromOctalAsciiChars(Span<byte> buffer)
+        {
+            string str = GetTrimmedAsciiString(buffer);
+            return string.IsNullOrEmpty(str) ? 0 : Convert.ToInt64(str, fromBase: 8);
+        }
+
         // Returns the string contained in the specified buffer of bytes,
         // in the specified encoding, removing the trailing null or space chars.
         private static string GetTrimmedString(ReadOnlySpan<byte> buffer, Encoding encoding)
