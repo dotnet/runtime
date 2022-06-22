@@ -56,8 +56,11 @@ namespace System.Formats.Cbor
 
         public static void Validate(CborConformanceMode conformanceMode)
         {
-            ArgumentOutOfRangeException.ThrowIf(conformanceMode < CborConformanceMode.Lax ||
-                conformanceMode > CborConformanceMode.Ctap2Canonical);
+            if (conformanceMode < CborConformanceMode.Lax ||
+                conformanceMode > CborConformanceMode.Ctap2Canonical)
+            {
+                throw new ArgumentOutOfRangeException(nameof(conformanceMode));
+            }
         }
 
         public static bool RequiresCanonicalIntegerRepresentation(CborConformanceMode conformanceMode)

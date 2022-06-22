@@ -111,8 +111,10 @@ namespace System.Diagnostics
         {
             readonly get
             {
-                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)index, (uint)_tagsCount);
-
+                if ((uint)index >= (uint)_tagsCount)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(index));
+                }
                 if (_overflowTags is not null)
                 {
                     Debug.Assert(index < _overflowTags.Length);
@@ -137,8 +139,10 @@ namespace System.Diagnostics
 
             set
             {
-                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)index, (uint)_tagsCount);
-
+                if ((uint)index >= (uint)_tagsCount)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(index));
+                }
                 if (_overflowTags is not null)
                 {
                     Debug.Assert(index < _overflowTags.Length);
@@ -262,7 +266,10 @@ namespace System.Diagnostics
                 throw new ArgumentNullException(nameof(array));
             }
 
-            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)arrayIndex, (uint)array.Length);
+            if ((uint)arrayIndex >= array.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex));
+            }
 
             CopyTo(array.AsSpan().Slice(arrayIndex));
         }
@@ -275,7 +282,10 @@ namespace System.Diagnostics
         /// <exception cref="T:System.ArgumentOutOfRangeException"> <paramref name="index" /> index is less than 0 or <paramref name="index" /> is greater than <see cref="M:System.Diagnostics.TagList.Count" />.</exception>
         public void Insert(int index, KeyValuePair<string, object?> item)
         {
-            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)index, (uint)_tagsCount);
+            if ((uint)index > (uint)_tagsCount)
+            {
+                throw new ArgumentOutOfRangeException(nameof(index));
+            }
 
             if (index == _tagsCount)
             {
@@ -330,7 +340,10 @@ namespace System.Diagnostics
         /// <exception cref="T:System.ArgumentOutOfRangeException"> <paramref name="index" /> index is less than 0 or <paramref name="index" /> is greater than <see cref="M:System.Diagnostics.TagList.Count" />.</exception>
         public void RemoveAt(int index)
         {
-            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)index, (uint)_tagsCount);
+            if ((uint)index >= (uint)_tagsCount)
+            {
+                throw new ArgumentOutOfRangeException(nameof(index));
+            }
 
             if (_overflowTags is not null)
             {
