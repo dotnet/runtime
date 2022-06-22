@@ -6877,8 +6877,10 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
             tree = gtNewOperNode(GT_IND, TYP_REF, tree);
             // This indirection won't cause an exception.
             tree->gtFlags |= GTF_IND_NONFAULTING;
-            // This indirection points into the gloabal heap (it is String Object)
-            tree->gtFlags |= GTF_GLOB_REF;
+            // String literal objects are also ok to model as invariant.
+            tree->gtFlags |= GTF_IND_INVARIANT;
+            // ..and they are never null.
+            tree->gtFlags |= GTF_IND_NONNULL;
             break;
 
         default:

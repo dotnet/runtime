@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.IO;
 using System.Net.Quic;
-using System.Net.Quic.Implementations;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.Versioning;
@@ -105,19 +104,22 @@ namespace System.Net.Http
         [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
-        public static async ValueTask<QuicConnection> ConnectQuicAsync(HttpRequestMessage request, QuicImplementationProvider quicImplementationProvider, DnsEndPoint endPoint, SslClientAuthenticationOptions clientAuthenticationOptions, CancellationToken cancellationToken)
+        public static async ValueTask<QuicConnection> ConnectQuicAsync(HttpRequestMessage request, DnsEndPoint endPoint, SslClientAuthenticationOptions clientAuthenticationOptions, CancellationToken cancellationToken)
         {
             clientAuthenticationOptions = SetUpRemoteCertificateValidationCallback(clientAuthenticationOptions, request);
-
-            QuicConnection con = new QuicConnection(quicImplementationProvider, endPoint, clientAuthenticationOptions);
+            QuicConnection connection = await QuicConnection.ConnectAsync(new QuicClientConnectionOptions()
+            {
+                RemoteEndPoint = endPoint,
+                ClientAuthenticationOptions = clientAuthenticationOptions
+            }, cancellationToken).ConfigureAwait(false);
             try
             {
-                await con.ConnectAsync(cancellationToken).ConfigureAwait(false);
-                return con;
+                await connection.ConnectAsync(cancellationToken).ConfigureAwait(false);
+                return connection;
             }
             catch (Exception ex)
             {
-                con.Dispose();
+                connection.Dispose();
                 throw CreateWrappedException(ex, endPoint.Host, endPoint.Port, cancellationToken);
             }
         }

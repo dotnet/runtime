@@ -2915,9 +2915,8 @@ mono_assembly_release_gc_roots (MonoAssembly *assembly)
 		return;
 
 	if (assembly_is_dynamic (assembly)) {
-		int i;
 		MonoDynamicImage *dynimg = (MonoDynamicImage *)assembly->image;
-		for (i = 0; i < dynimg->image.module_count; ++i)
+		for (guint32 i = 0; i < dynimg->image.module_count; ++i)
 			mono_dynamic_image_release_gc_roots ((MonoDynamicImage *)dynimg->image.modules [i]);
 		mono_dynamic_image_release_gc_roots (dynimg);
 	}

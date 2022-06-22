@@ -1566,6 +1566,7 @@ void EEJitManager::SetCpuInfo()
     if (IsProcessorFeaturePresent(PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE))
     {
         CPUCompileFlags.Set(InstructionSet_Atomics);
+        g_arm64_atomics_present = true;
     }
 
     // PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE (43)

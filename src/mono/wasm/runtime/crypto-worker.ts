@@ -9,7 +9,7 @@ let mono_wasm_crypto: {
     worker: Worker
 } | null = null;
 
-export function dotnet_browser_can_use_simple_digest_hash(): number {
+export function dotnet_browser_can_use_subtle_crypto_impl(): number {
     return mono_wasm_crypto === null ? 0 : 1;
 }
 
@@ -30,6 +30,27 @@ export function dotnet_browser_simple_digest_hash(ver: number, input_buffer: num
     }
 
     Module.HEAPU8.set(digest, output_buffer);
+    return 1;
+}
+
+export function dotnet_browser_sign(hashAlgorithm: number, key_buffer: number, key_len: number, input_buffer: number, input_len: number, output_buffer: number, output_len: number): number {
+    mono_assert(!!mono_wasm_crypto, "subtle crypto not initialized");
+
+    const msg = {
+        func: "sign",
+        type: hashAlgorithm,
+        key: Array.from(Module.HEAPU8.subarray(key_buffer, key_buffer + key_len)),
+        data: Array.from(Module.HEAPU8.subarray(input_buffer, input_buffer + input_len))
+    };
+
+    const response = mono_wasm_crypto.channel.send_msg(JSON.stringify(msg));
+    const signResult = JSON.parse(response);
+    if (signResult.length > output_len) {
+        console.info("dotnet_browser_sign: about to throw!");
+        throw "SIGN HASH: Sign length exceeds output length: " + signResult.length + " > " + output_len;
+    }
+
+    Module.HEAPU8.set(signResult, output_buffer);
     return 1;
 }
 

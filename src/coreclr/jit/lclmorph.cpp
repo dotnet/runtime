@@ -1036,7 +1036,6 @@ private:
         {
             // TODO-ADDR: Skip SIMD indirs for now, SIMD typed LCL_FLDs works most of the time
             // but there are exceptions - fgMorphFieldAssignToSimdSetElement for example.
-            // And more importantly, SIMD call args have to be wrapped in OBJ nodes currently.
             return IndirTransform::None;
         }
 
@@ -1096,7 +1095,7 @@ private:
         // | Partial    | LCL_FLD | OBJ/LCL_FLD | LCL_FLD |
         // |------------|---------|-------------|---------|
         //
-        // * - On Windows x64/Unix x64 only.
+        // * - On XArch only.
         //
         // |------------|------|------|--------|----------|
         // | SIMD       | CALL | ASG  | RETURN | HWI/SIMD |
@@ -1114,9 +1113,9 @@ private:
 
         if (user->IsCall())
         {
-#if !defined(WINDOWS_AMD64_ABI) && !defined(UNIX_AMD64_ABI)
+#if !defined(TARGET_XARCH)
             return IndirTransform::None;
-#endif // !defined(WINDOWS_AMD64_ABI) && !defined(UNIX_AMD64_ABI)
+#endif // !defined(TARGET_XARCH)
         }
 
         if (match == StructMatch::Compatible)

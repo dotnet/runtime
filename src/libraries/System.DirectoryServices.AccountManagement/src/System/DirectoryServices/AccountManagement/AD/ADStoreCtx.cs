@@ -1192,9 +1192,9 @@ namespace System.DirectoryServices.AccountManagement
                     // duplicates because the list of global groups will show up on both the GC and DC.
                     Debug.Assert(p.ContextType == ContextType.Domain);
 
-                    Forest forest = Forest.GetForest(new DirectoryContext(DirectoryContextType.Forest, this.DnsForestName, this.credentials != null ? this.credentials.UserName : null, this.credentials != null ? this.credentials.Password : null));
+                    Forest forest = Forest.GetForest(new DirectoryContext(DirectoryContextType.Forest, this.DnsForestName, this.credentials?.UserName, this.credentials?.Password));
 
-                    DirectoryContext dc = new DirectoryContext(DirectoryContextType.Domain, this.DnsDomainName, this.credentials != null ? this.credentials.UserName : null, this.credentials != null ? this.credentials.Password : null);
+                    DirectoryContext dc = new DirectoryContext(DirectoryContextType.Domain, this.DnsDomainName, this.credentials?.UserName, this.credentials?.Password);
                     DomainController dd = DomainController.FindOne(dc);
 
                     GlobalCatalog gc = null;
@@ -1213,7 +1213,7 @@ namespace System.DirectoryServices.AccountManagement
                             }
                         }
 
-                        roots.Add(new DirectoryEntry("GC://" + gc.Name + "/" + p.DistinguishedName, this.credentials != null ? this.credentials.UserName : null, this.credentials != null ? this.credentials.Password : null, this.AuthTypes));
+                        roots.Add(new DirectoryEntry("GC://" + gc.Name + "/" + p.DistinguishedName, this.credentials?.UserName, this.credentials?.Password, this.AuthTypes));
 
                         if (!string.Equals(this.DnsDomainName, gc.Domain.Name, StringComparison.OrdinalIgnoreCase))
                         {

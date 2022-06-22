@@ -1104,7 +1104,7 @@ BOOL Thread::IsRudeAbort()
 // we can determine that the OS is not in user mode.  Otherwise, we
 // return TRUE.
 //
-BOOL Thread::IsContextSafeToRedirect(CONTEXT* pContext)
+BOOL Thread::IsContextSafeToRedirect(const CONTEXT* pContext)
 {
     CONTRACTL
     {
@@ -1933,13 +1933,7 @@ void ThreadSuspend::UnlockThreadStore(BOOL bThreadDestroyed, ThreadSuspend::SUSP
 #endif
 }
 
-typedef BOOL(WINAPI* PINITIALIZECONTEXT2)(PVOID Buffer, DWORD ContextFlags, PCONTEXT* Context, PDWORD ContextLength, ULONG64 XStateCompactionMask);
-PINITIALIZECONTEXT2 pfnInitializeContext2 = NULL;
-
 #ifdef TARGET_X86
-typedef VOID(__cdecl* PRTLRESTORECONTEXT)(PCONTEXT ContextRecord, struct _EXCEPTION_RECORD* ExceptionRecord);
-PRTLRESTORECONTEXT pfnRtlRestoreContext = NULL;
-
 #define CONTEXT_COMPLETE (CONTEXT_FULL | CONTEXT_FLOATING_POINT |       \
                           CONTEXT_DEBUG_REGISTERS | CONTEXT_EXTENDED_REGISTERS)
 #else
@@ -1953,20 +1947,6 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
 #if !defined(TARGET_UNIX) && (defined(TARGET_X86) || defined(TARGET_AMD64))
     DWORD context = CONTEXT_COMPLETE;
 
-    if (pfnInitializeContext2 == NULL)
-    {
-        HMODULE hm = GetModuleHandleW(_T("kernel32.dll"));
-        pfnInitializeContext2 = (PINITIALIZECONTEXT2)GetProcAddress(hm, "InitializeContext2");
-    }
-
-#ifdef TARGET_X86
-    if (pfnRtlRestoreContext == NULL)
-    {
-        HMODULE hm = GetModuleHandleW(_T("ntdll.dll"));
-        pfnRtlRestoreContext = (PRTLRESTORECONTEXT)GetProcAddress(hm, "RtlRestoreContext");
-    }
-#endif //TARGET_X86
-
     // Determine if the processor supports AVX so we could
     // retrieve extended registers
     DWORD64 FeatureMask = GetEnabledXStateFeatures();
@@ -1979,8 +1959,8 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
     DWORD contextSize = 0;
     ULONG64 xStateCompactionMask = XSTATE_MASK_LEGACY | XSTATE_MASK_AVX;
     // The initialize call should fail but return contextSize
-    BOOL success = pfnInitializeContext2 ?
-        pfnInitializeContext2(NULL, context, NULL, &contextSize, xStateCompactionMask) :
+    BOOL success = g_pfnInitializeContext2 ?
+        g_pfnInitializeContext2(NULL, context, NULL, &contextSize, xStateCompactionMask) :
         InitializeContext(NULL, context, NULL, &contextSize);
 
     // Spec mentions that we may get a different error (it was observed on Windows7).
@@ -1996,8 +1976,8 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
     BYTE* buffer = new (nothrow)BYTE[contextSize];
     if (buffer != NULL)
     {
-        success = pfnInitializeContext2 ?
-            pfnInitializeContext2(buffer, context, &pOSContext, &contextSize, xStateCompactionMask):
+        success = g_pfnInitializeContext2 ?
+            g_pfnInitializeContext2(buffer, context, &pOSContext, &contextSize, xStateCompactionMask):
             InitializeContext(buffer, context, &pOSContext, &contextSize);
 
         if (!success)
@@ -2677,7 +2657,7 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
     frame.Push();
 
 #if defined(HAVE_GCCOVER) && defined(USE_REDIRECT_FOR_GCSTRESS) // GCCOVER
-    if (reason == RedirectReason_GCStress)
+    if (Thread::UseRedirectForGcStress() && (reason == RedirectReason_GCStress))
     {
         _ASSERTE(pThread->PreemptiveGCDisabledOther());
         DoGcStress(frame.GetContext(), NULL);
@@ -2700,7 +2680,7 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
     // and continue normal execution.
 
 #ifdef TARGET_X86
-    if (!pfnRtlRestoreContext)
+    if (!g_pfnRtlRestoreContext)
     {
         RestoreContextSimulated(pThread, pCtx, &frame, dwLastError);
 
@@ -2715,7 +2695,7 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
     // cooperative - but we will resume to preemptive below.  We should not trigger an abort in that case, as it will fail
     // due to the GC mode.
     //
-    if (!pThread->m_fPreemptiveGCDisabledForGCStress)
+    if (!Thread::UseRedirectForGcStress() || !pThread->m_fPreemptiveGCDisabledForGCStress)
 #endif
     {
 
@@ -2752,7 +2732,7 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
     pThread->UnmarkRedirectContextInUse(pCtx);
 
 #if defined(HAVE_GCCOVER) && defined(USE_REDIRECT_FOR_GCSTRESS) // GCCOVER
-    if (pThread->m_fPreemptiveGCDisabledForGCStress)
+    if (Thread::UseRedirectForGcStress() && pThread->m_fPreemptiveGCDisabledForGCStress)
     {
         pThread->EnablePreemptiveGC();
         pThread->m_fPreemptiveGCDisabledForGCStress = false;
@@ -2763,7 +2743,7 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
     SetLastError(dwLastError); // END_PRESERVE_LAST_ERROR
 
 #ifdef TARGET_X86
-    pfnRtlRestoreContext(pCtx, NULL);
+    g_pfnRtlRestoreContext(pCtx, NULL);
 #else
     RtlRestoreContext(pCtx, NULL);
 #endif
@@ -2830,6 +2810,7 @@ void __stdcall Thread::RedirectedHandledJITCaseForUserSuspend()
 void __stdcall Thread::RedirectedHandledJITCaseForGCStress()
 {
     WRAPPER_NO_CONTRACT;
+    _ASSERTE(Thread::UseRedirectForGcStress());
     RedirectedHandledJITCase(RedirectReason_GCStress);
 }
 
@@ -2925,7 +2906,7 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
     SetIP(pCtx, (PCODE)pTgt);
 
 
-    STRESS_LOG4(LF_SYNC, LL_INFO10000, "Redirecting thread %p(tid=%x) from address 0x%08x to address 0x%p\n",
+    STRESS_LOG4(LF_SYNC, LL_INFO10000, "Redirecting thread %p(tid=%x) from address 0x%p to address 0x%p\n",
         this, this->GetThreadId(), dwOrigEip, pTgt);
 
     bRes = EESetThreadContext(this, pCtx);
@@ -3072,7 +3053,7 @@ BOOL Thread::IsAddrOfRedirectFunc(void * pFuncAddr)
     WRAPPER_NO_CONTRACT;
 
 #if defined(HAVE_GCCOVER) && defined(USE_REDIRECT_FOR_GCSTRESS) // GCCOVER
-    if (pFuncAddr == GetRedirectHandlerForGCStress())
+    if (Thread::UseRedirectForGcStress() && (pFuncAddr == GetRedirectHandlerForGCStress()))
         return TRUE;
 #endif // HAVE_GCCOVER && USE_REDIRECT_FOR_GCSTRESS
 
@@ -3147,6 +3128,8 @@ BOOL Thread::CheckForAndDoRedirectForUserSuspend()
 BOOL Thread::CheckForAndDoRedirectForGCStress (CONTEXT *pCurrentThreadCtx)
 {
     WRAPPER_NO_CONTRACT;
+
+    _ASSERTE(Thread::UseRedirectForGcStress());
 
     LOG((LF_CORDB, LL_INFO1000, "Redirecting thread %08x for GCStress", GetThreadId()));
 
@@ -5878,7 +5861,7 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
 
         frame.Pop(pThread);
 
-        // TODO: Windows - Raise thread abort exception if ready for abort
+        pThread->HandleThreadAbort();
     }
     else
     {

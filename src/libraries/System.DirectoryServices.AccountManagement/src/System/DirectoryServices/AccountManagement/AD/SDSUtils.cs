@@ -373,9 +373,9 @@ namespace System.DirectoryServices.AccountManagement
         internal static DirectoryEntry BuildDirectoryEntry(string path, NetCred credentials, AuthenticationTypes authTypes)
         {
             DirectoryEntry de = new DirectoryEntry(path,
-                                                                               credentials != null ? credentials.UserName : null,
-                                                                               credentials != null ? credentials.Password : null,
-                                                                               authTypes);
+                                                   credentials?.UserName,
+                                                   credentials?.Password,
+                                                   authTypes);
 
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SDSUtils", "BuildDirectoryEntry (1): built DE for  " + de.Path);
 
@@ -386,8 +386,8 @@ namespace System.DirectoryServices.AccountManagement
         {
             DirectoryEntry de = new DirectoryEntry();
 
-            de.Username = credentials != null ? credentials.UserName : null;
-            de.Password = credentials != null ? credentials.Password : null;
+            de.Username = credentials?.UserName;
+            de.Password = credentials?.Password;
             de.AuthenticationType = authTypes;
 
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SDSUtils", "BuildDirectoryEntry (2): built DE");

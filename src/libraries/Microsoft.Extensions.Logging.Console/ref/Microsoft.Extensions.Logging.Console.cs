@@ -62,6 +62,8 @@ namespace Microsoft.Extensions.Logging.Console
         [System.ObsoleteAttribute("ConsoleLoggerOptions.IncludeScopes has been deprecated. Use ConsoleFormatterOptions.IncludeScopes instead.")]
         public bool IncludeScopes { get { throw null; } set { } }
         public Microsoft.Extensions.Logging.LogLevel LogToStandardErrorThreshold { get { throw null; } set { } }
+        public int MaxQueueLength { get { throw null; } set { } }
+        public Microsoft.Extensions.Logging.Console.ConsoleLoggerQueueFullMode QueueFullMode { get { throw null; } set { } }
         [System.ObsoleteAttribute("ConsoleLoggerOptions.TimestampFormat has been deprecated. Use ConsoleFormatterOptions.TimestampFormat instead.")]
         public string? TimestampFormat { get { throw null; } set { } }
         [System.ObsoleteAttribute("ConsoleLoggerOptions.UseUtcTimestamp has been deprecated. Use ConsoleFormatterOptions.UseUtcTimestamp instead.")]
@@ -76,6 +78,11 @@ namespace Microsoft.Extensions.Logging.Console
         public Microsoft.Extensions.Logging.ILogger CreateLogger(string name) { throw null; }
         public void Dispose() { }
         public void SetScopeProvider(Microsoft.Extensions.Logging.IExternalScopeProvider scopeProvider) { }
+    }
+    public enum ConsoleLoggerQueueFullMode
+    {
+        Wait = 0,
+        DropWrite = 1,
     }
     public partial class JsonConsoleFormatterOptions : Microsoft.Extensions.Logging.Console.ConsoleFormatterOptions
     {

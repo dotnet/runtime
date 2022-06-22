@@ -651,7 +651,7 @@ namespace System.Xml.Schema
 
         public override object? FindId(string name)
         {
-            return _IDs == null ? null : _IDs[name];
+            return _IDs?[name];
         }
 
         private void Push(XmlQualifiedName elementName)

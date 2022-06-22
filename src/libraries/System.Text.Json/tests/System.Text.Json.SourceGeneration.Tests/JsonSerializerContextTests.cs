@@ -61,6 +61,36 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
+        public static void SupportsReservedLanguageKeywordsAsProperties()
+        {
+            GreetingCard card = new()
+            {
+                @event = "Birthday",
+                message = @"Happy Birthday!"
+            };
+
+            byte[] utf8Json = JsonSerializer.SerializeToUtf8Bytes(card, GreetingCardJsonContext.Default.GreetingCard);
+
+            card = JsonSerializer.Deserialize<GreetingCard>(utf8Json, GreetingCardJsonContext.Default.GreetingCard);
+            Assert.Equal("Birthday", card.@event);
+            Assert.Equal("Happy Birthday!", card.message);
+        }
+
+        [Fact]
+        public static void SupportsReservedLanguageKeywordsAsFields()
+        {
+            var options = new JsonSerializerOptions { IncludeFields = true };
+
+            GreetingCardWithFields card = new() {@event = "Birthday", message = @"Happy Birthday!"};
+        
+            byte[] utf8Json = JsonSerializer.SerializeToUtf8Bytes(card, GreetingCardWithFieldsJsonContext.Default.GreetingCardWithFields);
+        
+            card = JsonSerializer.Deserialize<GreetingCardWithFields>(utf8Json, GreetingCardWithFieldsJsonContext.Default.GreetingCardWithFields);
+            Assert.Equal("Happy Birthday!", card.message);
+            Assert.Equal("Birthday", card.@event);
+        }
+
+        [Fact]
         public static void SupportsPositionalRecords()
         {
             Person person = new(FirstName: "Jane", LastName: "Doe");
@@ -88,6 +118,29 @@ namespace System.Text.Json.SourceGeneration.Tests
             PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
         [JsonSerializable(typeof(Person))]
         internal partial class PersonJsonContext : JsonSerializerContext
+        {
+        }
+
+        internal class GreetingCard
+        {
+            public string @event { get;set; }
+            public string message { get;set; }
+        }
+
+        internal class GreetingCardWithFields
+        {
+            public string @event;
+            public string message;
+        }
+
+        [JsonSerializable(typeof(GreetingCard))]
+        internal partial class GreetingCardJsonContext : JsonSerializerContext
+        {
+        }
+
+        [JsonSourceGenerationOptions(IncludeFields = true)]
+        [JsonSerializable(typeof(GreetingCardWithFields))]
+        internal partial class GreetingCardWithFieldsJsonContext : JsonSerializerContext
         {
         }
 
