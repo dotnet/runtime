@@ -33,7 +33,7 @@ namespace System.Formats.Tar
         {
             ArgumentException.ThrowIfNullOrEmpty(entryName);
 
-            Debug.Assert(!isGea || (isGea && entryType is TarEntryType.GlobalExtendedAttributes));
+            Debug.Assert(!isGea || entryType is TarEntryType.GlobalExtendedAttributes);
 
             if (!isGea)
             {
