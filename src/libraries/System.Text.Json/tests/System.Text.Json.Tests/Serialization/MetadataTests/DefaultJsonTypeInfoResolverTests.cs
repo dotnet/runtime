@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -176,6 +177,79 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.True(createObjectCalled);
             Assert.True(secondModifierCalled);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void StaticInitialization_SerializationWithJsonTypeInfoWithoutSettingTypeInfoResolverThrows()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                JsonSerializerOptions o = new();
+                DefaultJsonTypeInfoResolver r = new();
+                // note: TypeInfoResolver not set
+                JsonTypeInfo<SomeClass> ti = (JsonTypeInfo<SomeClass>)r.GetTypeInfo(typeof(SomeClass), o);
+                SomeClass obj = new()
+                {
+                    ObjProp = "test",
+                    IntProp = 42,
+                };
+
+                // TODO: reasses if this is expected behavior
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj, ti));
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void StaticInitialization_DeserializationWithJsonTypeInfoWithoutSettingTypeInfoResolverThrows()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                JsonSerializerOptions o = new();
+                DefaultJsonTypeInfoResolver r = new();
+                // note: TypeInfoResolver not set
+                JsonTypeInfo<SomeClass> ti = (JsonTypeInfo<SomeClass>)r.GetTypeInfo(typeof(SomeClass), o);
+
+                // TODO: reasses if this is expected behavior
+                string json = """{"ObjProp":"test","IntProp":42}""";
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize(json, ti));
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void StaticInitialization_SerializationWithJsonTypeInfoWhenTypeInfoResolverSetIsPossible()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                JsonSerializerOptions o = new();
+                DefaultJsonTypeInfoResolver r = new();
+                o.TypeInfoResolver = r;
+                JsonTypeInfo<SomeClass> ti = (JsonTypeInfo<SomeClass>)r.GetTypeInfo(typeof(SomeClass), o);
+                SomeClass obj = new()
+                {
+                    ObjProp = "test",
+                    IntProp = 42,
+                };
+
+                string json = JsonSerializer.Serialize(obj, ti);
+                Assert.Equal("""{"ObjProp":"test","IntProp":42}""", json);
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void StaticInitialization_DeserializationWithJsonTypeInfoWhenTypeInfoResolverSetIsPossible()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                JsonSerializerOptions o = new();
+                DefaultJsonTypeInfoResolver r = new();
+                o.TypeInfoResolver = r;
+                JsonTypeInfo<SomeClass> ti = (JsonTypeInfo<SomeClass>)r.GetTypeInfo(typeof(SomeClass), o);
+                string json = """{"ObjProp":"test","IntProp":42}""";
+                SomeClass deserialized = JsonSerializer.Deserialize(json, ti);
+                Assert.IsType<JsonElement>(deserialized.ObjProp);
+                Assert.Equal("test", ((JsonElement)deserialized.ObjProp).GetString());
+                Assert.Equal(42, deserialized.IntProp);
+            }).Dispose();
         }
 
         private static void InvokeGeneric(Type type, string methodName, params object[] args)

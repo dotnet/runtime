@@ -117,6 +117,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_JsonTypeInfoUsedButTypeInfoResolverNotSet()
+        {
+            throw new InvalidOperationException(SR.JsonTypeInfoUsedButTypeInfoResolverNotSet);
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_SerializationConverterOnAttributeInvalid(Type classType, MemberInfo? memberInfo)
         {
             string location = classType.ToString();

@@ -244,7 +244,7 @@
     <value>The requested operation requires an element of type '{0}', but the target element has type '{1}'.</value>
   </data>
   <data name="TypeInfoResolverImmutable" xml:space="preserve">
-    <value>Default TypeInfoResolver and custom TypeInfoResolver after first usage cannot be changed.</value>
+    <value>Default TypeInfoResolver and custom TypeInfoResolver cannot be changed after first usage.</value>
   </data>
   <data name="TypeInfoImmutable" xml:space="preserve">
     <value>JsonTypeInfo cannot be changed after first usage.</value>
@@ -661,5 +661,8 @@
   </data>
   <data name="JsonPropertyInfoBoundToDifferentParent" xml:space="preserve">
     <value>JsonPropertyInfo with name '{0}' for type '{1}' is already bound to different JsonTypeInfo.</value>
+  </data>
+  <data name="JsonTypeInfoUsedButTypeInfoResolverNotSet" xml:space="preserve">
+    <value>Using JsonTypeInfo for serialization is not possible when TypeInfoResolver has not been set.</value>
   </data>
 </root>

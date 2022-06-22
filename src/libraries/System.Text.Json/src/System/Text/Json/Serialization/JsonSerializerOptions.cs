@@ -655,6 +655,12 @@ namespace System.Text.Json
         private JsonTypeInfo? GetTypeInfoInternal(Type type)
         {
             IJsonTypeInfoResolver? resolver = _effectiveJsonTypeInfoResolver ?? _typeInfoResolver;
+
+            if (resolver == null)
+            {
+                ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoUsedButTypeInfoResolverNotSet();
+            }
+
             JsonTypeInfo? info = resolver?.GetTypeInfo(type, this);
 
             if (info != null)
