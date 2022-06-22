@@ -8438,10 +8438,12 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
     switch (ins)
     {
         case INS_bl_local:
+            idjShort = true;
+            FALLTHROUGH;
         case INS_b:
             // Unconditional jump is a single form.
-            idjShort = true;
-            fmt      = IF_BI_0A;
+            // Assume is long in case we cross hot/cold sections.
+            fmt = IF_BI_0A;
             break;
 
         case INS_beq:
@@ -8486,7 +8488,6 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
         id->idAddr()->iiaBBlabel = dst;
 
         // Skip unconditional jump that has a single form.
-        // TODO-ARM64-NYI: enable hot/cold splittingNYI.
         // The target needs to be relocated.
         if (!idjShort)
         {
@@ -9816,38 +9817,67 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
                 {
                     // Update addrReg with the reserved integer register
                     // since we cannot use dstReg (vector) to load constant directly from memory.
-                    addrReg = id->idReg2();
+
+                    // If loading a 16-byte value, we will need to load directly into dstReg.
+                    // Thus, encode addrReg for the ld1 instruction.
+                    if (opSize == EA_16BYTE)
+                    {
+                        addrReg = encodingSPtoZR(id->idReg2());
+                    }
+                    else
+                    {
+                        addrReg = id->idReg2();
+                    }
+
                     assert(isGeneralRegister(addrReg));
                 }
+
                 ins = INS_adrp;
                 fmt = IF_DI_1E;
                 dst = emitOutputShortAddress(dst, ins, fmt, relPageAddr, addrReg);
 
-                // ldr x, [x, page offs] -- load constant from page address + page offset into integer register.
                 ssize_t imm12 = (ssize_t)dstAddr & 0xFFF; // 12 bits
                 assert(isValidUimm12(imm12));
-                ins = INS_ldr;
-                fmt = IF_LS_2B;
-                dst = emitOutputShortConstant(dst, ins, fmt, imm12, addrReg, opSize);
 
-                // fmov v, d -- copy constant in integer register to vector register.
-                // This is needed only for vector constant.
-                if (addrReg != dstReg)
+                // Special case: emit add + ld1 instructions for loading 16-byte data into vector register.
+                if (isVectorRegister(dstReg) && (opSize == EA_16BYTE))
                 {
-                    //  fmov    Vd,Rn                DV_2I  X00111100X100111 000000nnnnnddddd   1E27 0000   Vd,Rn
-                    //  (scalar, from general)
-                    assert(isVectorRegister(dstReg) && isGeneralRegister(addrReg));
-                    ins         = INS_fmov;
-                    fmt         = IF_DV_2I;
-                    code_t code = emitInsCode(ins, fmt);
+                    const emitAttr elemSize = EA_1BYTE;
+                    const insOpts  opt      = optMakeArrangement(opSize, elemSize);
 
-                    code |= insEncodeReg_Vd(dstReg);  // ddddd
-                    code |= insEncodeReg_Rn(addrReg); // nnnnn
-                    if (id->idOpSize() == EA_8BYTE)
+                    assert(isGeneralRegisterOrSP(addrReg));
+                    assert(isValidVectorElemsize(elemSize));
+                    assert(isValidArrangement(opSize, opt));
+
+                    // Calculate page addr + page offs, then emit ld1 instruction.
+                    dst = emitOutputVectorConstant(dst, imm12, dstReg, addrReg, opSize, elemSize);
+                }
+                else
+                {
+                    // ldr x, [x, 0] -- load constant from address into integer register.
+                    ins = INS_ldr;
+                    fmt = IF_LS_2B;
+                    dst = emitOutputShortConstant(dst, ins, fmt, imm12, addrReg, opSize);
+
+                    // fmov v, d -- copy constant in integer register to vector register.
+                    // This is needed only for vector constant.
+                    if (addrReg != dstReg)
                     {
-                        code |= 0x80400000; // X ... X
+                        //  fmov    Vd,Rn                DV_2I  X00111100X100111 000000nnnnnddddd   1E27 0000   Vd,Rn
+                        //  (scalar, from general)
+                        assert(isVectorRegister(dstReg) && isGeneralRegister(addrReg));
+                        ins         = INS_fmov;
+                        fmt         = IF_DV_2I;
+                        code_t code = emitInsCode(ins, fmt);
+
+                        code |= insEncodeReg_Vd(dstReg);  // ddddd
+                        code |= insEncodeReg_Rn(addrReg); // nnnnn
+                        if (id->idOpSize() == EA_8BYTE)
+                        {
+                            code |= 0x80400000; // X ... X
+                        }
+                        dst += emitOutput_Instr(dst, code);
                     }
-                    dst += emitOutput_Instr(dst, code);
                 }
             }
         }
@@ -9950,12 +9980,6 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
     /* For forward jumps, record the address of the distance value */
     id->idjTemp.idjAddr = (distVal > 0) ? dst : NULL;
 
-    if (emitJumpCrossHotColdBoundary(srcOffs, dstOffs))
-    {
-        assert(!id->idjShort);
-        NYI_ARM64("Relocation Support for long address");
-    }
-
     assert(insOptsNone(id->idInsOpt()));
 
     if (isJump)
@@ -9966,75 +9990,114 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
             assert(!id->idjKeepLong);
             assert(emitJumpCrossHotColdBoundary(srcOffs, dstOffs) == false);
             assert((fmt == IF_BI_0A) || (fmt == IF_BI_0B) || (fmt == IF_BI_1A) || (fmt == IF_BI_1B));
+            dst = emitOutputShortBranch(dst, ins, fmt, distVal, id);
         }
         else
         {
-            // Long conditional jump
-            assert(fmt == IF_LARGEJMP);
-            // This is a pseudo-instruction format representing a large conditional branch, to allow
-            // us to get a greater branch target range than we can get by using a straightforward conditional
-            // branch. It is encoded as a short conditional branch that branches around a long unconditional
-            // branch.
-            //
-            // Conceptually, we have:
-            //
-            //      b<cond> L_target
-            //
-            // The code we emit is:
-            //
-            //      b<!cond> L_not  // 4 bytes. Note that we reverse the condition.
-            //      b L_target      // 4 bytes
-            //   L_not:
-            //
-            // Note that we don't actually insert any blocks: we simply encode "b <!cond> L_not" as a branch with
-            // the correct offset. Note also that this works for both integer and floating-point conditions, because
-            // the condition inversion takes ordered/unordered into account, preserving NaN behavior. For example,
-            // "GT" (greater than) is inverted to "LE" (less than, equal, or unordered).
+            // Long conditional/unconditional jump
 
-            instruction reverseIns;
-            insFormat   reverseFmt;
-
-            switch (ins)
+            if (fmt == IF_LARGEJMP)
             {
-                case INS_cbz:
-                    reverseIns = INS_cbnz;
-                    reverseFmt = IF_BI_1A;
-                    break;
-                case INS_cbnz:
-                    reverseIns = INS_cbz;
-                    reverseFmt = IF_BI_1A;
-                    break;
-                case INS_tbz:
-                    reverseIns = INS_tbnz;
-                    reverseFmt = IF_BI_1B;
-                    break;
-                case INS_tbnz:
-                    reverseIns = INS_tbz;
-                    reverseFmt = IF_BI_1B;
-                    break;
-                default:
-                    reverseIns = emitJumpKindToIns(emitReverseJumpKind(emitInsToJumpKind(ins)));
-                    reverseFmt = IF_BI_0B;
+                // This is a pseudo-instruction format representing a large conditional branch, to allow
+                // us to get a greater branch target range than we can get by using a straightforward conditional
+                // branch. It is encoded as a short conditional branch that branches around a long unconditional
+                // branch.
+                //
+                // Conceptually, we have:
+                //
+                //      b<cond> L_target
+                //
+                // The code we emit is:
+                //
+                //      b<!cond> L_not  // 4 bytes. Note that we reverse the condition.
+                //      b L_target      // 4 bytes
+                //   L_not:
+                //
+                // Note that we don't actually insert any blocks: we simply encode "b <!cond> L_not" as a branch with
+                // the correct offset. Note also that this works for both integer and floating-point conditions, because
+                // the condition inversion takes ordered/unordered into account, preserving NaN behavior. For example,
+                // "GT" (greater than) is inverted to "LE" (less than, equal, or unordered).
+
+                instruction reverseIns;
+                insFormat   reverseFmt;
+
+                switch (ins)
+                {
+                    case INS_cbz:
+                        reverseIns = INS_cbnz;
+                        reverseFmt = IF_BI_1A;
+                        break;
+                    case INS_cbnz:
+                        reverseIns = INS_cbz;
+                        reverseFmt = IF_BI_1A;
+                        break;
+                    case INS_tbz:
+                        reverseIns = INS_tbnz;
+                        reverseFmt = IF_BI_1B;
+                        break;
+                    case INS_tbnz:
+                        reverseIns = INS_tbz;
+                        reverseFmt = IF_BI_1B;
+                        break;
+                    default:
+                        reverseIns = emitJumpKindToIns(emitReverseJumpKind(emitInsToJumpKind(ins)));
+                        reverseFmt = IF_BI_0B;
+                }
+
+                dst = emitOutputShortBranch(dst,
+                                            reverseIns,    // reverse the conditional instruction
+                                            reverseFmt, 8, /* 8 bytes from start of this large conditional
+                                                              pseudo-instruction to L_not. */
+                                            id);
+
+                // Now, pretend we've got a normal unconditional branch, and fall through to the code to emit that.
+                ins = INS_b;
+                fmt = IF_BI_0A;
+
+                // The distVal was computed based on the beginning of the pseudo-instruction,
+                // So subtract the size of the conditional branch so that it is relative to the
+                // unconditional branch.
+                distVal -= 4;
             }
 
-            dst =
-                emitOutputShortBranch(dst,
-                                      reverseIns, // reverse the conditional instruction
-                                      reverseFmt,
-                                      8, /* 8 bytes from start of this large conditional pseudo-instruction to L_not. */
-                                      id);
+            assert(fmt == IF_BI_0A);
+            assert((distVal & 1) == 0);
+            code_t     code             = emitInsCode(ins, fmt);
+            const bool recordRelocation = emitComp->opts.compReloc && emitJumpCrossHotColdBoundary(srcOffs, dstOffs);
 
-            // Now, pretend we've got a normal unconditional branch, and fall through to the code to emit that.
-            ins = INS_b;
-            fmt = IF_BI_0A;
+            if (recordRelocation)
+            {
+                // dst isn't an actual final target location, just some intermediate
+                // location.  Thus we cannot make any guarantees about distVal (not
+                // even the direction/sign).  Instead we don't encode any offset and
+                // rely on the relocation to do all the work
+            }
+            else
+            {
+                // Branch offset encodings are scaled by 4.
+                noway_assert((distVal & 3) == 0);
+                distVal >>= 2;
+                noway_assert(isValidSimm26(distVal));
 
-            // The distVal was computed based on the beginning of the pseudo-instruction,
-            // So subtract the size of the conditional branch so that it is relative to the
-            // unconditional branch.
-            distVal -= 4;
+                // Insert offset into unconditional branch instruction
+                distVal &= 0x3FFFFFFLL;
+                code |= distVal;
+            }
+
+            const unsigned instrSize = emitOutput_Instr(dst, code);
+
+            if (recordRelocation)
+            {
+                assert(id->idjKeepLong);
+                if (emitComp->info.compMatchedVM)
+                {
+                    void* target = emitOffsetToPtr(dstOffs);
+                    emitRecordRelocation((void*)dst, target, IMAGE_REL_ARM64_BRANCH26);
+                }
+            }
+
+            dst += instrSize;
         }
-
-        dst = emitOutputShortBranch(dst, ins, fmt, distVal, id);
     }
     else if (loadLabel)
     {
@@ -10155,7 +10218,7 @@ BYTE* emitter::emitOutputShortConstant(
 
         ssize_t loBits = (imm & 3);
         noway_assert(loBits == 0);
-        ssize_t distVal = imm >>= 2; // load offset encodings are scaled by 4.
+        ssize_t distVal = imm >> 2; // load offset encodings are scaled by 4.
 
         noway_assert(isValidSimm19(distVal));
 
@@ -10223,6 +10286,33 @@ BYTE* emitter::emitOutputShortConstant(
 
     return dst;
 }
+
+/*****************************************************************************
+ *
+ *  Output instructions to load a constant into a vector register.
+ */
+BYTE* emitter::emitOutputVectorConstant(
+    BYTE* dst, ssize_t imm, regNumber dstReg, regNumber addrReg, emitAttr opSize, emitAttr elemSize)
+{
+    // add addrReg, addrReg, page offs -- compute address = page addr + page offs.
+    code_t code = emitInsCode(INS_add, IF_DI_2A); // DI_2A  X0010001shiiiiii iiiiiinnnnnddddd   1100 0000   imm(i12, sh)
+    code |= insEncodeDatasize(EA_8BYTE);          // X - use EA_8BYTE, as we are calculating 64-bit address
+    code |= ((code_t)imm << 10);                  // iiiiiiiiiiii
+    code |= insEncodeReg_Rd(addrReg);             // ddddd
+    code |= insEncodeReg_Rn(addrReg);             // nnnnn
+    dst += emitOutput_Instr(dst, code);
+
+    // ld1 dstReg, addrReg -- load constant at address in addrReg into dstReg.
+    code = emitInsCode(INS_ld1, IF_LS_2D);  // LS_2D   .Q.............. ....ssnnnnnttttt      Vt Rn
+    code |= insEncodeVectorsize(opSize);    // Q
+    code |= insEncodeVLSElemsize(elemSize); // ss
+    code |= insEncodeReg_Rn(addrReg);       // nnnnn
+    code |= insEncodeReg_Vt(dstReg);        // ttttt
+    dst += emitOutput_Instr(dst, code);
+
+    return dst;
+}
+
 /*****************************************************************************
  *
  *  Output a call instruction.

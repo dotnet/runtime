@@ -563,13 +563,20 @@ void Compiler::unwindReserve()
 void Compiler::unwindReserveFunc(FuncInfoDsc* func)
 {
     BOOL isFunclet          = (func->funKind == FUNC_ROOT) ? FALSE : TRUE;
-    bool funcHasColdSection = false;
+    bool funcHasColdSection = (fgFirstColdBlock != nullptr);
+
+#ifdef DEBUG
+    if (JitConfig.JitFakeProcedureSplitting() && funcHasColdSection)
+    {
+        funcHasColdSection = false; // "Trick" the VM into thinking we don't have a cold section.
+    }
+#endif // DEBUG
 
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         DWORD unwindCodeBytes = 0;
-        if (fgFirstColdBlock != nullptr)
+        if (funcHasColdSection)
         {
             eeReserveUnwindInfo(isFunclet, true /*isColdCode*/, unwindCodeBytes);
         }
@@ -584,7 +591,7 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
     // cold section. This needs to be done before we split into fragments, as each
     // of the hot and cold sections can have multiple fragments.
 
-    if (fgFirstColdBlock != NULL)
+    if (funcHasColdSection)
     {
         assert(!isFunclet); // TODO-CQ: support hot/cold splitting with EH
 
@@ -595,8 +602,6 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
         func->uwiCold = new (this, CMK_UnwindInfo) UnwindInfo();
         func->uwiCold->InitUnwindInfo(this, startLoc, endLoc);
         func->uwiCold->HotColdSplitCodes(&func->uwi);
-
-        funcHasColdSection = true;
     }
 
     // First we need to split the function or funclet into fragments that are no larger
@@ -1604,11 +1609,19 @@ void UnwindFragmentInfo::Allocate(
     UNATIVE_OFFSET endOffset;
     UNATIVE_OFFSET codeSize;
 
-    // We don't support hot/cold splitting with EH, so if there is cold code, this
-    // better not be a funclet!
-    // TODO-CQ: support funclets in cold code
-
-    noway_assert(isHotCode || funKind == CORJIT_FUNC_ROOT);
+// We don't support hot/cold splitting with EH, so if there is cold code, this
+// better not be a funclet!
+// TODO-CQ: support funclets in cold code
+#ifdef DEBUG
+    if (JitConfig.JitFakeProcedureSplitting() && (pColdCode != NULL))
+    {
+        noway_assert(isHotCode && (funKind == CORJIT_FUNC_ROOT));
+    }
+    else
+#endif // DEBUG
+    {
+        noway_assert(isHotCode || (funKind == CORJIT_FUNC_ROOT));
+    }
 
     // Compute the final size, and start and end offsets of the fragment
 
@@ -1656,7 +1669,17 @@ void UnwindFragmentInfo::Allocate(
 
     if (isHotCode)
     {
-        assert(endOffset <= uwiComp->info.compTotalHotCodeSize);
+#ifdef DEBUG
+        if (JitConfig.JitFakeProcedureSplitting() && (pColdCode != NULL))
+        {
+            assert(endOffset <= uwiComp->info.compNativeCodeSize);
+        }
+        else
+#endif // DEBUG
+        {
+            assert(endOffset <= uwiComp->info.compTotalHotCodeSize);
+        }
+
         pColdCode = NULL;
     }
     else
