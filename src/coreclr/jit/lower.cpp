@@ -5364,7 +5364,7 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
 
     // Check if we can "contain" LEA(BFIZ) in order to extend 32bit index to 64bit as part of load/store.
     if ((index != nullptr) && index->OperIs(GT_BFIZ) && index->gtGetOp1()->OperIs(GT_CAST) &&
-        index->gtGetOp2()->IsCnsIntOrI() && (varTypeIsIntegral(targetType) || varTypeIsFloating(targetType)))
+        index->gtGetOp2()->IsCnsIntOrI() && !varTypeIsStruct(targetType))
     {
         // BFIZ node is a binary op where op1 is GT_CAST and op2 is GT_CNS_INT
         GenTreeCast* cast = index->gtGetOp1()->AsCast();
@@ -7384,6 +7384,7 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
 
             if (arg->IsCnsFltOrDbl())
             {
+                noway_assert(constArgCount < ArrLen(constArgValues));
                 constArgValues[constArgCount] = static_cast<float>(arg->AsDblCon()->gtDconVal);
                 constArgCount++;
             }
@@ -7396,10 +7397,14 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
                 BlockRange().Remove(arg);
             }
 
-            assert(sizeof(constArgValues) == 16);
+            // For SIMD12, even though there might be 12 bytes of constants, we need to store 16 bytes of data
+            // since we've bashed the node the TYP_SIMD16 and do a 16-byte indirection.
+            assert(varTypeIsSIMD(simdNode));
+            const unsigned cnsSize = genTypeSize(simdNode);
+            assert(cnsSize <= sizeof(constArgValues));
 
-            unsigned cnsSize  = sizeof(constArgValues);
-            unsigned cnsAlign = (comp->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : 1;
+            const unsigned cnsAlign =
+                (comp->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : emitter::dataSection::MIN_DATA_ALIGN;
 
             CORINFO_FIELD_HANDLE hnd =
                 comp->GetEmitter()->emitBlkConst(constArgValues, cnsSize, cnsAlign, simdNode->GetSimdBaseType());

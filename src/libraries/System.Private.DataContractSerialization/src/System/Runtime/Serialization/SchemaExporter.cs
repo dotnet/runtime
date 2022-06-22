@@ -90,9 +90,8 @@ namespace System.Runtime.Serialization
             {
                 XmlSchema schema = GetSchema(dataContract.StableName.Namespace);
 
-                if (dataContract is ClassDataContract)
+                if (dataContract is ClassDataContract classDataContract)
                 {
-                    ClassDataContract classDataContract = (ClassDataContract)dataContract;
                     if (classDataContract.IsISerializable)
                         ExportISerializableDataContract(classDataContract, schema);
                     else

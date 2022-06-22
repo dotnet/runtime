@@ -324,6 +324,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_CSNEG_MI:
+        case GT_CNEG_LT:
             genCodeForCond(treeNode->AsOp());
             break;
 #endif // TARGET_ARM64
@@ -3874,14 +3875,9 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
 
         case GenIntCastDesc::CHECK_INT_RANGE:
         {
-            const regNumber tempReg = cast->GetSingleTempReg();
-            assert(tempReg != reg);
-            instGen_Set_Reg_To_Imm(EA_8BYTE, tempReg, INT32_MAX);
-            GetEmitter()->emitIns_R_R(INS_cmp, EA_8BYTE, reg, tempReg);
-            genJumpToThrowHlpBlk(EJ_gt, SCK_OVERFLOW);
-            instGen_Set_Reg_To_Imm(EA_8BYTE, tempReg, INT32_MIN);
-            GetEmitter()->emitIns_R_R(INS_cmp, EA_8BYTE, reg, tempReg);
-            genJumpToThrowHlpBlk(EJ_lt, SCK_OVERFLOW);
+            // Emit "if ((long)(int)x != x) goto OVERFLOW"
+            GetEmitter()->emitIns_R_R(INS_cmp, EA_8BYTE, reg, reg, INS_OPTS_SXTW);
+            genJumpToThrowHlpBlk(EJ_ne, SCK_OVERFLOW);
         }
         break;
 #endif
@@ -4430,6 +4426,16 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
         }
         else
         {
+#ifdef TARGET_ARM64
+            // Handle LEA with "contained" BFIZ
+            if (index->isContained() && index->OperIs(GT_BFIZ))
+            {
+                assert(scale == 0);
+                scale = (DWORD)index->gtGetOp2()->AsIntConCommon()->IconValue();
+                index = index->gtGetOp1()->gtGetOp1();
+            }
+#endif
+
             // Then compute target reg from [base + index*scale]
             genScaledAdd(size, lea->GetRegNum(), memBase->GetRegNum(), index->GetRegNum(), scale);
         }
@@ -4651,7 +4657,7 @@ void CodeGen::genPushCalleeSavedRegisters()
     //      |-----------------------|
     //      |Callee saved registers | // not including FP/LR; multiple of 8 bytes
     //      |-----------------------|
-    //      |    MonitorAcquired    |
+    //      |    MonitorAcquired    | // 8 bytes; for synchronized methods
     //      |-----------------------|
     //      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
     //      |-----------------------|
@@ -4684,7 +4690,7 @@ void CodeGen::genPushCalleeSavedRegisters()
     //      |-----------------------|
     //      |Callee saved registers | // not including FP/LR; multiple of 8 bytes
     //      |-----------------------|
-    //      |    MonitorAcquired    |
+    //      |    MonitorAcquired    | // 8 bytes; for synchronized methods
     //      |-----------------------|
     //      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
     //      |-----------------------|

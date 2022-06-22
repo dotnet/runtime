@@ -111,7 +111,7 @@ internal static partial class Interop
                 if (protocols != SslProtocols.None &&
                     CipherSuitesPolicyPal.WantsTls13(protocols))
                 {
-                    protocols = protocols & (~SslProtocols.Tls13);
+                    protocols &= ~SslProtocols.Tls13;
                 }
             }
             else if (CipherSuitesPolicyPal.WantsTls13(protocols) &&

@@ -1009,7 +1009,6 @@ private:
         {
             // TODO-ADDR: Skip SIMD indirs for now, SIMD typed LCL_FLDs works most of the time
             // but there are exceptions - fgMorphFieldAssignToSimdSetElement for example.
-            // And more importantly, SIMD call args have to be wrapped in OBJ nodes currently.
             return IndirTransform::None;
         }
 
@@ -1022,10 +1021,9 @@ private:
             return IndirTransform::None;
         }
 
-        if ((user == nullptr) || !user->OperIs(GT_ASG, GT_RETURN))
+        if ((user == nullptr) || !user->OperIs(GT_ASG, GT_CALL, GT_RETURN))
         {
-            // TODO-ADDR: call args require extra work because currently they must
-            // be wrapped in OBJ nodes so we can't replace those with local nodes.
+            // TODO-ADDR: remove unused indirections.
             return IndirTransform::None;
         }
 
@@ -1048,7 +1046,6 @@ private:
         //
         enum class StructMatch
         {
-            Exact,
             Compatible,
             Partial
         };
@@ -1057,32 +1054,25 @@ private:
         assert(varDsc->GetLayout() != nullptr);
 
         StructMatch match = StructMatch::Partial;
-        if (val.Offset() == 0)
+        if ((val.Offset() == 0) && ClassLayout::AreCompatible(indirLayout, varDsc->GetLayout()))
         {
-            if (indirLayout->GetClassHandle() == varDsc->GetStructHnd())
-            {
-                match = StructMatch::Exact;
-            }
-            else if (ClassLayout::AreCompatible(indirLayout, varDsc->GetLayout()))
-            {
-                match = StructMatch::Compatible;
-            }
+            match = StructMatch::Compatible;
         }
 
         // Current matrix of matches/users/types:
         //
-        // |------------|------|---------|---------|
-        // | STRUCT     | CALL | ASG     | RETURN  |
-        // |------------|------|---------|---------|
-        // | Exact      | None | LCL_VAR | LCL_VAR |
-        // | Compatible | None | LCL_VAR | LCL_VAR |
-        // | Partial    | None | LCL_FLD | LCL_FLD |
-        // |------------|------|---------|---------|
+        // |------------|---------|---------|---------|
+        // | STRUCT     | CALL(*) | ASG     | RETURN  |
+        // |------------|---------|---------|---------|
+        // | Compatible | LCL_VAR | LCL_VAR | LCL_VAR |
+        // | Partial    | LCL_FLD | LCL_FLD | LCL_FLD |
+        // |------------|---------|---------|---------|
+        //
+        // * - On Windows x64 only.
         //
         // |------------|------|------|--------|----------|
         // | SIMD       | CALL | ASG  | RETURN | HWI/SIMD |
         // |------------|------|------|--------|----------|
-        // | Exact      | None | None | None   | None     |
         // | Compatible | None | None | None   | None     |
         // | Partial    | None | None | None   | None     |
         // |------------|------|------|--------|----------|
@@ -1090,11 +1080,18 @@ private:
         // TODO-ADDR: delete all the "None" entries and always
         // transform local nodes into LCL_VAR or LCL_FLD.
 
-        assert(indir->TypeIs(TYP_STRUCT) && user->OperIs(GT_ASG, GT_RETURN));
+        assert(indir->TypeIs(TYP_STRUCT) && user->OperIs(GT_ASG, GT_CALL, GT_RETURN));
 
         *pStructLayout = indirLayout;
 
-        if ((match == StructMatch::Exact) || (match == StructMatch::Compatible))
+        if (user->IsCall())
+        {
+#ifndef WINDOWS_AMD64_ABI
+            return IndirTransform::None;
+#endif // !WINDOWS_AMD64_ABI
+        }
+
+        if (match == StructMatch::Compatible)
         {
             return IndirTransform::LclVar;
         }

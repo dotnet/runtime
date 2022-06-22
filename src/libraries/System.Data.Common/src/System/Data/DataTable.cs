@@ -543,7 +543,7 @@ namespace System.Data
                 {
                     ForeignKeyConstraint? fk = c as ForeignKeyConstraint;
                     Debug.Assert(fk != null);
-                    bool shouldSerialize = (allConstraints == true) || (fk.Table == this && fk.RelatedTable == this);
+                    bool shouldSerialize = allConstraints || (fk.Table == this && fk.RelatedTable == this);
 
                     if (shouldSerialize)
                     {

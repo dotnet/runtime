@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -84,35 +85,34 @@ namespace System.Formats.Tar.Tests
             VerifyPosixFifo(fifo);
         }
 
-        protected DateTimeOffset ConvertDoubleToDateTimeOffset(double value)
-        {
-            return new DateTimeOffset((long)(value * TimeSpan.TicksPerSecond) + DateTime.UnixEpoch.Ticks, TimeSpan.Zero);
-        }
+        private DateTimeOffset GetDateTimeOffsetFromSecondsSinceEpoch(double secondsSinceUnixEpoch) =>
+            new DateTimeOffset((long)(secondsSinceUnixEpoch * TimeSpan.TicksPerSecond) + DateTime.UnixEpoch.Ticks, TimeSpan.Zero);
 
-        protected double ConvertDateTimeOffsetToDouble(DateTimeOffset value)
-        {
-            return ((double)(value.UtcDateTime - DateTime.UnixEpoch).Ticks)/TimeSpan.TicksPerSecond;
-        }
+        private double GetSecondsSinceEpochFromDateTimeOffset(DateTimeOffset value) =>
+            ((double)(value.UtcDateTime - DateTime.UnixEpoch).Ticks) / TimeSpan.TicksPerSecond;
 
-        protected void VerifyExtendedAttributeTimestamp(PaxTarEntry entry, string name, DateTimeOffset expected = default)
+        protected DateTimeOffset GetDateTimeOffsetFromTimestampString(IReadOnlyDictionary<string, string> ea, string fieldName)
         {
-            Assert.Contains(name, entry.ExtendedAttributes);
+            Assert.True(ea.TryGetValue(fieldName, out string value), $"Extended attributes did not contain field '{fieldName}'");
 
             // As regular header fields, timestamps are saved as integer numbers that fit in 12 bytes
             // But as extended attributes, they should always be saved as doubles with decimal precision
-            Assert.Contains(".", entry.ExtendedAttributes[name]);
+            Assert.Contains(".", value);
 
-            Assert.True(double.TryParse(entry.ExtendedAttributes[name], NumberStyles.Any, CultureInfo.InvariantCulture, out double doubleTime)); // Force the parsing to use '.' as decimal separator
-            DateTimeOffset timestamp = ConvertDoubleToDateTimeOffset(doubleTime);
+            Assert.True(double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out double secondsSinceEpoch), $"Extended attributes field '{fieldName}' is not a valid double.");
+            return GetDateTimeOffsetFromSecondsSinceEpoch(secondsSinceEpoch);
+        }
 
-            if (expected != default)
-            {
-                Assert.Equal(expected, timestamp);
-            }
-            else
-            {
-                Assert.True(timestamp > DateTimeOffset.UnixEpoch);
-            }
+        protected string GetTimestampStringFromDateTimeOffset(DateTimeOffset timestamp)
+        {
+            double secondsSinceEpoch = GetSecondsSinceEpochFromDateTimeOffset(timestamp);
+            return secondsSinceEpoch.ToString("F9", CultureInfo.InvariantCulture);
+        }
+
+        protected void VerifyExtendedAttributeTimestamp(PaxTarEntry paxEntry, string fieldName, DateTimeOffset minimumTime)
+        {
+            DateTimeOffset converted = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, fieldName);
+            AssertExtensions.GreaterThanOrEqualTo(converted, minimumTime);
         }
     }
 }

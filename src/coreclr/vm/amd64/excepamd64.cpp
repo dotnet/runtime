@@ -619,7 +619,6 @@ AdjustContextForVirtualStub(
             _ASSERTE(!"AV in ResolveStub at unknown instruction");
             return FALSE;
         }
-        SetSP(pContext, dac_cast<PCODE>(dac_cast<PTR_BYTE>(GetSP(pContext)) + sizeof(void*))); // rollback push rdx
     }
     else
     {
@@ -633,6 +632,14 @@ AdjustContextForVirtualStub(
     }
     SetIP(pContext, callsite);
     SetSP(pContext, dac_cast<PCODE>(dac_cast<PTR_BYTE>(GetSP(pContext)) + sizeof(void*))); // Move SP to where it was at the call site
+
+#if defined(TARGET_WINDOWS)
+    DWORD64 ssp = GetSSP(pContext);
+    if (ssp != 0)
+    {
+        SetSSP(pContext, ssp + sizeof(void*));
+    }
+#endif // TARGET_WINDOWS
 
     return TRUE;
 }

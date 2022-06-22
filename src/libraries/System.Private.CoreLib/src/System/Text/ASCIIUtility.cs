@@ -198,7 +198,7 @@ namespace System.Text
                 {
                     if (!BitConverter.IsLittleEndian)
                     {
-                        currentUInt32 = currentUInt32 << 16;
+                        currentUInt32 <<= 16;
                     }
                     goto FoundNonAsciiData;
                 }
@@ -1680,7 +1680,7 @@ namespace System.Text
                 {
                     if (!BitConverter.IsLittleEndian)
                     {
-                        asciiData = asciiData << 16;
+                        asciiData <<= 16;
                     }
                     goto FoundNonAsciiData;
                 }

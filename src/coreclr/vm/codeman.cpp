@@ -654,7 +654,7 @@ ExecutionManager::ReaderLockHolder::ReaderLockHolder(HostCallPreference hostCall
 
     IncCantAllocCount();
 
-    FastInterlockIncrement(&m_dwReaderCount);
+    InterlockedIncrement(&m_dwReaderCount);
 
     EE_LOCK_TAKEN(GetPtrForLockContract());
 
@@ -687,7 +687,7 @@ ExecutionManager::ReaderLockHolder::~ReaderLockHolder()
     }
     CONTRACTL_END;
 
-    FastInterlockDecrement(&m_dwReaderCount);
+    InterlockedDecrement(&m_dwReaderCount);
     DecCantAllocCount();
 
     EE_LOCK_RELEASED(GetPtrForLockContract());
@@ -725,10 +725,10 @@ ExecutionManager::WriterLockHolder::WriterLockHolder()
         // or allow a profiler to walk its stack
         Thread::IncForbidSuspendThread();
 
-        FastInterlockIncrement(&m_dwWriterLock);
+        InterlockedIncrement(&m_dwWriterLock);
         if (m_dwReaderCount == 0)
             break;
-        FastInterlockDecrement(&m_dwWriterLock);
+        InterlockedDecrement(&m_dwWriterLock);
 
         // Before we loop and retry, it's safe to suspend or hijack and inspect
         // this thread
@@ -743,7 +743,7 @@ ExecutionManager::WriterLockHolder::~WriterLockHolder()
 {
     LIMITED_METHOD_CONTRACT;
 
-    FastInterlockDecrement(&m_dwWriterLock);
+    InterlockedDecrement(&m_dwWriterLock);
 
     // Writer lock released, so it's safe again for this thread to be
     // suspended or have its stack walked by a profiler
@@ -1566,6 +1566,7 @@ void EEJitManager::SetCpuInfo()
     if (IsProcessorFeaturePresent(PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE))
     {
         CPUCompileFlags.Set(InstructionSet_Atomics);
+        g_arm64_atomics_present = true;
     }
 
     // PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE (43)

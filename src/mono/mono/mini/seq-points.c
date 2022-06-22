@@ -104,7 +104,7 @@ mono_save_seq_point_info (MonoCompile *cfg, MonoJitInfo *jinfo)
 	MonoBasicBlock *bb;
 	GSList *bb_seq_points, *l;
 	MonoInst *last;
-	int i, seq_info_size;
+	int seq_info_size;
 	GSList **next = NULL;
 	SeqPoint* seq_points;
 	GByteArray* array;
@@ -115,7 +115,7 @@ mono_save_seq_point_info (MonoCompile *cfg, MonoJitInfo *jinfo)
 
 	seq_points = g_new0 (SeqPoint, cfg->seq_points->len);
 
-	for (i = 0; i < cfg->seq_points->len; ++i) {
+	for (guint i = 0; i < cfg->seq_points->len; ++i) {
 		SeqPoint *sp = &seq_points [i];
 		MonoInst *ins = (MonoInst *)g_ptr_array_index (cfg->seq_points, i);
 		sp->il_offset = GTMREG_TO_INT (ins->inst_imm);
@@ -185,7 +185,7 @@ mono_save_seq_point_info (MonoCompile *cfg, MonoJitInfo *jinfo)
 		if (cfg->verbose_level > 2) {
 			printf ("\nSEQ POINT MAP: \n");
 
-			for (i = 0; i < cfg->seq_points->len; ++i) {
+			for (guint i = 0; i < cfg->seq_points->len; ++i) {
 				SeqPoint *sp = &seq_points [i];
 
 				if (!next [i])
@@ -207,7 +207,7 @@ mono_save_seq_point_info (MonoCompile *cfg, MonoJitInfo *jinfo)
 		SeqPoint zero_seq_point = {0};
 		SeqPoint* last_seq_point = &zero_seq_point;
 
-		for (i = 0; i < cfg->seq_points->len; ++i) {
+		for (guint i = 0; i < cfg->seq_points->len; ++i) {
 			SeqPoint *sp = &seq_points [i];
 			GSList* next_list = NULL;
 

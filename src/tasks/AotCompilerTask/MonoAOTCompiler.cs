@@ -112,6 +112,16 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public bool UseDwarfDebug { get; set; }
 
     /// <summary>
+    /// Path to Dotnet PGO binary (dotnet-pgo)
+    /// </summary>
+    public string? PgoBinaryPath { get; set; }
+
+    /// <summary>
+    /// NetTrace file to use when invoking dotnet-pgo for
+    /// </summary>
+    public string? NetTracePath { get; set; }
+
+    /// <summary>
     /// File to use for profile-guided optimization, *only* the methods described in the file will be AOT compiled.
     /// </summary>
     public string[]? AotProfilePath { get; set; }
@@ -119,7 +129,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// <summary>
     /// Mibc file to use for profile-guided optimization, *only* the methods described in the file will be AOT compiled.
     /// </summary>
-    public string[]? MibcProfilePath { get; set; }
+    public string[] MibcProfilePath { get; set; } = Array.Empty<string>();
 
     /// <summary>
     /// List of profilers to use.
@@ -271,6 +281,20 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (!Directory.Exists(IntermediateOutputPath))
             Directory.CreateDirectory(IntermediateOutputPath);
 
+        if (!string.IsNullOrEmpty(NetTracePath))
+        {
+            if (!File.Exists(NetTracePath))
+            {
+                Log.LogError($"NetTracePath={nameof(NetTracePath)} doesn't exist");
+                return false;
+            }
+            if (!File.Exists(PgoBinaryPath))
+            {
+                Log.LogError($"NetTracePath was provided, but {nameof(PgoBinaryPath)}='{PgoBinaryPath}' doesn't exist");
+                return false;
+            }
+        }
+
         if (AotProfilePath != null)
         {
             foreach (var path in AotProfilePath)
@@ -283,15 +307,12 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             }
         }
 
-        if (MibcProfilePath != null)
+        foreach (var path in MibcProfilePath)
         {
-            foreach (var path in MibcProfilePath)
+            if (!File.Exists(path))
             {
-                if (!File.Exists(path))
-                {
-                    Log.LogError($"MibcProfilePath '{path}' doesn't exist.");
-                    return false;
-                }
+                Log.LogError($"MibcProfilePath '{path}' doesn't exist.");
+                return false;
             }
         }
 
@@ -400,6 +421,39 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
     }
 
+    private bool ProcessNettrace(string netTraceFile)
+    {
+        var outputMibcPath = Path.Combine(OutputDir, Path.ChangeExtension(Path.GetFileName(netTraceFile), ".mibc"));
+
+        if (_cache!.Enabled)
+        {
+            string hash = Utils.ComputeHash(netTraceFile);
+            if (!_cache!.UpdateAndCheckHasFileChanged($"-mibc-source-file-{Path.GetFileName(netTraceFile)}", hash))
+            {
+                Log.LogMessage(MessageImportance.Low, $"Skipping generating {outputMibcPath} from {netTraceFile} because source file hasn't changed");
+                return true;
+            }
+            else
+            {
+                Log.LogMessage(MessageImportance.Low, $"Generating {outputMibcPath} from {netTraceFile} because the source file's hash has changed.");
+            }
+        }
+
+        (int exitCode, string output) = Utils.TryRunProcess(Log,
+                                                            PgoBinaryPath!,
+                                                            $"create-mibc --trace {netTraceFile} --output {outputMibcPath}");
+
+        if (exitCode != 0)
+        {
+            Log.LogError($"dotnet-pgo({PgoBinaryPath}) failed for {netTraceFile}:{output}");
+            return false;
+        }
+
+        MibcProfilePath = MibcProfilePath.Append(outputMibcPath).ToArray();
+        Log.LogMessage(MessageImportance.Low, $"Generated {outputMibcPath} from {PgoBinaryPath}");
+        return true;
+    }
+
     private bool ExecuteInternal()
     {
         if (!ProcessAndValidateArguments())
@@ -416,6 +470,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             monoPaths = string.Join(Path.PathSeparator.ToString(), AdditionalAssemblySearchPaths);
 
         _cache = new FileCache(CacheFilePath, Log);
+
+        if (!string.IsNullOrEmpty(NetTracePath) && !ProcessNettrace(NetTracePath))
+            return false;
 
         List<PrecompileArguments> argsList = new();
         foreach (var assemblyItem in _assembliesToCompile)
@@ -756,7 +813,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             }
         }
 
-        if (MibcProfilePath?.Length > 0)
+        if (MibcProfilePath.Length > 0)
         {
             aotArgs.Add("profile-only");
             foreach (var path in MibcProfilePath)
@@ -833,12 +890,13 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     private bool PrecompileLibrary(PrecompileArguments args)
     {
         string assembly = args.AOTAssembly.GetMetadata("FullPath");
+        string output;
         try
         {
             string msgPrefix = $"[{Path.GetFileName(assembly)}] ";
 
             // run the AOT compiler
-            (int exitCode, string output) = Utils.TryRunProcess(Log,
+            (int exitCode, output) = Utils.TryRunProcess(Log,
                                                                 CompilerBinaryPath,
                                                                 $"--response=\"{args.ResponseFilePath}\"",
                                                                 args.EnvironmentVariables,
@@ -878,6 +936,12 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         bool copied = false;
         foreach (var proxyFile in args.ProxyFiles)
         {
+            if (!File.Exists(proxyFile.TempFile))
+            {
+                Log.LogError($"Precompile command succeeded, but can't find the expected temporary output file - {proxyFile.TempFile} for {assembly}.{Environment.NewLine}{output}");
+                return false;
+            }
+
             copied |= proxyFile.CopyOutputFileIfChanged();
             _fileWrites.Add(proxyFile.TargetFile);
         }
@@ -1092,8 +1156,20 @@ internal sealed class FileCache
         _newCache = new(_oldCache.FileHashes);
     }
 
+    public bool UpdateAndCheckHasFileChanged(string filePath, string newHash)
+    {
+        if (!Enabled)
+            throw new InvalidOperationException("Cache is not enabled. Make sure the cache file path is set");
+
+        _newCache!.FileHashes[filePath] = newHash;
+        return !_oldCache!.FileHashes.TryGetValue(filePath, out string? oldHash) || oldHash != newHash;
+    }
+
     public bool ShouldCopy(ProxyFile proxyFile, [NotNullWhen(true)] out string? cause)
     {
+        if (!Enabled)
+            throw new InvalidOperationException("Cache is not enabled. Make sure the cache file path is set");
+
         cause = null;
 
         string newHash = Utils.ComputeHash(proxyFile.TempFile);
@@ -1151,6 +1227,9 @@ internal sealed class ProxyFile
 
         try
         {
+            if (!File.Exists(TempFile))
+                throw new LogAsErrorException($"Could not find the temporary file {TempFile} for target file {TargetFile}. Look for any errors/warnings generated earlier in the build.");
+
             if (!_cache.ShouldCopy(this, out string? cause))
             {
                 _cache.Log.LogMessage(MessageImportance.Low, $"Skipping copying over {TargetFile} as the contents are unchanged");

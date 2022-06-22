@@ -3421,6 +3421,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
     {
         firstColdBlock       = fgFirstBB->bbNext;
         prevToFirstColdBlock = fgFirstBB;
+        JITDUMP("JitStressProcedureSplitting is enabled: Splitting after the first basic block\n");
     }
     else
     {

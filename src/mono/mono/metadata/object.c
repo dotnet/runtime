@@ -879,16 +879,16 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 			case MONO_TYPE_ARRAY:
 				g_assert ((m_field_get_offset (field) % wordsize) == 0);
 
-				g_assert (pos < size || pos <= max_size);
+				g_assert (pos < GINT_TO_UINT32(size) || pos <= GINT_TO_UINT32(max_size));
 				bitmap [pos / BITMAP_EL_SIZE] |= ((gsize)1) << (pos % BITMAP_EL_SIZE);
-				*max_set = MAX (*max_set, pos);
+				*max_set = MAX (GINT_TO_UINT32(*max_set), pos);
 				break;
 			case MONO_TYPE_GENERICINST:
 				if (!mono_type_generic_inst_is_valuetype (type)) {
 					g_assert ((m_field_get_offset (field) % wordsize) == 0);
 
 					bitmap [pos / BITMAP_EL_SIZE] |= ((gsize)1) << (pos % BITMAP_EL_SIZE);
-					*max_set = MAX (*max_set, pos);
+					*max_set = MAX (GINT_TO_UINT32(*max_set), pos);
 					break;
 				} else {
 					/* fall through */
@@ -1462,10 +1462,9 @@ initialize_imt_slot (MonoVTable *vtable, MonoImtBuilderEntry *imt_builder_entry,
 			/* Collision, build the trampoline */
 			GPtrArray *imt_ir = imt_sort_slot_entries (imt_builder_entry);
 			gpointer result;
-			int i;
 			result = imt_trampoline_builder (vtable,
 				(MonoIMTCheckItem**)imt_ir->pdata, imt_ir->len, fail_tramp);
-			for (i = 0; i < imt_ir->len; ++i)
+			for (guint i = 0; i < imt_ir->len; ++i)
 				g_free (g_ptr_array_index (imt_ir, i));
 			g_ptr_array_free (imt_ir, TRUE);
 			return result;
@@ -1821,7 +1820,7 @@ mono_method_add_generic_virtual_invocation (MonoVTable *vtable,
 				entries = next;
 			}
 
-			for (int i = 0; i < sorted->len; ++i)
+			for (guint i = 0; i < sorted->len; ++i)
 				g_free (g_ptr_array_index (sorted, i));
 			g_ptr_array_free (sorted, TRUE);
 
@@ -5748,7 +5747,7 @@ mono_array_new_jagged_helper (MonoClass *klass, int n, uintptr_t *lengths, int i
 		// are also arrays and we allocate each one of them.
 		MonoClass *element_class = m_class_get_element_class (klass);
 		g_assert (m_class_get_rank (element_class) == 1);
-		for (int i = 0; i < lengths [index]; i++) {
+		for (uintptr_t i = 0; i < lengths [index]; i++) {
 			MonoArray *o = mono_array_new_jagged_helper (element_class, n, lengths, index + 1, error);
 			goto_if_nok (error, exit);
 			mono_array_setref_fast (ret, i, o);
@@ -6991,7 +6990,7 @@ mono_ldstr_utf8 (MonoImage *image, guint32 idx, MonoError *error)
 		return NULL;
 	}
 	/* g_utf16_to_utf8 may not be able to complete the conversion (e.g. NULL values were found, #335488) */
-	if (len2 > written) {
+	if (len2 > GLONG_TO_ULONG(written)) {
 		/* allocate the total length and copy the part of the string that has been converted */
 		char *as2 = (char *)g_malloc0 (len2);
 		memcpy (as2, as, written);
@@ -7054,7 +7053,7 @@ mono_utf16_to_utf8len (const gunichar2 *s, gsize slength, gsize *utf8_length, Mo
 		return NULL;
 	}
 	/* g_utf16_to_utf8 may not be able to complete the conversion (e.g. NULL values were found, #335488) */
-	if (slength > written) {
+	if (slength > GLONG_TO_ULONG(written)) {
 		/* allocate the total length and copy the part of the string that has been converted */
 		char *as2 = (char *)g_malloc0 (slength);
 		memcpy (as2, as, written);

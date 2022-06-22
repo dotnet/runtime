@@ -835,7 +835,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 case BinaryArrayTypeEnum.RectangularOffset:
                     int arrayLength = 1;
                     for (int i = 0; i < record._rank; i++)
-                        arrayLength = arrayLength * record._lengthA[i];
+                        arrayLength *= record._lengthA[i];
                     op._numItems = arrayLength;
                     pr._arrayTypeEnum = InternalArrayTypeE.Rectangular;
                     break;
