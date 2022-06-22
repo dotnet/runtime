@@ -2181,7 +2181,7 @@ namespace System.Globalization
             {
                 result[index++] = digits.Substring(start, ffffPos - start);
                 start = ++ffffPos;
-                while (ffffPos < digits.Length && digits[ffffPos] != '\uFFFF')
+                while ((uint)ffffPos < (uint)digits.Length && digits[ffffPos] != '\uFFFF')
                 {
                     ffffPos++;
                 }
