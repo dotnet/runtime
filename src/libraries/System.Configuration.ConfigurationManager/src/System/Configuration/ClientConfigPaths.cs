@@ -270,16 +270,13 @@ namespace System.Configuration
                 {
                     typeName = StrongNameDesc;
                 }
-                else
+                else if (Uri.TryCreate(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, assembly.ManifestModule.Name), UriKind.Absolute, out Uri codeBase))
                 {
                     try
                     {
-                        if (Uri.TryCreate(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, assembly.ManifestModule.Name), UriKind.Absolute, out Uri codeBase))
-                        {
-                            // Certain platforms may not have support for crypto
-                            hash = IdentityHelper.GetNormalizedUriHash(codeBase);
-                            typeName = UrlDesc;
-                        }
+                        // Certain platforms may not have support for crypto
+                        hash = IdentityHelper.GetNormalizedUriHash(codeBase);
+                        typeName = UrlDesc;
                     }
                     catch (PlatformNotSupportedException) { }
                 }
