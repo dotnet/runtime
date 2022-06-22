@@ -540,10 +540,10 @@ extern "C" BYTE * QCALLTYPE AssemblyNative_GetResource(QCall::AssemblyHandle pAs
         COMPlusThrow(kArgumentNullException, W("ArgumentNull_String"));
 
     // Get the name in UTF8
-    SString name(SString::Literal, wszName);
+    StackSString name;
+    name.SetAndConvertToUTF8(wszName);
 
-    StackScratchBuffer scratch;
-    LPCUTF8 pNameUTF8 = name.GetUTF8(scratch);
+    LPCUTF8 pNameUTF8 = name.GetUTF8();
 
     if (*pNameUTF8 == '\0')
         COMPlusThrow(kArgumentException, W("Format_StringZeroLength"));
@@ -570,10 +570,9 @@ extern "C" INT32 QCALLTYPE AssemblyNative_GetManifestResourceInfo(QCall::Assembl
         COMPlusThrow(kArgumentNullException, W("ArgumentNull_String"));
 
     // Get the name in UTF8
-    SString name(SString::Literal, wszName);
-
-    StackScratchBuffer scratch;
-    LPCUTF8 pNameUTF8 = name.GetUTF8(scratch);
+    SString name;
+    name.SetAndConvertToUTF8(wszName);
+    LPCUTF8 pNameUTF8 = name.GetUTF8();
 
     if (*pNameUTF8 == '\0')
         COMPlusThrow(kArgumentException, W("Format_StringZeroLength"));

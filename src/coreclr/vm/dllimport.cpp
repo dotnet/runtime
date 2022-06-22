@@ -4628,8 +4628,9 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
         //
         // Find method using name + signature
         //
-        StackScratchBuffer buffer;
-        LPCUTF8 szMethodNameUTF8 = methodName.GetUTF8(buffer);
+        StackSString buffer;
+        buffer.SetAndConvertToUTF8(methodName);
+        LPCUTF8 szMethodNameUTF8 = buffer.GetUTF8();
         pStubMD = MemberLoader::FindMethod(stubClassType.GetMethodTable(),
             szMethodNameUTF8,
             pStubSig,
