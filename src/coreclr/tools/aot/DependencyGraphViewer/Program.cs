@@ -54,7 +54,7 @@ namespace DependencyLogViewer
         public Dictionary<int, Node> Nodes = new Dictionary<int, Node>();
     }
 
-    class GraphCollection
+    public class GraphCollection
     {
         public static readonly GraphCollection Singleton = new GraphCollection();
         public static DependencyGraphs DependencyGraphsUI;
@@ -158,7 +158,7 @@ namespace DependencyLogViewer
         public string Str;
     }
 
-    class DGMLGraphProcessing
+    public class DGMLGraphProcessing
     {
         ConcurrentQueue<GraphEvent> events = new ConcurrentQueue<GraphEvent>();
 
@@ -179,7 +179,7 @@ namespace DependencyLogViewer
         public bool FindXML(string argPath)
         {
             var fileStream = Stream.Null;
-            if (argPath != null) 
+            if (argPath != null)
             {
                 try
                 {
@@ -207,11 +207,15 @@ namespace DependencyLogViewer
                     }
                 }
             }
+            return FindXML(fileStream);
+        }
+        public bool FindXML(Stream stream)
+        {
 
-            if (fileStream != Stream.Null)
+            if (stream != Stream.Null)
             {
                 Thread th = new Thread(ParseXML);
-                th.Start(fileStream);
+                th.Start(stream);
                 return true;
             }
             return false;
