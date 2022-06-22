@@ -11,28 +11,93 @@ using System.Text;
 
 namespace SharedTypes
 {
-    [NativeMarshalling(typeof(StringContainerNative))]
+    [NativeMarshalling(typeof(StringContainerMarshaller))]
     public struct StringContainer
     {
         public string str1;
         public string str2;
     }
 
-    [CustomTypeMarshaller(typeof(StringContainer), Features = CustomTypeMarshallerFeatures.UnmanagedResources)]
-    public struct StringContainerNative
+    [ManagedToUnmanagedMarshallers(typeof(StringContainer),
+        InMarshaller = typeof(In),
+        RefMarshaller = typeof(Ref),
+        OutMarshaller = typeof(Out))]
+    public static class StringContainerMarshaller
+    {
+        public struct StringContainerNative
+        {
+            public IntPtr str1;
+            public IntPtr str2;
+        }
+
+        public static class In
+        {
+            public static StringContainerNative ConvertToUnmanaged(StringContainer managed)
+                => Ref.ConvertToUnmanaged(managed);
+
+            public static void Free(StringContainerNative unmanaged)
+                => Ref.Free(unmanaged);
+        }
+
+        public static class Ref
+        {
+            public static StringContainerNative ConvertToUnmanaged(StringContainer managed)
+            {
+                return new StringContainerNative
+                {
+                    str1 = Marshal.StringToCoTaskMemUTF8(managed.str1),
+                    str2 = Marshal.StringToCoTaskMemUTF8(managed.str2)
+                };
+            }
+
+            public static StringContainer ConvertToManaged(StringContainerNative unmanaged)
+            {
+                return new StringContainer
+                {
+                    str1 = Marshal.PtrToStringUTF8(unmanaged.str1),
+                    str2 = Marshal.PtrToStringUTF8(unmanaged.str2)
+                };
+            }
+
+            public static void Free(StringContainerNative unmanaged)
+            {
+                Marshal.FreeCoTaskMem(unmanaged.str1);
+                Marshal.FreeCoTaskMem(unmanaged.str2);
+            }
+        }
+
+        public static class Out
+        {
+            public static StringContainer ConvertToManaged(StringContainerNative unmanaged)
+                => Ref.ConvertToManaged(unmanaged);
+
+            public static void Free(StringContainerNative unmanaged)
+                => Ref.Free(unmanaged);
+        }
+    }
+
+    [NativeMarshalling(typeof(StringContainerNative_V1))]
+    public struct StringContainer_V1
+    {
+        public string str1;
+        public string str2;
+    }
+
+    [CustomTypeMarshaller(typeof(StringContainer_V1), Features = CustomTypeMarshallerFeatures.UnmanagedResources)]
+    public struct StringContainerNative_V1
     {
         public IntPtr str1;
         public IntPtr str2;
 
-        public StringContainerNative(StringContainer managed)
+        public StringContainerNative_V1(StringContainer_V1 managed)
         {
             str1 = Marshal.StringToCoTaskMemUTF8(managed.str1);
             str2 = Marshal.StringToCoTaskMemUTF8(managed.str2);
         }
 
-        public StringContainer ToManaged()
+        public StringContainer_V1 ToManaged()
         {
-            return new StringContainer
+            return new StringContainer_V1
             {
                 str1 = Marshal.PtrToStringUTF8(str1),
                 str2 = Marshal.PtrToStringUTF8(str2)
@@ -46,12 +111,21 @@ namespace SharedTypes
         }
     }
 
+    [ManagedToUnmanagedMarshallers(typeof(double))]
+    public static class DoubleToLongMarshaller
+    {
+        public static long ConvertToUnmanaged(double managed)
+        {
+            return MemoryMarshal.Cast<double, long>(MemoryMarshal.CreateSpan(ref managed, 1))[0];
+        }
+    }
+
     [CustomTypeMarshaller(typeof(double), Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
-    public struct DoubleToLongMarshaler
+    public struct DoubleToLongMarshaller_V1
     {
         public long l;
 
-        public DoubleToLongMarshaler(double d)
+        public DoubleToLongMarshaller_V1(double d)
         {
             l = MemoryMarshal.Cast<double, long>(MemoryMarshal.CreateSpan(ref d, 1))[0];
         }
@@ -63,7 +137,7 @@ namespace SharedTypes
         public void FromNativeValue(long value) => l = value;
     }
 
-    [NativeMarshalling(typeof(BoolStructNative))]
+    [NativeMarshalling(typeof(BoolStructMarshaller))]
     public struct BoolStruct
     {
         public bool b1;
@@ -71,22 +145,61 @@ namespace SharedTypes
         public bool b3;
     }
 
-    [CustomTypeMarshaller(typeof(BoolStruct))]
-    public struct BoolStructNative
+    [ManagedToUnmanagedMarshallers(typeof(BoolStruct))]
+    public static class BoolStructMarshaller
+    {
+        public struct BoolStructNative
+        {
+            public byte b1;
+            public byte b2;
+            public byte b3;
+        }
+
+        public static BoolStructNative ConvertToUnmanaged(BoolStruct managed)
+        {
+            return new BoolStructNative
+            {
+                b1 = (byte)(managed.b1 ? 1 : 0),
+                b2 = (byte)(managed.b2 ? 1 : 0),
+                b3 = (byte)(managed.b3 ? 1 : 0)
+            };
+        }
+
+        public static BoolStruct ConvertToManaged(BoolStructNative unmanaged)
+        {
+            return new BoolStruct
+            {
+                b1 = unmanaged.b1 != 0,
+                b2 = unmanaged.b2 != 0,
+                b3 = unmanaged.b3 != 0
+            };
+        }
+    }
+
+    [NativeMarshalling(typeof(BoolStructNative_V1))]
+    public struct BoolStruct_V1
+    {
+        public bool b1;
+        public bool b2;
+        public bool b3;
+    }
+
+    [CustomTypeMarshaller(typeof(BoolStruct_V1))]
+    public struct BoolStructNative_V1
     {
         public byte b1;
         public byte b2;
         public byte b3;
-        public BoolStructNative(BoolStruct bs)
+        public BoolStructNative_V1(BoolStruct_V1 bs)
         {
             b1 = (byte)(bs.b1 ? 1 : 0);
             b2 = (byte)(bs.b2 ? 1 : 0);
             b3 = (byte)(bs.b3 ? 1 : 0);
         }
 
-        public BoolStruct ToManaged()
+        public BoolStruct_V1 ToManaged()
         {
-            return new BoolStruct
+            return new BoolStruct_V1
             {
                 b1 = b1 != 0,
                 b2 = b2 != 0,
@@ -95,7 +208,7 @@ namespace SharedTypes
         }
     }
 
-    [NativeMarshalling(typeof(IntWrapperMarshaler))]
+    [NativeMarshalling(typeof(IntWrapperMarshaller))]
     public class IntWrapper
     {
         public int i;
@@ -103,10 +216,39 @@ namespace SharedTypes
         public ref int GetPinnableReference() => ref i;
     }
 
-    [CustomTypeMarshaller(typeof(IntWrapper), Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling)]
-    public unsafe struct IntWrapperMarshaler
+    [ManagedToUnmanagedMarshallers(typeof(IntWrapper))]
+    public static unsafe class IntWrapperMarshaller
     {
-        public IntWrapperMarshaler(IntWrapper managed)
+        public static int* ConvertToUnmanaged(IntWrapper managed)
+        {
+            int* ret = (int*)Marshal.AllocCoTaskMem(sizeof(int));
+            *ret = managed.i;
+            return ret;
+        }
+
+        public static IntWrapper ConvertToManaged(int* unmanaged)
+        {
+            return new IntWrapper { i = *unmanaged };
+        }
+
+        public static void Free(int* unmanaged)
+        {
+            Marshal.FreeCoTaskMem((IntPtr)unmanaged);
+        }
+    }
+
+    [NativeMarshalling(typeof(IntWrapperMarshaler_V1))]
+    public class IntWrapper_V1
+    {
+        public int i;
+
+        public ref int GetPinnableReference() => ref i;
+    }
+
+    [CustomTypeMarshaller(typeof(IntWrapper_V1), Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling)]
+    public unsafe struct IntWrapperMarshaler_V1
+    {
+        public IntWrapperMarshaler_V1(IntWrapper_V1 managed)
         {
             Value = (int*)Marshal.AllocCoTaskMem(sizeof(int));
             *Value = managed.i;
@@ -117,7 +259,7 @@ namespace SharedTypes
         public int* ToNativeValue() => Value;
         public void FromNativeValue(int* value) => Value = value;
 
-        public IntWrapper ToManaged() => new IntWrapper { i = *Value };
+        public IntWrapper_V1 ToManaged() => new IntWrapper_V1 { i = *Value };
 
         public void FreeNative()
         {
