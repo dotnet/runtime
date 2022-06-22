@@ -627,12 +627,12 @@ namespace System.Formats.Tar
             int processId = Environment.ProcessId;
 
             string result = string.Format(GlobalHeadFormatPrefix, tmpDir, processId);
-            if (result.Length >= FieldLengths.Name)
+            string suffix = $".{globalExtendedAttributesEntryNumber}"; // GEA sequence number
+            if (result.Length + suffix.Length >= FieldLengths.Name)
             {
                 result = string.Format(GlobalHeadFormatPrefix, "/tmp", processId);
             }
-
-            result += $".{globalExtendedAttributesEntryNumber}"; // Suffix is ".{sequenceNumber}"
+            result += suffix;
 
             return result;
         }
