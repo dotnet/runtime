@@ -1,7 +1,4 @@
-# Setting batch to true, triggers one build at a time.
-# if there is a push while a build in progress, it will wait,
-# until the running build finishes, and produce a build with all the changes
-# that happened during the last build.
+# Disable for now, enable when once it's stable
 trigger: none
 
 pr:
