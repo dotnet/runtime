@@ -4616,8 +4616,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                 assert(op1->IsCnsFltOrDbl() && !op2->IsCnsFltOrDbl());
 
-                impPopStack().val;
-                impPopStack().val;
+                impPopStack();
+                impPopStack();
 
                 GenTreeVecCon* vecCon = gtNewVconNode(TYP_SIMD16, callJitType);
 
