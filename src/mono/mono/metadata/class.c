@@ -4985,6 +4985,10 @@ mono_class_num_fields (MonoClass *klass)
 int
 mono_class_num_methods (MonoClass *klass)
 {
+	MonoImage *image = m_class_get_image (klass);
+	if (G_UNLIKELY (image->has_updates)) {
+		return mono_class_get_method_count (klass) + mono_metadata_update_get_num_methods_added (klass);
+	}
 	return mono_class_get_method_count (klass);
 }
 
