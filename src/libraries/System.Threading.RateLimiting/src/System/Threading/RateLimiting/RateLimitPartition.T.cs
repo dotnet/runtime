@@ -26,7 +26,7 @@ namespace System.Threading.RateLimiting
         public TKey PartitionKey { get; }
 
         /// <summary>
-        /// The function called when a rate limiter for the given <paramref name="partitionKey"/> is needed.
+        /// The function called when a rate limiter for the given partitionKey is needed.
         /// </summary>
         public Func<TKey, RateLimiter> Factory { get; }
     }
