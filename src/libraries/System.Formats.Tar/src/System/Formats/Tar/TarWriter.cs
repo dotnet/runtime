@@ -17,7 +17,7 @@ namespace System.Formats.Tar
         private bool _isDisposed;
         private readonly bool _leaveOpen;
         private readonly Stream _archiveStream;
-        private int _globalExtendedAttributesEntryNumber;
+        private int _nextGlobalExtendedAttributesEntryNumber;
 
         /// <summary>
         /// Initializes a <see cref="TarWriter"/> instance that can write tar entries to the specified stream and closes the <paramref name="archiveStream"/> upon disposal of this instance.
@@ -70,7 +70,7 @@ namespace System.Formats.Tar
             _leaveOpen = leaveOpen;
             _isDisposed = false;
             _wroteEntries = false;
-            _globalExtendedAttributesEntryNumber = 1;
+            _nextGlobalExtendedAttributesEntryNumber = 1;
         }
 
         /// <summary>
@@ -183,8 +183,8 @@ namespace System.Formats.Tar
                     case TarEntryFormat.Pax:
                         if (entry._header._typeFlag is TarEntryType.GlobalExtendedAttributes)
                         {
-                            entry._header.WriteAsPaxGlobalExtendedAttributes(_archiveStream, buffer, _globalExtendedAttributesEntryNumber);
-                            _globalExtendedAttributesEntryNumber++;
+                            entry._header.WriteAsPaxGlobalExtendedAttributes(_archiveStream, buffer, _nextGlobalExtendedAttributesEntryNumber);
+                            _nextGlobalExtendedAttributesEntryNumber++;
                         }
                         else
                         {
