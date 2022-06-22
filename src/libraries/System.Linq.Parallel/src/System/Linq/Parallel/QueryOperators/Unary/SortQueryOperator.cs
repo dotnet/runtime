@@ -62,7 +62,7 @@ namespace System.Linq.Parallel
         IOrderedEnumerable<TInputOutput> IOrderedEnumerable<TInputOutput>.CreateOrderedEnumerable<TKey2>(
             Func<TInputOutput, TKey2> key2Selector, IComparer<TKey2>? key2Comparer, bool descending)
         {
-            key2Comparer = key2Comparer ?? Util.GetDefaultComparer<TKey2>();
+            key2Comparer ??= Util.GetDefaultComparer<TKey2>();
 
             if (descending)
             {

@@ -58,9 +58,9 @@ namespace System.Formats.Tar
                 entry._header._devMinor = (int)minor;
             }
 
-            entry._header._mTime = TarHelpers.GetDateTimeFromSecondsSinceEpoch(status.MTime);
-            entry._header._aTime = TarHelpers.GetDateTimeFromSecondsSinceEpoch(status.ATime);
-            entry._header._cTime = TarHelpers.GetDateTimeFromSecondsSinceEpoch(status.CTime);
+            entry._header._mTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(status.MTime);
+            entry._header._aTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(status.ATime);
+            entry._header._cTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(status.CTime);
 
             entry._header._mode = (status.Mode & 4095); // First 12 bits
 

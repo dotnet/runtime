@@ -101,20 +101,23 @@ namespace Internal.JitInterface
             private static readonly IntPtr s_jit;
         }
 
-        private struct LikelyClassRecord
+        private struct LikelyClassMethodRecord
         {
-            public IntPtr clsHandle;
+            public IntPtr handle;
             public uint likelihood;
 
-            public LikelyClassRecord(IntPtr clsHandle, uint likelihood)
+            public LikelyClassMethodRecord(IntPtr handle, uint likelihood)
             {
-                this.clsHandle = clsHandle;
+                this.handle = handle;
                 this.likelihood = likelihood;
             }
         }
 
         [DllImport(JitLibrary)]
-        private extern static uint getLikelyClasses(LikelyClassRecord* pLikelyClasses, uint maxLikelyClasses, PgoInstrumentationSchema* schema, uint countSchemaItems, byte*pInstrumentationData, int ilOffset);
+        private extern static uint getLikelyClasses(LikelyClassMethodRecord* pLikelyClasses, uint maxLikelyClasses, PgoInstrumentationSchema* schema, uint countSchemaItems, byte*pInstrumentationData, int ilOffset);
+
+        [DllImport(JitLibrary)]
+        private extern static uint getLikelyMethods(LikelyClassMethodRecord* pLikelyMethods, uint maxLikelyMethods, PgoInstrumentationSchema* schema, uint countSchemaItems, byte*pInstrumentationData, int ilOffset);
 
         [DllImport(JitSupportLibrary)]
         private extern static IntPtr GetJitHost(IntPtr configProvider);
@@ -192,17 +195,18 @@ namespace Internal.JitInterface
 
         public static IEnumerable<PgoSchemaElem> ConvertTypeHandleHistogramsToCompactTypeHistogramFormat(PgoSchemaElem[] pgoData, CompilationModuleGroup compilationModuleGroup)
         {
-            bool hasTypeHistogram = false;
+            bool hasHistogram = false;
             foreach (var elem in pgoData)
             {
-                if (elem.InstrumentationKind == PgoInstrumentationKind.HandleHistogramTypes)
+                if (elem.InstrumentationKind == PgoInstrumentationKind.HandleHistogramTypes ||
+                    elem.InstrumentationKind == PgoInstrumentationKind.HandleHistogramMethods)
                 {
                     // found histogram
-                    hasTypeHistogram = true;
+                    hasHistogram = true;
                     break;
                 }
             }
-            if (!hasTypeHistogram)
+            if (!hasHistogram)
             {
                 foreach (var elem in pgoData)
                 {
@@ -222,9 +226,10 @@ namespace Internal.JitInterface
                     if ((i + 1 < pgoData.Length) &&
                         (pgoData[i].InstrumentationKind == PgoInstrumentationKind.HandleHistogramIntCount ||
                          pgoData[i].InstrumentationKind == PgoInstrumentationKind.HandleHistogramLongCount) &&
-                        (pgoData[i + 1].InstrumentationKind == PgoInstrumentationKind.HandleHistogramTypes))
+                        (pgoData[i + 1].InstrumentationKind == PgoInstrumentationKind.HandleHistogramTypes ||
+                         pgoData[i + 1].InstrumentationKind == PgoInstrumentationKind.HandleHistogramMethods))
                     {
-                        PgoSchemaElem? newElem = ComputeLikelyClass(i, handleToObject, nativeSchema, instrumentationData, compilationModuleGroup);
+                        PgoSchemaElem? newElem = ComputeLikelyClassMethod(i, handleToObject, nativeSchema, instrumentationData, compilationModuleGroup);
                         if (newElem.HasValue)
                         {
                             yield return newElem.Value;
@@ -249,33 +254,63 @@ namespace Internal.JitInterface
             }
         }
 
-        private static PgoSchemaElem? ComputeLikelyClass(int index, Dictionary<IntPtr, object> handleToObject, PgoInstrumentationSchema[] nativeSchema, byte[] instrumentationData, CompilationModuleGroup compilationModuleGroup)
+        private static PgoSchemaElem? ComputeLikelyClassMethod(int index, Dictionary<IntPtr, object> handleToObject, PgoInstrumentationSchema[] nativeSchema, byte[] instrumentationData, CompilationModuleGroup compilationModuleGroup)
         {
             // getLikelyClasses will use two entries from the native schema table. There must be at least two present to avoid overruning the buffer
             if (index > (nativeSchema.Length - 2))
                 return null;
 
+            bool isType = nativeSchema[index + 1].InstrumentationKind == PgoInstrumentationKind.HandleHistogramTypes;
+
             fixed(PgoInstrumentationSchema* pSchema = &nativeSchema[index])
             {
                 fixed(byte* pInstrumentationData = &instrumentationData[0])
                 {
-                    // We're going to store only the most popular type to reduce size of the profile
-                    LikelyClassRecord* likelyClasses = stackalloc LikelyClassRecord[1];
-                    uint numberOfClasses = getLikelyClasses(likelyClasses, 1, pSchema, 2, pInstrumentationData, nativeSchema[index].ILOffset);
-
-                    if (numberOfClasses > 0)
+                    // We're going to store only the most popular type/method to reduce size of the profile
+                    LikelyClassMethodRecord* likelyClassMethods = stackalloc LikelyClassMethodRecord[1];
+                    uint numberOfRecords;
+                    if (isType)
                     {
-                        TypeDesc type = (TypeDesc)handleToObject[likelyClasses->clsHandle];
+                        numberOfRecords = getLikelyClasses(likelyClassMethods, 1, pSchema, 2, pInstrumentationData, nativeSchema[index].ILOffset);
+                    }
+                    else
+                    {
+                        numberOfRecords = getLikelyMethods(likelyClassMethods, 1, pSchema, 2, pInstrumentationData, nativeSchema[index].ILOffset);
+                    }
+
+                    if (numberOfRecords > 0)
+                    {
+                        TypeSystemEntityOrUnknown[] newData = null;
+                        if (isType)
+                        {
+                            TypeDesc type = (TypeDesc)handleToObject[likelyClassMethods->handle];
 #if READYTORUN
-                        if (compilationModuleGroup.VersionsWithType(type))
+                            if (compilationModuleGroup.VersionsWithType(type))
 #endif
+                            {
+                                newData = new[] { new TypeSystemEntityOrUnknown(type) };
+                            }
+                        }
+                        else
+                        {
+                            MethodDesc method = (MethodDesc)handleToObject[likelyClassMethods->handle];
+
+#if READYTORUN
+                            if (compilationModuleGroup.VersionsWithMethodBody(method))
+#endif
+                            {
+                                newData = new[] { new TypeSystemEntityOrUnknown(method) };
+                            }
+                        }
+
+                        if (newData != null)
                         {
                             PgoSchemaElem likelyClassElem = new PgoSchemaElem();
-                            likelyClassElem.InstrumentationKind = PgoInstrumentationKind.GetLikelyClass;
+                            likelyClassElem.InstrumentationKind = isType ? PgoInstrumentationKind.GetLikelyClass : PgoInstrumentationKind.GetLikelyMethod;
                             likelyClassElem.ILOffset = nativeSchema[index].ILOffset;
                             likelyClassElem.Count = 1;
-                            likelyClassElem.Other = (int)(likelyClasses->likelihood | (numberOfClasses << 8));
-                            likelyClassElem.DataObject = new TypeSystemEntityOrUnknown[] { new TypeSystemEntityOrUnknown(type) };
+                            likelyClassElem.Other = (int)(likelyClassMethods->likelihood | (numberOfRecords << 8));
+                            likelyClassElem.DataObject = newData;
                             return likelyClassElem;
                         }
                     }

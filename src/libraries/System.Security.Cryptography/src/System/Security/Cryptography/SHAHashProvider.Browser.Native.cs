@@ -8,7 +8,7 @@ using System.Security.Cryptography;
 
 using SimpleDigest = Interop.BrowserCrypto.SimpleDigest;
 
-namespace Internal.Cryptography
+namespace System.Security.Cryptography
 {
     internal sealed class SHANativeHashProvider : HashProvider
     {
@@ -87,7 +87,7 @@ namespace Internal.Cryptography
             _buffer = null;
         }
 
-        private static (SimpleDigest, int) HashAlgorithmToPal(string hashAlgorithmId)
+        internal static (SimpleDigest HashName, int HashSizeInBytes) HashAlgorithmToPal(string hashAlgorithmId)
         {
             return hashAlgorithmId switch
             {
