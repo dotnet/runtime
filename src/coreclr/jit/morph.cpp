@@ -13807,6 +13807,21 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
     }
 #endif
 
+#if defined(FEATURE_SIMD)
+    if (multiOp->OperIs(GT_SIMD))
+    {
+        dontCseConstArguments = true;
+        for (GenTree* arg : multiOp->Operands())
+        {
+            if (!arg->OperIsConst())
+            {
+                dontCseConstArguments = false;
+                break;
+            }
+        }
+    }
+#endif
+
     for (GenTree** use : multiOp->UseEdges())
     {
         *use = fgMorphTree(*use);
