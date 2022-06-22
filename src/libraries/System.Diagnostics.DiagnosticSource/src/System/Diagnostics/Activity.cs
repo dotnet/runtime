@@ -1983,7 +1983,7 @@ namespace System.Diagnostics
 
         public static ActivitySpanId CreateFromString(ReadOnlySpan<char> idData)
         {
-            Aif (idData.Length != 16 || !ActivityTraceId.IsLowerCaseHexAndNotAllZeros(idData))
+            if (idData.Length != 16 || !ActivityTraceId.IsLowerCaseHexAndNotAllZeros(idData))
                 throw new ArgumentOutOfRangeException(nameof(idData));
 
             return new ActivitySpanId(idData.ToString());
