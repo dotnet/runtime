@@ -1403,10 +1403,8 @@ namespace DebuggerTests
 
         internal async Task SetJustMyCode(bool enabled)
         {
-            var req = JObject.FromObject(new { enabled = enabled });
-            var res = await cli.SendCommand("DotnetDebugger.justMyCode", req, token);
-            Assert.True(res.IsOk);
-            Assert.Equal(res.Value["justMyCodeEnabled"], enabled);
+            var req = JObject.FromObject(new { JustMyCodeStepping = enabled });
+            var res = await cli.SendCommand("DotnetDebugger.setDebuggerProperty", req, token);
         }
     }
 
