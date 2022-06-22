@@ -5,12 +5,12 @@ using System;
 
 interface IBase<T>
 {
-    public static abstract void Method();
+    static abstract void Method();
 }
 
 interface IDerived<T> : IBase<T>
 {
-    public static void IBase<T>.Method()
+    static void IBase<T>.Method()
     {
         Console.WriteLine("IDerived.Method");
     }
