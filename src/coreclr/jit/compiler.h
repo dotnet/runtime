@@ -5881,15 +5881,6 @@ private:
     Statement* fgInlinePrependStatements(InlineInfo* inlineInfo);
     void fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* block, Statement* stmt);
 
-#if FEATURE_MULTIREG_RET
-    GenTree* fgGetStructAsStructPtr(GenTree* tree);
-    GenTree* fgAssignStructInlineeToVar(GenTree* child, CORINFO_CLASS_HANDLE retClsHnd);
-    void fgAttachStructInlineeToAsg(GenTree* tree, GenTree* child, CORINFO_CLASS_HANDLE retClsHnd);
-#endif // FEATURE_MULTIREG_RET
-
-    static fgWalkPreFn  fgUpdateInlineReturnExpressionPlaceHolder;
-    static fgWalkPostFn fgLateDevirtualization;
-
 #ifdef DEBUG
     static fgWalkPreFn fgDebugCheckInlineCandidates;
 

@@ -8666,12 +8666,6 @@ GenTree* Compiler::fgMorphConst(GenTree* tree)
 // Return value:
 //    GenTreeLclVar if the obj can be replaced by it, null otherwise.
 //
-// Notes:
-//    TODO-CQ: currently this transformation is done only under copy block,
-//    but it is beneficial to do for each OBJ node. However, `PUT_ARG_STACK`
-//    for some platforms does not expect struct `LCL_VAR` as a source, so
-//    it needs more work.
-//
 GenTreeLclVar* Compiler::fgMorphTryFoldObjAsLclVar(GenTreeObj* obj, bool destroyNodes)
 {
     if (opts.OptimizationEnabled())
