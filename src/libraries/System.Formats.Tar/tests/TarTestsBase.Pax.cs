@@ -94,8 +94,12 @@ namespace System.Formats.Tar.Tests
         protected DateTimeOffset GetDateTimeOffsetFromTimestampString(IReadOnlyDictionary<string, string> ea, string fieldName)
         {
             Assert.Contains(fieldName, ea);
+            return GetDateTimeOffsetFromTimestampString(ea[fieldName]);
+        }
 
-            Assert.True(decimal.TryParse(ea[fieldName], NumberStyles.Any, CultureInfo.InvariantCulture, out decimal secondsSinceEpoch), $"Extended attributes field '{fieldName}' is not a valid decimal number.");
+        protected DateTimeOffset GetDateTimeOffsetFromTimestampString(string strNumber)
+        {
+            Assert.True(decimal.TryParse(strNumber, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal secondsSinceEpoch));
             return GetDateTimeOffsetFromSecondsSinceEpoch(secondsSinceEpoch);
         }
 
