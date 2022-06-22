@@ -168,10 +168,10 @@ namespace
         }
 
         dialogMsg.append(
-            _X("Would you like to download it now?\n\n")
             _X("Learn about "));
         dialogMsg.append(error_code == StatusCode::FrameworkMissingFailure ? _X("framework resolution:") : _X("runtime installation:"));
-        dialogMsg.append(_X("\n") DOTNET_APP_LAUNCH_FAILED_URL);
+        dialogMsg.append(_X("\n") DOTNET_APP_LAUNCH_FAILED_URL _X("\n\n")
+            _X("Would you like to download it now?"));
 
         assert(url.length() > 0);
         assert(is_gui_application());
