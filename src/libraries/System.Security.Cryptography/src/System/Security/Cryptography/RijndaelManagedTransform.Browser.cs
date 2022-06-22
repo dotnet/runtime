@@ -140,13 +140,9 @@ namespace System.Security.Cryptography
 
         public int Transform(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            // TODO: eerhardt change this to make it efficient
-
-            byte[] inputBuffer = input.ToArray();
-
             byte[] outputBuffer = new byte[output.Length];
 
-            int written = TransformBlock(inputBuffer, 0, inputBuffer.Length, outputBuffer, 0);
+            int written = TransformBlock(input, outputBuffer, 0);
             outputBuffer.AsSpan(0, written).CopyTo(output);
             return written;
         }
@@ -163,13 +159,16 @@ namespace System.Security.Cryptography
             if (inputCount <= 0 || (inputCount % InputBlockSize != 0) || (inputCount > inputBuffer.Length)) throw new ArgumentException(SR.GetResourceString("Argument_InvalidValue"));
             if ((inputBuffer.Length - inputCount) < inputOffset) throw new ArgumentException(SR.GetResourceString("Argument_InvalidOffLen"));
 
+            return TransformBlock(inputBuffer.AsSpan(inputOffset, inputCount), outputBuffer, outputOffset);
+        }
+
+        private int TransformBlock(ReadOnlySpan<byte> inputBuffer, byte[] outputBuffer, int outputOffset)
+        {
             if (_encrypting)
             {
                 // if we're encrypting we can always push out the bytes because no padding mode
                 // removes bytes during encryption
                 return EncryptData(inputBuffer,
-                                   inputOffset,
-                                   inputCount,
                                    ref outputBuffer,
                                    outputOffset,
                                    false);
@@ -182,11 +181,9 @@ namespace System.Security.Cryptography
                 {
                     _depadBuffer = new byte[InputBlockSize];
                     // copy the last InputBlockSize bytes to _depadBuffer everything else gets processed and returned
-                    int inputToProcess = inputCount - InputBlockSize;
-                    Buffer.BlockCopy(inputBuffer, inputOffset + inputToProcess, _depadBuffer, 0, InputBlockSize);
-                    return DecryptData(inputBuffer,
-                                       inputOffset,
-                                       inputToProcess,
+                    int inputToProcess = inputBuffer.Length - InputBlockSize;
+                    inputBuffer.Slice(inputToProcess).CopyTo(_depadBuffer);
+                    return DecryptData(inputBuffer.Slice(0, inputToProcess),
                                        ref outputBuffer,
                                        outputOffset,
                                        false);
@@ -195,16 +192,13 @@ namespace System.Security.Cryptography
                 {
                     // we already have a depad buffer, so we need to decrypt that info first & copy it out
                     DecryptData(_depadBuffer,
-                                0, _depadBuffer.Length,
                                 ref outputBuffer,
                                 outputOffset,
                                 false);
                     outputOffset += OutputBlockSize;
-                    int inputToProcess = inputCount - InputBlockSize;
-                    Buffer.BlockCopy(inputBuffer, inputOffset + inputToProcess, _depadBuffer, 0, InputBlockSize);
-                    int r = DecryptData(inputBuffer,
-                                    inputOffset,
-                                    inputToProcess,
+                    int inputToProcess = inputBuffer.Length - InputBlockSize;
+                    inputBuffer.Slice(inputToProcess).CopyTo(_depadBuffer);
+                    int r = DecryptData(inputBuffer.Slice(0, inputToProcess),
                                     ref outputBuffer,
                                     outputOffset,
                                     false);
@@ -215,11 +209,7 @@ namespace System.Security.Cryptography
 
         public int TransformFinal(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            // TODO: eerhardt change this to make it efficient
-
-            byte[] inputBuffer = input.ToArray();
-
-            byte[] outputBuffer = TransformFinalBlock(inputBuffer, 0, inputBuffer.Length);
+            byte[] outputBuffer = TransformFinalBlock(input);
             outputBuffer.CopyTo(output);
             return outputBuffer.Length;
         }
@@ -231,13 +221,16 @@ namespace System.Security.Cryptography
             if (inputCount < 0 || (inputCount > inputBuffer.Length)) throw new ArgumentException(SR.GetResourceString("Argument_InvalidValue"));
             if ((inputBuffer.Length - inputCount) < inputOffset) throw new ArgumentException(SR.GetResourceString("Argument_InvalidOffLen"));
 
+            return TransformFinalBlock(inputBuffer.AsSpan(inputOffset, inputCount));
+        }
+
+        private byte[] TransformFinalBlock(ReadOnlySpan<byte> inputBuffer)
+        {
             if (_encrypting)
             {
                 // If we're encrypting we can alway return what we compute because there's no _depadBuffer
                 byte[]? transformedBytes = null;
                 EncryptData(inputBuffer,
-                            inputOffset,
-                            inputCount,
                             ref transformedBytes,
                             0,
                             true);
@@ -246,15 +239,13 @@ namespace System.Security.Cryptography
             }
             else
             {
-                if (inputCount % InputBlockSize != 0)
+                if (inputBuffer.Length % InputBlockSize != 0)
                     throw new CryptographicException(SR.GetResourceString("Cryptography_SSD_InvalidDataSize"));
 
                 if (_depadBuffer == null)
                 {
                     byte[]? transformedBytes = null;
                     DecryptData(inputBuffer,
-                                inputOffset,
-                                inputCount,
                                 ref transformedBytes,
                                 0,
                                 true);
@@ -263,13 +254,11 @@ namespace System.Security.Cryptography
                 }
                 else
                 {
-                    byte[] temp = new byte[_depadBuffer.Length + inputCount];
+                    byte[] temp = new byte[_depadBuffer.Length + inputBuffer.Length];
                     Buffer.BlockCopy(_depadBuffer, 0, temp, 0, _depadBuffer.Length);
-                    Buffer.BlockCopy(inputBuffer, inputOffset, temp, _depadBuffer.Length, inputCount);
+                    inputBuffer.CopyTo(temp.AsSpan(_depadBuffer.Length));
                     byte[]? transformedBytes = null;
                     DecryptData(temp,
-                                0,
-                                temp.Length,
                                 ref transformedBytes,
                                 0,
                                 true);
@@ -296,22 +285,18 @@ namespace System.Security.Cryptography
         // This method writes the encrypted data into the output buffer. If the output buffer is null,
         // it allocates it and populates it with the encrypted data.
         //
-        private unsafe int EncryptData(byte[] inputBuffer,
-                                       int inputOffset,
-                                       int inputCount,
+        private unsafe int EncryptData(ReadOnlySpan<byte> inputBuffer,
                                        [NotNull] ref byte[]? outputBuffer,
                                        int outputOffset,
                                        bool fLast)
         {
-            if (inputBuffer.Length < inputOffset + inputCount)
-                throw new CryptographicException(SR.GetResourceString("Cryptography_InsufficientBuffer"));
-
+            int inputCount = inputBuffer.Length;
             int padSize = 0;
             int lonelyBytes = inputCount % InputBlockSize;
 
             // Check the padding mode and make sure we have enough outputBuffer to handle any padding we have to do.
             byte[]? padBytes = null;
-            int workBaseIndex = inputOffset, index = 0;
+            int workBaseIndex = 0, index = 0;
             if (fLast)
             {
                 padSize = InputBlockSize - lonelyBytes;
@@ -411,15 +396,12 @@ namespace System.Security.Cryptography
         // it allocates it and populates it with the decrypted data.
         //
 
-        private unsafe int DecryptData(byte[] inputBuffer,
-                                       int inputOffset,
-                                       int inputCount,
+        private unsafe int DecryptData(ReadOnlySpan<byte> inputBuffer,
                                        [NotNull] ref byte[]? outputBuffer,
                                        int outputOffset,
                                        bool fLast)
         {
-            if (inputBuffer.Length < inputOffset + inputCount)
-                throw new CryptographicException(SR.GetResourceString("Cryptography_InsufficientBuffer"));
+            int inputCount = inputBuffer.Length;
 
             if (outputBuffer == null)
             {
@@ -452,7 +434,7 @@ namespace System.Security.Cryptography
                                             int* temp = stackalloc int[_Nb];
 
                                             int iNumBlocks = inputCount / InputBlockSize;
-                                            int workBaseIndex = inputOffset, index = 0, transformCount = outputOffset;
+                                            int workBaseIndex = 0, index = 0, transformCount = outputOffset;
                                             for (int blockNum = 0; blockNum < iNumBlocks; ++blockNum)
                                             {
                                                 index = workBaseIndex;
