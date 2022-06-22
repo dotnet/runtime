@@ -66,31 +66,30 @@ namespace System
         {
             MonoStackFrame[]? stackFrames;
 
-            // Make sure foreignExceptionFrames does not change at this point.
-            // Otherwise, the Array.Copy into combinedStackFrames can fail due to size differences
-            //
-            // See https://github.com/dotnet/runtime/issues/70081
-            lock(frameLock)
+            if (_traceIPs != null)
             {
-                if (_traceIPs != null)
-                {
-                    stackFrames = Diagnostics.StackTrace.get_trace(this, 0, true);
-                    if (stackFrames.Length > 0)
-                        stackFrames[stackFrames.Length - 1].isLastFrameFromForeignException = true;
+                stackFrames = Diagnostics.StackTrace.get_trace(this, 0, true);
+                if (stackFrames.Length > 0)
+                    stackFrames[stackFrames.Length - 1].isLastFrameFromForeignException = true;
 
-                    if (foreignExceptionsFrames != null)
-                    {
-                        var combinedStackFrames = new MonoStackFrame[stackFrames.Length + foreignExceptionsFrames.Length];
-                        Array.Copy(foreignExceptionsFrames, 0, combinedStackFrames, 0, foreignExceptionsFrames.Length);
-                        Array.Copy(stackFrames, 0, combinedStackFrames, foreignExceptionsFrames.Length, stackFrames.Length);
+                // Make sure foreignExceptionsFrames does not change at this point.
+                // Otherwise, the Array.Copy into combinedStackFrames can fail due to size differences
+                //
+                // See https://github.com/dotnet/runtime/issues/70081
+                MonoStackFrame[]? feFrames = foreignExceptionsFrames;
 
-                        stackFrames = combinedStackFrames;
-                    }
-                }
-                else
+                if (feFrames != null)
                 {
-                    stackFrames = foreignExceptionsFrames;
+                    var combinedStackFrames = new MonoStackFrame[stackFrames.Length + feFrames.Length];
+                    Array.Copy(feFrames, 0, combinedStackFrames, 0, feFrames.Length);
+                    Array.Copy(stackFrames, 0, combinedStackFrames, feFrames.Length, stackFrames.Length);
+
+                    stackFrames = combinedStackFrames;
                 }
+            }
+            else
+            {
+                stackFrames = foreignExceptionsFrames;
             }
 
             return new DispatchState(stackFrames);
@@ -98,14 +97,8 @@ namespace System
 
         internal void RestoreDispatchState(in DispatchState state)
         {
-            // Isolate so we can safely update foreignExceptionFrames and CaptureDispatchState can read the correct values
-            //
-            // See https://github.com/dotnet/runtime/issues/70081
-            lock(frameLock)
-            {
-                foreignExceptionsFrames = state.StackFrames;
-                _stackTraceString = null;
-            }
+            foreignExceptionsFrames = state.StackFrames;
+            _stackTraceString = null;
         }
 
         // Returns true if setting the _remoteStackTraceString field is legal, false if not (immutable exception).
