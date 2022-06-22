@@ -888,7 +888,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 feedbackSize: 128);
         }
 
-        public static IEnumerable<object[]> CryptorReuse_LeadsToSameResultsData
+        public static IEnumerable<object[]> EncryptorReuse_LeadsToSameResultsData
         {
             get
             {
@@ -904,7 +904,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
         
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
-        [MemberData(nameof(CryptorReuse_LeadsToSameResultsData))]
+        [MemberData(nameof(EncryptorReuse_LeadsToSameResultsData))]
         public static void EncryptorReuse_LeadsToSameResults(CipherMode cipherMode, int feedbackSize)
         {
             // AppleCCCryptor does not allow calling Reset on CFB cipher.
@@ -931,12 +931,31 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
-        [MemberData(nameof(CryptorReuse_LeadsToSameResultsData))]
+        [InlineData(CipherMode.CBC, 0)]
+        [InlineData(CipherMode.CFB, 128)]
+        [InlineData(CipherMode.CFB, 8)]
+        [InlineData(CipherMode.ECB, 0)]
+        [SkipOnPlatform(TestPlatforms.Browser, "PaddingMode.None is not supported on Browser")]
         public static void DecryptorReuse_LeadsToSameResults(CipherMode cipherMode, int feedbackSize)
         {
             // AppleCCCryptor does not allow calling Reset on CFB cipher.
             // this test validates that the behavior is taken into consideration.
+            var input = "2981761d979bb1765a28b2dd19125b54".HexToByteArray();
+            DecryptorReuse_LeadsToSameResults_Common(cipherMode, feedbackSize, input, PaddingMode.None);
+        }
+
+        // Split from DecryptorReuse_LeadsToSameResults in order to run the test on Browser
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        public static void DecryptorReuse_LeadsToSameResults_CBC_PCKS7()
+        {
             var input = "123d9e5823e1b2464eea51b9fd346735f1fa8d126b3967fa213990a443f8f5c1".HexToByteArray();
+            DecryptorReuse_LeadsToSameResults_Common(CipherMode.CBC, feedbackSize: 0, input, paddingMode: null);
+        }
+
+        private static void DecryptorReuse_LeadsToSameResults_Common(CipherMode cipherMode, int feedbackSize, byte[] input, PaddingMode? paddingMode)
+        {
+            // AppleCCCryptor does not allow calling Reset on CFB cipher.
+            // this test validates that the behavior is taken into consideration.
             var key = "e1c6e6884eee69552dbfee21f22ca92685d5d08ef0e3f37e5b338c533bb8d72c".HexToByteArray();
             var iv = "cea9f23ae87a637ab0cda6381ecc1202".HexToByteArray();
 
@@ -945,6 +964,11 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 aes.Mode = cipherMode;
                 aes.Key = key;
                 aes.IV = iv;
+
+                if (paddingMode.HasValue)
+                {
+                    aes.Padding = paddingMode.Value;
+                }
 
                 if (feedbackSize > 0)
                 {
