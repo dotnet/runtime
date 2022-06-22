@@ -461,7 +461,8 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal void CacheMember(JsonPropertyInfo jsonPropertyInfo, JsonPropertyDictionary<JsonPropertyInfo>? propertyCache, ref Dictionary<string, JsonPropertyInfo>? ignoredMembers)
         {
-            string memberName = jsonPropertyInfo.ClrName!;
+            Debug.Assert(jsonPropertyInfo.ClrName != null, "ClrName can be null in custom JsonPropertyInfo instances and should never be passed in this method");
+            string memberName = jsonPropertyInfo.ClrName;
 
             // The JsonPropertyNameAttribute or naming policy resulted in a collision.
             if (!propertyCache!.TryAdd(jsonPropertyInfo.Name, jsonPropertyInfo))
@@ -545,7 +546,7 @@ namespace System.Text.Json.Serialization.Metadata
             foreach (KeyValuePair<string, JsonPropertyInfo?> kvp in PropertyCache.List)
             {
                 JsonPropertyInfo jsonProperty = kvp.Value!;
-                string propertyName = jsonProperty.ClrName!;
+                string propertyName = jsonProperty.ClrName ?? jsonProperty.Name;
 
                 ParameterLookupKey key = new(propertyName, jsonProperty.PropertyType);
                 ParameterLookupValue value = new(jsonProperty);
@@ -584,7 +585,8 @@ namespace System.Text.Json.Serialization.Metadata
                 else if (DataExtensionProperty != null &&
                     StringComparer.OrdinalIgnoreCase.Equals(paramToCheck.Name, DataExtensionProperty.Name))
                 {
-                    ThrowHelper.ThrowInvalidOperationException_ExtensionDataCannotBindToCtorParam(DataExtensionProperty);
+                    Debug.Assert(DataExtensionProperty.ClrName != null, "Custom property info cannot be data extension property");
+                    ThrowHelper.ThrowInvalidOperationException_ExtensionDataCannotBindToCtorParam(DataExtensionProperty.ClrName, DataExtensionProperty);
                 }
             }
 

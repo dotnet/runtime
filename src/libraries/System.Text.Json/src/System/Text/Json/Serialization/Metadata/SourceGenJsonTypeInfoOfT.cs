@@ -150,7 +150,8 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     if (hasJsonInclude)
                     {
-                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(jsonPropertyInfo.ClrName!, jsonPropertyInfo.DeclaringType);
+                        Debug.Assert(jsonPropertyInfo.ClrName != null, "ClrName is not set by source gen");
+                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(jsonPropertyInfo.ClrName, jsonPropertyInfo.DeclaringType);
                     }
 
                     continue;

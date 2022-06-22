@@ -721,6 +721,70 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void SerializingTypeWithCustomNonSerializablePropertyAndJsonConstructorWorksCorrectly()
+        {
+            var resolver = new DefaultJsonTypeInfoResolver { Modifiers = { ContractModifier } };
+            var options = new JsonSerializerOptions { TypeInfoResolver = resolver };
+            string json = JsonSerializer.Serialize(new PocoWithConstructor("str"), options);
+            Assert.Equal("{}", json);
+
+            static void ContractModifier(JsonTypeInfo jti)
+            {
+                if (jti.Type == typeof(PocoWithConstructor))
+                {
+                    jti.Properties.Add(jti.CreateJsonPropertyInfo(typeof(string), "someOtherName"));
+                }
+            }
+        }
+
+        [Fact]
+        public static void SerializingTypeWithCustomSerializablePropertyAndJsonConstructorWorksCorrectly()
+        {
+            var resolver = new DefaultJsonTypeInfoResolver { Modifiers = { ContractModifier } };
+            var options = new JsonSerializerOptions { TypeInfoResolver = resolver };
+            string json = JsonSerializer.Serialize(new PocoWithConstructor("str"), options);
+            Assert.Equal("""{"test":"asd"}""", json);
+
+            static void ContractModifier(JsonTypeInfo jti)
+            {
+                if (jti.Type == typeof(PocoWithConstructor))
+                {
+                    JsonPropertyInfo pi = jti.CreateJsonPropertyInfo(typeof(string), "test");
+                    pi.Get = (o) => "asd";
+                    jti.Properties.Add(pi);
+                }
+            }
+        }
+
+        [Fact]
+        public static void SerializingTypeWithCustomPropertyAndJsonConstructorBindsParameter()
+        {
+            var resolver = new DefaultJsonTypeInfoResolver { Modifiers = { ContractModifier } };
+            var options = new JsonSerializerOptions { TypeInfoResolver = resolver };
+            string json = """{"parameter":"asd"}""";
+            PocoWithConstructor deserialized = JsonSerializer.Deserialize<PocoWithConstructor>(json, options);
+            Assert.Equal("asd", deserialized.ParameterValue);
+
+            static void ContractModifier(JsonTypeInfo jti)
+            {
+                if (jti.Type == typeof(PocoWithConstructor))
+                {
+                    jti.Properties.Add(jti.CreateJsonPropertyInfo(typeof(string), "parameter"));
+                }
+            }
+        }
+
+        private class PocoWithConstructor
+        {
+            internal string ParameterValue { get; set; }
+
+            public PocoWithConstructor(string parameter)
+            {
+                ParameterValue = parameter;
+            }
+        }
+
+        [Fact]
         public static void JsonConstructorAttributeIsOverridenAndPropertiesAreSetWhenCreateObjectIsSet_LargeConstructor()
         {
             DefaultJsonTypeInfoResolver resolver = new();

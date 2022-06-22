@@ -228,9 +228,9 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_ExtensionDataCannotBindToCtorParam(JsonPropertyInfo jsonPropertyInfo)
+        public static void ThrowInvalidOperationException_ExtensionDataCannotBindToCtorParam(string propertyName, JsonPropertyInfo jsonPropertyInfo)
         {
-            throw new InvalidOperationException(SR.Format(SR.ExtensionDataCannotBindToCtorParam, jsonPropertyInfo.ClrName, jsonPropertyInfo.DeclaringType));
+            throw new InvalidOperationException(SR.Format(SR.ExtensionDataCannotBindToCtorParam, propertyName, jsonPropertyInfo.DeclaringType));
         }
 
         [DoesNotReturn]
