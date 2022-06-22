@@ -1383,6 +1383,16 @@ public:
         return OperIsConditionalCompare(OperGet());
     }
 
+    static bool OperIsCC(genTreeOps gtOper)
+    {
+        return (gtOper == GT_JCC) || (gtOper == GT_SETCC);
+    }
+
+    bool OperIsCC() const
+    {
+        return OperIsCC(OperGet());
+    }
+
     static bool OperIsShift(genTreeOps gtOper)
     {
         return (gtOper == GT_LSH) || (gtOper == GT_RSH) || (gtOper == GT_RSZ);

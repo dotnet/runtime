@@ -796,7 +796,12 @@ void Lowering::LowerCast(GenTree* tree)
 //
 void Lowering::LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIntrinsicId, GenCondition condition)
 {
-    GenTreeCC* cc = LowerNodeCC(node, condition);
+    GenTree* cc = LowerNodeCC(node, condition);
+
+    if (!cc->OperIsCC())
+    {
+        return;
+    }
 
     assert(HWIntrinsicInfo::lookupNumArgs(newIntrinsicId) == 2);
     node->ChangeHWIntrinsicId(newIntrinsicId);
@@ -805,6 +810,7 @@ void Lowering::LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIn
 
     bool swapOperands    = false;
     bool canSwapOperands = false;
+    GenCondition ccCondition = cc->AsCC()->gtCondition;
 
     switch (newIntrinsicId)
     {
@@ -824,20 +830,20 @@ void Lowering::LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIn
             //     containment.
             //   - Allow swapping for containment purposes only if this doesn't result in a non-"preferred"
             //     condition being generated.
-            if ((cc != nullptr) && cc->gtCondition.PreferSwap())
+            if ((cc != nullptr) && ccCondition.PreferSwap())
             {
                 swapOperands = true;
             }
             else
             {
-                canSwapOperands = (cc == nullptr) || !GenCondition::Swap(cc->gtCondition).PreferSwap();
+                canSwapOperands = (cc == nullptr) || !GenCondition::Swap(ccCondition).PreferSwap();
             }
             break;
 
         case NI_SSE41_PTEST:
         case NI_AVX_PTEST:
             // If we need the Carry flag then we can't swap operands.
-            canSwapOperands = (cc == nullptr) || cc->gtCondition.Is(GenCondition::EQ, GenCondition::NE);
+            canSwapOperands = (cc == nullptr) || ccCondition.Is(GenCondition::EQ, GenCondition::NE);
             break;
 
         default:
@@ -863,7 +869,7 @@ void Lowering::LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIn
 
         if (cc != nullptr)
         {
-            cc->gtCondition = GenCondition::Swap(cc->gtCondition);
+            ccCondition = GenCondition::Swap(ccCondition);
         }
     }
 }
