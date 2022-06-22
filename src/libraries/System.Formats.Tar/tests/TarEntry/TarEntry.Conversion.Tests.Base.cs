@@ -123,8 +123,8 @@ namespace System.Formats.Tar.Tests
             if (formatToConvert is TarEntryFormat.Pax)
             {
                 PaxTarEntry paxEntry = convertedEntry as PaxTarEntry;
-                DateTimeOffset actualAccessTime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, "atime");
-                DateTimeOffset actualChangeTime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, "atime");
+                DateTimeOffset actualAccessTime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaATime);
+                DateTimeOffset actualChangeTime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaCTime);
                 if (originalEntry.Format is TarEntryFormat.Pax or TarEntryFormat.Gnu)
                 {
                     GetExpectedTimestampsFromOriginalPaxOrGnu(originalEntry, out DateTimeOffset expectedATime, out DateTimeOffset expectedCTime);
