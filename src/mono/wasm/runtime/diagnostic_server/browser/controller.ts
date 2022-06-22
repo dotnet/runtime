@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { DiagnosticOptions, EventPipeSessionOptions, EventPipeSessionIPCOptions, EventPipeSessionDiagnosticServerID } from "../../types";
-import type { EventPipeSessionIDImpl } from "../server_pthread/controller-commands";
-
+import type { EventPipeSessionIDImpl } from "../shared/types";
 
 
 interface ServerReadyResult {
@@ -32,7 +31,7 @@ async function configureServer(options: DiagnosticOptions): Promise<ServerConfig
         return { serverStarted: false };
 }
 
-function postIPCStreamingSessionStarted(diagnosticSessionID: EventPipeSessionDiagnosticServerID, sessionID: EventPipeSessionIDImpl): void {
+function postIPCStreamingSessionStarted(/*diagnosticSessionID: EventPipeSessionDiagnosticServerID, sessionID: EventPipeSessionIDImpl*/): void {
     // TODO: For IPC streaming sessions this is the place to send back an acknowledgement with the session ID
 }
 

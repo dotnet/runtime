@@ -1,13 +1,3 @@
 {
-    "extends": "../tsconfig",
-    "compilerOptions": {
-        "lib": [
-            "esnext",
-            "webworker"
-        ],
-    },
-    "exclude": [
-        "../dotnet.d.ts",
-        "../bin"
-    ]
+    "extends": "../tsconfig.worker.json"
 }

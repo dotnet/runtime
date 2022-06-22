@@ -5,15 +5,8 @@
 
 import { pthread_self } from "../../pthreads/worker";
 import { controlCommandReceived } from "./event_pipe";
+import { isDiagnosticMessage } from "../shared/types";
 
-interface DiagnosticMessage {
-    type: "diagnostic_server";
-    cmd: string;
-}
-
-function isDiagnosticMessage(x: any): x is DiagnosticMessage {
-    return typeof (x) === "object" && x.type === "diagnostic_server" && typeof (x.cmd) === "string";
-}
 
 class DiagnosticServer {
     readonly websocketUrl: string;
@@ -27,8 +20,8 @@ class DiagnosticServer {
         console.log("starting diagnostic server");
 
         if (pthread_self) {
-            pthread_self.addEventListener(this.onMessage.bind(this));
-            pthread_self.postMessage({
+            pthread_self.addEventListenerFromBrowser(this.onMessage.bind(this));
+            pthread_self.postMessageToBrowser({
                 "type": "diagnostic_server",
                 "cmd": "started",
                 "thread_id": pthread_self.pthread_id

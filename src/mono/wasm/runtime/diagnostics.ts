@@ -29,11 +29,18 @@ function stop_streaming(sessionID: EventPipeSessionIDImpl): void {
     cwraps.mono_wasm_event_pipe_session_disable(sessionID);
 }
 
-class EventPipeIPCSession implements EventPipeStreamingSession {
+abstract class EventPipeSessionBase {
+    isIPCStreamingSession(): this is EventPipeStreamingSession {
+        return this instanceof EventPipeIPCSession;
+    }
+}
+
+class EventPipeIPCSession extends EventPipeSessionBase implements EventPipeStreamingSession {
     private _sessionID: EventPipeSessionIDImpl;
     private _diagnosticServerID: EventPipeSessionDiagnosticServerID;
 
     constructor(diagnosticServerID: EventPipeSessionDiagnosticServerID, sessionID: EventPipeSessionIDImpl) {
+        super();
         this._sessionID = sessionID;
         this._diagnosticServerID = diagnosticServerID;
     }
@@ -41,9 +48,7 @@ class EventPipeIPCSession implements EventPipeStreamingSession {
     get sessionID(): bigint {
         return BigInt(this._sessionID);
     }
-    get isIPCStreamingSession(): true {
-        return true;
-    }
+
     start() {
         throw new Error("implement me");
     }
@@ -59,17 +64,15 @@ class EventPipeIPCSession implements EventPipeStreamingSession {
 }
 
 /// An EventPipe session that saves the event data to a file in the VFS.
-class EventPipeFileSession implements EventPipeSession {
+class EventPipeFileSession extends EventPipeSessionBase implements EventPipeSession {
     protected _state: State;
     private _sessionID: EventPipeSessionIDImpl;
     private _tracePath: string; // VFS file path to the trace file
 
     get sessionID(): bigint { return BigInt(this._sessionID); }
-    get isIPCStreamingSession(): boolean {
-        return false;
-    }
 
     constructor(sessionID: EventPipeSessionIDImpl, tracePath: string) {
+        super();
         this._state = State.Initialized;
         this._sessionID = sessionID;
         this._tracePath = tracePath;

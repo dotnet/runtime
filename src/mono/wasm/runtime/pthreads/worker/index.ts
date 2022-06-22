@@ -7,6 +7,7 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 import { Module, ENVIRONMENT_IS_PTHREAD } from "../../imports";
 import { makeChannelCreatedMonoMessage, pthread_ptr } from "../shared";
 import { mono_assert, is_nullish } from "../../types";
+import type { MonoThreadMessage, PThreadInfo } from "../shared";
 import {
     makeWorkerThreadEvent,
     dotnetPthreadCreated,
@@ -23,23 +24,27 @@ export {
     WorkerThreadEventTarget,
 } from "./events";
 
-export interface PThreadSelf {
-    readonly pthread_id: pthread_ptr;
-    postMessage: <T = object>(message: T, transfer?: Transferable[]) => void;
-    addEventListener: <T>(listener: (event: MessageEvent<T>) => void) => void;
+export interface PThreadSelf extends PThreadInfo {
+    postMessageToBrowser: <T extends MonoThreadMessage>(message: T, transfer?: Transferable[]) => void;
+    addEventListenerFromBrowser: (listener: <T extends MonoThreadMessage>(event: MessageEvent<T>) => void) => void;
 }
 
 class WorkerSelf implements PThreadSelf {
     readonly port: MessagePort;
     readonly pthread_id: pthread_ptr;
+    readonly is_main_thread = false;
     constructor(pthread_id: pthread_ptr, port: MessagePort) {
         this.port = port;
         this.pthread_id = pthread_id;
     }
-    postMessage<T = object>(message: T, transfer?: Transferable[]) {
-        this.port.postMessage(message, transfer);
+    postMessageToBrowser(message: MonoThreadMessage, transfer?: Transferable[]) {
+        if (transfer) {
+            this.port.postMessage(message, transfer);
+        } else {
+            this.port.postMessage(message);
+        }
     }
-    addEventListener<T>(listener: (event: MessageEvent<T>) => void) {
+    addEventListenerFromBrowser(listener: (event: MessageEvent<MonoThreadMessage>) => void) {
         this.port.addEventListener("message", listener);
     }
 }

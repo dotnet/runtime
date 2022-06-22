@@ -2,9 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type {
-    EventPipeSessionIDImpl, EventPipeSessionDiagnosticServerID, DiagnosticServerControlCommand,
+    EventPipeSessionIDImpl, EventPipeSessionDiagnosticServerID,
+} from "../shared/types";
+import { DiagnosticMessage } from "../shared/types";
+import type {
+    DiagnosticServerControlCommand,
     /*DiagnosticServerControlCommandStart, DiagnosticServerControlCommandSetSessionID*/
-} from "./controller-commands";
+} from "../shared/controller-commands";
 
 /// Everything the diagnostic server knows about a connection.
 /// The connection has a server ID and a websocket. If it's an eventpipe session, it will also have an eventpipe ID assigned when the runtime starts an EventPipe session.
@@ -190,15 +194,9 @@ function startServer(url: string): SessionManager {
 
 let sessionManager: SessionManager | null = null;
 
-export function controlCommandReceived(event: MessageEvent<DiagnosticServerControlCommand>): void {
-    console.debug("get in loser, we're going to vegas", event.data);
-    const cmd = event.data;
-    if (cmd.type === undefined) {
-        console.error("control command has no type property");
-        return;
-    }
-
-    switch (cmd.type) {
+export function controlCommandReceived(msg: DiagnosticMessage): void {
+    const cmd = msg as DiagnosticServerControlCommand;
+    switch (cmd.cmd) {
         case "start":
             if (sessionManager !== null)
                 throw new Error("server already started");
@@ -210,7 +208,7 @@ export function controlCommandReceived(event: MessageEvent<DiagnosticServerContr
             sessionManager.assignEventPipeSessionID(cmd.diagnostic_server_id, cmd.session_id);
             break;
         default:
-            console.warn("Unknown control command: " + (<any>cmd).type);
+            console.warn("Unknown control command: ", <any>cmd);
             break;
     }
 }
