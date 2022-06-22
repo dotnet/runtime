@@ -40,7 +40,7 @@ namespace System.Reflection.Emit
         private int m_length;
         private byte[] m_ILStream;
 
-        private int[]? m_labelList;
+        private __LabelInfo[]? m_labelList;
         private int m_labelCount;
 
         private __FixupData[]? m_fixupData;
@@ -61,10 +61,13 @@ namespace System.Reflection.Emit
         internal int m_localCount;
         internal SignatureHelper m_localSignature;
 
-        private int m_maxStackSize;     // Maximum stack size not counting the exceptions.
+        private int m_curDepth; // Current stack depth, with -1 meaning unknown.
+        private int m_targetDepth; // Stack depth at a target of the previous instruction (when it is branching).
+        private int m_maxDepth; // Running max of the stack depth.
 
-        private int m_maxMidStack;      // Maximum stack size for a given basic block.
-        private int m_maxMidStackCur;   // Running count of the maximum stack size for the current basic block.
+        // Adjustment to add to m_maxDepth for incorrect/invalid IL. For example, when branch instructions
+        // with different stack depths target the same label.
+        private long m_depthAdjustment;
 
         internal int CurrExcStackCount => m_currExcStackCount;
 
@@ -131,28 +134,32 @@ namespace System.Reflection.Emit
             // requirements for the function.  stackchange specifies the amount
             // by which the stacksize needs to be updated.
 
-            // Special case for the Return.  Returns pops 1 if there is a
-            // non-void return value.
-
-            // Update the running stacksize.  m_maxMidStack specifies the maximum
-            // amount of stack required for the current basic block irrespective of
-            // where you enter the block.
-            m_maxMidStackCur += stackchange;
-            if (m_maxMidStackCur > m_maxMidStack)
-                m_maxMidStack = m_maxMidStackCur;
-            else if (m_maxMidStackCur < 0)
-                m_maxMidStackCur = 0;
-
-            // If the current instruction signifies end of a basic, which basically
-            // means an unconditional branch, add m_maxMidStack to m_maxStackSize.
-            // m_maxStackSize will eventually be the sum of the stack requirements for
-            // each basic block.
-            if (opcode.EndsUncondJmpBlk())
+            if (m_curDepth < 0)
             {
-                m_maxStackSize += m_maxMidStack;
-                m_maxMidStack = 0;
-                m_maxMidStackCur = 0;
+                // Current depth is "unknown". We get here when:
+                // * this is unreachable code.
+                // * the client uses explicit numeric offsets rather than Labels.
+                m_curDepth = 0;
             }
+
+            m_curDepth += stackchange;
+            if (m_curDepth < 0)
+            {
+                // Stack underflow. Assume our previous depth computation was flawed.
+                m_depthAdjustment -= m_curDepth;
+                m_curDepth = 0;
+            }
+            else if (m_maxDepth < m_curDepth)
+                m_maxDepth = m_curDepth;
+            Debug.Assert(m_depthAdjustment >= 0);
+            Debug.Assert(m_curDepth >= 0);
+
+            // Record the stack depth at a "target" of this instruction.
+            m_targetDepth = m_curDepth;
+
+            // If the current instruction can't fall through, set the depth to unknown.
+            if (opcode.EndsUncondJmpBlk())
+                m_curDepth = -1;
         }
 
         private int GetMethodToken(MethodBase method, Type[]? optionalParameterTypes, bool useMethodDef)
@@ -280,10 +287,11 @@ namespace System.Reflection.Emit
             if (index < 0 || index >= m_labelCount || m_labelList is null)
                 throw new ArgumentException(SR.Argument_BadLabel);
 
-            if (m_labelList[index] < 0)
+            int pos = m_labelList[index].m_pos;
+            if (pos < 0)
                 throw new ArgumentException(SR.Argument_BadLabelContent);
 
-            return m_labelList[index];
+            return pos;
         }
 
         private void AddFixup(Label lbl, int pos, int instSize)
@@ -306,11 +314,30 @@ namespace System.Reflection.Emit
                 m_fixupLabel = lbl,
                 m_fixupInstSize = instSize
             };
+
+            int labelIndex = lbl.GetLabelValue();
+            if (labelIndex < 0 || labelIndex >= m_labelCount || m_labelList is null)
+                throw new ArgumentException(SR.Argument_BadLabel);
+
+            int depth = m_labelList[labelIndex].m_depth;
+            int targetDepth = m_targetDepth;
+            Debug.Assert(depth >= -1);
+            Debug.Assert(targetDepth >= -1);
+            if (depth < targetDepth)
+            {
+                // Either unknown depth for this label or this branch location has a larger depth than previously recorded.
+                // In the latter case, the IL is (likely) invalid, but we just compensate for it.
+                if (depth >= 0)
+                    m_depthAdjustment += targetDepth - depth;
+                m_labelList[labelIndex].m_depth = targetDepth;
+            }
         }
 
         internal int GetMaxStackSize()
         {
-            return m_maxStackSize;
+            // Limit the computed max stack to 2^16 - 1, since the value is mod`ed by 2^16 by other code.
+            Debug.Assert(m_depthAdjustment >= 0);
+            return (int)Math.Min(ushort.MaxValue, m_maxDepth + m_depthAdjustment);
         }
 
         private static void SortExceptions(__ExceptionInfo[] exceptions)
@@ -926,7 +953,7 @@ namespace System.Reflection.Emit
                 m_currExcStack = EnlargeArray(m_currExcStack);
             }
 
-            Label endLabel = DefineLabel();
+            Label endLabel = DefineLabel(0);
             __ExceptionInfo exceptionInfo = new __ExceptionInfo(m_length, endLabel);
 
             // add the exception to the tracking list
@@ -934,6 +961,10 @@ namespace System.Reflection.Emit
 
             // Make this exception the current active exception
             m_currExcStack[m_currExcStackCount++] = exceptionInfo;
+
+            // Stack depth for "try" starts at zero.
+            m_curDepth = 0;
+
             return endLabel;
         }
 
@@ -969,7 +1000,7 @@ namespace System.Reflection.Emit
             // Check if we've already set this label.
             // The only reason why we might have set this is if we have a finally block.
 
-            Label label = m_labelList![endLabel.GetLabelValue()] != -1
+            Label label = m_labelList![endLabel.GetLabelValue()].m_pos != -1
                 ? current.m_finallyEndLabel
                 : endLabel;
 
@@ -990,6 +1021,9 @@ namespace System.Reflection.Emit
             Emit(OpCodes.Leave, current.GetEndLabel());
 
             current.MarkFilterAddr(m_length);
+
+            // Stack depth for "filter" starts at one.
+            m_curDepth = 1;
         }
 
         public virtual void BeginCatchBlock(Type? exceptionType)
@@ -1020,6 +1054,9 @@ namespace System.Reflection.Emit
             }
 
             current.MarkCatchAddr(m_length, exceptionType);
+
+            // Stack depth for "catch" starts at one.
+            m_curDepth = 1;
         }
 
         public virtual void BeginFaultBlock()
@@ -1034,6 +1071,9 @@ namespace System.Reflection.Emit
             Emit(OpCodes.Leave, current.GetEndLabel());
 
             current.MarkFaultAddr(m_length);
+
+            // Stack depth for "fault" starts at zero.
+            m_curDepth = 0;
         }
 
         public virtual void BeginFinallyBlock()
@@ -1055,7 +1095,7 @@ namespace System.Reflection.Emit
 
             MarkLabel(endLabel);
 
-            Label finallyEndLabel = DefineLabel();
+            Label finallyEndLabel = DefineLabel(0);
             current.SetFinallyEndLabel(finallyEndLabel);
 
             // generate leave for try clause
@@ -1063,6 +1103,9 @@ namespace System.Reflection.Emit
             if (catchEndAddr == 0)
                 catchEndAddr = m_length;
             current.MarkFinallyAddr(m_length, catchEndAddr);
+
+            // Stack depth for "finally" starts at zero.
+            m_curDepth = 0;
         }
 
         #endregion
@@ -1070,18 +1113,26 @@ namespace System.Reflection.Emit
         #region Labels
         public virtual Label DefineLabel()
         {
+            // We don't know the stack depth at the label yet, so set it to -1.
+            return DefineLabel(-1);
+        }
+
+        private Label DefineLabel(int depth)
+        {
             // Declares a new Label.  This is just a token and does not yet represent any particular location
             // within the stream.  In order to set the position of the label within the stream, you must call
             // Mark Label.
+            Debug.Assert(depth >= -1);
 
-            // Delay init the lable array in case we dont use it
-            m_labelList ??= new int[DefaultLabelArraySize];
+            // Delay init the label array in case we dont use it
+            m_labelList ??= new __LabelInfo[DefaultLabelArraySize];
 
             if (m_labelCount >= m_labelList.Length)
             {
                 m_labelList = EnlargeArray(m_labelList);
             }
-            m_labelList[m_labelCount] = -1;
+            m_labelList[m_labelCount].m_pos = -1;
+            m_labelList[m_labelCount].m_depth = depth;
             return new Label(m_labelCount++);
         }
 
@@ -1098,12 +1149,39 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_InvalidLabel);
             }
 
-            if (m_labelList[labelIndex] != -1)
+            if (m_labelList[labelIndex].m_pos != -1)
             {
                 throw new ArgumentException(SR.Argument_RedefinedLabel);
             }
 
-            m_labelList[labelIndex] = m_length;
+            m_labelList[labelIndex].m_pos = m_length;
+
+            int depth = m_labelList[labelIndex].m_depth;
+            if (depth < 0)
+            {
+                // Unknown depth for this label, indicating that it hasn't been used yet.
+                // If m_curDepth is unknown, we're in the Backward branch constraint case. See ECMA-335 III.1.7.5.
+                // The m_depthAdjustment field will compensate for violations of this constraint, as we
+                // discover them. That is, here we assume a depth of zero. If a (later) branch to this label
+                // has a positive stack depth, we'll record that as the new depth and add the delta into
+                // m_depthAdjustment.
+                if (m_curDepth < 0)
+                    m_curDepth = 0;
+                m_labelList[labelIndex].m_depth = m_curDepth;
+            }
+            else if (depth < m_curDepth)
+            {
+                // A branch location with smaller stack targets this label. In this case, the IL is
+                // invalid, but we just compensate for it.
+                m_depthAdjustment += m_curDepth - depth;
+                m_labelList[labelIndex].m_depth = m_curDepth;
+            }
+            else if (depth > m_curDepth)
+            {
+                // Either the current depth is unknown, or a branch location with larger stack targets
+                // this label, so the IL is invalid. In either case, just adjust the current depth.
+                m_curDepth = depth;
+            }
         }
 
         #endregion
@@ -1285,6 +1363,12 @@ namespace System.Reflection.Emit
         #endregion
 
         #endregion
+    }
+
+    internal struct __LabelInfo
+    {
+        internal int m_pos; // Position in the il stream, with -1 meaning unknown.
+        internal int m_depth; // Stack depth, with -1 meaning unknown.
     }
 
     internal struct __FixupData
