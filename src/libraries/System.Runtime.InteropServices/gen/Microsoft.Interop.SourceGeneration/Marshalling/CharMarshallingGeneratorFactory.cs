@@ -52,7 +52,6 @@ namespace Microsoft.Interop
                 {
                     case UnmanagedType.I2:
                     case UnmanagedType.U2:
-                        // If runtime marshalling is disabled, we treat UTF-16 char as blittable
                         return _useBlittableMarshallerForUtf16 ? s_blittable : s_utf16Char;
                 }
             }
@@ -61,7 +60,6 @@ namespace Microsoft.Interop
                 switch (marshalStringInfo.CharEncoding)
                 {
                     case CharEncoding.Utf16:
-                        // If runtime marshalling is disabled, we treat UTF-16 char as blittable
                         return _useBlittableMarshallerForUtf16 ? s_blittable : s_utf16Char;
                     case CharEncoding.Utf8:
                         throw new MarshallingNotSupportedException(info, context) // [Compat] UTF-8 is not supported for char

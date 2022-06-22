@@ -26,7 +26,7 @@ namespace Microsoft.Interop
         }
 
         public UnsupportedMarshallingFactory()
-            :this(DefaultTypeToErrorMessageMap)
+            : this(DefaultTypeToErrorMessageMap)
         {
 
         }
