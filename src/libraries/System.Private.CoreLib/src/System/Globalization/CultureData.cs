@@ -2188,6 +2188,8 @@ namespace System.Globalization
 
             } while (ffffPos < digits.Length && index < 10);
 
+            Debug.Assert(index >= 10, $"Couldn't read native digits for '{_sWindowsName}' successfully.");
+
             return index < 10 ? NumberFormatInfo.s_asciiDigits : result;
         }
 
