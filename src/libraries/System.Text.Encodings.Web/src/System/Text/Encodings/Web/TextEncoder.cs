@@ -608,8 +608,14 @@ namespace System.Text.Encodings.Web
 
         private static void ValidateRanges(int startIndex, int characterCount, int actualInputLength)
         {
-            ArgumentOutOfRangeException.ThrowIfNotBetween(startIndex, 0, actualInputLength);
-            ArgumentOutOfRangeException.ThrowIfNotBetween(characterCount, 0, (actualInputLength - startIndex));
+            if (startIndex < 0 || startIndex > actualInputLength)
+            {
+                throw new ArgumentOutOfRangeException(nameof(startIndex));
+            }
+            if (characterCount < 0 || characterCount > (actualInputLength - startIndex))
+            {
+                throw new ArgumentOutOfRangeException(nameof(characterCount));
+            }
         }
 
         [DoesNotReturn]

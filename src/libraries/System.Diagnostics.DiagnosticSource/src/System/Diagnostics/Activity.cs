@@ -1790,7 +1790,8 @@ namespace System.Diagnostics
         }
         public static ActivityTraceId CreateFromBytes(ReadOnlySpan<byte> idData)
         {
-            ArgumentOutOfRangeException.ThrowIf(idData.Length != 16);
+            if (idData.Length != 16)
+                throw new ArgumentOutOfRangeException(nameof(idData));
 
             return new ActivityTraceId(HexConverter.ToString(idData, HexConverter.Casing.Lower));
         }
@@ -1798,7 +1799,8 @@ namespace System.Diagnostics
 
         public static ActivityTraceId CreateFromString(ReadOnlySpan<char> idData)
         {
-            ArgumentOutOfRangeException.ThrowIf(idData.Length != 32 || !ActivityTraceId.IsLowerCaseHexAndNotAllZeros(idData));
+            if (idData.Length != 32 || !ActivityTraceId.IsLowerCaseHexAndNotAllZeros(idData))
+                throw new ArgumentOutOfRangeException(nameof(idData));
 
             return new ActivityTraceId(idData.ToString());
         }
@@ -1845,7 +1847,8 @@ namespace System.Diagnostics
         /// <param name="idData"></param>
         private ActivityTraceId(ReadOnlySpan<byte> idData)
         {
-            ArgumentOutOfRangeException.ThrowIf(idData.Length != 32);
+            if (idData.Length != 32)
+                throw new ArgumentOutOfRangeException(nameof(idData));
 
             Span<ulong> span = stackalloc ulong[2];
 
@@ -1911,7 +1914,10 @@ namespace System.Diagnostics
         {
             int hi = HexConverter.FromLowerChar(char1);
             int lo = HexConverter.FromLowerChar(char2);
-            ArgumentOutOfRangeException.ThrowIf((hi | lo) == 0xFF);
+            if ((hi | lo) == 0xFF)
+            {
+                throw new ArgumentOutOfRangeException("idData");
+            }
 
             return (byte)((hi << 4) | lo);
         }
@@ -1968,7 +1974,8 @@ namespace System.Diagnostics
         }
         public static ActivitySpanId CreateFromBytes(ReadOnlySpan<byte> idData)
         {
-            ArgumentOutOfRangeException.ThrowIf(idData.Length != 8);
+            if (idData.Length != 8)
+                throw new ArgumentOutOfRangeException(nameof(idData));
 
             return new ActivitySpanId(HexConverter.ToString(idData, HexConverter.Casing.Lower));
         }
@@ -1976,7 +1983,8 @@ namespace System.Diagnostics
 
         public static ActivitySpanId CreateFromString(ReadOnlySpan<char> idData)
         {
-            ArgumentOutOfRangeException.ThrowIf(idData.Length != 16 || !ActivityTraceId.IsLowerCaseHexAndNotAllZeros(idData));
+            Aif (idData.Length != 16 || !ActivityTraceId.IsLowerCaseHexAndNotAllZeros(idData))
+                throw new ArgumentOutOfRangeException(nameof(idData));
 
             return new ActivitySpanId(idData.ToString());
         }
@@ -2020,7 +2028,10 @@ namespace System.Diagnostics
 
         private unsafe ActivitySpanId(ReadOnlySpan<byte> idData)
         {
-            ArgumentOutOfRangeException.ThrowIf(idData.Length != 16);
+            if (idData.Length != 16)
+            {
+                throw new ArgumentOutOfRangeException(nameof(idData));
+            }
 
             if (!Utf8Parser.TryParse(idData, out ulong id, out _, 'x'))
             {
