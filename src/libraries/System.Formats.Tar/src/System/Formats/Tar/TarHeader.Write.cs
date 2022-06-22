@@ -615,12 +615,8 @@ namespace System.Formats.Tar
         {
             Debug.Assert(globalExtendedAttributesEntryNumber >= 1);
 
-            string? tmpDir = Environment.GetEnvironmentVariable("TMPDIR");
-            if (string.IsNullOrWhiteSpace(tmpDir))
-            {
-                tmpDir = "/tmp";
-            }
-            else if (Path.EndsInDirectorySeparator(tmpDir))
+            string tmpDir = Path.GetTempPath();
+            if (Path.EndsInDirectorySeparator(tmpDir))
             {
                 tmpDir = Path.TrimEndingDirectorySeparator(tmpDir);
             }
