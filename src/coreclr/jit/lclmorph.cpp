@@ -702,7 +702,6 @@ private:
         if (node->OperIs(GT_LCL_VAR, GT_LCL_FLD))
         {
             // If the location is accessed directly then we don't need to do anything.
-
             assert(node->AsLclVarCommon()->GetLclNum() == val.LclNum());
         }
         else
@@ -981,19 +980,14 @@ private:
 
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(val.LclNum());
 
-        if (varDsc->TypeGet() != TYP_STRUCT)
+        if (varTypeIsSIMD(varDsc))
         {
-            // TODO-ADDR: Skip integral/floating point variables for now, they're more
-            // complicated to transform. We can always turn an indirect access of such
-            // a variable into a LCL_FLD but that blocks enregistration so we need to
-            // detect those case where we can use LCL_VAR instead, perhaps in conjunction
-            // with CAST and/or BITCAST.
-            // Also skip SIMD variables for now, fgMorphFieldAssignToSimdSetElement and
+            // TODO-ADDR: skip SIMD variables for now, fgMorphFieldAssignToSimdSetElement and
             // others need to be updated to recognize LCL_FLDs.
             return IndirTransform::None;
         }
 
-        if (!indir->TypeIs(TYP_STRUCT))
+        if (indir->TypeGet() != TYP_STRUCT)
         {
             if (varDsc->lvPromoted)
             {
@@ -1002,10 +996,47 @@ private:
                 return IndirTransform::None;
             }
 
-            // As we are only handling non-promoted STRUCT locals right now, the only
-            // possible transformation for non-STRUCT indirect uses is LCL_FLD.
-            assert(varDsc->TypeGet() == TYP_STRUCT);
+            // For primitives, for now, we will support the simplest transformation: exact type
+            // match. This could in future be improved, for example, "IND<byte>(ADDR(int))" as
+            // an R-value is equivalent to "CAST<byte>(int)". Likewise we could/should support
+            // "BITCAST"s here.
+            if (indir->TypeGet() == varDsc->TypeGet())
+            {
+                return IndirTransform::LclVar;
+            }
+
+            // Locals are not enregistered when optimizations are disabled; there is no point
+            // in spending time finding LCL_VAR-equivalent trees for them. TODO-ADDR: move
+            // this check earlier.
+            if (m_compiler->opts.OptimizationDisabled())
+            {
+                return IndirTransform::LclFld;
+            }
+
+            // Bool and ubyte are the same type.
+            if ((indir->TypeIs(TYP_BOOL) && (varDsc->TypeGet() == TYP_UBYTE)) ||
+                (indir->TypeIs(TYP_UBYTE) && (varDsc->TypeGet() == TYP_BOOL)))
+            {
+                return IndirTransform::LclVar;
+            }
+
+            // For small locals on the LHS we can ignore the signed/unsigned diff.
+            if (user->OperIs(GT_ASG) && (user->gtGetOp1() == indir) &&
+                (varTypeToSigned(indir) == varTypeToSigned(varDsc)))
+            {
+                assert(varTypeIsSmall(indir));
+                return IndirTransform::LclVar;
+            }
+
             return IndirTransform::LclFld;
+        }
+
+        if (varDsc->TypeGet() != TYP_STRUCT)
+        {
+            // TODO-ADDR: STRUCT uses of primitives require more work: "fgMorphOneAsgBlockOp"
+            // and init block morphing need to be updated to recognize them. Alternatively,
+            // we could consider moving some of their functionality here.
+            return IndirTransform::None;
         }
 
         ClassLayout* indirLayout = nullptr;
