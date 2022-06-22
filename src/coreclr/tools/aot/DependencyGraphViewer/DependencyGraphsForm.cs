@@ -19,7 +19,6 @@ namespace DependencyLogViewer
     public partial class DependencyGraphs : Form
     {
         private int _fileCount = -1;
-        private DGMLGraphProcessing currentFile = null;
 #nullable enable
         public DependencyGraphs(string? argPath)
         {
@@ -102,28 +101,20 @@ Once the interesting node(s) have been identified in the dependency graph window
         {
             GraphCollection collection = GraphCollection.Singleton;
 
-            if (currentFile is null)
+            DGMLGraphProcessing dgml = new DGMLGraphProcessing(_fileCount);
+            dgml.Complete += (fileID) =>
             {
-                DGMLGraphProcessing dgml = new DGMLGraphProcessing(_fileCount);
-
-                if (dgml.FindXML(argPath))
+                lock (collection)
                 {
-                    currentFile = dgml;
-                    _fileCount -= 1;
-                    dgml.Complete += (fileID) =>
-                    {
-                        lock (collection)
-                        {
-                            collection.AddGraph(dgml.g);
-                        }
-                        Debug.Assert(fileID == currentFile.FileID);
-                        currentFile = null;
-                    };
+                    collection.AddGraph(dgml.g);
                 }
-            }
-            else
+                Debug.Assert(fileID == dgml.FileID);
+            };
+
+            if (dgml.FindXML(argPath))
             {
-                MessageBox.Show("File is already processing. Please Wait.");
+                _fileCount -= 1;
+
             }
         }
 
