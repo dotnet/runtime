@@ -22,12 +22,11 @@ namespace System.Net.Security
 
         internal static void ValidateImpersonationLevel(TokenImpersonationLevel impersonationLevel)
         {
-            throw new PlatformNotSupportedException();
-        }
-
-        internal static Win32Exception CreateExceptionFromError(SecurityStatusPal statusCode)
-        {
-            throw new PlatformNotSupportedException();
+            if (impersonationLevel != TokenImpersonationLevel.Identification)
+            {
+                throw new ArgumentOutOfRangeException(nameof(impersonationLevel), impersonationLevel.ToString(),
+                    SR.net_auth_supported_impl_levels);
+            }
         }
 #pragma warning restore IDE0060
     }

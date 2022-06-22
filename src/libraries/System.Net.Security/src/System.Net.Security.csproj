@@ -312,7 +312,7 @@
     <Compile Include="System\Net\Security\NegotiateStreamPal.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseManagedNtlm)' == 'true'">
-    <Compile Include="System\Net\Security\NegotiateStreamPal.PlatformNotSupported.cs" />
+    <Compile Include="System\Net\Security\NegotiateStreamPal.Managed.cs" />
     <Compile Include="$(CommonPath)System\Net\NTAuthentication.Managed.cs"
              Link="Common\System\Net\NTAuthentication.Managed.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\MD4.cs"
