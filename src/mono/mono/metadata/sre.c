@@ -305,10 +305,9 @@ mono_reflection_method_count_clauses (MonoReflectionILGen *ilgen)
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	guint32 num_clauses = 0;
-	int i;
 
 	MonoILExceptionInfo *ex_info;
-	for (i = 0; i < mono_array_length_internal (ilgen->ex_handlers); ++i) {
+	for (guint32 i = 0; i < mono_array_length_internal (ilgen->ex_handlers); ++i) {
 		ex_info = (MonoILExceptionInfo*)mono_array_addr_internal (ilgen->ex_handlers, MonoILExceptionInfo, i);
 		if (ex_info->handlers)
 			num_clauses += mono_array_length_internal (ex_info->handlers);
@@ -331,18 +330,17 @@ method_encode_clauses (MonoImage *image, MonoDynamicImage *assembly, MonoReflect
 	MonoExceptionClause *clause;
 	MonoILExceptionInfo *ex_info;
 	MonoILExceptionBlock *ex_block;
-	guint32 finally_start;
-	int i, j, clause_index;
+	guint32 finally_start, clause_index;
 
 	clauses = image_g_new0 (image, MonoExceptionClause, num_clauses);
 
 	clause_index = 0;
-	for (i = mono_array_length_internal (ilgen->ex_handlers) - 1; i >= 0; --i) {
+	for (guint32 i = mono_array_length_internal (ilgen->ex_handlers) - 1; i >= 0; --i) {
 		ex_info = (MonoILExceptionInfo*)mono_array_addr_internal (ilgen->ex_handlers, MonoILExceptionInfo, i);
 		finally_start = ex_info->start + ex_info->len;
 		if (!ex_info->handlers)
 			continue;
-		for (j = 0; j < mono_array_length_internal (ex_info->handlers); ++j) {
+		for (guint32 j = 0; j < mono_array_length_internal (ex_info->handlers); ++j) {
 			ex_block = (MonoILExceptionBlock*)mono_array_addr_internal (ex_info->handlers, MonoILExceptionBlock, j);
 			clause = &(clauses [clause_index]);
 
@@ -3452,7 +3450,7 @@ void
 mono_reflection_get_dynamic_overrides (MonoClass *klass, MonoMethod ***overrides, int *num_overrides, MonoError *error)
 {
 	MonoReflectionTypeBuilder *tb;
-	int i, j, onum;
+	int onum;
 	MonoReflectionMethod *m;
 
 	error_init (error);
@@ -3469,7 +3467,7 @@ mono_reflection_get_dynamic_overrides (MonoClass *klass, MonoMethod ***overrides
 
 	onum = 0;
 	if (tb->methods) {
-		for (i = 0; i < tb->num_methods; ++i) {
+		for (gint32 i = 0; i < tb->num_methods; ++i) {
 			MonoReflectionMethodBuilder *mb =
 				mono_array_get_internal (tb->methods, MonoReflectionMethodBuilder*, i);
 			if (mb->override_methods)
@@ -3481,11 +3479,11 @@ mono_reflection_get_dynamic_overrides (MonoClass *klass, MonoMethod ***overrides
 		*overrides = g_new0 (MonoMethod*, onum * 2);
 
 		onum = 0;
-		for (i = 0; i < tb->num_methods; ++i) {
+		for (gint32 i = 0; i < tb->num_methods; ++i) {
 			MonoReflectionMethodBuilder *mb =
 				mono_array_get_internal (tb->methods, MonoReflectionMethodBuilder*, i);
 			if (mb->override_methods) {
-				for (j = 0; j < mono_array_length_internal (mb->override_methods); ++j) {
+				for (guint32 j = 0; j < mono_array_length_internal (mb->override_methods); ++j) {
 					m = mono_array_get_internal (mb->override_methods, MonoReflectionMethod*, j);
 
 					(*overrides) [onum * 2] = mono_reflection_method_get_handle ((MonoObject*)m, error);
@@ -3658,7 +3656,6 @@ typebuilder_setup_properties (MonoClass *klass, MonoError *error)
 	MonoImage *image = klass->image;
 	MonoProperty *properties;
 	MonoClassPropertyInfo *info;
-	int i;
 
 	error_init (error);
 
@@ -3673,7 +3670,7 @@ typebuilder_setup_properties (MonoClass *klass, MonoError *error)
 
 	properties = image_g_new0 (image, MonoProperty, info->count);
 	info->properties = properties;
-	for (i = 0; i < info->count; ++i) {
+	for (guint32 i = 0; i < info->count; ++i) {
 		pb = mono_array_get_internal (tb->properties, MonoReflectionPropertyBuilder*, i);
 		properties [i].parent = klass;
 		properties [i].attrs = pb->attrs;
@@ -3712,7 +3709,6 @@ typebuilder_setup_events (MonoClass *klass, MonoError *error)
 	MonoImage *image = klass->image;
 	MonoEvent *events;
 	MonoClassEventInfo *info;
-	int i;
 
 	error_init (error);
 
@@ -3724,7 +3720,7 @@ typebuilder_setup_events (MonoClass *klass, MonoError *error)
 
 	events = image_g_new0 (image, MonoEvent, info->count);
 	info->events = events;
-	for (i = 0; i < info->count; ++i) {
+	for (guint32 i = 0; i < info->count; ++i) {
 		eb = mono_array_get_internal (tb->events, MonoReflectionEventBuilder*, i);
 		events [i].parent = klass;
 		events [i].attrs = eb->attrs;
@@ -3740,9 +3736,8 @@ typebuilder_setup_events (MonoClass *klass, MonoError *error)
 
 #ifndef MONO_SMALL_CONFIG
 		if (eb->other_methods) {
-			int j;
 			events [i].other = image_g_new0 (image, MonoMethod*, mono_array_length_internal (eb->other_methods) + 1);
-			for (j = 0; j < mono_array_length_internal (eb->other_methods); ++j) {
+			for (guint32 j = 0; j < mono_array_length_internal (eb->other_methods); ++j) {
 				MonoReflectionMethodBuilder *mb =
 					mono_array_get_internal (eb->other_methods,
 									MonoReflectionMethodBuilder*, j);
@@ -4001,7 +3996,6 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 	MonoMethodSignature *sig;
 	MonoClass *klass;
 	GSList *l;
-	int i;
 	gboolean ret = TRUE;
 	MonoReflectionDynamicMethod *mb;
 	MonoAssembly *ass = NULL;
@@ -4030,7 +4024,7 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 	 */
 	rmb.nrefs = mb->nrefs;
 	rmb.refs = g_new0 (gpointer, mb->nrefs + 1);
-	for (i = 0; i < mb->nrefs; i += 2) {
+	for (gint32 i = 0; i < mb->nrefs; i += 2) {
 		MonoClass *handle_class;
 		gpointer ref;
 		MonoObject *obj = mono_array_get_internal (mb->refs, MonoObject*, i);
@@ -4105,7 +4099,7 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 		g_assert (method->mhandle);
 
 		data = (gpointer*)wrapper->method_data;
-		for (i = 0; i < GPOINTER_TO_UINT (data [0]); i += 2) {
+		for (guint i = 0; i < GPOINTER_TO_UINT (data [0]); i += 2) {
 			if ((data [i + 1] == mb) && (data [i + 1 + 1] == mono_defaults.methodhandle_class))
 				data [i + 1] = mb->mhandle;
 		}
@@ -4170,9 +4164,7 @@ ensure_complete_type (MonoClass *klass, MonoError *error)
 
 	if (mono_class_is_ginst (klass)) {
 		MonoGenericInst *inst = mono_class_get_generic_class (klass)->context.class_inst;
-		int i;
-
-		for (i = 0; i < inst->type_argc; ++i) {
+		for (guint i = 0; i < inst->type_argc; ++i) {
 			ensure_complete_type (mono_class_from_mono_type_internal (inst->type_argv [i]), error);
 			goto_if_nok (error, exit);
 		}
