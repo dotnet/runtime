@@ -51,6 +51,13 @@ public class ExtensionPoints
         {
             var arr = new [] { "", "", "", "", null };
 
+            // The goal of this test is to trigger paths in which CoTaskMemAlloc
+            // will be implicitly used and validate that the registered managed
+            // IMallocSpy can be called successful. The validation is for confirming
+            // the transition to Preemptive mode was performed.
+            //
+            // Casting the function pointer to one in which an IL stub will be
+            // used to marshal the string[].
             var fptr = (delegate*unmanaged<string[], int>)(delegate*unmanaged<char**, int>)&ArrayLen;
             int len = fptr(arr);
             Assert.Equal(arr.Length - 1, len);
