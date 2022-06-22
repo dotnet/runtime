@@ -8772,6 +8772,8 @@ is_concrete_type (MonoType *t)
 	MonoClass *klass;
 	int i;
 
+	if (m_type_is_byref (t))
+		return TRUE;
 	if (t->type == MONO_TYPE_VAR || t->type == MONO_TYPE_MVAR)
 		return FALSE;
 	if (t->type == MONO_TYPE_GENERICINST) {
