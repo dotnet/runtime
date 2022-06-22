@@ -369,6 +369,7 @@ namespace System
             return Unsafe.Add(ref RuntimeHelpers.GetMultiDimensionalArrayBounds(this), rank + dimension);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal unsafe CorElementType GetCorElementTypeOfElementType()
         {
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(this);

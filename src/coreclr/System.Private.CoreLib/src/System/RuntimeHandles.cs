@@ -348,6 +348,7 @@ namespace System
             return m_type;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static CorElementType GetCorElementType(RuntimeType type)
         {
             TypeHandle typeHandle = new TypeHandle((void*)type.m_handle);
