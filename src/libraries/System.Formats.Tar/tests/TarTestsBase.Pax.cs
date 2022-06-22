@@ -93,20 +93,16 @@ namespace System.Formats.Tar.Tests
 
         protected DateTimeOffset GetDateTimeOffsetFromTimestampString(IReadOnlyDictionary<string, string> ea, string fieldName)
         {
-            Assert.True(ea.TryGetValue(fieldName, out string value), $"Extended attributes did not contain field '{fieldName}'");
+            Assert.Contains(fieldName, ea);
 
-            // As regular header fields, timestamps are saved as integer numbers that fit in 12 bytes
-            // But as extended attributes, they should always be saved as doubles with decimal precision
-            Assert.Contains(".", value);
-
-            Assert.True(decimal.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal secondsSinceEpoch), $"Extended attributes field '{fieldName}' is not a valid decimal number.");
+            Assert.True(decimal.TryParse(ea[fieldName], NumberStyles.Any, CultureInfo.InvariantCulture, out decimal secondsSinceEpoch), $"Extended attributes field '{fieldName}' is not a valid decimal number.");
             return GetDateTimeOffsetFromSecondsSinceEpoch(secondsSinceEpoch);
         }
 
         protected string GetTimestampStringFromDateTimeOffset(DateTimeOffset timestamp)
         {
             decimal secondsSinceEpoch = GetSecondsSinceEpochFromDateTimeOffset(timestamp);
-            return secondsSinceEpoch.ToString("F9", CultureInfo.InvariantCulture);
+            return secondsSinceEpoch.ToString("G", CultureInfo.InvariantCulture);
         }
 
         protected void VerifyExtendedAttributeTimestamp(PaxTarEntry paxEntry, string fieldName, DateTimeOffset minimumTime)
