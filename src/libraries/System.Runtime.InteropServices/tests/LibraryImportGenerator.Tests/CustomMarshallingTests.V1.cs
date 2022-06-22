@@ -13,49 +13,43 @@ namespace LibraryImportGenerator.IntegrationTests
 {
     partial class NativeExportsNE
     {
-        internal partial class Stateless
+        internal partial class V1
         {
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "stringcontainer_deepduplicate")]
-            public static partial void DeepDuplicateStrings(StringContainer strings, out StringContainer pStringsOut);
+            public static partial void DeepDuplicateStrings(StringContainer_V1 strings, out StringContainer_V1 pStringsOut);
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "stringcontainer_reverse_strings")]
-            public static partial void ReverseStrings(ref StringContainer strings);
+            public static partial void ReverseStrings(ref StringContainer_V1 strings);
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "get_long_bytes_as_double")]
-            public static partial double GetLongBytesAsDouble([MarshalUsing(typeof(DoubleToLongMarshaller))] double d);
+            public static partial double GetLongBytesAsDouble([MarshalUsing(typeof(DoubleToLongMarshaller_V1))] double d);
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "negate_bools")]
             public static partial void NegateBools(
-                BoolStruct boolStruct,
-                out BoolStruct pBoolStructOut);
+                BoolStruct_V1 boolStruct,
+                out BoolStruct_V1 pBoolStructOut);
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "and_bools_ref")]
             [return: MarshalAs(UnmanagedType.U1)]
-            public static partial bool AndBoolsRef(in BoolStruct boolStruct);
+            public static partial bool AndBoolsRef(in BoolStruct_V1 boolStruct);
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "double_int_ref")]
-            public static partial IntWrapper DoubleIntRef(IntWrapper pInt);
+            public static partial IntWrapper_V1 DoubleIntRef(IntWrapper_V1 pInt);
         }
-
-        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "reverse_replace_ref_ushort")]
-        public static partial void ReverseReplaceString([MarshalUsing(typeof(Utf16StringMarshaller))] ref string s);
-
-        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "return_length_ushort")]
-        public static partial int ReturnStringLength([MarshalUsing(typeof(Utf16StringMarshaller))] string s);
     }
 
-    public class CustomMarshallingTests
+    public class CustomMarshallingTests_V1
     {
         [Fact]
         public void NonBlittableStructWithFree()
         {
-            var stringContainer = new StringContainer
+            var stringContainer = new StringContainer_V1
             {
                 str1 = "Foo",
                 str2 = "Bar"
             };
 
-            NativeExportsNE.Stateless.DeepDuplicateStrings(stringContainer, out var stringContainer2);
+            NativeExportsNE.V1.DeepDuplicateStrings(stringContainer, out var stringContainer2);
 
             Assert.Equal(stringContainer, stringContainer2);
         }
@@ -65,20 +59,20 @@ namespace LibraryImportGenerator.IntegrationTests
         {
             double d = 1234.56789;
 
-            Assert.Equal(d, NativeExportsNE.Stateless.GetLongBytesAsDouble(d));
+            Assert.Equal(d, NativeExportsNE.V1.GetLongBytesAsDouble(d));
         }
 
         [Fact]
         public void NonBlittableStructWithoutAllocation()
         {
-            var boolStruct = new BoolStruct
+            var boolStruct = new BoolStruct_V1
             {
                 b1 = true,
                 b2 = false,
                 b3 = true
             };
 
-            NativeExportsNE.Stateless.NegateBools(boolStruct, out BoolStruct boolStructNegated);
+            NativeExportsNE.V1.NegateBools(boolStruct, out BoolStruct_V1 boolStructNegated);
 
             Assert.Equal(!boolStruct.b1, boolStructNegated.b1);
             Assert.Equal(!boolStruct.b2, boolStructNegated.b2);
@@ -89,9 +83,9 @@ namespace LibraryImportGenerator.IntegrationTests
         public void GetPinnableReferenceMarshalling()
         {
             int originalValue = 42;
-            var wrapper = new IntWrapper { i = originalValue };
+            var wrapper = new IntWrapper_V1 { i = originalValue };
 
-            var retVal = NativeExportsNE.Stateless.DoubleIntRef(wrapper);
+            var retVal = NativeExportsNE.V1.DoubleIntRef(wrapper);
 
             Assert.Equal(originalValue * 2, wrapper.i);
             Assert.Equal(originalValue * 2, retVal.i);
@@ -100,13 +94,13 @@ namespace LibraryImportGenerator.IntegrationTests
         [Fact]
         public void NonBlittableStructRef()
         {
-            var stringContainer = new StringContainer
+            var stringContainer = new StringContainer_V1
             {
                 str1 = "Foo",
                 str2 = "Bar"
             };
 
-            var expected = new StringContainer
+            var expected = new StringContainer_V1
             {
                 str1 = ReverseUTF8Bytes(stringContainer.str1),
                 str2 = ReverseUTF8Bytes(stringContainer.str2)
@@ -114,7 +108,7 @@ namespace LibraryImportGenerator.IntegrationTests
 
             var stringContainerCopy = stringContainer;
 
-            NativeExportsNE.Stateless.ReverseStrings(ref stringContainerCopy);
+            NativeExportsNE.V1.ReverseStrings(ref stringContainerCopy);
 
             Assert.Equal(expected, stringContainerCopy);
         }
@@ -130,30 +124,14 @@ namespace LibraryImportGenerator.IntegrationTests
         [InlineData(false, false, false)]
         public void NonBlittableStructIn(bool b1, bool b2, bool b3)
         {
-            var container = new BoolStruct
+            var container = new BoolStruct_V1
             {
                 b1 = b1,
                 b2 = b2,
                 b3 = b3
             };
 
-            Assert.Equal(b1 && b2 && b3, NativeExportsNE.Stateless.AndBoolsRef(container));
-        }
-
-        [Fact]
-        public void NonBlittableStructStackallocPinnableNativeMarshalling()
-        {
-            string str = "Hello world!";
-            Assert.Equal(str.Length, NativeExportsNE.ReturnStringLength(str));
-        }
-
-        [Fact]
-        public void NonBlittableStructPinnableMarshalerPassByRef()
-        {
-            string str = "Hello world!";
-            string expected = ReverseChars(str);
-            NativeExportsNE.ReverseReplaceString(ref str);
-            Assert.Equal(expected, str);
+            Assert.Equal(b1 && b2 && b3, NativeExportsNE.V1.AndBoolsRef(container));
         }
 
         private static string ReverseChars(string value)
