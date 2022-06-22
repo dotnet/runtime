@@ -123,7 +123,6 @@ BOOL                    g_fCustomInstructionEncodingSystem = FALSE;
 COR_FIELD_OFFSET        *g_rFieldOffset = NULL;
 ULONG                   g_cFieldsMax, g_cFieldOffsets;
 
-char*                   g_pszExeFile;
 char                    g_szInputFile[MAX_FILENAME_LENGTH]; // in UTF-8
 WCHAR                   g_wszFullInputFile[MAX_PATH + 1]; // in UTF-16
 char                    g_szOutputFile[MAX_FILENAME_LENGTH]; // in UTF-8
