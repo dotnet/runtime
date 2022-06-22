@@ -4542,9 +4542,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                     retNode = cnsNode;
 
-                    impSpillSideEffects(false, (unsigned)CHECK_SPILL_ALL DEBUGARG(
-                                                   "spill side effects before folding two consts"));
-
                     impPopStack();
                     impPopStack();
                     DEBUG_DESTROY_NODE(otherNode);
