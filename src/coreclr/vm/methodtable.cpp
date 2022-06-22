@@ -5569,7 +5569,8 @@ namespace
                         candidateMaybe = pMT->TryResolveVirtualStaticMethodOnThisType(
                             interfaceMT,
                             interfaceMD,
-                            /* verifyImplemented */ FALSE);
+                            /* verifyImplemented */ FALSE,
+                            /* level */ level);
                     }
                 }
             }
@@ -8029,7 +8030,7 @@ MethodTable::ResolveVirtualStaticMethod(
             // Search for match on a per-level in the type hierarchy
             for (MethodTable* pMT = this; pMT != nullptr; pMT = pMT->GetParentMethodTable())
             {
-                MethodDesc* pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pInterfaceType, pInterfaceMD, verifyImplemented);
+                MethodDesc* pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pInterfaceType, pInterfaceMD, verifyImplemented, level);
                 if (pMD != nullptr)
                 {
                     return pMD;
@@ -8073,7 +8074,7 @@ MethodTable::ResolveVirtualStaticMethod(
                         {
                             // Variant or equivalent matching interface found
                             // Attempt to resolve on variance matched interface
-                            pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pItfInMap, pInterfaceMD, verifyImplemented);
+                            pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pItfInMap, pInterfaceMD, verifyImplemented, level);
                             if (pMD != nullptr)
                             {
                                 return pMD;
@@ -8118,7 +8119,7 @@ MethodTable::ResolveVirtualStaticMethod(
 // Try to locate the appropriate MethodImpl matching a given interface static virtual method.
 // Returns nullptr on failure.
 MethodDesc*
-MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL verifyImplemented)
+MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL verifyImplemented, ClassLoadLevel level)
 {
     HRESULT hr = S_OK;
     IMDInternalImport* pMDInternalImport = GetMDImport();
@@ -8245,7 +8246,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
                 /* allowInstParam */ FALSE,
                 /* forceRemotableMethod */ FALSE,
                 /* allowCreate */ TRUE,
-                /* level */ CLASS_LOAD_EXACTPARENTS);
+                /* level */ level);
         }
         if (pMethodImpl != nullptr)
         {
