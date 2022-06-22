@@ -353,34 +353,34 @@ jobs:
 #
 # WebAssembly legs
 #
-- template: /eng/pipelines/common/templates/wasm-library-tests.yml
-  parameters:
-    platforms:
-      - Browser_wasm
-    alwaysRun: ${{ variables.isRollingBuild }}
-    scenarios:
-      - normal
-      - WasmTestOnBrowser
+#- template: /eng/pipelines/common/templates/wasm-library-tests.yml
+  #parameters:
+    #platforms:
+      #- Browser_wasm
+    #alwaysRun: ${{ variables.isRollingBuild }}
+    #scenarios:
+      #- normal
+      #- WasmTestOnBrowser
 
-# EAT Library tests - only run on linux
-- template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
-  parameters:
-    platforms:
-      - Browser_wasm
-    nameSuffix: _EAT
-    runAOT: false
-    runSmokeOnlyArg: $(_runSmokeTestsOnlyArg)
-    alwaysRun: ${{ variables.isRollingBuild }}
+## EAT Library tests - only run on linux
+#- template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
+  #parameters:
+    #platforms:
+      #- Browser_wasm
+    #nameSuffix: _EAT
+    #runAOT: false
+    #runSmokeOnlyArg: $(_runSmokeTestsOnlyArg)
+    #alwaysRun: ${{ variables.isRollingBuild }}
 
-# AOT Library tests
-- template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
-  parameters:
-    platforms:
-      - Browser_wasm
-    nameSuffix: _AOT
-    runAOT: true
-    runSmokeOnlyArg: $(_runSmokeTestsOnlyArg)
-    alwaysRun: ${{ variables.isRollingBuild }}
+## AOT Library tests
+#- template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
+  #parameters:
+    #platforms:
+      #- Browser_wasm
+    #nameSuffix: _AOT
+    #runAOT: true
+    #runSmokeOnlyArg: $(_runSmokeTestsOnlyArg)
+    #alwaysRun: ${{ variables.isRollingBuild }}
 
 - template: /eng/pipelines/common/templates/wasm-build-tests.yml
   parameters:
@@ -388,28 +388,28 @@ jobs:
       - Browser_wasm
     alwaysRun: ${{ variables.isRollingBuild }}
 
-- template: /eng/pipelines/common/templates/wasm-runtime-tests.yml
-  parameters:
-    platforms:
-      - Browser_wasm
-    alwaysRun: ${{ variables.isRollingBuild }}
+#- template: /eng/pipelines/common/templates/wasm-runtime-tests.yml
+  #parameters:
+    #platforms:
+      #- Browser_wasm
+    #alwaysRun: ${{ variables.isRollingBuild }}
 
-# BUILD ONLY - Wasm Threading Legs
-- template: /eng/pipelines/common/templates/wasm-build-only.yml
-  parameters:
-    platforms:
-      - Browser_wasm
-    nameSuffix: _Threading
-    extraBuildArgs: /p:WasmEnableThreads=true
-    alwaysRun: ${{ variables.isRollingBuild }}
+## BUILD ONLY - Wasm Threading Legs
+#- template: /eng/pipelines/common/templates/wasm-build-only.yml
+  #parameters:
+    #platforms:
+      #- Browser_wasm
+    #nameSuffix: _Threading
+    #extraBuildArgs: /p:WasmEnableThreads=true
+    #alwaysRun: ${{ variables.isRollingBuild }}
 
-- template: /eng/pipelines/common/templates/wasm-build-only.yml
-  parameters:
-    platforms:
-      - Browser_wasm
-    nameSuffix: _Threading_PerfTracing
-    extraBuildArgs: /p:WasmEnablePerfTracing=true
-    alwaysRun: ${{ variables.isRollingBuild }}
+#- template: /eng/pipelines/common/templates/wasm-build-only.yml
+  #parameters:
+    #platforms:
+      #- Browser_wasm
+    #nameSuffix: _Threading_PerfTracing
+    #extraBuildArgs: /p:WasmEnablePerfTracing=true
+    #alwaysRun: ${{ variables.isRollingBuild }}
 
 #
 # iOS/tvOS devices - Full AOT + AggressiveTrimming to reduce size
