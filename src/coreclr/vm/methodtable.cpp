@@ -5588,9 +5588,11 @@ namespace
                 FALSE,                  // forceBoxedEntryPoint
                 candidateMaybe->HasMethodInstantiation() ?
                 candidateMaybe->AsInstantiatedMethodDesc()->IMD_GetMethodInstantiation() :
-                Instantiation(),    // for method themselves that are generic
+                Instantiation(),        // for method themselves that are generic
                 FALSE,                  // allowInstParam
-                TRUE                    // forceRemoteableMethod
+                TRUE,                   // forceRemoteableMethod
+                TRUE,                   // allowCreate
+                CLASS_LOAD_EXACTPARENTS // level
             );
         }
 
@@ -8239,7 +8241,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
                 /* allowInstParam */ FALSE,
                 /* forceRemotableMethod */ FALSE,
                 /* allowCreate */ TRUE,
-                /* level */ CLASS_LOADED);
+                /* level */ CLASS_LOAD_EXACTPARENTS);
         }
         if (pMethodImpl != nullptr)
         {
