@@ -185,7 +185,8 @@ extern "C" void QCALLTYPE AssemblyName_InitializeAssemblySpec(NativeAssemblyName
 
     BEGIN_QCALL;
 
-    StackSString ssName(pAssemblyNameParts->_pName);
+    StackSString ssName;
+    ssName.SetAndConvertToUTF8(pAssemblyNameParts->_pName);
 
     AssemblyMetaDataInternal asmInfo;
 
@@ -196,7 +197,7 @@ extern "C" void QCALLTYPE AssemblyName_InitializeAssemblySpec(NativeAssemblyName
 
     SmallStackSString ssLocale;
     if (pAssemblyNameParts->_pCultureName != NULL)
-        ssLocale.Set(pAssemblyNameParts->_pCultureName);
+        ssLocale.SetAndConvertToUTF8(pAssemblyNameParts->_pCultureName);
     asmInfo.szLocale = (pAssemblyNameParts->_pCultureName != NULL) ? ssLocale.GetUTF8() : NULL;
 
     // Initialize spec
