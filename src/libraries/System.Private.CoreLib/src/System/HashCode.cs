@@ -337,14 +337,17 @@ namespace System
                 switch (_length % 4)
                 {
                     case 1:
+                        Debug.Assert(Unsafe.ByteOffset(ref pos, ref end) >= sizeof(int));
                         Add(Unsafe.ReadUnaligned<int>(ref pos));
                         pos = ref Unsafe.Add(ref pos, sizeof(int));
                         goto case 2;
                     case 2:
+                        Debug.Assert(Unsafe.ByteOffset(ref pos, ref end) >= sizeof(int));
                         Add(Unsafe.ReadUnaligned<int>(ref pos));
                         pos = ref Unsafe.Add(ref pos, sizeof(int));
                         goto case 3;
                     case 3:
+                        Debug.Assert(Unsafe.ByteOffset(ref pos, ref end) >= sizeof(int));
                         Add(Unsafe.ReadUnaligned<int>(ref pos));
                         pos = ref Unsafe.Add(ref pos, sizeof(int));
                         break;
@@ -354,9 +357,9 @@ namespace System
             // With the queue clear, we add sixteen bytes at a time until the input has fewer than sixteen bytes remaining.
             // We first have to round the end pointer to the nearest 16-byte block from the offset. This makes the loop's condition simpler.
             ref byte blockEnd = ref Unsafe.Subtract(ref end, Unsafe.ByteOffset(ref pos, ref end) % (sizeof(int) * 4));
-            Debug.Assert(Unsafe.ByteOffset(ref pos, ref blockEnd) >= (sizeof(int) * 4));
             while (Unsafe.IsAddressLessThan(ref pos, ref blockEnd))
             {
+                Debug.Assert((nint)Unsafe.ByteOffset(ref pos, ref blockEnd) >= (sizeof(int) * 4));
                 uint v1 = Unsafe.ReadUnaligned<uint>(ref pos);
                 _v1 = Round(_v1, v1);
                 uint v2 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref pos, sizeof(int) * 1));
