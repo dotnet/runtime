@@ -18,7 +18,7 @@ Here are some of the main feedback points on the previous design:
 
 The new design tries to address many of these concerns.
 
-The new marshallers have a stateless shape and a stateful shape. Stateful shapes are (currently) not allowed in "element of a collection" scenarios as handling them is difficult today, but we may improve this in the future. The stateful shapes are described in the order in which the methods will be called. Additionally, by moving away from using construtors for part of the marshalling, we can simplify the exception-handling guidance as we will only ever have one marshaller instance per parameter and it will always be assigned to the local.
+The new marshallers have a stateless shape and a stateful shape. Stateful shapes are (currently) not allowed in "element of a collection" scenarios as handling them is difficult today, but we may improve this in the future. The stateful shapes are described in the order in which the methods will be called. Additionally, by moving away from using constructors for part of the marshalling, we can simplify the exception-handling guidance as we will only ever have one marshaller instance per parameter and it will always be assigned to the local.
 
 Stateless shapes avoid the problems of maintaining state and will be the primarily used shapes (they cover 90+% of our scenarios).
 
@@ -223,7 +223,7 @@ The examples below will also show which properties in each attribute support eac
 
 ## Value Marshaller Shapes
 
-We'll start with the value marshaller shapes. These marshaller shapes support marshalling a single self-contained value.
+We'll start with the value marshaller shapes. These marshaller shapes support marshalling a single value.
 
 Each of these shapes will support marshalling the following type:
 
@@ -717,3 +717,52 @@ The static GetPinnableReference method provides a mechanism to pin a managed val
 ### `-Generated` method variants
 
 These method variants provide a mechanism for a marshaller to state that it needs to be called during the "Generated Unmarshal" phase in the `finally` block to ensure that resources are not leaked. This feature is required only by the SafeHandle marshaller, so it is an optional extension to the model instead of being a required feature.
+
+## Blittability
+
+To determine which types are blittable and which are not, we will be following [Design 2 in StructMarshalling.md](StructMarshalling.md#determining-if-a-type-doesnt-need-marshalling).
+
+## Using the marshallers
+
+To use these marshallers the user would apply either the `NativeMarshallingAttribute` attribute to their type or a `MarshalUsingAttribute` at the marshalling location (field, parameter, or return value) with a marshalling type matching the same requirements as `NativeMarshallingAttribute`'s marshalling type.
+
+The marshaller type must be an entry-point marshaller type as defined above and meet the following additional requirements:
+
+- The type must either be:
+  - Non-generic
+  - A closed generic
+  - An open generic with as many generic parameters with compatible constraints as the managed type (excluding up to one generic parameter with the `ElementUnmanagedTypeAttribute`)
+- If used in `NativeMarshallingAttribute`, the type should be at least as visible as the managed type.
+
+Passing size info for parameters will be based to the [V1 design](SpanMarshallers.md#providing-additional-data-for-collection-marshalling) and the properties/fields on `MarshalUsingAttribute` will remain unchanged.
+
+Here are some examples of using these new marshaller shapes with the `NativeMarshallingAttribute` and the `MarshalUsingAttribute`.
+
+```csharp
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
+
+[NativeMarshalling(typeof(HResultMarshaller))]
+struct HResult
+{
+    private int hr;
+}
+
+[ManagedToUnmanagedMarshallers(typeof(HResult), InMarshaller = typeof(HResultMarshaller), RefMarshaller = typeof(HResultMarshaller), OutMarshaller = typeof(HResultMarshaller))]
+[UnmanagedToManagedMarshallers(typeof(HResult), InMarshaller = typeof(HResultMarshaller), RefMarshaller = typeof(HResultMarshaller), OutMarshaller = typeof(HResultMarshaller))]
+[ElementMarshaller(typeof(HResult), typeof(HResultMarshaller))]
+public static class HResultMarshaller
+{
+    public int ConvertToUnmanaged(HResult hr);
+    public HResult ConvertToManaged(int hr);
+}
+
+public static class NativeLib
+{
+    [LibraryImport(nameof(NativeLib))]
+    public static partial HResult CountArrayElements(
+        [MarshalUsing(typeof(ArrayMarshaller<,>))] int[] array, // Unlike the V1 system, we'll allow open generics in the V2 system in MarshalUsing since there's an extra generic parameter that the user does not provide.
+        out int numElements);
+}
+
+```
