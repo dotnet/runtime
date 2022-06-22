@@ -58,3 +58,22 @@ There's a complication here that we need to be careful because emscripten reuses
 Emscripten `pthread_t` is a pointer. hope...fully... they're not reused.
 
 Basically make `mono_thread_create_internal` run some JS that
+
+## TODO
+
+- [browser] in dotnet preInit read the config options. extract websocket URL and whether to suspend.
+- [browser] call down to C to start diagnostics
+- [browser] create a pthread and have it call the JS diagnostic server start and then set it to not die after thread main returns. return pthread id to JS.
+- [server_worker] start listening on the URL.
+- [browser] if suspending, listen for a continue event from the JS and await for that to resolve.
+- [server_worker] when there's a session start event, if we were suspended, add a pending session, and send a continue event.
+- [server_worker] wait for a "runtime started" event?
+- [server_worker] when there's a new session start event, call down to C to start and EP session.  **FIXME** need a port at this point -
+- [browser] in early startup callback, start any pending EP sessions (and create ports for them to the diagnostic server)
+- [session_streamer] call out to JS to post messages to the diagnostic server.
+- [browser] in C, fire events, which will wake up the session streamer
+- [session_streamer] post more messages
+
+So the tricky bit is that for startup sessions and for "course of running" sessions, we need the browser thread to originate the message port transfer.  (hopefully queuing work on the main thread is good enough?)
+
+Also the streamer thread probably needs to do a bunch of preliminary work in asynchronous JS before it can begin serving sessions.
