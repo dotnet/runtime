@@ -778,7 +778,7 @@ void SString::ConvertToUnicode(const CIterator &i) const
 }
 
 //-----------------------------------------------------------------------------
-// Convert the internal representation for this String to Unicode.
+// Convert the internal representation for this String to UTF8.
 //-----------------------------------------------------------------------------
 void SString::ConvertToUTF8() const
 {
