@@ -16,7 +16,7 @@
 
 // Keep these in sync with src/coreclr/tools/Common/Internal/Runtime/ModuleHeaders.cs
 #define READYTORUN_MAJOR_VERSION 0x0006
-#define READYTORUN_MINOR_VERSION 0x0003
+#define READYTORUN_MINOR_VERSION 0x0002
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 0x006
 
@@ -60,7 +60,6 @@ enum ReadyToRunFlag
     READYTORUN_FLAG_NONSHARED_PINVOKE_STUBS     = 0x00000008,   // PInvoke stubs compiled into image are non-shareable (no secret parameter)
     READYTORUN_FLAG_EMBEDDED_MSIL               = 0x00000010,   // MSIL is embedded in the composite R2R executable
     READYTORUN_FLAG_COMPONENT                   = 0x00000020,   // This is the header describing a component assembly of composite R2R
-    READYTORUN_FLAG_MULTIMODULE_VERSION_BUBBLE  = 0x00000040,   // This R2R module has multiple modules within its version bubble (For versions before version 6.2, all modules are assumed to possibly have this characteristic)
 };
 
 enum class ReadyToRunSectionType : uint32_t
@@ -84,7 +83,6 @@ enum class ReadyToRunSectionType : uint32_t
     OwnerCompositeExecutable    = 116, // Added in V4.1
     PgoInstrumentationData      = 117, // Added in V5.2
     ManifestAssemblyMvids       = 118, // Added in V5.3
-    CrossModuleInlineInfo       = 119, // Added in V6.2
 
     // If you add a new section consider whether it is a breaking or non-breaking change.
     // Usually it is non-breaking, but if it is preferable to have older runtimes fail
@@ -101,10 +99,9 @@ struct READYTORUN_SECTION
 
 enum class ReadyToRunImportSectionType : uint8_t
 {
-    Unknown      = 0,
+    Unknown   = 0,
     StubDispatch = 2,
     StringHandle = 3,
-    ILBodyFixups = 7,
 };
 
 enum class ReadyToRunImportSectionFlags : uint16_t
@@ -166,16 +163,6 @@ enum ReadyToRunVirtualFunctionOverrideFlags
 {
     READYTORUN_VIRTUAL_OVERRIDE_None = 0x00,
     READYTORUN_VIRTUAL_OVERRIDE_VirtualFunctionOverriden = 0x01,
-};
-
-enum class ReadyToRunCrossModuleInlineFlags : uint32_t
-{
-    CrossModuleInlinee           = 0x1,
-    HasCrossModuleInliners       = 0x2,
-    CrossModuleInlinerIndexShift = 2,
-
-    InlinerRidHasModule          = 0x1,
-    InlinerRidShift              = 1,
 };
 
 //
@@ -240,9 +227,6 @@ enum ReadyToRunFixupKind
 
     READYTORUN_FIXUP_Check_VirtualFunctionOverride = 0x33, /* Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, code will not be used */
     READYTORUN_FIXUP_Verify_VirtualFunctionOverride = 0x34, /* Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, generate runtime failure. */
-
-    READYTORUN_FIXUP_Check_IL_Body              = 0x35, /* Check to see if an IL method is defined the same at runtime as at compile time. A failed match will cause code not to be used. */
-    READYTORUN_FIXUP_Verify_IL_Body             = 0x36, /* Verify an IL body is defined the same at compile time and runtime. A failed match will cause a hard runtime failure. */
 };
 
 //

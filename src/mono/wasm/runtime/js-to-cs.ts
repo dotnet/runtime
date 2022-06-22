@@ -278,7 +278,7 @@ export function _wrap_js_thenable_as_task_root(thenable: Promise<any>, resultRoo
 }
 
 export function mono_wasm_typed_array_to_array_ref(js_handle: JSHandle, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
-    const resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
+    const resultRoot = mono_wasm_new_external_root<MonoArray>(result_address);
     try {
         const js_obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
         if (is_nullish(js_obj)) {
@@ -287,8 +287,7 @@ export function mono_wasm_typed_array_to_array_ref(js_handle: JSHandle, is_excep
         }
 
         // returns pointer to C# array
-        // FIXME: ref
-        resultRoot.value = js_typed_array_to_array(js_obj);
+        js_typed_array_to_array_root(js_obj, resultRoot);
     } catch (exc) {
         wrap_error_root(is_exception, String(exc), resultRoot);
     } finally {

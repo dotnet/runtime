@@ -398,11 +398,12 @@ struct ResolveStub
 private:
     friend struct ResolveHolder;
 
-    BYTE    _resolveEntryPoint[3];//                resolveStub:
+    BYTE    _resolveEntryPoint[6];//                resolveStub:
+                                  // 48 8B XX                 mov    rax, [THIS_REG]
                                   // 52                       push   rdx
                                   // 49 BA                    mov    r10,
     size_t  _cacheAddress;        // xx xx xx xx xx xx xx xx              64-bit address
-    BYTE    part1 [15];           // 48 8B XX                 mov    rax, [THIS_REG]     ; Compute hash = ((MT + MT>>12) ^ prehash)
+    BYTE    part1 [12];           //                                                     ; Compute hash = ((MT + MT>>12) ^ prehash)
                                   // 48 8B D0                 mov    rdx, rax            ; rdx <- current MethodTable
                                   // 48 C1 E8 0C              shr    rax, 12
                                   // 48 03 C2                 add    rax, rdx
@@ -687,25 +688,25 @@ void ResolveHolder::InitializeStatic()
 {
     static_assert_no_msg((sizeof(ResolveHolder) % sizeof(void*)) == 0);
 
-    resolveInit._resolveEntryPoint [0] = 0x52;
-    resolveInit._resolveEntryPoint [1] = 0x49;
-    resolveInit._resolveEntryPoint [2] = 0xBA;
+    resolveInit._resolveEntryPoint [0] = X64_INSTR_MOV_RAX_IND_THIS_REG & 0xff;
+    resolveInit._resolveEntryPoint [1] = (X64_INSTR_MOV_RAX_IND_THIS_REG >> 8) & 0xff;
+    resolveInit._resolveEntryPoint [2] = (X64_INSTR_MOV_RAX_IND_THIS_REG >> 16) & 0xff;
+    resolveInit._resolveEntryPoint [3] = 0x52;
+    resolveInit._resolveEntryPoint [4] = 0x49;
+    resolveInit._resolveEntryPoint [5] = 0xBA;
     resolveInit._cacheAddress          = 0xcccccccccccccccc;
-    resolveInit.part1 [ 0]             = X64_INSTR_MOV_RAX_IND_THIS_REG & 0xff;
-    resolveInit.part1 [ 1]             = (X64_INSTR_MOV_RAX_IND_THIS_REG >> 8) & 0xff;
-    resolveInit.part1 [ 2]             = (X64_INSTR_MOV_RAX_IND_THIS_REG >> 16) & 0xff;
+    resolveInit.part1 [ 0]             = 0x48;
+    resolveInit.part1 [ 1]             = 0x8B;
+    resolveInit.part1 [ 2]             = 0xD0;
     resolveInit.part1 [ 3]             = 0x48;
-    resolveInit.part1 [ 4]             = 0x8B;
-    resolveInit.part1 [ 5]             = 0xD0;
-    resolveInit.part1 [ 6]             = 0x48;
-    resolveInit.part1 [ 7]             = 0xC1;
-    resolveInit.part1 [ 8]             = 0xE8;
-    resolveInit.part1 [ 9]             = CALL_STUB_CACHE_NUM_BITS;
+    resolveInit.part1 [ 4]             = 0xC1;
+    resolveInit.part1 [ 5]             = 0xE8;
+    resolveInit.part1 [ 6]             = CALL_STUB_CACHE_NUM_BITS;
+    resolveInit.part1 [ 7]             = 0x48;
+    resolveInit.part1 [ 8]             = 0x03;
+    resolveInit.part1 [ 9]             = 0xC2;
     resolveInit.part1 [10]             = 0x48;
-    resolveInit.part1 [11]             = 0x03;
-    resolveInit.part1 [12]             = 0xC2;
-    resolveInit.part1 [13]             = 0x48;
-    resolveInit.part1 [14]             = 0x35;
+    resolveInit.part1 [11]             = 0x35;
 // Review truncation from unsigned __int64 to UINT32 of a constant value.
 #if defined(_MSC_VER)
 #pragma warning(push)

@@ -177,16 +177,6 @@ namespace System.Formats.Tar.Tests
 
         }
 
-        protected TarEntry InvokeTarEntryCreationConstructor(TarEntryFormat targetFormat, TarEntryType entryType, string entryName)
-            => targetFormat switch
-            {
-                TarEntryFormat.V7 => new V7TarEntry(entryType, entryName),
-                TarEntryFormat.Ustar => new UstarTarEntry(entryType, entryName),
-                TarEntryFormat.Pax => new PaxTarEntry(entryType, entryName),
-                TarEntryFormat.Gnu => new GnuTarEntry(entryType, entryName),
-                _ => throw new FormatException($"Unexpected format: {targetFormat}")
-            };
-
         protected TarEntry InvokeTarEntryConversionConstructor(TarEntryFormat targetFormat, TarEntry other)
             => targetFormat switch
             {
