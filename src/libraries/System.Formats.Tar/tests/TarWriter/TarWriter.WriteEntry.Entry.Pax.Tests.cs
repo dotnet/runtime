@@ -12,7 +12,7 @@ namespace System.Formats.Tar.Tests
     public class TarWriter_WriteEntry_Pax_Tests : TarTestsBase
     {
         [Fact]
-        public void Write_V7RegularFileEntry_As_RegularFileEntry()
+        public void Write_V7RegularFile_To_PaxArchive()
         {
             using MemoryStream archive = new MemoryStream();
             using (TarWriter writer = new TarWriter(archive, format: TarEntryFormat.Pax, leaveOpen: true))
@@ -30,6 +30,7 @@ namespace System.Formats.Tar.Tests
                 Assert.NotNull(entry);
                 Assert.Equal(TarEntryFormat.V7, entry.Format);
                 Assert.True(entry is V7TarEntry);
+                Assert.Equal(TarEntryType.V7RegularFile, entry.EntryType);
 
                 Assert.Null(reader.GetNextEntry());
             }
@@ -367,6 +368,31 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal("hardlink", hardlink.ExtendedAttributes[PaxEaName]);
                 Assert.Contains(PaxEaLinkName, hardlink.ExtendedAttributes);
                 Assert.Equal(longHardLinkName, hardlink.ExtendedAttributes[PaxEaLinkName]);
+            }
+        }
+
+        [Fact]
+        public void Add_Empty_GlobalExtendedAttributes()
+        {
+            using MemoryStream archive = new MemoryStream();
+
+            using (TarWriter writer = new TarWriter(archive, leaveOpen: true))
+            {
+                PaxGlobalExtendedAttributesTarEntry gea = new PaxGlobalExtendedAttributesTarEntry(new Dictionary<string, string>());
+                writer.WriteEntry(gea);
+            }
+
+            archive.Seek(0, SeekOrigin.Begin);
+            using (TarReader reader = new TarReader(archive))
+            {
+                PaxGlobalExtendedAttributesTarEntry gea = reader.GetNextEntry() as PaxGlobalExtendedAttributesTarEntry;
+                Assert.NotNull(gea);
+                Assert.Equal(TarEntryFormat.Pax, gea.Format);
+                Assert.Equal(TarEntryType.GlobalExtendedAttributes, gea.EntryType);
+
+                Assert.Equal(0, gea.GlobalExtendedAttributes.Count);
+
+                Assert.Null(reader.GetNextEntry());
             }
         }
     }

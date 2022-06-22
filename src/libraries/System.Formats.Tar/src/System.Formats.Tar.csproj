@@ -24,6 +24,7 @@
     <Compile Include="System\Formats\Tar\TarEntryFormat.cs" />
     <Compile Include="System\Formats\Tar\UstarTarEntry.cs" />
     <Compile Include="System\Formats\Tar\GnuTarEntry.cs" />
+    <Compile Include="System\Formats\Tar\PaxGlobalExtendedAttributesTarEntry.cs" />
     <Compile Include="System\Formats\Tar\PaxTarEntry.cs" />
     <Compile Include="System\Formats\Tar\TarEntryType.cs" />
     <Compile Include="System\Formats\Tar\TarFile.cs" />
