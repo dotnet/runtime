@@ -1567,7 +1567,6 @@ void EEJitManager::SetCpuInfo()
     {
         CPUCompileFlags.Set(InstructionSet_Atomics);
         g_arm64_atomics_present = true;
-        printf("g_arm64_atomics_present= true\n");
     }
 
     // PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE (43)

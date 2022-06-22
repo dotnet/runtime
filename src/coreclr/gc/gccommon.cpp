@@ -20,9 +20,9 @@ IGCHandleManager* g_theGCHandleManager;
 
 #if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
 // Flag to check if atomics feature is available on
-// the machine
+// the machine. OFF for standalone.
 bool g_arm64_atomics_present = false;
-#endif
+#endif // defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
 
 IGCToCLR* g_theGCToCLR;
 #endif // BUILD_AS_STANDALONE

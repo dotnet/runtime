@@ -10,9 +10,7 @@
 #if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
 // Flag to check if atomics feature is available on
 // the machine
-// #ifdef BUILD_AS_STANDALONE
 extern bool g_arm64_atomics_present;
-// #endif
 #endif
 
 

@@ -30,8 +30,6 @@ Module Name:
 #endif // BUILD_AS_STANDALONE
 #include "gcconfig.h"
 
-
-
 /*
  * Promotion Function Prototypes
  */

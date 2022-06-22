@@ -77,7 +77,9 @@ __forceinline T Interlocked::Exchange(T volatile *destination, T value)
     }
     else
 #endif // TARGET_ARM64
-    return _InterlockedExchange((long*)destination, value);
+    {
+        return _InterlockedExchange((long*)destination, value);
+    }
 #else
     T result = __atomic_exchange_n(destination, value, __ATOMIC_ACQ_REL);
     ArmInterlockedOperationBarrier();
@@ -215,7 +217,9 @@ __forceinline T Interlocked::ExchangePointer(T volatile * destination, T value)
     }
     else
 #endif // TARGET_ARM64
-    return (T)(TADDR)_InterlockedExchangePointer((void* volatile *)destination, value);
+    {
+        return (T)(TADDR)_InterlockedExchangePointer((void* volatile *)destination, value);
+    }
 #else
     return (T)(TADDR)_InterlockedExchange((long volatile *)(void* volatile *)destination, (long)(void*)value);
 #endif // HOST_64BIT
@@ -238,7 +242,9 @@ __forceinline T Interlocked::ExchangePointer(T volatile * destination, std::null
     }
     else
 #endif // TARGET_ARM64
-    return (T)(TADDR)_InterlockedExchangePointer((void* volatile *)destination, value);
+    {
+        return (T)(TADDR)_InterlockedExchangePointer((void* volatile *)destination, value);
+    }
 #else
     return (T)(TADDR)_InterlockedExchange((long volatile *)(void* volatile *)destination, (long)(void*)value);
 #endif // HOST_64BIT
@@ -262,24 +268,15 @@ __forceinline T Interlocked::CompareExchangePointer(T volatile *destination, T e
 {
 #ifdef _MSC_VER
 #ifdef HOST_64BIT
-#ifdef TARGET_ARM64
-    if (g_arm64_atomics_present)
-    {
-        return (T)(TADDR)__casal64((unsigned __int64*) destination, (unsigned  __int64)comparand, (unsigned __int64)exchange);
-    }
-    else
-#endif // TARGET_ARM64
-    {
-        return (T)(TADDR)_InterlockedCompareExchangePointer((void* volatile *)destination, exchange, comparand);
-    }
+    return (T)(TADDR)_InterlockedCompareExchangePointer((void* volatile *)destination, exchange, comparand);
 #else
     return (T)(TADDR)_InterlockedCompareExchange((long volatile *)(void* volatile *)destination, (long)(void*)exchange, (long)(void*)comparand);
-#endif // HOST_64BIT
+#endif
 #else
     T result = (T)(TADDR)__sync_val_compare_and_swap((void* volatile *)destination, comparand, exchange);
     ArmInterlockedOperationBarrier();
     return result;
-#endif // _MSC_VER
+#endif
 }
 
 template <typename T>
@@ -287,13 +284,6 @@ __forceinline T Interlocked::CompareExchangePointer(T volatile *destination, T e
 {
 #ifdef _MSC_VER
 #ifdef HOST_64BIT
-#ifdef TARGET_ARM64
-    if (g_arm64_atomics_present)
-    {
-        return (T)(TADDR)__casal64((unsigned __int64*) destination, (unsigned  __int64)comparand, (unsigned __int64)exchange);
-    }
-    else
-#endif // TARGET_ARM64
     return (T)(TADDR)_InterlockedCompareExchangePointer((void* volatile *)destination, (void*)exchange, (void*)comparand);
 #else
     return (T)(TADDR)_InterlockedCompareExchange((long volatile *)(void* volatile *)destination, (long)(void*)exchange, (long)(void*)comparand);
