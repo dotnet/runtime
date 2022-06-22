@@ -3199,6 +3199,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     opts.compProcedureSplitting = jitFlags->IsSet(JitFlags::JIT_FLAG_PROCSPLIT) || enableFakeSplitting;
 
+#ifdef TARGET_LOONGARCH64
+    // Hot/cold splitting is not being tested on LoongArch64.
+    opts.compProcedureSplitting = false;
+#endif // TARGET_LOONGARCH64
+
 #ifdef DEBUG
     opts.compProcedureSplittingEH = opts.compProcedureSplitting;
 #endif // DEBUG
