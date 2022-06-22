@@ -894,14 +894,8 @@ namespace System.Xml.Linq
             return null;
         }
 
-        internal static bool IsWhitespace(string s)
-        {
-            foreach (char ch in s)
-            {
-                if (ch != ' ' && ch != '\t' && ch != '\r' && ch != '\n') return false;
-            }
-            return true;
-        }
+        internal static bool IsWhitespace(string s) =>
+            s.AsSpan().IndexOfAnyExcept(" \t\r\n") < 0;
 
         internal override void ValidateNode(XNode node, XNode? previous)
         {

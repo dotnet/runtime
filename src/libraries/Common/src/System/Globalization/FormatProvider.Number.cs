@@ -584,18 +584,9 @@ namespace System.Globalization
                 return false;
             }
 
-            private static bool TrailingZeros(ReadOnlySpan<char> s, int index)
-            {
+            private static bool TrailingZeros(ReadOnlySpan<char> s, int index) =>
                 // For compatibility, we need to allow trailing zeros at the end of a number string
-                for (int i = index; i < s.Length; i++)
-                {
-                    if (s[i] != '\0')
-                    {
-                        return false;
-                    }
-                }
-                return true;
-            }
+                s.Slice(index).IndexOfAnyExcept('\0') < 0;
 
             internal static unsafe bool TryStringToNumber(ReadOnlySpan<char> str, NumberStyles options, ref NumberBuffer number, StringBuilder sb, NumberFormatInfo numfmt, bool parseDecimal)
             {
