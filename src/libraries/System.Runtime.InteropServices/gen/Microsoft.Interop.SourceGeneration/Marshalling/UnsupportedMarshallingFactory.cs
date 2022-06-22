@@ -31,14 +31,14 @@ namespace Microsoft.Interop
 
         }
 
-        public UnsupportedMarshallingFactory(ImmutableDictionary<ManagedTypeInfo, string> customTypeToErrorMessageMap)
+        private UnsupportedMarshallingFactory(ImmutableDictionary<ManagedTypeInfo, string> customTypeToErrorMessageMap)
         {
             CustomTypeToErrorMessageMap = customTypeToErrorMessageMap;
         }
 
         public ImmutableDictionary<ManagedTypeInfo, string> CustomTypeToErrorMessageMap { get; }
 
-        public static ImmutableDictionary<ManagedTypeInfo, string> DefaultTypeToErrorMessageMap { get; } =
+        private static ImmutableDictionary<ManagedTypeInfo, string> DefaultTypeToErrorMessageMap { get; } =
             ImmutableDictionary.CreateRange(new Dictionary<ManagedTypeInfo, string>
             {
                 { SpecialTypeInfo.String, SR.MarshallingStringOrCharAsUndefinedNotSupported },

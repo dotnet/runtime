@@ -348,7 +348,7 @@ namespace Microsoft.Interop
                 bool runtimeMarshallingDisabled = disabledRuntimeMarshallingAttributeType is not null
                     && env.Compilation.Assembly.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, disabledRuntimeMarshallingAttributeType));
 
-                // Since the char type can go into the P/Invoke signature here, we use can only use it when
+                // Since the char type can go into the P/Invoke signature here, we can only use it when
                 // runtime marshalling is disabled.
                 generatorFactory = new CharMarshallingGeneratorFactory(generatorFactory, useBlittableMarshallerForUtf16: runtimeMarshallingDisabled);
 
