@@ -1006,10 +1006,8 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
     while (m_dwThreadHandleBeingUsed > 0)
     {
         // Another thread is using the handle now.
-#undef Sleep
         // We can not call __SwitchToThread since we can not go back to host.
-        ::Sleep(10);
-#define Sleep(a) Dont_Use_Sleep(a)
+        ClrSleepEx(10, FALSE);
     }
     if (m_WeOwnThreadHandle && m_ThreadHandleForClose == INVALID_HANDLE_VALUE)
     {
@@ -6748,11 +6746,7 @@ BOOL Thread::DoesRegionContainGuardPage(UINT_PTR uLowAddress, UINT_PTR uHighAddr
 
     while (uStartOfCurrentRegion < uHighAddress)
     {
-#undef VirtualQuery
-        // This code can run below YieldTask, which means that it must not call back into the host.
-        // The reason is that YieldTask is invoked by the host, and the host needs not be reentrant.
         dwRes = VirtualQuery((const void *)uStartOfCurrentRegion, &meminfo, sizeof(meminfo));
-#define VirtualQuery(lpAddress, lpBuffer, dwLength) Dont_Use_VirtualQuery(lpAddress, lpBuffer, dwLength)
 
         // If the query fails then assume we have no guard page.
         if (sizeof(meminfo) != dwRes)
@@ -8358,6 +8352,23 @@ void Thread::InitializeSpecialUserModeApc()
 }
 
 #endif // FEATURE_SPECIAL_USER_MODE_APC
+
+#if !(defined(TARGET_WINDOWS) && defined(TARGET_X86))
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+EXTERN_C void STDCALL ClrRestoreNonvolatileContextWorker(PCONTEXT ContextRecord, DWORD64 ssp);
+#endif
+
+void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord)
+{
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    DWORD64 ssp = GetSSP(ContextRecord);
+    ClrRestoreNonvolatileContextWorker(ContextRecord, ssp);
+#else
+    // Falling back to RtlRestoreContext() for now, though it should be possible to have simpler variants for these cases
+    RtlRestoreContext(ContextRecord, NULL);
+#endif
+}
+#endif // !(TARGET_WINDOWS && TARGET_X86)
 #endif // #ifndef DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE

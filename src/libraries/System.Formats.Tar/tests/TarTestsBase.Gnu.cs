@@ -56,7 +56,7 @@ namespace System.Formats.Tar.Tests
 
         protected void SetGnuProperties(GnuTarEntry entry)
         {
-            DateTimeOffset approxNow = DateTimeOffset.Now.Subtract(TimeSpan.FromHours(6));
+            DateTimeOffset approxNow = DateTimeOffset.UtcNow.Subtract(TimeSpan.FromHours(6));
 
             // ATime: Verify the default value was approximately "now"
             Assert.True(entry.AccessTime > approxNow);

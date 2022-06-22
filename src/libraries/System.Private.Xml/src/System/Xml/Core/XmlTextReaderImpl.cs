@@ -505,7 +505,7 @@ namespace System.Xml
         internal XmlTextReaderImpl(Stream xmlFragment, XmlNodeType fragType, XmlParserContext? context)
             : this((context != null && context.NameTable != null) ? context.NameTable : new NameTable())
         {
-            Encoding? enc = (context != null) ? context.Encoding : null;
+            Encoding? enc = context?.Encoding;
             if (context == null || context.BaseURI == null || context.BaseURI.Length == 0)
             {
                 InitStreamInput(xmlFragment, enc);
@@ -3466,7 +3466,7 @@ namespace System.Xml
                     int copyCharsCount = _ps.charsUsed - _ps.charPos;
                     if (copyCharsCount < charsLen - 1)
                     {
-                        _ps.lineStartPos = _ps.lineStartPos - _ps.charPos;
+                        _ps.lineStartPos -= _ps.charPos;
                         if (copyCharsCount > 0)
                         {
                             BlockCopyChars(_ps.chars, _ps.charPos, _ps.chars, 0, copyCharsCount);
@@ -3791,10 +3791,7 @@ namespace System.Xml
                         if (XmlConvert.StrEqual(_ps.chars, _ps.charPos, nameEndPos - _ps.charPos, "standalone") &&
                              (xmlDeclState == 1 || xmlDeclState == 2) && !isTextDecl)
                         {
-                            if (!isTextDecl)
-                            {
-                                attr = AddAttributeNoChecks("standalone", 1);
-                            }
+                            attr = AddAttributeNoChecks("standalone", 1);
                             xmlDeclState = 2;
                             break;
                         }
@@ -6168,7 +6165,7 @@ namespace System.Xml
                 {
                     PushExternalEntity(entity);
                     _curNode.entityId = _ps.entityId;
-                    return (isInAttributeValue && _validatingReaderCompatFlag) ? EntityType.ExpandedInAttribute : EntityType.Expanded;
+                    return EntityType.Expanded;
                 }
             }
             else

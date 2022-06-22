@@ -47,7 +47,7 @@ namespace System.Composition.TypedParts
                     var ima = attr as ImportManyAttribute;
                     if (ima != null)
                     {
-                        importMetadata = importMetadata ?? new Dictionary<string, object>();
+                        importMetadata ??= new Dictionary<string, object>();
                         importMetadata.Add(ImportManyImportMetadataConstraintName, true);
                         importedContract = new CompositionContract(memberType, ima.ContractName);
                         explicitImportsApplied++;
@@ -57,7 +57,7 @@ namespace System.Composition.TypedParts
                         var imca = attr as ImportMetadataConstraintAttribute;
                         if (imca != null)
                         {
-                            importMetadata = importMetadata ?? new Dictionary<string, object>();
+                            importMetadata ??= new Dictionary<string, object>();
                             importMetadata.Add(imca.Name, imca.Value);
                         }
                     }
@@ -72,7 +72,7 @@ namespace System.Composition.TypedParts
                         .GetRuntimeProperties()
                         .Where(p => p.GetMethod.IsPublic && p.DeclaringType == attrType && p.CanRead))
                     {
-                        importMetadata = importMetadata ?? new Dictionary<string, object>();
+                        importMetadata ??= new Dictionary<string, object>();
                         importMetadata.Add(prop.Name, prop.GetValue(attr, null));
                     }
                 }

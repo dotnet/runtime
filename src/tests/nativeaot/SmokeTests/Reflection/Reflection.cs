@@ -9,6 +9,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Reflection;
@@ -31,6 +32,8 @@ internal static class ReflectionTest
         TestVirtualDelegateTargets.Run();
         TestRunClassConstructor.Run();
         TestFieldMetadata.Run();
+        TestLinqInvocation.Run();
+        TestGenericMethodsHaveSameReflectability.Run();
 #if !OPTIMIZED_MODE_WITHOUT_SCANNER
         TestContainment.Run();
         TestInterfaceMethod.Run();
@@ -1856,6 +1859,48 @@ internal static class ReflectionTest
                 throw new Exception();
 #endif
             static Type GetAtom3() => typeof(Atom3);
+        }
+    }
+
+    class TestLinqInvocation
+    {
+        delegate void RunMeDelegate();
+
+        static void RunMe() { }
+
+        public static void Run()
+        {
+            Expression<Action<RunMeDelegate>> ex = (RunMeDelegate m) => m();
+            ex.Compile()(RunMe);
+        }
+    }
+
+    class TestGenericMethodsHaveSameReflectability
+    {
+        public interface IHardToGuess { }
+
+        struct SomeStruct<T> : IHardToGuess { }
+
+        public static void TakeAGuess<T>() where T : struct, IHardToGuess { }
+
+        class Atom1 { }
+        class Atom2 { }
+
+        static Type s_someStructOverAtom1 = typeof(SomeStruct<Atom1>);
+
+        public static void Run()
+        {
+            // Statically call with SomeStruct over Atom2
+            TakeAGuess<SomeStruct<Atom2>>();
+
+            // MakeGenericMethod the method with SomeStruct over Atom1
+            // Note the compiler cannot figure out a suitable instantiation here because
+            // of the "struct, interface" constraint on T. But the expected side effect is that the static
+            // call above now became reflection-visible and will let the type loader make this
+            // work at runtime. All generic instantiations share the same refection visibility.
+            var mi = typeof(TestGenericMethodsHaveSameReflectability).GetMethod(nameof(TakeAGuess)).MakeGenericMethod(s_someStructOverAtom1);
+
+            mi.Invoke(null, Array.Empty<object>());
         }
     }
 

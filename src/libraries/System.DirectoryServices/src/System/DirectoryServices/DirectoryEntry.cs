@@ -806,13 +806,9 @@ namespace System.DirectoryServices
             }
             catch (TargetInvocationException e)
             {
-                if (e.InnerException != null)
+                if (e.InnerException is COMException inner)
                 {
-                    if (e.InnerException is COMException)
-                    {
-                        COMException inner = (COMException)e.InnerException;
-                        throw new TargetInvocationException(e.Message, COMExceptionHelper.CreateFormattedComException(inner));
-                    }
+                    throw new TargetInvocationException(e.Message, COMExceptionHelper.CreateFormattedComException(inner));
                 }
 
                 throw;
@@ -843,13 +839,9 @@ namespace System.DirectoryServices
             }
             catch (TargetInvocationException e)
             {
-                if (e.InnerException != null)
+                if (e.InnerException is COMException inner)
                 {
-                    if (e.InnerException is COMException)
-                    {
-                        COMException inner = (COMException)e.InnerException;
-                        throw new TargetInvocationException(e.Message, COMExceptionHelper.CreateFormattedComException(inner));
-                    }
+                    throw new TargetInvocationException(e.Message, COMExceptionHelper.CreateFormattedComException(inner));
                 }
 
                 throw;
@@ -876,13 +868,9 @@ namespace System.DirectoryServices
             }
             catch (TargetInvocationException e)
             {
-                if (e.InnerException != null)
+                if (e.InnerException is COMException inner)
                 {
-                    if (e.InnerException is COMException)
-                    {
-                        COMException inner = (COMException)e.InnerException;
-                        throw new TargetInvocationException(e.Message, COMExceptionHelper.CreateFormattedComException(inner));
-                    }
+                    throw new TargetInvocationException(e.Message, COMExceptionHelper.CreateFormattedComException(inner));
                 }
 
                 throw;

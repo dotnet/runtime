@@ -2418,15 +2418,8 @@ namespace System
                 } while (lastOffset >= (sizeof(int) * 2));
             }
 
-            last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, (int)lastOffset), 1);
-
             // Store any remaining values one-by-one
-            while (Unsafe.IsAddressLessThan(ref first, ref last))
-            {
-                (last, first) = (first, last);
-                first = ref Unsafe.Add(ref first, 1);
-                last = ref Unsafe.Subtract(ref last, 1);
-            }
+            ReverseInner(ref first, lastOffset);
         }
     }
 }

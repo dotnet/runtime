@@ -475,15 +475,7 @@ namespace System
                 } while (lastOffset >= (nuint)Vector128<int>.Count * 2);
             }
 
-            last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, (int)lastOffset), 1);
-
-            // Store any remaining values one-by-one
-            while (Unsafe.IsAddressLessThan(ref first, ref last))
-            {
-                (last, first) = (first, last);
-                first = ref Unsafe.Add(ref first, 1);
-                last = ref Unsafe.Subtract(ref last, 1);
-            }
+            ReverseInner(ref first, lastOffset);
         }
 
         public static void Reverse(ref long buf, nuint length)
@@ -554,15 +546,9 @@ namespace System
                     lastOffset -= (nuint)Vector128<long>.Count * 2;
                 } while (lastOffset >= (nuint)Vector128<long>.Count * 2);
             }
-            last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, (int)lastOffset), 1);
 
             // Store any remaining values one-by-one
-            while (Unsafe.IsAddressLessThan(ref first, ref last))
-            {
-                (last, first) = (first, last);
-                first = ref Unsafe.Add(ref first, 1);
-                last = ref Unsafe.Subtract(ref last, 1);
-            }
+            ReverseInner(ref first, lastOffset);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -595,16 +581,16 @@ namespace System
             ReverseInner(ref elements, length);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void ReverseInner<T>(ref T elements, nuint length)
         {
-            Debug.Assert(length > 0);
+            if (length <= 1)
+                return;
             ref T first = ref elements;
             ref T last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, (int)length), 1);
             do
             {
-                T temp = first;
-                first = last;
-                last = temp;
+                (last, first) = (first, last);
                 first = ref Unsafe.Add(ref first, 1);
                 last = ref Unsafe.Subtract(ref last, 1);
             } while (Unsafe.IsAddressLessThan(ref first, ref last));

@@ -1,18 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Text;
+using System.Xml;
+using System.Xml.Schema;
+
 namespace System.Xml.Serialization
 {
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Reflection;
-    using System.Text;
-    using System.Xml;
-    using System.Xml.Schema;
-
     // These classes provide a higher level view on reflection specific to
     // Xml serialization, for example:
     // - allowing one to talk about types w/o having them compiled yet
@@ -1379,9 +1379,8 @@ namespace System.Xml.Serialization
                 {
                     for (int i = 0; i < defaultMembers.Length; i++)
                     {
-                        if (defaultMembers[i] is PropertyInfo)
+                        if (defaultMembers[i] is PropertyInfo defaultProp)
                         {
-                            PropertyInfo defaultProp = (PropertyInfo)defaultMembers[i];
                             if (defaultProp.DeclaringType != t) continue;
                             if (!defaultProp.CanRead) continue;
                             MethodInfo getMethod = defaultProp.GetMethod!;
