@@ -4542,6 +4542,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                     retNode = cnsNode;
 
+                    impSpillSideEffects(false, (unsigned)CHECK_SPILL_ALL DEBUGARG(
+                                                   "spill side effects before folding two consts"));
+
                     impPopStack();
                     impPopStack();
                     DEBUG_DESTROY_NODE(otherNode);
@@ -4553,8 +4556,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                 if (cnsNode->IsFloatNaN())
                 {
+                    impSpillSideEffects(false, (unsigned)CHECK_SPILL_ALL DEBUGARG(
+                                                   "spill side effects before propagating NaN"));
+
                     // maxsd, maxss, minsd, and minss all return op2 if either is NaN
                     // we require NaN to be propagated so ensure the known NaN is op2
+
                     impPopStack();
                     impPopStack();
                     DEBUG_DESTROY_NODE(otherNode);
@@ -4562,19 +4569,22 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     retNode = cnsNode;
                     break;
                 }
-                else if (ni == NI_System_Math_Max)
+
+                if (ni == NI_System_Math_Max)
                 {
                     // maxsd, maxss return op2 if both inputs are 0 of either sign
                     // we require +0 to be greater than -0, so we can't handle if
                     // the known constant is +0. This is because if the unknown value
                     // is -0, we'd need the cns to be op2. But if the unknown value
                     // is NaN, we'd need the cns to be op1 instead.
+
                     if (cnsNode->IsFloatPositiveZero())
                     {
                         break;
                     }
 
                     // Given the checks, op1 can safely be the cns and op2 the other node
+
                     ni = (callType == TYP_DOUBLE) ? NI_SSE2_Max : NI_SSE_Max;
 
                     // one is constant and we know its something we can handle, so pop both peeked values
@@ -4591,12 +4601,14 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     // the known constant is -0. This is because if the unknown value
                     // is +0, we'd need the cns to be op2. But if the unknown value
                     // is NaN, we'd need the cns to be op1 instead.
+
                     if (cnsNode->IsFloatNegativeZero())
                     {
                         break;
                     }
 
                     // Given the checks, op1 can safely be the cns and op2 the other node
+
                     ni = (callType == TYP_DOUBLE) ? NI_SSE2_Min : NI_SSE_Min;
 
                     // one is constant and we know its something we can handle, so pop both peeked values
