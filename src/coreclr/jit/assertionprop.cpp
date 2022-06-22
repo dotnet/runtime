@@ -1559,7 +1559,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                         if (varTypeIsIntegral(lclVar) && genActualType(lclVar) != genActualType(op2) &&
                             genTypeSize(lclVar) < genTypeSize(op2))
                         {
-                            iconVal = genCastIconVal(iconVal, genActualType(lclVar));
+                            iconVal = genCastIconVal(iconVal, lclVar->TypeGet());
                         }
 #ifdef TARGET_ARM
                         // Do not Constant-Prop large constants for ARM

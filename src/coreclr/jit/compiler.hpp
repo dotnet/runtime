@@ -621,7 +621,11 @@ inline ssize_t genCastIconVal(ssize_t iconVal, var_types castToType)
             break;
 
         case TYP_UINT:
+            iconVal = UINT32(iconVal);
+            break;
+
         case TYP_INT:
+            iconVal = INT32(iconVal);
             break;
 
         case TYP_ULONG:
