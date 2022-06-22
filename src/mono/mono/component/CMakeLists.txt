@@ -6,6 +6,7 @@ set(MONO_EVENTPIPE_GEN_INCLUDE_PATH "${CMAKE_CURRENT_BINARY_DIR}/eventpipe")
 set(MONO_HOT_RELOAD_COMPONENT_NAME "hot_reload")
 set(MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME "diagnostics_tracing")
 set(MONO_DEBUGGER_COMPONENT_NAME "debugger")
+set(MONO_MARSHAL_ILGEN_COMPONENT_NAME "marshal_ilgen")
 
 # a list of every component.
 set(components "")
@@ -77,6 +78,21 @@ set(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-dependencies
   ${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-gen-headers
   ${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-gen-sources
 )
+
+# marshal_ilgen
+list(APPEND components
+  ${MONO_MARSHAL_ILGEN_COMPONENT_NAME}
+)
+
+set(${MONO_MARSHAL_ILGEN_COMPONENT_NAME}-sources
+  ${MONO_COMPONENT_PATH}/marshal_ilgen.c
+  ${MONO_COMPONENT_PATH}/marshal_ilgen.h  
+)
+
+set(${MONO_MARSHAL_ILGEN_COMPONENT_NAME}-stub-sources
+  ${MONO_COMPONENT_PATH}/marshal_ilgen-stub.c
+)
+
 
 # from here down, all the components are treated in the same way
 

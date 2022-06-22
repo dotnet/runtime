@@ -16,8 +16,6 @@ set(ilgen_base_sources
     method-builder-ilgen.c
     method-builder-ilgen.h
     method-builder-ilgen-internals.h
-    marshal-ilgen.c
-    marshal-ilgen.h
     marshal-lightweight.c
     marshal-lightweight.h
     marshal-shared.c

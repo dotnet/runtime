@@ -29,7 +29,10 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)' == 'Debug' and '@(_MonoComponent->Count())' == 0">
-    <_MonoComponent Include="hot_reload;debugger" />
+    <_MonoComponent Include="hot_reload;debugger;marshal_ilgen" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)' == 'Release' and '@(_MonoComponent->Count())' == 0">
+    <_MonoComponent Include="marshal_ilgen" />
   </ItemGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props" Condition="'$(WasmUseEMSDK_PATH)' == 'true'" />

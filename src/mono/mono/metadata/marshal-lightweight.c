@@ -10,12 +10,13 @@
 
 #include "metadata/method-builder-ilgen.h"
 #include "metadata/method-builder-ilgen-internals.h"
+#include "component/marshal_ilgen.h"
 #include <mono/metadata/object.h>
 #include <mono/metadata/loader.h>
 #include "cil-coff.h"
 #include "metadata/marshal.h"
 #include "metadata/marshal-internals.h"
-#include "metadata/marshal-ilgen.h"
+// #include "metadata/marshal-ilgen.h"
 #include "metadata/marshal-lightweight.h"
 #include "metadata/marshal-shared.h"
 #include "metadata/tabledefs.h"
@@ -24,6 +25,7 @@
 #include "mono/metadata/abi-details.h"
 #include "mono/metadata/class-abi-details.h"
 #include "mono/metadata/class-init.h"
+#include "mono/metadata/components.h"
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/threads.h"
 #include "mono/metadata/monitor.h"
