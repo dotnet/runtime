@@ -20,7 +20,10 @@ namespace System.Text.Json.Serialization
         /// </summary>
         public JsonNumberHandlingAttribute(JsonNumberHandling handling)
         {
-            ArgumentOutOfRangeException.ThrowIf(!JsonSerializer.IsValidNumberHandlingValue(handling));
+            if (!JsonSerializer.IsValidNumberHandlingValue(handling))
+            {
+                throw new ArgumentOutOfRangeException(nameof(handling));
+            }
             Handling = handling;
         }
     }

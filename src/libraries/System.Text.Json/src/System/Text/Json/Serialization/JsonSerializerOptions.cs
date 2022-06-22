@@ -334,7 +334,10 @@ namespace System.Text.Json
             {
                 VerifyMutable();
 
-                ArgumentOutOfRangeException.ThrowIf(!JsonSerializer.IsValidNumberHandlingValue(value));
+                if (!JsonSerializer.IsValidNumberHandlingValue(value))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
                 _numberHandling = value;
             }
         }
@@ -501,7 +504,8 @@ namespace System.Text.Json
                 VerifyMutable();
 
                 Debug.Assert(value >= 0);
-                ArgumentOutOfRangeException.ThrowIf(value > JsonCommentHandling.Skip);
+                if (value > JsonCommentHandling.Skip)
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.JsonSerializerDoesNotSupportComments);
 
                 _readCommentHandling = value;
             }
