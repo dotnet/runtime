@@ -14,7 +14,7 @@ namespace System.IO.Tests
         // When false, the Get API returns (UnixFileMode)(-1) when the file doesn't exist.
         protected virtual bool GetThrowsWhenDoesntExist => false;
 
-        // The FileSafeHandle APIs require a readable file to open the handle.
+        // The SafeFileHandle APIs require a readable file to open the handle.
         protected virtual bool GetModeNeedsReadableFile => false;
 
         // When false, the Get API returns (UnixFileMode)(-1) when the platform is not supported (Windows).
@@ -57,7 +57,7 @@ namespace System.IO.Tests
             UnixFileMode required = UnixFileMode.UserRead | UnixFileMode.UserWrite;
             if (IsDirectory)
             {
-                required = UnixFileMode.UserExecute;
+                required |= UnixFileMode.UserExecute;
             }
             Assert.True((mode & required) == required);
 

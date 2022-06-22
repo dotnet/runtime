@@ -54,9 +54,7 @@ namespace System.Formats.Tar
             // If the permissions weren't set at all, don't write the file's permissions.
             if (permissions != 0)
             {
-#pragma warning disable CA1416 // Validate platform compatibility
                 File.SetUnixFileMode(handle, (UnixFileMode)permissions);
-#pragma warning disable CA1416
             }
         }
     }

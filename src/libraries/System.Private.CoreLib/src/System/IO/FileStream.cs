@@ -200,6 +200,15 @@ namespace System.IO
                 FileStreamHelpers.ValidateArgumentsForPreallocation(options.Mode, options.Access);
             }
 
+            if (options.UnixCreateMode.HasValue)
+            {
+                // Only allow UnixCreateMode for file modes that can create a new file.
+                if (options.Mode == FileMode.Truncate || options.Mode == FileMode.Open)
+                {
+                    throw new ArgumentException(SR.Argument_InvalidUnixCreateMode, nameof(options));
+                }
+            }
+
             FileStreamHelpers.SerializationGuard(options.Access);
 
             _strategy = FileStreamHelpers.ChooseStrategy(

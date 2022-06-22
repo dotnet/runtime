@@ -19,24 +19,24 @@ namespace System.IO.Tests
         public void CreateWithUnixFileMode(UnixFileMode mode)
         {
             string path = GetRandomDirPath();
-            DirectoryInfo di = Directory.CreateDirectory(path, mode);
+            DirectoryInfo dir = Directory.CreateDirectory(path, mode);
 
             // under Linux the created directory gets mode (mode & ~umask & 01777).
             // under OSX, it gets (mode & ~umask & 0777).
             UnixFileMode platformFilter = UnixFileMode.SetGroup | UnixFileMode.SetUser | (PlatformDetection.IsBsdLike ? UnixFileMode.StickyBit : UnixFileMode.None);
             UnixFileMode expectedMode = mode & ~GetUmask() & ~platformFilter;
-            Assert.Equal(expectedMode, di.UnixFileMode);
+            Assert.Equal(expectedMode, dir.UnixFileMode);
         }
 
         [Fact]
         public void CreateDoesntChangeExistingMode()
         {
             string path = GetRandomDirPath();
-            DirectoryInfo di = Directory.CreateDirectory(path, AllAccess);
-            UnixFileMode initialMode = di.UnixFileMode;
+            DirectoryInfo dir = Directory.CreateDirectory(path, AllAccess);
+            UnixFileMode initialMode = dir.UnixFileMode;
 
-            DirectoryInfo di2 = Directory.CreateDirectory(path, UnixFileMode.UserRead);
-            Assert.Equal(initialMode, di2.UnixFileMode);
+            DirectoryInfo sameDir = Directory.CreateDirectory(path, UnixFileMode.UserRead);
+            Assert.Equal(initialMode, sameDir.UnixFileMode);
         }
 
         [Theory]

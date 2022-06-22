@@ -9,7 +9,6 @@ namespace System.IO.Tests
 {
     public partial class FileStream_ctor_options
     {
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [Theory]
         [MemberData(nameof(TestUnixFileModes))]
         public void CreateWithUnixFileMode(UnixFileMode mode)
@@ -26,20 +25,46 @@ namespace System.IO.Tests
             Assert.Equal(expectedMode, actualMode);
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [Fact]
-        public void CreateDoesntChangeExistingMode()
+        [Theory]
+        [InlineData(FileMode.Append)]
+        [InlineData(FileMode.Create)]
+        [InlineData(FileMode.OpenOrCreate)]
+        public void CreateDoesntChangeExistingUnixFileMode(FileMode fileMode)
         {
             // Create file as writable for user only.
             const UnixFileMode mode = UnixFileMode.UserWrite;
             string filename = GetTestFilePath();
-            using FileStream fs = CreateFileStream(filename, FileMode.CreateNew, FileAccess.Write, FileShare.None, bufferSize: 1, FileOptions.None, preallocationSize: 0, mode);
-            fs.Dispose();
+            CreateFileStream(filename, FileMode.CreateNew, FileAccess.Write, FileShare.None, bufferSize: 1, FileOptions.None, preallocationSize: 0, mode).Dispose();
 
             // Now open with AllAccess.
-            using FileStream fs2 = CreateFileStream(filename, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 1, FileOptions.None, preallocationSize: 0, AllAccess);
+            using FileStream fs = CreateFileStream(filename, fileMode, FileAccess.Write, FileShare.None, bufferSize: 1, FileOptions.None, preallocationSize: 0, AllAccess);
             UnixFileMode actualMode = File.GetUnixFileMode(filename);
             Assert.Equal(mode, actualMode);
+        }
+
+        [Theory]
+        [InlineData(FileMode.Append, true)]
+        [InlineData(FileMode.Create, true)]
+        [InlineData(FileMode.CreateNew, true)]
+        [InlineData(FileMode.OpenOrCreate, true)]
+        [InlineData(FileMode.Truncate, false)]
+        [InlineData(FileMode.Open, false)]
+        public void UnixCreateModeThrowsForNonCreatingFileModes(FileMode fileMode, bool canSetUnixCreateMode)
+        {
+            const UnixFileMode unixMode = UnixFileMode.UserWrite;
+            string filename = GetTestFilePath();
+
+            if (canSetUnixCreateMode)
+            {
+                CreateFileStream(filename, fileMode, FileAccess.Write, FileShare.None, bufferSize: 1, FileOptions.None, preallocationSize: 0, unixMode).Dispose();
+
+                UnixFileMode actualMode = File.GetUnixFileMode(filename);
+                Assert.Equal(unixMode, actualMode);
+            }
+            else
+            {
+                Assert.Throws<ArgumentException>(() => CreateFileStream(filename, fileMode, FileAccess.Write, FileShare.None, bufferSize: 1, FileOptions.None, preallocationSize: 0, unixMode));
+            }
         }
 
         private static long GetAllocatedSize(FileStream fileStream)

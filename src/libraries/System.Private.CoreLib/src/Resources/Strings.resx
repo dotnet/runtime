@@ -1098,6 +1098,9 @@
   <data name="Argument_InvalidPreallocateMode" xml:space="preserve">
     <value>Preallocation size can be requested only for new files.</value>
   </data>
+  <data name="Argument_InvalidUnixCreateMode" xml:space="preserve">
+    <value>UnixCreateMode can be requested only for modes that can new files.</value>
+  </data>
   <data name="Argument_InvalidArgumentForComparison" xml:space="preserve">
     <value>Type of argument is not compatible with the generic comparer.</value>
   </data>
