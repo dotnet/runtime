@@ -52,6 +52,7 @@
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/icall-internals.h>
 #include <mono/metadata/loader-internals.h>
+#include <mono/metadata/marshal-lightweight.h>
 #define MONO_MATH_DECLARE_ALL 1
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-compiler.h>
@@ -4505,6 +4506,11 @@ mini_init (const char *filename)
 	if (mono_use_interpreter)
 		mono_ee_interp_init (mono_interp_opts_string);
 #endif
+
+	if (mono_marshal_should_init_ilgen_after_component_init())
+	{
+		mono_component_marshal_ilgen ()->ilgen_init_internal(); 
+	}
 
 	mono_os_mutex_init_recursive (&jit_mutex);
 
