@@ -403,7 +403,6 @@ size_t GetLogicalProcessorCacheSizeFromOS()
 {
     size_t cache_size = 0;
     size_t cache_level = 0;
-    uint32_t totalCPUCount = 0;
 
     DWORD nEntries = 0;
 
@@ -433,10 +432,6 @@ size_t GetLogicalProcessorCacheSizeFromOS()
                     cache_level = pslpi[i].Cache.Level;
                 }
             }
-            else if (pslpi[i].Relationship == RelationProcessorCore)
-            {
-                totalCPUCount++;
-            }
         }
         cache_size = last_cache_size;
     }
@@ -448,6 +443,8 @@ Exit:
 #if defined(TARGET_ARM64)
     if (cache_level != 3)
     {
+        uint32_t totalCPUCount = GCToOSInterface::GetTotalProcessorCount();
+
         // We expect to get the L3 cache size for Arm64 but currently expected to be missing that info
         // from most of the machines.
         // Hence, just use the following heuristics at best depending on the CPU count
