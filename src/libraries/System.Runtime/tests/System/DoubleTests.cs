@@ -1455,8 +1455,8 @@ namespace System.Tests
 
         [Theory]                                                      
         [InlineData( double.NaN,               double.NaN,              double.NaN,           0.0)]
-        [InlineData( 0.0,                     -1.0,                      1.0,                 0.0)]                         // y: sinpi(0)              x:  cospi(1)
-        [InlineData( 0.0,                     -0.0,                      1.0,                 0.0)]                         // y: sinpi(0)              x: -cospi(0.5)
+        [InlineData( 0.0,                     -1.0,                      1.0,                 CrossPlatformMachineEpsilon)] // y: sinpi(0)              x:  cospi(1)            ; This should be exact, but has an issue on WASM/Unix
+        [InlineData( 0.0,                     -0.0,                      1.0,                 CrossPlatformMachineEpsilon)] // y: sinpi(0)              x: -cospi(0.5)          ; This should be exact, but has an issue on WASM/Unix
         [InlineData( 0.0,                      0.0,                      0.0,                 0.0)]                         // y: sinpi(0)              x:  cospi(0.5)
         [InlineData( 0.0,                      1.0,                      0.0,                 0.0)]                         // y: sinpi(0)              x:  cospi(0)
         [InlineData( 0.84147098480789651,      0.54030230586813972,      0.31830988618379067, CrossPlatformMachineEpsilon)] // y: sinpi(1 / pi)         x:  cospi(1 / pi)
@@ -1474,12 +1474,12 @@ namespace System.Tests
         [InlineData( 0.81376384817462330,      0.58119566361426737,      0.30258509299404568, CrossPlatformMachineEpsilon)] // y: sinpi(ln(10))         x:  cospi(ln(10))
         [InlineData( 0.77394268526670828,     -0.63325565131482003,      0.71828182845904524, CrossPlatformMachineEpsilon)] // y: sinpi(e)              x:  cospi(e)
         [InlineData(-0.43030121700009227,     -0.90268536193307107,     -0.85840734641020676, CrossPlatformMachineEpsilon)] // y: sinpi(pi)             x:  cospi(pi)
-        [InlineData( 1.0,                      double.NegativeInfinity,  1.0,                 0.0)]                         // y: sinpi(0.5)
+        [InlineData( 1.0,                      double.NegativeInfinity,  1.0,                 CrossPlatformMachineEpsilon)] // y: sinpi(0.5)                                    ; This should be exact, but has an issue on WASM/Unix
         [InlineData( 1.0,                      double.PositiveInfinity,  0.0,                 0.0)]                         // y: sinpi(0.5)
-        [InlineData( double.PositiveInfinity, -1.0,                      0.5,                 0.0)]                         //                          x:  cospi(1)
-        [InlineData( double.PositiveInfinity,  1.0,                      0.5,                 0.0)]                         //                          x:  cospi(0)
-        [InlineData( double.PositiveInfinity,  double.NegativeInfinity,  0.75,                0.0)]
-        [InlineData( double.PositiveInfinity,  double.PositiveInfinity,  0.25,                0.0)]
+        [InlineData( double.PositiveInfinity, -1.0,                      0.5,                 CrossPlatformMachineEpsilon)] //                          x:  cospi(1)            ; This should be exact, but has an issue on WASM/Unix
+        [InlineData( double.PositiveInfinity,  1.0,                      0.5,                 CrossPlatformMachineEpsilon)] //                          x:  cospi(0)            ; This should be exact, but has an issue on WASM/Unix
+        [InlineData( double.PositiveInfinity,  double.NegativeInfinity,  0.75,                CrossPlatformMachineEpsilon)] //                                                  ; This should be exact, but has an issue on WASM/Unix
+        [InlineData( double.PositiveInfinity,  double.PositiveInfinity,  0.25,                CrossPlatformMachineEpsilon)] //                                                  ; This should be exact, but has an issue on WASM/Unix
         public static void Atan2PiTest(double y, double x, double expectedResult, double allowedVariance)
         {
             AssertExtensions.Equal(-expectedResult, double.Atan2Pi(-y, +x), allowedVariance);

@@ -1825,8 +1825,8 @@ namespace System.Tests
             yield return new object[] {  Half.Zero,              Half.One,               Half.Zero,          Half.Zero };                   // y: sinpi(0)              x:  cospi(0)
             yield return new object[] {  (Half)0.841470985f,     (Half)0.540302306f,     (Half)0.318309886f, CrossPlatformMachineEpsilon }; // y: sinpi(1 / pi)         x:  cospi(1 / pi)
             yield return new object[] {  (Half)0.978770938f,     (Half)0.204957194f,     (Half)0.434294482f, CrossPlatformMachineEpsilon }; // y: sinpi(log10(e))       x:  cospi(log10(e))
-            yield return new object[] {  Half.One,              -Half.Zero,              (Half)0.5f,         CrossPlatformMachineEpsilon }; // y: sinpi(0.5)            x: -cospi(0.5)          ; This should be exact, but has an issue on WASM/Unix
-            yield return new object[] {  Half.One,               Half.Zero,              (Half)0.5f,         CrossPlatformMachineEpsilon }; // y: sinpi(0.5)            x:  cospi(0.5)          ; This should be exact, but has an issue on WASM/Unix
+            yield return new object[] {  Half.One,              -Half.Zero,              (Half)0.5f,         Half.Zero };                   // y: sinpi(0.5)            x: -cospi(0.5)
+            yield return new object[] {  Half.One,               Half.Zero,              (Half)0.5f,         Half.Zero };                   // y: sinpi(0.5)            x:  cospi(0.5)
             yield return new object[] {  (Half)0.909297427f,    -(Half)0.416146837f,     (Half)0.636619772f, CrossPlatformMachineEpsilon }; // y: sinpi(2 / pi)         x:  cospi(2 / pi)
             yield return new object[] {  (Half)0.821482831f,    -(Half)0.570233249f,     (Half)0.693147181f, CrossPlatformMachineEpsilon }; // y: sinpi(ln(2))          x:  cospi(ln(2))
             yield return new object[] {  (Half)0.795693202f,    -(Half)0.605699867f,     (Half)0.707106781f, CrossPlatformMachineEpsilon }; // y: sinpi(1 / sqrt(2))    x:  cospi(1 / sqrt(2))
