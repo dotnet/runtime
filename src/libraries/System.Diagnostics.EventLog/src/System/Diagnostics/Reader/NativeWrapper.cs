@@ -20,7 +20,7 @@ namespace System.Diagnostics.Eventing.Reader
     /// </summary>
     internal static class NativeWrapper
     {
-        public class SystemProperties
+        public sealed class SystemProperties
         {
             // Indicates if the SystemProperties values were already computed (for this event Instance, surely).
             public bool filled;
@@ -597,10 +597,7 @@ namespace System.Diagnostics.Eventing.Reader
                         case UnsafeNativeMethods.EvtChannelConfigPropertyId.EvtChannelConfigEnabled:
                             {
                                 varVal.Type = (uint)UnsafeNativeMethods.EvtVariantType.EvtVarTypeBoolean;
-                                if ((bool)val == true)
-                                    varVal.Bool = 1;
-                                else
-                                    varVal.Bool = 0;
+                                varVal.Bool = (bool)val ? 1u : 0u;
                             }
                             break;
                         case UnsafeNativeMethods.EvtChannelConfigPropertyId.EvtChannelConfigAccess:
@@ -638,19 +635,13 @@ namespace System.Diagnostics.Eventing.Reader
                         case UnsafeNativeMethods.EvtChannelConfigPropertyId.EvtChannelLoggingConfigRetention:
                             {
                                 varVal.Type = (uint)UnsafeNativeMethods.EvtVariantType.EvtVarTypeBoolean;
-                                if ((bool)val == true)
-                                    varVal.Bool = 1;
-                                else
-                                    varVal.Bool = 0;
+                                varVal.Bool = (bool)val ? 1u : 0u;
                             }
                             break;
                         case UnsafeNativeMethods.EvtChannelConfigPropertyId.EvtChannelLoggingConfigAutoBackup:
                             {
                                 varVal.Type = (uint)UnsafeNativeMethods.EvtVariantType.EvtVarTypeBoolean;
-                                if ((bool)val == true)
-                                    varVal.Bool = 1;
-                                else
-                                    varVal.Bool = 0;
+                                varVal.Bool = (bool)val ? 1u : 0u;
                             }
                             break;
                         default:

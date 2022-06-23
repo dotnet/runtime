@@ -24,20 +24,21 @@ namespace System.Diagnostics
         public static Process[] GetProcessesByName(string? processName, string machineName)
         {
             ProcessManager.ThrowIfRemoteMachine(machineName);
-            if (processName == null)
-            {
-                processName = string.Empty;
-            }
 
-            var processes = new List<Process>();
+            processName ??= "";
+
+            ArrayBuilder<Process> processes = default;
             foreach (int pid in ProcessManager.EnumerateProcessIds())
             {
-                if (Interop.procfs.TryReadStatFile(pid, out Interop.procfs.ParsedStat parsedStat) &&
-                    string.Equals(processName, Process.GetUntruncatedProcessName(ref parsedStat), StringComparison.OrdinalIgnoreCase) &&
-                    Interop.procfs.TryReadStatusFile(pid, out Interop.procfs.ParsedStatus parsedStatus))
+                if (Interop.procfs.TryReadStatFile(pid, out Interop.procfs.ParsedStat parsedStat))
                 {
-                    ProcessInfo processInfo = ProcessManager.CreateProcessInfo(ref parsedStat, ref parsedStatus, processName);
-                    processes.Add(new Process(machineName, false, processInfo.ProcessId, processInfo));
+                    string actualProcessName = GetUntruncatedProcessName(ref parsedStat);
+                    if ((processName == "" || string.Equals(processName, actualProcessName, StringComparison.OrdinalIgnoreCase)) &&
+                        Interop.procfs.TryReadStatusFile(pid, out Interop.procfs.ParsedStatus parsedStatus))
+                    {
+                        ProcessInfo processInfo = ProcessManager.CreateProcessInfo(ref parsedStat, ref parsedStatus, actualProcessName);
+                        processes.Add(new Process(machineName, isRemoteMachine: false, pid, processInfo));
+                    }
                 }
             }
 
@@ -45,6 +46,8 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public TimeSpan PrivilegedProcessorTime
         {
             get
@@ -108,7 +111,7 @@ namespace System.Diagnostics
             GetStat().ppid;
 
         /// <summary>Gets execution path</summary>
-        private string? GetPathToOpenFile()
+        private static string? GetPathToOpenFile()
         {
             string[] allowedProgramsToRun = { "xdg-open", "gnome-open", "kfmclient" };
             foreach (var program in allowedProgramsToRun)
@@ -127,6 +130,9 @@ namespace System.Diagnostics
         /// It is the sum of the <see cref='System.Diagnostics.Process.UserProcessorTime'/> and
         /// <see cref='System.Diagnostics.Process.PrivilegedProcessorTime'/>.
         /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan TotalProcessorTime
         {
             get
@@ -140,6 +146,9 @@ namespace System.Diagnostics
         /// Gets the amount of time the associated process has spent running code
         /// inside the application portion of the process (not the operating system core).
         /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan UserProcessorTime
         {
             get
@@ -238,7 +247,7 @@ namespace System.Diagnostics
         /// <param name="newMax">The new maximum working set limit, or null not to change it.</param>
         /// <param name="resultingMin">The resulting minimum working set limit after any changes applied.</param>
         /// <param name="resultingMax">The resulting maximum working set limit after any changes applied.</param>
-        private void SetWorkingSetLimitsCore(IntPtr? newMin, IntPtr? newMax, out IntPtr resultingMin, out IntPtr resultingMax)
+        private static void SetWorkingSetLimitsCore(IntPtr? newMin, IntPtr? newMax, out IntPtr resultingMin, out IntPtr resultingMax)
         {
             // RLIMIT_RSS with setrlimit not supported on Linux > 2.4.30.
             throw new PlatformNotSupportedException(SR.MinimumWorkingSetNotSupported);

@@ -1,11 +1,6 @@
 ; Licensed to the .NET Foundation under one or more agreements.
 ; The .NET Foundation licenses this file to you under the MIT license.
 
-; ==++==
-;
-
-;
-; ==--==
 ; ***********************************************************************
 ; File: RedirectedHandledJITCase.asm
 ;
@@ -31,7 +26,7 @@ EXTERN _GetCurrentSavedRedirectContext@0:PROC
 ; WARNING!!  restoring the context prior to any stackwalk.  This means that
 ; WARNING!!  we need to ensure that no GC can occur while the stack is
 ; WARNING!!  unwalkable.  This further means that we cannot allow any exception
-; WARNING!!  to occure when the stack is unwalkable
+; WARNING!!  to occur when the stack is unwalkable
 ;
 
 

@@ -501,7 +501,7 @@ mono_gc_invoke_finalizers (void)
 MonoBoolean
 mono_gc_pending_finalizers (void)
 {
-	return sgen_have_pending_finalizers ();
+	return !!sgen_have_pending_finalizers ();
 }
 
 void
@@ -2816,9 +2816,6 @@ mono_gchandle_set_target (MonoGCHandle gchandle, MonoObject *obj)
 void
 sgen_client_gchandle_created (int handle_type, GCObject *obj, guint32 handle)
 {
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_inc_i32 (&mono_perfcounters->gc_num_handles);
-#endif
 
 	MONO_PROFILER_RAISE (gc_handle_created, (handle, (MonoGCHandleType)handle_type, obj));
 }
@@ -2826,9 +2823,6 @@ sgen_client_gchandle_created (int handle_type, GCObject *obj, guint32 handle)
 void
 sgen_client_gchandle_destroyed (int handle_type, guint32 handle)
 {
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_dec_i32 (&mono_perfcounters->gc_num_handles);
-#endif
 
 	MONO_PROFILER_RAISE (gc_handle_deleted, (handle, (MonoGCHandleType)handle_type));
 }
@@ -3165,12 +3159,6 @@ sgen_client_binary_protocol_collection_begin (int minor_gc_count, int generation
 		MONO_PROFILER_RAISE (gc_root_register, (SPECIAL_ADDRESS_TOGGLEREF, 1, MONO_ROOT_SOURCE_TOGGLEREF, NULL, "ToggleRefs"));
 	}
 
-#ifndef DISABLE_PERFCOUNTERS
-	if (generation == GENERATION_NURSERY)
-		mono_atomic_inc_i32 (&mono_perfcounters->gc_collections0);
-	else
-		mono_atomic_inc_i32 (&mono_perfcounters->gc_collections1);
-#endif
 }
 
 void

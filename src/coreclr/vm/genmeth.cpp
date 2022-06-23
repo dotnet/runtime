@@ -358,7 +358,7 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
         TypeHandle *pInstOrPerInstInfo = NULL;
         DictionaryLayout *pDL = NULL;
         DWORD infoSize = 0;
-        IBCLoggerAwareAllocMemTracker amt;
+        AllocMemTracker amt;
 
         if (!methodInst.IsEmpty())
         {
@@ -473,7 +473,7 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
                 amt.SuppressRelease();
 
 #ifdef _DEBUG
-                SString name(SString::Utf8);
+                SString name;
                 TypeString::AppendMethodDebug(name, pNewMD);
                 StackScratchBuffer buff;
                 const char* pDebugNameUTF8 = name.GetUTF8(buff);
@@ -857,7 +857,6 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
             if (pResultMD != NULL)
             {
                 _ASSERTE(pResultMD->GetMethodTable()->IsFullyLoaded());
-                g_IBCLogger.LogMethodDescAccess(pResultMD);
                 RETURN(pResultMD);
             }
 
@@ -894,7 +893,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                    FALSE);
                 if (pResultMD == NULL)
                 {
-                    IBCLoggerAwareAllocMemTracker amt;
+                    AllocMemTracker amt;
 
                     pResultMD = CreateMethodDesc(pAllocator,
                                                  pRepMT,
@@ -972,7 +971,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                     _ASSERTE(!pNonUnboxingStub->RequiresInstArg());
                     _ASSERTE(!pNonUnboxingStub->IsUnboxingStub());
 
-                    IBCLoggerAwareAllocMemTracker amt;
+                    AllocMemTracker amt;
 
                     _ASSERTE(pDefMD->GetClassification() == mcInstantiated);
 
@@ -1052,11 +1051,8 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                      pResultMD == FindTightlyBoundWrappedMethodDesc_DEBUG(pMDescInCanonMT));
 
             if (pResultMD != NULL)
-                            {
+            {
                 _ASSERTE(pResultMD->GetMethodTable()->IsFullyLoaded());
-
-                g_IBCLogger.LogMethodDescAccess(pResultMD);
-
                 if (allowInstParam || !pResultMD->RequiresInstArg())
                 {
                     RETURN(pResultMD);
@@ -1240,12 +1236,11 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
         if (methodInst.GetNumArgs() != pMethod->GetNumGenericMethodArgs())
             COMPlusThrow(kArgumentException);
 
-        // we base the creation of an unboxing stub on whether the original method was one already
-        // that keeps the reflection logic the same for value types
+        // we need unboxing stubs for virtual methods on value types
         pInstMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
             pMethod,
             pMT,
-            pMethod->IsUnboxingStub(),
+            instType.IsValueType() && pMethod->IsVirtual(),
             methodInst,
             FALSE,      /* no allowInstParam */
             TRUE   /* force remotable method (i.e. inst wrappers for non-generic methods on generic interfaces) */);
@@ -1267,12 +1262,8 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
         // - non generic method on a generic interface
         //
 
-        // we base the creation of an unboxing stub on whether the original method was one already
-        // that keeps the reflection logic the same for value types
-
         // we need unboxing stubs for virtual methods on value types unless the method is generic
-        BOOL fNeedUnboxingStub = pMethod->IsUnboxingStub() ||
-            ( instType.IsValueType() && pMethod->IsVirtual() );
+        BOOL fNeedUnboxingStub = instType.IsValueType() && pMethod->IsVirtual();
 
         pInstMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
             pMethod,            /* the original MD          */

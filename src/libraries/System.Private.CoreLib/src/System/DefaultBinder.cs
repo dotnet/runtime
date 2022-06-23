@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#pragma warning disable CA1852 // DefaultBinder is derived from in some targets
+
 using System.Reflection;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -9,12 +11,7 @@ using CultureInfo = System.Globalization.CultureInfo;
 
 namespace System
 {
-#if CORERT
-    public sealed
-#else
-    internal
-#endif
-    partial class DefaultBinder : Binder
+    internal partial class DefaultBinder : Binder
     {
         // This method is passed a set of methods and must choose the best
         // fit.  The methods all have the same number of arguments and the object
@@ -107,7 +104,6 @@ namespace System
                 if (candidates[i] == null)
                     continue;
 
-                // Validate the parameters.
                 ParameterInfo[] par = candidates[i]!.GetParametersNoCopy();
 
 #region Match method by parameter count
@@ -432,8 +428,10 @@ namespace System
 
         // Given a set of fields that match the base criteria, select a field.
         // if value is null then we have no way to select a field
-        public sealed override FieldInfo BindToField(BindingFlags bindingAttr, FieldInfo[] match!!, object value, CultureInfo? cultureInfo)
+        public sealed override FieldInfo BindToField(BindingFlags bindingAttr, FieldInfo[] match, object value, CultureInfo? cultureInfo)
         {
+            ArgumentNullException.ThrowIfNull(match);
+
             int i;
             // Find the method that match...
             int CurIdx = 0;
@@ -767,8 +765,10 @@ namespace System
 
         // Return any exact bindings that may exist. (This method is not defined on the
         //  Binder and is used by RuntimeType.)
-        public static MethodBase? ExactBinding(MethodBase[] match!!, Type[] types)
+        public static MethodBase? ExactBinding(MethodBase[] match, Type[] types)
         {
+            ArgumentNullException.ThrowIfNull(match);
+
             MethodBase[] aExactMatches = new MethodBase[match.Length];
             int cExactMatches = 0;
 
@@ -807,8 +807,10 @@ namespace System
 
         // Return any exact bindings that may exist. (This method is not defined on the
         //  Binder and is used by RuntimeType.)
-        public static PropertyInfo? ExactPropertyBinding(PropertyInfo[] match!!, Type? returnType, Type[]? types)
+        public static PropertyInfo? ExactPropertyBinding(PropertyInfo[] match, Type? returnType, Type[]? types)
         {
+            ArgumentNullException.ThrowIfNull(match);
+
             PropertyInfo? bestMatch = null;
             int typesLength = (types != null) ? types.Length : 0;
             for (int i = 0; i < match.Length; i++)

@@ -649,159 +649,6 @@ g_snprintf(gchar *string, gulong n, gchar const *format, ...)
 	return ret;
 }
 
-static const char hx [] = { '0', '1', '2', '3', '4', '5', '6', '7',
-				  '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-
-static gboolean
-char_needs_encoding (char c)
-{
-	if (((unsigned char)c) >= 0x80)
-		return TRUE;
-
-	if ((c >= '@' && c <= 'Z') ||
-	    (c >= 'a' && c <= 'z') ||
-	    (c >= '&' && c < 0x3b) ||
-	    (c == '!') || (c == '$') || (c == '_') || (c == '=') || (c == '~'))
-		return FALSE;
-	return TRUE;
-}
-
-gchar *
-g_filename_to_uri (const gchar *filename, const gchar *hostname, GError **gerror)
-{
-	size_t n;
-	char *ret, *rp;
-	const char *p;
-#ifdef G_OS_WIN32
-	const char *uriPrefix = "file:///";
-#else
-	const char *uriPrefix = "file://";
-#endif
-
-	g_return_val_if_fail (filename != NULL, NULL);
-
-	if (hostname != NULL)
-		g_warning ("%s", "eglib: g_filename_to_uri: hostname not handled");
-
-	if (!g_path_is_absolute (filename)){
-		if (gerror != NULL)
-			*gerror = g_error_new (NULL, 2, "Not an absolute filename");
-
-		return NULL;
-	}
-
-	n = strlen (uriPrefix) + 1;
-	for (p = filename; *p; p++){
-#ifdef G_OS_WIN32
-		if (*p == '\\') {
-			n++;
-			continue;
-		}
-#endif
-		if (char_needs_encoding (*p))
-			n += 3;
-		else
-			n++;
-	}
-	ret = g_malloc (n);
-	strcpy (ret, uriPrefix);
-	for (p = filename, rp = ret + strlen (ret); *p; p++){
-#ifdef G_OS_WIN32
-		if (*p == '\\') {
-			*rp++ = '/';
-			continue;
-		}
-#endif
-		if (char_needs_encoding (*p)){
-			*rp++ = '%';
-			*rp++ = hx [((unsigned char)(*p)) >> 4];
-			*rp++ = hx [((unsigned char)(*p)) & 0xf];
-		} else
-			*rp++ = *p;
-	}
-	*rp = 0;
-	return ret;
-}
-
-static int
-decode (char p)
-{
-	if (p >= '0' && p <= '9')
-		return p - '0';
-	if (p >= 'A' && p <= 'F')
-		return (p - 'A') + 10;
-	if (p >= 'a' && p <= 'f')
-		return (p - 'a') + 10;
-	g_assert_not_reached ();
-	return 0;
-}
-
-gchar *
-g_filename_from_uri (const gchar *uri, gchar **hostname, GError **gerror)
-{
-	const char *p;
-	char *r, *result;
-	int flen = 0;
-
-	g_return_val_if_fail (uri != NULL, NULL);
-
-	if (hostname != NULL)
-		g_warning ("%s", "eglib: g_filename_from_uri: hostname not handled");
-
-	if (strncmp (uri, "file:///", 8) != 0){
-		if (gerror != NULL)
-			*gerror = g_error_new (NULL, 2, "URI does not start with the file: scheme");
-		return NULL;
-	}
-
-	for (p = uri + 8; *p; p++){
-		if (*p == '%'){
-			if (p [1] && p [2] && isxdigit (p [1]) && isxdigit (p [2])){
-				p += 2;
-			} else {
-				if (gerror != NULL)
-					*gerror = g_error_new (NULL, 2, "URI contains an invalid escape sequence");
-				return NULL;
-			}
-		}
-		flen++;
-	}
-#ifndef G_OS_WIN32
-	flen++;
-#endif
-
-	result = g_malloc (flen + 1);
-	result [flen] = 0;
-
-#ifndef G_OS_WIN32
-	*result = '/';
-	r = result + 1;
-#else
-	r = result;
-#endif
-
-	for (p = uri + 8; *p; p++){
-		if (*p == '%'){
-			*r++ = (char)((decode (p [1]) << 4) | decode (p [2]));
-			p += 2;
-		} else
-			*r++ = *p;
-		flen++;
-	}
-	return result;
-}
-
-void
-g_strdown (gchar *string)
-{
-	g_return_if_fail (string != NULL);
-
-	while (*string){
-		*string = (gchar)tolower (*string);
-		string++;
-	}
-}
-
 gchar
 g_ascii_tolower (gchar c)
 {
@@ -1018,64 +865,6 @@ g_stpcpy (gchar *dest, const char *src)
 #endif
 }
 
-static const gchar escaped_dflt [256] = {
-	1, 1, 1, 1, 1, 1, 1, 1, 'b', 't', 'n', 1, 'f', 'r', 1, 1,
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-	0, 0, '"', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '\\', 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
-};
-
-gchar *
-g_strescape (const gchar *source, const gchar *exceptions)
-{
-	gchar escaped [256];
-	const gchar *ptr;
-	gchar c;
-	gchar op;
-	gchar *result;
-	gchar *res_ptr;
-
-	g_return_val_if_fail (source != NULL, NULL);
-
-	memcpy (escaped, escaped_dflt, 256);
-	if (exceptions != NULL) {
-		for (ptr = exceptions; *ptr; ptr++)
-			escaped [(int) *ptr] = 0;
-	}
-	result = g_malloc (strlen (source) * 4 + 1); /* Worst case: everything octal. */
-	res_ptr = result;
-	for (ptr = source; *ptr; ptr++) {
-		c = *ptr;
-		op = escaped [(int) c];
-		if (op == 0) {
-			*res_ptr++ = c;
-		} else {
-			*res_ptr++ = '\\';
-			if (op != 1) {
-				*res_ptr++ = op;
-			} else {
-				*res_ptr++ = '0' + ((c >> 6) & 3);
-				*res_ptr++ = '0' + ((c >> 3) & 7);
-				*res_ptr++ = '0' + (c & 7);
-			}
-		}
-	}
-	*res_ptr = '\0';
-	return result;
-}
-
 gint
 g_ascii_xdigit_value (gchar c)
 {
@@ -1130,7 +919,7 @@ g_str_from_file_region (int fd, guint64 offset, gsize size)
 	int status;
 
 	do {
-		loc = lseek (fd, offset, SEEK_SET);
+		loc = lseek (fd, GUINT64_TO_LONG (offset), SEEK_SET);
 	} while (loc == -1 && errno == EINTR);
 	if (loc == -1)
 		return NULL;
@@ -1139,7 +928,7 @@ g_str_from_file_region (int fd, guint64 offset, gsize size)
 		return NULL;
 	buffer [size] = 0;
 	do {
-		status = read (fd, buffer, size);
+		status = g_read (fd, buffer, size);
 	} while (status == -1 && errno == EINTR);
 	if (status == -1){
 		g_free (buffer);

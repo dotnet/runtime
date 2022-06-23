@@ -21,9 +21,9 @@
 }
 .assembly extern xunit.core {}
 // MVID: {885F4995-E80A-480B-BB9B-30139BED90E1}
-.namespace TestCase
+.namespace TestCase_recurse_tail_call_il
 {
-  .class private auto ansi Test extends ['mscorlib']System.Object
+  .class public auto ansi Test extends ['mscorlib']System.Object
   {
     .method private hidebysig static int32 
             Fact1(int32& arg,
@@ -55,14 +55,14 @@
       			
       			ldarg.0
       			ldarg.1
-      			tail. call      int32 TestCase.Test::Fact1(int32&, int32&)
+      			tail. call      int32 TestCase_recurse_tail_call_il.Test::Fact1(int32&, int32&)
       			
       end_of_method:
       			ret
 
     } // end of method 'Test::Fact1'
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -80,7 +80,7 @@
       IL_0003:  stloc.1
       IL_0004:  ldloca.s   V_0
       IL_0006:  ldloca.s   V_1
-      IL_0008:  call       int32 TestCase.Test::Fact1(int32&,
+      IL_0008:  call       int32 TestCase_recurse_tail_call_il.Test::Fact1(int32&,
                                                       int32&)
       IL_000d:  ldc.i4     0x12345
       IL_0012:  beq.s      IL_0022
@@ -125,6 +125,6 @@
 
   } // end of class 'Test'
 
-} // end of namespace 'TestCase'
+} // end of namespace 'TestCase_recurse_tail_call_il'
 
 //*********** DISASSEMBLY COMPLETE ***********************

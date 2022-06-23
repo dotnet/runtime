@@ -7,7 +7,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using Internal.NativeFormat;
-using Internal.Runtime.CompilerServices;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -201,6 +200,9 @@ namespace Internal.Runtime
                 return SupportsRelativePointers;
             }
         }
+
+        [Intrinsic]
+        internal static extern MethodTable* Of<T>();
 
         private ushort _usComponentSize;
         private ushort _usFlags;
@@ -1497,7 +1499,7 @@ namespace Internal.Runtime
 
     // Wrapper around pointers
     [StructLayout(LayoutKind.Sequential)]
-    internal unsafe readonly struct Pointer<T> where T : unmanaged
+    internal readonly unsafe struct Pointer<T> where T : unmanaged
     {
         private readonly T* _value;
 
@@ -1512,7 +1514,7 @@ namespace Internal.Runtime
 
     // Wrapper around pointers that might be indirected through IAT
     [StructLayout(LayoutKind.Sequential)]
-    internal unsafe readonly struct IatAwarePointer<T> where T : unmanaged
+    internal readonly unsafe struct IatAwarePointer<T> where T : unmanaged
     {
         private readonly T* _value;
 
@@ -1544,7 +1546,7 @@ namespace Internal.Runtime
 
     // Wrapper around relative pointers
     [StructLayout(LayoutKind.Sequential)]
-    internal unsafe readonly struct RelativePointer<T> where T : unmanaged
+    internal readonly unsafe struct RelativePointer<T> where T : unmanaged
     {
         private readonly int _value;
 
@@ -1559,7 +1561,7 @@ namespace Internal.Runtime
 
     // Wrapper around relative pointers that might be indirected through IAT
     [StructLayout(LayoutKind.Sequential)]
-    internal unsafe readonly struct IatAwareRelativePointer<T> where T : unmanaged
+    internal readonly unsafe struct IatAwareRelativePointer<T> where T : unmanaged
     {
         private readonly int _value;
 
@@ -1590,7 +1592,7 @@ namespace Internal.Runtime
         // This is a function pointer with the following signature IntPtr()(MethodTable* targetType, MethodTable* interfaceType, ushort slot)
         private delegate*<MethodTable*, MethodTable*, ushort, IntPtr> _dynamicTypeSlotDispatchResolve;
 
-        // Starting address for the the binary module corresponding to this dynamic module.
+        // Starting address for the binary module corresponding to this dynamic module.
         private delegate*<ExceptionIDs, Exception> _getRuntimeException;
 
 #if TYPE_LOADER_IMPLEMENTATION

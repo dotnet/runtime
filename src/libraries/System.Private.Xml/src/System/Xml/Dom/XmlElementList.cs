@@ -206,9 +206,9 @@ namespace System.Xml
         //the function is for the enumerator to find out the next available matching element node
         public XmlNode? GetNextNode(XmlNode? n)
         {
-            if (_empty == true)
+            if (_empty)
                 return null;
-            XmlNode node = (n == null) ? _rootNode : n;
+            XmlNode node = n ?? _rootNode;
             return GetMatchingNode(node, true);
         }
 
@@ -217,7 +217,7 @@ namespace System.Xml
             if (_rootNode == null || index < 0)
                 return null;
 
-            if (_empty == true)
+            if (_empty)
                 return null;
             if (_curInd == index)
                 return _curElem;
@@ -241,7 +241,7 @@ namespace System.Xml
         {
             get
             {
-                if (_empty == true)
+                if (_empty)
                     return 0;
 
                 if (_matchCount < 0)
@@ -268,7 +268,7 @@ namespace System.Xml
 
         public override IEnumerator GetEnumerator()
         {
-            if (_empty == true)
+            if (_empty)
                 return new XmlEmptyElementListEnumerator(this);
 
             return new XmlElementListEnumerator(this);

@@ -45,7 +45,7 @@ case "$CPUName" in
         arch=x64
         ;;
 
-    armv7l)
+    armv7l|armv8l)
         if (NAME=""; . /etc/os-release; test "$NAME" = "Tizen"); then
             arch=armel
         else
@@ -66,6 +66,9 @@ case "$CPUName" in
         arch=s390x
 	;;
 
+    ppc64le)
+	arch=ppc64le
+	;;
     *)
         echo "Unknown CPU $CPUName detected, configuring as if for x64"
         arch=x64

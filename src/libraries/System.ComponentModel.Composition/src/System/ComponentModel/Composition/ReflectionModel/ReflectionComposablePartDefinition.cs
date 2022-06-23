@@ -21,8 +21,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
         private volatile ConstructorInfo? _constructor;
         private readonly object _lock = new object();
 
-        public ReflectionComposablePartDefinition(IReflectionPartCreationInfo creationInfo!!)
+        public ReflectionComposablePartDefinition(IReflectionPartCreationInfo creationInfo)
         {
+            ArgumentNullException.ThrowIfNull(creationInfo);
+
             _creationInfo = creationInfo;
         }
 

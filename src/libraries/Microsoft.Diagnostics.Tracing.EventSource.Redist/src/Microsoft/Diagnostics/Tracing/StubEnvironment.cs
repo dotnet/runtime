@@ -37,7 +37,7 @@ namespace System.Numerics
             const uint c3 = 0x_0F0F0F0Fu;
             const uint c4 = 0x_01010101u;
 
-            value = value - ((value >> 1) & c1);
+            value -= (value >> 1) & c1;
             value = (value & c2) + ((value >> 2) & c2);
             value = (((value + (value >> 4)) & c3) * c4) >> 24;
 
@@ -65,10 +65,10 @@ internal static partial class Interop
     [SuppressUnmanagedCodeSecurityAttribute]
     internal static partial class Kernel32
     {
-        [GeneratedDllImport(nameof(Kernel32))]
+        [LibraryImport(nameof(Kernel32))]
         internal static partial int GetCurrentThreadId();
 
-        [GeneratedDllImport(nameof(Kernel32))]
+        [LibraryImport(nameof(Kernel32))]
         internal static partial uint GetCurrentProcessId();
     }
 }

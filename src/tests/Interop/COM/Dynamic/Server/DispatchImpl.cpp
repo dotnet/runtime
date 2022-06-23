@@ -23,15 +23,6 @@ DispatchImpl::DispatchImpl(GUID guid, void *instance, const wchar_t* tlb)
         throw hr;
 }
 
-DispatchImpl::~DispatchImpl()
-{
-    if (_typeLib != nullptr)
-        _typeLib->Release();
-
-    if (_typeInfo != nullptr)
-        _typeInfo->Release();
-};
-
 HRESULT DispatchImpl::DoGetTypeInfoCount(UINT* pctinfo)
 {
     *pctinfo = 1;

@@ -20,7 +20,7 @@ public class CleanTests : NativeRebuildTestsBase
     {
     }
 
-    [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+    [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
     public void Blazor_BuildThenClean_NativeRelinking(string config)
@@ -34,13 +34,13 @@ public class CleanTests : NativeRebuildTestsBase
                                     <WasmBuildNative>true</WasmBuildNative>";
 
         AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
-        BlazorBuild(id, config, NativeFilesType.Relinked);
+        BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
 
-        string relinkDir = Path.Combine(_projectDir!, "obj", config, "net6.0", "wasm", "for-build");
+        string relinkDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFramework, "wasm", "for-build");
         Assert.True(Directory.Exists(relinkDir), $"Could not find expected relink dir: {relinkDir}");
 
         string logPath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-clean.binlog");
-        new DotNetCommand(s_buildEnv)
+        new DotNetCommand(s_buildEnv, _testOutput)
                 .WithWorkingDirectory(_projectDir!)
                 .ExecuteWithCapturedOutput("build", "-t:Clean", $"-p:Configuration={config}", $"-bl:{logPath}")
                 .EnsureSuccessful();
@@ -48,13 +48,13 @@ public class CleanTests : NativeRebuildTestsBase
         AssertEmptyOrNonExistantDirectory(relinkDir);
     }
 
-    [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+    [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
     public void Blazor_BuildNoNative_ThenBuildNative_ThenClean(string config)
         => Blazor_BuildNativeNonNative_ThenCleanTest(config, firstBuildNative: false);
 
-    [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+    [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
     public void Blazor_BuildNative_ThenBuildNonNative_ThenClean(string config)
@@ -75,7 +75,7 @@ public class CleanTests : NativeRebuildTestsBase
         BuildInternal(id, config, publish: false,
                         extraArgs: relink ? "-p:WasmBuildNative=true" : string.Empty);
 
-        string relinkDir = Path.Combine(_projectDir!, "obj", config, "net6.0", "wasm", "for-build");
+        string relinkDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFramework, "wasm", "for-build");
         if (relink)
             Assert.True(Directory.Exists(relinkDir), $"Could not find expected relink dir: {relinkDir}");
 
@@ -87,7 +87,7 @@ public class CleanTests : NativeRebuildTestsBase
             Assert.True(Directory.Exists(relinkDir), $"Could not find expected relink dir: {relinkDir}");
 
         string logPath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-clean.binlog");
-        new DotNetCommand(s_buildEnv)
+        new DotNetCommand(s_buildEnv, _testOutput)
                 .WithWorkingDirectory(_projectDir!)
                 .ExecuteWithCapturedOutput("build", "-t:Clean", $"-p:Configuration={config}", $"-bl:{logPath}")
                 .EnsureSuccessful();
@@ -96,7 +96,7 @@ public class CleanTests : NativeRebuildTestsBase
     }
     private void AssertEmptyOrNonExistantDirectory(string dirPath)
     {
-        Console.WriteLine($"dirPath: {dirPath}");
+        _testOutput.WriteLine($"dirPath: {dirPath}");
         if (!Directory.Exists(dirPath))
             return;
 

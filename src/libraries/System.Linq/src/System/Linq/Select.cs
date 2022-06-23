@@ -151,7 +151,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// An iterator that maps each item of a array.
+        /// An iterator that maps each item of an array.
         /// </summary>
         /// <typeparam name="TSource">The type of the source array.</typeparam>
         /// <typeparam name="TResult">The type of the mapped items.</typeparam>

@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal unsafe partial class Sys
     {
-        [GeneratedDllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_SchedGetCpu")]
+        [LibraryImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_SchedGetCpu")]
         internal static partial int SchedGetCpu();
     }
 }

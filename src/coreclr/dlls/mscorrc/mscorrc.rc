@@ -40,21 +40,10 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #define SMAKEHR(val)    val
 #define EMAKEHR(val)    val
 
-#include "mscorrc.common.rc"
-
-
-#define MDARC_DEBUGGER_FIBER_MODE_NOT_SUPPORTED_MSG                                                         \
-    L"A thread has entered fiber mode and therefore debugging must be stopped."
-
-STRINGTABLE DISCARDABLE
-BEGIN
-    MDARC_DEBUGGER_FIBER_MODE_NOT_SUPPORTED     MDARC_DEBUGGER_FIBER_MODE_NOT_SUPPORTED_MSG
-END
-
 STRINGTABLE DISCARDABLE
 BEGIN
     CLDB_E_FILE_OLDVER                      "Version %d.%d is not a compatible version."
-    CLDB_E_SMDUPLICATE                      "Shared memory '%hs' already exists."
+    CLDB_E_SMDUPLICATE                      "Shared memory '%s' already exists."
     CLDB_E_NO_DATA                          "No metadata was found."
 
     CLDB_E_FILE_CORRUPT                     "Database file is corrupt and may not be usable."
@@ -120,26 +109,15 @@ BEGIN
 
     COR_E_APPDOMAINUNLOADED                 "Error: Attempt to access unloaded AppDomain."
     COR_E_MISSINGMETHOD                     "Error: Missing method '%2' from class '%1'."
-    COR_E_FIXUPSINEXE                       "Cannot load executable '%1' because it contains extra relocations or has relocations stripped."
 
     COR_E_FILELOAD                          "Unable to load file '%1'."
     COR_E_ASSEMBLYEXPECTED                  "The module '%1' was expected to contain an assembly manifest."
     FUSION_E_REF_DEF_MISMATCH               "The located assembly's manifest definition with name '%1' does not match the assembly reference."
-    FUSION_E_INVALID_PRIVATE_ASM_LOCATION   "The found private assembly, '%1', was located outside the ApplicationBase."
-    FUSION_E_SIGNATURE_CHECK_FAILED         "Strong name signature verification failed for assembly '%1'.  The assembly may have been tampered with, or it was delay signed but not fully signed with the correct private key."
-    COR_E_MODULE_HASH_CHECK_FAILED          "The check of the module's hash failed for file '%1'."
     FUSION_E_PRIVATE_ASM_DISALLOWED         "Assembly '%1' is required to be strongly named."
-    FUSION_E_INVALID_NAME                   "The given assembly name or codebase, '%1', was invalid."
-    FUSION_E_ASM_MODULE_MISSING             "A module specified in the manifest of assembly '%1' could not be found."
-    FUSION_E_CODE_DOWNLOAD_DISABLED         "HTTP download of assemblies has been disabled for this appdomain."
-    FUSION_E_HOST_GAC_ASM_MISMATCH          "The assembly returned from the host store has a different strong name signature than the corresponding one in GAC. Assembly: '%1'"
-    FUSION_E_LOADFROM_BLOCKED               "LoadFrom(), LoadFile(), Load(byte[]) and LoadModule() have been disabled by the host."
+    FUSION_E_INVALID_NAME                   "The given assembly name, '%1', was invalid."
     FUSION_E_CACHEFILE_FAILED               "Failed to add file to AppDomain cache."
     FUSION_E_APP_DOMAIN_LOCKED              "The requested assembly version conflicts with what is already bound in the app domain or specified in the manifest."
-    FUSION_E_CONFIGURATION_ERROR            "The requested assembly name was neither found in the GAC nor in the manifest or the manifest's specified location is wrong."
-    FUSION_E_MANIFEST_PARSE_ERROR           "Unexpected error while parsing the specified manifest."
     IDS_EE_HASH_VAL_FAILED                  "Hash validation failed for file or assembly '%1'."
-    CORSEC_E_MISSING_STRONGNAME             "Assembly '%1' is missing the required strong name."
     CORSEC_E_INVALID_PUBLICKEY              "The public key for assembly '%1' was invalid."
     CORSEC_E_INVALID_STRONGNAME             "Strong name validation failed for assembly '%1'."
     CORSEC_E_SIGNATURE_MISMATCH             "The allocated signature slot for assembly '%1' does not correspond to the generated signature size."
@@ -150,9 +128,6 @@ BEGIN
     COR_E_SERIALIZATION                     "An error relating to serialization occurred during the load of file or assembly '%1'."
     COR_E_SECURITY                          "A security violation has occurred."
     IDS_EE_PROC_NOT_FOUND                   "A procedure imported by '%1' could not be loaded."
-    IDS_IBC_MISSING_EXTERNAL_TYPE           "The generic type specified by the IBC data is not available to this assembly"
-    IDS_IBC_MISSING_EXTERNAL_METHOD         "The generic method specified by the IBC data is not available to this assembly"
-    IDS_EE_HWINTRINSIC_NGEN_DISALLOWED      "Hardware intrinsics may not be used with ngen."
 
     IDS_INET_E_CANNOT_CONNECT               "Cannot connect to URL for '%1'."
     IDS_INET_E_RESOURCE_NOT_FOUND           "The server or proxy was not found for '%1'."
@@ -176,7 +151,6 @@ BEGIN
 // These strings are generated from within the EE.
 STRINGTABLE DISCARDABLE
 BEGIN
-    CEE_E_CVTRES_NOT_FOUND                  "Could not execute CVTRES.EXE."
     IDS_EE_THREAD_APARTMENT_NOT_SUPPORTED   "The system does not support the %1 thread apartment."
     IDS_EE_NDIRECT_UNSUPPORTED_SIG          "Method's type signature is not PInvoke compatible."
     IDS_EE_COM_UNSUPPORTED_SIG              "Method's type signature is not Interop compatible."
@@ -187,7 +161,7 @@ BEGIN
     IDS_EE_NDIRECT_BADNATL_VARARGS_CALLCONV "Invalid PInvoke calling convention. Vararg functions must use the cdecl calling convention."
     IDS_EE_NDIRECT_BADNATL_THISCALL         "Invalid PInvoke calling convention. Thiscall requires that the first parameter is present and can be enregistered."
     IDS_EE_NDIRECT_LOADLIB_WIN              "Unable to load DLL '%1' or one of its dependencies: %2"
-    IDS_EE_NDIRECT_LOADLIB_LINUX            "Unable to load shared library '%1' or one of its dependencies. In order to help diagnose loading problems, consider setting the LD_DEBUG environment variable: %2"
+    IDS_EE_NDIRECT_LOADLIB_LINUX            "Unable to load shared library '%1' or one of its dependencies. In order to help diagnose loading problems, consider using a tool like strace. If you're using glibc, consider setting the LD_DEBUG environment variable: %2"
     IDS_EE_NDIRECT_LOADLIB_MAC              "Unable to load shared library '%1' or one of its dependencies. In order to help diagnose loading problems, consider setting the DYLD_PRINT_LIBRARIES environment variable: %2"
     IDS_EE_NDIRECT_GETPROCADDRESS_WIN       "Unable to find an entry point named '%2' in DLL '%1'."
     IDS_EE_NDIRECT_GETPROCADDRESS_UNIX      "Unable to find an entry point named '%2' in shared library '%1'."
@@ -211,9 +185,7 @@ BEGIN
     COR_E_NEWER_RUNTIME                     "The assembly is built by a runtime newer than the currently loaded runtime, and cannot be loaded."
     IDS_EE_BAD_USER_PROFILE                 "The specified user does not have a valid profile.  Unable to load '%1'."
     IDS_EE_ALREADY_EXISTS                   "Cannot create/shadow copy '%1' when that file already exists."
-    IDS_EE_NOTNDIRECT                       "Not a PInvoke method."
-    IDS_EE_ERRORTITLE                       "Error"
-    IDS_EE_ERRORMESSAGETEMPLATE             "Error 0x%08x.\n\n%s."
+
     IDS_EE_RETHROW_NOT_ALLOWED              "No exception available to rethrow."
     IDS_EE_INVALID_OLE_VARIANT              "Specified OLE variant is invalid."
     IDS_EE_TO_MANY_ARGUMENTS_IN_MAIN        "Signature for the entry point has too many arguments."
@@ -325,8 +297,6 @@ BEGIN
     IDS_EE_NATIVE_COM_WEAKREF_BAD_TYPE               "The object resolved by a native IWeakReference has an incompatible type for its managed WeakReference instance.\r\nExpected WeakReference target type: '%1'\r\nNative IWeakReference returned type: '%2'"
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
 
-    IDS_EE_INTEROP_CODE_SIZE_COMMENT        "Code size"
-
     IDS_CLASSLOAD_TYPEWRONGNUMGENERICARGS      "The generic type '%1' was used with the wrong number of generic arguments in assembly '%2'."
     IDS_CLASSLOAD_INVALIDINSTANTIATION    "The generic type '%1' was used with an invalid instantiation in assembly '%2'."
     IDS_CLASSLOAD_VARIANCE_IN_METHOD_ARG    "Could not load type '%1' from assembly '%2' because a covariant or contravariant type parameter was used illegally in the signature for an argument in method '%3'."
@@ -349,7 +319,6 @@ BEGIN
     IDS_CLASSLOAD_BADFORMAT                 "Could not load type '%1' from assembly '%2' because the format is invalid."
     IDS_CLASSLOAD_BYREFARRAY                "Could not create array type '%1' from assembly '%2' because the element type is ByRef."
     IDS_CLASSLOAD_BYREFLIKEARRAY            "Could not create array type '%1' from assembly '%2' because the element type is ByRef-like."
-    IDS_CLASSLOAD_MISSINGMETHOD             "Could not load type '%1' from assembly '%2' because the method '%3' could not be loaded."
     IDS_CLASSLOAD_FIELDTOOLARGE             "Size of field of type '%1' from assembly '%2' is too large."
     IDS_CLASSLOAD_CANTEXTEND                "Type '%1' from assembly '%2' cannot extend from any other type."
     IDS_CLASSLOAD_STATICVIRTUAL             "Method '%3' in type '%1' from assembly '%2' cannot be a static and a virtual."
@@ -390,9 +359,6 @@ BEGIN
     IDS_CLASSLOAD_METHOD_NOT_IMPLEMENTED    "Could not call method '%1' on type '%2' with an instance of '%3' from assembly '%4' because there is no implementation for the method."
 
     IDS_CLASSLOAD_MISSINGMETHODRVA          "Could not load type '%1' from assembly '%2' because the method '%3' has no implementation (no RVA)."
-    SECURITY_E_INCOMPATIBLE_EVIDENCE        "Assembly '%1' already loaded without additional security evidence."
-    SECURITY_E_INCOMPATIBLE_SHARE           "Assembly '%1' security permission grant set is incompatible between appdomains."
-    SECURITY_E_UNVERIFIABLE                 "Unverifiable assembly '%1' failed policy check."
     IDS_CLASSLOAD_BAD_FIELD                 "Type '%1' from assembly '%2' has a field of an illegal type."
     IDS_CLASSLOAD_MI_ILLEGAL_BODY           "Body referenced in a method implementation must be defined in the same type.  Type: '%1'.  Assembly: '%2'."
     IDS_CLASSLOAD_MI_ILLEGAL_TOKEN_BODY     "Body token used in a method implementation is out of range.  Type: '%1'.  Assembly: '%2'."
@@ -433,29 +399,22 @@ BEGIN
     IDS_EE_INVOKE_NEW_ENUM_INVALID_RETURN   "Variant returned from an Invoke call with a DISPID of -4 does not contain a valid IUnknown pointer."
     IDS_EE_COM_OBJECT_RELEASE_RACE          "COM object that has been separated from its underlying RCW cannot be used. The COM object was released while it was still in use on another thread."
     IDS_EE_COM_OBJECT_NO_LONGER_HAS_WRAPPER "COM object that has been separated from its underlying RCW cannot be used."
-    IDS_EE_CALLBACK_NOT_CALLED_FROM_CCTOR   "Function can only be called from inside the class constructor of a class derived from a COM imported class."
-    IDS_EE_CALLBACK_ALREADY_REGISTERED      "Base type has already registered a type creation callback."
     IDS_EE_CANNOTCAST                       "Unable to cast object of type '%1' to type '%2'."
 
     IDS_EE_CANNOTCASTSAME                   "[A]%1 cannot be cast to [B]%2. %3. %4."
     IDS_EE_CANNOTCAST_HELPER_PATH           "Type %s originates from '%s' in the context '%s' at location '%s'"
     IDS_EE_CANNOTCAST_HELPER_BYTE           "Type %s originates from '%s' in the context '%s' in a byte array"
-    IDS_EE_NOTISOMORPHIC                    "Object contains non-primitive or non-blittable data."
+    IDS_EE_NOTISOMORPHIC                    "Object contains references."
     IDS_EE_INVALID_VT_FOR_CUSTOM_MARHALER   "Type of the VARIANT specified for a parameter with a custom marshaler is not supported by the custom marshaler."
     IDS_EE_BAD_COMEXTENDS_CLASS             "Types extending from COM objects should override all methods of an interface implemented by the base COM class."
     IDS_EE_INTERFACE_NOT_DISPATCH_BASED     "The interface does not support late bound calls since it does not derive from IDispatch."
     IDS_EE_MARSHAL_UNMAPPABLE_CHAR          "Cannot marshal: Encountered unmappable character."
-
-    // Errors associated with parsing security custom attributes at compile time.
-    CORSECATTR_E_BAD_ACTION                 "Security custom attribute has invalid SecurityAction."
 
     IDS_EE_NOCUSTOMMARSHALER                "A call to GetInstance() for custom marshaler '%1' returned null, which is not allowed."
     IDS_EE_SIZECONTROLOUTOFRANGE            "Array size control parameter index is out of range."
     IDS_EE_SIZECONTROLBADTYPE               "Array size control parameter type not supported."
     IDS_EE_SAFEARRAYSZARRAYMISMATCH         "SafeArray cannot be marshaled to this array type because it has either nonzero lower bounds or more than one dimension."
 
-    IDS_EE_ASSEMBLY_GETTYPE_CANNONT_HAVE_ASSEMBLY_SPEC "Type names passed to Assembly.GetType() must not specify an assembly."
-    IDS_EE_CANNOT_HAVE_ASSEMBLY_SPEC        "Unexpected assembly-qualifier in a typename."
     IDS_EE_NEEDS_ASSEMBLY_SPEC              "Typename needs an assembly qualifier."
 
     IDS_EE_FILELOAD_ERROR_GENERIC           "Could not load file or assembly '%1'. %2"
@@ -465,7 +424,6 @@ BEGIN
 
     IDS_EE_CREATEINSTANCE_FAILED            "Creating an instance of the COM component with CLSID %2 from the IClassFactory failed due to the following error: %1 %3."
     IDS_EE_CREATEINSTANCE_LIC_FAILED        "Creating an instance of the licensed COM component with CLSID %2 from the IClassFactory failed due to the following error: %1 %3."
-    IDS_EE_CREATEINSTANCEFROMAPP_FAILED     "Creating an instance of the COM component with CLSID %2 using CoCreateInstanceFromApp failed due to the following error: %1 %3. Please make sure your COM object is in the allowed list of CoCreateInstanceFromApp."
 
     IDS_EE_RCW_INVALIDCAST_ITF              "Unable to cast COM object of type '%2' to interface type '%3'. This operation failed because the QueryInterface call on the COM component for the interface with IID '%4' failed due to the following error: %1."
     IDS_EE_RCW_INVALIDCAST_EVENTITF         "Unable to cast COM object of type '%2' to event interface type '%3'. This operation failed because the QueryInterface call on the COM component for the interface with IID '%4' failed due to the following error: '%1' and the COM component does not support the source interface with IID '%5'."
@@ -480,7 +438,6 @@ BEGIN
     IDS_EE_MISSING_FIELD                    "Field not found: '%1'."
     IDS_EE_MISSING_METHOD                   "Method not found: '%1'."
 
-    IDS_EE_NO_IDISPATCH                     "This object cannot be marshaled as an IDispatch."
     IDS_EE_NO_IINSPECTABLE                  "Marshalling as IInspectable is not supported in the .NET runtime."
     IDS_EE_NO_BACKING_CLASS_FACTORY         "An instance of the __ComObject type cannot be created unless the type has been obtained using GetTypeFromProgID or GetTypeFromCLSID."
 
@@ -600,9 +557,6 @@ END
 
 STRINGTABLE DISCARDABLE
 BEGIN
-    IDS_ERROR                               "Error"
-
-    IDS_DEBUG_UNHANDLEDEXCEPTION_IPC         "INTERNAL ERROR:\n\nUnhandled exception in Debugger::HandleIPCEvent.\n\nEvent ID=0x%x.\n\nException code=0x%08x, Eip=0x%08x.\n\nProcess ID=0x%x (%d), Thread ID=0x%x (%d).\n\n"
     IDS_DEBUG_UNHANDLED_EXCEPTION_MSG        "Application has generated an exception that could not be handled.\n\nProcess ID=0x%x (%d), Thread ID=0x%x (%d).\n\nClick OK to terminate the application.\nClick CANCEL to debug the application."
     IDS_DEBUG_USER_BREAKPOINT_MSG            "Application has encountered a user-defined breakpoint.\n\nProcess ID=0x%x (%d), Thread ID=0x%x (%d).\n\nClick ABORT to terminate the application.\nClick RETRY to debug the application.\nClick IGNORE to ignore the breakpoint."
 
@@ -692,12 +646,10 @@ BEGIN
         BFA_BAD_SIGNATURE                       "The signature is incorrect."
         BFA_TYPEREG_NAME_TOO_LONG               "Full Name of Typeref is too long."
         BFA_BAD_TYPEREF_TOKEN                   "Invalid Typeref token."
-        BFA_BAD_CLASS_INT_CA                    "The ClassInterface custom attribute is invalid."
         BFA_BAD_CLASS_INT_CA_FORMAT             "ClassInterface custom attribute does not have the right format."
         BFA_BAD_COMPLUS_SIG                     "Illegal or unimplemented ELEM_TYPE in signature."
         BFA_BAD_ELEM_IN_SIZEOF                  "Bad element type in SizeOf."
         BFA_BAD_CA_HEADER                       "Malformed custom attribute header."
-        BFA_BAD_STRING_TOKEN                    "Bad string token."
         BFA_BAD_STRING_TOKEN_RANGE              "No string associated with token."
         BFA_FIXUP_WRONG_PLATFORM                "Image has a platform-specific fixup type that is not compatible with this platform."
         BFA_UNEXPECTED_GENERIC_TOKENTYPE        "Token specifying generic type must be either a typeref or typedef."
@@ -707,7 +659,6 @@ BEGIN
         BFA_UNEXPECTED_ARRAY_TYPE               "Array type not expected here."
         BFA_BAD_VISIBILITY                      "Bad type visibility flag value."
         BFA_FAMILY_ON_GLOBAL                    "Family flag is not allowed on global functions."
-        BFA_NOFIND_EXPORTED_TYPE                "Could not find exported type in metadata."
         BFA_NOT_AN_ARRAY                        "Expected array type."
         BFA_EXPECTED_METHODDEF_OR_MEMBERREF     "Generic member ref must be of type MethodDef or MemberRef."
         BFA_UNEXPECTED_FIELD_SIGNATURE          "An unexpected field signature was found."
@@ -724,28 +675,28 @@ END
 // Profiler messages for event log
 STRINGTABLE DISCARDABLE
 BEGIN
-        IDS_E_PROF_BAD_PATH                     "Loading profiler failed.  COR_ENABLE_PROFILING and COR_PROFILER were set properly, but COR_PROFILER_PATH was not.  COR_PROFILER_PATH must be set to the full path of the profiler DLL to load with no more than 260 charaters including the null terminator.\n"
-        IDS_E_PROF_NO_CLSID                     "Loading profiler failed.  COR_ENABLE_PROFILING was set properly, but COR_PROFILER was not.  COR_PROFILER must be set to the CLSID of the profiler to load.\n"
+        IDS_E_PROF_BAD_PATH                     "Loading profiler failed.  CORECLR_ENABLE_PROFILING and CORECLR_PROFILER were set properly, but CORECLR_PROFILER_PATH was not.  CORECLR_PROFILER_PATH must be set to the full path of the profiler DLL to load with no more than 260 characters including the null terminator.\n"
+        IDS_E_PROF_NO_CLSID                     "Loading profiler failed.  CORECLR_ENABLE_PROFILING was set properly, but CORECLR_PROFILER was not.  CORECLR_PROFILER must be set to the CLSID of the profiler to load.\n"
         IDS_E_PROF_INTERNAL_INIT                "Loading profiler failed due to an internal profiling services initialization failure.  Profiler CLSID: '%s'.  HRESULT: 0x%x.\n"
-        IDS_E_PROF_BAD_CLSID                    "Loading profiler failed.  COR_PROFILER is set to an invalid CLSID: '%s'.  HRESULT: 0x%x.\n"
-        IDS_E_PROF_NO_CALLBACK_IFACE            "Loading profiler failed.  COR_PROFILER is set to a CLSID of a COM object that does not implement the interface GUID (IID) requested by the CLR.  This often indicates that the profiler does not support this version of the CLR.  Profiler CLSID: '%s'.  Requested IID: '%s'.\n"
-        IDS_E_PROF_CCI_FAILED                   "Loading profiler failed during CoCreateInstance.  Profiler CLSID: '%s'.  HRESULT: 0x%x.\n"
-        IDS_E_PROF_INIT_CALLBACK_FAILED         "Loading profiler failed.  The profiler COM object was instantiated, but the profiler failed during its initialization callback.  Profiler CLSID: '%s'.  HRESULT: 0x%x.\n"
+        IDS_E_PROF_BAD_CLSID                    "Loading profiler failed.  CORECLR_PROFILER is set to an invalid CLSID: '%s'.  HRESULT: 0x%x.\n"
+        IDS_E_PROF_NO_CALLBACK_IFACE            "Loading profiler failed.  CORECLR_PROFILER is set to a CLSID of a COM object that does not implement the interface GUID (IID) requested by the CLR.  This often indicates that the profiler does not support this version of the CLR.  Profiler CLSID: '%s'.  Requested IID: '%s'.\n"
+        IDS_E_PROF_CCI_FAILED                   "Loading profiler failed during instantiation.  Profiler CLSID: '%s'.  HRESULT: 0x%x.\n"
+        IDS_E_PROF_INIT_CALLBACK_FAILED         "Loading profiler failed.  The profiler was instantiated, but the profiler failed during its initialization callback.  Profiler CLSID: '%s'.  HRESULT: 0x%x.\n"
         IDS_PROF_SUPPLEMENTARY_INFO             "Process ID (decimal): %d.  Message ID: [0x%x].\n"
         IDS_PROF_LOAD_COMPLETE                  "The profiler was loaded successfully.  Profiler CLSID: '%s'.\n"
-        IDS_E_PROF_NOT_ATTACHABLE               "Loading profiler failed.  The profiler COM object was instantiated, but the profiler does not support attaching to a live process.  The profiler must be loaded at application startup by using a launcher program included with the profiler (if any) or by setting the COR_ENABLE_PROFILING and COR_PROFILER environment variables before launching the application to be profiled.  Profiler CLSID: '%s'\n"
-        IDS_E_PROF_UNHANDLED_EXCEPTION_ON_LOAD  "Loading profiler failed.  There was an unhandled exception while trying to instantiate the profiler COM object.  Please ensure the CLSID is associated with a valid profiler designed to work with this version of the runtime.  Profiler CLSID: '%s'.\n"
+        IDS_E_PROF_NOT_ATTACHABLE               "Loading profiler failed.  The profiler was instantiated, but the profiler does not support attaching to a live process.  The profiler must be loaded at application startup by using a launcher program included with the profiler (if any) or by setting the CORECLR_ENABLE_PROFILING and CORECLR_PROFILER environment variables before launching the application to be profiled.  Profiler CLSID: '%s'\n"
+        IDS_E_PROF_UNHANDLED_EXCEPTION_ON_LOAD  "Loading profiler failed.  There was an unhandled exception while trying to instantiate the profiler.  Please ensure the CLSID is associated with a valid profiler designed to work with this version of the runtime.  Profiler CLSID: '%s'.\n"
         IDS_PROF_ATTACH_REQUEST_RECEIVED        "The CLR received a request to attach a profiler. Profiler CLSID: '%s'.\n"
         IDS_PROF_DETACH_INITIATED               "The profiler currently in use has requested to be detached from the process.  The CLR has disabled communication with the profiler and will unload the profiler when it is safe to do so.\n"
         IDS_PROF_DETACH_COMPLETE                "The CLR has fully detached and unloaded the profiler.\n"
         IDS_PROF_DETACH_THREAD_ERROR            "There was an internal failure in the profiling API detach infrastructure.  The profiler will not be able to be detached.  Error code: %d.\n"
         IDS_PROF_CANCEL_ACTIVATION              "The profiler has requested that the CLR instance not load the profiler into this process.  Profiler CLSID: '%s'.\n"
-        IDS_PROF_V2PROFILER_DISABLED            "Loading profiler failed.   The profiler that was configured to load was designed for an older version of the CLR.  You can use the COMPlus_ProfAPI_ProfilerCompatibilitySetting environment variable to allow older profilers to be loaded by the current version of the CLR.  Please consult the documentation for information on how to use this environment variable, and the risks associated with it.  Profiler CLSID: '%s'.\n"
+        IDS_PROF_V2PROFILER_DISABLED            "Loading profiler failed.   The profiler that was configured to load was designed for an older version of the CLR.  You can use the DOTNET_ProfAPI_ProfilerCompatibilitySetting environment variable to allow older profilers to be loaded by the current version of the CLR.  Please consult the documentation for information on how to use this environment variable, and the risks associated with it.  Profiler CLSID: '%s'.\n"
         IDS_PROF_V2PROFILER_ENABLED             "A profiler designed for an older version of the CLR was loaded because of the environment variable setting below.  Older profilers will continue to work in many cases, but if you encounter problems, please consider upgrading the profiler or changing the setting of the environment variable.  Please consult the documentation for information on how to use this environment variable, and the risks associated with it.  Environment variable setting: %s=%s.  Profiler CLSID: '%s'.\n"
         IDS_PROF_PROFILER_DISABLED              "Profilers will not be loaded by the current version of the CLR because of the environment variable setting below.  Please consult the documentation for information on how to use this environment variable, and the risks associated with it.  Environment variable setting: %s=%s. Profiler CLSID: '%s'.\n"
-        IDS_E_PROF_NOTIFICATION_DISABLED        "Profiler was prevented from loading notification profiler due to app settings.\n"
+        IDS_E_PROF_NOTIFICATION_DISABLED        "Notification profiler was prevented from loading because it was explicitly disabled by app settings.\n"
         IDS_E_PROF_NOTIFICATION_LIMIT_EXCEEDED  "Notification profiler was prevented from loading because the limit of notification profilers was reached.\n"
-        IDS_E_PROF_TIMEOUT_WAITING_FOR_CONCURRENT_GC    "Profiler timed out on waiting for concurrent GC to finish after '%d' milliseconds. Please configure your profiler to increase its attaching time out value or consult the documentation for the COMPlus_ProfAPI_AttachProfilerMinTimeoutInMs environment variable and try again. Profiler CLSID: '%s'.\n"
+        IDS_E_PROF_TIMEOUT_WAITING_FOR_CONCURRENT_GC    "Profiler timed out on waiting for concurrent GC to finish after '%d' milliseconds. Please configure your profiler to increase its attaching time out value and try again. Profiler CLSID: '%s'.\n"
         IDS_PROF_ALREADY_LOADED                 "A request was made to load a profiler when a profiler was already loaded.\n"
   END
 
@@ -761,7 +712,6 @@ STRINGTABLE DISCARDABLE
 BEGIN
     IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT "Assembly with same name is already loaded"
     IDS_HOST_ASSEMBLY_RESOLVER_DYNAMICALLY_EMITTED_ASSEMBLIES_UNSUPPORTED "Dynamically emitted assemblies are unsupported during host-based resolution."
-    IDS_HOST_ASSEMBLY_RESOLVER_INCOMPATIBLE_BINDING_CONTEXT "Assembly is already bound to an incompatible binding context."
 END
 
 STRINGTABLE DISCARDABLE

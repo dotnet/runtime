@@ -1,17 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)-Browser</TargetFramework>
     <TestRuntime>true</TestRuntime>
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --engine-arg=--expose-gc --web-server-use-cop</WasmXHarnessArgs>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\JavaScript\JavaScriptTests.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\DataViewTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\MemoryTests.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\TypedArrayTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\SharedArrayBufferTests.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\ArrayTests.cs" />
-    <!-- <Compile Include="System\Runtime\InteropServices\JavaScript\MapTests.cs" /> -->
     <Compile Include="System\Runtime\InteropServices\JavaScript\MarshalTests.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\DelegateTests.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\HelperMarshal.cs" />

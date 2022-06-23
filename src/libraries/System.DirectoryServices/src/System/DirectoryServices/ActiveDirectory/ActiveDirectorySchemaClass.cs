@@ -46,8 +46,10 @@ namespace System.DirectoryServices.ActiveDirectory
         private bool _defaultSDSddlFormInitialized;
 
         #region constructors
-        public ActiveDirectorySchemaClass(DirectoryContext context!!, string ldapDisplayName)
+        public ActiveDirectorySchemaClass(DirectoryContext context, string ldapDisplayName)
         {
+            ArgumentNullException.ThrowIfNull(context);
+
             if ((context.Name == null) && (!context.isRootDomain()))
             {
                 throw new ArgumentException(SR.ContextNotAssociatedWithDomain, nameof(context));
@@ -219,8 +221,10 @@ namespace System.DirectoryServices.ActiveDirectory
         #endregion IDisposable
 
         #region public methods
-        public static ActiveDirectorySchemaClass FindByName(DirectoryContext context!!, string ldapDisplayName)
+        public static ActiveDirectorySchemaClass FindByName(DirectoryContext context, string ldapDisplayName)
         {
+            ArgumentNullException.ThrowIfNull(context);
+
             ActiveDirectorySchemaClass? schemaClass = null;
             if ((context.Name == null) && (!context.isRootDomain()))
             {
@@ -1045,9 +1049,9 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (isBound)
                 {
                     // set the value on the directory entry
-                    SetProperty(PropertyManager.DefaultSecurityDescriptor, (value == null) ? null : value.GetSecurityDescriptorSddlForm(AccessControlSections.All));
+                    SetProperty(PropertyManager.DefaultSecurityDescriptor, value?.GetSecurityDescriptorSddlForm(AccessControlSections.All));
                 }
-                _defaultSDSddlForm = (value == null) ? null : value.GetSecurityDescriptorSddlForm(AccessControlSections.All);
+                _defaultSDSddlForm = value?.GetSecurityDescriptorSddlForm(AccessControlSections.All);
             }
         }
 

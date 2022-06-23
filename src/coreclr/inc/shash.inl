@@ -24,6 +24,9 @@ SHash<TRAITS>::SHash()
     static_assert_no_msg(SHash<TRAITS>::s_growth_factor_numerator > SHash<TRAITS>::s_growth_factor_denominator);
     static_assert_no_msg(SHash<TRAITS>::s_density_factor_numerator < SHash<TRAITS>::s_density_factor_denominator);
 #endif
+
+    static_assert_no_msg(TRAITS::s_supports_remove || !TRAITS::s_supports_autoremove);
+    static_assert_no_msg(!TRAITS::s_DestructPerEntryCleanupAction || !TRAITS::s_RemovePerEntryCleanupAction);
 }
 
 template <typename TRAITS>
@@ -36,6 +39,13 @@ SHash<TRAITS>::~SHash()
         for (Iterator i = Begin(); i != End(); i++)
         {
             TRAITS::OnDestructPerEntryCleanupAction(*i);
+        }
+    }
+    else if (TRAITS::s_RemovePerEntryCleanupAction)
+    {
+        for (Iterator i = Begin(); i != End(); i++)
+        {
+            TRAITS::OnRemovePerEntryCleanupAction(*i);
         }
     }
 
@@ -88,6 +98,33 @@ const typename SHash<TRAITS>::element_t * SHash<TRAITS>::LookupPtr(key_t key) co
     CONTRACT_END;
 
     RETURN Lookup(m_table, m_tableSize, key);
+}
+
+template <typename TRAITS>
+void SHash<TRAITS>::ReplacePtr(const element_t *elementPtr, const element_t &newElement, bool invokeCleanupAction)
+{
+    CONTRACT_VOID
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        INSTANCE_CHECK;
+        PRECONDITION(m_table <= elementPtr);
+        PRECONDITION(elementPtr < m_table + m_tableSize);
+        PRECONDITION(!TRAITS::IsNull(*elementPtr));
+        PRECONDITION(!TRAITS::IsDeleted(*elementPtr));
+        PRECONDITION(!TRAITS::IsNull(newElement));
+        PRECONDITION(!TRAITS::IsDeleted(newElement));
+        PRECONDITION(TRAITS::Equals(TRAITS::GetKey(newElement), TRAITS::GetKey(*elementPtr)));
+    }
+    CONTRACT_END;
+
+    if (TRAITS::s_RemovePerEntryCleanupAction && invokeCleanupAction)
+    {
+        TRAITS::OnRemovePerEntryCleanupAction(*elementPtr);
+    }
+
+    *const_cast<element_t *>(elementPtr) = newElement;
+    RETURN;
 }
 
 template <typename TRAITS>
@@ -277,11 +314,11 @@ void SHash<TRAITS>::RemoveAll()
     }
     CONTRACT_END;
 
-    if (TRAITS::s_DestructPerEntryCleanupAction)
+    if (TRAITS::s_RemovePerEntryCleanupAction)
     {
         for (Iterator i = Begin(); i != End(); i++)
         {
-            TRAITS::OnDestructPerEntryCleanupAction(*i);
+            TRAITS::OnRemovePerEntryCleanupAction(*i);
         }
     }
 
@@ -495,10 +532,18 @@ void SHash<TRAITS>::ForEach(Functor &functor)
     for (count_t i = 0; i < m_tableSize; i++)
     {
         element_t element = m_table[i];
-        if (!TRAITS::IsNull(element) && !TRAITS::IsDeleted(element))
+        if (TRAITS::IsNull(element) || TRAITS::IsDeleted(element))
         {
-            functor(element);
+            continue;
         }
+
+        if (TRAITS::s_supports_autoremove && TRAITS::ShouldDelete(element))
+        {
+            RemoveElement(m_table, m_tableSize, &m_table[i]);
+            continue;
+        }
+
+        functor(element);
     }
 }
 
@@ -587,8 +632,9 @@ SHash<TRAITS>::ReplaceTable(element_t * newTable, count_t newTableSize)
     for (Iterator i = Begin(), end = End(); i != end; i++)
     {
         const element_t & cur = (*i);
-        if (!TRAITS::IsNull(cur) && !TRAITS::IsDeleted(cur))
-            Add(newTable, newTableSize, cur);
+        _ASSERTE(!TRAITS::IsNull(cur));
+        _ASSERTE(!TRAITS::IsDeleted(cur));
+        Add(newTable, newTableSize, cur);
     }
 
     m_table = PTR_element_t(newTable);
@@ -619,7 +665,7 @@ SHash<TRAITS>::DeleteOldTable(element_t * oldTable)
 }
 
 template <typename TRAITS>
-const typename SHash<TRAITS>::element_t * SHash<TRAITS>::Lookup(PTR_element_t table, count_t tableSize, key_t key)
+const typename SHash<TRAITS>::element_t * SHash<TRAITS>::Lookup(PTR_element_t table, count_t tableSize, key_t key) const
 {
     CONTRACT(const element_t *)
     {
@@ -644,10 +690,16 @@ const typename SHash<TRAITS>::element_t * SHash<TRAITS>::Lookup(PTR_element_t ta
         if (TRAITS::IsNull(current))
             RETURN NULL;
 
-        if (!TRAITS::IsDeleted(current)
-            && TRAITS::Equals(key, TRAITS::GetKey(current)))
+        if (!TRAITS::IsDeleted(current))
         {
-            RETURN &current;
+            if (TRAITS::s_supports_autoremove && TRAITS::ShouldDelete(current))
+            {
+                const_cast<SHash<TRAITS> *>(this)->RemoveElement(table, tableSize, &current);
+            }
+            else if (TRAITS::Equals(key, TRAITS::GetKey(current)))
+            {
+                RETURN &current;
+            }
         }
 
         if (increment == 0)
@@ -688,6 +740,13 @@ BOOL SHash<TRAITS>::Add(element_t * table, count_t tableSize, const element_t & 
 
         if (TRAITS::IsDeleted(current))
         {
+            table[index] = element;
+            RETURN FALSE;
+        }
+
+        if (TRAITS::s_supports_autoremove && TRAITS::ShouldDelete(current))
+        {
+            RemoveElement(table, tableSize, &current);
             table[index] = element;
             RETURN FALSE;
         }
@@ -733,6 +792,11 @@ void SHash<TRAITS>::AddOrReplace(element_t *table, count_t tableSize, const elem
         }
         else if (TRAITS::Equals(key, TRAITS::GetKey(current)))
         {
+            if (TRAITS::s_RemovePerEntryCleanupAction)
+            {
+                TRAITS::OnRemovePerEntryCleanupAction(current);
+            }
+
             table[index] = element;
             RETURN;
         }
@@ -769,12 +833,13 @@ void SHash<TRAITS>::Remove(element_t *table, count_t tableSize, key_t key)
         if (TRAITS::IsNull(current))
             RETURN;
 
-        if (!TRAITS::IsDeleted(current)
-            && TRAITS::Equals(key, TRAITS::GetKey(current)))
+        if (!TRAITS::IsDeleted(current))
         {
-            table[index] = TRAITS::Deleted();
-            m_tableCount--;
-            RETURN;
+            if ((TRAITS::s_supports_autoremove && TRAITS::ShouldDelete(current)) ||
+                TRAITS::Equals(key, TRAITS::GetKey(current)))
+            {
+                RemoveElement(table, tableSize, &current);
+            }
         }
 
         if (increment == 0)
@@ -793,11 +858,16 @@ void SHash<TRAITS>::RemoveElement(element_t *table, count_t tableSize, element_t
     {
         NOTHROW;
         GC_NOTRIGGER;
-        static_assert(TRAITS::s_supports_remove, "This SHash does not support remove operations.");
+        PRECONDITION(TRAITS::s_supports_remove);
         PRECONDITION(table <= element && element < table + tableSize);
         PRECONDITION(!TRAITS::IsNull(*element) && !TRAITS::IsDeleted(*element));
     }
     CONTRACT_END;
+
+    if (TRAITS::s_RemovePerEntryCleanupAction)
+    {
+        TRAITS::OnRemovePerEntryCleanupAction(*element);
+    }
 
     *element = TRAITS::Deleted();
     m_tableCount--;

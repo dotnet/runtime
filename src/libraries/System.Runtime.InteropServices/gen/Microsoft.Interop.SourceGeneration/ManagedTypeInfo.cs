@@ -45,12 +45,17 @@ namespace Microsoft.Interop
             {
                 return new DelegateTypeInfo(typeName, diagonsticFormattedName);
             }
-            return new SimpleManagedTypeInfo(typeName, diagonsticFormattedName);
+            if (type.IsValueType)
+            {
+                return new ValueTypeInfo(typeName, diagonsticFormattedName, type.IsRefLikeType);
+            }
+            return new ReferenceTypeInfo(typeName, diagonsticFormattedName);
         }
     }
 
     public sealed record SpecialTypeInfo(string FullTypeName, string DiagnosticFormattedName, SpecialType SpecialType) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName)
     {
+        public static readonly SpecialTypeInfo Byte = new("byte", "byte", SpecialType.System_Byte);
         public static readonly SpecialTypeInfo Int32 = new("int", "int", SpecialType.System_Int32);
         public static readonly SpecialTypeInfo Void = new("void", "void", SpecialType.System_Void);
 
@@ -73,5 +78,7 @@ namespace Microsoft.Interop
 
     public sealed record DelegateTypeInfo(string FullTypeName, string DiagnosticFormattedName) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
 
-    public sealed record SimpleManagedTypeInfo(string FullTypeName, string DiagnosticFormattedName) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
+    public sealed record ValueTypeInfo(string FullTypeName, string DiagnosticFormattedName, bool IsByRefLike) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
+
+    public sealed record ReferenceTypeInfo(string FullTypeName, string DiagnosticFormattedName) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
 }

@@ -189,6 +189,9 @@ dotnet_diagnostic.CA1309.severity = none
 # CA1310: Specify StringComparison for correctness
 dotnet_diagnostic.CA1310.severity = none
 
+# CA1311: Specify a culture or use an invariant version
+dotnet_diagnostic.CA1311.severity = none
+
 # CA1401: P/Invokes should not be visible
 dotnet_diagnostic.CA1401.severity = none
 
@@ -203,6 +206,12 @@ dotnet_diagnostic.CA1418.severity = none
 
 # CA1419: Provide a parameterless constructor that is as visible as the containing type for concrete types derived from 'System.Runtime.InteropServices.SafeHandle'
 dotnet_diagnostic.CA1419.severity = none
+
+# CA1420: Property, type, or attribute requires runtime marshalling
+dotnet_diagnostic.CA1420.severity = none
+
+# CA1421: This method uses runtime marshalling even when the 'DisableRuntimeMarshallingAttribute' is applied
+dotnet_diagnostic.CA1421.severity = none
 
 # CA1501: Avoid excessive inheritance
 dotnet_diagnostic.CA1501.severity = none
@@ -390,6 +399,18 @@ dotnet_diagnostic.CA1849.severity = none
 # CA1850: Prefer static 'HashData' method over 'ComputeHash'
 dotnet_diagnostic.CA1850.severity = none
 
+# CA1851: Possible multiple enumerations of 'IEnumerable' collection
+dotnet_diagnostic.CA1851.severity = none
+
+# CA1852: Seal internal types
+dotnet_diagnostic.CA1852.severity = none
+
+# CA1853: Unnecessary call to 'Dictionary.ContainsKey(key)'
+dotnet_diagnostic.CA1853.severity = none
+
+# CA1854: Prefer the 'IDictionary.TryGetValue(TKey, out TValue)' method
+dotnet_diagnostic.CA1854.severity = none
+
 # CA2000: Dispose objects before losing scope
 dotnet_diagnostic.CA2000.severity = none
 
@@ -424,10 +445,13 @@ dotnet_diagnostic.CA2015.severity = none
 dotnet_diagnostic.CA2016.severity = none
 
 # CA2017: Parameter count mismatch
-dotnet_diagnostic.CA2017.severity = warning
+dotnet_diagnostic.CA2017.severity = none
 
 # CA2018: 'Buffer.BlockCopy' expects the number of bytes to be copied for the 'count' argument
-dotnet_diagnostic.CA2018.severity = warning
+dotnet_diagnostic.CA2018.severity = none
+
+# CA2019: Improper 'ThreadStatic' field initialization
+dotnet_diagnostic.CA2019.severity = none
 
 # CA2100: Review SQL queries for security vulnerabilities
 dotnet_diagnostic.CA2100.severity = none
@@ -550,16 +574,19 @@ dotnet_diagnostic.CA2253.severity = none
 dotnet_diagnostic.CA2254.severity = none
 
 # CA2255: The 'ModuleInitializer' attribute should not be used in libraries
-dotnet_diagnostic.CA2255.severity = warning
+dotnet_diagnostic.CA2255.severity = none
 
 # CA2256: All members declared in parent interfaces must have an implementation in a DynamicInterfaceCastableImplementation-attributed interface
-dotnet_diagnostic.CA2256.severity = warning
+dotnet_diagnostic.CA2256.severity = none
 
 # CA2257: Members defined on an interface with the 'DynamicInterfaceCastableImplementationAttribute' should be 'static'
-dotnet_diagnostic.CA2257.severity = warning
+dotnet_diagnostic.CA2257.severity = none
 
 # CA2258: Providing a 'DynamicInterfaceCastableImplementation' interface in Visual Basic is unsupported
-dotnet_diagnostic.CA2258.severity = warning
+dotnet_diagnostic.CA2258.severity = none
+
+# CA2259: 'ThreadStatic' only affects static fields
+dotnet_diagnostic.CA2259.severity = none
 
 # CA2300: Do not use insecure deserializer BinaryFormatter
 dotnet_diagnostic.CA2300.severity = none
@@ -771,7 +798,7 @@ dotnet_diagnostic.CA5383.severity = none
 # CA5384: Do Not Use Digital Signature Algorithm (DSA)
 dotnet_diagnostic.CA5384.severity = none
 
-# CA5385: Use Rivest–Shamir–Adleman (RSA) Algorithm With Sufficient Key Size
+# CA5385: Use Rivest-Shamir-Adleman (RSA) Algorithm With Sufficient Key Size
 dotnet_diagnostic.CA5385.severity = none
 
 # CA5386: Avoid hardcoding SecurityProtocolType value
@@ -1535,9 +1562,6 @@ dotnet_diagnostic.IDE0160.severity = silent
 
 # IDE0161: Convert to file-scoped namespace
 dotnet_diagnostic.IDE0161.severity = silent
-
-# IDE0190: Null check can be simplified
-dotnet_diagnostic.IDE0190.severity = silent
 
 # IDE1005: Delegate invocation can be simplified.
 dotnet_diagnostic.IDE1005.severity = silent

@@ -21,8 +21,11 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="root">The configuration root.</param>
         /// <param name="path">The path to this section.</param>
-        public ConfigurationSection(IConfigurationRoot root!!, string path!!)
+        public ConfigurationSection(IConfigurationRoot root, string path)
         {
+            ThrowHelper.ThrowIfNull(root);
+            ThrowHelper.ThrowIfNull(path);
+
             _root = root;
             _path = path;
         }

@@ -27,7 +27,7 @@ namespace System.Net.Http
                 1024;
 #endif
 
-            private static ReadOnlySpan<byte> StatusHeaderName => new byte[] { (byte)':', (byte)'s', (byte)'t', (byte)'a', (byte)'t', (byte)'u', (byte)'s' };
+            private static ReadOnlySpan<byte> StatusHeaderName => ":status"u8;
 
             private readonly Http2Connection _connection;
             private readonly HttpRequestMessage _request;
@@ -477,7 +477,7 @@ namespace System.Net.Http
             private static readonly (HeaderDescriptor descriptor, byte[] value)[] s_hpackStaticHeaderTable = new (HeaderDescriptor, byte[])[LastHPackNormalHeaderId - FirstHPackNormalHeaderId + 1]
             {
                 (KnownHeaders.AcceptCharset.Descriptor, Array.Empty<byte>()),
-                (KnownHeaders.AcceptEncoding.Descriptor, Encoding.ASCII.GetBytes("gzip, deflate")),
+                (KnownHeaders.AcceptEncoding.Descriptor, "gzip, deflate"u8.ToArray()),
                 (KnownHeaders.AcceptLanguage.Descriptor, Array.Empty<byte>()),
                 (KnownHeaders.AcceptRanges.Descriptor, Array.Empty<byte>()),
                 (KnownHeaders.Accept.Descriptor, Array.Empty<byte>()),

@@ -658,7 +658,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("Calls GetType on object")]
-        private object? GetMemberValue(object o, string memberName)
+        private static object? GetMemberValue(object o, string memberName)
         {
             MemberInfo memberInfo = ReflectionXmlSerializationHelper.GetEffectiveGetInfo(o.GetType(), memberName);
             object? memberValue = GetMemberValue(o, memberInfo);
@@ -754,7 +754,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private object? GetMemberValue(object? o, MemberInfo memberInfo)
+        private static object? GetMemberValue(object? o, MemberInfo memberInfo)
         {
             if (memberInfo is PropertyInfo memberProperty)
             {
@@ -870,7 +870,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private bool CanOptimizeWriteListSequence(TypeDesc? listElementTypeDesc)
+        private static bool CanOptimizeWriteListSequence(TypeDesc? listElementTypeDesc)
         {
             // check to see if we can write values of the attribute sequentially
             // currently we have only one data type (XmlQualifiedName) that we can not write "inline",
@@ -899,7 +899,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private int FindXmlnsIndex(MemberMapping[] members)
+        private static int FindXmlnsIndex(MemberMapping[] members)
         {
             for (int i = 0; i < members.Length; i++)
             {
@@ -1055,12 +1055,12 @@ namespace System.Xml.Serialization
             }
         }
 
-        private bool hasRequirement(WritePrimitiveMethodRequirement value, WritePrimitiveMethodRequirement requirement)
+        private static bool hasRequirement(WritePrimitiveMethodRequirement value, WritePrimitiveMethodRequirement requirement)
         {
             return (value & requirement) == requirement;
         }
 
-        private bool IsDefaultValue(TypeMapping mapping, object o, object value, bool isNullable)
+        private static bool IsDefaultValue(TypeMapping mapping, object o, object value, bool isNullable)
         {
             if (value is string && ((string)value).Length == 0)
             {
@@ -1161,7 +1161,7 @@ namespace System.Xml.Serialization
             return false;
         }
 
-        private string ConvertPrimitiveToString(object o, TypeDesc typeDesc)
+        private static string ConvertPrimitiveToString(object o, TypeDesc typeDesc)
         {
             string stringValue = typeDesc.FormatterName switch
             {

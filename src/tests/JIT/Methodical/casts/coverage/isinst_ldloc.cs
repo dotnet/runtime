@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace JitTest
+namespace JitTest_isinst_ldloc_cs
 {
-    internal class BaseClass { }
+    public class BaseClass { }
 
-    internal class TestClass : BaseClass
+    public class TestClass : BaseClass
     {
         private static bool Test_LDLOC(object _obj, bool flag)
         {
@@ -32,7 +33,8 @@ namespace JitTest
             }
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             if (!Test_LDLOC(new TestClass(), true))
             {

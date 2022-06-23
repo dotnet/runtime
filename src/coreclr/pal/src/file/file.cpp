@@ -3,8 +3,6 @@
 
 /*++
 
-
-
 Module Name:
 
     file.cpp
@@ -12,8 +10,6 @@ Module Name:
 Abstract:
 
     Implementation of the file WIN API for the PAL
-
-
 
 --*/
 
@@ -341,7 +337,7 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
         // check if we are going to truncate the "/" corresponding to the
         // root folder (e.g. case of "/Volumes"). If so:
         //
-        // 1) Set the seperator to point to the NULL terminator of the specified
+        // 1) Set the separator to point to the NULL terminator of the specified
         //    file/folder name.
         //
         // 2) Null terminate lpBuffer

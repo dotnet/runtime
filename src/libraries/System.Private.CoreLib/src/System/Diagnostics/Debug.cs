@@ -19,8 +19,10 @@ namespace System.Diagnostics
     {
         private static volatile DebugProvider s_provider = new DebugProvider();
 
-        public static DebugProvider SetProvider(DebugProvider provider!!)
+        public static DebugProvider SetProvider(DebugProvider provider)
         {
+            ArgumentNullException.ThrowIfNull(provider);
+
             return Interlocked.Exchange(ref s_provider, provider);
         }
 
@@ -72,7 +74,7 @@ namespace System.Diagnostics
             WriteLine(message);
 
         [Conditional("DEBUG")]
-        public static void Print(string format, params object?[] args) =>
+        public static void Print([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] args) =>
             WriteLine(string.Format(null, format, args));
 
         [Conditional("DEBUG")]
@@ -101,7 +103,7 @@ namespace System.Diagnostics
             Assert(condition, message.ToStringAndClear(), detailMessage.ToStringAndClear());
 
         [Conditional("DEBUG")]
-        public static void Assert([DoesNotReturnIf(false)] bool condition, string? message, string detailMessageFormat, params object?[] args) =>
+        public static void Assert([DoesNotReturnIf(false)] bool condition, string? message, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string detailMessageFormat, params object?[] args) =>
             Assert(condition, message, string.Format(detailMessageFormat, args));
 
         internal static void ContractFailure(string message, string detailMessage, string failureKindMessage)
@@ -147,7 +149,7 @@ namespace System.Diagnostics
             WriteLine(value?.ToString(), category);
 
         [Conditional("DEBUG")]
-        public static void WriteLine(string format, params object?[] args) =>
+        public static void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] args) =>
             WriteLine(string.Format(null, format, args));
 
         [Conditional("DEBUG")]

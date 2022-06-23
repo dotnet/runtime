@@ -31,8 +31,17 @@ namespace System.ServiceModel.Syndication
         {
         }
 
-        public ResourceCollectionInfo(TextSyndicationContent title!!, Uri link!!, IEnumerable<CategoriesDocument> categories, IEnumerable<string> accepts)
+        public ResourceCollectionInfo(TextSyndicationContent title, Uri link, IEnumerable<CategoriesDocument> categories, IEnumerable<string> accepts)
         {
+            if (title is null)
+            {
+                throw new ArgumentNullException(nameof(title));
+            }
+            if (link is null)
+            {
+                throw new ArgumentNullException(nameof(link));
+            }
+
             Title = title;
             Link = link;
 
@@ -57,7 +66,7 @@ namespace System.ServiceModel.Syndication
 
         public Collection<string> Accepts
         {
-            get => _accepts ?? (_accepts = new NullNotAllowedCollection<string>());
+            get => _accepts ??= new NullNotAllowedCollection<string>();
         }
 
         public Dictionary<XmlQualifiedName, string> AttributeExtensions => _extensions.AttributeExtensions;
@@ -66,7 +75,7 @@ namespace System.ServiceModel.Syndication
 
         public Collection<CategoriesDocument> Categories
         {
-            get => _categories ?? (_categories = new NullNotAllowedCollection<CategoriesDocument>());
+            get => _categories ??= new NullNotAllowedCollection<CategoriesDocument>();
         }
 
         public SyndicationElementExtensionCollection ElementExtensions => _extensions.ElementExtensions;

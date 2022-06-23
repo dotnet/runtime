@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace Rotate
+namespace Rotate_rotarg_valref_cs
 {
     public struct Weight
     {
@@ -14,7 +15,7 @@ namespace Rotate
         public Object m_padding3;
     }
 
-    internal class App
+    public class App
     {
         public static int s_weightCount = 1;
         public static int s_objCount = 0;
@@ -119,7 +120,8 @@ namespace Rotate
             }
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Node root = new Node();
             root.growTree(4, "");

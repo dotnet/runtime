@@ -30,10 +30,19 @@ namespace System.Security.Cryptography.Pkcs
         }
 
         public void AddSafeContentsEncrypted(
-            Pkcs12SafeContents safeContents!!,
+            Pkcs12SafeContents safeContents,
             ReadOnlySpan<byte> passwordBytes,
-            PbeParameters pbeParameters!!)
+            PbeParameters pbeParameters)
         {
+            if (safeContents is null)
+            {
+                throw new ArgumentNullException(nameof(safeContents));
+            }
+            if (pbeParameters is null)
+            {
+                throw new ArgumentNullException(nameof(pbeParameters));
+            }
+
             if (pbeParameters.IterationCount < 1)
                 throw new ArgumentOutOfRangeException(nameof(pbeParameters));
             if (safeContents.ConfidentialityMode != Pkcs12ConfidentialityMode.None)
@@ -74,10 +83,19 @@ namespace System.Security.Cryptography.Pkcs
         }
 
         public void AddSafeContentsEncrypted(
-            Pkcs12SafeContents safeContents!!,
+            Pkcs12SafeContents safeContents,
             ReadOnlySpan<char> password,
-            PbeParameters pbeParameters!!)
+            PbeParameters pbeParameters)
         {
+            if (safeContents is null)
+            {
+                throw new ArgumentNullException(nameof(safeContents));
+            }
+            if (pbeParameters is null)
+            {
+                throw new ArgumentNullException(nameof(pbeParameters));
+            }
+
             if (pbeParameters.IterationCount < 1)
                 throw new ArgumentOutOfRangeException(nameof(pbeParameters));
             if (safeContents.ConfidentialityMode != Pkcs12ConfidentialityMode.None)
@@ -105,8 +123,13 @@ namespace System.Security.Cryptography.Pkcs
                 });
         }
 
-        public void AddSafeContentsUnencrypted(Pkcs12SafeContents safeContents!!)
+        public void AddSafeContentsUnencrypted(Pkcs12SafeContents safeContents)
         {
+            if (safeContents is null)
+            {
+                throw new ArgumentNullException(nameof(safeContents));
+            }
+
             if (IsSealed)
                 throw new InvalidOperationException(SR.Cryptography_Pkcs12_PfxIsSealed);
 

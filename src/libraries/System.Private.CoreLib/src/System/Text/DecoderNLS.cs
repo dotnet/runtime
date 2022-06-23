@@ -46,9 +46,10 @@ namespace System.Text
             return GetCharCount(bytes, index, count, false);
         }
 
-        public override unsafe int GetCharCount(byte[] bytes!!, int index, int count, bool flush)
+        public override unsafe int GetCharCount(byte[] bytes, int index, int count, bool flush)
         {
-            // Validate Parameters
+            ArgumentNullException.ThrowIfNull(bytes);
+
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count),
                     SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -62,9 +63,10 @@ namespace System.Text
                 return GetCharCount(pBytes + index, count, flush);
         }
 
-        public override unsafe int GetCharCount(byte* bytes!!, int count, bool flush)
+        public override unsafe int GetCharCount(byte* bytes, int count, bool flush)
         {
-            // Validate parameters
+            ArgumentNullException.ThrowIfNull(bytes);
+
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count),
                       SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -74,7 +76,7 @@ namespace System.Text
             _throwOnOverflow = true;
 
             // By default just call the encoding version, no flush by default
-            Debug.Assert(_encoding != null);
+            Debug.Assert(_encoding is not null);
             return _encoding.GetCharCount(bytes, count, this);
         }
 
@@ -84,10 +86,12 @@ namespace System.Text
             return GetChars(bytes, byteIndex, byteCount, chars, charIndex, false);
         }
 
-        public override unsafe int GetChars(byte[] bytes!!, int byteIndex, int byteCount,
-                                            char[] chars!!, int charIndex, bool flush)
+        public override unsafe int GetChars(byte[] bytes, int byteIndex, int byteCount,
+                                            char[] chars, int charIndex, bool flush)
         {
-            // Validate Parameters
+            ArgumentNullException.ThrowIfNull(bytes);
+            ArgumentNullException.ThrowIfNull(chars);
+
             if (byteIndex < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException(byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount),
                     SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -98,7 +102,7 @@ namespace System.Text
 
             if (charIndex < 0 || charIndex > chars.Length)
                 throw new ArgumentOutOfRangeException(nameof(charIndex),
-                    SR.ArgumentOutOfRange_Index);
+                    SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
 
             int charCount = chars.Length - charIndex;
 
@@ -110,10 +114,12 @@ namespace System.Text
                                 pChars + charIndex, charCount, flush);
         }
 
-        public override unsafe int GetChars(byte* bytes!!, int byteCount,
-                                            char* chars!!, int charCount, bool flush)
+        public override unsafe int GetChars(byte* bytes, int byteCount,
+                                            char* chars, int charCount, bool flush)
         {
-            // Validate parameters
+            ArgumentNullException.ThrowIfNull(bytes);
+            ArgumentNullException.ThrowIfNull(chars);
+
             if (byteCount < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException(byteCount < 0 ? nameof(byteCount) : nameof(charCount),
                       SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -123,17 +129,19 @@ namespace System.Text
             _throwOnOverflow = true;
 
             // By default just call the encodings version
-            Debug.Assert(_encoding != null);
+            Debug.Assert(_encoding is not null);
             return _encoding.GetChars(bytes, byteCount, chars, charCount, this);
         }
 
         // This method is used when the output buffer might not be big enough.
         // Just call the pointer version.  (This gets chars)
-        public override unsafe void Convert(byte[] bytes!!, int byteIndex, int byteCount,
-                                            char[] chars!!, int charIndex, int charCount, bool flush,
+        public override unsafe void Convert(byte[] bytes, int byteIndex, int byteCount,
+                                            char[] chars, int charIndex, int charCount, bool flush,
                                             out int bytesUsed, out int charsUsed, out bool completed)
         {
-            // Validate parameters
+            ArgumentNullException.ThrowIfNull(bytes);
+            ArgumentNullException.ThrowIfNull(chars);
+
             if (byteIndex < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException(byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount),
                       SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -167,10 +175,8 @@ namespace System.Text
                                               char* chars, int charCount, bool flush,
                                               out int bytesUsed, out int charsUsed, out bool completed)
         {
-            // Validate input parameters
-            if (chars == null || bytes == null)
-                throw new ArgumentNullException(chars == null ? nameof(chars) : nameof(bytes),
-                    SR.ArgumentNull_Array);
+            ArgumentNullException.ThrowIfNull(bytes);
+            ArgumentNullException.ThrowIfNull(chars);
 
             if (byteCount < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException(byteCount < 0 ? nameof(byteCount) : nameof(charCount),
@@ -182,7 +188,7 @@ namespace System.Text
             _bytesUsed = 0;
 
             // Do conversion
-            Debug.Assert(_encoding != null);
+            Debug.Assert(_encoding is not null);
             charsUsed = _encoding.GetChars(bytes, byteCount, chars, charCount, this);
             bytesUsed = _bytesUsed;
 
@@ -205,11 +211,11 @@ namespace System.Text
         }
 
         internal ReadOnlySpan<byte> GetLeftoverData() =>
-            MemoryMarshal.AsBytes(new ReadOnlySpan<int>(ref _leftoverBytes, 1)).Slice(0, _leftoverByteCount);
+            MemoryMarshal.AsBytes(new ReadOnlySpan<int>(in _leftoverBytes)).Slice(0, _leftoverByteCount);
 
         internal void SetLeftoverData(ReadOnlySpan<byte> bytes)
         {
-            bytes.CopyTo(MemoryMarshal.AsBytes(new Span<int>(ref _leftoverBytes, 1)));
+            bytes.CopyTo(MemoryMarshal.AsBytes(new Span<int>(ref _leftoverBytes)));
             _leftoverByteCount = bytes.Length;
         }
 
@@ -236,7 +242,7 @@ namespace System.Text
             combinedBuffer = combinedBuffer.Slice(0, ConcatInto(GetLeftoverData(), bytes, combinedBuffer));
             int charCount = 0;
 
-            Debug.Assert(_encoding != null);
+            Debug.Assert(_encoding is not null);
             switch (_encoding.DecodeFirstRune(combinedBuffer, out Rune value, out int combinedBufferBytesConsumed))
             {
                 case OperationStatus.Done:
@@ -294,7 +300,7 @@ namespace System.Text
 
             bool persistNewCombinedBuffer = false;
 
-            Debug.Assert(_encoding != null);
+            Debug.Assert(_encoding is not null);
             switch (_encoding.DecodeFirstRune(combinedBuffer, out Rune value, out int combinedBufferBytesConsumed))
             {
                 case OperationStatus.Done:

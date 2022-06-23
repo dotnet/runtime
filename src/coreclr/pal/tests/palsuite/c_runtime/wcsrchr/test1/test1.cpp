@@ -7,12 +7,10 @@
 **
 ** Purpose:
 ** Tests to see that wcsrchr correctly returns a pointer to the last occurrence
-** of a character in a a string.
+** of a character in a string.
 **
 **
 **==========================================================================*/
-
-
 
 #include <palsuite.h>
 

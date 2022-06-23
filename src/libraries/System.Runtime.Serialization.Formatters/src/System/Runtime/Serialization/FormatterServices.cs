@@ -16,8 +16,9 @@ namespace System.Runtime.Serialization
     {
         private static readonly ConcurrentDictionary<MemberHolder, MemberInfo[]> s_memberInfoTable = new ConcurrentDictionary<MemberHolder, MemberInfo[]>();
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "The Type is annotated with All, which will preserve base type fields.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2065:UnrecognizedReflectionPattern",
+            Justification = "The parentType is read from an array which currently can't be annotated," +
+                            "but the input type is annotated with All, so all of its base types are also All.")]
         private static FieldInfo[] InternalGetSerializableMembers(
             // currently the only way to preserve base, non-public fields is to use All
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
@@ -168,9 +169,11 @@ namespace System.Runtime.Serialization
         }
 
         public static MemberInfo[] GetSerializableMembers(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type!!,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
             StreamingContext context)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             // If we've already gathered the members for this type, just return them.
             // Otherwise, get them and add them.
             return s_memberInfoTable.GetOrAdd(
@@ -209,8 +212,12 @@ namespace System.Runtime.Serialization
             throw new ArgumentException(SR.Argument_InvalidFieldInfo);
         }
 
-        public static object PopulateObjectMembers(object obj!!, MemberInfo[] members!!, object?[] data!!)
+        public static object PopulateObjectMembers(object obj, MemberInfo[] members, object?[] data)
         {
+            ArgumentNullException.ThrowIfNull(obj);
+            ArgumentNullException.ThrowIfNull(members);
+            ArgumentNullException.ThrowIfNull(data);
+
             if (members.Length != data.Length)
             {
                 throw new ArgumentException(SR.Argument_DataLengthDifferent);
@@ -247,8 +254,11 @@ namespace System.Runtime.Serialization
             return obj;
         }
 
-        public static object?[] GetObjectData(object obj!!, MemberInfo[] members!!)
+        public static object?[] GetObjectData(object obj, MemberInfo[] members)
         {
+            ArgumentNullException.ThrowIfNull(obj);
+            ArgumentNullException.ThrowIfNull(members);
+
             object?[] data = new object[members.Length];
             for (int i = 0; i < members.Length; i++)
             {
@@ -269,14 +279,18 @@ namespace System.Runtime.Serialization
             return data;
         }
 
-        public static ISerializationSurrogate GetSurrogateForCyclicalReference(ISerializationSurrogate innerSurrogate!!)
+        public static ISerializationSurrogate GetSurrogateForCyclicalReference(ISerializationSurrogate innerSurrogate)
         {
+            ArgumentNullException.ThrowIfNull(innerSurrogate);
+
             return new SurrogateForCyclicalReference(innerSurrogate);
         }
 
         [RequiresUnreferencedCode("Types might be removed")]
-        public static Type? GetTypeFromAssembly(Assembly assem!!, string name)
+        public static Type? GetTypeFromAssembly(Assembly assem, string name)
         {
+            ArgumentNullException.ThrowIfNull(assem);
+
             return assem.GetType(name, throwOnError: false, ignoreCase: false);
         }
 
@@ -295,8 +309,10 @@ namespace System.Runtime.Serialization
             return null;
         }
 
-        internal static string GetClrAssemblyName(Type type!!, out bool hasTypeForwardedFrom)
+        internal static string GetClrAssemblyName(Type type, out bool hasTypeForwardedFrom)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             // Special case types like arrays
             Type attributedType = type;
             while (attributedType.HasElementType)

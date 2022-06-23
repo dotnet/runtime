@@ -332,12 +332,10 @@ namespace System.Xml.Schema
         {
             if (complexType.ContentModel != null)
             { //simpleContent or complexContent
-                if (complexType.ContentModel is XmlSchemaSimpleContent)
+                if (complexType.ContentModel is XmlSchemaSimpleContent simpleContent)
                 {
-                    XmlSchemaSimpleContent simpleContent = (XmlSchemaSimpleContent)complexType.ContentModel;
-                    if (simpleContent.Content is XmlSchemaSimpleContentExtension)
+                    if (simpleContent.Content is XmlSchemaSimpleContentExtension simpleExtension)
                     {
-                        XmlSchemaSimpleContentExtension simpleExtension = (XmlSchemaSimpleContentExtension)simpleContent.Content;
                         CleanupAttributes(simpleExtension.Attributes);
                     }
                     else
@@ -537,9 +535,8 @@ namespace System.Xml.Schema
             simpleType.IsProcessing = true;
             try
             {
-                if (simpleType.Content is XmlSchemaSimpleTypeList)
+                if (simpleType.Content is XmlSchemaSimpleTypeList list)
                 {
-                    XmlSchemaSimpleTypeList list = (XmlSchemaSimpleTypeList)simpleType.Content;
                     XmlSchemaDatatype datatype;
                     simpleType.SetBaseSchemaType(DatatypeImplementation.AnySimpleType);
                     if (list.ItemTypeName.IsEmpty)
@@ -568,9 +565,8 @@ namespace System.Xml.Schema
                     simpleType.SetDatatype(datatype.DeriveByList(simpleType));
                     simpleType.SetDerivedBy(XmlSchemaDerivationMethod.List);
                 }
-                else if (simpleType.Content is XmlSchemaSimpleTypeRestriction)
+                else if (simpleType.Content is XmlSchemaSimpleTypeRestriction restriction)
                 {
-                    XmlSchemaSimpleTypeRestriction restriction = (XmlSchemaSimpleTypeRestriction)simpleType.Content;
                     XmlSchemaDatatype datatype;
                     if (restriction.BaseTypeName.IsEmpty)
                     {
@@ -725,9 +721,8 @@ namespace System.Xml.Schema
             complexType.IsProcessing = true;
             if (complexType.ContentModel != null)
             { //simpleContent or complexContent
-                if (complexType.ContentModel is XmlSchemaSimpleContent)
+                if (complexType.ContentModel is XmlSchemaSimpleContent simpleContent)
                 {
-                    XmlSchemaSimpleContent simpleContent = (XmlSchemaSimpleContent)complexType.ContentModel;
                     complexType.SetContentType(XmlSchemaContentType.TextOnly);
                     if (simpleContent.Content is XmlSchemaSimpleContentExtension)
                     {
@@ -1417,7 +1412,7 @@ namespace System.Xml.Schema
             return false;
         }
 
-        private bool IsElementFromElement(XmlSchemaElement derivedElement, XmlSchemaElement baseElement)
+        private static bool IsElementFromElement(XmlSchemaElement derivedElement, XmlSchemaElement baseElement)
         {
             return (derivedElement.QualifiedName == baseElement.QualifiedName) &&
                     (derivedElement.IsNillable == baseElement.IsNillable) &&
@@ -1428,13 +1423,13 @@ namespace System.Xml.Schema
                     XmlSchemaType.IsDerivedFrom(derivedElement.ElementSchemaType, baseElement.ElementSchemaType, ~XmlSchemaDerivationMethod.Restriction);
         }
 
-        private bool IsElementFromAny(XmlSchemaElement derivedElement, XmlSchemaAny baseAny)
+        private static bool IsElementFromAny(XmlSchemaElement derivedElement, XmlSchemaAny baseAny)
         {
             return baseAny.Allows(derivedElement.QualifiedName) &&
                 IsValidOccurrenceRangeRestriction(derivedElement, baseAny);
         }
 
-        private bool IsAnyFromAny(XmlSchemaAny derivedAny, XmlSchemaAny baseAny)
+        private static bool IsAnyFromAny(XmlSchemaAny derivedAny, XmlSchemaAny baseAny)
         {
             return IsValidOccurrenceRangeRestriction(derivedAny, baseAny) &&
                 NamespaceList.IsSubset(derivedAny.NamespaceList!, baseAny.NamespaceList!);
@@ -1572,7 +1567,7 @@ namespace System.Xml.Schema
             return true;
         }
 
-        private void CalculateSequenceRange(XmlSchemaSequence sequence, out decimal minOccurs, out decimal maxOccurs)
+        private static void CalculateSequenceRange(XmlSchemaSequence sequence, out decimal minOccurs, out decimal maxOccurs)
         {
             minOccurs = decimal.Zero; maxOccurs = decimal.Zero;
             for (int i = 0; i < sequence.Items.Count; ++i)
@@ -1596,12 +1591,12 @@ namespace System.Xml.Schema
             }
         }
 
-        private bool IsValidOccurrenceRangeRestriction(XmlSchemaParticle derivedParticle, XmlSchemaParticle baseParticle)
+        private static bool IsValidOccurrenceRangeRestriction(XmlSchemaParticle derivedParticle, XmlSchemaParticle baseParticle)
         {
             return IsValidOccurrenceRangeRestriction(derivedParticle.MinOccurs, derivedParticle.MaxOccurs, baseParticle.MinOccurs, baseParticle.MaxOccurs);
         }
 
-        private bool IsValidOccurrenceRangeRestriction(decimal minOccurs, decimal maxOccurs, decimal baseMinOccurs, decimal baseMaxOccurs)
+        private static bool IsValidOccurrenceRangeRestriction(decimal minOccurs, decimal maxOccurs, decimal baseMinOccurs, decimal baseMaxOccurs)
         {
             return (baseMinOccurs <= minOccurs) && (maxOccurs <= baseMaxOccurs);
         }
@@ -1705,7 +1700,7 @@ namespace System.Xml.Schema
             _complexTypeStack.Push(complexType);
         }
 
-        private XmlSchemaContentType GetSchemaContentType(XmlSchemaComplexType complexType, XmlSchemaComplexContent? complexContent, XmlSchemaParticle particle)
+        private static XmlSchemaContentType GetSchemaContentType(XmlSchemaComplexType complexType, XmlSchemaComplexContent? complexContent, XmlSchemaParticle particle)
         {
             if ((complexContent != null && complexContent.IsMixed) ||
                 (complexContent == null && complexType.IsMixed))
@@ -1794,7 +1789,7 @@ namespace System.Xml.Schema
 
         private void CompileLocalAttributes(XmlSchemaComplexType? baseType, XmlSchemaComplexType derivedType, XmlSchemaObjectCollection attributes, XmlSchemaAnyAttribute? anyAttribute, XmlSchemaDerivationMethod derivedBy)
         {
-            XmlSchemaAnyAttribute? baseAttributeWildcard = baseType != null ? baseType.AttributeWildcard : null;
+            XmlSchemaAnyAttribute? baseAttributeWildcard = baseType?.AttributeWildcard;
             for (int i = 0; i < attributes.Count; ++i)
             {
                 XmlSchemaAttribute? attribute = attributes[i] as XmlSchemaAttribute;
@@ -2264,9 +2259,8 @@ namespace System.Xml.Schema
                     if (decl == null)
                     {
                         Debug.Assert(xe.ElementSchemaType != null);
-                        if (xe.ElementSchemaType is XmlSchemaComplexType)
+                        if (xe.ElementSchemaType is XmlSchemaComplexType complexType)
                         {
-                            XmlSchemaComplexType complexType = (XmlSchemaComplexType)xe.ElementSchemaType;
                             CompileComplexType(complexType);
                             if (complexType.ElementDecl != null)
                             {
@@ -2274,9 +2268,8 @@ namespace System.Xml.Schema
                                 //                                decl.LocalElements = complexType.LocalElementDecls;
                             }
                         }
-                        else if (xe.ElementSchemaType is XmlSchemaSimpleType)
+                        else if (xe.ElementSchemaType is XmlSchemaSimpleType simpleType)
                         {
-                            XmlSchemaSimpleType simpleType = (XmlSchemaSimpleType)xe.ElementSchemaType;
                             CompileSimpleType(simpleType);
                             if (simpleType.ElementDecl != null)
                             {
@@ -2382,9 +2375,8 @@ namespace System.Xml.Schema
                 }
             }
             PushComplexType(complexType);
-            if (particle is XmlSchemaAll)
+            if (particle is XmlSchemaAll all)
             {
-                XmlSchemaAll all = (XmlSchemaAll)particle;
                 AllElementsContentValidator contentValidator = new AllElementsContentValidator(complexType.ContentType, all.Items.Count, all.MinOccurs == decimal.Zero);
                 for (int i = 0; i < all.Items.Count; ++i)
                 {
@@ -2459,9 +2451,8 @@ namespace System.Xml.Schema
                 sb.Append(((XmlSchemaAny)particle!).NamespaceList!.ToString());
                 sb.Append('>');
             }
-            else if (particle is XmlSchemaAll)
+            else if (particle is XmlSchemaAll all)
             {
-                XmlSchemaAll all = (XmlSchemaAll)particle;
                 sb.Append('[');
                 bool first = true;
                 for (int i = 0; i < all.Items.Count; ++i)
@@ -2483,9 +2474,8 @@ namespace System.Xml.Schema
                 }
                 sb.Append(']');
             }
-            else if (particle is XmlSchemaGroupBase)
+            else if (particle is XmlSchemaGroupBase gb)
             {
-                XmlSchemaGroupBase gb = (XmlSchemaGroupBase)particle;
                 sb.Append('(');
                 string delimeter = (particle is XmlSchemaChoice) ? " | " : ", ";
                 bool first = true;
@@ -2533,14 +2523,12 @@ namespace System.Xml.Schema
 
         private void BuildParticleContentModel(ParticleContentValidator contentValidator, XmlSchemaParticle particle)
         {
-            if (particle is XmlSchemaElement)
+            if (particle is XmlSchemaElement element)
             {
-                XmlSchemaElement element = (XmlSchemaElement)particle;
                 contentValidator.AddName(element.QualifiedName, element);
             }
-            else if (particle is XmlSchemaAny)
+            else if (particle is XmlSchemaAny any)
             {
-                XmlSchemaAny any = (XmlSchemaAny)particle;
                 contentValidator.AddNamespaceList(any.NamespaceList!, any);
             }
             else if (particle is XmlSchemaGroupBase)
@@ -2597,9 +2585,8 @@ namespace System.Xml.Schema
 
         private void CompileParticleElements(XmlSchemaComplexType complexType, XmlSchemaParticle particle)
         {
-            if (particle is XmlSchemaElement)
+            if (particle is XmlSchemaElement localElement)
             {
-                XmlSchemaElement localElement = (XmlSchemaElement)particle;
                 CompileElement(localElement);
                 if (complexType.LocalElements[localElement.QualifiedName] == null)
                 {

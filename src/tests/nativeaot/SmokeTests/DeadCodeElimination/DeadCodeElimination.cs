@@ -13,8 +13,11 @@ class Program
     {
         SanityTest.Run();
         TestInstanceMethodOptimization.Run();
-        TestAbstractTypeVirtualsOptimization.Run();
         TestAbstractTypeNeverDerivedVirtualsOptimization.Run();
+        TestAbstractNeverDerivedWithDevirtualizedCall.Run();
+        TestAbstractDerivedByUnrelatedTypeWithDevirtualizedCall.Run();
+        TestUnusedDefaultInterfaceMethod.Run();
+        TestArrayElementTypeOperations.Run();
 
         return 100;
     }
@@ -45,9 +48,7 @@ class Program
             public Type DoSomething() => typeof(UnreferencedType);
         }
 
-#if DEBUG
-        static NeverAllocatedType s_instance = null;
-#else
+#if !DEBUG
         static object s_instance = new object[10];
 #endif
 
@@ -56,8 +57,9 @@ class Program
             Console.WriteLine("Testing instance methods on unallocated types");
 
 #if DEBUG
-            if (s_instance != null)
-                s_instance.DoSomething();
+            NeverAllocatedType instance = null;
+            if (instance != null)
+                instance.DoSomething();
 #else
             // In release builds additionally test that the "is" check didn't introduce the constructed type
             if (s_instance is NeverAllocatedType never)
@@ -65,42 +67,6 @@ class Program
 #endif
 
             ThrowIfPresent(typeof(TestInstanceMethodOptimization), nameof(UnreferencedType));
-        }
-    }
-
-    class TestAbstractTypeVirtualsOptimization
-    {
-        class UnreferencedType1 { }
-        class UnreferencedType2 { }
-        class ReferencedType1 { }
-
-        abstract class Base
-        {
-            public virtual Type GetTheType() => typeof(UnreferencedType1);
-            public virtual Type GetOtherType() => typeof(ReferencedType1);
-        }
-
-        abstract class Mid : Base
-        {
-            public override Type GetTheType() => typeof(UnreferencedType2);
-        }
-
-        class Derived : Mid
-        {
-            public override Type GetTheType() => null;
-        }
-
-        static Base s_instance = Activator.CreateInstance<Derived>();
-
-        public static void Run()
-        {
-            Console.WriteLine("Testing virtual methods on abstract types");
-
-            s_instance.GetTheType();
-            s_instance.GetOtherType();
-
-            ThrowIfPresent(typeof(TestAbstractTypeVirtualsOptimization), nameof(UnreferencedType1));
-            ThrowIfPresent(typeof(TestAbstractTypeVirtualsOptimization), nameof(UnreferencedType2));
         }
     }
 
@@ -147,9 +113,166 @@ class Program
                 s_d.TrySomething();
             }
 
-            ThrowIfPresent(typeof(TestAbstractTypeNeverDerivedVirtualsOptimization), nameof(UnreferencedType1));
+            // This optimization got disabled, but if it ever gets re-enabled, this test
+            // will ensure we don't reintroduce the old bugs (this was a compiler crash).
+            //ThrowIfPresent(typeof(TestAbstractTypeNeverDerivedVirtualsOptimization), nameof(UnreferencedType1));
         }
     }
+
+    class TestAbstractNeverDerivedWithDevirtualizedCall
+    {
+        static void DoIt(Derived d) => d?.DoSomething();
+
+        abstract class Base
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public virtual void DoSomething() => new UnreferencedType1().ToString();
+        }
+
+        sealed class Derived : Base { }
+
+        class UnreferencedType1 { }
+
+        public static void Run()
+        {
+            Console.WriteLine("Testing abstract classes that might have methods reachable through devirtualization");
+
+            // Force a vtable for Base
+            typeof(Base).ToString();
+
+            // Do a devirtualizable virtual call to something that was never allocated
+            // and uses a virtual method implementation from Base.
+            DoIt(null);
+
+            // This optimization got disabled, but if it ever gets re-enabled, this test
+            // will ensure we don't reintroduce the old bugs (this was a compiler crash).
+            //ThrowIfPresent(typeof(TestAbstractNeverDerivedWithDevirtualizedCall), nameof(UnreferencedType1));
+        }
+    }
+
+    class TestAbstractDerivedByUnrelatedTypeWithDevirtualizedCall
+    {
+        static void DoIt(Derived1 d) => d?.DoSomething();
+
+        abstract class Base
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public virtual void DoSomething() => new UnreferencedType1().ToString();
+        }
+
+        sealed class Derived1 : Base { }
+
+        sealed class Derived2 : Base
+        {
+            public override void DoSomething() { }
+        }
+
+        class UnreferencedType1 { }
+
+        public static void Run()
+        {
+            Console.WriteLine("Testing more abstract classes that might have methods reachable through devirtualization");
+
+            // Force a vtable for Base
+            typeof(Base).ToString();
+
+            // Do a devirtualizable virtual call to something that was never allocated
+            // and uses a virtual method implementation from Base.
+            DoIt(null);
+
+            new Derived2().DoSomething();
+
+            // This optimization got disabled, but if it ever gets re-enabled, this test
+            // will ensure we don't reintroduce the old bugs (this was a compiler crash).
+            //ThrowIfPresent(typeof(TestAbstractDerivedByUnrelatedTypeWithDevirtualizedCall), nameof(UnreferencedType1));
+        }
+    }
+
+    class TestUnusedDefaultInterfaceMethod
+    {
+        interface IFoo<T>
+        {
+            void DoSomething();
+        }
+
+        interface IBar<T> : IFoo<T>
+        {
+            void IFoo<T>.DoSomething()
+            {
+                Activator.CreateInstance(typeof(NeverReferenced));
+            }
+        }
+
+        class NeverReferenced { }
+
+        class SomeInstance : IBar<object>
+        {
+            void IFoo<object>.DoSomething() { }
+        }
+
+        static IFoo<object> s_instance = new SomeInstance();
+
+        public static void Run()
+        {
+            s_instance.DoSomething();
+
+            ThrowIfPresent(typeof(TestUnusedDefaultInterfaceMethod), nameof(NeverReferenced));
+        }
+    }
+
+    class TestArrayElementTypeOperations
+    {
+        public static void Run()
+        {
+            Console.WriteLine("Testing array element type optimizations");
+
+            // We consider valuetype elements of arrays constructed...
+            {
+                Array arr = new NeverAllocated1[1];
+                ThrowIfNotPresent(typeof(TestArrayElementTypeOperations), nameof(Marker1));
+
+                // The reason they're considered constructed is runtime magic here
+                // Make sure that works too.
+                object o = arr.GetValue(0);
+                if (!o.ToString().Contains(nameof(Marker1)))
+                    throw new Exception();
+            }
+
+            // ...but not nullable...
+            {
+                Array arr = new Nullable<NeverAllocated2>[1];
+                arr.GetValue(0);
+                ThrowIfPresent(typeof(TestArrayElementTypeOperations), nameof(Marker2));
+            }
+
+
+            // ...or reference type element types
+            {
+                Array arr = new NeverAllocated3[1];
+                arr.GetValue(0);
+                ThrowIfPresent(typeof(TestArrayElementTypeOperations), nameof(Marker3));
+            }
+        }
+
+        class Marker1 { }
+        struct NeverAllocated1
+        {
+            public override string ToString() => typeof(Marker1).ToString();
+        }
+
+        class Marker2 { }
+        struct NeverAllocated2
+        {
+            public override string ToString() => typeof(Marker2).ToString();
+        }
+
+        class Marker3 { }
+        class NeverAllocated3
+        {
+            public override string ToString() => typeof(Marker3).ToString();
+        }
+    }
+
 
     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
         Justification = "That's the point")]
@@ -158,6 +281,14 @@ class Program
     private static void ThrowIfPresent(Type testType, string typeName)
     {
         if (IsTypePresent(testType, typeName))
+        {
+            throw new Exception(typeName);
+        }
+    }
+
+    private static void ThrowIfNotPresent(Type testType, string typeName)
+    {
+        if (!IsTypePresent(testType, typeName))
         {
             throw new Exception(typeName);
         }

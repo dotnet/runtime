@@ -285,7 +285,8 @@ interface ICorDebugDataTarget : IUnknown
         CORDB_PLATFORM_POSIX_AMD64,       // Posix supporting OS on Intel x64
         CORDB_PLATFORM_POSIX_X86,         // Posix supporting OS on Intel x86
         CORDB_PLATFORM_POSIX_ARM,         // Posix supporting OS on ARM32
-        CORDB_PLATFORM_POSIX_ARM64        // Posix supporting OS on ARM64
+        CORDB_PLATFORM_POSIX_ARM64,       // Posix supporting OS on ARM64
+        CORDB_PLATFORM_POSIX_LOONGARCH64  // Posix supporting OS on LoongArch64
     } CorDebugPlatform;
 
     HRESULT GetPlatform([out] CorDebugPlatform * pTargetPlatform);
@@ -996,7 +997,7 @@ interface ICorDebugManagedCallback : IUnknown
 {
     /*
      * All callbacks are called with the process in the synchronized state
-     * All callbacks are serialized, and are called in in the same thread.
+     * All callbacks are serialized, and are called in the same thread.
      * Each callback implementor must call Continue in a callback to
      *      resume execution.
      * If Continue is not called before returning, the process will
@@ -2363,7 +2364,7 @@ interface ICorDebugAppDomain4 : IUnknown
 
 /* ------------------------------------------------------------------------- *
  * Assembly interface
- * An ICorDebugAssembly instance corresponds to a a managed assembly loaded
+ * An ICorDebugAssembly instance corresponds to a managed assembly loaded
  * into a specific AppDomain in the CLR.  For assemblies shared between multiple
  * AppDomains (eg. CoreLib), there will be a separate ICorDebugAssembly instance
  * per AppDomain in which it is used.
@@ -3916,6 +3917,73 @@ interface ICorDebugRegisterSet : IUnknown
         REGISTER_ARM64_V29,
         REGISTER_ARM64_V30,
         REGISTER_ARM64_V31,
+
+        // LoongArch64 registers
+        REGISTER_LOONGARCH64_PC = 0,
+        REGISTER_LOONGARCH64_SP,
+        REGISTER_LOONGARCH64_FP,
+        REGISTER_LOONGARCH64_RA,
+        REGISTER_LOONGARCH64_TP,
+        REGISTER_LOONGARCH64_A0,
+        REGISTER_LOONGARCH64_A1,
+        REGISTER_LOONGARCH64_A2,
+        REGISTER_LOONGARCH64_A3,
+        REGISTER_LOONGARCH64_A4,
+        REGISTER_LOONGARCH64_A5,
+        REGISTER_LOONGARCH64_A6,
+        REGISTER_LOONGARCH64_A7,
+        REGISTER_LOONGARCH64_T0,
+        REGISTER_LOONGARCH64_T1,
+        REGISTER_LOONGARCH64_T2,
+        REGISTER_LOONGARCH64_T3,
+        REGISTER_LOONGARCH64_T4,
+        REGISTER_LOONGARCH64_T5,
+        REGISTER_LOONGARCH64_T6,
+        REGISTER_LOONGARCH64_T7,
+        REGISTER_LOONGARCH64_T8,
+        REGISTER_LOONGARCH64_X0,
+        REGISTER_LOONGARCH64_S0,
+        REGISTER_LOONGARCH64_S1,
+        REGISTER_LOONGARCH64_S2,
+        REGISTER_LOONGARCH64_S3,
+        REGISTER_LOONGARCH64_S4,
+        REGISTER_LOONGARCH64_S5,
+        REGISTER_LOONGARCH64_S6,
+        REGISTER_LOONGARCH64_S7,
+        REGISTER_LOONGARCH64_S8,
+
+        REGISTER_LOONGARCH64_F0,
+        REGISTER_LOONGARCH64_F1,
+        REGISTER_LOONGARCH64_F2,
+        REGISTER_LOONGARCH64_F3,
+        REGISTER_LOONGARCH64_F4,
+        REGISTER_LOONGARCH64_F5,
+        REGISTER_LOONGARCH64_F6,
+        REGISTER_LOONGARCH64_F7,
+        REGISTER_LOONGARCH64_F8,
+        REGISTER_LOONGARCH64_F9,
+        REGISTER_LOONGARCH64_F10,
+        REGISTER_LOONGARCH64_F11,
+        REGISTER_LOONGARCH64_F12,
+        REGISTER_LOONGARCH64_F13,
+        REGISTER_LOONGARCH64_F14,
+        REGISTER_LOONGARCH64_F15,
+        REGISTER_LOONGARCH64_F16,
+        REGISTER_LOONGARCH64_F17,
+        REGISTER_LOONGARCH64_F18,
+        REGISTER_LOONGARCH64_F19,
+        REGISTER_LOONGARCH64_F20,
+        REGISTER_LOONGARCH64_F21,
+        REGISTER_LOONGARCH64_F22,
+        REGISTER_LOONGARCH64_F23,
+        REGISTER_LOONGARCH64_F24,
+        REGISTER_LOONGARCH64_F25,
+        REGISTER_LOONGARCH64_F26,
+        REGISTER_LOONGARCH64_F27,
+        REGISTER_LOONGARCH64_F28,
+        REGISTER_LOONGARCH64_F29,
+        REGISTER_LOONGARCH64_F30,
+        REGISTER_LOONGARCH64_F31,
 
         // other architectures here
 
@@ -6208,7 +6276,7 @@ interface ICorDebugEval2 : IUnknown
                         [in, size_is(nTypeArgs)] ICorDebugType *ppTypeArgs[]);
 
     /*
-     * NewParamaterizedArray allocates a new array whose elements may be instances
+     * NewParameterizedArray allocates a new array whose elements may be instances
      * of a generic type.  The array is always created in the AppDomain the thread is
      * currently in.
      */
@@ -6569,7 +6637,7 @@ interface ICorDebugObjectValue : ICorDebugValue
     HRESULT GetContext([out] ICorDebugContext **ppContext);
 
     /*
-     * IsValueClass returns true if the the class of this object is
+     * IsValueClass returns true if the class of this object is
      * a value class.
      */
 
@@ -7290,7 +7358,7 @@ interface ICorDebugType : IUnknown
      * GetClass and the relevant metadata, but it is relatively painful: you would
      * have to lookup the class, then the metadata of that class
      * to find the "generic" base type, then instantiate this generic base type by
-     * looking up the type paramaters to the initial type,
+     * looking up the type parameters to the initial type,
      * and then perform the appropriate instantiation in the case where the class
      * happens to be either a generic class or a normal class with a constructed type
      * as its parent.  Looking up the base types is useful to implement common

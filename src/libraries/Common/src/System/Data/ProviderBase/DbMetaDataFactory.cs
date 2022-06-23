@@ -74,7 +74,7 @@ namespace System.Data.ProviderBase
 
             foreach (DataRow row in sourceTable.Rows)
             {
-                if (SupportedByCurrentVersion(row) == true)
+                if (SupportedByCurrentVersion(row))
                 {
                     newRow = destinationTable.NewRow();
                     for (int i = 0; i < destinationColumns.Count; i++)
@@ -190,12 +190,12 @@ namespace System.Data.ProviderBase
             return resultTable;
         }
 
-        private DataColumn[] FilterColumns(DataTable sourceTable, string[]? hiddenColumnNames, DataColumnCollection destinationColumns)
+        private static DataColumn[] FilterColumns(DataTable sourceTable, string[]? hiddenColumnNames, DataColumnCollection destinationColumns)
         {
             int columnCount = 0;
             foreach (DataColumn sourceColumn in sourceTable.Columns)
             {
-                if (IncludeThisColumn(sourceColumn, hiddenColumnNames) == true)
+                if (IncludeThisColumn(sourceColumn, hiddenColumnNames))
                 {
                     columnCount++;
                 }
@@ -211,7 +211,7 @@ namespace System.Data.ProviderBase
 
             foreach (DataColumn sourceColumn in sourceTable.Columns)
             {
-                if (IncludeThisColumn(sourceColumn, hiddenColumnNames) == true)
+                if (IncludeThisColumn(sourceColumn, hiddenColumnNames))
                 {
                     DataColumn newDestinationColumn = new DataColumn(sourceColumn.ColumnName, sourceColumn.DataType);
                     destinationColumns.Add(newDestinationColumn);
@@ -269,7 +269,7 @@ namespace System.Data.ProviderBase
                     {
                         if (collectionName == candidateCollectionName)
                         {
-                            if (haveExactMatch == true)
+                            if (haveExactMatch)
                             {
                                 throw ADP.CollectionNameIsNotUnique(collectionName);
                             }
@@ -304,7 +304,7 @@ namespace System.Data.ProviderBase
                 }
             }
 
-            if ((haveExactMatch == false) && (haveMultipleInexactMatches == true))
+            if (!haveExactMatch && haveMultipleInexactMatches)
             {
                 throw ADP.AmbigousCollectionName(collectionName);
             }
@@ -465,7 +465,7 @@ namespace System.Data.ProviderBase
             return requestedSchema;
         }
 
-        private bool IncludeThisColumn(DataColumn sourceColumn, string[]? hiddenColumnNames)
+        private static bool IncludeThisColumn(DataColumn sourceColumn, string[]? hiddenColumnNames)
         {
 
             bool result = true;
@@ -528,7 +528,7 @@ namespace System.Data.ProviderBase
             }
 
             // if the minmum version was ok what about the maximum version
-            if (result == true)
+            if (result)
             {
                 versionColumn = tableColumns[_maximumVersion];
                 if (versionColumn != null)

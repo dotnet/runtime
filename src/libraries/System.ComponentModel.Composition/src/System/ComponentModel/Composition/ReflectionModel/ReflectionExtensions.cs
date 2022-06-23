@@ -41,8 +41,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
         }
 
-        public static LazyMemberInfo ToLazyMember(this MemberInfo member!!)
+        public static LazyMemberInfo ToLazyMember(this MemberInfo member)
         {
+            ArgumentNullException.ThrowIfNull(member);
+
             if (member.MemberType == MemberTypes.Property)
             {
                 PropertyInfo? property = member as PropertyInfo;
@@ -76,8 +78,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return reflectionMember;
         }
 
-        public static ReflectionProperty ToReflectionProperty(this PropertyInfo property!!)
+        public static ReflectionProperty ToReflectionProperty(this PropertyInfo property)
         {
+            ArgumentNullException.ThrowIfNull(property);
+
             return CreateReflectionProperty(property.GetGetMethod(true)!, property.GetSetMethod(true)!);
         }
 
@@ -91,8 +95,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return new ReflectionProperty(getMethod, setMethod);
         }
 
-        public static ReflectionParameter ToReflectionParameter(this ParameterInfo parameter!!)
+        public static ReflectionParameter ToReflectionParameter(this ParameterInfo parameter)
         {
+            ArgumentNullException.ThrowIfNull(parameter);
+
             return new ReflectionParameter(parameter);
         }
 
@@ -106,18 +112,24 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return new ReflectionMethod(method);
         }
 
-        public static ReflectionField ToReflectionField(this FieldInfo field!!)
+        public static ReflectionField ToReflectionField(this FieldInfo field)
         {
+            ArgumentNullException.ThrowIfNull(field);
+
             return new ReflectionField(field);
         }
 
-        public static ReflectionType ToReflectionType(this Type type!!)
+        public static ReflectionType ToReflectionType(this Type type)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             return new ReflectionType(type);
         }
 
-        public static ReflectionWritableMember ToReflectionWritableMember(this MemberInfo member!!)
+        public static ReflectionWritableMember ToReflectionWritableMember(this MemberInfo member)
         {
+            ArgumentNullException.ThrowIfNull(member);
+
             if (member.MemberType == MemberTypes.Property)
             {
                 return ((PropertyInfo)member).ToReflectionProperty();

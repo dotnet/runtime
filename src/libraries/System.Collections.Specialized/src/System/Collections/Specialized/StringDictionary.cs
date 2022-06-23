@@ -62,14 +62,18 @@ namespace System.Collections.Specialized
         /// <devdoc>
         ///    <para>Gets or sets the value associated with the specified key.</para>
         /// </devdoc>
-        public virtual string? this[string key!!]
+        public virtual string? this[string key]
         {
             get
             {
+                ArgumentNullException.ThrowIfNull(key);
+
                 return (string?)contents[key.ToLowerInvariant()];
             }
             set
             {
+                ArgumentNullException.ThrowIfNull(key);
+
                 contents[key.ToLowerInvariant()] = value;
             }
         }
@@ -111,8 +115,10 @@ namespace System.Collections.Specialized
         /// <devdoc>
         /// <para>Adds an entry with the specified key and value into the StringDictionary.</para>
         /// </devdoc>
-        public virtual void Add(string key!!, string? value)
+        public virtual void Add(string key, string? value)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             contents.Add(key.ToLowerInvariant(), value);
         }
 
@@ -127,8 +133,10 @@ namespace System.Collections.Specialized
         /// <devdoc>
         ///    <para>Determines if the string dictionary contains a specific key</para>
         /// </devdoc>
-        public virtual bool ContainsKey(string key!!)
+        public virtual bool ContainsKey(string key)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             return contents.ContainsKey(key.ToLowerInvariant());
         }
 
@@ -160,8 +168,10 @@ namespace System.Collections.Specialized
         /// <devdoc>
         ///    <para>Removes the entry with the specified key from the string dictionary.</para>
         /// </devdoc>
-        public virtual void Remove(string key!!)
+        public virtual void Remove(string key)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             contents.Remove(key.ToLowerInvariant());
         }
     }

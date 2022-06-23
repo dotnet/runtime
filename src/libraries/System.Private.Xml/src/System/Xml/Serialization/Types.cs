@@ -1,19 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Text;
+using System.Xml;
+using System.Xml.Schema;
+
 namespace System.Xml.Serialization
 {
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Reflection;
-    using System.Text;
-    using System.Xml;
-    using System.Xml.Extensions;
-    using System.Xml.Schema;
-
     // These classes provide a higher level view on reflection specific to
     // Xml serialization, for example:
     // - allowing one to talk about types w/o having them compiled yet
@@ -152,7 +151,7 @@ namespace System.Xml.Serialization
             get { return _isXsdType; }
         }
 
-        internal bool IsMappedType
+        internal static bool IsMappedType
         {
             get { return false; }
         }
@@ -511,6 +510,10 @@ namespace System.Xml.Serialization
             "token"
         };
 
+        [UnconditionalSuppressMessage ("ReflectionAnalysis", "IL2118",
+            Justification = "DAM on AddPrimitive references methods of DateTime, which has a compiler-generated local function " +
+                            "LowGranularityNonCachedFallback that calls PInvokes which are considered potentially dangerous. " +
+                            "XML serialization will not access this local function.")]
         static TypeScope()
         {
             AddPrimitive(typeof(string), "string", "String", TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.CanBeTextValue | TypeFlags.Reference | TypeFlags.HasDefaultConstructor);
@@ -606,6 +609,10 @@ namespace System.Xml.Serialization
             return false;
         }
 
+        [UnconditionalSuppressMessage ("ReflectionAnalysis", "IL2118",
+            Justification = "DAM on AddPrimitive references methods of DateTime, which has a compiler-generated local function " +
+                            "LowGranularityNonCachedFallback that calls PInvokes which are considered potentially dangerous. " +
+                            "XML serialization will not access this local function.")]
         private static void AddSoapEncodedTypes(string ns)
         {
             AddSoapEncodedPrimitive(typeof(string), "normalizedString", ns, "String", new XmlQualifiedName("normalizedString", XmlSchema.Namespace), TypeFlags.AmbiguousDataType | TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.Reference | TypeFlags.HasDefaultConstructor);
@@ -686,12 +693,12 @@ namespace System.Xml.Serialization
             AddNonXsdPrimitive(type, dataTypeName, ns, formatterName, baseTypeName, Array.Empty<XmlSchemaFacet>(), flags);
         }
 
-        internal TypeDesc? GetTypeDesc(string name, string ns)
+        internal static TypeDesc? GetTypeDesc(string name, string ns)
         {
             return GetTypeDesc(name, ns, TypeFlags.CanBeElementValue | TypeFlags.CanBeTextValue | TypeFlags.CanBeAttributeValue);
         }
 
-        internal TypeDesc? GetTypeDesc(string name, string? ns, TypeFlags flags)
+        internal static TypeDesc? GetTypeDesc(string name, string? ns, TypeFlags flags)
         {
             TypeDesc? typeDesc = (TypeDesc?)s_primitiveNames[name, ns];
             if (typeDesc != null)
@@ -704,7 +711,7 @@ namespace System.Xml.Serialization
             return null;
         }
 
-        internal TypeDesc? GetTypeDesc(XmlSchemaSimpleType dataType)
+        internal static TypeDesc? GetTypeDesc(XmlSchemaSimpleType dataType)
         {
             return (TypeDesc?)s_primitiveDataTypes[dataType];
         }
@@ -1196,12 +1203,13 @@ namespace System.Xml.Serialization
             }
         }
 
+        // The DynamicallyAccessedMemberTypes.All annotation is required here because the method
+        // tries to access private members on base types (which is normally blocked by reflection)
+        // This doesn't make the requirements worse since the only callers already have the type
+        // annotated as All anyway.
         private static bool ShouldBeReplaced(
             MemberInfo memberInfoToBeReplaced,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties
-                | DynamicallyAccessedMemberTypes.NonPublicProperties
-                | DynamicallyAccessedMemberTypes.PublicFields
-                | DynamicallyAccessedMemberTypes.NonPublicFields)] Type derivedType,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type derivedType,
             out MemberInfo replacedInfo)
         {
             replacedInfo = memberInfoToBeReplaced;
@@ -1371,9 +1379,8 @@ namespace System.Xml.Serialization
                 {
                     for (int i = 0; i < defaultMembers.Length; i++)
                     {
-                        if (defaultMembers[i] is PropertyInfo)
+                        if (defaultMembers[i] is PropertyInfo defaultProp)
                         {
-                            PropertyInfo defaultProp = (PropertyInfo)defaultMembers[i];
                             if (defaultProp.DeclaringType != t) continue;
                             if (!defaultProp.CanRead) continue;
                             MethodInfo getMethod = defaultProp.GetMethod!;

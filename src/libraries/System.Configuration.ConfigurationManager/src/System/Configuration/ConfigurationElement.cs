@@ -86,17 +86,13 @@ namespace System.Configuration
 
         internal ConfigurationValueFlags ItemLocked => _itemLockedFlag;
 
-        public ConfigurationLockCollection LockAttributes => _lockedAttributesList
-            ?? (_lockedAttributesList = new ConfigurationLockCollection(this, ConfigurationLockCollectionType.LockedAttributes));
+        public ConfigurationLockCollection LockAttributes => _lockedAttributesList ??= new ConfigurationLockCollection(this, ConfigurationLockCollectionType.LockedAttributes);
 
-        public ConfigurationLockCollection LockAllAttributesExcept => _lockedAllExceptAttributesList
-            ?? (_lockedAllExceptAttributesList = new ConfigurationLockCollection(this, ConfigurationLockCollectionType.LockedExceptionList, ElementTagName));
+        public ConfigurationLockCollection LockAllAttributesExcept => _lockedAllExceptAttributesList ??= new ConfigurationLockCollection(this, ConfigurationLockCollectionType.LockedExceptionList, ElementTagName);
 
-        public ConfigurationLockCollection LockElements => _lockedElementsList
-            ?? (_lockedElementsList = new ConfigurationLockCollection(this, ConfigurationLockCollectionType.LockedElements));
+        public ConfigurationLockCollection LockElements => _lockedElementsList ??= new ConfigurationLockCollection(this, ConfigurationLockCollectionType.LockedElements);
 
-        public ConfigurationLockCollection LockAllElementsExcept => _lockedAllExceptElementsList
-            ?? (_lockedAllExceptElementsList = new ConfigurationLockCollection(this, ConfigurationLockCollectionType.LockedElementsExceptionList, ElementTagName));
+        public ConfigurationLockCollection LockAllElementsExcept => _lockedAllExceptElementsList ??= new ConfigurationLockCollection(this, ConfigurationLockCollectionType.LockedElementsExceptionList, ElementTagName);
 
         public bool LockItem
         {
@@ -203,7 +199,7 @@ namespace System.Configuration
 
         internal ConfigurationValues Values { get; }
 
-        public ElementInformation ElementInformation => _evaluationElement ?? (_evaluationElement = new ElementInformation(this));
+        public ElementInformation ElementInformation => _evaluationElement ??= new ElementInformation(this);
 
         protected ContextInformation EvaluationContext
         {
@@ -230,7 +226,7 @@ namespace System.Configuration
 
         public Configuration CurrentConfiguration => _configRecord?.CurrentConfiguration;
 
-        internal ConfigurationElement CreateElement(Type type)
+        internal static ConfigurationElement CreateElement(Type type)
         {
             ConfigurationElement element = (ConfigurationElement)TypeUtil.CreateInstance(type);
             element.CallInit();
@@ -835,8 +831,8 @@ namespace System.Configuration
         {
             Debug.Assert(elem != null);
 
-            if ((s_perTypeValidators != null) && s_perTypeValidators.ContainsKey(elem.GetType()))
-                elem._elementProperty = new ConfigurationElementProperty(s_perTypeValidators[elem.GetType()]);
+            if ((s_perTypeValidators != null) && s_perTypeValidators.TryGetValue(elem.GetType(), out ConfigurationValidatorBase value))
+                elem._elementProperty = new ConfigurationElementProperty(value);
         }
 
         protected void SetPropertyValue(ConfigurationProperty prop, object value, bool ignoreLocks)
@@ -1192,7 +1188,7 @@ namespace System.Configuration
             return dataToWrite;
         }
 
-        private bool SerializeLockList(ConfigurationLockCollection list, string elementKey, XmlWriter writer)
+        private static bool SerializeLockList(ConfigurationLockCollection list, string elementKey, XmlWriter writer)
         {
             StringBuilder sb = new StringBuilder();
 
@@ -1727,7 +1723,7 @@ namespace System.Configuration
             PostDeserialize();
         }
 
-        private object DeserializePropertyValue(ConfigurationProperty prop, XmlReader reader)
+        private static object DeserializePropertyValue(ConfigurationProperty prop, XmlReader reader)
         {
             Debug.Assert(prop != null, "prop != null");
             Debug.Assert(reader != null, "reader != null");

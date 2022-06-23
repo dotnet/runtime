@@ -569,17 +569,6 @@ FCIMPL3(SIZE_T, StubHelpers::ProfilerBeginTransitionCallback, SIZE_T pSecretPara
     DELEGATEREF dref = (DELEGATEREF)ObjectToOBJECTREF(unsafe_pThis);
     HELPER_METHOD_FRAME_BEGIN_RET_1(dref);
 
-    bool fReverseInterop = false;
-
-    if (NULL == pThread)
-    {
-        // This is our signal for the reverse interop cases.
-        fReverseInterop = true;
-        pThread = GET_THREAD();
-        // the secret param in this casee is the UMEntryThunk
-        pRealMD = ((UMEntryThunk*)pSecretParam)->GetMethod();
-    }
-    else
     if (pSecretParam == 0)
     {
         // Secret param is null.  This is the calli pinvoke case or the unmanaged delegate case.
@@ -611,14 +600,7 @@ FCIMPL3(SIZE_T, StubHelpers::ProfilerBeginTransitionCallback, SIZE_T pSecretPara
     {
         GCX_PREEMP_THREAD_EXISTS(pThread);
 
-        if (fReverseInterop)
-        {
-            ProfilerUnmanagedToManagedTransitionMD(pRealMD, COR_PRF_TRANSITION_CALL);
-        }
-        else
-        {
-            ProfilerManagedToUnmanagedTransitionMD(pRealMD, COR_PRF_TRANSITION_CALL);
-        }
+        ProfilerManagedToUnmanagedTransitionMD(pRealMD, COR_PRF_TRANSITION_CALL);
     }
 
     HELPER_METHOD_FRAME_END();
@@ -646,25 +628,9 @@ FCIMPL2(void, StubHelpers::ProfilerEndTransitionCallback, MethodDesc* pRealMD, T
     // and the transition requires us to set up a HMF.
     HELPER_METHOD_FRAME_BEGIN_0();
     {
-        bool fReverseInterop = false;
-
-        if (NULL == pThread)
-        {
-            // if pThread is null, we are doing reverse interop
-            pThread = GET_THREAD();
-            fReverseInterop = true;
-        }
-
         GCX_PREEMP_THREAD_EXISTS(pThread);
 
-        if (fReverseInterop)
-        {
-            ProfilerManagedToUnmanagedTransitionMD(pRealMD, COR_PRF_TRANSITION_RETURN);
-        }
-        else
-        {
-            ProfilerUnmanagedToManagedTransitionMD(pRealMD, COR_PRF_TRANSITION_RETURN);
-        }
+        ProfilerUnmanagedToManagedTransitionMD(pRealMD, COR_PRF_TRANSITION_RETURN);
     }
     HELPER_METHOD_FRAME_END();
 

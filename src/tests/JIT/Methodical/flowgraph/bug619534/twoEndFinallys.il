@@ -31,7 +31,7 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class private auto ansi beforefieldinit Test_twoEndFinallys
+.class public auto ansi beforefieldinit Test_twoEndFinallys
        extends [mscorlib]System.Object
 {
   .field private int32 temp
@@ -49,7 +49,7 @@
     IL_000e:  ret
   } // end of method Test::.ctor
 
-  .method private hidebysig static int32 
+  .method public hidebysig static int32 
           Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

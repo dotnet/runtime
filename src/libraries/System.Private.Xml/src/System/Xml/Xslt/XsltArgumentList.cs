@@ -38,16 +38,23 @@ namespace System.Xml.Xsl
             return _extensions[namespaceUri];
         }
 
-        public void AddParam(string name!!, string namespaceUri!!, object parameter!!)
+        public void AddParam(string name, string namespaceUri, object parameter)
         {
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(namespaceUri);
+            ArgumentNullException.ThrowIfNull(parameter);
+
             XmlQualifiedName qname = new XmlQualifiedName(name, namespaceUri);
             qname.Verify();
             _parameters.Add(qname, parameter);
         }
 
         [RequiresUnreferencedCode(ExtensionObjectWarning)]
-        public void AddExtensionObject(string namespaceUri!!, object extension!!)
+        public void AddExtensionObject(string namespaceUri, object extension)
         {
+            ArgumentNullException.ThrowIfNull(namespaceUri);
+            ArgumentNullException.ThrowIfNull(extension);
+
             _extensions.Add(namespaceUri, extension);
         }
 

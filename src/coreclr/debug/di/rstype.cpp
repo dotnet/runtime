@@ -2138,7 +2138,7 @@ static inline bool _IsNonGCRootHelper(CordbType * pType)
 //-----------------------------------------------------------------------------
 bool CordbType::IsGCRoot()
 {
-    // If it's a E_T_PTR type, then look at what it's a a pointer of.
+    // If it's a E_T_PTR type, then check its pointer type.
     CordbType * pPtr = this->GetPointerElementType();
     if (pPtr == NULL)
     {
@@ -2313,7 +2313,7 @@ HRESULT CordbType::GetTypeID(COR_TYPEID *pId)
         hr = Init(FALSE);
         IfFailThrow(hr);
 
-        VMPTR_TypeHandle vmTypeHandle;
+        VMPTR_TypeHandle vmTypeHandle = VMPTR_TypeHandle::NullPtr();
 
         CorElementType et = GetElementType();
         switch (et)

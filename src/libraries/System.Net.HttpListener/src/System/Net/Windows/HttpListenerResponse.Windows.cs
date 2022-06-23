@@ -572,7 +572,7 @@ $"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength}
             return pinnedHeaders;
         }
 
-        private void FreePinnedHeaders(List<GCHandle>? pinnedHeaders)
+        private static void FreePinnedHeaders(List<GCHandle>? pinnedHeaders)
         {
             if (pinnedHeaders != null)
             {

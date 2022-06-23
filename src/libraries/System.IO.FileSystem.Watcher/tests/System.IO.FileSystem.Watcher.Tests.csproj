@@ -4,7 +4,7 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-MacCatalyst;$(NetCoreAppCurrent)-FreeBSD</TargetFrameworks>
     <IgnoreForCI Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'tvOS'">true</IgnoreForCI>
-    <EnableDllImportGenerator>true</EnableDllImportGenerator>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
@@ -39,6 +39,8 @@
              Link="Common\System\IO\TempDirectory.cs" />
     <Compile Include="$(CommonTestPath)System\IO\ReparsePointUtilities.cs"
              Link="Common\System\IO\ReparsePointUtilities.cs" />
+    <Compile Include="$(CommonTestPath)System\Threading\ThreadTestHelpers.cs"
+             Link="Common\System\Threading\ThreadTestHelpers.cs" />
     <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs"
              Link="Common\TestUtilities\System\DisableParallelization.cs" />
     <Compile Include="$(CommonPath)System\IO\PathInternal.cs"

@@ -342,7 +342,8 @@
 // it's an array or some other value that is not important to have
 // in a minidump) a second macro, DEFINE_DACVAR_NO_DUMP, will allow
 // you to make the required entry in the DacGlobals structure without
-// dumping its value.
+// dumping its value. If the variable is implemented with one of the VOLATILE_* macros
+// then the DEFINE_DACVAR_VOLATILE macro must be used.
 //
 // For convenience, here is a list of the various variable declaration and
 // initialization macros:
@@ -361,6 +362,25 @@
 //                            initialized outside the
 //                            class declaration
 // ------------------------------------------------------------------------------------------------
+// VOLATILE_SVAL_DECL(type, name)    static volatile   class MyClass
+//                                   non-pointer data  {
+//                                   member declared      // static Volatile<int> i;
+//                                   within the class     VOLATILE_SVAL_DECL(int, i);
+//                                    declaration      }
+//
+// VOLATILE_SVAL_IMPL(type, cls,     static volatile
+//                    name)          non-pointer data  // Volatile<int> MyClass::i;
+//                                   member defined    VOLATILE_SVAL_IMPL(int, MyClass, i);
+//                                   outside the
+//                                   class declaration
+//
+// VOLATILE_SVAL_IMPL_INIT(          static volatile
+//    type, cls, name)               non-pointer data  // Volatile<int> MyClass::i = 0;
+//                                   member defined    VOLATILE_SVAL_IMPL_INIT(int, MyClass, i, 0);
+//                                   and initialized
+//                                   outside the
+//                                   class declaration
+// ------------------------------------------------------------------------------------------------
 // SPTR_DECL(type, name)      static pointer data       class MyClass
 //                            member declared within    {
 //                            the class declaration        // static int * pInt;
@@ -375,6 +395,25 @@
 //                name, val)  member defined and        SPTR_IMPL_INIT(int, MyClass, pInt, NULL);
 //                            initialized outside the
 //                            class declaration
+// ------------------------------------------------------------------------------------------------
+// VOLATILE_SPTR_DECL(type, name)    static volatile   class MyClass
+//                                   pointer data      {
+//                                   member declared      // static Volatile<int*> i;
+//                                   within the class     VOLATILE_SPTR_DECL(int, i);
+//                                    declaration      }
+//
+// VOLATILE_SPTR_IMPL(type, cls,     static volatile
+//                    name)          pointer data      // Volatile<int*> MyClass::i;
+//                                   member defined    VOLATILE_SPTR_IMPL(int, MyClass, i);
+//                                   outside the
+//                                   class declaration
+//
+// VOLATILE_SPTR_IMPL_INIT(          static volatile
+//    type, cls, name)               pointer data      // Volatile<int*> MyClass::i = 0;
+//                                   member defined    VOLATILE_SPTR_IMPL_INIT(int, MyClass, i, 0);
+//                                   and initialized
+//                                   outside the
+//                                   class declaration
 // ------------------------------------------------------------------------------------------------
 // GVAL_DECL(type, name)      extern declaration of     // extern int g_i
 //                            global non-pointer        GVAL_DECL(int, g_i);
@@ -455,12 +494,6 @@
 // link errors for an unresolved method called VPtrSize you missed a
 // derived class declaration.
 //
-// As described above, dac can only handle classes with a single
-// vtable.  However, there's a special case for multiple inheritance
-// situations when only one of the classes is needed for dac.  If
-// the base class needed is the first class in the derived class's
-// layout then it can be used with dac via using the VPTR_MULTI_CLASS
-// macros.  Use with extreme care.
 //
 // All classes to be instantiated must be listed in src\inc\vptr_list.h.
 //
@@ -531,7 +564,8 @@
 #include "safemath.h"
 #include "corerror.h"
 
-#define DACCESS_TABLE_RESOURCE "COREXTERNALDATAACCESSRESOURCE"
+// Keep in sync with the definitions in dbgutil.cpp and createdump.h
+#define DACCESS_TABLE_SYMBOL "g_dacTable"
 
 #ifdef PAL_STDCPP_COMPAT
 #include <type_traits>
@@ -594,50 +628,38 @@ typedef SIZE_T TSIZE_T;
 
 typedef struct _DacGlobals
 {
-#ifdef TARGET_UNIX
+#ifdef _MSC_VER
+private:
+    const static _DacGlobals s_dacGlobals;
+#else
+    void InitializeEntries();
+#endif
+public:
     static void Initialize();
-    void InitializeEntries(TADDR baseAddress);
-#endif // TARGET_UNIX
 
 // These will define all of the dac related mscorwks static and global variables
-#define DEFINE_DACVAR(id_type, size, id, var)                 id_type id;
-#define DEFINE_DACVAR_NO_DUMP(id_type, size, id, var)         id_type id;
+#define DEFINE_DACVAR(size, id, var)                 TADDR id;
+#define DEFINE_DACVAR_VOLATILE(size, id, var)        TADDR id;
+#define DEFINE_DACVAR_NO_DUMP(size, id, var)         TADDR id;
 #include "dacvars.h"
+#undef DEFINE_DACVAR_VOLATILE
+#undef DEFINE_DACVAR_NODUMP
+#undef DEFINE_DACVAR
 
-    // Global functions.
-    ULONG fn__ThreadpoolMgr__AsyncTimerCallbackCompletion;
-    ULONG fn__DACNotifyCompilationFinished;
-    ULONG fn__ThePreStub;
-
-#ifdef TARGET_ARM
-    ULONG fn__ThePreStubCompactARM;
-#endif // TARGET_ARM
-
-    ULONG fn__ThePreStubPatchLabel;
-    ULONG fn__PrecodeFixupThunk;
-#ifdef FEATURE_COMINTEROP
-    ULONG fn__Unknown_AddRef;
-    ULONG fn__Unknown_AddRefSpecial;
-    ULONG fn__Unknown_AddRefInner;
-#endif
-#ifdef FEATURE_COMWRAPPERS
-    ULONG fn__ManagedObjectWrapper_QueryInterface;
-    ULONG fn__TrackerTarget_QueryInterface;
-#endif
+#define DEFINE_DACGFN(func) TADDR fn__##func;
+#define DEFINE_DACGFN_STATIC(class, func) TADDR fn__##class##__##func;
+#include "gfunc_list.h"
+#undef DEFINE_DACGFN
+#undef DEFINE_DACGFN_STATIC
 
     // Vtable pointer values for all classes that must
     // be instanted using vtable pointers as the identity.
-#define VPTR_CLASS(name) ULONG name##__vtAddr;
-#define VPTR_MULTI_CLASS(name, keyBase) ULONG name##__##keyBase##__mvtAddr;
-#include <vptr_list.h>
+#define VPTR_CLASS(name) TADDR name##__vtAddr;
+#include "vptr_list.h"
 #undef VPTR_CLASS
-#undef VPTR_MULTI_CLASS
 } DacGlobals;
 
 #ifdef DACCESS_COMPILE
-
-extern DacTableInfo g_dacTableInfo;
-extern DacGlobals g_dacGlobals;
 
 #ifdef __cplusplus
 extern "C" {
@@ -652,6 +674,7 @@ void DacNotImpl(void);
 void    DacError(HRESULT err);
 void    DECLSPEC_NORETURN DacError_NoRet(HRESULT err);
 TADDR   DacGlobalBase(void);
+DacGlobals* DacGlobalValues(void);
 HRESULT DacReadAll(TADDR addr, PVOID buffer, ULONG32 size, bool throwEx);
 HRESULT DacWriteAll(TADDR addr, PVOID buffer, ULONG32 size, bool throwEx);
 HRESULT DacAllocVirtual(TADDR addr, ULONG32 size,
@@ -1476,19 +1499,19 @@ template<typename type>
 class __GlobalVal
 {
 public:
-    __GlobalVal< type >(PULONG rvaPtr)
+    __GlobalVal< type >(TADDR DacGlobals::* ptr)
     {
-        m_rvaPtr = rvaPtr;
+        m_ptr = ptr;
     }
 
     operator type() const
     {
-        return (type)*__DPtr< type >(DacGlobalBase() + *m_rvaPtr);
+        return (type)*__DPtr< type >(DacGlobalValues()->*m_ptr);
     }
 
     __DPtr< type > operator&() const
     {
-        return __DPtr< type >(DacGlobalBase() + *m_rvaPtr);
+        return __DPtr< type >(DacGlobalValues()->*m_ptr);
     }
 
     // @dbgtodo  dac support: This updates values in the host.  This seems extremely dangerous
@@ -1496,7 +1519,7 @@ public:
     // was used.  Try disabling this and see what fails...
     __GlobalVal<type> & operator=(const type & val)
     {
-        type* ptr = __DPtr< type >(DacGlobalBase() + *m_rvaPtr);
+        type* ptr = __DPtr< type >(DacGlobalValues()->*m_ptr);
         // Update the host copy;
         *ptr = val;
         // Write back to the target.
@@ -1506,68 +1529,68 @@ public:
 
     bool IsValid(void) const
     {
-        return __DPtr< type >(DacGlobalBase() + *m_rvaPtr).IsValid();
+        return __DPtr< type >(DacGlobalValues()->*m_ptr).IsValid();
     }
     void EnumMem(void) const
     {
-        TADDR p = DacGlobalBase() + *m_rvaPtr;
+        TADDR p = DacGlobalValues()->*m_ptr;
         __DPtr< type >(p).EnumMem();
     }
 
 private:
-    PULONG m_rvaPtr;
+    TADDR DacGlobals::* m_ptr;
 };
 
 template<typename type, size_t size>
 class __GlobalArray
 {
 public:
-    __GlobalArray< type, size >(PULONG rvaPtr)
+    __GlobalArray< type, size >(TADDR DacGlobals::* ptr)
     {
-        m_rvaPtr = rvaPtr;
+        m_ptr = ptr;
     }
 
     __DPtr< type > operator&() const
     {
-        return __DPtr< type >(DacGlobalBase() + *m_rvaPtr);
+        return __DPtr< type >(DacGlobalValues()->*m_ptr);
     }
 
     type& operator[](unsigned int index) const
     {
-        return __DPtr< type >(DacGlobalBase() + *m_rvaPtr)[index];
+        return __DPtr< type >(DacGlobalValues()->*m_ptr)[index];
     }
 
     bool IsValid(void) const
     {
         // Only validates the base pointer, not the full array range.
-        return __DPtr< type >(DacGlobalBase() + *m_rvaPtr).IsValid();
+        return __DPtr< type >(DacGlobalValues()->*m_ptr).IsValid();
     }
     void EnumMem(void) const
     {
-        DacEnumMemoryRegion(DacGlobalBase() + *m_rvaPtr, sizeof(type) * size);
+        DacEnumMemoryRegion(DacGlobalValues()->*m_ptr, sizeof(type) * size);
     }
 
 private:
-    PULONG m_rvaPtr;
+    TADDR DacGlobals::* m_ptr;
 };
 
 template<typename acc_type, typename store_type>
 class __GlobalPtr
 {
 public:
-    __GlobalPtr< acc_type, store_type >(PULONG rvaPtr)
+    __GlobalPtr< acc_type, store_type >(TADDR DacGlobals::* ptr)
     {
-        m_rvaPtr = rvaPtr;
+        m_ptr = ptr;
     }
 
     __DPtr< store_type > operator&() const
     {
-        return __DPtr< store_type >(DacGlobalBase() + *m_rvaPtr);
+        return __DPtr< store_type >(DacGlobalValues()->*m_ptr);
     }
 
     store_type & operator=(store_type & val)
     {
-        store_type* ptr = __DPtr< store_type >(DacGlobalBase() + *m_rvaPtr);
+        store_type* ptr = __DPtr< store_type >(DacGlobalValues()->*m_ptr);
         // Update the host copy;
         *ptr = val;
         // Write back to the target.
@@ -1577,57 +1600,57 @@ public:
 
     acc_type operator->() const
     {
-        return (acc_type)*__DPtr< store_type >(DacGlobalBase() + *m_rvaPtr);
+        return (acc_type)*__DPtr< store_type >(DacGlobalValues()->*m_ptr);
     }
     operator acc_type() const
     {
-        return (acc_type)*__DPtr< store_type >(DacGlobalBase() + *m_rvaPtr);
+        return (acc_type)*__DPtr< store_type >(DacGlobalValues()->*m_ptr);
     }
     operator store_type() const
     {
-        return *__DPtr< store_type >(DacGlobalBase() + *m_rvaPtr);
+        return *__DPtr< store_type >(DacGlobalValues()->*m_ptr);
     }
     bool operator!() const
     {
-        return !*__DPtr< store_type >(DacGlobalBase() + *m_rvaPtr);
+        return !*__DPtr< store_type >(DacGlobalValues()->*m_ptr);
     }
 
     typename store_type::_Type& operator[](int index)
     {
-        return (*__DPtr< store_type >(DacGlobalBase() + *m_rvaPtr))[index];
+        return (*__DPtr< store_type >(DacGlobalValues()->*m_ptr))[index];
     }
 
     typename store_type::_Type& operator[](unsigned int index)
     {
-        return (*__DPtr< store_type >(DacGlobalBase() + *m_rvaPtr))[index];
+        return (*__DPtr< store_type >(DacGlobalValues()->*m_ptr))[index];
     }
 
     TADDR GetAddr() const
     {
-        return (*__DPtr< store_type >(DacGlobalBase() + *m_rvaPtr)).GetAddr();
+        return (*__DPtr< store_type >(DacGlobalValues()->*m_ptr)).GetAddr();
     }
 
     TADDR GetAddrRaw () const
     {
-        return DacGlobalBase() + *m_rvaPtr;
+        return DacGlobalValues()->*m_ptr;
     }
 
-    // This is only testing the the pointer memory is available but does not verify
+    // This is only testing the pointer memory is available but does not verify
     // the memory that it points to.
     //
     bool IsValidPtr(void) const
     {
-        return __DPtr< store_type >(DacGlobalBase() + *m_rvaPtr).IsValid();
+        return __DPtr< store_type >(DacGlobalValues()->*m_ptr).IsValid();
     }
 
     bool IsValid(void) const
     {
-        return __DPtr< store_type >(DacGlobalBase() + *m_rvaPtr).IsValid() &&
-            (*__DPtr< store_type >(DacGlobalBase() + *m_rvaPtr)).IsValid();
+        return __DPtr< store_type >(DacGlobalValues()->*m_ptr).IsValid() &&
+            (*__DPtr< store_type >(DacGlobalValues()->*m_ptr)).IsValid();
     }
     void EnumMem(void) const
     {
-        __DPtr< store_type > ptr(DacGlobalBase() + *m_rvaPtr);
+        __DPtr< store_type > ptr(DacGlobalValues()->*m_ptr);
         ptr.EnumMem();
         if (ptr.IsValid())
         {
@@ -1635,7 +1658,7 @@ public:
         }
     }
 
-    PULONG m_rvaPtr;
+    TADDR DacGlobals::* m_ptr;
 };
 
 template<typename acc_type, typename store_type>
@@ -1643,7 +1666,7 @@ inline bool operator==(const __GlobalPtr<acc_type, store_type>& gptr,
                        acc_type host)
 {
     return DacGetTargetAddrForHostAddr(host, true) ==
-        *__DPtr< TADDR >(DacGlobalBase() + *gptr.m_rvaPtr);
+        *__DPtr< TADDR >(DacGlobalValues()->*gptr.m_ptr);
 }
 template<typename acc_type, typename store_type>
 inline bool operator!=(const __GlobalPtr<acc_type, store_type>& gptr,
@@ -1657,7 +1680,7 @@ inline bool operator==(acc_type host,
                        const __GlobalPtr<acc_type, store_type>& gptr)
 {
     return DacGetTargetAddrForHostAddr(host, true) ==
-        *__DPtr< TADDR >(DacGlobalBase() + *gptr.m_rvaPtr);
+        *__DPtr< TADDR >(DacGlobalValues()->*gptr.m_ptr);
 }
 template<typename acc_type, typename store_type>
 inline bool operator!=(acc_type host,
@@ -1826,13 +1849,7 @@ typedef __VoidPtr PTR_CVOID;
         VPTR_ANY_CLASS_METHODS(name)                            \
         static TADDR VPtrTargetVTable() {                       \
             SUPPORTS_DAC;                                       \
-            return DacGlobalBase() + g_dacGlobals.name##__vtAddr; }
-
-#define VPTR_MULTI_CLASS_METHODS(name, keyBase)                 \
-        VPTR_ANY_CLASS_METHODS(name)                            \
-        static TADDR VPtrTargetVTable() {                       \
-            SUPPORTS_DAC;                                       \
-            return DacGlobalBase() + g_dacGlobals.name##__##keyBase##__mvtAddr; }
+            return DacGlobalValues()->name##__vtAddr; }
 
 #define VPTR_VTABLE_CLASS(name, base)                           \
 public: name(TADDR addr, TADDR vtAddr) : base(addr, vtAddr) {}  \
@@ -1840,10 +1857,6 @@ public: name(TADDR addr, TADDR vtAddr) : base(addr, vtAddr) {}  \
 
 #define VPTR_VTABLE_CLASS_AND_CTOR(name, base)                  \
         VPTR_VTABLE_CLASS(name, base)
-
-#define VPTR_MULTI_VTABLE_CLASS(name, base)                     \
-public: name(TADDR addr, TADDR vtAddr) : base(addr, vtAddr) {}  \
-        VPTR_MULTI_CLASS_METHODS(name, base)
 
 // Used for base classes that can be instantiated directly.
 // The fake vfn is still used to force a vtable even when
@@ -1884,7 +1897,7 @@ public: name(TADDR addr, TADDR vtAddr);
 // Safe access for retrieving the target address of a PTR.
 #define PTR_TO_TADDR(ptr) ((ptr).GetAddr())
 
-#define GFN_TADDR(name) (DacGlobalBase() + g_dacGlobals.fn__ ## name)
+#define GFN_TADDR(name) (DacGlobalValues()->fn__ ## name)
 
 #define GVAL_ADDR(g) \
     ((g).operator&())
@@ -1898,43 +1911,51 @@ public: name(TADDR addr, TADDR vtAddr);
 #define _SPTR_DECL(acc_type, store_type, var) \
     static __GlobalPtr< acc_type, store_type > var
 #define _SPTR_IMPL(acc_type, store_type, cls, var) \
-    __GlobalPtr< acc_type, store_type > cls::var(&g_dacGlobals.cls##__##var)
+    __GlobalPtr< acc_type, store_type > cls::var(&DacGlobals::cls##__##var)
 #define _SPTR_IMPL_INIT(acc_type, store_type, cls, var, init) \
-    __GlobalPtr< acc_type, store_type > cls::var(&g_dacGlobals.cls##__##var)
+    __GlobalPtr< acc_type, store_type > cls::var(&DacGlobals::cls##__##var)
 #define _SPTR_IMPL_NS(acc_type, store_type, ns, cls, var) \
-    __GlobalPtr< acc_type, store_type > cls::var(&g_dacGlobals.ns##__##cls##__##var)
+    __GlobalPtr< acc_type, store_type > cls::var(&DacGlobals::ns##__##cls##__##var)
 #define _SPTR_IMPL_NS_INIT(acc_type, store_type, ns, cls, var, init) \
-    __GlobalPtr< acc_type, store_type > cls::var(&g_dacGlobals.ns##__##cls##__##var)
+    __GlobalPtr< acc_type, store_type > cls::var(&DacGlobals::ns##__##cls##__##var)
+
+#define VOLATILE_SPTR_DECL(type, var) SPTR_DECL(type, var)
+#define VOLATILE_SPTR_IMPL(type, cls, var) SPTR_IMPL(type, cls, var)
+#define VOLATILE_SPTR_IMPL_INIT(type, cls, var, init) SPTR_IMPL_INIT(type, cls, var, init)
 
 #define _GPTR_DECL(acc_type, store_type, var) \
     extern __GlobalPtr< acc_type, store_type > var
 #define _GPTR_IMPL(acc_type, store_type, var) \
-    __GlobalPtr< acc_type, store_type > var(&g_dacGlobals.dac__##var)
+    __GlobalPtr< acc_type, store_type > var(&DacGlobals::dac__##var)
 #define _GPTR_IMPL_INIT(acc_type, store_type, var, init) \
-    __GlobalPtr< acc_type, store_type > var(&g_dacGlobals.dac__##var)
+    __GlobalPtr< acc_type, store_type > var(&DacGlobals::dac__##var)
 
 #define SVAL_DECL(type, var) \
     static __GlobalVal< type > var
 #define SVAL_IMPL(type, cls, var) \
-    __GlobalVal< type > cls::var(&g_dacGlobals.cls##__##var)
+    __GlobalVal< type > cls::var(&DacGlobals::cls##__##var)
 #define SVAL_IMPL_INIT(type, cls, var, init) \
-    __GlobalVal< type > cls::var(&g_dacGlobals.cls##__##var)
+    __GlobalVal< type > cls::var(&DacGlobals::cls##__##var)
 #define SVAL_IMPL_NS(type, ns, cls, var) \
-    __GlobalVal< type > cls::var(&g_dacGlobals.ns##__##cls##__##var)
+    __GlobalVal< type > cls::var(&DacGlobals::ns##__##cls##__##var)
 #define SVAL_IMPL_NS_INIT(type, ns, cls, var, init) \
-    __GlobalVal< type > cls::var(&g_dacGlobals.ns##__##cls##__##var)
+    __GlobalVal< type > cls::var(&DacGlobals::ns##__##cls##__##var)
+
+#define VOLATILE_SVAL_DECL(type, var) SVAL_DECL(type, var)
+#define VOLATILE_SVAL_IMPL(type, cls, var) SVAL_IMPL(type, cls, var)
+#define VOLATILE_SVAL_IMPL_INIT(type, cls, var, init) SVAL_IMPL_INIT(type, cls, var, init)
 
 #define GVAL_DECL(type, var) \
     extern __GlobalVal< type > var
 #define GVAL_IMPL(type, var) \
-    __GlobalVal< type > var(&g_dacGlobals.dac__##var)
+    __GlobalVal< type > var(&DacGlobals::dac__##var)
 #define GVAL_IMPL_INIT(type, var, init) \
-    __GlobalVal< type > var(&g_dacGlobals.dac__##var)
+    __GlobalVal< type > var(&DacGlobals::dac__##var)
 
 #define GARY_DECL(type, var, size) \
     extern __GlobalArray< type, size > var
 #define GARY_IMPL(type, var, size) \
-    __GlobalArray< type, size > var(&g_dacGlobals.dac__##var)
+    __GlobalArray< type, size > var(&DacGlobals::dac__##var)
 
 // Translation from a host pointer back to the target address
 // that was used to retrieve the data for the host pointer.
@@ -2118,10 +2139,6 @@ public: name(int dummy) : base(dummy) {}
         VPTR_VTABLE_CLASS(name, base) \
         name() : base() {}
 
-#define VPTR_MULTI_VTABLE_CLASS(name, base) \
-        friend struct _DacGlobals; \
-public: name(int dummy) : base(dummy) {}
-
 #define VPTR_BASE_CONCRETE_VTABLE_CLASS(name) \
         friend struct _DacGlobals; \
 public: name(int dummy) {}
@@ -2144,13 +2161,12 @@ public: name(int dummy) : base(dummy) {}
 
 #else // TARGET_UNIX
 
-#define VPTR_VTABLE_CLASS(name, base)
+#define VPTR_VTABLE_CLASS(name, base) friend struct _DacGlobals;
 #define VPTR_VTABLE_CLASS_AND_CTOR(name, base)
-#define VPTR_MULTI_VTABLE_CLASS(name, base)
-#define VPTR_BASE_CONCRETE_VTABLE_CLASS(name)
-#define VPTR_BASE_VTABLE_CLASS(name)
+#define VPTR_BASE_CONCRETE_VTABLE_CLASS(name) friend struct _DacGlobals;
+#define VPTR_BASE_VTABLE_CLASS(name) friend struct _DacGlobals;
 #define VPTR_BASE_VTABLE_CLASS_AND_CTOR(name)
-#define VPTR_ABSTRACT_VTABLE_CLASS(name, base)
+#define VPTR_ABSTRACT_VTABLE_CLASS(name, base) friend struct _DacGlobals;
 #define VPTR_ABSTRACT_VTABLE_CLASS_AND_CTOR(name, base)
 
 #endif // TARGET_UNIX
@@ -2177,6 +2193,9 @@ public: name(int dummy) : base(dummy) {}
     store_type cls::var
 #define _SPTR_IMPL_NS_INIT(acc_type, store_type, ns, cls, var, init) \
     store_type cls::var = init
+#define VOLATILE_SPTR_DECL(type, var) _SPTR_DECL(type*, Volatile<PTR_##type>, var)
+#define VOLATILE_SPTR_IMPL(type, cls, var) _SPTR_IMPL(type*, Volatile<PTR_##type>, cls, var)
+#define VOLATILE_SPTR_IMPL_INIT(type, cls, var, init) _SPTR_IMPL_INIT(type*, Volatile<PTR_##type>, cls, var, init)
 #define _GPTR_DECL(acc_type, store_type, var) \
     extern store_type var
 #define _GPTR_IMPL(acc_type, store_type, var) \
@@ -2189,6 +2208,12 @@ public: name(int dummy) : base(dummy) {}
     type cls::var
 #define SVAL_IMPL_INIT(type, cls, var, init) \
     type cls::var = init
+#define VOLATILE_SVAL_DECL(type, var) \
+    static Volatile<type> var
+#define VOLATILE_SVAL_IMPL(type, cls, var) \
+    Volatile<type> cls::var
+#define VOLATILE_SVAL_IMPL_INIT(type, cls, var, init) \
+    Volatile<type> cls::var = init
 #define SVAL_IMPL_NS(type, ns, cls, var) \
     type cls::var
 #define SVAL_IMPL_NS_INIT(type, ns, cls, var, init) \

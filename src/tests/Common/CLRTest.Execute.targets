@@ -74,6 +74,8 @@ This file contains the logic for providing Execution Script generation.
   <PropertyGroup>
     <BashScriptSnippetGen></BashScriptSnippetGen>
     <BatchScriptSnippetGen></BatchScriptSnippetGen>
+    <GetExecuteScriptTarget>GetExecuteShFullPath</GetExecuteScriptTarget>
+    <GetExecuteScriptTarget Condition="'$(TestWrapperTargetsWindows)' == 'true'">GetExecuteCmdFullPath</GetExecuteScriptTarget>
   </PropertyGroup>
 
   <Import Project="CLRTest.Jit.targets" />
@@ -82,8 +84,23 @@ This file contains the logic for providing Execution Script generation.
   <Import Project="CLRTest.Execute.*.targets" />
   <Import Project="CLRTest.MockHosting.targets" Condition="'$(RequiresMockHostPolicy)' == 'true'" />
 
+  <Target Name="FetchExternalProperties">
+    <!--Call GetExecuteShFullPath to get ToRunProject cmd file Path  -->
+    <MSBuild Projects="$(CLRTestProjectToRun)"
+             Targets="$(GetExecuteScriptTarget)"
+             Properties="GenerateRunScript=True"
+             Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'">
+      <Output TaskParameter="TargetOutputs" PropertyName="_CLRTestToRunFileFullPath"/>
+    </MSBuild>
+
+    <PropertyGroup>
+      <InputAssemblyName Condition="'$(CLRTestKind)' == 'RunOnly'">$([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)))</InputAssemblyName>
+      <InputAssemblyName Condition="'$(CLRTestKind)' == 'BuildAndRun'">$(AssemblyName).dll</InputAssemblyName>
+    </PropertyGroup>
+  </Target>
+
   <Target Name="GenerateExecutionScriptsInternal"
     Condition="$(_CLRTestNeedsToRun) or $(_CLRTestBuildsExecutable)"
-    DependsOnTargets="Generate@(ExecutionScriptKind, 'ExecutionScript;Generate')ExecutionScript;" />
+    DependsOnTargets="FetchExternalProperties;Generate@(ExecutionScriptKind, 'ExecutionScript;Generate')ExecutionScript;" />
 
 </Project>

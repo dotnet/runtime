@@ -16,7 +16,7 @@
     C++/CLI project system support.
   -->
   <ItemGroup>
-    <CrossArchSdkMsiInstallerArch Include="x86;x64" />
+    <CrossArchSdkMsiInstallerArch Include="x86;x64;arm64" />
   </ItemGroup>
 
   <ItemGroup>

@@ -20,8 +20,10 @@ namespace System.Net.Http
         {
         }
 
-        public HttpMessageInvoker(HttpMessageHandler handler!!, bool disposeHandler)
+        public HttpMessageInvoker(HttpMessageHandler handler, bool disposeHandler)
         {
+            ArgumentNullException.ThrowIfNull(handler);
+
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, handler);
 
             _handler = handler;
@@ -29,8 +31,10 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatformAttribute("browser")]
-        public virtual HttpResponseMessage Send(HttpRequestMessage request!!, CancellationToken cancellationToken)
+        public virtual HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            ArgumentNullException.ThrowIfNull(request);
+
             CheckDisposed();
 
             if (ShouldSendWithTelemetry(request))
@@ -57,8 +61,10 @@ namespace System.Net.Http
             }
         }
 
-        public virtual Task<HttpResponseMessage> SendAsync(HttpRequestMessage request!!, CancellationToken cancellationToken)
+        public virtual Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            ArgumentNullException.ThrowIfNull(request);
+
             CheckDisposed();
 
             if (ShouldSendWithTelemetry(request))

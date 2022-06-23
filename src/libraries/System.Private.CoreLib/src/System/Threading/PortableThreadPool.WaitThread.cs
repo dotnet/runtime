@@ -384,7 +384,8 @@ namespace System.Threading
                     UnregisterWait(registeredHandle, blocking: false); // We shouldn't block the wait thread on the unregistration.
                 }
 
-                ThreadPool.UnsafeQueueWaitCompletion(new CompleteWaitThreadPoolWorkItem(registeredHandle, timedOut));
+                ThreadPool.UnsafeQueueHighPriorityWorkItemInternal(
+                    new CompleteWaitThreadPoolWorkItem(registeredHandle, timedOut));
             }
 
             /// <summary>

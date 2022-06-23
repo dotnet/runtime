@@ -58,8 +58,10 @@ namespace System.ComponentModel
         /// <summary>
         /// Creates a new AttributeCollection from an existing AttributeCollection
         /// </summary>
-        public static AttributeCollection FromExisting(AttributeCollection existing!!, params Attribute[]? newAttributes)
+        public static AttributeCollection FromExisting(AttributeCollection existing, params Attribute[]? newAttributes)
         {
+            ArgumentNullException.ThrowIfNull(existing);
+
             if (newAttributes == null)
             {
                 newAttributes = Array.Empty<Attribute>();
@@ -125,10 +127,12 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets the attribute with the specified type.
         /// </summary>
-        public virtual Attribute? this[[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields)] Type attributeType!!]
+        public virtual Attribute? this[[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields)] Type attributeType]
         {
             get
             {
+                ArgumentNullException.ThrowIfNull(attributeType);
+
                 lock (s_internalSyncObject)
                 {
                     // 2 passes here for perf. Really!  first pass, we just
@@ -242,8 +246,10 @@ namespace System.ComponentModel
         /// Returns the default value for an attribute. This uses the following heuristic:
         /// 1. It looks for a public static field named "Default".
         /// </summary>
-        protected Attribute? GetDefaultAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields)] Type attributeType!!)
+        protected Attribute? GetDefaultAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields)] Type attributeType)
         {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
             lock (s_internalSyncObject)
             {
                 if (s_defaultAttributes == null)

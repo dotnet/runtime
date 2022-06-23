@@ -2,13 +2,15 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
-    <Nullable>enable</Nullable>
     <EnableDefaultItems>true</EnableDefaultItems>
-    <!-- Use targeting pack references instead of granular ones in the project file. -->
-    <DisableImplicitAssemblyReferences>false</DisableImplicitAssemblyReferences>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides additional configuration specific functionality related to Options.</PackageDescription>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonPath)System\ThrowHelper.cs" Link="Common\System\ThrowHelper.cs" />
+  </ItemGroup>
+
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />

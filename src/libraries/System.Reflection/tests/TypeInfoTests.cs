@@ -593,6 +593,7 @@ namespace System.Reflection.Tests
         static volatile object s_boxedInt32;
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67568", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void IsAssignableNullable()
         {
             Type nubInt = typeof(Nullable<int>);
@@ -1173,6 +1174,54 @@ namespace System.Reflection.Tests
             Assert.True(pointerType.IsPointer);
         }
 
+        public static IEnumerable<object[]> ByRefPonterTypes_IsPublicIsVisible_TestData()
+        {
+            yield return new object[] { typeof(int).MakeByRefType(), true, true };
+            yield return new object[] { typeof(int).MakePointerType(), true, true };
+            yield return new object[] { typeof(List<int>), true, true };
+            yield return new object[] { typeof(int), true, true };
+            yield return new object[] { typeof(TI_BaseClass.InternalNestedClass).MakeByRefType(), true, false };
+            yield return new object[] { typeof(TI_BaseClass.InternalNestedClass).MakePointerType(), true, false };
+            yield return new object[] { typeof(List<TI_BaseClass.InternalNestedClass>), true, false };
+            yield return new object[] { typeof(TI_BaseClass.InternalNestedClass), false, false };
+            yield return new object[] { typeof(TI_BaseClass).MakeByRefType(), true, true };
+            yield return new object[] { typeof(TI_BaseClass).MakePointerType(), true, true };
+            yield return new object[] { typeof(List<TI_BaseClass>), true, true };
+        }
+
+        [Theory]
+        [MemberData(nameof(ByRefPonterTypes_IsPublicIsVisible_TestData))]
+        public void ByRefPonterTypesTypes_IsPublicIsVisible(Type type, bool isPublic, bool isVisible)
+        {
+            Assert.Equal(isPublic, type.IsPublic);
+            Assert.Equal(!isPublic, type.IsNestedAssembly);
+            Assert.Equal(isVisible, type.IsVisible);
+        }
+
+        public delegate void PublicDelegate(string str);
+        internal delegate void InternalDelegate(string str);
+
+        [Fact]
+        public void DelegateTypesIsPublic()
+        {
+            Assert.True(typeof(Delegate).IsPublic);
+            Assert.False(typeof(Delegate).IsNotPublic);
+            Assert.True(typeof(PublicDelegate).IsNestedPublic);
+            Assert.True(typeof(InternalDelegate).IsNestedAssembly);
+            Assert.False(typeof(InternalDelegate).IsPublic);
+            Assert.False(typeof(InternalDelegate).MakePointerType().IsNestedAssembly);
+            Assert.True(typeof(InternalDelegate).MakePointerType().IsPublic);
+            Assert.True(typeof(Delegate).MakePointerType().IsPublic);
+            Assert.False(typeof(Delegate).MakePointerType().IsNotPublic);
+        }
+
+        [Fact]
+        public void FunctionPointerTypeIsPublic()
+        {
+            Assert.True(typeof(delegate*<string, int>).IsPublic);
+            Assert.True(typeof(delegate*<string, int>).MakePointerType().IsPublic);
+        }
+
         [Fact]
         public void MakePointerType_TypeAlreadyByRef_ThrowsTypeLoadException()
         {
@@ -1607,6 +1656,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory, MemberData(nameof(GetMemberWithSameMetadataDefinitionAsData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69244", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void GetMemberWithSameMetadataDefinitionAs(Type openGenericType, Type closedGenericType, bool checkDeclaringType)
         {
             BindingFlags all = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly;

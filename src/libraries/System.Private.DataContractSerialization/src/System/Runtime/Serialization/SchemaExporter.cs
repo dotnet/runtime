@@ -90,9 +90,8 @@ namespace System.Runtime.Serialization
             {
                 XmlSchema schema = GetSchema(dataContract.StableName.Namespace);
 
-                if (dataContract is ClassDataContract)
+                if (dataContract is ClassDataContract classDataContract)
                 {
-                    ClassDataContract classDataContract = (ClassDataContract)dataContract;
                     if (classDataContract.IsISerializable)
                         ExportISerializableDataContract(classDataContract, schema);
                     else
@@ -138,7 +137,7 @@ namespace System.Runtime.Serialization
                 XmlSchemaElement element = new XmlSchemaElement();
                 element.Name = dataMember.Name;
                 XmlElement? actualTypeElement = null;
-                DataContract memberTypeContract = _dataContractSet.GetMemberTypeDataContract(dataMember);
+                DataContract memberTypeContract = DataContractSet.GetMemberTypeDataContract(dataMember);
                 if (CheckIfMemberHasConflict(dataMember))
                 {
                     element.SchemaTypeName = AnytypeQualifiedName;
@@ -178,7 +177,7 @@ namespace System.Runtime.Serialization
             type.Annotation = GetSchemaAnnotation(genericInfoElement, ExportSurrogateData(classDataContract), isValueTypeElement);
         }
 
-        private void AddReferenceAttributes(XmlSchemaObjectCollection attributes, XmlSchema schema)
+        private static void AddReferenceAttributes(XmlSchemaObjectCollection attributes, XmlSchema schema)
         {
             SchemaHelper.AddSchemaImport(Globals.SerializationNamespace, schema);
             schema.Namespaces.Add(Globals.SerPrefixForSchema, Globals.SerializationNamespace);
@@ -186,7 +185,7 @@ namespace System.Runtime.Serialization
             attributes.Add(RefAttribute);
         }
 
-        private void SetElementType(XmlSchemaElement element, DataContract dataContract, XmlSchema schema)
+        private static void SetElementType(XmlSchemaElement element, DataContract dataContract, XmlSchema schema)
         {
             XmlDataContract? xmlDataContract = dataContract as XmlDataContract;
             if (xmlDataContract != null && xmlDataContract.IsAnonymous)
@@ -204,7 +203,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private bool CheckIfMemberHasConflict(DataMember dataMember)
+        private static bool CheckIfMemberHasConflict(DataMember dataMember)
         {
             if (dataMember.HasConflictingNameAndType)
                 return true;
@@ -338,7 +337,7 @@ namespace System.Runtime.Serialization
             return typeElement;
         }
 
-        private XmlElement? ExportSurrogateData(object key)
+        private static XmlElement? ExportSurrogateData(object key)
         {
             // IDataContractSurrogate is not available on NetCore.
             return null;
@@ -372,7 +371,7 @@ namespace System.Runtime.Serialization
                 {
                     XmlSchemaElement keyValueElement = new XmlSchemaElement();
                     keyValueElement.Name = dataMember.Name;
-                    SetElementType(keyValueElement, _dataContractSet.GetMemberTypeDataContract(dataMember), schema);
+                    SetElementType(keyValueElement, DataContractSet.GetMemberTypeDataContract(dataMember), schema);
                     SchemaHelper.AddElementForm(keyValueElement, schema);
                     if (dataMember.IsNullable)
                         keyValueElement.IsNillable = true;
@@ -386,7 +385,7 @@ namespace System.Runtime.Serialization
             {
                 if (collectionDataContract.IsItemTypeNullable)
                     element.IsNillable = true;
-                DataContract itemContract = _dataContractSet.GetItemTypeDataContract(collectionDataContract);
+                DataContract itemContract = DataContractSet.GetItemTypeDataContract(collectionDataContract);
                 SetElementType(element, itemContract, schema);
             }
             SchemaHelper.AddElementForm(element, schema);
@@ -474,7 +473,7 @@ namespace System.Runtime.Serialization
             type.Annotation = GetSchemaAnnotation(genericInfoElement, ExportSurrogateData(dataContract), isValueTypeElement);
         }
 
-        private XmlSchemaComplexContentExtension CreateTypeContent(XmlSchemaComplexType type, XmlQualifiedName baseTypeName, XmlSchema schema)
+        private static XmlSchemaComplexContentExtension CreateTypeContent(XmlSchemaComplexType type, XmlQualifiedName baseTypeName, XmlSchema schema)
         {
             SchemaHelper.AddSchemaImport(baseTypeName.Namespace, schema);
 
@@ -777,7 +776,7 @@ namespace System.Runtime.Serialization
             type.Name = localName;
             type.Particle = new XmlSchemaSequence();
             XmlSchemaAny any = new XmlSchemaAny();
-            any.Namespace = (datasetSchema.TargetNamespace == null) ? string.Empty : datasetSchema.TargetNamespace;
+            any.Namespace = datasetSchema.TargetNamespace ?? string.Empty;
             ((XmlSchemaSequence)type.Particle).Items.Add(any);
             schemas.Add(datasetSchema);
             XmlSchema schema = SchemaHelper.GetSchema(ns, schemas);

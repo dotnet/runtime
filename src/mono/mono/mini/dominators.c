@@ -263,7 +263,6 @@ static void
 df_set (MonoCompile *m, MonoBitSet* dest, MonoBitSet *set)
 {
 	int i;
-
 	mono_bitset_foreach_bit (set, i, m->num_bblocks) {
 		mono_bitset_union_fast (dest, m->bblocks [i]->dfrontier);
 	}

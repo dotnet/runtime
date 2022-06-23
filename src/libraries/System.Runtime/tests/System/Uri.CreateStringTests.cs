@@ -553,14 +553,14 @@ namespace System.Tests
                 yield return new object[] { @"file:///path1\path2/path3\path4", "/path1/path2/path3/path4", "", "" };
                 yield return new object[] { @"file:///path1\path2/path3%5Cpath4\", "/path1/path2/path3/path4/", "", "" };
                 yield return new object[] { @"file://localhost/path1\path2/path3\path4\", "/path1/path2/path3/path4/", "", "" };
-                yield return new object[] { @"file://localhost/path1%5Cpath2", "/path1/path2", "", ""};
+                yield return new object[] { @"file://localhost/path1%5Cpath2", "/path1/path2", "", "" };
             }
             else // Unix paths preserve backslash
             {
                 yield return new object[] { @"file:///path1\path2/path3\path4", @"/path1%5Cpath2/path3%5Cpath4", "", "" };
-                yield return new object[] { @"file:///path1%5Cpath2\path3", @"/path1%5Cpath2%5Cpath3", "", ""};
+                yield return new object[] { @"file:///path1%5Cpath2\path3", @"/path1%5Cpath2%5Cpath3", "", "" };
                 yield return new object[] { @"file://localhost/path1\path2/path3\path4\", @"/path1%5Cpath2/path3%5Cpath4%5C", "", "" };
-                yield return new object[] { @"file://localhost/path1%5Cpath2\path3", @"/path1%5Cpath2%5Cpath3", "", ""};
+                yield return new object[] { @"file://localhost/path1%5Cpath2\path3", @"/path1%5Cpath2%5Cpath3", "", "" };
             }
             // Implicit file with empty path
             yield return new object[] { "C:/", "C:/", "", "" };

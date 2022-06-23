@@ -16,8 +16,26 @@ using Xunit.Sdk;
 
 namespace DebuggerTests
 {
+    public class DebuggerTests :
+#if RUN_IN_CHROME
+    DebuggerTestBase
+#else
+    DebuggerTestFirefox
+#endif
+    {}
+
     public class DebuggerTestBase : IAsyncLifetime
     {
+        public static WasmHost RunningOn
+#if RUN_IN_CHROME
+            => WasmHost.Chrome;
+#else
+            => WasmHost.Firefox;
+#endif
+        public static bool RunningOnChrome => RunningOn == WasmHost.Chrome;
+
+        public const int FirefoxProxyPort = 6002;
+
         internal InspectorClient cli;
         internal Inspector insp;
         protected CancellationToken token;
@@ -26,8 +44,15 @@ namespace DebuggerTests
 
         public bool UseCallFunctionOnBeforeGetProperties;
 
+        private const int DefaultTestTimeoutMs = 1 * 60 * 1000;
+        protected TimeSpan TestTimeout = TimeSpan.FromMilliseconds(DefaultTestTimeoutMs);
+
         static string s_debuggerTestAppPath;
-        protected static string DebuggerTestAppPath
+        static int s_idCounter = -1;
+
+        public int Id { get; init; }
+
+        public static string DebuggerTestAppPath
         {
             get
             {
@@ -66,55 +91,36 @@ namespace DebuggerTests
             throw new Exception($"Cannot find 'debugger-driver.html' in {test_app_path}");
         }
 
-        static string[] PROBE_LIST = {
-            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-            "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
-            "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
-            "/usr/bin/chromium",
-            "C:/Program Files/Google/Chrome/Application/chrome.exe",
-            "/usr/bin/chromium-browser",
-        };
-        static string chrome_path;
+        internal virtual string UrlToRemoteDebugging() => "http://localhost:0";
 
-        static string GetChromePath()
+        static string s_testLogPath = null;
+        public static string TestLogPath
         {
-            if (string.IsNullOrEmpty(chrome_path))
+            get
             {
-                chrome_path = FindChromePath();
-                if (!string.IsNullOrEmpty(chrome_path))
-                    Console.WriteLine ($"** Using chrome from {chrome_path}");
-                else
-                    throw new Exception("Could not find an installed Chrome to use");
-            }
-
-            return chrome_path;
-
-            string FindChromePath()
-            {
-                string chrome_path_env_var = Environment.GetEnvironmentVariable("CHROME_PATH_FOR_DEBUGGER_TESTS");
-                if (!string.IsNullOrEmpty(chrome_path_env_var))
+                if (s_testLogPath == null)
                 {
-                    if (File.Exists(chrome_path_env_var))
-                        return chrome_path_env_var;
-
-                    Console.WriteLine ($"warning: Could not find CHROME_PATH_FOR_DEBUGGER_TESTS={chrome_path_env_var}");
+                    string logPathVar = Environment.GetEnvironmentVariable("TEST_LOG_PATH");
+                    logPathVar = string.IsNullOrEmpty(logPathVar) ? Environment.CurrentDirectory : logPathVar;
+                    Interlocked.CompareExchange(ref s_testLogPath, logPathVar, null);
+                    Console.WriteLine ($"logPathVar: {logPathVar}, s_testLogPath: {s_testLogPath}");
                 }
 
-                return PROBE_LIST.FirstOrDefault(p => File.Exists(p));
+                return s_testLogPath;
             }
         }
 
         public DebuggerTestBase(string driver = "debugger-driver.html")
         {
+            Id = Interlocked.Increment(ref s_idCounter);
             // the debugger is working in locale of the debugged application. For example Datetime.ToString()
             // we want the test to mach it. We are also starting chrome with --lang=en-US
             System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo("en-US");
 
-            insp = new Inspector();
+            insp = new Inspector(Id);
             cli = insp.Client;
             scripts = SubscribeToScripts(insp);
-
-            startTask = TestHarnessProxy.Start(GetChromePath(), DebuggerTestAppPath, driver);
+            startTask = TestHarnessProxy.Start(DebuggerTestAppPath, driver, UrlToRemoteDebugging());
         }
 
         public virtual async Task InitializeAsync()
@@ -134,7 +140,7 @@ namespace DebuggerTests
              };
 
             await Ready();
-            await insp.OpenSessionAsync(fn);
+            await insp.OpenSessionAsync(fn, TestTimeout);
         }
 
         public virtual async Task DisposeAsync() => await insp.ShutdownAsync().ConfigureAwait(false);
@@ -143,7 +149,7 @@ namespace DebuggerTests
 
         internal Dictionary<string, string> dicScriptsIdToUrl;
         internal Dictionary<string, string> dicFileToUrl;
-        internal Dictionary<string, string> SubscribeToScripts(Inspector insp)
+        internal virtual Dictionary<string, string> SubscribeToScripts(Inspector insp)
         {
             dicScriptsIdToUrl = new Dictionary<string, string>();
             dicFileToUrl = new Dictionary<string, string>();
@@ -203,6 +209,19 @@ namespace DebuggerTests
             );
         }
 
+        internal virtual string EvaluateCommand()
+        {
+            return "Runtime.evaluate";
+        }
+
+        internal virtual JObject CreateEvaluateArgs(string expression)
+            => JObject.FromObject(new { expression });
+
+        internal virtual async Task<JObject> WaitFor(string what)
+        {
+            return await insp.WaitFor(what);
+        }
+
         // sets breakpoint by method name and line offset
         internal async Task CheckInspectLocalsAtBreakpointSite(string type, string method, int line_offset, string bp_function_name, string eval_expression,
             Func<JToken, Task> locals_fn = null, Func<JObject, Task> wait_for_event_fn = null, bool use_cfo = false, string assembly = "debugger-test.dll", int col = 0)
@@ -210,16 +229,13 @@ namespace DebuggerTests
             UseCallFunctionOnBeforeGetProperties = use_cfo;
 
             var bp = await SetBreakpointInMethod(assembly, type, method, line_offset, col);
-
-            var args = JObject.FromObject(new { expression = eval_expression });
-            var res = await cli.SendCommand("Runtime.evaluate", args, token);
+            var res = await cli.SendCommand(EvaluateCommand(), CreateEvaluateArgs(eval_expression), token);
             if (!res.IsOk)
             {
-                Console.WriteLine($"Failed to run command {method} with args: {args?.ToString()}\nresult: {res.Error.ToString()}");
+                Console.WriteLine($"Failed to run command {method} with args: {CreateEvaluateArgs(eval_expression)?.ToString()}\nresult: {res.Error.ToString()}");
                 Assert.True(false, $"SendCommand for {method} failed with {res.Error.ToString()}");
             }
-
-            var pause_location = await insp.WaitFor(Inspector.PAUSE);
+            var pause_location = await WaitFor(Inspector.PAUSE);
 
             if (bp_function_name != null)
                 Assert.Equal(bp_function_name, pause_location["callFrames"]?[0]?["functionName"]?.Value<string>());
@@ -240,7 +256,7 @@ namespace DebuggerTests
             }
         }
 
-        internal void CheckLocation(string script_loc, int line, int column, Dictionary<string, string> scripts, JToken location)
+        internal virtual void CheckLocation(string script_loc, int line, int column, Dictionary<string, string> scripts, JToken location)
         {
             var loc_str = $"{ scripts[location["scriptId"].Value<string>()] }" +
                 $"#{ location["lineNumber"].Value<int>() }" +
@@ -285,10 +301,10 @@ namespace DebuggerTests
             await CheckValue(l["value"], TString(value), name);
         }
 
-        internal async Task<JToken> CheckSymbol(JToken locals, string name, string value)
+        internal async Task<JToken> CheckSymbol(JToken locals, string name, char value)
         {
             var l = GetAndAssertObjectWithName(locals, name);
-            await CheckValue(l["value"], TSymbol(value), name);
+            await CheckValue(l["value"], TChar(value), name);
             return l;
         }
 
@@ -328,30 +344,33 @@ namespace DebuggerTests
             await CheckDateTimeValue(obj["value"], expected, label);
         }
 
+        async Task CheckDateTimeMembers(JToken v, DateTime exp_dt, string label = "")
+        {
+            AssertEqual("System.DateTime", v["className"]?.Value<string>(), $"{label}#className");
+            AssertEqual(exp_dt.ToString(), v["description"]?.Value<string>(), $"{label}#description");
+
+            var members = await GetProperties(v["objectId"]?.Value<string>());
+
+            // not checking everything
+            CheckNumber(members, "Year", exp_dt.Year);
+            CheckNumber(members, "Month", exp_dt.Month);
+            CheckNumber(members, "Day", exp_dt.Day);
+            CheckNumber(members, "Hour", exp_dt.Hour);
+            CheckNumber(members, "Minute", exp_dt.Minute);
+            CheckNumber(members, "Second", exp_dt.Second);
+        }
+
+        internal virtual async Task CheckDateTimeGetter(JToken value, DateTime expected, string label = "")
+        {
+            var res = await InvokeGetter(JObject.FromObject(new { value = value }), "Date");
+            await CheckDateTimeMembers(res.Value["result"], expected.Date, label);
+        }
+
         internal async Task CheckDateTimeValue(JToken value, DateTime expected, string label = "")
         {
             await CheckDateTimeMembers(value, expected, label);
 
-            var res = await InvokeGetter(JObject.FromObject(new { value = value }), "Date");
-            await CheckDateTimeMembers(res.Value["result"], expected.Date, label);
-
-            // FIXME: check some float properties too
-
-            async Task CheckDateTimeMembers(JToken v, DateTime exp_dt, string label = "")
-            {
-                AssertEqual("System.DateTime", v["className"]?.Value<string>(), $"{label}#className");
-                AssertEqual(exp_dt.ToString(), v["description"]?.Value<string>(), $"{label}#description");
-
-                var members = await GetProperties(v["objectId"]?.Value<string>());
-
-                // not checking everything
-                CheckNumber(members, "Year", exp_dt.Year);
-                CheckNumber(members, "Month", exp_dt.Month);
-                CheckNumber(members, "Day", exp_dt.Day);
-                CheckNumber(members, "Hour", exp_dt.Hour);
-                CheckNumber(members, "Minute", exp_dt.Minute);
-                CheckNumber(members, "Second", exp_dt.Second);
-            }
+            await CheckDateTimeGetter(value, expected, label);
         }
 
         internal async Task<JToken> CheckBool(JToken locals, string name, bool expected)
@@ -365,6 +384,16 @@ namespace DebuggerTests
         {
             var val = token["value"].Value<string>();
             Assert.Equal(value, val);
+        }
+
+        internal void CheckContainsJObject(JToken locals, JToken comparedTo, string name)
+        {
+            var val = GetAndAssertObjectWithName(locals, name);
+            JObject refValue = (JObject)val["value"];
+            refValue?.Property("objectId")?.Remove();
+            JObject comparedToValue = (JObject)comparedTo["value"];
+            comparedToValue?.Property("objectId")?.Remove();
+            Assert.Equal(val, comparedTo);
         }
 
         internal async Task<JToken> CheckValueType(JToken locals, string name, string class_name, string description=null)
@@ -407,7 +436,7 @@ namespace DebuggerTests
 
         internal async Task<Result> Evaluate(string expression)
         {
-            return await SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = expression }));
+            return await SendCommand(EvaluateCommand(), CreateEvaluateArgs(expression));
         }
 
         internal void AssertLocation(JObject args, string methodName)
@@ -422,7 +451,7 @@ namespace DebuggerTests
             await SetBreakpointInMethod("debugger-test", "DebuggerTest", methodName);
             // This will run all the tests until it hits the bp
             await Evaluate("window.setTimeout(function() { invoke_run_all (); }, 1);");
-            var wait_res = await insp.WaitFor(Inspector.PAUSE);
+            var wait_res = await WaitFor(Inspector.PAUSE);
             AssertLocation(wait_res, "locals_inner");
             return wait_res;
         }
@@ -459,7 +488,7 @@ namespace DebuggerTests
             return res;
         }
 
-        internal async Task<JObject> StepAndCheck(StepKind kind, string script_loc, int line, int column, string function_name,
+        internal virtual async Task<JObject> StepAndCheck(StepKind kind, string script_loc, int line, int column, string function_name,
             Func<JObject, Task> wait_for_event_fn = null, Func<JToken, Task> locals_fn = null, int times = 1)
         {
             string method = (kind == StepKind.Resume ? "Debugger.resume" : $"Debugger.step{kind}");
@@ -498,16 +527,16 @@ namespace DebuggerTests
             return JObject.FromObject(res);
         }
 
-        internal async Task<JObject> EvaluateAndCheck(
+        internal virtual async Task<JObject> EvaluateAndCheck(
                                         string expression, string script_loc, int line, int column, string function_name,
                                         Func<JObject, Task> wait_for_event_fn = null, Func<JToken, Task> locals_fn = null)
             => await SendCommandAndCheck(
-                        JObject.FromObject(new { expression = expression }),
+                        CreateEvaluateArgs(expression),
                         "Runtime.evaluate", script_loc, line, column, function_name,
                         wait_for_event_fn: wait_for_event_fn,
                         locals_fn: locals_fn);
 
-        internal async Task<JObject> SendCommandAndCheck(JObject args, string method, string script_loc, int line, int column, string function_name,
+        internal virtual async Task<JObject> SendCommandAndCheck(JObject args, string method, string script_loc, int line, int column, string function_name,
             Func<JObject, Task> wait_for_event_fn = null, Func<JToken, Task> locals_fn = null, string waitForEvent = Inspector.PAUSE)
         {
             var res = await cli.SendCommand(method, args, token);
@@ -517,7 +546,7 @@ namespace DebuggerTests
                 Assert.True(false, $"SendCommand for {method} failed with {res.Error.ToString()}");
             }
 
-            var wait_res = await insp.WaitFor(waitForEvent);
+            var wait_res = await WaitFor(waitForEvent);
             JToken top_frame = wait_res["callFrames"]?[0];
             if (function_name != null)
             {
@@ -671,7 +700,7 @@ namespace DebuggerTests
             }
         }
 
-        internal async Task CheckProps(JToken actual, object exp_o, string label, int num_fields = -1)
+        internal async Task CheckProps(JToken actual, object exp_o, string label, int num_fields = -1, bool skip_num_fields_check = false)
         {
             if (exp_o.GetType().IsArray || exp_o is JArray)
             {
@@ -700,8 +729,24 @@ namespace DebuggerTests
             if (exp == null)
                 exp = JObject.FromObject(exp_o);
 
-            num_fields = num_fields < 0 ? exp.Values<JToken>().Count() : num_fields;
-            Assert.True(num_fields == actual.Count(), $"[{label}] Number of fields don't match, Expected: {num_fields}, Actual: {actual.Count()}");
+            if (!skip_num_fields_check)
+            {
+                num_fields = num_fields < 0 ? exp.Values<JToken>().Count() : num_fields;
+                var expected_str = string.Join(", ",
+                    exp.Children()
+                    .Select(e => e is JProperty jprop ? jprop.Name : e["name"]?.Value<string>())
+                    .Where(e => !string.IsNullOrEmpty(e))
+                    .OrderBy(e => e));
+
+                var actual_str = string.Join(", ",
+                    actual.Children()
+                    .Select(e => e["name"]?.Value<string>())
+                    .Where(e => !string.IsNullOrEmpty(e))
+                    .OrderBy(e => e));
+                Assert.True(num_fields == actual.Count(), $"[{label}] Number of fields don't match, Expected: {num_fields}, Actual: {actual.Count()}.{Environment.NewLine}"
+                    + $"  Expected: {expected_str}{Environment.NewLine}"
+                    + $"  Actual:   {actual_str}");
+            }
 
             foreach (var kvp in exp)
             {
@@ -716,10 +761,9 @@ namespace DebuggerTests
 
                 Assert.True(actual_obj != null, $"[{label}] not value found for property named '{exp_name}'");
 
-                var actual_val = actual_obj["value"];
                 if (exp_val.Type == JTokenType.Array)
                 {
-                    var actual_props = await GetProperties(actual_val["objectId"]?.Value<string>());
+                    var actual_props = await GetProperties(actual_obj["value"]["objectId"]?.Value<string>());
                     await CheckProps(actual_props, exp_val, $"{label}-{exp_name}");
                 }
                 else if (exp_val["__custom_type"] != null && exp_val["__custom_type"]?.Value<string>() == "getter")
@@ -729,9 +773,14 @@ namespace DebuggerTests
                 }
                 else
                 {
-                    await CheckValue(actual_val, exp_val, $"{label}#{exp_name}");
+                    await CheckValue(actual_obj["value"], exp_val, $"{label}#{exp_name}");
                 }
             }
+        }
+
+        internal virtual bool SkipProperty(string propertyName)
+        {
+            return false;
         }
 
         internal async Task CheckValue(JToken actual_val, JToken exp_val, string label)
@@ -753,6 +802,8 @@ namespace DebuggerTests
             {
                 foreach (var jp in exp_val.Values<JProperty>())
                 {
+                    if (SkipProperty(jp.Name))
+                        continue;
                     if (jp.Value.Type == JTokenType.Object)
                     {
                         var new_val = await GetProperties(actual_val["objectId"].Value<string>());
@@ -794,7 +845,7 @@ namespace DebuggerTests
         }
 
         // Find an object with @name, *fetch* the object, and check against @o
-        internal async Task<JToken> CompareObjectPropertiesFor(JToken locals, string name, object o, string label = null, int num_fields = -1)
+        internal async Task<JToken> CompareObjectPropertiesFor(JToken locals, string name, object o, string label = null, int num_fields = -1, bool skip_num_fields_check = false)
         {
             if (label == null)
                 label = name;
@@ -802,7 +853,7 @@ namespace DebuggerTests
             try
             {
                 if (o != null)
-                    await CheckProps(props, o, label, num_fields);
+                    await CheckProps(props, o, label, num_fields, skip_num_fields_check);
                 return props;
             }
             catch
@@ -821,7 +872,7 @@ namespace DebuggerTests
         }
 
         /* @fn_args is for use with `Runtime.callFunctionOn` only */
-        internal async Task<JToken> GetProperties(string id, JToken fn_args = null, bool? own_properties = null, bool? accessors_only = null, bool expect_ok = true)
+        internal virtual async Task<JToken> GetProperties(string id, JToken fn_args = null, bool? own_properties = null, bool? accessors_only = null, bool expect_ok = true)
         {
             if (UseCallFunctionOnBeforeGetProperties && !id.StartsWith("dotnet:scope:"))
             {
@@ -880,7 +931,6 @@ namespace DebuggerTests
                     }
                 }
             }
-
             return locals;
         }
 
@@ -943,7 +993,7 @@ namespace DebuggerTests
             return (locals, locals_internal, locals_private);
         }
 
-        internal async Task<(JToken, Result)> EvaluateOnCallFrame(string id, string expression, bool expect_ok = true)
+        internal virtual async Task<(JToken, Result)> EvaluateOnCallFrame(string id, string expression, bool expect_ok = true)
         {
             var evaluate_req = JObject.FromObject(new
             {
@@ -1013,7 +1063,7 @@ namespace DebuggerTests
             return res;
         }
 
-        internal async Task<Result> SetBreakpoint(string url_key, int line, int column, bool expect_ok = true, bool use_regex = false, string condition = "")
+        internal virtual async Task<Result> SetBreakpoint(string url_key, int line, int column, bool expect_ok = true, bool use_regex = false, string condition = "")
         {
             var bp1_req = !use_regex ?
                 JObject.FromObject(new { lineNumber = line, columnNumber = column, url = dicFileToUrl[url_key], condition }) :
@@ -1031,7 +1081,7 @@ namespace DebuggerTests
             return exc_res;
         }
 
-        internal async Task<Result> SetBreakpointInMethod(string assembly, string type, string method, int lineOffset = 0, int col = 0, string condition = "")
+        internal virtual async Task<Result> SetBreakpointInMethod(string assembly, string type, string method, int lineOffset = 0, int col = 0, string condition = "")
         {
             var req = JObject.FromObject(new { assemblyName = assembly, typeName = type, methodName = method, lineOffset = lineOffset });
 
@@ -1052,7 +1102,6 @@ namespace DebuggerTests
 
             res = await cli.SendCommand("Debugger.setBreakpointByUrl", bp1_req, token);
             Assert.True(res.IsOk);
-
             return res;
         }
 
@@ -1060,7 +1109,7 @@ namespace DebuggerTests
         {
             foreach (var arg in args)
             {
-                var (eval_val, _) = await EvaluateOnCallFrame(call_frame_id, arg.expression);
+                var (eval_val, _) = await EvaluateOnCallFrame(call_frame_id, arg.expression).ConfigureAwait(false);
                 try
                 {
                     await CheckValue(eval_val, arg.expected, arg.expression);
@@ -1114,8 +1163,12 @@ namespace DebuggerTests
         internal static JObject TNumber(uint value) =>
             JObject.FromObject(new { type = "number", value = @value.ToString(), description = value.ToString() });
 
-        internal static JObject TNumber(string value) =>
-            JObject.FromObject(new { type = "number", value = @value.ToString(), description = value });
+        // If is decimal, skip description due to culture-specific separators.
+        // They depend on user's settings and we are not able to detect them here
+        internal static JObject TNumber(string value, bool isDecimal = false) =>
+            isDecimal ?
+            JObject.FromObject(new { type = "number", value = @value.ToString() }) :
+            JObject.FromObject(new { type = "number", value = @value.ToString(), description = double.Parse(value, System.Globalization.CultureInfo.InvariantCulture).ToString() });
 
         internal static JObject TValueType(string className, string description = null, object members = null) =>
             JObject.FromObject(new { type = "object", isValueType = true, className = className, description = description ?? className });
@@ -1133,6 +1186,8 @@ namespace DebuggerTests
         internal static JObject TBool(bool value) => JObject.FromObject(new { type = "boolean", value = @value, description = @value ? "true" : "false" });
 
         internal static JObject TSymbol(string value) => JObject.FromObject(new { type = "symbol", value = @value, description = @value });
+
+        internal static JObject TChar(char value) => JObject.FromObject(new { type = "symbol", value = @value, description = $"{(int)value} '{@value}'" });
 
         /*
         	For target names with generated method names like
@@ -1209,7 +1264,7 @@ namespace DebuggerTests
             });
 
             await cli.SendCommand("Runtime.evaluate", run_method, token);
-            return await insp.WaitFor(Inspector.PAUSE);
+            return await WaitFor(Inspector.PAUSE);
         }
 
         internal async Task<JObject> LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(string asm_file, string pdb_file, string class_name, string method_name)
@@ -1235,10 +1290,10 @@ namespace DebuggerTests
             });
 
             await cli.SendCommand("Runtime.evaluate", run_method, token);
-            return await insp.WaitFor(Inspector.PAUSE);
+            return await WaitFor(Inspector.PAUSE);
         }
 
-        internal async Task<JObject> LoadAssemblyAndTestHotReloadUsingSDB(string asm_file_hot_reload, string class_name, string method_name, int id, Func<Task> rebindBreakpoint = null)
+        internal async Task<JObject> LoadAssemblyAndTestHotReloadUsingSDB(string asm_file_hot_reload, string class_name, string method_name, int id, Func<Task> rebindBreakpoint = null, bool rebindBeforeUpdates = false)
         {
             await cli.SendCommand("Debugger.resume", null, token);
             var bytes = File.ReadAllBytes($"{asm_file_hot_reload}.{id}.dmeta");
@@ -1267,9 +1322,13 @@ namespace DebuggerTests
                 dil = dil1,
                 dpdb = dpdb1
             });
+
+            if (rebindBreakpoint != null && rebindBeforeUpdates)
+                await rebindBreakpoint();
+
             await cli.SendCommand("DotnetDebugger.applyUpdates", applyUpdates, token);
 
-            if (rebindBreakpoint != null)
+            if (rebindBreakpoint != null && !rebindBeforeUpdates)
                 await rebindBreakpoint();
 
             run_method = JObject.FromObject(new
@@ -1277,7 +1336,7 @@ namespace DebuggerTests
                 expression = "window.setTimeout(function() { invoke_static_method('[debugger-test] TestHotReloadUsingSDB:RunMethod', '" + class_name + "', '" + method_name + "'); }, 1);"
             });
             await cli.SendCommand("Runtime.evaluate", run_method, token);
-            return await insp.WaitFor(Inspector.PAUSE);
+            return await WaitFor(Inspector.PAUSE);
         }
 
         internal async Task<JObject> LoadAssemblyAndTestHotReload(string asm_file, string pdb_file, string asm_file_hot_reload, string class_name, string method_name)
@@ -1325,7 +1384,7 @@ namespace DebuggerTests
             });
 
             await cli.SendCommand("Runtime.evaluate", run_method, token);
-            return await insp.WaitFor(Inspector.PAUSE);
+            return await WaitFor(Inspector.PAUSE);
         }
 
         public async Task<JObject> WaitForBreakpointResolvedEvent()

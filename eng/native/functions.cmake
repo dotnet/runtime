@@ -175,6 +175,10 @@ function(find_unwind_libs UnwindLibs)
       find_library(UNWIND_ARCH NAMES unwind-s390x)
     endif()
 
+    if(CLR_CMAKE_HOST_ARCH_POWERPC64)
+      find_library(UNWIND_ARCH NAMES unwind-ppc64le)
+    endif()
+
     if(NOT UNWIND_ARCH STREQUAL UNWIND_ARCH-NOTFOUND)
        set(UNWIND_LIBS ${UNWIND_ARCH})
     endif()
@@ -390,18 +394,29 @@ function(strip_symbols targetName outputFilename)
         message(FATAL_ERROR "strip not found")
       endif()
 
+      set(strip_command ${STRIP} -no_code_signature_warning -S ${strip_source_file})
+
+      # codesign release build
       string(TOLOWER "${CMAKE_BUILD_TYPE}" LOWERCASE_CMAKE_BUILD_TYPE)
       if (LOWERCASE_CMAKE_BUILD_TYPE STREQUAL release)
-        set(strip_command ${STRIP} -no_code_signature_warning -S ${strip_source_file} && codesign -f -s - ${strip_source_file})
-      else ()
-        set(strip_command)
+        set(strip_command ${strip_command} && codesign -f -s - ${strip_source_file})
+      endif ()
+
+      execute_process(
+        COMMAND ${DSYMUTIL} --help
+        OUTPUT_VARIABLE DSYMUTIL_HELP_OUTPUT
+      )
+
+      set(DSYMUTIL_OPTS "--flat")
+      if ("${DSYMUTIL_HELP_OUTPUT}" MATCHES "--minimize")
+        list(APPEND DSYMUTIL_OPTS "--minimize")
       endif ()
 
       add_custom_command(
         TARGET ${targetName}
         POST_BUILD
         VERBATIM
-        COMMAND ${DSYMUTIL} --flat --minimize ${strip_source_file}
+        COMMAND ${DSYMUTIL} ${DSYMUTIL_OPTS} ${strip_source_file}
         COMMAND ${strip_command}
         COMMENT "Stripping symbols from ${strip_source_file} into file ${strip_destination_file}"
         )

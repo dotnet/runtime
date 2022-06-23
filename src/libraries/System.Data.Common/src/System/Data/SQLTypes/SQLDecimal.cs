@@ -1073,15 +1073,19 @@ namespace System.Data.SqlTypes
                 usChar = rgwchStr[iCurChar];
                 iCurChar++;
 
-                if (usChar >= '0' && usChar <= '9')
+                if (char.IsAsciiDigit(usChar))
+                {
                     usChar -= '0';
+                }
                 else if (usChar == '.' && lDecPnt < 0)
                 {
                     lDecPnt = iData;
                     continue;
                 }
                 else
+                {
                     throw new FormatException(SQLResource.FormatMessage);
+                }
 
                 snResult.MultByULong(s_ulBase10);
                 snResult.AddULong(usChar);
@@ -1874,12 +1878,9 @@ namespace System.Data.SqlTypes
         //Precision        Length
         //    0            invalid
         //    1-9            1
-        //    10-19        2
-        //    20-28        3
-        //    29-38        4
-        // The array in Shiloh. Listed here for comparison.
-        //private static readonly byte[] rgCLenFromPrec = new byte[] {5,5,5,5,5,5,5,5,5,9,9,9,9,9,
-        //    9,9,9,9,9,13,13,13,13,13,13,13,13,13,17,17,17,17,17,17,17,17,17,17};
+        //    10-19          2
+        //    20-28          3
+        //    29-38          4
         private static ReadOnlySpan<byte> RgCLenFromPrec => new byte[] // rely on C# compiler optimization to eliminate allocation
         {
             1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2,
@@ -1908,7 +1909,7 @@ namespace System.Data.SqlTypes
              (_data3 == 0x5a86c47aL) && (_data2 >= 0x098a2240L));
         }
 
-        private bool FGt10_38(Span<uint> rglData)
+        private static bool FGt10_38(Span<uint> rglData)
         {
             Debug.Assert(rglData.Length == 4, "rglData.Length == 4", $"Wrong array length: {rglData.Length}");
 
@@ -2221,7 +2222,7 @@ namespace System.Data.SqlTypes
                 ulQuotientCur = (uint)(dwlAccum / dwlDivisor);
                 rguiData[iData - 1] = ulQuotientCur;
                 //Remainder to be carried to the next lower significant byte.
-                dwlAccum = dwlAccum % dwlDivisor;
+                dwlAccum %= dwlDivisor;
 
                 // While current part of quotient still 0, reduce length
                 if (fAllZero && (ulQuotientCur == 0))
@@ -2704,7 +2705,7 @@ namespace System.Data.SqlTypes
                     // D5. Test remainder. Carry indicates result<0, therefore QH 1 too large
                     if (HI(dwlAccum) == 0)
                     {
-                        // D6. Add back - probabilty is 2**(-31). R += D. Q[digit] -= 1
+                        // D6. Add back - probability is 2**(-31). R += D. Q[digit] -= 1
                         uint ulCarry;
 
                         rgulQ[iulRindex - ciulD] = QH - 1;
@@ -2829,7 +2830,7 @@ namespace System.Data.SqlTypes
 
         private static void CheckValidPrecScale(byte bPrec, byte bScale)
         {
-            if (bPrec < 1 || bPrec > MaxPrecision || bScale < 0 || bScale > MaxScale || bScale > bPrec)
+            if (bPrec < 1 || bPrec > MaxPrecision || bScale > MaxScale || bScale > bPrec)
                 throw new SqlTypeException(SQLResource.InvalidPrecScaleMessage);
         }
 

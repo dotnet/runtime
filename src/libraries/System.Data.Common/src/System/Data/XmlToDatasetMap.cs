@@ -207,7 +207,7 @@ namespace System.Data
                                                                         // schema map in it
         }
 
-        private bool AddColumnSchema(DataColumn col, XmlNameTable nameTable, XmlNodeIdHashtable columns)
+        private static bool AddColumnSchema(DataColumn col, XmlNameTable nameTable, XmlNodeIdHashtable columns)
         {
             string? columnLocalName = nameTable.Get(col.EncodedColumnName);
             string? columnNamespace = nameTable.Get(col.Namespace);
@@ -228,7 +228,7 @@ namespace System.Data
             return true;
         }
 
-        private bool AddColumnSchema(XmlNameTable nameTable, DataColumn col, XmlNodeIdHashtable columns)
+        private static bool AddColumnSchema(XmlNameTable nameTable, DataColumn col, XmlNodeIdHashtable columns)
         {
             string _columnLocalName = XmlConvert.EncodeLocalName(col.ColumnName);
             string? columnLocalName = nameTable.Get(_columnLocalName);           // Look it up in a name table
@@ -434,7 +434,7 @@ namespace System.Data
             }
         }
 
-        private ArrayList GetSelfAndDescendants(DataTable dt)
+        private static ArrayList GetSelfAndDescendants(DataTable dt)
         { // breadth-first
             ArrayList tableList = new ArrayList();
             tableList.Add(dt);
@@ -521,7 +521,7 @@ namespace System.Data
             return null;
         }
 
-        private void HandleSpecialColumn(DataColumn col, XmlNameTable nameTable, XmlNodeIdHashtable columns)
+        private static void HandleSpecialColumn(DataColumn col, XmlNameTable nameTable, XmlNodeIdHashtable columns)
         {
             // if column name starts with xml, we encode it manualy and add it for look up
             Debug.Assert(col.ColumnName.StartsWith("xml", StringComparison.OrdinalIgnoreCase), "column name should start with xml");

@@ -633,66 +633,27 @@ LinearScan::LinearScan(Compiler* theCompiler)
     maxNodeLocation   = 0;
     activeRefPosition = nullptr;
 
-    // Get the value of the environment variable that controls stress for register allocation
     lsraStressMask = JitConfig.JitStressRegs();
 
-#if 0
     if (lsraStressMask != 0)
     {
-        // The code in this #if can be used to debug JitStressRegs issues according to
-        // method hash or method count.
-        // To use, simply set environment variables:
-        //   JitStressRegsHashLo and JitStressRegsHashHi to set the range of method hash, or
-        //   JitStressRegsStart and JitStressRegsEnd to set the range of method count
-        //     (Compiler::jitTotalMethodCount as reported by COMPlus_DumpJittedMethods).
-        unsigned methHash = compiler->info.compMethodHash();
-        char* lostr = getenv("JitStressRegsHashLo");
-        unsigned methHashLo = 0;
-        bool dump = false;
-        if (lostr != nullptr)
+        // See if stress regs is enabled for this method
+        //
+        static ConfigMethodRange JitStressRegsRange;
+        JitStressRegsRange.EnsureInit(JitConfig.JitStressRegsRange());
+        const unsigned methHash = compiler->info.compMethodHash();
+        const bool     inRange  = JitStressRegsRange.Contains(methHash);
+
+        if (!inRange)
         {
-            sscanf_s(lostr, "%x", &methHashLo);
-            dump = true;
-        }
-        char* histr = getenv("JitStressRegsHashHi");
-        unsigned methHashHi = UINT32_MAX;
-        if (histr != nullptr)
-        {
-            sscanf_s(histr, "%x", &methHashHi);
-            dump = true;
-        }
-        if (methHash < methHashLo || methHash > methHashHi)
-        {
+            JITDUMP("*** JitStressRegs = 0x%x -- disabled by JitStressRegsRange\n", lsraStressMask);
             lsraStressMask = 0;
         }
-        // Check method count
-        unsigned count = Compiler::jitTotalMethodCompiled;
-        unsigned start = 0;
-        unsigned end = UINT32_MAX;
-        char* startStr = getenv("JitStressRegsStart");
-        char* endStr = getenv("JitStressRegsEnd");
-        if (startStr != nullptr)
+        else
         {
-            sscanf_s(startStr, "%d", &start);
-            dump = true;
-        }
-        if (endStr != nullptr)
-        {
-            sscanf_s(endStr, "%d", &end);
-            dump = true;
-        }
-        if (count < start || (count > end))
-        {
-            lsraStressMask = 0;
-        }
-        if ((lsraStressMask != 0) && (dump == true))
-        {
-            printf("JitStressRegs = %x for method %d: %s, hash = 0x%x.\n",
-                lsraStressMask, Compiler::jitTotalMethodCompiled, compiler->info.compFullName, compiler->info.compMethodHash());
-            printf("");         // flush
+            JITDUMP("*** JitStressRegs = 0x%x\n", lsraStressMask);
         }
     }
-#endif // 0
 #endif // DEBUG
 
     // Assume that we will enregister local variables if it's not disabled. We'll reset it if we
@@ -703,8 +664,10 @@ LinearScan::LinearScan(Compiler* theCompiler)
     enregisterLocalVars = compiler->compEnregLocals();
 #ifdef TARGET_ARM64
     availableIntRegs = (RBM_ALLINT & ~(RBM_PR | RBM_FP | RBM_LR) & ~compiler->codeGen->regSet.rsMaskResvd);
+#elif TARGET_LOONGARCH64
+    availableIntRegs = (RBM_ALLINT & ~(RBM_FP | RBM_RA) & ~compiler->codeGen->regSet.rsMaskResvd);
 #else
-    availableIntRegs   = (RBM_ALLINT & ~compiler->codeGen->regSet.rsMaskResvd);
+    availableIntRegs = (RBM_ALLINT & ~compiler->codeGen->regSet.rsMaskResvd);
 #endif
 
 #if ETW_EBP_FRAMED
@@ -714,17 +677,16 @@ LinearScan::LinearScan(Compiler* theCompiler)
     availableFloatRegs  = RBM_ALLFLOAT;
     availableDoubleRegs = RBM_ALLDOUBLE;
 
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     if (compiler->opts.compDbgEnC)
     {
-        // On x64 when the EnC option is set, we always save exactly RBP, RSI and RDI.
-        // RBP is not available to the register allocator, so RSI and RDI are the only
-        // callee-save registers available.
-        availableIntRegs &= ~RBM_CALLEE_SAVED | RBM_RSI | RBM_RDI;
+        // When the EnC option is set we have an exact set of registers that we always save
+        // that are also available in future versions.
+        availableIntRegs &= ~RBM_CALLEE_SAVED | RBM_ENC_CALLEE_SAVED;
         availableFloatRegs &= ~RBM_CALLEE_SAVED;
         availableDoubleRegs &= ~RBM_CALLEE_SAVED;
     }
-#endif // TARGET_AMD64
+#endif // TARGET_AMD64 || TARGET_ARM64
     compiler->rpFrameType           = FT_NOT_SET;
     compiler->rpMustCreateEBPCalled = false;
 
@@ -1571,11 +1533,19 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
 #endif // FEATURE_SIMD
 
         case TYP_STRUCT:
+        {
             // TODO-1stClassStructs: support vars with GC pointers. The issue is that such
             // vars will have `lvMustInit` set, because emitter has poor support for struct liveness,
             // but if the variable is tracked the prolog generator would expect it to be in liveIn set,
             // so an assert in `genFnProlog` will fire.
-            return compiler->compEnregStructLocals() && !varDsc->HasGCPtr();
+            bool isRegCandidate = compiler->compEnregStructLocals() && !varDsc->HasGCPtr();
+#ifdef TARGET_LOONGARCH64
+            // The LoongArch64's ABI which the float args within a struct maybe passed by integer register
+            // when no float register left but free integer register.
+            isRegCandidate &= !genIsValidFloatReg(varDsc->GetOtherArgReg());
+#endif
+            return isRegCandidate;
+        }
 
         case TYP_UNDEF:
         case TYP_UNKNOWN:
@@ -1795,7 +1765,7 @@ void LinearScan::identifyCandidates()
 
         if (varDsc->lvLRACandidate)
         {
-            var_types type = varDsc->GetActualRegisterType();
+            var_types type = varDsc->GetStackSlotHomeType();
             if (varTypeUsesFloatReg(type))
             {
                 compiler->compFloatingPointUsed = true;
@@ -2299,7 +2269,7 @@ void LinearScan::checkLastUses(BasicBlock* block)
 //
 // Arguments:
 //    block                 - The block for which we're selecting a predecesor.
-//    prevBlock             - The previous block in in allocation order.
+//    prevBlock             - The previous block in allocation order.
 //    pPredBlockIsAllocated - A debug-only argument that indicates whether any of the predecessors have been seen
 //                            in allocation order.
 //
@@ -2576,7 +2546,7 @@ void LinearScan::setFrameType()
 
     compiler->rpFrameType = frameType;
 
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
     // Determine whether we need to reserve a register for large lclVar offsets.
     if (compiler->compRsvdRegCheck(Compiler::REGALLOC_FRAME_LAYOUT))
     {
@@ -2586,7 +2556,7 @@ void LinearScan::setFrameType()
         JITDUMP("  Reserved REG_OPT_RSVD (%s) due to large frame\n", getRegName(REG_OPT_RSVD));
         removeMask |= RBM_OPT_RSVD;
     }
-#endif // TARGET_ARMARCH
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
 
     if ((removeMask != RBM_NONE) && ((availableIntRegs & removeMask) != 0))
     {
@@ -2652,11 +2622,24 @@ RegisterType LinearScan::getRegisterType(Interval* currentInterval, RefPosition*
     assert(refPosition->getInterval() == currentInterval);
     RegisterType regType    = currentInterval->registerType;
     regMaskTP    candidates = refPosition->registerAssignment;
-
+#ifdef TARGET_LOONGARCH64
+    // The LoongArch64's ABI which the float args maybe passed by integer register
+    // when no float register left but free integer register.
+    if ((candidates & allRegs(regType)) != RBM_NONE)
+    {
+        return regType;
+    }
+    else
+    {
+        assert((regType == TYP_DOUBLE) || (regType == TYP_FLOAT));
+        assert((candidates & allRegs(TYP_I_IMPL)) != RBM_NONE);
+        return TYP_I_IMPL;
+    }
+#else
     assert((candidates & allRegs(regType)) != RBM_NONE);
     return regType;
+#endif
 }
-
 //------------------------------------------------------------------------
 // isMatchingConstant: Check to see whether a given register contains the constant referenced
 //                     by the given RefPosition
@@ -2712,6 +2695,7 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
             }
             break;
         }
+
         case GT_CNS_DBL:
         {
             // For floating point constants, the values must be identical, not simply compare
@@ -2723,6 +2707,12 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
             }
             break;
         }
+
+        case GT_CNS_VEC:
+        {
+            return GenTreeVecCon::Equals(refPosition->treeNode->AsVecCon(), otherTreeNode->AsVecCon());
+        }
+
         default:
             break;
     }
@@ -2754,7 +2744,7 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
 // To select a ref position for spilling.
 // - If refPosition->RegOptional() == false
 //        The RefPosition chosen for spilling will be the lowest weight
-//        of all and if there is is more than one ref position with the
+//        of all and if there is more than one ref position with the
 //        same lowest weight, among them choses the one with farthest
 //        distance to its next reference.
 //
@@ -5238,7 +5228,6 @@ void LinearScan::allocateRegisters()
                 if (physRegRecord->assignedInterval == currentInterval)
                 {
                     unassignPhysRegNoSpill(physRegRecord);
-                    physRegRecord->assignedInterval = nullptr;
                     clearConstantReg(assignedRegister, currentInterval->registerType);
                 }
                 currentRefPosition->moveReg = true;
@@ -6359,7 +6348,7 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
                                           Interval*    upperVectorInterval,
                                           BasicBlock*  block)
 {
-    JITDUMP("Adding UpperVectorRestore for RP #%d ", refPosition->rpNum);
+    JITDUMP("Inserting UpperVectorRestore for RP #%d ", refPosition->rpNum);
     Interval* lclVarInterval = upperVectorInterval->relatedInterval;
     assert(lclVarInterval->isLocalVar == true);
     regNumber lclVarReg = lclVarInterval->physReg;
@@ -6407,7 +6396,6 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
     simdNode->SetRegNum(restoreReg);
 
     LIR::Range& blockRange = LIR::AsRange(block);
-    JITDUMP("Adding UpperVectorRestore ");
     if (tree != nullptr)
     {
         JITDUMP("before %d.%s:\n", tree->gtTreeID, GenTree::OpName(tree->gtOper));
@@ -6826,13 +6814,17 @@ void LinearScan::resolveRegisters()
                     Interval* localVarInterval = interval->relatedInterval;
                     if ((localVarInterval->physReg != REG_NA) && !localVarInterval->isPartiallySpilled)
                     {
-                        // If the localVar is in a register, it must be in a register that is not trashed by
-                        // the current node (otherwise it would have already been spilled).
-                        assert((genRegMask(localVarInterval->physReg) & getKillSetForNode(treeNode)) == RBM_NONE);
-                        // If we have allocated a register to spill it to, we will use that; otherwise, we will spill it
-                        // to the stack.  We can use as a temp register any non-arg caller-save register.
-                        currentRefPosition->referent->recentRefPosition = currentRefPosition;
-                        insertUpperVectorSave(treeNode, currentRefPosition, currentRefPosition->getInterval(), block);
+                        if (!currentRefPosition->skipSaveRestore)
+                        {
+                            // If the localVar is in a register, it must be in a register that is not trashed by
+                            // the current node (otherwise it would have already been spilled).
+                            assert((genRegMask(localVarInterval->physReg) & getKillSetForNode(treeNode)) == RBM_NONE);
+                            // If we have allocated a register to spill it to, we will use that; otherwise, we will
+                            // spill it to the stack.  We can use as a temp register any non-arg caller-save register.
+                            currentRefPosition->referent->recentRefPosition = currentRefPosition;
+                            insertUpperVectorSave(treeNode, currentRefPosition, currentRefPosition->getInterval(),
+                                                  block);
+                        }
                         localVarInterval->isPartiallySpilled = true;
                     }
                 }
@@ -6856,7 +6848,10 @@ void LinearScan::resolveRegisters()
                     assert((localVarInterval->assignedReg != nullptr) &&
                            (localVarInterval->assignedReg->regNum == localVarInterval->physReg) &&
                            (localVarInterval->assignedReg->assignedInterval == localVarInterval));
-                    insertUpperVectorRestore(treeNode, currentRefPosition, interval, block);
+                    if (!currentRefPosition->skipSaveRestore)
+                    {
+                        insertUpperVectorRestore(treeNode, currentRefPosition, interval, block);
+                    }
                 }
                 localVarInterval->isPartiallySpilled = false;
             }
@@ -7678,7 +7673,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
         }
     }
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     // Next, if this blocks ends with a JCMP, we have to make sure:
     // 1. Not to copy into the register that JCMP uses
     //    e.g. JCMP w21, BRANCH
@@ -7716,7 +7711,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             }
         }
     }
-#endif
+#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
     VarToRegMap sameVarToRegMap = sharedCriticalVarToRegMap;
     regMaskTP   sameWriteRegs   = RBM_NONE;
@@ -7791,12 +7786,12 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
                 sameToReg = REG_NA;
             }
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
             if (jcmpLocalVarDsc && (jcmpLocalVarDsc->lvVarIndex == outResolutionSetVarIndex))
             {
                 sameToReg = REG_NA;
             }
-#endif
+#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
             // If the var is live only at those blocks connected by a split edge and not live-in at some of the
             // target blocks, we will resolve it the same way as if it were in diffResolutionSet and resolution
@@ -8105,10 +8100,10 @@ void LinearScan::resolveEdges()
                         if (!foundMismatch)
                         {
                             foundMismatch = true;
-                            printf("Found mismatched var locations after resolution!\n");
+                            JITDUMP("Found mismatched var locations after resolution!\n");
                         }
-                        printf(" V%02u: " FMT_BB " to " FMT_BB ": %s to %s\n", interval->varNum, predBlock->bbNum,
-                               block->bbNum, getRegName(fromReg), getRegName(toReg));
+                        JITDUMP(" V%02u: " FMT_BB " to " FMT_BB ": %s to %s\n", interval->varNum, predBlock->bbNum,
+                                block->bbNum, getRegName(fromReg), getRegName(toReg));
                     }
                 }
             }
@@ -9259,7 +9254,7 @@ void LinearScan::lsraGetOperandString(GenTree*          tree,
         {
             Compiler* compiler = JitTls::GetCompiler();
 
-            if (!tree->gtHasReg())
+            if (!tree->gtHasReg(compiler))
             {
                 _snprintf_s(operandString, operandStringLength, operandStringLength, "STK%s", lastUseChar);
             }
@@ -9272,8 +9267,7 @@ void LinearScan::lsraGetOperandString(GenTree*          tree,
 
                 if (tree->IsMultiRegNode())
                 {
-                    unsigned regCount = tree->IsMultiRegLclVar() ? compiler->lvaGetDesc(tree->AsLclVar())->lvFieldCnt
-                                                                 : tree->GetMultiRegCount();
+                    unsigned regCount = tree->GetMultiRegCount(compiler);
                     for (unsigned regIndex = 1; regIndex < regCount; regIndex++)
                     {
                         charCount = _snprintf_s(operandString, operandStringLength, operandStringLength, ",%s%s",
@@ -9304,7 +9298,7 @@ void LinearScan::lsraDispNode(GenTree* tree, LsraTupleDumpMode mode, bool hasDes
         {
             spillChar = 'S';
         }
-        if (!hasDest && tree->gtHasReg())
+        if (!hasDest && tree->gtHasReg(compiler))
         {
             // A node can define a register, but not produce a value for a parent to consume,
             // i.e. in the "localDefUse" case.
@@ -9340,7 +9334,7 @@ void LinearScan::lsraDispNode(GenTree* tree, LsraTupleDumpMode mode, bool hasDes
     {
         if (mode == LinearScan::LSRA_DUMP_POST && tree->gtFlags & GTF_SPILLED)
         {
-            assert(tree->gtHasReg());
+            assert(tree->gtHasReg(compiler));
         }
         lsraGetOperandString(tree, mode, operandString, operandStringLength);
         printf("%-15s =", operandString);
@@ -9374,7 +9368,7 @@ void LinearScan::lsraDispNode(GenTree* tree, LsraTupleDumpMode mode, bool hasDes
     }
     else if (tree->OperIs(GT_ASG))
     {
-        assert(!tree->gtHasReg());
+        assert(!tree->gtHasReg(compiler));
         printf("  asg%s  ", GenTree::OpName(tree->OperGet()));
     }
     else
@@ -9401,10 +9395,6 @@ void LinearScan::DumpOperandDefs(
 {
     assert(operand != nullptr);
     assert(operandString != nullptr);
-    if (operand->OperIs(GT_ARGPLACE))
-    {
-        return;
-    }
 
     int dstCount = ComputeOperandDstCount(operand);
 
@@ -10288,7 +10278,7 @@ bool LinearScan::IsResolutionMove(GenTree* node)
 //
 bool LinearScan::IsResolutionNode(LIR::Range& containingRange, GenTree* node)
 {
-    for (;;)
+    while (true)
     {
         if (IsResolutionMove(node))
         {

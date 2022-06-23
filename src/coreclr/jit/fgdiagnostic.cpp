@@ -8,6 +8,7 @@
 #endif
 
 #include "allocacheck.h" // for alloca
+#include "jitstd/algorithm.h"
 
 // Flowgraph Check and Dump Support
 
@@ -217,9 +218,11 @@ struct escapeMapping_t
 // clang-format off
 static escapeMapping_t s_EscapeFileMapping[] =
 {
-    {':', "="},
-    {'<', "["},
-    {'>', "]"},
+    {' ', "_"},
+    {':', "_"},
+    {',', "_"},
+    {'<', "~lt~"},
+    {'>', "~gt~"},
     {';', "~semi~"},
     {'|', "~bar~"},
     {'&', "~amp~"},
@@ -431,7 +434,7 @@ void Compiler::fgDumpTree(FILE* fgxFile, GenTree* const tree)
 // Return Value:
 //    Opens a file to which a flowgraph can be dumped, whose name is based on the current
 //    config vales.
-
+//
 FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePosition pos, LPCWSTR type)
 {
     FILE*       fgxFile;
@@ -441,7 +444,6 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
     LPCWSTR     filename         = nullptr;
     LPCWSTR     pathname         = nullptr;
     const char* escapedString;
-    bool        createDuplicateFgxFiles = true;
 
     if (fgBBcount <= 1)
     {
@@ -525,7 +527,6 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
     {
         if (fgFirstBB->hasProfileWeight())
         {
-            createDuplicateFgxFiles = true;
             goto ONE_FILE_PER_METHOD;
         }
         else
@@ -536,9 +537,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
     if (wcscmp(filename, W("hot")) == 0)
     {
         if (info.compMethodInfo->regionKind == CORINFO_REGION_HOT)
-
         {
-            createDuplicateFgxFiles = true;
             goto ONE_FILE_PER_METHOD;
         }
         else
@@ -550,7 +549,6 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
     {
         if (info.compMethodInfo->regionKind == CORINFO_REGION_COLD)
         {
-            createDuplicateFgxFiles = true;
             goto ONE_FILE_PER_METHOD;
         }
         else
@@ -562,7 +560,6 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
     {
         if (info.compMethodInfo->regionKind == CORINFO_REGION_JIT)
         {
-            createDuplicateFgxFiles = true;
             goto ONE_FILE_PER_METHOD;
         }
         else
@@ -572,15 +569,38 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
     }
     else if (wcscmp(filename, W("all")) == 0)
     {
-        createDuplicateFgxFiles = true;
 
     ONE_FILE_PER_METHOD:;
 
-        escapedString = fgProcessEscapes(info.compFullName, s_EscapeFileMapping);
+#define FILENAME_PATTERN W("%S-%S-%s-%S.%s")
+#define FILENAME_PATTERN_WITH_NUMBER W("%S-%S-%s-%S~%d.%s")
 
-        const char* tierName = compGetTieringName(true);
-        size_t      wCharCount =
-            strlen(escapedString) + wcslen(phaseName) + 1 + strlen("~999") + wcslen(type) + strlen(tierName) + 1;
+        const size_t MaxFileNameLength = MAX_PATH_FNAME - 20 /* give us some extra buffer */;
+
+        escapedString           = fgProcessEscapes(info.compFullName, s_EscapeFileMapping);
+        size_t escapedStringLen = strlen(escapedString);
+
+        static const char* phasePositionStrings[] = {"pre", "post"};
+        assert((unsigned)pos < ArrLen(phasePositionStrings));
+        const char*  phasePositionString    = phasePositionStrings[(unsigned)pos];
+        const size_t phasePositionStringLen = strlen(phasePositionString);
+        const char*  tierName               = compGetTieringName(true);
+        size_t       wCharCount = escapedStringLen + 1 + strlen(phasePositionString) + 1 + wcslen(phaseName) + 1 +
+                            strlen(tierName) + strlen("~999") + 1 + wcslen(type) + 1;
+
+        if (wCharCount > MaxFileNameLength)
+        {
+            // Crop the escapedString.
+            wCharCount -= escapedStringLen;
+            size_t newEscapedStringLen = MaxFileNameLength - wCharCount;
+            char*  newEscapedString    = getAllocator(CMK_DebugOnly).allocate<char>(newEscapedStringLen + 1);
+            strncpy_s(newEscapedString, newEscapedStringLen + 1, escapedString, newEscapedStringLen);
+            newEscapedString[newEscapedStringLen] = '\0';
+            escapedString                         = newEscapedString;
+            escapedStringLen                      = newEscapedStringLen;
+            wCharCount += escapedStringLen;
+        }
+
         if (pathname != nullptr)
         {
             wCharCount += wcslen(pathname) + 1;
@@ -589,48 +609,42 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
 
         if (pathname != nullptr)
         {
-            swprintf_s((LPWSTR)filename, wCharCount, W("%s\\%S-%s-%S.%s"), pathname, escapedString, phaseName, tierName,
-                       type);
+            swprintf_s((LPWSTR)filename, wCharCount, W("%s\\") FILENAME_PATTERN, pathname, escapedString,
+                       phasePositionString, phaseName, tierName, type);
         }
         else
         {
-            swprintf_s((LPWSTR)filename, wCharCount, W("%S.%s"), escapedString, type);
+            swprintf_s((LPWSTR)filename, wCharCount, FILENAME_PATTERN, escapedString, phasePositionString, phaseName,
+                       tierName, type);
         }
-        fgxFile = _wfopen(filename, W("r")); // Check if this file already exists
-        if (fgxFile != nullptr)
+        fgxFile = _wfopen(filename, W("wx")); // Open the file for writing only only if it doesn't already exist
+        if (fgxFile == nullptr)
         {
-            // For Generic methods we will have both hot and cold versions
-            if (createDuplicateFgxFiles == false)
-            {
-                fclose(fgxFile);
-                return nullptr;
-            }
-            // Yes, this filename already exists, so create a different one by appending ~2, ~3, etc...
+            // This filename already exists, so create a different one by appending ~2, ~3, etc...
             for (int i = 2; i < 1000; i++)
             {
-                fclose(fgxFile);
                 if (pathname != nullptr)
                 {
-                    swprintf_s((LPWSTR)filename, wCharCount, W("%s\\%S~%d.%s"), pathname, escapedString, i, type);
+                    swprintf_s((LPWSTR)filename, wCharCount, W("%s\\") FILENAME_PATTERN_WITH_NUMBER, pathname,
+                               escapedString, phasePositionString, phaseName, tierName, i, type);
                 }
                 else
                 {
-                    swprintf_s((LPWSTR)filename, wCharCount, W("%S~%d.%s"), escapedString, i, type);
+                    swprintf_s((LPWSTR)filename, wCharCount, FILENAME_PATTERN_WITH_NUMBER, escapedString,
+                               phasePositionString, phaseName, tierName, i, type);
                 }
-                fgxFile = _wfopen(filename, W("r")); // Check if this file exists
-                if (fgxFile == nullptr)
+                fgxFile = _wfopen(filename, W("wx")); // Open the file for writing only only if it doesn't already exist
+                if (fgxFile != nullptr)
                 {
                     break;
                 }
             }
             // If we have already created 1000 files with this name then just fail
-            if (fgxFile != nullptr)
+            if (fgxFile == nullptr)
             {
-                fclose(fgxFile);
                 return nullptr;
             }
         }
-        fgxFile      = _wfopen(filename, W("a+"));
         *wbDontClose = false;
     }
     else if (wcscmp(filename, W("stdout")) == 0)
@@ -2168,13 +2182,20 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
 
 void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, bool dumpTrees)
 {
-    BasicBlock* block;
+    // Build vector of blocks in order.
+    //
+    if (fgBBOrder == nullptr)
+    {
+        CompAllocator allocator = getAllocator(CMK_DebugOnly);
+        fgBBOrder               = new (allocator) jitstd::vector<BasicBlock*>(allocator);
+    }
 
-    // If any block has IBC data, we add an "IBC weight" column just before the 'IL range' column. This column is as
-    // wide as necessary to accommodate all the various IBC weights. It's at least 4 characters wide, to accommodate
-    // the "IBC" title and leading space.
+    fgBBOrder->reserve(fgBBcount);
+    fgBBOrder->clear();
+
     int ibcColWidth = 0;
-    for (block = firstBlock; block != nullptr; block = block->bbNext)
+
+    for (BasicBlock* block = firstBlock; block != nullptr; block = block->bbNext)
     {
         if (block->hasProfileWeight())
         {
@@ -2182,11 +2203,46 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
             ibcColWidth      = max(ibcColWidth, thisIbcWidth);
         }
 
+        fgBBOrder->push_back(block);
+
         if (block == lastBlock)
         {
             break;
         }
     }
+
+    bool inDefaultOrder = true;
+
+    struct fgBBNumCmp
+    {
+        bool operator()(const BasicBlock* bb1, const BasicBlock* bb2)
+        {
+            return bb1->bbNum < bb2->bbNum;
+        }
+    };
+
+    struct fgBBIDCmp
+    {
+        bool operator()(const BasicBlock* bb1, const BasicBlock* bb2)
+        {
+            return bb1->bbID < bb2->bbID;
+        }
+    };
+
+    // Optionally sort
+    //
+    if (JitConfig.JitDumpFgBlockOrder() == 1)
+    {
+        jitstd::sort(fgBBOrder->begin(), fgBBOrder->end(), fgBBNumCmp());
+        inDefaultOrder = false;
+    }
+    else if (JitConfig.JitDumpFgBlockOrder() == 2)
+    {
+
+        jitstd::sort(fgBBOrder->begin(), fgBBOrder->end(), fgBBIDCmp());
+        inDefaultOrder = false;
+    }
+
     if (ibcColWidth > 0)
     {
         ibcColWidth = max(ibcColWidth, 3) + 1; // + 1 for the leading space
@@ -2221,7 +2277,7 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
 
     // clang-format on
 
-    for (block = firstBlock; block; block = block->bbNext)
+    for (BasicBlock* block : *fgBBOrder)
     {
         // First, do some checking on the bbPrev links
         if (block->bbPrev)
@@ -2236,7 +2292,7 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
             printf("bad prev link!\n");
         }
 
-        if (block == fgFirstColdBlock)
+        if (inDefaultOrder && (block == fgFirstColdBlock))
         {
             printf(
                 "~~~~~~%*s~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%*s~~~~~~~~~~~~~~~~~~~~~~~~~~%*s~~~~~~~~~~~~~~~~~~~~~~~~"
@@ -2245,7 +2301,7 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
         }
 
 #if defined(FEATURE_EH_FUNCLETS)
-        if (block == fgFirstFuncletBB)
+        if (inDefaultOrder && (block == fgFirstFuncletBB))
         {
             printf(
                 "++++++%*s+++++++++++++++++++++++++++++++++++++%*s++++++++++++++++++++++++++%*s++++++++++++++++++++++++"
@@ -2269,7 +2325,13 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
 
     if (dumpTrees)
     {
-        fgDumpTrees(firstBlock, lastBlock);
+        for (BasicBlock* block : *fgBBOrder)
+        {
+            fgDumpBlock(block);
+        }
+        printf("\n-----------------------------------------------------------------------------------------------------"
+               "----"
+               "----------\n");
     }
 }
 
@@ -2951,20 +3013,15 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
         expectedFlags |= GTF_CALL;
     }
 
-    // We reuse GTF_REVERSE_OPS as GTF_VAR_ARR_INDEX for LCL_VAR nodes.
-    if (((tree->gtFlags & GTF_REVERSE_OPS) != 0) && !tree->OperIs(GT_LCL_VAR))
+    if ((tree->gtFlags & GTF_REVERSE_OPS) != 0)
     {
-        assert(tree->OperSupportsReverseOps());
+        assert(tree->OperSupportsReverseOpEvalOrder(this));
     }
 
     GenTree* op1 = tree->OperIsSimple() ? tree->gtGetOp1() : nullptr;
 
     switch (tree->OperGet())
     {
-        case GT_CLS_VAR:
-            expectedFlags |= GTF_GLOB_REF;
-            break;
-
         case GT_CATCH_ARG:
             expectedFlags |= GTF_ORDER_SIDEEFF;
             break;
@@ -2990,7 +3047,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
         case GT_IND:
             // Do we have a constant integer address as op1 that is also a handle?
-            if (op1->IsCnsIntOrI() && op1->IsIconHandle())
+            if (op1->IsIconHandle())
             {
                 if ((tree->gtFlags & GTF_IND_INVARIANT) != 0)
                 {
@@ -3021,6 +3078,8 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                 // Currently we expect all indirections with constant addresses to be nonfaulting.
                 expectedFlags |= GTF_IND_NONFAULTING;
             }
+
+            assert(((tree->gtFlags & GTF_IND_TGT_NOT_HEAP) == 0) || ((tree->gtFlags & GTF_IND_TGT_HEAP) == 0));
             break;
 
         case GT_CALL:
@@ -3029,44 +3088,21 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
             call = tree->AsCall();
 
-            if ((call->gtCallThisArg != nullptr) && ((call->gtCallThisArg->GetNode()->gtFlags & GTF_ASG) != 0))
+            for (CallArg& arg : call->gtArgs.Args())
             {
                 // TODO-Cleanup: this is a patch for a violation in our GT_ASG propagation.
                 // see https://github.com/dotnet/runtime/issues/13758
-                actualFlags |= GTF_ASG;
-            }
-
-            for (GenTreeCall::Use& use : call->Args())
-            {
-                if ((use.GetNode()->gtFlags & GTF_ASG) != 0)
+                if (arg.GetEarlyNode() != nullptr)
                 {
-                    // TODO-Cleanup: this is a patch for a violation in our GT_ASG propagation.
-                    // see https://github.com/dotnet/runtime/issues/13758
-                    actualFlags |= GTF_ASG;
+                    actualFlags |= arg.GetEarlyNode()->gtFlags & GTF_ASG;
+                }
+
+                if (arg.GetLateNode() != nullptr)
+                {
+                    actualFlags |= arg.GetLateNode()->gtFlags & GTF_ASG;
                 }
             }
 
-            for (GenTreeCall::Use& use : call->LateArgs())
-            {
-                if ((use.GetNode()->gtFlags & GTF_ASG) != 0)
-                {
-                    // TODO-Cleanup: this is a patch for a violation in our GT_ASG propagation.
-                    // see https://github.com/dotnet/runtime/issues/13758
-                    actualFlags |= GTF_ASG;
-                }
-            }
-
-            if (call->IsUnmanaged() && ((call->gtCallMoreFlags & GTF_CALL_M_UNMGD_THISCALL) != 0))
-            {
-                if (call->gtCallArgs->GetNode()->OperGet() == GT_NOP)
-                {
-                    assert(call->gtCallLateArgs->GetNode()->TypeIs(TYP_I_IMPL, TYP_BYREF));
-                }
-                else
-                {
-                    assert(call->gtCallArgs->GetNode()->TypeIs(TYP_I_IMPL, TYP_BYREF));
-                }
-            }
             break;
 
         case GT_CMPXCHG:
@@ -3098,8 +3134,8 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
         return GenTree::VisitResult::Continue;
     });
 
-    // ADDR nodes break the "parent flags >= operands flags" invariant for GTF_GLOB_REF.
-    if (tree->OperIs(GT_ADDR) && op1->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_CLS_VAR))
+    // Addresses of locals never need GTF_GLOB_REF
+    if (tree->OperIs(GT_ADDR) && tree->IsLocalAddrExpr())
     {
         expectedFlags &= ~GTF_GLOB_REF;
     }
@@ -3781,12 +3817,9 @@ void Compiler::fgDebugCheckLoopTable()
         }
 
         // Check the flags.
-        // Note that the various init/limit flags are only used when LPFLG_ITER is set, but they are set first,
+        // Note that the various limit flags are only used when LPFLG_ITER is set, but they are set first,
         // separately, and only if everything works out is LPFLG_ITER set. If LPFLG_ITER is NOT set, the
         // individual flags are not un-set (arguably, they should be).
-
-        // Only one of the `init` flags can be set.
-        assert(genCountBits((unsigned)(loop.lpFlags & (LPFLG_VAR_INIT | LPFLG_CONST_INIT))) <= 1);
 
         // Only one of the `limit` flags can be set. (Note that LPFLG_SIMD_LIMIT is a "sub-flag" that can be
         // set when LPFLG_CONST_LIMIT is set.)
@@ -3799,14 +3832,9 @@ void Compiler::fgDebugCheckLoopTable()
             assert(loop.lpFlags & LPFLG_CONST_LIMIT);
         }
 
-        if (loop.lpFlags & (LPFLG_CONST_INIT | LPFLG_VAR_INIT))
+        if (loop.lpFlags & LPFLG_CONST_INIT)
         {
             assert(loop.lpInitBlock != nullptr);
-
-            if (loop.lpFlags & LPFLG_VAR_INIT)
-            {
-                assert(loop.lpVarInit < lvaCount);
-            }
         }
 
         if (loop.lpFlags & LPFLG_ITER)

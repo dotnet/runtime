@@ -71,9 +71,11 @@ namespace System.Security.AccessControl
             _securityDescriptor = new CommonSecurityDescriptor(isContainer, isDS, ControlFlags.None, null, null, null, dacl);
         }
 
-        protected ObjectSecurity(CommonSecurityDescriptor securityDescriptor!!)
+        protected ObjectSecurity(CommonSecurityDescriptor securityDescriptor)
             : this()
         {
+            ArgumentNullException.ThrowIfNull(securityDescriptor);
+
             _securityDescriptor = securityDescriptor;
         }
 
@@ -356,8 +358,10 @@ namespace System.Security.AccessControl
             }
         }
 
-        public void SetOwner(IdentityReference identity!!)
+        public void SetOwner(IdentityReference identity)
         {
+            ArgumentNullException.ThrowIfNull(identity);
+
             WriteLock();
 
             try
@@ -394,8 +398,10 @@ namespace System.Security.AccessControl
             }
         }
 
-        public void SetGroup(IdentityReference identity!!)
+        public void SetGroup(IdentityReference identity)
         {
+            ArgumentNullException.ThrowIfNull(identity);
+
             WriteLock();
 
             try
@@ -409,8 +415,10 @@ namespace System.Security.AccessControl
             }
         }
 
-        public virtual void PurgeAccessRules(IdentityReference identity!!)
+        public virtual void PurgeAccessRules(IdentityReference identity)
         {
+            ArgumentNullException.ThrowIfNull(identity);
+
             WriteLock();
 
             try
@@ -424,8 +432,9 @@ namespace System.Security.AccessControl
             }
         }
 
-        public virtual void PurgeAuditRules(IdentityReference identity!!)
+        public virtual void PurgeAuditRules(IdentityReference identity)
         {
+            ArgumentNullException.ThrowIfNull(identity);
 
             WriteLock();
 
@@ -562,8 +571,10 @@ namespace System.Security.AccessControl
             SetSecurityDescriptorSddlForm(sddlForm, AccessControlSections.All);
         }
 
-        public void SetSecurityDescriptorSddlForm(string sddlForm!!, AccessControlSections includeSections)
+        public void SetSecurityDescriptorSddlForm(string sddlForm, AccessControlSections includeSections)
         {
+            ArgumentNullException.ThrowIfNull(sddlForm);
+
             if ((includeSections & AccessControlSections.All) == 0)
             {
                 throw new ArgumentException(
@@ -606,8 +617,10 @@ namespace System.Security.AccessControl
             SetSecurityDescriptorBinaryForm(binaryForm, AccessControlSections.All);
         }
 
-        public void SetSecurityDescriptorBinaryForm(byte[] binaryForm!!, AccessControlSections includeSections)
+        public void SetSecurityDescriptorBinaryForm(byte[] binaryForm, AccessControlSections includeSections)
         {
+            ArgumentNullException.ThrowIfNull(binaryForm);
+
             if ((includeSections & AccessControlSections.All) == 0)
             {
                 throw new ArgumentException(
@@ -634,8 +647,10 @@ namespace System.Security.AccessControl
         protected abstract bool ModifyAccess(AccessControlModification modification, AccessRule rule, out bool modified);
         protected abstract bool ModifyAudit(AccessControlModification modification, AuditRule rule, out bool modified);
 
-        public virtual bool ModifyAccessRule(AccessControlModification modification, AccessRule rule!!, out bool modified)
+        public virtual bool ModifyAccessRule(AccessControlModification modification, AccessRule rule, out bool modified)
         {
+            ArgumentNullException.ThrowIfNull(rule);
+
             if (!this.AccessRuleType.IsAssignableFrom(rule.GetType()))
             {
                 throw new ArgumentException(
@@ -655,8 +670,10 @@ namespace System.Security.AccessControl
             }
         }
 
-        public virtual bool ModifyAuditRule(AccessControlModification modification, AuditRule rule!!, out bool modified)
+        public virtual bool ModifyAuditRule(AccessControlModification modification, AuditRule rule, out bool modified)
         {
+            ArgumentNullException.ThrowIfNull(rule);
+
             if (!this.AuditRuleType.IsAssignableFrom(rule.GetType()))
             {
                 throw new ArgumentException(

@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [GeneratedDllImport(Libraries.Advapi32, ExactSpelling = true)]
+        [LibraryImport(Libraries.Advapi32)]
         internal static unsafe partial uint EventRegister(
             in Guid providerId,
             EtwEnableCallback enableCallback,

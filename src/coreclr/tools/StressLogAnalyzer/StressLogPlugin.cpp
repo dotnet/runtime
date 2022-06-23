@@ -50,6 +50,7 @@ bool IsInCantAllocStressLogRegion()
 size_t StressLog::writing_base_address;
 size_t StressLog::reading_base_address;
 
+bool s_showAllMessages = false;
 BOOL g_bDacBroken;
 WCHAR g_mdName[1];
 SYMBOLS* g_ExtSymbols;
@@ -590,7 +591,7 @@ void Usage()
     printf("\n");
     printf(" -l:<level1>,<level2>,... : print messages at dprint level1,level2,...\n");
     printf("\n");
-    printf(" -g:<gc_index>: only print messages occuring during GC#gc_index\n");
+    printf(" -g:<gc_index>: only print messages occurring during GC#gc_index\n");
     printf(" -g:<gc_index1>-<gc_index_2>: as above, for a range of GC indices\n");
     printf("\n");
     printf(" -f: print the raw format strings along with the message\n");
@@ -608,12 +609,14 @@ void Usage()
     printf("     e.g. '-tid:2bc8,GC3,BG14' would print messages from thread 2bc8, the gc thread\n");
     printf("     associated with heap 3, and the background GC thread for heap 14\n");
     printf("\n");
-    printf(" -e: printf earliest messages from all threads\n");
+    printf(" -e: print earliest messages from all threads\n");
     printf(" -e:<thread id1>,<thread id2>,...: print earliest messages from the listed\n");
     printf("     threads. Thread ids are in hex, given as GC<decimal heap number>,\n");
     printf("     or BG<decimal heap number>\n");
     printf("     e.g. '-e:2bc8,GC3,BG14' would print the earliest messages from thread 2bc8,\n");
     printf("     the gc thread associated with heap 3, and the background GC thread for heap 14\n");
+    printf("\n");
+    printf(" -a: print all messages from all threads\n");
     printf("\n");
 }
 
@@ -665,14 +668,14 @@ bool ParseOptions(int argc, char* argv[])
                 {
                     int i = s_valueFilterCount++;
                     char* end = nullptr;
-                    s_valueFilter[i].start = strtoul(&arg[3], &end, 16);
+                    s_valueFilter[i].start = strtoull(&arg[3], &end, 16);
                     if (*end == '-')
                     {
-                        s_valueFilter[i].end = strtoul(end + 1, &end, 16);
+                        s_valueFilter[i].end = strtoull(end + 1, &end, 16);
                     }
                     else if (*end == '+')
                     {
-                        s_valueFilter[i].end = s_valueFilter[i].start + strtoul(end + 1, &end, 16);
+                        s_valueFilter[i].end = s_valueFilter[i].start + strtoull(end + 1, &end, 16);
                     }
                     else if (*end != '\0')
                     {
@@ -749,7 +752,7 @@ bool ParseOptions(int argc, char* argv[])
                         else
                         {
                             int i = s_threadFilterCount++;
-                            s_threadFilter[i] = strtoul(arg, &end, 16);
+                            s_threadFilter[i] = strtoull(arg, &end, 16);
                         }
                         if (*end == ',')
                         {
@@ -848,6 +851,10 @@ bool ParseOptions(int argc, char* argv[])
                 }
                 break;
 
+            case 'a':
+            case 'A':
+                s_showAllMessages = true;
+                break;
             case 'f':
             case 'F':
                 if (arg[2] == '\0')
@@ -961,7 +968,7 @@ bool ParseOptions(int argc, char* argv[])
                         else
                         {
                             int i = s_printEarliestMessageFromThreadCount++;
-                            s_printEarliestMessageFromThread[i] = strtoul(arg, &end, 16);
+                            s_printEarliestMessageFromThread[i] = strtoull(arg, &end, 16);
                         }
                         if (*end == ',')
                         {
@@ -1106,7 +1113,7 @@ DWORD WINAPI ProcessStresslogWorker(LPVOID)
                 int numberOfArgs = (msg->numberOfArgsX << 3) + msg->numberOfArgs;
                 if (!fIgnoreMessage)
                 {
-                    bool fIncludeMessage = FilterMessage(hdr, tsl, msg->facility, format, deltaTime, numberOfArgs, msg->args);
+                    bool fIncludeMessage = s_showAllMessages || FilterMessage(hdr, tsl, msg->facility, format, deltaTime, numberOfArgs, msg->args);
                     if (!fIncludeMessage && s_valueFilterCount > 0)
                     {
                         for (int i = 0; i < numberOfArgs; i++)
@@ -1218,7 +1225,23 @@ int ProcessStressLog(void* baseAddress, int argc, char* argv[])
     s_timeFilterEnd = 0;
     s_outputFileName = nullptr;
     s_fPrintFormatStrings = false;
+    s_showAllMessages = false;
+    s_maxHeapNumberSeen = -1;
+    s_interestingStringCount = IS_INTERESTING;
+    s_levelFilterCount = 0;
+    s_gcFilterStart = 0;
+    s_gcFilterEnd = 0;
+    s_valueFilterCount = 0;
+    s_threadFilterCount = 0;
+    s_hadGcThreadFilters = false;
+    s_printHexTidForGcThreads = false;
+    s_facilityIgnore = 0;
+    s_printEarliestMessages = false;
+    s_printEarliestMessageFromThreadCount = 0;
+    memset(s_gcThreadFilter, 0, sizeof(s_gcThreadFilter));
     memset(&mapImageToStringId, 0, sizeof(mapImageToStringId));
+    memset(s_interestingStringFilter, 0, sizeof(s_interestingStringFilter));
+    memset(s_printEarliestMessageFromGcThread, 0, sizeof(s_printEarliestMessageFromGcThread));
 
     if (!ParseOptions(argc, argv))
         return 1;

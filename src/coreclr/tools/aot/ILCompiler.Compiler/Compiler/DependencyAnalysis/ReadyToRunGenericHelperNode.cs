@@ -81,6 +81,11 @@ namespace ILCompiler.DependencyAnalysis
                     return factory.GenericLookup.DefaultCtorLookupResult((TypeDesc)target);
                 case ReadyToRunHelperId.ObjectAllocator:
                     return factory.GenericLookup.ObjectAllocator((TypeDesc)target);
+                case ReadyToRunHelperId.ConstrainedDirectCall:
+                    return factory.GenericLookup.ConstrainedMethodUse(
+                        ((ConstrainedCallInfo)target).Method,
+                        ((ConstrainedCallInfo)target).ConstrainedType,
+                        directCall: !((ConstrainedCallInfo)target).Method.HasInstantiation);
                 default:
                     throw new NotImplementedException();
             }
@@ -208,6 +213,12 @@ namespace ILCompiler.DependencyAnalysis
             foreach (DependencyNodeCore<NodeFactory> dependency in _lookupSignature.NonRelocDependenciesFromUsage(factory))
             {
                 dependencies.Add(new DependencyListEntry(dependency, "GenericLookupResultDependency"));
+            }
+
+            if (_id == ReadyToRunHelperId.DelegateCtor)
+            {
+                MethodDesc targetMethod = ((DelegateCreationInfo)_target).PossiblyUnresolvedTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                factory.MetadataManager.GetDependenciesDueToDelegateCreation(ref dependencies, factory, targetMethod);
             }
 
             return dependencies;

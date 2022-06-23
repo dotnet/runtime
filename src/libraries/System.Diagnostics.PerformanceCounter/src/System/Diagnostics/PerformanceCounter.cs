@@ -35,7 +35,7 @@ namespace System.Diagnostics
         // Cached IP Shared Performanco counter
         private SharedPerformanceCounter _sharedCounter;
 
-        [ObsoleteAttribute("PerformanceCounter.DefaultFileMappingSize has been deprecated and is not used. Use machine.config or an application configuration file to set the size of the PerformanceCounter file mapping instead.")]
+        [Obsolete("PerformanceCounter.DefaultFileMappingSize has been deprecated and is not used. Use machine.config or an application configuration file to set the size of the PerformanceCounter file mapping instead.")]
         public static int DefaultFileMappingSize = 524288;
 
         private object _instanceLockObject;
@@ -432,7 +432,7 @@ namespace System.Diagnostics
             return _sharedCounter.Increment();
         }
 
-        private void ThrowReadOnly()
+        private static void ThrowReadOnly()
         {
             throw new InvalidOperationException(SR.ReadOnlyCounter);
         }

@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json.Reflection;
+using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -24,7 +25,7 @@ namespace System.Text.Json.SourceGeneration
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
             IncrementalValuesProvider<ClassDeclarationSyntax> classDeclarations = context.SyntaxProvider
-                .CreateSyntaxProvider(static (s, _) => Parser.IsSyntaxTargetForGeneration(s), static (s, _) => Parser.GetSemanticTargetForGeneration(s))
+                .CreateSyntaxProvider(static (s, _) => Parser.IsSyntaxTargetForGeneration(s), static (s, c) => Parser.GetSemanticTargetForGeneration(s, c))
                 .Where(static c => c is not null);
 
             IncrementalValueProvider<(Compilation, ImmutableArray<ClassDeclarationSyntax>)> compilationAndClasses =
@@ -48,7 +49,7 @@ namespace System.Text.Json.SourceGeneration
 
             JsonSourceGenerationContext context = new JsonSourceGenerationContext(sourceProductionContext);
             Parser parser = new(compilation, context);
-            SourceGenerationSpec? spec = parser.GetGenerationSpec(contextClasses);
+            SourceGenerationSpec? spec = parser.GetGenerationSpec(contextClasses, sourceProductionContext.CancellationToken);
             if (spec != null)
             {
                 _rootTypes = spec.ContextGenerationSpecList[0].RootSerializableTypes;

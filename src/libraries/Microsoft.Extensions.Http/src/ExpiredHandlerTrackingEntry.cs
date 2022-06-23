@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.Http
             Scope = other.Scope;
 
             _livenessTracker = new WeakReference(other.Handler);
-            InnerHandler = other.Handler.InnerHandler;
+            InnerHandler = other.Handler.InnerHandler!;
         }
 
         public bool CanDispose => !_livenessTracker.IsAlive;
@@ -29,6 +29,6 @@ namespace Microsoft.Extensions.Http
 
         public string Name { get; }
 
-        public IServiceScope Scope { get; }
+        public IServiceScope? Scope { get; }
     }
 }

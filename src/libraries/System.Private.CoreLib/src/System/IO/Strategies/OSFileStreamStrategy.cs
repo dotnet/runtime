@@ -74,7 +74,7 @@ namespace System.IO.Strategies
 
         public sealed override bool CanWrite => !_fileHandle.IsClosed && (_access & FileAccess.Write) != 0;
 
-        public unsafe sealed override long Length => _fileHandle.GetFileLength();
+        public sealed override unsafe long Length => _fileHandle.GetFileLength();
 
         // in case of concurrent incomplete reads, there can be multiple threads trying to update the position
         // at the same time. That is why we are using Interlocked here.
@@ -119,8 +119,6 @@ namespace System.IO.Strategies
 
             return ValueTask.CompletedTask;
         }
-
-        internal sealed override void DisposeInternal(bool disposing) => Dispose(disposing);
 
         // this method just disposes everything (no buffer, no need to flush)
         protected sealed override void Dispose(bool disposing)
@@ -204,10 +202,10 @@ namespace System.IO.Strategies
             }
         }
 
-        public sealed override unsafe int ReadByte()
+        public sealed override int ReadByte()
         {
-            byte b;
-            return Read(new Span<byte>(&b, 1)) != 0 ? b : -1;
+            byte b = 0;
+            return Read(new Span<byte>(ref b)) != 0 ? b : -1;
         }
 
         public sealed override int Read(byte[] buffer, int offset, int count) =>
@@ -231,8 +229,8 @@ namespace System.IO.Strategies
             return r;
         }
 
-        public sealed override unsafe void WriteByte(byte value) =>
-            Write(new ReadOnlySpan<byte>(&value, 1));
+        public sealed override void WriteByte(byte value) =>
+            Write(new ReadOnlySpan<byte>(in value));
 
         public override void Write(byte[] buffer, int offset, int count) =>
             Write(new ReadOnlySpan<byte>(buffer, offset, count));

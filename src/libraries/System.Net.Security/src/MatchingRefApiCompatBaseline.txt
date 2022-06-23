@@ -1,0 +1,3 @@
+# Exposed publicly only in implementation for Quic
+MembersMustExist : Member 'public System.Security.Cryptography.X509Certificates.X509Certificate2 System.Security.Cryptography.X509Certificates.X509Certificate2 System.Net.Security.SslStreamCertificateContext.Certificate' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public System.Security.Cryptography.X509Certificates.X509Certificate2[] System.Security.Cryptography.X509Certificates.X509Certificate2[] System.Net.Security.SslStreamCertificateContext.IntermediateCertificates' does not exist in the reference but it does exist in the implementation.

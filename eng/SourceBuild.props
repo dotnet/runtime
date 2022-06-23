@@ -38,6 +38,7 @@
       <InnerBuildArgs>$(InnerBuildArgs) /p:RuntimeOS=$(TargetRidWithoutPlatform)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:PortableBuild=$(SourceBuildPortable)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:BuildDebPackage=false</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) /p:EnableNgenOptimization=false</InnerBuildArgs>
     </PropertyGroup>
   </Target>
 

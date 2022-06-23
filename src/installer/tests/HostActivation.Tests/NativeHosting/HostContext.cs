@@ -279,7 +279,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 SharedTestState.ConfigPropertyName
             };
             CommandResult result = sharedState.CreateNativeHostCommand(args.Concat(appArgs), sharedState.DotNetRoot)
-                .EnvironmentVariable("COREHOST_TRACE_VERBOSITY", "3")
+                .EnvironmentVariable(Constants.HostTracing.VerbosityEnvironmentVariable, "3")
                 .EnvironmentVariable("TEST_BLOCK_MOCK_EXECUTE_ASSEMBLY", $"{sharedState.AppPath}.block")
                 .EnvironmentVariable("TEST_SIGNAL_MOCK_EXECUTE_ASSEMBLY", $"{sharedState.AppPath}.signal")
                 .Execute();
@@ -351,7 +351,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             try
             {
                 result = sharedState.CreateNativeHostCommand(args, sharedState.DotNetRoot)
-                    .EnvironmentVariable("COREHOST_TRACE_VERBOSITY", "3")
+                    .EnvironmentVariable(Constants.HostTracing.VerbosityEnvironmentVariable, "3")
                     .EnvironmentVariable("TEST_BLOCK_MOCK_EXECUTE_ASSEMBLY", $"{sharedState.AppPath}.block")
                     .EnvironmentVariable("TEST_SIGNAL_MOCK_EXECUTE_ASSEMBLY", $"{sharedState.AppPath}.signal")
                     .Execute();
@@ -447,7 +447,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             try
             {
                 result = sharedState.CreateNativeHostCommand(args, sharedState.DotNetRoot)
-                    .EnvironmentVariable("COREHOST_TRACE_VERBOSITY", "3")
+                    .EnvironmentVariable(Constants.HostTracing.VerbosityEnvironmentVariable, "3")
                     .EnvironmentVariable("TEST_BLOCK_MOCK_EXECUTE_ASSEMBLY", $"{sharedState.AppPath}.block")
                     .EnvironmentVariable("TEST_SIGNAL_MOCK_EXECUTE_ASSEMBLY", $"{sharedState.AppPath}.signal")
                     .Execute();

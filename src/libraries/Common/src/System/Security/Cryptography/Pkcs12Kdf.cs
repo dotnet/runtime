@@ -130,10 +130,10 @@ namespace System.Security.Cryptography.Pkcs
             // (The RFC quote considers the trailing '\0' to be part of the string,
             // so "empty string" from this RFC means "null string" in C#, and C#'s
             // "empty string" is not 'empty' in this context.)
-            int PLen = ((passLen - 1 + vBytes) / vBytes) * vBytes;
+            int PLen = checked(((passLen - 1 + vBytes) / vBytes) * vBytes);
 
             // 4.  Set I=S||P to be the concatenation of S and P.
-            int ILen = SLen + PLen;
+            int ILen = checked(SLen + PLen);
             Span<byte> I = stackalloc byte[0];
             byte[]? IRented = null;
 

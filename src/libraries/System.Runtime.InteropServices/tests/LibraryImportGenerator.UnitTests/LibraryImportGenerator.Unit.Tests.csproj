@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <Nullable>enable</Nullable>
+    <TestRunRequiresLiveRefPack>true</TestRunRequiresLiveRefPack>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)SourceGenerators\LiveReferencePack.cs"
+             Link="Common\SourceGenerators\LiveReferencePack.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion)" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing.XUnit" Version="$(CompilerPlatformTestingVersion)" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing.XUnit" Version="$(CompilerPlatformTestingVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ancillary.Interop\Ancillary.Interop.csproj" />
+    <ProjectReference Include="..\..\gen\LibraryImportGenerator\LibraryImportGenerator.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(RepoRoot)/NuGet.config" Link="NuGet.config" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

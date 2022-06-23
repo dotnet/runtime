@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.Serialization.Formatters.cs" />
@@ -9,10 +8,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Collections.NonGeneric\ref\System.Collections.NonGeneric.csproj" />
-    <ProjectReference Include="..\..\System.Reflection\ref\System.Reflection.csproj" />
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
-    <ProjectReference Include="..\..\System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj" />
-    <ProjectReference Include="..\..\System.Runtime.Serialization.Primitives\ref\System.Runtime.Serialization.Primitives.csproj" />
-    <ProjectReference Include="..\..\System.Text.Json\ref\System.Text.Json.csproj" />
   </ItemGroup>
 </Project>

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <!-- NuGet restore issue with TargetFrameworks in f# projects: https://github.com/NuGet/Home/issues/10005 -->
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>

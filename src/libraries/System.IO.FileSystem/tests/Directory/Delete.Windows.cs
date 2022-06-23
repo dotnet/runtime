@@ -18,13 +18,18 @@ namespace System.IO.Tests
             string parentPath = GetTestFilePath();
             var parent = Directory.CreateDirectory(parentPath);
             var ac = parent.GetAccessControl();
-            ac.SetAccessRule(new FileSystemAccessRule(WindowsIdentity.GetCurrent().User, FileSystemRights.ListDirectory, AccessControlType.Deny));
+            var rule = new FileSystemAccessRule(WindowsIdentity.GetCurrent().User, FileSystemRights.ListDirectory, AccessControlType.Deny);
+            ac.SetAccessRule(rule);
             parent.SetAccessControl(ac);
 
             var subDir = parent.CreateSubdirectory("subdir");
             File.Create(Path.Combine(subDir.FullName, GetTestFileName())).Dispose();
             Delete(subDir.FullName, recursive: true);
             Assert.False(subDir.Exists);
+
+            // Cleanup
+            ac.RemoveAccessRule(rule);
+            parent.SetAccessControl(ac);
         }
     }
 }

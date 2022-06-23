@@ -151,7 +151,7 @@ namespace System.Data.OleDb
             return InnerList[index];
         }
 
-        private static int IndexOf(System.Collections.IEnumerable items, string parameterName)
+        private static int IndexOf(List<OleDbParameter> items, string parameterName)
         {
             if (null != items)
             {

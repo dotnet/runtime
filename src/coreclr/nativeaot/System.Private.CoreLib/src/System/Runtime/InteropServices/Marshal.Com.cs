@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices.ComTypes;
@@ -24,6 +25,7 @@ namespace System.Runtime.InteropServices
         public static bool AreComObjectsAvailableForCleanup() => false;
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IntPtr CreateAggregatedObject(IntPtr pOuter, object o)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
@@ -47,6 +49,7 @@ namespace System.Runtime.InteropServices
         }
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static object? CreateWrapperOfType(object? o, Type t)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
@@ -71,6 +74,7 @@ namespace System.Runtime.InteropServices
         }
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IntPtr GetComInterfaceForObject(object o, Type T)
         {
             if (o is null)
@@ -87,6 +91,7 @@ namespace System.Runtime.InteropServices
         }
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IntPtr GetComInterfaceForObject(object o, Type T, CustomQueryInterfaceMode mode)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
@@ -122,6 +127,7 @@ namespace System.Runtime.InteropServices
         }
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static unsafe void GetNativeVariantForObject(object? obj, IntPtr pDstNativeVariant)
         {
             if (pDstNativeVariant == IntPtr.Zero)
@@ -188,9 +194,11 @@ namespace System.Runtime.InteropServices
                 case BStrWrapper value:
                     data->AsBstr = value.WrappedObject;
                     break;
+#pragma warning disable 0618 // CurrencyWrapper is obsolete
                 case CurrencyWrapper value:
                     data->AsCy = value.WrappedObject;
                     break;
+#pragma warning restore 0618
                 case UnknownWrapper value:
                     data->AsUnknown = value.WrappedObject;
                     break;
@@ -285,6 +293,7 @@ namespace System.Runtime.InteropServices
         }
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void GetNativeVariantForObject<T>(T? obj, IntPtr pDstNativeVariant)
         {
             GetNativeVariantForObject((object?)obj, pDstNativeVariant);
@@ -303,6 +312,7 @@ namespace System.Runtime.InteropServices
         }
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static unsafe object? GetObjectForNativeVariant(IntPtr pSrcNativeVariant)
         {
             if (pSrcNativeVariant == IntPtr.Zero)
@@ -351,18 +361,21 @@ namespace System.Runtime.InteropServices
 
         [return: MaybeNull]
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static T GetObjectForNativeVariant<T>(IntPtr pSrcNativeVariant)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static object?[] GetObjectsForNativeVariants(IntPtr aSrcNativeVariant, int cVars)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
         [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static T[] GetObjectsForNativeVariants<T>(IntPtr aSrcNativeVariant, int cVars)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);

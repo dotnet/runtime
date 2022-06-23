@@ -7,7 +7,7 @@ using System.Runtime.Versioning;
 
 namespace System.Runtime.Caching.Configuration
 {
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
     [UnsupportedOSPlatform("browser")]
 #endif
     internal sealed class CachingSectionGroup : ConfigurationSectionGroup

@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
+namespace Test_structarr_InnerProd
+{
 public struct ArrayStruct
 {
     public int[,] a2d;
@@ -117,7 +120,8 @@ public class intmm
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool pass = false;
 
@@ -242,4 +246,5 @@ public class intmm
             return 1;
         }
     }
+}
 }

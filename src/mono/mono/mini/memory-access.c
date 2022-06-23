@@ -51,6 +51,7 @@ mini_emit_memset (MonoCompile *cfg, int destreg, int offset, int size, int val, 
 
 	val_reg = alloc_preg (cfg);
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	if (SIZEOF_REGISTER == 8)
 		MONO_EMIT_NEW_I8CONST (cfg, val_reg, val);
 	else
@@ -85,6 +86,7 @@ mini_emit_memset (MonoCompile *cfg, int destreg, int offset, int size, int val, 
 			size -= 8;
 		}
 	}
+MONO_RESTORE_WARNING
 
 set_4:
 	while (size >= 4) {
@@ -118,6 +120,7 @@ mini_emit_memcpy (MonoCompile *cfg, int destreg, int doffset, int srcreg, int so
 	g_assert (size < MAX_INLINE_COPY_SIZE);
 	g_assert (align > 0);
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	if (align < TARGET_SIZEOF_VOID_P) {
 		if (align == 4)
 			goto copy_4;
@@ -139,7 +142,6 @@ mini_emit_memcpy (MonoCompile *cfg, int destreg, int doffset, int srcreg, int so
 			goto copy_4;
 	}
 
-
 	if (SIZEOF_REGISTER == 8) {
 		while (size >= 8) {
 			cur_reg = alloc_preg (cfg);
@@ -150,6 +152,7 @@ mini_emit_memcpy (MonoCompile *cfg, int destreg, int doffset, int srcreg, int so
 			size -= 8;
 		}
 	}
+MONO_RESTORE_WARNING
 
 copy_4:
 	while (size >= 4) {
@@ -250,7 +253,7 @@ create_write_barrier_bitmap (MonoCompile *cfg, MonoClass *klass, unsigned *wb_bi
 
 		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
-		foffset = m_class_is_valuetype (klass) ? field->offset - MONO_ABI_SIZEOF (MonoObject): field->offset;
+		foffset = m_class_is_valuetype (klass) ? m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject): m_field_get_offset (field);
 		if (mini_type_is_reference (mono_field_get_type_internal (field))) {
 			g_assert ((foffset % TARGET_SIZEOF_VOID_P) == 0);
 			*wb_bitmap |= 1 << ((offset + foffset) / TARGET_SIZEOF_VOID_P);
@@ -542,7 +545,7 @@ mini_emit_memory_copy_bytes (MonoCompile *cfg, MonoInst *dest, MonoInst *src, Mo
 	}
 
 	if ((cfg->opt & MONO_OPT_INTRINS) && (size->opcode == OP_ICONST)) {
-		mini_emit_memcpy_const_size (cfg, dest, src, size->inst_c0, align);
+		mini_emit_memcpy_const_size (cfg, dest, src, GTMREG_TO_INT (size->inst_c0), align);
 	} else {
 		mini_emit_memcpy_internal (cfg, dest, src, size, 0, align);
 	}
@@ -565,7 +568,7 @@ mini_emit_memory_init_bytes (MonoCompile *cfg, MonoInst *dest, MonoInst *value, 
 
 	//FIXME unrolled memset only supports zeroing
 	if ((cfg->opt & MONO_OPT_INTRINS) && (size->opcode == OP_ICONST) && (value->opcode == OP_ICONST) && (value->inst_c0 == 0)) {
-		mini_emit_memset_const_size (cfg, dest, value->inst_c0, size->inst_c0, align);
+		mini_emit_memset_const_size (cfg, dest, GTMREG_TO_INT (value->inst_c0), GTMREG_TO_INT (size->inst_c0), align);
 	} else {
 		mini_emit_memset_internal (cfg, dest, value, 0, size, 0, align);
 	}

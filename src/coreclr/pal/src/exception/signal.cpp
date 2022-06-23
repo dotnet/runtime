@@ -485,7 +485,7 @@ static void sigfpe_handler(int code, siginfo_t *siginfo, void *context)
 Function :
     signal_handler_worker
 
-    Handles signal on the original stack where the signal occured.
+    Handles signal on the original stack where the signal occurred.
     Invoked via setcontext.
 
 Parameters :
@@ -532,7 +532,7 @@ Function :
 Parameters :
     POSIX signal handler parameter list ("man sigaction" for details)
     sp - stack pointer of the stack to execute the handler on.
-         If sp == 0, execute it on the original stack where the signal has occured.
+         If sp == 0, execute it on the original stack where the signal has occurred.
 Return :
     The return value from the signal handler
 --*/

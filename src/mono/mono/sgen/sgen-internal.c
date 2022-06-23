@@ -146,8 +146,6 @@ description_for_type (int type)
 	case INTERNAL_MEM_WORKER_DATA: return "worker-data";
 	case INTERNAL_MEM_THREAD_POOL_JOB: return "thread-pool-job";
 	case INTERNAL_MEM_BRIDGE_DATA: return "bridge-data";
-	case INTERNAL_MEM_OLD_BRIDGE_HASH_TABLE: return "old-bridge-hash-table";
-	case INTERNAL_MEM_OLD_BRIDGE_HASH_TABLE_ENTRY: return "old-bridge-hash-table-entry";
 	case INTERNAL_MEM_BRIDGE_HASH_TABLE: return "bridge-hash-table";
 	case INTERNAL_MEM_BRIDGE_HASH_TABLE_ENTRY: return "bridge-hash-table-entry";
 	case INTERNAL_MEM_TARJAN_BRIDGE_HASH_TABLE: return "tarjan-bridge-hash-table";
@@ -281,7 +279,7 @@ sgen_init_internal_allocator (void)
 		fixed_type_allocator_indexes [i] = -1;
 
 	for (i = 0; i < NUM_ALLOCATORS; ++i) {
-		allocator_block_sizes [i] = block_size (allocator_sizes [i]);
+		allocator_block_sizes [i] = (int)block_size (allocator_sizes [i]);
 		mono_lock_free_allocator_init_size_class (&size_classes [i], allocator_sizes [i], allocator_block_sizes [i]);
 		mono_lock_free_allocator_init_allocator (&allocators [i], &size_classes [i], MONO_MEM_ACCOUNT_SGEN_INTERNAL);
 	}

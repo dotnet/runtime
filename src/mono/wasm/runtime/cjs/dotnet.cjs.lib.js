@@ -10,11 +10,12 @@ const DotnetSupportLib = {
     // we replace implementation of readAsync and fetch
     // replacement of require is there for consistency with ES6 code
     $DOTNET__postset: `
-let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require};
+let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require, updateGlobalBufferAndViews};
 let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
-    { isESM:false, isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile, quit_, ExitStatus, requirePromise:Promise.resolve(require)}, 
+    { isESM:false, isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile, quit_, ExitStatus, requirePromise:Promise.resolve(require)},
     { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
     __dotnet_replacements);
+updateGlobalBufferAndViews = __dotnet_replacements.updateGlobalBufferAndViews;
 readAsync = __dotnet_replacements.readAsync;
 var fetch = __dotnet_replacements.fetch;
 require = __dotnet_replacements.requireOut;
@@ -41,33 +42,36 @@ const linked_functions = [
     "mono_wasm_invoke_js",
     "mono_wasm_invoke_js_blazor",
     "mono_wasm_trace_logger",
+    "mono_wasm_set_entrypoint_breakpoint",
 
     // corebindings.c
-    "mono_wasm_invoke_js_with_args",
-    "mono_wasm_get_object_property",
-    "mono_wasm_set_object_property",
-    "mono_wasm_get_by_index",
-    "mono_wasm_set_by_index",
-    "mono_wasm_get_global_object",
-    "mono_wasm_create_cs_owned_object",
+    "mono_wasm_invoke_js_with_args_ref",
+    "mono_wasm_get_object_property_ref",
+    "mono_wasm_set_object_property_ref",
+    "mono_wasm_get_by_index_ref",
+    "mono_wasm_set_by_index_ref",
+    "mono_wasm_get_global_object_ref",
+    "mono_wasm_create_cs_owned_object_ref",
     "mono_wasm_release_cs_owned_object",
-    "mono_wasm_typed_array_to_array",
-    "mono_wasm_typed_array_copy_to",
-    "mono_wasm_typed_array_from",
-    "mono_wasm_typed_array_copy_from",
-    "mono_wasm_add_event_listener",
-    "mono_wasm_remove_event_listener",
-    "mono_wasm_cancel_promise",
-    "mono_wasm_web_socket_open",
+    "mono_wasm_typed_array_to_array_ref",
+    "mono_wasm_typed_array_copy_to_ref",
+    "mono_wasm_typed_array_from_ref",
+    "mono_wasm_typed_array_copy_from_ref",
+    "mono_wasm_cancel_promise_ref",
+    "mono_wasm_web_socket_open_ref",
     "mono_wasm_web_socket_send",
     "mono_wasm_web_socket_receive",
-    "mono_wasm_web_socket_close",
+    "mono_wasm_web_socket_close_ref",
     "mono_wasm_web_socket_abort",
-    "mono_wasm_compile_function",
+    "mono_wasm_compile_function_ref",
 
     // pal_icushim_static.c
     "mono_wasm_load_icu_data",
     "mono_wasm_get_icudt_name",
+
+    // pal_crypto_webworker.c
+    "dotnet_browser_simple_digest_hash",
+    "dotnet_browser_can_use_simple_digest_hash",
 ];
 
 // -- this javascript file is evaluated by emcc during compilation! --

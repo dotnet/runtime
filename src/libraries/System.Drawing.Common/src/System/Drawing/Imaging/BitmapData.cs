@@ -3,11 +3,25 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+#if NET7_0_OR_GREATER
+using System.Runtime.InteropServices.Marshalling;
+#endif
 
 namespace System.Drawing.Imaging
 {
-    public partial class BitmapData
+    /// <summary>
+    /// Specifies the attributes of a bitmap image.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public sealed class BitmapData
     {
+        private int _width;
+        private int _height;
+        private int _stride;
+        private PixelFormat _pixelFormat;
+        private IntPtr _scan0;
+        private int _reserved;
+
         /// <summary>
         /// Specifies the pixel width of the <see cref='Bitmap'/>.
         /// </summary>
@@ -98,6 +112,7 @@ namespace System.Drawing.Imaging
         internal ref int GetPinnableReference() => ref _width;
 
 #if NET7_0_OR_GREATER
+        [CustomTypeMarshaller(typeof(BitmapData), Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
         internal unsafe struct PinningMarshaller
         {
             private readonly BitmapData _managed;
@@ -108,7 +123,7 @@ namespace System.Drawing.Imaging
 
             public ref int GetPinnableReference() => ref (_managed is null ? ref Unsafe.NullRef<int>() : ref _managed.GetPinnableReference());
 
-            public void* Value => Unsafe.AsPointer(ref GetPinnableReference());
+            public void* ToNativeValue() => Unsafe.AsPointer(ref GetPinnableReference());
         }
 #endif
     }

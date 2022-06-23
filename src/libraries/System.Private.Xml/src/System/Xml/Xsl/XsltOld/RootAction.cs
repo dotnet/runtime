@@ -1,19 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics;
+using System.Collections;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Xml;
+using System.Xml.XPath;
+using System.Xml.Xsl.Runtime;
+using MS.Internal.Xml.XPath;
+using System.Security;
+
 namespace System.Xml.Xsl.XsltOld
 {
-    using System;
-    using System.Diagnostics;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Globalization;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Xml.Xsl.Runtime;
-    using MS.Internal.Xml.XPath;
-    using System.Security;
-
     internal sealed class Key
     {
         private readonly XmlQualifiedName _name;
@@ -78,7 +78,7 @@ namespace System.Xml.Xsl.XsltOld
         public Hashtable KeyTable { get { return _keyTable; } }
     }
 
-    internal class RootAction : TemplateBaseAction
+    internal sealed class RootAction : TemplateBaseAction
     {
         private const int QueryInitialized = 2;
         private const int RootProcessed = 3;
@@ -87,7 +87,6 @@ namespace System.Xml.Xsl.XsltOld
         private readonly Hashtable _decimalFormatTable = new Hashtable();
         private List<Key>? _keyList;
         private XsltOutput? _output;
-        public Stylesheet? builtInSheet;
 
         internal XsltOutput Output
         {

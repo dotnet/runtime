@@ -8,7 +8,7 @@ Namespace Global.Microsoft.VisualBasic
 
         Public Const vbCrLf As String = ChrW(13) & ChrW(10)
         Public Const vbObjectError As Integer = &H80040000I
-        <Global.System.Obsolete("For a carriage return and line feed, use vbCrLf.  For the current platform's newline, use System.Environment.NewLine.")>
+        <Global.System.Obsolete("vbNewLine has been deprecated. For a carriage return and line feed, use vbCrLf. For the current platform's newline, use System.Environment.NewLine.")>
         Public Const vbNewLine As String = ChrW(13) & ChrW(10)
         Public Const vbCr As String = ChrW(13)
         Public Const vbLf As String = ChrW(10)

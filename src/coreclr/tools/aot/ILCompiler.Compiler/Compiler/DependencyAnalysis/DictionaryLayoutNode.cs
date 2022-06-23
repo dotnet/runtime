@@ -277,7 +277,7 @@ namespace ILCompiler.DependencyAnalysis
                 layout[index++] = entry;
             }
 
-            var comparer = new GenericLookupResult.Comparer(new TypeSystemComparer());
+            var comparer = new GenericLookupResult.Comparer(TypeSystemComparer.Instance);
             Array.Sort(layout, comparer.Compare);
 
             // Only publish after the full layout is computed. Races are fine.

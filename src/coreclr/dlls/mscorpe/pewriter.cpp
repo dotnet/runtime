@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 #include "stdafx.h"
 
-// Enable building with older SDKs that don't have IMAGE_FILE_MACHINE_ARM64 defined.
-#ifndef IMAGE_FILE_MACHINE_ARM64
-#define IMAGE_FILE_MACHINE_ARM64             0xAA64  // ARM64 Little-Endian
-#endif
-
 #include "blobfetcher.h"
 #include "pedecoder.h"
 
@@ -114,7 +109,7 @@ void PERelocSection::AddBaseReloc(unsigned rva, int type, unsigned short highAdj
     relocSize++;
     unsigned short* offset = (unsigned short*) section->getBlock(2);
     if(offset) {
-        *offset = VAL16((rva & 0xFFF) | (type << 12));
+        *offset = VAL16((unsigned short)(rva & 0xFFF) | (unsigned short)(type << 12));
     }
 }
 
@@ -1313,7 +1308,7 @@ HRESULT PEWriter::linkSortSections(entry * entries,
         _ASSERTE(index == -1 || index == atoi(p));
 
         e->nameLength = (unsigned char)(p - e->name);
-        e->index = index;
+        e->index = (char)index;
         e->arrayIndex = (unsigned short)(cur - getSectStart());
         e++;
     }
@@ -1594,7 +1589,7 @@ HRESULT PEWriter::link() {
     iUniqueSections++; // One more for .reloc
     filePos = sizeof(IMAGE_DOS_HEADER)+sizeof(x86StubPgm) + m_ntHeadersSize;
 
-    m_ntHeaders->FileHeader.NumberOfSections = VAL16(iUniqueSections);
+    m_ntHeaders->FileHeader.NumberOfSections = (WORD)VAL16(iUniqueSections);
 
     filePos += iUniqueSections * sizeof(IMAGE_SECTION_HEADER);
     filePos  = roundUp(filePos, VAL32(m_ntHeaders->OptionalHeader.FileAlignment));

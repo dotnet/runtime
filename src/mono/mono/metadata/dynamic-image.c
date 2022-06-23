@@ -332,13 +332,7 @@ mono_dynamic_image_create (MonoDynamicAssembly *assembly, char *assembly_name, c
 	static const guchar entrycode [16] = {0xff, 0x25, 0};
 	MonoDynamicImage *image;
 	int i;
-
-	const char *version;
-
-	if (!strcmp (mono_get_runtime_info ()->framework_version, "2.1"))
-		version = "v2.0.50727"; /* HACK: SL 2 enforces the .net 2 metadata version */
-	else
-		version = mono_get_runtime_info ()->runtime_version;
+	const char *version = "v4.0.30319";
 
 	image = g_new0 (MonoDynamicImage, 1);
 

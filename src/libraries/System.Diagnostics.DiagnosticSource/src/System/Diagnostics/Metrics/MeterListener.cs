@@ -117,33 +117,37 @@ namespace System.Diagnostics.Metrics
         /// <param name="measurementCallback">The callback which can be used to get measurement recording of numeric type T.</param>
         public void SetMeasurementEventCallback<T>(MeasurementCallback<T>? measurementCallback) where T : struct
         {
-            if (measurementCallback is MeasurementCallback<byte> byteCallback)
+            if (measurementCallback is null)
             {
-                _byteMeasurementCallback = (measurementCallback is null) ? ((instrument, measurement, tags, state) => { /* no-op */}) : byteCallback;
+                measurementCallback = (instrument, measurement, tags, state) => { /* no-op */};
             }
-            else if (measurementCallback is MeasurementCallback<int> intCallback)
+            if (typeof(T) == typeof(byte))
             {
-                _intMeasurementCallback = (measurementCallback is null) ? ((instrument, measurement, tags, state) => { /* no-op */}) : intCallback;
+                _byteMeasurementCallback = (MeasurementCallback<byte>)(object)measurementCallback;
             }
-            else if (measurementCallback is MeasurementCallback<float> floatCallback)
+            else if (typeof(T) == typeof(int))
             {
-                _floatMeasurementCallback = (measurementCallback is null) ? ((instrument, measurement, tags, state) => { /* no-op */}) : floatCallback;
+                _intMeasurementCallback = (MeasurementCallback<int>)(object)measurementCallback;
             }
-            else if (measurementCallback is MeasurementCallback<double> doubleCallback)
+            else if (typeof(T) == typeof(float))
             {
-                _doubleMeasurementCallback = (measurementCallback is null) ? ((instrument, measurement, tags, state) => { /* no-op */}) : doubleCallback;
+                _floatMeasurementCallback = (MeasurementCallback<float>)(object)measurementCallback;
             }
-            else if (measurementCallback is MeasurementCallback<decimal> decimalCallback)
+            else if (typeof(T) == typeof(double))
             {
-                _decimalMeasurementCallback = (measurementCallback is null) ? ((instrument, measurement, tags, state) => { /* no-op */}) : decimalCallback;
+                _doubleMeasurementCallback = (MeasurementCallback<double>)(object)measurementCallback;
             }
-            else if (measurementCallback is MeasurementCallback<short> shortCallback)
+            else if (typeof(T) == typeof(decimal))
             {
-                _shortMeasurementCallback = (measurementCallback is null) ? ((instrument, measurement, tags, state) => { /* no-op */}) : shortCallback;
+                _decimalMeasurementCallback = (MeasurementCallback<decimal>)(object)measurementCallback;
             }
-            else if (measurementCallback is MeasurementCallback<long> longCallback)
+            else if (typeof(T) == typeof(short))
             {
-                _longMeasurementCallback = (measurementCallback is null) ? ((instrument, measurement, tags, state) => { /* no-op */}) : longCallback;
+                _shortMeasurementCallback = (MeasurementCallback<short>)(object)measurementCallback;
+            }
+            else if (typeof(T) == typeof(long))
+            {
+                _longMeasurementCallback = (MeasurementCallback<long>)(object)measurementCallback;
             }
             else
             {

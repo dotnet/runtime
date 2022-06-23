@@ -56,6 +56,12 @@
 #include <sys/endian.h>
 #endif
 
+#ifndef HOST_WIN32
+#define SOCKET int
+#define INVALID_SOCKET (-1)
+#define SOCKET_ERROR (-1)
+#endif
+
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/debug-internals.h>
 #include <mono/metadata/domain-internals.h>
@@ -331,8 +337,8 @@ static AgentConfig agent_config;
 static gint32 agent_inited;
 
 #ifndef DISABLE_SOCKET_TRANSPORT
-static int conn_fd;
-static int listen_fd;
+static SOCKET conn_fd;
+static SOCKET listen_fd;
 #endif
 
 static int objref_id = 0;
@@ -414,6 +420,7 @@ static gboolean buffer_replies;
 	DebuggerTlsData *tls; \
 	tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id);
 #else
+/* the thread argument is omitted on wasm, to avoid compiler warning */
 #define GET_TLS_DATA_FROM_THREAD(...) \
 	DebuggerTlsData *tls; \
 	tls = &debugger_wasm_thread;
@@ -529,7 +536,7 @@ is_debugger_thread (void)
 	if (!internal)
 		return FALSE;
 
-	return internal->debugger_thread;
+	return internal->debugger_thread ? TRUE : FALSE;
 }
 
 static int
@@ -915,7 +922,7 @@ socket_transport_recv (void *buf, int len)
 {
 	int res;
 	int total = 0;
-	int fd = conn_fd;
+	SOCKET fd = conn_fd;
 	int flags = 0;
 	static gint64 last_keepalive;
 	gint64 msecs;
@@ -929,9 +936,9 @@ socket_transport_recv (void *buf, int len)
 			total += res;
 		if (agent_config.keepalive) {
 			gboolean need_keepalive = FALSE;
-			if (res == -1 && get_last_sock_error () == MONO_EWOULDBLOCK) {
+			if (res == SOCKET_ERROR && get_last_sock_error () == MONO_EWOULDBLOCK) {
 				need_keepalive = TRUE;
-			} else if (res == -1) {
+			} else if (res == SOCKET_ERROR) {
 				/* This could happen if recv () is interrupted repeatedly */
 				msecs = mono_msec_ticks ();
 				if (msecs - last_keepalive >= agent_config.keepalive) {
@@ -946,7 +953,7 @@ socket_transport_recv (void *buf, int len)
 				goto again;
 			}
 		}
-	} while ((res > 0 && total < len) || (res == -1 && get_last_sock_error () == MONO_EINTR));
+	} while ((res > 0 && total < len) || (res == SOCKET_ERROR && get_last_sock_error () == MONO_EINTR));
 
 	return total;
 }
@@ -967,16 +974,16 @@ set_keepalive (void)
 	g_assert (result >= 0);
 }
 
-static int
-socket_transport_accept (int socket_fd)
+static SOCKET
+socket_transport_accept (SOCKET socket_fd)
 {
 	MONO_REQ_GC_SAFE_MODE;
 	conn_fd = accept (socket_fd, NULL, NULL);
 
-	if (conn_fd == -1) {
-		PRINT_ERROR_MSG ("debugger-agent: Unable to listen on %d\n", socket_fd);
+	if (conn_fd == INVALID_SOCKET) {
+		PRINT_ERROR_MSG ("debugger-agent: Unable to listen on %d: %s.\n", (int)socket_fd, strerror (get_last_sock_error()));
 	} else {
-		PRINT_DEBUG_MSG (1, "Accepted connection from client, connection fd=%d.\n", conn_fd);
+		PRINT_DEBUG_MSG (1, "Accepted connection from client, connection fd=%d.\n", (int)conn_fd);
 	}
 
 	return conn_fd;
@@ -991,7 +998,7 @@ socket_transport_send (void *data, int len)
 
 	do {
 		res = send (conn_fd, (const char*)data, len, 0);
-	} while (res == -1 && get_last_sock_error () == MONO_EINTR);
+	} while (res == SOCKET_ERROR && get_last_sock_error () == MONO_EINTR);
 
 	if (res != len)
 		return FALSE;
@@ -1007,9 +1014,10 @@ socket_transport_send (void *data, int len)
 static void
 socket_transport_connect (const char *address)
 {
-	MonoAddressInfo *result;
+	MonoAddressInfo *result = NULL;
 	MonoAddressEntry *rp;
-	int sfd = -1, s, res;
+	SOCKET sfd = INVALID_SOCKET;
+	int s = 0, res;
 	char *host;
 	int port;
 
@@ -1027,8 +1035,8 @@ socket_transport_connect (const char *address)
 		port = 56000 + (mono_process_current_pid () % 1000);
 	}
 
-	conn_fd = -1;
-	listen_fd = -1;
+	conn_fd = INVALID_SOCKET;
+	listen_fd = INVALID_SOCKET;
 
 	MONO_ENTER_GC_UNSAFE;
 	mono_networking_init();
@@ -1041,7 +1049,7 @@ socket_transport_connect (const char *address)
 			MONO_HINT_UNSPECIFIED
 		};
 
-		for (int i = 0; i < sizeof(hints) / sizeof(int); i++) {
+		for (size_t i = 0; i < sizeof(hints) / sizeof(int); i++) {
 			/* Obtain address(es) matching host/port */
 			MONO_ENTER_GC_UNSAFE;
 			s = mono_get_address_info (host, port, hints[i], &result);
@@ -1063,14 +1071,14 @@ socket_transport_connect (const char *address)
 
 			/* No address, generate one */
 			sfd = socket (AF_INET, SOCK_STREAM, 0);
-			if (sfd == -1) {
+			if (sfd == INVALID_SOCKET) {
 				PRINT_ERROR_MSG ("debugger-agent: Unable to create a socket: %s\n", strerror (get_last_sock_error ()));
 				exit (1);
 			}
 
 			/* This will bind the socket to a random port */
 			res = listen (sfd, 16);
-			if (res == -1) {
+			if (res == SOCKET_ERROR) {
 				PRINT_ERROR_MSG ("debugger-agent: Unable to setup listening socket: %s\n", strerror (get_last_sock_error ()));
 				exit (1);
 			}
@@ -1099,18 +1107,18 @@ socket_transport_connect (const char *address)
 				MONO_EXIT_GC_UNSAFE;
 
 				sfd = socket (rp->family, rp->socktype, rp->protocol);
-				if (sfd == -1)
+				if (sfd == INVALID_SOCKET)
 					continue;
 
-				if (setsockopt (sfd, SOL_SOCKET, SO_REUSEADDR, (const char*)&n, sizeof(n)) == -1)
+				if (setsockopt (sfd, SOL_SOCKET, SO_REUSEADDR, (const char*)&n, sizeof(n)) == SOCKET_ERROR)
 					continue;
 
 				res = bind (sfd, &sockaddr.addr, sock_len);
-				if (res == -1)
+				if (res == SOCKET_ERROR)
 					continue;
 
 				res = listen (sfd, 16);
-				if (res == -1)
+				if (res == SOCKET_ERROR)
 					continue;
 				listen_fd = sfd;
 				break;
@@ -1135,7 +1143,7 @@ socket_transport_connect (const char *address)
 			FD_ZERO (&readfds);
 			FD_SET (sfd, &readfds);
 
-			res = select (sfd + 1, &readfds, NULL, NULL, &tv);
+			res = select ((int)sfd + 1, &readfds, NULL, NULL, &tv);
 
 			if (res == 0) {
 				PRINT_ERROR_MSG ("debugger-agent: Timed out waiting to connect.\n");
@@ -1144,14 +1152,14 @@ socket_transport_connect (const char *address)
 		}
 
 		conn_fd = socket_transport_accept (sfd);
-		if (conn_fd == -1)
+		if (conn_fd == INVALID_SOCKET)
 			exit (1);
 
-		PRINT_DEBUG_MSG (1, "Accepted connection from client, socket fd=%d.\n", conn_fd);
+		PRINT_DEBUG_MSG (1, "Accepted connection from client, socket fd=%d.\n", (int)conn_fd);
 	} else {
 		/* Connect to the specified address */
 		/* FIXME: Respect the timeout */
-		uint32_t startTime = time(NULL);
+		time_t startTime = time(NULL);
 		uint32_t elapsedTime;
 		do {
 			PRINT_DEBUG_MSG (1, "Trying to connect - %d.\n", port);
@@ -1165,7 +1173,7 @@ socket_transport_connect (const char *address)
 
 				sfd = socket (rp->family, rp->socktype,
 							rp->protocol);
-				if (sfd == -1) {
+				if (sfd == INVALID_SOCKET) {
 					perror("socket");
 					fprintf(stderr, "socket() failed: %s\n", strerror(errno));
 					PRINT_DEBUG_MSG(1, "socket() failed: %s\n", strerror(errno));
@@ -1174,7 +1182,7 @@ socket_transport_connect (const char *address)
 
 				res = connect (sfd, &sockaddr.addr, sock_len);
 
-				if (res != -1)
+				if (res != SOCKET_ERROR)
 					break;       /* Success */
 
 	#ifdef HOST_WIN32
@@ -1183,7 +1191,7 @@ socket_transport_connect (const char *address)
 				close (sfd);
 	#endif
 			}
-			elapsedTime = difftime (time (NULL), startTime) * 1000;
+			elapsedTime = GDOUBLE_TO_UINT32 (difftime (time (NULL), startTime) * 1000);
 			if (rp == 0)
 				sleep (1);
 		} while ((elapsedTime < agent_config.timeout) && (rp == 0));
@@ -1263,7 +1271,13 @@ socket_fd_transport_connect (const char *address)
 
 	MONO_REQ_GC_SAFE_MODE;
 
-	res = sscanf (address, "%d", &conn_fd);
+#if defined(HOST_WIN32) && (TARGET_SIZEOF_VOID_P == 8)
+	const char *format = "%" PRIu64;
+#else
+	const char *format = "%d";
+#endif
+	res = sscanf (address, format, &conn_fd);
+
 	if (res != 1) {
 		PRINT_ERROR_MSG ("debugger-agent: socket-fd transport address is invalid: '%s'\n", address);
 		exit (1);
@@ -1398,13 +1412,13 @@ transport_handshake (void)
 	sprintf (handshake_msg, "DWP-Handshake");
 
 	do {
-		res = transport_send (handshake_msg, strlen (handshake_msg));
-	} while (res == -1 && get_last_sock_error () == MONO_EINTR);
+		res = transport_send (handshake_msg, (int)strlen (handshake_msg));
+	} while (res == SOCKET_ERROR && get_last_sock_error () == MONO_EINTR);
 
-	g_assert (res != -1);
+	g_assert (res != SOCKET_ERROR);
 
 	/* Read answer */
-	res = transport_recv (buf, strlen (handshake_msg));
+	res = transport_recv (buf, (int)strlen (handshake_msg));
 	if ((res != strlen (handshake_msg)) || (memcmp (buf, handshake_msg, strlen (handshake_msg)) != 0)) {
 		PRINT_ERROR_MSG ("debugger-agent: DWP handshake failed.\n");
 		return FALSE;
@@ -1488,7 +1502,7 @@ start_debugger_thread (MonoError *error)
 }
 
 static gboolean
-send_packet (int command_set, int command, Buffer *data)
+send_packet (uint8_t command_set, uint8_t command, Buffer *data)
 {
 	Buffer buf;
 	int len, id;
@@ -1496,7 +1510,7 @@ send_packet (int command_set, int command, Buffer *data)
 
 	id = mono_atomic_inc_i32 (&packet_id);
 
-	len = data->p - data->buf + 11;
+	len = GPTRDIFF_TO_INT (data->p - data->buf + 11);
 	buffer_init (&buf, len);
 	buffer_add_int (&buf, len);
 	buffer_add_int (&buf, id);
@@ -1528,7 +1542,7 @@ send_reply_packets (int npackets, ReplyPacket *packets)
 		buffer_add_int (&buf, packets [i].id);
 		buffer_add_byte (&buf, 0x80); /* flags */
 		buffer_add_byte (&buf, (packets [i].error >> 8) & 0xff);
-		buffer_add_byte (&buf, packets [i].error);
+		buffer_add_byte (&buf, packets [i].error & 0xff);
 		buffer_add_buffer (&buf, packets [i].data);
 	}
 
@@ -1609,13 +1623,17 @@ mono_init_debugger_agent_for_wasm (int log_level_parm, MonoProfilerHandle *prof)
 	event_requests = g_ptr_array_new ();
 	vm_start_event_sent = TRUE;
 	transport = &transports [0];
+
 	memset(&debugger_wasm_thread, 0, sizeof(DebuggerTlsData));
+	mono_native_tls_alloc (&debugger_tls_id, NULL);
+	mono_native_tls_set_value (debugger_tls_id, &debugger_wasm_thread);
+
 	agent_config.enabled = TRUE;
 
 	mono_profiler_set_jit_done_callback (*prof, jit_done);
 }
 
-void 
+void
 mono_change_log_level (int new_log_level)
 {
 	log_level = new_log_level;
@@ -1998,7 +2016,7 @@ decode_ptr_id (guint8 *buf, guint8 **endbuf, guint8 *limit, IdType type, MonoDom
 	dbg_lock ();
 	g_assert (id > 0 && id <= ids [type]->len);
 
-	res = (Id *)g_ptr_array_index (ids [type], GPOINTER_TO_INT (id - 1));
+	res = (Id *)g_ptr_array_index (ids [type], id - 1);
 	dbg_unlock ();
 
 	if (res->domain == NULL) {
@@ -2926,21 +2944,14 @@ static gint32 isFixedSizeArray (MonoClassField *f)
 			MonoClass *fixed_size_class = mono_class_try_get_fixed_buffer_class ();
 			if (fixed_size_class != NULL && mono_class_has_parent (ctor_class, fixed_size_class)) {
 				attr = &cinfo->attrs [aindex];
-				gpointer *typed_args, *named_args;
-				CattrNamedArg *arginfo;
-				int num_named_args;
-
-				mono_reflection_create_custom_attr_data_args_noalloc (mono_get_corlib (), attr->ctor, attr->data, attr->data_size,
-																	&typed_args, &named_args, &num_named_args, &arginfo, error);
+				MonoDecodeCustomAttr *decoded_args = mono_reflection_create_custom_attr_data_args_noalloc (mono_get_corlib (), attr->ctor, attr->data, attr->data_size, error);
 				if (!is_ok (error)) {
 					ret = 0;
 					goto leave;
 				}
-				ret = *(gint32*)typed_args [1];
-				g_free (typed_args [1]);
-				g_free (typed_args);
-				g_free (named_args);
-				g_free (arginfo);
+
+				ret = *(gint32*)decoded_args->typed_args[1]->value.primitive;
+				mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);
 				return ret;
 			}
 		}
@@ -3188,7 +3199,7 @@ strdup_tolower (char *s)
 
 	s2 = g_strdup (s);
 	for (p = s2; *p; ++p)
-		*p = tolower (*p);
+		*p = GINT_TO_CHAR (tolower (*p));
 	return s2;
 }
 
@@ -3290,7 +3301,6 @@ init_jit_info_dbg_attrs (MonoJitInfo *ji)
 static GSList*
 create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, EventInfo *ei, int *suspend_policy)
 {
-	int i, j;
 	GSList *events = NULL;
 
 	*suspend_policy = SUSPEND_POLICY_NONE;
@@ -3308,13 +3318,13 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, EventInfo 
 	gint everything_else_suspend_policy = 0;
 	gint everything_else_req_id = 0;
 	gboolean is_already_filtered = FALSE;
-	for (i = 0; i < reqs->len; ++i) {
+	for (guint i = 0; i < reqs->len; ++i) {
 		EventRequest *req = (EventRequest *)g_ptr_array_index (reqs, i);
 		if (req->event_kind == event) {
 			gboolean filtered = FALSE;
 
 			/* Apply filters */
-			for (j = 0; j < req->nmodifiers; ++j) {
+			for (int j = 0; j < req->nmodifiers; ++j) {
 				Modifier *mod = &req->modifiers [j];
 
 				if (mod->kind == MOD_KIND_COUNT) {
@@ -3381,7 +3391,6 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, EventInfo 
 					MonoDebugSourceInfo *sinfo;
 					char *s;
 					gboolean found = FALSE;
-					int i;
 					GPtrArray *source_file_list;
 
 					while ((method = mono_class_get_methods (ei->klass, &iter))) {
@@ -3389,8 +3398,8 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, EventInfo 
 
 						if (minfo) {
 							mono_debug_get_seq_points (minfo, NULL, &source_file_list, NULL, NULL, NULL);
-							for (i = 0; i < source_file_list->len; ++i) {
-								sinfo = (MonoDebugSourceInfo *)g_ptr_array_index (source_file_list, i);
+							for (guint k = 0; k < source_file_list->len; ++k) {
+								sinfo = (MonoDebugSourceInfo *)g_ptr_array_index (source_file_list, k);
 								/*
 								 * Do a case-insesitive match by converting the file name to
 								 * lowercase.
@@ -3541,11 +3550,11 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 
 	nevents = g_slist_length (events);
 	buffer_init (&buf, 128);
-	buffer_add_byte (&buf, suspend_policy);
+	buffer_add_byte (&buf, GINT_TO_UINT8 (suspend_policy));
 	buffer_add_int (&buf, nevents);
 
 	for (l = events; l; l = l->next) {
-		buffer_add_byte (&buf, event); // event kind
+		buffer_add_byte (&buf, GINT_TO_UINT8 (event)); // event kind
 		buffer_add_int (&buf, GPOINTER_TO_INT (l->data)); // request id
 
 		ecount ++;
@@ -3619,7 +3628,7 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 			EventInfo *ei = (EventInfo *)arg;
 			buffer_add_objid (&buf, ei->exc);
 #ifdef TARGET_WASM
-			buffer_add_byte (&buf, ei->caught);
+			buffer_add_byte (&buf, GINT_TO_UINT8 (ei->caught));
 #endif
 			/*
 			 * We are not yet suspending, so get_objref () will not keep this object alive. So we need to do it
@@ -4017,7 +4026,7 @@ send_assemblies_for_domain (MonoDomain *domain, void *user_data)
 	mono_domain_set_fast (domain);
 
 	GPtrArray *assemblies = mono_alc_get_all_loaded_assemblies ();
-	for (int i = 0; i < assemblies->len; ++i)
+	for (guint i = 0; i < assemblies->len; ++i)
 		emit_assembly_load ((MonoAssembly*)g_ptr_array_index (assemblies, i), NULL);
 	g_ptr_array_free (assemblies, TRUE);
 
@@ -4933,7 +4942,7 @@ buffer_add_fixed_array (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain
 	buffer_add_byte (buf, VALUE_TYPE_ID_FIXED_ARRAY);
 	buffer_add_byte (buf, t->type);
 	buffer_add_int (buf, len_fixed_array );
-	for (int i = 0; i < len_fixed_array; i++) {
+	for (gint32 i = 0; i < len_fixed_array; i++) {
 		switch (t->type) {
 			case MONO_TYPE_BOOLEAN:
 			case MONO_TYPE_I1:
@@ -5168,10 +5177,10 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 		}
 
 		buffer_add_byte (buf, MONO_TYPE_VALUETYPE);
-		buffer_add_byte (buf, m_class_is_enumtype (klass));
+		buffer_add_byte (buf, !!m_class_is_enumtype (klass));
 
 		if (CHECK_PROTOCOL_VERSION(2, 61))
-			buffer_add_byte(buf, boxed_vtype);
+			buffer_add_byte(buf, !!boxed_vtype);
 		buffer_add_typeid (buf, domain, klass);
 
 		nfields = 0;
@@ -5290,40 +5299,40 @@ static ErrorCode decode_fixed_size_array_internal (MonoType *t, int type, MonoDo
 	for (int i = 0 ; i < fixedSizeLen; i++) {
 		switch (newType) {
 		case MONO_TYPE_BOOLEAN:
-			((guint8*)addr)[i] = decode_int (buf, &buf, limit);
+			((guint8*)addr)[i] = GINT_TO_UINT8 (decode_int (buf, &buf, limit));
 			break;
 		case MONO_TYPE_CHAR:
-			((gunichar2*)addr)[i] = decode_int (buf, &buf, limit);
+			((gunichar2*)addr)[i] = GINT_TO_UNICHAR2 (decode_int (buf, &buf, limit));
 			break;
 		case MONO_TYPE_I1:
-			((gint8*)addr)[i] = decode_int (buf, &buf, limit);
+			((gint8*)addr)[i] = GINT_TO_INT8 (decode_int (buf, &buf, limit));
 			break;
 		case MONO_TYPE_U1:
-			((guint8*)addr)[i] = decode_int (buf, &buf, limit);
+			((guint8*)addr)[i] = GINT_TO_UINT8 (decode_int (buf, &buf, limit));
 			break;
 		case MONO_TYPE_I2:
-			((gint16*)addr)[i] = decode_int (buf, &buf, limit);
+			((gint16*)addr)[i] = GINT_TO_INT16 (decode_int (buf, &buf, limit));
 			break;
 		case MONO_TYPE_U2:
-			((guint16*)addr)[i]  = decode_int (buf, &buf, limit);
+			((guint16*)addr)[i]  = GINT_TO_UINT16 (decode_int (buf, &buf, limit));
 			break;
 		case MONO_TYPE_I4:
-			((gint32*)addr)[i]  = decode_int (buf, &buf, limit);
+			((gint32*)addr)[i]  = GINT_TO_INT32 (decode_int (buf, &buf, limit));
 			break;
 		case MONO_TYPE_U4:
-			((guint32*)addr)[i]  = decode_int (buf, &buf, limit);
+			((guint32*)addr)[i]  = GINT_TO_UINT32 (decode_int (buf, &buf, limit));
 			break;
 		case MONO_TYPE_I8:
 			((gint64*)addr)[i]  = decode_long (buf, &buf, limit);
 			break;
 		case MONO_TYPE_U8:
-			((guint64*)addr)[i]  = decode_long (buf, &buf, limit);
+			((guint64*)addr)[i]  = GINT64_TO_UINT64 (decode_long (buf, &buf, limit));
 			break;
 		case MONO_TYPE_R4:
-			((guint32*)addr)[i]  = decode_int (buf, &buf, limit);
+			((guint32*)addr)[i]  = GINT_TO_UINT32 (decode_int (buf, &buf, limit));
 			break;
 		case MONO_TYPE_R8:
-			((guint64*)addr)[i]  = decode_long (buf, &buf, limit);
+			((guint64*)addr)[i]  = GINT64_TO_UINT64 (decode_long (buf, &buf, limit));
 			break;
 		}
 	}
@@ -5334,6 +5343,7 @@ static ErrorCode
 decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, guint8 *buf, guint8 **endbuf, guint8 *limit, gboolean check_field_datatype)
 {
 	ErrorCode err;
+
 	if (type != t->type && !MONO_TYPE_IS_REFERENCE (t) &&
 		!(t->type == MONO_TYPE_I && type == MONO_TYPE_VALUETYPE) &&
 		!(type == VALUE_TYPE_ID_FIXED_ARRAY) &&
@@ -5354,46 +5364,46 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 
 	switch (t->type) {
 	case MONO_TYPE_BOOLEAN:
-		*(guint8*)addr = decode_int (buf, &buf, limit);
+		*(guint8*)addr = GINT_TO_UINT8 (decode_int (buf, &buf, limit));
 		break;
 	case MONO_TYPE_CHAR:
-		*(gunichar2*)addr = decode_int (buf, &buf, limit);
+		*(gunichar2*)addr = GINT_TO_UNICHAR2 (decode_int (buf, &buf, limit));
 		break;
 	case MONO_TYPE_I1:
-		*(gint8*)addr = decode_int (buf, &buf, limit);
+		*(gint8*)addr = GINT_TO_INT8 (decode_int (buf, &buf, limit));
 		break;
 	case MONO_TYPE_U1:
-		*(guint8*)addr = decode_int (buf, &buf, limit);
+		*(guint8*)addr = GINT_TO_UINT8 (decode_int (buf, &buf, limit));
 		break;
 	case MONO_TYPE_I2:
-		*(gint16*)addr = decode_int (buf, &buf, limit);
+		*(gint16*)addr = GINT_TO_INT16 (decode_int (buf, &buf, limit));
 		break;
 	case MONO_TYPE_U2:
-		*(guint16*)addr = decode_int (buf, &buf, limit);
+		*(guint16*)addr = GINT_TO_UINT16 (decode_int (buf, &buf, limit));
 		break;
 	case MONO_TYPE_I4:
-		*(gint32*)addr = decode_int (buf, &buf, limit);
+		*(gint32*)addr = GINT_TO_INT32 (decode_int (buf, &buf, limit));
 		break;
 	case MONO_TYPE_U4:
-		*(guint32*)addr = decode_int (buf, &buf, limit);
+		*(guint32*)addr = GINT_TO_UINT32 (decode_int (buf, &buf, limit));
 		break;
 	case MONO_TYPE_I8:
 		*(gint64*)addr = decode_long (buf, &buf, limit);
 		break;
 	case MONO_TYPE_U8:
-		*(guint64*)addr = decode_long (buf, &buf, limit);
+		*(guint64*)addr = GINT64_TO_UINT64 (decode_long (buf, &buf, limit));
 		break;
 	case MONO_TYPE_R4:
-		*(guint32*)addr = decode_int (buf, &buf, limit);
+		*(guint32*)addr = GINT_TO_UINT32 (decode_int (buf, &buf, limit));
 		break;
 	case MONO_TYPE_R8:
-		*(guint64*)addr = decode_long (buf, &buf, limit);
+		*(guint64*)addr = GINT64_TO_UINT64 (decode_long (buf, &buf, limit));
 		break;
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_FNPTR:
 		/* We send these as I8, so we get them back as such */
 		g_assert (type == MONO_TYPE_I8);
-		*(gssize*)addr = decode_long (buf, &buf, limit);
+		*(gssize*)addr = GINT64_TO_SSIZE (decode_long (buf, &buf, limit));
 		break;
 	case MONO_TYPE_GENERICINST:
 		if (MONO_TYPE_ISSTRUCT (t)) {
@@ -5413,7 +5423,6 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 		if (type == MONO_TYPE_OBJECT || type == MONO_TYPE_STRING) {
 			/* Boxed vtype */
 			int objid = decode_objid (buf, &buf, limit);
-			ErrorCode err;
 			MonoObject *obj;
 
 			err = get_object (objid, (MonoObject**)&obj);
@@ -5437,7 +5446,6 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 		if (MONO_TYPE_IS_REFERENCE (t)) {
 			if (type == MONO_TYPE_CLASS || type == MONO_TYPE_OBJECT || type == MONO_TYPE_STRING) {
 				int objid = decode_objid (buf, &buf, limit);
-				ErrorCode err;
 				MonoObject *obj;
 
 				err = get_object (objid, (MonoObject**)&obj);
@@ -5702,7 +5710,7 @@ set_var (MonoType *t, MonoDebugVarInfo *var, MonoContext *ctx, MonoDomain *domai
 			v = is_signed ? *(gint32*)val : *(guint32*)val;
 			break;
 		case 8:
-			v = is_signed ? *(gint64*)val : *(guint64*)val;
+			v = is_signed ? GINT64_TO_HMREG (*(gint64*)val) : GUINT64_TO_HMREG (*(guint64*)val);
 			break;
 		default:
 			g_assert_not_reached ();
@@ -6052,7 +6060,6 @@ mono_do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, gu
 			if (mono_class_is_abstract (m->klass))
 				return ERR_INVALID_ARGUMENT;
 			else {
-				ERROR_DECL (error);
 				this_arg = mono_object_new_checked (m->klass, error);
 				if (!is_ok (error)) {
 					mono_error_cleanup (error);
@@ -6385,7 +6392,7 @@ get_types (gpointer key, gpointer value, gpointer user_data)
 	GetTypesArgs *ud = (GetTypesArgs*)user_data;
 
 	GPtrArray *assemblies = mono_alc_get_all_loaded_assemblies ();
-	for (int i = 0; i < assemblies->len; ++i) {
+	for (guint i = 0; i < assemblies->len; ++i) {
 		ass = (MonoAssembly*)g_ptr_array_index (assemblies, i);
 
 		if (ass->image) {
@@ -6429,7 +6436,7 @@ get_types_for_source_file (gpointer key, gpointer value, gpointer user_data)
 			files = get_source_files_for_type (klass);
 			g_hash_table_insert (info->source_files, klass, files);
 
-			for (int i = 0; i < files->len; ++i) {
+			for (guint i = 0; i < files->len; ++i) {
 				char *s = (char *)g_ptr_array_index (files, i);
 				char *s2 = dbg_path_get_basename (s);
 				char *s3;
@@ -6491,8 +6498,8 @@ send_enc_delta (MonoImage *image, gconstpointer dmeta_bytes, int32_t dmeta_len, 
 
 		EnCInfo info;
 		info.image = image;
-		info.meta_bytes = dpdb_bytes;
-		info.meta_len = dpdb_len;
+		info.meta_bytes = dmeta_bytes;
+		info.meta_len = dmeta_len;
 		info.pdb_bytes = dpdb_bytes;
 		info.pdb_len = dpdb_len;
 
@@ -6971,18 +6978,17 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		/* Handled in the main loop */
 		break;
 	case MDBGPROT_CMD_VM_READ_MEMORY: {
-		guint8* memory = (guint8*) decode_long (p, &p, end);
+		guint8* memory = (guint8*)GINT_TO_POINTER (decode_long (p, &p, end));
 		int size = decode_int (p, &p, end);
 		PRINT_DEBUG_MSG(1, "MDBGPROT_CMD_VM_READ_MEMORY - [%p] - size - %d\n", memory, size);
 		buffer_add_byte_array (buf, memory, size);
 		break;
 	}
 	case MDBGPROT_CMD_GET_ASSEMBLY_BY_NAME: {
-		int i;
 		char* assembly_name = decode_string (p, &p, end);
 		//we get 'foo.dll' but mono_assembly_load expects 'foo' so we strip the last dot
 		char *lookup_name = g_strdup (assembly_name);
-		for (i = strlen (lookup_name) - 1; i >= 0; --i) {
+		for (int i = ((int)strlen (lookup_name) - 1); i >= 0; --i) {
 			if (lookup_name [i] == '.') {
 				lookup_name [i] = 0;
 				break;
@@ -7003,7 +7009,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		g_free (lookup_name);
 		if (!assembly) {
 			GPtrArray *assemblies = mono_alc_get_all_loaded_assemblies ();
-			for (int i = 0; i < assemblies->len; ++i) {
+			for (guint i = 0; i < assemblies->len; ++i) {
 				MonoAssembly *assemblyOnALC = (MonoAssembly*)g_ptr_array_index (assemblies, i);
 				if (!strcmp(assemblyOnALC->aname.name, aname->name)) {
 					assembly = assemblyOnALC;
@@ -7027,7 +7033,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		uint8_t* guid = m_dbgprot_decode_byte_array (p, &p, end, &len);
 		MonoAssembly *assembly = NULL;
 		GPtrArray *assemblies = mono_alc_get_all_loaded_assemblies ();
-		for (int i = 0; i < assemblies->len; ++i) {
+		for (guint i = 0; i < assemblies->len; ++i) {
 			MonoAssembly *assemblyOnALC = (MonoAssembly*)g_ptr_array_index (assemblies, i);
 			if (!memcmp(assemblyOnALC->image->heap_guid.data, guid, len)) {
 				assembly = assemblyOnALC;
@@ -7094,7 +7100,7 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				method = decode_methodid (p, &p, end, &domain, &err);
 				if (err != ERR_NONE)
 					return err;
-				location = decode_long (p, &p, end);
+				location = GINT64_TO_LONG (decode_long (p, &p, end));
 			} else if (mod == MOD_KIND_STEP) {
 				step_thread_id = decode_id (p, &p, end);
 				size = (StepSize)decode_int (p, &p, end);
@@ -7237,7 +7243,7 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			if (!isBPOnManagedCode) {
 				mono_de_cancel_all_ss ();
 			}
-			buffer_add_byte (buf, isBPOnManagedCode);
+			buffer_add_byte (buf, GINT_TO_UINT8 (isBPOnManagedCode));
 #endif
 		} else if (req->event_kind == EVENT_KIND_METHOD_ENTRY) {
 			req->info = mono_de_set_breakpoint (NULL, METHOD_ENTRY_IL_OFFSET, req, NULL);
@@ -7346,7 +7352,7 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 		GPtrArray *assemblies = mono_alc_get_all_loaded_assemblies ();
 		buffer_add_int (buf, assemblies->len);
-		for (int i = 0; i < assemblies->len; ++i) {
+		for (guint i = 0; i < assemblies->len; ++i) {
 			MonoAssembly *ass = (MonoAssembly*)g_ptr_array_index (assemblies, i);
 			buffer_add_assemblyid (buf, domain, ass);
 		}
@@ -7828,13 +7834,13 @@ static int get_static_field_value(MonoClassField* f, MonoClass* klass, MonoDomai
 			return -1;
 		}
 
-		if (f->offset == -1) {
+		if (m_field_get_offset (f) == -1) {
 			/* Special static */
 			gpointer addr = mono_special_static_field_get_offset (f, error);
 			mono_error_assert_ok (error);
 			src = mono_get_special_static_data_for_thread (thread, GPOINTER_TO_UINT (addr));
 		} else {
-			src = (char*)mono_vtable_get_static_field_data (vtable) + f->offset;
+			src = (char*)mono_vtable_get_static_field_data (vtable) + m_field_get_offset (f);
 		}
 		buffer_add_value(buf, f->type, src, domain);
 	}
@@ -7859,14 +7865,14 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 	ERROR_DECL (error);
 	MonoClass *nested;
 	MonoType *type;
-	gpointer iter;
 	guint8 b;
 	int nnested;
 	ErrorCode err;
-	char *name;
 
 	switch (command) {
 	case CMD_TYPE_GET_INFO: {
+		gpointer iter;
+		char *name;
 		buffer_add_string (buf, m_class_get_name_space (klass));
 		buffer_add_string (buf, m_class_get_name (klass));
 		// FIXME: byref
@@ -7994,18 +8000,18 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		int nprops;
 		int i = 0;
 		gpointer iter = NULL;
-		MonoProperty *p;
+		MonoProperty *prop;
 
 		nprops = mono_class_num_properties (klass);
 
 		buffer_add_int (buf, nprops);
 
-		while ((p = mono_class_get_properties (klass, &iter))) {
-			buffer_add_propertyid (buf, domain, p);
-			buffer_add_string (buf, p->name);
-			buffer_add_methodid (buf, domain, p->get);
-			buffer_add_methodid (buf, domain, p->set);
-			buffer_add_int (buf, p->attrs);
+		while ((prop = mono_class_get_properties (klass, &iter))) {
+			buffer_add_propertyid (buf, domain, prop);
+			buffer_add_string (buf, prop->name);
+			buffer_add_methodid (buf, domain, prop->get);
+			buffer_add_methodid (buf, domain, prop->set);
+			buffer_add_int (buf, prop->attrs & ~MONO_PROPERTY_META_FLAG_MASK);
 			i ++;
 		}
 		g_assert (i == nprops);
@@ -8151,7 +8157,10 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 			// FIXME: Check for literal/const
 
 			vtable = mono_class_vtable_checked (m_field_get_parent (f), error);
-			goto_if_nok (error, invalid_fieldid);
+			if (!is_ok (error)) {
+				mono_error_cleanup (error);
+				goto invalid_fieldid;
+			}
 
 			val = (guint8 *)g_malloc (mono_class_instance_size (mono_class_from_mono_type_internal (f->type)));
 			err = decode_value (f->type, domain, val, p, &p, end, TRUE);
@@ -8218,10 +8227,11 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 			mlisttype = decode_int (p, &p, end);
 		else
 			mlisttype = 0; // MLISTTYPE_All
-		ERROR_DECL (error);
-		GPtrArray *array;
 
-		error_init (error);
+		if (!klass)
+			goto invalid_argument;
+
+		GPtrArray *array;
 		array = mono_class_get_methods_by_name (klass, name, flags & ~BINDING_FLAGS_IGNORE_CASE, mlisttype, TRUE, error);
 		if (!is_ok (error)) {
 			mono_error_cleanup (error);
@@ -8247,10 +8257,16 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 
 		for (parent = tclass; parent; parent = m_class_get_parent (parent)) {
 			mono_class_setup_interfaces (parent, error);
-			goto_if_nok (error, loader_error);
+			if (!is_ok (error)) {
+				mono_error_cleanup (error);
+				goto loader_error;
+			}
 
 			collect_interfaces (parent, iface_hash, error);
-			goto_if_nok (error, loader_error);
+			if (!is_ok (error)) {
+				mono_error_cleanup (error);
+				goto loader_error;
+			}
 		}
 
 		buffer_add_int (buf, g_hash_table_size (iface_hash));
@@ -8296,7 +8312,10 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 	}
 	case CMD_TYPE_IS_INITIALIZED: {
 		MonoVTable *vtable = mono_class_vtable_checked (klass, error);
-		goto_if_nok (error, loader_error);
+		if (!is_ok (error)) {
+			mono_error_cleanup (error);
+			goto loader_error;
+		}
 
 		if (vtable)
 			buffer_add_int (buf, (vtable->initialized || vtable->init_failed) ? 1 : 0);
@@ -8305,7 +8324,6 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		break;
 	}
 	case CMD_TYPE_CREATE_INSTANCE: {
-		ERROR_DECL (error);
 		MonoObject *obj;
 
 		obj = mono_object_new_checked (klass, error);
@@ -8339,9 +8357,15 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 	}
 	case MDBGPROT_CMD_TYPE_INITIALIZE: {
 		MonoVTable *vtable = mono_class_vtable_checked (klass, error);
-		goto_if_nok (error, loader_error);
+		if (!is_ok (error)) {
+			mono_error_cleanup (error);
+			goto loader_error;
+		}
 		mono_runtime_class_init_full (vtable, error);
-		goto_if_nok (error, loader_error);
+		if (!is_ok (error)) {
+			mono_error_cleanup (error);
+			goto loader_error;
+		}
 		break;
 	}
 	default:
@@ -8905,8 +8929,8 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			buffer_add_int (buf, 0);
 		} else {
 			const size_t len = strlen (s);
-			buffer_add_int (buf, len);
-			buffer_add_data (buf, (guint8*)s, len);
+			buffer_add_int (buf, (guint32)len);
+			buffer_add_data (buf, (guint8*)s, (uint32_t)len);
 			g_free (s);
 		}
 		break;
@@ -8976,7 +9000,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		start_frame = decode_int (p, &p, end);
 		length = decode_int (p, &p, end);
 
-		if (start_frame != 0 || length != -1)
+		if (start_frame != 0)
 			return ERR_NOT_IMPLEMENTED;
 		GET_TLS_DATA_FROM_THREAD (thread);
 		if (tls == NULL)
@@ -8984,8 +9008,8 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 		compute_frame_info (thread, tls, TRUE); //the last parameter is TRUE to force that the frame info that will be send is synchronised with the debugged thread
 
-		buffer_add_int (buf, tls->frame_count);
-		for (i = 0; i < tls->frame_count; ++i) {
+		buffer_add_int (buf, length != -1 ? (length > tls->frame_count ? tls->frame_count : length) : tls->frame_count);
+		for (i = 0; i < tls->frame_count && (i < length || length == -1); ++i) {
 			buffer_add_int (buf, tls->frames [i]->id);
 			buffer_add_methodid (buf, tls->frames [i]->de.domain, tls->frames [i]->actual_method);
 			buffer_add_int (buf, tls->frames [i]->il_offset);
@@ -8995,7 +9019,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			 * conditional code in the client, since a frame whose type isn't
 			 * FRAME_TYPE_MANAGED has no method, location, etc.
 			 */
-			buffer_add_byte (buf, tls->frames [i]->flags);
+			buffer_add_byte (buf, GINT_TO_UINT8 (tls->frames [i]->flags));
 		}
 		break;
 	}
@@ -9036,7 +9060,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		if (tls->frame_count == 0 || tls->frames [0]->actual_method != method)
 			return ERR_INVALID_ARGUMENT;
 
-		found_sp = mono_find_seq_point (method, il_offset, &seq_points, &sp);
+		found_sp = mono_find_seq_point (method, GINT64_TO_INT32 (il_offset), &seq_points, &sp);
 
 		g_assert (seq_points);
 
@@ -9211,7 +9235,6 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 	switch (command) {
 	case MDBGPROT_CMD_STACK_FRAME_GET_ARGUMENTS: {
-		int i = 0;
 		buffer_add_int(buf, sig->hasthis ? sig->param_count + 1 : sig->param_count);
 		if (sig->hasthis)
 			cmd_stack_frame_get_this (frame, sig, buf, jit);
@@ -9277,7 +9300,6 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		break;
 	}
 	case CMD_STACK_FRAME_SET_VALUES: {
-		ERROR_DECL (error);
 		guint8 *val_buf;
 		MonoType *t;
 		MonoDebugVarInfo *var = NULL;
@@ -9500,8 +9522,8 @@ string_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		buffer_add_long (buf, mono_string_length_internal (str));
 		break;
 	case CMD_STRING_REF_GET_CHARS:
-		index = decode_long (p, &p, end);
-		length = decode_long (p, &p, end);
+		index = GINT64_TO_INT (decode_long (p, &p, end));
+		length = GINT64_TO_INT (decode_long (p, &p, end));
 		if (index > mono_string_length_internal (str) - length)
 			return ERR_INVALID_ARGUMENT;
 		c = mono_string_chars_internal (str) + index;
@@ -9577,10 +9599,10 @@ pointer_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		type =  m_class_get_byval_arg (m_class_get_element_class (klass));
 		size = mono_type_size (type, &align);
 
-		if (!valid_memory_address((gpointer)addr, size))
+		if (!valid_memory_address(GINT_TO_POINTER (addr), size))
 			return ERR_INVALID_ARGUMENT;
 
-		buffer_add_value (buf, type, (gpointer)addr, domain);
+		buffer_add_value (buf, type, GINT_TO_POINTER (addr), domain);
 
 		break;
 	default:
@@ -9659,6 +9681,8 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			if (!found)
 				goto invalid_fieldid;
 get_field_value:
+			/* TODO: metadata-update: implement support for added fields */
+			g_assert (!m_field_is_from_update (f));
 			if (f->type->attrs & FIELD_ATTRIBUTE_STATIC) {
 				guint8 *val;
 				MonoVTable *vtable;
@@ -9681,7 +9705,7 @@ get_field_value:
 				buffer_add_value (buf, f->type, val, obj->vtable->domain);
 				g_free (val);
 			} else {
-				void *field_value = (guint8*)obj + f->offset;
+				void *field_value = (guint8*)obj + m_field_get_offset (f);
 
 				buffer_add_value (buf, f->type, field_value, obj->vtable->domain);
 			}
@@ -9706,6 +9730,9 @@ get_field_value:
 			if (!found)
 				goto invalid_fieldid;
 
+			/* TODO: metadata-update: implement support for added fields. */
+			g_assert (!m_field_is_from_update (f));
+
 			if (f->type->attrs & FIELD_ATTRIBUTE_STATIC) {
 				guint8 *val;
 				MonoVTable *vtable;
@@ -9729,7 +9756,7 @@ get_field_value:
 				mono_field_static_set_value_internal (vtable, f, val);
 				g_free (val);
 			} else {
-				err = decode_value (f->type, obj->vtable->domain, (guint8*)obj + f->offset, p, &p, end, TRUE);
+				err = decode_value (f->type, obj->vtable->domain, (guint8*)obj + m_field_get_offset (f), p, &p, end, TRUE);
 				if (err != ERR_NONE)
 					goto exit;
 			}
@@ -10042,7 +10069,7 @@ wait_for_attach (void)
 	MONO_REQ_GC_UNSAFE_MODE;
 
 #ifndef DISABLE_SOCKET_TRANSPORT
-	if (listen_fd == -1) {
+	if (listen_fd == INVALID_SOCKET) {
 		PRINT_DEBUG_MSG (1, "[dbg] Invalid listening socket\n");
 		return FALSE;
 	}
@@ -10052,8 +10079,8 @@ wait_for_attach (void)
 	conn_fd = socket_transport_accept (listen_fd);
 	MONO_EXIT_GC_SAFE;
 
-	PRINT_DEBUG_MSG (1, "Accepted connection on %d\n", conn_fd);
-	if (conn_fd == -1) {
+	PRINT_DEBUG_MSG (1, "Accepted connection on %d\n", (int)conn_fd);
+	if (conn_fd == INVALID_SOCKET) {
 		PRINT_DEBUG_MSG (1, "[dbg] Bad client connection\n");
 		return FALSE;
 	}

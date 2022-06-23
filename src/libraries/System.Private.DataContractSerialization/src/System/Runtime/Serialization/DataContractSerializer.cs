@@ -1,22 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Text;
+using System.Xml;
+using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+
 namespace System.Runtime.Serialization
 {
-    using System;
-    using System.Collections;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.IO;
-    using System.Reflection;
-    using System.Text;
-    using System.Xml;
-    using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Runtime.CompilerServices;
-    using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, DataContract>;
-    using System.Diagnostics.CodeAnalysis;
-
     public sealed class DataContractSerializer : XmlObjectSerializer
     {
         private Type _rootType;
@@ -104,7 +104,7 @@ namespace System.Runtime.Serialization
         }
 
         [MemberNotNull(nameof(_rootType))]
-        private void Initialize(Type type!!,
+        private void Initialize(Type type,
             IEnumerable<Type>? knownTypes,
             int maxItemsInObjectGraph,
             bool ignoreExtensionDataObject,
@@ -112,6 +112,8 @@ namespace System.Runtime.Serialization
             DataContractResolver? dataContractResolver,
             bool serializeReadOnlyTypes)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             _rootType = type;
 
             if (knownTypes != null)

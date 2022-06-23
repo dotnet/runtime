@@ -1,8 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
+
 namespace System.Runtime.InteropServices.ComTypes
 {
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public enum SYSKIND
     {
         SYS_WIN16 = 0,
@@ -11,6 +14,7 @@ namespace System.Runtime.InteropServices.ComTypes
         SYS_WIN64 = SYS_MAC + 1
     }
 
+    [EditorBrowsable(EditorBrowsableState.Never)]
     [Flags]
     public enum LIBFLAGS : short
     {
@@ -20,6 +24,7 @@ namespace System.Runtime.InteropServices.ComTypes
         LIBFLAG_FHASDISKIMAGE = 0x8
     }
 
+    [EditorBrowsable(EditorBrowsableState.Never)]
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct TYPELIBATTR
     {
@@ -32,6 +37,7 @@ namespace System.Runtime.InteropServices.ComTypes
     }
 
     [Guid("00020402-0000-0000-C000-000000000046")]
+    [EditorBrowsable(EditorBrowsableState.Never)]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     [ComImport]
     public interface ITypeLib

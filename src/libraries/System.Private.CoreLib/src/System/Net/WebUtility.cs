@@ -62,8 +62,10 @@ namespace System.Net
             return sb.ToString();
         }
 
-        public static void HtmlEncode(string? value, TextWriter output!!)
+        public static void HtmlEncode(string? value, TextWriter output)
         {
+            ArgumentNullException.ThrowIfNull(output);
+
             if (string.IsNullOrEmpty(value))
             {
                 output.Write(value);
@@ -183,7 +185,7 @@ namespace System.Net
 
             ReadOnlySpan<char> valueSpan = value.AsSpan();
 
-            int index = IndexOfHtmlDecodingChars(valueSpan);
+            int index = valueSpan.IndexOf('&');
             if (index < 0)
             {
                 return value;
@@ -201,8 +203,10 @@ namespace System.Net
             return sb.ToString();
         }
 
-        public static void HtmlDecode(string? value, TextWriter output!!)
+        public static void HtmlDecode(string? value, TextWriter output)
         {
+            ArgumentNullException.ThrowIfNull(output);
+
             if (string.IsNullOrEmpty(value))
             {
                 output.Write(value);
@@ -211,7 +215,7 @@ namespace System.Net
 
             ReadOnlySpan<char> valueSpan = value.AsSpan();
 
-            int index = IndexOfHtmlDecodingChars(valueSpan);
+            int index = valueSpan.IndexOf('&');
             if (index == -1)
             {
                 output.Write(value);
@@ -675,13 +679,9 @@ namespace System.Net
                 1 << ((int)'-' - 0x20) | // 0x2D
                 1 << ((int)'.' - 0x20); // 0x2E
 
-            unchecked
-            {
-                return ((uint)(code - 'a') <= (uint)('z' - 'a')) ||
-                       ((uint)(code - 'A') <= (uint)('Z' - 'A')) ||
-                       ((uint)(code - 0x20) <= (uint)('9' - 0x20) && ((1 << (code - 0x20)) & safeSpecialCharMask) != 0) ||
-                       (code == (int)'_');
-            }
+            return char.IsAsciiLetter(ch) ||
+                   ((uint)(code - 0x20) <= (uint)('9' - 0x20) && ((1 << (code - 0x20)) & safeSpecialCharMask) != 0) ||
+                   (code == (int)'_');
         }
 
         private static bool ValidateUrlEncodingParameters(byte[]? bytes, int offset, int count)
@@ -699,21 +699,6 @@ namespace System.Net
             }
 
             return true;
-        }
-
-        private static int IndexOfHtmlDecodingChars(ReadOnlySpan<char> input)
-        {
-            // this string requires html decoding if it contains '&' or a surrogate character
-            for (int i = 0; i < input.Length; i++)
-            {
-                char c = input[i];
-                if (c == '&' || char.IsSurrogate(c))
-                {
-                    return i;
-                }
-            }
-
-            return -1;
         }
 
         #endregion

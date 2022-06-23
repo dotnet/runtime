@@ -13,7 +13,7 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "RegQueryValueExW", CharSet = CharSet.Unicode, ExactSpelling = true)]
+        [LibraryImport(Libraries.Advapi32, EntryPoint = "RegQueryValueExW", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int RegQueryValueEx(
             SafeRegistryHandle hKey,
             string? lpValueName,
@@ -22,7 +22,7 @@ internal static partial class Interop
             byte[]? lpData,
             ref int lpcbData);
 
-        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "RegQueryValueExW", CharSet = CharSet.Unicode, ExactSpelling = true)]
+        [LibraryImport(Libraries.Advapi32, EntryPoint = "RegQueryValueExW", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int RegQueryValueEx(
             SafeRegistryHandle hKey,
             string? lpValueName,
@@ -31,7 +31,7 @@ internal static partial class Interop
             ref int lpData,
             ref int lpcbData);
 
-        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "RegQueryValueExW", CharSet = CharSet.Unicode, ExactSpelling = true)]
+        [LibraryImport(Libraries.Advapi32, EntryPoint = "RegQueryValueExW", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int RegQueryValueEx(
             SafeRegistryHandle hKey,
             string? lpValueName,
@@ -40,7 +40,7 @@ internal static partial class Interop
             ref long lpData,
             ref int lpcbData);
 
-        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "RegQueryValueExW", CharSet = CharSet.Unicode, ExactSpelling = true)]
+        [LibraryImport(Libraries.Advapi32, EntryPoint = "RegQueryValueExW", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int RegQueryValueEx(
             SafeRegistryHandle hKey,
             string? lpValueName,

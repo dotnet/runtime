@@ -69,7 +69,7 @@ def setup_args(args):
 
 def extract_assertion_error(text):
     """ Extract assertion error from stderr output
-    
+
     Args:
         text (string): The text that might contain an assertion
     Returns:
@@ -202,9 +202,9 @@ def main(main_args):
         if len(crashes_by_assert) > 0:
             f.write("# {} distinct assertion errors seen\n".format(len(crashes_by_assert)))
             for error, examples in sorted(crashes_by_assert.items(), key=lambda p: len(p[1]), reverse=True):
-                f.write("## ({} occurences) {}\n".format(len(examples), error))
+                f.write("## ({} occurrences) {}\n".format(len(examples), error))
                 if len(examples) > 1:
-                    f.write("Example occurence:\n")
+                    f.write("Example occurrence:\n")
                 f.write("```scala\n")
                 f.write(examples[0]['Message'].strip() + "\n")
                 f.write("```\n")

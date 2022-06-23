@@ -84,8 +84,10 @@ namespace System.DirectoryServices.ActiveDirectory
         #endregion IDisposable
 
         #region public methods
-        public static ActiveDirectorySchema GetSchema(DirectoryContext context!!)
+        public static ActiveDirectorySchema GetSchema(DirectoryContext context)
         {
+            ArgumentNullException.ThrowIfNull(context);
+
             // contexttype should be Forest, DirectoryServer or ConfigurationSet
             if ((context.ContextType != DirectoryContextType.Forest) &&
                 (context.ContextType != DirectoryContextType.ConfigurationSet) &&

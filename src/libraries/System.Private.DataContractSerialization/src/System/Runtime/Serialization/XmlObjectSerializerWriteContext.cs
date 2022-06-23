@@ -501,7 +501,7 @@ namespace System.Runtime.Serialization
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        internal void GetObjectData(ISerializable obj, SerializationInfo serInfo, StreamingContext context)
+        internal static void GetObjectData(ISerializable obj, SerializationInfo serInfo, StreamingContext context)
         {
             obj.GetObjectData(serInfo, context);
         }
@@ -689,7 +689,7 @@ namespace System.Runtime.Serialization
             }
 
             if (dataNode.PreservesReferences
-                && OnHandleReference(xmlWriter, (dataNode.Value == null ? dataNode : dataNode.Value), true /*canContainCyclicReference*/))
+                && OnHandleReference(xmlWriter, dataNode.Value ?? dataNode, canContainCyclicReference: true))
                 return;
 
             Type dataType = dataNode.DataType;
@@ -717,7 +717,7 @@ namespace System.Runtime.Serialization
                     xmlWriter.WriteExtensionData(dataNode);
             }
             if (dataNode.PreservesReferences)
-                OnEndHandleReference(xmlWriter, (dataNode.Value == null ? dataNode : dataNode.Value), true  /*canContainCyclicReference*/);
+                OnEndHandleReference(xmlWriter, (dataNode.Value ?? dataNode), true  /*canContainCyclicReference*/);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]

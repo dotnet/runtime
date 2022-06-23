@@ -37,7 +37,6 @@ enum MAPPINGTYPE
 #define COMPRESSED_MODEL_STREAM_A   "#~"
 #define ENC_MODEL_STREAM_A          "#-"
 #define MINIMAL_MD_STREAM_A         "#JTD"
-#define HOT_MODEL_STREAM_A          "#!"
 #ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
 #define PDB_STREAM_A                "#Pdb"
 #endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
@@ -50,7 +49,6 @@ enum MAPPINGTYPE
 #define COMPRESSED_MODEL_STREAM     W("#~")
 #define ENC_MODEL_STREAM            W("#-")
 #define MINIMAL_MD_STREAM           W("#JTD")
-#define HOT_MODEL_STREAM            W("#!")
 #ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
 #define PDB_STREAM                  W("#Pdb")
 #endif // FEATURE_METADATA_EMIT_PORTABLE_PDB

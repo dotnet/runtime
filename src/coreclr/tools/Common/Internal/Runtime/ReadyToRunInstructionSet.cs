@@ -37,6 +37,9 @@ namespace Internal.ReadyToRunConstants
         Dp=23,
         Rdm=24,
         AvxVnni=25,
+        Rcpc=26,
+        Movbe=27,
+        X86Serialize=28,
 
     }
 }

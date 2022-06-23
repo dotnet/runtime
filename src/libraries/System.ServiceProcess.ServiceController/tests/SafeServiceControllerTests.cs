@@ -81,12 +81,12 @@ namespace System.ServiceProcess.Tests
             ServiceController[] devices = ServiceController.GetDevices();
             Assert.True(devices.Length != 0);
 
-            const ServiceType SERVICE_TYPE_DRIVER =
+            const ServiceType SERVICE_DRIVER =
                 ServiceType.FileSystemDriver |
                 ServiceType.KernelDriver |
                 ServiceType.RecognizerDriver;
 
-            Assert.All(devices, device => Assert.NotEqual(0, (int)(device.ServiceType & SERVICE_TYPE_DRIVER)));
+            Assert.All(devices, device => Assert.NotEqual(0, (int)(device.ServiceType & SERVICE_DRIVER)));
         }
 
         [Fact]

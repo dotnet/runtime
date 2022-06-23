@@ -68,7 +68,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             // Check encrypted import with the wrong password.
             // It shouldn't do enough work to realize it was wrong.
             pwBytes = Array.Empty<byte>();
-            Assert.Throws<ObjectDisposedException>(() => key.ImportEncryptedPkcs8PrivateKey("", pkcs8EncryptedPrivate, out _));
+            Assert.Throws<ObjectDisposedException>(() => key.ImportEncryptedPkcs8PrivateKey((ReadOnlySpan<char>)"", pkcs8EncryptedPrivate, out _));
             Assert.Throws<ObjectDisposedException>(() => key.ImportEncryptedPkcs8PrivateKey(pwBytes, pkcs8EncryptedPrivate, out _));
         }
 
@@ -182,7 +182,7 @@ QT4YuclwLvQmTewyjLtDGiDF/mC+4kpyBePeO9kfkRUDHiwSNk/efN4ug1xQgwhu
 qE3Db1UI4anCCnyEj/jDA8R6hZTFDjxu6bG0Z66g7I2GBDEYaaB+8x0vtiyu5LXo
 6UZ53SX6S+jfIqJoF5YME9zVMoO2kwS/EGvc64+epCGcee1Nx4SGgUcr5HJYz1P4
 CU+l4wPQR0rRmYHIJJIvFh5OXk84pV0crsOrekw7tHeNU6DMzw==",
-                Encoding.UTF8.GetBytes("Password > cipher"),
+                "Password > cipher"u8.ToArray(),
                 new PbeParameters(
                     PbeEncryptionAlgorithm.Aes192Cbc,
                     HashAlgorithmName.SHA256,
@@ -581,7 +581,7 @@ KaC843/LqYiSNoD7rBPpSpkyLtldwhqc7o2Wz7tyb1Oj8WF47AJD5OI=");
             using (DSA key = DSAFactory.Create())
             {
                 Assert.ThrowsAny<CryptographicException>(
-                    () => key.ImportEncryptedPkcs8PrivateKey("test", high3DesIterationKey, out _));
+                    () => key.ImportEncryptedPkcs8PrivateKey((ReadOnlySpan<char>)"test", high3DesIterationKey, out _));
             }
         }
 

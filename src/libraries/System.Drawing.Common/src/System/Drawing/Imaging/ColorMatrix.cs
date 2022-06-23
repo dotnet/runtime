@@ -3,6 +3,9 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+#if NET7_0_OR_GREATER
+using System.Runtime.InteropServices.Marshalling;
+#endif
 
 namespace System.Drawing.Imaging
 {
@@ -396,6 +399,7 @@ namespace System.Drawing.Imaging
         internal ref float GetPinnableReference() => ref _matrix00;
 
 #if NET7_0_OR_GREATER
+        [CustomTypeMarshaller(typeof(ColorMatrix), Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
         internal unsafe struct PinningMarshaller
         {
             private readonly ColorMatrix _managed;
@@ -406,7 +410,7 @@ namespace System.Drawing.Imaging
 
             public ref float GetPinnableReference() => ref (_managed is null ? ref Unsafe.NullRef<float>() : ref _managed.GetPinnableReference());
 
-            public void* Value => Unsafe.AsPointer(ref GetPinnableReference());
+            public void* ToNativeValue() => Unsafe.AsPointer(ref GetPinnableReference());
         }
 #endif
     }

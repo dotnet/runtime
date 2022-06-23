@@ -337,7 +337,7 @@ public:
         mdMethodDef mb);                    // The method for which to get props.
 
     //*****************************************
-    // return method implementation informaiton, like RVA and implflags
+    // return method implementation information, like RVA and implflags
     //*****************************************
     __checkReturn
     STDMETHODIMP GetMethodImplProps(

@@ -1,12 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+#if NET7_0_OR_GREATER
+using System.Runtime.InteropServices.Marshalling;
+#endif
+
 namespace System.Drawing.Imaging
 {
-    using System.Diagnostics;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.InteropServices;
-
     [StructLayout(LayoutKind.Sequential, Pack = 8)]
     internal sealed class MetafileHeaderWmf
     {
@@ -55,6 +58,7 @@ namespace System.Drawing.Imaging
         public int LogicalDpiY;
 
 #if NET7_0_OR_GREATER
+        [CustomTypeMarshaller(typeof(MetafileHeaderWmf), Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
         internal unsafe struct InPlaceMarshaller
         {
             [StructLayout(LayoutKind.Sequential, Pack = 8)]
@@ -120,11 +124,9 @@ namespace System.Drawing.Imaging
                 _native.LogicalDpiY = managed.LogicalDpiY;
             }
 
-            public Native Value
-            {
-                get => _native;
-                set => _native = value;
-            }
+            public Native ToNativeValue() => _native;
+
+            public void FromNativeValue(Native value) => _native = value;
 
             public MetafileHeaderWmf ToManaged()
             {

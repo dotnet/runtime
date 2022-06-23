@@ -289,8 +289,6 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HelperMethodFrame::UpdateRegDisplay cached ip:%p, sp:%p\n", m_MachState.GetRetAddr(), m_MachState.esp()));
 
-    pRD->PCTAddr = dac_cast<TADDR>(m_MachState.pRetAddr());
-
 #ifdef FEATURE_EH_FUNCLETS
 
     pRD->IsCallerContextValid = FALSE;
@@ -306,6 +304,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
         InsureInit(false, pUnwoundState);
 
+        pRD->PCTAddr = dac_cast<TADDR>(pUnwoundState->pRetAddr());
         pRD->pCurrentContext->Eip = pRD->ControlPC = pUnwoundState->GetRetAddr();
         pRD->pCurrentContext->Esp = pRD->SP        = pUnwoundState->esp();
 
@@ -325,6 +324,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     }
 #endif // DACCESS_COMPILE
 
+    pRD->PCTAddr = dac_cast<TADDR>(m_MachState.pRetAddr());
     pRD->pCurrentContext->Eip = pRD->ControlPC = m_MachState.GetRetAddr();
     pRD->pCurrentContext->Esp = pRD->SP = (DWORD) m_MachState.esp();
 
@@ -401,6 +401,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->pEbx = (DWORD*) m_MachState.pEbx();
     pRD->pEbp = (DWORD*) m_MachState.pEbp();
 
+    pRD->PCTAddr = dac_cast<TADDR>(m_MachState.pRetAddr());
     pRD->ControlPC = m_MachState.GetRetAddr();
     pRD->SP  = (DWORD) m_MachState.esp();
 
@@ -1006,7 +1007,7 @@ extern "C" VOID STDCALL StubRareDisableTHROWWorker(Thread *pThread)
     // when we start executing here, we are actually in cooperative mode.  But we
     // haven't synchronized with the barrier to reentry yet.  So we are in a highly
     // dangerous mode.  If we call managed code, we will potentially be active in
-    // the GC heap, even as GC's are occuring!
+    // the GC heap, even as GC's are occurring!
 
     // We must do the following in this order, because otherwise we would be constructing
     // the exception for the abort without synchronizing with the GC.  Also, we have no
@@ -1183,63 +1184,6 @@ UMEntryThunk* UMEntryThunk::Decode(LPVOID pCallback)
         return NULL;
     }
     return *(UMEntryThunk**)( 1 + (BYTE*)pCallback );
-}
-
-BOOL DoesSlotCallPrestub(PCODE pCode)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(pCode != NULL);
-        PRECONDITION(pCode != GetPreStubEntryPoint());
-    } CONTRACTL_END;
-
-    // x86 has the following possible sequences for prestub logic:
-    // 1. slot -> temporary entrypoint -> prestub
-    // 2. slot -> precode -> prestub
-    // 3. slot -> precode -> jumprel32 (NGEN case) -> prestub
-
-#ifdef HAS_COMPACT_ENTRYPOINTS
-    if (MethodDescChunk::GetMethodDescFromCompactEntryPoint(pCode, TRUE) != NULL)
-    {
-        return TRUE;
-    }
-#endif // HAS_COMPACT_ENTRYPOINTS
-
-    if (!IS_ALIGNED(pCode, PRECODE_ALIGNMENT))
-    {
-        return FALSE;
-    }
-
-#ifdef HAS_FIXUP_PRECODE
-    if (*PTR_BYTE(pCode) == X86_INSTR_CALL_REL32)
-    {
-        // Note that call could have been patched to jmp in the meantime
-        pCode = rel32Decode(pCode+1);
-
-        // NGEN case
-        if (*PTR_BYTE(pCode) == X86_INSTR_JMP_REL32) {
-            pCode = rel32Decode(pCode+1);
-        }
-
-        return pCode == (TADDR)PrecodeFixupThunk;
-    }
-#endif
-
-    if (*PTR_BYTE(pCode) != X86_INSTR_MOV_EAX_IMM32 ||
-        *PTR_BYTE(pCode+5) != X86_INSTR_MOV_RM_R ||
-        *PTR_BYTE(pCode+7) != X86_INSTR_JMP_REL32)
-    {
-        return FALSE;
-    }
-    pCode = rel32Decode(pCode+8);
-
-    // NGEN case
-    if (*PTR_BYTE(pCode) == X86_INSTR_JMP_REL32) {
-        pCode = rel32Decode(pCode+1);
-    }
-
-    return pCode == GetPreStubEntryPoint();
 }
 
 #ifdef FEATURE_READYTORUN

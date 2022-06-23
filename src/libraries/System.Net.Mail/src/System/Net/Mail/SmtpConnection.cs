@@ -303,7 +303,7 @@ namespace System.Net.Mail
 #endif
                 try
                 {
-                    ExecutionContext? x = context == null ? null : context.ContextCopy;
+                    ExecutionContext? x = context?.ContextCopy;
                     if (x != null)
                     {
                         AuthenticateCallbackContext authenticationContext =
@@ -355,7 +355,7 @@ namespace System.Net.Mail
             internal Authorization? _result;
         }
 
-        internal void EndGetConnection(IAsyncResult result)
+        internal static void EndGetConnection(IAsyncResult result)
         {
             ConnectAndHandshakeAsyncResult.End(result);
         }
@@ -469,7 +469,7 @@ namespace System.Net.Mail
                     return;
                 }
 
-                LineInfo info = reader.EndReadLine(result);
+                LineInfo info = SmtpReplyReader.EndReadLine(result);
 
                 if (info.StatusCode != SmtpStatusCode.ServiceReady)
                 {
@@ -500,7 +500,7 @@ namespace System.Net.Mail
                     {
                         try
                         {
-                            LineInfo info = thisPtr._connection.Reader!.CurrentReader!.EndReadLine(result);
+                            LineInfo info = SmtpReplyReader.EndReadLine(result);
                             if (info.StatusCode != SmtpStatusCode.ServiceReady)
                             {
                                 thisPtr.InvokeCallback(new SmtpException(info.StatusCode, info.Line, true));

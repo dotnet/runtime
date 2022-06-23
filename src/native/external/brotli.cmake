@@ -1,4 +1,4 @@
-include_directories("${CMAKE_CURRENT_LIST_DIR}/brotli/include")
+include_directories(BEFORE "${CMAKE_CURRENT_LIST_DIR}/brotli/include")
 
 set (BROTLI_SOURCES_BASE
     common/constants.c

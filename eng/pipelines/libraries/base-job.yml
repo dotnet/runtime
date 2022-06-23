@@ -46,6 +46,9 @@ jobs:
         disableComponentGovernance: true
 
       variables:
+        - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+          - group: DotNet-HelixApi-Access
+
         - _buildScriptFileName: build
 
         - _msbuildCommonParameters: ''
@@ -89,7 +92,7 @@ jobs:
         - ${{ if eq(parameters.isOfficialAllConfigurations, true) }}:
           - librariesBuildArtifactName: 'libraries_bin_official_allconfigurations'
 
-        - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+        - ${{ if eq(parameters.isOfficialBuild, true) }}:
           - _msbuildCommonParameters: /p:OfficialBuildId=$(Build.BuildNumber)
 
         - _runtimeArtifactName: ''

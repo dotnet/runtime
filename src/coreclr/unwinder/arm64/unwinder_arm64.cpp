@@ -636,7 +636,7 @@ Arguments:
         returned.
 
     HandlerData - Supplies a pointer to a variable that receives a pointer
-        the the language handler data.
+        the language handler data.
 
     UnwindParams - Additional parameters shared with caller.
 
@@ -720,6 +720,8 @@ Return Value:
     if ((HeaderWord & (1 << 21)) != 0) {
         UnwindIndex = EpilogScopeCount;
         EpilogScopeCount = 0;
+    } else {
+        UnwindIndex = 0;
     }
 
     //
@@ -1267,7 +1269,7 @@ Arguments:
         returned.
 
     HandlerData - Supplies a pointer to a variable that receives a pointer
-        the the language handler data.
+        the language handler data.
 
     UnwindParams - Additional parameters shared with caller.
 

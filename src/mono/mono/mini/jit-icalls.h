@@ -221,6 +221,8 @@ ICALL_EXPORT double mono_ckfinite (double d);
 
 ICALL_EXPORT void mono_throw_method_access (MonoMethod *caller, MonoMethod *callee);
 
+ICALL_EXPORT void mono_throw_ambiguous_implementation (void);
+
 ICALL_EXPORT void mono_throw_bad_image (void);
 
 ICALL_EXPORT void mono_throw_not_supported (void);
@@ -232,5 +234,7 @@ ICALL_EXPORT void mono_throw_invalid_program (const char *msg);
 ICALL_EXPORT void mono_dummy_jit_icall (void);
 
 ICALL_EXPORT void mono_dummy_jit_icall_val (gpointer ptr);
+
+ICALL_EXPORT void mini_init_method_rgctx (MonoMethodRuntimeGenericContext *mrgctx, MonoGSharedMethodInfo *info);
 
 #endif /* __MONO_JIT_ICALLS_H__ */

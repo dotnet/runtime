@@ -1,7 +1,33 @@
 <Project>
   <PropertyGroup>
     <!-- The trailing semicolon is important for each entry! -->
+    <NetFxReference>
+      mscorlib;
+      Microsoft.VisualBasic;
+      System;
+      System.ComponentModel.DataAnnotations;
+      System.Configuration;
+      System.Core;
+      System.Data;
+      System.Drawing;
+      System.IO.Compression.FileSystem;
+      System.Net;
+      System.Numerics;
+      System.Runtime.Serialization;
+      System.Security;
+      System.ServiceProcess;
+      System.ServiceModel.Web;
+      System.Transactions;
+      System.Web;
+      System.Windows;
+      System.Xml;
+      System.Xml.Serialization;
+      System.Xml.Linq;
+      WindowsBase;
+    </NetFxReference>
     <NetCoreAppLibrary>
+      $(NetFxReference)
+      netstandard;
       Microsoft.CSharp;
       Microsoft.VisualBasic.Core;
       Microsoft.Win32.Primitives;
@@ -34,6 +60,7 @@
       System.Drawing.Primitives;
       System.Dynamic.Runtime;
       System.Formats.Asn1;
+      System.Formats.Tar;
       System.Globalization;
       System.Globalization.Calendars;
       System.Globalization.Extensions;
@@ -76,6 +103,7 @@
       System.Net.WebSockets.Client;
       System.Numerics.Vectors;
       System.ObjectModel;
+      System.Private.CoreLib;
       System.Private.DataContractSerialization;
       System.Private.Runtime.InteropServices.JavaScript;
       System.Private.Uri;
@@ -146,6 +174,21 @@
       System.Xml.XPath;
       System.Xml.XPath.XDocument;
     </NetCoreAppLibrary>
+    <NetCoreAppLibraryNoReference>
+      System.Net.Quic;
+      System.Private.CoreLib;
+      System.Private.DataContractSerialization;
+      System.Private.Runtime.InteropServices.JavaScript;
+      System.Private.Uri;
+      System.Private.Xml;
+      System.Private.Xml.Linq;
+    </NetCoreAppLibraryNoReference>
+    <!-- List .NETCoreApp shared framework generator project names below. -->
+    <NetCoreAppLibraryGenerator>
+      LibraryImportGenerator;
+      System.Text.Json.SourceGeneration.Roslyn4.0;
+      System.Text.RegularExpressions.Generator;
+    </NetCoreAppLibraryGenerator>
     <AspNetCoreAppLibrary>
       Microsoft.Extensions.Caching.Abstractions;
       Microsoft.Extensions.Caching.Memory;
@@ -205,7 +248,10 @@
   </PropertyGroup>
   <!-- Make available as an item. -->
   <ItemGroup>
+    <NetFxReference Include="$(NetFxReference)" />
     <NetCoreAppLibrary Include="$(NetCoreAppLibrary)" />
+    <NetCoreAppLibraryNoReference Include="$(NetCoreAppLibraryNoReference)" />
+    <NetCoreAppLibraryGenerator Include="$(NetCoreAppLibraryGenerator)" />
     <AspNetCoreAppLibrary Include="$(AspNetCoreAppLibrary)" />
     <WindowsDesktopCoreAppLibrary Include="$(WindowsDesktopCoreAppLibrary)" />
   </ItemGroup>

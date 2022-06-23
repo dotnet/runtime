@@ -114,8 +114,8 @@ static void
 mono_custom_modifiers_get_desc (GString *res, const MonoType *type, gboolean include_namespace)
 {
 	ERROR_DECL (error);
-	int count = mono_type_custom_modifier_count (type);
-	for (int i = 0; i < count; ++i) {
+	uint8_t count = mono_type_custom_modifier_count (type);
+	for (uint8_t i = 0; i < count; ++i) {
 		gboolean required;
 		MonoType *cmod_type = mono_type_get_custom_modifier (type, i, &required, error);
 		mono_error_assert_ok (error);
@@ -569,7 +569,7 @@ mono_method_desc_full_match (MonoMethodDesc *desc, MonoMethod *method)
 		return FALSE;
 	if (!desc->klass)
 		return FALSE;
-	if (!match_class (desc, strlen (desc->klass), method->klass))
+	if (!match_class (desc, (int)strlen (desc->klass), method->klass))
 		return FALSE;
 
 	return mono_method_desc_match (desc, method);
@@ -655,7 +655,7 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 	}
 	il_code = mono_method_header_get_code (header, NULL, NULL);
 
-	label = ip - il_code;
+	label = GPTRDIFF_TO_UINT32 (ip - il_code);
 	if (dh->indenter) {
 		tmp = dh->indenter (dh, method, label);
 		g_string_append (str, tmp);
@@ -715,11 +715,11 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 
 				for (i = 0; i < len2; ++i)
 					buf [i] = GUINT16_FROM_LE (((guint16*)blob2) [i]);
-				s = g_utf16_to_utf8 (buf, len2, NULL, NULL, NULL);
+				s = g_utf16_to_utf8 (buf, (glong)len2, NULL, NULL, NULL);
 				g_free (buf);
 			}
 #else
-				s = g_utf16_to_utf8 ((gunichar2*)blob2, len2, NULL, NULL, NULL);
+				s = g_utf16_to_utf8 ((gunichar2*)blob2, (glong)len2, NULL, NULL, NULL);
 #endif
 
 			g_string_append_printf (str, "\"%s\"", s);
@@ -755,17 +755,17 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 			g_string_append_printf (str, "%d", sval);
 		break;
 	case MonoInlineSwitch: {
-		const unsigned char *end;
+		const unsigned char *sval_end;
 		sval = read32 (ip);
 		ip += 4;
-		end = ip + sval * 4;
+		sval_end = ip + sval * 4;
 		g_string_append_c (str, '(');
 		for (i = 0; i < sval; ++i) {
 			if (i > 0)
 				g_string_append (str, ", ");
 			label = read32 (ip);
 			if (dh->label_target)
-				g_string_append_printf (str, dh->label_target, end + label - il_code);
+				g_string_append_printf (str, dh->label_target, sval_end + label - il_code);
 			else
 				g_string_append_printf (str, "%d", label);
 			ip += 4;
@@ -1064,10 +1064,10 @@ mono_object_describe (MonoObject *obj)
 }
 
 static void
-print_field_value (const char *field_ptr, MonoClassField *field, int type_offset)
+print_field_value (const char *field_ptr, MonoClassField *field, gssize type_offset)
 {
 	MonoType *type;
-	g_print ("At %p (ofs: %2d) %s: ", field_ptr, field->offset + type_offset, mono_field_get_name (field));
+	g_print ("At %p (ofs: %2d) %s: ", field_ptr, m_field_is_from_update (field) ? -1 : (field->offset + type_offset), mono_field_get_name (field));
 	type = mono_type_get_underlying_type (field->type);
 
 	switch (type->type) {
@@ -1155,6 +1155,9 @@ objval_describe (MonoClass *klass, const char *addr)
 		while ((field = mono_class_get_fields_internal (p, &iter))) {
 			if (field->type->attrs & (FIELD_ATTRIBUTE_STATIC | FIELD_ATTRIBUTE_HAS_FIELD_RVA))
 				continue;
+			/* TODO: metadata-update: print something here */
+			if (m_field_is_from_update (field))
+				continue;
 
 			if (p != klass && !printed_header) {
 				const char *sep;
@@ -1229,7 +1232,11 @@ mono_class_describe_statics (MonoClass* klass)
 			if (!(field->type->attrs & (FIELD_ATTRIBUTE_STATIC | FIELD_ATTRIBUTE_HAS_FIELD_RVA)))
 				continue;
 
-			field_ptr = (const char*)addr + field->offset;
+			/* TODO: metadata-update: print something for added fields? */
+			if (m_field_is_from_update (field))
+				continue;
+
+			field_ptr = (const char*)addr + m_field_get_offset (field);
 
 			print_field_value (field_ptr, field, 0);
 		}

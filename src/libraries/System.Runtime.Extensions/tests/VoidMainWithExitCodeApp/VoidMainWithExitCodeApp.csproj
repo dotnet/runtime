@@ -4,7 +4,7 @@
     <!-- To be consistent between net472 and others we override the SDK behavior which defaults to .dll -->
     <TargetExt>.exe</TargetExt>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="VoidMainWithExitCodeApp.cs" />

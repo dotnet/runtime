@@ -1033,16 +1033,6 @@ _CRTIMP void * __cdecl _decode_pointer(void *);
 /* internal helper function for communicating with the debugger */
 BOOL DebuggerKnownHandle();
 
-/* Macros to simplify the use of Secure CRT in the CRT itself.
- * We should use [_BEGIN/_END]_SECURE_CRT_DEPRECATION_DISABLE sparingly.
- */
-#define _BEGIN_SECURE_CRT_DEPRECATION_DISABLE \
-    __pragma(warning(push)) \
-    __pragma(warning(disable:4996))
-
-#define _END_SECURE_CRT_DEPRECATION_DISABLE \
-    __pragma(warning(pop))
-
 #define _ERRCHECK(e) \
     _INVOKE_WATSON_IF_ERROR(e)
 

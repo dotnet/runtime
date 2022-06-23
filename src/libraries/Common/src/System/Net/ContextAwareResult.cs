@@ -370,6 +370,6 @@ namespace System.Net
             base.Complete(IntPtr.Zero);
         }
 
-        internal EndPoint? RemoteEndPoint => null;
+        internal static EndPoint? RemoteEndPoint => null;
     }
 }

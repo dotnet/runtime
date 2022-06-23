@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 
 using Internal.IL;
 using Internal.TypeSystem;
@@ -52,9 +53,8 @@ namespace ILCompiler
         private string _mapFileName;
         private string _metadataLogFileName;
         private bool _noMetadataBlocking;
-        private bool _disableReflection;
+        private string _reflectionData;
         private bool _completeTypesMetadata;
-        private bool _reflectedOnly;
         private bool _scanReflection;
         private bool _methodBodyFolding;
         private int _parallelism = Environment.ProcessorCount;
@@ -118,45 +118,48 @@ namespace ILCompiler
             Console.WriteLine(helpText);
         }
 
-        private void InitializeDefaultOptions()
+        public static void ComputeDefaultOptions(out TargetOS os, out TargetArchitecture arch)
         {
-            // We could offer this as a command line option, but then we also need to
-            // load a different RyuJIT, so this is a future nice to have...
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                _targetOS = TargetOS.Windows;
+                os = TargetOS.Windows;
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                _targetOS = TargetOS.Linux;
+                os = TargetOS.Linux;
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                _targetOS = TargetOS.OSX;
+                os = TargetOS.OSX;
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD))
+                os = TargetOS.FreeBSD;
             else
                 throw new NotImplementedException();
 
             switch (RuntimeInformation.ProcessArchitecture)
             {
                 case Architecture.X86:
-                    _targetArchitecture = TargetArchitecture.X86;
+                    arch = TargetArchitecture.X86;
                     break;
                 case Architecture.X64:
-                    _targetArchitecture = TargetArchitecture.X64;
+                    arch = TargetArchitecture.X64;
                     break;
                 case Architecture.Arm:
-                    _targetArchitecture = TargetArchitecture.ARM;
+                    arch = TargetArchitecture.ARM;
                     break;
                 case Architecture.Arm64:
-                    _targetArchitecture = TargetArchitecture.ARM64;
+                    arch = TargetArchitecture.ARM64;
                     break;
                 default:
                     throw new NotImplementedException();
             }
 
-            // Workaround for https://github.com/dotnet/corefx/issues/25267
-            // If pointer size is 8, we're obviously not an X86 process...
-            if (_targetArchitecture == TargetArchitecture.X86 && IntPtr.Size == 8)
-                _targetArchitecture = TargetArchitecture.X64;
+        }
+
+        private void InitializeDefaultOptions()
+        {
+            ComputeDefaultOptions(out _targetOS, out _targetArchitecture);
         }
 
         private ArgumentSyntax ParseCommandLine(string[] args)
         {
+            var validReflectionDataOptions = new string[] { "all", "none" };
+
             IReadOnlyList<string> inputFiles = Array.Empty<string>();
             IReadOnlyList<string> referenceFiles = Array.Empty<string>();
 
@@ -199,9 +202,8 @@ namespace ILCompiler
                 syntax.DefineOption("map", ref _mapFileName, "Generate a map file");
                 syntax.DefineOption("metadatalog", ref _metadataLogFileName, "Generate a metadata log file");
                 syntax.DefineOption("nometadatablocking", ref _noMetadataBlocking, "Ignore metadata blocking for internal implementation details");
-                syntax.DefineOption("disablereflection", ref _disableReflection, "Disable generation of reflection metadata");
                 syntax.DefineOption("completetypemetadata", ref _completeTypesMetadata, "Generate complete metadata for types");
-                syntax.DefineOption("reflectedonly", ref _reflectedOnly, "Generate metadata only for reflected members");
+                syntax.DefineOption("reflectiondata", ref _reflectionData, $"Reflection data to generate (one of: {string.Join(", ", validReflectionDataOptions)})");
                 syntax.DefineOption("scanreflection", ref _scanReflection, "Scan IL for reflection patterns");
                 syntax.DefineOption("scan", ref _useScanner, "Use IL scanner to generate optimized code (implied by -O)");
                 syntax.DefineOption("noscan", ref _noScanner, "Do not use IL scanner to generate optimized code");
@@ -241,6 +243,71 @@ namespace ILCompiler
 
                 syntax.DefineParameterList("in", ref inputFiles, "Input file(s) to compile");
             });
+
+            if (_help)
+            {
+                List<string> extraHelp = new List<string>();
+
+                extraHelp.Add("Options may be passed on the command line, or via response file. On the command line switch values may be specified by passing " +
+                    "the option followed by a space followed by the value of the option, or by specifying a : between option and switch value. A response file " +
+                    "is specified by passing the @ symbol before the response file name. In a response file all options must be specified on their own lines, and " +
+                    "only the : syntax for switches is supported.");
+
+                extraHelp.Add("");
+
+                extraHelp.Add("Use the '--' option to disambiguate between input files that have begin with -- and options. After a '--' option, all arguments are " +
+                    "considered to be input files. If no input files begin with '--' then this option is not necessary.");
+
+                extraHelp.Add("");
+
+                string[] ValidArchitectures = new string[] { "arm", "arm64", "x86", "x64" };
+                string[] ValidOS = new string[] { "windows", "linux", "osx" };
+
+                Program.ComputeDefaultOptions(out TargetOS defaultOs, out TargetArchitecture defaultArch);
+
+                extraHelp.Add(String.Format("Valid switches for {0} are: '{1}'. The default value is '{2}'", "--targetos", String.Join("', '", ValidOS), defaultOs.ToString().ToLowerInvariant()));
+
+                extraHelp.Add("");
+
+                extraHelp.Add(String.Format("Valid switches for {0} are: '{1}'. The default value is '{2}'", "--targetarch", String.Join("', '", ValidArchitectures), defaultArch.ToString().ToLowerInvariant()));
+
+                extraHelp.Add("");
+
+                extraHelp.Add("The allowable values for the --instruction-set option are described in the table below. Each architecture has a different set of valid " +
+                    "instruction sets, and multiple instruction sets may be specified by separating the instructions sets by a ','. For example 'avx2,bmi,lzcnt'");
+
+                foreach (string arch in ValidArchitectures)
+                {
+                    StringBuilder archString = new StringBuilder();
+
+                    archString.Append(arch);
+                    archString.Append(": ");
+
+                    TargetArchitecture targetArch = Program.GetTargetArchitectureFromArg(arch);
+                    bool first = true;
+                    foreach (var instructionSet in Internal.JitInterface.InstructionSetFlags.ArchitectureToValidInstructionSets(targetArch))
+                    {
+                        // Only instruction sets with are specifiable should be printed to the help text
+                        if (instructionSet.Specifiable)
+                        {
+                            if (first)
+                            {
+                                first = false;
+                            }
+                            else
+                            {
+                                archString.Append(", ");
+                            }
+                            archString.Append(instructionSet.Name);
+                        }
+                    }
+
+                    extraHelp.Add(archString.ToString());
+                }
+
+                argSyntax.ExtraHelpParagraphs = extraHelp;
+            }
+
             if (waitForDebugger)
             {
                 Console.WriteLine("Waiting for debugger to attach. Press ENTER to continue");
@@ -275,22 +342,27 @@ namespace ILCompiler
                 Helpers.MakeReproPackage(_makeReproPath, _outputFilePath, args, argSyntax, new[] { "-r", "-m", "--rdxml", "--directpinvokelist" });
             }
 
+            if (_reflectionData != null && Array.IndexOf(validReflectionDataOptions, _reflectionData) < 0)
+            {
+                Console.WriteLine($"Warning: option '{_reflectionData}' not recognized");
+            }
+
             return argSyntax;
         }
 
         private IReadOnlyCollection<MethodDesc> CreateInitializerList(CompilerTypeSystemContext context)
         {
-            List<ModuleDesc> assembliesWithInitalizers = new List<ModuleDesc>();
+            List<ModuleDesc> assembliesWithInitializers = new List<ModuleDesc>();
 
             // Build a list of assemblies that have an initializer that needs to run before
             // any user code runs.
             foreach (string initAssemblyName in _initAssemblies)
             {
                 ModuleDesc assembly = context.ResolveAssembly(new AssemblyName(initAssemblyName), throwIfNotFound: true);
-                assembliesWithInitalizers.Add(assembly);
+                assembliesWithInitializers.Add(assembly);
             }
 
-            var libraryInitializers = new LibraryInitializers(context, assembliesWithInitalizers);
+            var libraryInitializers = new LibraryInitializers(context, assembliesWithInitializers);
 
             List<MethodDesc> initializerList = new List<MethodDesc>(libraryInitializers.LibraryInitializerMethods);
 
@@ -303,6 +375,32 @@ namespace ILCompiler
             }
 
             return initializerList;
+        }
+
+        private static TargetArchitecture GetTargetArchitectureFromArg(string archArg)
+        {
+            if (archArg.Equals("x86", StringComparison.OrdinalIgnoreCase))
+                return TargetArchitecture.X86;
+            else if (archArg.Equals("x64", StringComparison.OrdinalIgnoreCase))
+                return TargetArchitecture.X64;
+            else if (archArg.Equals("arm", StringComparison.OrdinalIgnoreCase))
+                return TargetArchitecture.ARM;
+            else if (archArg.Equals("arm64", StringComparison.OrdinalIgnoreCase))
+                return TargetArchitecture.ARM64;
+            else
+                throw new CommandLineException("Target architecture is not supported");
+        }
+
+        private static TargetOS GetTargetOSFromArg(string osArg)
+        {
+            if (osArg.Equals("windows", StringComparison.OrdinalIgnoreCase))
+                return TargetOS.Windows;
+            else if (osArg.Equals("linux", StringComparison.OrdinalIgnoreCase))
+                return TargetOS.Linux;
+            else if (osArg.Equals("osx", StringComparison.OrdinalIgnoreCase))
+                return TargetOS.OSX;
+            else
+                throw new CommandLineException("Target OS is not supported");
         }
 
         private int Run(string[] args)
@@ -324,29 +422,11 @@ namespace ILCompiler
             //
             if (_targetArchitectureStr != null)
             {
-                if (_targetArchitectureStr.Equals("x86", StringComparison.OrdinalIgnoreCase))
-                    _targetArchitecture = TargetArchitecture.X86;
-                else if (_targetArchitectureStr.Equals("x64", StringComparison.OrdinalIgnoreCase))
-                    _targetArchitecture = TargetArchitecture.X64;
-                else if (_targetArchitectureStr.Equals("arm", StringComparison.OrdinalIgnoreCase))
-                    _targetArchitecture = TargetArchitecture.ARM;
-                else if (_targetArchitectureStr.Equals("armel", StringComparison.OrdinalIgnoreCase))
-                    _targetArchitecture = TargetArchitecture.ARM;
-                else if (_targetArchitectureStr.Equals("arm64", StringComparison.OrdinalIgnoreCase))
-                    _targetArchitecture = TargetArchitecture.ARM64;
-                else
-                    throw new CommandLineException("Target architecture is not supported");
+                _targetArchitecture = GetTargetArchitectureFromArg(_targetArchitectureStr);
             }
             if (_targetOSStr != null)
             {
-                if (_targetOSStr.Equals("windows", StringComparison.OrdinalIgnoreCase))
-                    _targetOS = TargetOS.Windows;
-                else if (_targetOSStr.Equals("linux", StringComparison.OrdinalIgnoreCase))
-                    _targetOS = TargetOS.Linux;
-                else if (_targetOSStr.Equals("osx", StringComparison.OrdinalIgnoreCase))
-                    _targetOS = TargetOS.OSX;
-                else
-                    throw new CommandLineException("Target OS is not supported");
+                _targetOS = GetTargetOSFromArg(_targetOSStr);
             }
 
             InstructionSetSupportBuilder instructionSetSupportBuilder = new InstructionSetSupportBuilder(_targetArchitecture);
@@ -354,13 +434,11 @@ namespace ILCompiler
             // The runtime expects certain baselines that the codegen can assume as well.
             if ((_targetArchitecture == TargetArchitecture.X86) || (_targetArchitecture == TargetArchitecture.X64))
             {
-                instructionSetSupportBuilder.AddSupportedInstructionSet("sse");
-                instructionSetSupportBuilder.AddSupportedInstructionSet("sse2");
+                instructionSetSupportBuilder.AddSupportedInstructionSet("sse2"); // Lower baselines included by implication
             }
             else if (_targetArchitecture == TargetArchitecture.ARM64)
             {
-                instructionSetSupportBuilder.AddSupportedInstructionSet("base");
-                instructionSetSupportBuilder.AddSupportedInstructionSet("neon");
+                instructionSetSupportBuilder.AddSupportedInstructionSet("neon"); // Lower baselines included by implication
             }
 
             if (_instructionSet != null)
@@ -387,7 +465,7 @@ namespace ILCompiler
                 Dictionary<string, bool> instructionSetSpecification = new Dictionary<string, bool>();
                 foreach (string instructionSetSpecifier in instructionSetParams)
                 {
-                    string instructionSet = instructionSetSpecifier.Substring(1, instructionSetSpecifier.Length - 1);
+                    string instructionSet = instructionSetSpecifier.Substring(1);
 
                     bool enabled = instructionSetSpecifier[0] == '+' ? true : false;
                     if (enabled)
@@ -412,22 +490,18 @@ namespace ILCompiler
             // Optimistically assume some instruction sets are present.
             if ((_targetArchitecture == TargetArchitecture.X86) || (_targetArchitecture == TargetArchitecture.X64))
             {
-                // We set these hardware features as enabled always, as most
-                // of hardware in the wild supports them. Note that we do not indicate support for AVX, or any other
-                // instruction set which uses the VEX encodings as the presence of those makes otherwise acceptable
-                // code be unusable on hardware which does not support VEX encodings, as well as emulators that do not
-                // support AVX instructions.
+                // We set these hardware features as opportunistically enabled as most of hardware in the wild supports them.
+                // Note that we do not indicate support for AVX, or any other instruction set which uses the VEX encodings as
+                // the presence of those makes otherwise acceptable code be unusable on hardware which does not support VEX encodings.
                 //
-                // The compiler is able to generate runtime IsSupported checks for the following instruction sets.
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse4.1");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse4.2");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("ssse3");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse4.2"); // Lower SSE versions included by implication
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("pclmul");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("movbe");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("popcnt");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lzcnt");
 
-                // If AVX was enabled, we can opportunistically enable FMA/BMI/VNNI
+                // If AVX was enabled, we can opportunistically enable instruction sets which use the VEX encodings
                 Debug.Assert(InstructionSet.X64_AVX == InstructionSet.X86_AVX);
                 if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX))
                 {
@@ -444,6 +518,7 @@ namespace ILCompiler
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sha1");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sha2");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lse");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("rcpc");
             }
 
             optimisticInstructionSetSupportBuilder.ComputeInstructionSetFlags(out var optimisticInstructionSet, out _,
@@ -457,7 +532,7 @@ namespace ILCompiler
                                                                   InstructionSetSupportBuilder.GetNonSpecifiableInstructionSetsForArch(_targetArchitecture),
                                                                   _targetArchitecture);
 
-            bool supportsReflection = !_disableReflection && _systemModuleName == DefaultSystemModule;
+            bool supportsReflection = _reflectionData != "none" && _systemModuleName == DefaultSystemModule;
 
             //
             // Initialize type system context
@@ -466,9 +541,9 @@ namespace ILCompiler
             SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
 
             var simdVectorLength = instructionSetSupport.GetVectorTSimdVector();
-            var targetAbi = TargetAbi.CoreRT;
+            var targetAbi = TargetAbi.NativeAot;
             var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, targetAbi, simdVectorLength);
-            CompilerTypeSystemContext typeSystemContext = 
+            CompilerTypeSystemContext typeSystemContext =
                 new CompilerTypeSystemContext(targetDetails, genericsMode, supportsReflection ? DelegateFeature.All : 0, _maxGenericCycle);
 
             //
@@ -477,7 +552,7 @@ namespace ILCompiler
             //
             // See: https://github.com/dotnet/corert/issues/2785
             //
-            // When we undo this this hack, replace this foreach with
+            // When we undo this hack, replace the foreach with
             //  typeSystemContext.InputFilePaths = _inputFilePaths;
             //
             Dictionary<string, string> inputFilePaths = new Dictionary<string, string>();
@@ -607,7 +682,6 @@ namespace ILCompiler
                 }
             }
 
-            _rootedAssemblies = new List<string>(_rootedAssemblies.Select(a => ILLinkify(a)));
             _conditionallyRootedAssemblies = new List<string>(_conditionallyRootedAssemblies.Select(a => ILLinkify(a)));
             _trimmedAssemblies = new List<string>(_trimmedAssemblies.Select(a => ILLinkify(a)));
 
@@ -626,10 +700,16 @@ namespace ILCompiler
             // Root whatever assemblies were specified on the command line
             foreach (var rootedAssembly in _rootedAssemblies)
             {
+                // For compatibility with IL Linker, the parameter could be a file name or an assembly name.
+                // This is the logic IL Linker uses to decide how to interpret the string. Really.
+                EcmaModule module = File.Exists(rootedAssembly)
+                    ? typeSystemContext.GetModuleFromPath(rootedAssembly)
+                    : typeSystemContext.GetModuleForSimpleName(rootedAssembly);
+
                 // We only root the module type. The rest will fall out because we treat _rootedAssemblies
                 // same as conditionally rooted ones and here we're fulfilling the condition ("something is used").
                 compilationRoots.Add(
-                    new GenericRootProvider<ModuleDesc>(typeSystemContext.GetModuleForSimpleName(rootedAssembly),
+                    new GenericRootProvider<ModuleDesc>(module,
                     (ModuleDesc module, IRootingServiceProvider rooter) => rooter.AddCompilationRoot(module.GetGlobalModuleType(), "Command line root")));
             }
 
@@ -649,7 +729,7 @@ namespace ILCompiler
 
             PInvokeILEmitterConfiguration pinvokePolicy = new ConfigurablePInvokePolicy(typeSystemContext.Target, _directPInvokes, _directPInvokeLists);
 
-            ILProvider ilProvider = new CoreRTILProvider();
+            ILProvider ilProvider = new NativeAotILProvider();
 
             List<KeyValuePair<string, bool>> featureSwitches = new List<KeyValuePair<string, bool>>();
             foreach (var switchPair in _featureSwitches)
@@ -683,8 +763,8 @@ namespace ILCompiler
                     metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.CompleteTypesOnly;
                 if (_scanReflection)
                     metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.ReflectionILScanning;
-                if (_reflectedOnly)
-                    metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.ReflectedMembersOnly;
+                if (_reflectionData == "all")
+                    metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts;
                 if (_rootDefaultAssemblies)
                     metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.RootDefaultAssemblies;
             }
@@ -696,7 +776,7 @@ namespace ILCompiler
 
             DynamicInvokeThunkGenerationPolicy invokeThunkGenerationPolicy = new DefaultDynamicInvokeThunkGenerationPolicy();
 
-            var flowAnnotations = new Dataflow.FlowAnnotations(logger, ilProvider);
+            var flowAnnotations = new ILLink.Shared.TrimAnalysis.FlowAnnotations(logger, ilProvider);
 
             MetadataManager metadataManager = new UsageBasedMetadataManager(
                     compilationGroup,
@@ -742,7 +822,8 @@ namespace ILCompiler
                     .UseCompilationRoots(compilationRoots)
                     .UseMetadataManager(metadataManager)
                     .UseParallelism(_parallelism)
-                    .UseInteropStubManager(interopStubManager);
+                    .UseInteropStubManager(interopStubManager)
+                    .UseLogger(logger);
 
                 if (_scanDgmlLogFileName != null)
                     scannerBuilder.UseDependencyTracking(_generateFullScanDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
@@ -845,9 +926,19 @@ namespace ILCompiler
                 // Check that methods and types generated during compilation are a subset of method and types scanned
                 bool scanningFail = false;
                 DiffCompilationResults(ref scanningFail, compilationResults.CompiledMethodBodies, scanResults.CompiledMethodBodies,
-                    "Methods", "compiled", "scanned", method => !(method.GetTypicalMethodDefinition() is EcmaMethod) || method.Name == "ThrowPlatformNotSupportedException" || method.Name == "ThrowArgumentOutOfRangeException");
+                    "Methods", "compiled", "scanned", method => !(method.GetTypicalMethodDefinition() is EcmaMethod) || IsRelatedToInvalidInput(method));
                 DiffCompilationResults(ref scanningFail, compilationResults.ConstructedEETypes, scanResults.ConstructedEETypes,
                     "EETypes", "compiled", "scanned", type => !(type.GetTypeDefinition() is EcmaType));
+
+                static bool IsRelatedToInvalidInput(MethodDesc method)
+                {
+                    // RyuJIT is more sensitive to invalid input and might detect cases that the scanner didn't have trouble with.
+                    // If we find logic related to compiling fallback method bodies (methods that just throw) that got compiled
+                    // but not scanned, it's usually fine. If it wasn't fine, we would probably crash before getting here.
+                    return method.OwningType is MetadataType mdType
+                        && mdType.Module == method.Context.SystemModule
+                        && (mdType.Name.EndsWith("Exception") || mdType.Namespace.StartsWith("Internal.Runtime"));
+                }
 
                 // If optimizations are enabled, the results will for sure not match in the other direction due to inlining, etc.
                 // But there's at least some value in checking the scanner doesn't expand the universe too much in debug.

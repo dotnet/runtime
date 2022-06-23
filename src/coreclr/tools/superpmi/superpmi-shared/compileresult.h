@@ -11,6 +11,8 @@
 #include "lightweightmap.h"
 #include "agnostic.h"
 
+class MethodContext;
+
 // MemoryTracker: a very simple allocator and tracker of allocated memory, so it can be deleted when needed.
 class MemoryTracker
 {
@@ -50,6 +52,21 @@ private:
     };
 
     MemoryNode* m_pHead;
+};
+
+// Data we need to process relocations properly.
+struct RelocContext
+{
+    MethodContext* mc;
+    size_t hotCodeAddress;
+    size_t hotCodeSize;
+    size_t coldCodeAddress;
+    size_t coldCodeSize;
+    size_t roDataAddress;
+    size_t roDataSize;
+    size_t originalHotCodeAddress;
+    size_t originalColdCodeAddress;
+    size_t originalRoDataAddress;
 };
 
 class CompileResult
@@ -161,10 +178,10 @@ public:
     void recReportFatalError(CorJitResult result);
     void dmpReportFatalError(DWORD key, DWORD value);
 
-    void recRecordRelocation(void* location, void* target, WORD fRelocType, WORD slotNum, INT32 addlDelta);
+    void recRecordRelocation(void* location, void* target, uint16_t fRelocType, uint16_t slotNum, int32_t addlDelta);
     void dmpRecordRelocation(DWORD key, const Agnostic_RecordRelocation& value);
-    void repRecordRelocation(void* location, void* target, WORD fRelocType, WORD slotNum, INT32 addlDelta);
-    void applyRelocs(unsigned char* block1, ULONG blocksize1, void* originalAddr);
+    void repRecordRelocation(void* location, void* target, uint16_t fRelocType, uint16_t slotNum, int32_t addlDelta);
+    void applyRelocs(RelocContext* rc, unsigned char* block1, ULONG blocksize1, void* originalAddr);
 
     void recProcessName(const char* name);
     void dmpProcessName(DWORD key, DWORD value);

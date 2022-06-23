@@ -103,7 +103,6 @@ namespace System.Drawing.Tests
             return fonts.ToTestData();
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(SystemFonts_WindowsNames_TestData))]
         public void SystemFont_Get_ReturnsExpected_WindowsNames(Func<Font> getFont, string systemFontName, string windowsFontName)

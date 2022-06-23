@@ -1,16 +1,10 @@
 <Project>
   <PropertyGroup>
-    <PrepareResourcesDependsOn>
-      _EmbedILLinkXmls;
-      $(PrepareResourcesDependsOn)
-    </PrepareResourcesDependsOn>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <TargetsTriggeredByCompilation Condition="'$(DesignTimeBuild)' != 'true'">
-      $(TargetsTriggeredByCompilation);
-      ILLinkTrimAssembly
-    </TargetsTriggeredByCompilation>
+    <IsTrimmable Condition="'$(IsTrimmable)' == ''">true</IsTrimmable>
+    <PrepareResourcesDependsOn>_EmbedILLinkXmls;$(PrepareResourcesDependsOn)</PrepareResourcesDependsOn>
+    <TargetsTriggeredByCompilation Condition="'$(DesignTimeBuild)' != 'true'">$(TargetsTriggeredByCompilation);ILLinkTrimAssembly</TargetsTriggeredByCompilation>
+    <!-- ApiCompat should perform compatibility checks on the trimmed assemblies. -->
+    <ApiCompatDependsOn>$(ApiCompatDependsOn);ILLinkTrimAssembly</ApiCompatDependsOn>
   </PropertyGroup>
 
   <!-- Inputs and outputs of ILLinkTrimAssembly -->
@@ -35,6 +29,8 @@
     <ILLinkSuppressionsXmlFile>$(ILLinkSuppressionsXmlFilePrefix).xml</ILLinkSuppressionsXmlFile>
     <ILLinkSuppressionsConfigurationSpecificXmlFile>$(ILLinkSuppressionsXmlFilePrefix).$(Configuration).xml</ILLinkSuppressionsConfigurationSpecificXmlFile>
     <ILLinkSuppressionsLibraryBuildXmlFile>$(ILLinkSuppressionsXmlFilePrefix).LibraryBuild.xml</ILLinkSuppressionsLibraryBuildXmlFile>
+    <!-- Only run the trim analyzer on libraries which have been annotated. -->
+    <EnableTrimAnalyzer Condition="'$(EnableTrimAnalyzer)' == '' And (Exists('$(ILLinkSuppressionsXmlFile)') Or Exists('$(ILLinkSuppressionsConfigurationSpecificXmlFile)'))">false</EnableTrimAnalyzer>
 
     <!-- if building a PDB, tell illink to rewrite the symbols file -->
     <ILLinkRewritePDBs Condition="'$(ILLinkRewritePDBs)' == '' and '$(DebugSymbols)' != 'false'">true</ILLinkRewritePDBs>
@@ -198,13 +194,21 @@
     </ItemGroup>
   </Target>
 
-  <!-- ILLink.Tasks arguments common to runs for both individual libraries and for the entire runtime pack -->
-  <Target Name="SetCommonILLinkArgs">
+  <Target Name="PrepareForAssembliesTrim">
+    <!-- ILLink.Tasks arguments common to runs for both individual libraries and for the entire runtime pack -->
     <PropertyGroup>
       <!-- don't remove attributes after build, our tooling is not ready for that -->
       <ILLinkArgs>$(ILLinkArgs) --ignore-link-attributes true</ILLinkArgs>
       <!-- ignore unresolved references -->
       <ILLinkArgs>$(ILLinkArgs) --skip-unresolved true</ILLinkArgs>
+    </PropertyGroup>
+
+    <!-- When running from Desktop MSBuild, DOTNET_HOST_PATH is not set.
+         In this case, explicitly specify the path to the dotnet host. -->
+    <PropertyGroup Condition="'$(DOTNET_HOST_PATH)' == ''">
+      <!-- This is defined when building in Visual Studio. -->
+      <_DotNetHostDirectory>$(NetCoreRoot)</_DotNetHostDirectory>
+      <_DotNetHostFileName>$([System.IO.Path]::GetFileName('$(DotNetTool)'))</_DotNetHostFileName>
     </PropertyGroup>
   </Target>
 
@@ -215,7 +219,7 @@
   <UsingTask TaskName="ILLink" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" />
   <Target Name="ILLinkTrimAssembly"
           Condition="'$(ILLinkTrimAssembly)' == 'true'"
-          DependsOnTargets="SetCommonILLinkArgs">
+          DependsOnTargets="PrepareForAssembliesTrim">
     <PropertyGroup>
       <!-- default action for assemblies with IsTrimmable attribute -->
       <ILLinkArgs>$(ILLinkArgs) --trim-mode skip</ILLinkArgs>
@@ -285,21 +289,12 @@
       <ILLinkArgs Condition="@(_DependencyDirectories->Count()) > 0">$(ILLinkArgs) -d @(_DependencyDirectories->'"%(Identity)"', ' -d ')</ILLinkArgs>
     </PropertyGroup>
 
-    <!-- When running from Desktop MSBuild, DOTNET_HOST_PATH is not set.
-         In this case, explicitly specify the path to the dotnet host. -->
-    <PropertyGroup Condition=" '$(DOTNET_HOST_PATH)' == '' ">
-      <!-- This is defined when building in Visual Studio. -->
-      <_DotNetHostDirectory>$(NetCoreRoot)</_DotNetHostDirectory>
-      <_DotNetHostFileName>$([System.IO.Path]::GetFileName('$(DotNetTool)'))</_DotNetHostFileName>
-    </PropertyGroup>
-
     <ILLink AssemblyPaths=""
             RootAssemblyNames="@(ILLinkTrimInputAssembly)"
             OutputDirectory="$(ILLinkTrimOutputPath)"
             ExtraArgs="$(ILLinkArgs)"
             ToolExe="$(_DotNetHostFileName)"
             ToolPath="$(_DotNetHostDirectory)" />
-
   </Target>
 
   <!-- ILLink reporting.

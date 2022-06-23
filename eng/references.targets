@@ -7,8 +7,8 @@
     <_FindDependencies>false</_FindDependencies>
   </PropertyGroup>
 
-  <!-- Project references shouldn't be copied to the output for non test apps. -->
-  <ItemDefinitionGroup Condition="'$(IsTestProject)' != 'true' and '$(IsTestSupportProject)' != 'true' and '$(IsGeneratorProject)' != 'true'">
+  <!-- Project references shouldn't be copied to the output for reference or source projects. -->
+  <ItemDefinitionGroup Condition="'$(IsSourceProject)' == 'true' or '$(IsReferenceAssemblyProject)' == 'true'">
     <ProjectReference>
       <Private>false</Private>
     </ProjectReference>
@@ -16,19 +16,17 @@
 
   <ItemGroup Condition="'@(ProjectReference)' != ''">
     <_coreLibProjectReference Include="@(ProjectReference->WithMetadataValue('Identity', '$(CoreLibProject)'))" />
-    <ProjectReference Update="@(_coreLibProjectReference)">
-      <!-- Don't flow TargetFramework and Platform to use same inputs and outputs as the CoreLib's build as part of the runtime. -->
-      <UndefineProperties>$(UndefineProperties);TargetFramework;Platform</UndefineProperties>
+    <ProjectReference Update="@(_coreLibProjectReference)"
+                      Private="false">
       <SetConfiguration Condition="'$(RuntimeFlavor)' == 'CoreCLR' and
                                    '$(Configuration)' != '$(CoreCLRConfiguration)'">Configuration=$(CoreCLRConfiguration)</SetConfiguration>
       <SetConfiguration Condition="'$(RuntimeFlavor)' == 'Mono' and
                                    '$(Configuration)' != '$(MonoConfiguration)'">Configuration=$(MonoConfiguration)</SetConfiguration>
-      <Private>false</Private>
     </ProjectReference>
     <!-- If a CoreLib ProjectReference is present, make all P2P assets non transitive. -->
-    <ProjectReference Update="@(ProjectReference)"
+    <ProjectReference Update="@(ProjectReference->WithMetadataValue('PrivateAssets', ''))"
                       PrivateAssets="all"
-                      Condition="'@(_coreLibProjectReference)' != ''" />
+                      Condition="'$(IsSourceProject)' == 'true' and '@(_coreLibProjectReference)' != ''" />
   </ItemGroup>
 
   <!-- Disable TargetArchitectureMismatch warning when we reference CoreLib as it is platform specific. -->
@@ -72,14 +70,42 @@
 
   <ItemDefinitionGroup>
     <TargetPathWithTargetPlatformMoniker>
-      <IsReferenceAssembly>$(IsReferenceAssembly)</IsReferenceAssembly>
+      <IsReferenceAssemblyProject>$(IsReferenceAssemblyProject)</IsReferenceAssemblyProject>
     </TargetPathWithTargetPlatformMoniker>
   </ItemDefinitionGroup>
 
-  <Target Name="ValidateReferenceAssemblyProjectReferences"
+  <Target Name="ValidateReferenceAssemblyProjectReferencesAndTargetFramework"
           AfterTargets="ResolveReferences"
-          Condition="'$(IsReferenceAssembly)' == 'true'">
-    <Error Condition="'%(ReferencePath.ReferenceSourceTarget)' == 'ProjectReference' and '%(ReferencePath.IsReferenceAssembly)' != 'true' and '%(ReferencePath.ReferenceAssembly)' == ''"
-           Text="Reference assemblies must only reference other reference assemblies and '%(ReferencePath.ProjectReferenceOriginalItemSpec)' is not a reference assembly project and does not set 'ProduceReferenceAssembly'." />
+          Condition="'$(IsReferenceAssemblyProject)' == 'true' and
+                     '$(SkipValidateReferenceAssemblyProjectReferences)' != 'true'">
+    <Error Text="Reference assemblies must only reference other reference assemblies and '%(ReferencePath.ProjectReferenceOriginalItemSpec)' is not a reference assembly project and does not set 'ProduceReferenceAssembly'."
+           Condition="'%(ReferencePath.ReferenceSourceTarget)' == 'ProjectReference' and '%(ReferencePath.IsReferenceAssemblyProject)' != 'true' and '%(ReferencePath.ReferenceAssembly)' == ''" />
+    <Error Text="Reference assemblies must be TargetPlatform agnostic. $(MSBuildProjectName) incorrectly targets $(TargetFramework), platform: $(TargetPlatformIdentifier)."
+           Condition="'$(TargetPlatformIdentifier)' != ''" />
+  </Target>
+
+  <!-- An opt-in target to trim out private assemblies from the ref assembly ReferencePath. -->
+  <Target Name="TrimOutPrivateAssembliesFromReferencePath"
+          Condition="'$(CompileUsingReferenceAssemblies)' == 'true' and '$(TrimOutPrivateAssembliesFromReferencePath)' == 'true'"
+          AfterTargets="FindReferenceAssembliesForReferences">
+    <ItemGroup>
+      <ReferencePathWithRefAssemblies Remove="@(ReferencePathWithRefAssemblies)"
+                                      Condition="$(NetCoreAppLibraryNoReference.Contains('%(Filename);'))" />
+    </ItemGroup>
+  </Target>
+
+  <!-- For experimental ref assemblies (which typically have the same name as a regular ref
+       assembly), bump their minor file version by 100 to make it distinguishable from the regular
+       ref assembly. -->
+  <Target Name="UpdateExperimentalRefAssemblyFileVersion"
+          AfterTargets="_InitializeAssemblyVersion"
+	        Condition="'$(IsReferenceAssemblyProject)' == 'true' and '$(IsExperimentalRefAssembly)' == 'true'">
+    <PropertyGroup>
+      <_FileVersionMaj>$(FileVersion.Split('.')[0])</_FileVersionMaj>
+      <_FileVersionMin>$(FileVersion.Split('.')[1])</_FileVersionMin>
+      <_FileVersionBld>$(FileVersion.Split('.')[2])</_FileVersionBld>
+      <_FileVersionRev>$(FileVersion.Split('.')[3])</_FileVersionRev>
+      <FileVersion>$(_FileVersionMaj).$([MSBuild]::Add($(_FileVersionMin), 100)).$(_FileVersionBld).$(_FileVersionRev)</FileVersion>
+    </PropertyGroup>
   </Target>
 </Project>

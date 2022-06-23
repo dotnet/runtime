@@ -10,8 +10,8 @@ Microsoft.Diagnostics.Tracing.EventSource</PackageDescription>
     <PackageId>$(MSBuildProjectName)</PackageId>
     <AssemblyName>Microsoft.Diagnostics.Tracing.EventSource</AssemblyName>
     <DefineConstants>$(DefineConstants);NO_EVENTCOMMANDEXECUTED_SUPPORT;ES_BUILD_STANDALONE;FEATURE_MANAGED_ETW;TARGET_WINDOWS</DefineConstants>
-    <TargetFrameworks>$(NetFrameworkMinimum)</TargetFrameworks>
-    <Nullable>enable</Nullable>
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <TargetFramework>$(NetFrameworkMinimum)</TargetFramework>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
-using Internal.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
@@ -71,7 +71,7 @@ namespace System
         {
             if ((uint)startIndex > (uint)Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if ((uint)count > (uint)(Length - startIndex))
@@ -111,7 +111,7 @@ namespace System
 
             if ((uint)startIndex > (uint)Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if ((uint)count > (uint)(Length - startIndex))
@@ -280,7 +280,7 @@ namespace System
 
             if ((uint)startIndex >= (uint)Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLess);
             }
 
             if ((uint)count > (uint)startIndex + 1)
@@ -328,7 +328,7 @@ namespace System
 
             if ((uint)startIndex >= (uint)Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLess);
             }
 
             if ((count < 0) || ((count - 1) > startIndex))

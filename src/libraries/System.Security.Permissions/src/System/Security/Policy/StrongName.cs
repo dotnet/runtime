@@ -5,7 +5,7 @@ using System.Security.Permissions;
 
 namespace System.Security.Policy
 {
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
     public sealed partial class StrongName : EvidenceBase, IIdentityPermissionFactory

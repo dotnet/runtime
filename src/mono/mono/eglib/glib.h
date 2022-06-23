@@ -30,15 +30,6 @@
 #include <minipal/utils.h>
 #include <time.h>
 
-// - Pointers should only be converted to or from pointer-sized integers.
-// - Any size integer can be converted to any other size integer.
-// - Therefore a pointer-sized integer is the intermediary between
-//   a pointer and any integer type.
-#define GPOINTER_TO_INT(ptr)   ((gint)(gssize)(ptr))
-#define GPOINTER_TO_UINT(ptr)  ((guint)(gsize)(ptr))
-#define GINT_TO_POINTER(v)     ((gpointer)(gssize)(v))
-#define GUINT_TO_POINTER(v)    ((gpointer)(gsize)(v))
-
 #ifndef EGLIB_NO_REMAP
 #include <eglib-remap.h>
 #endif
@@ -194,6 +185,9 @@ typedef uint64_t       guint64;
 typedef float          gfloat;
 typedef double         gdouble;
 typedef int32_t        gboolean;
+typedef ptrdiff_t      gptrdiff;
+typedef intptr_t       gintptr;
+typedef uintptr_t      guintptr;
 
 #if defined (HOST_WIN32) || defined (_WIN32)
 G_END_DECLS
@@ -228,8 +222,8 @@ typedef guint32 gunichar;
 #define G_MAXUINT32          UINT32_MAX
 #define G_MININT32           INT32_MIN
 #define G_MININT64           INT64_MIN
-#define G_MAXINT64	     INT64_MAX
-#define G_MAXUINT64	     UINT64_MAX
+#define G_MAXINT64           INT64_MAX
+#define G_MAXUINT64          UINT64_MAX
 
 #define G_LITTLE_ENDIAN 1234
 #define G_BIG_ENDIAN    4321
@@ -322,10 +316,6 @@ gchar *          g_getenv(const gchar *variable);
 G_EXTERN_C // sdks/wasm/driver.c is C and uses this
 gboolean         g_setenv(const gchar *variable, const gchar *value, gboolean overwrite);
 
-void             g_unsetenv(const gchar *variable);
-
-gchar*           g_win32_getlocale(void);
-
 /*
  * Precondition macros
  */
@@ -370,16 +360,11 @@ gchar       *g_strjoin        (const gchar *separator, ...);
 gchar       *g_strjoinv       (const gchar *separator, gchar **str_array);
 gchar       *g_strchug        (gchar *str);
 gchar       *g_strchomp       (gchar *str);
-void         g_strdown        (gchar *string);
 gchar       *g_strnfill       (gsize length, gchar fill_char);
 gsize        g_strnlen        (const char*, gsize);
 char        *g_str_from_file_region (int fd, guint64 offset, gsize size);
 
 void	     g_strdelimit     (char *string, char delimiter, char new_delimiter);
-gchar       *g_strescape      (const gchar *source, const gchar *exceptions);
-
-gchar       *g_filename_to_uri   (const gchar *filename, const gchar *hostname, GError **gerror);
-gchar       *g_filename_from_uri (const gchar *uri, gchar **hostname, GError **gerror);
 
 gint         g_printf          (gchar const *format, ...) G_ATTR_FORMAT_PRINTF(1, 2);
 gint         g_fprintf         (FILE *file, gchar const *format, ...) G_ATTR_FORMAT_PRINTF(2, 3);
@@ -693,12 +678,6 @@ void    g_array_set_size          (GArray *array, gint length);
 //FIXME previous missing parens
 
 /*
- * QSort
-*/
-
-void g_qsort_with_data (gpointer base, size_t nmemb, size_t size, GCompareDataFunc compare, gpointer user_data);
-
-/*
  * Pointer Array
  */
 
@@ -716,7 +695,6 @@ gpointer   g_ptr_array_remove_index       (GPtrArray *array, guint index);
 gboolean   g_ptr_array_remove_fast        (GPtrArray *array, gpointer data);
 gpointer   g_ptr_array_remove_index_fast  (GPtrArray *array, guint index);
 void       g_ptr_array_sort               (GPtrArray *array, GCompareFunc compare_func);
-void       g_ptr_array_sort_with_data     (GPtrArray *array, GCompareDataFunc compare_func, gpointer user_data);
 void       g_ptr_array_set_size           (GPtrArray *array, gint length);
 gpointer  *g_ptr_array_free               (GPtrArray *array, gboolean free_seg);
 void       g_ptr_array_foreach            (GPtrArray *array, GFunc func, gpointer user_data);
@@ -814,94 +792,6 @@ GPrintFunc g_set_printerr_handler    (GPrintFunc func);
 
 gpointer g_convert_error_quark(void);
 
-
-/*
- * Unicode Manipulation: most of this is not used by Mono by default, it is
- * only used if the old collation code is activated, so this is only the
- * bare minimum to build.
- */
-
-typedef enum {
-	G_UNICODE_CONTROL,
-	G_UNICODE_FORMAT,
-	G_UNICODE_UNASSIGNED,
-	G_UNICODE_PRIVATE_USE,
-	G_UNICODE_SURROGATE,
-	G_UNICODE_LOWERCASE_LETTER,
-	G_UNICODE_MODIFIER_LETTER,
-	G_UNICODE_OTHER_LETTER,
-	G_UNICODE_TITLECASE_LETTER,
-	G_UNICODE_UPPERCASE_LETTER,
-	G_UNICODE_COMBINING_MARK,
-	G_UNICODE_ENCLOSING_MARK,
-	G_UNICODE_NON_SPACING_MARK,
-	G_UNICODE_DECIMAL_NUMBER,
-	G_UNICODE_LETTER_NUMBER,
-	G_UNICODE_OTHER_NUMBER,
-	G_UNICODE_CONNECT_PUNCTUATION,
-	G_UNICODE_DASH_PUNCTUATION,
-	G_UNICODE_CLOSE_PUNCTUATION,
-	G_UNICODE_FINAL_PUNCTUATION,
-	G_UNICODE_INITIAL_PUNCTUATION,
-	G_UNICODE_OTHER_PUNCTUATION,
-	G_UNICODE_OPEN_PUNCTUATION,
-	G_UNICODE_CURRENCY_SYMBOL,
-	G_UNICODE_MODIFIER_SYMBOL,
-	G_UNICODE_MATH_SYMBOL,
-	G_UNICODE_OTHER_SYMBOL,
-	G_UNICODE_LINE_SEPARATOR,
-	G_UNICODE_PARAGRAPH_SEPARATOR,
-	G_UNICODE_SPACE_SEPARATOR
-} GUnicodeType;
-
-typedef enum {
-	G_UNICODE_BREAK_MANDATORY,
-	G_UNICODE_BREAK_CARRIAGE_RETURN,
-	G_UNICODE_BREAK_LINE_FEED,
-	G_UNICODE_BREAK_COMBINING_MARK,
-	G_UNICODE_BREAK_SURROGATE,
-	G_UNICODE_BREAK_ZERO_WIDTH_SPACE,
-	G_UNICODE_BREAK_INSEPARABLE,
-	G_UNICODE_BREAK_NON_BREAKING_GLUE,
-	G_UNICODE_BREAK_CONTINGENT,
-	G_UNICODE_BREAK_SPACE,
-	G_UNICODE_BREAK_AFTER,
-	G_UNICODE_BREAK_BEFORE,
-	G_UNICODE_BREAK_BEFORE_AND_AFTER,
-	G_UNICODE_BREAK_HYPHEN,
-	G_UNICODE_BREAK_NON_STARTER,
-	G_UNICODE_BREAK_OPEN_PUNCTUATION,
-	G_UNICODE_BREAK_CLOSE_PUNCTUATION,
-	G_UNICODE_BREAK_QUOTATION,
-	G_UNICODE_BREAK_EXCLAMATION,
-	G_UNICODE_BREAK_IDEOGRAPHIC,
-	G_UNICODE_BREAK_NUMERIC,
-	G_UNICODE_BREAK_INFIX_SEPARATOR,
-	G_UNICODE_BREAK_SYMBOL,
-	G_UNICODE_BREAK_ALPHABETIC,
-	G_UNICODE_BREAK_PREFIX,
-	G_UNICODE_BREAK_POSTFIX,
-	G_UNICODE_BREAK_COMPLEX_CONTEXT,
-	G_UNICODE_BREAK_AMBIGUOUS,
-	G_UNICODE_BREAK_UNKNOWN,
-	G_UNICODE_BREAK_NEXT_LINE,
-	G_UNICODE_BREAK_WORD_JOINER,
-	G_UNICODE_BREAK_HANGUL_L_JAMO,
-	G_UNICODE_BREAK_HANGUL_V_JAMO,
-	G_UNICODE_BREAK_HANGUL_T_JAMO,
-	G_UNICODE_BREAK_HANGUL_LV_SYLLABLE,
-	G_UNICODE_BREAK_HANGUL_LVT_SYLLABLE
-} GUnicodeBreakType;
-
-gunichar       g_unichar_toupper (gunichar c);
-gunichar       g_unichar_tolower (gunichar c);
-gunichar       g_unichar_totitle (gunichar c);
-GUnicodeType   g_unichar_type    (gunichar c);
-gboolean       g_unichar_isspace (gunichar c);
-gboolean       g_unichar_isxdigit (gunichar c);
-gint           g_unichar_xdigit_value (gunichar c);
-GUnicodeBreakType   g_unichar_break_type (gunichar c);
-
 #ifndef MAX
 #define MAX(a,b) (((a)>(b)) ? (a) : (b))
 #endif
@@ -987,8 +877,6 @@ typedef enum {
 	G_CONVERT_ERROR_NO_MEMORY
 } GConvertError;
 
-gchar     *g_utf8_strup (const gchar *str, gssize len);
-gchar     *g_utf8_strdown (const gchar *str, gssize len);
 gint       g_unichar_to_utf8 (gunichar c, gchar *outbuf);
 gunichar  *g_utf8_to_ucs4_fast (const gchar *str, glong len, glong *items_written);
 gunichar  *g_utf8_to_ucs4 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err);
@@ -1036,21 +924,9 @@ gchar  *g_find_program_in_path (const gchar *program);
 gchar  *g_get_current_dir      (void);
 gboolean g_path_is_absolute    (const char *filename);
 
-const gchar *g_get_home_dir    (void);
 const gchar *g_get_tmp_dir     (void);
-const gchar *g_get_user_name   (void);
-gchar *g_get_prgname           (void);
-void  g_set_prgname            (const gchar *prgname);
 
 gboolean g_ensure_directory_exists (const gchar *filename);
-
-/*
- * Shell
- */
-
-gboolean  g_shell_parse_argv (const gchar *command_line, gint *argcp, gchar ***argvp, GError **gerror);
-gchar    *g_shell_unquote    (const gchar *quoted_string, GError **gerror);
-gchar    *g_shell_quote      (const gchar *unquoted_string);
 
 #ifndef G_OS_WIN32 // Spawn could be implemented but is not.
 
@@ -1080,7 +956,6 @@ typedef enum {
 
 typedef void (*GSpawnChildSetupFunc) (gpointer user_data);
 
-gboolean g_spawn_command_line_sync (const gchar *command_line, gchar **standard_output, gchar **standard_error, gint *exit_status, GError **gerror);
 gboolean g_spawn_async_with_pipes  (const gchar *working_directory, gchar **argv, gchar **envp, GSpawnFlags flags, GSpawnChildSetupFunc child_setup,
 				gpointer user_data, GPid *child_pid, gint *standard_input, gint *standard_output, gint *standard_error, GError **gerror);
 
@@ -1189,9 +1064,9 @@ gboolean   g_file_test (const gchar *filename, GFileTest test);
 #define g_write write
 #endif
 #ifdef G_OS_WIN32
-#define g_read _read
+#define g_read(fd, buffer, buffer_size) _read(fd, buffer, (unsigned)buffer_size)
 #else
-#define g_read read
+#define g_read(fd, buffer, buffer_size) (int)read(fd, buffer, buffer_size)
 #endif
 
 #define g_fopen fopen
@@ -1272,15 +1147,6 @@ g_async_safe_printf (gchar const *format, ...)
 	return ret;
 }
 
-
-/*
- * Pattern matching
- */
-typedef struct _GPatternSpec GPatternSpec;
-GPatternSpec * g_pattern_spec_new (const gchar *pattern);
-void           g_pattern_spec_free (GPatternSpec *pspec);
-gboolean       g_pattern_match_string (GPatternSpec *pspec, const gchar *string);
-
 /*
  * Directory
  */
@@ -1292,78 +1158,6 @@ void         g_dir_close (GDir *dir);
 
 int          g_mkdir_with_parents (const gchar *pathname, int mode);
 #define g_mkdir mkdir
-
-/*
- * GMarkup
- */
-typedef struct _GMarkupParseContext GMarkupParseContext;
-
-typedef enum
-{
-	G_MARKUP_DO_NOT_USE_THIS_UNSUPPORTED_FLAG = 1 << 0,
-	G_MARKUP_TREAT_CDATA_AS_TEXT              = 1 << 1
-} GMarkupParseFlags;
-
-typedef struct {
-	void (*start_element)  (GMarkupParseContext *context,
-				const gchar *element_name,
-				const gchar **attribute_names,
-				const gchar **attribute_values,
-				gpointer user_data,
-				GError **gerror);
-
-	void (*end_element)    (GMarkupParseContext *context,
-				const gchar         *element_name,
-				gpointer             user_data,
-				GError             **gerror);
-
-	void (*text)           (GMarkupParseContext *context,
-				const gchar         *text,
-				gsize                text_len,
-				gpointer             user_data,
-				GError             **gerror);
-
-	void (*passthrough)    (GMarkupParseContext *context,
-				const gchar         *passthrough_text,
-				gsize                text_len,
-				gpointer             user_data,
-				GError             **gerror);
-	void (*error)          (GMarkupParseContext *context,
-				GError              *gerror,
-				gpointer             user_data);
-} GMarkupParser;
-
-GMarkupParseContext *g_markup_parse_context_new   (const GMarkupParser *parser,
-						   GMarkupParseFlags flags,
-						   gpointer user_data,
-						   GDestroyNotify user_data_dnotify);
-void                 g_markup_parse_context_free  (GMarkupParseContext *context);
-gboolean             g_markup_parse_context_parse (GMarkupParseContext *context,
-						   const gchar *text, gssize text_len,
-						   GError **gerror);
-gboolean         g_markup_parse_context_end_parse (GMarkupParseContext *context,
-						   GError **gerror);
-
-/*
- * Character set conversion
- */
-typedef struct _GIConv *GIConv;
-
-gsize g_iconv (GIConv cd, gchar **inbytes, gsize *inbytesleft, gchar **outbytes, gsize *outbytesleft);
-GIConv g_iconv_open (const gchar *to_charset, const gchar *from_charset);
-int g_iconv_close (GIConv cd);
-
-gboolean  g_get_charset        (G_CONST_RETURN char **charset);
-gchar    *g_locale_to_utf8     (const gchar *opsysstring, gssize len,
-				gsize *bytes_read, gsize *bytes_written,
-				GError **gerror);
-gchar    *g_locale_from_utf8   (const gchar *utf8string, gssize len, gsize *bytes_read,
-				gsize *bytes_written, GError **gerror);
-gchar    *g_filename_from_utf8 (const gchar *utf8string, gssize len, gsize *bytes_read,
-				gsize *bytes_written, GError **gerror);
-gchar    *g_convert            (const gchar *str, gssize len,
-				const gchar *to_codeset, const gchar *from_codeset,
-				gsize *bytes_read, gsize *bytes_written, GError **gerror);
 
 /*
  * Unicode manipulation
@@ -1515,5 +1309,433 @@ mono_qsort (void* base, size_t num, size_t size, int (*compare)(const void*, con
 gint
 g_clock_nanosleep (clockid_t clockid, gint flags, const struct timespec *request, struct timespec *remain);
 #endif
+
+//#define ENABLE_CHECKED_CASTS
+#ifdef ENABLE_CHECKED_CASTS
+
+#define __CAST_PTRTYPE_TO_STYPE(src,dest,min_v,max_v) \
+static inline dest \
+__cast_ptr_##src##_to_stype_##dest (src v) \
+{ \
+	if ((gssize)(v) < min_v) \
+		/* underflow */ \
+		; \
+	if ((gssize)(v) > max_v) \
+		/* overflow */ \
+		; \
+	return ((dest)(gssize)(v)); \
+}
+
+#define __CAST_PTRTYPE_TO_UTYPE(src,dest,max_v) \
+static inline dest \
+__cast_ptr_##src##_to_utype_##dest (src v) \
+{ \
+	if ((gsize)(v) > max_v) \
+		/* overflow */ \
+		; \
+	return ((dest)(gsize)(v)); \
+}
+
+#define __CAST_STYPE_TO_STYPE(src,dest,min_v,max_v) \
+static inline dest \
+__cast_##src##_to_##dest (src v) \
+{ \
+	if (v < min_v) \
+		/* underflow */ \
+		; \
+	if (v > max_v) \
+		/* overflow */ \
+		; \
+	return (dest)(v); \
+}
+
+#define __CAST_UTYPE_TO_UTYPE(src,dest,max_v) \
+static inline dest \
+__cast_##src##_to_##dest (src v) \
+{ \
+	if (v > max_v) \
+		/* overflow */ \
+		; \
+	return (dest)(v); \
+}
+
+#define __CAST_STYPE_TO_UTYPE(src,dest,max_v) \
+static inline dest \
+__cast_##src##_to_##dest (src v) \
+{ \
+	if (v < 0) \
+		/* underflow */ \
+		; \
+	if (v > max_v) \
+		/* overflow */ \
+		; \
+	return (dest)(v); \
+}
+
+#define __CAST_UTYPE_TO_STYPE(src,dest,min_v,max_v) \
+static inline dest \
+__cast_##src##_to_##dest (src v) \
+{ \
+	if (v > max_v) \
+		/* overflow */ \
+		; \
+	return (dest)(v); \
+}
+
+__CAST_PTRTYPE_TO_STYPE(gpointer, gint64, INT64_MIN, INT64_MAX)
+__CAST_PTRTYPE_TO_UTYPE(gpointer, guint64, UINT64_MAX)
+__CAST_PTRTYPE_TO_STYPE(gpointer, gint32, INT32_MIN, INT32_MAX)
+__CAST_PTRTYPE_TO_UTYPE(gpointer, guint32, UINT32_MAX)
+__CAST_PTRTYPE_TO_STYPE(gpointer, gint16, INT16_MIN, INT16_MAX)
+__CAST_PTRTYPE_TO_UTYPE(gpointer, guint16, UINT16_MAX)
+__CAST_PTRTYPE_TO_STYPE(gpointer, gint8, INT8_MIN, INT8_MAX)
+__CAST_PTRTYPE_TO_UTYPE(gpointer, guint8, UINT8_MAX)
+
+__CAST_PTRTYPE_TO_STYPE(gpointer, glong, LONG_MIN, LONG_MAX)
+__CAST_PTRTYPE_TO_UTYPE(gpointer, gulong, ULONG_MAX)
+__CAST_PTRTYPE_TO_STYPE(gpointer, gint, INT_MIN, INT_MAX)
+__CAST_PTRTYPE_TO_UTYPE(gpointer, guint, UINT_MAX)
+
+__CAST_PTRTYPE_TO_STYPE(gintptr, gint32, INT32_MIN, INT32_MAX)
+__CAST_PTRTYPE_TO_UTYPE(gintptr, guint32, UINT32_MAX)
+__CAST_PTRTYPE_TO_STYPE(gintptr, gint16, INT16_MIN, INT16_MAX)
+__CAST_PTRTYPE_TO_UTYPE(gintptr, guint16, UINT16_MAX)
+
+__CAST_PTRTYPE_TO_STYPE(gintptr, glong, LONG_MIN, LONG_MAX)
+__CAST_PTRTYPE_TO_UTYPE(gintptr, gulong, ULONG_MAX)
+__CAST_PTRTYPE_TO_STYPE(gintptr, gint, INT_MIN, INT_MAX)
+__CAST_PTRTYPE_TO_UTYPE(gintptr, guint, UINT_MAX)
+
+__CAST_PTRTYPE_TO_STYPE(guintptr, gint32, INT32_MIN, INT32_MAX)
+__CAST_PTRTYPE_TO_UTYPE(guintptr, guint32, UINT32_MAX)
+__CAST_PTRTYPE_TO_STYPE(guintptr, gint16, INT16_MIN, INT16_MAX)
+__CAST_PTRTYPE_TO_UTYPE(guintptr, guint16, UINT16_MAX)
+
+__CAST_PTRTYPE_TO_STYPE(guintptr, glong, LONG_MIN, LONG_MAX)
+__CAST_PTRTYPE_TO_UTYPE(guintptr, gulong, ULONG_MAX)
+__CAST_PTRTYPE_TO_STYPE(guintptr, gint, INT_MIN, INT_MAX)
+__CAST_PTRTYPE_TO_UTYPE(guintptr, guint, UINT_MAX)
+
+__CAST_PTRTYPE_TO_STYPE(gptrdiff, gint32, INT32_MIN, INT32_MAX)
+__CAST_PTRTYPE_TO_UTYPE(gptrdiff, guint32, UINT32_MAX)
+__CAST_PTRTYPE_TO_STYPE(gptrdiff, gint16, INT16_MIN, INT16_MAX)
+__CAST_PTRTYPE_TO_UTYPE(gptrdiff, guint16, UINT16_MAX)
+__CAST_PTRTYPE_TO_STYPE(gptrdiff, gint8, INT8_MIN, INT8_MAX)
+__CAST_PTRTYPE_TO_UTYPE(gptrdiff, guint8, UINT8_MAX)
+
+__CAST_PTRTYPE_TO_STYPE(gptrdiff, glong, LONG_MIN, LONG_MAX)
+__CAST_PTRTYPE_TO_UTYPE(gptrdiff, gulong, ULONG_MAX)
+__CAST_PTRTYPE_TO_STYPE(gptrdiff, gint, INT_MIN, INT_MAX)
+__CAST_PTRTYPE_TO_UTYPE(gptrdiff, guint, UINT_MAX)
+
+__CAST_UTYPE_TO_STYPE(gsize, gint32, INT32_MIN, INT32_MAX)
+__CAST_UTYPE_TO_UTYPE(gsize, guint32, UINT32_MAX)
+
+__CAST_UTYPE_TO_STYPE(gsize, gint, INT_MIN, INT_MAX)
+__CAST_UTYPE_TO_UTYPE(gsize, guint, UINT_MAX)
+
+__CAST_STYPE_TO_STYPE(gssize, gint32, INT32_MIN, INT32_MAX)
+__CAST_STYPE_TO_UTYPE(gssize, guint32, UINT32_MAX)
+
+__CAST_STYPE_TO_STYPE(gssize, gint, INT_MIN, INT_MAX)
+__CAST_STYPE_TO_UTYPE(gssize, guint, UINT_MAX)
+
+__CAST_STYPE_TO_UTYPE(gssize, gsize, SIZE_MAX)
+__CAST_UTYPE_TO_STYPE(gsize, gssize, PTRDIFF_MIN, PTRDIFF_MAX)
+
+__CAST_STYPE_TO_STYPE(gdouble, gint64, INT64_MIN, INT64_MAX)
+__CAST_STYPE_TO_UTYPE(gdouble, guint64, UINT64_MAX)
+__CAST_STYPE_TO_STYPE(gdouble, gint32, INT32_MIN, INT32_MAX)
+__CAST_STYPE_TO_UTYPE(gdouble, guint32, UINT32_MAX)
+
+__CAST_STYPE_TO_UTYPE(gdouble, gsize, SIZE_MAX)
+__CAST_STYPE_TO_STYPE(gdouble, gint, INT_MIN, INT_MAX)
+__CAST_STYPE_TO_UTYPE(gdouble, guint, UINT_MAX)
+
+__CAST_STYPE_TO_UTYPE(gint64, guint64, UINT64_MAX)
+__CAST_STYPE_TO_STYPE(gint64, gint32, INT32_MIN, INT32_MAX)
+__CAST_STYPE_TO_UTYPE(gint64, guint32, UINT32_MAX)
+__CAST_STYPE_TO_STYPE(gint64, gint16, INT16_MIN, INT16_MAX)
+__CAST_STYPE_TO_UTYPE(gint64, guint16, UINT16_MAX)
+__CAST_STYPE_TO_STYPE(gint64, gint8, INT8_MIN, INT8_MAX)
+__CAST_STYPE_TO_UTYPE(gint64, guint8, UINT8_MAX)
+
+__CAST_STYPE_TO_STYPE(gint64, gssize, PTRDIFF_MIN, PTRDIFF_MAX)
+__CAST_STYPE_TO_UTYPE(gint64, gsize, SIZE_MAX)
+__CAST_STYPE_TO_STYPE(gint64, glong, LONG_MIN, LONG_MAX)
+__CAST_STYPE_TO_UTYPE(gint64, gulong, ULONG_MAX)
+__CAST_STYPE_TO_STYPE(gint64, gint, INT_MIN, INT_MAX)
+__CAST_STYPE_TO_UTYPE(gint64, guint, UINT_MAX)
+
+__CAST_UTYPE_TO_STYPE(guint64, gint64, INT64_MIN, INT64_MAX)
+__CAST_UTYPE_TO_STYPE(guint64, gint32, INT32_MIN, INT32_MAX)
+__CAST_UTYPE_TO_UTYPE(guint64, guint32, UINT32_MAX)
+__CAST_UTYPE_TO_STYPE(guint64, gint16, INT16_MIN, INT16_MAX)
+__CAST_UTYPE_TO_UTYPE(guint64, guint16, UINT16_MAX)
+__CAST_UTYPE_TO_STYPE(guint64, gint8, INT8_MIN, INT8_MAX)
+__CAST_UTYPE_TO_UTYPE(guint64, guint8, UINT8_MAX)
+
+__CAST_UTYPE_TO_STYPE(guint64, gssize, PTRDIFF_MIN, PTRDIFF_MAX)
+__CAST_UTYPE_TO_UTYPE(guint64, gsize, SIZE_MAX)
+__CAST_UTYPE_TO_STYPE(guint64, glong, LONG_MIN, LONG_MAX)
+__CAST_UTYPE_TO_UTYPE(guint64, gulong, ULONG_MAX)
+__CAST_UTYPE_TO_STYPE(guint64, gint, INT_MIN, INT_MAX)
+__CAST_UTYPE_TO_UTYPE(guint64, guint, UINT_MAX)
+
+__CAST_STYPE_TO_UTYPE(gint32, guint32, UINT32_MAX)
+__CAST_STYPE_TO_STYPE(gint32, gint16, INT16_MIN, INT16_MAX)
+__CAST_STYPE_TO_UTYPE(gint32, guint16, UINT16_MAX)
+__CAST_STYPE_TO_STYPE(gint32, gint8, INT8_MIN, INT8_MAX)
+__CAST_STYPE_TO_UTYPE(gint32, guint8, UINT8_MAX)
+
+__CAST_STYPE_TO_UTYPE(gint32, guint, UINT_MAX)
+
+__CAST_UTYPE_TO_UTYPE(guint32, guint, UINT_MAX)
+__CAST_UTYPE_TO_STYPE(guint32, gint32, INT32_MIN, INT32_MAX)
+__CAST_UTYPE_TO_STYPE(guint32, gint16, INT16_MIN, INT16_MAX)
+__CAST_UTYPE_TO_UTYPE(guint32, guint16, UINT16_MAX)
+__CAST_UTYPE_TO_STYPE(guint32, gint8, INT8_MIN, INT8_MAX)
+__CAST_UTYPE_TO_UTYPE(guint32, guint8, UINT8_MAX)
+
+__CAST_UTYPE_TO_STYPE(guint32, gint, INT_MIN, INT_MAX)
+__CAST_UTYPE_TO_STYPE(guint32, gchar, CHAR_MIN, CHAR_MAX)
+
+__CAST_STYPE_TO_STYPE(gint, gint32, INT32_MIN, INT32_MAX)
+__CAST_STYPE_TO_UTYPE(gint, guint32, UINT32_MAX)
+__CAST_STYPE_TO_STYPE(gint, gint16, INT16_MIN, INT16_MAX)
+__CAST_STYPE_TO_UTYPE(gint, guint16, UINT16_MAX)
+__CAST_STYPE_TO_STYPE(gint, gint8, INT8_MIN, INT8_MAX)
+__CAST_STYPE_TO_UTYPE(gint, guint8, UINT8_MAX)
+
+__CAST_STYPE_TO_UTYPE(gint, guint, UINT_MAX)
+__CAST_STYPE_TO_UTYPE(gint, gunichar2, UINT16_MAX)
+__CAST_STYPE_TO_STYPE(gint, gshort, SHRT_MIN, SHRT_MAX)
+__CAST_STYPE_TO_STYPE(gint, gchar, CHAR_MIN, CHAR_MAX)
+
+__CAST_UTYPE_TO_STYPE(guint, gint32, INT32_MIN, INT32_MAX)
+__CAST_UTYPE_TO_UTYPE(guint, guint32, UINT32_MAX)
+__CAST_UTYPE_TO_STYPE(guint, gint16, INT16_MIN, INT16_MAX)
+__CAST_UTYPE_TO_UTYPE(guint, guint16, UINT16_MAX)
+__CAST_UTYPE_TO_STYPE(guint, gint8, INT8_MIN, INT8_MAX)
+__CAST_UTYPE_TO_UTYPE(guint, guint8, UINT8_MAX)
+
+__CAST_UTYPE_TO_STYPE(guint, gint, INT_MIN, INT_MAX)
+__CAST_UTYPE_TO_UTYPE(guint, gunichar2, UINT16_MAX)
+__CAST_UTYPE_TO_STYPE(guint, gshort, SHRT_MIN, SHRT_MAX)
+__CAST_UTYPE_TO_STYPE(guint, gchar, CHAR_MIN, CHAR_MAX)
+
+__CAST_STYPE_TO_STYPE(gfloat, gint32, INT32_MIN, INT32_MAX)
+__CAST_STYPE_TO_UTYPE(gfloat, guint32, UINT32_MAX)
+
+__CAST_STYPE_TO_STYPE(gfloat, gint, INT_MIN, INT_MAX)
+__CAST_STYPE_TO_UTYPE(gfloat, guint, UINT_MAX)
+
+__CAST_STYPE_TO_STYPE(gint16, gint8, INT8_MIN, INT8_MAX)
+__CAST_STYPE_TO_UTYPE(gint16, guint8, UINT8_MAX)
+
+__CAST_UTYPE_TO_STYPE(guint16, gint8, INT8_MIN, INT8_MAX)
+__CAST_UTYPE_TO_UTYPE(guint16, guint8, UINT8_MAX)
+
+__CAST_UTYPE_TO_STYPE(gunichar, gint16, INT16_MIN, INT16_MAX)
+__CAST_UTYPE_TO_UTYPE(gunichar, guint16, UINT16_MAX)
+__CAST_UTYPE_TO_STYPE(gunichar, gint8, INT8_MIN, INT8_MAX)
+__CAST_UTYPE_TO_UTYPE(gunichar, guint8, UINT8_MAX)
+__CAST_UTYPE_TO_STYPE(gunichar, gchar, CHAR_MIN, CHAR_MAX)
+
+#define G_CAST_PTRTYPE_TO_STYPE(src,dest,v) __cast_ptr_##src##_to_stype_##dest ((v))
+#define G_CAST_PTRTYPE_TO_UTYPE(src,dest,v) __cast_ptr_##src##_to_utype_##dest ((v))
+#define G_CAST_TYPE_TO_TYPE(src,dest,v) __cast_##src##_to_##dest ((v))
+
+#endif
+
+#if !defined(ENABLE_CHECKED_CASTS)
+
+#define G_CAST_PTRTYPE_TO_STYPE(src,dest,v) ((dest)(gssize)(v))
+#define G_CAST_PTRTYPE_TO_UTYPE(src,dest,v) ((dest)(gsize)(v))
+#define G_CAST_TYPE_TO_TYPE(src,dest,v) ((dest)(v))
+
+#endif
+
+// - Pointers should only be converted to or from pointer-sized integers.
+// - Any size integer can be converted to any other size integer.
+// - Therefore a pointer-sized integer is the intermediary between
+//   a pointer and any integer type.
+
+#define G_CAST_STYPE_TO_PTRTYPE(src,dest,v) ((dest)(gssize)(v))
+#define G_CAST_UTYPE_TO_PTRTYPE(src,dest,v) ((dest)(gsize)(v))
+
+#define GPOINTER_TO_INT64(v)     G_CAST_PTRTYPE_TO_STYPE(gpointer, gint64, v)
+#define GPOINTER_TO_UINT64(v)    G_CAST_PTRTYPE_TO_UTYPE(gpointer, guint64, v)
+#define GPOINTER_TO_INT32(v)     G_CAST_PTRTYPE_TO_STYPE(gpointer, gint32, v)
+#define GPOINTER_TO_UINT32(v)    G_CAST_PTRTYPE_TO_UTYPE(gpointer, guint32, v)
+#define GPOINTER_TO_INT16(v)     G_CAST_PTRTYPE_TO_STYPE(gpointer, gint16, v)
+#define GPOINTER_TO_UINT16(v)    G_CAST_PTRTYPE_TO_UTYPE(gpointer, guint16, v)
+#define GPOINTER_TO_INT8(v)      G_CAST_PTRTYPE_TO_STYPE(gpointer, gint8, v)
+#define GPOINTER_TO_UINT8(v)     G_CAST_PTRTYPE_TO_UTYPE(gpointer, guint8, v)
+
+#define GPOINTER_TO_LONG(v)      G_CAST_PTRTYPE_TO_STYPE(gpointer, glong, v)
+#define GPOINTER_TO_ULONG(v)     G_CAST_PTRTYPE_TO_UTYPE(gpointer, gulong, v)
+#define GPOINTER_TO_INT(v)       G_CAST_PTRTYPE_TO_STYPE(gpointer, gint, v)
+#define GPOINTER_TO_UINT(v)      G_CAST_PTRTYPE_TO_UTYPE(gpointer, guint, v)
+
+#define GINTPTR_TO_INT32(v)      G_CAST_PTRTYPE_TO_STYPE(gintptr, gint32, v)
+#define GINTPTR_TO_UINT32(v)     G_CAST_PTRTYPE_TO_UTYPE(gintptr, guint32, v)
+
+#define GINTPTR_TO_INT16(v)      G_CAST_PTRTYPE_TO_STYPE(gintptr, gint16, v)
+#define GINTPTR_TO_UINT16(v)     G_CAST_PTRTYPE_TO_UTYPE(gintptr, guint16, v)
+
+#define GINTPTR_TO_LONG(v)       G_CAST_PTRTYPE_TO_STYPE(gintptr, glong, v)
+#define GINTPTR_TO_INT(v)        G_CAST_PTRTYPE_TO_STYPE(gintptr, gint, v)
+#define GINTPTR_TO_UINT(v)       G_CAST_PTRTYPE_TO_UTYPE(gintptr, guint, v)
+
+#define GUINTPTR_TO_INT32(v)     G_CAST_PTRTYPE_TO_STYPE(guintptr, gint32, v)
+#define GUINTPTR_TO_UINT32(v)    G_CAST_PTRTYPE_TO_UTYPE(guintptr, guint32, v)
+
+#define GUINTPTR_TO_INT16(v)     G_CAST_PTRTYPE_TO_STYPE(guintptr, gint16, v)
+#define GUINTPTR_TO_UINT16(v)    G_CAST_PTRTYPE_TO_UTYPE(guintptr, guint16, v)
+
+#define GUINTPTR_TO_LONG(v)      G_CAST_PTRTYPE_TO_STYPE(guintptr, glong, v)
+#define GUINTPTR_TO_INT(v)       G_CAST_PTRTYPE_TO_STYPE(guintptr, gint, v)
+#define GUINTPTR_TO_UINT(v)      G_CAST_PTRTYPE_TO_UTYPE(guintptr, guint, v)
+
+#define GPTRDIFF_TO_INT32(v)     G_CAST_PTRTYPE_TO_STYPE(gptrdiff, gint32, v)
+#define GPTRDIFF_TO_UINT32(v)    G_CAST_PTRTYPE_TO_UTYPE(gptrdiff, guint32, v)
+#define GPTRDIFF_TO_INT16(v)     G_CAST_PTRTYPE_TO_STYPE(gptrdiff, gint16, v)
+#define GPTRDIFF_TO_UINT16(v)    G_CAST_PTRTYPE_TO_UTYPE(gptrdiff, guint16, v)
+#define GPTRDIFF_TO_INT8(v)      G_CAST_PTRTYPE_TO_STYPE(gptrdiff, gint8, v)
+#define GPTRDIFF_TO_UINT8(v)     G_CAST_PTRTYPE_TO_UTYPE(gptrdiff, guint8, v)
+
+#define GPTRDIFF_TO_LONG(v)      G_CAST_PTRTYPE_TO_STYPE(gptrdiff, glong, v)
+#define GPTRDIFF_TO_INT(v)       G_CAST_PTRTYPE_TO_STYPE(gptrdiff, gint, v)
+#define GPTRDIFF_TO_UINT(v)      G_CAST_PTRTYPE_TO_UTYPE(gptrdiff, guint, v)
+
+#define GSIZE_TO_INT32(v)        G_CAST_TYPE_TO_TYPE(gsize, gint32, v)
+#define GSIZE_TO_UINT32(v)       G_CAST_TYPE_TO_TYPE(gsize, guint32, v)
+
+#define GSIZE_TO_INT(v)          G_CAST_TYPE_TO_TYPE(gsize, gint, v)
+#define GSIZE_TO_UINT(v)         G_CAST_TYPE_TO_TYPE(gsize, guint, v)
+
+#define GSSIZE_TO_INT32(v)       G_CAST_TYPE_TO_TYPE(gssize, gint32, v)
+#define GSSIZE_TO_UINT32(v)      G_CAST_TYPE_TO_TYPE(gssize, guint32, v)
+
+#define GSSIZE_TO_INT(v)         G_CAST_TYPE_TO_TYPE(gssize, gint, v)
+#define GSSIZE_TO_UINT(v)        G_CAST_TYPE_TO_TYPE(gssize, guint, v)
+
+#define GSSIZE_TO_SIZE(v)        G_CAST_TYPE_TO_TYPE(gssize, gsize, v)
+#define GSIZE_TO_SSIZE(v)        G_CAST_TYPE_TO_TYPE(gsize, gssize, v)
+
+#define GDOUBLE_TO_INT64(v)      G_CAST_TYPE_TO_TYPE(gdouble, gint64, v)
+#define GDOUBLE_TO_UINT64(v)     G_CAST_TYPE_TO_TYPE(gdouble, guint64, v)
+#define GDOUBLE_TO_INT32(v)      G_CAST_TYPE_TO_TYPE(gdouble, gint32, v)
+#define GDOUBLE_TO_UINT32(v)     G_CAST_TYPE_TO_TYPE(gdouble, guint32, v)
+
+#define GDOUBLE_TO_SIZE(v)       G_CAST_TYPE_TO_TYPE(gdouble, gsize, v)
+#define GDOUBLE_TO_INT(v)        G_CAST_TYPE_TO_TYPE(gdouble, gint, v)
+#define GDOUBLE_TO_UINT(v)       G_CAST_TYPE_TO_TYPE(gdouble, guint, v)
+
+#define GINT64_TO_UINT64(v)      G_CAST_TYPE_TO_TYPE(gint64, guint64, v)
+#define GINT64_TO_INT32(v)       G_CAST_TYPE_TO_TYPE(gint64, gint32, v)
+#define GINT64_TO_UINT32(v)      G_CAST_TYPE_TO_TYPE(gint64, guint32,v)
+#define GINT64_TO_INT16(v)       G_CAST_TYPE_TO_TYPE(gint64, gint16, v)
+#define GINT64_TO_UINT16(v)      G_CAST_TYPE_TO_TYPE(gint64, guint16, v)
+#define GINT64_TO_INT8(v)        G_CAST_TYPE_TO_TYPE(gint64, gint8, v)
+#define GINT64_TO_UINT8(v)       G_CAST_TYPE_TO_TYPE(gint64, guint8, v)
+
+#define GINT64_TO_INTPTR(v)      G_CAST_STYPE_TO_PTRTYPE(gint64, gintptr, v)
+#define GINT64_TO_UINTPTR(v)     G_CAST_STYPE_TO_PTRTYPE(gint64, guintptr, v)
+#define GINT64_TO_POINTER(v)     G_CAST_STYPE_TO_PTRTYPE(gint64, gpointer, v)
+#define GINT64_TO_SSIZE(v)       G_CAST_TYPE_TO_TYPE(gint64, gssize, v)
+#define GINT64_TO_SIZE(v)        G_CAST_TYPE_TO_TYPE(gint64, gsize, v)
+#define GINT64_TO_LONG(v)        G_CAST_TYPE_TO_TYPE(gint64, glong, v)
+#define GINT64_TO_ULONG(v)       G_CAST_TYPE_TO_TYPE(gint64, gulong, v)
+#define GINT64_TO_INT(v)         G_CAST_TYPE_TO_TYPE(gint64, gint, v)
+#define GINT64_TO_UINT(v)        G_CAST_TYPE_TO_TYPE(gint64, guint, v)
+
+#define GUINT64_TO_INT64(v)      G_CAST_TYPE_TO_TYPE(guint64, gint64, v)
+#define GUINT64_TO_INT32(v)      G_CAST_TYPE_TO_TYPE(guint64, gint32, v)
+#define GUINT64_TO_UINT32(v)     G_CAST_TYPE_TO_TYPE(guint64, guint32, v)
+#define GUINT64_TO_INT16(v)      G_CAST_TYPE_TO_TYPE(guint64, gint16, v)
+#define GUINT64_TO_UINT16(v)     G_CAST_TYPE_TO_TYPE(guint64, guint16, v)
+#define GUINT64_TO_INT8(v)       G_CAST_TYPE_TO_TYPE(guint64, gint8, v)
+#define GUINT64_TO_UINT8(v)      G_CAST_TYPE_TO_TYPE(guint64, guint8, v)
+
+#define GUINT64_TO_INTPTR(v)     G_CAST_UTYPE_TO_PTRTYPE(guint64, gintptr, v)
+#define GUINT64_TO_UINTPTR(v)    G_CAST_UTYPE_TO_PTRTYPE(guint64, guintptr, v)
+#define GUINT64_TO_POINTER(v)    G_CAST_UTYPE_TO_PTRTYPE(guint64, gpointer, v)
+#define GUINT64_TO_SSIZE(v)      G_CAST_TYPE_TO_TYPE(guint64, gssize, v)
+#define GUINT64_TO_SIZE(v)       G_CAST_TYPE_TO_TYPE(guint64, gsize, v)
+#define GUINT64_TO_LONG(v)       G_CAST_TYPE_TO_TYPE(guint64, glong, v)
+#define GUINT64_TO_ULONG(v)      G_CAST_TYPE_TO_TYPE(guint64, gulong, v)
+#define GUINT64_TO_INT(v)        G_CAST_TYPE_TO_TYPE(guint64, gint, v)
+#define GUINT64_TO_UINT(v)       G_CAST_TYPE_TO_TYPE(guint64, guint, v)
+
+#define GINT32_TO_UINT32(v)      G_CAST_TYPE_TO_TYPE(gint32, guint32, v)
+#define GINT32_TO_INT16(v)       G_CAST_TYPE_TO_TYPE(gint32, gint16, v)
+#define GINT32_TO_UINT16(v)      G_CAST_TYPE_TO_TYPE(gint32, guint16, v)
+#define GINT32_TO_INT8(v)        G_CAST_TYPE_TO_TYPE(gint32, gint8, v)
+#define GINT32_TO_UINT8(v)       G_CAST_TYPE_TO_TYPE(gint32, guint8, v)
+
+#define GINT32_TO_UINT(v)        G_CAST_TYPE_TO_TYPE(gint32, guint, v)
+
+#define GUINT32_TO_UINT(v)       G_CAST_TYPE_TO_TYPE(guint32, guint, v)
+#define GUINT32_TO_INT32(v)      G_CAST_TYPE_TO_TYPE(guint32, gint32, v)
+#define GUINT32_TO_INT16(v)      G_CAST_TYPE_TO_TYPE(guint32, gint16, v)
+#define GUINT32_TO_UINT16(v)     G_CAST_TYPE_TO_TYPE(guint32, guint16, v)
+#define GUINT32_TO_INT8(v)       G_CAST_TYPE_TO_TYPE(guint32, gint8, v)
+#define GUINT32_TO_UINT8(v)      G_CAST_TYPE_TO_TYPE(guint32, guint8, v)
+
+#define GUINT32_TO_INT(v)        G_CAST_TYPE_TO_TYPE(guint32, gint, v)
+#define GUINT32_TO_OPCODE(v)     G_CAST_TYPE_TO_TYPE(guint32, guint16, v)
+#define GUINT32_TO_CHAR(v)       G_CAST_TYPE_TO_TYPE(guint32, gchar, v)
+
+#define GINT_TO_INT32(v)         G_CAST_TYPE_TO_TYPE(gint, gint32, v)
+#define GINT_TO_UINT32(v)        G_CAST_TYPE_TO_TYPE(gint, guint32, v)
+#define GINT_TO_INT16(v)         G_CAST_TYPE_TO_TYPE(gint, gint16, v)
+#define GINT_TO_UINT16(v)        G_CAST_TYPE_TO_TYPE(gint, guint16, v)
+#define GINT_TO_INT8(v)          G_CAST_TYPE_TO_TYPE(gint, gint8, v)
+#define GINT_TO_UINT8(v)         G_CAST_TYPE_TO_TYPE(gint, guint8, v)
+
+#define GINT_TO_INTPTR(v)        G_CAST_STYPE_TO_PTRTYPE(gint, gintptr, v)
+#define GINT_TO_UINTPTR(v)       G_CAST_STYPE_TO_PTRTYPE(gint, guintptr, v)
+#define GINT_TO_POINTER(v)       G_CAST_STYPE_TO_PTRTYPE(gint, gpointer, v)
+#define GINT_TO_UINT(v)          G_CAST_TYPE_TO_TYPE(gint, guint, v)
+#define GINT_TO_OPCODE(v)        G_CAST_TYPE_TO_TYPE(gint, guint16, v)
+#define GINT_TO_UNICHAR2(v)      G_CAST_TYPE_TO_TYPE(gint, gunichar2, v)
+#define GINT_TO_SHORT(v)         G_CAST_TYPE_TO_TYPE(gint, gshort, v)
+#define GINT_TO_CHAR(v)          G_CAST_TYPE_TO_TYPE(gint, gchar, v)
+
+#define GUINT_TO_INT32(v)        G_CAST_TYPE_TO_TYPE(guint, gint32, v)
+#define GUINT_TO_UINT32(v)       G_CAST_TYPE_TO_TYPE(guint, guint32, v)
+#define GUINT_TO_INT16(v)        G_CAST_TYPE_TO_TYPE(guint, gint16, v)
+#define GUINT_TO_UINT16(v)       G_CAST_TYPE_TO_TYPE(guint, guint16, v)
+#define GUINT_TO_INT8(v)         G_CAST_TYPE_TO_TYPE(guint, gint8, v)
+#define GUINT_TO_UINT8(v)        G_CAST_TYPE_TO_TYPE(guint, guint8, v)
+
+#define GUINT_TO_INTPTR(v)       G_CAST_UTYPE_TO_PTRTYPE(guint, gintptr, v)
+#define GUINT_TO_UINTPTR(v)      G_CAST_UTYPE_TO_PTRTYPE(guint, guintptr, v)
+#define GUINT_TO_POINTER(v)      G_CAST_UTYPE_TO_PTRTYPE(guint, gpointer, v)
+#define GUINT_TO_INT(v)          G_CAST_TYPE_TO_TYPE(guint, gint, v)
+#define GUINT_TO_OPCODE(v)       G_CAST_TYPE_TO_TYPE(guint, guint16, v)
+#define GUINT_TO_UNICHAR2(v)     G_CAST_TYPE_TO_TYPE(guint, gunichar2, v)
+#define GUINT_TO_SHORT(v)        G_CAST_TYPE_TO_TYPE(guint, gshort, v)
+#define GUINT_TO_CHAR(v)         G_CAST_TYPE_TO_TYPE(guint, gchar, v)
+
+#define GFLOAT_TO_INT32(v)       G_CAST_TYPE_TO_TYPE(gfloat, gint32, v)
+#define GFLOAT_TO_UINT32(v)      G_CAST_TYPE_TO_TYPE(gfloat, guint32, v)
+
+#define GFLOAT_TO_INT(v)         G_CAST_TYPE_TO_TYPE(gfloat, gint, v)
+#define GFLOAT_TO_UINT(v)        G_CAST_TYPE_TO_TYPE(gfloat, guint, v)
+
+#define GINT16_TO_INT8(v)        G_CAST_TYPE_TO_TYPE(gint16, gint8, v)
+#define GINT16_TO_UINT8(v)       G_CAST_TYPE_TO_TYPE(gint16, guint8, v)
+
+#define GUINT16_TO_INT8(v)       G_CAST_TYPE_TO_TYPE(guint16, gint8, v)
+#define GUINT16_TO_UINT8(v)      G_CAST_TYPE_TO_TYPE(guint16, guint8, v)
+
+#define GUNICHAR_TO_INT16(v)     G_CAST_TYPE_TO_TYPE(gunichar, gint16, v)
+#define GUNICHAR_TO_UINT16(v)    G_CAST_TYPE_TO_TYPE(gunichar, guint16, v)
+#define GUNICHAR_TO_INT8(v)      G_CAST_TYPE_TO_TYPE(gunichar, gint8, v)
+#define GUNICHAR_TO_UINT8(v)     G_CAST_TYPE_TO_TYPE(gunichar, guint8, v)
+#define GUNICHAR_TO_CHAR(v)      G_CAST_TYPE_TO_TYPE(gunichar, gchar, v)
 
 #endif // __GLIB_H

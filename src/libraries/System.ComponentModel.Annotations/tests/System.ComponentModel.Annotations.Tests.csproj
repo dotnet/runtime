@@ -2,7 +2,7 @@
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent);net48</TargetFrameworks>
-    <Nullable>disable</Nullable>
+    <Nullable>disable</Nullable> <!-- Disable nullable attributes as some tests depend on them not being present. -->
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\ComponentModel\DataAnnotations\AssociatedMetadataTypeTypeDescriptionProviderTests.cs" />
@@ -28,6 +28,7 @@
     <Compile Include="System\ComponentModel\DataAnnotations\PhoneAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\RangeAttributeTests.cs" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
     <Compile Include="System\ComponentModel\DataAnnotations\RegularExpressionAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\RegularExpressionAttributeTests.Core.cs" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
     <Compile Include="System\ComponentModel\DataAnnotations\RequiredAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\ScaffoldColumnAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\Schema\ColumnAttributeTests.cs" />

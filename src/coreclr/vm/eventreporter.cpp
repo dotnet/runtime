@@ -478,7 +478,7 @@ BOOL ShouldLogInEventLog()
     }
 
     static LONG fOnce = 0;
-    if (fOnce == 1 || FastInterlockExchange(&fOnce, 1) == 1)
+    if (fOnce == 1 || InterlockedExchange(&fOnce, 1) == 1)
     {
         return FALSE;
     }
@@ -679,7 +679,7 @@ void DoReportForUnhandledNativeException(PEXCEPTION_POINTERS pExceptionInfo)
         SmallStackSString exceptionCodeString;
         exceptionCodeString.Printf(W("%x"), pExceptionInfo->ExceptionRecord->ExceptionCode);
         SmallStackSString addressString;
-        addressString.Printf(W("%p"), (UINT_PTR)pExceptionInfo->ExceptionRecord->ExceptionAddress);
+        addressString.Printf(W("%p"), (PVOID)pExceptionInfo->ExceptionRecord->ExceptionAddress);
         s.FormatMessage(FORMAT_MESSAGE_FROM_STRING, (LPCWSTR)ssErrorFormat, 0, 0, exceptionCodeString, addressString);
         reporter.AddDescription(s);
         if (pThread)

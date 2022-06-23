@@ -321,7 +321,7 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
 
     // Reset any flags relevant to the old code
     //
-    // Note that this only works since we've very carefullly made sure that _all_ references
+    // Note that this only works since we've very carefully made sure that _all_ references
     // to the Method's code must be to the call/jmp blob immediately in front of the
     // MethodDesc itself.  See MethodDesc::IsEnCMethod()
     //
@@ -609,7 +609,7 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
     SIZE_T newILOffset,
     CONTEXT *pOrigContext)
 {
-#if defined(TARGET_ARM64) || defined(TARGET_ARM)
+#if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64)
     return E_NOTIMPL;
 #else
     LOG((LF_ENC, LL_INFO100, "EnCModule::ResumeInUpdatedFunction for %s at IL offset 0x%x, ",
@@ -653,8 +653,27 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
 
     _ASSERTE(oldCodeInfo.GetCodeManager() == newCodeInfo.GetCodeManager());
 
+#ifdef TARGET_ARM64
+    // GCInfo for old method
+    GcInfoDecoder oldGcDecoder(
+        oldCodeInfo.GetGCInfoToken(),
+        GcInfoDecoderFlags(DECODE_EDIT_AND_CONTINUE),
+        0       // Instruction offset (not needed)
+        );
+
+    // GCInfo for new method
+    GcInfoDecoder newGcDecoder(
+        newCodeInfo.GetGCInfoToken(),
+        GcInfoDecoderFlags(DECODE_EDIT_AND_CONTINUE),
+        0       // Instruction offset (not needed)
+        );
+
+    DWORD oldFrameSize = oldGcDecoder.GetSizeOfEditAndContinueFixedStackFrame();
+    DWORD newFrameSize = newGcDecoder.GetSizeOfEditAndContinueFixedStackFrame();
+#else
     DWORD oldFrameSize = oldCodeInfo.GetFixedStackSize();
     DWORD newFrameSize = newCodeInfo.GetFixedStackSize();
+#endif
 
     // FixContextAndResume() will replace the old stack frame of the function with the new
     // one and will initialize that new frame to null. Anything on the stack where that new
@@ -694,7 +713,7 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
     // Win32 handlers on the stack so cannot ever return from this function.
     EEPOLICY_HANDLE_FATAL_ERROR(CORDBG_E_ENC_INTERNAL_ERROR);
     return hr;
-#endif // #if define(TARGET_ARM64) || defined(TARGET_ARM)
+#endif // #if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64)
 }
 
 //---------------------------------------------------------------------------------------
@@ -738,7 +757,7 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
     memcpy(&context, pContext, sizeof(CONTEXT));
     pContext = &context;
 
-#if defined(TARGET_AMD64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     // Since we made a copy of the incoming CONTEXT in context, clear any new flags we
     // don't understand (like XSAVE), since we'll eventually be passing a CONTEXT based
     // on this copy to ClrRestoreNonvolatileContext, and this copy doesn't have the extra info
@@ -1339,7 +1358,7 @@ PTR_CBYTE EnCSyncBlockInfo::ResolveOrAllocateField(OBJECTREF thisPointer, EnCFie
 
         // put at front of list so the list is in order of most recently added
         pEntry->m_pNext = m_pList;
-        if (FastInterlockCompareExchangePointer(&m_pList, pEntry, pEntry->m_pNext) == pEntry->m_pNext)
+        if (InterlockedCompareExchangeT(&m_pList, pEntry, pEntry->m_pNext) == pEntry->m_pNext)
             break;
 
         // There was a race and another thread modified the list here, so we need to try again

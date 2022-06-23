@@ -1,17 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
+using System.Collections;
+using System.ComponentModel;
+using System.Xml.Serialization;
+using System.Threading;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml.Schema
 {
-    using System.IO;
-    using System.Collections;
-    using System.ComponentModel;
-    using System.Xml.Serialization;
-    using System.Threading;
-    using System.Diagnostics;
-    using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
-
     [XmlRoot("schema", Namespace = XmlSchema.Namespace)]
     public class XmlSchema : XmlSchemaObject
     {
@@ -174,7 +174,7 @@ namespace System.Xml.Schema
             serializer.Serialize(writer, this, ns);
         }
 
-        [Obsolete("XmlSchema.Compile has been deprecated. Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation instead.")]
+        [Obsolete("XmlSchema.Compile has been deprecated. Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation.")]
         public void Compile(ValidationEventHandler? validationEventHandler)
         {
             SchemaInfo sInfo = new SchemaInfo();
@@ -182,7 +182,7 @@ namespace System.Xml.Schema
             CompileSchema(null, null, sInfo, null, validationEventHandler, NameTable, false);
         }
 
-        [Obsolete("XmlSchema.Compile has been deprecated. Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation instead.")]
+        [Obsolete("XmlSchema.Compile has been deprecated. Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation.")]
         public void Compile(ValidationEventHandler? validationEventHandler, XmlResolver? resolver)
         {
             SchemaInfo sInfo = new SchemaInfo();

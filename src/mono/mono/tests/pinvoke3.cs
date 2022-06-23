@@ -197,6 +197,9 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_icall_delegate")]
 	public static extern int mono_test_marshal_icall_delegate (IcallDelegate del);
 
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_nullable_ret_delegate")]
+	public static extern int mono_test_marshal_nullable_ret_delegate (NullableReturnDelegate del);
+
 	public delegate string IcallDelegate (IntPtr p);
 
 	public delegate int TestDelegate (int a, ref SimpleStruct ss, int b);
@@ -224,6 +227,8 @@ public class Tests {
 	public delegate int DelegateByrefDelegate (ref return_int_delegate del);
 
 	public delegate int VirtualDelegate (int i);
+
+	public delegate Nullable<int> NullableReturnDelegate ();
 
 	public static int Main () {
 		return TestDriver.RunTests (typeof (Tests));
@@ -1267,5 +1272,24 @@ public class Tests {
 		var m = typeof (Marshal).GetMethod ("PtrToStringAnsi", new Type[] { typeof (IntPtr) });
 
 		return mono_test_marshal_icall_delegate ((IcallDelegate)Delegate.CreateDelegate (typeof (IcallDelegate), m));
+	}
+
+	private static Nullable<int> nullable_ret_cb () {
+		return 0;
+	}
+
+	public static int test_0_generic_return () {
+		try {
+			Marshal.GetFunctionPointerForDelegate<NullableReturnDelegate> (nullable_ret_cb);
+			return 1;
+		} catch (MarshalDirectiveException) {
+		}
+		try {
+			mono_test_marshal_nullable_ret_delegate (nullable_ret_cb);
+			return 2;
+		} catch (MarshalDirectiveException) {
+		}
+
+		return 0;
 	}
 }

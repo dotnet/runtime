@@ -218,7 +218,7 @@ namespace System.Reflection.Tests
         public static IEnumerable<object[]> TestEqualityMethodData2()
         {
             //Verify two different MethodInfo objects with same name from two different classes are not equal
-            yield return new object[] { typeof(Sample), typeof(SampleG<>), "Method1", "Method1", false};
+            yield return new object[] { typeof(Sample), typeof(SampleG<>), "Method1", "Method1", false };
             //Verify two different MethodInfo objects with same name from two different classes are not equal
             yield return new object[] { typeof(Sample), typeof(SampleG<string>), "Method2", "Method2", false };
         }
@@ -382,6 +382,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67531", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Invoke_TwoParameters_CustomBinder_IncorrectTypeArguments()
         {
             MethodInfo method = GetMethod(typeof(MI_SubClass), nameof(MI_SubClass.StaticIntIntMethodReturningInt));
@@ -619,6 +620,182 @@ namespace System.Reflection.Tests
             Assert.Equal(expected, methodInfo.ToString());
         }
 
+        [Fact]
+        public void InvokeNullableRefs()
+        {
+            object?[] args;
+
+            int? iNull = null;
+            args = new object[] { iNull };
+            Assert.True((bool)GetMethod(nameof(NullableRefMethods.Null)).Invoke(null, args));
+            Assert.Null(args[0]);
+            Assert.False(((int?)args[0]).HasValue);
+
+            args = new object[] { iNull };
+            Assert.True((bool)GetMethod(nameof(NullableRefMethods.NullBoxed)).Invoke(null, args));
+            Assert.Null(args[0]);
+
+            args = new object[] { iNull, 10 };
+            Assert.True((bool)GetMethod(nameof(NullableRefMethods.NullToValue)).Invoke(null, args));
+            Assert.IsType<int>(args[0]);
+            Assert.Equal(10, (int)args[0]);
+
+            iNull = 42;
+            args = new object[] { iNull, 42 };
+            Assert.True((bool)GetMethod(nameof(NullableRefMethods.ValueToNull)).Invoke(null, args));
+            Assert.Null(args[0]);
+
+            iNull = null;
+            args = new object[] { iNull, 10 };
+            Assert.True((bool)GetMethod(nameof(NullableRefMethods.NullToValueBoxed)).Invoke(null, args));
+            Assert.IsType<int>(args[0]);
+            Assert.Equal(10, (int)args[0]);
+
+            static MethodInfo GetMethod(string name) => typeof(NullableRefMethods).GetMethod(
+                name, BindingFlags.Public | BindingFlags.Static)!;
+        }
+
+        [Fact]
+        public void InvokeBoxedNullableRefs()
+        {
+            object?[] args;
+
+            object? iNull = null;
+            args = new object[] { iNull };
+            Assert.True((bool)GetMethod(nameof(NullableRefMethods.Null)).Invoke(null, args));
+            Assert.Null(args[0]);
+
+            args = new object[] { iNull };
+            Assert.True((bool)GetMethod(nameof(NullableRefMethods.NullBoxed)).Invoke(null, args));
+            Assert.Null(args[0]);
+
+            args = new object[] { iNull, 10 };
+            Assert.True((bool)GetMethod(nameof(NullableRefMethods.NullToValue)).Invoke(null, args));
+            Assert.IsType<int>(args[0]);
+            Assert.Equal(10, (int)args[0]);
+
+            iNull = 42;
+            args = new object[] { iNull, 42 };
+            Assert.True((bool)GetMethod(nameof(NullableRefMethods.ValueToNull)).Invoke(null, args));
+            Assert.Null(args[0]);
+
+            iNull = null;
+            args = new object[] { iNull, 10 };
+            Assert.True((bool)GetMethod(nameof(NullableRefMethods.NullToValueBoxed)).Invoke(null, args));
+            Assert.IsType<int>(args[0]);
+            Assert.Equal(10, (int)args[0]);
+
+            static MethodInfo GetMethod(string name) => typeof(NullableRefMethods).GetMethod(
+                name, BindingFlags.Public | BindingFlags.Static)!;
+        }
+
+        [Fact]
+        public void InvokeEnum()
+        {
+            // Enums only need to match by primitive type.
+            Assert.True((bool)GetMethod(nameof(EnumMethods.PassColorsInt)).
+                Invoke(null, new object[] { OtherColorsInt.Red }));
+
+            // Widening allowed
+            Assert.True((bool)GetMethod(nameof(EnumMethods.PassColorsInt)).
+                Invoke(null, new object[] { ColorsShort.Red }));
+
+            // Narrowing not allowed
+            Assert.Throws<ArgumentException>(() => GetMethod(nameof(EnumMethods.PassColorsShort)).
+                Invoke(null, new object[] { OtherColorsInt.Red }));
+
+            static MethodInfo GetMethod(string name) => typeof(EnumMethods).GetMethod(
+                name, BindingFlags.Public | BindingFlags.Static)!;
+        }
+
+        [Fact]
+        public void ValueTypeMembers_WithOverrides()
+        {
+            ValueTypeWithOverrides obj = new() { Id = 1 };
+
+            // ToString is overridden.
+            Assert.Equal("Hello", (string)GetMethod(typeof(ValueTypeWithOverrides), nameof(ValueTypeWithOverrides.ToString)).
+                Invoke(obj, null));
+
+            // Ensure a normal method works.
+            Assert.Equal(1, (int)GetMethod(typeof(ValueTypeWithOverrides), nameof(ValueTypeWithOverrides.GetId)).
+                Invoke(obj, null));
+        }
+
+        [Fact]
+        public void ValueTypeMembers_WithoutOverrides()
+        {
+            ValueTypeWithoutOverrides obj = new() { Id = 1 };
+
+            // ToString is not overridden.
+            Assert.Equal(typeof(ValueTypeWithoutOverrides).ToString(), (string)GetMethod(typeof(ValueTypeWithoutOverrides), nameof(ValueTypeWithoutOverrides.ToString)).
+                Invoke(obj, null));
+
+            // Ensure a normal method works.
+            Assert.Equal(1, (int)GetMethod(typeof(ValueTypeWithoutOverrides), nameof(ValueTypeWithoutOverrides.GetId)).
+                Invoke(obj, null));
+        }
+
+        [Fact]
+        public void NullableOfTMembers()
+        {
+            // Ensure calling a method on Nullable<T> works.
+            MethodInfo mi = GetMethod(typeof(int?), nameof(Nullable<int>.GetValueOrDefault));
+            Assert.Equal(42, mi.Invoke(42, null));
+        }
+
+        [Fact]
+        public void CopyBackWithByRefArgs()
+        {
+            object i = 42;
+            object[] args = new object[] { i };
+            GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.IncrementByRef)).Invoke(null, args);
+            Assert.Equal(43, (int)args[0]);
+            Assert.NotSame(i, args[0]); // A copy should be made; a boxed instance should never be directly updated.
+
+            i = 42;
+            args = new object[] { i };
+            GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.IncrementByNullableRef)).Invoke(null, args);
+            Assert.Equal(43, (int)args[0]);
+            Assert.NotSame(i, args[0]);
+
+            object o = null;
+            args = new object[] { o };
+            GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.SetToNonNullByRef)).Invoke(null, args);
+            Assert.NotNull(args[0]);
+
+            o = new object();
+            args = new object[] { o };
+            GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.SetToNullByRef)).Invoke(null, args);
+            Assert.Null(args[0]);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69919", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public static void CallStackFrame_AggressiveInlining()
+        {
+            MethodInfo mi = typeof(System.Reflection.TestAssembly.ClassToInvoke).GetMethod(nameof(System.Reflection.TestAssembly.ClassToInvoke.CallMe_AggressiveInlining),
+                BindingFlags.Public | BindingFlags.Static)!;
+
+            // Although the target method has AggressiveInlining, currently reflection should not inline the target into any generated IL.
+            FirstCall(mi);
+            SecondCall(mi);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // Separate non-inlineable method to aid any test failures
+        private static void FirstCall(MethodInfo mi)
+        {
+            Assembly asm = (Assembly)mi.Invoke(null, null);
+            Assert.Contains("TestAssembly", asm.ToString());
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // Separate non-inlineable method to aid any test failures
+        private static void SecondCall(MethodInfo mi)
+        {
+            Assembly asm = (Assembly)mi.Invoke(null, null);
+            Assert.Contains("TestAssembly", asm.ToString());
+        }
 
         //Methods for Reflection Metadata
         private void DummyMethod1(string str, int iValue, long lValue)
@@ -829,8 +1006,8 @@ namespace System.Reflection.Tests
             return FormattableString.Invariant($"{p1}, {p2}, {p3}");
         }
 
-        public object OptionalObjectParameter([Optional]object parameter) => parameter;
-        public string OptionalStringParameter([Optional]string parameter) => parameter;
+        public object OptionalObjectParameter([Optional] object parameter) => parameter;
+        public string OptionalStringParameter([Optional] string parameter) => parameter;
     }
 
     public delegate int Delegate_TC_Int(MI_BaseClass tc);
@@ -868,5 +1045,115 @@ namespace System.Reflection.Tests
             return t2;
         }
     }
+
+    public static class NullableRefMethods
+    {
+        public static bool Null(ref int? i)
+        {
+            Assert.Null(i);
+            return true;
+        }
+
+        public static bool NullBoxed(ref object? i)
+        {
+            Assert.Null(i);
+            return true;
+        }
+
+        public static bool NullToValue(ref int? i, int value)
+        {
+            Assert.Null(i);
+            i = value;
+            return true;
+        }
+
+        public static bool NullToValueBoxed(ref object? i, int value)
+        {
+            Assert.Null(i);
+            i = value;
+            return true;
+        }
+
+        public static bool ValueToNull(ref int? i, int expected)
+        {
+            Assert.Equal(expected, i);
+            i = null;
+            return true;
+        }
+
+        public static bool ValueToNullBoxed(ref int? i, int expected)
+        {
+            Assert.Equal(expected, i);
+            i = null;
+            return true;
+        }
+    }
+
+    public static class CopyBackMethods
+    {
+        public static void IncrementByRef(ref int i)
+        {
+            i++;
+        }
+
+        public static void IncrementByNullableRef(ref int? i)
+        {
+            i++;
+        }
+
+        public static void SetToNullByRef(ref object o)
+        {
+            o = null;
+        }
+
+        public static void SetToNonNullByRef(ref object o)
+        {
+            o = new object();
+        }
+    }
+
+    public enum ColorsInt : int
+    {
+        Red = 1
+    }
+
+    public enum ColorsShort : short
+    {
+        Red = 1
+    }
+
+    public enum OtherColorsInt : int
+    {
+        Red = 1
+    }
+
+    public struct ValueTypeWithOverrides
+    {
+        public int Id;
+        public override string ToString() => "Hello";
+        public int GetId() => Id;
+    }
+
+    public struct ValueTypeWithoutOverrides
+    {
+        public int Id;
+        public int GetId() => Id;
+    }
+
+    public static class EnumMethods
+    {
+        public static bool PassColorsInt(ColorsInt color)
+        {
+            Assert.Equal(ColorsInt.Red, color);
+            return true;
+        }
+
+        public static bool PassColorsShort(ColorsShort color)
+        {
+            Assert.Equal(ColorsShort.Red, color);
+            return true;
+        }
+    }
 #pragma warning restore 0414
 }
+

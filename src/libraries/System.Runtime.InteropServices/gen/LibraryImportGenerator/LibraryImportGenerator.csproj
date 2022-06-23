@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyName>Microsoft.Interop.LibraryImportGenerator</AssemblyName>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>Microsoft.Interop</RootNamespace>
+    <IsRoslynComponent>true</IsRoslynComponent>
+    <!-- Disable RS2008: Enable analyzer release tracking
+         Diagnostics in runtime use a different mechanism (docs/project/list-of-diagnostics.md) -->
+    <NoWarn>RS2008;$(NoWarn)</NoWarn>
+    <AnalyzerLanguage>cs</AnalyzerLanguage>
+
+    <!-- Packaging properties -->
+    <!-- In the future LibraryImportGenerator might ship as part of a package, but meanwhile disable packaging. -->
+    <IsPackable>false</IsPackable>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <PackageProjectUrl>https://github.com/dotnet/runtime/tree/main/src/libraries/System.Runtime.InteropServices/gen/LibraryImportGenerator</PackageProjectUrl>
+    <Description>LibraryImportGenerator</Description>
+    <PackageTags>LibraryImportGenerator, analyzers</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion_4_X)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="$(MicrosoftCodeAnalysisAnalyzersVersion)" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(TargetPath)" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="$(AssemblyName).props" Pack="true" PackagePath="build" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj" Pack="true" PackagePath="analyzers/dotnet/cs" />
+  </ItemGroup>
+
+</Project>

@@ -1441,7 +1441,7 @@ namespace System.Numerics.Tests
 
         // A test for Vector4f comparison involving NaN values
         [Fact]
-        public void Vector4EqualsNanTest()
+        public void Vector4EqualsNaNTest()
         {
             Vector4 a = new Vector4(float.NaN, 0, 0, 0);
             Vector4 b = new Vector4(0, float.NaN, 0, 0);
@@ -1463,11 +1463,10 @@ namespace System.Numerics.Tests
             Assert.False(c.Equals(Vector4.Zero));
             Assert.False(d.Equals(Vector4.Zero));
 
-            // Counterintuitive result - IEEE rules for NaN comparison are weird!
-            Assert.False(a.Equals(a));
-            Assert.False(b.Equals(b));
-            Assert.False(c.Equals(c));
-            Assert.False(d.Equals(d));
+            Assert.True(a.Equals(a));
+            Assert.True(b.Equals(b));
+            Assert.True(c.Equals(c));
+            Assert.True(d.Equals(d));
         }
 
         [Fact]

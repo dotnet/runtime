@@ -2,10 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
-    <Nullable>enable</Nullable>
     <EnableDefaultItems>true</EnableDefaultItems>
-    <!-- Use targeting pack references instead of granular ones in the project file. -->
-    <DisableImplicitAssemblyReferences>false</DisableImplicitAssemblyReferences>
     <IsPackable>true</IsPackable>
     <PackageDescription>Command line configuration provider implementation for Microsoft.Extensions.Configuration.</PackageDescription>
   </PropertyGroup>
@@ -13,6 +10,8 @@
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\src\Microsoft.Extensions.Configuration.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Abstractions\src\Microsoft.Extensions.Configuration.Abstractions.csproj" />
+    <Compile Include="$(CommonPath)System\ThrowHelper.cs"
+             Link="Common\System\ThrowHelper.cs" />
   </ItemGroup>
 
 </Project>

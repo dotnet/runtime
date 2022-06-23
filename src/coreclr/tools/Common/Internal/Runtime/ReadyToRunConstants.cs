@@ -17,6 +17,23 @@ namespace Internal.ReadyToRunConstants
         READYTORUN_FLAG_NonSharedPInvokeStubs = 0x00000008,     // PInvoke stubs compiled into image are non-shareable (no secret parameter)
         READYTORUN_FLAG_EmbeddedMSIL = 0x00000010,              // MSIL is embedded in the composite R2R executable
         READYTORUN_FLAG_Component = 0x00000020,                 // This is the header describing a component assembly of composite R2R
+        READYTORUN_FLAG_MultiModuleVersionBubble = 0x00000040,   // This R2R module has multiple modules within its version bubble
+    }
+
+    public enum ReadyToRunImportSectionType : byte
+    {
+        Unknown      = 0,
+        StubDispatch = 2,
+        StringHandle = 3,
+        ILBodyFixups = 7,
+    }
+
+    [Flags]
+    public enum ReadyToRunImportSectionFlags : ushort
+    {
+        None     = 0x0000,
+        Eager    = 0x0001, // Section at module load time.
+        PCode    = 0x0004, // Section contains pointers to code
     }
 
     /// <summary>
@@ -60,6 +77,16 @@ namespace Internal.ReadyToRunConstants
         None = 0x00,
         VirtualFunctionOverriden = 0x01,
     }
+
+    [Flags]
+    enum ReadyToRunCrossModuleInlineFlags : uint
+    {
+        CrossModuleInlinee  = 0x1,
+        HasCrossModuleInliners = 0x2,
+        CrossModuleInlinerIndexShift = 2,
+        InlinerRidHasModule = 0x1,
+        InlinerRidShift = 1,
+    };
 
     public enum DictionaryEntryKind
     {
@@ -133,6 +160,9 @@ namespace Internal.ReadyToRunConstants
 
         Check_VirtualFunctionOverride = 0x33, // Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, code will not be used
         Verify_VirtualFunctionOverride = 0x34, // Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, generate runtime failure.
+
+        Check_IL_Body              = 0x35, /* Check to see if an IL method is defined the same at runtime as at compile time. A failed match will cause code not to be used. */
+        Verify_IL_Body             = 0x36, /* Verify an IL body is defined the same at compile time and runtime. A failed match will cause a hard runtime failure. */
 
         ModuleOverride = 0x80,
         // followed by sig-encoded UInt with assemblyref index into either the assemblyref

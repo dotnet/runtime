@@ -19,15 +19,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Composition.Tests", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestLibrary", "tests\TestLibrary\TestLibrary.csproj", "{B16BCA17-DCA8-43B7-8E8A-89033F7A676E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.CompilerServices.Unsafe", "..\System.Runtime.CompilerServices.Unsafe\ref\System.Runtime.CompilerServices.Unsafe.csproj", "{ABFBB6AD-0A7C-4545-A129-3B7D5327E277}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraryImportGenerator", "..\System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj", "{872B3C94-AC4C-4CE3-B8B1-6FDE84C50CE3}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.CompilerServices.Unsafe", "..\System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj", "{0E9A94D5-DC06-4A7F-B73D-43EA7DE0B8B8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.SourceGeneration", "..\System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj", "{3EA50BD8-ABA5-47D8-AC31-4C6D1C2CAE63}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{E2A40304-1D7F-4BDA-B3A8-150A6B732A82}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{A1E6CEE6-45AE-4A8A-A7FA-FFC34DB87C94}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{9E81CF07-5F10-4E1B-96F6-C3A0A53C428B}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "gen", "gen", "{AB19313E-E606-4F39-AA2E-D3299DC26D7C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -75,14 +75,14 @@ Global
 		{B16BCA17-DCA8-43B7-8E8A-89033F7A676E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B16BCA17-DCA8-43B7-8E8A-89033F7A676E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B16BCA17-DCA8-43B7-8E8A-89033F7A676E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{ABFBB6AD-0A7C-4545-A129-3B7D5327E277}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{ABFBB6AD-0A7C-4545-A129-3B7D5327E277}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{ABFBB6AD-0A7C-4545-A129-3B7D5327E277}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{ABFBB6AD-0A7C-4545-A129-3B7D5327E277}.Release|Any CPU.Build.0 = Release|Any CPU
-		{0E9A94D5-DC06-4A7F-B73D-43EA7DE0B8B8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0E9A94D5-DC06-4A7F-B73D-43EA7DE0B8B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0E9A94D5-DC06-4A7F-B73D-43EA7DE0B8B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0E9A94D5-DC06-4A7F-B73D-43EA7DE0B8B8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{872B3C94-AC4C-4CE3-B8B1-6FDE84C50CE3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{872B3C94-AC4C-4CE3-B8B1-6FDE84C50CE3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{872B3C94-AC4C-4CE3-B8B1-6FDE84C50CE3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{872B3C94-AC4C-4CE3-B8B1-6FDE84C50CE3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3EA50BD8-ABA5-47D8-AC31-4C6D1C2CAE63}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3EA50BD8-ABA5-47D8-AC31-4C6D1C2CAE63}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3EA50BD8-ABA5-47D8-AC31-4C6D1C2CAE63}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3EA50BD8-ABA5-47D8-AC31-4C6D1C2CAE63}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -98,8 +98,8 @@ Global
 		{60940C78-4DDA-4CDD-BA1C-8C9B6DB4FB64} = {A1E6CEE6-45AE-4A8A-A7FA-FFC34DB87C94}
 		{E3295CB6-16E3-497C-A696-71A077DD5828} = {A1E6CEE6-45AE-4A8A-A7FA-FFC34DB87C94}
 		{D1273F2F-1B6C-4EFB-ABF8-6072054E906C} = {A1E6CEE6-45AE-4A8A-A7FA-FFC34DB87C94}
-		{0E9A94D5-DC06-4A7F-B73D-43EA7DE0B8B8} = {A1E6CEE6-45AE-4A8A-A7FA-FFC34DB87C94}
-		{ABFBB6AD-0A7C-4545-A129-3B7D5327E277} = {9E81CF07-5F10-4E1B-96F6-C3A0A53C428B}
+		{872B3C94-AC4C-4CE3-B8B1-6FDE84C50CE3} = {AB19313E-E606-4F39-AA2E-D3299DC26D7C}
+		{3EA50BD8-ABA5-47D8-AC31-4C6D1C2CAE63} = {AB19313E-E606-4F39-AA2E-D3299DC26D7C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {66F5BC63-E142-4B22-8B5D-1FF5206A7171}

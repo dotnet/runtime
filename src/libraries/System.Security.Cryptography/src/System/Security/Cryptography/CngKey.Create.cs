@@ -32,8 +32,10 @@ namespace System.Security.Cryptography
         }
 
         [SupportedOSPlatform("windows")]
-        public static CngKey Create(CngAlgorithm algorithm!!, string? keyName, CngKeyCreationParameters? creationParameters)
+        public static CngKey Create(CngAlgorithm algorithm, string? keyName, CngKeyCreationParameters? creationParameters)
         {
+            ArgumentNullException.ThrowIfNull(algorithm);
+
             if (creationParameters == null)
                 creationParameters = new CngKeyCreationParameters();
 

@@ -43,8 +43,13 @@ namespace System.Net.Security.Tests
         private static readonly X509BasicConstraintsExtension s_eeConstraints =
             new X509BasicConstraintsExtension(false, false, 0, false);
 
-        public static readonly byte[] s_ping = Encoding.UTF8.GetBytes("PING");
-        public static readonly byte[] s_pong = Encoding.UTF8.GetBytes("PONG");
+        public static readonly byte[] s_ping = "PING"u8.ToArray();
+        public static readonly byte[] s_pong = "PONG"u8.ToArray();
+
+        public static bool AllowAnyServerCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        {
+            return true;
+        }
 
         public static (SslStream ClientStream, SslStream ServerStream) GetConnectedSslStreams()
         {
@@ -79,7 +84,25 @@ namespace System.Net.Security.Tests
 
                 return (new NetworkStream(clientSocket, ownsSocket: true), new NetworkStream(serverSocket, ownsSocket: true));
             }
+        }
 
+        internal static async Task<(NetworkStream ClientStream, NetworkStream ServerStream)> GetConnectedTcpStreamsAsync()
+        {
+            using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                listener.Listen(1);
+
+                var clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                Task<Socket> acceptTask = listener.AcceptAsync(CancellationToken.None).AsTask();
+                await clientSocket.ConnectAsync(listener.LocalEndPoint).WaitAsync(TestConfiguration.PassingTestTimeout);
+                Socket serverSocket = await acceptTask.WaitAsync(TestConfiguration.PassingTestTimeout);
+
+                serverSocket.NoDelay = true;
+                clientSocket.NoDelay = true;
+
+                return (new NetworkStream(clientSocket, ownsSocket: true), new NetworkStream(serverSocket, ownsSocket: true));
+            }
         }
 
         internal static void CleanupCertificates([CallerMemberName] string? testName = null)
@@ -118,6 +141,25 @@ namespace System.Net.Security.Tests
             catch { };
         }
 
+        internal static X509ExtensionCollection BuildTlsServerCertExtensions(string serverName)
+        {
+            return BuildTlsCertExtensions(serverName, true);
+        }
+
+        private static X509ExtensionCollection BuildTlsCertExtensions(string targetName, bool serverCertificate)
+        {
+            X509ExtensionCollection extensions = new X509ExtensionCollection();
+
+            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
+            builder.AddDnsName(targetName);
+            extensions.Add(builder.Build());
+            extensions.Add(s_eeConstraints);
+            extensions.Add(s_eeKeyUsage);
+            extensions.Add(serverCertificate ? s_tlsServerEku : s_tlsClientEku);
+
+            return extensions;
+        }
+
         internal static (X509Certificate2 certificate, X509Certificate2Collection) GenerateCertificates(string targetName, [CallerMemberName] string? testName = null, bool longChain = false, bool serverCertificate = true)
         {
             const int keySize = 2048;
@@ -127,14 +169,7 @@ namespace System.Net.Security.Tests
             }
 
             X509Certificate2Collection chain = new X509Certificate2Collection();
-            X509ExtensionCollection extensions = new X509ExtensionCollection();
-
-            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
-            builder.AddDnsName(targetName);
-            extensions.Add(builder.Build());
-            extensions.Add(s_eeConstraints);
-            extensions.Add(s_eeKeyUsage);
-            extensions.Add(serverCertificate ? s_tlsServerEku : s_tlsClientEku);
+            X509ExtensionCollection extensions = BuildTlsCertExtensions(targetName, serverCertificate);
 
             CertificateAuthority.BuildPrivatePki(
                 PkiOptions.IssuerRevocationViaCrl,

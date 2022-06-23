@@ -37,7 +37,7 @@ namespace ILCompiler
                 layout.ThreadGcStatics.Size = LayoutInt.Zero;
             }
 
-            // CoreRT makes no distinction between Gc / non-Gc thread statics. All are placed into ThreadGcStatics since thread statics
+            // NativeAOT makes no distinction between Gc / non-Gc thread statics. All are placed into ThreadGcStatics since thread statics
             // are typically rare.
             Debug.Assert(layout.ThreadNonGcStatics.Size == LayoutInt.Zero);
         }

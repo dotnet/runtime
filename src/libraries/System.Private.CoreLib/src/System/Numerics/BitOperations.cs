@@ -1,14 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
-
-using Internal.Runtime.CompilerServices;
 
 // Some routines inspired by the Stanford Bit Twiddling Hacks by Sean Eron Anderson:
 // http://graphics.stanford.edu/~seander/bithacks.html
@@ -164,6 +161,18 @@ namespace System.Numerics
 #endif
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int LeadingZeroCount(Int128 value)
+        {
+            ulong upper = value.Upper;
+
+            if (upper == 0)
+            {
+                return 64 + LeadingZeroCount(value.Lower);
+            }
+            return LeadingZeroCount(upper);
+        }
+
         /// <summary>
         /// Count the number of leading zero bits in a mask.
         /// Similar in behavior to the x86 instruction LZCNT.
@@ -235,6 +244,18 @@ namespace System.Numerics
             }
 
             return LeadingZeroCount(hi);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int LeadingZeroCount(UInt128 value)
+        {
+            ulong upper = value.Upper;
+
+            if (upper == 0)
+            {
+                return 64 + LeadingZeroCount(value.Lower);
+            }
+            return LeadingZeroCount(upper);
         }
 
         /// <summary>

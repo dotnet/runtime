@@ -8,10 +8,6 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
-#if SYSTEM_PRIVATE_CORELIB
-using Internal.Runtime.CompilerServices;
-#endif
-
 namespace System.Text
 {
     internal static partial class ASCIIUtility
@@ -202,7 +198,7 @@ namespace System.Text
                 {
                     if (!BitConverter.IsLittleEndian)
                     {
-                        currentUInt32 = currentUInt32 << 16;
+                        currentUInt32 <<= 16;
                     }
                     goto FoundNonAsciiData;
                 }
@@ -1684,7 +1680,7 @@ namespace System.Text
                 {
                     if (!BitConverter.IsLittleEndian)
                     {
-                        asciiData = asciiData << 16;
+                        asciiData <<= 16;
                     }
                     goto FoundNonAsciiData;
                 }

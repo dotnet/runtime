@@ -73,7 +73,7 @@ enum EtwGCSettingFlags
     kEtwGCFlagNoAffinitize =    0x00000010,
 };
 
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NATIVEAOT
 
 #if defined(FEATURE_EVENT_TRACE)
 
@@ -156,7 +156,7 @@ enum EtwGCSettingFlags
 
 #endif // FEATURE_EVENT_TRACE
 
-#endif // FEATURE_REDHAWK
+#endif // FEATURE_NATIVEAOT
 
 // During a heap walk, this is the storage for keeping track of all the nodes and edges
 // being batched up by ETW, and for remembering whether we're also supposed to call into
@@ -214,13 +214,13 @@ struct ProfilingScanContext;
     ETWTraceStartup trace##StartEventName##(Microsoft_Windows_DotNETRuntimePrivateHandle, &StartEventName, &StartupId, &EndEventName, &StartupId);
 #define ETWFireEvent(EventName) FireEtw##EventName(GetClrInstanceId())
 
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NATIVEAOT
 // Headers
 #include <initguid.h>
 #include <wmistr.h>
 #include <evntrace.h>
 #include <evntprov.h>
-#endif //!FEATURE_REDHAWK
+#endif //!FEATURE_NATIVEAOT
 #endif //!defined(HOST_UNIX)
 
 
@@ -229,7 +229,7 @@ struct ProfilingScanContext;
 #include "../gc/env/etmdummy.h"
 #endif // FEATURE_EVENT_TRACE
 
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NATIVEAOT
 
 #include "corprof.h"
 
@@ -939,7 +939,7 @@ namespace ETW
         static VOID MethodRestored(MethodDesc * pMethodDesc);
         static VOID MethodTableRestored(MethodTable * pMethodTable);
         static VOID DynamicMethodDestroyed(MethodDesc *pMethodDesc);
-        static VOID LogMethodInstrumentationData(MethodDesc* method, uint32_t cbData, BYTE *data, TypeHandle* pTypeHandles, uint32_t typeHandles);
+        static VOID LogMethodInstrumentationData(MethodDesc* method, uint32_t cbData, BYTE *data, TypeHandle* pTypeHandles, uint32_t numTypeHandles, MethodDesc** pMethods, uint32_t numMethods);
 #else // FEATURE_EVENT_TRACE
     public:
         static VOID GetR2RGetEntryPointStart(MethodDesc *pMethodDesc) {};
@@ -951,7 +951,7 @@ namespace ETW
         static VOID MethodRestored(MethodDesc * pMethodDesc) {};
         static VOID MethodTableRestored(MethodTable * pMethodTable) {};
         static VOID DynamicMethodDestroyed(MethodDesc *pMethodDesc) {};
-        static VOID LogMethodInstrumentationData(MethodDesc* method, uint32_t cbData, BYTE *data, TypeHandle* pTypeHandles, uint32_t typeHandles) {};
+        static VOID LogMethodInstrumentationData(MethodDesc* method, uint32_t cbData, BYTE *data, TypeHandle* pTypeHandles, uint32_t numTypeHandles, MethodDesc** pMethods, uint32_t numMethods) {};
 #endif // FEATURE_EVENT_TRACE
     };
 
@@ -1517,10 +1517,10 @@ McGenEventProviderEnabled(
 #endif // FEATURE_EVENT_TRACE && !defined(HOST_UNIX)
 
 
-#endif // !FEATURE_REDHAWK
+#endif // !FEATURE_NATIVEAOT
 
-// These parts of the ETW namespace are common for both FEATURE_REDHAWK and
-// !FEATURE_REDHAWK builds.
+// These parts of the ETW namespace are common for both FEATURE_NATIVEAOT and
+// !FEATURE_NATIVEAOT builds.
 
 
 struct ProfilingScanContext;

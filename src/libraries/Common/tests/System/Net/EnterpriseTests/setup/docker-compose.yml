@@ -60,6 +60,9 @@ services:
     hostname: linuxclient
     domainname: linux.contoso.com
     dns_search: linux.contoso.com
+    privileged: true
+    dns:
+      - 8.8.8.8
     volumes:
       - shared-volume:/SHARED
       - ${DOTNET_RUNTIME_REPO_ROOT}:/repo

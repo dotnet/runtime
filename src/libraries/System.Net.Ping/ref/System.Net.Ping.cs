@@ -47,6 +47,8 @@ namespace System.Net.NetworkInformation
         public System.Net.NetworkInformation.PingReply Send(string hostNameOrAddress, int timeout) { throw null; }
         public System.Net.NetworkInformation.PingReply Send(string hostNameOrAddress, int timeout, byte[] buffer) { throw null; }
         public System.Net.NetworkInformation.PingReply Send(string hostNameOrAddress, int timeout, byte[] buffer, System.Net.NetworkInformation.PingOptions? options) { throw null; }
+        public System.Net.NetworkInformation.PingReply Send(System.Net.IPAddress address, System.TimeSpan timeout, byte[]? buffer, System.Net.NetworkInformation.PingOptions? options) { throw null; }
+        public System.Net.NetworkInformation.PingReply Send(string hostNameOrAddress, System.TimeSpan timeout, byte[]? buffer, System.Net.NetworkInformation.PingOptions? options) { throw null; }
         public void SendAsync(System.Net.IPAddress address, int timeout, byte[] buffer, System.Net.NetworkInformation.PingOptions? options, object? userToken) { }
         public void SendAsync(System.Net.IPAddress address, int timeout, byte[] buffer, object? userToken) { }
         public void SendAsync(System.Net.IPAddress address, int timeout, object? userToken) { }

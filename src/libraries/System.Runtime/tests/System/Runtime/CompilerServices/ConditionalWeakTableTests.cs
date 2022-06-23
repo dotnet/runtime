@@ -30,9 +30,11 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
-        [InlineData(1)]
-        [InlineData(100)]
-        public static void Add(int numObjects)
+        [InlineData(1, false)]
+        [InlineData(1, true)]
+        [InlineData(100, false)]
+        [InlineData(100, true)]
+        public static void Add(int numObjects, bool tryAdd)
         {
             // Isolated to ensure we drop all references even in debug builds where lifetime is extended by the JIT to the end of the method
             Func<int, Tuple<ConditionalWeakTable<object, object>, WeakReference[], WeakReference[]>> body = count =>
@@ -43,7 +45,14 @@ namespace System.Runtime.CompilerServices.Tests
 
                 for (int i = 0; i < count; i++)
                 {
-                    cwt.Add(keys[i], values[i]);
+                    if (tryAdd)
+                    {
+                        Assert.True(cwt.TryAdd(keys[i], values[i]));
+                    }
+                    else
+                    {
+                        cwt.Add(keys[i], values[i]);
+                    }
                 }
 
                 for (int i = 0; i < count; i++)
@@ -68,6 +77,33 @@ namespace System.Runtime.CompilerServices.Tests
                 Assert.False(result.Item2[i].IsAlive, $"Expected not to find key #{i}");
                 Assert.False(result.Item3[i].IsAlive, $"Expected not to find value #{i}");
             }
+        }
+
+        [Fact]
+        public static void TryAdd_ConditionallyAdds()
+        {
+            var cwt = new ConditionalWeakTable<object, object>();
+
+            object value1 = new object();
+            object value2 = new object();
+            object found;
+
+            object key1 = new object();
+            Assert.True(cwt.TryAdd(key1, value1));
+            Assert.False(cwt.TryAdd(key1, value2));
+            Assert.True(cwt.TryGetValue(key1, out found));
+            Assert.Same(value1, found);
+            Assert.Equal(1, cwt.Count());
+
+            object key2 = new object();
+            Assert.True(cwt.TryAdd(key2, value1));
+            Assert.False(cwt.TryAdd(key2, value2));
+            Assert.True(cwt.TryGetValue(key2, out found));
+            Assert.Same(value1, found);
+            Assert.Equal(2, cwt.Count());
+
+            GC.KeepAlive(key1);
+            GC.KeepAlive(key2);
         }
 
         [Theory]

@@ -14,6 +14,7 @@ namespace Internal.TypeSystem
             Empty,
             NonORef,
             ORef,
+            ByRef,
         }
 
         private struct FieldLayoutInterval : IComparable<FieldLayoutInterval>
@@ -51,7 +52,7 @@ namespace Internal.TypeSystem
 
         private readonly int _pointerSize;
 
-        // Represent field layout bits as as a series of intervals to prevent pathological bad behavior
+        // Represent field layout bits as a series of intervals to prevent pathological bad behavior
         // involving excessively large explicit layout structures.
         private readonly List<FieldLayoutInterval> _fieldLayout;
 
@@ -92,15 +93,9 @@ namespace Internal.TypeSystem
             }
             else if (fieldType.IsValueType)
             {
-                if (fieldType.IsByRefLike && offset % _pointerSize != 0)
-                {
-                    // Misaligned ByRefLike
-                    ThrowFieldLayoutError(offset);
-                }
-
                 MetadataType mdType = (MetadataType)fieldType;
                 int fieldSize = mdType.InstanceByteCountUnaligned.AsInt;
-                if (!mdType.ContainsGCPointers)
+                if (!mdType.ContainsGCPointers && !mdType.IsByRefLike)
                 {
                     // Plain value type, mark the entire range as NonORef
                     SetFieldLayout(offset, fieldSize, FieldLayoutTag.NonORef);
@@ -109,27 +104,27 @@ namespace Internal.TypeSystem
                 {
                     if (offset % _pointerSize != 0)
                     {
-                        // Misaligned struct with GC pointers
+                        // Misaligned struct with GC pointers or ByRef
                         ThrowFieldLayoutError(offset);
                     }
 
-                    List<FieldLayoutInterval> fieldORefMap = new List<FieldLayoutInterval>();
-                    MarkORefLocations(mdType, fieldORefMap, offset: 0);
+                    List<FieldLayoutInterval> fieldRefMap = new();
+                    MarkByRefAndORefLocations(mdType, fieldRefMap, offset: 0);
 
-                    // Merge in fieldORefMap from structure specifying not attributed intervals as NonORef
+                    // Merge in fieldRefMap from structure specifying not attributed intervals as NonORef
                     int lastGCRegionReportedEnd = 0;
 
-                    foreach (var gcRegion in fieldORefMap)
+                    foreach (var gcRegion in fieldRefMap)
                     {
                         SetFieldLayout(offset + lastGCRegionReportedEnd, gcRegion.Start - lastGCRegionReportedEnd, FieldLayoutTag.NonORef);
-                        Debug.Assert(gcRegion.Tag == FieldLayoutTag.ORef);
+                        Debug.Assert(gcRegion.Tag == FieldLayoutTag.ORef || gcRegion.Tag == FieldLayoutTag.ByRef);
                         SetFieldLayout(offset + gcRegion.Start, gcRegion.Size, gcRegion.Tag);
                         lastGCRegionReportedEnd = gcRegion.EndSentinel;
                     }
 
-                    if (fieldORefMap.Count > 0)
+                    if (fieldRefMap.Count > 0)
                     {
-                        int trailingRegionStart = fieldORefMap[fieldORefMap.Count - 1].EndSentinel;
+                        int trailingRegionStart = fieldRefMap[fieldRefMap.Count - 1].EndSentinel;
                         int trailingRegionSize = fieldSize - trailingRegionStart;
                         SetFieldLayout(offset + trailingRegionStart, trailingRegionSize, FieldLayoutTag.NonORef);
                     }
@@ -142,7 +137,7 @@ namespace Internal.TypeSystem
                     // Misaligned pointer field
                     ThrowFieldLayoutError(offset);
                 }
-                SetFieldLayout(offset, _pointerSize, FieldLayoutTag.NonORef);
+                SetFieldLayout(offset, _pointerSize, FieldLayoutTag.ByRef);
             }
             else
             {
@@ -150,7 +145,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        private void MarkORefLocations(MetadataType type, List<FieldLayoutInterval> orefMap, int offset)
+        private void MarkByRefAndORefLocations(MetadataType type, List<FieldLayoutInterval> refMap, int offset)
         {
             // Recurse into struct fields
             foreach (FieldDesc field in type.GetFields())
@@ -160,14 +155,18 @@ namespace Internal.TypeSystem
                     int fieldOffset = offset + field.Offset.AsInt;
                     if (field.FieldType.IsGCPointer)
                     {
-                        SetFieldLayout(orefMap, offset, _pointerSize, FieldLayoutTag.ORef);
+                        SetFieldLayout(refMap, offset, _pointerSize, FieldLayoutTag.ORef);
+                    }
+                    else if (field.FieldType.IsByRef || field.FieldType.IsByReferenceOfT)
+                    {
+                        SetFieldLayout(refMap, offset, _pointerSize, FieldLayoutTag.ByRef);
                     }
                     else if (field.FieldType.IsValueType)
                     {
                         MetadataType mdFieldType = (MetadataType)field.FieldType;
-                        if (mdFieldType.ContainsGCPointers)
+                        if (mdFieldType.ContainsGCPointers || mdFieldType.IsByRefLike)
                         {
-                            MarkORefLocations(mdFieldType, orefMap, fieldOffset);
+                            MarkByRefAndORefLocations(mdFieldType, refMap, fieldOffset);
                         }
                     }
                 }
@@ -234,7 +233,7 @@ namespace Internal.TypeSystem
                         previousInterval.EndSentinel = newInterval.EndSentinel;
 
                         fieldLayoutInterval[newIntervalLocation - 1] = previousInterval;
-                        newIntervalLocation = newIntervalLocation - 1;
+                        newIntervalLocation--;
                     }
                     else
                     {

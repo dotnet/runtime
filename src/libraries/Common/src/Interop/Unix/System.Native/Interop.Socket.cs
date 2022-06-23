@@ -11,7 +11,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Socket")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Socket")]
         internal static unsafe partial Error Socket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, IntPtr* socket);
     }
 }

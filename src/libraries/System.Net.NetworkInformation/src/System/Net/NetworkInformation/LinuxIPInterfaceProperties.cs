@@ -81,7 +81,7 @@ namespace System.Net.NetworkInformation
             return new InternalIPAddressCollection(internalCollection);
         }
 
-        private IPAddressCollection GetWinsServerAddresses()
+        private static IPAddressCollection GetWinsServerAddresses()
         {
             List<IPAddress> internalCollection
                 = StringParsingHelpers.ParseWinsServerAddressesFromSmbConfFile(NetworkFiles.SmbConfFile);

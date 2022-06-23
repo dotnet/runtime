@@ -78,8 +78,8 @@ namespace System.Security.Cryptography.X509Certificates
             RawData = rawData;
             certificate = CertificateAsn.Decode(rawData, AsnEncodingRules.DER);
             certificate.TbsCertificate.ValidateVersion();
-            Issuer = new X500DistinguishedName(certificate.TbsCertificate.Issuer.ToArray());
-            Subject = new X500DistinguishedName(certificate.TbsCertificate.Subject.ToArray());
+            Issuer = new X500DistinguishedName(certificate.TbsCertificate.Issuer.Span);
+            Subject = new X500DistinguishedName(certificate.TbsCertificate.Subject.Span);
             IssuerName = Issuer.Name;
             SubjectName = Subject.Name;
 
@@ -87,14 +87,14 @@ namespace System.Security.Cryptography.X509Certificates
             certificate.TbsCertificate.SubjectPublicKeyInfo.Encode(writer);
             SubjectPublicKeyInfo = writer.Encode();
 
-            Extensions = new List<X509Extension>();
+            Extensions = new List<X509Extension>((certificate.TbsCertificate.Extensions?.Length).GetValueOrDefault());
             if (certificate.TbsCertificate.Extensions != null)
             {
                 foreach (X509ExtensionAsn rawExtension in certificate.TbsCertificate.Extensions)
                 {
                     X509Extension extension = new X509Extension(
                         rawExtension.ExtnId,
-                        rawExtension.ExtnValue.ToArray(),
+                        rawExtension.ExtnValue.Span,
                         rawExtension.Critical);
 
                     Extensions.Add(extension);
@@ -104,9 +104,8 @@ namespace System.Security.Cryptography.X509Certificates
         }
         catch (Exception e)
         {
-            throw new CryptographicException(
-                $"Error in reading certificate:{Environment.NewLine}{PemPrintCert(rawData)}",
-                e);
+            string pem = PemEncoding.WriteString(PemLabels.X509Certificate, rawData);
+            throw new CryptographicException($"Error in reading certificate:{Environment.NewLine}{pem}", e);
         }
 #endif
         }
@@ -379,25 +378,5 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
         }
-
-#if DEBUG
-        private static string PemPrintCert(byte[] rawData)
-        {
-            const string PemHeader = "-----BEGIN CERTIFICATE-----";
-            const string PemFooter = "-----END CERTIFICATE-----";
-
-            StringBuilder builder = new StringBuilder(PemHeader.Length + PemFooter.Length + rawData.Length * 2);
-            builder.Append(PemHeader);
-            builder.AppendLine();
-
-            builder.Append(Convert.ToBase64String(rawData, Base64FormattingOptions.InsertLineBreaks));
-            builder.AppendLine();
-
-            builder.Append(PemFooter);
-            builder.AppendLine();
-
-            return builder.ToString();
-        }
-#endif
     }
 }

@@ -61,6 +61,7 @@
         01 00 00 00
     )
     .field public int32& Field
+    .field public int32 Size
 }
 
 .class public explicit ansi sealed beforefieldinit InvalidCSharp.IntPtrOverlapWithInnerFieldType

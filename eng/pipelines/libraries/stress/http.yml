@@ -31,7 +31,7 @@ jobs:
     DUMPS_SHARE_MOUNT_ROOT: "/dumps-share"
   pool:
     name: NetCore1ESPool-Public
-    demands: ImageOverride -equals Build.Ubuntu.1804.Amd64.Open
+    demands: ImageOverride -equals 1es-ubuntu-1804-open
 
   steps:
   - checkout: self
@@ -39,13 +39,13 @@ jobs:
     fetchDepth: 5
 
   - bash: |
-      $(dockerfilesFolder)/build-docker-sdk.sh -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
+      $(dockerfilesFolder)/build-docker-sdk.sh -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION) && \
       echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
     name: buildRuntime
     displayName: Build CLR and Libraries
 
   - bash: |
-      $(httpStressProject)/run-docker-compose.sh -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage)
+      $(httpStressProject)/run-docker-compose.sh -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage) && \
       echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
     name: buildStress
     displayName: Build HttpStress
@@ -81,6 +81,11 @@ jobs:
     displayName: Run HttpStress - HTTP 1.1
     condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
+  - bash: |
+      sudo chown -R $(id -u):$(id -g) $(Build.ArtifactStagingDirectory)/dumps
+    displayName: Own shared dumps and files
+    condition: failed()
+
   - publish: $(Build.ArtifactStagingDirectory)/dumps
     artifact: DumpsLinux
     condition: failed()
@@ -92,7 +97,7 @@ jobs:
     DUMPS_SHARE_MOUNT_ROOT: "C:/dumps-share"
   pool:
     name: NetCore1ESPool-Public
-    demands: ImageOverride -equals Build.Server.Amd64.VS2019.Open
+    demands: ImageOverride -equals Build.Windows.Amd64.VS2022.Pre
 
   steps:
   - checkout: self

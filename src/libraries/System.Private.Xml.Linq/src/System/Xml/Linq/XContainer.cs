@@ -26,8 +26,10 @@ namespace System.Xml.Linq
 
         internal XContainer() { }
 
-        internal XContainer(XContainer other!!)
+        internal XContainer(XContainer other)
         {
+            ArgumentNullException.ThrowIfNull(other);
+
             if (other.content is string)
             {
                 this.content = other.content;
@@ -53,8 +55,7 @@ namespace System.Xml.Linq
         {
             get
             {
-                XNode? last = LastNode;
-                return last != null ? last.next : null;
+                return LastNode?.next;
             }
         }
 

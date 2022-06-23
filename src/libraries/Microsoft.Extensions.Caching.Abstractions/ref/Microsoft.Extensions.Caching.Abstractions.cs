@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.Caching.Memory
     public static partial class CacheExtensions
     {
         public static object? Get(this Microsoft.Extensions.Caching.Memory.IMemoryCache cache, object key) { throw null; }
-        public static System.Threading.Tasks.Task<TItem> GetOrCreateAsync<TItem>(this Microsoft.Extensions.Caching.Memory.IMemoryCache cache, object key, System.Func<Microsoft.Extensions.Caching.Memory.ICacheEntry, System.Threading.Tasks.Task<TItem>> factory) { throw null; }
+        public static System.Threading.Tasks.Task<TItem?> GetOrCreateAsync<TItem>(this Microsoft.Extensions.Caching.Memory.IMemoryCache cache, object key, System.Func<Microsoft.Extensions.Caching.Memory.ICacheEntry, System.Threading.Tasks.Task<TItem>> factory) { throw null; }
         public static TItem? GetOrCreate<TItem>(this Microsoft.Extensions.Caching.Memory.IMemoryCache cache, object key, System.Func<Microsoft.Extensions.Caching.Memory.ICacheEntry, TItem> factory) { throw null; }
         public static TItem? Get<TItem>(this Microsoft.Extensions.Caching.Memory.IMemoryCache cache, object key) { throw null; }
         public static TItem Set<TItem>(this Microsoft.Extensions.Caching.Memory.IMemoryCache cache, object key, TItem value) { throw null; }
@@ -125,6 +125,14 @@ namespace Microsoft.Extensions.Caching.Memory
         public Microsoft.Extensions.Caching.Memory.CacheItemPriority Priority { get { throw null; } set { } }
         public long? Size { get { throw null; } set { } }
         public System.TimeSpan? SlidingExpiration { get { throw null; } set { } }
+    }
+    public partial class MemoryCacheStatistics
+    {
+        public MemoryCacheStatistics() { }
+        public long CurrentEntryCount { get { throw null; } init { } }
+        public long? CurrentEstimatedSize { get { throw null; } init { } }
+        public long TotalHits { get { throw null; } init { } }
+        public long TotalMisses { get { throw null; } init { } }
     }
     public partial class PostEvictionCallbackRegistration
     {

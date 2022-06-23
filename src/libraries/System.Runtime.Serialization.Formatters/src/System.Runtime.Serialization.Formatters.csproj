@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-Android</TargetFrameworks>
-    <Nullable>enable</Nullable>
     <!-- ILLinker settings -->
     <ILLinkDirectory>$(MSBuildThisFileDirectory)ILLink\</ILLinkDirectory>
   </PropertyGroup>
@@ -10,6 +9,7 @@
     <TargetPlatformIdentifier Condition="$(TargetFramework.Contains('-'))">$(TargetFramework.SubString($([MSBuild]::Add($(TargetFramework.IndexOf('-')), 1))))</TargetPlatformIdentifier>
     <!-- TargetsMobile: When we replace implementations with PNSE, need to suppress some "field is never assigned to" warnings. -->
     <NoWarn Condition="'$(TargetPlatformIdentifier)' != ''">$(NoWarn);CS0649</NoWarn>
+    <NoWarn>$(NoWarn);CA1822</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <ILLinkSubstitutionsXmls Condition="'$(TargetPlatformIdentifier)' == ''" Include="$(ILLinkDirectory)ILLink.Substitutions.NonMobile.xml" />
@@ -81,7 +81,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Concurrent\src\System.Collections.Concurrent.csproj" />

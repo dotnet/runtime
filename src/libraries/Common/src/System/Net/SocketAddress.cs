@@ -18,7 +18,7 @@ namespace System.Net.Internals
 #if SYSTEM_NET_PRIMITIVES_DLL
     public
 #else
-    internal
+    internal sealed
 #endif
     class SocketAddress
     {
@@ -133,6 +133,7 @@ namespace System.Net.Internals
         {
             Buffer = buffer.ToArray();
             InternalSize = Buffer.Length;
+            SocketAddressPal.SetAddressFamily(Buffer, addressFamily);
         }
 
         internal IPAddress GetIPAddress()

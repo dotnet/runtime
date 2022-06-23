@@ -56,8 +56,10 @@ namespace System.Security.Cryptography
         /// <param name="data">The data to process.</param>
         /// <exception cref="ArgumentNullException"><paramref name="data"/> is <c>null</c>.</exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public void AppendData(byte[] data!!)
+        public void AppendData(byte[] data)
         {
+            ArgumentNullException.ThrowIfNull(data);
+
             AppendData(new ReadOnlySpan<byte>(data));
         }
 
@@ -81,8 +83,10 @@ namespace System.Security.Cryptography
         ///     <paramref name="data"/>.<see cref="Array.Length"/> - <paramref name="offset"/>.
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public void AppendData(byte[] data!!, int offset, int count)
+        public void AppendData(byte[] data, int offset, int count)
         {
+            ArgumentNullException.ThrowIfNull(data);
+
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0 || (count > data.Length))
@@ -341,9 +345,10 @@ namespace System.Security.Cryptography
         ///     the empty string.
         /// </exception>
         /// <exception cref="CryptographicException"><paramref name="hashAlgorithm"/> is not a known hash algorithm.</exception>
-        [UnsupportedOSPlatform("browser")]
-        public static IncrementalHash CreateHMAC(HashAlgorithmName hashAlgorithm, byte[] key!!)
+        public static IncrementalHash CreateHMAC(HashAlgorithmName hashAlgorithm, byte[] key)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             return CreateHMAC(hashAlgorithm, (ReadOnlySpan<byte>)key);
         }
 
@@ -369,7 +374,6 @@ namespace System.Security.Cryptography
         ///     the empty string.
         /// </exception>
         /// <exception cref="CryptographicException"><paramref name="hashAlgorithm"/> is not a known hash algorithm.</exception>
-        [UnsupportedOSPlatform("browser")]
         public static IncrementalHash CreateHMAC(HashAlgorithmName hashAlgorithm, ReadOnlySpan<byte> key)
         {
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));

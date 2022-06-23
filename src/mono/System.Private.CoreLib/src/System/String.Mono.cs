@@ -9,16 +9,14 @@ namespace System
     {
         public static string Intern(string str)
         {
-            if (str == null)
-                throw new ArgumentNullException(nameof(str));
+            ArgumentNullException.ThrowIfNull(str);
 
             return InternalIntern(str);
         }
 
         public static string IsInterned(string str)
         {
-            if (str == null)
-                throw new ArgumentNullException(nameof(str));
+            ArgumentNullException.ThrowIfNull(str);
 
             return InternalIsInterned(str);
         }
@@ -49,8 +47,8 @@ namespace System
             }
             if (val != 0)
             {
-                val = val | (val << 8);
-                val = val | (val << 16);
+                val |= (val << 8);
+                val |= (val << 16);
             }
             // align to 4
             int rest = (int)dest & 3;

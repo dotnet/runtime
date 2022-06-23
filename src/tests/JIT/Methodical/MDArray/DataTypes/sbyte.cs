@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public struct VT
 {
@@ -33,7 +34,8 @@ public class sbyteMDArrTest
     static sbyte[][,] ja1_b = new sbyte[2][,];
     static sbyte[][, ,] ja2_b = new sbyte[2][, ,];
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
 
         bool pass = true;

@@ -1,0 +1,102 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
+    <!-- Reference the dependencies to have the assemblies available for API comparison. -->
+    <NoTargetsDoNotReferenceOutputAssemblies>false</NoTargetsDoNotReferenceOutputAssemblies>
+    <!-- Target reference assemblies instead of implementation assemblies. -->
+    <CompileUsingReferenceAssemblies>true</CompileUsingReferenceAssemblies>
+    <TrimOutPrivateAssembliesFromReferencePath>true</TrimOutPrivateAssembliesFromReferencePath>
+    <ValidateBaseline>true</ValidateBaseline>
+
+    <ApiCompatNetStandard20BaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.netstandard2.0.txt</ApiCompatNetStandard20BaselineFile>
+    <ApiCompatNetStandard21BaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.netstandard2.1.txt</ApiCompatNetStandard21BaselineFile>
+    <ApiCompatNetCoreAppLatestStableBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.NetCoreAppLatestStable.txt</ApiCompatNetCoreAppLatestStableBaselineFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The globally defined DefaultGenApiDocIds.txt and the ApiCompatExcludeAttributes.txt exclude attribute files apply as well. -->
+    <ApiCompatExcludeAttributesFile Include="ApiCompatBaselineExcludedAttributes.txt" />
+  </ItemGroup>
+
+  <!-- For API comparision, ApiCompat needs both the inbox and the out-of-band assemblies plus the shims to be built. -->
+  <ItemGroup>
+    <ProjectReference Include="..\sfx-src.proj;
+                               ..\oob-src.proj;
+                               ..\shims.proj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageDownload Include="Microsoft.NETCore.App.Ref" Version="[$(NetCoreAppLatestStablePackageBaselineVersion)]" />
+    <PackageDownload Include="NETStandard.Library.Ref" Version="[$(NETStandardLibraryRefVersion)]" />
+    <PackageDownload Include="NETStandard.Library" Version="[$(NetStandardLibraryVersion)]" />
+    <PackageReference Include="Microsoft.DotNet.ApiCompat" Version="$(MicrosoftDotNetApiCompatVersion)" IsImplicitlyDefined="true" />
+  </ItemGroup>
+
+  <Target Name="RunApiCompat"
+          DependsOnTargets="FindReferenceAssembliesForReferences"
+          AfterTargets="Build"
+          Inputs="@(ReferencePathWithRefAssemblies);$(ApiCompatNetStandard20BaselineFile);$(ApiCompatNetStandard21BaselineFile);$(ApiCompatNetCoreAppLatestStableBaselineFile);@(ApiCompatExcludeAttributesFile)"
+          Outputs="$(IntermediateOutputPath)$(TargetArchitecture)-marker.txt">
+    <Message Text="ApiCompat -> Comparing $(NetCoreAppCurrent) reference assemblies against .NETStandard2.x and .NETCoreApp$(NetCoreAppLatestStableVersion)..." Importance="high"  />
+
+    <PropertyGroup Condition="'$(UpdateBaselineFiles)' == 'true'">
+      <ApiCompatNetStandard21OutputFile>$(ApiCompatNetStandard21BaselineFile)</ApiCompatNetStandard21OutputFile>
+      <ApiCompatNetStandard20OutputFile>$(ApiCompatNetStandard20BaselineFile)</ApiCompatNetStandard20OutputFile>
+      <ApiCompatNetCoreAppLatestStableOutputFile>$(ApiCompatNetCoreAppLatestStableBaselineFile)</ApiCompatNetCoreAppLatestStableOutputFile>
+      <ApiCompatNetStandard21BaselineFile />
+      <ApiCompatNetStandard20BaselineFile />
+      <ApiCompatNetCoreAppLatestStableBaselineFile />
+    </PropertyGroup>
+    <Delete Files="$(ApiCompatNetStandard21OutputFile);$(ApiCompatNetStandard20OutputFile);$(ApiCompatNetCoreAppLatestStableOutputFile)"
+            Condition="'$(UpdateBaselineFiles)' == 'true'" />
+
+    <!-- ApiCompat: NetCoreAppCurrent <-> netstandard2.1 -->
+    <ApiCompatTask Contracts="$(NETStandard21RefPath)netstandard.dll"
+                   ExcludeAttributes="@(ApiCompatExcludeAttributesFile)"
+                   ImplementationDirectories="$(LibrariesAllRefArtifactsPath)"
+                   BaselineFiles="$(ApiCompatNetStandard21BaselineFile)"
+                   ValidateBaseline="$(ValidateBaseline)"
+                   OutFilePath="$(ApiCompatNetStandard21OutputFile)"
+                   DisableAssemblyResolveTraceListener="true"
+                   IgnoreExitCode="true">
+      <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
+    </ApiCompatTask>
+    <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing netstandard.dll to $(NetCoreAppCurrent). If this breaking change is intentional, the ApiCompat baseline files can be updated by running 'dotnet build $(MSBuildThisFileFullPath) --no-incremental /p:UpdateBaselineFiles=true'." />
+
+    <!-- ApiCompat: NetCoreAppCurrent <-> netstandard2.0 -->
+    <ApiCompatTask Contracts="$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'netstandard.library', '$(NetStandardLibraryVersion)', 'build', 'netstandard2.0', 'ref'))"
+                   ExcludeAttributes="@(ApiCompatExcludeAttributesFile)"
+                   ImplementationDirectories="$(LibrariesAllRefArtifactsPath)"
+                   BaselineFiles="$(ApiCompatNetStandard20BaselineFile)"
+                   ValidateBaseline="$(ValidateBaseline)"
+                   OutFilePath="$(ApiCompatNetStandard20OutputFile)"
+                   DisableAssemblyResolveTraceListener="true"
+                   IgnoreExitCode="true">
+      <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
+    </ApiCompatTask>
+    <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing netstandard to $(NetCoreAppCurrent). If this breaking change is intentional, the ApiCompat baseline files can be updated by running 'dotnet build $(MSBuildThisFileFullPath) --no-incremental /p:UpdateBaselineFiles=true'." />
+ 
+    <!-- ApiCompat: NetCoreAppCurrent <-> NetCoreAppLatestStable -->
+    <ApiCompatTask Contracts="$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'microsoft.netcore.app.ref', '$(NetCoreAppLatestStablePackageBaselineVersion)', 'ref', '$(NetCoreAppLatestStable)'))"
+                   ExcludeAttributes="@(ApiCompatExcludeAttributesFile)"
+                   ImplementationDirectories="$(LibrariesAllRefArtifactsPath)"
+                   BaselineFiles="$(ApiCompatNetCoreAppLatestStableBaselineFile)"
+                   ValidateBaseline="$(ValidateBaseline)"
+                   OutFilePath="$(ApiCompatNetCoreAppLatestStableOutputFile)"
+                   DisableAssemblyResolveTraceListener="true"
+                   IgnoreExitCode="true">
+      <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
+    </ApiCompatTask>
+    <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing $(NetCoreAppLatestStable) to $(NetCoreAppCurrent). If this breaking change is intentional, the ApiCompat baseline files can be updated by running 'dotnet build $(MSBuildThisFileFullPath) --no-incremental /p:UpdateBaselineFiles=true'." />
+
+    <!-- Create a marker file which serves as the target's output to enable incremental builds. -->
+    <Touch Files="$(IntermediateOutputPath)$(TargetArchitecture)-marker.txt"
+           AlwaysCreate="true" />
+  </Target>
+
+  <Target Name="CleanAdditionalFiles" AfterTargets="Clean">
+    <RemoveDir Directories="$(IntermediateOutputPath)" />
+  </Target>
+
+</Project>

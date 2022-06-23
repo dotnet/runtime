@@ -4,7 +4,9 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -13,11 +15,14 @@ namespace Sample
 {
     public partial class Test
     {
+        static bool JsonResults = false;
+
         List<BenchTask> tasks = new()
         {
             new AppStartTask(),
             new ExceptionsTask(),
             new JsonTask(),
+            new VectorTask(),
             new WebSocketTask()
         };
         static Test instance = new Test();
@@ -77,6 +82,7 @@ namespace Sample
             set { task = value; }
         }
         List<BenchTask.Result> results = new();
+        Dictionary<string, double> minTimes = new();
         bool resultsReturned;
 
         bool NextTask()
@@ -108,7 +114,7 @@ namespace Sample
             {
                 measurementIdx++;
 
-                if (Task.pattern == null || Task.pattern.Match(Task.Measurements[measurementIdx].Name).Success)
+                if (Task.pattern == null || Task.pattern.IsMatch(Task.Measurements[measurementIdx].Name))
                     return true;
             }
 
@@ -141,21 +147,11 @@ namespace Sample
 
         string ResultsSummary()
         {
-            Dictionary<string, double> minTimes = new Dictionary<string, double>();
-            StringBuilder sb = new();
+            ProcessResults();
+            if (JsonResults)
+                PrintJsonResults();
 
-            foreach (var result in results)
-            {
-                double t;
-                var key = $"{result.taskName}, {result.measurementName}";
-                t = result.span.TotalMilliseconds / result.steps;
-                if (minTimes.ContainsKey(key))
-                    t = Math.Min(minTimes[key], t);
-
-                minTimes[key] = t;
-            }
-
-            sb.Append($"{formatter.NewLine}Summary{formatter.NewLine}");
+            StringBuilder sb = new($"{formatter.NewLine}Summary{formatter.NewLine}");
             foreach (var key in minTimes.Keys)
             {
                 sb.Append($"{key}: {minTimes[key]}ms{formatter.NewLine}");
@@ -178,6 +174,48 @@ namespace Sample
             resultsReturned = true;
 
             return sb.ToString();
+        }
+
+        private void ProcessResults()
+        {
+            minTimes.Clear();
+
+            foreach (var result in results)
+            {
+                double t;
+                var key = $"{result.taskName}, {result.measurementName}";
+                t = result.span.TotalMilliseconds / result.steps;
+                if (minTimes.ContainsKey(key))
+                    t = Math.Min(minTimes[key], t);
+
+                minTimes[key] = t;
+            }
+        }
+
+        class JsonResultsData
+        {
+            public List<BenchTask.Result> results;
+            public Dictionary<string, double> minTimes;
+            public DateTime timeStamp;
+        }
+
+        public static string GetFullJsonResults()
+        {
+            return instance.GetJsonResults();
+        }
+
+        string GetJsonResults ()
+        {
+            var options = new JsonSerializerOptions { IncludeFields = true, WriteIndented = true };
+            var jsonObject = new JsonResultsData { results = results, minTimes = minTimes, timeStamp = DateTime.UtcNow };
+            return JsonSerializer.Serialize(jsonObject, options);
+        }
+
+        private void PrintJsonResults()
+        {
+            Console.WriteLine("=== json results start ===");
+            Console.WriteLine(GetJsonResults ());
+            Console.WriteLine("=== json results end ===");
         }
     }
 

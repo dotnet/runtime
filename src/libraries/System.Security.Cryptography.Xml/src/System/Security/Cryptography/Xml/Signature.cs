@@ -133,8 +133,13 @@ namespace System.Security.Cryptography.Xml
             return signatureElement;
         }
 
-        public void LoadXml(XmlElement value!!)
+        public void LoadXml(XmlElement value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             // Signature
             XmlElement signatureElement = value;
             if (!signatureElement.LocalName.Equals("Signature"))

@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
+    <WasmMainJSPath>main.js</WasmMainJSPath>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>embedded</DebugType>
+    <WasmDebugLevel>1</WasmDebugLevel>
+    <WasmEnableES6>false</WasmEnableES6>
+    <WasmBuildNative>true</WasmBuildNative>
+    <GenerateRunScriptForSample Condition="'$(ArchiveTests)' == 'true'">true</GenerateRunScriptForSample>
+    <RunScriptCommand>$(ExecXHarnessCmd) wasm test-browser  --app=. --browser=Chrome $(XHarnessBrowserPathArg) --html-file=index.html --output-directory=$(XHarnessOutput) -- $(MSBuildProjectName).dll</RunScriptCommand>
+    <FeatureWasmPerfTracing>true</FeatureWasmPerfTracing>
+    <NoWarn>CA2007</NoWarn> <!-- consider ConfigureAwait() -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <WasmExtraFilesToDeploy Include="index.html" />
+    <WasmExtraConfig Condition="false" Include="environment_variables" Value='
+{
+  "MONO_LOG_LEVEL": "debug",
+  "MONO_LOG_MASK": "diagnostics"
+}' />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <_SampleProject>Wasm.Browser.CJS.Sample.csproj</_SampleProject>
+  </PropertyGroup>
+
+
+  <PropertyGroup>
+    <RunAnalyzers>true</RunAnalyzers>
+  </PropertyGroup>
+
+  <!-- set the condition to false and you will get a CA1416 errors about calls to create DiagnosticCounter instances -->
+  <ItemGroup Condition="true">
+    <!-- TODO: some .props file that automates this.  Unfortunately just adding a ProjectReference to Microsoft.NET.WebAssembly.Threading.proj doesn't work - it ends up bundling the ref assemblies into the publish directory and breaking the app. -->
+    <!-- it's a reference assembly, but the project system doesn't know that - include it during compilation, but don't publish it -->
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.Diagnostics.Tracing.WebAssembly.PerfTracing\ref\System.Diagnostics.Tracing.WebAssembly.PerfTracing.csproj" IncludeAssets="compile" PrivateAssets="none" ExcludeAssets="runtime" Private="false" />
+  </ItemGroup>
+
+  <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowser" />
+</Project>

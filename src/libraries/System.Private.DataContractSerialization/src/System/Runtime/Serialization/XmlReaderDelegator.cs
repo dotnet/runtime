@@ -15,8 +15,10 @@ namespace System.Runtime.Serialization
         protected XmlDictionaryReader? dictionaryReader;
         protected bool isEndOfEmptyElement;
 
-        public XmlReaderDelegator(XmlReader reader!!)
+        public XmlReaderDelegator(XmlReader reader)
         {
+            ArgumentNullException.ThrowIfNull(reader);
+
             this.reader = reader;
             this.dictionaryReader = reader as XmlDictionaryReader;
         }
@@ -53,7 +55,7 @@ namespace System.Runtime.Serialization
             return reader.GetAttribute(i);
         }
 
-        internal bool IsEmptyElement
+        internal static bool IsEmptyElement
         {
             get { return false; }
         }
@@ -202,7 +204,7 @@ namespace System.Runtime.Serialization
                 reader.ReadEndElement();
         }
 
-        private Exception CreateInvalidPrimitiveTypeException(Type type)
+        private static Exception CreateInvalidPrimitiveTypeException(Type type)
         {
             return new InvalidDataContractException(SR.Format(
                 type.IsInterface ? SR.InterfaceTypeCannotBeCreated : SR.InvalidPrimitiveType_Serialization,
@@ -335,7 +337,7 @@ namespace System.Runtime.Serialization
         }
 
         [DoesNotReturn]
-        private void ThrowNotAtElement()
+        private static void ThrowNotAtElement()
         {
             throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(SR.Format(SR.XmlStartElementExpected, "EndElement")));
         }
@@ -467,7 +469,7 @@ namespace System.Runtime.Serialization
         }
 
         [return: NotNullIfNotNull("str")]
-        internal byte[]? ReadContentAsBase64(string? str)
+        internal static byte[]? ReadContentAsBase64(string? str)
         {
             if (str == null)
                 return null;
@@ -776,17 +778,17 @@ namespace System.Runtime.Serialization
             return new XmlQualifiedName(name, ns);
         }
 
-        private void CheckExpectedArrayLength(XmlObjectSerializerReadContext context, int arrayLength)
+        private static void CheckExpectedArrayLength(XmlObjectSerializerReadContext context, int arrayLength)
         {
             context.IncrementItemCount(arrayLength);
         }
 
-        protected int GetArrayLengthQuota(XmlObjectSerializerReadContext context)
+        protected static int GetArrayLengthQuota(XmlObjectSerializerReadContext context)
         {
             return Math.Min(context.RemainingItemCount, int.MaxValue);
         }
 
-        private void CheckActualArrayLength(int expectedLength, int actualLength, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
+        private static void CheckActualArrayLength(int expectedLength, int actualLength, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
         {
             if (expectedLength != actualLength)
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ArrayExceededSizeAttribute, expectedLength, itemName.Value, itemNamespace.Value)));

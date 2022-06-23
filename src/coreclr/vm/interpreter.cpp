@@ -91,7 +91,7 @@ InterpreterMethodInfo::InterpreterMethodInfo(CEEInfo* comp, CORINFO_METHOD_INFO*
     }
 #endif
 
-#if defined(UNIX_AMD64_ABI)
+#if defined(UNIX_AMD64_ABI) || defined(HOST_LOONGARCH64)
     // ...or it fits into two registers.
     if (hasRetBuff && getClassSize(methInfo->args.retTypeClass) <= 2 * sizeof(void*))
     {
@@ -534,6 +534,9 @@ void Interpreter::ArgState::AddArg(unsigned canonIndex, short numSlots, bool noR
         // On ARM, args are pushed in *reverse* order.  So we will create an offset relative to the address
         // of the first stack arg; later, we will add the size of the non-stack arguments.
         ClrSafeInt<short> offset(callerArgStackSlots);
+#elif defined(HOST_LOONGARCH64)
+        callerArgStackSlots += numSlots;
+        ClrSafeInt<short> offset(-callerArgStackSlots);
 #endif
         offset *= static_cast<short>(sizeof(void*));
         _ASSERTE(!offset.IsOverflow());
@@ -676,6 +679,19 @@ void Interpreter::ArgState::AddFPArg(unsigned canonIndex, unsigned short numSlot
 
     _ASSERTE(numFPRegArgSlots + numSlots <= MaxNumFPRegArgSlots);
     _ASSERTE(!twoSlotAlign);
+    argIsReg[canonIndex] = ARS_FloatReg;
+
+    argOffsets[canonIndex] = numFPRegArgSlots * sizeof(void*);
+    for (unsigned i = 0; i < numSlots; i++)
+    {
+        fpArgsUsed |= (0x1 << (numFPRegArgSlots + i));
+    }
+    numFPRegArgSlots += numSlots;
+
+#elif defined(HOST_LOONGARCH64)
+
+    assert(numFPRegArgSlots + numSlots <= MaxNumFPRegArgSlots);
+    assert(!twoSlotAlign);
     argIsReg[canonIndex] = ARS_FloatReg;
 
     argOffsets[canonIndex] = numFPRegArgSlots * sizeof(void*);
@@ -882,7 +898,6 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
         // x8 through x15 are scratch registers on ARM64.
         IntReg x8 = IntReg(8);
         IntReg x9 = IntReg(9);
-#else
 #error unsupported platform
 #endif
     }
@@ -1110,7 +1125,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 #elif defined(HOST_ARM)
                     // LONGS have 2-reg alignment; inc reg if necessary.
                     argState.AddArg(k, 2, /*noReg*/false, /*twoSlotAlign*/true);
-#elif defined(HOST_AMD64) || defined(HOST_ARM64)
+#elif defined(HOST_AMD64) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64)
                     argState.AddArg(k);
 #else
 #error unknown platform
@@ -1123,7 +1138,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                     argState.AddArg(k, 1, /*noReg*/true);
 #elif defined(HOST_ARM)
                     argState.AddFPArg(k, 1, /*twoSlotAlign*/false);
-#elif defined(HOST_AMD64) || defined(HOST_ARM64)
+#elif defined(HOST_AMD64) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64)
                     argState.AddFPArg(k, 1, false);
 #else
 #error unknown platform
@@ -1136,7 +1151,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                     argState.AddArg(k, 2, /*noReg*/true);
 #elif defined(HOST_ARM)
                     argState.AddFPArg(k, 2, /*twoSlotAlign*/true);
-#elif defined(HOST_AMD64) || defined(HOST_ARM64)
+#elif defined(HOST_AMD64) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64)
                     argState.AddFPArg(k, 1, false);
 #else
 #error unknown platform
@@ -1177,6 +1192,8 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 #endif
                                     );
                         }
+#elif defined(HOST_LOONGARCH64)
+                        argState.AddArg(k, static_cast<short>(szSlots));
 #else
 #error unknown platform
 #endif
@@ -1229,6 +1246,10 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
             unsigned short stackArgBaseOffset = (2 + argState.numRegArgs + argState.numFPRegArgSlots) * sizeof(void*);
 #elif defined(HOST_AMD64)
             unsigned short stackArgBaseOffset = (argState.numRegArgs) * sizeof(void*);
+#elif defined(HOST_LOONGARCH64)
+            // See StubLinkerCPU::EmitProlog for the layout of the stack
+            unsigned       intRegArgBaseOffset = (argState.numFPRegArgSlots) * sizeof(void*);
+            unsigned short stackArgBaseOffset = (unsigned short) ((argState.numRegArgs + argState.numFPRegArgSlots) * sizeof(void*));
 #else
 #error unsupported platform
 #endif
@@ -1277,6 +1298,8 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                     X86Reg argRegs[] = { kECX, kEDX, kR8, kR9 };
                     if (!jmpCall) { sl.X86EmitIndexRegStoreRSP(regArgsFound * sizeof(void*), argRegs[regArgsFound - 1]); }
                     argState.argOffsets[k] = (regArgsFound - 1) * sizeof(void*);
+#elif defined(HOST_LOONGARCH64)
+                    argState.argOffsets[k] += intRegArgBaseOffset;
 #else
 #error unsupported platform
 #endif
@@ -1589,6 +1612,8 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 
         sl.EmitEpilog();
 
+#elif defined(HOST_LOONGARCH64)
+        assert(!"unimplemented on LOONGARCH yet");
 
 #else
 #error unsupported platform
@@ -6280,6 +6305,9 @@ void Interpreter::MkRefany()
 #elif defined(HOST_ARM64)
     tbr = NULL;
     NYI_INTERP("Unimplemented code: MkRefAny");
+#elif defined(HOST_LOONGARCH64)
+    tbr = NULL;
+    NYI_INTERP("Unimplemented code: MkRefAny on LOONGARCH");
 #else
 #error "unsupported platform"
 #endif
@@ -9211,32 +9239,29 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         }
 
 #if FEATURE_SIMD
-        if (fFeatureSIMD.val(CLRConfig::EXTERNAL_FeatureSIMD) != 0)
+        // Check for the simd class...
+        _ASSERTE(exactClass != NULL);
+        GCX_PREEMP();
+        bool isIntrinsicType = m_interpCeeInfo.isIntrinsicType(exactClass);
+
+        if (isIntrinsicType)
         {
-            // Check for the simd class...
-            _ASSERTE(exactClass != NULL);
-            GCX_PREEMP();
-            bool isIntrinsicType = m_interpCeeInfo.isIntrinsicType(exactClass);
-
-            if (isIntrinsicType)
+            // SIMD intrinsics are recognized by name.
+            const char* namespaceName = NULL;
+            const char* className = NULL;
+            const char* methodName = m_interpCeeInfo.getMethodNameFromMetadata((CORINFO_METHOD_HANDLE)methToCall, &className, &namespaceName, NULL);
+            if ((strcmp(methodName, "get_IsHardwareAccelerated") == 0) && (strcmp(className, "Vector") == 0) && (strcmp(namespaceName, "System.Numerics") == 0))
             {
-                // SIMD intrinsics are recognized by name.
-                const char* namespaceName = NULL;
-                const char* className = NULL;
-                const char* methodName = m_interpCeeInfo.getMethodNameFromMetadata((CORINFO_METHOD_HANDLE)methToCall, &className, &namespaceName, NULL);
-                if ((strcmp(methodName, "get_IsHardwareAccelerated") == 0) && (strcmp(className, "Vector") == 0) && (strcmp(namespaceName, "System.Numerics") == 0))
-                {
-                    GCX_COOP();
-                    DoSIMDHwAccelerated();
-                    didIntrinsic = true;
-                }
+                GCX_COOP();
+                DoSIMDHwAccelerated();
+                didIntrinsic = true;
             }
+        }
 
-            if (didIntrinsic)
-            {
-                // Must block caching or we lose easy access to the class
-                doNotCache = true;
-            }
+        if (didIntrinsic)
+        {
+            // Must block caching or we lose easy access to the class
+            doNotCache = true;
         }
 #endif // FEATURE_SIMD
 
@@ -9426,6 +9451,8 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     // ARM64TODO: Verify that the following statement is correct for ARM64.
     unsigned totalArgSlots = nSlots + HFAReturnArgSlots;
 #elif defined(HOST_AMD64)
+    unsigned totalArgSlots = nSlots;
+#elif defined(HOST_LOONGARCH64)
     unsigned totalArgSlots = nSlots;
 #else
 #error "unsupported platform"

@@ -44,6 +44,10 @@ CorInfoInline canInline(
           CORINFO_METHOD_HANDLE callerHnd,
           CORINFO_METHOD_HANDLE calleeHnd) override;
 
+void beginInlining(
+          CORINFO_METHOD_HANDLE inlinerHnd,
+          CORINFO_METHOD_HANDLE inlineeHnd) override;
+
 void reportInliningDecision(
           CORINFO_METHOD_HANDLE inlinerHnd,
           CORINFO_METHOD_HANDLE inlineeHnd,
@@ -165,10 +169,11 @@ bool isValidStringRef(
           CORINFO_MODULE_HANDLE module,
           unsigned metaTOK) override;
 
-const char16_t* getStringLiteral(
+int getStringLiteral(
           CORINFO_MODULE_HANDLE module,
           unsigned metaTOK,
-          int* length) override;
+          char16_t* buffer,
+          int bufferSize) override;
 
 CorInfoType asCorInfoType(
           CORINFO_CLASS_HANDLE cls) override;
@@ -283,6 +288,7 @@ bool getReadyToRunHelper(
 
 void getReadyToRunDelegateCtorHelper(
           CORINFO_RESOLVED_TOKEN* pTargetMethod,
+          mdToken targetConstraint,
           CORINFO_CLASS_HANDLE delegateType,
           CORINFO_LOOKUP* pLookup) override;
 
@@ -479,6 +485,9 @@ size_t findNameOfToken(
 bool getSystemVAmd64PassStructInRegisterDescriptor(
           CORINFO_CLASS_HANDLE structHnd,
           SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr) override;
+
+uint32_t getLoongArch64PassStructInRegisterFlags(
+          CORINFO_CLASS_HANDLE structHnd) override;
 
 uint32_t getThreadTLSIndex(
           void** ppIndirection) override;
@@ -704,10 +713,6 @@ uint32_t getExpectedTargetArchitecture() override;
 uint32_t getJitFlags(
           CORJIT_FLAGS* flags,
           uint32_t sizeInBytes) override;
-
-bool doesFieldBelongToClass(
-          CORINFO_FIELD_HANDLE fldHnd,
-          CORINFO_CLASS_HANDLE cls) override;
 
 /**********************************************************************************/
 // clang-format on

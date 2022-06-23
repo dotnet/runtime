@@ -3,13 +3,14 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [GeneratedDllImport(Interop.Libraries.Advapi32, EntryPoint = "LsaLookupNames2", CharSet = CharSet.Unicode, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.Advapi32, EntryPoint = "LsaLookupNames2",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial uint LsaLookupNames2(
             SafeLsaPolicyHandle handle,
             int flags,
@@ -26,6 +27,7 @@ internal static partial class Interop
             internal ushort MaximumLength;
             internal string Buffer;
 
+            [CustomTypeMarshaller(typeof(MARSHALLED_UNICODE_STRING), Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.UnmanagedResources)]
             public struct Native
             {
                 internal ushort Length;

@@ -206,6 +206,7 @@ Crst ExecutableAllocatorLock
 End
 
 Crst ExecuteManRangeLock
+    AcquiredAfter NativeImageEagerFixups
 End
 
 Crst FCall
@@ -543,7 +544,7 @@ Crst InlineTrackingMap
 End
 
 Crst JitInlineTrackingMap
-    AcquiredBefore CodeVersioning ThreadStore LoaderAllocator
+    AcquiredBefore CodeVersioning ThreadStore MethodDescBackpatchInfoTracker
 End
 
 Crst EventPipe
@@ -567,8 +568,8 @@ Crst COMCallWrapper
 End
 
 Crst MethodDescBackpatchInfoTracker
-    AcquiredBefore FuncPtrStubs ThreadStore SystemDomain
-    AcquiredAfter ReJITGlobalRequest
+    AcquiredBefore FuncPtrStubs
+    AcquiredAfter ReJITGlobalRequest ThreadStore SystemDomain
 End
 
 Crst NativeImageEagerFixups

@@ -18,6 +18,7 @@ namespace System.Text.Json.Serialization
         internal const string ImmutableConvertersUnreferencedCodeMessage = "System.Collections.Immutable converters use Reflection to find and create Immutable Collection types, which requires unreferenced code.";
 
         [RequiresUnreferencedCode(ImmutableConvertersUnreferencedCodeMessage)]
+        [RequiresDynamicCode(ImmutableConvertersUnreferencedCodeMessage)]
         public static MethodInfo GetImmutableEnumerableCreateRangeMethod(this Type type, Type elementType)
         {
             Type? constructingType = GetImmutableEnumerableConstructingType(type);
@@ -41,6 +42,7 @@ namespace System.Text.Json.Serialization
         }
 
         [RequiresUnreferencedCode(ImmutableConvertersUnreferencedCodeMessage)]
+        [RequiresDynamicCode(ImmutableConvertersUnreferencedCodeMessage)]
         public static MethodInfo GetImmutableDictionaryCreateRangeMethod(this Type type, Type keyType, Type valueType)
         {
             Type? constructingType = GetImmutableDictionaryConstructingType(type);
@@ -64,6 +66,7 @@ namespace System.Text.Json.Serialization
         }
 
         [RequiresUnreferencedCode(ImmutableConvertersUnreferencedCodeMessage)]
+        [RequiresDynamicCode(ImmutableConvertersUnreferencedCodeMessage)]
         private static Type? GetImmutableEnumerableConstructingType(Type type)
         {
             Debug.Assert(type.IsImmutableEnumerableType());
@@ -76,6 +79,7 @@ namespace System.Text.Json.Serialization
         }
 
         [RequiresUnreferencedCode(ImmutableConvertersUnreferencedCodeMessage)]
+        [RequiresDynamicCode(ImmutableConvertersUnreferencedCodeMessage)]
         private static Type? GetImmutableDictionaryConstructingType(Type type)
         {
             Debug.Assert(type.IsImmutableDictionaryType());

@@ -24,8 +24,6 @@
 // Resource strings for MDA descriptions.
 //-----------------------------------------------------------------------------
 
-#define MDARC_DEBUGGER_FIBER_MODE_NOT_SUPPORTED 0x1934
-
 #define IDS_RTL                                 0x01F5
 
 #define IDS_DS_ACTIVESESSIONS                   0x1701
@@ -48,7 +46,6 @@
 #define IDS_EE_LOAD_BAD_MAIN_SIG                0x1712
 #define IDS_EE_COM_UNSUPPORTED_TYPE             0x1713
 
-#define IDS_EE_NOTNDIRECT                       0x1719
 #define IDS_EE_RETHROW_NOT_ALLOWED              0x171d
 #define IDS_EE_INVALID_OLE_VARIANT              0x171e
 
@@ -126,7 +123,6 @@
 #define IDS_CLASSLOAD_BADFORMAT                 0x1774
 #define IDS_CLASSLOAD_BYREFARRAY                0x1775
 #define IDS_CLASSLOAD_BYREFLIKEARRAY            0x1776
-#define IDS_CLASSLOAD_MISSINGMETHOD             0x1777
 #define IDS_CLASSLOAD_STATICVIRTUAL             0x1778
 #define IDS_CLASSLOAD_REDUCEACCESS              0x1779
 #define IDS_CLASSLOAD_BADPINVOKE                0x177a
@@ -171,11 +167,9 @@
 #define IDS_CLASSLOAD_STATICVIRTUAL_NOTIMPL     0x17a9
 
 #define IDS_CLASSLOAD_TOOMANYGENERICARGS        0x17ab
-#define IDS_ERROR                               0x17b0
-#define IDS_DEBUG_SERVICE_CAPTION               0x17b4
+
 #define IDS_DEBUG_USERBREAKPOINT                0x17b6
-#define IDS_DEBUG_UNHANDLEDEXCEPTION            0x17b7
-#define IDS_DEBUG_UNHANDLEDEXCEPTION_IPC        0x17b8
+
 #define IDS_PERFORMANCEMON_FUNCNOTFOUND         0x17bb
 #define IDS_PERFORMANCEMON_FUNCNOTFOUND_TITLE   0x17bc
 #define IDS_PERFORMANCEMON_PSAPINOTFOUND        0x17bd
@@ -201,8 +195,6 @@
 #define IDS_EE_INVOKE_NEW_ENUM_INVALID_RETURN   0x17d7
 #define IDS_EE_COM_OBJECT_RELEASE_RACE          0x17d8
 #define IDS_EE_COM_OBJECT_NO_LONGER_HAS_WRAPPER 0x17d9
-#define IDS_EE_CALLBACK_NOT_CALLED_FROM_CCTOR   0x17da
-#define IDS_EE_CALLBACK_ALREADY_REGISTERED      0x17de
 #define IDS_EE_NDIRECT_BADNATL_CALLCONV         0x17df
 #define IDS_EE_CANNOTCAST                       0x17e0
 #define IDS_EE_NOTISOMORPHIC                    0x17e1
@@ -213,9 +205,6 @@
 #define IDS_EE_SAFEARRAYSZARRAYMISMATCH         0x17eb
 #define IDS_EE_INVALID_VT_FOR_CUSTOM_MARHALER   0x17ec
 #define IDS_EE_BAD_COMEXTENDS_CLASS             0x17ed
-
-#define IDS_EE_ERRORTITLE                       0x17f0
-#define IDS_EE_ERRORMESSAGETEMPLATE             0x17f1
 
 #define IDS_EE_LOCAL_COGETCLASSOBJECT_FAILED    0x17f5
 
@@ -230,16 +219,12 @@
 #define IDS_CLASSLOAD_EQUIVALENTSTRUCTMETHODS   0x17fe
 #define IDS_CLASSLOAD_EQUIVALENTSTRUCTFIELDS    0x17ff
 
-#define IDS_EE_NO_IDISPATCH                     0x1a02
-
-
 #define IDS_EE_SIGTOOCOMPLEX                    0x1a03
 #define IDS_EE_STRUCTTOOCOMPLEX                 0x1a04
 #define IDS_EE_STRUCTARRAYTOOLARGE              0x1a05
 #define IDS_EE_BADMARSHALFIELD_NOSTRINGBUILDER  0x1a06
-#define IDS_EE_NAME_UNKNOWN                     0x1a07
+
 #define IDS_EE_NO_BACKING_CLASS_FACTORY         0x1a0b
-#define IDS_EE_NAME_UNKNOWN_UNQ                 0x1a0c
 #define IDS_EE_STRING_TOOLONG                   0x1a0d
 #define IDS_EE_VARARG_NOT_SUPPORTED             0x1a0f
 
@@ -320,9 +305,7 @@
 
 #define IDS_CLASSLOAD_OVERLAPPING_INTERFACES 0x1a80
 #define IDS_CLASSLOAD_32BITCLRLOADING64BITASSEMBLY 0x1a81
-#define IDS_EE_ASSEMBLY_GETTYPE_CANNONT_HAVE_ASSEMBLY_SPEC     0x1a84
 
-#define IDS_EE_CANNOT_HAVE_ASSEMBLY_SPEC        0x1a86
 #define IDS_EE_NEEDS_ASSEMBLY_SPEC              0x1a87
 
 #define IDS_EE_FILELOAD_ERROR_GENERIC           0x1a88
@@ -369,11 +352,7 @@
 #define IDS_CLASSLOAD_EQUIVALENTBADTYPE         0x1ab7
 #define IDS_EE_CODEEXECUTION_CONTAINSGENERICVAR 0x1abb
 #define IDS_CLASSLOAD_WRONGCPU                  0x1abc
-#define IDS_EE_CREATEINSTANCEFROMAPP_FAILED     0x1abd
 
-#define IDS_IBC_MISSING_EXTERNAL_TYPE           0x1ac5
-#define IDS_IBC_MISSING_EXTERNAL_METHOD         0x1ac6
-#define IDS_EE_HWINTRINSIC_NGEN_DISALLOWED      0x1ac7
 #define IDS_CLASSLOAD_MI_FINAL_IMPL             0x1ac8
 #define IDS_CLASSLOAD_AMBIGUOUS_OVERRIDE        0x1ac9
 #define IDS_CLASSLOAD_UNSUPPORTED_DISPATCH      0x1aca
@@ -442,7 +421,6 @@
 #define BFA_BAD_SIGNATURE                       0x2044
 #define BFA_TYPEREG_NAME_TOO_LONG               0x2045
 #define BFA_BAD_TYPEREF_TOKEN                   0x2046
-#define BFA_BAD_CLASS_INT_CA                    0x2047
 #define BFA_BAD_CLASS_INT_CA_FORMAT             0x2048
 #define BFA_BAD_COMPLUS_SIG                     0x2049
 #define BFA_BAD_ELEM_IN_SIZEOF                  0x204b
@@ -451,7 +429,6 @@
 #define IDS_CLASSLOAD_INTERFACE_NO_ACCESS       0x204f
 
 #define BFA_BAD_CA_HEADER                       0x2050
-#define BFA_BAD_STRING_TOKEN                    0x2052
 #define BFA_BAD_STRING_TOKEN_RANGE              0x2053
 #define BFA_FIXUP_WRONG_PLATFORM                0x2054
 #define BFA_UNEXPECTED_GENERIC_TOKENTYPE        0x2055
@@ -461,7 +438,6 @@
 #define BFA_UNEXPECTED_ARRAY_TYPE               0x2059
 #define BFA_BAD_VISIBILITY                      0x205a
 #define BFA_FAMILY_ON_GLOBAL                    0x205b
-#define BFA_NOFIND_EXPORTED_TYPE                0x205c
 #define BFA_NOT_AN_ARRAY                        0x205d
 #define BFA_EXPECTED_METHODDEF_OR_MEMBERREF     0x205e
 
@@ -524,8 +500,6 @@
 #define IDS_EE_INTEROP_STUB_CA_NO_ACCESS_TO_STUB_METHOD             0x2111
 #endif
 
-#define IDS_EE_INTEROP_CODE_SIZE_COMMENT        0x2112
-
 #define BFA_REFERENCE_ASSEMBLY                  0x2113
 
 #define IDS_E_FIELDACCESS                       0x2114
@@ -568,7 +542,6 @@
 
 #define IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT                  0x2636
 #define IDS_HOST_ASSEMBLY_RESOLVER_DYNAMICALLY_EMITTED_ASSEMBLIES_UNSUPPORTED          0x2637
-#define IDS_HOST_ASSEMBLY_RESOLVER_INCOMPATIBLE_BINDING_CONTEXT                        0x2638
 
 #define IDS_NATIVE_IMAGE_CANNOT_BE_LOADED_MULTIPLE_TIMES                               0x263a
 

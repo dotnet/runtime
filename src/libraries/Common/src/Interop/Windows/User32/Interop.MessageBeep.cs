@@ -13,7 +13,8 @@ internal static partial class Interop
         internal const int MB_ICONEXCLAMATION = 0x30;
         internal const int MB_ICONASTERISK = 0x40;
 
-        [GeneratedDllImport(Libraries.User32, ExactSpelling = true)]
+        [LibraryImport(Libraries.User32)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool MessageBeep(int type);
     }
 }

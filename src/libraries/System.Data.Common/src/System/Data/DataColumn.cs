@@ -267,9 +267,9 @@ namespace System.Data
         }
 
         internal AutoIncrementValue AutoInc =>
-            (_autoInc ?? (_autoInc = ((DataType == typeof(BigInteger)) ?
+            (_autoInc ??= ((DataType == typeof(BigInteger)) ?
                 (AutoIncrementValue)new AutoIncrementBigInteger() :
-                new AutoIncrementInt64())));
+                new AutoIncrementInt64()));
 
 
         /// <summary>
@@ -315,7 +315,7 @@ namespace System.Data
         [AllowNull]
         public string Caption
         {
-            get { return (_caption != null) ? _caption : _columnName; }
+            get { return _caption ?? _columnName; }
             set
             {
                 if (value == null)
@@ -695,7 +695,7 @@ namespace System.Data
                         throw ExceptionBuilder.DefaultValueAndAutoIncrement();
                     }
 
-                    object newDefaultValue = (value == null) ? DBNull.Value : value;
+                    object newDefaultValue = value ?? DBNull.Value;
                     if (newDefaultValue != DBNull.Value && DataType != typeof(object))
                     {
                         // If the DefualtValue is different from the Column DataType, we will coerce the value to the DataType
@@ -859,7 +859,7 @@ namespace System.Data
         /// Gets the collection of custom user information.
         /// </summary>
         [Browsable(false)]
-        public PropertyCollection ExtendedProperties => _extendedProperties ?? (_extendedProperties = new PropertyCollection());
+        public PropertyCollection ExtendedProperties => _extendedProperties ??= new PropertyCollection();
 
         /// <summary>
         /// Indicates whether this column is now storing data.
@@ -1383,7 +1383,7 @@ namespace System.Data
 
         internal void CheckColumnConstraint(DataRow row, DataRowAction action)
         {
-            if (_table!.UpdatingCurrent(row, action))
+            if (DataTable.UpdatingCurrent(row, action))
             {
                 CheckNullable(row);
                 CheckMaxLength(row);
@@ -1639,14 +1639,14 @@ namespace System.Data
             dataType == typeof(SqlInt16) ||
             dataType == typeof(SqlDecimal);
 
-        private bool IsColumnMappingValid(StorageType typeCode, MappingType mapping) =>
+        private static bool IsColumnMappingValid(StorageType typeCode, MappingType mapping) =>
             !((mapping != MappingType.Element) && DataStorage.IsTypeCustomType(typeCode));
 
         internal bool IsCustomType => _storage != null ?
             _storage._isCustomDefinedType :
             DataStorage.IsTypeCustomType(DataType);
 
-        internal bool IsValueCustomTypeInstance(object value) =>
+        internal static bool IsValueCustomTypeInstance(object value) =>
             // if instance is not a storage supported type (built in or SQL types)
             (DataStorage.IsTypeCustomType(value.GetType()) && !(value is Type));
 
@@ -1782,8 +1782,6 @@ namespace System.Data
         }
 
         private bool ShouldSerializeDefaultValue() => !DefaultValueIsNull;
-
-        internal void OnSetDataSet() { }
 
         // Returns the <see cref='System.Data.DataColumn.Expression'/> of the column, if one exists.
         public override string ToString() => _expression == null ?

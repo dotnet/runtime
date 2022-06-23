@@ -35,11 +35,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
         public override string ToString() => $"<type library {Name}>";
 
-        public string Documentation
-        {
-            get { return string.Empty; }
-        }
-
         #region IDynamicMetaObjectProvider Members
 
         DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter)

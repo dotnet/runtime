@@ -72,51 +72,59 @@ namespace System.Reflection.Emit
         internal bool creating;
         private DynamicILInfo? il_info;
 
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name, Type? returnType, Type[]? parameterTypes, Module m) : this(name, returnType, parameterTypes, m, false)
         {
         }
 
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name, Type? returnType, Type[]? parameterTypes, Type owner) : this(name, returnType, parameterTypes, owner, false)
         {
         }
 
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name, Type? returnType, Type[]? parameterTypes, Module m, bool skipVisibility) : this(name, MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, returnType, parameterTypes, m, skipVisibility)
         {
         }
 
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name, Type? returnType, Type[]? parameterTypes, Type owner, bool skipVisibility) : this(name, MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, returnType, parameterTypes, owner, skipVisibility)
         {
         }
 
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, Type owner, bool skipVisibility) : this(name, attributes, callingConvention, returnType, parameterTypes, owner, owner?.Module, skipVisibility, false, true)
         {
         }
 
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, Module m, bool skipVisibility) : this(name, attributes, callingConvention, returnType, parameterTypes, null, m, skipVisibility, false, false)
         {
         }
 
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name, Type? returnType, Type[]? parameterTypes) : this(name, returnType, parameterTypes, false)
         {
         }
 
         // FIXME: "Visibility is not restricted"
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name, Type? returnType, Type[]? parameterTypes, bool restrictedSkipVisibility)
             : this(name, MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, returnType, parameterTypes, null, null, restrictedSkipVisibility, true, false)
         {
         }
 
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         [DynamicDependency(nameof(owner))]  // Automatically keeps all previous fields too due to StructLayout
         private DynamicMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, Type? owner, Module? m, bool skipVisibility, bool anonHosted, bool typeOwner)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
             if (returnType == null)
                 returnType = typeof(void);
-            if (owner == null && typeOwner)
-                throw new ArgumentNullException(nameof(owner));
-            if ((m == null) && !anonHosted)
-                throw new ArgumentNullException(nameof(m));
+            if (typeOwner)
+                ArgumentNullException.ThrowIfNull(owner);
+            if (!anonHosted)
+                ArgumentNullException.ThrowIfNull(m);
             if (parameterTypes != null)
             {
                 for (int i = 0; i < parameterTypes.Length; ++i)
@@ -183,12 +191,9 @@ namespace System.Reflection.Emit
             }
         }
 
-        [ComVisible(true)]
-        public sealed
-        override Delegate CreateDelegate(Type delegateType)
+        public sealed override Delegate CreateDelegate(Type delegateType)
         {
-            if (delegateType == null)
-                throw new ArgumentNullException(nameof(delegateType));
+            ArgumentNullException.ThrowIfNull(delegateType);
             if (deleg != null)
                 return deleg;
 
@@ -198,12 +203,9 @@ namespace System.Reflection.Emit
             return deleg;
         }
 
-        [ComVisible(true)]
-        public sealed
-        override Delegate CreateDelegate(Type delegateType, object? target)
+        public sealed override Delegate CreateDelegate(Type delegateType, object? target)
         {
-            if (delegateType == null)
-                throw new ArgumentNullException(nameof(delegateType));
+            ArgumentNullException.ThrowIfNull(delegateType);
 
             CreateDynMethod();
 
@@ -238,16 +240,19 @@ namespace System.Reflection.Emit
             return new object[] { new MethodImplAttribute((MethodImplOptions)GetMethodImplementationFlags()) };
         }
 
-        public override object[] GetCustomAttributes(Type attributeType,
-                                  bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
+            ArgumentNullException.ThrowIfNull(attributeType);
 
             if (attributeType.IsAssignableFrom(typeof(MethodImplAttribute)))
-                return new object[] { new MethodImplAttribute((MethodImplOptions)GetMethodImplementationFlags()) };
-            else
-                return Array.Empty<object>();
+            {
+                // avoid calling CreateInstance() in the common case where the type is Attribute
+                object[] result = attributeType == typeof(Attribute) ? new Attribute[1] : (object[])Array.CreateInstance(attributeType, 1);
+                result[0] = new MethodImplAttribute((MethodImplOptions)GetMethodImplementationFlags());
+                return result;
+            }
+
+            return (object[])Array.CreateInstance(attributeType.IsValueType || attributeType.ContainsGenericParameters ? typeof(object) : attributeType, 0);
         }
 
         public DynamicILInfo GetDynamicILInfo()
@@ -336,8 +341,7 @@ namespace System.Reflection.Emit
 
         public override bool IsDefined(Type attributeType, bool inherit)
         {
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
+            ArgumentNullException.ThrowIfNull(attributeType);
 
             if (attributeType.IsAssignableFrom(typeof(MethodImplAttribute)))
                 return true;

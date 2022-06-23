@@ -169,8 +169,13 @@ namespace System.Reflection.TypeLoading
             return Query<M>(null, bindingAttr, null);
         }
 
-        private QueryResult<M> Query<M>(string name!!, BindingFlags bindingAttr) where M : MemberInfo
+        private QueryResult<M> Query<M>(string name, BindingFlags bindingAttr) where M : MemberInfo
         {
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
             return Query<M>(name, bindingAttr, null);
         }
 
@@ -204,7 +209,7 @@ namespace System.Reflection.TypeLoading
             return true;
         }
 
-        private TypeComponentsCache Cache => _lazyCache ?? (_lazyCache = new TypeComponentsCache(this));
+        private TypeComponentsCache Cache => _lazyCache ??= new TypeComponentsCache(this);
 
         private volatile TypeComponentsCache? _lazyCache;
 

@@ -171,11 +171,13 @@ namespace System.Net.Security
     {
 #endif
 
+        internal DateTime _expiry;
         internal Interop.SspiCli.CredHandle _handle;    //should be always used as by ref in PInvokes parameters
 
         protected SafeFreeCredentials() : base(IntPtr.Zero, true)
         {
             _handle = default;
+            _expiry = DateTime.MaxValue;
         }
 
         public override bool IsInvalid
@@ -183,13 +185,7 @@ namespace System.Net.Security
             get { return IsClosed || _handle.IsZero; }
         }
 
-#if DEBUG
-        public new IntPtr DangerousGetHandle()
-        {
-            Debug.Fail("This method should never be called for this type");
-            throw NotImplemented.ByDesign;
-        }
-#endif
+        public DateTime Expiry => _expiry;
 
         public static unsafe int AcquireDefaultCredential(
             string package,

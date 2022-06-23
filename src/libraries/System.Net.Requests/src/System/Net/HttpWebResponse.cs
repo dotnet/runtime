@@ -34,17 +34,19 @@ namespace System.Net
             _cookies = null!;
         }
 
-        [ObsoleteAttribute("Serialization has been deprecated for HttpWebResponse.")]
+        [Obsolete("Serialization has been deprecated for HttpWebResponse.")]
         protected HttpWebResponse(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
         {
             throw new PlatformNotSupportedException();
         }
 
+        [Obsolete("Serialization has been deprecated for HttpWebResponse.")]
         void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             throw new PlatformNotSupportedException();
         }
 
+        [Obsolete("Serialization has been deprecated for HttpWebResponse.")]
         protected override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             throw new PlatformNotSupportedException();
@@ -78,8 +80,7 @@ namespace System.Net
             get
             {
                 CheckDisposed();
-                long? length = _httpResponseMessage.Content?.Headers.ContentLength;
-                return length.HasValue ? length.Value : -1;
+                return _httpResponseMessage.Content?.Headers.ContentLength ?? -1;
             }
         }
 
@@ -345,7 +346,7 @@ namespace System.Net
         {
             CheckDisposed();
             string? headerValue = Headers[headerName];
-            return (headerValue == null) ? string.Empty : headerValue;
+            return headerValue ?? string.Empty;
         }
 
         public override void Close()
@@ -371,6 +372,6 @@ namespace System.Net
             }
         }
 
-        private string GetHeaderValueAsString(IEnumerable<string> values) => string.Join(", ", values);
+        private static string GetHeaderValueAsString(IEnumerable<string> values) => string.Join(", ", values);
     }
 }

@@ -35,7 +35,7 @@ namespace System.IO
             }
         }
 
-        private unsafe Interop.Error SetCreationTimeCore(string path, long seconds, long nanoseconds)
+        private static unsafe Interop.Error SetCreationTimeCore(string path, long seconds, long nanoseconds)
         {
             Interop.Sys.TimeSpec timeSpec = default;
 

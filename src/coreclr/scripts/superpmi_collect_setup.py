@@ -155,12 +155,17 @@ native_binaries_to_ignore = [
     "mscordbi.dll",
     "mscorrc.dll",
     "msdia140.dll",
+    "msquic.dll",
+    "msvcp140.dll",
+    "vcruntime140.dll",
+    "vcruntime140_1.dll",
     "R2RDump.exe",
     "R2RTest.exe",
     "superpmi.exe",
     "superpmi-shim-collector.dll",
     "superpmi-shim-counter.dll",
     "superpmi-shim-simple.dll",
+    "System.CommandLine.resources.dll", # Managed, but uninteresting
     "System.IO.Compression.Native.dll",
     "ucrtbase.dll",
     "xunit.console.exe",
@@ -252,13 +257,13 @@ def get_files_sorted_by_size(src_directory, exclude_directories, exclude_files):
         return pair
 
     filename_with_size = []
+    exclude_files_lower = [filename.lower() for filename in exclude_files]
 
     for file_path, dirs, files in os.walk(src_directory, topdown=True):
         # Credit: https://stackoverflow.com/a/19859907
         dirs[:] = [d for d in dirs if d not in exclude_directories]
         for name in files:
             # Make the exclude check case-insensitive
-            exclude_files_lower = [filename.lower() for filename in exclude_files]
             if name.lower() in exclude_files_lower:
                 continue
             curr_file_path = os.path.join(file_path, name)
@@ -276,7 +281,8 @@ def get_files_sorted_by_size(src_directory, exclude_directories, exclude_files):
 
 def first_fit(sorted_by_size, max_size):
     """ Given a list of file names along with size in descending order, divides the files
-    in number of buckets such that each bucket doesn't exceed max_size. Since this is a first-fit
+    in number of buckets such that each bucket doesn't exceed max_size (unless a single file exceeds
+    max_size, in which case it gets its own bucket). Since this is a first-fit
     approach, it doesn't guarantee to find the bucket with tighest spot available.
 
     Args:
@@ -301,8 +307,8 @@ def first_fit(sorted_by_size, max_size):
                     found_bucket = True
                     break
 
-            if not found_bucket:
-                partitions[len(partitions)] = [curr_file]
+        if not found_bucket:
+            partitions[len(partitions)] = [curr_file]
 
     total_size = 0
     for p_index in partitions:

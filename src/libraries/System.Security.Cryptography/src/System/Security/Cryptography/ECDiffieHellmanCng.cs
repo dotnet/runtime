@@ -20,8 +20,10 @@ namespace System.Security.Cryptography
         private byte[]? _seed;
 
         [SupportedOSPlatform("windows")]
-        public ECDiffieHellmanCng(CngKey key!!)
+        public ECDiffieHellmanCng(CngKey key)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             if (key.AlgorithmGroup != CngAlgorithmGroup.ECDiffieHellman)
                 throw new ArgumentException(SR.Cryptography_ArgECDHRequiresECDHKey, nameof(key));
 
@@ -113,7 +115,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///     Use the secret agreement as the HMAC key rather than supplying a seperate one
+        ///     Use the secret agreement as the HMAC key rather than supplying a separate one
         /// </summary>
         public bool UseSecretAgreementAsHmacKey
         {

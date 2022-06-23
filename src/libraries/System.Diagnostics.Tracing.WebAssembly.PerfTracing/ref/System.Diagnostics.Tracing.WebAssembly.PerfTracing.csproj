@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <FeatureWasmPerfTracing>true</FeatureWasmPerfTracing>
+    <AssemblyName>System.Diagnostics.Tracing</AssemblyName>
+    <!-- tell references.targets to bump the assembly version -->
+    <IsExperimentalRefAssembly>true</IsExperimentalRefAssembly>
+    <!-- Disable all binplacing since this assembly will clash with the real ref assembly -->
+    <EnableBinPlacing>false</EnableBinPlacing>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <IncludePlatformAttributes>true</IncludePlatformAttributes>
+    <DefineConstants Condition="'$(FeatureWasmPerfTracing)' == 'true'">$(DefineConstants);FEATURE_WASM_PERFTRACING</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\System.Diagnostics.Tracing\ref\System.Diagnostics.Tracing.cs" />
+    <Compile Include="..\..\System.Diagnostics.Tracing\ref\System.Diagnostics.Tracing.Counters.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

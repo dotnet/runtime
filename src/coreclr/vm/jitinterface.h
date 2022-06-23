@@ -71,6 +71,12 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
                         CORJIT_FLAGS flags,
                         ULONG* sizeOfCode = NULL);
 
+void setILIntrinsicMethodInfo(CORINFO_METHOD_INFO* methInfo,
+                              uint8_t* ilcode,
+                              int ilsize,
+                              int maxstack);
+
+
 void getMethodInfoHelper(MethodDesc * ftn,
                          CORINFO_METHOD_HANDLE ftnHnd,
                          COR_ILMETHOD_DECODER * header,
@@ -388,7 +394,7 @@ extern "C"
     void STDCALL JIT_MemCpy(void *dest, const void *src, SIZE_T count);
 
     void STDMETHODCALLTYPE JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle);
-#ifndef TARGET_ARM64
+#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
     void STDCALL JIT_StackProbe();
 #endif // TARGET_ARM64
 };
@@ -460,11 +466,6 @@ protected:
         CORINFO_EH_CLAUSE*      clause,
         COR_ILMETHOD_DECODER*   pILHeader);
 
-    bool isVerifyOnly()
-    {
-        return m_fVerifyOnly;
-    }
-
 public:
 
     void* getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method, void **ppIndirection);
@@ -483,9 +484,8 @@ public:
                                       TypeHandle typeHnd = TypeHandle() /* optional in */,
                                       CORINFO_CLASS_HANDLE *clsRet = NULL /* optional out */ );
 
-    CEEInfo(MethodDesc * fd = NULL, bool fVerifyOnly = false, bool fAllowInlining = true) :
+    CEEInfo(MethodDesc * fd = NULL, bool fAllowInlining = true) :
         m_pMethodBeingCompiled(fd),
-        m_fVerifyOnly(fVerifyOnly),
         m_pThread(GetThreadNULLOk()),
         m_hMethodForSecurity_Key(NULL),
         m_pMethodForSecurity_Value(NULL),
@@ -561,7 +561,6 @@ public:
 
 protected:
     MethodDesc*             m_pMethodBeingCompiled;             // Top-level method being compiled
-    bool                    m_fVerifyOnly;
     Thread *                m_pThread;                          // Cached current thread for faster JIT-EE transitions
     CORJIT_FLAGS            m_jitFlags;
 
@@ -670,8 +669,6 @@ public:
     uint16_t getRelocTypeHint(void * target) override final;
 
     uint32_t getExpectedTargetArchitecture() override final;
-
-    bool doesFieldBelongToClass(CORINFO_FIELD_HANDLE fld, CORINFO_CLASS_HANDLE cls) override final;
 
     void ResetForJitRetry()
     {
@@ -786,8 +783,8 @@ public:
 #endif
 
     CEEJitInfo(MethodDesc* fd,  COR_ILMETHOD_DECODER* header,
-               EEJitManager* jm, bool fVerifyOnly, bool allowInlining = true)
-        : CEEInfo(fd, fVerifyOnly, allowInlining),
+               EEJitManager* jm, bool allowInlining = true)
+        : CEEInfo(fd, allowInlining),
           m_jitManager(jm),
           m_CodeHeader(NULL),
           m_CodeHeaderRW(NULL),

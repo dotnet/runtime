@@ -1,10 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
-using System.Globalization;
-using System.IO;
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Globalization;
+using System.Text;
 
 namespace System.Diagnostics
 {
@@ -82,7 +83,7 @@ namespace System.Diagnostics
         // warning would be hitted.
         protected override string[] GetSupportedAttributes() => new string[] { DelimiterKey };
 
-        public override void TraceEvent(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, string? format, params object?[]? args)
+        public override void TraceEvent(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string? format, params object?[]? args)
         {
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, format, args, null, null))
                 return;
@@ -239,7 +240,7 @@ namespace System.Diagnostics
             Write(sb.ToString());
         }
 
-        private void EscapeMessage(string? message, StringBuilder sb)
+        private static void EscapeMessage(string? message, StringBuilder sb)
         {
             if (!string.IsNullOrEmpty(message))
             {

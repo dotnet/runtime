@@ -54,7 +54,7 @@ namespace DependencyLogViewer
         {
             string helpMessage = @"
 Dependency Graph Viewer
-This application allows viewing the dependency graph produced by the CoreRT compilation.
+This application allows viewing the dependency graph produced by the AOT compilation.
 
 Usage instructions:
 1. Launch the process as an administrator

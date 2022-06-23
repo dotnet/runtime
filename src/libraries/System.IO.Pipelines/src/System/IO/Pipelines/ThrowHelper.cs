@@ -98,6 +98,11 @@ namespace System.IO.Pipelines
         options,
         pauseWriterThreshold,
         resumeWriterThreshold,
-        sizeHint
+        sizeHint,
+        destination,
+        buffer,
+        source,
+        readingStream,
+        writingStream,
     }
 }

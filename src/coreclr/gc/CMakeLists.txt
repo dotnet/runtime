@@ -8,7 +8,7 @@ remove_definitions(-DSTRESS_HEAP)
 # https://github.com/dotnet/runtime/issues/8062
 remove_definitions(-DWRITE_BARRIER_CHECK)
 
-set( GC_SOURCES
+set(GC_SOURCES
   gceventstatus.cpp
   gcconfig.cpp
   gccommon.cpp
@@ -28,19 +28,20 @@ set( GC_SOURCES
 
 if(CLR_CMAKE_HOST_UNIX)
   include(unix/configure.cmake)
-  set ( GC_SOURCES
+  set (GC_SOURCES
     ${GC_SOURCES}
     unix/gcenv.unix.cpp
     unix/events.cpp
     unix/cgroup.cpp)
 else()
-  set ( GC_SOURCES
+  set (GC_SOURCES
     ${GC_SOURCES}
-    windows/gcenv.windows.cpp)
+    windows/gcenv.windows.cpp
+    windows/Native.rc)
 endif(CLR_CMAKE_HOST_UNIX)
 
 if (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
-  set ( GC_SOURCES
+  set (GC_SOURCES
     ${GC_SOURCES}
     vxsort/isa_detection.cpp
     vxsort/do_vxsort_avx2.cpp
@@ -118,6 +119,7 @@ if(CLR_CMAKE_HOST_UNIX)
 endif(CLR_CMAKE_HOST_UNIX)
 
 add_definitions(-DBUILD_AS_STANDALONE)
+add_definitions(-DFX_VER_INTERNALNAME_STR=clrgc.dll)
 add_definitions(-DVERIFY_HEAP)
 if(CLR_CMAKE_HOST_OSX)
   # The implementation of GCToOSInterface on MacOS makes use of non-POSIX
@@ -128,4 +130,3 @@ endif(CLR_CMAKE_HOST_OSX)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/env)
-

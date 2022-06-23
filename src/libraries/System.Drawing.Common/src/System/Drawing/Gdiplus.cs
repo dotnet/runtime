@@ -3,12 +3,9 @@
 
 using System.Collections;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Runtime.CompilerServices;
-using System.Runtime.ConstrainedExecution;
+using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Threading;
 
 namespace System.Drawing
 {
@@ -18,13 +15,19 @@ namespace System.Drawing
         internal static partial class Gdip
         {
             private static readonly IntPtr s_initToken;
-            private const string ThreadDataSlotName = "system.drawing.threaddata";
+
+            [ThreadStatic]
+            private static IDictionary? t_threadData;
 
             static Gdip()
             {
-                Debug.Assert(s_initToken == IntPtr.Zero, "GdiplusInitialization: Initialize should not be called more than once in the same domain!");
+                if (!OperatingSystem.IsWindows())
+                {
+                    NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), static (_, _, _) =>
+                        throw new PlatformNotSupportedException(SR.PlatformNotSupported_Unix));
+                }
 
-                PlatformInitialize();
+                Debug.Assert(s_initToken == IntPtr.Zero, "GdiplusInitialization: Initialize should not be called more than once in the same domain!");
 
                 // GDI+ ref counts multiple calls to Startup in the same process, so calls from multiple
                 // domains are ok, just make sure to pair each w/GdiplusShutdown
@@ -42,21 +45,7 @@ namespace System.Drawing
             /// a per-thread basis. This way we can avoid 'object in use' crashes when different threads are
             /// referencing the same drawing object.
             /// </summary>
-            internal static IDictionary ThreadData
-            {
-                get
-                {
-                    LocalDataStoreSlot slot = Thread.GetNamedDataSlot(ThreadDataSlotName);
-                    IDictionary? threadData = (IDictionary?)Thread.GetData(slot);
-                    if (threadData == null)
-                    {
-                        threadData = new Hashtable();
-                        Thread.SetData(slot, threadData);
-                    }
-
-                    return threadData;
-                }
-            }
+            internal static IDictionary ThreadData => t_threadData ??= new Hashtable();
 
             // Used to ensure static constructor has run.
             internal static void DummyFunction()

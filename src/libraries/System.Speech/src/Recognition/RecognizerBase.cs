@@ -1440,7 +1440,7 @@ ISpGrammarResourceLoader
                     //  - Modify SAPI so LoadCmdFromFile works with dictation Uris.
                     //  - Modify the engine and use a regular grammar with a special ruleref to dictation.
                     //  - Call back to the Grammar and let it manage the loading activation.
-                    string topicName = string.IsNullOrEmpty(uri.Fragment) ? null : uri.Fragment.Substring(1, uri.Fragment.Length - 1);
+                    string topicName = string.IsNullOrEmpty(uri.Fragment) ? null : uri.Fragment.Substring(1);
                     sapiGrammar.LoadDictation(topicName, SPLOADOPTIONS.SPLO_STATIC);
                 }
                 else
@@ -1590,7 +1590,7 @@ ISpGrammarResourceLoader
 
                         sapiGrammar.SetGrammarLoader(_recoThunk);
                     }
-                    sapiGrammar.LoadCmdFromMemory2(dataPtr, SPLOADOPTIONS.SPLO_STATIC, null, baseUri == null ? null : baseUri.ToString());
+                    sapiGrammar.LoadCmdFromMemory2(dataPtr, SPLOADOPTIONS.SPLO_STATIC, null, baseUri?.ToString());
                 }
                 else
                 {
@@ -1762,12 +1762,7 @@ ISpGrammarResourceLoader
             Debug.WriteLine("Raising LoadGrammarCompleted event.");
 
             Grammar grammar = (Grammar)grammarObject;
-            EventHandler<LoadGrammarCompletedEventArgs> loadGrammarCompletedHandler = LoadGrammarCompleted;
-            if (loadGrammarCompletedHandler != null)
-            {
-                // When a LoadGrammarAsync completes all we must do is raise the LoadGrammarCompleted event.
-                loadGrammarCompletedHandler(this, new LoadGrammarCompletedEventArgs(grammar, grammar.LoadException, false, null));
-            }
+            LoadGrammarCompleted?.Invoke(this, new LoadGrammarCompletedEventArgs(grammar, grammar.LoadException, false, null));
         }
 
         // Create a new sapi grammarId and SapiGrammar object.
@@ -2091,11 +2086,7 @@ ISpGrammarResourceLoader
             }
 
             // Now raise RecognizeCompleted event.
-            EventHandler<RecognizeCompletedEventArgs> recognizeCompletedHandler = RecognizeCompleted;
-            if (recognizeCompletedHandler != null)
-            {
-                recognizeCompletedHandler(this, (RecognizeCompletedEventArgs)eventArgs);
-            }
+            RecognizeCompleted?.Invoke(this, (RecognizeCompletedEventArgs)eventArgs);
         }
 
         // This method will be called asynchronously
@@ -2264,11 +2255,7 @@ ISpGrammarResourceLoader
                 {
                     object userToken = GetBookmarkItemAndRemove(bookmarkId);
 
-                    EventHandler<RecognizerUpdateReachedEventArgs> updateHandler = RecognizerUpdateReached;
-                    if (updateHandler != null)
-                    {
-                        updateHandler(this, new RecognizerUpdateReachedEventArgs(userToken, speechEvent.AudioPosition));
-                    }
+                    RecognizerUpdateReached?.Invoke(this, new RecognizerUpdateReachedEventArgs(userToken, speechEvent.AudioPosition));
                 }
             }
             catch (COMException e)
@@ -2813,8 +2800,8 @@ ISpGrammarResourceLoader
         /// </summary>
         private void FireSignalProblemOccurredEvent(AudioSignalProblem audioSignalProblem)
         {
-            EventHandler<AudioSignalProblemOccurredEventArgs> audioSignalProblemOccuredHandler = _audioSignalProblemOccurredDelegate;
-            if (audioSignalProblemOccuredHandler != null)
+            EventHandler<AudioSignalProblemOccurredEventArgs> audioSignalProblemOccurredHandler = _audioSignalProblemOccurredDelegate;
+            if (audioSignalProblemOccurredHandler != null)
             {
                 TimeSpan recognizerPosition = TimeSpan.Zero;
                 TimeSpan audioPosition = TimeSpan.Zero;
@@ -2837,7 +2824,7 @@ ISpGrammarResourceLoader
                     throw ExceptionFromSapiCreateRecognizerError(e);
                 }
 
-                _asyncWorkerUI.PostOperation(audioSignalProblemOccuredHandler, this, new AudioSignalProblemOccurredEventArgs(audioSignalProblem, AudioLevel, audioPosition, recognizerPosition));
+                _asyncWorkerUI.PostOperation(audioSignalProblemOccurredHandler, this, new AudioSignalProblemOccurredEventArgs(audioSignalProblem, AudioLevel, audioPosition, recognizerPosition));
             }
         }
 

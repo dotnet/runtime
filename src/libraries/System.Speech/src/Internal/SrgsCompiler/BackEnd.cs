@@ -342,7 +342,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
                     System.Diagnostics.Debug.Assert(dwSymbolOffset == 0 || _symbols[iWord] == sRule);
 
-                    rule = dwSymbolOffset > 0 && _nameOffsetRules.ContainsKey(dwSymbolOffset) ? _nameOffsetRules[dwSymbolOffset] : null;
+                    rule = dwSymbolOffset > 0 && _nameOffsetRules.TryGetValue(dwSymbolOffset, out Rule value) ? value : null;
                 }
             }
 
@@ -358,7 +358,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 }
             }
 
-            return rule != null ? rule : null;
+            return rule ?? null;
         }
 
         /// <summary>
@@ -579,7 +579,7 @@ namespace System.Speech.Internal.SrgsCompiler
                         if (arc.RuleRef.Name.IndexOf("URL:DYNAMIC#", StringComparison.Ordinal) == 0)
                         {
                             ruleName = arc.RuleRef.Name.Substring(12);
-                            if (fromOrg == true && FindInRules(ruleName) == null)
+                            if (fromOrg && FindInRules(ruleName) == null)
                             {
                                 Rule ruleExtra = extra.FindInRules(ruleName);
                                 if (ruleExtra == null)

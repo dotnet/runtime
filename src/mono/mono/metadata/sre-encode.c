@@ -62,12 +62,12 @@ sigbuffer_init (SigBuffer *buf, int size)
 }
 
 static void
-sigbuffer_make_room (SigBuffer *buf, int size)
+sigbuffer_make_room (SigBuffer *buf, intptr_t size)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
 	if (buf->end - buf->p < size) {
-		int new_size = buf->end - buf->buf + size + 32;
+		intptr_t new_size = buf->end - buf->buf + size + 32;
 		char *p = (char *)g_realloc (buf->buf, new_size);
 		size = buf->p - buf->buf;
 		buf->buf = p;
@@ -120,11 +120,11 @@ sigbuffer_add_to_blob_cached (MonoDynamicImage *assembly, SigBuffer *buf)
 
 	char blob_size [8];
 	char *b = blob_size;
-	guint32 size = buf->p - buf->buf;
+	guint32 size = GPTRDIFF_TO_UINT32 (buf->p - buf->buf);
 	/* store length */
-	g_assert (size <= (buf->end - buf->buf));
+	g_assert (size <= GPTRDIFF_TO_UINT32 (buf->end - buf->buf));
 	mono_metadata_encode_value (size, b, &b);
-	return mono_dynamic_image_add_to_blob_cached (assembly, blob_size, b-blob_size, buf->buf, size);
+	return mono_dynamic_image_add_to_blob_cached (assembly, blob_size, GPTRDIFF_TO_INT (b - blob_size), buf->buf, size);
 }
 
 
@@ -370,7 +370,7 @@ handle_enum:
 			g_free (swapped);
 		}
 #else
-		idx = mono_dynamic_image_add_to_blob_cached (assembly, blob_size, b-blob_size, mono_string_chars_internal (str), len);
+		idx = mono_dynamic_image_add_to_blob_cached (assembly, blob_size, GPTRDIFF_TO_INT (b - blob_size), mono_string_chars_internal (str), len);
 #endif
 
 		g_free (buf);
@@ -390,7 +390,7 @@ handle_enum:
 	swap_with_size (blob_size, (const char*)box_val, len, 1);
 	mono_image_add_stream_data (&assembly->blob, blob_size, len);
 #else
-	idx = mono_dynamic_image_add_to_blob_cached (assembly, blob_size, b-blob_size, box_val, len);
+	idx = mono_dynamic_image_add_to_blob_cached (assembly, blob_size, GPTRDIFF_TO_INT (b - blob_size), box_val, len);
 #endif
 
 	g_free (buf);
@@ -488,8 +488,9 @@ reflection_sighelper_get_signature_local (MonoReflectionSigHelperHandle sig, Mon
 	MonoReflectionModuleBuilderHandle module = MONO_HANDLE_NEW_GET (MonoReflectionModuleBuilder, sig, module);
 	MonoDynamicImage *assembly = MONO_HANDLE_IS_NULL (module) ? NULL : MONO_HANDLE_GETVAL (module, dynamic_image);
 	MonoArrayHandle sig_arguments = MONO_HANDLE_NEW_GET (MonoArray, sig, arguments);
-	guint32 na = MONO_HANDLE_IS_NULL (sig_arguments) ? 0 : mono_array_handle_length (sig_arguments);
-	guint32 buflen, i;
+	guint32 na = MONO_HANDLE_IS_NULL (sig_arguments) ? 0 : GUINTPTR_TO_UINT32 (mono_array_handle_length (sig_arguments));
+	guint32 i;
+	size_t buflen;
 	SigBuffer buf;
 
 	error_init (error);
@@ -527,8 +528,9 @@ reflection_sighelper_get_signature_field (MonoReflectionSigHelperHandle sig, Mon
 	MonoReflectionModuleBuilderHandle module = MONO_HANDLE_NEW_GET (MonoReflectionModuleBuilder, sig, module);
 	MonoDynamicImage *assembly = MONO_HANDLE_GETVAL (module, dynamic_image);
 	MonoArrayHandle sig_arguments = MONO_HANDLE_NEW_GET (MonoArray, sig, arguments);
-	guint32 na = MONO_HANDLE_IS_NULL (sig_arguments) ? 0 : mono_array_handle_length (sig_arguments);
-	guint32 buflen, i;
+	guint32 na = MONO_HANDLE_IS_NULL (sig_arguments) ? 0 : GUINTPTR_TO_UINT32 (mono_array_handle_length (sig_arguments));
+	guint32 i;
+	size_t buflen;
 	SigBuffer buf;
 
 	error_init (error);

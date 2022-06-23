@@ -159,10 +159,10 @@ private:
     GenTree* LowerVirtualStubCall(GenTreeCall* call);
     void LowerArgsForCall(GenTreeCall* call);
     void ReplaceArgWithPutArgOrBitcast(GenTree** ppChild, GenTree* newNode);
-    GenTree* NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* info, var_types type);
-    void LowerArg(GenTreeCall* call, GenTree** ppTree);
-#ifdef TARGET_ARMARCH
-    GenTree* LowerFloatArg(GenTree** pArg, fgArgTabEntry* info);
+    GenTree* NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, var_types type);
+    void LowerArg(GenTreeCall* call, CallArg* callArg, bool late);
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+    GenTree* LowerFloatArg(GenTree** pArg, CallArg* callArg);
     GenTree* LowerFloatArgReg(GenTree* arg, regNumber regNum);
 #endif
 
@@ -337,192 +337,28 @@ private:
     void LowerSIMD(GenTreeSIMD* simdNode);
 #endif // FEATURE_SIMD
 #ifdef FEATURE_HW_INTRINSICS
-    void LowerHWIntrinsic(GenTreeHWIntrinsic* node);
+    GenTree* LowerHWIntrinsic(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIntrinsicId, GenCondition condition);
-    void LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp);
-    void LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node);
-    void LowerHWIntrinsicDot(GenTreeHWIntrinsic* node);
+    GenTree* LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp);
+    void LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node);
+    GenTree* LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node);
+    GenTree* LowerHWIntrinsicDot(GenTreeHWIntrinsic* node);
 #if defined(TARGET_XARCH)
     void LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node);
-    void LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node);
+    GenTree* LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node);
     GenTree* TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode);
+    GenTree* TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToAndNot(GenTreeOp* andNode);
+    GenTree* TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode);
+    void LowerBswapOp(GenTreeOp* node);
 #elif defined(TARGET_ARM64)
     bool IsValidConstForMovImm(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node);
+    void LowerModPow2(GenTree* node);
+    GenTree* LowerAddForPossibleContainment(GenTreeOp* node);
 #endif // !TARGET_XARCH && !TARGET_ARM64
-
-    union VectorConstant {
-        int8_t   i8[32];
-        uint8_t  u8[32];
-        int16_t  i16[16];
-        uint16_t u16[16];
-        int32_t  i32[8];
-        uint32_t u32[8];
-        int64_t  i64[4];
-        uint64_t u64[4];
-        float    f32[8];
-        double   f64[4];
-    };
-
-    //----------------------------------------------------------------------------------------------
-    // VectorConstantIsBroadcastedI64: Check N i64 elements in a constant vector for equality
-    //
-    //  Arguments:
-    //     vecCns  - Constant vector
-    //     count   - Amount of i64 components to compare
-    //
-    //  Returns:
-    //     true if N i64 elements of the given vector are equal
-    static bool VectorConstantIsBroadcastedI64(VectorConstant& vecCns, int count)
-    {
-        assert(count >= 1 && count <= 4);
-        for (int i = 1; i < count; i++)
-        {
-            if (vecCns.i64[i] != vecCns.i64[0])
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    //----------------------------------------------------------------------------------------------
-    // ProcessArgForHWIntrinsicCreate: Processes an argument for the Lowering::LowerHWIntrinsicCreate method
-    //
-    //  Arguments:
-    //     arg      - The argument to process
-    //     argIdx   - The index of the argument being processed
-    //     vecCns   - The vector constant being constructed
-    //     baseType - The base type of the vector constant
-    //
-    //  Returns:
-    //     true if arg was a constant; otherwise, false
-    static bool HandleArgForHWIntrinsicCreate(GenTree* arg, int argIdx, VectorConstant& vecCns, var_types baseType)
-    {
-        switch (baseType)
-        {
-            case TYP_BYTE:
-            case TYP_UBYTE:
-            {
-                if (arg->IsCnsIntOrI())
-                {
-                    vecCns.i8[argIdx] = static_cast<int8_t>(arg->AsIntCon()->gtIconVal);
-                    return true;
-                }
-                else
-                {
-                    // We expect the VectorConstant to have been already zeroed
-                    assert(vecCns.i8[argIdx] == 0);
-                }
-                break;
-            }
-
-            case TYP_SHORT:
-            case TYP_USHORT:
-            {
-                if (arg->IsCnsIntOrI())
-                {
-                    vecCns.i16[argIdx] = static_cast<int16_t>(arg->AsIntCon()->gtIconVal);
-                    return true;
-                }
-                else
-                {
-                    // We expect the VectorConstant to have been already zeroed
-                    assert(vecCns.i16[argIdx] == 0);
-                }
-                break;
-            }
-
-            case TYP_INT:
-            case TYP_UINT:
-            {
-                if (arg->IsCnsIntOrI())
-                {
-                    vecCns.i32[argIdx] = static_cast<int32_t>(arg->AsIntCon()->gtIconVal);
-                    return true;
-                }
-                else
-                {
-                    // We expect the VectorConstant to have been already zeroed
-                    assert(vecCns.i32[argIdx] == 0);
-                }
-                break;
-            }
-
-            case TYP_LONG:
-            case TYP_ULONG:
-            {
-#if defined(TARGET_64BIT)
-                if (arg->IsCnsIntOrI())
-                {
-                    vecCns.i64[argIdx] = static_cast<int64_t>(arg->AsIntCon()->gtIconVal);
-                    return true;
-                }
-#else
-                if (arg->OperIsLong() && arg->AsOp()->gtOp1->IsCnsIntOrI() && arg->AsOp()->gtOp2->IsCnsIntOrI())
-                {
-                    // 32-bit targets will decompose GT_CNS_LNG into two GT_CNS_INT
-                    // We need to reconstruct the 64-bit value in order to handle this
-
-                    INT64 gtLconVal = arg->AsOp()->gtOp2->AsIntCon()->gtIconVal;
-                    gtLconVal <<= 32;
-                    gtLconVal |= arg->AsOp()->gtOp1->AsIntCon()->gtIconVal;
-
-                    vecCns.i64[argIdx] = gtLconVal;
-                    return true;
-                }
-#endif // TARGET_64BIT
-                else
-                {
-                    // We expect the VectorConstant to have been already zeroed
-                    assert(vecCns.i64[argIdx] == 0);
-                }
-                break;
-            }
-
-            case TYP_FLOAT:
-            {
-                if (arg->IsCnsFltOrDbl())
-                {
-                    vecCns.f32[argIdx] = static_cast<float>(arg->AsDblCon()->gtDconVal);
-                    return true;
-                }
-                else
-                {
-                    // We expect the VectorConstant to have been already zeroed
-                    // We check against the i32, rather than f32, to account for -0.0
-                    assert(vecCns.i32[argIdx] == 0);
-                }
-                break;
-            }
-
-            case TYP_DOUBLE:
-            {
-                if (arg->IsCnsFltOrDbl())
-                {
-                    vecCns.f64[argIdx] = static_cast<double>(arg->AsDblCon()->gtDconVal);
-                    return true;
-                }
-                else
-                {
-                    // We expect the VectorConstant to have been already zeroed
-                    // We check against the i64, rather than f64, to account for -0.0
-                    assert(vecCns.i64[argIdx] == 0);
-                }
-                break;
-            }
-
-            default:
-            {
-                unreached();
-            }
-        }
-
-        return false;
-    }
 #endif // FEATURE_HW_INTRINSICS
 
     //----------------------------------------------------------------------------------------------
@@ -568,6 +404,10 @@ public:
     {
         return m_lsra->isContainableMemoryOp(node);
     }
+
+#ifdef TARGET_ARM64
+    bool IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) const;
+#endif // TARGET_ARM64
 
 #ifdef FEATURE_HW_INTRINSICS
     // Tries to get a containable node for a given HWIntrinsic

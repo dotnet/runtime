@@ -160,6 +160,18 @@ do { 							\
 #define mono_error_assert_msg_ok(error, msg)   g_assertf (is_ok (error), msg ", due to %s", mono_error_get_message (error))
 #define mono_error_assertf_ok(error, fmt, ...) g_assertf (is_ok (error), fmt ", due to %s", __VA_ARGS__, mono_error_get_message (error))
 
+/*
+* Returns a pointer to the error message, wihtout fields, empty string if no message is available.
+* Caller should NOT release returned pointer, owned by MonoError.
+*/
+static inline
+const char *
+mono_error_get_message_without_fields (MonoError *oerror)
+{
+	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
+	return error->full_message ? error->full_message : "";
+}
+
 void
 mono_error_dup_strings (MonoError *error, gboolean dup_strings);
 

@@ -20,9 +20,9 @@
 {
 }
 .assembly extern xunit.core {}
-.namespace BoxTest
+.namespace BoxTest_i_box_il
 {
-  .class private auto ansi Test extends [mscorlib]System.Object
+  .class public auto ansi Test extends [mscorlib]System.Object
   {
     .method private hidebysig static void Test(class [mscorlib]System.Object, native int&) il managed
     {
@@ -45,7 +45,7 @@
     	stind.i
     	ret
     }
-    .method private hidebysig static int32 Main() il managed
+    .method public hidebysig static int32 Main() il managed
     {
 		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
 		    01 00 00 00
@@ -59,13 +59,13 @@
 		box [mscorlib]System.IntPtr
 		dup
 		ldloca 0
-		call void BoxTest.Test::Test(class [mscorlib]System.Object, native int&)
+		call void BoxTest_i_box_il.Test::Test(class [mscorlib]System.Object, native int&)
 		ldloc.0
 		brtrue box_pop_fail
 		dup
 		dup
 		unbox [mscorlib]System.IntPtr
-		call void BoxTest.Test::Test(class [mscorlib]System.Object, native int&)
+		call void BoxTest_i_box_il.Test::Test(class [mscorlib]System.Object, native int&)
 		unbox [mscorlib]System.IntPtr
 		ldind.i
 		dup

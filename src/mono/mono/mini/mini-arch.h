@@ -11,8 +11,6 @@
 #include "mini-amd64.h"
 #elif defined(TARGET_POWERPC)
 #include "mini-ppc.h"
-#elif defined(__sparc__) || defined(sparc)
-#include "mini-sparc.h"
 #elif defined(TARGET_S390X)
 # if defined(__s390x__)
 #  include "mini-s390x.h"
@@ -23,8 +21,6 @@
 #include "mini-arm.h"
 #elif defined(TARGET_ARM64)
 #include "mini-arm64.h"
-#elif defined(__mips__)
-#include "mini-mips.h"
 #elif defined (TARGET_RISCV)
 #include "mini-riscv.h"
 #elif TARGET_WASM

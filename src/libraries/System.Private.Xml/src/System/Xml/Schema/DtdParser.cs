@@ -3430,7 +3430,7 @@ namespace System.Xml
             }
         }
 
-        private bool IsAttributeValueType(Token token)
+        private static bool IsAttributeValueType(Token token)
         {
             return (int)token >= (int)Token.CDATA && (int)token <= (int)Token.NOTATION;
         }
@@ -3476,7 +3476,7 @@ namespace System.Xml
         {
             _curPos = curPos;
             Uri? baseUri = _readerAdapter.BaseUri;
-            _readerAdapter.Throw(new XmlException(res, arg, (int)LineNo, (int)LinePos, baseUri == null ? null : baseUri.ToString()));
+            _readerAdapter.Throw(new XmlException(res, arg, (int)LineNo, (int)LinePos, baseUri?.ToString()));
         }
 
         [DoesNotReturn]
@@ -3484,14 +3484,14 @@ namespace System.Xml
         {
             _curPos = curPos;
             Uri? baseUri = _readerAdapter.BaseUri;
-            _readerAdapter.Throw(new XmlException(res, args, (int)LineNo, (int)LinePos, baseUri == null ? null : baseUri.ToString()));
+            _readerAdapter.Throw(new XmlException(res, args, (int)LineNo, (int)LinePos, baseUri?.ToString()));
         }
 
         [DoesNotReturn]
         private void Throw(string res, string arg, int lineNo, int linePos)
         {
             Uri? baseUri = _readerAdapter.BaseUri;
-            _readerAdapter.Throw(new XmlException(res, arg, (int)lineNo, (int)linePos, baseUri == null ? null : baseUri.ToString()));
+            _readerAdapter.Throw(new XmlException(res, arg, (int)lineNo, (int)linePos, baseUri?.ToString()));
         }
 
         private void ThrowInvalidChar(int pos, string data, int invCharPos)

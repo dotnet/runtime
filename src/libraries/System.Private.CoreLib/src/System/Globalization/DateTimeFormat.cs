@@ -167,13 +167,13 @@ namespace System
         //  The function can format to int.MaxValue.
         //
         ////////////////////////////////////////////////////////////////////////////
-        internal static void FormatDigits(StringBuilder outputBuffer, int value, int len)
+        internal static void FormatDigits(ref ValueStringBuilder outputBuffer, int value, int len)
         {
             Debug.Assert(value >= 0, "DateTimeFormat.FormatDigits(): value >= 0");
-            FormatDigits(outputBuffer, value, len, false);
+            FormatDigits(ref outputBuffer, value, len, false);
         }
 
-        internal static unsafe void FormatDigits(StringBuilder outputBuffer, int value, int len, bool overrideLengthLimit)
+        internal static unsafe void FormatDigits(ref ValueStringBuilder outputBuffer, int value, int len, bool overrideLengthLimit)
         {
             Debug.Assert(value >= 0, "DateTimeFormat.FormatDigits(): value >= 0");
 
@@ -206,9 +206,9 @@ namespace System
             outputBuffer.Append(p, digits);
         }
 
-        private static void HebrewFormatDigits(StringBuilder outputBuffer, int digits)
+        private static void HebrewFormatDigits(ref ValueStringBuilder outputBuffer, int digits)
         {
-            HebrewNumber.Append(outputBuffer, digits);
+            HebrewNumber.Append(ref outputBuffer, digits);
         }
 
         internal static int ParseRepeatPattern(ReadOnlySpan<char> format, int pos, char patternChar)
@@ -299,7 +299,7 @@ namespace System
         // The pos should point to a quote character. This method will
         // append to the result StringBuilder the string enclosed by the quote character.
         //
-        internal static int ParseQuoteString(ReadOnlySpan<char> format, int pos, StringBuilder result)
+        internal static int ParseQuoteString(ReadOnlySpan<char> format, int pos, ref ValueStringBuilder result)
         {
             //
             // NOTE : pos will be the index of the quote character in the 'format' string.
@@ -443,17 +443,10 @@ namespace System
         //
         //  Actions: Format the DateTime instance using the specified format.
         //
-        private static StringBuilder FormatCustomized(
-            DateTime dateTime, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, TimeSpan offset, StringBuilder? result)
+        private static void FormatCustomized(
+            DateTime dateTime, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, TimeSpan offset, ref ValueStringBuilder result)
         {
             Calendar cal = dtfi.Calendar;
-
-            bool resultBuilderIsPooled = false;
-            if (result == null)
-            {
-                resultBuilderIsPooled = true;
-                result = StringBuilderCache.Acquire();
-            }
 
             // This is a flag to indicate if we are formatting the dates using Hebrew calendar.
             bool isHebrewCalendar = (cal.ID == CalendarId.HEBREW);
@@ -481,19 +474,19 @@ namespace System
                         {
                             hour12 = 12;
                         }
-                        FormatDigits(result, hour12, tokenLen);
+                        FormatDigits(ref result, hour12, tokenLen);
                         break;
                     case 'H':
                         tokenLen = ParseRepeatPattern(format, i, ch);
-                        FormatDigits(result, dateTime.Hour, tokenLen);
+                        FormatDigits(ref result, dateTime.Hour, tokenLen);
                         break;
                     case 'm':
                         tokenLen = ParseRepeatPattern(format, i, ch);
-                        FormatDigits(result, dateTime.Minute, tokenLen);
+                        FormatDigits(ref result, dateTime.Minute, tokenLen);
                         break;
                     case 's':
                         tokenLen = ParseRepeatPattern(format, i, ch);
-                        FormatDigits(result, dateTime.Second, tokenLen);
+                        FormatDigits(ref result, dateTime.Second, tokenLen);
                         break;
                     case 'f':
                     case 'F':
@@ -530,17 +523,13 @@ namespace System
                                     // No fraction to emit, so see if we should remove decimal also.
                                     if (result.Length > 0 && result[result.Length - 1] == '.')
                                     {
-                                        result.Remove(result.Length - 1, 1);
+                                        result.Length--;
                                     }
                                 }
                             }
                         }
                         else
                         {
-                            if (resultBuilderIsPooled)
-                            {
-                                StringBuilderCache.Release(result);
-                            }
                             throw new FormatException(SR.Format_InvalidString);
                         }
                         break;
@@ -582,11 +571,11 @@ namespace System
                             if (isHebrewCalendar)
                             {
                                 // For Hebrew calendar, we need to convert numbers to Hebrew text for yyyy, MM, and dd values.
-                                HebrewFormatDigits(result, day);
+                                HebrewFormatDigits(ref result, day);
                             }
                             else
                             {
-                                FormatDigits(result, day, tokenLen);
+                                FormatDigits(ref result, day, tokenLen);
                             }
                         }
                         else
@@ -610,11 +599,11 @@ namespace System
                             if (isHebrewCalendar)
                             {
                                 // For Hebrew calendar, we need to convert numbers to Hebrew text for yyyy, MM, and dd values.
-                                HebrewFormatDigits(result, month);
+                                HebrewFormatDigits(ref result, month);
                             }
                             else
                             {
-                                FormatDigits(result, month, tokenLen);
+                                FormatDigits(ref result, month, tokenLen);
                             }
                         }
                         else
@@ -662,21 +651,21 @@ namespace System
                         }
                         else if (dtfi.HasForceTwoDigitYears)
                         {
-                            FormatDigits(result, year, tokenLen <= 2 ? tokenLen : 2);
+                            FormatDigits(ref result, year, tokenLen <= 2 ? tokenLen : 2);
                         }
                         else if (cal.ID == CalendarId.HEBREW)
                         {
-                            HebrewFormatDigits(result, year);
+                            HebrewFormatDigits(ref result, year);
                         }
                         else
                         {
                             if (tokenLen <= 2)
                             {
-                                FormatDigits(result, year % 100, tokenLen);
+                                FormatDigits(ref result, year % 100, tokenLen);
                             }
                             else if (tokenLen <= 16) // FormatDigits has an implicit 16-digit limit
                             {
-                                FormatDigits(result, year, tokenLen, overrideLengthLimit: true);
+                                FormatDigits(ref result, year, tokenLen, overrideLengthLimit: true);
                             }
                             else
                             {
@@ -687,11 +676,11 @@ namespace System
                         break;
                     case 'z':
                         tokenLen = ParseRepeatPattern(format, i, ch);
-                        FormatCustomizedTimeZone(dateTime, offset, tokenLen, bTimeOnly, result);
+                        FormatCustomizedTimeZone(dateTime, offset, tokenLen, bTimeOnly, ref result);
                         break;
                     case 'K':
                         tokenLen = 1;
-                        FormatCustomizedRoundripTimeZone(dateTime, offset, result);
+                        FormatCustomizedRoundripTimeZone(dateTime, offset, ref result);
                         break;
                     case ':':
                         result.Append(dtfi.TimeSeparator);
@@ -703,7 +692,7 @@ namespace System
                         break;
                     case '\'':
                     case '\"':
-                        tokenLen = ParseQuoteString(format, i, result);
+                        tokenLen = ParseQuoteString(format, i, ref result);
                         break;
                     case '%':
                         // Optional format character.
@@ -715,8 +704,7 @@ namespace System
                         if (nextChar >= 0 && nextChar != '%')
                         {
                             char nextCharChar = (char)nextChar;
-                            StringBuilder origStringBuilder = FormatCustomized(dateTime, MemoryMarshal.CreateReadOnlySpan<char>(ref nextCharChar, 1), dtfi, offset, result);
-                            Debug.Assert(ReferenceEquals(origStringBuilder, result));
+                            FormatCustomized(dateTime, new ReadOnlySpan<char>(in nextCharChar), dtfi, offset, ref result);
                             tokenLen = 2;
                         }
                         else
@@ -725,10 +713,6 @@ namespace System
                             // This means that '%' is at the end of the format string or
                             // "%%" appears in the format string.
                             //
-                            if (resultBuilderIsPooled)
-                            {
-                                StringBuilderCache.Release(result);
-                            }
                             throw new FormatException(SR.Format_InvalidString);
                         }
                         break;
@@ -752,10 +736,6 @@ namespace System
                             //
                             // This means that '\' is at the end of the formatting string.
                             //
-                            if (resultBuilderIsPooled)
-                            {
-                                StringBuilderCache.Release(result);
-                            }
                             throw new FormatException(SR.Format_InvalidString);
                         }
                         break;
@@ -770,11 +750,10 @@ namespace System
                 }
                 i += tokenLen;
             }
-            return result;
         }
 
         // output the 'z' family of formats, which output a the offset from UTC, e.g. "-07:30"
-        private static void FormatCustomizedTimeZone(DateTime dateTime, TimeSpan offset, int tokenLen, bool timeOnly, StringBuilder result)
+        private static void FormatCustomizedTimeZone(DateTime dateTime, TimeSpan offset, int tokenLen, bool timeOnly, ref ValueStringBuilder result)
         {
             // See if the instance already has an offset
             bool dateTimeFormat = (offset.Ticks == NullOffset);
@@ -811,22 +790,23 @@ namespace System
             if (tokenLen <= 1)
             {
                 // 'z' format e.g "-7"
-                result.Append(CultureInfo.InvariantCulture, $"{offset.Hours:0}");
+                result.AppendSpanFormattable(offset.Hours, "0", CultureInfo.InvariantCulture);
             }
             else
             {
                 // 'zz' or longer format e.g "-07"
-                result.Append(CultureInfo.InvariantCulture, $"{offset.Hours:00}");
+                result.AppendSpanFormattable(offset.Hours, "00", CultureInfo.InvariantCulture);
                 if (tokenLen >= 3)
                 {
                     // 'zzz*' or longer format e.g "-07:30"
-                    result.Append(CultureInfo.InvariantCulture, $":{offset.Minutes:00}");
+                    result.Append(':');
+                    result.AppendSpanFormattable(offset.Minutes, "00", CultureInfo.InvariantCulture);
                 }
             }
         }
 
         // output the 'K' format, which is for round-tripping the data
-        private static void FormatCustomizedRoundripTimeZone(DateTime dateTime, TimeSpan offset, StringBuilder result)
+        private static void FormatCustomizedRoundripTimeZone(DateTime dateTime, TimeSpan offset, ref ValueStringBuilder result)
         {
             // The objective of this format is to round trip the data in the type
             // For DateTime it should round-trip the Kind value and preserve the time zone.
@@ -862,12 +842,12 @@ namespace System
                 offset = offset.Negate();
             }
 
-            Append2DigitNumber(result, offset.Hours);
+            Append2DigitNumber(ref result, offset.Hours);
             result.Append(':');
-            Append2DigitNumber(result, offset.Minutes);
+            Append2DigitNumber(ref result, offset.Minutes);
         }
 
-        private static void Append2DigitNumber(StringBuilder result, int val)
+        private static void Append2DigitNumber(ref ValueStringBuilder result, int val)
         {
             result.Append((char)('0' + (val / 10)));
             result.Append((char)('0' + (val % 10)));
@@ -991,11 +971,10 @@ namespace System
             if (format != null && format.Length == 1)
             {
                 // Optimize for these standard formats that are not affected by culture.
-                switch (format[0])
+                switch ((char)(format[0] | 0x20))
                 {
                     // Round trip format
                     case 'o':
-                    case 'O':
                         const int MinFormatOLength = 27, MaxFormatOLength = 33;
                         Span<char> span = stackalloc char[MaxFormatOLength];
                         TryFormatO(dateTime, offset, span, out int ochars);
@@ -1004,7 +983,6 @@ namespace System
 
                     // RFC1123
                     case 'r':
-                    case 'R':
                         const int FormatRLength = 29;
                         string str = string.FastAllocateString(FormatRLength);
                         TryFormatR(dateTime, offset, new Span<char>(ref str.GetRawStringData(), str.Length), out int rchars);
@@ -1013,8 +991,9 @@ namespace System
                 }
             }
 
-            DateTimeFormatInfo dtfi = DateTimeFormatInfo.GetInstance(provider);
-            return StringBuilderCache.GetStringAndRelease(FormatStringBuilder(dateTime, format, dtfi, offset));
+            var vsb = new ValueStringBuilder(stackalloc char[256]);
+            FormatStringBuilder(dateTime, format, DateTimeFormatInfo.GetInstance(provider), offset, ref vsb);
+            return vsb.ToString();
         }
 
         internal static bool TryFormat(DateTime dateTime, Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
@@ -1025,39 +1004,24 @@ namespace System
             if (format.Length == 1)
             {
                 // Optimize for these standard formats that are not affected by culture.
-                switch (format[0])
+                switch ((char)(format[0] | 0x20))
                 {
                     // Round trip format
                     case 'o':
-                    case 'O':
                         return TryFormatO(dateTime, offset, destination, out charsWritten);
 
                     // RFC1123
                     case 'r':
-                    case 'R':
                         return TryFormatR(dateTime, offset, destination, out charsWritten);
                 }
             }
 
-            DateTimeFormatInfo dtfi = DateTimeFormatInfo.GetInstance(provider);
-            StringBuilder sb = FormatStringBuilder(dateTime, format, dtfi, offset);
-
-            bool success = sb.Length <= destination.Length;
-            if (success)
-            {
-                sb.CopyTo(0, destination, sb.Length);
-                charsWritten = sb.Length;
-            }
-            else
-            {
-                charsWritten = 0;
-            }
-
-            StringBuilderCache.Release(sb);
-            return success;
+            var vsb = new ValueStringBuilder(stackalloc char[256]);
+            FormatStringBuilder(dateTime, format, DateTimeFormatInfo.GetInstance(provider), offset, ref vsb);
+            return vsb.TryCopyTo(destination, out charsWritten);
         }
 
-        private static StringBuilder FormatStringBuilder(DateTime dateTime, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, TimeSpan offset)
+        private static void FormatStringBuilder(DateTime dateTime, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, TimeSpan offset, ref ValueStringBuilder result)
         {
             Debug.Assert(dtfi != null);
             if (format.Length == 0)
@@ -1109,7 +1073,7 @@ namespace System
                 format = ExpandPredefinedFormat(format, ref dateTime, ref dtfi, offset);
             }
 
-            return FormatCustomized(dateTime, format, dtfi, offset, result: null);
+            FormatCustomized(dateTime, format, dtfi, offset, ref result);
         }
 
         internal static bool IsValidCustomDateFormat(ReadOnlySpan<char> format, bool throwOnError)

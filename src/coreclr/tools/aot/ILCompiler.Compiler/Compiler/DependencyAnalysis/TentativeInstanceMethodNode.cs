@@ -68,5 +68,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override int ClassCode => 0x8905207;
+
+        public override string ToString() => Method.ToString();
     }
 }

@@ -40,7 +40,7 @@ namespace ILCompiler
             }
         }
 
-        public override void AddDependeciesDueToPInvoke(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        public override void AddDependenciesDueToPInvoke(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
         }
 

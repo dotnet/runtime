@@ -32,7 +32,7 @@ namespace System.Drawing.Printing
         /// Gets a value indicating whether this converter can
         /// convert an object to the given destination type using the context.
         /// </summary>
-        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType)
         {
             if (destinationType == typeof(InstanceDescriptor))
             {
@@ -91,8 +91,10 @@ namespace System.Drawing.Printing
         /// type is string. If this cannot convert to the desitnation type, this will
         /// throw a NotSupportedException.
         /// </summary>
-        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType!!)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
+            ArgumentNullException.ThrowIfNull(destinationType);
+
             if (value is Margins margins)
             {
                 if (destinationType == typeof(string))
@@ -140,8 +142,10 @@ namespace System.Drawing.Printing
         /// for the object.  This is useful for objects that are immutable, but still
         /// want to provide changable properties.
         /// </summary>
-        public override object CreateInstance(ITypeDescriptorContext? context, IDictionary propertyValues!!)
+        public override object CreateInstance(ITypeDescriptorContext? context, IDictionary propertyValues)
         {
+            ArgumentNullException.ThrowIfNull(propertyValues);
+
             object? left = propertyValues["Left"];
             object? right = propertyValues["Right"];
             object? top = propertyValues["Top"];

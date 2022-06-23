@@ -1,0 +1,15 @@
+<Project>
+  <Import Project="..\Directory.Build.props" />
+
+  <PropertyGroup>
+    <ContractProject>$(MSBuildThisFileDirectory)..\ref\$(MSBuildProjectName).csproj</ContractProject>
+    <IsRuntimeAndReferenceAssembly Condition="!Exists('$(ContractProject)')">true</IsRuntimeAndReferenceAssembly>
+  </PropertyGroup>
+
+  <!-- Reference the contract project so that this project's ReferenceAssembly attribute points to the contract, as expected. -->
+  <ItemGroup Condition="'$(IsRuntimeAndReferenceAssembly)' != 'true'">
+    <ProjectReference Include="$(ContractProject)"
+                      ReferenceOutputAssembly="false"
+                      OutputItemType="ResolvedMatchingContractOverride" />
+  </ItemGroup>
+</Project>

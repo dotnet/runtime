@@ -8,13 +8,20 @@
 
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-mmap.h>
+#include <mono/utils/mono-threads-api.h>
+#include <mono/utils/mono-threads-debug.h>
 
 #include <glib.h>
 
 #ifdef HOST_BROWSER
 
+#include <mono/utils/mono-threads-wasm.h>
+
 #include <emscripten.h>
 #include <emscripten/stack.h>
+#ifndef DISABLE_THREADS
+#include <emscripten/threading.h>
+#endif
 
 #define round_down(addr, val) ((void*)((addr) & ~((val) - 1)))
 
@@ -22,6 +29,7 @@ EMSCRIPTEN_KEEPALIVE
 static int
 wasm_get_stack_base (void)
 {
+	// wasm-mt: add MONO_ENTER_GC_UNSAFE / MONO_EXIT_GC_UNSAFE if this function becomes more complex
 	return emscripten_stack_get_end ();
 }
 
@@ -29,6 +37,7 @@ EMSCRIPTEN_KEEPALIVE
 static int
 wasm_get_stack_size (void)
 {
+	// wasm-mt: add MONO_ENTER_GC_UNSAFE / MONO_EXIT_GC_UNSAFE if this function becomes more complex
 	return (guint8*)emscripten_stack_get_base () - (guint8*)emscripten_stack_get_end ();
 }
 
@@ -109,7 +118,6 @@ mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2)
 {
 	return id1 == id2;
 }
-
 
 MonoNativeThreadId
 mono_native_thread_id_get (void)
@@ -221,13 +229,14 @@ mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_d
 	pthread_attr_t attr;
 	pthread_t thread;
 	gint res;
-	gsize set_stack_size;
 
 	res = pthread_attr_init (&attr);
 	if (res != 0)
 		g_error ("%s: pthread_attr_init failed, error: \"%s\" (%d)", __func__, g_strerror (res), res);
 
 #if 0
+	gsize set_stack_size;
+
 	if (stack_size)
 		set_stack_size = *stack_size;
 	else
@@ -319,11 +328,22 @@ mono_memory_barrier_process_wide (void)
 G_EXTERN_C
 extern void schedule_background_exec (void);
 
+/* jobs is not protected by a mutex, only access from a single thread! */
 static GSList *jobs;
 
 void
 mono_threads_schedule_background_job (background_job_cb cb)
 {
+#ifndef DISABLE_THREADS
+	if (!mono_threads_wasm_is_browser_thread ()) {
+		THREADS_DEBUG ("worker %p queued job %p\n", (gpointer)pthread_self(), (gpointer) cb);
+		mono_threads_wasm_async_run_in_main_thread_vi ((void (*)(gpointer))mono_threads_schedule_background_job, cb);
+		return;
+	}
+#endif
+
+	THREADS_DEBUG ("main thread queued job %p\n", (gpointer) cb);
+
 	if (!jobs)
 		schedule_background_exec ();
 
@@ -339,6 +359,10 @@ G_EXTERN_C
 EMSCRIPTEN_KEEPALIVE void
 mono_background_exec (void)
 {
+	MONO_ENTER_GC_UNSAFE;
+#ifndef DISABLE_THREADS
+	g_assert (mono_threads_wasm_is_browser_thread ());
+#endif
 	GSList *j = jobs, *cur;
 	jobs = NULL;
 
@@ -347,7 +371,59 @@ mono_background_exec (void)
 		cb ();
 	}
 	g_slist_free (j);
+	MONO_EXIT_GC_UNSAFE;
 }
+
+gboolean
+mono_threads_platform_is_main_thread (void)
+{
+#ifdef DISABLE_THREADS
+	return TRUE;
+#else
+	return emscripten_is_main_runtime_thread ();
+#endif
+}
+
+gboolean
+mono_threads_wasm_is_browser_thread (void)
+{
+#ifdef DISABLE_THREADS
+	return TRUE;
+#else
+	return emscripten_is_main_browser_thread ();
+#endif
+}
+
+MonoNativeThreadId
+mono_threads_wasm_browser_thread_tid (void)
+{
+#ifdef DISABLE_THREADS
+	return (MonoNativeThreadId)1;
+#else
+	return (MonoNativeThreadId)emscripten_main_browser_thread_id ();
+#endif
+}
+
+gboolean
+mono_threads_platform_stw_defer_initial_suspend (MonoThreadInfo *info)
+{
+	/* Suspend the browser thread after all the other threads are suspended already. */
+	return mono_native_thread_id_equals (mono_thread_info_get_tid (info), mono_threads_wasm_browser_thread_tid ());
+}
+
+#ifndef DISABLE_THREADS
+void
+mono_threads_wasm_async_run_in_main_thread (void (*func) (void))
+{
+	emscripten_async_run_in_main_runtime_thread (EM_FUNC_SIG_V, func);
+}
+
+void
+mono_threads_wasm_async_run_in_main_thread_vi (void (*func) (gpointer), gpointer user_data)
+{
+	emscripten_async_run_in_main_runtime_thread (EM_FUNC_SIG_VI, func, user_data);
+}
+#endif /* DISABLE_THREADS */
 
 #endif /* HOST_BROWSER */
 

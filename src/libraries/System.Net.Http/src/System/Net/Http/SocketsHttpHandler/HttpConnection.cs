@@ -33,17 +33,23 @@ namespace System.Net.Http
         /// to final error status code sent by the server when using Expect: 100-continue.
         /// </summary>
         private const int Expect100ErrorSendThreshold = 1024;
+        /// <summary>How long a chunk indicator is allowed to be.</summary>
+        /// <remarks>
+        /// While most chunks indicators will contain no more than ulong.MaxValue.ToString("X").Length characters,
+        /// "chunk extensions" are allowed. We place a limit on how long a line can be to avoid OOM issues if an
+        /// infinite chunk length is sent.  This value is arbitrary and can be changed as needed.
+        /// </remarks>
+        private const int MaxChunkBytesAllowed = 16 * 1024;
 
-        private static readonly byte[] s_contentLength0NewlineAsciiBytes = Encoding.ASCII.GetBytes("Content-Length: 0\r\n");
-        private static readonly byte[] s_spaceHttp10NewlineAsciiBytes = Encoding.ASCII.GetBytes(" HTTP/1.0\r\n");
-        private static readonly byte[] s_spaceHttp11NewlineAsciiBytes = Encoding.ASCII.GetBytes(" HTTP/1.1\r\n");
-        private static readonly byte[] s_httpSchemeAndDelimiter = Encoding.ASCII.GetBytes(Uri.UriSchemeHttp + Uri.SchemeDelimiter);
-        private static readonly byte[] s_http1DotBytes = Encoding.ASCII.GetBytes("HTTP/1.");
-        private static readonly ulong s_http10Bytes = BitConverter.ToUInt64(Encoding.ASCII.GetBytes("HTTP/1.0"));
-        private static readonly ulong s_http11Bytes = BitConverter.ToUInt64(Encoding.ASCII.GetBytes("HTTP/1.1"));
+        private static readonly byte[] s_contentLength0NewlineAsciiBytes = "Content-Length: 0\r\n"u8.ToArray();
+        private static readonly byte[] s_spaceHttp10NewlineAsciiBytes = " HTTP/1.0\r\n"u8.ToArray();
+        private static readonly byte[] s_spaceHttp11NewlineAsciiBytes = " HTTP/1.1\r\n"u8.ToArray();
+        private static readonly byte[] s_httpSchemeAndDelimiter = "http://"u8.ToArray();
+        private static readonly byte[] s_http1DotBytes = "HTTP/1."u8.ToArray();
+        private static readonly ulong s_http10Bytes = BitConverter.ToUInt64("HTTP/1.0"u8);
+        private static readonly ulong s_http11Bytes = BitConverter.ToUInt64("HTTP/1.1"u8);
 
         private readonly HttpConnectionPool _pool;
-        private readonly Socket? _socket; // used for polling; _stream should be used for all reading/writing. _stream owns disposal.
         private readonly Stream _stream;
         private readonly TransportContext? _transportContext;
         private readonly WeakReference<HttpConnection> _weakThisRef;
@@ -74,7 +80,6 @@ namespace System.Net.Http
 
         public HttpConnection(
             HttpConnectionPool pool,
-            Socket? socket,
             Stream stream,
             TransportContext? transportContext)
         {
@@ -83,7 +88,6 @@ namespace System.Net.Http
 
             _pool = pool;
             _stream = stream;
-            _socket = socket;
 
             _transportContext = transportContext;
 
@@ -158,13 +162,13 @@ namespace System.Net.Http
             // Check to see if we've received anything on the connection; if we have, that's
             // either erroneous data (we shouldn't have received anything yet) or the connection
             // has been closed; either way, we can't use it.
-            if (!async && _socket is not null)
+            if (!async && _stream is NetworkStream networkStream)
             {
                 // Directly poll the socket rather than doing an async read, so that we can
                 // issue an appropriate sync read when we actually need it.
                 try
                 {
-                    return !_socket.Poll(0, SelectMode.SelectRead);
+                    return !networkStream.Socket.Poll(0, SelectMode.SelectRead);
                 }
                 catch (Exception e) when (e is SocketException || e is ObjectDisposedException)
                 {
@@ -337,14 +341,11 @@ namespace System.Net.Http
             {
                 Debug.Assert(Kind == HttpConnectionKind.Proxy);
 
-                // TODO https://github.com/dotnet/runtime/issues/25782:
-                // Uri.IdnHost is missing '[', ']' characters around IPv6 address.
-                // So, we need to add them manually for now.
+                // Uri.IdnHost is missing '[', ']' characters around IPv6 address
+                // and it also contains ScopeID for Link-Local addresses
                 if (uri.HostNameType == UriHostNameType.IPv6)
                 {
-                    await WriteByteAsync((byte)'[', async).ConfigureAwait(false);
-                    await WriteAsciiStringAsync(uri.IdnHost, async).ConfigureAwait(false);
-                    await WriteByteAsync((byte)']', async).ConfigureAwait(false);
+                    await WriteAsciiStringAsync(uri.Host, async).ConfigureAwait(false);
                 }
                 else
                 {
@@ -739,6 +740,10 @@ namespace System.Net.Http
                     _pool.InvalidateHttp11Connection(this);
                     _detachedFromPool = true;
                 }
+                else if (response.Headers.TransferEncodingChunked == true)
+                {
+                    responseStream = new ChunkedEncodingReadStream(this, response);
+                }
                 else if (response.Content.Headers.ContentLength != null)
                 {
                     long contentLength = response.Content.Headers.ContentLength.GetValueOrDefault();
@@ -751,10 +756,6 @@ namespace System.Net.Http
                     {
                         responseStream = new ContentLengthReadStream(this, (ulong)contentLength);
                     }
-                }
-                else if (response.Headers.TransferEncodingChunked == true)
-                {
-                    responseStream = new ChunkedEncodingReadStream(this, response);
                 }
                 else
                 {
@@ -1452,28 +1453,49 @@ namespace System.Net.Http
             }
         }
 
-        private bool TryReadNextLine(out ReadOnlySpan<byte> line)
+        private bool TryReadNextChunkedLine(bool readingHeader, out ReadOnlySpan<byte> line)
         {
+            int maxByteLength = readingHeader ? _allowedReadLineBytes : MaxChunkBytesAllowed;
             var buffer = new ReadOnlySpan<byte>(_readBuffer, _readOffset, _readLength - _readOffset);
-            int length = buffer.IndexOf((byte)'\n');
-            if (length < 0)
-            {
-                if (_allowedReadLineBytes < buffer.Length)
-                {
-                    throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _pool.Settings._maxResponseHeadersLength * 1024L));
-                }
 
-                line = default;
-                return false;
+            int lineFeedIndex = buffer.IndexOf((byte)'\n');
+            if (lineFeedIndex < 0)
+            {
+                if (buffer.Length < maxByteLength)
+                {
+                    line = default;
+                    return false;
+                }
+            }
+            else
+            {
+                int bytesConsumed = lineFeedIndex + 1;
+                int maxBytesRemaining = maxByteLength - bytesConsumed;
+                if (maxBytesRemaining >= 0)
+                {
+                    _readOffset += bytesConsumed;
+
+                    if (readingHeader)
+                    {
+                        _allowedReadLineBytes = maxBytesRemaining;
+                    }
+
+                    int carriageReturnIndex = lineFeedIndex - 1;
+
+                    int length = (uint)carriageReturnIndex < (uint)buffer.Length && buffer[carriageReturnIndex] == '\r'
+                        ? carriageReturnIndex
+                        : lineFeedIndex;
+
+                    line = buffer.Slice(0, length);
+                    return true;
+                }
             }
 
-            int bytesConsumed = length + 1;
-            _readOffset += bytesConsumed;
-            _allowedReadLineBytes -= bytesConsumed;
-            ThrowIfExceededAllowedReadLineBytes();
+            string message = readingHeader
+                ? SR.Format(SR.net_http_response_headers_exceeded_length, _pool.Settings._maxResponseHeadersLength * 1024L)
+                : SR.net_http_chunk_too_large;
 
-            line = buffer.Slice(0, length > 0 && buffer[length - 1] == '\r' ? length - 1 : length);
-            return true;
+            throw new HttpRequestException(message);
         }
 
         private async ValueTask<ReadOnlyMemory<byte>> ReadNextResponseHeaderLineAsync(bool async, bool foldedHeadersAllowed = false)
@@ -2057,7 +2079,7 @@ namespace System.Net.Http
                 _idleSinceTickCount = Environment.TickCount64;
 
                 // Put connection back in the pool.
-                _pool.ReturnHttp11Connection(this);
+                _pool.ReturnHttp11Connection(this, isNewConnection: false);
             }
         }
 

@@ -1,23 +1,23 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System;
+using System.Globalization;
+using System.ComponentModel;
+using System.Xml.Serialization;
+using System.Xml.Schema;
+using System.Diagnostics;
+using System.Threading;
+using System.Security;
+using System.Net;
+using System.Reflection;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml.Serialization
 {
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.IO;
-    using System;
-    using System.Globalization;
-    using System.ComponentModel;
-    using System.Xml.Serialization;
-    using System.Xml.Schema;
-    using System.Diagnostics;
-    using System.Threading;
-    using System.Security;
-    using System.Net;
-    using System.Reflection;
-    using System.Diagnostics.CodeAnalysis;
-
     public class XmlSchemas : CollectionBase, IEnumerable<XmlSchema>
     {
         private XmlSchemaSet? _schemaSet;
@@ -204,7 +204,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private void Prepare(XmlSchema schema)
+        private static void Prepare(XmlSchema schema)
         {
             // need to remove illegal <import> externals;
             ArrayList removes = new ArrayList();
@@ -324,9 +324,8 @@ namespace System.Xml.Serialization
         {
             foreach (XmlSchemaObject o in schema.Items)
             {
-                if (o is XmlSchemaElement)
+                if (o is XmlSchemaElement e)
                 {
-                    XmlSchemaElement e = (XmlSchemaElement)o;
                     if (e.UnhandledAttributes != null)
                     {
                         foreach (XmlAttribute a in e.UnhandledAttributes)
@@ -361,7 +360,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private void AddImport(IList schemas, string? ns)
+        private static void AddImport(IList schemas, string? ns)
         {
             foreach (XmlSchema s in schemas)
             {
@@ -491,9 +490,8 @@ namespace System.Xml.Serialization
         {
             while (item.Parent != null)
             {
-                if (item.Parent is XmlSchemaType)
+                if (item.Parent is XmlSchemaType type)
                 {
-                    XmlSchemaType type = (XmlSchemaType)item.Parent;
                     if (type.Name != null && type.Name.Length != 0)
                     {
                         return type.QualifiedName;
@@ -536,9 +534,8 @@ namespace System.Xml.Serialization
             {
                 item = SR.Format(SR.XmlSchemaNamedItem, ns, "group", ((XmlSchemaGroup)o).Name, details);
             }
-            else if (o is XmlSchemaElement)
+            else if (o is XmlSchemaElement e)
             {
-                XmlSchemaElement e = ((XmlSchemaElement)o);
                 if (e.Name == null || e.Name.Length == 0)
                 {
                     XmlQualifiedName parentName = XmlSchemas.GetParentName(o);
@@ -558,9 +555,8 @@ namespace System.Xml.Serialization
             {
                 item = SR.Format(SR.XmlSchemaNamedItem, ns, "attributeGroup", ((XmlSchemaAttributeGroup)o).Name, details);
             }
-            else if (o is XmlSchemaAttribute)
+            else if (o is XmlSchemaAttribute a)
             {
-                XmlSchemaAttribute a = ((XmlSchemaAttribute)o);
                 if (a.Name == null || a.Name.Length == 0)
                 {
                     XmlQualifiedName parentName = XmlSchemas.GetParentName(o);
@@ -618,7 +614,7 @@ namespace System.Xml.Serialization
             return err;
         }
 
-        internal XmlSchemaObject? Find(XmlSchemaObject o, IList originals)
+        internal static XmlSchemaObject? Find(XmlSchemaObject o, IList originals)
         {
             string? name = ItemName(o);
             if (name == null)

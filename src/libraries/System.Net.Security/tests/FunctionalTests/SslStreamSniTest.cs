@@ -18,6 +18,7 @@ namespace System.Net.Security.Tests
     {
         [Theory]
         [MemberData(nameof(HostNameData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_ClientSendsSNIServerReceives_Ok(string hostName)
         {
             X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
@@ -95,6 +96,7 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [MemberData(nameof(HostNameData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_ServerCallbackNotSet_UsesLocalCertificateSelection(string hostName)
         {
             X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();

@@ -2,15 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection.Metadata;
 using System.Text;
 
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
-    internal static class DisplayNameHelpers
+    public static class DisplayNameHelpers
     {
         public static string GetDisplayName(this TypeSystemEntity entity)
         {
@@ -37,6 +39,12 @@ namespace ILCompiler
             if (method.IsConstructor)
             {
                 sb.Append(method.OwningType.GetDisplayNameWithoutNamespace());
+            }
+            else if (method.GetPropertyForAccessor() is PropertyPseudoDesc property)
+            {
+                sb.Append(property.Name);
+                sb.Append('.');
+                sb.Append(property.GetMethod == method ? "get" : "set");
             }
             else
             {
@@ -66,6 +74,20 @@ namespace ILCompiler
             sb.Append(')');
 
             return sb.ToString();
+        }
+
+        public static string GetParameterDisplayName(this EcmaMethod method, int parameterIndex)
+        {
+            var reader = method.MetadataReader;
+            var methodDefinition = reader.GetMethodDefinition(method.Handle);
+            foreach (var parameterHandle in methodDefinition.GetParameters())
+            {
+                var parameter = reader.GetParameter(parameterHandle);
+                if (parameter.SequenceNumber == parameterIndex + 1)
+                    return reader.GetString(parameter.Name);
+            }
+
+            return $"#{parameterIndex}";
         }
 
         public static string GetDisplayName(this FieldDesc field)

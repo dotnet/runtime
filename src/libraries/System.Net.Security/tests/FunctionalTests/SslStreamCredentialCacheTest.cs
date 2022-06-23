@@ -17,6 +17,7 @@ namespace System.Net.Security.Tests
     public class SslStreamCredentialCacheTest
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_SameCertUsedForClientAndServer_Ok()
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();

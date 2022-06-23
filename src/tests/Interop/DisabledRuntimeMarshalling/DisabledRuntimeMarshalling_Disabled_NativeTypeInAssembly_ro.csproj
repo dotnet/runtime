@@ -9,6 +9,6 @@
     <Compile Include="PInvokeAssemblyMarshallingDisabled/*.cs" />
     <Compile Include="*.cs" />
     <Compile Include="Native_DisabledMarshalling/DisabledRuntimeMarshallingNative.cs" />
-    <ProjectReference Include="CMakeLists.txt" />
+    <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
 </Project>

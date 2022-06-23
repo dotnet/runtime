@@ -1,15 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
-
+using Microsoft.DotNet.XUnitExtensions;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using Xunit;
 
 namespace System.IO.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class Directory_Move_Tests : FileSystemWatcherTest
     {
         [Fact]
@@ -26,13 +25,18 @@ namespace System.IO.Tests
             DirectoryMove_FromWatchedToUnwatched(WatcherChangeTypes.Deleted);
         }
 
-        [Theory]
+        [ConditionalTheory]
         [PlatformSpecific(TestPlatforms.OSX)]
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]
         public void Directory_Move_Multiple_From_Watched_To_Unwatched_Mac(int filesCount)
         {
+            if (Environment.OSVersion.Version.Major == 12)
+            {
+                throw new SkipTestException("Unreliable on Monterey"); // https://github.com/dotnet/runtime/issues/70164
+            }
+
             // On Mac, the FSStream aggregate old events caused by the test setup.
             // There is no option how to get rid of it but skip it.
             DirectoryMove_Multiple_FromWatchedToUnwatched(filesCount, skipOldEvents: true);
@@ -96,15 +100,14 @@ namespace System.IO.Tests
         [Fact]
         public void Directory_Move_SynchronizingObject()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path))
+            string dir = CreateTestDirectory(TestDirectory, "dir");
+            using (var watcher = new FileSystemWatcher(TestDirectory))
             {
                 TestISynchronizeInvoke invoker = new TestISynchronizeInvoke();
                 watcher.SynchronizingObject = invoker;
 
-                string sourcePath = dir.Path;
-                string targetPath = Path.Combine(testDirectory.Path, "target");
+                string sourcePath = dir;
+                string targetPath = Path.Combine(TestDirectory, "target");
 
                 Action action = () => Directory.Move(sourcePath, targetPath);
                 Action cleanup = () => Directory.Move(targetPath, sourcePath);
@@ -118,12 +121,11 @@ namespace System.IO.Tests
 
         private void DirectoryMove_SameDirectory(WatcherChangeTypes eventType)
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path, "*"))
+            string dir = CreateTestDirectory(TestDirectory, "dir");
+            using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
-                string sourcePath = dir.Path;
-                string targetPath = Path.Combine(testDirectory.Path, "target");
+                string sourcePath = dir;
+                string targetPath = Path.Combine(TestDirectory, "target");
 
                 Action action = () => Directory.Move(sourcePath, targetPath);
                 Action cleanup = () => Directory.Move(targetPath, sourcePath);
@@ -134,20 +136,20 @@ namespace System.IO.Tests
 
         private void DirectoryMove_DifferentWatchedDirectory(WatcherChangeTypes eventType)
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var sourceDir = new TempDirectory(Path.Combine(testDirectory.Path, "source")))
-            using (var adjacentDir = new TempDirectory(Path.Combine(testDirectory.Path, "adj")))
-            using (var dir = new TempDirectory(Path.Combine(sourceDir.Path, "dir")))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path, "*"))
+            string sourceDir = Path.Combine(TestDirectory, "source");
+            string adjacentDir = CreateTestDirectory(TestDirectory, "adj");
+            string dir = CreateTestDirectory(sourceDir, "dir");
+
+            using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
-                string sourcePath = dir.Path;
-                string targetPath = Path.Combine(adjacentDir.Path, "target");
+                string sourcePath = dir;
+                string targetPath = Path.Combine(adjacentDir, "target");
 
                 // Move the dir to a different directory under the Watcher
                 Action action = () => Directory.Move(sourcePath, targetPath);
                 Action cleanup = () => Directory.Move(targetPath, sourcePath);
 
-                ExpectEvent(watcher, eventType, action, cleanup, new string[] { sourceDir.Path, adjacentDir.Path });
+                ExpectEvent(watcher, eventType, action, cleanup, new string[] { sourceDir, adjacentDir });
             }
         }
 
@@ -155,19 +157,18 @@ namespace System.IO.Tests
         {
             Assert.InRange(filesCount, 0, int.MaxValue);
 
-            using var watchedTestDirectory = new TempDirectory(GetTestFilePath());
-            using var unwatchedTestDirectory = new TempDirectory(GetTestFilePath());
-
+            string watchedTestDirectory = CreateTestDirectory();
+            string unwatchedTestDirectory = CreateTestDirectory();
             var dirs = Enumerable.Range(0, filesCount)
                             .Select(i => new
                             {
-                                DirecoryInWatchedDir = Path.Combine(watchedTestDirectory.Path, $"dir{i}"),
-                                DirecoryInUnwatchedDir = Path.Combine(unwatchedTestDirectory.Path, $"dir{i}")
+                                DirecoryInWatchedDir = Path.Combine(watchedTestDirectory, $"dir{i}"),
+                                DirecoryInUnwatchedDir = Path.Combine(unwatchedTestDirectory, $"dir{i}")
                             }).ToArray();
 
             Array.ForEach(dirs, (dir) => Directory.CreateDirectory(dir.DirecoryInWatchedDir));
 
-            using var watcher = new FileSystemWatcher(watchedTestDirectory.Path, "*");
+            using var watcher = new FileSystemWatcher(watchedTestDirectory, "*");
 
             Action action = () => Array.ForEach(dirs, dir => Directory.Move(dir.DirecoryInWatchedDir, dir.DirecoryInUnwatchedDir));
 
@@ -193,20 +194,19 @@ namespace System.IO.Tests
         {
             Assert.InRange(filesCount, 0, int.MaxValue);
 
-            using var watchedTestDirectory = new TempDirectory(GetTestFilePath());
-            using var unwatchedTestDirectory = new TempDirectory(GetTestFilePath());
-
+            string watchedTestDirectory = CreateTestDirectory();
+            string unwatchedTestDirectory = CreateTestDirectory();
 
             var dirs = Enumerable.Range(0, filesCount)
                             .Select(i => new
                             {
-                                DirecoryInWatchedDir = Path.Combine(watchedTestDirectory.Path, $"dir{i}"),
-                                DirecoryInUnwatchedDir = Path.Combine(unwatchedTestDirectory.Path, $"dir{i}")
+                                DirecoryInWatchedDir = Path.Combine(watchedTestDirectory, $"dir{i}"),
+                                DirecoryInUnwatchedDir = Path.Combine(unwatchedTestDirectory, $"dir{i}")
                             }).ToArray();
 
             Array.ForEach(dirs, (dir) => Directory.CreateDirectory(dir.DirecoryInUnwatchedDir));
 
-            using var watcher = new FileSystemWatcher(watchedTestDirectory.Path, "*");
+            using var watcher = new FileSystemWatcher(watchedTestDirectory, "*");
 
             Action action = () => Array.ForEach(dirs, dir => Directory.Move(dir.DirecoryInUnwatchedDir, dir.DirecoryInWatchedDir));
 
@@ -218,13 +218,13 @@ namespace System.IO.Tests
 
         private void DirectoryMove_FromWatchedToUnwatched(WatcherChangeTypes eventType)
         {
-            using (var watchedTestDirectory = new TempDirectory(GetTestFilePath()))
-            using (var unwatchedTestDirectory = new TempDirectory(GetTestFilePath()))
-            using (var dir = new TempDirectory(Path.Combine(watchedTestDirectory.Path, "dir")))
-            using (var watcher = new FileSystemWatcher(watchedTestDirectory.Path, "*"))
+            string watchedTestDirectory = GetTestFilePath();
+            string unwatchedTestDirectory = CreateTestDirectory();
+            string dir = CreateTestDirectory(watchedTestDirectory, "dir");
+            using (var watcher = new FileSystemWatcher(watchedTestDirectory, "*"))
             {
-                string sourcePath = dir.Path; // watched
-                string targetPath = Path.Combine(unwatchedTestDirectory.Path, "target");
+                string sourcePath = dir; // watched
+                string targetPath = Path.Combine(unwatchedTestDirectory, "target");
 
                 Action action = () => Directory.Move(sourcePath, targetPath);
                 Action cleanup = () => Directory.Move(targetPath, sourcePath);
@@ -235,13 +235,13 @@ namespace System.IO.Tests
 
         private void DirectoryMove_FromUnwatchedToWatched(WatcherChangeTypes eventType)
         {
-            using (var watchedTestDirectory = new TempDirectory(GetTestFilePath()))
-            using (var unwatchedTestDirectory = new TempDirectory(GetTestFilePath()))
-            using (var dir = new TempDirectory(Path.Combine(unwatchedTestDirectory.Path, "dir")))
-            using (var watcher = new FileSystemWatcher(watchedTestDirectory.Path, "*"))
+            string watchedTestDirectory = CreateTestDirectory();
+            string unwatchedTestDirectory = GetTestFilePath();
+            string dir = CreateTestDirectory(unwatchedTestDirectory, "dir");
+            using (var watcher = new FileSystemWatcher(watchedTestDirectory, "*"))
             {
-                string sourcePath = dir.Path; // unwatched
-                string targetPath = Path.Combine(watchedTestDirectory.Path, "target");
+                string sourcePath = dir; // unwatched
+                string targetPath = Path.Combine(watchedTestDirectory, "target");
 
                 Action action = () => Directory.Move(sourcePath, targetPath);
                 Action cleanup = () => Directory.Move(targetPath, sourcePath);
@@ -252,17 +252,14 @@ namespace System.IO.Tests
 
         private void DirectoryMove_NestedDirectory(WatcherChangeTypes eventType, bool includeSubdirectories)
         {
-            using (var dir = new TempDirectory(GetTestFilePath()))
-            using (var firstDir = new TempDirectory(Path.Combine(dir.Path, "first")))
-            using (var secondDir = new TempDirectory(Path.Combine(firstDir.Path, "second")))
-            using (var nestedDir = new TempDirectory(Path.Combine(secondDir.Path, "nested")))
-            using (var watcher = new FileSystemWatcher(dir.Path, "*"))
+            string nestedDir = CreateTestDirectory(TestDirectory, "first", "second", "nested");
+            using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 watcher.IncludeSubdirectories = includeSubdirectories;
                 watcher.NotifyFilter = NotifyFilters.DirectoryName;
 
-                string sourcePath = nestedDir.Path;
-                string targetPath = nestedDir.Path + "_2";
+                string sourcePath = nestedDir;
+                string targetPath = nestedDir + "_2";
 
                 // Move the dir to a different directory within the same nested directory
                 Action action = () => Directory.Move(sourcePath, targetPath);
@@ -274,14 +271,13 @@ namespace System.IO.Tests
 
         private void DirectoryMove_WithNotifyFilter(WatcherChangeTypes eventType)
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path, "*"))
+            string dir = CreateTestDirectory(TestDirectory, "dir");
+            using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 watcher.NotifyFilter = NotifyFilters.DirectoryName;
 
-                string sourcePath = dir.Path;
-                string targetPath = dir.Path + "_2";
+                string sourcePath = dir;
+                string targetPath = dir + "_2";
 
                 Action action = () => Directory.Move(sourcePath, targetPath);
                 Action cleanup = () => Directory.Move(targetPath, sourcePath);

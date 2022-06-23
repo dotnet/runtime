@@ -57,13 +57,7 @@ public:
         CORJIT_FLAG_ALT_JIT                 = 14, // JIT should consider itself an ALT_JIT
         CORJIT_FLAG_UNUSED8                 = 15,
         CORJIT_FLAG_UNUSED9                 = 16,
-
-
-    #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
-        CORJIT_FLAG_FEATURE_SIMD            = 17,
-    #else
         CORJIT_FLAG_UNUSED10                = 17,
-    #endif // !(defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64))
 
         CORJIT_FLAG_MAKEFINALCODE           = 18, // Use the final code generator, i.e., not the interpreter.
         CORJIT_FLAG_READYTORUN              = 19, // Use version-resilient code generation

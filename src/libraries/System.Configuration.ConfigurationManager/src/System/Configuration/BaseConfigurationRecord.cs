@@ -803,7 +803,7 @@ namespace System.Configuration
                     }
                     catch
                     {
-                        // Ignore the error if we are attempting to retreive
+                        // Ignore the error if we are attempting to retrieve
                         // the last known good configuration.
                         if (!getLkg) throw;
                     }
@@ -848,7 +848,7 @@ namespace System.Configuration
                     //
                     // It WILL be common in web scenarios for there to be
                     // deep hierarchies of config files, most of which have
-                    // sparse input. Therefore we do not want to retreive a
+                    // sparse input. Therefore we do not want to retrieve a
                     // factory record if it is not necessary to do so, as
                     // it would always lead to an order N-squared operation,
                     // where N is the depth of the config hierarchy.
@@ -1075,7 +1075,7 @@ namespace System.Configuration
                 }
                 catch
                 {
-                    // Ignore the error if we are attempting to retreive
+                    // Ignore the error if we are attempting to retrieve
                     // the last known good configuration.
                     if (!getLkg) throw;
                 }
@@ -1189,7 +1189,7 @@ namespace System.Configuration
                     }
                     catch
                     {
-                        // Ignore the error if we are attempting to retreive
+                        // Ignore the error if we are attempting to retrieve
                         // the last known good configuration.
                         if (!getLkg) throw;
                     }
@@ -3181,12 +3181,12 @@ namespace System.Configuration
         // per record by creating the table on demand.
         protected Hashtable EnsureFactories()
         {
-            return _factoryRecords ?? (_factoryRecords = new Hashtable());
+            return _factoryRecords ??= new Hashtable();
         }
 
         private ArrayList EnsureLocationSections()
         {
-            return _locationSections ?? (_locationSections = new ArrayList());
+            return _locationSections ??= new ArrayList();
         }
 
         internal static string NormalizeConfigSource(string configSource, IConfigErrorInfo errorInfo)
@@ -3695,7 +3695,7 @@ namespace System.Configuration
                 StringUtil.StartsWithOrdinal(name, "lock");
         }
 
-        protected class ConfigRecordStreamInfo
+        protected sealed class ConfigRecordStreamInfo
         {
             private HybridDictionary _streamInfos;
 
@@ -3714,7 +3714,7 @@ namespace System.Configuration
 
             internal StreamChangeCallback CallbackDelegate { get; set; }
 
-            internal HybridDictionary StreamInfos => _streamInfos ?? (_streamInfos = new HybridDictionary(true));
+            internal HybridDictionary StreamInfos => _streamInfos ??= new HybridDictionary(true);
 
             internal bool HasStreamInfos => _streamInfos != null;
 

@@ -46,7 +46,6 @@ The .NET Foundation licenses this file to you under the MIT license.
 
   <!-- Set up default feature switches -->
   <PropertyGroup>
-    <EnableUnsafeBinaryFormatterSerialization Condition="'$(EnableUnsafeBinaryFormatterSerialization)' == ''">false</EnableUnsafeBinaryFormatterSerialization>
     <UseSystemResourceKeys Condition="$(IlcDisableReflection) == 'true'">true</UseSystemResourceKeys>
     <EventSourceSupport Condition="$(IlcDisableReflection) == 'true'">false</EventSourceSupport>
   </PropertyGroup>
@@ -69,6 +68,10 @@ The .NET Foundation licenses this file to you under the MIT license.
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' != 'windows' and '$(TargetOS)' != 'OSX' and $(NativeLib) == 'Shared'">.so</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' == 'windows' and $(NativeLib) == 'Static'">.lib</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' != 'windows' and $(NativeLib) == 'Static'">.a</NativeBinaryExt>
+
+    <NativeSymbolExt Condition="'$(TargetOS)' == 'OSX'">.dwarf</NativeSymbolExt>
+    <NativeSymbolExt Condition="'$(TargetOS)' == 'windows'">.pdb</NativeSymbolExt>
+    <NativeSymbolExt Condition="'$(TargetOS)' != 'OSX' and '$(TargetOS)' != 'windows'">.dbg</NativeSymbolExt>
 
     <ExportsFileExt Condition="'$(TargetOS)' == 'windows'">.def</ExportsFileExt>
     <ExportsFileExt Condition="'$(TargetOS)' != 'windows'">.exports</ExportsFileExt>
@@ -102,12 +105,10 @@ The .NET Foundation licenses this file to you under the MIT license.
     <AutoInitializedAssemblies Include="System.Private.TypeLoader" />
     <AutoInitializedAssemblies Include="System.Private.Reflection.Execution" Condition="$(IlcDisableReflection) != 'true'" />
     <AutoInitializedAssemblies Include="System.Private.DisabledReflection" Condition="$(IlcDisableReflection) == 'true'" />
-    <AutoInitializedAssemblies Include="System.Private.Interop" />
   </ItemGroup>
 
   <ItemGroup>
-    <_ExcludedPrivateSdkAssemblies Include="$(IlcSdkPath)System.Private.Reflection.Core.dll" Condition="$(IlcDisableReflection) == 'true'" />
-    <PrivateSdkAssemblies Include="$(IlcSdkPath)*.dll" Exclude="@(_ExcludedPrivateSdkAssemblies)"/>
+    <PrivateSdkAssemblies Include="$(IlcSdkPath)*.dll" />
 
     <!-- Exclude unmanaged dlls -->
     <FrameworkAssemblies Include="$(IlcFrameworkPath)*.dll" Exclude="$(IlcFrameworkPath)*.Native.dll;$(IlcFrameworkPath)msquic.dll" />
@@ -147,8 +148,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <!-- If running from a package these values need to be set again with the resolved IlcXYZPath -->
     <ItemGroup>
-      <_ExcludedPrivateSdkAssemblies Include="$(IlcSdkPath)System.Private.Reflection.Core.dll" Condition="$(IlcDisableReflection) == 'true'" />
-      <PrivateSdkAssemblies Include="$(IlcSdkPath)*.dll" Exclude="@(_ExcludedPrivateSdkAssemblies)"/>
+      <PrivateSdkAssemblies Include="$(IlcSdkPath)*.dll" />
 
       <!-- Exclude unmanaged dlls -->
       <FrameworkAssemblies Include="$(IlcFrameworkPath)*.dll" Exclude="$(IlcFrameworkPath)*.Native.dll;$(IlcFrameworkPath)msquic.dll" />
@@ -231,14 +231,15 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="$(IlcFoldIdenticalMethodBodies) == 'true'" Include="--methodbodyfolding" />
       <IlcArg Condition="$(Optimize) == 'true' and $(IlcOptimizationPreference) == 'Size'" Include="--Os" />
       <IlcArg Condition="$(Optimize) == 'true' and $(IlcOptimizationPreference) == 'Speed'" Include="--Ot" />
-      <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--disablereflection" />
+      <IlcArg Condition="$(IlcInstructionSet) != ''" Include="--instructionset:$(IlcInstructionSet)" />
+      <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--reflectiondata:none" />
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--feature:System.Collections.Generic.DefaultComparers=false" />
-      <IlcArg Condition="$(IlcSingleThreaded) == 'true'" Include="--singlethreaded" />
+      <IlcArg Condition="$(IlcSingleThreaded) == 'true'" Include="--parallelism:1" />
       <IlcArg Condition="$(IlcSystemModule) != ''" Include="--systemmodule:$(IlcSystemModule)" />
       <IlcArg Condition="$(IlcDumpIL) == 'true'" Include="--ildump:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).il" />
       <IlcArg Condition="$(NoWarn) != ''" Include='--nowarn:"$([MSBuild]::Escape($(NoWarn)))"' />
       <IlcArg Condition="$(TrimmerSingleWarn) == 'true'" Include="--singlewarn" />
-      <IlcArg Condition="$(IlcTrimMetadata) == 'true'" Include="--reflectedonly" />
+      <IlcArg Condition="$(IlcTrimMetadata) == 'false'" Include="--reflectiondata:all" />
       <IlcArg Condition="'$(ControlFlowGuard)' == 'Guard' and '$(TargetOS)' == 'windows'" Include="--guard:cf" />
       <IlcArg Include="@(_IlcRootedAssemblies->'--root:%(Identity)')" />
       <IlcArg Include="@(_IlcConditionallyRootedAssemblies->'--conditionalroot:%(Identity)')" />
@@ -264,7 +265,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       Outputs="%(ManagedBinary.IlcOutputFile)"
       DependsOnTargets="WriteIlcRspFileForCompilation;$(IlcCompileDependsOn)">
     <Message Text="Generating native code" Condition="$(_BuildingInCompatibleMode) != 'true'" Importance="high" />
-    <Message Text="Generating compatible native code. To optimize for size or speed, visit https://aka.ms/OptimizeCoreRT" Condition="$(_BuildingInCompatibleMode) == 'true'" Importance="high" />
+    <Message Text="Generating compatible native code. To optimize for size or speed, visit https://aka.ms/OptimizeNativeAOT" Condition="$(_BuildingInCompatibleMode) == 'true'" Importance="high" />
 
     <Exec Command="&quot;$(IlcToolsPath)\ilc&quot; @&quot;$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).ilc.rsp&quot;" />
 
@@ -341,6 +342,16 @@ The .NET Foundation licenses this file to you under the MIT license.
     <Exec Command="$(CppLinker)  @&quot;$(NativeIntermediateOutputPath)link.rsp&quot;" Condition="'$(TargetOS)' == 'windows' and '$(NativeLib)' != 'Static'" />
     <WriteLinesToFile File="$(NativeIntermediateOutputPath)lib.rsp" Lines="@(CustomLibArg)" Overwrite="true" Encoding="utf-8" Condition="'$(TargetOS)' == 'windows' and '$(NativeLib)' == 'Static'" />
     <Exec Command="$(CppLibCreator)  @&quot;$(NativeIntermediateOutputPath)lib.rsp&quot;" Condition="'$(TargetOS)' == 'windows' and '$(NativeLib)' == 'Static'" />
+
+    <!-- strip symbols, see https://github.com/dotnet/runtime/blob/5d3288d/eng/native/functions.cmake#L374 -->
+    <Exec Condition="'$(StripSymbols)' == 'true' and '$(TargetOS)' != 'windows' and '$(TargetOS)' != 'OSX'"
+      Command="
+        objcopy --only-keep-debug &quot;$(NativeBinary)&quot; &quot;$(NativeBinary)$(NativeSymbolExt)&quot; &amp;&amp;
+        objcopy --strip-unneeded &quot;$(NativeBinary)&quot; &amp;&amp;
+        objcopy --add-gnu-debuglink=&quot;$(NativeBinary)$(NativeSymbolExt)&quot; &quot;$(NativeBinary)&quot;" />
+
+    <Exec Condition="'$(StripSymbols)' == 'true' and '$(TargetOS)' == 'OSX'" Command="dsymutil $(DsymUtilOptions) &quot;$(NativeBinary)&quot;" />
+    <Exec Condition="'$(StripSymbols)' == 'true' and '$(TargetOS)' == 'OSX'" Command="strip -no_code_signature_warning -S &quot;$(NativeBinary)&quot;" />
   </Target>
 
   <Target Name="CreateLib"

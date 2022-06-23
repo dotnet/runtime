@@ -421,9 +421,11 @@ namespace ILCompiler
         {
             forceRuntimeLookup = false;
 
+            bool isStaticVirtualMethod = interfaceMethod.Signature.IsStatic;
+
             // We can't resolve constraint calls effectively for reference types, and there's
             // not a lot of perf. benefit in doing it anyway.
-            if (!constrainedType.IsValueType)
+            if (!constrainedType.IsValueType && (!isStaticVirtualMethod || constrainedType.IsCanonicalDefinitionType(CanonicalFormKind.Any)))
             {
                 return null;
             }
@@ -466,10 +468,17 @@ namespace ILCompiler
                                 potentialInterfaceMethod.GetTypicalMethodDefinition(), (InstantiatedType)potentialInterfaceType);
                         }
 
-                        method = canonType.ResolveInterfaceMethodToVirtualMethodOnType(potentialInterfaceMethod);
+                        if (isStaticVirtualMethod)
+                        {
+                            method = canonType.ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(potentialInterfaceMethod);
+                        }
+                        else
+                        {
+                            method = canonType.ResolveInterfaceMethodToVirtualMethodOnType(potentialInterfaceMethod);
+                        }
 
                         // See code:#TryResolveConstraintMethodApprox_DoNotReturnParentMethod
-                        if (method != null && !method.OwningType.IsValueType)
+                        if (!isStaticVirtualMethod && method != null && !method.OwningType.IsValueType)
                         {
                             // We explicitly wouldn't want to abort if we found a default implementation.
                             // The above resolution doesn't consider the default methods.
@@ -500,7 +509,14 @@ namespace ILCompiler
                             // We can resolve to exact method
                             MethodDesc exactInterfaceMethod = context.GetMethodForInstantiatedType(
                                 genInterfaceMethod.GetTypicalMethodDefinition(), (InstantiatedType)interfaceType);
-                            method = constrainedType.ResolveVariantInterfaceMethodToVirtualMethodOnType(exactInterfaceMethod);
+                            if (isStaticVirtualMethod)
+                            {
+                                method = constrainedType.ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(exactInterfaceMethod);
+                            }
+                            else
+                            {
+                                method = constrainedType.ResolveVariantInterfaceMethodToVirtualMethodOnType(exactInterfaceMethod);
+                            }
                             isExactMethodResolved = method != null;
                         }
                     }
@@ -523,7 +539,14 @@ namespace ILCompiler
                         if (genInterfaceMethod.OwningType != interfaceType)
                             exactInterfaceMethod = context.GetMethodForInstantiatedType(
                                 genInterfaceMethod.GetTypicalMethodDefinition(), (InstantiatedType)interfaceType);
-                        method = constrainedType.ResolveVariantInterfaceMethodToVirtualMethodOnType(exactInterfaceMethod);
+                        if (isStaticVirtualMethod)
+                        {
+                            method = constrainedType.ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(exactInterfaceMethod);
+                        }
+                        else
+                        {
+                            method = constrainedType.ResolveVariantInterfaceMethodToVirtualMethodOnType(exactInterfaceMethod);
+                        }
                     }
                 }
             }
@@ -539,6 +562,16 @@ namespace ILCompiler
                 method = null;
             }
 
+            // Default implementation logic, which only kicks in for default implementations when looking up on an exact interface target
+            if (isStaticVirtualMethod && method == null && !genInterfaceMethod.IsAbstract && !constrainedType.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                MethodDesc exactInterfaceMethod = genInterfaceMethod;
+                if (genInterfaceMethod.OwningType != interfaceType)
+                    exactInterfaceMethod = context.GetMethodForInstantiatedType(
+                        genInterfaceMethod.GetTypicalMethodDefinition(), (InstantiatedType)interfaceType);
+                method = exactInterfaceMethod;
+            }
+
             if (method == null)
             {
                 // Fall back to VSD
@@ -548,7 +581,7 @@ namespace ILCompiler
             //#TryResolveConstraintMethodApprox_DoNotReturnParentMethod
             // Only return a method if the value type itself declares the method,
             // otherwise we might get a method from Object or System.ValueType
-            if (!method.OwningType.IsValueType)
+            if (!isStaticVirtualMethod && !method.OwningType.IsValueType)
             {
                 // Fall back to VSD
                 return null;
@@ -659,6 +692,28 @@ namespace ILCompiler
                 if (c.ContainsSignatureVariables())
                     return null;
 
+                // If there's unimplemented static abstract methods, this is not a suitable instantiation.
+                // We shortcut to look for any static virtuals. It matches what Roslyn does for error CS8920.
+                // Once TypeSystemConstraintsHelpers is updated to check constraints around static virtuals,
+                // we could dispatch there instead.
+                if (c.IsInterface)
+                {
+                    if (HasStaticVirtualMethods(c))
+                        return null;
+
+                    foreach (DefType intface in c.RuntimeInterfaces)
+                        if (HasStaticVirtualMethods(intface))
+                            return null;
+
+                    static bool HasStaticVirtualMethods(TypeDesc type)
+                    {
+                        foreach (MethodDesc method in type.GetVirtualMethods())
+                            if (method.Signature.IsStatic)
+                                return true;
+                        return false;
+                    }
+                }
+
                 constrainedType = c;
             }
 
@@ -674,28 +729,6 @@ namespace ILCompiler
             }
 
             return false;
-        }
-
-        /// <summary>
-        /// Return true when the type in question is marked with the NonVersionable attribute.
-        /// </summary>
-        /// <param name="type">Type to check</param>
-        /// <returns>True when the type is marked with the non-versionable custom attribute, false otherwise.</returns>
-        public static bool IsNonVersionable(this MetadataType type)
-        {
-            return type.HasCustomAttribute("System.Runtime.Versioning", "NonVersionableAttribute");
-        }
-
-        /// <summary>
-        /// Return true when the method is marked as non-versionable. Non-versionable methods
-        /// may be freely inlined into ReadyToRun images even when they don't reside in the
-        /// same version bubble as the module being compiled.
-        /// </summary>
-        /// <param name="method">Method to check</param>
-        /// <returns>True when the method is marked as non-versionable, false otherwise.</returns>
-        public static bool IsNonVersionable(this MethodDesc method)
-        {
-            return method.HasCustomAttribute("System.Runtime.Versioning", "NonVersionableAttribute");
         }
 
         /// <summary>

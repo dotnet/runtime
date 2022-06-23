@@ -74,7 +74,7 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public static string MakeValid(string identifier)
         {
-            StringBuilder builder = new StringBuilder();
+            var builder = new ValueStringBuilder(stackalloc char[MaxIdentifierLength]);
             for (int i = 0; i < identifier.Length && builder.Length < MaxIdentifierLength; i++)
             {
                 char c = identifier[i];
@@ -271,12 +271,14 @@ namespace System.Xml.Serialization
             }
         }
 
+        private static readonly char[] s_identifierSeparators = new char[] { '.', ',', '<', '>' };
+
         [return: NotNullIfNotNull("identifier")]
         private static string? EscapeKeywords(string? identifier)
         {
             if (identifier == null || identifier.Length == 0) return identifier;
             string originalIdentifier = identifier;
-            string[] names = identifier.Split(new char[] { '.', ',', '<', '>' });
+            string[] names = identifier.Split(s_identifierSeparators);
             StringBuilder sb = new StringBuilder();
             int separator = -1;
             for (int i = 0; i < names.Length; i++)

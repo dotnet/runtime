@@ -115,29 +115,30 @@ typedef struct {
  * cfg->unwind_ops.
  */
 void
-mono_emit_unwind_op (MonoCompile *cfg, int when, int tag, int reg, int val)
+mono_emit_unwind_op (MonoCompile *cfg, gsize when, guint8 tag, guint16 reg, int val)
 {
 	MonoUnwindOp *op = (MonoUnwindOp *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoUnwindOp));
+	guint32 when32 = GSIZE_TO_UINT32 (when);
 
 	op->op = tag;
 	op->reg = reg;
 	op->val = val;
-	op->when = when;
+	op->when = when32;
 
 	cfg->unwind_ops = g_slist_append_mempool (cfg->mempool, cfg->unwind_ops, op);
 	if (cfg->verbose_level > 1) {
 		switch (tag) {
 		case DW_CFA_def_cfa:
-			printf ("CFA: [%x] def_cfa: %s+0x%x\n", when, mono_arch_regname (reg), val);
+			printf ("CFA: [%x] def_cfa: %s+0x%x\n", when32, mono_arch_regname (reg), val);
 			break;
 		case DW_CFA_def_cfa_register:
-			printf ("CFA: [%x] def_cfa_reg: %s\n", when, mono_arch_regname (reg));
+			printf ("CFA: [%x] def_cfa_reg: %s\n", when32, mono_arch_regname (reg));
 			break;
 		case DW_CFA_def_cfa_offset:
-			printf ("CFA: [%x] def_cfa_offset: 0x%x\n", when, val);
+			printf ("CFA: [%x] def_cfa_offset: 0x%x\n", when32, val);
 			break;
 		case DW_CFA_offset:
-			printf ("CFA: [%x] offset: %s at cfa-0x%x\n", when, mono_arch_regname (reg), -val);
+			printf ("CFA: [%x] offset: %s at cfa-0x%x\n", when32, mono_arch_regname (reg), -val);
 			break;
 		}
 	}
@@ -598,8 +599,8 @@ mono_decompose_op_imm (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 	mono_bblock_insert_before_ins (bb, ins, temp);
 
 	if (opcode2 == -1)
-                g_error ("mono_op_imm_to_op failed for %s\n", mono_inst_name (ins->opcode));
-	ins->opcode = opcode2;
+		g_error ("mono_op_imm_to_op failed for %s\n", mono_inst_name (ins->opcode));
+	ins->opcode = GINT_TO_OPCODE (opcode2);
 
 	if (ins->opcode == OP_LOCALLOC)
 		ins->sreg1 = dreg;
@@ -939,17 +940,6 @@ mono_create_jump_table (MonoCompile *cfg, MonoInst *label, MonoBasicBlock **bbs,
 	ji->data.table = table;
 	ji->next = cfg->patch_info;
 	cfg->patch_info = ji;
-}
-
-gboolean
-mini_assembly_can_skip_verification (MonoMethod *method)
-{
-	MonoAssembly *assembly = m_class_get_image (method->klass)->assembly;
-	if (method->wrapper_type != MONO_WRAPPER_NONE && method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD)
-		return FALSE;
-	if (assembly->image == mono_defaults.corlib)
-		return FALSE;
-	return mono_assembly_has_skip_verification (assembly);
 }
 
 typedef struct {
@@ -1581,13 +1571,13 @@ mini_register_opcode_emulation (int opcode, MonoJitICallInfo *info, const char *
 	mono_register_jit_icall_info (info, func, name, sig, no_wrapper, symbol);
 
 	if (emul_opcode_num >= emul_opcode_alloced) {
-		int incr = emul_opcode_alloced? emul_opcode_alloced/2: 16;
+		short incr = emul_opcode_alloced? emul_opcode_alloced/2: 16;
 		emul_opcode_alloced += incr;
 		emul_opcode_map = (MonoJitICallInfo **)g_realloc (emul_opcode_map, sizeof (emul_opcode_map [0]) * emul_opcode_alloced);
 		emul_opcode_opcodes = (short *)g_realloc (emul_opcode_opcodes, sizeof (emul_opcode_opcodes [0]) * emul_opcode_alloced);
 	}
 	emul_opcode_map [emul_opcode_num] = info;
-	emul_opcode_opcodes [emul_opcode_num] = opcode;
+	emul_opcode_opcodes [emul_opcode_num] = GINT_TO_OPCODE (opcode);
 	emul_opcode_num++;
 	emul_opcode_hit_cache [opcode >> (EMUL_HIT_SHIFT + 3)] |= (1 << (opcode & EMUL_HIT_MASK));
 }
@@ -1878,7 +1868,7 @@ mono_add_var_location (MonoCompile *cfg, MonoInst *var, gboolean is_reg, int reg
 static void
 mono_apply_volatile (MonoInst *inst, MonoBitSet *set, gsize index)
 {
-	inst->flags |= mono_bitset_test_safe (set, index) ? MONO_INST_VOLATILE : 0;
+	inst->flags |= mono_bitset_test_safe (set, (guint32)index) ? MONO_INST_VOLATILE : 0;
 }
 
 static void
@@ -2359,7 +2349,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 	} else {
 		num_clauses = header->num_clauses;
 		int dead_clauses = 0;
-		for (int i = 0; i < header->num_clauses; ++i)
+		for (unsigned int i = 0; i < header->num_clauses; ++i)
 			if (cfg->clause_is_dead [i])
 				dead_clauses ++;
 		num_clauses -= dead_clauses;
@@ -2430,11 +2420,11 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 		if (COMPILE_LLVM (cfg)) {
 			g_assert (cfg->llvm_this_reg != -1);
 			gi->this_in_reg = 0;
-			gi->this_reg = cfg->llvm_this_reg;
+			gi->this_reg = GINT_TO_UINT8 (cfg->llvm_this_reg);
 			gi->this_offset = cfg->llvm_this_offset;
 		} else if (inst->opcode == OP_REGVAR) {
 			gi->this_in_reg = 1;
-			gi->this_reg = inst->dreg;
+			gi->this_reg = GINT32_TO_UINT8 (inst->dreg);
 		} else {
 			g_assert (inst->opcode == OP_REGOFFSET);
 #ifdef TARGET_X86
@@ -2445,8 +2435,8 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 			g_assert (inst->inst_offset >= G_MININT32 && inst->inst_offset <= G_MAXINT32);
 
 			gi->this_in_reg = 0;
-			gi->this_reg = inst->inst_basereg;
-			gi->this_offset = inst->inst_offset;
+			gi->this_reg = GINT32_TO_UINT8 (inst->inst_basereg);
+			gi->this_offset = GTMREG_TO_INT32 (inst->inst_offset);
 		}
 	}
 
@@ -2472,7 +2462,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 
 			start_bb_offset = hole_data->start_offset - hole_data->basic_block->native_offset;
 			hole = &table->holes [i++];
-			hole->clause = hole_data->clause - &header->clauses [0];
+			hole->clause = GPTRDIFF_TO_UINT16 (hole_data->clause - &header->clauses [0]);
 			hole->offset = (guint32)hole_data->start_offset;
 			hole->length = (guint16)(hole_data->basic_block->native_length - start_bb_offset);
 
@@ -2503,7 +2493,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 			memcpy (&jinfo->clauses [0], &cfg->llvm_ex_info [0], num_clauses * sizeof (MonoJitExceptionInfo));
 	} else {
 		int eindex = 0;
-		for (int i = 0; i < header->num_clauses; i++) {
+		for (unsigned int i = 0; i < header->num_clauses; i++) {
 			MonoExceptionClause *ec = &header->clauses [i];
 			MonoJitExceptionInfo *ei = &jinfo->clauses [eindex];
 			MonoBasicBlock *tblock;
@@ -2519,7 +2509,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 				printf ("IL clause: try 0x%x-0x%x handler 0x%x-0x%x filter 0x%x\n", ec->try_offset, ec->try_offset + ec->try_len, ec->handler_offset, ec->handler_offset + ec->handler_len, ec->flags == MONO_EXCEPTION_CLAUSE_FILTER ? ec->data.filter_offset : 0);
 
 			exvar = mono_find_exvar_for_offset (cfg, ec->handler_offset);
-			ei->exvar_offset = exvar ? exvar->inst_offset : 0;
+			ei->exvar_offset = exvar ? GTMREG_TO_INT32 (exvar->inst_offset) : 0;
 
 			if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
 				tblock = cfg->cil_offset_to_bb [ec->data.filter_offset];
@@ -2614,12 +2604,12 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 		int i;
 		for (i = 0; i < jinfo->num_clauses; i++) {
 			MonoJitExceptionInfo *ei = &jinfo->clauses [i];
-			int start = (guint8*)ei->try_start - cfg->native_code;
-			int end = (guint8*)ei->try_end - cfg->native_code;
-			int handler = (guint8*)ei->handler_start - cfg->native_code;
-			int handler_end = (guint8*)ei->data.handler_end - cfg->native_code;
+			ptrdiff_t start = (guint8*)ei->try_start - cfg->native_code;
+			ptrdiff_t end = (guint8*)ei->try_end - cfg->native_code;
+			ptrdiff_t handler = (guint8*)ei->handler_start - cfg->native_code;
+			ptrdiff_t handler_end = (guint8*)ei->data.handler_end - cfg->native_code;
 
-			printf ("JitInfo EH clause %d flags %x try %x-%x handler %x-%x\n", i, ei->flags, start, end, handler, handler_end);
+			printf ("JitInfo EH clause %d flags %x try %tx-%tx handler %tx-%tx\n", i, ei->flags, start, end, handler, handler_end);
 		}
 	}
 
@@ -2644,7 +2634,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 		jinfo->unwind_info = unwind_desc;
 		g_free (unwind_info);
 	} else {
-		jinfo->unwind_info = cfg->used_int_regs;
+		jinfo->unwind_info = (guint32)cfg->used_int_regs;
 	}
 
 	return jinfo;
@@ -2850,7 +2840,7 @@ mono_insert_branches_between_bblocks (MonoCompile *cfg)
 				bb->last_ins->inst_true_bb = bb->last_ins->inst_false_bb;
 				bb->last_ins->inst_false_bb = tmp;
 
-				bb->last_ins->opcode = mono_reverse_branch_op (bb->last_ins->opcode);
+				bb->last_ins->opcode = GUINT32_TO_OPCODE (mono_reverse_branch_op (bb->last_ins->opcode));
 			} else {
 				MonoInst *inst = (MonoInst *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst));
 				inst->opcode = OP_BR;
@@ -2889,7 +2879,7 @@ remove_empty_finally_pass (MonoCompile *cfg)
 	if (!cfg->llvm_only)
 		return;
 
-	for (int i = 0; i < cfg->header->num_clauses; ++i) {
+	for (unsigned int i = 0; i < cfg->header->num_clauses; ++i) {
 		MonoExceptionClause *clause = &cfg->header->clauses [i];
 
 		if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
@@ -2924,7 +2914,7 @@ remove_empty_finally_pass (MonoCompile *cfg)
 				 * Avoid doing this in nested clauses, because it might mess up the EH code generated by
 				 * the llvm backend.
 				 */
-				for (int j = 0; j < cfg->header->num_clauses; ++j) {
+				for (unsigned int j = 0; j < cfg->header->num_clauses; ++j) {
 					MonoExceptionClause *clause2 = &cfg->header->clauses [j];
 
 					if (i != j && MONO_OFFSET_IN_CLAUSE (clause2, clause->handler_offset))
@@ -3066,35 +3056,9 @@ mini_get_rgctx_access_for_method (MonoMethod *method)
 		return MONO_RGCTX_ACCESS_MRGCTX;
 
 	if (method->flags & METHOD_ATTRIBUTE_STATIC || m_class_is_valuetype (method->klass))
-		return MONO_RGCTX_ACCESS_VTABLE;
+		return MONO_RGCTX_ACCESS_MRGCTX;
 
 	return MONO_RGCTX_ACCESS_THIS;
-}
-
-static gboolean
-can_deopt (MonoCompile *cfg)
-{
-	MonoMethodHeader *header = cfg->header;
-
-	if (!header->num_clauses)
-		return FALSE;
-
-	/*
-	 * Currently, only finally/fault clauses are supported.
-	 * Catch clauses are hard to support, since even if the
-	 * rest of the method is executed by the interpreter, execution needs to
-	 * return to the caller which is an AOTed method.
-	 * Filter clauses could be supported, but every filter clause has an
-	 * associated catch clause.
-	 */
-	for (int i = 0; i < header->num_clauses; ++i) {
-		MonoExceptionClause *clause = &header->clauses [i];
-
-		if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY && clause->flags != MONO_EXCEPTION_CLAUSE_FAULT)
-			return FALSE;
-	}
-
-	return TRUE;
 }
 
 /*
@@ -3113,7 +3077,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	MonoMethodHeader *header;
 	MonoMethodSignature *sig;
 	MonoCompile *cfg;
-	int i;
 	gboolean try_generic_shared, try_llvm = FALSE;
 	MonoMethod *method_to_compile, *method_to_register;
 	gboolean method_is_gshared = FALSE;
@@ -3331,7 +3294,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		return cfg;
 	}
 
-	if (cfg->llvm_only && cfg->interp && !cfg->interp_entry_only && header->num_clauses && can_deopt (cfg)) {
+	if (cfg->llvm_only && cfg->interp && !cfg->interp_entry_only && !cfg->gsharedvt && header->num_clauses) {
 		cfg->deopt = TRUE;
 		/* Can't reconstruct inlined state */
 		cfg->disable_inline = TRUE;
@@ -3430,9 +3393,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		verbose_method_inited = TRUE;
 	}
 	if (verbose_method_names) {
-		int i;
-
-		for (i = 0; verbose_method_names [i] != NULL; i++){
+		for (size_t i = 0; verbose_method_names [i] != NULL; i++){
 			const char *name = verbose_method_names [i];
 
 			if ((strchr (name, '.') > name) || strchr (name, ':') || strchr (name, '*')) {
@@ -3500,7 +3461,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	mono_cfg_dump_create_context (cfg);
 	mono_cfg_dump_begin_group (cfg);
 
-	MONO_TIME_TRACK (mono_jit_stats.jit_method_to_ir, i = mono_method_to_ir (cfg, method_to_compile, NULL, NULL, NULL, NULL, 0, FALSE));
+	int inline_cost;
+	MONO_TIME_TRACK (mono_jit_stats.jit_method_to_ir, inline_cost = mono_method_to_ir (cfg, method_to_compile, NULL, NULL, NULL, NULL, 0, FALSE));
 	mono_cfg_dump_ir (cfg, "method-to-ir");
 
 	if (cfg->gdump_ctx != NULL) {
@@ -3509,7 +3471,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		mono_cfg_dump_ir (cfg, "mono_insert_nop_in_empty_bb");
 	}
 
-	if (i < 0) {
+	if (inline_cost < 0) {
 		if (try_generic_shared && cfg->exception_type == MONO_EXCEPTION_GENERIC_SHARING_FAILED) {
 			if (compile_aot) {
 				if (MONO_METHOD_COMPILE_END_ENABLED ())
@@ -3634,7 +3596,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 
 	if (cfg->llvm_only && cfg->interp && !cfg->method->wrapper_type && !interp_entry_only && !cfg->deopt) {
 		/* Disable llvm if there are still finally clauses left */
-		for (int i = 0; i < cfg->header->num_clauses; ++i) {
+		for (unsigned int i = 0; i < cfg->header->num_clauses; ++i) {
 			MonoExceptionClause *clause = &header->clauses [i];
 			if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY && !cfg->clause_is_dead [i]) {
 				cfg->exception_message = g_strdup ("finally clause.");
@@ -3789,6 +3751,16 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		mono_cfg_dump_ir (cfg, "decompose_array_access_opts");
 	}
 
+	/* Eliminate the mrgctx init call if the method has no mrgctx entries */
+	if (cfg->gshared_info && !cfg->gshared_info->num_entries) {
+		NULLIFY_INS (cfg->init_method_rgctx_ins);
+		/* Needed by the assert in get_gshared_info_slot () */
+		cfg->init_method_rgctx_ins = NULL;
+		cfg->init_method_rgctx_ins_arg->opcode = OP_PCONST;
+		cfg->init_method_rgctx_ins_arg->inst_p0 = NULL;
+		MONO_INST_NULLIFY_SREGS (cfg->init_method_rgctx_ins_arg);
+	}
+
 	if (cfg->got_var) {
 #ifndef MONO_ARCH_GOT_REG
 		GList *regs;
@@ -3877,6 +3849,13 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 
 	mono_insert_branches_between_bblocks (cfg);
 
+	if (cfg->gshared_info) {
+		MonoGSharedMethodInfo *info = mini_gshared_method_info_dup (cfg->mem_manager, cfg->gshared_info);
+
+		/* cfg->gshared_info is already allocated from permanent memory, so change only the entries */
+		cfg->gshared_info->entries = info->entries;
+	}
+
 	if (COMPILE_LLVM (cfg)) {
 #ifdef ENABLE_LLVM
 		char *nm;
@@ -3938,7 +3917,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 
 	if (cfg->extend_live_ranges) {
 		/* Extend live ranges to cover the whole method */
-		for (i = 0; i < cfg->num_varinfo; ++i)
+		for (guint i = 0; i < cfg->num_varinfo; ++i)
 			MONO_VARINFO (cfg, i)->live_range_end = cfg->code_len;
 	}
 
@@ -3980,10 +3959,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 #endif
 
 	/* collect statistics */
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_inc_i32 (&mono_perfcounters->jit_methods);
-	mono_atomic_fetch_add_i32 (&mono_perfcounters->jit_bytes, header->code_size);
-#endif
 	gint32 code_size_ratio = cfg->code_len;
 	mono_atomic_fetch_add_i32 (&mono_jit_stats.allocated_code_size, code_size_ratio);
 	mono_atomic_fetch_add_i32 (&mono_jit_stats.native_code_size, code_size_ratio);
@@ -4045,7 +4020,7 @@ mono_cfg_add_try_hole (MonoCompile *cfg, MonoExceptionClause *clause, guint8 *st
 {
 	TryBlockHole *hole = (TryBlockHole *)mono_mempool_alloc (cfg->mempool, sizeof (TryBlockHole));
 	hole->clause = clause;
-	hole->start_offset = start - cfg->native_code;
+	hole->start_offset = GPTRDIFF_TO_INT (start - cfg->native_code);
 	hole->basic_block = bb;
 
 	cfg->try_block_holes = g_slist_append_mempool (cfg->mempool, cfg->try_block_holes, hole);
@@ -4122,7 +4097,7 @@ mono_jit_compile_method_inner (MonoMethod *method, int opt, MonoError *error)
 
 	start = mono_time_track_start ();
 	cfg = mini_method_compile (method, opt, JIT_FLAG_RUN_CCTORS, 0, -1);
-	gint64 jit_time = 0.0;
+	gint64 jit_time = 0;
 	mono_time_track_end (&jit_time, start);
 	UnlockedAdd64 (&mono_jit_stats.jit_time, jit_time);
 
@@ -4250,7 +4225,7 @@ mono_jit_compile_method_inner (MonoMethod *method, int opt, MonoError *error)
 		}
 	}
 	MONO_PROFILER_RAISE (jit_done, (method, jinfo));
-	if (prof_method != method)
+	if (prof_method != method && !jinfo->has_generic_jit_info)
 		MONO_PROFILER_RAISE (jit_done, (prof_method, jinfo));
 
 	if (!mono_runtime_class_init_full (vtable, error))

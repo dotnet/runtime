@@ -257,7 +257,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return null;
         }
 
-        private void AddConstant(ILEmitResolverBuilderContext argument, object? value)
+        private static void AddConstant(ILEmitResolverBuilderContext argument, object? value)
         {
             if (argument.Constants == null)
             {
@@ -273,7 +273,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             argument.Constants.Add(value);
         }
 
-        private void AddCacheKey(ILEmitResolverBuilderContext argument, ServiceCacheKey key)
+        private static void AddCacheKey(ILEmitResolverBuilderContext argument, ServiceCacheKey key)
         {
             Debug.Assert(key.Type != null);
 

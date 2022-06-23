@@ -31,12 +31,16 @@ namespace Internal.IL.Stubs
                     return EmitAdd(method);
                 case "AddByteOffset":
                     return new ILStubMethodIL(method, new byte[] { (byte)ILOpcode.ldarg_0, (byte)ILOpcode.ldarg_1, (byte)ILOpcode.add, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
+                case "Copy":
+                    return EmitCopy(method);
+                case "CopyBlock":
+                    return EmitCopyBlock(method, unaligned: false);
+                case "CopyBlockUnaligned":
+                    return EmitCopyBlock(method, unaligned: true);
+                case "InitBlock":
+                    return EmitInitBlock(method, unaligned: false);
                 case "InitBlockUnaligned":
-                    return new ILStubMethodIL(method, new byte[] {
-                        (byte)ILOpcode.ldarg_0, (byte)ILOpcode.ldarg_1, (byte)ILOpcode.ldarg_2,
-                        (byte)ILOpcode.prefix1, unchecked((byte)ILOpcode.unaligned), 0x01,
-                        (byte)ILOpcode.prefix1, unchecked((byte)ILOpcode.initblk),
-                        (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
+                    return EmitInitBlock(method, unaligned: true);
                 case "Read":
                     return EmitReadWrite(method, write: false);
                 case "Write":
@@ -83,6 +87,12 @@ namespace Internal.IL.Stubs
                         (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
                 case "SkipInit":
                     return new ILStubMethodIL(method, new byte[] { (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
+                case "Subtract":
+                    return EmitSubtract(method);
+                case "SubtractByteOffset":
+                    return new ILStubMethodIL(method, new byte[] { (byte)ILOpcode.ldarg_0, (byte)ILOpcode.ldarg_1, (byte)ILOpcode.sub, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
+                case "Unbox":
+                    return EmitUnbox(method);
             }
 
             return null;
@@ -119,6 +129,26 @@ namespace Internal.IL.Stubs
             return emit.Link(method);
         }
 
+        private static MethodIL EmitSubtract(MethodDesc method)
+        {
+            Debug.Assert(method.Signature.IsStatic && method.Signature.Length == 2);
+
+            TypeSystemContext context = method.Context;
+
+            ILEmitter emit = new ILEmitter();
+            ILCodeStream codeStream = emit.NewCodeStream();
+
+            codeStream.Emit(ILOpcode.ldarg_0);
+            codeStream.Emit(ILOpcode.ldarg_1);
+            codeStream.Emit(ILOpcode.sizeof_, emit.NewToken(context.GetSignatureVariable(0, method: true)));
+            codeStream.Emit(ILOpcode.conv_i);
+            codeStream.Emit(ILOpcode.mul);
+            codeStream.Emit(ILOpcode.sub);
+            codeStream.Emit(ILOpcode.ret);
+
+            return emit.Link(method);
+        }
+
         private static MethodIL EmitReadWrite(MethodDesc method, bool write, bool unaligned = false)
         {
             Debug.Assert(method.Signature.IsStatic && method.Signature.Length == (write ? 2 : 1));
@@ -134,6 +164,77 @@ namespace Internal.IL.Stubs
             codeStream.Emit(write ? ILOpcode.stobj : ILOpcode.ldobj,
                 emit.NewToken(context.GetSignatureVariable(0, method: true)));
             codeStream.Emit(ILOpcode.ret);
+            return emit.Link(method);
+        }
+
+        private static MethodIL EmitCopy(MethodDesc method)
+        {
+            Debug.Assert(method.Signature.IsStatic && method.Signature.Length == 2);
+
+            TypeSystemContext context = method.Context;
+
+            ILEmitter emit = new ILEmitter();
+            ILCodeStream codeStream = emit.NewCodeStream();
+            ILToken token = emit.NewToken(context.GetSignatureVariable(0, method: true));
+
+            codeStream.EmitLdArg(0);
+            codeStream.EmitLdArg(1);
+            codeStream.Emit(ILOpcode.ldobj, token);
+            codeStream.Emit(ILOpcode.stobj, token);
+            codeStream.Emit(ILOpcode.ret);
+
+            return emit.Link(method);
+        }
+
+        private static MethodIL EmitCopyBlock(MethodDesc method, bool unaligned)
+        {
+            ILEmitter emit = new ILEmitter();
+            ILCodeStream codeStream = emit.NewCodeStream();
+
+            codeStream.EmitLdArg(0);
+            codeStream.EmitLdArg(1);
+            codeStream.EmitLdArg(2);
+            if (unaligned)
+            {
+                codeStream.EmitUnaligned();
+            }
+            codeStream.Emit(ILOpcode.cpblk);
+            codeStream.Emit(ILOpcode.ret);
+
+            return emit.Link(method);
+        }
+
+        private static MethodIL EmitInitBlock(MethodDesc method, bool unaligned)
+        {
+            ILEmitter emit = new ILEmitter();
+            ILCodeStream codeStream = emit.NewCodeStream();
+
+            codeStream.EmitLdArg(0);
+            codeStream.EmitLdArg(1);
+            codeStream.EmitLdArg(2);
+            if (unaligned)
+            {
+                codeStream.EmitUnaligned();
+            }
+            codeStream.Emit(ILOpcode.initblk);
+            codeStream.Emit(ILOpcode.ret);
+
+            return emit.Link(method);
+        }
+
+        private static MethodIL EmitUnbox(MethodDesc method)
+        {
+            Debug.Assert(method.Signature.IsStatic && method.Signature.Length == 1);
+
+            TypeSystemContext context = method.Context;
+
+            ILEmitter emit = new ILEmitter();
+            ILCodeStream codeStream = emit.NewCodeStream();
+
+            codeStream.EmitLdArg(0);
+            codeStream.Emit(ILOpcode.unbox, emit.NewToken(context.GetSignatureVariable(0, method: true)));
+            codeStream.Emit(ILOpcode.ret);
+
             return emit.Link(method);
         }
     }

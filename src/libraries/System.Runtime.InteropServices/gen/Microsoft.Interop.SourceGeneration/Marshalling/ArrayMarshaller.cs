@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -12,16 +13,14 @@ namespace Microsoft.Interop
     public sealed class ArrayMarshaller : IMarshallingGenerator
     {
         private readonly IMarshallingGenerator _manualMarshallingGenerator;
-        private readonly TypeSyntax _elementType;
+        private readonly TypePositionInfo _elementInfo;
         private readonly bool _enablePinning;
-        private readonly InteropGenerationOptions _options;
 
-        public ArrayMarshaller(IMarshallingGenerator manualMarshallingGenerator, TypeSyntax elementType, bool enablePinning, InteropGenerationOptions options)
+        public ArrayMarshaller(IMarshallingGenerator manualMarshallingGenerator, TypePositionInfo elementInfo, bool enablePinning)
         {
             _manualMarshallingGenerator = manualMarshallingGenerator;
-            _elementType = elementType;
+            _elementInfo = elementInfo;
             _enablePinning = enablePinning;
-            _options = options;
         }
 
         public bool IsSupported(TargetFramework target, Version version)
@@ -29,14 +28,21 @@ namespace Microsoft.Interop
             return target is TargetFramework.Net && version.Major >= 7;
         }
 
-        public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
+        public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context)
         {
             if (IsPinningPathSupported(info, context))
             {
-                string identifier = context.GetIdentifiers(info).native;
-                return Argument(CastExpression(AsNativeType(info), IdentifierName(identifier)));
+                if (AsNativeType(info) is PointerTypeSyntax pointerType
+                    && pointerType.ElementType is PredefinedTypeSyntax predefinedType
+                    && predefinedType.Keyword.IsKind(SyntaxKind.VoidKeyword))
+                {
+                    return ValueBoundaryBehavior.NativeIdentifier;
+                }
+
+                // Cast to native type if it is not void*
+                return ValueBoundaryBehavior.CastNativeIdentifier;
             }
-            return _manualMarshallingGenerator.AsArgument(info, context);
+            return _manualMarshallingGenerator.GetValueBoundaryBehavior(info, context);
         }
 
         public TypeSyntax AsNativeType(TypePositionInfo info)
@@ -44,9 +50,9 @@ namespace Microsoft.Interop
             return _manualMarshallingGenerator.AsNativeType(info);
         }
 
-        public ParameterSyntax AsParameter(TypePositionInfo info)
+        public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info)
         {
-            return _manualMarshallingGenerator.AsParameter(info);
+            return _manualMarshallingGenerator.GetNativeSignatureBehavior(info);
         }
 
         public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
@@ -62,7 +68,14 @@ namespace Microsoft.Interop
         {
             if (context.SingleFrameSpansNativeContext && _enablePinning)
             {
-                return false;
+                // Only report no support for by-value contents when element is strictly blittable, such that
+                // the status remains the same regardless of whether or not runtime marshalling is enabled
+                if (_elementInfo.MarshallingAttributeInfo is NoMarshallingInfo
+                    || _elementInfo.MarshallingAttributeInfo is UnmanagedBlittableMarshallingInfo { IsStrictlyBlittable: true }
+                    || _elementInfo.MarshallingAttributeInfo is NativeMarshallingAttributeInfo { IsStrictlyBlittable: true })
+                {
+                    return false;
+                }
             }
             return marshalKind.HasFlag(ByValueContentsMarshalKind.Out);
         }
@@ -85,7 +98,11 @@ namespace Microsoft.Interop
         {
             (string managedIdentifer, string nativeIdentifier) = context.GetIdentifiers(info);
             string byRefIdentifier = $"__byref_{managedIdentifer}";
-            TypeSyntax arrayElementType = _elementType;
+
+            // The element type here is used only for refs/pointers. In the pointer array case, we use byte as the basic placeholder type,
+            // since we can't use pointer types in generic type parameters.
+            bool isPointerArray = info.ManagedType is SzArrayType arrayType && arrayType.ElementTypeInfo is PointerTypeInfo;
+            TypeSyntax arrayElementType = isPointerArray ? PredefinedType(Token(SyntaxKind.ByteKeyword)) : _elementInfo.ManagedType.Syntax;
             if (context.CurrentStage == StubCodeContext.Stage.Marshal)
             {
                 // [COMPAT] We use explicit byref calculations here instead of just using a fixed statement
@@ -130,21 +147,14 @@ namespace Microsoft.Interop
             }
             if (context.CurrentStage == StubCodeContext.Stage.Pin)
             {
-                // fixed (<nativeType> <nativeIdentifier> = &Unsafe.As<elementType, byte>(ref <byrefIdentifier>))
+                // fixed (void* <nativeIdentifier> = &<byRefIdentifier>)
                 yield return FixedStatement(
-                    VariableDeclaration(AsNativeType(info), SingletonSeparatedList(
-                        VariableDeclarator(nativeIdentifier)
-                            .WithInitializer(EqualsValueClause(
-                                PrefixUnaryExpression(SyntaxKind.AddressOfExpression,
-                                InvocationExpression(
-                                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                        ParseTypeName(TypeNames.Unsafe(_options)),
-                                        GenericName("As").AddTypeArgumentListArguments(
-                                            arrayElementType,
-                                            PredefinedType(Token(SyntaxKind.ByteKeyword)))))
-                                .AddArgumentListArguments(
-                                    Argument(IdentifierName(byRefIdentifier))
-                                        .WithRefKindKeyword(Token(SyntaxKind.RefKeyword)))))))),
+                    VariableDeclaration(
+                        PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))),
+                        SingletonSeparatedList(
+                            VariableDeclarator(Identifier(nativeIdentifier))
+                                .WithInitializer(EqualsValueClause(
+                                    PrefixUnaryExpression(SyntaxKind.AddressOfExpression, IdentifierName(byRefIdentifier)))))),
                     EmptyStatement());
             }
         }

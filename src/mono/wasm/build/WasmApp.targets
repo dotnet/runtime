@@ -23,6 +23,7 @@
 
       - $(WasmNativeDebugSymbols) - Build with native debug symbols, useful only with `$(RunAOTCompilation)`, or `$(WasmBuildNative)`
                                     Defaults to true.
+      - $(WasmEmitSymbolMap)      - Generates a `dotnet.js.symbols` file with a map of wasm function number to name.
       - $(WasmDedup)         - Whenever to dedup generic instances when using AOT. Defaults to true.
 
       - $(WasmProfilers)     - Profilers to use
@@ -50,7 +51,9 @@
       - $(EmccFlags)                        - Emcc flags used for both compiling native files, and linking
       - $(EmccExtraLDFlags)                 - Extra emcc flags for linking
       - $(EmccExtraCFlags)                  - Extra emcc flags for compiling native files
-      - $(EmccTotalMemory)                  - Total memory specified with `emcc`. Default value: 536870912
+      - $(EmccInitialHeapSize)              - Initial heap size specified with `emcc`. Default value: 536870912
+                                              Corresponds to `INITIAL_MEMORY` arg for emcc.
+                                              (previously named EmccTotalMemory, which is still kept as an alias)
 
       - $(WasmBuildAppAfterThisTarget)      - This target is used as `AfterTargets` for `WasmBuildApp. this
                                               is what triggers the wasm app building. Defaults to `Build`.
@@ -62,6 +65,8 @@
       - $(RunAOTCompilationAfterBuild)      - Run AOT compilation even after Build. By default, it is run only for publish.
                                               Defaults to false.
       - $(WasmAotProfilePath)               - Path to an AOT profile file.
+      - $(WasmExceptionHandling)            - Enable support for the WASM Exception Handling feature.
+      - $(WasmSIMD)                         - Enable support for the WASM SIMD feature.
 
       Public items:
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).
@@ -81,6 +86,8 @@
 
   <PropertyGroup>
     <WasmDedup Condition="'$(WasmDedup)' == ''">false</WasmDedup>
+    <WasmExceptionHandling Condition="'$(WasmExceptionHandling)' == ''">false</WasmExceptionHandling>
+    <WasmSIMD Condition="'$(WasmSIMD)' == ''">false</WasmSIMD>
 
     <!--<WasmStripAOTAssemblies Condition="'$(AOTMode)' == 'LLVMOnlyInterp'">false</WasmStripAOTAssemblies>-->
     <!--<WasmStripAOTAssemblies Condition="'$(WasmStripAOTAssemblies)' == ''">$(RunAOTCompilation)</WasmStripAOTAssemblies>-->
@@ -96,6 +103,27 @@
 
     <EnableDefaultWasmAssembliesToBundle Condition="'$(EnableDefaultWasmAssembliesToBundle)' == ''">true</EnableDefaultWasmAssembliesToBundle>
     <WasmBuildOnlyAfterPublish Condition="'$(WasmBuildOnlyAfterPublish)' == '' and '$(DeployOnBuild)' == 'true'">true</WasmBuildOnlyAfterPublish>
+    <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == '' and '$(OutputType)' != 'Library'">true</WasmGenerateAppBundle>
+    <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">false</WasmGenerateAppBundle>
+    <UseAppHost>false</UseAppHost>
+
+    <!-- if DebuggerSupport==true, then ensure that WasmDebugLevel isn't disabling debugging -->
+    <WasmDebugLevel Condition="('$(WasmDebugLevel)' == '' or '$(WasmDebugLevel)' == '0') and ('$(DebuggerSupport)' == 'true' or '$(Configuration)' == 'Debug')">-1</WasmDebugLevel>
+
+    <!-- workaround: RuntimeIdentifierInference.targets is imported after this file, and updates OutputPath to include
+                     the RID. So, we don't have the correct final OutputPath here. But we need it for `dotnet run` to work,
+                     as it just reads the RunCommand after evaluation. -->
+    <_AppBundleDirForRunCommand Condition="Exists('$(WasmAppDir)/$(AssemblyName).runtimeconfig.json')">$(WasmAppDir)</_AppBundleDirForRunCommand>
+    <_AppBundleDirForRunCommand Condition="'$(_AppBundleDirForRunCommand)' == '' and Exists('$(OutputPath)/AppBundle')">$([MSBuild]::NormalizeDirectory($(OutputPath), 'AppBundle'))</_AppBundleDirForRunCommand>
+    <_AppBundleDirForRunCommand Condition="'$(_AppBundleDirForRunCommand)' == '' and Exists('$(OutputPath)/browser-wasm/AppBundle')">$([MSBuild]::NormalizeDirectory($(OutputPath), 'browser-wasm', 'AppBundle'))</_AppBundleDirForRunCommand>
+    <_AppBundleDirForRunCommand Condition="'$(_AppBundleDirForRunCommand)' == ''">OutputPath=$(OutputPath), OutDir=$(OutDir)</_AppBundleDirForRunCommand>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(WasmGenerateAppBundle)' == 'true'">
+    <RunCommand Condition="'$(DOTNET_HOST_PATH)' != '' and Exists($(DOTNET_HOST_PATH))">$(DOTNET_HOST_PATH)</RunCommand>
+    <RunCommand Condition="'$(RunCommand)' == ''">dotnet</RunCommand>
+    <RunArguments Condition="'$(RunArguments)' == ''">exec $([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll')) --runtime-config $(_AppBundleDirForRunCommand)/$(AssemblyName).runtimeconfig.json $(WasmHostArguments)</RunArguments>
+    <RunWorkingDirectory Condition="'$(RunWorkingDirectory)' == ''">$(_AppBundleDirForRunCommand)</RunWorkingDirectory>
   </PropertyGroup>
 
   <!-- PUBLISH -->
@@ -196,8 +224,6 @@
     <Error Condition="@(WasmAssembliesToBundle->Count()) == 0" Text="WasmAssembliesToBundle item is empty. No assemblies to process" />
 
     <PropertyGroup>
-      <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == '' and '$(OutputType)' != 'Library'">true</WasmGenerateAppBundle>
-      <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">false</WasmGenerateAppBundle>
       <WasmAppDir Condition="'$(WasmAppDir)' == ''">$([MSBuild]::NormalizeDirectory($(OutputPath), 'AppBundle'))</WasmAppDir>
       <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">$(TargetFileName)</WasmMainAssemblyFileName>
 
@@ -255,6 +281,9 @@
       <WasmIcuDataFileName Condition="'$(InvariantGlobalization)' != 'true'">icudt.dat</WasmIcuDataFileName>
 
       <_HasDotnetWasm Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.wasm'">true</_HasDotnetWasm>
+      <_HasDotnetJsWorker Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.worker.js'">true</_HasDotnetJsWorker>
+      <_HasDotnetJsCryptoWorker Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet-crypto-worker.js'">true</_HasDotnetJsCryptoWorker>
+      <_HasDotnetJsSymbols Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js.symbols'">true</_HasDotnetJsSymbols>
       <_HasDotnetJs Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js'">true</_HasDotnetJs>
     </PropertyGroup>
 
@@ -262,9 +291,15 @@
       <!-- If dotnet.{wasm,js} weren't added already (eg. AOT can add them), then add the default ones -->
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js" Condition="'$(_HasDotnetJs)' != 'true'" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.worker.js" Condition="'$(_HasDotnetJsWorker)' != 'true' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.worker.js')" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet-crypto-worker.js" Condition="'$(_HasDotnetJsCryptoWorker)' != 'true' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet-crypto-worker.js')" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js.symbols"
+                       Condition="'$(WasmEmitSymbolMap)' == 'true' and '$(_HasDotnetJs)' != 'true' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js.symbols')" />
 
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(WasmIcuDataFileName)" Condition="'$(InvariantGlobalization)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.timezones.blat" />
+
+      <WasmFilesToIncludeInFileSystem Include="@(WasmNativeAsset)" Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js.symbols'" />
     </ItemGroup>
   </Target>
 
@@ -279,7 +314,12 @@
     <WasmAppBuilder
       AppDir="$(WasmAppDir)"
       MainJS="$(WasmMainJSPath)"
+      MainHTMLPath="$(WasmMainHTMLPath)"
       Assemblies="@(_WasmAssembliesInternal)"
+      MainAssemblyName="$(WasmMainAssemblyFileName)"
+      HostConfigs="@(HostConfig)"
+      RuntimeArgsForHost="@(WasmMonoRuntimeArgs)"
+      DefaultHostConfig="$(DefaultWasmHostConfig)"
       InvariantGlobalization="$(InvariantGlobalization)"
       SatelliteAssemblies="@(_WasmSatelliteAssemblies)"
       FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
@@ -293,6 +333,9 @@
     </WasmAppBuilder>
 
     <CallTarget Targets="_GenerateRunV8Script" Condition="'$(WasmGenerateRunV8Script)' == 'true'" />
+    <Message Text="Generated app bundle at $(WasmAppDir)" Importance="High" />
+
+    <Copy SourceFiles="@(_WasmAppHostFiles)" DestinationFiles="@(_WasmAppHostFiles->'$(WasmAppDir)\WasmAppHost\%(RecursiveDir)%(FileName)%(Extension)')" />
 
     <WriteLinesToFile File="$(WasmAppDir)\.stamp" Lines="" Overwrite="true" />
   </Target>

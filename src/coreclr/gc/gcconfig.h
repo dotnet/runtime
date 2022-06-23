@@ -103,8 +103,8 @@ public:
     INT_CONFIG   (GCHeapHardLimit,        "GCHeapHardLimit",        "System.GC.HeapHardLimit",        0,                 "Specifies a hard limit for the GC heap")                                                 \
     INT_CONFIG   (GCHeapHardLimitPercent, "GCHeapHardLimitPercent", "System.GC.HeapHardLimitPercent", 0,                 "Specifies the GC heap usage as a percentage of the total memory")                        \
     INT_CONFIG   (GCTotalPhysicalMemory,  "GCTotalPhysicalMemory",  NULL,                             0,                 "Specifies what the GC should consider to be total physical memory")                      \
-    INT_CONFIG   (GCRegionsRange,         "GCRegionsRange",         NULL,                             274877906944L,     "Specifies the range for the GC heap")                                                    \
-    INT_CONFIG   (GCRegionsSize,          "GCRegionsSize",          NULL,                             4194304,           "Specifies the size for a basic GC region")                                               \
+    INT_CONFIG   (GCRegionRange,          "GCRegionRange",          NULL,                             274877906944L,     "Specifies the range for the GC heap")                                                    \
+    INT_CONFIG   (GCRegionSize,           "GCRegionSize",           NULL,                             4194304,           "Specifies the size for a basic GC region")                                               \
     STRING_CONFIG(LogFile,                "GCLogFile",              NULL,                                                "Specifies the name of the GC log file")                                                  \
     STRING_CONFIG(ConfigLogFile,          "GCConfigLogFile",        NULL,                                                "Specifies the name of the GC config log file")                                           \
     INT_CONFIG   (BGCFLTuningEnabled,     "BGCFLTuningEnabled",     NULL,                             0,                 "Enables FL tuning")                                                                      \
@@ -179,6 +179,6 @@ static void Initialize();
 
 };
 
-bool ParseGCHeapAffinitizeRanges(const char* cpu_index_ranges, AffinitySet* config_affinity_set);
+bool ParseGCHeapAffinitizeRanges(const char* cpu_index_ranges, AffinitySet* config_affinity_set, uintptr_t& config_affinity_mask);
 
 #endif // __GCCONFIG_H__

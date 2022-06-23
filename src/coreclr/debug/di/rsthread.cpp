@@ -3526,14 +3526,14 @@ HRESULT CordbUnmanagedThread::GetThreadContext(DT_CONTEXT* pContext)
     // 3) The original context present when the hijack was started
     //
     // Both #1 and #3 are stored in the GetHijackCtx() space so of course you can't
-    // have them both. You have have #1 if IsContextSet() is true, otherwise it holds #3
+    // have them both. You have #1 if IsContextSet() is true, otherwise it holds #3.
     //
     // GenericHijack, FirstChanceHijackForSync, and RaiseExceptionHijack use #1 if available
     // and fallback to #3 if not. In other words they use GetHijackCtx() regardless of which thing it holds
     // M2UHandoff uses #1 if available and then falls back to #2.
     //
     // The reasoning here is that the first three hijacks are intended to be transparent. Since
-    // the debugger shouldn't know they are occuring then it shouldn't see changes potentially
+    // the debugger shouldn't know they are occurring then it shouldn't see changes potentially
     // made on the LS. The M2UHandoff is not transparent, it has to update the context in order
     // to get clear of a bp.
     //
@@ -6884,7 +6884,7 @@ CordbNativeFrame::GetLocalMemoryValue(CORDB_ADDRESS address,
     _ASSERTE(m_nativeCode->GetFunction() != NULL);
     HRESULT hr = S_OK;
 
-    ICorDebugValue *pValue;
+    ICorDebugValue *pValue = NULL;
     EX_TRY
     {
         CordbValue::CreateValueByType(GetCurrentAppDomain(),
@@ -8096,7 +8096,7 @@ HRESULT CordbJITILFrame::FabricateNativeInfo(DWORD dwIndex,
             IfFailThrow(pArgType->GetUnboxedObjectSize(&cbType));
 
 #if defined(TARGET_X86) // STACK_GROWS_DOWN_ON_ARGS_WALK
-            // The the rpCur pointer starts off in the right spot for the
+            // The rpCur pointer starts off in the right spot for the
             // first argument, but thereafter we have to decrement it
             // before getting the variable's location from it.  So increment
             // it here to be consistent later.
@@ -8327,6 +8327,9 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
                                                        type, ppValue);
 #elif defined(TARGET_ARM64)
         hr = m_nativeFrame->GetLocalFloatingPointValue(pNativeVarInfo->loc.vlReg.vlrReg + REGISTER_ARM64_V0,
+                                                       type, ppValue);
+#elif defined(TARGET_LOONGARCH64)
+        hr = m_nativeFrame->GetLocalFloatingPointValue(pNativeVarInfo->loc.vlReg.vlrReg + REGISTER_LOONGARCH64_F0,
                                                        type, ppValue);
 #else
 #error Platform not implemented
@@ -8764,6 +8767,8 @@ HRESULT CordbJITILFrame::GetReturnValueForType(CordbType *pType, ICorDebugValue 
     const CorDebugRegister floatRegister = REGISTER_ARM64_V0;
 #elif  defined(TARGET_ARM)
     const CorDebugRegister floatRegister = REGISTER_ARM_D0;
+#elif  defined(TARGET_LOONGARCH64)
+    const CorDebugRegister floatRegister = REGISTER_LOONGARCH64_F0;
 #endif
 
 #if defined(TARGET_X86)
@@ -8776,7 +8781,8 @@ HRESULT CordbJITILFrame::GetReturnValueForType(CordbType *pType, ICorDebugValue 
 #elif  defined(TARGET_ARM)
     const CorDebugRegister ptrRegister = REGISTER_ARM_R0;
     const CorDebugRegister ptrHighWordRegister = REGISTER_ARM_R1;
-
+#elif  defined(TARGET_LOONGARCH64)
+    const CorDebugRegister ptrRegister = REGISTER_LOONGARCH64_A0;
 #endif
 
     CorElementType corReturnType = pType->GetElementType();

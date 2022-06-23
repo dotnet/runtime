@@ -306,7 +306,7 @@ namespace System.Xml
         {
             int len, lenLocal, offset;
 
-            if (s.Length != 0 && s[0] == '*')
+            if (s.StartsWith('*'))
             {
                 // '*' as a NameTest
                 prefix = localName = null;
@@ -626,7 +626,7 @@ namespace System.Xml
             {
                 prefix = name.Substring(0, colonPos);
                 colonPos++; // move after colon
-                lname = name.Substring(colonPos, name.Length - colonPos);
+                lname = name.Substring(colonPos);
             }
         }
     }

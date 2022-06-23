@@ -11,11 +11,10 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
+using SysTx = System.Transactions;
 
 namespace System.Data.ProviderBase
 {
-    using SysTx = Transactions;
-
     internal sealed class DbConnectionPool
     {
         private enum State
@@ -658,8 +657,6 @@ namespace System.Data.ProviderBase
             return (new Timer(new TimerCallback(this.CleanupCallback), null, _cleanupWait, _cleanupWait));
         }
 
-        private bool IsBlockingPeriodEnabled() => true;
-
         private DbConnectionInternal CreateObject(DbConnection? owningObject, DbConnectionOptions? userOptions, DbConnectionInternal? oldConnection)
         {
             DbConnectionInternal? newObj = null;
@@ -715,11 +712,6 @@ namespace System.Data.ProviderBase
                 }
 
                 ADP.TraceExceptionForCapture(e);
-
-                if (!IsBlockingPeriodEnabled())
-                {
-                    throw;
-                }
 
                 newObj = null; // set to null, so we do not return bad new object
                 // Failed to create instance
@@ -887,7 +879,7 @@ namespace System.Data.ProviderBase
             // postcondition
 
             // ensure that the connection was processed
-            Debug.Assert(rootTxn == true || returnToGeneralPool == true || destroyObject == true);
+            Debug.Assert(rootTxn || returnToGeneralPool || destroyObject);
 
             // TODO: BID trace processing state?
         }

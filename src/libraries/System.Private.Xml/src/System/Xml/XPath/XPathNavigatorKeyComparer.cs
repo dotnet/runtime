@@ -20,8 +20,10 @@ namespace System.Xml.XPath
             return false;
         }
 
-        int IEqualityComparer.GetHashCode(object obj!!)
+        int IEqualityComparer.GetHashCode(object obj)
         {
+            ArgumentNullException.ThrowIfNull(obj);
+
             int hashCode;
             XPathNavigator? nav;
             XPathDocumentNavigator? xpdocNav;

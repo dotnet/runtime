@@ -6,7 +6,7 @@ using System.Security.Permissions;
 
 namespace System.Configuration
 {
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
     [AttributeUsage(AttributeTargets.All, AllowMultiple = true, Inherited = false)]

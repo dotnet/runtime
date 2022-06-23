@@ -166,11 +166,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         [InlineData(Constants.RollForwardSetting.LatestPatch, false)]
         public void NeverRollBackOnPatch_ReleaseOnly(string rollForward, bool? applyPatches)
         {
+            string requestedVersion = "2.1.4";
             RunTest(
-                "2.1.4",
+                requestedVersion,
                 rollForward,
                 applyPatches)
-                .ShouldFailToFindCompatibleFrameworkVersion();
+                .ShouldFailToFindCompatibleFrameworkVersion(MicrosoftNETCoreApp, requestedVersion);
         }
 
         // Verify that rollForward settings will never roll back to lower minor version.
@@ -183,11 +184,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         [InlineData(Constants.RollForwardSetting.LatestMinor, false)]
         public void NeverRollBackOnMinor_ReleaseOnly(string rollForward, bool? applyPatches)
         {
+            string requestedVersion = "2.5.0";
             RunTest(
-                "2.5.0",
+                requestedVersion,
                 rollForward,
                 applyPatches)
-                .ShouldFailToFindCompatibleFrameworkVersion();
+                .ShouldFailToFindCompatibleFrameworkVersion(MicrosoftNETCoreApp, requestedVersion);
         }
 
         // Verify that rollForward settings will never roll back to lower major version.
@@ -200,11 +202,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         [InlineData(Constants.RollForwardSetting.LatestMinor, false)]
         public void NeverRollBackOnMajor_ReleaseOnly(string rollForward, bool? applyPatches)
         {
+            string requestedVersion = "4.1.0";
             RunTest(
-                "4.1.0",
+                requestedVersion,
                 rollForward,
                 applyPatches)
-                .ShouldFailToFindCompatibleFrameworkVersion();
+                .ShouldFailToFindCompatibleFrameworkVersion(MicrosoftNETCoreApp, requestedVersion);
         }
 
         private CommandResult RunTest(

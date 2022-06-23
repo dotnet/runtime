@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -21,7 +20,7 @@ namespace System
             }
         }
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "Buffer_Clear")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Buffer_Clear")]
         private static unsafe partial void __ZeroMemory(void* b, nuint byteLength);
 
         // The maximum block size to for __BulkMoveWithWriteBarrier FCall. This is required to avoid GC starvation.
@@ -77,7 +76,7 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void __BulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount);
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "Buffer_MemMove")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Buffer_MemMove")]
         private static unsafe partial void __Memmove(byte* dest, byte* src, nuint len);
 
         // Used by ilmarshalers.cpp

@@ -8,7 +8,7 @@ using System.Threading;
 
 namespace System.Security.Permissions
 {
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
     public sealed class PrincipalPermission : IPermission, ISecurityEncodable, IUnrestrictedPermission
@@ -151,12 +151,12 @@ namespace System.Security.Permissions
 
                         if (operandIdRole.ID == null || idRole.ID == null || idRole.ID.Equals(operandIdRole.ID))
                         {
-                            newID = operandIdRole.ID == null ? idRole.ID : operandIdRole.ID;
+                            newID = operandIdRole.ID ?? idRole.ID;
                             addToNewIDRoles = true;
                         }
                         if (operandIdRole.Role == null || idRole.Role == null || idRole.Role.Equals(operandIdRole.Role))
                         {
-                            newRole = operandIdRole.Role == null ? idRole.Role : operandIdRole.Role;
+                            newRole = operandIdRole.Role ?? idRole.Role;
                             addToNewIDRoles = true;
                         }
                         if (addToNewIDRoles)
@@ -268,8 +268,13 @@ namespace System.Security.Permissions
             return root;
         }
 
-        public void FromXml(SecurityElement elem!!)
+        public void FromXml(SecurityElement elem)
         {
+            if (elem is null)
+            {
+                throw new ArgumentNullException(nameof(elem));
+            }
+
             if (elem.Tag == null || !elem.Tag.Equals("Permission") && !elem.Tag.Equals("IPermission"))
                 throw new ArgumentException(SR.Argument_NotAPermissionElement);
 

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -11,34 +12,42 @@ namespace Microsoft.Interop
 {
     public sealed class PinnableManagedValueMarshaller : IMarshallingGenerator
     {
-        private readonly IMarshallingGenerator _manualMarshallingGenerator;
+        private readonly IMarshallingGenerator _innerMarshallingGenerator;
 
-        public PinnableManagedValueMarshaller(IMarshallingGenerator manualMarshallingGenerator)
+        public PinnableManagedValueMarshaller(IMarshallingGenerator innerMarshallingGenerator)
         {
-            _manualMarshallingGenerator = manualMarshallingGenerator;
+            _innerMarshallingGenerator = innerMarshallingGenerator;
         }
 
         public bool IsSupported(TargetFramework target, Version version)
-            => _manualMarshallingGenerator.IsSupported(target, version);
+            => _innerMarshallingGenerator.IsSupported(target, version);
 
-        public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
+        public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context)
         {
             if (IsPinningPathSupported(info, context))
             {
-                string identifier = context.GetIdentifiers(info).native;
-                return Argument(CastExpression(AsNativeType(info), IdentifierName(identifier)));
+                if (AsNativeType(info) is PointerTypeSyntax pointerType
+                    && pointerType.ElementType is PredefinedTypeSyntax predefinedType
+                    && predefinedType.Keyword.IsKind(SyntaxKind.VoidKeyword))
+                {
+                    return ValueBoundaryBehavior.NativeIdentifier;
+                }
+
+                // Cast to native type if it is not void*
+                return ValueBoundaryBehavior.CastNativeIdentifier;
             }
-            return _manualMarshallingGenerator.AsArgument(info, context);
+
+            return _innerMarshallingGenerator.GetValueBoundaryBehavior(info, context);
         }
 
         public TypeSyntax AsNativeType(TypePositionInfo info)
         {
-            return _manualMarshallingGenerator.AsNativeType(info);
+            return _innerMarshallingGenerator.AsNativeType(info);
         }
 
-        public ParameterSyntax AsParameter(TypePositionInfo info)
+        public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info)
         {
-            return _manualMarshallingGenerator.AsParameter(info);
+            return _innerMarshallingGenerator.GetNativeSignatureBehavior(info);
         }
 
         public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
@@ -47,12 +56,13 @@ namespace Microsoft.Interop
             {
                 return GeneratePinningPath(info, context);
             }
-            return _manualMarshallingGenerator.Generate(info, context);
+
+            return _innerMarshallingGenerator.Generate(info, context);
         }
 
         public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context)
         {
-            return _manualMarshallingGenerator.SupportsByValueMarshalKind(marshalKind, context);
+            return _innerMarshallingGenerator.SupportsByValueMarshalKind(marshalKind, context);
         }
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context)
@@ -61,18 +71,21 @@ namespace Microsoft.Interop
             {
                 return false;
             }
-            return _manualMarshallingGenerator.UsesNativeIdentifier(info, context);
+
+            return _innerMarshallingGenerator.UsesNativeIdentifier(info, context);
         }
         private static bool IsPinningPathSupported(TypePositionInfo info, StubCodeContext context)
         {
             return context.SingleFrameSpansNativeContext && !info.IsByRef && !info.IsManagedReturnPosition;
         }
 
-        private IEnumerable<StatementSyntax> GeneratePinningPath(TypePositionInfo info, StubCodeContext context)
+        private static IEnumerable<StatementSyntax> GeneratePinningPath(TypePositionInfo info, StubCodeContext context)
         {
             if (context.CurrentStage == StubCodeContext.Stage.Pin)
             {
                 (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
+
+                // fixed (void* <nativeIdentifier> = <managedIdentifier>)
                 yield return FixedStatement(
                     VariableDeclaration(
                         PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))),
@@ -83,8 +96,7 @@ namespace Microsoft.Interop
                                 ))
                         )
                     ),
-                    EmptyStatement()
-                );
+                    EmptyStatement());
             }
         }
     }

@@ -241,7 +241,7 @@ namespace System.Linq.Expressions.Interpreter
                     return null;
                 }
                 //return the last one that is smaller
-                i = i - 1;
+                i--;
             }
 
             return debugInfos[i];
@@ -442,7 +442,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private bool MaybeMutableValueType(Type type)
+        private static bool MaybeMutableValueType(Type type)
         {
             return type.IsValueType && !type.IsEnum && !type.IsPrimitive;
         }

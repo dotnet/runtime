@@ -130,7 +130,7 @@ void trace::error(const pal::char_t* format, ...)
 
     va_list dup_args;
     va_copy(dup_args, args);
-    int count = pal::str_vprintf(nullptr, 0, format, args) + 1;
+    int count = pal::strlen_vprintf(format, args) + 1;
     std::vector<pal::char_t> buffer(count);
     pal::str_vprintf(&buffer[0], count, format, dup_args);
 

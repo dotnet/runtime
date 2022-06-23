@@ -30,14 +30,14 @@ namespace System.Reflection.Emit
             }
         }
 
-        [RequiresDynamicCode("Generating new code at runtime is not supported with native AOT.")]
+        [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access)
         {
             ReflectionEmitThrower.ThrowPlatformNotSupportedException();
             return default;
         }
 
-        [RequiresDynamicCode("Generating new code at runtime is not supported with native AOT.")]
+        [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access, IEnumerable<CustomAttributeBuilder> assemblyAttributes)
         {
             ReflectionEmitThrower.ThrowPlatformNotSupportedException();

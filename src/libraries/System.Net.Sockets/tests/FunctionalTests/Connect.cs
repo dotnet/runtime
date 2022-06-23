@@ -123,7 +123,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop("Connects to external server")]
-        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "Not supported on BSD like OSes.")]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.MacCatalyst | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.FreeBSD, "Not supported on BSD like OSes.")]
         [Theory]
         [InlineData("1.1.1.1", false)]
         [InlineData("1.1.1.1", true)]
@@ -341,8 +341,10 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
-        public async Task FailedConnect_ConnectedReturnsFalse()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task FailedConnect_ConnectedReturnsFalse(bool useTimeSpan)
         {
             using Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
@@ -354,7 +356,14 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(SocketError.WouldBlock, se.SocketErrorCode);
 
                 // Give the non-blocking connect some time to complete.
-                socket.Poll(5_000_000 /* microSeconds */, SelectMode.SelectWrite);
+                if (useTimeSpan)
+                {
+                    socket.Poll(TimeSpan.FromMilliseconds(5000), SelectMode.SelectWrite);
+                }
+                else
+                {
+                    socket.Poll(5_000_000 /* microSeconds */, SelectMode.SelectWrite);
+                }
             }
 
             Assert.False(socket.Connected);

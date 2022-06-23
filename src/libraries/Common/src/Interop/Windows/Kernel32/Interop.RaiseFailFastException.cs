@@ -49,7 +49,7 @@ internal partial class Interop
                 pExAddress == IntPtr.Zero ? FAIL_FAST_GENERATE_EXCEPTION_ADDRESS : 0);
         }
 
-        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "RaiseFailFastException")]
+        [LibraryImport(Libraries.Kernel32, EntryPoint = "RaiseFailFastException")]
         [DoesNotReturn]
         private static unsafe partial void RaiseFailFastException(
             EXCEPTION_RECORD* pExceptionRecord,

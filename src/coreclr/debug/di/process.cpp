@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // File: process.cpp
 //
-
-//
 //*****************************************************************************
+
 #include "stdafx.h"
 #include "primitives.h"
 #include "safewrap.h"
@@ -604,7 +604,7 @@ void CordbProcess::Free(void * p)
 //          runtime then DBI matches DAC. Technically because the DBI only matches runtime on major version number
 //          runtime and DAC could be from different builds. However because we service all three binaries together
 //          and DBI always loads the DAC that is sitting in the same directory DAC and DBI generally get tight
-//          version coupling. A user with admin privleges could put different builds together and no version check
+//          version coupling. A user with admin privileges could put different builds together and no version check
 //          would ever fail though.
 //
 //      - Desktop and Windows CoreCLR (new architecture)
@@ -684,9 +684,9 @@ CordbProcess::CreateDacDbiInterface()
     // in the new arch we can get the module from OpenVirtualProcess2 but in the shim case
     // and the deprecated OpenVirtualProcess case we must assume it comes from DAC in the
     // same directory as DBI
-    if(m_hDacModule == NULL)
+    if (m_hDacModule == NULL)
     {
-        m_hDacModule.Assign(ShimProcess::GetDacModule());
+        m_hDacModule.Assign(ShimProcess::GetDacModule(m_cordb->GetDacModulePath()));
     }
 
     //
@@ -1312,6 +1312,12 @@ void CordbProcess::NeuterChildren()
     m_steppers.NeuterAndClear(GetProcessLock());
 
 #ifdef FEATURE_INTEROP_DEBUGGING
+    if (m_lastDispatchedIBEvent != NULL)
+    {
+        m_lastDispatchedIBEvent->m_owner->InternalRelease();
+        m_lastDispatchedIBEvent = NULL;
+    }
+
     m_unmanagedThreads.NeuterAndClear(GetProcessLock());
 #endif // FEATURE_INTEROP_DEBUGGING
 
@@ -2726,7 +2732,7 @@ HRESULT CordbRefEnum::Next(ULONG celt, COR_GC_REFERENCE refs[], ULONG *pceltFetc
                     {
                         CordbAppDomain *pDomain = process->LookupOrCreateAppDomain(dacRefs[i].vmDomain);
 
-                        ICorDebugAppDomain *pAppDomain;
+                        ICorDebugAppDomain *pAppDomain = NULL;
                         ICorDebugValue *pOutObject = NULL;
                         if (dacRefs[i].pObject & 1)
                         {
@@ -6400,7 +6406,7 @@ HRESULT CordbProcess::SafeWriteThreadContext(LSPTR_CONTEXT pContext, const DT_CO
 #endif
 
 // 64 bit windows puts space for the first 6 stack parameters in the CONTEXT structure so that
-// kernel to usermode transitions don't have to allocate a CONTEXT and do a seperate sub rsp
+// kernel to usermode transitions don't have to allocate a CONTEXT and do a separate sub rsp
 // to allocate stack spill space for the arguments. This means that writing to P1Home - P6Home
 // will overwrite the arguments of some function higher on the stack, very bad. Conceptually you
 // can think of these members as not being part of the context, ie they don't represent something
@@ -7552,7 +7558,7 @@ void CordbProcess::VerifyControlBlock()
     UpdateLeftSideDCBField(&(GetDCB()->m_rightSideProtocolMinSupported),
                            sizeof(GetDCB()->m_rightSideProtocolMinSupported));
 
-    // For Telesto, Dbi and Wks have a more flexible versioning allowed, as described by the Debugger
+    // Dbi and Wks have a more flexible versioning allowed, as described by the Debugger
     // Version Protocol String in DEBUGGER_PROTOCOL_STRING in DbgIpcEvents.h. This allows different build
     // numbers, but the other protocol numbers should still match.
 
@@ -11440,9 +11446,6 @@ void CordbWin32EventThread::Win32EventLoop()
 
     LOG((LF_CORDB, LL_INFO1000, "W32ET::W32EL: entered win32 event loop\n"));
 
-
-    DEBUG_EVENT event;
-
     // Allow the timeout for WFDE to be adjustable. Default to 25 ms based off perf numbers (see issue VSWhidbey 132368).
     DWORD dwWFDETimeout = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_DbgWFDETimeout);
 
@@ -11468,7 +11471,7 @@ void CordbWin32EventThread::Win32EventLoop()
         rghWaitSet[0] = m_threadControlEvent;
 
         DWORD dwWaitTimeout = INFINITE;
-
+        DEBUG_EVENT event = {};
         if (m_pProcess != NULL)
         {
             // Process is always built on Native debugging pipeline, so it needs to always be prepared to call WFDE
@@ -12783,7 +12786,7 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
     }
 #endif
 
-    // This call will decide what to do w/ the the win32 event we just got. It does a lot of work.
+    // This call will decide what to do w/ the win32 event we just got. It does a lot of work.
     Reaction reaction = TriageWin32DebugEvent(pUnmanagedThread, pEvent);
 
 

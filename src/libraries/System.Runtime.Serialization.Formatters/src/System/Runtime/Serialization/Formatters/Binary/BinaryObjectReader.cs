@@ -40,7 +40,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         //MethodCall and MethodReturn are handled special for perf reasons
         private bool _fullDeserialization;
 
-        private SerStack ValueFixupStack => _valueFixupStack ?? (_valueFixupStack = new SerStack("ValueType Fixup Stack"));
+        private SerStack ValueFixupStack => _valueFixupStack ??= new SerStack("ValueType Fixup Stack");
 
         // Older formatters generate ids for valuetypes using a different counter than ref types. Newer ones use
         // a single counter, only value types have a negative value. Need a way to handle older formats.
@@ -63,8 +63,10 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
         }
 
-        internal ObjectReader(Stream stream!!, ISurrogateSelector? selector, StreamingContext context, InternalFE formatterEnums, SerializationBinder? binder)
+        internal ObjectReader(Stream stream, ISurrogateSelector? selector, StreamingContext context, InternalFE formatterEnums, SerializationBinder? binder)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             _stream = stream;
             _surrogates = selector;
             _context = context;
@@ -73,8 +75,10 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         [RequiresUnreferencedCode("Types might be removed")]
-        internal object Deserialize(BinaryParser serParser!!)
+        internal object Deserialize(BinaryParser serParser)
         {
+            ArgumentNullException.ThrowIfNull(serParser);
+
             _fullDeserialization = false;
             TopObject = null;
             _topId = 0;
@@ -479,7 +483,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 int sum = 1;
                 for (int i = 0; i < pr._rank; i++)
                 {
-                    sum = sum * pr._lengthA[i];
+                    sum *= pr._lengthA[i];
                 }
                 pr._indexMap = new int[pr._rank];
                 pr._rectangularMap = new int[pr._rank];
@@ -651,9 +655,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     }
                     else
                     {
-                        var = pr._varValue != null ?
-                            pr._varValue :
-                            Converter.FromString(pr._value, pr._dtTypeCode);
+                        var = pr._varValue ?? Converter.FromString(pr._value, pr._dtTypeCode);
                     }
                     if (objectPr._objectA != null)
                     {
@@ -676,9 +678,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     }
                     else
                     {
-                        object? var = pr._varValue != null ?
-                            pr._varValue :
-                            Converter.FromString(pr._value, objectPr._arrayElementTypeCode);
+                        object? var = pr._varValue ?? Converter.FromString(pr._value, objectPr._arrayElementTypeCode);
                         if (objectPr._objectA != null)
                         {
                             objectPr._objectA[objectPr._indexMap[0]] = var;
@@ -816,9 +816,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 }
                 else
                 {
-                    object? var = pr._varValue != null ?
-                        pr._varValue :
-                        Converter.FromString(pr._value, pr._dtTypeCode);
+                    object? var = pr._varValue ?? Converter.FromString(pr._value, pr._dtTypeCode);
                     objectPr._objectInfo.AddValue(pr._name, var, ref objectPr._si, ref objectPr._memberData);
                 }
             }

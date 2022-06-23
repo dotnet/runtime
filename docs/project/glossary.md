@@ -24,12 +24,14 @@ terminology.
 | DAC | Data Access Component. An abstraction layer over the internal structures in the runtime. |
 | EE | [Execution Engine](https://docs.microsoft.com/dotnet/standard/managed-execution-process#running_code). |
 | GC | [Garbage Collector](https://github.com/dotnet/runtime/blob/main/docs/design/coreclr/botr/garbage-collection.md). |
+| IBC | Instrumented Block Counts - used as extension (`*.ibc`) for old PGO files. |
 | IPC | Inter-Process Communication. |
 | IL | Intermediate Language. Equivalent to CIL, also equivalent to [MSIL](https://docs.microsoft.com/dotnet/standard/managed-execution-process#compiling-to-msil). |
 | JIT | [Just-in-Time](https://github.com/dotnet/runtime/blob/main/docs/design/coreclr/jit/ryujit-overview.md) compiler. RyuJIT is the code name for the next generation Just-in-Time(aka "JIT") for the .NET runtime. |
 | LCG | Lightweight Code Generation. An early name for [dynamic methods](https://github.com/dotnet/runtime/blob/main/src/coreclr/System.Private.CoreLib/src/System/Reflection/Emit/DynamicMethod.cs). |
 | MD | MetaData. |
 | MDA | Managed Debugging Assistant - see [details](https://docs.microsoft.com/dotnet/framework/debug-trace-profile/diagnosing-errors-with-managed-debugging-assistants) (Note: Not in .NET Core, equivalent diagnostic functionality is made available on a case-by-case basis, e.g. [#9418](https://github.com/dotnet/runtime/issues/9418)) |
+| MIBC | Managed Instrumented Block Counts - used as extension (`*.mibc`) for managed PGO files. |
 | MSIL | [Microsoft Intermediate Language](https://docs.microsoft.com/dotnet/standard/managed-execution-process#compiling-to-msil).Common Intermediate Language. Equivalent to IL, also equivalent to CIL. |
 | NGen | Native Image Generator. |
 | NYI | Not Yet Implemented. |
@@ -43,12 +45,13 @@ terminology.
 | SDK | Software Development Kit. The [.NET SDK](https://docs.microsoft.com/dotnet/core/sdk) contains the .NET CLI, .NET libraries and runtime, and the dotnet driver. |
 | SEH | [Structured Exception Handling](https://docs.microsoft.com/windows/win32/debug/structured-exception-handling). Unified mechanism for handling hardware and software exceptions on Windows. |
 | SOS | [Son of Strike](https://docs.microsoft.com/archive/blogs/jasonz/sos-debugging-of-the-clr-part-1). The debugging extension for DbgEng based debuggers. Uses the DAC as an abstraction layer for its operation. |
+| SPCL | `System.Private.CoreLib` - the lowest managed assembly in the libraries stack that contains `System.Object`, `String`, etc. |
 | SuperPMI | JIT component test framework (super fast JIT testing - it mocks/replays EE in EE-JIT interface) - see [SuperPMI details](https://github.com/dotnet/runtime/blob/main/src/coreclr/tools/superpmi/readme.md). |
 | SVR | The CLR used to be built as two variants, with one called "mscorsvr.dll", to mean the "server" version. In particular, it contained the server GC implementation, which was intended for multi-threaded apps capable of taking advantage of multiple processors. In the .NET Framework 2 release, the two variants were merged into "mscorwks.dll". The WKS version was the default, however the SVR version remained available. |
 | TFM | [Target Framework Moniker](https://docs.microsoft.com/dotnet/standard/frameworks) such as `net6.0` or `netstandard2.0`. |
 | TPA | Trusted Platform Assemblies used to be a special set of assemblies that comprised the platform assemblies, when it was originally designed. As of today, it is simply the set of assemblies known to constitute the application. |
 | URT | Universal Runtime. Ancient name for what ended up being .NET, is used in the WinError facility name FACILITY_URT. |
-| UTC | [Universal Tuple Compiler](https://blogs.msdn.microsoft.com/vcblog/2013/06/12/optimizing-c-code-overview/). The Microsoft C++ optimizer back-end that that starts by converting the information from the FrontEnd into tuples – a binary stream of instructions. |
+| UTC | [Universal Tuple Compiler](https://blogs.msdn.microsoft.com/vcblog/2013/06/12/optimizing-c-code-overview/). The Microsoft C++ optimizer back-end that starts by converting the information from the FrontEnd into tuples – a binary stream of instructions. |
 | UWP | [Universal Windows Platform (UWP)](https://docs.microsoft.com/en-us/windows/uwp/get-started/universal-application-platform-guide) is a platform-homogeneous application architecture available on every device that runs Windows 10. |
 | VSD | [Virtual Stub Dispatch](../design/coreclr/botr/virtual-stub-dispatch.md). Technique of using stubs for virtual method invocations instead of the traditional virtual method table. |
 | VM | Virtual machine. |

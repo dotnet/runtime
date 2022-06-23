@@ -367,7 +367,21 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             switch (intrin.numOperands)
             {
                 case 1:
-                    GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                    if (intrin.op1->isContained())
+                    {
+                        assert(ins == INS_ld1);
+
+                        // Emit 'ldr target, [base, index]'
+                        GenTreeAddrMode* lea = intrin.op1->AsAddrMode();
+                        assert(lea->GetScale() == 1);
+                        assert(lea->Offset() == 0);
+                        GetEmitter()->emitIns_R_R_R(INS_ldr, emitSize, targetReg, lea->Base()->GetRegNum(),
+                                                    lea->Index()->GetRegNum());
+                    }
+                    else
+                    {
+                        GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                    }
                     break;
 
                 case 2:
@@ -776,17 +790,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            // mvni doesn't support the range of element types, so hard code the 'opts' value.
-            case NI_Vector64_get_Zero:
-            case NI_Vector64_get_AllBitsSet:
-                GetEmitter()->emitIns_R_I(ins, emitSize, targetReg, 0, INS_OPTS_2S);
-                break;
-
-            case NI_Vector128_get_Zero:
-            case NI_Vector128_get_AllBitsSet:
-                GetEmitter()->emitIns_R_I(ins, emitSize, targetReg, 0, INS_OPTS_4S);
-                break;
-
             case NI_AdvSimd_DuplicateToVector64:
             case NI_AdvSimd_DuplicateToVector128:
             case NI_AdvSimd_Arm64_DuplicateToVector64:
@@ -858,7 +861,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     regNumber baseReg;
                     regNumber indexReg = op2Reg;
 
-                    // Optimize the case of op1 is in memory and trying to access ith element.
+                    // Optimize the case of op1 is in memory and trying to access i'th element.
                     if (!intrin.op1->isUsedFromReg())
                     {
                         assert(intrin.op1->isContained());

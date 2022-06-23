@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -16,188 +18,210 @@ namespace System.Tests
         [Fact]
         public static void Zero()
         {
-            VerifyPointer(UIntPtr.Zero, 0);
+            VerifyPointer(nuint.Zero, 0);
         }
 
         [Fact]
         public static void Ctor_UInt()
         {
             uint i = 42;
-            VerifyPointer(new UIntPtr(i), i);
-            VerifyPointer((UIntPtr)i, i);
+            VerifyPointer(new nuint(i), i);
+            VerifyPointer(i, i);
         }
 
         [ConditionalFact(nameof(Is64Bit))]
         public static void Ctor_ULong()
         {
             ulong l = 0x0fffffffffffffff;
-            VerifyPointer(new UIntPtr(l), l);
-            VerifyPointer((UIntPtr)l, l);
+            VerifyPointer(new nuint(l), l);
+            VerifyPointer((nuint)l, l);
         }
 
         [ConditionalFact(nameof(Is64Bit))]
         public static unsafe void TestCtor_VoidPointer_ToPointer()
         {
-            void* pv = new UIntPtr(42).ToPointer();
+            void* pv = new nuint(42).ToPointer();
 
-            VerifyPointer(new UIntPtr(pv), 42);
-            VerifyPointer((UIntPtr)pv, 42);
+            VerifyPointer(new nuint(pv), 42);
+            VerifyPointer((nuint)pv, 42);
         }
 
         [ConditionalFact(nameof(Is64Bit))]
         public static unsafe void TestSize()
         {
-            Assert.Equal(sizeof(void*), UIntPtr.Size);
+            Assert.Equal(sizeof(void*), nuint.Size);
         }
 
         public static IEnumerable<object[]> Add_TestData()
         {
-            yield return new object[] { new UIntPtr(42), 6, (ulong)48 };
-            yield return new object[] { new UIntPtr(40), 0, (ulong)40 };
-            yield return new object[] { new UIntPtr(38), -2, (ulong)36 };
+            yield return new object[] { (nuint)42, 6, (ulong)48 };
+            yield return new object[] { (nuint)40, 0, (ulong)40 };
+            yield return new object[] { (nuint)38, -2, (ulong)36 };
 
-            yield return new object[] { new UIntPtr(0xffffffffffffffff), 5, unchecked(0x0000000000000004) }; /// Add should not throw an OverflowException
+            yield return new object[] { unchecked((nuint)0xffffffffffffffff), 5, unchecked(0x0000000000000004) }; /// Add should not throw an OverflowException
         }
 
         [ConditionalTheory(nameof(Is64Bit))]
         [MemberData(nameof(Add_TestData))]
-        public static void Add(UIntPtr ptr, int offset, ulong expected)
+        public static void Add(nuint value, int offset, ulong expected)
         {
-            UIntPtr p1 = UIntPtr.Add(ptr, offset);
-            VerifyPointer(p1, expected);
+            MethodInfo add = typeof(nuint).GetMethod("Add");
 
-            UIntPtr p2 = ptr + offset;
-            VerifyPointer(p2, expected);
+            nuint result = (nuint)add.Invoke(null, new object[] { value, offset });
+            VerifyPointer(result, expected);
 
-            UIntPtr p3 = ptr;
-            p3 += offset;
-            VerifyPointer(p3, expected);
+            MethodInfo opAddition = typeof(nuint).GetMethod("op_Addition");
+
+            result = (nuint)opAddition.Invoke(null, new object[] { value, offset });
+            VerifyPointer(result, expected);
         }
 
         public static IEnumerable<object[]> Subtract_TestData()
         {
-            yield return new object[] { new UIntPtr(42), 6, (ulong)36 };
-            yield return new object[] { new UIntPtr(40), 0, (ulong)40 };
-            yield return new object[] { new UIntPtr(38), -2, (ulong)40 };
+            yield return new object[] { (nuint)42, 6, (ulong)36 };
+            yield return new object[] { (nuint)40, 0, (ulong)40 };
+            yield return new object[] { (nuint)38, -2, (ulong)40 };
         }
 
         [ConditionalTheory(nameof(Is64Bit))]
         [MemberData(nameof(Subtract_TestData))]
-        public static void Subtract(UIntPtr ptr, int offset, ulong expected)
+        public static void Subtract(nuint value, int offset, ulong expected)
         {
-            UIntPtr p1 = UIntPtr.Subtract(ptr, offset);
-            VerifyPointer(p1, expected);
+            MethodInfo subtract = typeof(nuint).GetMethod("Subtract");
 
-            UIntPtr p2 = ptr - offset;
-            VerifyPointer(p2, expected);
+            nuint result = (nuint)subtract.Invoke(null, new object[] { value, offset });
+            VerifyPointer(result, expected);
 
-            UIntPtr p3 = ptr;
-            p3 -= offset;
-            VerifyPointer(p3, expected);
+            MethodInfo opSubtraction = typeof(nuint).GetMethod("op_Subtraction");
+
+            result = (nuint)opSubtraction.Invoke(null, new object[] { value, offset });
+            VerifyPointer(result, expected);
         }
 
         public static IEnumerable<object[]> Equals_TestData()
         {
-            yield return new object[] { new UIntPtr(42), new UIntPtr(42), true };
-            yield return new object[] { new UIntPtr(42), new UIntPtr(43), false };
-            yield return new object[] { new UIntPtr(42), 42, false };
-            yield return new object[] { new UIntPtr(42), null, false };
+            yield return new object[] { (nuint)42, (nuint)42, true };
+            yield return new object[] { (nuint)42, (nuint)43, false };
+            yield return new object[] { (nuint)42, 42, false };
+            yield return new object[] { (nuint)42, null, false };
         }
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public static void EqualsTest(UIntPtr ptr1, object obj, bool expected)
+        public static void EqualsTest(nuint value, object obj, bool expected)
         {
-            if (obj is UIntPtr)
+            if (obj is nuint other)
             {
-                UIntPtr ptr2 = (UIntPtr)obj;
-                Assert.Equal(expected, ptr1 == ptr2);
-                Assert.Equal(!expected, ptr1 != ptr2);
-                Assert.Equal(expected, ptr1.GetHashCode().Equals(ptr2.GetHashCode()));
+                Assert.Equal(expected, value == other);
+                Assert.Equal(!expected, value != other);
+                Assert.Equal(expected, value.GetHashCode().Equals(other.GetHashCode()));
 
-                IEquatable<UIntPtr> iEquatable = ptr1;
-                Assert.Equal(expected, iEquatable.Equals((UIntPtr)obj));
+                IEquatable<nuint> iEquatable = value;
+                Assert.Equal(expected, iEquatable.Equals((nuint)obj));
             }
-            Assert.Equal(expected, ptr1.Equals(obj));
-            Assert.Equal(ptr1.GetHashCode(), ptr1.GetHashCode());
+            Assert.Equal(expected, value.Equals(obj));
+            Assert.Equal(value.GetHashCode(), value.GetHashCode());
         }
 
         [ConditionalFact(nameof(Is64Bit))]
-        public static unsafe void TestImplicitCast()
+        public static unsafe void TestExplicitCast()
         {
-            var ptr = new UIntPtr(42);
+            nuint value = 42u;
 
-            uint i = (uint)ptr;
+            MethodInfo[] methods = typeof(nuint).GetMethods();
+
+            MethodInfo opExplicitFromUInt32 = typeof(nuint).GetMethod("op_Explicit", new Type[] { typeof(uint) });
+            MethodInfo opExplicitToUInt32 = methods.Single((methodInfo) => (methodInfo.Name == "op_Explicit") && (methodInfo.ReturnType == typeof(uint)));
+
+            uint i = (uint)opExplicitToUInt32.Invoke(null, new object[] { value });
             Assert.Equal(42u, i);
-            Assert.Equal(ptr, (UIntPtr)i);
+            Assert.Equal(value, (nuint)opExplicitFromUInt32.Invoke(null, new object[] { i }));
 
-            ulong l = (ulong)ptr;
+            MethodInfo opExplicitFromUInt64 = typeof(nuint).GetMethod("op_Explicit", new Type[] { typeof(ulong) });
+            MethodInfo opExplicitToUInt64 = methods.Single((methodInfo) => (methodInfo.Name == "op_Explicit") && (methodInfo.ReturnType == typeof(ulong)));
+
+            ulong l = (ulong)opExplicitToUInt64.Invoke(null, new object[] { value });
             Assert.Equal(42u, l);
-            Assert.Equal(ptr, (UIntPtr)l);
+            Assert.Equal(value, (nuint)opExplicitFromUInt64.Invoke(null, new object[] { l }));
 
-            void* v = (void*)ptr;
-            Assert.Equal(ptr, (UIntPtr)v);
+            MethodInfo opExplicitFromPointer = typeof(nuint).GetMethod("op_Explicit", new Type[] { typeof(void*) });
+            MethodInfo opExplicitToPointer = methods.Single((methodInfo) => (methodInfo.Name == "op_Explicit") && (methodInfo.ReturnType == typeof(void*)));
 
-            ptr = new UIntPtr(0x7fffffffffffffff);
-            Assert.Throws<OverflowException>(() => (uint)ptr);
+            void* v = Pointer.Unbox(opExplicitToPointer.Invoke(null, new object[] { value }));
+            Assert.Equal(value, (nuint)opExplicitFromPointer.Invoke(null, new object[] { Pointer.Box(v, typeof(void*)) }));
+
+            value = unchecked((nuint)0x7fffffffffffffff);
+            Exception ex = Assert.ThrowsAny<Exception>(() => opExplicitToUInt32.Invoke(null, new object[] { value }));
+
+
+            if (ex is TargetInvocationException)
+            {
+                // RyuJIT throws TargetInvocationException wrapping an OverflowException
+                // while Mono directly throws the OverflowException
+                ex = ex.InnerException;
+            }
+            Assert.IsType<OverflowException>(ex);
         }
 
         [ConditionalFact(nameof(Is64Bit))]
         public static void GetHashCodeRespectAllBits()
         {
-            var ptr1 = new UIntPtr(0x123456FFFFFFFF);
-            var ptr2 = new UIntPtr(0x654321FFFFFFFF);
-            Assert.NotEqual(ptr1.GetHashCode(), ptr2.GetHashCode());
+            var value = unchecked((nuint)0x123456FFFFFFFF);
+            var other = unchecked((nuint)0x654321FFFFFFFF);
+            Assert.NotEqual(value.GetHashCode(), other.GetHashCode());
         }
 
-        private static void VerifyPointer(UIntPtr ptr, ulong expected)
+        private static void VerifyPointer(nuint value, ulong expected)
         {
-            Assert.Equal(expected, ptr.ToUInt64());
+            Assert.Equal(expected, value.ToUInt64());
 
             uint expected32 = unchecked((uint)expected);
             if (expected32 != expected)
             {
-                Assert.Throws<OverflowException>(() => ptr.ToUInt32());
+                Assert.Throws<OverflowException>(() => value.ToUInt32());
                 return;
             }
 
-            Assert.Equal(expected32, ptr.ToUInt32());
+            Assert.Equal(expected32, value.ToUInt32());
 
-            Assert.Equal(expected.ToString(), ptr.ToString());
+            Assert.Equal(expected.ToString(), value.ToString());
 
-            Assert.Equal(ptr, new UIntPtr(expected));
-            Assert.True(ptr == new UIntPtr(expected));
-            Assert.False(ptr != new UIntPtr(expected));
+            Assert.Equal(value, checked((nuint)expected));
+            Assert.True(value == checked((nuint)expected));
+            Assert.False(value != checked((nuint)expected));
 
-            Assert.NotEqual(ptr, new UIntPtr(expected + 1));
-            Assert.False(ptr == new UIntPtr(expected + 1));
-            Assert.True(ptr != new UIntPtr(expected + 1));
+            Assert.NotEqual(value, checked((nuint)expected + 1));
+            Assert.False(value == checked((nuint)expected + 1));
+            Assert.True(value != checked((nuint)expected + 1));
         }
+
+        public static nuint RealMax => Is64Bit ? unchecked((nuint)ulong.MaxValue) : uint.MaxValue;
+        public static nuint RealMin => Is64Bit ? unchecked((nuint)ulong.MinValue) : uint.MinValue;
 
         [Fact]
         public static void Ctor_Empty()
         {
-            var i = new UIntPtr();
-            Assert.Equal((UIntPtr)0, i);
+            var i = new nuint();
+            Assert.Equal((nuint)0, i);
         }
 
         [Fact]
         public static void Ctor_Value()
         {
-            UIntPtr i = (UIntPtr)41;
-            Assert.Equal((UIntPtr)41, i);
+            nuint i = 41;
+            Assert.Equal((nuint)41, i);
         }
 
         [Fact]
         public static void MaxValue()
         {
-            Assert.Equal(UIntPtr.Size == 4 ? (UIntPtr)uint.MaxValue : (UIntPtr)ulong.MaxValue, UIntPtr.MaxValue);
+            Assert.Equal(RealMax, nuint.MaxValue);
         }
 
         [Fact]
         public static void MinValue()
         {
-            Assert.Equal((UIntPtr)0, UIntPtr.MinValue);
+            Assert.Equal(RealMin, nuint.MinValue);
         }
 
         [Theory]
@@ -209,10 +233,10 @@ namespace System.Tests
         [InlineData(234u, null, 1)]
         public static void CompareTo_Other_ReturnsExpected(uint i0, object value, int expected)
         {
-            var i = (UIntPtr)i0;
+            nuint i = i0;
             if (value is uint uintValue)
             {
-                var uintPtrValue = (UIntPtr)uintValue;
+                nuint uintPtrValue = uintValue;
                 Assert.Equal(expected, Math.Sign(i.CompareTo(uintPtrValue)));
 
                 Assert.Equal(expected, Math.Sign(i.CompareTo((object)uintPtrValue)));
@@ -226,27 +250,27 @@ namespace System.Tests
         [Theory]
         [InlineData("a")]
         [InlineData(234)]
-        public static void CompareTo_ObjectNotUIntPtr_ThrowsArgumentException(object value)
+        public static void CompareTo_ObjectNotnuint_ThrowsArgumentException(object value)
         {
-            AssertExtensions.Throws<ArgumentException>(null, () => ((UIntPtr)123).CompareTo(value));
+            AssertExtensions.Throws<ArgumentException>(null, () => ((nuint)123).CompareTo(value));
         }
 
         public static IEnumerable<object[]> ToString_TestData()
         {
             foreach (NumberFormatInfo defaultFormat in new[] { null, NumberFormatInfo.CurrentInfo })
             {
-                foreach (string defaultSpecifier in new[] { "G", "G\0", "\0N222", "\0", "" })
+                foreach (string defaultSpecifier in new[] { "G", "G\0", "\0N222", "\0", "", "R" })
                 {
-                    yield return new object[] { (UIntPtr)0, defaultSpecifier, defaultFormat, "0" };
-                    yield return new object[] { (UIntPtr)4567, defaultSpecifier, defaultFormat, "4567" };
-                    yield return new object[] { UIntPtr.MaxValue, defaultSpecifier, defaultFormat, Is64Bit ? "18446744073709551615" : "4294967295" };
+                    yield return new object[] { (nuint)0, defaultSpecifier, defaultFormat, "0" };
+                    yield return new object[] { (nuint)4567, defaultSpecifier, defaultFormat, "4567" };
+                    yield return new object[] { nuint.MaxValue, defaultSpecifier, defaultFormat, Is64Bit ? "18446744073709551615" : "4294967295" };
                 }
 
-                yield return new object[] { (UIntPtr)4567, "D", defaultFormat, "4567" };
-                yield return new object[] { (UIntPtr)4567, "D18", defaultFormat, "000000000000004567" };
+                yield return new object[] { (nuint)4567, "D", defaultFormat, "4567" };
+                yield return new object[] { (nuint)4567, "D18", defaultFormat, "000000000000004567" };
 
-                yield return new object[] { (UIntPtr)0x2468, "x", defaultFormat, "2468" };
-                yield return new object[] { (UIntPtr)2468, "N", defaultFormat, string.Format("{0:N}", 2468.00) };
+                yield return new object[] { (nuint)0x2468, "x", defaultFormat, "2468" };
+                yield return new object[] { (nuint)2468, "N", defaultFormat, string.Format("{0:N}", 2468.00) };
             }
 
             var customFormat = new NumberFormatInfo()
@@ -261,15 +285,15 @@ namespace System.Tests
                 PercentDecimalSeparator = ".",
                 PercentDecimalDigits = 5
             };
-            yield return new object[] { (UIntPtr)2468, "N", customFormat, "2*468~00" };
-            yield return new object[] { (UIntPtr)123, "E", customFormat, "1~230000E&002" };
-            yield return new object[] { (UIntPtr)123, "F", customFormat, "123~00" };
-            yield return new object[] { (UIntPtr)123, "P", customFormat, "12,300.00000 @" };
+            yield return new object[] { (nuint)2468, "N", customFormat, "2*468~00" };
+            yield return new object[] { (nuint)123, "E", customFormat, "1~230000E&002" };
+            yield return new object[] { (nuint)123, "F", customFormat, "123~00" };
+            yield return new object[] { (nuint)123, "P", customFormat, "12,300.00000 @" };
         }
 
         [Theory]
         [MemberData(nameof(ToString_TestData))]
-        public static void ToStringTest(UIntPtr i, string format, IFormatProvider provider, string expected)
+        public static void ToStringTest(nuint i, string format, IFormatProvider provider, string expected)
         {
             // Format is case insensitive
             string upperFormat = format.ToUpperInvariant();
@@ -279,7 +303,7 @@ namespace System.Tests
             string lowerExpected = expected.ToLowerInvariant();
 
             bool isDefaultProvider = (provider == null || provider == NumberFormatInfo.CurrentInfo);
-            if (string.IsNullOrEmpty(format) || format.ToUpperInvariant() == "G")
+            if (string.IsNullOrEmpty(format) || format.ToUpperInvariant() is "G" or "R")
             {
                 if (isDefaultProvider)
                 {
@@ -302,23 +326,19 @@ namespace System.Tests
         [Fact]
         public static void ToString_InvalidFormat_ThrowsFormatException()
         {
-            UIntPtr i = (UIntPtr)123;
-            Assert.Throws<FormatException>(() => i.ToString("r")); // Invalid format
-            Assert.Throws<FormatException>(() => i.ToString("r", null)); // Invalid format
-            Assert.Throws<FormatException>(() => i.ToString("R")); // Invalid format
-            Assert.Throws<FormatException>(() => i.ToString("R", null)); // Invalid format
+            nuint i = 123;
             Assert.Throws<FormatException>(() => i.ToString("Y")); // Invalid format
             Assert.Throws<FormatException>(() => i.ToString("Y", null)); // Invalid format
         }
 
         public static IEnumerable<object[]> Parse_Valid_TestData()
         {
-            // Reuse all IntPtr test data that's relevant
+            // Reuse all nint test data that's relevant
             foreach (object[] objs in IntPtrTests.Parse_Valid_TestData())
             {
-                if ((long)(IntPtr)objs[3] < 0) continue;
-                var intPtr = (IntPtr)objs[3];
-                yield return new object[] { objs[0], objs[1], objs[2], Unsafe.As<IntPtr, UIntPtr>(ref intPtr) };
+                if ((long)(nint)objs[3] < 0) continue;
+                var intPtr = (nint)objs[3];
+                yield return new object[] { objs[0], objs[1], objs[2], Unsafe.As<nint, nuint>(ref intPtr) };
             }
 
             // All lengths decimal
@@ -329,7 +349,7 @@ namespace System.Tests
                 {
                     result = (uint)(result * 10 + (i % 10));
                     s += (i % 10).ToString();
-                    yield return new object[] { s, NumberStyles.Integer, null, (UIntPtr)result };
+                    yield return new object[] { s, NumberStyles.Integer, null, (nuint)result };
                 }
             }
 
@@ -345,49 +365,49 @@ namespace System.Tests
                 }
             }
 
-            // And test boundary conditions for IntPtr
-            yield return new object[] { Is64Bit ? "18446744073709551615" : "4294967295", NumberStyles.Integer, null, UIntPtr.MaxValue };
-            yield return new object[] { Is64Bit ? "+18446744073709551615" : "+4294967295", NumberStyles.Integer, null, UIntPtr.MaxValue };
-            yield return new object[] { Is64Bit ? "  +18446744073709551615  " : "  +4294967295  ", NumberStyles.Integer, null, UIntPtr.MaxValue };
-            yield return new object[] { Is64Bit ? "FFFFFFFFFFFFFFFF" : "FFFFFFFF", NumberStyles.HexNumber, null, UIntPtr.MaxValue };
-            yield return new object[] { Is64Bit ? "  FFFFFFFFFFFFFFFF  " : "  FFFFFFFF  ", NumberStyles.HexNumber, null, UIntPtr.MaxValue };
+            // And test boundary conditions for nuint
+            yield return new object[] { Is64Bit ? "18446744073709551615" : "4294967295", NumberStyles.Integer, null, nuint.MaxValue };
+            yield return new object[] { Is64Bit ? "+18446744073709551615" : "+4294967295", NumberStyles.Integer, null, nuint.MaxValue };
+            yield return new object[] { Is64Bit ? "  +18446744073709551615  " : "  +4294967295  ", NumberStyles.Integer, null, nuint.MaxValue };
+            yield return new object[] { Is64Bit ? "FFFFFFFFFFFFFFFF" : "FFFFFFFF", NumberStyles.HexNumber, null, nuint.MaxValue };
+            yield return new object[] { Is64Bit ? "  FFFFFFFFFFFFFFFF  " : "  FFFFFFFF  ", NumberStyles.HexNumber, null, nuint.MaxValue };
         }
 
         [Theory]
         [MemberData(nameof(Parse_Valid_TestData))]
-        public static void Parse_Valid(string value, NumberStyles style, IFormatProvider provider, UIntPtr expected)
+        public static void Parse_Valid(string value, NumberStyles style, IFormatProvider provider, nuint expected)
         {
-            UIntPtr result;
+            nuint result;
 
             // Default style and provider
             if (style == NumberStyles.Integer && provider == null)
             {
-                Assert.True(UIntPtr.TryParse(value, out result));
+                Assert.True(nuint.TryParse(value, out result));
                 Assert.Equal(expected, result);
-                Assert.Equal(expected, UIntPtr.Parse(value));
+                Assert.Equal(expected, nuint.Parse(value));
             }
 
             // Default provider
             if (provider == null)
             {
-                Assert.Equal(expected, UIntPtr.Parse(value, style));
+                Assert.Equal(expected, nuint.Parse(value, style));
 
                 // Substitute default NumberFormatInfo
-                Assert.True(UIntPtr.TryParse(value, style, new NumberFormatInfo(), out result));
+                Assert.True(nuint.TryParse(value, style, new NumberFormatInfo(), out result));
                 Assert.Equal(expected, result);
-                Assert.Equal(expected, UIntPtr.Parse(value, style, new NumberFormatInfo()));
+                Assert.Equal(expected, nuint.Parse(value, style, new NumberFormatInfo()));
             }
 
             // Default style
             if (style == NumberStyles.Integer)
             {
-                Assert.Equal(expected, UIntPtr.Parse(value, provider));
+                Assert.Equal(expected, nuint.Parse(value, provider));
             }
 
             // Full overloads
-            Assert.True(UIntPtr.TryParse(value, style, provider, out result));
+            Assert.True(nuint.TryParse(value, style, provider, out result));
             Assert.Equal(expected, result);
-            Assert.Equal(expected, UIntPtr.Parse(value, style, provider));
+            Assert.Equal(expected, nuint.Parse(value, style, provider));
         }
 
         public static IEnumerable<object[]> Parse_Invalid_TestData()
@@ -401,37 +421,37 @@ namespace System.Tests
         [MemberData(nameof(Parse_Invalid_TestData))]
         public static void Parse_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
         {
-            UIntPtr result;
+            nuint result;
 
             // Default style and provider
             if (style == NumberStyles.Integer && provider == null)
             {
-                Assert.False(UIntPtr.TryParse(value, out result));
+                Assert.False(nuint.TryParse(value, out result));
                 Assert.Equal(default, result);
-                Assert.Throws(exceptionType, () => UIntPtr.Parse(value));
+                Assert.Throws(exceptionType, () => nuint.Parse(value));
             }
 
             // Default provider
             if (provider == null)
             {
-                Assert.Throws(exceptionType, () => UIntPtr.Parse(value, style));
+                Assert.Throws(exceptionType, () => nuint.Parse(value, style));
 
                 // Substitute default NumberFormatInfo
-                Assert.False(UIntPtr.TryParse(value, style, new NumberFormatInfo(), out result));
+                Assert.False(nuint.TryParse(value, style, new NumberFormatInfo(), out result));
                 Assert.Equal(default, result);
-                Assert.Throws(exceptionType, () => UIntPtr.Parse(value, style, new NumberFormatInfo()));
+                Assert.Throws(exceptionType, () => nuint.Parse(value, style, new NumberFormatInfo()));
             }
 
             // Default style
             if (style == NumberStyles.Integer)
             {
-                Assert.Throws(exceptionType, () => UIntPtr.Parse(value, provider));
+                Assert.Throws(exceptionType, () => nuint.Parse(value, provider));
             }
 
             // Full overloads
-            Assert.False(UIntPtr.TryParse(value, style, provider, out result));
+            Assert.False(nuint.TryParse(value, style, provider, out result));
             Assert.Equal(default, result);
-            Assert.Throws(exceptionType, () => UIntPtr.Parse(value, style, provider));
+            Assert.Throws(exceptionType, () => nuint.Parse(value, style, provider));
         }
 
         [Theory]
@@ -439,12 +459,12 @@ namespace System.Tests
         [InlineData(unchecked((NumberStyles)0xFFFFFC00), "style")]
         public static void TryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style, string paramName)
         {
-            UIntPtr result = (UIntPtr)0;
-            AssertExtensions.Throws<ArgumentException>(paramName, () => UIntPtr.TryParse("1", style, null, out result));
-            Assert.Equal(default(UIntPtr), result);
+            nuint result = 0;
+            AssertExtensions.Throws<ArgumentException>(paramName, () => nuint.TryParse("1", style, null, out result));
+            Assert.Equal(default(nuint), result);
 
-            AssertExtensions.Throws<ArgumentException>(paramName, () => UIntPtr.Parse("1", style));
-            AssertExtensions.Throws<ArgumentException>(paramName, () => UIntPtr.Parse("1", style, null));
+            AssertExtensions.Throws<ArgumentException>(paramName, () => nuint.Parse("1", style));
+            AssertExtensions.Throws<ArgumentException>(paramName, () => nuint.Parse("1", style, null));
         }
 
         public static IEnumerable<object[]> Parse_ValidWithOffsetCount_TestData()
@@ -454,31 +474,31 @@ namespace System.Tests
                 yield return new object[] { inputs[0], 0, ((string)inputs[0]).Length, inputs[1], inputs[2], inputs[3] };
             }
 
-            yield return new object[] { "123", 0, 2, NumberStyles.Integer, null, (UIntPtr)12 };
-            yield return new object[] { "123", 1, 2, NumberStyles.Integer, null, (UIntPtr)23 };
-            yield return new object[] { "4294967295", 0, 1, NumberStyles.Integer, null, (UIntPtr)4 };
-            yield return new object[] { "4294967295", 9, 1, NumberStyles.Integer, null, (UIntPtr)5 };
-            yield return new object[] { "12", 0, 1, NumberStyles.HexNumber, null, (UIntPtr)0x1 };
-            yield return new object[] { "12", 1, 1, NumberStyles.HexNumber, null, (UIntPtr)0x2 };
-            yield return new object[] { "$1,000", 1, 3, NumberStyles.Currency, new NumberFormatInfo() { CurrencySymbol = "$" }, (UIntPtr)10 };
+            yield return new object[] { "123", 0, 2, NumberStyles.Integer, null, (nuint)12 };
+            yield return new object[] { "123", 1, 2, NumberStyles.Integer, null, (nuint)23 };
+            yield return new object[] { "4294967295", 0, 1, NumberStyles.Integer, null, (nuint)4 };
+            yield return new object[] { "4294967295", 9, 1, NumberStyles.Integer, null, (nuint)5 };
+            yield return new object[] { "12", 0, 1, NumberStyles.HexNumber, null, (nuint)0x1 };
+            yield return new object[] { "12", 1, 1, NumberStyles.HexNumber, null, (nuint)0x2 };
+            yield return new object[] { "$1,000", 1, 3, NumberStyles.Currency, new NumberFormatInfo() { CurrencySymbol = "$" }, (nuint)10 };
         }
 
         [Theory]
         [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
-        public static void Parse_Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, UIntPtr expected)
+        public static void Parse_Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, nuint expected)
         {
-            UIntPtr result;
+            nuint result;
 
             // Default style and provider
             if (style == NumberStyles.Integer && provider == null)
             {
-                Assert.True(UIntPtr.TryParse(value.AsSpan(offset, count), out result));
+                Assert.True(nuint.TryParse(value.AsSpan(offset, count), out result));
                 Assert.Equal(expected, result);
             }
 
-            Assert.Equal(expected, UIntPtr.Parse(value.AsSpan(offset, count), style, provider));
+            Assert.Equal(expected, nuint.Parse(value.AsSpan(offset, count), style, provider));
 
-            Assert.True(UIntPtr.TryParse(value.AsSpan(offset, count), style, provider, out result));
+            Assert.True(nuint.TryParse(value.AsSpan(offset, count), style, provider, out result));
             Assert.Equal(expected, result);
         }
 
@@ -488,25 +508,25 @@ namespace System.Tests
         {
             if (value != null)
             {
-                UIntPtr result;
+                nuint result;
 
                 // Default style and provider
                 if (style == NumberStyles.Integer && provider == null)
                 {
-                    Assert.False(UIntPtr.TryParse(value.AsSpan(), out result));
+                    Assert.False(nuint.TryParse(value.AsSpan(), out result));
                     Assert.Equal(default, result);
                 }
 
-                Assert.Throws(exceptionType, () => UIntPtr.Parse(value.AsSpan(), style, provider));
+                Assert.Throws(exceptionType, () => nuint.Parse(value.AsSpan(), style, provider));
 
-                Assert.False(UIntPtr.TryParse(value.AsSpan(), style, provider, out result));
+                Assert.False(nuint.TryParse(value.AsSpan(), style, provider, out result));
                 Assert.Equal(default, result);
             }
         }
 
         [Theory]
         [MemberData(nameof(ToString_TestData))]
-        public static void TryFormat(UIntPtr i, string format, IFormatProvider provider, string expected)
+        public static void TryFormat(nuint i, string format, IFormatProvider provider, string expected)
         {
             char[] actual;
             int charsWritten;

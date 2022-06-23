@@ -4,9 +4,9 @@
 using System;
 using System.Diagnostics.Tracing;
 using System.Collections.Generic;
-using Microsoft.Diagnostics.Tools.RuntimeClient;
 using Microsoft.Diagnostics.Tracing;
 using Tracing.Tests.Common;
+using Microsoft.Diagnostics.NETCore.Client;
 
 namespace Tracing.Tests.GCEvents
 {
@@ -14,15 +14,14 @@ namespace Tracing.Tests.GCEvents
     {
         public static int Main(string[] args)
         {
-            var providers = new List<Provider>()
+            var providers = new List<EventPipeProvider>()
             {
-                new Provider("Microsoft-DotNETCore-SampleProfiler"),
+                new EventPipeProvider("Microsoft-DotNETCore-SampleProfiler", EventLevel.Verbose),
                 //GCKeyword (0x1): 0b1
-                new Provider("Microsoft-Windows-DotNETRuntime", 0b1, EventLevel.Informational)
+                new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Informational, 0b1)
             };
-            
-            var configuration = new SessionConfiguration(circularBufferSizeMB: 1024, format: EventPipeSerializationFormat.NetTrace,  providers: providers);
-            return IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, configuration, _DoesTraceContainEvents);
+
+            return IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, providers, 1024, _DoesTraceContainEvents);
         }
 
         private static Dictionary<string, ExpectedEventCount> _expectedEventCounts = new Dictionary<string, ExpectedEventCount>()
@@ -32,7 +31,7 @@ namespace Tracing.Tests.GCEvents
             { "Microsoft-DotNETCore-SampleProfiler", -1 }
         };
 
-        private static Action _eventGeneratingAction = () => 
+        private static Action _eventGeneratingAction = () =>
         {
             for (int i = 0; i < 50; i++)
             {
@@ -44,7 +43,7 @@ namespace Tracing.Tests.GCEvents
             }
         };
 
-        private static Func<EventPipeEventSource, Func<int>> _DoesTraceContainEvents = (source) => 
+        private static Func<EventPipeEventSource, Func<int>> _DoesTraceContainEvents = (source) =>
         {
             int GCStartEvents = 0;
             int GCEndEvents = 0;
@@ -52,9 +51,9 @@ namespace Tracing.Tests.GCEvents
             source.Clr.GCStop += (eventData) => GCEndEvents += 1;
 
             int GCRestartEEStartEvents = 0;
-            int GCRestartEEStopEvents = 0;           
+            int GCRestartEEStopEvents = 0;
             source.Clr.GCRestartEEStart += (eventData) => GCRestartEEStartEvents += 1;
-            source.Clr.GCRestartEEStop += (eventData) => GCRestartEEStopEvents += 1; 
+            source.Clr.GCRestartEEStop += (eventData) => GCRestartEEStopEvents += 1;
 
             int GCSuspendEEEvents = 0;
             int GCSuspendEEEndEvents = 0;

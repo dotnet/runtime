@@ -242,7 +242,7 @@ namespace Internal.Runtime.TypeLoader
         }
 
         // Helper method to serialize the data-blob type and flags
-        public void SerializeDataBlobTypeAndFlags(ref NativePrimitiveEncoder encoder, SerializedDataBlobKind blobType, byte flags)
+        public static void SerializeDataBlobTypeAndFlags(ref NativePrimitiveEncoder encoder, SerializedDataBlobKind blobType, byte flags)
         {
             // make sure that blobType fits in 2 bits and flags fits in 6 bits
             Debug.Assert(blobType < SerializedDataBlobKind.Limit);
@@ -320,7 +320,7 @@ namespace Internal.Runtime.TypeLoader
                     sharedTypeFlags |= SerializedDebugData.SharedTypeFlags.HasStaticFields;
             }
 
-            Instance.SerializeDataBlobTypeAndFlags(ref encoder, SerializedDataBlobKind.SharedType, (byte)sharedTypeFlags);
+            SerializeDataBlobTypeAndFlags(ref encoder, SerializedDataBlobKind.SharedType, (byte)sharedTypeFlags);
 
             //
             // The order of these writes is a contract shared between the runtime and debugger engine.
@@ -443,7 +443,7 @@ namespace Internal.Runtime.TypeLoader
 
             byte nativeFormatTypeFlags = 0;
 
-            Instance.SerializeDataBlobTypeAndFlags(
+            SerializeDataBlobTypeAndFlags(
                 ref encoder,
                 SerializedDataBlobKind.NativeFormatType,
                 nativeFormatTypeFlags);
@@ -468,7 +468,7 @@ namespace Internal.Runtime.TypeLoader
             byte sharedMethodFlags = 0;
             sharedMethodFlags |= (byte)(method.OwningType.IsGeneric() ? SharedMethodFlags.HasDeclaringTypeHandle : 0);
 
-            Instance.SerializeDataBlobTypeAndFlags(ref encoder, SerializedDataBlobKind.SharedMethod, sharedMethodFlags);
+            SerializeDataBlobTypeAndFlags(ref encoder, SerializedDataBlobKind.SharedMethod, sharedMethodFlags);
             encoder.WriteUnsignedLong((ulong)method.RuntimeMethodDictionary.ToInt64());
             encoder.WriteUnsigned((uint)method.Instantiation.Length);
 
@@ -502,7 +502,7 @@ namespace Internal.Runtime.TypeLoader
                         // Write out the size of thunks used by the calling convention converter
                         // Make sure that this is called only once
                         encoder.Init();
-                        Instance.SerializeDataBlobTypeAndFlags(ref encoder,
+                        SerializeDataBlobTypeAndFlags(ref encoder,
                             SerializedDataBlobKind.StepThroughStubSize,
                             (byte)StepThroughStubFlags.IsTailCallStub);
                         encoder.WriteUnsigned((uint)RuntimeAugments.GetThunkSize());
@@ -513,7 +513,7 @@ namespace Internal.Runtime.TypeLoader
             }
 
             encoder.Init();
-            Instance.SerializeDataBlobTypeAndFlags(ref encoder,
+            SerializeDataBlobTypeAndFlags(ref encoder,
                 SerializedDataBlobKind.StepThroughStubAddress,
                 (byte)StepThroughStubFlags.IsTailCallStub);
             encoder.WriteUnsignedLong((ulong)thunk.ToInt64());

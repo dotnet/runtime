@@ -25,8 +25,10 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
 
         public StringComparison ComparisonType { get; }
 
-        public IPattern Build(string pattern!!)
+        public IPattern Build(string pattern)
         {
+            ThrowHelper.ThrowIfNull(pattern);
+
             pattern = pattern.TrimStart(_slashes);
 
             if (pattern.TrimEnd(_slashes).Length < pattern.Length)

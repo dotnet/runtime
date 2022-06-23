@@ -9,18 +9,6 @@
 // be loaded without implementing all methods declared on that interface.
 // Here, Gen<T> implements GenBase<T>, but does not implement GenBase.Dummy(T).
 
-
-
-
-
-
-
-//  Microsoft (R) .NET Framework IL Disassembler.  Version 1.1.2019.0
-//  Copyright (C) Microsoft Corporation 1998-2002. All rights reserved.
-
-
-
-// Metadata version: v1.1.2019
 .assembly extern mscorlib
 {
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..

@@ -249,3 +249,10 @@ Sets enabled cipher suites for the current session.
 Returns the output of SSLSetEnabledCiphers.
 */
 PALEXPORT int32_t AppleCryptoNative_SslSetEnabledCipherSuites(SSLContextRef sslContext, const uint32_t* cipherSuites, int32_t numCipherSuites);
+
+/*
+Adds one or more certificates to a server's list of certification authorities (CAs) acceptable for client authentication.
+
+Returns the output of SSLSetCertificateAuthorities.
+*/
+PALEXPORT int32_t AppleCryptoNative_SslSetCertificateAuthorities(SSLContextRef sslContext, CFArrayRef certificates, int32_t replaceExisting);

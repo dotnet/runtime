@@ -7,7 +7,9 @@
 #include "pal_digest.h"
 #include "pal_ecc.h"
 #include "pal_hmac.h"
+#include "pal_keyagree.h"
 #include "pal_keychain_macos.h"
+#include "pal_keyderivation_macos.h"
 #include "pal_random.h"
 #include "pal_rsa.h"
 #include "pal_sec.h"
@@ -20,8 +22,6 @@
 #include "pal_x509.h"
 #include "pal_x509_macos.h"
 #include "pal_x509chain.h"
-#include "pal_keyderivation_macos.h"
-#include "pal_keyagree.h"
 
 static const Entry s_cryptoAppleNative[] =
 {
@@ -84,6 +84,7 @@ static const Entry s_cryptoAppleNative[] =
     DllImportEntry(AppleCryptoNative_SslSetMinProtocolVersion)
     DllImportEntry(AppleCryptoNative_SslSetMaxProtocolVersion)
     DllImportEntry(AppleCryptoNative_SslSetCertificate)
+    DllImportEntry(AppleCryptoNative_SslSetCertificateAuthorities)
     DllImportEntry(AppleCryptoNative_SslSetTargetName)
     DllImportEntry(AppleCryptoNative_SSLSetALPNProtocols)
     DllImportEntry(AppleCryptoNative_SslGetAlpnSelected)
@@ -95,7 +96,6 @@ static const Entry s_cryptoAppleNative[] =
     DllImportEntry(AppleCryptoNative_CryptorFree)
     DllImportEntry(AppleCryptoNative_CryptorCreate)
     DllImportEntry(AppleCryptoNative_CryptorUpdate)
-    DllImportEntry(AppleCryptoNative_CryptorFinal)
     DllImportEntry(AppleCryptoNative_CryptorReset)
     DllImportEntry(AppleCryptoNative_StoreEnumerateUserRoot)
     DllImportEntry(AppleCryptoNative_StoreEnumerateMachineRoot)

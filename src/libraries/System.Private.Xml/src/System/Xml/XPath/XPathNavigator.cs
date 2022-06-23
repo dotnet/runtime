@@ -36,7 +36,7 @@ namespace System.Xml.XPath
         // XPathItem
         //-----------------------------------------------
 
-        public override sealed bool IsNode
+        public sealed override bool IsNode
         {
             get { return true; }
         }
@@ -109,8 +109,10 @@ namespace System.Xml.XPath
             }
         }
 
-        public virtual void SetTypedValue(object typedValue!!)
+        public virtual void SetTypedValue(object typedValue)
         {
+            ArgumentNullException.ThrowIfNull(typedValue);
+
             switch (NodeType)
             {
                 case XPathNodeType.Element:
@@ -600,8 +602,10 @@ namespace System.Xml.XPath
             return CreateReader();
         }
 
-        public virtual void WriteSubtree(XmlWriter writer!!)
+        public virtual void WriteSubtree(XmlWriter writer)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             writer.WriteNode(this, true);
         }
 
@@ -1087,7 +1091,7 @@ namespace System.Xml.XPath
             return validityTracker.IsValid;
         }
 
-        private XmlReader GetValidatingReader(XmlReader reader, XmlSchemaSet schemas, ValidationEventHandler validationEvent, XmlSchemaType? schemaType, XmlSchemaElement? schemaElement, XmlSchemaAttribute? schemaAttribute)
+        private static XmlReader GetValidatingReader(XmlReader reader, XmlSchemaSet schemas, ValidationEventHandler validationEvent, XmlSchemaType? schemaType, XmlSchemaElement? schemaElement, XmlSchemaAttribute? schemaAttribute)
         {
             if (schemaAttribute != null)
             {
@@ -1335,8 +1339,10 @@ namespace System.Xml.XPath
             ReplaceSelf(reader);
         }
 
-        public virtual void ReplaceSelf(XmlReader newNode!!)
+        public virtual void ReplaceSelf(XmlReader newNode)
         {
+            ArgumentNullException.ThrowIfNull(newNode);
+
             XPathNodeType type = NodeType;
             if (type == XPathNodeType.Root
                 || type == XPathNodeType.Attribute
@@ -1349,8 +1355,10 @@ namespace System.Xml.XPath
             writer.Close();
         }
 
-        public virtual void ReplaceSelf(XPathNavigator newNode!!)
+        public virtual void ReplaceSelf(XPathNavigator newNode)
         {
+            ArgumentNullException.ThrowIfNull(newNode);
+
             XmlReader reader = newNode.CreateReader();
             ReplaceSelf(reader);
         }
@@ -1484,15 +1492,19 @@ namespace System.Xml.XPath
             AppendChild(reader);
         }
 
-        public virtual void AppendChild(XmlReader newChild!!)
+        public virtual void AppendChild(XmlReader newChild)
         {
+            ArgumentNullException.ThrowIfNull(newChild);
+
             XmlWriter writer = AppendChild();
             BuildSubtree(newChild, writer);
             writer.Close();
         }
 
-        public virtual void AppendChild(XPathNavigator newChild!!)
+        public virtual void AppendChild(XPathNavigator newChild)
         {
+            ArgumentNullException.ThrowIfNull(newChild);
+
             if (!IsValidChildType(newChild.NodeType))
             {
                 throw new InvalidOperationException(SR.Xpn_BadPosition);
@@ -1507,15 +1519,19 @@ namespace System.Xml.XPath
             PrependChild(reader);
         }
 
-        public virtual void PrependChild(XmlReader newChild!!)
+        public virtual void PrependChild(XmlReader newChild)
         {
+            ArgumentNullException.ThrowIfNull(newChild);
+
             XmlWriter writer = PrependChild();
             BuildSubtree(newChild, writer);
             writer.Close();
         }
 
-        public virtual void PrependChild(XPathNavigator newChild!!)
+        public virtual void PrependChild(XPathNavigator newChild)
         {
+            ArgumentNullException.ThrowIfNull(newChild);
+
             if (!IsValidChildType(newChild.NodeType))
             {
                 throw new InvalidOperationException(SR.Xpn_BadPosition);
@@ -1530,15 +1546,19 @@ namespace System.Xml.XPath
             InsertBefore(reader);
         }
 
-        public virtual void InsertBefore(XmlReader newSibling!!)
+        public virtual void InsertBefore(XmlReader newSibling)
         {
+            ArgumentNullException.ThrowIfNull(newSibling);
+
             XmlWriter writer = InsertBefore();
             BuildSubtree(newSibling, writer);
             writer.Close();
         }
 
-        public virtual void InsertBefore(XPathNavigator newSibling!!)
+        public virtual void InsertBefore(XPathNavigator newSibling)
         {
+            ArgumentNullException.ThrowIfNull(newSibling);
+
             if (!IsValidSiblingType(newSibling.NodeType))
             {
                 throw new InvalidOperationException(SR.Xpn_BadPosition);
@@ -1553,15 +1573,19 @@ namespace System.Xml.XPath
             InsertAfter(reader);
         }
 
-        public virtual void InsertAfter(XmlReader newSibling!!)
+        public virtual void InsertAfter(XmlReader newSibling)
         {
+            ArgumentNullException.ThrowIfNull(newSibling);
+
             XmlWriter writer = InsertAfter();
             BuildSubtree(newSibling, writer);
             writer.Close();
         }
 
-        public virtual void InsertAfter(XPathNavigator newSibling!!)
+        public virtual void InsertAfter(XPathNavigator newSibling)
         {
+            ArgumentNullException.ThrowIfNull(newSibling);
+
             if (!IsValidSiblingType(newSibling.NodeType))
             {
                 throw new InvalidOperationException(SR.Xpn_BadPosition);
@@ -1839,7 +1863,7 @@ namespace System.Xml.XPath
         // namespace(0)    ?(0)            before(-1)      before(-2)
         // attribute(1)    after(1)        ?(0)            before(-1)
         // other    (2)    after(2)        after(1)        ?(0)
-        private XmlNodeOrder CompareSiblings(XPathNavigator n1, XPathNavigator n2)
+        private static XmlNodeOrder CompareSiblings(XPathNavigator n1, XPathNavigator n2)
         {
             int cmp = 0;
 
@@ -2017,8 +2041,10 @@ namespace System.Xml.XPath
             return XPathNavigatorReader.Create(this);
         }
 
-        private XmlReader CreateContextReader(string xml!!, bool fromCurrentNode)
+        private XmlReader CreateContextReader(string xml, bool fromCurrentNode)
         {
+            ArgumentNullException.ThrowIfNull(xml);
+
             // We have to set the namespace context for the reader.
             XPathNavigator editor = CreateNavigator();
             // scope starts from parent.
@@ -2043,7 +2069,7 @@ namespace System.Xml.XPath
             return reader;
         }
 
-        internal void BuildSubtree(XmlReader reader, XmlWriter writer)
+        internal static void BuildSubtree(XmlReader reader, XmlWriter writer)
         {
             // important (perf) string literal...
             string xmlnsUri = XmlReservedNs.NsXmlNs; // http://www.w3.org/2000/xmlns/

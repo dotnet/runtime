@@ -40,7 +40,7 @@ lock_free_mempool_chunk_new (LockFreeMempool *mp, int len)
 	chunk = (LockFreeMempoolChunk *)mono_valloc (0, size, MONO_MMAP_READ|MONO_MMAP_WRITE, MONO_MEM_ACCOUNT_MEM_MANAGER);
 	g_assert (chunk);
 	chunk->mem = (guint8 *)ALIGN_PTR_TO ((char*)chunk + sizeof (LockFreeMempoolChunk), 16);
-	chunk->size = ((char*)chunk + size) - (char*)chunk->mem;
+	chunk->size = GPTRDIFF_TO_INT (((char*)chunk + size) - (char*)chunk->mem);
 	chunk->pos = 0;
 
 	/* Add to list of chunks lock-free */
@@ -189,10 +189,6 @@ memory_manager_delete (MonoMemoryManager *memory_manager, gboolean debug_unload)
 		mono_mempool_invalidate (memory_manager->_mp);
 		mono_code_manager_invalidate (memory_manager->code_mp);
 	} else {
-#ifndef DISABLE_PERFCOUNTERS
-		/* FIXME: use an explicit subtraction method as soon as it's available */
-		mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, -1 * mono_mempool_get_allocated (memory_manager->_mp));
-#endif
 		mono_mempool_destroy (memory_manager->_mp);
 		memory_manager->_mp = NULL;
 		mono_code_manager_destroy (memory_manager->code_mp);
@@ -247,9 +243,6 @@ mono_mem_manager_alloc (MonoMemoryManager *memory_manager, guint size)
 	void *res;
 
 	alloc_lock (memory_manager);
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, size);
-#endif
 	res = mono_mempool_alloc (memory_manager->_mp, size);
 	alloc_unlock (memory_manager);
 
@@ -262,9 +255,6 @@ mono_mem_manager_alloc0 (MonoMemoryManager *memory_manager, guint size)
 	void *res;
 
 	alloc_lock (memory_manager);
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, size);
-#endif
 	res = mono_mempool_alloc0 (memory_manager->_mp, size);
 	alloc_unlock (memory_manager);
 
@@ -356,14 +346,16 @@ static gint32 mem_manager_cache_hit, mem_manager_cache_miss;
 static guint32
 mix_hash (uintptr_t source)
 {
-	unsigned int hash = source;
+	unsigned int hash = GUINTPTR_TO_UINT (source);
 
 	// Actual hash
 	hash = (((hash * 215497) >> 16) ^ ((hash * 1823231) + hash));
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	// Mix in highest bits on 64-bit systems only
 	if (sizeof (source) > 4)
-		hash = hash ^ ((source >> 31) >> 1);
+		hash = hash ^ GUINTPTR_TO_UINT ((source >> 31) >> 1);
+MONO_RESTORE_WARNING
 
 	return hash;
 }

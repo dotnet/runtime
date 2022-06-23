@@ -8,7 +8,8 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
-        [GeneratedDllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
+        [LibraryImport(Libraries.Crypt32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool CryptImportPublicKeyInfoEx2(
             CertEncodingType dwCertEncodingType,
             CERT_PUBLIC_KEY_INFO* pInfo,

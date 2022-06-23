@@ -203,18 +203,21 @@ namespace System.ComponentModel.Composition.Hosting
 
         private void InitializeTypeCatalog(IEnumerable<Type> types)
         {
-            foreach (var type in types)
+            Type[] arr = types.ToArray();
+            foreach (Type type in arr)
             {
                 if (type == null)
                 {
                     throw ExceptionBuilder.CreateContainsNullElement(nameof(types));
                 }
-                else if (type.Assembly.ReflectionOnly)
+
+                if (type.Assembly.ReflectionOnly)
                 {
                     throw new ArgumentException(SR.Format(SR.Argument_ElementReflectionOnlyType, nameof(types)), nameof(types));
                 }
             }
-            _types = types.ToArray();
+
+            _types = arr;
         }
 
         public override IEnumerator<ComposablePartDefinition> GetEnumerator()
@@ -281,8 +284,10 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        internal override IEnumerable<ComposablePartDefinition>? GetCandidateParts(ImportDefinition definition!!)
+        internal override IEnumerable<ComposablePartDefinition>? GetCandidateParts(ImportDefinition definition)
         {
+            ArgumentNullException.ThrowIfNull(definition);
+
             string contractName = definition.ContractName;
             if (string.IsNullOrEmpty(contractName))
             {

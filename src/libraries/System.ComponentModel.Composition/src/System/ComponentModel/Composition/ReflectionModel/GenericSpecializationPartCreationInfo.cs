@@ -29,8 +29,12 @@ namespace System.ComponentModel.Composition.ReflectionModel
         private ConstructorInfo? _constructor;
         private readonly object _lock = new object();
 
-        public GenericSpecializationPartCreationInfo(IReflectionPartCreationInfo originalPartCreationInfo!!, ReflectionComposablePartDefinition originalPart!!, Type[] specialization!!)
+        public GenericSpecializationPartCreationInfo(IReflectionPartCreationInfo originalPartCreationInfo, ReflectionComposablePartDefinition originalPart, Type[] specialization)
         {
+            ArgumentNullException.ThrowIfNull(originalPartCreationInfo);
+            ArgumentNullException.ThrowIfNull(originalPart);
+            ArgumentNullException.ThrowIfNull(specialization);
+
             _originalPartCreationInfo = originalPartCreationInfo;
             _originalPart = originalPart;
             _specialization = specialization;
@@ -173,8 +177,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
         }
 
-        private Dictionary<LazyMemberInfo, MemberInfo[]> BuildMembersTable(List<LazyMemberInfo> members!!)
+        private Dictionary<LazyMemberInfo, MemberInfo[]> BuildMembersTable(List<LazyMemberInfo> members)
         {
+            ArgumentNullException.ThrowIfNull(members);
+
             Dictionary<LazyMemberInfo, MemberInfo[]> membersTable = new Dictionary<LazyMemberInfo, MemberInfo[]>();
             Dictionary<int, MemberInfo> specializedPartMembers = new Dictionary<int, MemberInfo>();
 

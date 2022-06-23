@@ -70,7 +70,6 @@
 
   <!-- Filter out conflicting implicit assembly references. -->
   <Target Name="FilterImplicitAssemblyReferences"
-          Condition="'$(DisableImplicitAssemblyReferences)' != 'true'"
           DependsOnTargets="ResolveProjectReferences"
           AfterTargets="ResolveTargetingPackAssets">
     <ItemGroup>

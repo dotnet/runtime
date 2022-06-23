@@ -174,7 +174,7 @@ mono_seq_point_info_add_seq_point (GByteArray* array, SeqPoint *sp, SeqPoint *la
 	int il_delta, native_delta;
 	GSList *l;
 	guint8 buffer[4];
-	guint8 len;
+	int len;
 	int flags;
 
 	if (!has_debug_data &&
@@ -209,8 +209,7 @@ mono_seq_point_info_add_seq_point (GByteArray* array, SeqPoint *sp, SeqPoint *la
 
 		for (l = next; l; l = l->next) {
 			int next_index = GPOINTER_TO_UINT (l->data);
-			guint8 buffer[4];
-			int len = encode_var_int (buffer, NULL, next_index);
+			len = encode_var_int (buffer, NULL, next_index);
 			g_byte_array_append (array, buffer, len);
 		}
 	}
@@ -237,6 +236,7 @@ gboolean
 mono_seq_point_find_prev_by_native_offset (MonoSeqPointInfo* info, int native_offset, SeqPoint* seq_point)
 {
 	SeqPoint prev_seq_point;
+	prev_seq_point.native_offset = 0;
 	gboolean  is_first = TRUE;
 	SeqPointIterator it;
 	mono_seq_point_iterator_init (&it, info);

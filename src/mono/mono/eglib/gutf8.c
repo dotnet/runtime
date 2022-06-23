@@ -30,34 +30,6 @@ const guchar g_utf8_jump_table[256] = {
 	3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3, 4,4,4,4,4,4,4,4,5,5,5,5,6,6,1,1
 };
 
-static gchar *
-utf8_case_conv (const gchar *str, gssize len, gboolean upper)
-{
-	gunichar *ustr;
-	glong i, ulen;
-	gchar *utf8;
-
-	ustr = g_utf8_to_ucs4_fast (str, (glong) len, &ulen);
-	for (i = 0; i < ulen; i++)
-		ustr[i] = upper ? g_unichar_toupper (ustr[i]) : g_unichar_tolower (ustr[i]);
-	utf8 = g_ucs4_to_utf8 (ustr, ulen, NULL, NULL, NULL);
-	g_free (ustr);
-
-	return utf8;
-}
-
-gchar *
-g_utf8_strup (const gchar *str, gssize len)
-{
-	return utf8_case_conv (str, len, TRUE);
-}
-
-gchar *
-g_utf8_strdown (const gchar *str, gssize len)
-{
-	return utf8_case_conv (str, len, FALSE);
-}
-
 static gboolean
 utf8_validate (const unsigned char *inptr, size_t len)
 {
@@ -150,7 +122,7 @@ g_utf8_validate (const gchar *str, gssize max_len, const gchar **end)
 			}
 
 			length = g_utf8_jump_table[*inptr];
-			min = MIN (length, max_len - n);
+			min = MIN (length, GSSIZE_TO_UINT (max_len - n));
 
 			if (!utf8_validate (inptr, min)) {
 				valid = FALSE;

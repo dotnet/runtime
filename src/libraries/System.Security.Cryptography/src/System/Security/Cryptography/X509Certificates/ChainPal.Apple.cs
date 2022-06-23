@@ -118,7 +118,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         private SafeCreateHandle PreparePoliciesArray(bool checkRevocation)
         {
-            IntPtr[] policies = new IntPtr[checkRevocation ? 2 : 1];
+            Span<IntPtr> policies = checkRevocation ? stackalloc IntPtr[2] : stackalloc IntPtr[1];
 
             SafeHandle defaultPolicy = Interop.AppleCrypto.X509ChainCreateDefaultPolicy();
 
@@ -138,8 +138,7 @@ namespace System.Security.Cryptography.X509Certificates
                 policies[1] = revPolicy.DangerousGetHandle();
             }
 
-            SafeCreateHandle policiesArray =
-                Interop.CoreFoundation.CFArrayCreate(policies, (UIntPtr)policies.Length);
+            SafeCreateHandle policiesArray = Interop.CoreFoundation.CFArrayCreate(policies);
 
             _extraHandles.Push(policiesArray);
             return policiesArray;
@@ -306,7 +305,7 @@ namespace System.Security.Cryptography.X509Certificates
             return elements;
         }
 
-        private bool IsPolicyMatch(
+        private static bool IsPolicyMatch(
             (X509Certificate2, int)[] elements,
             OidCollection? applicationPolicy,
             OidCollection? certificatePolicy)

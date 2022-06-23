@@ -22,6 +22,8 @@
 
 
 
+.namespace Test_delegateTail_il
+{
 .class public auto ansi sealed beforefieldinit Closure
        extends [mscorlib]System.Object
 {
@@ -36,10 +38,10 @@
     IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
     IL_0006:  ldarg.0
     IL_0007:  ldarg.1
-    IL_0008:  stfld      object[] Closure::Constants
+    IL_0008:  stfld      object[] Test_delegateTail_il.Closure::Constants
     IL_000d:  ldarg.0
     IL_000e:  ldarg.2
-    IL_000f:  stfld      object[] Closure::Locals
+    IL_000f:  stfld      object[] Test_delegateTail_il.Closure::Locals
     IL_0014:  ret
   } 
 
@@ -56,7 +58,7 @@
   {
     .maxstack  8
     IL_0000:  ldarg.0
-    IL_0001:  ldfld      object[] Closure::Constants
+    IL_0001:  ldfld      object[] Test_delegateTail_il.Closure::Constants
     IL_0006:  ldc.i4.0
     IL_0007:  ldelem.ref
     IL_0008:  castclass  string[]
@@ -76,7 +78,7 @@
   {
     .maxstack  10
     IL_0000:  ldarg.0
-    IL_0001:  ldfld      object[] Closure::Constants
+    IL_0001:  ldfld      object[] Test_delegateTail_il.Closure::Constants
     IL_0006:  ldc.i4.0
     IL_0007:  ldelem.ref
     IL_0008:  castclass  class [System.Runtime]System.Func`10<object,object,object,object,object,object,object,object,object,object>
@@ -113,10 +115,10 @@
 
 } 
 
-.class private abstract auto ansi sealed beforefieldinit Repro
+.class public abstract auto ansi sealed beforefieldinit Repro
        extends [mscorlib]System.Object
 {
-  .method private hidebysig static int32 Main() cil managed
+  .method public hidebysig static int32 Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
@@ -144,9 +146,9 @@
     IL_0019:  stelem.ref
     IL_001a:  ldloc.2
     IL_001b:  ldnull
-    IL_001c:  newobj     instance void Closure::.ctor(object[],
+    IL_001c:  newobj     instance void Test_delegateTail_il.Closure::.ctor(object[],
                                                       object[])
-    IL_0021:  ldftn      instance object Closure::FImpl(object,
+    IL_0021:  ldftn      instance object Test_delegateTail_il.Closure::FImpl(object,
                                                         object,
                                                         object,
                                                         object,
@@ -167,9 +169,9 @@
     IL_0039:  stelem.ref
     IL_003a:  ldloc.s    V_4
     IL_003c:  ldnull
-    IL_003d:  newobj     instance void Closure::.ctor(object[],
+    IL_003d:  newobj     instance void Test_delegateTail_il.Closure::.ctor(object[],
                                                       object[])
-    IL_0042:  ldftn      instance object Closure::GImpl(int32,
+    IL_0042:  ldftn      instance object Test_delegateTail_il.Closure::GImpl(int32,
                                                         int32,
                                                         int32,
                                                         int32,
@@ -206,3 +208,4 @@ ldc.i4 100
   } 
 
 } 
+}

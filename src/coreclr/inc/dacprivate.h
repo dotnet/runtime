@@ -609,6 +609,7 @@ struct MSLAYOUT DacpTieredVersionData
         OptimizationTier_QuickJitted,
         OptimizationTier_OptimizedTier1,
         OptimizationTier_ReadyToRun,
+        OptimizationTier_OptimizedTier1OSR,
     };
 
     CLRDATA_ADDRESS NativeCodeAddr;
@@ -724,7 +725,7 @@ struct MSLAYOUT DacpGenerationAllocData
 
 struct MSLAYOUT DacpGcHeapDetails
 {
-    CLRDATA_ADDRESS heapAddr = 0; // Only filled in in server mode, otherwise NULL
+    CLRDATA_ADDRESS heapAddr = 0; // Only filled in server mode, otherwise NULL
     CLRDATA_ADDRESS alloc_allocated = 0;
 
     CLRDATA_ADDRESS mark_array = 0;
@@ -779,7 +780,7 @@ struct MSLAYOUT DacpHeapSegmentData
     CLRDATA_ADDRESS mem = 0;
     // pass this to request if non-null to get the next segments.
     CLRDATA_ADDRESS next = 0;
-    CLRDATA_ADDRESS gc_heap = 0; // only filled in in server mode, otherwise NULL
+    CLRDATA_ADDRESS gc_heap = 0; // only filled in server mode, otherwise NULL
     // computed field: if this is the ephemeral segment highMark includes the ephemeral generation
     CLRDATA_ADDRESS highAllocMark = 0;
 
@@ -788,13 +789,15 @@ struct MSLAYOUT DacpHeapSegmentData
 
     HRESULT Request(ISOSDacInterface *sos, CLRDATA_ADDRESS addr, const DacpGcHeapDetails& heap)
     {
+        // clear this here to make sure we don't get stale values
+        this->highAllocMark = 0;
+
         HRESULT hr = sos->GetHeapSegmentData(addr, this);
 
-        // if this is the start segment, set highAllocMark too.
-        if (SUCCEEDED(hr))
+        // if this is the start segment, and the Dac hasn't set highAllocMark, set it here.
+        if (SUCCEEDED(hr) && this->highAllocMark == 0)
         {
-            // TODO:  This needs to be put on the Dac side.
-            if (this->segmentAddr == heap.generation_table[0].start_segment)
+            if (this->segmentAddr == heap.ephemeral_heap_segment)
                 highAllocMark = heap.alloc_allocated;
             else
                 highAllocMark = allocated;
@@ -880,7 +883,7 @@ struct MSLAYOUT DacpGCInterestingInfoData
 
 struct MSLAYOUT DacpGcHeapAnalyzeData
 {
-    CLRDATA_ADDRESS heapAddr = 0; // Only filled in in server mode, otherwise NULL
+    CLRDATA_ADDRESS heapAddr = 0; // Only filled in server mode, otherwise NULL
 
     CLRDATA_ADDRESS internal_root_array = 0;
     ULONG64         internal_root_array_index = 0;

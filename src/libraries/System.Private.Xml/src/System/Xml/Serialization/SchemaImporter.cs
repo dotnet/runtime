@@ -1,21 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.ComponentModel;
+using System.Configuration;
+#if DEBUG
+using System.Diagnostics;
+#endif
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Xml.Schema;
+using System.Xml.Serialization.Configuration;
+
 namespace System.Xml.Serialization
 {
-    using System;
-    using System.Xml.Schema;
-    using System.Collections;
-    using System.ComponentModel;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Reflection;
-    using System.Configuration;
-    using System.Xml.Serialization.Configuration;
-
-#if DEBUG
-    using System.Diagnostics;
-#endif
-
     public abstract class SchemaImporter
     {
         private XmlSchemas _schemas;
@@ -183,7 +181,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode("calls ImportType")]
         internal abstract void ImportDerivedTypes(XmlQualifiedName baseName);
 
-        internal void AddReference(XmlQualifiedName name, NameTable references, string error)
+        internal static void AddReference(XmlQualifiedName name, NameTable references, string error)
         {
             if (name.Namespace == XmlSchema.Namespace)
                 return;
@@ -194,7 +192,7 @@ namespace System.Xml.Serialization
             references[name] = name;
         }
 
-        internal void RemoveReference(XmlQualifiedName name, NameTable references)
+        internal static void RemoveReference(XmlQualifiedName name, NameTable references)
         {
             references[name] = null;
         }

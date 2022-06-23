@@ -1094,7 +1094,7 @@ TypeHandle TypeName::GetTypeFromAsm()
         {
             if (bThrowIfNotFound)
             {
-                COMPlusThrow(kArgumentException, IDS_EE_ASSEMBLY_GETTYPE_CANNONT_HAVE_ASSEMBLY_SPEC);
+                COMPlusThrow(kArgumentException, W("Argument_AssemblyGetTypeCannotSpecifyAssembly"));
             }
             else
             {
@@ -1363,7 +1363,7 @@ TypeName::GetTypeHaveAssemblyHelper(
                 if (pManifestModule->LookupFile(mdFile))
                     continue;
 
-                pManifestModule->LoadModule(GetAppDomain(), mdFile);
+                pManifestModule->LoadModule(mdFile);
 
                 th = GetTypeHaveAssemblyHelper(pAssembly, bThrowIfNotFound, bIgnoreCase, NULL, FALSE);
 
@@ -1397,18 +1397,18 @@ DomainAssembly * LoadDomainAssembly(
 {
     CONTRACTL
     {
-        MODE_ANY;
+        MODE_COOPERATIVE;
         THROWS;
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
+
     AssemblySpec spec;
     DomainAssembly *pDomainAssembly = NULL;
 
-    StackScratchBuffer buffer;
-    LPCUTF8 szAssemblySpec = psszAssemblySpec ? psszAssemblySpec->GetUTF8(buffer) : NULL;
-    IfFailThrow(spec.Init(szAssemblySpec));
+    StackSString ssAssemblyName(*psszAssemblySpec);
+    spec.Init(ssAssemblyName);
 
     if (pRequestingAssembly)
     {

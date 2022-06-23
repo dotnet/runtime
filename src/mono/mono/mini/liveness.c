@@ -159,15 +159,16 @@ visit_bb (MonoCompile *cfg, MonoBasicBlock *bb, MonoPtrSet *visited)
 
 		if ((ins->dreg != -1) && get_vreg_to_inst (cfg, ins->dreg)) {
 			MonoInst *var = get_vreg_to_inst (cfg, ins->dreg);
-			int idx = var->inst_c0;
-			MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
+			MonoMethodVar *vi = MONO_VARINFO (cfg, var->inst_c0);
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 			cfg->varinfo [vi->idx]->flags |= MONO_INST_VOLATILE;
 			if (SIZEOF_REGISTER == 4 && (var->type == STACK_I8 || (var->type == STACK_R8 && COMPILE_SOFT_FLOAT (cfg)))) {
 				/* Make the component vregs volatile as well (#612206) */
 				get_vreg_to_inst (cfg, MONO_LVREG_LS (var->dreg))->flags |= MONO_INST_VOLATILE;
 				get_vreg_to_inst (cfg, MONO_LVREG_MS (var->dreg))->flags |= MONO_INST_VOLATILE;
 			}
+MONO_RESTORE_WARNING
 		}
 
 		/* SREGS */
@@ -178,15 +179,16 @@ visit_bb (MonoCompile *cfg, MonoBasicBlock *bb, MonoPtrSet *visited)
 			g_assert (sreg != -1);
 			if (get_vreg_to_inst (cfg, sreg)) {
 				MonoInst *var = get_vreg_to_inst (cfg, sreg);
-				int idx = var->inst_c0;
-				MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
+				MonoMethodVar *vi = MONO_VARINFO (cfg, var->inst_c0);
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 				cfg->varinfo [vi->idx]->flags |= MONO_INST_VOLATILE;
 				if (SIZEOF_REGISTER == 4 && (var->type == STACK_I8 || (var->type == STACK_R8 && COMPILE_SOFT_FLOAT (cfg)))) {
 					/* Make the component vregs volatile as well (#612206) */
 					get_vreg_to_inst (cfg, MONO_LVREG_LS (var->dreg))->flags |= MONO_INST_VOLATILE;
 					get_vreg_to_inst (cfg, MONO_LVREG_MS (var->dreg))->flags |= MONO_INST_VOLATILE;
 				}
+MONO_RESTORE_WARNING
 			}
 		}
 	}
@@ -301,12 +303,12 @@ analyze_liveness_bb (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		if (ins->opcode == OP_LDADDR) {
 			MonoInst *var = (MonoInst *)ins->inst_p0;
-			int idx = var->inst_c0;
+			target_mgreg_t idx = var->inst_c0;
 			MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
 
 #ifdef DEBUG_LIVENESS
 			if (cfg->verbose_level > 1)
-				printf ("\tGEN: R%d(%d)\n", var->dreg, idx);
+				printf ("\tGEN: R%d(%d)\n", var->dreg, GTMREG_TO_INT (idx));
 #endif
 			update_live_range (&vars [idx], abs_pos + inst_num);
 			if (!mono_bitset_test_fast (bb->kill_set, idx))
@@ -320,12 +322,12 @@ analyze_liveness_bb (MonoCompile *cfg, MonoBasicBlock *bb)
 			sreg = sregs [i];
 			if ((spec [MONO_INST_SRC1 + i] != ' ') && get_vreg_to_inst (cfg, sreg)) {
 				MonoInst *var = get_vreg_to_inst (cfg, sreg);
-				int idx = var->inst_c0;
+				target_mgreg_t idx = var->inst_c0;
 				MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
 
 #ifdef DEBUG_LIVENESS
 				if (cfg->verbose_level > 1)
-					printf ("\tGEN: R%d(%d)\n", sreg, idx);
+					printf ("\tGEN: R%d(%d)\n", sreg, GTMREG_TO_INT (idx));
 #endif
 				update_live_range (&vars [idx], abs_pos + inst_num);
 				if (!mono_bitset_test_fast (bb->kill_set, idx))
@@ -337,7 +339,7 @@ analyze_liveness_bb (MonoCompile *cfg, MonoBasicBlock *bb)
 		/* DREG */
 		if ((spec [MONO_INST_DEST] != ' ') && get_vreg_to_inst (cfg, ins->dreg)) {
 			MonoInst *var = get_vreg_to_inst (cfg, ins->dreg);
-			int idx = var->inst_c0;
+			target_mgreg_t idx = var->inst_c0;
 			MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
 
 			if (MONO_IS_STORE_MEMBASE (ins)) {
@@ -348,7 +350,7 @@ analyze_liveness_bb (MonoCompile *cfg, MonoBasicBlock *bb)
 			} else {
 #ifdef DEBUG_LIVENESS
 				if (cfg->verbose_level > 1)
-					printf ("\tKILL: R%d(%d)\n", ins->dreg, idx);
+					printf ("\tKILL: R%d(%d)\n", ins->dreg, GTMREG_TO_INT (idx));
 #endif
 				update_live_range (&vars [idx], abs_pos + inst_num + 1);
 				mono_bitset_set_fast (bb->kill_set, idx);
@@ -858,7 +860,7 @@ update_liveness2 (MonoCompile *cfg, MonoInst *ins, gboolean set_volatile, int in
 	/* DREG */
 	if ((spec [MONO_INST_DEST] != ' ') && get_vreg_to_inst (cfg, ins->dreg)) {
 		MonoInst *var = get_vreg_to_inst (cfg, ins->dreg);
-		int idx = var->inst_c0;
+		target_mgreg_t idx = var->inst_c0;
 		MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
 
 		if (MONO_IS_STORE_MEMBASE (ins)) {
@@ -899,7 +901,7 @@ update_liveness2 (MonoCompile *cfg, MonoInst *ins, gboolean set_volatile, int in
 		sreg = sregs [i];
 		if ((spec [MONO_INST_SRC1 + i] != ' ') && get_vreg_to_inst (cfg, sreg)) {
 			MonoInst *var = get_vreg_to_inst (cfg, sreg);
-			int idx = var->inst_c0;
+			target_mgreg_t idx = var->inst_c0;
 
 			if (last_use [idx] == 0) {
 				LIVENESS_DEBUG (printf ("\tlast use of R%d set to %x\n", sreg, inst_num));
@@ -1046,7 +1048,7 @@ static void
 update_liveness_gc (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, gint32 *last_use, MonoMethodVar **vreg_to_varinfo, GSList **callsites)
 {
 	if (ins->opcode == OP_GC_LIVENESS_DEF || ins->opcode == OP_GC_LIVENESS_USE) {
-		int vreg = ins->inst_c1;
+		target_mgreg_t vreg = ins->inst_c1;
 		MonoMethodVar *vi = vreg_to_varinfo [vreg];
 		int idx = vi->idx;
 		int pc_offset = ins->backend.pc_offset;
@@ -1055,12 +1057,12 @@ update_liveness_gc (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, gint32 
 
 		if (ins->opcode == OP_GC_LIVENESS_DEF) {
 			if (last_use [idx] > 0) {
-				LIVENESS_DEBUG (printf ("\tadd range to R%d: [%x, %x)\n", vreg, pc_offset, last_use [idx]));
+				LIVENESS_DEBUG (printf ("\tadd range to R%d: [%x, %x)\n", GTMREG_TO_INT (vreg), pc_offset, last_use [idx]));
 				last_use [idx] = 0;
 			}
 		} else {
 			if (last_use [idx] == 0) {
-				LIVENESS_DEBUG (printf ("\tlast use of R%d set to %x\n", vreg, pc_offset));
+				LIVENESS_DEBUG (printf ("\tlast use of R%d set to %x\n", GTMREG_TO_INT (vreg), pc_offset));
 				last_use [idx] = pc_offset;
 			}
 		}
@@ -1189,9 +1191,7 @@ mono_analyze_liveness_gc (MonoCompile *cfg)
 		/* Process instructions backwards */
 		callsites = NULL;
 		for (i = nins - 1; i >= 0; --i) {
-			MonoInst *ins = (MonoInst*)reverse [i];
-
-			update_liveness_gc (cfg, bb, ins, last_use, vreg_to_varinfo, &callsites);
+			update_liveness_gc (cfg, bb, (MonoInst*)reverse [i], last_use, vreg_to_varinfo, &callsites);
 		}
 		/* The callsites should already be sorted by pc offset because we added them backwards */
 		bb->gc_callsites = callsites;

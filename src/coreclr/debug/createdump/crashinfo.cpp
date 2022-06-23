@@ -67,7 +67,7 @@ CrashInfo::~CrashInfo()
         kern_return_t result = ::mach_port_deallocate(mach_task_self(), m_task);
         if (result != KERN_SUCCESS)
         {
-            fprintf(stderr, "~CrashInfo: mach_port_deallocate FAILED %x %s\n", result, mach_error_string(result));
+            printf_error("Internal error: mach_port_deallocate FAILED %s (%x)\n", mach_error_string(result), result);
         }
     }
 #endif
@@ -219,6 +219,27 @@ CrashInfo::GatherCrashInfo(MINIDUMP_TYPE minidumpType)
     return true;
 }
 
+static const char*
+GetHResultString(HRESULT hr)
+{
+    switch (hr)
+    {
+        case E_FAIL:
+            return "The operation has failed";
+        case E_INVALIDARG:
+            return "Invalid argument";
+        case E_OUTOFMEMORY:
+            return "Out of memory";
+        case CORDBG_E_UNCOMPATIBLE_PLATFORMS:
+            return "The operation failed because debuggee and debugger are on incompatible platforms";
+        case CORDBG_E_MISSING_DEBUGGER_EXPORTS:
+            return "The debuggee memory space does not have the expected debugging export table";
+        case CORDBG_E_UNSUPPORTED:
+            return "The specified action is unsupported by this version of the runtime";
+    }
+    return "";
+}
+
 //
 // Enumerate all the memory regions using the DAC memory region support given a minidump type
 //
@@ -241,31 +262,31 @@ CrashInfo::InitializeDAC()
         m_hdac = LoadLibraryA(dacPath.c_str());
         if (m_hdac == nullptr)
         {
-            fprintf(stderr, "LoadLibraryA(%s) FAILED %d\n", dacPath.c_str(), GetLastError());
+            printf_error("InitializeDAC: LoadLibraryA(%s) FAILED %s\n", dacPath.c_str(), GetLastErrorString().c_str());
             goto exit;
         }
         pfnCLRDataCreateInstance = (PFN_CLRDataCreateInstance)GetProcAddress(m_hdac, "CLRDataCreateInstance");
         if (pfnCLRDataCreateInstance == nullptr)
         {
-            fprintf(stderr, "GetProcAddress(CLRDataCreateInstance) FAILED %d\n", GetLastError());
+            printf_error("InitializeDAC: GetProcAddress(CLRDataCreateInstance) FAILED %s\n", GetLastErrorString().c_str());
             goto exit;
         }
         hr = pfnCLRDataCreateInstance(__uuidof(ICLRDataEnumMemoryRegions), dataTarget, (void**)&m_pClrDataEnumRegions);
         if (FAILED(hr))
         {
-            fprintf(stderr, "CLRDataCreateInstance(ICLRDataEnumMemoryRegions) FAILED %08x\n", hr);
+            printf_error("InitializeDAC: CLRDataCreateInstance(ICLRDataEnumMemoryRegions) FAILED %s (%08x)\n", GetHResultString(hr), hr);
             goto exit;
         }
         hr = pfnCLRDataCreateInstance(__uuidof(IXCLRDataProcess), dataTarget, (void**)&m_pClrDataProcess);
         if (FAILED(hr))
         {
-            fprintf(stderr, "CLRDataCreateInstance(IXCLRDataProcess) FAILED %08x\n", hr);
+            printf_error("InitializeDAC: CLRDataCreateInstance(IXCLRDataProcess) FAILED %s (%08x)\n", GetHResultString(hr), hr);
             goto exit;
         }
     }
     else
     {
-        TRACE("InitializeDAC: coreclr not found; not using DAC\n");
+        printf_error("InitializeDAC: coreclr not found; not using DAC\n");
     }
     result = true;
 exit:
@@ -302,7 +323,7 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType)
         HRESULT hr = m_pClrDataEnumRegions->EnumMemoryRegions(this, minidumpType, CLRDATA_ENUM_MEM_DEFAULT);
         if (FAILED(hr))
         {
-            fprintf(stderr, "EnumMemoryRegions FAILED %08x\n", hr);
+            printf_error("EnumMemoryRegions FAILED %s (%08x)\n", GetHResultString(hr), hr);
             return false;
         }
         TRACE("EnumerateMemoryRegionsWithDAC: Memory enumeration FINISHED\n");
@@ -324,7 +345,7 @@ CrashInfo::EnumerateManagedModules()
         TRACE("EnumerateManagedModules: Module enumeration STARTED\n");
 
         if (FAILED(hr = m_pClrDataProcess->StartEnumModules(&enumModules))) {
-            fprintf(stderr, "StartEnumModules FAILED %08x\n", hr);
+            printf_error("StartEnumModules FAILED %s (%08x)\n", GetHResultString(hr), hr);
             return false;
         }
 
@@ -412,9 +433,15 @@ CrashInfo::UnwindAllThreads()
 void
 CrashInfo::ReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, const std::string& name)
 {
-    uint64_t start = (uint64_t)baseAddress;
-    uint64_t end = ((baseAddress + size) + (PAGE_SIZE - 1)) & PAGE_MASK;
-    uint32_t flags = GetMemoryRegionFlags(start);
+    // Round to page boundary (single-file managed assemblies are not page aligned)
+    ULONG_PTR start = ((ULONG_PTR)baseAddress) & PAGE_MASK;
+    assert(start > 0);
+
+    // Round up to page boundary
+    ULONG_PTR end = ((baseAddress + size) + (PAGE_SIZE - 1)) & PAGE_MASK;
+    assert(end > 0);
+
+    uint32_t flags = GetMemoryRegionFlags((ULONG_PTR)baseAddress);
 
     // Make sure that the page containing the PE header for the managed asseblies is in the dump
     // especially on MacOS where they are added artificially.
@@ -768,32 +795,6 @@ CrashInfo::SearchMemoryRegions(const std::set<MemoryRegion>& regions, const Memo
     return nullptr;
 }
 
-void
-CrashInfo::Trace(const char* format, ...)
-{
-    if (g_diagnostics)
-    {
-        va_list args;
-        va_start(args, format);
-        vfprintf(stdout, format, args);
-        fflush(stdout);
-        va_end(args);
-    }
-}
-
-void
-CrashInfo::TraceVerbose(const char* format, ...)
-{
-    if (g_diagnosticsVerbose)
-    {
-        va_list args;
-        va_start(args, format);
-        vfprintf(stdout, format, args);
-        fflush(stdout);
-        va_end(args);
-    }
-}
-
 //
 // Lookup a symbol in a module. The caller needs to call "free()" on symbol returned.
 //
@@ -833,6 +834,22 @@ GetFileName(const std::string& fileName)
         last = 0;
     }
     return fileName.substr(last);
+}
+
+//
+// Returns just the directory portion of a path or empty if none
+//
+const std::string
+GetDirectory(const std::string& fileName)
+{
+    size_t last = fileName.rfind(DIRECTORY_SEPARATOR_STR_A);
+    if (last != std::string::npos) {
+        last++;
+    }
+    else {
+        last = 0;
+    }
+    return fileName.substr(0, last);
 }
 
 //

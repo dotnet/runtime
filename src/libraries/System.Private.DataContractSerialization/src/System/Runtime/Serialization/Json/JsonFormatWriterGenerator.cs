@@ -2,19 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Security;
 using System.Xml;
 
 namespace System.Runtime.Serialization.Json
 {
-    using System;
-    using System.Collections;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Reflection;
-    using System.Reflection.Emit;
-    using System.Security;
-    using System.Xml;
-
     internal delegate void JsonFormatClassWriterDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContextComplexJson context, ClassDataContract dataContract, XmlDictionaryString[]? memberNames);
     internal delegate void JsonFormatCollectionWriterDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContextComplexJson context, CollectionDataContract dataContract);
 
@@ -115,7 +112,7 @@ namespace System.Runtime.Serialization.Json
                 return (JsonFormatCollectionWriterDelegate)_ilg.EndMethod();
             }
 
-            private void BeginMethod(CodeGenerator ilg, string methodName, Type delegateType, bool allowPrivateMemberAccess)
+            private static void BeginMethod(CodeGenerator ilg, string methodName, Type delegateType, bool allowPrivateMemberAccess)
             {
                 MethodInfo signature = GetInvokeMethod(delegateType);
                 ParameterInfo[] parameters = signature.GetParameters();
@@ -317,7 +314,6 @@ namespace System.Runtime.Serialization.Json
             private void WriteCollection(CollectionDataContract collectionContract)
             {
                 LocalBuilder itemName = _ilg.DeclareLocal(typeof(XmlDictionaryString), "itemName");
-                _ilg.Load(_contextArg);
                 _ilg.LoadMember(JsonFormatGeneratorStatics.CollectionItemNameProperty);
                 _ilg.Store(itemName);
 
@@ -728,6 +724,7 @@ namespace System.Runtime.Serialization.Json
                 _ilg.Call(methodInfo);
             }
 
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private LocalBuilder UnwrapNullableObject(LocalBuilder memberValue)// Leaves !HasValue on stack
             {
                 Type memberType = memberValue.LocalType;

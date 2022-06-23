@@ -12,7 +12,7 @@ namespace System.Net.Security
         private X509RevocationMode _checkCertificateRevocation = X509RevocationMode.NoCheck;
         private SslProtocols _enabledSslProtocols = SecurityProtocol.SystemDefaultSecurityProtocols;
         private EncryptionPolicy _encryptionPolicy = EncryptionPolicy.RequireEncryption;
-        private bool _allowRenegotiation = true;
+        private bool _allowRenegotiation;
 
         public bool AllowRenegotiation
         {
@@ -57,10 +57,12 @@ namespace System.Net.Security
             get => _encryptionPolicy;
             set
             {
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                 if (value != EncryptionPolicy.RequireEncryption && value != EncryptionPolicy.AllowNoEncryption && value != EncryptionPolicy.NoEncryption)
                 {
                     throw new ArgumentException(SR.Format(SR.net_invalid_enum, nameof(EncryptionPolicy)), nameof(value));
                 }
+#pragma warning restore SYSLIB0040
 
                 _encryptionPolicy = value;
             }

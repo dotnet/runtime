@@ -26,15 +26,12 @@ extern "C" {
 class SString;
 bool GetStackTraceAtContext(SString & s, struct _CONTEXT * pContext);
 
-void _cdecl DbgWriteEx(LPCTSTR szFmt, ...);
 bool _DbgBreakCheck(LPCSTR szFile, int iLine, LPCSTR szExpr, BOOL fConstrained = FALSE);
 
 extern VOID ANALYZER_NORETURN DbgAssertDialog(const char *szFile, int iLine, const char *szExpr);
 
 #define TRACE_BUFF_SIZE (cchMaxAssertStackLevelStringLen * cfrMaxAssertStackLevels + cchMaxAssertExprLen + 1)
 extern char g_szExprWithStack[TRACE_BUFF_SIZE];
-
-extern int _DbgBreakCount;
 
 #define PRE_ASSERTE         /* if you need to change modes before doing asserts override */
 #define POST_ASSERTE        /* put it back */
@@ -62,8 +59,6 @@ extern int _DbgBreakCount;
 #define FreeBuildDebugBreak() DebugBreak()
 
 #else // !_DEBUG
-
-#define _DbgBreakCount  0
 
 #define _ASSERTE(expr) ((void)0)
 #define _ASSERTE_MSG(expr, msg) ((void)0)

@@ -117,6 +117,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public string[]? AotProfilePath { get; set; }
 
     /// <summary>
+    /// Mibc file to use for profile-guided optimization, *only* the methods described in the file will be AOT compiled.
+    /// </summary>
+    public string[]? MibcProfilePath { get; set; }
+
+    /// <summary>
     /// List of profilers to use.
     /// </summary>
     public string[]? Profilers { get; set; }
@@ -278,6 +283,18 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             }
         }
 
+        if (MibcProfilePath != null)
+        {
+            foreach (var path in MibcProfilePath)
+            {
+                if (!File.Exists(path))
+                {
+                    Log.LogError($"MibcProfilePath '{path}' doesn't exist.");
+                    return false;
+                }
+            }
+        }
+
         if (UseLLVM)
         {
             if (string.IsNullOrEmpty(LLVMPath))
@@ -419,8 +436,34 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             if (BuildEngine is IBuildEngine9 be9)
                 allowedParallelism = be9.RequestCores(allowedParallelism);
 
+            /*
+                From: https://github.com/dotnet/runtime/issues/46146#issuecomment-754021690
+
+                Stephen Toub:
+                "As such, by default ForEach works on a scheme whereby each
+                thread takes one item each time it goes back to the enumerator,
+                and then after a few times of this upgrades to taking two items
+                each time it goes back to the enumerator, and then four, and
+                then eight, and so on. This ammortizes the cost of taking and
+                releasing the lock across multiple items, while still enabling
+                parallelization for enumerables containing just a few items. It
+                does, however, mean that if you've got a case where the body
+                takes a really long time and the work for every item is
+                heterogeneous, you can end up with an imbalance."
+
+                The time taken by individual compile jobs here can vary a
+                lot, depending on various factors like file size. This can
+                create an imbalance, like mentioned above, and we can end up
+                in a situation where one of the partitions has a job that
+                takes very long to execute, by which time other partitions
+                have completed, so some cores are idle.  But the idle
+                ones won't get any of the remaining jobs, because they are
+                all assigned to that one partition.
+
+                Instead, we want to use work-stealing so jobs can be run by any partition.
+            */
             ParallelLoopResult result = Parallel.ForEach(
-                                            argsList,
+                                            Partitioner.Create(argsList, EnumerablePartitionerOptions.NoBuffering),
                                             new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
                                             (args, state) => PrecompileLibraryParallel(args, state));
 
@@ -440,7 +483,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         return !Log.HasLoggedErrors;
     }
 
-    private bool CheckAllUpToDate(IList<PrecompileArguments> argsList)
+    private static bool CheckAllUpToDate(IList<PrecompileArguments> argsList)
     {
         foreach (var args in argsList)
         {
@@ -698,8 +741,10 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (UseAotDataFile)
         {
             string aotDataFile = Path.ChangeExtension(assembly, ".aotdata");
-            aotArgs.Add($"data-outfile={aotDataFile}");
-            aotAssembly.SetMetadata("AotDataFile", aotDataFile);
+            ProxyFile proxyFile = _cache.NewFile(aotDataFile);
+            proxyFiles.Add(proxyFile);
+            aotArgs.Add($"data-outfile={proxyFile.TempFile}");
+            aotAssembly.SetMetadata("AotDataFile", proxyFile.TargetFile);
         }
 
         if (AotProfilePath?.Length > 0)
@@ -708,6 +753,15 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             foreach (var path in AotProfilePath)
             {
                 aotArgs.Add($"profile={path}");
+            }
+        }
+
+        if (MibcProfilePath?.Length > 0)
+        {
+            aotArgs.Add("profile-only");
+            foreach (var path in MibcProfilePath)
+            {
+                aotArgs.Add($"mibc-profile={path}");
             }
         }
 

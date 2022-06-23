@@ -413,8 +413,10 @@ namespace System.Net.Mail
             Send(mailMessage);
         }
 
-        public void Send(MailMessage message!!)
+        public void Send(MailMessage message)
         {
+            ArgumentNullException.ThrowIfNull(message);
+
             ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (NetEventSource.Log.IsEnabled())
@@ -677,7 +679,7 @@ namespace System.Net.Mail
             }
         }
 
-        private bool IsSystemNetworkCredentialInCache(CredentialCache cache)
+        private static bool IsSystemNetworkCredentialInCache(CredentialCache cache)
         {
             // Check if SystemNetworkCredential is in given cache.
             foreach (NetworkCredential credential in cache)
@@ -904,7 +906,7 @@ namespace System.Net.Mail
         {
             try
             {
-                _writer = _transport.EndSendMail(result);
+                _writer = SmtpTransport.EndSendMail(result);
                 // If some recipients failed but not others, send the e-mail anyway, but then return the
                 // "Non-fatal" exception reporting the failures.  The sync code path does it this way.
                 // Fatal exceptions would have thrown above at transport.EndSendMail(...)
@@ -940,7 +942,7 @@ namespace System.Net.Mail
         {
             try
             {
-                _transport.EndGetConnection(result);
+                SmtpTransport.EndGetConnection(result);
                 if (_cancelled)
                 {
                     Complete(null, result);
@@ -964,7 +966,7 @@ namespace System.Net.Mail
         // After we've estabilished a connection and initilized ServerSupportsEai,
         // check all the addresses for one that contains unicode in the username/localpart.
         // The localpart is the only thing we cannot succesfully downgrade.
-        private void ValidateUnicodeRequirement(MailMessage message, MailAddressCollection recipients, bool allowUnicode)
+        private static void ValidateUnicodeRequirement(MailMessage message, MailAddressCollection recipients, bool allowUnicode)
         {
             // Check all recipients, to, from, sender, bcc, cc, etc...
             // GetSmtpAddress will throw if !allowUnicode and the username contains non-ascii

@@ -3,7 +3,7 @@
 
 using System.Diagnostics;
 using System.Threading;
-using Internal.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
@@ -163,15 +163,18 @@ namespace System
         //
         // Registers a custom Uri parser based on a scheme string
         //
-        public static void Register(UriParser uriParser!!, string schemeName!!, int defaultPort)
+        public static void Register(UriParser uriParser, string schemeName, int defaultPort)
         {
+            ArgumentNullException.ThrowIfNull(uriParser);
+            ArgumentNullException.ThrowIfNull(schemeName);
+
             if (schemeName.Length == 1)
                 throw new ArgumentOutOfRangeException(nameof(schemeName));
 
             if (!Uri.CheckSchemeName(schemeName))
                 throw new ArgumentOutOfRangeException(nameof(schemeName));
 
-            if ((defaultPort >= 0xFFFF || defaultPort < 0) && defaultPort != -1)
+            if ((defaultPort > 0xFFFF || defaultPort < 0) && defaultPort != -1)
                 throw new ArgumentOutOfRangeException(nameof(defaultPort));
 
             schemeName = schemeName.ToLowerInvariant();
@@ -181,8 +184,10 @@ namespace System
         //
         // Is a Uri scheme known to System.Uri?
         //
-        public static bool IsKnownScheme(string schemeName!!)
+        public static bool IsKnownScheme(string schemeName)
         {
+            ArgumentNullException.ThrowIfNull(schemeName);
+
             if (!Uri.CheckSchemeName(schemeName))
                 throw new ArgumentOutOfRangeException(nameof(schemeName));
 

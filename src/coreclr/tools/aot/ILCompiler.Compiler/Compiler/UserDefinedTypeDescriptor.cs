@@ -588,7 +588,7 @@ namespace ILCompiler
             string nonGcStaticDataName = NodeFactory.NameMangler.NodeMangler.NonGCStatics(type);
             string gcStaticDataName = NodeFactory.NameMangler.NodeMangler.GCStatics(type);
             string threadStaticDataName = NodeFactory.NameMangler.NodeMangler.ThreadStatics(type);
-            bool IsCoreRTAbi = Abi == TargetAbi.CoreRT;
+            bool isNativeAOT = Abi == TargetAbi.NativeAot;
 
             bool isCanonical = defType.IsCanonicalSubtype(CanonicalFormKind.Any);
 
@@ -657,10 +657,10 @@ namespace ILCompiler
 
                         if (fieldDesc.IsThreadStatic) {
                             staticDesc.StaticDataName = threadStaticDataName;
-                            staticDesc.IsStaticDataInObject = IsCoreRTAbi ? 1 : 0;
+                            staticDesc.IsStaticDataInObject = isNativeAOT ? 1 : 0;
                         } else if (fieldDesc.HasGCStaticBase) {
                             staticDesc.StaticDataName = gcStaticDataName;
-                            staticDesc.IsStaticDataInObject = IsCoreRTAbi ? 1 : 0;
+                            staticDesc.IsStaticDataInObject = isNativeAOT ? 1 : 0;
                         } else {
                             staticDesc.StaticDataName = nonGcStaticDataName;
                             staticDesc.IsStaticDataInObject = 0;
@@ -685,8 +685,8 @@ namespace ILCompiler
             if (NodeFactory.Target.OperatingSystem == TargetOS.Windows)
             {
                 InsertStaticFieldRegionMember(fieldsDescs, defType, nonGcStaticFields, WindowsNodeMangler.NonGCStaticMemberName, false, false);
-                InsertStaticFieldRegionMember(fieldsDescs, defType, gcStaticFields, WindowsNodeMangler.GCStaticMemberName, IsCoreRTAbi, false);
-                InsertStaticFieldRegionMember(fieldsDescs, defType, threadStaticFields, WindowsNodeMangler.ThreadStaticMemberName, IsCoreRTAbi, true);
+                InsertStaticFieldRegionMember(fieldsDescs, defType, gcStaticFields, WindowsNodeMangler.GCStaticMemberName, isNativeAOT, false);
+                InsertStaticFieldRegionMember(fieldsDescs, defType, threadStaticFields, WindowsNodeMangler.ThreadStaticMemberName, isNativeAOT, true);
             }
             else
             {

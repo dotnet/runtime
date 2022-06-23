@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Data
@@ -15,12 +16,14 @@ namespace System.Data
 
         public override bool GetPropertiesSupported(ITypeDescriptorContext? context) => false;
 
-        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType) =>
+        public override bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType) =>
             destinationType == typeof(string) ||
             base.CanConvertTo(context, destinationType);
 
-        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType!!)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
+            ArgumentNullException.ThrowIfNull(destinationType);
+
             return destinationType == typeof(string) ?
                 Array.Empty<DataColumn>().GetType().Name :
                 base.ConvertTo(context, culture, value, destinationType);

@@ -48,7 +48,7 @@
   .field public uint64 l2
 } // end of class RetBuff
 
-.class private abstract auto ansi sealed beforefieldinit RetBufferBug
+.class public abstract auto ansi sealed beforefieldinit RetBufferBug
        extends [mscorlib]System.Object
 {
   .field private static int32 s_i
@@ -59,7 +59,7 @@
   .field private static int32 s_n
   .field private static int32 s_o
   .field private static int32 s_p
-  .method private hidebysig static int32 
+  .method public hidebysig static int32 
           Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

@@ -147,7 +147,7 @@ namespace System.Net.Mail
                     {
                         // Store the decoded value, we'll re-encode before sending
                         value = MimeBasePart.DecodeHeaderValue(value);
-                        _subjectEncoding = _subjectEncoding ?? inputEncoding;
+                        _subjectEncoding ??= inputEncoding;
                     }
                     // Failed to decode, just pass it through as ascii (legacy)
                     catch (FormatException) { }
@@ -252,7 +252,7 @@ namespace System.Net.Mail
             EmptySendContext context = (EmptySendContext)result.AsyncState!;
             try
             {
-                context._writer.EndGetContentStream(result).Close();
+                BaseWriter.EndGetContentStream(result).Close();
             }
             catch (Exception ex)
             {
@@ -289,15 +289,17 @@ namespace System.Net.Mail
                 IAsyncResult newResult = writer.BeginGetContentStream(EmptySendCallback, new EmptySendContext(writer, result));
                 if (newResult.CompletedSynchronously)
                 {
-                    writer.EndGetContentStream(newResult).Close();
+                    BaseWriter.EndGetContentStream(newResult).Close();
                     result.InvokeCallback();
                 }
                 return result;
             }
         }
 
-        internal void EndSend(IAsyncResult asyncResult!!)
+        internal void EndSend(IAsyncResult asyncResult)
         {
+            ArgumentNullException.ThrowIfNull(asyncResult);
+
             if (Content != null)
             {
                 Content.EndSend(asyncResult);

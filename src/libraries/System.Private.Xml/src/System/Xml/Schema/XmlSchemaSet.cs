@@ -84,8 +84,10 @@ namespace System.Xml.Schema
         /// Construct a new empty schema schemas with associated XmlNameTable.
         /// The XmlNameTable is used when loading schemas.
         /// </summary>
-        public XmlSchemaSet(XmlNameTable nameTable!!)
+        public XmlSchemaSet(XmlNameTable nameTable)
         {
+            ArgumentNullException.ThrowIfNull(nameTable);
+
             _nameTable = nameTable;
             _schemas = new SortedList();
 
@@ -319,8 +321,10 @@ namespace System.Xml.Schema
         /// If the given schema references other namespaces, the schemas for those
         /// other namespaces are NOT automatically loaded.
         /// </summary>
-        public XmlSchema? Add(string? targetNamespace, XmlReader schemaDocument!!)
+        public XmlSchema? Add(string? targetNamespace, XmlReader schemaDocument)
         {
+            ArgumentNullException.ThrowIfNull(schemaDocument);
+
             if (targetNamespace != null)
             {
                 targetNamespace = XmlComplianceUtil.CDataNormalize(targetNamespace);
@@ -349,8 +353,10 @@ namespace System.Xml.Schema
         /// Adds all the namespaces defined in the given schemas
         /// (including their associated schemas) to this schemas.
         /// </summary>
-        public void Add(XmlSchemaSet schemas!!)
+        public void Add(XmlSchemaSet schemas)
         {
+            ArgumentNullException.ThrowIfNull(schemas);
+
             if (this == schemas)
             {
                 return;
@@ -431,8 +437,10 @@ namespace System.Xml.Schema
             }
         }
 
-        public XmlSchema? Add(XmlSchema schema!!)
+        public XmlSchema? Add(XmlSchema schema)
         {
+            ArgumentNullException.ThrowIfNull(schema);
+
             lock (InternalSyncObject)
             {
                 if (_schemas.ContainsKey(schema.SchemaId))
@@ -449,8 +457,10 @@ namespace System.Xml.Schema
             return Remove(schema, true);
         }
 
-        public bool RemoveRecursive(XmlSchema schemaToRemove!!)
+        public bool RemoveRecursive(XmlSchema schemaToRemove)
         {
+            ArgumentNullException.ThrowIfNull(schemaToRemove);
+
             if (!_schemas.ContainsKey(schemaToRemove.SchemaId))
             {
                 return false;
@@ -476,10 +486,9 @@ namespace System.Xml.Schema
                     //Removal list is all schemas imported by this schema directly or indirectly
                     //Need to check if other schemas in the set import schemaToRemove / any of its imports
                     ArrayList needToCheckSchemaList = new ArrayList();
-                    XmlSchema? mainSchema;
                     for (int i = 0; i < _schemas.Count; i++)
                     {
-                        mainSchema = (XmlSchema)_schemas.GetByIndex(i)!;
+                        XmlSchema mainSchema = (XmlSchema)_schemas.GetByIndex(i)!;
                         if (mainSchema == schemaToRemove ||
                             schemaToRemove.ImportedSchemas.Contains(mainSchema))
                         {
@@ -488,10 +497,9 @@ namespace System.Xml.Schema
                         needToCheckSchemaList.Add(mainSchema);
                     }
 
-                    mainSchema = null;
                     for (int i = 0; i < needToCheckSchemaList.Count; i++)
                     { //Perf: Not using nested foreach here
-                        mainSchema = (XmlSchema)needToCheckSchemaList[i]!;
+                        XmlSchema mainSchema = (XmlSchema)needToCheckSchemaList[i]!;
 
                         if (mainSchema.ImportedNamespaces.Count > 0)
                         {
@@ -528,8 +536,10 @@ namespace System.Xml.Schema
             return _targetNamespaces[targetNamespace] != null;
         }
 
-        public bool Contains(XmlSchema schema!!)
+        public bool Contains(XmlSchema schema)
         {
+            ArgumentNullException.ThrowIfNull(schema);
+
             return _schemas.ContainsValue(schema);
         }
 
@@ -628,8 +638,10 @@ namespace System.Xml.Schema
             return;
         }
 
-        public XmlSchema Reprocess(XmlSchema schema!!)
+        public XmlSchema Reprocess(XmlSchema schema)
         {
+            ArgumentNullException.ThrowIfNull(schema);
+
             // Due to bug 644477 - this method is tightly coupled (THE CODE IS BASICALLY COPIED) to Remove, Add and AddSchemaToSet
             // methods. If you change anything here *make sure* to update Remove/Add/AddSchemaToSet method(s) accordingly.
             // The only difference is that we don't touch .schemas collection here to not break a code like this:
@@ -715,8 +727,10 @@ namespace System.Xml.Schema
             }
         }
 
-        public void CopyTo(XmlSchema[] schemas!!, int index)
+        public void CopyTo(XmlSchema[] schemas, int index)
         {
+            ArgumentNullException.ThrowIfNull(schemas);
+
             if (index < 0 || index > schemas.Length - 1)
                 throw new ArgumentOutOfRangeException(nameof(index));
             _schemas.Values.CopyTo(schemas, index);
@@ -846,8 +860,10 @@ namespace System.Xml.Schema
 #endif
 
         //For use by the validator when loading schemaLocations in the instance
-        internal void Add(string? targetNamespace, XmlReader reader!!, Hashtable validatedNamespaces)
+        internal void Add(string? targetNamespace, XmlReader reader, Hashtable validatedNamespaces)
         {
+            ArgumentNullException.ThrowIfNull(reader);
+
             if (targetNamespace == null)
             {
                 targetNamespace = string.Empty;
@@ -928,7 +944,7 @@ namespace System.Xml.Schema
             if (schema != null)
             {
                 Debug.Assert(ns != null);
-                string tns = schema.TargetNamespace == null ? string.Empty : schema.TargetNamespace;
+                string tns = schema.TargetNamespace ?? string.Empty;
                 if (tns == ns)
                 {
                     return schema;
@@ -1080,8 +1096,10 @@ namespace System.Xml.Schema
             substitutionGroup.Members.Add(headElement);
         }
 
-        internal XmlSchema? Remove(XmlSchema schema!!, bool forceCompile)
+        internal XmlSchema? Remove(XmlSchema schema, bool forceCompile)
         {
+            ArgumentNullException.ThrowIfNull(schema);
+
             // Due to bug 644477 - this method is tightly coupled (THE CODE IS BASICALLY COPIED) to Reprocess
             // method. If you change anything here *make sure* to update Reprocess method accordingly.
             lock (InternalSyncObject)
@@ -1149,10 +1167,9 @@ namespace System.Xml.Schema
             SchemaNames schemaNames = GetSchemaNames(readerNameTable);
             Parser parser = new Parser(SchemaType.XSD, readerNameTable, schemaNames, _eventHandler);
             parser.XmlResolver = _readerSettings.GetXmlResolver_CheckConfig();
-            SchemaType schemaType;
             try
             {
-                schemaType = parser.Parse(reader, targetNamespace);
+                parser.Parse(reader, targetNamespace);
             }
             catch (XmlSchemaException e)
             {
@@ -1361,9 +1378,9 @@ namespace System.Xml.Schema
             return false;
         }
 
-        internal string GetTargetNamespace(XmlSchema schema)
+        internal static string GetTargetNamespace(XmlSchema schema)
         {
-            return schema.TargetNamespace == null ? string.Empty : schema.TargetNamespace;
+            return schema.TargetNamespace ?? string.Empty;
         }
 
         internal SortedList SortedSchemas

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
 using FluentAssertions;
 using Microsoft.DotNet.Cli.Build.Framework;
 
@@ -8,15 +9,19 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 {
     internal static class FrameworkResolutionCommandResultExtensions
     {
-        public static AndConstraint<CommandResultAssertions> HaveResolvedFramework(this CommandResultAssertions assertion, string name, string version)
+        public static AndConstraint<CommandResultAssertions> HaveResolvedFramework(this CommandResultAssertions assertion, string name, string version, string resolvedFrameworkBasePath = null)
         {
-            return assertion.HaveStdOutContaining($"mock frameworks: {name} {version}");
+            string expectedOutput = $"mock frameworks: {name} {version}";
+            if (resolvedFrameworkBasePath is not null)
+                expectedOutput += $" [path: {Path.Combine(resolvedFrameworkBasePath, "shared", name, version)}]";
+
+            return assertion.HaveStdOutContaining(expectedOutput);
         }
 
-        public static AndConstraint<CommandResultAssertions> ShouldHaveResolvedFramework(this CommandResult result, string resolvedFrameworkName, string resolvedFrameworkVersion)
+        public static AndConstraint<CommandResultAssertions> ShouldHaveResolvedFramework(this CommandResult result, string resolvedFrameworkName, string resolvedFrameworkVersion, string resolvedFrameworkBasePath = null)
         {
             return result.Should().Pass()
-                .And.HaveResolvedFramework(resolvedFrameworkName, resolvedFrameworkVersion);
+                .And.HaveResolvedFramework(resolvedFrameworkName, resolvedFrameworkVersion, resolvedFrameworkBasePath);
         }
 
         /// <summary>
@@ -28,28 +33,34 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         ///     Either null in which case the command result is expected to fail and not find compatible framework version,
         ///     or the framework versions in which case the command result is expected to succeed and resolve the specified framework version.</param>
         /// <returns>Constraint</returns>
-        public static AndConstraint<CommandResultAssertions> ShouldHaveResolvedFrameworkOrFailToFind(this CommandResult result, string resolvedFrameworkName, string resolvedFrameworkVersion)
+        public static AndConstraint<CommandResultAssertions> ShouldHaveResolvedFrameworkOrFailToFind(this CommandResult result, string resolvedFrameworkName, string resolvedFrameworkVersion, string resolvedFrameworkBasePath = null)
         {
-            if (resolvedFrameworkName == null || resolvedFrameworkVersion == null || 
+            if (resolvedFrameworkName == null || resolvedFrameworkVersion == null ||
                 resolvedFrameworkVersion == FrameworkResolutionBase.ResolvedFramework.NotFound)
             {
-                return result.ShouldFailToFindCompatibleFrameworkVersion();
+                return result.ShouldFailToFindCompatibleFrameworkVersion(resolvedFrameworkName);
             }
             else
             {
-                return result.ShouldHaveResolvedFramework(resolvedFrameworkName, resolvedFrameworkVersion);
+                return result.ShouldHaveResolvedFramework(resolvedFrameworkName, resolvedFrameworkVersion, resolvedFrameworkBasePath);
             }
         }
 
-        public static AndConstraint<CommandResultAssertions> DidNotFindCompatibleFrameworkVersion(this CommandResultAssertions assertion)
+        public static AndConstraint<CommandResultAssertions> DidNotFindCompatibleFrameworkVersion(this CommandResultAssertions assertion, string frameworkName, string requestedVersion)
         {
-            return assertion.HaveStdErrContaining("It was not possible to find any compatible framework version");
+            var constraint = assertion.HaveStdErrContaining("You must install or update .NET to run this application.");
+            if (frameworkName is not null)
+            {
+                constraint = constraint.And.HaveStdErrContaining($"Framework: '{frameworkName}', {(requestedVersion is null ? "" : $"version '{requestedVersion}'")}");
+            }
+
+            return constraint;
         }
 
-        public static AndConstraint<CommandResultAssertions> ShouldFailToFindCompatibleFrameworkVersion(this CommandResult result)
+        public static AndConstraint<CommandResultAssertions> ShouldFailToFindCompatibleFrameworkVersion(this CommandResult result, string frameworkName, string requestedVersion = null)
         {
             return result.Should().Fail()
-                .And.DidNotFindCompatibleFrameworkVersion();
+                .And.DidNotFindCompatibleFrameworkVersion(frameworkName, requestedVersion);
         }
 
         public static AndConstraint<CommandResultAssertions> FailedToReconcileFrameworkReference(
@@ -91,7 +102,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             }
             else if (resolvedVersion == FrameworkResolutionBase.ResolvedFramework.NotFound)
             {
-                return result.ShouldFailToFindCompatibleFrameworkVersion();
+                return result.ShouldFailToFindCompatibleFrameworkVersion(frameworkName, null);
             }
             else
             {

@@ -10,7 +10,7 @@
     <Compile Include="../../ServerContracts/ServerGuids.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../../NativeServer/CMakeLists.txt" />
+    <CMakeProjectReference Include="../../NativeServer/CMakeLists.txt" />
     <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
   </ItemGroup>
 </Project>

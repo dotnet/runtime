@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <!-- don't need to run this on helix -->
     <WasmCopyAppZipToHelixTestDir>false</WasmCopyAppZipToHelixTestDir>
     <WasmMainJSPath>main.js</WasmMainJSPath>
@@ -19,5 +20,6 @@
     <_SampleAssembly> Wasm.Browser.Bench.Sample.dll</_SampleAssembly>
   </PropertyGroup>
 
-  <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowser" />
+  <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowserAndSimpleServer" />
+
 </Project>

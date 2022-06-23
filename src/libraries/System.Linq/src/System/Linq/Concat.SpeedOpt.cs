@@ -38,7 +38,7 @@ namespace System.Linq
 
             public override TSource[] ToArray()
             {
-                var builder = new SparseArrayBuilder<TSource>(initialize: true);
+                SparseArrayBuilder<TSource> builder = new();
 
                 bool reservedFirst = builder.ReserveOrAdd(_first);
                 bool reservedSecond = builder.ReserveOrAdd(_second);
@@ -102,7 +102,7 @@ namespace System.Linq
             {
                 Debug.Assert(!_hasOnlyCollections);
 
-                var builder = new SparseArrayBuilder<TSource>(initialize: true);
+                SparseArrayBuilder<TSource> builder = new();
                 ArrayBuilder<int> deferredCopies = default;
 
                 for (int i = 0; ; i++)

@@ -7,7 +7,7 @@ namespace Microsoft.Extensions.Logging
 {
     internal static class LoggerRuleSelector
     {
-        public static void Select(LoggerFilterOptions options, Type providerType, string category, out LogLevel? minLevel, out Func<string, string, LogLevel, bool> filter)
+        public static void Select(LoggerFilterOptions options, Type providerType, string category, out LogLevel? minLevel, out Func<string?, string?, LogLevel, bool>? filter)
         {
             filter = null;
             minLevel = options.MinLevel;
@@ -20,8 +20,8 @@ namespace Microsoft.Extensions.Logging
             // 4. If there are multiple rules use last
             // 5. If there are no applicable rules use global minimal level
 
-            string providerAlias = ProviderAliasUtilities.GetAlias(providerType);
-            LoggerFilterRule current = null;
+            string? providerAlias = ProviderAliasUtilities.GetAlias(providerType);
+            LoggerFilterRule? current = null;
             foreach (LoggerFilterRule rule in options.RulesInternal)
             {
                 if (IsBetter(rule, current, providerType.FullName, category)
@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.Logging
             }
         }
 
-        private static bool IsBetter(LoggerFilterRule rule, LoggerFilterRule current, string logger, string category)
+        private static bool IsBetter(LoggerFilterRule rule, LoggerFilterRule? current, string? logger, string category)
         {
             // Skip rules with inapplicable type or category
             if (rule.ProviderName != null && rule.ProviderName != logger)
@@ -46,7 +46,7 @@ namespace Microsoft.Extensions.Logging
                 return false;
             }
 
-            string categoryName = rule.CategoryName;
+            string? categoryName = rule.CategoryName;
             if (categoryName != null)
             {
                 const char WildcardChar = '*';

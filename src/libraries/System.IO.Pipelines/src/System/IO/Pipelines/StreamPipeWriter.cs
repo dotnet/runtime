@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -46,8 +47,17 @@ namespace System.IO.Pipelines
             }
         }
 
-        public StreamPipeWriter(Stream writingStream!!, StreamPipeWriterOptions options!!)
+        public StreamPipeWriter(Stream writingStream, StreamPipeWriterOptions options)
         {
+            if (writingStream is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.writingStream);
+            }
+            if (options is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.options);
+            }
+
             InnerStream = writingStream;
             _minimumBufferSize = options.MinimumBufferSize;
             _pool = options.Pool == MemoryPool<byte>.Shared ? null : options.Pool;
@@ -212,13 +222,18 @@ namespace System.IO.Pipelines
 
             _isCompleted = true;
 
-            FlushInternal(writeToStream: exception == null);
-
-            _internalTokenSource?.Dispose();
-
-            if (!_leaveOpen)
+            try
             {
-                InnerStream.Dispose();
+                FlushInternal(writeToStream: exception == null);
+            }
+            finally
+            {
+                _internalTokenSource?.Dispose();
+
+                if (!_leaveOpen)
+                {
+                    InnerStream.Dispose();
+                }
             }
         }
 
@@ -231,17 +246,22 @@ namespace System.IO.Pipelines
 
             _isCompleted = true;
 
-            await FlushAsyncInternal(writeToStream: exception == null, data: Memory<byte>.Empty).ConfigureAwait(false);
-
-            _internalTokenSource?.Dispose();
-
-            if (!_leaveOpen)
+            try
             {
+                await FlushAsyncInternal(writeToStream: exception == null, data: Memory<byte>.Empty).ConfigureAwait(false);
+            }
+            finally
+            {
+                _internalTokenSource?.Dispose();
+
+                if (!_leaveOpen)
+                {
 #if (!NETSTANDARD2_0 && !NETFRAMEWORK)
-                await InnerStream.DisposeAsync().ConfigureAwait(false);
+                    await InnerStream.DisposeAsync().ConfigureAwait(false);
 #else
-                InnerStream.Dispose();
+                    InnerStream.Dispose();
 #endif
+                }
             }
         }
 
@@ -269,6 +289,9 @@ namespace System.IO.Pipelines
             InternalTokenSource.Cancel();
         }
 
+#if NETCOREAPP
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
+#endif
         private async ValueTask<FlushResult> FlushAsyncInternal(bool writeToStream, ReadOnlyMemory<byte> data, CancellationToken cancellationToken = default)
         {
             // Write all completed segments and whatever remains in the current segment

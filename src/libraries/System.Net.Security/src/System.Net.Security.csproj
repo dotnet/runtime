@@ -1,10 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)</TargetFrameworks>
     <!-- This is needed so that code for TlsCipherSuite will have no namespace (causes compile errors) when used within T4 template  -->
     <DefineConstants>$(DefineConstants);PRODUCT</DefineConstants>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
@@ -13,8 +12,11 @@
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'windows'">$(DefineConstants);TARGET_WINDOWS</DefineConstants>
     <UseAndroidCrypto Condition="'$(TargetPlatformIdentifier)' == 'Android'">true</UseAndroidCrypto>
     <UseAppleCrypto Condition="'$(TargetPlatformIdentifier)' == 'OSX' or '$(TargetPlatformIdentifier)' == 'iOS' or '$(TargetPlatformIdentifier)' == 'tvOS'">true</UseAppleCrypto>
+    <UseManagedNtlm Condition="'$(TargetPlatformIdentifier)' == 'Android' or '$(TargetPlatformIdentifier)' == 'tvOS'">true</UseManagedNtlm>
     <DefineConstants Condition="'$(UseAndroidCrypto)' == 'true' or '$(UseAppleCrypto)' == 'true'">$(DefineConstants);SYSNETSECURITY_NO_OPENSSL</DefineConstants>
+    <GenAPIExcludeApiList>ReferenceAssemblyExclusions.txt</GenAPIExcludeApiList>
   </PropertyGroup>
+  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition="'$(UseManagedNtlm)' == 'true'" />
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="System\Net\CertificateValidationPal.cs" />
     <Compile Include="System\Net\Logging\NetEventSource.cs" />
@@ -22,6 +24,10 @@
     <Compile Include="System\Net\Security\AuthenticatedStream.cs" />
     <Compile Include="System\Security\Authentication\AuthenticationException.cs" />
     <Compile Include="System\Net\Security\CipherSuitesPolicy.cs" />
+    <Compile Include="System\Net\Security\NegotiateAuthentication.cs" />
+    <Compile Include="System\Net\Security\NegotiateAuthenticationClientOptions.cs" />
+    <Compile Include="System\Net\Security\NegotiateAuthenticationServerOptions.cs" />
+    <Compile Include="System\Net\Security\NegotiateAuthenticationStatusCode.cs" />
     <Compile Include="System\Net\Security\NetEventSource.Security.cs" />
     <Compile Include="System\Net\Security\NetSecurityTelemetry.cs" />
     <Compile Include="System\Net\Security\ReadWriteAdapter.cs" />
@@ -32,10 +38,10 @@
     <Compile Include="System\Net\Security\SslClientAuthenticationOptions.cs" />
     <Compile Include="System\Net\Security\SslClientHelloInfo.cs" />
     <Compile Include="System\Net\Security\SslServerAuthenticationOptions.cs" />
-    <Compile Include="System\Net\Security\SecureChannel.cs" />
     <Compile Include="System\Net\Security\SslSessionsCache.cs" />
     <Compile Include="System\Net\Security\SslStream.cs" />
-    <Compile Include="System\Net\Security\SslStream.Implementation.cs" />
+    <Compile Include="System\Net\Security\SslStream.IO.cs" />
+    <Compile Include="System\Net\Security\SslStream.Protocol.cs" />
     <Compile Include="System\Net\Security\SslStreamCertificateContext.cs" />
     <Compile Include="System\Net\Security\SslConnectionInfo.cs" />
     <Compile Include="System\Net\Security\StreamSizes.cs" />
@@ -58,8 +64,6 @@
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\InternalException.cs"
              Link="Common\System\Net\InternalException.cs" />
-    <Compile Include="$(CommonPath)Extensions\ValueStopwatch\ValueStopwatch.cs"
-             Link="Common\Extensions\ValueStopwatch\ValueStopwatch.cs" />
     <!-- Debug only -->
     <Compile Include="$(CommonPath)System\Net\DebugSafeHandle.cs"
              Link="Common\System\Net\DebugSafeHandle.cs" />
@@ -89,11 +93,14 @@
     <Compile Include="$(CommonPath)System\Net\NegotiationInfoClass.cs"
              Link="Common\System\Net\NegotiationInfoClass.cs" />
     <Compile Include="$(CommonPath)System\Net\NTAuthentication.Common.cs"
-             Link="Common\System\Net\NTAuthentication.Common.cs" />
+             Link="Common\System\Net\NTAuthentication.Common.cs"
+             Condition="'$(UseManagedNtlm)' != 'true'" />
     <Compile Include="$(CommonPath)System\Net\SecurityStatusPal.cs"
              Link="Common\System\Net\SecurityStatusPal.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" 
+             Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <!-- This file depends on IANA registry. We do not want anyone's build to break after the update -->
   <!-- or if they don't have internet connection - explicit opt-in required -->
@@ -243,8 +250,6 @@
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
              Link="Common\Interop\Unix\Interop.Errors.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\TlsCertificateExtensions.cs"
-             Link="Common\System\Net\Http\TlsCertificateExtensions.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.GssFlags.cs"
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.GssFlags.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.Status.cs"
@@ -260,7 +265,7 @@
     <Compile Include="System\Net\Security\SslConnectionInfo.Unix.cs" />
     <Compile Include="System\Net\Security\TlsCipherSuiteData.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'tvOS'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(UseManagedNtlm)' != 'true'">
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\GssSafeHandles.cs"
              Link="Common\Microsoft\Win32\SafeHandles\GssSafeHandles.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteNegoContext.cs"
@@ -283,14 +288,16 @@
              Link="Common\System\Net\Security\NegotiateStreamPal.Unix.cs" />
     <Compile Include="System\Net\Security\NegotiateStreamPal.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'tvOS'">
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\GssSafeHandles.PlatformNotSupported.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\GssSafeHandles.PlatformNotSupported.cs" />
-    <Compile Include="$(CommonPath)System\Net\ContextFlagsAdapterPal.PlatformNotSupported.cs"
-             Link="Common\System\Net\ContextFlagsAdapterPal.PlatformNotSupported.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\NegotiateStreamPal.PlatformNotSupported.cs"
-             Link="Common\System\Net\Security\NegotiateStreamPal.PlatformNotSupported.cs" />
+  <ItemGroup Condition="'$(UseManagedNtlm)' == 'true'">
     <Compile Include="System\Net\Security\NegotiateStreamPal.PlatformNotSupported.cs" />
+    <Compile Include="$(CommonPath)System\Net\NTAuthentication.Managed.cs"
+             Link="Common\System\Net\NTAuthentication.Managed.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\MD4.cs"
+             Link="Common\System\Net\Security\MD4.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\RC4.cs"
+             Link="Common\System\Net\Security\RC4.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs"
+             Link="Common\System\Security\Cryptography\CryptoPool.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(UseAndroidCrypto)' != 'true' and '$(UseAppleCrypto)' != 'true'">
     <Compile Include="System\Net\CertificateValidationPal.Unix.cs" />
@@ -299,8 +306,12 @@
     <Compile Include="System\Net\Security\SslConnectionInfo.Linux.cs" />
     <Compile Include="System\Net\Security\SslStreamCertificateContext.Linux.cs" />
     <Compile Include="System\Net\Security\StreamSizes.Unix.cs" />
+    <Compile Include="$(CommonPath)System\Net\Http\X509ResourceClient.cs"
+             Link="Common\System\Net\Http\X509ResourceClient.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\CertificateValidation.Unix.cs"
              Link="Common\System\Net\Security\CertificateValidation.Unix.cs" />
+    <Compile Include="$(CommonPath)System\Text\UrlBase64Encoding.cs"
+             Link="Common\System\Text\UrlBase64Encoding.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.BIO.cs"
@@ -311,8 +322,12 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Crypto.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Crypto.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OCSP.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OCSP.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSsl.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSsl.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs"
+                 Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Ssl.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Ssl.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtx.cs"
@@ -362,7 +377,6 @@
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs"
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs" />
     <Compile Include="System\Net\CertificateValidationPal.Android.cs" />
-    <Compile Include="System\Net\Security\MD4.cs" />
     <Compile Include="System\Net\Security\Pal.Android\SafeDeleteSslContext.cs" />
     <Compile Include="System\Net\Security\Pal.Managed\SafeFreeSslCredentials.cs" />
     <Compile Include="System\Net\Security\Pal.Managed\SslProtocolsValidation.cs" />
@@ -419,21 +433,19 @@
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Sockets" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Security.Claims" />
     <Reference Include="System.Security.Cryptography" />
-    <Reference Include="System.Security.Cryptography.OpenSsl" />
-    <Reference Include="System.Security.Cryptography.X509Certificates" />
-    <Reference Include="System.Security.Principal" />
     <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'">
     <Reference Include="System.Diagnostics.StackTrace" />
-    <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Cryptography" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UseManagedNtlm)' == 'true'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Formats.Asn1\src\System.Formats.Asn1.csproj" />
+    <Reference Include="System.Runtime.Numerics" />
   </ItemGroup>
 </Project>

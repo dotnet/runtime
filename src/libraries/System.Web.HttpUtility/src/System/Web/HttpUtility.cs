@@ -80,11 +80,14 @@ namespace System.Web
 
         public static NameValueCollection ParseQueryString(string query) => ParseQueryString(query, Encoding.UTF8);
 
-        public static NameValueCollection ParseQueryString(string query!!, Encoding encoding!!)
+        public static NameValueCollection ParseQueryString(string query, Encoding encoding)
         {
+            ArgumentNullException.ThrowIfNull(query);
+            ArgumentNullException.ThrowIfNull(encoding);
+
             HttpQSCollection result = new HttpQSCollection();
             int queryLength = query.Length;
-            int namePos = queryLength > 0 && query[0] == '?' ? 1 : 0;
+            int namePos = query.StartsWith('?') ? 1 : 0;
             if (queryLength == namePos)
             {
                 return result;
@@ -171,9 +174,7 @@ namespace System.Web
         [return: NotNullIfNotNull("bytes")]
         public static byte[]? UrlEncodeToBytes(byte[]? bytes) => bytes == null ? null : UrlEncodeToBytes(bytes, 0, bytes.Length);
 
-        [Obsolete(
-             "This method produces non-standards-compliant output and has interoperability issues. The preferred alternative is UrlEncodeToBytes(String)."
-         )]
+        [Obsolete("This method produces non-standards-compliant output and has interoperability issues. The preferred alternative is UrlEncodeToBytes(String).")]
         [return: NotNullIfNotNull("str")]
         public static byte[]? UrlEncodeUnicodeToBytes(string? str) => str == null ? null : Encoding.ASCII.GetBytes(UrlEncodeUnicode(str));
 
@@ -207,10 +208,7 @@ namespace System.Web
         [return: NotNullIfNotNull("bytes")]
         public static byte[]? UrlEncodeToBytes(byte[]? bytes, int offset, int count) => HttpEncoder.UrlEncode(bytes, offset, count, alwaysCreateNewReturnValue: true);
 
-        [Obsolete(
-             "This method produces non-standards-compliant output and has interoperability issues. The preferred alternative is UrlEncode(String)."
-         )]
-
+        [Obsolete("This method produces non-standards-compliant output and has interoperability issues. The preferred alternative is UrlEncode(String).")]
         [return: NotNullIfNotNull("str")]
         public static string? UrlEncodeUnicode(string? str) => HttpEncoder.UrlEncodeUnicode(str);
 

@@ -100,8 +100,10 @@ namespace System.DirectoryServices.ActiveDirectory
                                               /* ReplicaLink */ new Syntax("2.5.5.10", 127, s_replicaLinkOMObjectClass)};
 
         #region constructors
-        public ActiveDirectorySchemaProperty(DirectoryContext context!!, string ldapDisplayName)
+        public ActiveDirectorySchemaProperty(DirectoryContext context, string ldapDisplayName)
         {
+            ArgumentNullException.ThrowIfNull(context);
+
             if ((context.Name == null) && (!context.isRootDomain()))
             {
                 throw new ArgumentException(SR.ContextNotAssociatedWithDomain, nameof(context));
@@ -116,10 +118,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
             }
 
-            if (ldapDisplayName == null)
-            {
-                throw new ArgumentNullException(nameof(ldapDisplayName));
-            }
+            ArgumentNullException.ThrowIfNull(ldapDisplayName);
 
             if (ldapDisplayName.Length == 0)
             {
@@ -273,8 +272,10 @@ namespace System.DirectoryServices.ActiveDirectory
         #endregion IDisposable
 
         #region public methods
-        public static ActiveDirectorySchemaProperty FindByName(DirectoryContext context!!, string ldapDisplayName)
+        public static ActiveDirectorySchemaProperty FindByName(DirectoryContext context, string ldapDisplayName)
         {
+            ArgumentNullException.ThrowIfNull(context);
+
             ActiveDirectorySchemaProperty? schemaProperty = null;
             if ((context.Name == null) && (!context.isRootDomain()))
             {
@@ -290,10 +291,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
             }
 
-            if (ldapDisplayName == null)
-            {
-                throw new ArgumentNullException(nameof(ldapDisplayName));
-            }
+            ArgumentNullException.ThrowIfNull(ldapDisplayName);
 
             if (ldapDisplayName.Length == 0)
             {

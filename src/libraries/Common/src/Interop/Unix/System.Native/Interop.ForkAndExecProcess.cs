@@ -40,7 +40,7 @@ internal static partial class Interop
             }
         }
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ForkAndExecProcess", CharSet = CharSet.Ansi, SetLastError = true)]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ForkAndExecProcess", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         private static unsafe partial int ForkAndExecProcess(
             string filename, byte** argv, byte** envp, string? cwd,
             int redirectStdin, int redirectStdout, int redirectStderr,

@@ -70,7 +70,7 @@ exception occurs.
        block, stmt, tree information) to do the optimization later.
             a) This involves checking if the loop is well-formed with respect to
             the optimization being performed.
-            b) In array bounds check case, reconstructing the morphed GT_INDEX
+            b) In array bounds check case, reconstructing the morphed GT_INDEX_ADDR
             nodes back to their array representation.
                 i) The array index is stored in the "context" variable with
                 additional block, tree, stmt info.
@@ -138,45 +138,37 @@ exception occurs.
     1. Loop detection has completed and the loop table is populated.
 
     2. The loops that will be considered are the ones with the LPFLG_ITER flag:
-       "for (i = icon or lclVar; test_condition(); i++)"
+       "for ( ; test_condition(); i++)"
 
     Limitations
 
-    1. For array based optimizations the loop choice condition is checked
-       before the loop body. This implies that the loop initializer statement
-       has not executed at the time of the check. So any loop cloning condition
-       involving the initial value of the loop counter cannot be condition checked
-       as it hasn't been assigned yet at the time of condition checking. Therefore
-       the initial value has to be statically known. This can be fixed with further
-       effort.
-
-    2. Loops containing nested exception handling regions are not cloned. (Cloning them
+    1. Loops containing nested exception handling regions are not cloned. (Cloning them
        would require creating new exception handling regions for the cloned loop, which
        is "hard".) There are a few other EH-related edge conditions that also cause us to
        reject cloning.
 
-    3. If the loop contains RETURN blocks, and cloning those would push us over the maximum
+    2. If the loop contains RETURN blocks, and cloning those would push us over the maximum
        number of allowed RETURN blocks in the function (either due to GC info encoding limitations
        or otherwise), we reject cloning.
 
-    4. Loop increment must be `i += 1`
+    3. Loop increment must be `i += 1`
 
-    5. Loop test must be `i < x` where `x` is a constant, a variable, or `a.Length` for array `a`
+    4. Loop test must be `i < x` or `i <= x` where `x` is a constant, a variable, or `a.Length` for array `a`
 
-    (There is some implementation support for decrementing loops, but it is incomplete.
-    There is some implementation support for `i <= x` conditions, but it is incomplete
-    (Compiler::optDeriveLoopCloningConditions() only handles GT_LT conditions))
+    (There is some implementation support for decrementing loops, but it is incomplete.)
 
-    6. Loop must have been converted to a do-while form.
+    5. Loop must have been converted to a do-while form.
 
-    7. There are a few other loop well-formedness conditions.
+    6. There are a few other loop well-formedness conditions.
 
-    8. Multi-dimensional (non-jagged) loop index checking is only partially implemented.
+    7. Multi-dimensional (non-jagged) loop index checking is only partially implemented.
 
-    9. Constant initializations and constant limits must be non-negative (REVIEW: why? The
-       implementation does use `unsigned` to represent them.)
+    8. Constant initializations and constant limits must be non-negative. This is because the
+       iterator variable will be used as an array index, and array indices must be non-negative.
+       For non-constant (or not found) iterator variable `i` initialization, we add a dynamic check that
+       `i >= 0`. Constant initializations can be checked statically.
 
-    10. The cloned loop (the slow path) is not added to the loop table, meaning certain
+    9. The cloned loop (the slow path) is not added to the loop table, meaning certain
        downstream optimization passes do not see them. See
        https://github.com/dotnet/runtime/issues/43713.
 
@@ -203,7 +195,7 @@ class Compiler;
  *
  *  Represents an array access and associated bounds checks.
  *  Array access is required to have the array and indices in local variables.
- *  This struct is constructed using a GT_INDEX node that is broken into
+ *  This struct is constructed using a GT_INDEX_ADDR node that is broken into
  *  its sub trees.
  *
  */
@@ -324,6 +316,21 @@ struct LcJaggedArrayOptInfo : public LcOptInfo
     }
 };
 
+// Optimization info for a type test
+//
+struct LcTypeTestOptInfo : public LcOptInfo
+{
+    // local whose method table is tested
+    unsigned lclNum;
+    // handle being tested for
+    CORINFO_CLASS_HANDLE clsHnd;
+
+    LcTypeTestOptInfo(unsigned lclNum, CORINFO_CLASS_HANDLE clsHnd)
+        : LcOptInfo(LcTypeTest), lclNum(lclNum), clsHnd(clsHnd)
+    {
+    }
+};
+
 /**
  *
  * Symbolic representation of a.length, or a[i][j].length or a[i,j].length and so on.
@@ -415,11 +422,11 @@ struct LC_Array
     GenTree* ToGenTree(Compiler* comp, BasicBlock* bb);
 };
 
-/**
- *
- * Symbolic representation of either a constant like 1 or 2, or a variable like V02 or V03, or an "LC_Array",
- * or the null constant.
- */
+//------------------------------------------------------------------------
+// LC_Ident: symbolic representation of either a constant like 1 or 2,
+//   or a variable like V02 or V03, or an "LC_Array", or the null constant,
+//   or a class handle, or an indir of a variable like *V02.
+//
 struct LC_Ident
 {
     enum IdentType
@@ -429,28 +436,53 @@ struct LC_Ident
         Var,
         ArrLen,
         Null,
+        ClassHandle,
+        Indir,
     };
 
-    LC_Array  arrLen;   // The LC_Array if the type is "ArrLen"
-    unsigned  constant; // The constant value if this node is of type "Const", or the lcl num if "Var"
-    IdentType type;     // The type of this object
+private:
+    union {
+        unsigned             constant;
+        unsigned             lclNum;
+        LC_Array             arrLen;
+        CORINFO_CLASS_HANDLE clsHnd;
+    };
+
+public:
+    // The type of this object
+    IdentType type;
 
     // Equality operator
     bool operator==(const LC_Ident& that) const
     {
+        if (type != that.type)
+        {
+            return false;
+        }
+
         switch (type)
         {
             case Const:
+                return (constant == that.constant);
+            case ClassHandle:
+                return (clsHnd == that.clsHnd);
             case Var:
-                return (type == that.type) && (constant == that.constant);
+            case Indir:
+                return (lclNum == that.lclNum);
             case ArrLen:
-                return (type == that.type) && (arrLen == that.arrLen);
+                return (arrLen == that.arrLen);
             case Null:
-                return (type == that.type);
+                return true;
             default:
                 assert(!"Unknown LC_Ident type");
                 unreached();
         }
+    }
+
+    unsigned LclNum() const
+    {
+        assert((type == Var) || (type == Indir));
+        return lclNum;
     }
 
 #ifdef DEBUG
@@ -462,7 +494,13 @@ struct LC_Ident
                 printf("%u", constant);
                 break;
             case Var:
-                printf("V%02d", constant);
+                printf("V%02u", lclNum);
+                break;
+            case Indir:
+                printf("*V%02u", lclNum);
+                break;
+            case ClassHandle:
+                printf("%p", clsHnd);
                 break;
             case ArrLen:
                 arrLen.Print();
@@ -480,12 +518,40 @@ struct LC_Ident
     LC_Ident() : type(Invalid)
     {
     }
-    LC_Ident(unsigned constant, IdentType type) : constant(constant), type(type)
+
+    explicit LC_Ident(unsigned val, IdentType type) : type(type)
     {
+        if (type == Const)
+        {
+            constant = val;
+        }
+        else if ((type == Var) || (type == Indir))
+        {
+            lclNum = val;
+        }
+        else
+        {
+            unreached();
+        }
     }
+
+    explicit LC_Ident(CORINFO_CLASS_HANDLE val, IdentType type) : type(type)
+    {
+        if (type == ClassHandle)
+        {
+            clsHnd = val;
+        }
+        else
+        {
+            unreached();
+        }
+    }
+
     explicit LC_Ident(IdentType type) : type(type)
     {
+        assert(type == Null);
     }
+
     explicit LC_Ident(const LC_Array& arrLen) : arrLen(arrLen), type(ArrLen)
     {
     }
@@ -605,24 +671,24 @@ struct LC_Condition
  *          i => {}
  *      }
  */
-struct LC_Deref
+struct LC_ArrayDeref
 {
-    const LC_Array                  array;
-    JitExpandArrayStack<LC_Deref*>* children;
+    const LC_Array                       array;
+    JitExpandArrayStack<LC_ArrayDeref*>* children;
 
     unsigned level;
 
-    LC_Deref(const LC_Array& array, unsigned level) : array(array), children(nullptr), level(level)
+    LC_ArrayDeref(const LC_Array& array, unsigned level) : array(array), children(nullptr), level(level)
     {
     }
 
-    LC_Deref* Find(unsigned lcl);
+    LC_ArrayDeref* Find(unsigned lcl);
 
     unsigned Lcl();
 
     bool HasChildren();
     void EnsureChildren(CompAllocator alloc);
-    static LC_Deref* Find(JitExpandArrayStack<LC_Deref*>* children, unsigned lcl);
+    static LC_ArrayDeref* Find(JitExpandArrayStack<LC_ArrayDeref*>* children, unsigned lcl);
 
     void DeriveLevelConditions(JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>* len);
 
@@ -643,7 +709,7 @@ struct LC_Deref
 #ifdef _MSC_VER
                 (*children)[i]->Print(indent + 1);
 #else  // _MSC_VER
-                (*((JitExpandArray<LC_Deref*>*)children))[i]->Print(indent + 1);
+                (*((JitExpandArray<LC_ArrayDeref*>*)children))[i]->Print(indent + 1);
 #endif // _MSC_VER
             }
         }
@@ -677,18 +743,22 @@ struct LoopCloneContext
     // The array of conditions that influence which path to take for each loop. (loop x cloning-conditions)
     jitstd::vector<JitExpandArrayStack<LC_Condition>*> conditions;
 
-    // The array of dereference conditions found in each loop. (loop x deref-conditions)
-    jitstd::vector<JitExpandArrayStack<LC_Array>*> derefs;
+    // The array of array dereference conditions found in each loop. (loop x deref-conditions)
+    jitstd::vector<JitExpandArrayStack<LC_Array>*> arrayDerefs;
+
+    // The array of object dereference conditions found in each loop.
+    jitstd::vector<JitExpandArrayStack<LC_Ident>*> objDerefs;
 
     // The array of block levels of conditions for each loop. (loop x level x conditions)
     jitstd::vector<JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>*> blockConditions;
 
     LoopCloneContext(unsigned loopCount, CompAllocator alloc)
-        : alloc(alloc), optInfo(alloc), conditions(alloc), derefs(alloc), blockConditions(alloc)
+        : alloc(alloc), optInfo(alloc), conditions(alloc), arrayDerefs(alloc), objDerefs(alloc), blockConditions(alloc)
     {
         optInfo.resize(loopCount, nullptr);
         conditions.resize(loopCount, nullptr);
-        derefs.resize(loopCount, nullptr);
+        arrayDerefs.resize(loopCount, nullptr);
+        objDerefs.resize(loopCount, nullptr);
         blockConditions.resize(loopCount, nullptr);
     }
 
@@ -717,8 +787,11 @@ struct LoopCloneContext
     // Get the conditions for loop. No allocation is performed.
     JitExpandArrayStack<LC_Condition>* GetConditions(unsigned loopNum);
 
-    // Ensure that the "deref" conditions array is allocated.
-    JitExpandArrayStack<LC_Array>* EnsureDerefs(unsigned loopNum);
+    // Ensure that the array "deref" conditions array is allocated.
+    JitExpandArrayStack<LC_Array>* EnsureArrayDerefs(unsigned loopNum);
+
+    // Ensure that the obj "deref" conditions array is allocated.
+    JitExpandArrayStack<LC_Ident>* EnsureObjDerefs(unsigned loopNum);
 
     // Get block conditions for each loop, no allocation is performed.
     JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>* GetBlockConditions(unsigned loopNum);

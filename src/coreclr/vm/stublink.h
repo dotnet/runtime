@@ -91,7 +91,7 @@ struct StubUnwindInfoHeader
     UNWIND_INFO UnwindInfo;  // variable length
 
     // Computes the size needed for this variable-sized struct.
-    static SIZE_T ComputeSize(UINT nUnwindInfoSize);
+    static SIZE_T ComputeAlignedSize(UINT nUnwindInfoSize);
 
     void Init ();
 
@@ -167,20 +167,6 @@ class StubLinker
         VOID EmitPtr(const VOID *pval);
 
         //---------------------------------------------------------------
-        // Emit a UTF8 string
-        //---------------------------------------------------------------
-        VOID EmitUtf8(LPCUTF8 pUTF8)
-        {
-            WRAPPER_NO_CONTRACT;
-
-            LPCUTF8 p = pUTF8;
-            while (*(p++)) {
-                //nothing
-            }
-            EmitBytes((const BYTE *)pUTF8, (unsigned int)(p-pUTF8-1));
-        }
-
-        //---------------------------------------------------------------
         // Append an instruction containing a reference to a label.
         //
         //      target             - the label being referenced.
@@ -213,6 +199,11 @@ class StubLinker
         {
             return NewExternalCodeLabel((LPVOID)pExternalAddress);
         }
+
+        //---------------------------------------------------------------
+        // Set the target method for Instantiating stubs.
+        //---------------------------------------------------------------
+        void SetTargetMethod(PTR_MethodDesc pMD);
 
         //---------------------------------------------------------------
         // Push and Pop can be used to keep track of stack growth.
@@ -288,6 +279,7 @@ public:
         CodeLabel     *m_pPatchLabel;       // label of stub patch offset
                                             // currently just for multicast
                                             // frames.
+        PTR_MethodDesc m_pTargetMethod;     // Used for instantiating stubs.
         SHORT         m_stackSize;          // count of pushes/pops
         CQuickHeap    m_quickHeap;          // throwaway heap for
                                             //   labels, and
@@ -443,9 +435,11 @@ struct CodeLabel
 
 enum NewStubFlags
 {
-    NEWSTUB_FL_MULTICAST        = 0x00000002,
-    NEWSTUB_FL_EXTERNAL         = 0x00000004,
-    NEWSTUB_FL_LOADERHEAP       = 0x00000008
+    NEWSTUB_FL_NONE                 = 0x00000000,
+    NEWSTUB_FL_INSTANTIATING_METHOD = 0x00000001,
+    NEWSTUB_FL_MULTICAST            = 0x00000002,
+    NEWSTUB_FL_EXTERNAL             = 0x00000004,
+    NEWSTUB_FL_LOADERHEAP           = 0x00000008
 };
 
 
@@ -465,16 +459,16 @@ class Stub
     protected:
     enum
     {
-        MULTICAST_DELEGATE_BIT = 0x80000000,
-        EXTERNAL_ENTRY_BIT     = 0x40000000,
-        LOADER_HEAP_BIT        = 0x20000000,
-        UNWIND_INFO_BIT        = 0x08000000,
+        MULTICAST_DELEGATE_BIT  = 0x80000000,
+        EXTERNAL_ENTRY_BIT      = 0x40000000,
+        LOADER_HEAP_BIT         = 0x20000000,
+        INSTANTIATING_STUB_BIT  = 0x10000000,
+        UNWIND_INFO_BIT         = 0x08000000,
 
-        PATCH_OFFSET_MASK      = UNWIND_INFO_BIT - 1,
-        MAX_PATCH_OFFSET       = PATCH_OFFSET_MASK + 1,
+        CODEBYTES_MASK          = UNWIND_INFO_BIT - 1,
+        MAX_CODEBYTES           = CODEBYTES_MASK + 1,
     };
-
-    static_assert_no_msg(PATCH_OFFSET_MASK < UNWIND_INFO_BIT);
+    static_assert_no_msg(CODEBYTES_MASK < UNWIND_INFO_BIT);
 
     public:
         //-------------------------------------------------------------------
@@ -482,14 +476,11 @@ class Stub
         //-------------------------------------------------------------------
         VOID IncRef();
 
-
         //-------------------------------------------------------------------
         // Dec the refcount.
         // Returns true if the count went to zero and the stub was deleted
         //-------------------------------------------------------------------
         BOOL DecRef();
-
-
 
         //-------------------------------------------------------------------
         // Used for throwing out unused stubs from stub caches. This
@@ -510,7 +501,28 @@ class Stub
         BOOL IsMulticastDelegate()
         {
             LIMITED_METHOD_CONTRACT;
-            return (m_patchOffset & MULTICAST_DELEGATE_BIT) != 0;
+            return (m_numCodeBytesAndFlags & MULTICAST_DELEGATE_BIT) != 0;
+        }
+
+        //-------------------------------------------------------------------
+        // Used by the debugger to help step through stubs
+        //-------------------------------------------------------------------
+        BOOL IsInstantiatingStub()
+        {
+            LIMITED_METHOD_CONTRACT;
+            return (m_numCodeBytesAndFlags & INSTANTIATING_STUB_BIT) != 0;
+        }
+
+        //-------------------------------------------------------------------
+        // For stubs which execute user code, a patch offset needs to be set
+        // to tell the debugger how far into the stub code the debugger has
+        // to step until the frame is set up.
+        //-------------------------------------------------------------------
+        void SetPatchOffset(USHORT offset)
+        {
+            LIMITED_METHOD_CONTRACT;
+            _ASSERTE(!IsInstantiatingStub());
+            m_data.PatchOffset = offset;
         }
 
         //-------------------------------------------------------------------
@@ -521,23 +533,44 @@ class Stub
         USHORT GetPatchOffset()
         {
             LIMITED_METHOD_CONTRACT;
-
-            return (USHORT)(m_patchOffset & PATCH_OFFSET_MASK);
+            _ASSERTE(!IsInstantiatingStub());
+            return m_data.PatchOffset;
         }
 
-        void SetPatchOffset(USHORT offset)
-        {
-            LIMITED_METHOD_CONTRACT;
-            _ASSERTE(GetPatchOffset() == 0);
-            m_patchOffset |= offset;
-            _ASSERTE(GetPatchOffset() == offset);
-        }
-
+        //-------------------------------------------------------------------
+        // For stubs which execute user code, a patch offset needs to be set
+        // to tell the debugger how far into the stub code the debugger has
+        // to step until the frame is set up.
+        //-------------------------------------------------------------------
         TADDR GetPatchAddress()
         {
-            WRAPPER_NO_CONTRACT;
-
+            LIMITED_METHOD_CONTRACT;
+            _ASSERTE(!IsInstantiatingStub());
             return dac_cast<TADDR>(GetEntryPointInternal()) + GetPatchOffset();
+        }
+
+        //-------------------------------------------------------------------
+        // For instantiating methods, the target MethodDesc needs to be set
+        // to tell the debugger where to step through the instantiating method
+        // stub.
+        //-------------------------------------------------------------------
+        void SetInstantiatedMethodDesc(PTR_MethodDesc pMD)
+        {
+            LIMITED_METHOD_CONTRACT;
+            _ASSERTE(IsInstantiatingStub());
+            m_data.InstantiatedMethod = pMD;
+        }
+
+        //-------------------------------------------------------------------
+        // For instantiating methods, the target MethodDesc needs to be set
+        // to tell the debugger where to step through the instantiating method
+        // stub.
+        //-------------------------------------------------------------------
+        PTR_MethodDesc GetInstantiatedMethodDesc()
+        {
+            LIMITED_METHOD_CONTRACT;
+            _ASSERTE(IsInstantiatingStub());
+            return m_data.InstantiatedMethod;
         }
 
         //-------------------------------------------------------------------
@@ -549,7 +582,7 @@ class Stub
         BOOL HasUnwindInfo()
         {
             LIMITED_METHOD_CONTRACT;
-            return (m_patchOffset & UNWIND_INFO_BIT) != 0;
+            return (m_numCodeBytesAndFlags & UNWIND_INFO_BIT) != 0;
         }
 
         StubUnwindInfoHeaderSuffix *GetUnwindInfoHeaderSuffix()
@@ -580,12 +613,14 @@ class Stub
             }
             CONTRACTL_END
 
+            _ASSERTE(HasUnwindInfo());
+
             StubUnwindInfoHeaderSuffix *pSuffix = GetUnwindInfoHeaderSuffix();
 
             TADDR suffixEnd = dac_cast<TADDR>(pSuffix) + sizeof(*pSuffix);
 
             return PTR_StubUnwindInfoHeader(suffixEnd -
-                                            StubUnwindInfoHeader::ComputeSize(pSuffix->nUnwindInfoSize));
+                                            StubUnwindInfoHeader::ComputeAlignedSize(pSuffix->nUnwindInfoSize));
         }
 
 #endif // STUBLINKER_GENERATES_UNWIND_INFO
@@ -625,7 +660,7 @@ class Stub
             WRAPPER_NO_CONTRACT;
             SUPPORTS_DAC;
 
-            return m_numCodeBytes;
+            return (m_numCodeBytesAndFlags & CODEBYTES_MASK);
         }
 
         //-------------------------------------------------------------------
@@ -661,7 +696,7 @@ class Stub
             CONTRACT_END;
 
             Stub *pStub = Stub::RecoverStub(pEntryPoint);
-            *pSize = sizeof(Stub) + pStub->m_numCodeBytes;
+            *pSize = sizeof(Stub) + pStub->GetNumCodeBytes();
             RETURN pStub;
         }
 
@@ -669,12 +704,12 @@ class Stub
         {
             LIMITED_METHOD_CONTRACT;
             if ((pBuffer == NULL) ||
-                (dwBufferSize < (sizeof(*this) + m_numCodeBytes)))
+                (dwBufferSize < (sizeof(*this) + GetNumCodeBytes())))
             {
                 return E_INVALIDARG;
             }
 
-            memcpyNoGCRefs(pBuffer, this, sizeof(*this) + m_numCodeBytes);
+            memcpyNoGCRefs(pBuffer, this, sizeof(*this) + GetNumCodeBytes());
             reinterpret_cast<Stub *>(pBuffer)->m_refcount = 1;
 
             return S_OK;
@@ -717,21 +752,21 @@ class Stub
         {
             LIMITED_METHOD_CONTRACT;
 
-            return (m_patchOffset & EXTERNAL_ENTRY_BIT) != 0;
+            return (m_numCodeBytesAndFlags & EXTERNAL_ENTRY_BIT) != 0;
         }
 
         //-------------------------------------------------------------------
         // This creates stubs.
         //-------------------------------------------------------------------
         static Stub* NewStub(LoaderHeap *pLoaderHeap, UINT numCodeBytes,
-                             DWORD flags = 0
+                             DWORD flags = NEWSTUB_FL_NONE
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
                              , UINT nUnwindInfoSize = 0
 #endif
                              );
 
-        static Stub* NewStub(PTR_VOID pCode, DWORD flags = 0);
-        static Stub* NewStub(PCODE pCode, DWORD flags = 0)
+        static Stub* NewStub(PTR_VOID pCode, DWORD flags = NEWSTUB_FL_NONE);
+        static Stub* NewStub(PCODE pCode, DWORD flags = NEWSTUB_FL_NONE)
         {
             return NewStub((PTR_VOID)pCode, flags);
         }
@@ -772,10 +807,13 @@ class Stub
             }
         }
 
-        ULONG   m_refcount;
-        ULONG   m_patchOffset;
-
-        UINT    m_numCodeBytes;
+        UINT32 m_refcount;
+        UINT32 m_numCodeBytesAndFlags;
+        union
+        {
+            USHORT          PatchOffset;
+            PTR_MethodDesc  InstantiatedMethod;
+        } m_data;
 
 #ifdef _DEBUG
         enum {
@@ -784,21 +822,16 @@ class Stub
         };
 
         UINT32  m_signature;
-#else
 #ifdef HOST_64BIT
-        //README ALIGNMENT: in retail mode UINT m_numCodeBytes does not align to 16byte for the code
-        //                   after the Stub struct. This is to pad properly
-        UINT    m_pad_code_bytes;
+        //README ALIGNMENT: Enusure code after the Stub struct align to 16-bytes.
+        UINT32  m_pad_code_bytes1;
+        UINT32  m_pad_code_bytes2;
+        UINT32  m_pad_code_bytes3;
 #endif // HOST_64BIT
 #endif // _DEBUG
 
-#ifdef _DEBUG
-        Stub()      // Stubs are created by NewStub(), not "new". Hide the
-        { LIMITED_METHOD_CONTRACT; }          //  constructor to enforce this.
-#endif
-
+        Stub() = delete; // Stubs are created by NewStub(), not "new".
 };
-
 
 //-------------------------------------------------------------------------
 // Each platform encodes the "branch" instruction in a different
@@ -840,13 +873,13 @@ class Stub
 //
 //
 //   UINT RRT.GetSizeOfData(refsize, variationCode)
-//     Returns the total size of the seperate data area (if any) that the
+//     Returns the total size of the separate data area (if any) that the
 //     instruction needs in bytes for a given refsize. For this example
 //     on the SH3
 //          if (refsize==k32) return 4; else return 0;
 //
 //   The default implem of this returns 0, so CPUs that don't have need
-//   for a seperate constant area don't have to worry about it.
+//   for a separate constant area don't have to worry about it.
 //
 //
 //   BOOL CanReach(refsize, variationcode, fExternal, offset)

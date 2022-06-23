@@ -265,7 +265,7 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalMarkThunksAsValidCallTargets(
     int thunkBlockSize,
     int thunkBlocksPerMapping)
 {
-    // For CoreRT we are using RWX pages so there is no need for this API for now.
+    // We are using RWX pages so there is no need for this API for now.
     // Once we have a scenario for non-RWX pages we should be able to put the implementation here
     return TRUE;
 }
@@ -310,6 +310,124 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalSwitchToThread()
 REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ LPCWSTR pName)
 {
     return CreateEventW(pEventAttributes, manualReset, initialState, pName);
+}
+
+typedef BOOL(WINAPI* PINITIALIZECONTEXT2)(PVOID Buffer, DWORD ContextFlags, PCONTEXT* Context, PDWORD ContextLength, ULONG64 XStateCompactionMask);
+PINITIALIZECONTEXT2 pfnInitializeContext2 = NULL;
+
+#ifdef TARGET_X86
+typedef VOID(__cdecl* PRTLRESTORECONTEXT)(PCONTEXT ContextRecord, struct _EXCEPTION_RECORD* ExceptionRecord);
+PRTLRESTORECONTEXT pfnRtlRestoreContext = NULL;
+
+#define CONTEXT_COMPLETE (CONTEXT_FULL | CONTEXT_FLOATING_POINT |       \
+                          CONTEXT_DEBUG_REGISTERS | CONTEXT_EXTENDED_REGISTERS)
+#else
+#define CONTEXT_COMPLETE (CONTEXT_FULL | CONTEXT_DEBUG_REGISTERS)
+#endif
+
+REDHAWK_PALEXPORT CONTEXT* PalAllocateCompleteOSContext(_Out_ uint8_t** contextBuffer)
+{
+    CONTEXT* pOSContext = NULL;
+
+#if (defined(TARGET_X86) || defined(TARGET_AMD64))
+    DWORD context = CONTEXT_COMPLETE;
+
+    if (pfnInitializeContext2 == NULL)
+    {
+        HMODULE hm = GetModuleHandleW(_T("kernel32.dll"));
+        if (hm != NULL)
+        {
+            pfnInitializeContext2 = (PINITIALIZECONTEXT2)GetProcAddress(hm, "InitializeContext2");
+        }
+    }
+
+#ifdef TARGET_X86
+    if (pfnRtlRestoreContext == NULL)
+    {
+        HMODULE hm = GetModuleHandleW(_T("ntdll.dll"));
+        pfnRtlRestoreContext = (PRTLRESTORECONTEXT)GetProcAddress(hm, "RtlRestoreContext");
+    }
+#endif //TARGET_X86
+
+    // Determine if the processor supports AVX so we could
+    // retrieve extended registers
+    DWORD64 FeatureMask = GetEnabledXStateFeatures();
+    if ((FeatureMask & XSTATE_MASK_AVX) != 0)
+    {
+        context = context | CONTEXT_XSTATE;
+    }
+
+    // Retrieve contextSize by passing NULL for Buffer
+    DWORD contextSize = 0;
+    ULONG64 xStateCompactionMask = XSTATE_MASK_LEGACY | XSTATE_MASK_AVX;
+    // The initialize call should fail but return contextSize
+    BOOL success = pfnInitializeContext2 ?
+        pfnInitializeContext2(NULL, context, NULL, &contextSize, xStateCompactionMask) :
+        InitializeContext(NULL, context, NULL, &contextSize);
+
+    // Spec mentions that we may get a different error (it was observed on Windows7).
+    // In such case the contextSize is undefined.
+    if (success || GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+    {
+        return NULL;
+    }
+
+    // So now allocate a buffer of that size and call InitializeContext again
+    uint8_t* buffer = new (nothrow)uint8_t[contextSize];
+    if (buffer != NULL)
+    {
+        success = pfnInitializeContext2 ?
+            pfnInitializeContext2(buffer, context, &pOSContext, &contextSize, xStateCompactionMask):
+            InitializeContext(buffer, context, &pOSContext, &contextSize);
+
+        if (!success)
+        {
+            delete[] buffer;
+            buffer = NULL;
+        }
+    }
+
+    if (!success)
+    {
+        pOSContext = NULL;
+    }
+
+    *contextBuffer = buffer;
+
+#else
+    pOSContext = new (nothrow) CONTEXT;
+    pOSContext->ContextFlags = CONTEXT_COMPLETE;
+    *contextBuffer = NULL;
+#endif
+
+    return pOSContext;
+}
+
+REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalGetCompleteThreadContext(HANDLE hThread, _Out_ CONTEXT * pCtx)
+{
+    _ASSERTE((pCtx->ContextFlags & CONTEXT_COMPLETE) == CONTEXT_COMPLETE);
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    // Make sure that AVX feature mask is set, if supported. This should not normally fail.
+    // The system silently ignores any feature specified in the FeatureMask which is not enabled on the processor.
+    if (!SetXStateFeaturesMask(pCtx, XSTATE_MASK_AVX))
+    {
+        _ASSERTE(!"Could not apply XSTATE_MASK_AVX");
+        return FALSE;
+    }
+#endif //defined(TARGET_X86) || defined(TARGET_AMD64)
+
+    return GetThreadContext(hThread, pCtx);
+}
+
+REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalSetThreadContext(HANDLE hThread, _Out_ CONTEXT * pCtx)
+{
+    return SetThreadContext(hThread, pCtx);
+}
+
+REDHAWK_PALEXPORT void REDHAWK_PALAPI PalRestoreContext(CONTEXT * pCtx)
+{
+    RtlRestoreContext(pCtx, NULL);
 }
 
 REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalGetThreadContext(HANDLE hThread, _Out_ PAL_LIMITED_CONTEXT * pCtx)
@@ -464,7 +582,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalTerminateCurrentProcess(uint32_t arg2)
 
 REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer)
 {
-    // CoreRT is not designed to be unloadable today. Use GET_MODULE_HANDLE_EX_FLAG_PIN to prevent
+    // The runtime is not designed to be unloadable today. Use GET_MODULE_HANDLE_EX_FLAG_PIN to prevent
     // the module from ever unloading.
 
     HMODULE module;
@@ -555,10 +673,7 @@ REDHAWK_PALIMPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
     *flags = 0;
 
     // FP and SIMD support are enabled by default
-    *flags |= ARM64IntrinsicConstants_ArmBase;
-    *flags |= ARM64IntrinsicConstants_ArmBase_Arm64;
     *flags |= ARM64IntrinsicConstants_AdvSimd;
-    *flags |= ARM64IntrinsicConstants_AdvSimd_Arm64;
 
     if (IsProcessorFeaturePresent(PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE))
     {
@@ -570,7 +685,6 @@ REDHAWK_PALIMPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
     if (IsProcessorFeaturePresent(PF_ARM_V8_CRC32_INSTRUCTIONS_AVAILABLE))
     {
         *flags |= ARM64IntrinsicConstants_Crc32;
-        *flags |= ARM64IntrinsicConstants_Crc32_Arm64;
     }
 
     if (IsProcessorFeaturePresent(PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE))

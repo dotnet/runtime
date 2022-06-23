@@ -32,17 +32,9 @@ EEHashEntry_t * EEUtf8HashTableHelper::AllocateEntry(LPCUTF8 pKey, BOOL bDeepCop
 
     if (bDeepCopy)
     {
-        DWORD StringLen = (DWORD)strlen(pKey);
-        DWORD BufLen = 0;
-// Review conversion of size_t to DWORD.
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4267)
-#endif
-        if (!ClrSafeInt<DWORD>::addition(StringLen, SIZEOF_EEHASH_ENTRY + sizeof(LPUTF8) + 1, BufLen))
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
+        SIZE_T StringLen = strlen(pKey);
+        SIZE_T BufLen = 0;
+        if (!ClrSafeInt<SIZE_T>::addition(StringLen, SIZEOF_EEHASH_ENTRY + sizeof(LPUTF8) + 1, BufLen))
             return NULL;
         pEntry = (EEHashEntry_t *) new (nothrow) BYTE[BufLen];
         if (!pEntry)

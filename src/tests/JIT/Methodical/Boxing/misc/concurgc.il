@@ -10,9 +10,9 @@
 {
 }
 .assembly extern xunit.core {}
-.namespace Test
+.namespace Test_concurgc_il
 {
-  .class auto ansi App extends [mscorlib]System.Object
+  .class public auto ansi App extends [mscorlib]System.Object
   {
     .field private static bool signal
 
@@ -24,12 +24,12 @@
                 ldc.i4 100
                 call       void [System.Threading.Thread]System.Threading.Thread::Sleep(int32)
                 volatile.
-                ldsfld     bool Test.App::signal
+                ldsfld     bool Test_concurgc_il.App::signal
                 brfalse.s  IL_0002
                 ret
     } // end of method 'App::Func'
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -37,17 +37,17 @@
       )
       .entrypoint
       .maxstack  3
-      .locals ([0] class Test.App app,
+      .locals ([0] class Test_concurgc_il.App app,
                [1] class [System.Threading.Thread]System.Threading.ThreadStart ts,
                [2] class [System.Threading.Thread]System.Threading.Thread th,
                [3] class System.Object obj,
                [4] class System.Object I,
                [5] float64 V_5,
                [6] int32 V_6)
-      IL_0000:  newobj     instance void Test.App::.ctor()
+      IL_0000:  newobj     instance void Test_concurgc_il.App::.ctor()
       IL_0005:  stloc.0
       IL_0006:  ldloc.0
-      IL_0007:  ldftn      instance void Test.App::Func()
+      IL_0007:  ldftn      instance void Test_concurgc_il.App::Func()
       IL_000d:  newobj     instance void [System.Threading.Thread]System.Threading.ThreadStart::.ctor(class System.Object,native int)
       IL_0012:  stloc.1
       IL_0013:  ldloc.1
@@ -55,7 +55,7 @@
       IL_0019:  stloc.2
                 ldc.i4.0
                 volatile.
-                stsfld     bool  Test.App::signal
+                stsfld     bool  Test_concurgc_il.App::signal
       IL_001a:  ldloc.2
       IL_001b:  call       instance void [System.Threading.Thread]System.Threading.Thread::Start()
       IL_0020:  ldc.r8     11.
@@ -139,7 +139,7 @@
 
       IL_00c1:  ldc.i4.1
                 volatile.
-      IL_00c2:  stsfld     bool  Test.App::signal
+      IL_00c2:  stsfld     bool  Test_concurgc_il.App::signal
       IL_00c7:  ldstr      "**** PASSED ****"
       IL_00cc:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_00d1:  ldc.i4    0x64
@@ -157,5 +157,5 @@
 
   } // end of class 'App'
 
-} // end of namespace 'Test'
+} // end of namespace 'Test_concurgc_il'
 

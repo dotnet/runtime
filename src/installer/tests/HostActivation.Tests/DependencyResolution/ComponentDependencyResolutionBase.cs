@@ -26,11 +26,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
             public ComponentSharedTestStateBase()
             {
-                DotNetWithNetCoreApp = DotNet("WithNetCoreApp")
-                    .AddMicrosoftNETCoreAppFrameworkMockCoreClr("4.0.0", builder => CustomizeDotNetWithNetCoreAppMicrosoftNETCoreApp(builder))
-                    .Build();
+                var dotNetBuilder = DotNet("WithNetCoreApp")
+                    .AddMicrosoftNETCoreAppFrameworkMockCoreClr("4.0.0", builder => CustomizeDotNetWithNetCoreAppMicrosoftNETCoreApp(builder));
+                CustomizeDotNetWithNetCoreApp(dotNetBuilder);
+                DotNetWithNetCoreApp = dotNetBuilder.Build();
 
-                TestApp app = CreateFrameworkReferenceApp(MicrosoftNETCoreApp, "4.0.0");
+                TestApp app = CreateTestFrameworkReferenceApp();
                 FrameworkReferenceApp = NetCoreAppBuilder.PortableForNETCoreApp(app)
                     .WithProject(p => p.WithAssemblyGroup(null, g => g.WithMainAssembly()))
                     .Build(app);
@@ -38,7 +39,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 _nativeHostingState = new NativeHosting.SharedTestStateBase();
             }
 
+            protected virtual TestApp CreateTestFrameworkReferenceApp() => CreateFrameworkReferenceApp(MicrosoftNETCoreApp, "4.0.0");
+
             protected virtual void CustomizeDotNetWithNetCoreAppMicrosoftNETCoreApp(NetCoreAppBuilder builder)
+            {
+            }
+
+            protected virtual void CustomizeDotNetWithNetCoreApp(DotNetBuilder builder)
             {
             }
 

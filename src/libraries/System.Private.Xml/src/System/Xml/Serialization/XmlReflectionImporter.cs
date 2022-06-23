@@ -1,23 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Reflection;
+using System;
+using System.Xml.Schema;
+using System.Collections;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Globalization;
+using System.Threading;
+using System.Diagnostics;
+using System.Xml;
+using System.Xml.Serialization;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+
 namespace System.Xml.Serialization
 {
-    using System.Reflection;
-    using System;
-    using System.Xml.Schema;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.ComponentModel;
-    using System.Globalization;
-    using System.Threading;
-    using System.Diagnostics;
-    using System.Xml.Extensions;
-    using System.Xml;
-    using System.Xml.Serialization;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Runtime.CompilerServices;
-
     ///<internalonly/>
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
@@ -166,8 +165,10 @@ namespace System.Xml.Serialization
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
-        public XmlTypeMapping ImportTypeMapping(Type type!!, XmlRootAttribute? root, string? defaultNamespace)
+        public XmlTypeMapping ImportTypeMapping(Type type, XmlRootAttribute? root, string? defaultNamespace)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             XmlTypeMapping xmlMapping = new XmlTypeMapping(_typeScope, ImportElement(_modelScope.GetTypeModel(type), root, defaultNamespace, new RecursionLimiter()));
             xmlMapping.SetKeyInternal(XmlMapping.GenerateKey(type, root, defaultNamespace));
             xmlMapping.GenerateSerializer = true;
@@ -261,7 +262,7 @@ namespace System.Xml.Serialization
 
             if (root == null)
                 root = a.XmlRoot;
-            string? ns = root == null ? null : root.Namespace;
+            string? ns = root?.Namespace;
             if (ns == null) ns = defaultNamespace;
             if (ns == null) ns = _defaultNs;
 
@@ -364,17 +365,17 @@ namespace System.Xml.Serialization
                 throw new InvalidOperationException(SR.Format(SR.XmlCannotReconcileAccessor, accessor.Name, accessor.Namespace, GetMappingName(existing.Mapping!), GetMappingName(accessor.Mapping!)));
         }
 
-        private Exception CreateReflectionException(string context, Exception e)
+        private static Exception CreateReflectionException(string context, Exception e)
         {
             return new InvalidOperationException(SR.Format(SR.XmlReflectionError, context), e);
         }
 
-        private Exception CreateTypeReflectionException(string context, Exception e)
+        private static Exception CreateTypeReflectionException(string context, Exception e)
         {
             return new InvalidOperationException(SR.Format(SR.XmlTypeReflectionError, context), e);
         }
 
-        private Exception CreateMemberReflectionException(FieldModel model, Exception e)
+        private static Exception CreateMemberReflectionException(FieldModel model, Exception e)
         {
             return new InvalidOperationException(SR.Format(model.IsProperty ? SR.XmlPropertyReflectionError : SR.XmlFieldReflectionError, model.Name), e);
         }
@@ -397,7 +398,7 @@ namespace System.Xml.Serialization
                     {
                         throw new InvalidOperationException(SR.Format(SR.XmlInvalidDataTypeUsage, dataType, "XmlElementAttribute.DataType"));
                     }
-                    TypeDesc? td = _typeScope.GetTypeDesc(dataType, XmlSchema.Namespace);
+                    TypeDesc? td = TypeScope.GetTypeDesc(dataType, XmlSchema.Namespace);
                     if (td == null)
                     {
                         throw new InvalidOperationException(SR.Format(SR.XmlInvalidXsdDataType, dataType, "XmlElementAttribute.DataType", new XmlQualifiedName(dataType, XmlSchema.Namespace).ToString()));
@@ -436,7 +437,7 @@ namespace System.Xml.Serialization
                         if (context != ImportContext.Element) throw UnsupportedException(model.TypeDesc, context);
                         if (model.TypeDesc.IsOptionalValue)
                         {
-                            TypeDesc valueTypeDesc = string.IsNullOrEmpty(dataType) ? model.TypeDesc.BaseTypeDesc! : _typeScope.GetTypeDesc(dataType, XmlSchema.Namespace)!;
+                            TypeDesc valueTypeDesc = string.IsNullOrEmpty(dataType) ? model.TypeDesc.BaseTypeDesc! : TypeScope.GetTypeDesc(dataType, XmlSchema.Namespace)!;
                             string? xsdTypeName = valueTypeDesc.DataType == null ? valueTypeDesc.Name : valueTypeDesc.DataType.Name;
                             TypeMapping? baseMapping = GetTypeMapping(xsdTypeName, ns, valueTypeDesc, _types, null);
                             if (baseMapping == null)
@@ -593,7 +594,7 @@ namespace System.Xml.Serialization
             XmlSchema s = (XmlSchema)srcSchemas[0]!;
 
             XmlSchemaType t = (XmlSchemaType)s.SchemaTypes[baseQname]!;
-            t = t.Redefined != null ? t.Redefined : t;
+            t = t.Redefined ?? t;
 
             if (_serializables![baseQname] == null)
             {
@@ -1066,9 +1067,8 @@ namespace System.Xml.Serialization
             TypeMapping? existingMapping = (TypeMapping?)_types[uniqueName, ns];
             while (existingMapping != null)
             {
-                if (existingMapping is ArrayMapping)
+                if (existingMapping is ArrayMapping arrayMapping)
                 {
-                    ArrayMapping arrayMapping = (ArrayMapping)existingMapping;
                     if (AccessorMapping.ElementsMatch(arrayMapping.Elements, mapping.Elements))
                     {
                         break;
@@ -1093,7 +1093,7 @@ namespace System.Xml.Serialization
                 _savedArrayItemAttributes = new XmlArrayItemAttributes();
             if (CountAtLevel(_savedArrayItemAttributes, _arrayNestingLevel) == 0)
                 _savedArrayItemAttributes.Add(CreateArrayItemAttribute(_typeScope.GetTypeDesc(model.Element.Type), _arrayNestingLevel));
-            CreateArrayElementsFromAttributes(mapping, _savedArrayItemAttributes, model.Element.Type, _savedArrayNamespace == null ? ns : _savedArrayNamespace, limiter);
+            CreateArrayElementsFromAttributes(mapping, _savedArrayItemAttributes, model.Element.Type, _savedArrayNamespace ?? ns, limiter);
             SetArrayMappingType(mapping, ns, model.Type);
 
             // reconcile accessors now that we have the ArrayMapping namespace
@@ -1132,7 +1132,7 @@ namespace System.Xml.Serialization
             return mapping;
         }
 
-        private void CheckContext(TypeDesc typeDesc, ImportContext context)
+        private static void CheckContext(TypeDesc typeDesc, ImportContext context)
         {
             switch (context)
             {
@@ -1152,16 +1152,16 @@ namespace System.Xml.Serialization
             throw UnsupportedException(typeDesc, context);
         }
 
-        private PrimitiveMapping ImportPrimitiveMapping(PrimitiveModel model, ImportContext context, string dataType, bool repeats)
+        private static PrimitiveMapping ImportPrimitiveMapping(PrimitiveModel model, ImportContext context, string dataType, bool repeats)
         {
             PrimitiveMapping mapping = new PrimitiveMapping();
             if (dataType.Length > 0)
             {
-                mapping.TypeDesc = _typeScope.GetTypeDesc(dataType, XmlSchema.Namespace);
+                mapping.TypeDesc = TypeScope.GetTypeDesc(dataType, XmlSchema.Namespace);
                 if (mapping.TypeDesc == null)
                 {
                     // try it as a non-Xsd type
-                    mapping.TypeDesc = _typeScope.GetTypeDesc(dataType, UrtTypes.Namespace);
+                    mapping.TypeDesc = TypeScope.GetTypeDesc(dataType, UrtTypes.Namespace);
                     if (mapping.TypeDesc == null)
                     {
                         throw new InvalidOperationException(SR.Format(SR.XmlUdeclaredXsdType, dataType));
@@ -1232,7 +1232,7 @@ namespace System.Xml.Serialization
                 a.XmlEnum = new XmlEnumAttribute();
 
             ConstantMapping constant = new ConstantMapping();
-            constant.XmlName = a.XmlEnum.Name == null ? model.Name : a.XmlEnum.Name;
+            constant.XmlName = a.XmlEnum.Name ?? model.Name;
             constant.Name = model.Name;
             constant.Value = model.Value;
             return constant;
@@ -1417,7 +1417,7 @@ namespace System.Xml.Serialization
             return member;
         }
 
-        private Type CheckChoiceIdentifierType(Type type, bool isArrayLike, string identifierName, string memberName)
+        private static Type CheckChoiceIdentifierType(Type type, bool isArrayLike, string identifierName, string memberName)
         {
             if (type.IsArray)
             {
@@ -1442,7 +1442,7 @@ namespace System.Xml.Serialization
             return type;
         }
 
-        private Type GetChoiceIdentifierType(XmlChoiceIdentifierAttribute choice, XmlReflectionMember[] xmlReflectionMembers, bool isArrayLike, string accessorName)
+        private static Type GetChoiceIdentifierType(XmlChoiceIdentifierAttribute choice, XmlReflectionMember[] xmlReflectionMembers, bool isArrayLike, string accessorName)
         {
             for (int i = 0; i < xmlReflectionMembers.Length; i++)
             {
@@ -1456,7 +1456,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls GetFieldModel")]
-        private Type GetChoiceIdentifierType(XmlChoiceIdentifierAttribute choice, StructModel structModel, bool isArrayLike, string accessorName)
+        private static Type GetChoiceIdentifierType(XmlChoiceIdentifierAttribute choice, StructModel structModel, bool isArrayLike, string accessorName)
         {
             // check that the choice field exists
 
@@ -1501,10 +1501,10 @@ namespace System.Xml.Serialization
                 XmlArrayItemAttribute xmlArrayItem = attributes[i]!;
                 if (xmlArrayItem.NestingLevel != _arrayNestingLevel)
                     continue;
-                Type targetType = xmlArrayItem.Type != null ? xmlArrayItem.Type : arrayElementType;
+                Type targetType = xmlArrayItem.Type ?? arrayElementType;
                 TypeDesc targetTypeDesc = _typeScope.GetTypeDesc(targetType);
                 ElementAccessor arrayItemElement = new ElementAccessor();
-                arrayItemElement.Namespace = xmlArrayItem.Namespace == null ? arrayElementNs : xmlArrayItem.Namespace;
+                arrayItemElement.Namespace = xmlArrayItem.Namespace ?? arrayElementNs;
                 arrayItemElement.Mapping = ImportTypeMapping(_modelScope.GetTypeModel(targetType), arrayItemElement.Namespace, ImportContext.Element, xmlArrayItem.DataType, null, limiter);
                 arrayItemElement.Name = xmlArrayItem.ElementName.Length == 0 ? arrayItemElement.Mapping.DefaultElementName : XmlConvert.EncodeLocalName(xmlArrayItem.ElementName);
                 arrayItemElement.IsNullable = xmlArrayItem.GetIsNullableSpecified() ? xmlArrayItem.IsNullable : targetTypeDesc.IsNullable || targetTypeDesc.IsOptionalValue;
@@ -1589,7 +1589,7 @@ namespace System.Xml.Serialization
                     Type targetType = a.XmlAttribute!.Type == null ? arrayElementType : a.XmlAttribute.Type!;
                     TypeDesc targetTypeDesc = _typeScope.GetTypeDesc(targetType);
                     attribute.Name = Accessor.EscapeQName(a.XmlAttribute.AttributeName.Length == 0 ? accessorName : a.XmlAttribute.AttributeName);
-                    attribute.Namespace = a.XmlAttribute.Namespace == null ? ns : a.XmlAttribute.Namespace;
+                    attribute.Namespace = a.XmlAttribute.Namespace ?? ns;
                     attribute.Form = a.XmlAttribute.Form;
                     if (attribute.Form == XmlSchemaForm.None && ns != attribute.Namespace)
                     {
@@ -1617,7 +1617,7 @@ namespace System.Xml.Serialization
                     if (a.XmlText != null)
                     {
                         TextAccessor text = new TextAccessor();
-                        Type targetType = a.XmlText.Type == null ? arrayElementType : a.XmlText.Type;
+                        Type targetType = a.XmlText.Type ?? arrayElementType;
                         TypeDesc targetTypeDesc = _typeScope.GetTypeDesc(targetType);
                         text.Name = accessorName; // unused except to make more helpful error messages
                         text.Mapping = ImportTypeMapping(_modelScope.GetTypeModel(targetType), ns, ImportContext.Text, a.XmlText.DataType, null, true, false, limiter);
@@ -1632,11 +1632,11 @@ namespace System.Xml.Serialization
                     for (int i = 0; i < a.XmlElements.Count; i++)
                     {
                         XmlElementAttribute xmlElement = a.XmlElements[i]!;
-                        Type targetType = xmlElement.Type == null ? arrayElementType : xmlElement.Type;
+                        Type targetType = xmlElement.Type ?? arrayElementType;
                         TypeDesc targetTypeDesc = _typeScope.GetTypeDesc(targetType);
                         TypeModel typeModel = _modelScope.GetTypeModel(targetType);
                         ElementAccessor element = new ElementAccessor();
-                        element.Namespace = rpc ? null : xmlElement.Namespace == null ? ns : xmlElement.Namespace;
+                        element.Namespace = rpc ? null : xmlElement.Namespace ?? ns;
                         element.Mapping = ImportTypeMapping(typeModel, rpc ? ns : element.Namespace, ImportContext.Element, xmlElement.DataType, null, limiter);
                         if (a.XmlElements.Count == 1)
                         {
@@ -1684,13 +1684,13 @@ namespace System.Xml.Serialization
                             continue;
                         }
                         anys[anyName, anyNs] = xmlAnyElement;
-                        if (elements[anyName, (anyNs == null ? ns : anyNs)] != null)
+                        if (elements[anyName, anyNs ?? ns] != null)
                         {
-                            throw new InvalidOperationException(SR.Format(SR.XmlAnyElementDuplicate, accessorName, xmlAnyElement.Name, xmlAnyElement.Namespace == null ? "null" : xmlAnyElement.Namespace));
+                            throw new InvalidOperationException(SR.Format(SR.XmlAnyElementDuplicate, accessorName, xmlAnyElement.Name, xmlAnyElement.Namespace ?? "null"));
                         }
                         ElementAccessor element = new ElementAccessor();
                         element.Name = anyName;
-                        element.Namespace = anyNs == null ? ns : anyNs;
+                        element.Namespace = anyNs ?? ns;
                         element.Any = true;
                         element.AnyNamespaces = anyNs;
                         TypeDesc targetTypeDesc = _typeScope.GetTypeDesc(targetType);
@@ -1733,7 +1733,7 @@ namespace System.Xml.Serialization
                         a.XmlArrayItems.Add(CreateArrayItemAttribute(arrayElementTypeDesc, _arrayNestingLevel));
                     ElementAccessor arrayElement = new ElementAccessor();
                     arrayElement.Name = XmlConvert.EncodeLocalName(a.XmlArray.ElementName.Length == 0 ? accessorName : a.XmlArray.ElementName);
-                    arrayElement.Namespace = rpc ? null : a.XmlArray.Namespace == null ? ns : a.XmlArray.Namespace;
+                    arrayElement.Namespace = rpc ? null : a.XmlArray.Namespace ?? ns;
                     _savedArrayItemAttributes = a.XmlArrayItems;
                     _savedArrayNamespace = arrayElement.Namespace;
                     ArrayMapping arrayMapping = ImportArrayLikeMapping(_modelScope.GetArrayModel(accessorType), ns, limiter);
@@ -1770,7 +1770,7 @@ namespace System.Xml.Serialization
                         if (a.XmlAttribute.Type != null) throw new InvalidOperationException(SR.Format(SR.XmlIllegalType, "XmlAttribute"));
                         AttributeAccessor attribute = new AttributeAccessor();
                         attribute.Name = Accessor.EscapeQName(a.XmlAttribute.AttributeName.Length == 0 ? accessorName : a.XmlAttribute.AttributeName);
-                        attribute.Namespace = a.XmlAttribute.Namespace == null ? ns : a.XmlAttribute.Namespace;
+                        attribute.Namespace = a.XmlAttribute.Namespace ?? ns;
                         attribute.Form = a.XmlAttribute.Form;
                         if (attribute.Form == XmlSchemaForm.None && ns != attribute.Namespace)
                         {
@@ -1815,7 +1815,7 @@ namespace System.Xml.Serialization
                             }
                             ElementAccessor element = new ElementAccessor();
                             element.Name = XmlConvert.EncodeLocalName(xmlElement.ElementName.Length == 0 ? accessorName : xmlElement.ElementName);
-                            element.Namespace = rpc ? null : xmlElement.Namespace == null ? ns : xmlElement.Namespace;
+                            element.Namespace = rpc ? null : xmlElement.Namespace ?? ns;
                             TypeModel typeModel = _modelScope.GetTypeModel(accessorType);
                             element.Mapping = ImportTypeMapping(typeModel, rpc ? ns : element.Namespace, ImportContext.Element, xmlElement.DataType, null, limiter);
                             if (element.Mapping.TypeDesc!.Kind == TypeKind.Node)
@@ -1876,11 +1876,11 @@ namespace System.Xml.Serialization
                     for (int i = 0; i < a.XmlElements.Count; i++)
                     {
                         XmlElementAttribute xmlElement = a.XmlElements[i]!;
-                        Type targetType = xmlElement.Type == null ? accessorType : xmlElement.Type;
+                        Type targetType = xmlElement.Type ?? accessorType;
                         TypeDesc targetTypeDesc = _typeScope.GetTypeDesc(targetType);
                         ElementAccessor element = new ElementAccessor();
                         TypeModel typeModel = _modelScope.GetTypeModel(targetType);
-                        element.Namespace = rpc ? null : xmlElement.Namespace == null ? ns : xmlElement.Namespace;
+                        element.Namespace = rpc ? null : xmlElement.Namespace ?? ns;
                         element.Mapping = ImportTypeMapping(typeModel, rpc ? ns : element.Namespace, ImportContext.Element, xmlElement.DataType, null, false, openModel, limiter);
                         if (a.XmlElements.Count == 1)
                         {
@@ -1928,13 +1928,13 @@ namespace System.Xml.Serialization
                             continue;
                         }
                         anys[anyName, anyNs] = xmlAnyElement;
-                        if (elements[anyName, (anyNs == null ? ns : anyNs)] != null)
+                        if (elements[anyName, anyNs ?? ns] != null)
                         {
-                            throw new InvalidOperationException(SR.Format(SR.XmlAnyElementDuplicate, accessorName, xmlAnyElement.Name, xmlAnyElement.Namespace == null ? "null" : xmlAnyElement.Namespace));
+                            throw new InvalidOperationException(SR.Format(SR.XmlAnyElementDuplicate, accessorName, xmlAnyElement.Name, xmlAnyElement.Namespace ?? "null"));
                         }
                         ElementAccessor element = new ElementAccessor();
                         element.Name = anyName;
-                        element.Namespace = anyNs == null ? ns : anyNs;
+                        element.Namespace = anyNs ?? ns;
                         element.Any = true;
                         element.AnyNamespaces = anyNs;
                         TypeDesc targetTypeDesc = _typeScope.GetTypeDesc(targetType);
@@ -1990,7 +1990,7 @@ namespace System.Xml.Serialization
 
                         if (element.Any && element.Name.Length == 0)
                         {
-                            string anyNs = element.AnyNamespaces == null ? "##any" : element.AnyNamespaces;
+                            string anyNs = element.AnyNamespaces ?? "##any";
                             if (xmlName.Substring(0, xmlName.Length - 1) == anyNs)
                             {
                                 accessor.ChoiceIdentifier.MemberIds[i] = choiceMapping.Constants[j].Name;
@@ -2035,7 +2035,7 @@ namespace System.Xml.Serialization
         }
 
 
-        private void CheckTopLevelAttributes(XmlAttributes a, string accessorName)
+        private static void CheckTopLevelAttributes(XmlAttributes a, string accessorName)
         {
             XmlAttributeFlags flags = a.XmlFlags;
 
@@ -2116,7 +2116,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private void CheckChoiceIdentifierMapping(EnumMapping choiceMapping)
+        private static void CheckChoiceIdentifierMapping(EnumMapping choiceMapping)
         {
             NameTable ids = new NameTable();
             for (int i = 0; i < choiceMapping.Constants!.Length; i++)
@@ -2135,7 +2135,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private object? GetDefaultValue(TypeDesc fieldTypeDesc, Type t, XmlAttributes a)
+        private static object? GetDefaultValue(TypeDesc fieldTypeDesc, Type t, XmlAttributes a)
         {
             if (a.XmlDefaultValue == null || a.XmlDefaultValue == DBNull.Value) return null;
             if (!(fieldTypeDesc.Kind == TypeKind.Primitive || fieldTypeDesc.Kind == TypeKind.Enum))
@@ -2252,7 +2252,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode("Calls TypeScope.GetTypeDesc(Type) which has RequiresUnreferencedCode")]
         internal static XmlTypeMapping GetTopLevelMapping(Type type, string? defaultNamespace)
         {
-            defaultNamespace = defaultNamespace ?? string.Empty;
+            defaultNamespace ??= string.Empty;
             XmlAttributes a = new XmlAttributes(type);
             TypeDesc typeDesc = new TypeScope().GetTypeDesc(type);
             ElementAccessor element = new ElementAccessor();

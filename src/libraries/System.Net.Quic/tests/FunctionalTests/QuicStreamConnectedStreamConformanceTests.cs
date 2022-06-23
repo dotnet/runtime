@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Tests;
 using System.Net.Sockets;
-using System.Net.Quic.Implementations;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -15,29 +14,14 @@ using Xunit.Abstractions;
 
 namespace System.Net.Quic.Tests
 {
-    public sealed class MockQuicStreamConformanceTests : QuicStreamConformanceTests
-    {
-        protected override QuicImplementationProvider Provider => QuicImplementationProviders.Mock;
-        protected override bool BlocksOnZeroByteReads => true;
-    }
-
-    [ConditionalClass(typeof(QuicTestBase<MsQuicProviderFactory>), nameof(QuicTestBase<MsQuicProviderFactory>.IsSupported))]
     [Collection(nameof(DisableParallelization))]
-    public sealed class MsQuicQuicStreamConformanceTests : QuicStreamConformanceTests
+    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported))]
+    public sealed class QuicStreamConformanceTests : ConnectedStreamConformanceTests
     {
-        protected override QuicImplementationProvider Provider => QuicImplementationProviders.MsQuic;
         protected override bool UsableAfterCanceledReads => false;
         protected override bool BlocksOnZeroByteReads => true;
         protected override bool CanTimeout => true;
 
-        public MsQuicQuicStreamConformanceTests(ITestOutputHelper output)
-        {
-            _output = output;
-        }
-    }
-
-    public abstract class QuicStreamConformanceTests : ConnectedStreamConformanceTests
-    {
         public X509Certificate2 ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
         public ITestOutputHelper _output;
 
@@ -65,15 +49,13 @@ namespace System.Net.Quic.Tests
             };
         }
 
-        protected abstract QuicImplementationProvider Provider { get; }
-
         protected override async Task<StreamPair> CreateConnectedStreamsAsync()
         {
-            QuicImplementationProvider provider = Provider;
-            var listener = new QuicListener(
-                provider,
-                new IPEndPoint(IPAddress.Loopback, 0),
-                GetSslServerAuthenticationOptions());
+            var listener = await QuicListener.ListenAsync(new QuicListenerOptions()
+            {
+                ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
+                ServerAuthenticationOptions = GetSslServerAuthenticationOptions()
+            });
 
             byte[] buffer = new byte[1] { 42 };
             QuicConnection connection1 = null, connection2 = null;
@@ -89,12 +71,13 @@ namespace System.Net.Quic.Tests
                 {
                     try
                     {
-                        connection2 = new QuicConnection(
-                            provider,
-                            listener.ListenEndPoint,
-                            GetSslClientAuthenticationOptions());
+                        connection2 = await QuicConnection.ConnectAsync(new QuicClientConnectionOptions()
+                        {
+                            RemoteEndPoint = listener.ListenEndPoint,
+                            ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
+                        });
                         await connection2.ConnectAsync();
-                        stream2 = connection2.OpenBidirectionalStream();
+                        stream2 = await connection2.OpenBidirectionalStreamAsync();
                         // OpenBidirectionalStream only allocates ID. We will force stream opening
                         // by Writing there and receiving data on the other side.
                         await stream2.WriteAsync(buffer);

@@ -29,6 +29,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false, CancellationMode.Token)]
         [InlineData(true, CancellationMode.Token)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/36634", TestPlatforms.Browser)] // out of memory
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PostAsync_CancelDuringRequestContentSend_TaskCanceledQuickly(bool chunkedTransfer, CancellationMode mode)
         {
             if (LoopbackServerFactory.Version >= HttpVersion20.Value && chunkedTransfer)
@@ -78,12 +79,16 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await server.AcceptConnectionAsync(connection => serverRelease.Task);
                 }
-                catch { };  // Ignore any closing errors since we did not really process anything.
+                catch (Exception ex)
+                {
+                    _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                }
             });
         }
 
         [Theory]
         [MemberData(nameof(OneBoolAndCancellationMode))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task GetAsync_CancelDuringResponseHeadersReceived_TaskCanceledQuickly(bool connectionClose, CancellationMode mode)
         {
             if (LoopbackServerFactory.Version >= HttpVersion20.Value && connectionClose)
@@ -131,7 +136,11 @@ namespace System.Net.Http.Functional.Tests
                     {
                         clientFinished.SetResult(true);
                         await serverTask;
-                    } catch { }
+                    }
+                    catch (Exception ex)
+                    {
+                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                    }
                 });
             }
         }
@@ -188,7 +197,11 @@ namespace System.Net.Http.Functional.Tests
                     {
                         clientFinished.SetResult(true);
                         await serverTask;
-                    } catch { }
+                    }
+                    catch (Exception ex)
+                    {
+                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                    }
                 });
             }
         }
@@ -196,6 +209,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [MemberData(nameof(ThreeBools))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/65429", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task GetAsync_CancelDuringResponseBodyReceived_Unbuffered_TaskCanceledQuickly(bool chunkedTransfer, bool connectionClose, bool readOrCopyToAsync)
         {
             if (LoopbackServerFactory.Version >= HttpVersion20.Value && (chunkedTransfer || connectionClose))
@@ -264,7 +278,11 @@ namespace System.Net.Http.Functional.Tests
                     {
                         clientFinished.SetResult(true);
                         await serverTask;
-                    } catch { }
+                    }
+                    catch (Exception ex)
+                    {
+                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                    }
                 });
             }
         }
@@ -275,6 +293,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(CancellationMode.CancelPendingRequests, true)]
         [InlineData(CancellationMode.DisposeHttpClient, true)]
         [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't have blocking synchronous Stream.ReadByte and so it waits for whole body")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task GetAsync_CancelPendingRequests_DoesntCancelReadAsyncOnResponseStream(CancellationMode mode, bool copyToAsync)
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)

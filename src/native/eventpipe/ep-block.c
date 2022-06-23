@@ -671,12 +671,12 @@ ep_event_block_base_write_event (
 	}
 
 	if (block->format == EP_SERIALIZATION_FORMAT_NETPERF_V3) {
-		uint32_t stack_size = ep_stack_contents_get_size (ep_event_instance_get_stack_contents_ref (event_instance));
+		uint32_t stack_size = ep_stack_contents_instance_get_size (ep_event_instance_get_stack_contents_instance_ref (event_instance));
 		memcpy (write_pointer, &stack_size, sizeof (stack_size));
 		write_pointer += sizeof (stack_size);
 
 		if (stack_size > 0) {
-			memcpy (write_pointer, ep_stack_contents_get_pointer (ep_event_instance_get_stack_contents_ref (event_instance)), stack_size);
+			memcpy (write_pointer, ep_stack_contents_instance_get_pointer (ep_event_instance_get_stack_contents_instance_ref (event_instance)), stack_size);
 			write_pointer += stack_size;
 		}
 	}
@@ -1052,13 +1052,13 @@ bool
 ep_stack_block_write_stack (
 	EventPipeStackBlock *stack_block,
 	uint32_t stack_id,
-	EventPipeStackContents *stack)
+	EventPipeStackContentsInstance *stack)
 {
 	bool result = true;
 
 	EP_ASSERT (stack_block != NULL);
 
-	uint32_t stack_size = ep_stack_contents_get_size (stack);
+	uint32_t stack_size = ep_stack_contents_instance_get_size (stack);
 	uint32_t total_size = sizeof (stack_size) + stack_size;
 	EventPipeBlock *block = &stack_block->block;
 	uint8_t *write_pointer = block->write_pointer;
@@ -1076,7 +1076,7 @@ ep_stack_block_write_stack (
 	write_pointer += sizeof (stack_size);
 
 	if (stack_size > 0) {
-		memcpy (write_pointer, ep_stack_contents_get_pointer (stack), stack_size);
+		memcpy (write_pointer, ep_stack_contents_instance_get_pointer (stack), stack_size);
 		write_pointer += stack_size;
 	}
 
@@ -1095,7 +1095,7 @@ ep_on_error:
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */
 
-#ifndef EP_INCLUDE_SOURCE_FILES
+#if !defined(ENABLE_PERFTRACING) || (defined(EP_INCLUDE_SOURCE_FILES) && !defined(EP_FORCE_INCLUDE_SOURCE_FILES))
 extern const char quiet_linker_empty_file_warning_eventpipe_block;
 const char quiet_linker_empty_file_warning_eventpipe_block = 0;
 #endif

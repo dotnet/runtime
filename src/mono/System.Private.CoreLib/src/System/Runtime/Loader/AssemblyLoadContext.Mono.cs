@@ -7,7 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
-using Internal.Runtime.CompilerServices;
 using Mono;
 
 namespace System.Runtime.Loader
@@ -72,8 +71,7 @@ namespace System.Runtime.Loader
         // Returns the load context in which the specified assembly has been loaded
         public static AssemblyLoadContext? GetLoadContext(Assembly assembly)
         {
-            if (assembly == null)
-                throw new ArgumentNullException(nameof(assembly));
+            ArgumentNullException.ThrowIfNull(assembly);
 
             AssemblyLoadContext? loadContextForAssembly = null;
 

@@ -4,6 +4,9 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+#if NET7_0_OR_GREATER
+using System.Runtime.InteropServices.Marshalling;
+#endif
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
@@ -37,6 +40,7 @@ internal static partial class Interop
             internal uint nStartPage;
 
 #if NET7_0_OR_GREATER
+            [CustomTypeMarshaller(typeof(CRYPTUI_VIEWCERTIFICATE_STRUCTW), Features = CustomTypeMarshallerFeatures.UnmanagedResources)]
             internal unsafe struct Native
             {
                 private uint dwSize;
@@ -139,6 +143,7 @@ internal static partial class Interop
             internal IntPtr hSelectedCertStore;
 
 #if NET7_0_OR_GREATER
+            [CustomTypeMarshaller(typeof(CRYPTUI_SELECTCERTIFICATE_STRUCTW), Features = CustomTypeMarshallerFeatures.UnmanagedResources)]
             internal unsafe struct Native
             {
                 private uint dwSize;
@@ -210,11 +215,12 @@ internal static partial class Interop
 #endif
         }
 
-        [GeneratedDllImport(Interop.Libraries.CryptUI, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.CryptUI, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CryptUIDlgViewCertificateW(
             in CRYPTUI_VIEWCERTIFICATE_STRUCTW ViewInfo, IntPtr pfPropertiesChanged);
 
-        [GeneratedDllImport(Interop.Libraries.CryptUI, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.CryptUI, SetLastError = true)]
         internal static partial SafeCertContextHandle CryptUIDlgSelectCertificateW(ref CRYPTUI_SELECTCERTIFICATE_STRUCTW csc);
     }
 }

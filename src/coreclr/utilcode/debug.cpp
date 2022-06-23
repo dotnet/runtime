@@ -29,13 +29,25 @@ void CreateCrashDumpIfEnabled(bool stackoverflow = false);
 // Global state counter to implement SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE.
 Volatile<LONG> g_DbgSuppressAllocationAsserts = 0;
 
+static void GetExecutableFileNameUtf8(SString& value)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    SString tmp;
+    WCHAR * pCharBuf = tmp.OpenUnicodeBuffer(_MAX_PATH);
+    DWORD numChars = GetModuleFileNameW(0 /* Get current executable */, pCharBuf, _MAX_PATH);
+    tmp.CloseBuffer(numChars);
+
+    tmp.ConvertToUTF8(value);
+}
 
 #ifdef _DEBUG
 
-int LowResourceMessageBoxHelperAnsi(
-                  LPCSTR szText,    // Text message
-                  LPCSTR szTitle,   // Title
-                  UINT uType);      // Style of MessageBox
 
 //*****************************************************************************
 // This struct tracks the asserts we want to ignore in the rest of this
@@ -176,7 +188,7 @@ BOOL DebugBreakOnAssert()
     return fRet;
 }
 
-VOID TerminateOnAssert()
+VOID DECLSPEC_NORETURN TerminateOnAssert()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -188,8 +200,6 @@ VOID TerminateOnAssert()
 #endif
     RaiseFailFastException(NULL, NULL, 0);
 }
-
-thread_local bool f_bDisplayingAssertDlg;
 
 VOID LogAssert(
     LPCSTR      szFile,
@@ -300,12 +310,10 @@ HRESULT _OutOfMemory(LPCSTR szFile, int iLine)
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_DEBUG_ONLY;
 
-    DbgWriteEx(W("WARNING:  Out of memory condition being issued from: %hs, line %d\n"),
-            szFile, iLine);
+    printf("WARNING: Out of memory condition being issued from: %s, line %d\n", szFile, iLine);
     return (E_OUTOFMEMORY);
 }
 
-int _DbgBreakCount = 0;
 static const char * szLowMemoryAssertMessage = "Assert failure (unable to format)";
 
 //*****************************************************************************
@@ -337,11 +345,9 @@ bool _DbgBreakCheck(
 
     CONTRACT_VIOLATION(FaultNotFatal | GCViolation | TakesLockViolation);
 
-    SString debugOutput;
-    SString dialogOutput;
+    char formatBuffer[4096];
+
     SString modulePath;
-    SString dialogTitle;
-    SString dialogIgnoreMessage;
     BOOL formattedMessages = FALSE;
 
     // If we are low on memory we cannot even format a message. If this happens we want to
@@ -350,29 +356,15 @@ bool _DbgBreakCheck(
     {
         EX_TRY
         {
-            ClrGetModuleFileName(0, modulePath);
-            debugOutput.Printf(
-                W("\nAssert failure(PID %d [0x%08x], Thread: %d [0x%04x]): %hs\n")
-                W("    File: %hs Line: %d\n")
-                W("    Image: "),
+            GetExecutableFileNameUtf8(modulePath);
+
+            sprintf_s(formatBuffer, sizeof(formatBuffer),
+                "\nAssert failure(PID %d [0x%08x], Thread: %d [0x%04x]): %s\n"
+                "    File: %s Line: %d\n"
+                "    Image: %s\n\n",
                 GetCurrentProcessId(), GetCurrentProcessId(),
                 GetCurrentThreadId(), GetCurrentThreadId(),
-                szExpr, szFile, iLine);
-            debugOutput.Append(modulePath);
-            debugOutput.Append(W("\n\n"));
-
-            // Change format for message box.  The extra spaces in the title
-            // are there to get around format truncation.
-            dialogOutput.Printf(
-                W("%hs\n\n%hs, Line: %d\n\nAbort - Kill program\nRetry - Debug\nIgnore - Keep running\n")
-                W("\n\nImage:\n"), szExpr, szFile, iLine);
-            dialogOutput.Append(modulePath);
-            dialogOutput.Append(W("\n"));
-            dialogTitle.Printf(W("Assert Failure (PID %d, Thread %d/0x%04x)"),
-                GetCurrentProcessId(), GetCurrentThreadId(), GetCurrentThreadId());
-
-            dialogIgnoreMessage.Printf(W("Ignore the assert for the rest of this run?\nYes - Assert will never fire again.\nNo - Assert will continue to fire.\n\n%hs\nLine: %d\n"),
-                szFile, iLine);
+                szExpr, szFile, iLine, modulePath.GetUTF8NoConvert());
 
             formattedMessages = TRUE;
         }
@@ -385,8 +377,8 @@ bool _DbgBreakCheck(
     // Emit assert in debug output and console for easy access.
     if (formattedMessages)
     {
-        WszOutputDebugString(debugOutput);
-        fwprintf(stderr, W("%s"), (const WCHAR*)debugOutput);
+        OutputDebugStringUtf8(formatBuffer);
+        fprintf(stderr, formatBuffer);
     }
     else
     {
@@ -419,101 +411,8 @@ bool _DbgBreakCheck(
         return true;       // like a retry
     }
 
-    if (NoGuiOnAssert())
-    {
-        TerminateOnAssert();
-    }
-
-    if (f_bDisplayingAssertDlg)
-    {
-        // We are already displaying an assert dialog box on this thread. The reason why we came here is
-        // the message loop run by the API we call to display the UI. A message was dispatched and execution
-        // ended up in the runtime where it fired another assertion. If this happens before the dialog had
-        // a chance to fully initialize the original assert may not be visible which is misleading for the
-        // user. So we just continue.
-        return false;
-    }
-
-    f_bDisplayingAssertDlg = true;
-
-    // Tell user there was an error.
-    _DbgBreakCount++;
-    int ret;
-    if (formattedMessages)
-    {
-        ret = UtilMessageBoxCatastrophicNonLocalized(
-            W("%s"), dialogTitle, MB_ABORTRETRYIGNORE | MB_ICONEXCLAMATION, TRUE, (const WCHAR*)dialogOutput);
-    }
-    else
-    {
-        ret = LowResourceMessageBoxHelperAnsi(
-            szExpr, szLowMemoryAssertMessage, MB_ABORTRETRYIGNORE | MB_ICONEXCLAMATION);
-    }
-    --_DbgBreakCount;
-
-    f_bDisplayingAssertDlg = false;
-
-    switch(ret)
-    {
-    case 0:
-#if 0
-        // The message box was not displayed. Tell caller to break.
-        return true;
-#endif
-    // For abort, just quit the app.
-    case IDABORT:
-#ifdef HOST_WINDOWS
-        CreateCrashDumpIfEnabled();
-#endif
-        TerminateProcess(GetCurrentProcess(), 1);
-        break;
-
-    // Tell caller to break at the correct location.
-    case IDRETRY:
-        if (IsDebuggerPresent())
-        {
-            SetErrorMode(0);
-        }
-        else
-        {
-            LaunchJITDebugger();
-        }
-        return true;
-
-    // If we want to ignore the assert, find out if this is forever.
-    case IDIGNORE:
-        if (formattedMessages)
-        {
-            if (UtilMessageBoxCatastrophicNonLocalized(
-                                   dialogIgnoreMessage,
-                                   W("Ignore Assert Forever?"),
-                                   MB_ICONQUESTION | MB_YESNO,
-                                   TRUE) != IDYES)
-            {
-                break;
-            }
-        }
-        else
-        {
-            if (LowResourceMessageBoxHelperAnsi(
-                                   "Ignore the assert for the rest of this run?\nYes - Assert will never fire again.\nNo - Assert will continue to fire.\n",
-                                   "Ignore Assert Forever?",
-                                   MB_ICONQUESTION | MB_YESNO) != IDYES)
-            {
-                break;
-            }
-        }
-        if ((psData = pDBGIFNORE->Append()) == 0)
-        {
-            return false;
-        }
-        psData->bIgnore = true;
-        psData->iLine = iLine;
-        strcpy(psData->rcFile, szFile);
-        break;
-    }
-
-    return false;
+    TerminateOnAssert();
+    UNREACHABLE();
 }
 
 bool _DbgBreakCheckNoThrow(
@@ -744,37 +643,6 @@ bool GetStackTraceAtContext(SString & s, CONTEXT * pContext)
 #endif // !defined(DACCESS_COMPILE)
 #endif // _DEBUG
 
-BOOL NoGuiOnAssert()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_DEBUG_ONLY;
-
-    static ConfigDWORD fNoGui;
-    return fNoGui.val(CLRConfig::INTERNAL_NoGuiOnAssert);
-}
-
-// This helper will throw up a message box without allocating or using stack if possible, and is
-// appropriate for either low memory or low stack situations.
-int LowResourceMessageBoxHelperAnsi(
-                  LPCSTR szText,    // Text message
-                  LPCSTR szTitle,   // Title
-                  UINT uType)       // Style of MessageBox
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        INJECT_FAULT(return IDCANCEL;);
-    }
-    CONTRACTL_END;
-
-    // In low memory or stack constrained code we cannot format or convert strings, so use the
-    // ANSI version.
-    int result = MessageBoxA(NULL, szText, szTitle, uType);
-    return result;
-}
-
-
 /****************************************************************************
    The following two functions are defined to allow Free builds to call
    DebugBreak or to Assert with a stack trace for unexpected fatal errors.
@@ -806,22 +674,18 @@ void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, cons
     SString buffer;
     SString modulePath;
 
-    // Give assert in output for easy access.
-    ClrGetModuleFileName(0, modulePath);
-#ifndef TARGET_UNIX
-    buffer.Printf(W("CLR: Assert failure(PID %d [0x%08x], Thread: %d [0x%x]): %hs\n")
-                W("    File: %hs, Line: %d Image:\n"),
+    GetExecutableFileNameUtf8(modulePath);
+
+    buffer.Printf("CLR: Assert failure(PID %d [0x%08x], Thread: %d [0x%x]): %s\n"
+                "    File: %s, Line: %d Image:\n%s\n",
                 GetCurrentProcessId(), GetCurrentProcessId(),
                 GetCurrentThreadId(), GetCurrentThreadId(),
-                szExpr, szFile, iLine);
-    buffer.Append(modulePath);
-    buffer.Append(W("\n"));
-    WszOutputDebugString(buffer);
+                szExpr, szFile, iLine, modulePath.GetUTF8NoConvert());
+    OutputDebugStringUtf8(buffer.GetUTF8NoConvert());
+
     // Write out the error to the console
-    _putws(buffer);
-#else // TARGET_UNIX
-    // UNIXTODO: Do this for Unix.
-#endif // TARGET_UNIX
+    printf(buffer.GetUTF8NoConvert());
+
     // Log to the stress log. Note that we can't include the szExpr b/c that
     // may not be a string literal (particularly for formatt-able asserts).
     STRESS_LOG2(LF_ASSERT, LL_ALWAYS, "ASSERT:%s, line:%d\n", szFile, iLine);

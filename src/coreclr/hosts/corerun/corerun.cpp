@@ -564,16 +564,13 @@ int MAIN(const int argc, const char_t* argv[])
     return exit_code;
 }
 
-#ifdef TARGET_WINDOWS
-// Used by CoreShim to determine running CoreCLR details.
-extern "C" __declspec(dllexport) HRESULT __cdecl GetCurrentClrDetails(void** clrInstance, unsigned int* appDomainId)
+extern "C" DLL_EXPORT HRESULT CDECL GetCurrentClrDetails(void** clrInstance, unsigned int* appDomainId)
 {
     assert(clrInstance != nullptr && appDomainId != nullptr);
     *clrInstance = CurrentClrInstance;
     *appDomainId = CurrentAppDomainId;
     return S_OK;
 }
-#endif // TARGET_WINDOWS
 
 //
 // Self testing for corerun.

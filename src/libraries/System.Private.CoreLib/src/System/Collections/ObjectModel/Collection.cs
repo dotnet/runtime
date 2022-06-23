@@ -44,7 +44,7 @@ namespace System.Collections.ObjectModel
 
                 if ((uint)index >= (uint)items.Count)
                 {
-                    ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                    ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
                 }
 
                 SetItem(index, value);
@@ -101,7 +101,7 @@ namespace System.Collections.ObjectModel
 
             if ((uint)index > (uint)items.Count)
             {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
 
             InsertItem(index, item);
@@ -129,7 +129,7 @@ namespace System.Collections.ObjectModel
 
             if ((uint)index >= (uint)items.Count)
             {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
             }
 
             RemoveItem(index);

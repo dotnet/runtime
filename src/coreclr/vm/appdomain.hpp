@@ -671,7 +671,7 @@ private:
 
 //--------------------------------------------------------------------------------------
 // Base class for domains. It provides an abstract way of finding the first assembly and
-// for creating assemblies in the the domain. The system domain only has one assembly, it
+// for creating assemblies in the domain. The system domain only has one assembly, it
 // contains the classes that are logically shared between domains. All other domains can
 // have multiple assemblies. Iteration is done be getting the first assembly and then
 // calling the Next() method on the assembly.
@@ -761,7 +761,7 @@ typedef PEFileListLock::Holder PEFileListLockHolder;
 // The PendingLoadQueue is a per thread data structure which serves two purposes.  First, it
 // holds a "load limit" which automatically restricts the level of recursive loads to be
 // one less than the current load which is preceding.  This, together with the AppDomain
-// LoadLock level behavior, will prevent any deadlocks from occuring due to circular
+// LoadLock level behavior, will prevent any deadlocks from occurring due to circular
 // dependencies.  (Note that it is important that the loading logic understands this restriction,
 // and any given level of loading must deal with the fact that any recursive loads will be partially
 // unfulfilled in a specific way.)
@@ -1453,7 +1453,6 @@ public:
 //
 struct FailedAssembly {
     SString displayName;
-    SString location;
     HRESULT error;
 
     void Initialize(AssemblySpec *pSpec, Exception *ex)
@@ -1467,7 +1466,6 @@ struct FailedAssembly {
         CONTRACTL_END;
 
         displayName.SetASCII(pSpec->GetName());
-        location.Set(pSpec->GetCodeBase());
         error = ex->GetHR();
 
         //
@@ -2003,14 +2001,14 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(m_dwIterHolders);
-        FastInterlockDecrement(&m_dwIterHolders);
+        InterlockedDecrement(&m_dwIterHolders);
     }
 
 
     void IteratorAcquire()
     {
         LIMITED_METHOD_CONTRACT;
-        FastInterlockIncrement(&m_dwIterHolders);
+        InterlockedIncrement(&m_dwIterHolders);
     }
 
 #endif
@@ -2154,7 +2152,7 @@ private:
         STRESS_LOG1(LF_APPDOMAIN, LL_INFO100,"Updating AD stage, stage=%d\n",stage);
         Stage lastStage=m_Stage;
         while (lastStage !=stage)
-            lastStage = (Stage)FastInterlockCompareExchange((LONG*)&m_Stage,stage,lastStage);
+            lastStage = (Stage)InterlockedCompareExchange((LONG*)&m_Stage,stage,lastStage);
     };
 
     // List of unloaded LoaderAllocators, protected by code:GetLoaderAllocatorReferencesLock (for now)
@@ -2491,8 +2489,6 @@ public:
     //****************************************************************************************
     // Methods used to get the callers module and hence assembly and app domain.
 
-    static MethodDesc* GetCallersMethod(StackCrawlMark* stackMark);
-    static MethodTable* GetCallersType(StackCrawlMark* stackMark);
     static Module* GetCallersModule(StackCrawlMark* stackMark);
     static Assembly* GetCallersAssembly(StackCrawlMark* stackMark);
 
@@ -2652,8 +2648,6 @@ private:
     static CrstStatic       m_SystemDomainCrst;
 
     static GlobalStringLiteralMap *m_pGlobalStringLiteralMap;
-
-    static DWORD        m_dwLowestFreeIndex;
 #endif // DACCESS_COMPILE
 
 public:

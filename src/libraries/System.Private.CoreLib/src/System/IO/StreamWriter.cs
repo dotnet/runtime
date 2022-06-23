@@ -367,8 +367,10 @@ namespace System.IO
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)] // prevent WriteSpan from bloating call sites
-        public override void Write(char[] buffer!!, int index, int count)
+        public override void Write(char[] buffer, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -503,7 +505,7 @@ namespace System.IO
             }
         }
 
-        private void WriteFormatHelper(string format, ParamsArray args, bool appendNewLine)
+        private void WriteFormatHelper(string format, ReadOnlySpan<object?> args, bool appendNewLine)
         {
             int estimatedLength = (format?.Length ?? 0) + args.Length * 8;
             var vsb = estimatedLength <= 256 ?
@@ -517,11 +519,11 @@ namespace System.IO
             vsb.Dispose();
         }
 
-        public override void Write(string format, object? arg0)
+        public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
         {
             if (GetType() == typeof(StreamWriter))
             {
-                WriteFormatHelper(format, new ParamsArray(arg0), appendNewLine: false);
+                WriteFormatHelper(format, new ReadOnlySpan<object?>(in arg0), appendNewLine: false);
             }
             else
             {
@@ -529,11 +531,12 @@ namespace System.IO
             }
         }
 
-        public override void Write(string format, object? arg0, object? arg1)
+        public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
         {
             if (GetType() == typeof(StreamWriter))
             {
-                WriteFormatHelper(format, new ParamsArray(arg0, arg1), appendNewLine: false);
+                TwoObjects two = new TwoObjects(arg0, arg1);
+                WriteFormatHelper(format, MemoryMarshal.CreateReadOnlySpan(ref two.Arg0, 2), appendNewLine: false);
             }
             else
             {
@@ -541,11 +544,12 @@ namespace System.IO
             }
         }
 
-        public override void Write(string format, object? arg0, object? arg1, object? arg2)
+        public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
         {
             if (GetType() == typeof(StreamWriter))
             {
-                WriteFormatHelper(format, new ParamsArray(arg0, arg1, arg2), appendNewLine: false);
+                ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
+                WriteFormatHelper(format, MemoryMarshal.CreateReadOnlySpan(ref three.Arg0, 3), appendNewLine: false);
             }
             else
             {
@@ -553,7 +557,7 @@ namespace System.IO
             }
         }
 
-        public override void Write(string format, params object?[] arg)
+        public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] arg)
         {
             if (GetType() == typeof(StreamWriter))
             {
@@ -561,7 +565,7 @@ namespace System.IO
                 {
                     ArgumentNullException.Throw(format is null ? nameof(format) : nameof(arg)); // same as base logic
                 }
-                WriteFormatHelper(format, new ParamsArray(arg), appendNewLine: false);
+                WriteFormatHelper(format, arg, appendNewLine: false);
             }
             else
             {
@@ -569,11 +573,11 @@ namespace System.IO
             }
         }
 
-        public override void WriteLine(string format, object? arg0)
+        public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
         {
             if (GetType() == typeof(StreamWriter))
             {
-                WriteFormatHelper(format, new ParamsArray(arg0), appendNewLine: true);
+                WriteFormatHelper(format, new ReadOnlySpan<object?>(in arg0), appendNewLine: true);
             }
             else
             {
@@ -581,11 +585,12 @@ namespace System.IO
             }
         }
 
-        public override void WriteLine(string format, object? arg0, object? arg1)
+        public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
         {
             if (GetType() == typeof(StreamWriter))
             {
-                WriteFormatHelper(format, new ParamsArray(arg0, arg1), appendNewLine: true);
+                TwoObjects two = new TwoObjects(arg0, arg1);
+                WriteFormatHelper(format, MemoryMarshal.CreateReadOnlySpan(ref two.Arg0, 2), appendNewLine: true);
             }
             else
             {
@@ -593,11 +598,12 @@ namespace System.IO
             }
         }
 
-        public override void WriteLine(string format, object? arg0, object? arg1, object? arg2)
+        public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
         {
             if (GetType() == typeof(StreamWriter))
             {
-                WriteFormatHelper(format, new ParamsArray(arg0, arg1, arg2), appendNewLine: true);
+                ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
+                WriteFormatHelper(format, MemoryMarshal.CreateReadOnlySpan(ref three.Arg0, 3), appendNewLine: true);
             }
             else
             {
@@ -605,12 +611,12 @@ namespace System.IO
             }
         }
 
-        public override void WriteLine(string format, params object?[] arg)
+        public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] arg)
         {
             if (GetType() == typeof(StreamWriter))
             {
                 ArgumentNullException.ThrowIfNull(arg);
-                WriteFormatHelper(format, new ParamsArray(arg), appendNewLine: true);
+                WriteFormatHelper(format, arg, appendNewLine: true);
             }
             else
             {
@@ -693,8 +699,10 @@ namespace System.IO
             }
         }
 
-        public override Task WriteAsync(char[] buffer!!, int index, int count)
+        public override Task WriteAsync(char[] buffer, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -849,8 +857,10 @@ namespace System.IO
             return task;
         }
 
-        public override Task WriteLineAsync(char[] buffer!!, int index, int count)
+        public override Task WriteLineAsync(char[] buffer, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);

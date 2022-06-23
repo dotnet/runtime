@@ -157,17 +157,17 @@ buffer_init (Buffer *buf, int size)
 	buf->end = buf->buf + size;
 }
 
-static int
+static intptr_t
 buffer_len (Buffer *buf)
 {
 	return buf->p - buf->buf;
 }
 
 static void
-buffer_make_room (Buffer *buf, int size)
+buffer_make_room (Buffer *buf, intptr_t size)
 {
 	if (buf->end - buf->p < size) {
-		int new_size = buf->end - buf->buf + size + 32;
+		intptr_t new_size = buf->end - buf->buf + size + 32;
 		guint8 *p = (guint8 *)g_realloc (buf->buf, new_size);
 		size = buf->p - buf->buf;
 		buf->buf = p;
@@ -206,14 +206,14 @@ buffer_add_data (Buffer *buf, guint8 *data, int len)
 static void
 buffer_add_string (Buffer *buf, const char *str)
 {
-	int len;
+	size_t len;
 
 	if (str == NULL) {
 		buffer_add_int (buf, 0);
 	} else {
 		len = strlen (str);
-		buffer_add_int (buf, len);
-		buffer_add_data (buf, (guint8*)str, len);
+		buffer_add_int (buf, (int)len);
+		buffer_add_data (buf, (guint8*)str, (int)len);
 	}
 }
 
@@ -249,7 +249,7 @@ add_entry (EntryType type, Buffer *buf)
 {
 	DebugEntry *entry;
 	guint8 *data;
-	int size = buffer_len (buf);
+	intptr_t size = buffer_len (buf);
 
 	data = g_malloc (size);
 	memcpy (data, buf->buf, size);
@@ -357,7 +357,7 @@ emit_unwind_info (GSList *unwind_ops, Buffer *buf)
 		nunwind_ops ++;
 	}
 
-	buffer_add_byte (buf, ret_reg);
+	buffer_add_byte (buf, GINT_TO_UINT8 (ret_reg));
 	buffer_add_int (buf, nunwind_ops);
 	for (l = unwind_ops; l; l = l->next) {
 		MonoUnwindOp *op = (MonoUnwindOp*)l->data;

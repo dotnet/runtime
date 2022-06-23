@@ -27,7 +27,7 @@ internal static partial class Interop
             }
         }
 
-        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        [LibraryImport(Libraries.AppleCryptoNative)]
         private static unsafe partial int AppleCryptoNative_GetRandomBytes(byte* buf, int num, int* errorCode);
     }
 }

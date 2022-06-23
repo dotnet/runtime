@@ -1,12 +1,12 @@
 <Project>
 
   <Import Project="..\Directory.Build.props" />
-  <Import Project="netfxreference.props" />
 
-  <PropertyGroup Condition="'$(IsFrameworkSupportFacade)' == 'true'">
-    <IsNETCoreAppSrc>true</IsNETCoreAppSrc>
-    <IsNETCoreAppRef>true</IsNETCoreAppRef>
-
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
+    <Nullable>disable</Nullable>
+    <!-- By default make shims compile against reference assemblies. -->
+    <CompileUsingReferenceAssemblies>true</CompileUsingReferenceAssemblies>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <GenFacadesIgnoreMissingTypes>true</GenFacadesIgnoreMissingTypes>
     <!-- ensure the desktop compat shims reference the lowest possible version of dependencies
@@ -14,7 +14,11 @@
          to reference the latest packages.
          netstandard.dll doesn't need to do this since it has no dangling dependencies -->
     <GenFacadesForceZeroVersionSeeds Condition="'$(MSBuildProjectName)' != 'netstandard'">true</GenFacadesForceZeroVersionSeeds>
-    <HasMatchingContract>true</HasMatchingContract>
+    <!-- Opt out of some features which are on by default. -->
+    <EnableLibraryImportGenerator>false</EnableLibraryImportGenerator>
+    <RunApiCompat>false</RunApiCompat>
+    <ILLinkTrimAssembly>false</ILLinkTrimAssembly>
+    <AddOSPlatformAttributes>false</AddOSPlatformAttributes>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(MSBuildProjectName)' == 'System.Runtime' or
@@ -26,10 +30,30 @@
     <Compile Include="$(MSBuildThisFileDirectory)System.Void.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(IsFrameworkSupportFacade)' == 'true'">
-    <!-- include any forwards needed by both generated and manual projects -->
-    <Compile Condition="Exists('$(MSBuildThisFileDirectory)$(MSBuildProjectName).forwards.cs')"
-                 Include="$(MSBuildThisFileDirectory)$(MSBuildProjectName).forwards.cs" />
+  <ItemGroup>
+    <!-- Include any forwards needed by both ref and src projects. -->
+    <Compile Include="$(MSBuildThisFileDirectory)$(MSBuildProjectName).forwards.cs"
+             Condition="Exists('$(MSBuildThisFileDirectory)$(MSBuildProjectName).forwards.cs')" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)..\sfx-src.proj" Condition="'$(RefOnly)' != 'true'" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)..\sfx-ref.proj" Condition="'$(RefOnly)' == 'true'" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(MSBuildProjectName)' != 'netstandard'">
+    <!-- .NET Framework shims compile against OOBs and the netstandard shim. -->
+    <ProjectReference Include="$(MSBuildThisFileDirectory)src\netstandard.csproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)..\oob-src.proj" Condition="'$(RefOnly)' != 'true'" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)..\oob-ref.proj" Condition="'$(RefOnly)' == 'true'" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- System.Data.SqlClient is not live built anymore, reference it manually to avoid tfm nuget selection fallback errors
+         when the TargetOS i.e. is MacCatalyst. Set Private false so that it doesn't flow down to consuming projects. -->
+    <PackageDownload Include="System.Data.SqlClient"
+                     Version="[$(SystemDataSqlClientVersion)]" />
+    <Reference Include="$([MSBuild]::NormalizePath('$(NuGetPackageRoot)', 'system.data.sqlclient', '$(SystemDataSqlClientVersion)', 'ref', 'netcoreapp2.1', 'System.Data.SqlClient.dll'))" Private="false" />
   </ItemGroup>
 
 </Project>

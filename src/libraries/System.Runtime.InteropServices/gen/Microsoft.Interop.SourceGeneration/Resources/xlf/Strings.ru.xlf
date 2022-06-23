@@ -1,0 +1,152 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="ru" original="../Strings.resx">
+    <body>
+      <trans-unit id="ArraySizeMustBeSpecified">
+        <source>Marshalling an array from unmanaged to managed requires either the 'SizeParamIndex' or 'SizeConst' fields to be set on a 'MarshalAsAttribute' or the 'ConstantElementCount' or 'CountElementName' properties to be set on a 'MarshalUsingAttribute'.</source>
+        <target state="translated">Маршализация массива из неуправляемого кода в управляемый требует, чтобы в \"MarshalAsAttribute\" было задано поле \"SizeParamIndex\" или \"SizeConst\", или в \"MarshalUsingAttribute\" было задано свойство \"ConstantElementCount\" или \"CountElementName\".</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ArraySizeParamIndexOutOfRange">
+        <source>The 'SizeParamIndex' value in the 'MarshalAsAttribute' is out of range.</source>
+        <target state="translated">Значение \"SizeParamIndex\" в \"MarshalAsAttribute\" выходит за пределы допустимого диапазона.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CannotHaveMultipleMarshallingAttributesDescription">
+        <source>The 'BlittableTypeAttribute' and 'NativeMarshallingAttribute' attributes are mutually exclusive.</source>
+        <target state="translated">Атрибуты \"BlittableTypeAttribute\" и \"NativeMarshallingAttribute\" взаимоисключающие.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CannotHaveMultipleMarshallingAttributesMessage">
+        <source>Type '{0}' is marked with 'BlittableTypeAttribute' and 'NativeMarshallingAttribute'. A type can only have one of these two attributes.</source>
+        <target state="translated">Тип \"{0}\" помечен атрибутами \"BlittableTypeAttribute\" и \"NativeMarshallingAttribute\". Тип может иметь только один из этих двух атрибутов.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CollectionNativeTypeMustHaveRequiredShapeDescription">
+        <source>A native type with the 'GenericContiguousCollectionMarshallerAttribute' must have at least one of the two marshalling methods as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;' to enable marshalling the managed type.</source>
+        <target state="translated">Собственный тип с атрибутом \"GenericContiguousCollectionMarshallerAttribute\" должен иметь хотя бы один из двух методов маршализации, а также свойство \"ManagedValues\" типа \"Span&lt;T&gt;\" для некоторых \"T\" и свойство \"NativeValueStorage\" типа \"Span&lt;byte&gt;\" для реализации маршализации управляемого типа.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CollectionNativeTypeMustHaveRequiredShapeMessage">
+        <source>The native type '{0}' must be a value type and have a constructor that takes two parameters, one of type '{1}' and an 'int', or have a parameterless instance method named 'ToManaged' that returns '{1}' as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;'</source>
+        <target state="translated">Собственный тип \"{0}\" должен быть типом значения и иметь конструктор, принимающий два параметра: типа \"{1}\" и \"int\", или метод экземпляра \"ToManaged\" без параметров, который возвращает \"{1}\", а также свойство \"ManagedValues\" типа \"Span&lt;T&gt;\" для некоторых \"T\" и \"NativeValueStorage\" типа \"Span&lt;byte&gt;\"</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CollectionSizeParamTypeMustBeIntegral">
+        <source>The specified collection size parameter for an collection must be an integer type. If the size information is applied to a nested collection, the size parameter must be a collection of one less level of nesting with an integral element.</source>
+        <target state="translated">Указанный параметр размера коллекции должен быть целочисленным типом. Если сведения о размере применяются к вложенной коллекции, параметр размера должен быть коллекцией на один уровень вложения меньше с целочисленным элементом.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConstantAndElementCountInfoDisallowed">
+        <source>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionDepth'</source>
+        <target state="translated">В \"MarshalUsingAttribute\" для заданного \"ElementIndirectionDepth\" можно использовать либо \"ConstantElementCount\", либо \"ElementCountInfo\".</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CustomTypeMarshallingManagedToNativeUnsupported">
+        <source>The specified parameter needs to be marshalled from managed to native, but the native type '{0}' does not support it.</source>
+        <target state="translated">Указанный параметр должен маршалироваться из управляемого в собственный, но собственный тип \"{0}\" не поддерживает это.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CustomTypeMarshallingNativeToManagedUnsupported">
+        <source>The specified parameter needs to be marshalled from native to managed, but the native type '{0}' does not support it.</source>
+        <target state="translated">Указанный параметр должен маршалироваться из собственного в управляемый, но собственный тип \"{0}\" не поддерживает это.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CyclicalCountInfo">
+        <source>This element cannot depend on '{0}' for collection size information without creating a dependency cycle</source>
+        <target state="translated">Этот элемент не может получать от \"{0}\" сведения о размере коллекции без создания цикла зависимостей</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DuplicateCountInfo">
+        <source>Count information for a given element at a given indirection level can only be specified once</source>
+        <target state="translated">Данные счетчика для заданного элемента на заданном уровне косвенного обращения можно указать только один раз</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DuplicateMarshallingInfo">
+        <source>Multiple marshalling attributes per element per indirection level is unsupported, but duplicate information was provided for indirection level {0}</source>
+        <target state="translated">Несколько атрибутов маршализации на один элемент на каждом уровне косвенного обращения не поддерживаются, но для уровня косвенного обращения {0} указаны повторяющиеся сведения</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ExtraneousMarshallingInfo">
+        <source>Marshalling info was specified for 'ElementIndirectionDepth' {0}, but marshalling info was only needed for {1} level(s) of indirection</source>
+        <target state="translated">Для \"ElementIndirectionDepth\" {0} указаны сведения маршализации, но они необходимы только для {1} уровней косвенного обращения</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GraphHasCycles">
+        <source>The provided graph has cycles and cannot be topologically sorted.</source>
+        <target state="translated">Указанный граф содержит циклы, и его невозможно топологически отсортировать.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InAttributeNotSupportedWithoutOut">
+        <source>The '[In]' attribute is not supported unless the '[Out]' attribute is also used. The behavior of the '[In]' attribute without the '[Out]' attribute is the same as the default behavior.</source>
+        <target state="translated">Атрибут \"[In]\" не поддерживается, если атрибут \"[Out]' не используется. Поведение атрибута \"[In]\" без \"[Out]\" совпадает с поведением по умолчанию.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InOutAttributeByRefNotSupported">
+        <source>The '[In]' and '[Out]' attributes are unsupported on parameters passed by reference. Use the 'in', 'ref', or 'out' keywords instead.</source>
+        <target state="translated">Атрибуты \"[In]\" и \"[Out]\" не поддерживаются для параметров, передаваемых по ссылке. Используйте вместо них ключевые слова \"in\", \"ref\" или \"out\".</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InOutAttributeMarshalerNotSupported">
+        <source>The provided '[In]' and '[Out]' attributes on this parameter are unsupported on this parameter.</source>
+        <target state="translated">Указанные атрибуты \"[In]\" и \"[Out]\" для этого параметра не поддерживаются.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingBoolAsUndefinedNotSupported">
+        <source>Marshalling bool without explicit marshalling information is not supported. Specify either 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
+        <target state="translated">Маршализация типа bool объекта без явного указания сведений маршализации не поддерживается. Укажите \"MarshalUsingAttribute\" или \"MarshalAsAttribute\".</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingCharAsSpecifiedStringMarshallingNotSupported">
+        <source>Marshalling char with 'StringMarshalling.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</source>
+        <target state="translated">Маршализация типа char с \"StringMarshalling.{0}\" не поддерживается. Вместо этого следует вручную преобразовать тип char в требуемое представление байтов и передать в P/Invoke с созданием источника.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingCharAsStringMarshallingCustomNotSupported">
+        <source>Marshalling char with 'StringMarshalling.Custom' is not supported. To use a custom type marshaller, specify 'MarshalUsingAttribute'.</source>
+        <target state="translated">Маршалинг char с \"StringMarshalling.Custom\" не поддерживается. Чтобы использовать маршалер пользовательского типа, укажите \"MarshalUsingAttribute\".</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingStringOrCharAsUndefinedNotSupported">
+        <source>Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
+        <target state="translated">Строка или символ со строкой или символом без явных сведений о маршалинге не поддерживаются. Укажите \"LibraryImportAttribute.StringMarsing\", \"LibraryImportAttribute.StringMarsingCustomType\", \"MarshalUsingAttribute\" или \"MarshalAsAttribute\".</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NativeGenericTypeMustBeClosedOrMatchArityMessage">
+        <source>The native type '{0}' for managed type '{1}' must be a closed generic type or have the same arity as the managed type.</source>
+        <target state="translated">Собственный тип \"{0}\" для управляемого типа \"{1}\" должен быть закрытым универсальным типом или иметь ту же арность, что и управляемый тип.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OutByValueNotSupportedDescription">
+        <source>The '[Out]' attribute is only supported on array parameters.</source>
+        <target state="translated">Атрибут \"[Out]\" поддерживается только для параметров массива.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OutByValueNotSupportedMessage">
+        <source>The '[Out]' attribute is not supported on the '{0}' parameter.</source>
+        <target state="translated">Атрибут \"[Out]\" не поддерживается в параметре \"{0}\".</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RuntimeMarshallingMustBeDisabled">
+        <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
+        <target state="translated">В этом проекте следует отключить маршализацию среды выполнения путем применения к сборке атрибута \"System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute\" для включения маршализации этого типа.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="SafeHandleByRefMustBeConcrete">
+        <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
+        <target state="translated">Абстрактный тип, производный от \"SafeHandle\", нельзя маршализировать по ссылке. Указанный тип должен быть конкретным.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedTitle">
+        <source>Specified type is not supported by source-generated P/Invokes</source>
+        <target state="translated">Указанный тип не поддерживается в P/Invoke с созданием источника.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorMessage">
+        <source>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a one-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</source>
+        <target state="translated">Тип \"{0}\" указывает, что поддерживает маршализацию в направлении \"внутрь\" с функцией \"CallerAllocatedBuffer\" для \"{1}\", но не предоставляет конструктор, принимающий два параметра: \"{1}\" и \"Span неуправляемого типа\"</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

@@ -12,7 +12,9 @@
 .assembly 'verify01_small'{}
 .assembly extern xunit.core {}
 
-.class private auto ansi beforefieldinit LocallocTest
+.namespace Test_verify01_small_il
+{
+.class public auto ansi beforefieldinit LocallocTest
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  Main() cil managed
@@ -26,7 +28,7 @@
     .locals init(int32 V_0)
     .try
     {
-      IL_0000:  call       void LocallocTest::func()
+      IL_0000:  call       void Test_verify01_small_il.LocallocTest::func()
       IL_0005:  leave.s    IL_0027
 
     }  // end .try
@@ -58,7 +60,7 @@
 
     IL_0035:  ldloc.0
     IL_0036:  ret
-  } // end of method LocallocTest::Main
+  } // end of method Test_verify01_small_il.LocallocTest::Main
 
   .method private hidebysig static void  func() cil managed
   {
@@ -77,7 +79,7 @@
     IL_0003:  localloc
     IL_0005:  stloc.0
     IL_000c:  ret
-  } // end of method LocallocTest::func
+  } // end of method Test_verify01_small_il.LocallocTest::func
 
   .method public hidebysig specialname rtspecialname 
           instance void  .ctor() cil managed
@@ -87,12 +89,13 @@
     IL_0000:  ldarg.0
     IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
     IL_0006:  ret
-  } // end of method LocallocTest::.ctor
+  } // end of method Test_verify01_small_il.LocallocTest::.ctor
 
-} // end of class LocallocTest
+} // end of class Test_verify01_small_il.LocallocTest
 
 
 // =============================================================
 
 //*********** DISASSEMBLY COMPLETE ***********************
 // WARNING: Created Win32 resource file verify01_dynamic.res
+}

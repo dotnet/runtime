@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 internal static partial class Interop
 {
@@ -74,6 +75,7 @@ internal static partial class Interop
             internal byte[] MulticastAddress; // IP address of group.
             internal int InterfaceIndex; // Local interface index.
 
+            [CustomTypeMarshaller(typeof(IPv6MulticastRequest))]
             public unsafe struct Native
             {
                 private const int MulticastAddressLength = 16;

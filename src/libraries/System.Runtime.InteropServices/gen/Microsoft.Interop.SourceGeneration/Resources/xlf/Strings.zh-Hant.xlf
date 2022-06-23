@@ -1,0 +1,152 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="zh-Hant" original="../Strings.resx">
+    <body>
+      <trans-unit id="ArraySizeMustBeSpecified">
+        <source>Marshalling an array from unmanaged to managed requires either the 'SizeParamIndex' or 'SizeConst' fields to be set on a 'MarshalAsAttribute' or the 'ConstantElementCount' or 'CountElementName' properties to be set on a 'MarshalUsingAttribute'.</source>
+        <target state="translated">將數組從未受管理排列到受管理，需要在 'MarshalUsingAttribute' 上設定 'SizeParamIndex' 或 'SizeConst' 字段，或在 'MarshalUsingAttribute' 上設定 'ConstantElementCount' 或 'CountElementName' 屬性。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ArraySizeParamIndexOutOfRange">
+        <source>The 'SizeParamIndex' value in the 'MarshalAsAttribute' is out of range.</source>
+        <target state="translated">'MarshalAsAttribute' 中的 'SizeParamIndex' 值超出範圍。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CannotHaveMultipleMarshallingAttributesDescription">
+        <source>The 'BlittableTypeAttribute' and 'NativeMarshallingAttribute' attributes are mutually exclusive.</source>
+        <target state="translated">'BlittableTypeAttribute' 和 'NativeMarshallingAttribute' 屬性互斥。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CannotHaveMultipleMarshallingAttributesMessage">
+        <source>Type '{0}' is marked with 'BlittableTypeAttribute' and 'NativeMarshallingAttribute'. A type can only have one of these two attributes.</source>
+        <target state="translated">類型'{0}'標示為 'BlittableTypeAttribute' 和 'NativeMarshallingAttribute'。類型只能有這兩個屬性其中之一。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CollectionNativeTypeMustHaveRequiredShapeDescription">
+        <source>A native type with the 'GenericContiguousCollectionMarshallerAttribute' must have at least one of the two marshalling methods as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;' to enable marshalling the managed type.</source>
+        <target state="translated">具有 'GenericContiguousCollectionMarshallerAttribute' 的原生類型，至少必須有兩個封送處理方法的其中之一，以及某些 'T' 類型 'Span&lt;T&gt;' 的 'ManagedValues' 屬性和類型 'Span&lt;byte&gt;' 的 'NativeValueStorage' 屬性，才能啟用受管理類型的封送處理。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CollectionNativeTypeMustHaveRequiredShapeMessage">
+        <source>The native type '{0}' must be a value type and have a constructor that takes two parameters, one of type '{1}' and an 'int', or have a parameterless instance method named 'ToManaged' that returns '{1}' as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;'</source>
+        <target state="translated">原生類型 '{0}' 必須是值類型，且具有可接受两個參數的建構函式: '{1}' 類型之一和 'int'，或具有名為 'ToManaged' 的無參數實例方法，其會傳回 '{1}'，以及某些 'T' 類型 'Span&lt;T&gt;' 的 'ManagedValues' 屬性，以及類型 'Span&lt;byte&gt;' 的 'NativeValueStorage' 屬性</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CollectionSizeParamTypeMustBeIntegral">
+        <source>The specified collection size parameter for an collection must be an integer type. If the size information is applied to a nested collection, the size parameter must be a collection of one less level of nesting with an integral element.</source>
+        <target state="translated">為集合指定的集合大小參數必須是整數類型。如果大小資訊套用至巢狀集合，大小參數必須是少於一層巢狀元素的集合。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConstantAndElementCountInfoDisallowed">
+        <source>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionDepth'</source>
+        <target state="translated">在指定的 'ElementIndirectionDepth' 的 'MarshalUsingAttribute' 中只能使用 'ConstantElementCount' 或 'ElementCountInfo' 其中之一</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CustomTypeMarshallingManagedToNativeUnsupported">
+        <source>The specified parameter needs to be marshalled from managed to native, but the native type '{0}' does not support it.</source>
+        <target state="translated">指定的參數必須從 Managed 整理為原生，但原生類型 '{0}'不支援。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CustomTypeMarshallingNativeToManagedUnsupported">
+        <source>The specified parameter needs to be marshalled from native to managed, but the native type '{0}' does not support it.</source>
+        <target state="translated">指定的參數必須從原生排列成受管理，但原生類型 '{0}' 不支援。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CyclicalCountInfo">
+        <source>This element cannot depend on '{0}' for collection size information without creating a dependency cycle</source>
+        <target state="translated">此元素不需要建立相依性循環，就無法依存 '{0}' 集合大小資訊</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DuplicateCountInfo">
+        <source>Count information for a given element at a given indirection level can only be specified once</source>
+        <target state="translated">在指定的間接層級，指定元素的計數資訊只能指定一次。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DuplicateMarshallingInfo">
+        <source>Multiple marshalling attributes per element per indirection level is unsupported, but duplicate information was provided for indirection level {0}</source>
+        <target state="translated">不支援每個元素的每個間接層級有多個排列屬性，但為間接層級提供了重複的資訊{0}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ExtraneousMarshallingInfo">
+        <source>Marshalling info was specified for 'ElementIndirectionDepth' {0}, but marshalling info was only needed for {1} level(s) of indirection</source>
+        <target state="translated">已為 'ElementIndirectionDepth' {0}指定封送處理資訊，但只有 {1}層級 (間接) 需要封送處理資訊</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GraphHasCycles">
+        <source>The provided graph has cycles and cannot be topologically sorted.</source>
+        <target state="translated">提供的圖表有週期，無法以拓撲排序。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InAttributeNotSupportedWithoutOut">
+        <source>The '[In]' attribute is not supported unless the '[Out]' attribute is also used. The behavior of the '[In]' attribute without the '[Out]' attribute is the same as the default behavior.</source>
+        <target state="translated">除非一併使用'[Out]'屬性，否則不支援'[In]'屬性。沒有'[Out]'屬性的'[In]'屬性行為與默認行為相同。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InOutAttributeByRefNotSupported">
+        <source>The '[In]' and '[Out]' attributes are unsupported on parameters passed by reference. Use the 'in', 'ref', or 'out' keywords instead.</source>
+        <target state="translated">參考所傳遞的參數不支援'[In]'和'[Out]'屬性。請改用 'in'、'ref' 或 'out' 關鍵詞。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InOutAttributeMarshalerNotSupported">
+        <source>The provided '[In]' and '[Out]' attributes on this parameter are unsupported on this parameter.</source>
+        <target state="translated">此參數不支援在此參數上提供的 '[In]' 和 '[Out]' 屬性。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingBoolAsUndefinedNotSupported">
+        <source>Marshalling bool without explicit marshalling information is not supported. Specify either 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
+        <target state="translated">不支援沒有明確排列資訊的封送處理布林值。指定 'MarshalUsingAttribute' 或 'MarshalAsAttribute'。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingCharAsSpecifiedStringMarshallingNotSupported">
+        <source>Marshalling char with 'StringMarshalling.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</source>
+        <target state="translated">不支援具有 'StringMarshalling.{0}' 的封送字元。請改為手動將字元類型轉換為想要的位元組表示法，並傳遞至來源產生的 P/Invoke。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingCharAsStringMarshallingCustomNotSupported">
+        <source>Marshalling char with 'StringMarshalling.Custom' is not supported. To use a custom type marshaller, specify 'MarshalUsingAttribute'.</source>
+        <target state="translated">不支援具有 'StringMarshalling.Custom' 的封送處理字元。若要使用自訂類型封送處理器，請指定 'MarshalUsingAttribute'。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingStringOrCharAsUndefinedNotSupported">
+        <source>Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
+        <target state="translated">不支援在未明確封送處理資訊的情況下封送處理字串或字元。請指定 'LibraryImportAttribute.StringMarshalling'、'LibraryImportAttribute.StringMarshallingCustomType'、'MarshalUsingAttribute' 或 'MarshalAsAttribute'。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NativeGenericTypeMustBeClosedOrMatchArityMessage">
+        <source>The native type '{0}' for managed type '{1}' must be a closed generic type or have the same arity as the managed type.</source>
+        <target state="translated">受管理類型 '{0}' 的原生類型 '{1}'必須是封閉式泛型類別，或具有與受管理類型相同的 arity。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OutByValueNotSupportedDescription">
+        <source>The '[Out]' attribute is only supported on array parameters.</source>
+        <target state="translated">只有數組參數才支援 '[Out]' 屬性。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OutByValueNotSupportedMessage">
+        <source>The '[Out]' attribute is not supported on the '{0}' parameter.</source>
+        <target state="translated">'{0}'參數不支援 '[Out]' 屬性。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RuntimeMarshallingMustBeDisabled">
+        <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
+        <target state="translated">必須將 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' 套用到組件，以停用此專案中的執行階段封送處理，以啟用此類型的封送處理。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="SafeHandleByRefMustBeConcrete">
+        <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
+        <target state="translated">衍生自 'SafeHandle' 的抽象類型無法依參考排列。提供的類型必須是實體。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedTitle">
+        <source>Specified type is not supported by source-generated P/Invokes</source>
+        <target state="translated">来源產生的 P/Invokes 不支援指定的類型。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorMessage">
+        <source>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a one-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</source>
+        <target state="translated">類型 '{0}' 指定其支援使用 'CallerAllocatedBuffer' 功能為 '{1}' 的 'In' 封送處理，但不提供接受 '{1}' 的單一參數構建函式，以及以 'unmanaged' 類型的 'Span' 作為參數</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

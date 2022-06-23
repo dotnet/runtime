@@ -53,7 +53,6 @@ namespace System.IO.Compression
         {
             CheckDeflateStream();
             _deflateStream.Flush();
-            return;
         }
 
         public override long Seek(long offset, SeekOrigin origin)

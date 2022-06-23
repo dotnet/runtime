@@ -128,8 +128,10 @@ namespace System.Threading
         public static bool TryOpenExisting(string name, SemaphoreRights rights, [NotNullWhen(returnValue: true)] out Semaphore? result) =>
             OpenExistingWorker(name, rights, out result) == OpenExistingResult.Success;
 
-        private static OpenExistingResult OpenExistingWorker(string name!!, SemaphoreRights rights, out Semaphore? result)
+        private static OpenExistingResult OpenExistingWorker(string name, SemaphoreRights rights, out Semaphore? result)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyName, nameof(name));

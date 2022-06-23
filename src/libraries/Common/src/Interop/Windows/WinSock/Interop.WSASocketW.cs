@@ -12,7 +12,7 @@ internal static partial class Interop
 {
     internal static partial class Winsock
     {
-        [GeneratedDllImport(Interop.Libraries.Ws2_32, CharSet = CharSet.Unicode, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.Ws2_32,  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial IntPtr WSASocketW(
             AddressFamily addressFamily,
             SocketType socketType,

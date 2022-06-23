@@ -19,6 +19,7 @@ namespace System.Net.Security.Tests
         protected abstract bool TestAuthenticateAsync { get; }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ClientOptions_ServerOptions_NotMutatedDuringAuthentication()
         {
             using (X509Certificate2 clientCert = Configuration.Certificates.GetClientCertificate())
@@ -40,8 +41,12 @@ namespace System.Net.Security.Tests
                 List<SslApplicationProtocol> serverAppProtocols = new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 };
                 X509RevocationMode serverRevocation = X509RevocationMode.NoCheck;
                 bool serverCertRequired = false;
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
                 SslProtocols serverSslProtocols = SslProtocols.Tls11 | SslProtocols.Tls12;
+#pragma warning restore SYSLIB0039
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                 EncryptionPolicy serverEncryption = EncryptionPolicy.AllowNoEncryption;
+#pragma warning restore SYSLIB0040
                 RemoteCertificateValidationCallback serverRemoteCallback = new RemoteCertificateValidationCallback(delegate { return true; });
                 SslStreamCertificateContext certificateContext = SslStreamCertificateContext.Create(serverCert, null, false);
 
@@ -107,6 +112,27 @@ namespace System.Net.Security.Tests
                     Assert.Same(serverCert, serverOptions.ServerCertificate);
                     Assert.Same(certificateContext, serverOptions.ServerCertificateContext);
                 }
+            }
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
+        public async Task ClientOptions_TargetHostNull_OK()
+        {
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            using (client)
+            using (server)
+            {
+                var serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = Configuration.Certificates.GetServerCertificate() };
+                var clientOptions = new SslClientAuthenticationOptions() { RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true };
+
+                Assert.Null(clientOptions.TargetHost);
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                        client.AuthenticateAsClientAsync(clientOptions),
+                        server.AuthenticateAsServerAsync(serverOptions));
+               Assert.Equal(string.Empty, client.TargetHostName);
+               Assert.Equal(string.Empty, server.TargetHostName);
             }
         }
     }

@@ -20,9 +20,9 @@
 }
 .assembly extern xunit.core {}
 
-.namespace hello
+.namespace hello_deadcodeincatch_deadcode_il
 {
-  .class private auto ansi beforefieldinit Class1
+  .class public auto ansi beforefieldinit Class1
          extends [mscorlib]System.Object
   {
     .field private static class [eh_common]TestUtil.TestLog testLog
@@ -39,7 +39,7 @@
             ldstr      "In catch"
             callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
             ldloc.s    expectedOut
-            ldstr      "hello"
+            ldstr      "hello_deadcodeincatch_deadcode_il"
             callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
             ldloc.s    expectedOut
             ldstr      "In finally"
@@ -49,7 +49,7 @@
             callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
             ldloc.s    expectedOut
             newobj     instance void [eh_common]TestUtil.TestLog::.ctor(object)
-            stsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
+            stsfld     class [eh_common]TestUtil.TestLog hello_deadcodeincatch_deadcode_il.Class1::testLog
             ret
     } // end of method Class1::.cctor
 
@@ -89,8 +89,8 @@
       )
       .entrypoint
       .maxstack  1
-      ldstr   "hello"
-      call    int32 hello.Class1::Run(string)
+      ldstr   "hello_deadcodeincatch_deadcode_il"
+      call    int32 hello_deadcodeincatch_deadcode_il.Class1::Run(string)
       ret
     }
     
@@ -106,13 +106,13 @@
              
     starttest:
       // Start recording
-      ldsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
+      ldsfld     class [eh_common]TestUtil.TestLog hello_deadcodeincatch_deadcode_il.Class1::testLog
       callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()
       ldarg.0
       stloc.0
       .try
       {
-        call       void hello.Class1::inTry()
+        call       void hello_deadcodeincatch_deadcode_il.Class1::inTry()
         newobj     instance void [mscorlib]System.Exception::.ctor()
         throw
         leave.s    done
@@ -129,7 +129,7 @@
           call       string [mscorlib]System.String::Concat(string,
                                                                     string)
           stloc.2
-          call       void hello.Class1::inCatch()
+          call       void hello_deadcodeincatch_deadcode_il.Class1::inCatch()
           ldloc.0
           call       void [System.Console]System.Console::WriteLine(string)
 
@@ -158,11 +158,11 @@
         call       void [System.Console]System.Console::WriteLine(string)
         
         // stop recoding
-        ldsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
+        ldsfld     class [eh_common]TestUtil.TestLog hello_deadcodeincatch_deadcode_il.Class1::testLog
         callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
       
         // verify output
-        ldsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
+        ldsfld     class [eh_common]TestUtil.TestLog hello_deadcodeincatch_deadcode_il.Class1::testLog
         callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
         stloc.3
        done:
@@ -181,4 +181,4 @@
     } // end of method Class1::.ctor
 
   } // end of class Class1
-} // end of namespace hello
+} // end of namespace hello_deadcodeincatch_deadcode_il

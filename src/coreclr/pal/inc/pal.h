@@ -28,8 +28,6 @@ Abstract:
     If you want to add a PAL_ wrapper function to a native function in
     here, you also need to edit palinternal.h and win32pal.h.
 
-
-
 --*/
 
 #ifndef __PAL_H__
@@ -98,6 +96,8 @@ typedef PVOID NATIVE_LIBRARY_HANDLE;
 #define _M_LOONGARCH64 1
 #elif defined(__s390x__) && !defined(_M_S390X)
 #define _M_S390X 1
+#elif defined(__powerpc__) && !defined(_M_PPC64)
+#define _M_PPC64 1
 #endif
 
 #if defined(_M_IX86) && !defined(HOST_X86)
@@ -112,6 +112,8 @@ typedef PVOID NATIVE_LIBRARY_HANDLE;
 #define HOST_LOONGARCH64
 #elif defined(_M_S390X) && !defined(HOST_S390X)
 #define HOST_S390X
+#elif defined(_M_PPC64) && !defined(HOST_POWERPC64)
+#define HOST_POWERPC64
 #endif
 
 #endif // !_MSC_VER
@@ -453,7 +455,9 @@ PALAPI
 PAL_GenerateCoreDump(
     IN LPCSTR dumpName,
     IN INT dumpType,
-    IN ULONG32 flags);
+    IN ULONG32 flags,
+    LPSTR errorMessageBuffer,
+    INT cbErrorMessageBuffer);
 
 typedef VOID (*PPAL_STARTUP_CALLBACK)(
     char *modulePath,
@@ -586,64 +590,20 @@ PAL_PerfJitDump_Finish();
 
 /******************* winuser.h Entrypoints *******************************/
 
-#define MB_OK                   0x00000000L
 #define MB_OKCANCEL             0x00000001L
 #define MB_ABORTRETRYIGNORE     0x00000002L
-#define MB_YESNO                0x00000004L
-#define MB_RETRYCANCEL          0x00000005L
 
-#define MB_ICONHAND             0x00000010L
 #define MB_ICONQUESTION         0x00000020L
 #define MB_ICONEXCLAMATION      0x00000030L
-#define MB_ICONASTERISK         0x00000040L
 
-#define MB_ICONINFORMATION      MB_ICONASTERISK
-#define MB_ICONSTOP             MB_ICONHAND
-#define MB_ICONERROR            MB_ICONHAND
-
-#define MB_DEFBUTTON1           0x00000000L
-#define MB_DEFBUTTON2           0x00000100L
-#define MB_DEFBUTTON3           0x00000200L
-
-#define MB_SYSTEMMODAL          0x00001000L
 #define MB_TASKMODAL            0x00002000L
-#define MB_SETFOREGROUND        0x00010000L
-#define MB_TOPMOST              0x00040000L
 
-#define MB_NOFOCUS                  0x00008000L
 #define MB_DEFAULT_DESKTOP_ONLY     0x00020000L
-
-// Note: this is the NT 4.0 and greater value.
-#define MB_SERVICE_NOTIFICATION 0x00200000L
-
-#define MB_TYPEMASK             0x0000000FL
-#define MB_ICONMASK             0x000000F0L
-#define MB_DEFMASK              0x00000F00L
 
 #define IDOK                    1
 #define IDCANCEL                2
 #define IDABORT                 3
 #define IDRETRY                 4
-#define IDIGNORE                5
-#define IDYES                   6
-#define IDNO                    7
-
-
-PALIMPORT
-int
-PALAPI
-MessageBoxW(
-        IN LPVOID hWnd,  // NOTE: diff from winuser.h
-        IN LPCWSTR lpText,
-        IN LPCWSTR lpCaption,
-        IN UINT uType);
-
-
-#ifdef UNICODE
-#define MessageBox MessageBoxW
-#else
-#define MessageBox MessageBoxA
-#endif
 
 // From win32.h
 #ifndef _CRTIMP
@@ -777,19 +737,6 @@ MoveFileExW(
 #else
 #define MoveFileEx MoveFileExA
 #endif
-
-typedef struct _BY_HANDLE_FILE_INFORMATION {
-    DWORD dwFileAttributes;
-    FILETIME ftCreationTime;
-    FILETIME ftLastAccessTime;
-    FILETIME ftLastWriteTime;
-    DWORD dwVolumeSerialNumber;
-    DWORD nFileSizeHigh;
-    DWORD nFileSizeLow;
-    DWORD nNumberOfLinks;
-    DWORD nFileIndexHigh;
-    DWORD nFileIndexLow;
-} BY_HANDLE_FILE_INFORMATION, *PBY_HANDLE_FILE_INFORMATION, *LPBY_HANDLE_FILE_INFORMATION;
 
 typedef struct _WIN32_FIND_DATAA {
     DWORD dwFileAttributes;
@@ -1640,13 +1587,11 @@ typedef struct _XMM_SAVE_AREA32 {
     BYTE  Reserved4[96];
 } XMM_SAVE_AREA32, *PXMM_SAVE_AREA32;
 
-#define LEGACY_SAVE_AREA_LENGTH sizeof(XMM_SAVE_AREA32)
-
 //
 // Context Frame
 //
 //  This frame has a several purposes: 1) it is used as an argument to
-//  NtContinue, 2) is is used to constuct a call frame for APC delivery,
+//  NtContinue, 2) it is used to constuct a call frame for APC delivery,
 //  and 3) it is used in the user level thread creation routines.
 //
 //
@@ -1655,7 +1600,7 @@ typedef struct _XMM_SAVE_AREA32 {
 //
 // If the context record is used as an input parameter, then for each
 // portion of the context record controlled by a flag whose value is
-// set, it is assumed that that portion of the context record contains
+// set, it is assumed that such portion of the context record contains
 // valid context. If the context record is being used to modify a threads
 // context, then only that portion of the threads context is modified.
 //
@@ -1901,7 +1846,7 @@ typedef struct _NEON128 {
 //
 // If the context record is used as an input parameter, then for each
 // portion of the context record controlled by a flag whose value is
-// set, it is assumed that that portion of the context record contains
+// set, it is assumed that such portion of the context record contains
 // valid context. If the context record is being used to modify a threads
 // context, then only that portion of the threads context is modified.
 //
@@ -2083,7 +2028,7 @@ typedef struct _IMAGE_ARM_RUNTIME_FUNCTION_ENTRY {
 //
 // If the context record is used as an input parameter, then for each
 // portion of the context record controlled by a flag whose value is
-// set, it is assumed that that portion of the context record contains
+// set, it is assumed that such portion of the context record contains
 // valid context. If the context record is being used to modify a threads
 // context, then only that portion of the threads context is modified.
 //
@@ -2260,7 +2205,7 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 //
 // If the context record is used as an input parameter, then for each
 // portion of the context record controlled by a flag whose value is
-// set, it is assumed that that portion of the context record contains
+// set, it is assumed that such portion of the context record contains
 // valid context. If the context record is being used to modify a threads
 // context, then only that portion of the threads context is modified.
 //
@@ -2278,7 +2223,7 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     /* +0x000 */ DWORD ContextFlags;
 
     //
-    // Integer registers, abi=N64.
+    // Integer registers.
     //
     DWORD64 R0;
     DWORD64 Ra;
@@ -2317,8 +2262,8 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     //
     // Floating Point Registers
     //
-    //TODO: support the SIMD.
-    DWORD64 F[32];
+    // TODO-LoongArch64: support the SIMD.
+    ULONGLONG F[32];
     DWORD Fcsr;
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
 
@@ -2458,6 +2403,153 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 
 } KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
 
+#elif defined(HOST_POWERPC64)
+
+// There is no context for ppc64le defined in winnt.h,
+// so we re-use the amd64 values.
+#define CONTEXT_PPC64   0x100000
+
+#define CONTEXT_CONTROL (CONTEXT_PPC64 | 0x1L)
+#define CONTEXT_INTEGER (CONTEXT_PPC64 | 0x2L)
+#define CONTEXT_FLOATING_POINT  (CONTEXT_PPC64 | 0x4L)
+
+#define CONTEXT_FULL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT)
+
+#define CONTEXT_ALL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT)
+
+#define CONTEXT_EXCEPTION_ACTIVE 0x8000000
+#define CONTEXT_SERVICE_ACTIVE 0x10000000
+#define CONTEXT_EXCEPTION_REQUEST 0x40000000
+#define CONTEXT_EXCEPTION_REPORTING 0x80000000
+
+typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
+
+    //
+    // Control flags.
+    //
+
+    DWORD ContextFlags;
+
+    // 
+    // Integer  Registers 
+    //
+
+    DWORD64 R0;
+    DWORD64 R1;
+    DWORD64 R2;
+    DWORD64 R3;
+    DWORD64 R4;
+    DWORD64 R5;
+    DWORD64 R6;
+    DWORD64 R7;
+    DWORD64 R8;
+    DWORD64 R9;
+    DWORD64 R10;
+    DWORD64 R11;
+    DWORD64 R12;
+    DWORD64 R13;
+    DWORD64 R14;
+    DWORD64 R15;
+    DWORD64 R16;
+    DWORD64 R17;
+    DWORD64 R18;
+    DWORD64 R19;
+    DWORD64 R20;
+    DWORD64 R21;
+    DWORD64 R22;
+    DWORD64 R23;
+    DWORD64 R24;
+    DWORD64 R25;
+    DWORD64 R26;
+    DWORD64 R27;
+    DWORD64 R28;
+    DWORD64 R29;
+    DWORD64 R30;
+    DWORD64 R31;
+
+    //
+    // Floaring Point Registers
+    //
+
+    DWORD64 F0;
+    DWORD64 F1;
+    DWORD64 F2;
+    DWORD64 F3;
+    DWORD64 F4;
+    DWORD64 F5;
+    DWORD64 F6;
+    DWORD64 F7;
+    DWORD64 F8;
+    DWORD64 F9;
+    DWORD64 F10;
+    DWORD64 F11;
+    DWORD64 F12;
+    DWORD64 F13;
+    DWORD64 F14;
+    DWORD64 F15;
+    DWORD64 F16;
+    DWORD64 F17;
+    DWORD64 F18;
+    DWORD64 F19;
+    DWORD64 F20;
+    DWORD64 F21;
+    DWORD64 F22;
+    DWORD64 F23;
+    DWORD64 F24;
+    DWORD64 F25;
+    DWORD64 F26;
+    DWORD64 F27;
+    DWORD64 F28;
+    DWORD64 F29;
+    DWORD64 F30;
+    DWORD64 F31;
+    DWORD64 Fpscr;
+
+    //
+    // Control Registers
+    //
+
+    DWORD64 Nip;
+    DWORD64 Msr;
+    DWORD64 Ctr;
+    DWORD64 Link;
+
+    DWORD Xer;
+    DWORD Ccr;
+
+
+} CONTEXT, *PCONTEXT, *LPCONTEXT;
+
+//
+// Nonvolatile context pointer record.
+//
+
+typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
+    PDWORD64 R14;
+    PDWORD64 R15;
+    PDWORD64 R16;
+    PDWORD64 R17;
+    PDWORD64 R18;
+    PDWORD64 R19;
+    PDWORD64 R20;
+    PDWORD64 R21;
+    PDWORD64 R22;
+    PDWORD64 R23;
+    PDWORD64 R24;
+    PDWORD64 R25;
+    PDWORD64 R26;
+    PDWORD64 R27;
+    PDWORD64 R28;
+    PDWORD64 R29;
+    PDWORD64 R30;
+    PDWORD64 R31;
+
+    // 
+    // Need to add Floating point non-volatile registers.
+    //
+
+} KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
+
 #else
 #error Unknown architecture for defining CONTEXT.
 #endif
@@ -2594,6 +2686,8 @@ PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_
 #elif defined(__linux__) && defined(__x86_64__)
 #define PAL_CS_NATIVE_DATA_SIZE 96
 #elif defined(__linux__) && defined(HOST_S390X)
+#define PAL_CS_NATIVE_DATA_SIZE 96
+#elif defined(__linux__) && defined(HOST_POWERPC64)
 #define PAL_CS_NATIVE_DATA_SIZE 96
 #elif defined(__NetBSD__) && defined(__amd64__)
 #define PAL_CS_NATIVE_DATA_SIZE 96
@@ -2871,20 +2965,6 @@ GetModuleFileNameW(
 #define GetModuleFileName GetModuleFileNameA
 #endif
 
-PALIMPORT
-DWORD
-PALAPI
-GetModuleFileNameExW(
-    IN HANDLE hProcess,
-    IN HMODULE hModule,
-    OUT LPWSTR lpFilename,
-    IN DWORD nSize
-    );
-
-#ifdef UNICODE
-#define GetModuleFileNameEx GetModuleFileNameExW
-#endif
-
 // Get base address of the module containing a given symbol
 PALIMPORT
 LPCVOID
@@ -2907,7 +2987,8 @@ PALAPI
 PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(
     IN LPCVOID lpBeginAddress,
     IN LPCVOID lpEndAddress,
-    IN SIZE_T dwSize);
+    IN SIZE_T dwSize,
+    IN BOOL storeAllocationInfo);
 
 PALIMPORT
 void
@@ -3144,16 +3225,6 @@ OpenProcess(
     );
 
 PALIMPORT
-BOOL
-PALAPI
-EnumProcessModules(
-    IN HANDLE hProcess,
-    OUT HMODULE *lphModule,
-    IN DWORD cb,
-    OUT LPDWORD lpcbNeeded
-    );
-
-PALIMPORT
 VOID
 PALAPI
 OutputDebugStringA(
@@ -3236,6 +3307,7 @@ RaiseException(
 PALIMPORT
 VOID
 PALAPI
+DECLSPEC_NORETURN
 RaiseFailFastException(
     IN PEXCEPTION_RECORD pExceptionRecord,
     IN PCONTEXT pContextRecord,
@@ -3519,7 +3591,6 @@ InterlockedDecrement(
     return result;
 }
 
-#define InterlockedDecrementAcquire InterlockedDecrement
 #define InterlockedDecrementRelease InterlockedDecrement
 
 EXTERN_C
@@ -3720,30 +3791,6 @@ InterlockedOr(
     LONG result = __sync_fetch_and_or(Destination, Value);
     PAL_ArmInterlockedOperationBarrier();
     return result;
-}
-
-EXTERN_C
-PALIMPORT
-inline
-UCHAR
-PALAPI
-InterlockedBitTestAndReset(
-    IN OUT LONG volatile *Base,
-    IN LONG Bit)
-{
-    return (InterlockedAnd(Base, ~(1 << Bit)) & (1 << Bit)) != 0;
-}
-
-EXTERN_C
-PALIMPORT
-inline
-UCHAR
-PALAPI
-InterlockedBitTestAndSet(
-    IN OUT LONG volatile *Base,
-    IN LONG Bit)
-{
-    return (InterlockedOr(Base, (1 << Bit)) & (1 << Bit)) != 0;
 }
 
 #if defined(HOST_64BIT)
@@ -3965,9 +4012,6 @@ typedef OSVERSIONINFOEXA OSVERSIONINFOEX;
 typedef POSVERSIONINFOEXA POSVERSIONINFOEX;
 typedef LPOSVERSIONINFOEXA LPOSVERSIONINFOEX;
 #endif
-
-#define IMAGE_FILE_MACHINE_I386              0x014c
-#define IMAGE_FILE_MACHINE_ARM64             0xAA64  // ARM64 Little-Endian
 
 typedef struct _SYSTEM_INFO {
     WORD wProcessorArchitecture_PAL_Undefined;
@@ -4200,8 +4244,6 @@ PALIMPORT char * __cdecl strrchr(const char *, int);
 PALIMPORT char * __cdecl strpbrk(const char *, const char *);
 PALIMPORT char * __cdecl strstr(const char *, const char *);
 PALIMPORT char * __cdecl strtok(char *, const char *);
-PALIMPORT size_t __cdecl strspn(const char *, const char *);
-PALIMPORT size_t  __cdecl strcspn(const char *, const char *);
 PALIMPORT int __cdecl atoi(const char *);
 PALIMPORT ULONG __cdecl strtoul(const char *, char **, int);
 PALIMPORT ULONGLONG __cdecl strtoull(const char *, char **, int);
@@ -4213,8 +4255,6 @@ PALIMPORT int __cdecl isalpha(int);
 PALIMPORT int __cdecl isalnum(int);
 PALIMPORT int __cdecl isdigit(int);
 PALIMPORT int __cdecl isxdigit(int);
-PALIMPORT int __cdecl isupper(int);
-PALIMPORT int __cdecl islower(int);
 PALIMPORT int __cdecl tolower(int);
 PALIMPORT int __cdecl toupper(int);
 PALIMPORT int __cdecl iswalpha(wint_t);
@@ -4639,6 +4679,7 @@ private:
         ExceptionPointers.ContextRecord = ex.ExceptionPointers.ContextRecord;
         TargetFrameSp = ex.TargetFrameSp;
         RecordsOnStack = ex.RecordsOnStack;
+        IsExternal = ex.IsExternal;
         ManagedToNativeExceptionCallback = ex.ManagedToNativeExceptionCallback;
         ManagedToNativeExceptionCallbackContext = ex.ManagedToNativeExceptionCallbackContext;
 
@@ -4660,6 +4701,9 @@ public:
     // Target frame stack pointer set before the 2nd pass.
     SIZE_T TargetFrameSp;
     bool RecordsOnStack;
+    // The exception is a hardware exception coming from a native code out of
+    // the well known runtime helpers
+    bool IsExternal;
 
     void(*ManagedToNativeExceptionCallback)(void* context);
     void* ManagedToNativeExceptionCallbackContext;
@@ -4670,6 +4714,7 @@ public:
         ExceptionPointers.ContextRecord = pContextRecord;
         TargetFrameSp = NoTargetFrameSp;
         RecordsOnStack = onStack;
+        IsExternal = false;
         ManagedToNativeExceptionCallback = NULL;
         ManagedToNativeExceptionCallbackContext = NULL;
     }
@@ -4708,6 +4753,7 @@ public:
         ExceptionPointers.ContextRecord = NULL;
         TargetFrameSp = NoTargetFrameSp;
         RecordsOnStack = false;
+        IsExternal = false;
         ManagedToNativeExceptionCallback = NULL;
         ManagedToNativeExceptionCallbackContext = NULL;
     }
@@ -5014,6 +5060,7 @@ public:
     {                                   \
         try                             \
         {                               \
+            HardwareExceptionHolder     \
             tryBlock(__param);          \
         }                               \
         catch (...)                     \
@@ -5039,10 +5086,6 @@ public:
                                             catch (...) {}
 
 #define PAL_CPP_ENDTRY                  }
-
-#ifdef _MSC_VER
-#pragma warning(disable:4611) // interaction between '_setjmp' and C++ object destruction is non-portable
-#endif
 
 #define PAL_TRY_FOR_DLLMAIN(ParamType, paramDef, paramRef, _reason) PAL_TRY(ParamType, paramDef, paramRef)
 

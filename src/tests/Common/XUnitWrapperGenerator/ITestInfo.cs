@@ -249,7 +249,12 @@ sealed class OutOfProcessTest : ITestInfo
         Method = displayName;
         DisplayNameForFiltering = displayName;
         TestNameExpression = $"@\"{displayName}\"";
-        ExecutionStatement = $@"TestLibrary.OutOfProcessTest.RunOutOfProcessTest(typeof(Program).Assembly.Location, @""{relativeAssemblyPath}"");";
+        ExecutionStatement = $@"
+if (TestLibrary.OutOfProcessTest.OutOfProcessTestsSupported)
+{{
+TestLibrary.OutOfProcessTest.RunOutOfProcessTest(typeof(Program).Assembly.Location, @""{relativeAssemblyPath}"");
+}}
+";
     }
 
     public string TestNameExpression { get; }
@@ -333,23 +338,27 @@ sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
 
         builder.AppendLine($"System.TimeSpan testStart = stopwatch.Elapsed;");
         builder.AppendLine("try {");
-        builder.AppendLine($"System.Console.WriteLine(\"Running test: {{0}}\", {test.TestNameExpression});");
+        builder.AppendLine($"System.Console.WriteLine(\"{{0:HH:mm:ss.fff}} Running test: {{1}}\", System.DateTime.Now, {test.TestNameExpression});");
         builder.AppendLine($"{_outputRecorderIdentifier}.ResetTestOutput();");
         builder.AppendLine(testExecutionExpression);
         builder.AppendLine($"{_summaryLocalIdentifier}.ReportPassedTest({test.TestNameExpression}, \"{test.ContainingType}\", @\"{test.Method}\", stopwatch.Elapsed - testStart, {_outputRecorderIdentifier}.GetTestOutput());");
-        builder.AppendLine($"System.Console.WriteLine(\"Passed test: {{0}}\", {test.TestNameExpression});");
+        builder.AppendLine($"System.Console.WriteLine(\"{{0:HH:mm:ss.fff}} Passed test: {{1}}\", System.DateTime.Now, {test.TestNameExpression});");
         builder.AppendLine("}");
         builder.AppendLine("catch (System.Exception ex) {");
         builder.AppendLine($"{_summaryLocalIdentifier}.ReportFailedTest({test.TestNameExpression}, \"{test.ContainingType}\", @\"{test.Method}\", stopwatch.Elapsed - testStart, ex, {_outputRecorderIdentifier}.GetTestOutput());");
-        builder.AppendLine($"System.Console.WriteLine(\"Failed test: {{0}}\", {test.TestNameExpression});");
+        builder.AppendLine($"System.Console.WriteLine(\"{{0:HH:mm:ss.fff}} Failed test: {{1}}\", System.DateTime.Now, {test.TestNameExpression});");
         builder.AppendLine("}");
 
+        builder.AppendLine("}");
+        builder.AppendLine("else");
+        builder.AppendLine("{");
+        builder.AppendLine(GenerateSkippedTestReporting(test));
         builder.AppendLine("}");
         return builder.ToString();
     }
 
     public string GenerateSkippedTestReporting(ITestInfo skippedTest)
     {
-        return $"{_summaryLocalIdentifier}.ReportSkippedTest({skippedTest.TestNameExpression}, \"{skippedTest.ContainingType}\", \"{skippedTest.Method}\", System.TimeSpan.Zero, string.Empty);";
+        return $"{_summaryLocalIdentifier}.ReportSkippedTest({skippedTest.TestNameExpression}, \"{skippedTest.ContainingType}\", @\"{skippedTest.Method}\", System.TimeSpan.Zero, string.Empty);";
     }
 }

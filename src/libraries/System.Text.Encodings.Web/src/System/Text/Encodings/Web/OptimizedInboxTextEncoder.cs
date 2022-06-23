@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.X86;
 #endif
 
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
 using System.Runtime.Intrinsics.Arm;
 #endif
 
@@ -348,11 +348,7 @@ namespace System.Text.Encodings.Web
             int dataOriginalLength = data.Length;
 
 #if NETCOREAPP
-            if (Ssse3.IsSupported
-#if NET5_0_OR_GREATER
-                || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian)
-#endif
-                )
+            if (Ssse3.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian))
             {
                 int asciiBytesSkipped;
                 unsafe
@@ -360,13 +356,11 @@ namespace System.Text.Encodings.Web
                     fixed (byte* pData = data)
                     {
                         nuint asciiBytesSkippedNInt;
-#if NET5_0_OR_GREATER
                         if (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian)
                         {
                             asciiBytesSkippedNInt = GetIndexOfFirstByteToEncodeAdvSimd64(pData, (uint)dataOriginalLength);
                         }
                         else
-#endif
                         {
                             Debug.Assert(Ssse3.IsSupported, "#ifdef was ill-formed.");
                             asciiBytesSkippedNInt = GetIndexOfFirstByteToEncodeSsse3(pData, (uint)dataOriginalLength);

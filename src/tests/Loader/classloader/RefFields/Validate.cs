@@ -4,12 +4,20 @@
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using InvalidCSharp;
 
 using Xunit;
 
 class Validate
 {
+    [StructLayout(LayoutKind.Explicit)]
+    private ref struct Explicit
+    {
+        [FieldOffset(0)] public Span<byte> Bytes;
+        [FieldOffset(0)] public Guid Guid;
+    }
+
     [Fact]
     public static void Validate_Invalid_RefField_Fails()
     {
@@ -17,8 +25,31 @@ class Validate
         Assert.Throws<TypeLoadException>(() => { var t = typeof(InvalidStructWithRefField); });
         Assert.Throws<TypeLoadException>(() => { var t = typeof(InvalidRefFieldAlignment); });
         Assert.Throws<TypeLoadException>(() => { var t = typeof(InvalidObjectRefRefFieldOverlap); });
-        Assert.Throws<TypeLoadException>(() => { var t = typeof(IntPtrRefFieldOverlap); });
-        Assert.Throws<TypeLoadException>(() => { var t = typeof(IntPtrOverlapWithInnerFieldType); });
+        Assert.Throws<TypeLoadException>(() =>
+        {
+            var t = new IntPtrRefFieldOverlap()
+            {
+                Field = IntPtr.Zero
+            };
+            return t.Field.ToString();
+        });
+        Assert.Throws<TypeLoadException>(() =>
+        {
+            var t = new IntPtrOverlapWithInnerFieldType()
+            {
+                Field = IntPtr.Zero
+            };
+            ref var i =  ref t.Invalid;
+            return i.Size;
+        });
+        Assert.Throws<TypeLoadException>(() =>
+        {
+            var t = new Explicit()
+            {
+                Guid = Guid.NewGuid()
+            };
+            return t.Bytes.Length;
+        });
     }
 
     [Fact]

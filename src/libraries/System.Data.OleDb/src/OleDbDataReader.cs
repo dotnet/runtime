@@ -1927,7 +1927,7 @@ namespace System.Data.OleDb
             _nextAccessorForRetrieval++;
         }
 
-        private int IndexOf(Hashtable hash, string name)
+        private static int IndexOf(Hashtable hash, string name)
         {
             // via case sensitive search, first match with lowest ordinal matches
             object? index = hash[name];
@@ -1972,8 +1972,8 @@ namespace System.Data.OleDb
                 MetaData info = _metadata[i];
                 if ((null != info.baseTableName) && (0 < info.baseTableName.Length))
                 {
-                    catalogName = ((null != info.baseCatalogName) ? info.baseCatalogName : "");
-                    schemaName = ((null != info.baseSchemaName) ? info.baseSchemaName : "");
+                    catalogName = info.baseCatalogName ?? "";
+                    schemaName = info.baseSchemaName ?? "";
                     if (null == baseTableName)
                     {
                         baseSchemaName = schemaName;

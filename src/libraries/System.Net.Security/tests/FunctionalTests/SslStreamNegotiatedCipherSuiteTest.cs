@@ -20,10 +20,12 @@ namespace System.Net.Security.Tests
     public class NegotiatedCipherSuiteTest
     {
 #pragma warning disable CS0618 // Ssl2 and Ssl3 are obsolete
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
         public const SslProtocols AllProtocols =
             SslProtocols.Ssl2 | SslProtocols.Ssl3 |
             SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 | SslProtocols.Tls13;
 #pragma warning restore CS0618
+#pragma warning restore SYSLIB0039
 
         public const SslProtocols NonTls13Protocols = AllProtocols & (~SslProtocols.Tls13);
 
@@ -31,16 +33,20 @@ namespace System.Net.Security.Tests
         private static bool CipherSuitesPolicySupported => s_cipherSuitePolicySupported.Value;
         private static bool Tls13Supported { get; set; } = IsKnownPlatformSupportingTls13 || ProtocolsSupported(SslProtocols.Tls13);
         private static bool CipherSuitesPolicyAndTls13Supported => Tls13Supported && CipherSuitesPolicySupported;
+        private static IReadOnlyList<TlsCipherSuite> SupportedNonTls13CipherSuites => s_supportedNonTls13CipherSuites.Value;
 
         private static HashSet<TlsCipherSuite> s_tls13CipherSuiteLookup = new HashSet<TlsCipherSuite>(GetTls13CipherSuites());
         private static HashSet<TlsCipherSuite> s_tls12CipherSuiteLookup = new HashSet<TlsCipherSuite>(GetTls12CipherSuites());
         private static HashSet<TlsCipherSuite> s_tls10And11CipherSuiteLookup = new HashSet<TlsCipherSuite>(GetTls10And11CipherSuites());
+        private static readonly Lazy<IReadOnlyList<TlsCipherSuite>> s_supportedNonTls13CipherSuites = new Lazy<IReadOnlyList<TlsCipherSuite>>(GetSupportedNonTls13CipherSuites);
 
         private static Dictionary<SslProtocols, HashSet<TlsCipherSuite>> s_protocolCipherSuiteLookup = new Dictionary<SslProtocols, HashSet<TlsCipherSuite>>()
         {
             { SslProtocols.Tls12, s_tls12CipherSuiteLookup },
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
             { SslProtocols.Tls11, s_tls10And11CipherSuiteLookup },
             { SslProtocols.Tls, s_tls10And11CipherSuiteLookup },
+#pragma warning restore SYSLIB0039
         };
 
         private static Lazy<bool> s_cipherSuitePolicySupported = new Lazy<bool>(() =>
@@ -55,8 +61,6 @@ namespace System.Net.Security.Tests
             return false;
         });
 
-        private static IReadOnlyList<TlsCipherSuite> SupportedNonTls13CipherSuites = GetSupportedNonTls13CipherSuites();
-
         [ConditionalFact(nameof(IsKnownPlatformSupportingTls13))]
         public void Tls13IsSupported_GetValue_ReturnsTrue()
         {
@@ -65,6 +69,7 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(nameof(Tls13Supported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public void NegotiatedCipherSuite_SslProtocolIsTls13_ShouldBeTls13()
         {
             var p = new ConnectionParams()
@@ -81,9 +86,12 @@ namespace System.Net.Security.Tests
         }
 
         [Theory]
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
         [InlineData(SslProtocols.Tls)]
         [InlineData(SslProtocols.Tls11)]
+#pragma warning restore SYSLIB0039
         [InlineData(SslProtocols.Tls12)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public void NegotiatedCipherSuite_SslProtocolIsLowerThanTls13_ShouldMatchTheProtocol(SslProtocols protocol)
         {
             var p = new ConnectionParams()
@@ -123,7 +131,9 @@ namespace System.Net.Security.Tests
             {
                 CipherSuitesPolicy = BuildPolicy(TlsCipherSuite.TLS_AES_128_GCM_SHA256,
                                                  SupportedNonTls13CipherSuites[0]),
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                 EncryptionPolicy = EncryptionPolicy.NoEncryption,
+#pragma warning restore SYSLIB0040
             };
 
             NegotiatedParams ret = ConnectAndGetNegotiatedParams(p, p);
@@ -146,6 +156,7 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(nameof(CipherSuitesPolicyAndTls13Supported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public void CipherSuitesPolicy_AllowOneOnOneSideTls13_Success()
         {
             bool hasSucceededAtLeastOnce = false;
@@ -699,15 +710,9 @@ namespace System.Net.Security.Tests
                 clientOptions.EnabledSslProtocols = clientParams.SslProtocols;
                 clientOptions.CipherSuitesPolicy = clientParams.CipherSuitesPolicy;
                 clientOptions.TargetHost = "test";
-                clientOptions.RemoteCertificateValidationCallback =
-                    new RemoteCertificateValidationCallback((object sender,
-                                                             X509Certificate certificate,
-                                                             X509Chain chain,
-                                                             SslPolicyErrors sslPolicyErrors) => {
-                                                                 return true;
-                                                             });
+                clientOptions.RemoteCertificateValidationCallback = delegate { return true; };
 
-                Exception failure = WaitForSecureConnection(client, clientOptions, server, serverOptions).GetAwaiter().GetResult();
+                Exception failure = WaitForSecureConnection(client, clientOptions, server, serverOptions).WaitAsync(TestConfiguration.PassingTestTimeoutMilliseconds).GetAwaiter().GetResult();
 
                 if (failure == null)
                 {

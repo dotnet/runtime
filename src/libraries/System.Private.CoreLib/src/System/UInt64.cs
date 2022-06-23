@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
@@ -14,19 +15,32 @@ namespace System
     [CLSCompliant(false)]
     [StructLayout(LayoutKind.Sequential)]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly struct UInt64 : IComparable, IConvertible, ISpanFormattable, IComparable<ulong>, IEquatable<ulong>
-#if FEATURE_GENERIC_MATH
-#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
-        , IBinaryInteger<ulong>,
+    public readonly struct UInt64
+        : IComparable,
+          IConvertible,
+          ISpanFormattable,
+          IComparable<ulong>,
+          IEquatable<ulong>,
+          IBinaryInteger<ulong>,
           IMinMaxValue<ulong>,
           IUnsignedNumber<ulong>
-#pragma warning restore SA1001, CA2252
-#endif // FEATURE_GENERIC_MATH
     {
         private readonly ulong m_value; // Do not rename (binary serialization)
 
         public const ulong MaxValue = (ulong)0xffffffffffffffffL;
         public const ulong MinValue = 0x0;
+
+        /// <summary>Represents the additive identity (0).</summary>
+        private const ulong AdditiveIdentity = 0;
+
+        /// <summary>Represents the multiplicative identity (1).</summary>
+        private const ulong MultiplicativeIdentity = 1;
+
+        /// <summary>Represents the number one (1).</summary>
+        private const ulong One = 1;
+
+        /// <summary>Represents the number zero (0).</summary>
+        private const ulong Zero = 0;
 
         // Compares this object to another object, returning an integer that
         // indicates the relationship.
@@ -93,17 +107,17 @@ namespace System
             return Number.UInt64ToDecStr(m_value, -1);
         }
 
-        public string ToString(string? format)
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
         {
             return Number.FormatUInt64(m_value, format, null);
         }
 
-        public string ToString(string? format, IFormatProvider? provider)
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
             return Number.FormatUInt64(m_value, format, provider);
         }
 
-        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
+        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
             return Number.TryFormatUInt64(m_value, format, provider, destination, out charsWritten);
         }
@@ -259,674 +273,768 @@ namespace System
             return Convert.DefaultToType((IConvertible)this, type, provider);
         }
 
-#if FEATURE_GENERIC_MATH
         //
         // IAdditionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong IAdditionOperators<ulong, ulong, ulong>.operator +(ulong left, ulong right)
-            => left + right;
+        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
+        static ulong IAdditionOperators<ulong, ulong, ulong>.operator +(ulong left, ulong right) => left + right;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked ulong IAdditionOperators<ulong, ulong, ulong>.operator +(ulong left, ulong right)
-        //     => checked(left + right);
+        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
+        static ulong IAdditionOperators<ulong, ulong, ulong>.operator checked +(ulong left, ulong right) => checked(left + right);
 
         //
         // IAdditiveIdentity
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong IAdditiveIdentity<ulong, ulong>.AdditiveIdentity => 0;
+        /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
+        static ulong IAdditiveIdentity<ulong, ulong>.AdditiveIdentity => AdditiveIdentity;
 
         //
         // IBinaryInteger
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong IBinaryInteger<ulong>.LeadingZeroCount(ulong value)
-            => (ulong)BitOperations.LeadingZeroCount(value);
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.DivRem(TSelf, TSelf)" />
+        public static (ulong Quotient, ulong Remainder) DivRem(ulong left, ulong right) => Math.DivRem(left, right);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong IBinaryInteger<ulong>.PopCount(ulong value)
-            => (ulong)BitOperations.PopCount(value);
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
+        public static ulong LeadingZeroCount(ulong value) => (ulong)BitOperations.LeadingZeroCount(value);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong IBinaryInteger<ulong>.RotateLeft(ulong value, int rotateAmount)
-            => BitOperations.RotateLeft(value, rotateAmount);
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
+        public static ulong PopCount(ulong value) => (ulong)BitOperations.PopCount(value);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong IBinaryInteger<ulong>.RotateRight(ulong value, int rotateAmount)
-            => BitOperations.RotateRight(value, rotateAmount);
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateLeft(TSelf, int)" />
+        public static ulong RotateLeft(ulong value, int rotateAmount) => BitOperations.RotateLeft(value, rotateAmount);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong IBinaryInteger<ulong>.TrailingZeroCount(ulong value)
-            => (ulong)BitOperations.TrailingZeroCount(value);
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateRight(TSelf, int)" />
+        public static ulong RotateRight(ulong value, int rotateAmount) => BitOperations.RotateRight(value, rotateAmount);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
+        public static ulong TrailingZeroCount(ulong value) => (ulong)BitOperations.TrailingZeroCount(value);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
+        int IBinaryInteger<ulong>.GetShortestBitLength() => (sizeof(ulong) * 8) - BitOperations.LeadingZeroCount(m_value);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.GetByteCount()" />
+        int IBinaryInteger<ulong>.GetByteCount() => sizeof(ulong);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteBigEndian(Span{byte}, out int)" />
+        bool IBinaryInteger<ulong>.TryWriteBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(ulong))
+            {
+                ulong value = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(m_value) : m_value;
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
+
+                bytesWritten = sizeof(ulong);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteLittleEndian(Span{byte}, out int)" />
+        bool IBinaryInteger<ulong>.TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(ulong))
+            {
+                ulong value = BitConverter.IsLittleEndian ? m_value : BinaryPrimitives.ReverseEndianness(m_value);
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
+
+                bytesWritten = sizeof(ulong);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
         //
         // IBinaryNumber
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IBinaryNumber<ulong>.IsPow2(ulong value)
-            => BitOperations.IsPow2(value);
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
+        public static bool IsPow2(ulong value) => BitOperations.IsPow2(value);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong IBinaryNumber<ulong>.Log2(ulong value)
-            => (ulong)BitOperations.Log2(value);
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
+        public static ulong Log2(ulong value) => (ulong)BitOperations.Log2(value);
 
         //
         // IBitwiseOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong IBitwiseOperators<ulong, ulong, ulong>.operator &(ulong left, ulong right)
-            => left & right;
+        /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_BitwiseAnd(TSelf, TOther)" />
+        static ulong IBitwiseOperators<ulong, ulong, ulong>.operator &(ulong left, ulong right) => left & right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong IBitwiseOperators<ulong, ulong, ulong>.operator |(ulong left, ulong right)
-            => left | right;
+        /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_BitwiseOr(TSelf, TOther)" />
+        static ulong IBitwiseOperators<ulong, ulong, ulong>.operator |(ulong left, ulong right) => left | right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong IBitwiseOperators<ulong, ulong, ulong>.operator ^(ulong left, ulong right)
-            => left ^ right;
+        /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_ExclusiveOr(TSelf, TOther)" />
+        static ulong IBitwiseOperators<ulong, ulong, ulong>.operator ^(ulong left, ulong right) => left ^ right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong IBitwiseOperators<ulong, ulong, ulong>.operator ~(ulong value)
-            => ~value;
+        /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_OnesComplement(TSelf)" />
+        static ulong IBitwiseOperators<ulong, ulong, ulong>.operator ~(ulong value) => ~value;
 
         //
         // IComparisonOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<ulong, ulong>.operator <(ulong left, ulong right)
-            => left < right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
+        static bool IComparisonOperators<ulong, ulong>.operator <(ulong left, ulong right) => left < right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<ulong, ulong>.operator <=(ulong left, ulong right)
-            => left <= right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
+        static bool IComparisonOperators<ulong, ulong>.operator <=(ulong left, ulong right) => left <= right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<ulong, ulong>.operator >(ulong left, ulong right)
-            => left > right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
+        static bool IComparisonOperators<ulong, ulong>.operator >(ulong left, ulong right) => left > right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<ulong, ulong>.operator >=(ulong left, ulong right)
-            => left >= right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
+        static bool IComparisonOperators<ulong, ulong>.operator >=(ulong left, ulong right) => left >= right;
 
         //
         // IDecrementOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong IDecrementOperators<ulong>.operator --(ulong value)
-            => --value;
+        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
+        static ulong IDecrementOperators<ulong>.operator --(ulong value) => --value;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked ulong IDecrementOperators<ulong>.operator --(ulong value)
-        //     => checked(--value);
+        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
+        static ulong IDecrementOperators<ulong>.operator checked --(ulong value) => checked(--value);
 
         //
         // IDivisionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong IDivisionOperators<ulong, ulong, ulong>.operator /(ulong left, ulong right)
-            => left / right;
-
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked ulong IDivisionOperators<ulong, ulong, ulong>.operator /(ulong left, ulong right)
-        //     => checked(left / right);
+        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
+        static ulong IDivisionOperators<ulong, ulong, ulong>.operator /(ulong left, ulong right) => left / right;
 
         //
         // IEqualityOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IEqualityOperators<ulong, ulong>.operator ==(ulong left, ulong right)
-            => left == right;
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Equality(TSelf, TOther)" />
+        static bool IEqualityOperators<ulong, ulong>.operator ==(ulong left, ulong right) => left == right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IEqualityOperators<ulong, ulong>.operator !=(ulong left, ulong right)
-            => left != right;
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Inequality(TSelf, TOther)" />
+        static bool IEqualityOperators<ulong, ulong>.operator !=(ulong left, ulong right) => left != right;
 
         //
         // IIncrementOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong IIncrementOperators<ulong>.operator ++(ulong value)
-            => ++value;
+        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_Increment(TSelf)" />
+        static ulong IIncrementOperators<ulong>.operator ++(ulong value) => ++value;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked ulong IIncrementOperators<ulong>.operator ++(ulong value)
-        //     => checked(++value);
+        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
+        static ulong IIncrementOperators<ulong>.operator checked ++(ulong value) => checked(++value);
 
         //
         // IMinMaxValue
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MinValue" />
         static ulong IMinMaxValue<ulong>.MinValue => MinValue;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MaxValue" />
         static ulong IMinMaxValue<ulong>.MaxValue => MaxValue;
 
         //
         // IModulusOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong IModulusOperators<ulong, ulong, ulong>.operator %(ulong left, ulong right)
-            => left % right;
-
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked ulong IModulusOperators<ulong, ulong, ulong>.operator %(ulong left, ulong right)
-        //     => checked(left % right);
+        /// <inheritdoc cref="IModulusOperators{TSelf, TOther, TResult}.op_Modulus(TSelf, TOther)" />
+        static ulong IModulusOperators<ulong, ulong, ulong>.operator %(ulong left, ulong right) => left % right;
 
         //
         // IMultiplicativeIdentity
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong IMultiplicativeIdentity<ulong, ulong>.MultiplicativeIdentity => 1;
+        /// <inheritdoc cref="IMultiplicativeIdentity{TSelf, TResult}.MultiplicativeIdentity" />
+        static ulong IMultiplicativeIdentity<ulong, ulong>.MultiplicativeIdentity => MultiplicativeIdentity;
 
         //
         // IMultiplyOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong IMultiplyOperators<ulong, ulong, ulong>.operator *(ulong left, ulong right)
-            => left * right;
+        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_Multiply(TSelf, TOther)" />
+        static ulong IMultiplyOperators<ulong, ulong, ulong>.operator *(ulong left, ulong right) => left * right;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked ulong IMultiplyOperators<ulong, ulong, ulong>.operator *(ulong left, ulong right)
-        //     => checked(left * right);
+        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
+        static ulong IMultiplyOperators<ulong, ulong, ulong>.operator checked *(ulong left, ulong right) => checked(left * right);
 
         //
         // INumber
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong INumber<ulong>.One => 1;
+        /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
+        public static ulong Clamp(ulong value, ulong min, ulong max) => Math.Clamp(value, min, max);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong INumber<ulong>.Zero => 0;
+        /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
+        static ulong INumber<ulong>.CopySign(ulong value, ulong sign) => value;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong INumber<ulong>.Abs(ulong value)
-            => value;
+        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
+        public static ulong Max(ulong x, ulong y) => Math.Max(x, y);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong INumber<ulong>.Clamp(ulong value, ulong min, ulong max)
-            => Math.Clamp(value, min, max);
+        /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
+        static ulong INumber<ulong>.MaxNumber(ulong x, ulong y) => Max(x, y);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
+        public static ulong Min(ulong x, ulong y) => Math.Min(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
+        static ulong INumber<ulong>.MinNumber(ulong x, ulong y) => Min(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
+        public static int Sign(ulong value) => (value == 0) ? 0 : 1;
+
+        //
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static ulong INumberBase<ulong>.One => One;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
+        static int INumberBase<ulong>.Radix => 2;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static ulong INumberBase<ulong>.Zero => Zero;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
+        static ulong INumberBase<ulong>.Abs(ulong value) => value;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
+        static bool INumberBase<ulong>.IsCanonical(ulong value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
+        static bool INumberBase<ulong>.IsComplexNumber(ulong value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsEvenInteger(TSelf)" />
+        public static bool IsEvenInteger(ulong value) => (value & 1) == 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsFinite(TSelf)" />
+        static bool INumberBase<ulong>.IsFinite(ulong value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
+        static bool INumberBase<ulong>.IsImaginaryNumber(ulong value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInfinity(TSelf)" />
+        static bool INumberBase<ulong>.IsInfinity(ulong value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInteger(TSelf)" />
+        static bool INumberBase<ulong>.IsInteger(ulong value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNaN(TSelf)" />
+        static bool INumberBase<ulong>.IsNaN(ulong value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegative(TSelf)" />
+        static bool INumberBase<ulong>.IsNegative(ulong value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegativeInfinity(TSelf)" />
+        static bool INumberBase<ulong>.IsNegativeInfinity(ulong value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNormal(TSelf)" />
+        static bool INumberBase<ulong>.IsNormal(ulong value) => value != 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
+        public static bool IsOddInteger(ulong value) => (value & 1) != 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositive(TSelf)" />
+        static bool INumberBase<ulong>.IsPositive(ulong value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositiveInfinity(TSelf)" />
+        static bool INumberBase<ulong>.IsPositiveInfinity(ulong value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsRealNumber(TSelf)" />
+        static bool INumberBase<ulong>.IsRealNumber(ulong value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsSubnormal(TSelf)" />
+        static bool INumberBase<ulong>.IsSubnormal(ulong value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
+        static bool INumberBase<ulong>.IsZero(ulong value) => (value == 0);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        static ulong INumberBase<ulong>.MaxMagnitude(ulong x, ulong y) => Max(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        static ulong INumberBase<ulong>.MaxMagnitudeNumber(ulong x, ulong y) => Max(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        static ulong INumberBase<ulong>.MinMagnitude(ulong x, ulong y) => Min(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        static ulong INumberBase<ulong>.MinMagnitudeNumber(ulong x, ulong y) => Min(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static ulong INumber<ulong>.Create<TOther>(TOther value)
+        static bool INumberBase<ulong>.TryConvertFromChecked<TOther>(TOther value, out ulong result)
         {
+            // In order to reduce overall code duplication and improve the inlinabilty of these
+            // methods for the corelib types we have `ConvertFrom` handle the same sign and
+            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
+            //
+            // That is, `ConvertFrom` for `ulong` will handle the other unsigned types and
+            // `ConvertTo` will handle the signed types
+
             if (typeof(TOther) == typeof(byte))
             {
-                return (byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return checked((ulong)(decimal)(object)value);
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return checked((ulong)(double)(object)value);
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return checked((ulong)(short)(object)value);
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return checked((ulong)(int)(object)value);
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return checked((ulong)(long)(object)value);
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return checked((ulong)(nint)(object)value);
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return checked((ulong)(sbyte)(object)value);
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return checked((ulong)(float)(object)value);
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (nuint)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
-        }
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static ulong INumber<ulong>.CreateSaturating<TOther>(TOther value)
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                var actualValue = (decimal)(object)value;
-                return (actualValue > MaxValue) ? MaxValue :
-                       (actualValue < 0) ? MinValue : (ulong)actualValue;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                var actualValue = (double)(object)value;
-                return (actualValue > MaxValue) ? MaxValue :
-                       (actualValue < 0) ? MinValue : (ulong)actualValue;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                var actualValue = (short)(object)value;
-                return (actualValue < 0) ? MinValue : (ulong)actualValue;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                var actualValue = (int)(object)value;
-                return (actualValue < 0) ? MinValue : (ulong)actualValue;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                var actualValue = (long)(object)value;
-                return (actualValue < 0) ? MinValue : (ulong)actualValue;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                var actualValue = (nint)(object)value;
-                return (actualValue < 0) ? MinValue : (ulong)actualValue;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                var actualValue = (sbyte)(object)value;
-                return (actualValue < 0) ? MinValue : (ulong)actualValue;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                var actualValue = (float)(object)value;
-                return (actualValue > MaxValue) ? MaxValue :
-                       (actualValue < 0) ? MinValue : (ulong)actualValue;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (nuint)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
-        }
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static ulong INumber<ulong>.CreateTruncating<TOther>(TOther value)
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return (ulong)(decimal)(object)value;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return (ulong)(double)(object)value;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (ulong)(short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (ulong)(int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return (ulong)(long)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (ulong)(nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (ulong)(sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return (ulong)(float)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (nuint)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
-        }
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static (ulong Quotient, ulong Remainder) INumber<ulong>.DivRem(ulong left, ulong right)
-            => Math.DivRem(left, right);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong INumber<ulong>.Max(ulong x, ulong y)
-            => Math.Max(x, y);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong INumber<ulong>.Min(ulong x, ulong y)
-            => Math.Min(x, y);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong INumber<ulong>.Parse(string s, NumberStyles style, IFormatProvider? provider)
-            => Parse(s, style, provider);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong INumber<ulong>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
-            => Parse(s, style, provider);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong INumber<ulong>.Sign(ulong value)
-            => (ulong)((value == 0) ? 0 : 1);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumber<ulong>.TryCreate<TOther>(TOther value, out ulong result)
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                result = (byte)(object)value;
+                byte actualValue = (byte)(object)value;
+                result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(char))
             {
-                result = (char)(object)value;
+                char actualValue = (char)(object)value;
+                result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(decimal))
             {
-                var actualValue = (decimal)(object)value;
-
-                if ((actualValue < MinValue) || (actualValue > MaxValue))
-                {
-                    result = default;
-                    return false;
-                }
-
-                result = (ulong)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                var actualValue = (double)(object)value;
-
-                if ((actualValue < MinValue) || (actualValue > MaxValue))
-                {
-                    result = default;
-                    return false;
-                }
-
-                result = (ulong)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                var actualValue = (short)(object)value;
-
-                if (actualValue < 0)
-                {
-                    result = default;
-                    return false;
-                }
-
-                result = (ulong)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                var actualValue = (int)(object)value;
-
-                if (actualValue < 0)
-                {
-                    result = default;
-                    return false;
-                }
-
-                result = (ulong)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                var actualValue = (long)(object)value;
-
-                if (actualValue < 0)
-                {
-                    result = default;
-                    return false;
-                }
-
-                result = (ulong)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                var actualValue = (nint)(object)value;
-
-                if (actualValue < 0)
-                {
-                    result = default;
-                    return false;
-                }
-
-                result = (ulong)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                var actualValue = (sbyte)(object)value;
-
-                if (actualValue < 0)
-                {
-                    result = default;
-                    return false;
-                }
-
-                result = (ulong)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                var actualValue = (float)(object)value;
-
-                if ((actualValue < MinValue) || (actualValue > MaxValue))
-                {
-                    result = default;
-                    return false;
-                }
-
-                result = (ulong)actualValue;
+                decimal actualValue = (decimal)(object)value;
+                result = checked((ulong)actualValue);
                 return true;
             }
             else if (typeof(TOther) == typeof(ushort))
             {
-                result = (ushort)(object)value;
+                ushort actualValue = (ushort)(object)value;
+                result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(uint))
             {
-                result = (uint)(object)value;
+                uint actualValue = (uint)(object)value;
+                result = actualValue;
                 return true;
             }
-            else if (typeof(TOther) == typeof(ulong))
+            else if (typeof(TOther) == typeof(UInt128))
             {
-                result = (ulong)(object)value;
+                UInt128 actualValue = (UInt128)(object)value;
+                result = checked((ulong)actualValue);
                 return true;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
-                result = (nuint)(object)value;
+                nuint actualValue = (nuint)(object)value;
+                result = actualValue;
                 return true;
             }
             else
             {
-                ThrowHelper.ThrowNotSupportedException();
                 result = default;
                 return false;
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool INumber<ulong>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out ulong result)
-            => TryParse(s, style, provider, out result);
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<ulong>.TryConvertFromSaturating<TOther>(TOther value, out ulong result)
+        {
+            // In order to reduce overall code duplication and improve the inlinabilty of these
+            // methods for the corelib types we have `ConvertFrom` handle the same sign and
+            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
+            //
+            // That is, `ConvertFrom` for `ulong` will handle the other unsigned types and
+            // `ConvertTo` will handle the signed types
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool INumber<ulong>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out ulong result)
-            => TryParse(s, style, provider, out result);
+            if (typeof(TOther) == typeof(byte))
+            {
+                byte actualValue = (byte)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                char actualValue = (char)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                decimal actualValue = (decimal)(object)value;
+                result = (actualValue >= MaxValue) ? MaxValue :
+                         (actualValue <= MinValue) ? MinValue : (ulong)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                ushort actualValue = (ushort)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                uint actualValue = (uint)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                UInt128 actualValue = (UInt128)(object)value;
+                result = (actualValue >= MaxValue) ? MaxValue : (ulong)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                nuint actualValue = (nuint)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else
+            {
+                result = default;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<ulong>.TryConvertFromTruncating<TOther>(TOther value, out ulong result)
+        {
+            // In order to reduce overall code duplication and improve the inlinabilty of these
+            // methods for the corelib types we have `ConvertFrom` handle the same sign and
+            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
+            //
+            // That is, `ConvertFrom` for `ulong` will handle the other unsigned types and
+            // `ConvertTo` will handle the signed types
+
+            if (typeof(TOther) == typeof(byte))
+            {
+                byte actualValue = (byte)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                char actualValue = (char)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                decimal actualValue = (decimal)(object)value;
+                result = (actualValue >= MaxValue) ? MaxValue :
+                         (actualValue <= MinValue) ? MinValue : (ulong)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                ushort actualValue = (ushort)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                uint actualValue = (uint)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                UInt128 actualValue = (UInt128)(object)value;
+                result = (ulong)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                nuint actualValue = (nuint)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else
+            {
+                result = default;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<ulong>.TryConvertToChecked<TOther>(ulong value, [NotNullWhen(true)] out TOther result)
+        {
+            // In order to reduce overall code duplication and improve the inlinabilty of these
+            // methods for the corelib types we have `ConvertFrom` handle the same sign and
+            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
+            //
+            // That is, `ConvertFrom` for `ulong` will handle the other unsigned types and
+            // `ConvertTo` will handle the signed types
+
+            if (typeof(TOther) == typeof(double))
+            {
+                double actualResult = value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                Half actualResult = (Half)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                short actualResult = checked((short)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                int actualResult = checked((int)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                long actualResult = checked((long)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                Int128 actualResult = checked((Int128)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                nint actualResult = checked((nint)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                sbyte actualResult = checked((sbyte)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                float actualResult = value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else
+            {
+                result = default!;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<ulong>.TryConvertToSaturating<TOther>(ulong value, [NotNullWhen(true)] out TOther result)
+        {
+            // In order to reduce overall code duplication and improve the inlinabilty of these
+            // methods for the corelib types we have `ConvertFrom` handle the same sign and
+            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
+            //
+            // That is, `ConvertFrom` for `ulong` will handle the other unsigned types and
+            // `ConvertTo` will handle the signed types
+
+            if (typeof(TOther) == typeof(double))
+            {
+                double actualResult = value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                Half actualResult = (Half)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                short actualResult = (value >= (ulong)short.MaxValue) ? short.MaxValue : (short)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                int actualResult = (value >= int.MaxValue) ? int.MaxValue : (int)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                long actualResult = (value >= long.MaxValue) ? long.MaxValue : (long)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                Int128 actualResult = value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                nint actualResult = (value >= (ulong)nint.MaxValue) ? nint.MaxValue : (nint)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                sbyte actualResult = (value >= (ulong)sbyte.MaxValue) ? sbyte.MaxValue : (sbyte)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                float actualResult = value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else
+            {
+                result = default!;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<ulong>.TryConvertToTruncating<TOther>(ulong value, [NotNullWhen(true)] out TOther result)
+        {
+            // In order to reduce overall code duplication and improve the inlinabilty of these
+            // methods for the corelib types we have `ConvertFrom` handle the same sign and
+            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
+            //
+            // That is, `ConvertFrom` for `ulong` will handle the other unsigned types and
+            // `ConvertTo` will handle the signed types
+
+            if (typeof(TOther) == typeof(double))
+            {
+                double actualResult = value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                Half actualResult = (Half)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                short actualResult = (short)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                int actualResult = (int)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                long actualResult = (long)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                Int128 actualResult = (Int128)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                nint actualResult = (nint)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                sbyte actualResult = (sbyte)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                float actualResult = value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else
+            {
+                result = default!;
+                return false;
+            }
+        }
 
         //
-        // IParseable
+        // IParsable
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong IParseable<ulong>.Parse(string s, IFormatProvider? provider)
-            => Parse(s, provider);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IParseable<ulong>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out ulong result)
-            => TryParse(s, NumberStyles.Integer, provider, out result);
+        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out ulong result) => TryParse(s, NumberStyles.Integer, provider, out result);
 
         //
         // IShiftOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong IShiftOperators<ulong, ulong>.operator <<(ulong value, int shiftAmount)
-            => value << (int)shiftAmount;
+        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_LeftShift(TSelf, int)" />
+        static ulong IShiftOperators<ulong, ulong>.operator <<(ulong value, int shiftAmount) => value << shiftAmount;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong IShiftOperators<ulong, ulong>.operator >>(ulong value, int shiftAmount)
-            => value >> (int)shiftAmount;
+        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_RightShift(TSelf, int)" />
+        static ulong IShiftOperators<ulong, ulong>.operator >>(ulong value, int shiftAmount) => value >> shiftAmount;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static ulong IShiftOperators<ulong, ulong>.operator >>>(ulong value, int shiftAmount)
-        //     => value >> (int)shiftAmount;
+        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
+        static ulong IShiftOperators<ulong, ulong>.operator >>>(ulong value, int shiftAmount) => value >>> shiftAmount;
 
         //
-        // ISpanParseable
+        // ISpanParsable
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong ISpanParseable<ulong>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
-            => Parse(s, NumberStyles.Integer, provider);
+        /// <inheritdoc cref="ISpanParsable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
+        public static ulong Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s, NumberStyles.Integer, provider);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool ISpanParseable<ulong>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out ulong result)
-            => TryParse(s, NumberStyles.Integer, provider, out result);
+        /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out ulong result) => TryParse(s, NumberStyles.Integer, provider, out result);
 
         //
         // ISubtractionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong ISubtractionOperators<ulong, ulong, ulong>.operator -(ulong left, ulong right)
-            => left - right;
+        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_Subtraction(TSelf, TOther)" />
+        static ulong ISubtractionOperators<ulong, ulong, ulong>.operator -(ulong left, ulong right) => left - right;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked ulong ISubtractionOperators<ulong, ulong, ulong>.operator -(ulong left, ulong right)
-        //     => checked(left - right);
+        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
+        static ulong ISubtractionOperators<ulong, ulong, ulong>.operator checked -(ulong left, ulong right) => checked(left - right);
 
         //
         // IUnaryNegationOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong IUnaryNegationOperators<ulong, ulong>.operator -(ulong value)
-            => 0UL - value;
+        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_UnaryNegation(TSelf)" />
+        static ulong IUnaryNegationOperators<ulong, ulong>.operator -(ulong value) => 0UL - value;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked ulong IUnaryNegationOperators<ulong, ulong>.operator -(ulong value)
-        //     => checked(0UL - value);
+        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
+        static ulong IUnaryNegationOperators<ulong, ulong>.operator checked -(ulong value) => checked(0UL - value);
 
         //
         // IUnaryPlusOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static ulong IUnaryPlusOperators<ulong, ulong>.operator +(ulong value)
-            => +value;
-
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked ulong IUnaryPlusOperators<ulong, ulong>.operator +(ulong value)
-        //     => checked(+value);
-#endif // FEATURE_GENERIC_MATH
+        /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
+        static ulong IUnaryPlusOperators<ulong, ulong>.operator +(ulong value) => +value;
     }
 }

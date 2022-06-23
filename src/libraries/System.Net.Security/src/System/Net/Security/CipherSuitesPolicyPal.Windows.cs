@@ -12,6 +12,8 @@ namespace System.Net.Security
             throw new PlatformNotSupportedException(SR.net_ssl_ciphersuites_policy_not_supported);
         }
 
+#pragma warning disable CA1822
         internal IEnumerable<TlsCipherSuite> GetCipherSuites() => null!;
+#pragma warning restore CA1822
     }
 }

@@ -37,9 +37,6 @@ GTNODE(LABEL            , GenTree            ,0,GTK_LEAF)             // Jump-ta
 GTNODE(JMP              , GenTreeVal         ,0,GTK_LEAF|GTK_NOVALUE) // Jump to another function
 GTNODE(FTN_ADDR         , GenTreeFptrVal     ,0,GTK_LEAF)             // Address of a function
 GTNODE(RET_EXPR         , GenTreeRetExpr     ,0,GTK_LEAF|DBK_NOTLIR)  // Place holder for the return expression from an inline candidate
-GTNODE(CLS_VAR          , GenTreeClsVar      ,0,GTK_LEAF)             // Static data member
-
-GTNODE(ARGPLACE         , GenTreeArgPlace    ,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTLIR)  // Placeholder for a "late arg" in the original arg list.
 
 //-----------------------------------------------------------------------------
 //  Constant nodes:
@@ -49,6 +46,7 @@ GTNODE(CNS_INT          , GenTreeIntCon      ,0,GTK_LEAF)
 GTNODE(CNS_LNG          , GenTreeLngCon      ,0,GTK_LEAF)
 GTNODE(CNS_DBL          , GenTreeDblCon      ,0,GTK_LEAF)
 GTNODE(CNS_STR          , GenTreeStrCon      ,0,GTK_LEAF)
+GTNODE(CNS_VEC          , GenTreeVecCon      ,0,GTK_LEAF)
 
 //-----------------------------------------------------------------------------
 //  Unary  operators (1 operand):
@@ -99,11 +97,11 @@ GTNODE(ALLOCOBJ         , GenTreeAllocObj    ,0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR) //
 GTNODE(INIT_VAL         , GenTreeOp          ,0,GTK_UNOP) // Initialization value for an initBlk
 
 GTNODE(BOX              , GenTreeBox         ,0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR)   // Marks its first operands (a local) as being a box
-GTNODE(PUTARG_TYPE      , GenTreeOp          ,0,GTK_UNOP|DBK_NOTLIR)            // Saves argument type between importation and morph
 GTNODE(RUNTIMELOOKUP    , GenTreeRuntimeLookup, 0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR) // Runtime handle lookup
+GTNODE(ARR_ADDR         , GenTreeArrAddr     ,0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR)   // Wraps an array address expression
 
 GTNODE(BSWAP            , GenTreeOp          ,0,GTK_UNOP)               // Byte swap (32-bit or 64-bit)
-GTNODE(BSWAP16          , GenTreeOp          ,0,GTK_UNOP)               // Byte swap (16-bit)
+GTNODE(BSWAP16          , GenTreeOp          ,0,GTK_UNOP)               // Byte swap lower 16-bits and zero upper 16 bits
 
 //-----------------------------------------------------------------------------
 //  Binary operators (2 operands):
@@ -150,11 +148,9 @@ GTNODE(COMMA            , GenTreeOp          ,0,GTK_BINOP|DBK_NOTLIR)
 GTNODE(QMARK            , GenTreeQmark       ,0,GTK_BINOP|GTK_EXOP|DBK_NOTLIR)
 GTNODE(COLON            , GenTreeColon       ,0,GTK_BINOP|DBK_NOTLIR)
 
-GTNODE(INDEX            , GenTreeIndex       ,0,GTK_BINOP|GTK_EXOP|DBK_NOTLIR) // SZ-array-element.
-GTNODE(INDEX_ADDR       , GenTreeIndexAddr   ,0,GTK_BINOP|GTK_EXOP)            // Addr of SZ-array-element; used when aiming to minimize compile times.
-
+GTNODE(INDEX_ADDR       , GenTreeIndexAddr   ,0,GTK_BINOP|GTK_EXOP)   // Address of SZ-array-element.
 GTNODE(MKREFANY         , GenTreeOp          ,0,GTK_BINOP|DBK_NOTLIR)
-GTNODE(LEA              , GenTreeAddrMode    ,0,GTK_BINOP|GTK_EXOP)
+GTNODE(LEA              , GenTreeAddrMode    ,0,GTK_BINOP|GTK_EXOP|DBK_NOTHIR)
 
 #if !defined(TARGET_64BIT)
 // A GT_LONG node simply represents the long value produced by the concatenation
@@ -220,10 +216,10 @@ GTNODE(MUL_LONG         , GenTreeOp          ,1,GTK_BINOP|DBK_NOTHIR)
 GTNODE(AND_NOT          , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 
 #ifdef TARGET_ARM64
-GTNODE(MADD             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Generates the Multiply-Add instruction (madd/msub) In the future, we might consider
-                                                                      // enabling it for both armarch and xarch for floating-point MADD "unsafe" math.
 GTNODE(ADDEX,             GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Add with sign/zero extension.
 GTNODE(BFIZ             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Bitfield Insert in Zero.
+GTNODE(CSNEG_MI         , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Conditional select, negate, minus result
+GTNODE(CNEG_LT          , GenTreeOp          ,0,GTK_UNOP|DBK_NOTHIR)  // Conditional, negate, signed less than result
 #endif
 
 //-----------------------------------------------------------------------------

@@ -169,7 +169,7 @@ namespace System.Linq.Expressions
         /// <param name="method">A <see cref="Emit.MethodBuilder"/> which will be used to hold the lambda's IL.</param>
         public void CompileToMethod(System.Reflection.Emit.MethodBuilder method)
         {
-            ContractUtils.RequiresNotNull(method, nameof(method));
+            ArgumentNullException.ThrowIfNull(method);
             ContractUtils.Requires(method.IsStatic, nameof(method));
             var type = method.DeclaringType as System.Reflection.Emit.TypeBuilder;
             if (type == null) throw Error.MethodBuilderDoesNotHaveTypeBuilder();
@@ -846,7 +846,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="LambdaExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Lambda"/> and the <see cref="LambdaExpression.Body"/> and <see cref="LambdaExpression.Parameters"/> properties set to the specified values.</returns>
         public static LambdaExpression Lambda(Expression body, string? name, bool tailCall, IEnumerable<ParameterExpression>? parameters)
         {
-            ContractUtils.RequiresNotNull(body, nameof(body));
+            ArgumentNullException.ThrowIfNull(body);
 
             ReadOnlyCollection<ParameterExpression> parameterList = parameters.ToReadOnly();
 
@@ -858,7 +858,7 @@ namespace System.Linq.Expressions
                 for (int i = 0; i < paramCount; i++)
                 {
                     ParameterExpression param = parameterList[i];
-                    ContractUtils.RequiresNotNull(param, "parameter");
+                    ArgumentNullException.ThrowIfNull(param, "parameter");
                     typeArgs[i] = param.IsByRef ? param.Type.MakeByRefType() : param.Type;
                     if (!set.Add(param))
                     {
@@ -908,7 +908,7 @@ namespace System.Linq.Expressions
 
         private static void ValidateLambdaArgs(Type delegateType, ref Expression body, ReadOnlyCollection<ParameterExpression> parameters, string paramName)
         {
-            ContractUtils.RequiresNotNull(delegateType, nameof(delegateType));
+            ArgumentNullException.ThrowIfNull(delegateType);
             ExpressionUtils.RequiresCanRead(body, nameof(body));
 
             if (!typeof(MulticastDelegate).IsAssignableFrom(delegateType) || delegateType == typeof(MulticastDelegate))

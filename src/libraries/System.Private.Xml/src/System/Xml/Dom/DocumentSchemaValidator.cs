@@ -525,7 +525,7 @@ namespace System.Xml
 
             if (parentNode == null)
             { //Did not find any type info all the way to the root, currentNode is Document || DocumentFragment
-                nodeIndex = nodeIndex - 1; //Subtract the one for document and set the node to null
+                nodeIndex--; //Subtract the one for document and set the node to null
                 _nodeSequenceToValidate![nodeIndex] = null;
                 return GetTypeFromAncestors(elementToValidate, null, nodeIndex);
             }
@@ -658,7 +658,7 @@ namespace System.Xml
             return schemaInfoFound;
         }
 
-        private bool AncestorTypeHasWildcard(XmlSchemaObject? ancestorType)
+        private static bool AncestorTypeHasWildcard(XmlSchemaObject? ancestorType)
         {
             XmlSchemaComplexType? ancestorSchemaType = GetComplexType(ancestorType);
             if (ancestorType != null)
@@ -669,7 +669,7 @@ namespace System.Xml
             return false;
         }
 
-        private XmlSchemaComplexType? GetComplexType(XmlSchemaObject? schemaObject)
+        private static XmlSchemaComplexType? GetComplexType(XmlSchemaObject? schemaObject)
         {
             if (schemaObject == null)
             {

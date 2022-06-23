@@ -361,8 +361,7 @@ mono_conc_hashtable_insert (MonoConcurrentHashTable *hash_table, gpointer key, g
 				return NULL;
 			}
 			if (key == kvs [i].key) {
-				gpointer value = kvs [i].value;
-				return value;
+				return kvs [i].value;
 			}
 			i = (i + 1) & table_mask;
 		}
@@ -381,8 +380,7 @@ mono_conc_hashtable_insert (MonoConcurrentHashTable *hash_table, gpointer key, g
 				return NULL;
 			}
 			if (equal (key, kvs [i].key)) {
-				gpointer value = kvs [i].value;
-				return value;
+				return kvs [i].value;
 			}
 			i = (i + 1) & table_mask;
 		}

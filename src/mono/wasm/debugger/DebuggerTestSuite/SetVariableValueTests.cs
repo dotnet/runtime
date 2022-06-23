@@ -12,9 +12,9 @@ using Xunit;
 
 namespace DebuggerTests
 {
-    public class SetVariableValueTests : DebuggerTestBase
+    public class SetVariableValueTests : DebuggerTests
     {
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("a", 1, 30, 130)]
         [InlineData("a", 1, -30, -130)]
         [InlineData("a1", 1, 20, -1)]
@@ -63,7 +63,7 @@ namespace DebuggerTests
             );
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("f", 9, 150.15616, 0.4564)]
         [InlineData("f", 9, -454.54654, -0.5648)]
         public async Task SetLocalFloatVariable(string variableName, float originalValue, float newValue, float newValue2) {
@@ -102,7 +102,7 @@ namespace DebuggerTests
             );
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("g", 10, 150.15615844726562, 0.4564000070095062)]
         [InlineData("g", 10, -454.5465393066406, -0.5648000240325928)]
         public async Task SetLocalDoubleVariable(string variableName, double originalValue, double newValue, double newValue2) {
@@ -141,7 +141,7 @@ namespace DebuggerTests
             );
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("a", "1", "30", "127")]
         [InlineData("a", "1", "-30", "-128")]
         [InlineData("a1", "1", "20", "0")]
@@ -191,7 +191,7 @@ namespace DebuggerTests
             );
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData(1, "a", 10, 30)]
         [InlineData(1, "a", 10, -1)]
         [InlineData(1, "b", 20, 30)]
@@ -221,7 +221,7 @@ namespace DebuggerTests
             );
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData(1, "a", 10, "wrongValue")]
         [InlineData(1, "b", 20, "wrongValue")]
         [InlineData(2, "c", 30, "wrongValue")]
@@ -251,7 +251,7 @@ namespace DebuggerTests
             );
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData(5, "f", true, false)]
         [InlineData(5, "f", true, true)]
         public async Task SetLocalBoolTypeVariable(int offset, string variableName, bool originalValue, bool newValue){
@@ -275,7 +275,7 @@ namespace DebuggerTests
                 }
             );
         }
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("A", 10, "20", true)]
         [InlineData("A", 10, "error", false)]
         [InlineData("d", 15, "20", true)]

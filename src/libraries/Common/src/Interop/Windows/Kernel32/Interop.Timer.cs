@@ -8,10 +8,10 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [GeneratedDllImport(Libraries.Kernel32)]
+        [LibraryImport(Libraries.Kernel32)]
         internal static unsafe partial IntPtr CreateThreadpoolTimer(delegate* unmanaged<IntPtr, IntPtr, IntPtr, void> pfnti, IntPtr pv, IntPtr pcbe);
 
-        [GeneratedDllImport(Libraries.Kernel32)]
+        [LibraryImport(Libraries.Kernel32)]
         internal static unsafe partial IntPtr SetThreadpoolTimer(IntPtr pti, long* pftDueTime, uint msPeriod, uint msWindowLength);
     }
 }

@@ -19,7 +19,7 @@
 {
 }
 .assembly extern xunit.core {}
-.namespace JitTest
+.namespace JitTest_huge_objref_huge_il
 {
   .class private auto ansi sealed TestClass extends [mscorlib]System.Object
   {
@@ -42,10 +42,10 @@
     }
   } // end of class 'TestClass'
   
-  .class private auto ansi Test
+  .class public auto ansi Test
          extends [mscorlib]System.Object
   {
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -53,10 +53,10 @@
       )
       .entrypoint
       .maxstack  70
-      .locals (class JitTest.TestClass[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,] matrix,
+      .locals (class JitTest_huge_objref_huge_il.TestClass[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,] matrix,
                int32 count,
 			   int32[] dim,
-			   class JitTest.TestClass ref)
+			   class JitTest_huge_objref_huge_il.TestClass ref)
 
       			ldstr     "Creating 32-dimension array"
       			call       void [System.Console]System.Console::WriteLine(string)
@@ -182,7 +182,7 @@
 				ldloc dim ldc.i4 61 ldelem.i4
 				ldloc dim ldc.i4 62 ldelem.i4
 				ldloc dim ldc.i4 63 ldelem.i4
-				newobj		instance void class JitTest.TestClass[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]::.ctor(
+				newobj		instance void class JitTest_huge_objref_huge_il.TestClass[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]::.ctor(
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
@@ -235,7 +235,7 @@
 				ldloc dim ldc.i4 60 ldelem.i4
 				ldloc dim ldc.i4 62 ldelem.i4
 				
-				newobj   instance void JitTest.TestClass::.ctor()
+				newobj   instance void JitTest_huge_objref_huge_il.TestClass::.ctor()
 				dup
 				dup
 				ldc.i4	99
@@ -244,16 +244,16 @@
 				ldc.i4  98
 				ldc.r8	8.0
 				stelem.r8
-				stfld	float64[] JitTest.TestClass::dbl_ptr
+				stfld	float64[] JitTest_huge_objref_huge_il.TestClass::dbl_ptr
 				ldc.i4	0x05071975
-				stfld	int32 JitTest.TestClass::magic
+				stfld	int32 JitTest_huge_objref_huge_il.TestClass::magic
 			
 				call    void [mscorlib]System.GC::Collect()
 				
 				dup
 				stloc ref
 				
-      			callvirt 	instance void class JitTest.TestClass[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]::Set(
+      			callvirt 	instance void class JitTest_huge_objref_huge_il.TestClass[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]::Set(
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
@@ -262,7 +262,7 @@
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
-      					class JitTest.TestClass)
+      					class JitTest_huge_objref_huge_il.TestClass)
 
 				ldloc matrix
 				ldloc dim ldc.i4.0 ldelem.i4
@@ -297,7 +297,7 @@
 				ldloc dim ldc.i4 58 ldelem.i4
 				ldloc dim ldc.i4 60 ldelem.i4
 				ldloc dim ldc.i4 62 ldelem.i4
-      			callvirt 	instance class JitTest.TestClass class JitTest.TestClass[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]::Get(
+      			callvirt 	instance class JitTest_huge_objref_huge_il.TestClass class JitTest_huge_objref_huge_il.TestClass[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]::Get(
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
@@ -308,7 +308,7 @@
       					int32, int32, int32, int32)
 
       			dup
-      			ldfld   float64[] JitTest.TestClass::dbl_ptr
+      			ldfld   float64[] JitTest_huge_objref_huge_il.TestClass::dbl_ptr
       			ldc.i4 98
       			ldelem.r8
       			ldc.r8 8.0
@@ -317,7 +317,7 @@
       			pop
       			br  throw0
 			next0_0:
-      			ldfld   int32 JitTest.TestClass::magic
+      			ldfld   int32 JitTest_huge_objref_huge_il.TestClass::magic
       			ldc.i4  0x05071975
       			ceq
       			brfalse throw0
@@ -363,7 +363,7 @@
       			br cont3
       			
       		go1:
-      			call instance class JitTest.TestClass class JitTest.TestClass[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]::Get(
+      			call instance class JitTest_huge_objref_huge_il.TestClass class JitTest_huge_objref_huge_il.TestClass[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]::Get(
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
@@ -373,7 +373,7 @@
       					int32, int32, int32, int32,
       					int32, int32, int32, int32)
       			dup
-      			ldfld   float64[] JitTest.TestClass::dbl_ptr
+      			ldfld   float64[] JitTest_huge_objref_huge_il.TestClass::dbl_ptr
       			ldc.i4 98
       			ldelem.r8
       			ldc.r8 8.0
@@ -382,7 +382,7 @@
       			pop
       			br  throw0
 			next0_1:
-      			ldfld   int32 JitTest.TestClass::magic
+      			ldfld   int32 JitTest_huge_objref_huge_il.TestClass::magic
       			ldc.i4  0x05071975
       			ceq
       			brfalse throw0
@@ -431,7 +431,7 @@
 				ldloc dim ldc.i4 60 ldelem.i4
 				ldloc dim ldc.i4 62 ldelem.i4
 				ldloc ref
-      			call 	instance void class JitTest.TestClass[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]::Set(
+      			call 	instance void class JitTest_huge_objref_huge_il.TestClass[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]::Set(
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
@@ -440,7 +440,7 @@
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
-      					class JitTest.TestClass)
+      					class JitTest_huge_objref_huge_il.TestClass)
       			ldnull
       			stloc matrix
       			call void [mscorlib]System.GC::Collect()
@@ -490,7 +490,7 @@
 				ldloc dim ldc.i4 58 ldelem.i4
 				ldloc dim ldc.i4 60 ldelem.i4
 				ldloc dim ldc.i4 62 ldelem.i4
-      			callvirt instance class JitTest.TestClass& class JitTest.TestClass[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]::Address(
+      			callvirt instance class JitTest_huge_objref_huge_il.TestClass& class JitTest_huge_objref_huge_il.TestClass[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]::Address(
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
@@ -501,7 +501,7 @@
       					int32, int32, int32, int32)
       			dup
       			ldind.ref
-      			ldfld   float64[] JitTest.TestClass::dbl_ptr
+      			ldfld   float64[] JitTest_huge_objref_huge_il.TestClass::dbl_ptr
       			ldc.i4 98
       			ldelem.r8
       			ldc.r8 8.0
@@ -513,12 +513,12 @@
 			next0_2:
 				dup
       			ldind.ref
-      			ldfld   int32 JitTest.TestClass::magic
+      			ldfld   int32 JitTest_huge_objref_huge_il.TestClass::magic
       			ldc.i4  0x05071975
       			ceq
       			brfalse pop_and_throw
       			ldind.ref
-      			callvirt   instance  string JitTest.TestClass::ToString()
+      			callvirt   instance  string JitTest_huge_objref_huge_il.TestClass::ToString()
       			call       void [System.Console]System.Console::WriteLine(string)
       			br pass2
 
@@ -537,4 +537,4 @@
     
   } // end of class 'Test'
   
-} // end of namespace 'JitTest'
+} // end of namespace 'JitTest_huge_objref_huge_il'

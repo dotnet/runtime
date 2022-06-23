@@ -33,8 +33,11 @@ namespace System.IO
             return GetFullPathInternal(path);
         }
 
-        public static string GetFullPath(string path!!, string basePath!!)
+        public static string GetFullPath(string path, string basePath)
         {
+            ArgumentNullException.ThrowIfNull(path);
+            ArgumentNullException.ThrowIfNull(basePath);
+
             if (!IsPathFullyQualified(basePath))
                 throw new ArgumentException(SR.Arg_BasePathNotFullyQualified, nameof(basePath));
 

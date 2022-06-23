@@ -182,6 +182,10 @@ static
 size_t
 ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value);
 
+static
+ep_char8_t *
+eo_rt_atomic_compare_exchange_utf8_string (volatile ep_char8_t **target, ep_char8_t *expected, ep_char8_t *value);
+
 /*
  * EventPipe.
  */

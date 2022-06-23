@@ -94,6 +94,7 @@ Note:
         <User>cn=admin,dc=example,dc=com</User>
         <Password>password</Password>
         <AuthenticationTypes>ServerBind,None</AuthenticationTypes>
+        <SupportsServerSideSort>True</SupportsServerSideSort>
     </Connection>
     <Connection Name="SLAPD OPENLDAP SERVER">
         <ServerName>localhost</ServerName>
@@ -102,6 +103,7 @@ Note:
         <User>cn=admin,dc=example,dc=com</User>
         <Password>password</Password>
         <AuthenticationTypes>ServerBind,None</AuthenticationTypes>
+        <SupportsServerSideSort>False</SupportsServerSideSort>
     </Connection>
     <Connection Name="ACTIVE DIRECTORY SERVER">
         <ServerName>danmose-ldap.danmose-domain.com</ServerName>
@@ -110,6 +112,7 @@ Note:
         <User>danmose-domain\Administrator</User>
         <Password>%TESTPASSWORD%</Password>
         <AuthenticationTypes>ServerBind,None</AuthenticationTypes>
+        <SupportsServerSideSort>True</SupportsServerSideSort>
     </Connection>
     <Connection Name="SLAPD OPENLDAP SERVER TLS">
         <ServerName>ldap.local</ServerName>
@@ -119,6 +122,7 @@ Note:
         <Password>password</Password>
         <AuthenticationTypes>ServerBind,None</AuthenticationTypes>
         <UseTls>true</UseTls>
+        <SupportsServerSideSort>False</SupportsServerSideSort>
     </Connection>
 
 </Configuration>

@@ -286,14 +286,9 @@ public:
             //
             GenTreeFlags oldUseFlags = m_useFlags;
 
-            if (m_callAncestor->gtCallThisArg != nullptr)
+            for (CallArg& arg : m_callAncestor->gtArgs.Args())
             {
-                m_useFlags |= (m_callAncestor->gtCallThisArg->GetNode()->gtFlags & GTF_GLOB_EFFECT);
-            }
-
-            for (GenTreeCall::Use& use : m_callAncestor->Args())
-            {
-                m_useFlags |= (use.GetNode()->gtFlags & GTF_GLOB_EFFECT);
+                m_useFlags |= (arg.GetNode()->gtFlags & GTF_GLOB_EFFECT);
             }
 
             if (oldUseFlags != m_useFlags)
@@ -509,12 +504,6 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         return false;
     }
 
-    if (gtGetStructHandleIfPresent(fwdSubNode) != gtGetStructHandleIfPresent(lhsNode))
-    {
-        JITDUMP(" would change struct handle (assignment)\n");
-        return false;
-    }
-
     // If lhs is mulit-reg, rhs must be too.
     //
     if (lhsNode->IsMultiRegNode() && !fwdSubNode->IsMultiRegNode())
@@ -633,15 +622,16 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // These conditions can be checked earlier in the final version to save some throughput.
     // Perhaps allowing for bypass with jit stress.
     //
-    // If fwdSubNode is an address-exposed local, forwarding it may lose optimizations.
-    // (maybe similar for dner?)
+    // If fwdSubNode is an address-exposed local, forwarding it may lose optimizations due
+    // to GLOB_REF "poisoning" the tree. CQ analysis shows this to not be a problem with
+    // structs.
     //
     if (fwdSubNode->OperIs(GT_LCL_VAR))
     {
         unsigned const   fwdLclNum = fwdSubNode->AsLclVarCommon()->GetLclNum();
         LclVarDsc* const fwdVarDsc = lvaGetDesc(fwdLclNum);
 
-        if (fwdVarDsc->IsAddressExposed())
+        if (!varTypeIsStruct(fwdVarDsc) && fwdVarDsc->IsAddressExposed())
         {
             JITDUMP(" V%02u is address exposed\n", fwdLclNum);
             return false;
@@ -669,12 +659,40 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 
     // Quirks:
     //
+    // Don't substitute nodes "AddFinalArgsAndDetermineABIInfo" doesn't handle into struct args.
+    //
+    if (fsv.IsCallArg() && fsv.GetNode()->TypeIs(TYP_STRUCT) &&
+        !fwdSubNode->OperIs(GT_OBJ, GT_LCL_VAR, GT_LCL_FLD, GT_MKREFANY))
+    {
+        JITDUMP(" use is a struct arg; fwd sub node is not OBJ/LCL_VAR/LCL_FLD/MKREFANY\n");
+        return false;
+    }
+
     // We may sometimes lose or change a type handle. Avoid substituting if so.
     //
-    if (gtGetStructHandleIfPresent(fwdSubNode) != gtGetStructHandleIfPresent(fsv.GetNode()))
+    // However, we allow free substitution of hardware SIMD types.
+    //
+    CORINFO_CLASS_HANDLE fwdHnd = gtGetStructHandleIfPresent(fwdSubNode);
+    CORINFO_CLASS_HANDLE useHnd = gtGetStructHandleIfPresent(fsv.GetNode());
+    if (fwdHnd != useHnd)
     {
-        JITDUMP(" would change struct handle (substitution)\n");
-        return false;
+        if ((fwdHnd == NO_CLASS_HANDLE) || (useHnd == NO_CLASS_HANDLE))
+        {
+            JITDUMP(" would add/remove struct handle (substitution)\n");
+            return false;
+        }
+
+#ifdef FEATURE_SIMD
+        const bool bothHWSIMD = isHWSIMDClass(fwdHnd) && isHWSIMDClass(useHnd);
+#else
+        const bool bothHWSIMD = false;
+#endif
+
+        if (!bothHWSIMD)
+        {
+            JITDUMP(" would change struct handle (substitution)\n");
+            return false;
+        }
     }
 
 #ifdef FEATURE_SIMD
@@ -739,7 +757,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     {
         if (!fwdSubNode->OperIs(GT_LCL_VAR))
         {
-            JITDUMP(" parent is return, fwd sub node is not lcl var\n");
+            JITDUMP(" parent is multi-reg return, fwd sub node is not lcl var\n");
             return false;
         }
 
@@ -752,8 +770,17 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 #endif // defined(TARGET_X86) || defined(TARGET_ARM)
 
         GenTreeLclVar* const fwdSubNodeLocal = fwdSubNode->AsLclVar();
+        unsigned const       fwdLclNum       = fwdSubNodeLocal->GetLclNum();
 
-        unsigned const   fwdLclNum = fwdSubNodeLocal->GetLclNum();
+        // These may later turn into indirections and the backend does not support
+        // those as sources of multi-reg returns.
+        //
+        if (lvaIsImplicitByRefLocal(fwdLclNum))
+        {
+            JITDUMP(" parent is multi-reg return; fwd sub node is implicit byref\n");
+            return false;
+        }
+
         LclVarDsc* const fwdVarDsc = lvaGetDesc(fwdLclNum);
 
         JITDUMP(" [marking V%02u as multi-reg-ret]", fwdLclNum);

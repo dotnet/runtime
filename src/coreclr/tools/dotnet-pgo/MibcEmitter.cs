@@ -32,7 +32,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 {
     static class MibcEmitter
     {
-        class MIbcGroup : IPgoEncodedValueEmitter<TypeSystemEntityOrUnknown>
+        class MIbcGroup : IPgoEncodedValueEmitter<TypeSystemEntityOrUnknown, TypeSystemEntityOrUnknown>
         {
             private static int s_emitCount = 0;
 
@@ -100,7 +100,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     if (processedMethodData.SchemaData != null)
                     {
                         _il.LoadString(_emitter.GetUserStringHandle("InstrumentationDataStart"));
-                        PgoProcessor.EncodePgoData<TypeSystemEntityOrUnknown>(processedMethodData.SchemaData, this, true);
+                        PgoProcessor.EncodePgoData<TypeSystemEntityOrUnknown, TypeSystemEntityOrUnknown>(processedMethodData.SchemaData, this, true);
                     }
                     _il.OpCode(ILOpCode.Pop);
                 }
@@ -121,13 +121,13 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 return _emitter.AddGlobalMethod(methodName, _il, 8);
             }
 
-            bool IPgoEncodedValueEmitter<TypeSystemEntityOrUnknown>.EmitDone()
+            bool IPgoEncodedValueEmitter<TypeSystemEntityOrUnknown, TypeSystemEntityOrUnknown>.EmitDone()
             {
                 _il.LoadString(_emitter.GetUserStringHandle("InstrumentationDataEnd"));
                 return true;
             }
 
-            void IPgoEncodedValueEmitter<TypeSystemEntityOrUnknown>.EmitLong(long value, long previousValue)
+            void IPgoEncodedValueEmitter<TypeSystemEntityOrUnknown, TypeSystemEntityOrUnknown>.EmitLong(long value, long previousValue)
             {
                 if ((value <= int.MaxValue) && (value >= int.MinValue))
                 {
@@ -139,7 +139,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 }
             }
 
-            void IPgoEncodedValueEmitter<TypeSystemEntityOrUnknown>.EmitType(TypeSystemEntityOrUnknown type, TypeSystemEntityOrUnknown previousValue)
+            void IPgoEncodedValueEmitter<TypeSystemEntityOrUnknown, TypeSystemEntityOrUnknown>.EmitType(TypeSystemEntityOrUnknown type, TypeSystemEntityOrUnknown previousValue)
             {
                 if (type.AsType != null)
                 {
@@ -150,6 +150,20 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 {
 
                     _il.LoadConstantI4(type.AsUnknown & 0x00FFFFFF);
+                }
+            }
+
+            void IPgoEncodedValueEmitter<TypeSystemEntityOrUnknown, TypeSystemEntityOrUnknown>.EmitMethod(TypeSystemEntityOrUnknown method, TypeSystemEntityOrUnknown previousValue)
+            {
+                if (method.AsMethod != null)
+                {
+                    _il.OpCode(ILOpCode.Ldtoken);
+                    _il.Token(_emitter.GetMethodRef(method.AsMethod));
+                }
+                else
+                {
+
+                    _il.LoadConstantI4(method.AsUnknown & 0x00FFFFFF);
                 }
             }
 
@@ -201,6 +215,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         public static int GenerateMibcFile(TypeSystemContext tsc, FileInfo outputFileName, IEnumerable<MethodProfileData> methodsToAttemptToPlaceIntoProfileData, bool validate, bool uncompressed)
         {
             TypeSystemMetadataEmitter emitter = new TypeSystemMetadataEmitter(new AssemblyName(outputFileName.Name), tsc);
+            emitter.InjectSystemPrivateCanon();
+            emitter.AllowUseOfAddGlobalMethod();
 
             SortedDictionary<string, MIbcGroup> groups = new SortedDictionary<string, MIbcGroup>();
             StringBuilder mibcGroupNameBuilder = new StringBuilder();

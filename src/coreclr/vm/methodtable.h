@@ -749,6 +749,10 @@ public:
     // during object construction.
     void CheckRunClassInitAsIfConstructingThrowing();
 
+#if defined(TARGET_LOONGARCH64)
+    static int GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE clh);
+#endif
+
 #if defined(UNIX_AMD64_ABI_ITF)
     // Builds the internal data structures and classifies struct eightbytes for Amd System V calling convention.
     bool ClassifyEightBytes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool isNativeStruct);
@@ -854,9 +858,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        g_IBCLogger.LogMethodTableAccess(this);
-
-        return !(GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_Unrestored);
+        return IsRestored_NoLogging();
     }
 
     //-------------------------------------------------------------------
@@ -884,7 +886,7 @@ public:
         PRECONDITION(!HasApproxParent());
         PRECONDITION(IsRestored_NoLogging());
 
-        FastInterlockAnd(&GetWriteableDataForWrite()->m_dwFlags, ~MethodTableWriteableData::enum_flag_IsNotFullyLoaded);
+        InterlockedAnd((LONG*)&GetWriteableDataForWrite()->m_dwFlags, ~MethodTableWriteableData::enum_flag_IsNotFullyLoaded);
     }
 
     // Equivalent to GetLoadLevel() == CLASS_LOADED
@@ -909,7 +911,7 @@ public:
         if (canCompare)
         {
             // Set checked and canCompare flags in one interlocked operation.
-            FastInterlockOr(&GetWriteableDataForWrite_NoLogging()->m_dwFlags,
+            InterlockedOr((LONG*)&GetWriteableDataForWrite_NoLogging()->m_dwFlags,
                 MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode | MethodTableWriteableData::enum_flag_CanCompareBitsOrUseFastGetHashCode);
         }
         else
@@ -927,7 +929,7 @@ public:
     inline void SetHasCheckedCanCompareBitsOrUseFastGetHashCode()
     {
         WRAPPER_NO_CONTRACT;
-        FastInterlockOr(&GetWriteableDataForWrite_NoLogging()->m_dwFlags, MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
+        InterlockedOr((LONG*)&GetWriteableDataForWrite_NoLogging()->m_dwFlags, MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
     }
 
     inline void SetIsDependenciesLoaded()
@@ -943,14 +945,12 @@ public:
         PRECONDITION(!HasApproxParent());
         PRECONDITION(IsRestored_NoLogging());
 
-        FastInterlockOr(&GetWriteableDataForWrite()->m_dwFlags, MethodTableWriteableData::enum_flag_DependenciesLoaded);
+        InterlockedOr((LONG*)&GetWriteableDataForWrite()->m_dwFlags, MethodTableWriteableData::enum_flag_DependenciesLoaded);
     }
 
     inline ClassLoadLevel GetLoadLevel()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-
-        g_IBCLogger.LogMethodTableAccess(this);
 
         DWORD dwFlags = GetWriteableData()->m_dwFlags;
 
@@ -1220,7 +1220,6 @@ public:
         {
             // Non-virtual slots < GetNumVtableSlots live in a single chunk pointed to by an optional member
             _ASSERTE(HasNonVirtualSlotsArray());
-            g_IBCLogger.LogMethodTableNonVirtualSlotsAccess(this);
             return GetNonVirtualSlotsArray() + (slotNum - GetNumVirtuals());
         }
     }
@@ -1392,7 +1391,6 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        g_IBCLogger.LogMethodTableAccess(this);
         return GetNumVirtuals_NoLogging();
     }
 
@@ -1416,7 +1414,6 @@ public:
             return 0;
         }
         MethodTable *pMTParent = GetParentMethodTable();
-        g_IBCLogger.LogMethodTableAccess(this);
         return pMTParent == NULL ? 0 : pMTParent->GetNumVirtuals();
     }
 
@@ -1750,7 +1747,7 @@ public:
     inline void SetHasExactParent()
     {
         WRAPPER_NO_CONTRACT;
-        FastInterlockAnd(&(GetWriteableDataForWrite()->m_dwFlags), ~MethodTableWriteableData::enum_flag_HasApproxParent);
+        InterlockedAnd((LONG*)&GetWriteableDataForWrite()->m_dwFlags, ~MethodTableWriteableData::enum_flag_HasApproxParent);
     }
 
 
@@ -1776,7 +1773,6 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         PRECONDITION(IsParentMethodTablePointerValid());
-        g_IBCLogger.LogMethodTableAccess(this);
         return GetParentMethodTable() == pMT;
     }
 
@@ -2096,7 +2092,15 @@ public:
     // Specify allowNullResult to return NULL instead of throwing if the there is no implementation
     // Specify verifyImplemented to verify that there is a match, but do not actually return a final usable MethodDesc
     // Specify allowVariantMatches to permit generic interface variance
-    MethodDesc *ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL allowNullResult, BOOL verifyImplemented = FALSE, BOOL allowVariantMatches = TRUE);
+    // Specify uniqueResolution to store the flag saying whether the resolution was unambiguous;
+    // when NULL, throw an AmbiguousResolutionException upon hitting ambiguous SVM resolution.
+    MethodDesc *ResolveVirtualStaticMethod(
+        MethodTable* pInterfaceType,
+        MethodDesc* pInterfaceMD,
+        BOOL allowNullResult,
+        BOOL verifyImplemented = FALSE,
+        BOOL allowVariantMatches = TRUE,
+        BOOL *uniqueResolution = NULL);
 
     // Try a partial resolve of the constraint call, up to generic code sharing.
     //
@@ -2386,7 +2390,6 @@ public:
     OBJECTREF FastBox(void** data);
 #ifndef DACCESS_COMPILE
     BOOL UnBoxInto(void *dest, OBJECTREF src);
-    BOOL UnBoxIntoArg(ArgDestination *argDest, OBJECTREF src);
     void UnBoxIntoUnchecked(void *dest, OBJECTREF src);
 #endif
 
@@ -2725,7 +2728,6 @@ public:
     inline PTR_Const_MethodTableWriteableData GetWriteableData() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        g_IBCLogger.LogMethodTableWriteableDataAccess(this);
         return GetWriteableData_NoLogging();
     }
 
@@ -2738,7 +2740,6 @@ public:
     inline PTR_MethodTableWriteableData GetWriteableDataForWrite()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        g_IBCLogger.LogMethodTableWriteableDataWriteAccess(this);
         return GetWriteableDataForWrite_NoLogging();
     }
 

@@ -185,7 +185,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task WritesUsingGetSpanWorks()
         {
-            var bytes = Encoding.ASCII.GetBytes("abcdefghijklmnopqrstuvwzyz");
+            byte[] bytes = "abcdefghijklmnopqrstuvwzyz"u8.ToArray();
             var pipe = new Pipe(new PipeOptions(pool: new HeapBufferPool(), minimumSegmentSize: 1));
             PipeWriter writer = pipe.Writer;
 
@@ -208,7 +208,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task WritesUsingGetMemoryWorks()
         {
-            var bytes = Encoding.ASCII.GetBytes("abcdefghijklmnopqrstuvwzyz");
+            byte[] bytes = "abcdefghijklmnopqrstuvwzyz"u8.ToArray();
             var pipe = new Pipe(new PipeOptions(pool: new HeapBufferPool(), minimumSegmentSize: 1));
             PipeWriter writer = pipe.Writer;
 
@@ -228,33 +228,35 @@ namespace System.IO.Pipelines.Tests
             pipe.Reader.Complete();
         }
 
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "allocates too much memory")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task CompleteWithLargeWriteThrows()
         {
+            var completeDelay = TimeSpan.FromMilliseconds(10);
+            var testTimeout = TimeSpan.FromMilliseconds(10000);
             var pipe = new Pipe();
             pipe.Reader.Complete();
 
             var task = Task.Run(async () =>
             {
-                await Task.Delay(10);
+                await Task.Delay(completeDelay);
                 pipe.Writer.Complete();
             });
 
-            try
+            // Complete while writing
+            await Assert.ThrowsAsync<InvalidOperationException>(async () =>
             {
-                for (int i = 0; i < 1000; i++)
+                var testStartTime = DateTime.UtcNow;
+                var buffer = new byte[10000000];
+                ulong i = 0;
+                while (true)
                 {
-                    var buffer = new byte[10000000];
                     await pipe.Writer.WriteAsync(buffer);
-                }
-            }
-            catch (InvalidOperationException)
-            {
-                // Complete while writing
-            }
 
-            await task;
+                    // abort test if we're executing for more than the testTimeout (check every 10000th iteration)
+                    if (i++ % 10000 == 0 && DateTime.UtcNow - testStartTime > testTimeout)
+                        break;
+                }
+            });
         }
 
         [Fact]

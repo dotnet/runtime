@@ -14,8 +14,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
         private readonly ICompositionElement? _origin;
         private IDictionary<string, object?>? _metadata;
 
-        public ReflectionMemberExportDefinition(LazyMemberInfo member, ExportDefinition exportDefinition!!, ICompositionElement? origin)
+        public ReflectionMemberExportDefinition(LazyMemberInfo member, ExportDefinition exportDefinition, ICompositionElement? origin)
         {
+            ArgumentNullException.ThrowIfNull(exportDefinition);
+
             _member = member;
             _exportDefinition = exportDefinition;
             _origin = origin;

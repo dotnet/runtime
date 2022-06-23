@@ -29,13 +29,13 @@ internal static partial class Interop
         public ApplicationProtocolNegotiationExt ProtoNegoExt;
         public byte ProtocolIdSize;
         public fixed byte ProtocolId[MaxProtocolIdSize];
-        public byte[] Protocol
+        public ReadOnlySpan<byte> Protocol
         {
             get
             {
                 fixed (byte* pid = ProtocolId)
                 {
-                    return new Span<byte>(pid, ProtocolIdSize).ToArray();
+                    return new ReadOnlySpan<byte>(pid, ProtocolIdSize);
                 }
             }
         }

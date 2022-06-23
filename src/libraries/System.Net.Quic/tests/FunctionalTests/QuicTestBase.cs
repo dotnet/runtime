@@ -1,9 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Net.Quic.Implementations;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -16,18 +16,12 @@ using System.Net.Sockets;
 
 namespace System.Net.Quic.Tests
 {
-    public abstract class QuicTestBase<T>
-        where T : IQuicImplProviderFactory, new()
+    public abstract class QuicTestBase
     {
-        private static readonly byte[] s_ping = Encoding.UTF8.GetBytes("PING");
-        private static readonly byte[] s_pong = Encoding.UTF8.GetBytes("PONG");
-        private static readonly IQuicImplProviderFactory s_factory = new T();
+        private static readonly byte[] s_ping = "PING"u8.ToArray();
+        private static readonly byte[] s_pong = "PONG"u8.ToArray();
 
-        public static QuicImplementationProvider ImplementationProvider { get; } = s_factory.GetProvider();
-        public static bool IsSupported => ImplementationProvider.IsSupported;
-
-        public static bool IsMockProvider => typeof(T) == typeof(MockProviderFactory);
-        public static bool IsMsQuicProvider => typeof(T) == typeof(MsQuicProviderFactory);
+        public static bool IsSupported => QuicListener.IsSupported && QuicConnection.IsSupported;
 
         public static SslApplicationProtocol ApplicationProtocol { get; } = new SslApplicationProtocol("quictest");
 
@@ -75,14 +69,16 @@ namespace System.Net.Quic.Tests
             };
         }
 
-        internal QuicConnection CreateQuicConnection(IPEndPoint endpoint)
+        internal ValueTask<QuicConnection> CreateQuicConnection(IPEndPoint endpoint)
         {
-            return new QuicConnection(ImplementationProvider, endpoint, GetSslClientAuthenticationOptions());
+            var options = CreateQuicClientOptions();
+            options.RemoteEndPoint = endpoint;
+            return CreateQuicConnection(options);
         }
 
-        internal QuicConnection CreateQuicConnection(QuicClientConnectionOptions clientOptions)
+        internal ValueTask<QuicConnection> CreateQuicConnection(QuicClientConnectionOptions clientOptions)
         {
-            return new QuicConnection(ImplementationProvider, clientOptions);
+            return QuicConnection.ConnectAsync(clientOptions);
         }
 
         internal QuicListenerOptions CreateQuicListenerOptions()
@@ -94,7 +90,7 @@ namespace System.Net.Quic.Tests
             };
         }
 
-        internal QuicListener CreateQuicListener(int maxUnidirectionalStreams = 100, int maxBidirectionalStreams = 100)
+        internal ValueTask<QuicListener> CreateQuicListener(int maxUnidirectionalStreams = 100, int maxBidirectionalStreams = 100)
         {
             var options = CreateQuicListenerOptions();
             options.MaxUnidirectionalStreams = maxUnidirectionalStreams;
@@ -103,7 +99,7 @@ namespace System.Net.Quic.Tests
             return CreateQuicListener(options);
         }
 
-        internal QuicListener CreateQuicListener(IPEndPoint endpoint)
+        internal ValueTask<QuicListener> CreateQuicListener(IPEndPoint endpoint)
         {
             var options = new QuicListenerOptions()
             {
@@ -113,12 +109,12 @@ namespace System.Net.Quic.Tests
             return CreateQuicListener(options);
         }
 
-        private QuicListener CreateQuicListener(QuicListenerOptions options) => new QuicListener(ImplementationProvider, options);
+        internal ValueTask<QuicListener> CreateQuicListener(QuicListenerOptions options) => QuicListener.ListenAsync(options);
 
         internal Task<(QuicConnection, QuicConnection)> CreateConnectedQuicConnection(QuicListener listener) => CreateConnectedQuicConnection(null, listener);
         internal async Task<(QuicConnection, QuicConnection)> CreateConnectedQuicConnection(QuicClientConnectionOptions? clientOptions, QuicListenerOptions listenerOptions)
         {
-            using (QuicListener listener = CreateQuicListener(listenerOptions))
+            using (QuicListener listener = await CreateQuicListener(listenerOptions))
             {
                 clientOptions ??= new QuicClientConnectionOptions()
                 {
@@ -137,7 +133,7 @@ namespace System.Net.Quic.Tests
 
             if (listener == null)
             {
-                listener = CreateQuicListener();
+                listener = await CreateQuicListener();
                 disposeListener = true;
             }
 
@@ -151,7 +147,7 @@ namespace System.Net.Quic.Tests
             ValueTask<QuicConnection> serverTask = listener.AcceptConnectionAsync();
             while (retry > 0)
             {
-                clientConnection = CreateQuicConnection(clientOptions);
+                clientConnection = await CreateQuicConnection(clientOptions);
                 retry--;
                 try
                 {
@@ -186,7 +182,7 @@ namespace System.Net.Quic.Tests
 
         internal async Task PingPong(QuicConnection client, QuicConnection server)
         {
-            using QuicStream clientStream = client.OpenBidirectionalStream();
+            using QuicStream clientStream = await client.OpenBidirectionalStreamAsync();
             ValueTask t = clientStream.WriteAsync(s_ping);
             using QuicStream serverStream = await server.AcceptStreamAsync();
 
@@ -219,7 +215,7 @@ namespace System.Net.Quic.Tests
             const long ClientCloseErrorCode = 11111;
             const long ServerCloseErrorCode = 22222;
 
-            using QuicListener listener = CreateQuicListener(listenerOptions ?? CreateQuicListenerOptions());
+            using QuicListener listener = await CreateQuicListener(listenerOptions ?? CreateQuicListenerOptions());
 
             using var serverFinished = new SemaphoreSlim(0);
             using var clientFinished = new SemaphoreSlim(0);
@@ -258,7 +254,7 @@ namespace System.Net.Quic.Tests
             await RunClientServer(
                 clientFunction: async connection =>
                 {
-                    await using QuicStream stream = bidi ? connection.OpenBidirectionalStream() : connection.OpenUnidirectionalStream();
+                    await using QuicStream stream = bidi ? await connection.OpenBidirectionalStreamAsync() : await connection.OpenUnidirectionalStreamAsync();
                     // Open(Bi|Uni)directionalStream only allocates ID. We will force stream opening
                     // by Writing there and receiving data on the other side.
                     await stream.WriteAsync(buffer);
@@ -307,28 +303,20 @@ namespace System.Net.Quic.Tests
             return bytesRead;
         }
 
-        internal static async Task<int> WriteForever(QuicStream stream)
+        internal static async Task<int> WriteForever(QuicStream stream, int size = 1)
         {
-            Memory<byte> buffer = new byte[] { 123 };
-            while (true)
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(size);
+            try
             {
-                await stream.WriteAsync(buffer);
+                while (true)
+                {
+                    await stream.WriteAsync(buffer);
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
             }
         }
-    }
-
-    public interface IQuicImplProviderFactory
-    {
-        QuicImplementationProvider GetProvider();
-    }
-
-    public sealed class MsQuicProviderFactory : IQuicImplProviderFactory
-    {
-        public QuicImplementationProvider GetProvider() => QuicImplementationProviders.MsQuic;
-    }
-
-    public sealed class MockProviderFactory : IQuicImplProviderFactory
-    {
-        public QuicImplementationProvider GetProvider() => QuicImplementationProviders.Mock;
     }
 }

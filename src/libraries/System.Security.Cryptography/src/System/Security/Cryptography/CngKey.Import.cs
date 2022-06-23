@@ -102,20 +102,25 @@ namespace System.Security.Cryptography
         }
 
         internal static CngKey Import(
-            byte[] keyBlob!!,
+            byte[] keyBlob,
             string? curveName,
             CngKeyBlobFormat format,
             CngProvider provider)
         {
+            ArgumentNullException.ThrowIfNull(keyBlob);
+
             return Import(new ReadOnlySpan<byte>(keyBlob), curveName, format, provider);
         }
 
         internal static CngKey Import(
             ReadOnlySpan<byte> keyBlob,
             string? curveName,
-            CngKeyBlobFormat format!!,
-            CngProvider provider!!)
+            CngKeyBlobFormat format,
+            CngProvider provider)
         {
+            ArgumentNullException.ThrowIfNull(format);
+            ArgumentNullException.ThrowIfNull(provider);
+
             SafeNCryptProviderHandle providerHandle = provider.OpenStorageProvider();
             SafeNCryptKeyHandle? keyHandle;
             ErrorCode errorCode;

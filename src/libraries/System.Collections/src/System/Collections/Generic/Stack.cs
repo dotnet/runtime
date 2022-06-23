@@ -48,8 +48,10 @@ namespace System.Collections.Generic
 
         // Fills a Stack with the contents of a particular collection.  The items are
         // pushed onto the stack in the same order they are read by the enumerator.
-        public Stack(IEnumerable<T> collection!!)
+        public Stack(IEnumerable<T> collection)
         {
+            ArgumentNullException.ThrowIfNull(collection);
+
             _array = EnumerableHelpers.ToArray(collection, out _size);
         }
 
@@ -92,11 +94,13 @@ namespace System.Collections.Generic
         }
 
         // Copies the stack into an array.
-        public void CopyTo(T[] array!!, int arrayIndex)
+        public void CopyTo(T[] array, int arrayIndex)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             if (arrayIndex < 0 || arrayIndex > array.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (array.Length - arrayIndex < _size)
@@ -113,8 +117,10 @@ namespace System.Collections.Generic
             }
         }
 
-        void ICollection.CopyTo(Array array!!, int arrayIndex)
+        void ICollection.CopyTo(Array array, int arrayIndex)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             if (array.Rank != 1)
             {
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
@@ -127,7 +133,7 @@ namespace System.Collections.Generic
 
             if (arrayIndex < 0 || arrayIndex > array.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (array.Length - arrayIndex < _size)

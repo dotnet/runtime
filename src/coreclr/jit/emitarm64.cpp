@@ -1132,6 +1132,7 @@ emitAttr emitter::emitInsTargetRegSize(instrDesc* id)
     {
         case INS_ldxrb:
         case INS_ldarb:
+        case INS_ldaprb:
         case INS_ldaxrb:
         case INS_stxrb:
         case INS_stlrb:
@@ -1145,6 +1146,7 @@ emitAttr emitter::emitInsTargetRegSize(instrDesc* id)
 
         case INS_ldxrh:
         case INS_ldarh:
+        case INS_ldaprh:
         case INS_ldaxrh:
         case INS_stxrh:
         case INS_stlrh:
@@ -1181,6 +1183,7 @@ emitAttr emitter::emitInsTargetRegSize(instrDesc* id)
 
         case INS_ldxr:
         case INS_ldar:
+        case INS_ldapr:
         case INS_ldaxr:
         case INS_stxr:
         case INS_stlr:
@@ -1212,6 +1215,7 @@ emitAttr emitter::emitInsLoadStoreSize(instrDesc* id)
     switch (ins)
     {
         case INS_ldarb:
+        case INS_ldaprb:
         case INS_stlrb:
         case INS_ldrb:
         case INS_strb:
@@ -1223,6 +1227,7 @@ emitAttr emitter::emitInsLoadStoreSize(instrDesc* id)
             break;
 
         case INS_ldarh:
+        case INS_ldaprh:
         case INS_stlrh:
         case INS_ldrh:
         case INS_strh:
@@ -1247,6 +1252,7 @@ emitAttr emitter::emitInsLoadStoreSize(instrDesc* id)
             break;
 
         case INS_ldar:
+        case INS_ldapr:
         case INS_stlr:
         case INS_ldr:
         case INS_str:
@@ -3734,7 +3740,8 @@ void emitter::emitIns_R_I(instruction ins,
                           emitAttr    attr,
                           regNumber   reg,
                           ssize_t     imm,
-                          insOpts opt /* = INS_OPTS_NONE */ DEBUGARG(GenTreeFlags gtFlags))
+                          insOpts     opt /* = INS_OPTS_NONE */
+                          DEBUGARG(size_t targetHandle /* = 0 */) DEBUGARG(GenTreeFlags gtFlags /* = GTF_EMPTY */))
 {
     emitAttr  size      = EA_SIZE(attr);
     emitAttr  elemsize  = EA_UNKNOWN;
@@ -3984,7 +3991,11 @@ void emitter::emitIns_R_I(instruction ins,
     id->idInsOpt(opt);
 
     id->idReg1(reg);
-    INDEBUG(id->idDebugOnlyInfo()->idFlags = gtFlags);
+
+#ifdef DEBUG
+    id->idDebugOnlyInfo()->idMemCookie = targetHandle;
+    id->idDebugOnlyInfo()->idFlags     = gtFlags;
+#endif
 
     dispIns(id);
     appendToCurIG(id);
@@ -4460,6 +4471,7 @@ void emitter::emitIns_R_R(
             break;
 
         case INS_ldar:
+        case INS_ldapr:
         case INS_ldaxr:
         case INS_ldxr:
         case INS_stlr:
@@ -4468,9 +4480,11 @@ void emitter::emitIns_R_R(
             FALLTHROUGH;
 
         case INS_ldarb:
+        case INS_ldaprb:
         case INS_ldaxrb:
         case INS_ldxrb:
         case INS_ldarh:
+        case INS_ldaprh:
         case INS_ldaxrh:
         case INS_ldxrh:
         case INS_stlrb:
@@ -4494,12 +4508,14 @@ void emitter::emitIns_R_R(
         case INS_str:
         case INS_strb:
         case INS_strh:
-
-        case INS_cmp:
         case INS_cmn:
         case INS_tst:
             assert(insOptsNone(opt));
             emitIns_R_R_I(ins, attr, reg1, reg2, 0, INS_OPTS_NONE);
+            return;
+
+        case INS_cmp:
+            emitIns_R_R_I(ins, attr, reg1, reg2, 0, opt);
             return;
 
         case INS_staddb:
@@ -4918,8 +4934,13 @@ void emitter::emitIns_R_R(
  *  Add an instruction referencing a register and two constants.
  */
 
-void emitter::emitIns_R_I_I(
-    instruction ins, emitAttr attr, regNumber reg, ssize_t imm1, ssize_t imm2, insOpts opt /* = INS_OPTS_NONE */)
+void emitter::emitIns_R_I_I(instruction ins,
+                            emitAttr    attr,
+                            regNumber   reg,
+                            ssize_t     imm1,
+                            ssize_t     imm2,
+                            insOpts     opt /* = INS_OPTS_NONE */
+                            DEBUGARG(size_t targetHandle /* = 0 */) DEBUGARG(GenTreeFlags gtFlags /* = 0 */))
 {
     emitAttr  size   = EA_SIZE(attr);
     insFormat fmt    = IF_NONE;
@@ -5005,6 +5026,11 @@ void emitter::emitIns_R_I_I(
     id->idInsFmt(fmt);
 
     id->idReg1(reg);
+
+#ifdef DEBUG
+    id->idDebugOnlyInfo()->idFlags     = gtFlags;
+    id->idDebugOnlyInfo()->idMemCookie = targetHandle;
+#endif
 
     dispIns(id);
     appendToCurIG(id);
@@ -12275,9 +12301,17 @@ void emitter::emitDispIns(
 
     emitDispInsOffs(offset, doffs);
 
-    /* Display the instruction hex code */
+    BYTE* pCodeRW = nullptr;
+    if (pCode != nullptr)
+    {
+        /* Display the instruction hex code */
+        assert(((pCode >= emitCodeBlock) && (pCode < emitCodeBlock + emitTotalHotCodeSize)) ||
+               ((pCode >= emitColdCodeBlock) && (pCode < emitColdCodeBlock + emitTotalColdCodeSize)));
 
-    emitDispInsHex(id, pCode, sz);
+        pCodeRW = pCode + writeableOffset;
+    }
+
+    emitDispInsHex(id, pCodeRW, sz);
 
     printf("      ");
 
@@ -12470,7 +12504,7 @@ void emitter::emitDispIns(
             }
             else
             {
-                emitDispCommentForHandle(id->idDebugOnlyInfo()->idMemCookie, id->idDebugOnlyInfo()->idFlags);
+                emitDispCommentForHandle(id->idDebugOnlyInfo()->idMemCookie, 0, id->idDebugOnlyInfo()->idFlags);
             }
             break;
 
@@ -12606,6 +12640,7 @@ void emitter::emitDispIns(
         case IF_DI_1A: // DI_1A   X.......shiiiiii iiiiiinnnnn.....      Rn       imm(i12,sh)
             emitDispReg(id->idReg1(), size, true);
             emitDispImmOptsLSL12(emitGetInsSC(id), id->idInsOpt());
+            emitDispCommentForHandle(0, id->idDebugOnlyInfo()->idMemCookie, id->idDebugOnlyInfo()->idFlags);
             break;
 
         case IF_DI_1B: // DI_1B   X........hwiiiii iiiiiiiiiiiddddd      Rd       imm(i16,hw)
@@ -12624,18 +12659,21 @@ void emitter::emitDispIns(
                     emitDispImm(hwi.immHW * 16, false);
                 }
             }
+            emitDispCommentForHandle(0, id->idDebugOnlyInfo()->idMemCookie, id->idDebugOnlyInfo()->idFlags);
             break;
 
         case IF_DI_1C: // DI_1C   X........Nrrrrrr ssssssnnnnn.....         Rn    imm(N,r,s)
             emitDispReg(id->idReg1(), size, true);
             bmi.immNRS = (unsigned)emitGetInsSC(id);
             emitDispImm(emitDecodeBitMaskImm(bmi, size), false);
+            emitDispCommentForHandle(0, id->idDebugOnlyInfo()->idMemCookie, id->idDebugOnlyInfo()->idFlags);
             break;
 
         case IF_DI_1D: // DI_1D   X........Nrrrrrr ssssss.....ddddd      Rd       imm(N,r,s)
             emitDispReg(encodingZRtoSP(id->idReg1()), size, true);
             bmi.immNRS = (unsigned)emitGetInsSC(id);
             emitDispImm(emitDecodeBitMaskImm(bmi, size), false);
+            emitDispCommentForHandle(0, id->idDebugOnlyInfo()->idMemCookie, id->idDebugOnlyInfo()->idFlags);
             break;
 
         case IF_DI_2A: // DI_2A   X.......shiiiiii iiiiiinnnnnddddd      Rd Rn    imm(i12,sh)
@@ -13540,17 +13578,28 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 }
                 else // no scale
                 {
-                    if (index->OperIs(GT_BFIZ) && index->isContained())
+                    if (index->OperIs(GT_BFIZ, GT_CAST) && index->isContained())
                     {
                         // Then load/store dataReg from/to [memBase + index*scale with sign/zero extension]
-                        GenTreeCast* cast = index->gtGetOp1()->AsCast();
+                        GenTreeCast* cast;
+                        int          cns;
+
+                        if (index->OperIs(GT_BFIZ))
+                        {
+                            cast = index->gtGetOp1()->AsCast();
+                            cns  = (int)index->gtGetOp2()->AsIntCon()->IconValue();
+                        }
+                        else
+                        {
+                            cast = index->AsCast();
+                            cns  = 0;
+                        }
 
                         // For now, this code only supports extensions from i32/u32
-                        assert(cast->isContained() && varTypeIsInt(cast->CastFromType()));
+                        assert(cast->isContained());
 
                         emitIns_R_R_R_Ext(ins, attr, dataReg, memBase->GetRegNum(), cast->CastOp()->GetRegNum(),
-                                          cast->IsUnsigned() ? INS_OPTS_UXTW : INS_OPTS_SXTW,
-                                          (int)index->gtGetOp2()->AsIntCon()->IconValue());
+                                          cast->IsUnsigned() ? INS_OPTS_UXTW : INS_OPTS_SXTW, cns);
                     }
                     else
                     {
@@ -14187,7 +14236,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case IF_LS_2A: // ldr, ldrsw, ldrb, ldrh, ldrsb, ldrsh, str, strb, strh (no immediate)
-                       // ldar, ldarb, ldarh, ldxr, ldxrb, ldxrh,
+                       // ldar, ldarb, ldarh, ldapr, ldaprb, ldaprh, ldxr, ldxrb, ldxrh,
                        // ldaxr, ldaxrb, ldaxrh, stlr, stlrb, stlrh
 
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
@@ -15696,8 +15745,7 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
         // Sometimes emitLastIns can be a mov with single register e.g. "mov reg, #imm". So ensure to
         // optimize formats that does vector-to-vector or scalar-to-scalar register movs.
         //
-        const bool isValidLastInsFormats =
-            ((lastInsfmt == IF_DV_3C) || (lastInsfmt == IF_DR_2G) || (lastInsfmt == IF_DR_2E));
+        const bool isValidLastInsFormats = ((lastInsfmt == IF_DV_3C) || (lastInsfmt == IF_DR_2E));
 
         if (isValidLastInsFormats && (prevDst == dst) && (prevSrc == src))
         {

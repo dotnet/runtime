@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 
@@ -114,7 +115,7 @@ namespace System.Net
 
         public CookieCollection Cookies
         {
-            get => _cookies ?? (_cookies = new CookieCollection());
+            get => _cookies ??= new CookieCollection();
             set => _cookies = value;
         }
 
@@ -204,8 +205,10 @@ namespace System.Net
             Headers.Add(name, value);
         }
 
-        public void AppendCookie(Cookie cookie!!)
+        public void AppendCookie(Cookie cookie)
         {
+            ArgumentNullException.ThrowIfNull(cookie);
+
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"cookie: {cookie}");
             Cookies.Add(cookie);
         }
@@ -259,7 +262,7 @@ namespace System.Net
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Exiting Set-Cookie: {Headers[HttpResponseHeader.SetCookie]} Set-Cookie2: {Headers[HttpKnownHeaderNames.SetCookie2]}");
         }
 
-        public void Redirect(string url)
+        public void Redirect([StringSyntax(StringSyntaxAttribute.Uri)] string url)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"url={url}");
             Headers[HttpResponseHeader.Location] = url;
@@ -267,8 +270,10 @@ namespace System.Net
             StatusDescription = HttpStatusDescription.Get(StatusCode)!;
         }
 
-        public void SetCookie(Cookie cookie!!)
+        public void SetCookie(Cookie cookie)
         {
+            ArgumentNullException.ThrowIfNull(cookie);
+
             Cookie newCookie = cookie.Clone();
             int added = Cookies.InternalAdd(newCookie, true);
 

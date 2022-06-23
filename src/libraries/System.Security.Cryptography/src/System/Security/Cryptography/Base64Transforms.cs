@@ -255,7 +255,7 @@ namespace System.Security.Cryptography
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int GetOutputSize(int bytesToTransform, Span<byte> tmpBuffer)
+        private static int GetOutputSize(int bytesToTransform, Span<byte> tmpBuffer)
         {
             int outputSize = Base64.GetMaxDecodedFromUtf8Length(bytesToTransform);
 
@@ -316,7 +316,7 @@ namespace System.Security.Cryptography
             ReturnToCryptoPool(transformBufferArray, transformBuffer.Length);
         }
 
-        private void ReturnToCryptoPool(byte[]? array, int clearSize)
+        private static void ReturnToCryptoPool(byte[]? array, int clearSize)
         {
             if (array != null)
             {

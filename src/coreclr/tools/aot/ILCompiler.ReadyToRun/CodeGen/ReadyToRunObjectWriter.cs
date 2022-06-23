@@ -206,7 +206,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode && _componentModule == null)
                 {
-                    headerBuilder = PEHeaderProvider.Create(Subsystem.Unknown, _nodeFactory.Target);
+                    headerBuilder = PEHeaderProvider.Create(Subsystem.Unknown, _nodeFactory.Target, _nodeFactory.ImageBase);
                     peIdProvider = new Func<IEnumerable<Blob>, BlobContentId>(content => BlobContentId.FromHash(CryptographicHashProvider.ComputeSourceHash(content)));
                     timeDateStamp = null;
                     r2rHeaderExportSymbol = _nodeFactory.Header;
@@ -214,7 +214,7 @@ namespace ILCompiler.DependencyAnalysis
                 else
                 {
                     PEReader inputPeReader = (_componentModule != null ? _componentModule.PEReader : _nodeFactory.CompilationModuleGroup.CompilationModuleSet.First().PEReader);
-                    headerBuilder = PEHeaderProvider.Create(inputPeReader.PEHeaders.PEHeader.Subsystem, _nodeFactory.Target);
+                    headerBuilder = PEHeaderProvider.Create(inputPeReader.PEHeaders.PEHeader.Subsystem, _nodeFactory.Target, _nodeFactory.ImageBase);
                     timeDateStamp = inputPeReader.PEHeaders.CoffHeader.TimeDateStamp;
                     r2rHeaderExportSymbol = null;
                 }
@@ -341,11 +341,11 @@ namespace ILCompiler.DependencyAnalysis
                     if (nativeDebugDirectoryEntryNode is not null)
                     {
                         Debug.Assert(_generatePdbFile);
-                        // Compute MD5 hash of the output image and store that in the native DebugDirectory entry
-                        using (var md5Hash = MD5.Create())
+                        // Compute hash of the output image and store that in the native DebugDirectory entry
+                        using (var hashAlgorithm = SHA256.Create())
                         {
                             peStream.Seek(0, SeekOrigin.Begin);
-                            byte[] hash = md5Hash.ComputeHash(peStream);
+                            byte[] hash = hashAlgorithm.ComputeHash(peStream);
                             byte[] rsdsEntry = nativeDebugDirectoryEntryNode.GenerateRSDSEntryData(hash);
 
                             int offsetToUpdate = r2rPeBuilder.GetSymbolFilePosition(nativeDebugDirectoryEntryNode);

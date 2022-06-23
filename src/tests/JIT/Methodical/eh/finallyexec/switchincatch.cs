@@ -4,13 +4,14 @@
 // switch in catch 
 
 using System;
+using Xunit;
 
-namespace strswitch
+namespace strswitch_switchincatch_cs
 {
     /// <summary>
     /// Summary description for Class1.
     /// </summary>
-    class Class1
+    public class Class1
     {
         private static TestUtil.TestLog testLog;
 
@@ -40,7 +41,8 @@ namespace strswitch
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             string[] s = { "one", "two", "three", "four", "five", "six" };
             //Start recording

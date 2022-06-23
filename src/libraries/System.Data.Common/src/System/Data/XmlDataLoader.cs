@@ -123,7 +123,7 @@ namespace System.Data
             }
         }
 
-        private int CountNonNSAttributes(XmlNode node)
+        private static int CountNonNSAttributes(XmlNode node)
         {
             int count = 0;
             for (int i = 0; i < node.Attributes!.Count; i++)
@@ -134,7 +134,7 @@ namespace System.Data
             return count;
         }
 
-        private string GetValueForTextOnlyColums(XmlNode? n)
+        private static string GetValueForTextOnlyColums(XmlNode? n)
         {
             string? value = null;
 
@@ -169,7 +169,7 @@ namespace System.Data
             return value;
         }
 
-        private string GetInitialTextFromNodes(ref XmlNode? n)
+        private static string GetInitialTextFromNodes(ref XmlNode? n)
         {
             string? value = null;
 
@@ -203,7 +203,7 @@ namespace System.Data
             return value;
         }
 
-        private DataColumn? GetTextOnlyColumn(DataRow row)
+        private static DataColumn? GetTextOnlyColumn(DataRow row)
         {
             DataColumnCollection columns = row.Table.Columns;
             int cCols = columns.Count;
@@ -236,7 +236,7 @@ namespace System.Data
             return true;
         }
 
-        private bool FExcludedNamespace(string ns)
+        private static bool FExcludedNamespace(string ns)
         {
             return ns.Equals(Keywords.XSD_XMLNS_NS);
         }
@@ -264,7 +264,7 @@ namespace System.Data
                 return false;
         }
 
-        internal bool IsTextLikeNode(XmlNodeType n)
+        internal static bool IsTextLikeNode(XmlNodeType n)
         {
             switch (n)
             {
@@ -282,7 +282,7 @@ namespace System.Data
             }
         }
 
-        internal bool IsTextOnly(DataColumn c)
+        internal static bool IsTextOnly(DataColumn c)
         {
             if (c.ColumnMapping != MappingType.SimpleContent)
                 return false;
@@ -513,9 +513,8 @@ namespace System.Data
 
             for (XmlNode? n = parentElement.FirstChild; n != null; n = n.NextSibling)
             {
-                if (n is XmlElement)
+                if (n is XmlElement e)
                 {
-                    XmlElement e = (XmlElement)n;
                     object? schema = _nodeToSchemaMap!.GetSchemaForNode(e, FIgnoreNamespace(e));
 
                     if (schema != null && schema is DataTable)
@@ -547,7 +546,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        private void SetRowValueFromXmlText(DataRow row, DataColumn col, string xmlText)
+        private static void SetRowValueFromXmlText(DataRow row, DataColumn col, string xmlText)
         {
             row[col] = col.ConvertXmlToObject(xmlText);
         }
@@ -1071,7 +1070,7 @@ namespace System.Data
                     // Check all columns
                     c = collection[i];                      // Get column for this index
 
-                    c[row._tempRecord] = null != foundColumns[i] ? foundColumns[i] : DBNull.Value;
+                    c[row._tempRecord] = foundColumns[i] ?? DBNull.Value;
                     // Set column to loaded value of to
                     // DBNull if value is missing.
                 }

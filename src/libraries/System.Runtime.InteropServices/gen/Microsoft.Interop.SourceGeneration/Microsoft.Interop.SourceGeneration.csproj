@@ -1,28 +1,26 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Nullable>enable</Nullable>
     <RootNamespace>Microsoft.Interop</RootNamespace>
-    <RunAnalyzers>true</RunAnalyzers>
+    <DefineConstants>$(DefineConstants);MICROSOFT_INTEROP_SOURCEGENERATION</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <!-- Code included from System.Runtime.InteropServices -->
   <ItemGroup>
-    <Compile Update="Resources.Designer.cs"
-             DependentUpon="Resources.resx"
-             DesignTime="True"
-             AutoGen="True" />
+    <Compile Include="$(CoreLibSharedDir)\System\Runtime\InteropServices\Marshalling\CustomTypeMarshallerKind.cs"
+             Link="Production\CustomTypeMarshallerKind.cs" />
+    <Compile Include="$(CoreLibSharedDir)\System\Runtime\InteropServices\Marshalling\CustomTypeMarshallerDirection.cs"
+             Link="Production\CustomTypeMarshallerDirection.cs" />
+    <Compile Include="$(CoreLibSharedDir)\System\Runtime\InteropServices\Marshalling\CustomTypeMarshallerFeatures.cs"
+             Link="Production\CustomTypeMarshallerFeatures.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\StringMarshalling.cs"
+             Link="Production\StringMarshalling.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Update="Resources.resx"
-                      SubType="Designer"
-                      LastGenOutput="Resources.Designer.cs"
-                      Generator="ResXFileCodeGenerator" />
-  </ItemGroup>
-
- <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="$(MicrosoftCodeAnalysisVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="$(MicrosoftCodeAnalysisVersion_4_X)" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="$(MicrosoftCodeAnalysisAnalyzersVersion)" PrivateAssets="all" />
   </ItemGroup>
 

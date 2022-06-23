@@ -7,7 +7,7 @@ using System.Security.Authentication;
 
 namespace System.Net.Security
 {
-    internal sealed partial class SslConnectionInfo
+    internal partial struct SslConnectionInfo
     {
         private void MapCipherSuite(TlsCipherSuite cipherSuite)
         {

@@ -21,6 +21,7 @@ namespace System.IO.Compression
         private ZipVersionNeededValues _versionMadeBySpecification;
         internal ZipVersionNeededValues _versionToExtract;
         private BitFlagValues _generalPurposeBitFlag;
+        private bool _isEncrypted;
         private CompressionMethodValues _storedCompressionMethod;
         private DateTimeOffset _lastModified;
         private long _compressedSize;
@@ -42,7 +43,6 @@ namespace System.IO.Compression
         private List<ZipGenericExtraField>? _lhUnknownExtraFields;
         private byte[] _fileComment;
         private readonly CompressionLevel? _compressionLevel;
-        private bool _hasUnicodeEntryNameOrComment;
 
         // Initializes a ZipArchiveEntry instance for an existing archive entry.
         internal ZipArchiveEntry(ZipArchive archive, ZipCentralDirectoryFileHeader cd)
@@ -56,6 +56,7 @@ namespace System.IO.Compression
             _versionMadeBySpecification = (ZipVersionNeededValues)cd.VersionMadeBySpecification;
             _versionToExtract = (ZipVersionNeededValues)cd.VersionNeededToExtract;
             _generalPurposeBitFlag = (BitFlagValues)cd.GeneralPurposeBitFlag;
+            _isEncrypted = (_generalPurposeBitFlag & BitFlagValues.IsEncrypted) != 0;
             CompressionMethod = (CompressionMethodValues)cd.CompressionMethod;
             _lastModified = new DateTimeOffset(ZipHelper.DosTimeToDateTime(cd.LastModified));
             _compressedSize = cd.CompressedSize;
@@ -84,8 +85,6 @@ namespace System.IO.Compression
             _fileComment = cd.FileComment;
 
             _compressionLevel = null;
-
-            _hasUnicodeEntryNameOrComment = (_generalPurposeBitFlag & BitFlagValues.UnicodeFileNameAndComment) != 0;
         }
 
         // Initializes a ZipArchiveEntry instance for a new archive entry with a specified compression level.
@@ -144,8 +143,6 @@ namespace System.IO.Compression
             {
                 _archive.AcquireArchiveStream(this);
             }
-
-            _hasUnicodeEntryNameOrComment = false;
         }
 
         /// <summary>
@@ -155,6 +152,11 @@ namespace System.IO.Compression
 
         [CLSCompliant(false)]
         public uint Crc32 => _crc32;
+
+        /// <summary>
+        /// Gets a value that indicates whether the entry is encrypted.
+        /// </summary>
+        public bool IsEncrypted => _isEncrypted;
 
         /// <summary>
         /// The compressed size of the entry. If the archive that the entry belongs to is in Create mode, attempts to get this property will always throw an exception. If the archive that the entry belongs to is in update mode, this property will only be valid if the entry has not been opened.
@@ -197,7 +199,11 @@ namespace System.IO.Compression
             set
             {
                 _fileComment = ZipHelper.GetEncodedTruncatedBytesFromString(value, _archive.EntryNameAndCommentEncoding, ushort.MaxValue, out bool isUTF8);
-                _hasUnicodeEntryNameOrComment |= isUTF8;
+
+                if (isUTF8)
+                {
+                    _generalPurposeBitFlag |= BitFlagValues.UnicodeFileNameAndComment;
+                }
             }
         }
 
@@ -218,10 +224,18 @@ namespace System.IO.Compression
                 ArgumentNullException.ThrowIfNull(value, nameof(FullName));
 
                 _storedEntryNameBytes = ZipHelper.GetEncodedTruncatedBytesFromString(
-                    value, _archive.EntryNameAndCommentEncoding, 0 /* No truncation */, out bool hasUnicodeEntryName);
+                    value, _archive.EntryNameAndCommentEncoding, 0 /* No truncation */, out bool isUTF8);
 
-                _hasUnicodeEntryNameOrComment |= hasUnicodeEntryName;
                 _storedEntryName = value;
+
+                if (isUTF8)
+                {
+                    _generalPurposeBitFlag |= BitFlagValues.UnicodeFileNameAndComment;
+                }
+                else
+                {
+                    _generalPurposeBitFlag &= ~BitFlagValues.UnicodeFileNameAndComment;
+                }
 
                 DetectEntryNameVersion();
             }
@@ -504,11 +518,6 @@ namespace System.IO.Compression
             {
                 extraFieldLength = (ushort)bigExtraFieldLength;
             }
-
-            if (_hasUnicodeEntryNameOrComment)
-                _generalPurposeBitFlag |= BitFlagValues.UnicodeFileNameAndComment;
-            else
-                _generalPurposeBitFlag &= ~BitFlagValues.UnicodeFileNameAndComment;
 
             writer.Write(ZipCentralDirectoryFileHeader.SignatureConstant);      // Central directory file header signature  (4 bytes)
             writer.Write((byte)_versionMadeBySpecification);                    // Version made by Specification (version)  (1 byte)
@@ -813,7 +822,7 @@ namespace System.IO.Compression
             {
                 // if we have a non-seekable stream, don't worry about sizes at all, and just set the right bit
                 // if we are using the data descriptor, then sizes and crc should be set to 0 in the header
-                if (_archive.Mode == ZipArchiveMode.Create && _archive.ArchiveStream.CanSeek == false && !isEmptyFile)
+                if (_archive.Mode == ZipArchiveMode.Create && _archive.ArchiveStream.CanSeek == false)
                 {
                     _generalPurposeBitFlag |= BitFlagValues.DataDescriptor;
                     zip64Used = false;
@@ -1087,14 +1096,10 @@ namespace System.IO.Compression
         /// </summary>
         private static string GetFileName_Windows(string path)
         {
-            int length = path.Length;
-            for (int i = length; --i >= 0;)
-            {
-                char ch = path[i];
-                if (ch == '\\' || ch == '/' || ch == ':')
-                    return path.Substring(i + 1);
-            }
-            return path;
+            int i = path.AsSpan().LastIndexOfAny('\\', '/', ':');
+            return i >= 0 ?
+                path.Substring(i + 1) :
+                path;
         }
 
         /// <summary>
@@ -1102,11 +1107,10 @@ namespace System.IO.Compression
         /// </summary>
         private static string GetFileName_Unix(string path)
         {
-            int length = path.Length;
-            for (int i = length; --i >= 0;)
-                if (path[i] == '/')
-                    return path.Substring(i + 1);
-            return path;
+            int i = path.LastIndexOf('/');
+            return i >= 0 ?
+                path.Substring(i + 1) :
+                path;
         }
 
         private sealed class DirectToArchiveWriterStream : Stream
@@ -1304,7 +1308,7 @@ namespace System.IO.Compression
         }
 
         [Flags]
-        internal enum BitFlagValues : ushort { DataDescriptor = 0x8, UnicodeFileNameAndComment = 0x800 }
+        internal enum BitFlagValues : ushort { IsEncrypted = 0x1, DataDescriptor = 0x8, UnicodeFileNameAndComment = 0x800 }
 
         internal enum CompressionMethodValues : ushort { Stored = 0x0, Deflate = 0x8, Deflate64 = 0x9, BZip2 = 0xC, LZMA = 0xE }
     }

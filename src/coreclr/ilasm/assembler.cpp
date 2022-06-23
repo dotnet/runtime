@@ -992,7 +992,7 @@ BOOL Assembler::EmitField(FieldDescriptor* pFD)
             }
         }
         //--------------------------------------------------------------------------------
-        // Set the the RVA to a dummy value.  later it will be fixed
+        // Set the RVA to a dummy value.  later it will be fixed
         // up to be something correct, but if we don't emit something
         // the size of the meta-data will not be correct
         if (pFD->m_rvaLabel)
@@ -1161,7 +1161,7 @@ void Assembler::EmitLocals(BinStr* sig)
             ARG_NAME_LIST   *pAN, *pList= getArgNameList();
             if(pList)
             {
-                VarDescr*       pVD;
+                VarDescr* pVD = NULL;
                 for(pAN=pList; pAN; pAN = pAN->pNext)
                 {
                     if(pAN->dwAttr == 0) pAN->dwAttr = m_pCurMethod->m_Locals.COUNT() +1;
@@ -1681,7 +1681,7 @@ void Assembler::EmitInstrBrTarget(Instr* instr, _In_ __nullterminated char* labe
     int offset=0;
     if (pLabel == NULL) // branching forward -- no optimization
     {
-        int pcrelsize = 1+(isShort(instr->opcode) ? 1 : 4); //size of the instruction plus argument
+        BYTE pcrelsize = 1+(isShort(instr->opcode) ? 1 : 4); //size of the instruction plus argument
         AddDeferredFixup(label, m_pCurOutputPos+1,
                                        (m_CurPC + pcrelsize), pcrelsize-1);
     }

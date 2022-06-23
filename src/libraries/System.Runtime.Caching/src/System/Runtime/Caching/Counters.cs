@@ -21,7 +21,7 @@ namespace System.Runtime.Caching
         private DiagnosticCounter[] _counters;
         private long[] _counterValues;
 
-        internal Counters(string cacheName!!) : base(EVENT_SOURCE_NAME_ROOT + cacheName)
+        internal Counters(string cacheName) : base(EVENT_SOURCE_NAME_ROOT + (cacheName ?? throw new ArgumentNullException(nameof(cacheName))))
         {
             InitDisposableMembers(cacheName);
         }
@@ -106,6 +106,7 @@ namespace System.Runtime.Caching
             Interlocked.Decrement(ref _counterValues[idx]);
         }
 #else
+#pragma warning disable CA1822
         internal Counters(string cacheName)
         {
         }
@@ -121,6 +122,7 @@ namespace System.Runtime.Caching
         internal void Decrement(CounterName name)
         {
         }
+#pragma warning restore CA1822
 #endif
     }
 }

@@ -9,21 +9,32 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
-        [GeneratedDllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
+        [LibraryImport(Libraries.Crypt32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CertGetCertificateContextProperty(
             SafeCertContextHandle pCertContext,
             CertContextPropId dwPropId,
             byte[]? pvData,
             ref int pcbData);
 
-        [GeneratedDllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
+        [LibraryImport(Libraries.Crypt32, SetLastError = true, EntryPoint = "CertGetCertificateContextProperty")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static unsafe partial bool CertGetCertificateContextPropertyPtr(
+            SafeCertContextHandle pCertContext,
+            CertContextPropId dwPropId,
+            byte* pvData,
+            ref int pcbData);
+
+        [LibraryImport(Libraries.Crypt32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CertGetCertificateContextProperty(
             SafeCertContextHandle pCertContext,
             CertContextPropId dwPropId,
             out IntPtr pvData,
             ref int pcbData);
 
-        [GeneratedDllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
+        [LibraryImport(Libraries.Crypt32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CertGetCertificateContextProperty(
             SafeCertContextHandle pCertContext,
             CertContextPropId dwPropId,

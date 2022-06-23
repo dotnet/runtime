@@ -15,8 +15,8 @@ namespace System.IO.Tests
             using var px = Process.Start(new ProcessStartInfo
             {
                 FileName = "stat",
-                ArgumentList = { isOSX ? "-f"    : "-c",
-                                 isOSX ? "%b %k" : "%b %B",
+                ArgumentList = { PlatformDetection.IsBsdLike ? "-f"    : "-c",
+                                 PlatformDetection.IsBsdLike ? "%b %k" : "%b %B",
                                  fileStream.Name },
                 RedirectStandardOutput = true
             });

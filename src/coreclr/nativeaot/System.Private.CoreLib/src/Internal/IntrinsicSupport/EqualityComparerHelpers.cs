@@ -62,11 +62,8 @@ namespace Internal.IntrinsicSupport
             if (RuntimeAugments.IsNullable(t))
             {
                 RuntimeTypeHandle nullableType = RuntimeAugments.GetNullableType(t);
-                if (ImplementsIEquatable(nullableType))
-                {
-                    openComparerType = typeof(NullableEqualityComparer<>).TypeHandle;
-                    comparerTypeArgument = nullableType;
-                }
+                openComparerType = typeof(NullableEqualityComparer<>).TypeHandle;
+                comparerTypeArgument = nullableType;
             }
             if (IsEnum(t))
             {
@@ -156,6 +153,7 @@ namespace Internal.IntrinsicSupport
         }
 
         private static bool StructOnlyNormalEquals<T>(T left, T right)
+            where T : notnull
         {
             return left.Equals(right);
         }

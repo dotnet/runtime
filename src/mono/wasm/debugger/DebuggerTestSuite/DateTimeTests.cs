@@ -8,7 +8,7 @@ using Xunit;
 
 namespace DebuggerTests
 {
-    public class DateTimeTests : DebuggerTestBase
+    public class DateTimeTests : DebuggerTests
     {
 
         [Theory]

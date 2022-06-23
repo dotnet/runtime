@@ -68,7 +68,7 @@
 %token UINT_ UINT8_ UINT16_ UINT32_ UINT64_  FLAGS_ CALLCONV_ MDTOKEN_
 %token OBJECT_ STRING_ NULLREF_
         /* misc keywords */
-%token DEFAULT_ CDECL_ VARARG_ STDCALL_ THISCALL_ FASTCALL_ CLASS_
+%token DEFAULT_ CDECL_ VARARG_ STDCALL_ THISCALL_ FASTCALL_ CLASS_ BYREFLIKE_
 %token TYPEDREF_ UNMANAGED_ FINALLY_ HANDLER_ CATCH_ FILTER_ FAULT_
 %token EXTENDS_ IMPLEMENTS_ TO_ AT_ TLS_ TRUE_ FALSE_ _INTERFACEIMPL
 
@@ -486,7 +486,9 @@ typarAttrib             : '+'                               { $$ = gpCovariant; 
                         | '-'                               { $$ = gpContravariant; }
                         | CLASS_                            { $$ = gpReferenceTypeConstraint; }
                         | VALUETYPE_                        { $$ = gpNotNullableValueTypeConstraint; }
+                        | BYREFLIKE_                        { $$ = gpAcceptByRefLike; }
                         | _CTOR                             { $$ = gpDefaultConstructorConstraint; }
+                        | FLAGS_ '(' int32 ')'              { $$ = (CorGenericParamAttr)$3; }
                         ;
 
 typarAttribs            : /* EMPTY */                       { $$ = 0; }
@@ -896,7 +898,7 @@ methodDecl              : _EMITBYTE int32                   { PASM->EmitByte($2)
                                                                 PASM->m_pCurMethod->m_dwExportOrdinal = $3;
                                                                 PASM->m_pCurMethod->m_szExportAlias = NULL;
                                                                 if(PASM->m_pCurMethod->m_wVTEntry == 0) PASM->m_pCurMethod->m_wVTEntry = 1;
-                                                                if(PASM->m_pCurMethod->m_wVTSlot  == 0) PASM->m_pCurMethod->m_wVTSlot = $3 + 0x8000;
+                                                                if(PASM->m_pCurMethod->m_wVTSlot  == 0) PASM->m_pCurMethod->m_wVTSlot = (WORD)($3 + 0x8000);
                                                               }
                                                               else
                                                                 PASM->report->warn("Duplicate .export directive, ignored\n");
@@ -906,7 +908,7 @@ methodDecl              : _EMITBYTE int32                   { PASM->EmitByte($2)
                                                                 PASM->m_pCurMethod->m_dwExportOrdinal = $3;
                                                                 PASM->m_pCurMethod->m_szExportAlias = $6;
                                                                 if(PASM->m_pCurMethod->m_wVTEntry == 0) PASM->m_pCurMethod->m_wVTEntry = 1;
-                                                                if(PASM->m_pCurMethod->m_wVTSlot  == 0) PASM->m_pCurMethod->m_wVTSlot = $3 + 0x8000;
+                                                                if(PASM->m_pCurMethod->m_wVTSlot  == 0) PASM->m_pCurMethod->m_wVTSlot = (WORD)($3 + 0x8000);
                                                               }
                                                               else
                                                                 PASM->report->warn("Duplicate .export directive, ignored\n");

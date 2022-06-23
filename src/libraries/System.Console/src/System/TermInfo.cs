@@ -498,9 +498,8 @@ namespace System
             /// <summary>Finds the null-terminator for a string that begins at the specified position.</summary>
             private static int FindNullTerminator(byte[] buffer, int pos)
             {
-                int termPos = pos;
-                while (termPos < buffer.Length && buffer[termPos] != '\0') termPos++;
-                return termPos;
+                int i = buffer.AsSpan(pos).IndexOf((byte)'\0');
+                return i >= 0 ? pos + i : buffer.Length;
             }
         }
 
@@ -559,8 +558,11 @@ namespace System
             /// <param name="format">The format string.</param>
             /// <param name="args">The arguments to the format string.</param>
             /// <returns>The formatted string.</returns>
-            public static string Evaluate(string format!!, params FormatParam[] args!!)
+            public static string Evaluate(string format, params FormatParam[] args)
             {
+                ArgumentNullException.ThrowIfNull(format);
+                ArgumentNullException.ThrowIfNull(args);
+
                 // Initialize the stack to use for processing.
                 Stack<FormatParam>? stack = t_cachedStack;
                 if (stack == null)
@@ -603,7 +605,7 @@ namespace System
                 // Create a StringBuilder to store the output of this processing.  We use the format's length as an
                 // approximation of an upper-bound for how large the output will be, though with parameter processing,
                 // this is just an estimate, sometimes way over, sometimes under.
-                StringBuilder output = StringBuilderCache.Acquire(format.Length);
+                var output = new ValueStringBuilder(stackalloc char[256]);
 
                 // Format strings support conditionals, including the equivalent of "if ... then ..." and
                 // "if ... then ... else ...", as well as "if ... then ... else ... then ..."
@@ -634,13 +636,13 @@ namespace System
                             output.Append('%');
                             break;
                         case 'c': // Pop the stack and output it as a char
-                            output.Append((char)stack.Pop().Int32);
+                            output.AppendSpanFormattable((char)stack.Pop().Int32);
                             break;
                         case 's': // Pop the stack and output it as a string
                             output.Append(stack.Pop().String);
                             break;
                         case 'd': // Pop the stack and output it as an integer
-                            output.Append(stack.Pop().Int32);
+                            output.AppendSpanFormattable(stack.Pop().Int32);
                             break;
                         case 'o':
                         case 'X':
@@ -684,7 +686,7 @@ namespace System
                         // Stack pushing operations
                         case 'p': // Push the specified parameter (1-based) onto the stack
                             pos++;
-                            Debug.Assert(format[pos] >= '0' && format[pos] <= '9');
+                            Debug.Assert(char.IsAsciiDigit(format[pos]));
                             stack.Push(args[format[pos] - '1']);
                             break;
                         case 'l': // Pop a string and push its length
@@ -695,7 +697,7 @@ namespace System
                             int intLit = 0;
                             while (format[pos] != '}')
                             {
-                                Debug.Assert(format[pos] >= '0' && format[pos] <= '9');
+                                Debug.Assert(char.IsAsciiDigit(format[pos]));
                                 intLit = (intLit * 10) + (format[pos] - '0');
                                 pos++;
                             }
@@ -819,7 +821,7 @@ namespace System
                             if (!sawIfConditional)
                             {
                                 stack.Push(1);
-                                return StringBuilderCache.GetStringAndRelease(output);
+                                return output.ToString();
                             }
 
                             // Otherwise, we're done processing the conditional in its entirety.
@@ -829,7 +831,7 @@ namespace System
                         case ';':
                             // Let our caller know why we're exiting, whether due to the end of the conditional or an else branch.
                             stack.Push(AsInt(format[pos] == ';'));
-                            return StringBuilderCache.GetStringAndRelease(output);
+                            return output.ToString();
 
                         // Anything else is an error
                         default:
@@ -838,7 +840,7 @@ namespace System
                 }
 
                 stack.Push(1);
-                return StringBuilderCache.GetStringAndRelease(output);
+                return output.ToString();
             }
 
             /// <summary>Converts an Int32 to a Boolean, with 0 meaning false and all non-zero values meaning true.</summary>
@@ -897,15 +899,15 @@ namespace System
             private static FormatParam[] GetDynamicOrStaticVariables(
                 char c, ref FormatParam[]? dynamicVars, ref FormatParam[]? staticVars, out int index)
             {
-                if (c >= 'A' && c <= 'Z')
+                if (char.IsAsciiLetterUpper(c))
                 {
                     index = c - 'A';
-                    return staticVars ?? (staticVars = new FormatParam[26]); // one slot for each letter of alphabet
+                    return staticVars ??= new FormatParam[26]; // one slot for each letter of alphabet
                 }
-                else if (c >= 'a' && c <= 'z')
+                else if (char.IsAsciiLetterLower(c))
                 {
                     index = c - 'a';
-                    return dynamicVars ?? (dynamicVars = new FormatParam[26]); // one slot for each letter of alphabet
+                    return dynamicVars ??= new FormatParam[26]; // one slot for each letter of alphabet
                 }
                 else throw new InvalidOperationException(SR.IO_TermInfoInvalid);
             }

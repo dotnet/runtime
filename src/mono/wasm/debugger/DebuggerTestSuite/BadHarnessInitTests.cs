@@ -12,11 +12,11 @@ using Xunit;
 
 namespace DebuggerTests
 {
-    public class BadHarnessInitTests : DebuggerTestBase
+    public class BadHarnessInitTests : DebuggerTests
     {
         public override async Task InitializeAsync() => await Task.CompletedTask;
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task InvalidInitCommands()
         {
             var bad_cmd_name = "non-existant.command";
@@ -30,7 +30,7 @@ namespace DebuggerTests
 
             await Ready();
 
-            var ae = await Assert.ThrowsAsync<ArgumentException>(async () => await insp.OpenSessionAsync(fn));
+            var ae = await Assert.ThrowsAsync<ArgumentException>(async () => await insp.OpenSessionAsync(fn, TestTimeout));
             Assert.Contains(bad_cmd_name, ae.Message);
         }
     }

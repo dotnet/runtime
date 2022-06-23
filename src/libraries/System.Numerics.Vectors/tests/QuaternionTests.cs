@@ -633,7 +633,7 @@ namespace System.Numerics.Tests
         {
             Quaternion a = new Quaternion(1.0f, 2.0f, 3.0f, 4.0f);
 
-            int expected = unchecked(a.X.GetHashCode() + a.Y.GetHashCode() + a.Z.GetHashCode() + a.W.GetHashCode());
+            int expected = HashCode.Combine(a.X, a.Y, a.Z, a.W);
             int actual = a.GetHashCode();
             Assert.Equal(expected, actual);
         }
@@ -949,7 +949,7 @@ namespace System.Numerics.Tests
 
         // A test for Quaternion comparison involving NaN values
         [Fact]
-        public void QuaternionEqualsNanTest()
+        public void QuaternionEqualsNaNTest()
         {
             Quaternion a = new Quaternion(float.NaN, 0, 0, 0);
             Quaternion b = new Quaternion(0, float.NaN, 0, 0);
@@ -976,11 +976,10 @@ namespace System.Numerics.Tests
             Assert.False(c.IsIdentity);
             Assert.False(d.IsIdentity);
 
-            // Counterintuitive result - IEEE rules for NaN comparison are weird!
-            Assert.False(a.Equals(a));
-            Assert.False(b.Equals(b));
-            Assert.False(c.Equals(c));
-            Assert.False(d.Equals(d));
+            Assert.True(a.Equals(a));
+            Assert.True(b.Equals(b));
+            Assert.True(c.Equals(c));
+            Assert.True(d.Equals(d));
         }
 
         // A test to make sure these types are blittable directly into GPU buffer memory layouts

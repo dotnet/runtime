@@ -236,7 +236,7 @@ namespace
                 ExtObjCxtCache* instMaybe = new ExtObjCxtCache();
 
                 // Attempt to set the global instance.
-                if (NULL != FastInterlockCompareExchangePointer(&g_Instance, instMaybe, NULL))
+                if (NULL != InterlockedCompareExchangeT(&g_Instance, instMaybe, NULL))
                     delete instMaybe;
             }
 
@@ -413,7 +413,7 @@ namespace
                 // Separate the wrapper from the tracker runtime prior to
                 // passing them onto the caller. This call is okay to make
                 // even if the instance isn't from the tracker runtime.
-                // We switch to Preemptive mode since seperating a wrapper
+                // We switch to Preemptive mode since separating a wrapper
                 // requires us to call out to non-runtime code which could
                 // call back into the runtime and/or trigger a GC.
                 GCX_PREEMP();
@@ -1166,12 +1166,11 @@ namespace InteropLibImports
         }
         CONTRACTL_END;
 
-        bool isValid = false;
         ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
 
-        isValid = ObjectHandleIsNull(objectHandle) != FALSE;
-
-        return isValid;
+        // A valid target is one that is not null.
+        bool isNotNull = ObjectHandleIsNull(objectHandle) == FALSE;
+        return isNotNull;
     }
 
     bool GetGlobalPeggingState() noexcept
@@ -1430,7 +1429,7 @@ extern "C" BOOL QCALLTYPE ComWrappers_TryGetOrCreateComInterfaceForObject(
 {
     QCALL_CONTRACT;
 
-    bool success;
+    bool success = false;
 
     BEGIN_QCALL;
 
@@ -1465,7 +1464,7 @@ extern "C" BOOL QCALLTYPE ComWrappers_TryGetOrCreateObjectForComInstance(
 
     _ASSERTE(ext != NULL);
 
-    bool success;
+    bool success = false;
 
     BEGIN_QCALL;
 

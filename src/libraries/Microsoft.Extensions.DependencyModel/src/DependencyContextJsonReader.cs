@@ -19,8 +19,10 @@ namespace Microsoft.Extensions.DependencyModel
 
         private readonly IDictionary<string, string> _stringPool = new Dictionary<string, string>();
 
-        public DependencyContext Read(Stream stream!!)
+        public DependencyContext Read(Stream stream)
         {
+            ThrowHelper.ThrowIfNull(stream);
+
             ArraySegment<byte> buffer = ReadToEnd(stream);
             try
             {
@@ -145,7 +147,7 @@ namespace Microsoft.Extensions.DependencyModel
                     case DependencyContextStrings.RuntimeTargetPropertyName:
                         ReadRuntimeTarget(ref reader, out runtimeTargetName, out runtimeSignature);
                         break;
-                    case DependencyContextStrings.CompilationOptionsPropertName:
+                    case DependencyContextStrings.CompilationOptionsPropertyName:
                         compilationOptions = ReadCompilationOptions(ref reader);
                         break;
                     case DependencyContextStrings.TargetsPropertyName:

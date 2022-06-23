@@ -50,10 +50,6 @@ public:
                                 UINT32 timeout,
                                 CLR_BOOL executeOnlyOnce,
                                 Object* registeredWaitObjectUNSAFE);
-#ifdef TARGET_WINDOWS // the IO completion thread pool is currently only available on Windows
-    static FCDECL1(void, CorQueueWaitCompletion, Object* completeWaitWorkItemObjectUNSAFE);
-#endif
-
 
     static FCDECL1(FC_BOOL_RET, CorPostQueuedCompletionStatus, LPOVERLAPPED lpOverlapped);
     static FCDECL2(FC_BOOL_RET, CorUnregisterWait, LPVOID WaitHandle, Object * objectToNotify);

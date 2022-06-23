@@ -6,8 +6,6 @@
  */
 //
 
-//
-
 #include "common.h"
 
 #include "frames.h"
@@ -26,8 +24,6 @@
 
 #include "exceptionhandling.h"
 #include "virtualcallstub.h"
-
-
 
 #if !defined(DACCESS_COMPILE)
 
@@ -199,7 +195,7 @@ RtlVirtualUnwind_Worker (
     // that the debugger is attched when we get here.
     _ASSERTE(CORDebuggerAttached());
 
-    LOG((LF_CORDB, LL_EVERYTHING, "RVU_CBSW: in RtlVitualUnwind_ClrDbgSafeWorker, ControlPc=0x%p\n", ControlPc));
+    LOG((LF_CORDB, LL_EVERYTHING, "RVU_CBSW: in RtlVirtualUnwind_ClrDbgSafeWorker, ControlPc=0x%p\n", ControlPc));
 
     BOOL     InEpilogue = FALSE;
     BOOL     HasManagedBreakpoint = FALSE;
@@ -630,7 +626,7 @@ AdjustContextForVirtualStub(
         return FALSE;
     }
 
-    PCODE callsite = *dac_cast<PTR_PCODE>(GetSP(pContext)); 
+    PCODE callsite = *dac_cast<PTR_PCODE>(GetSP(pContext));
     if (pExceptionRecord != NULL)
     {
         pExceptionRecord->ExceptionAddress = (PVOID)callsite;
@@ -642,4 +638,3 @@ AdjustContextForVirtualStub(
 }
 
 #endif
-

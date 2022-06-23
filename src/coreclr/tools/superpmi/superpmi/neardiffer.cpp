@@ -1141,12 +1141,36 @@ bool NearDiffer::compare(MethodContext* mc, CompileResult* cr1, CompileResult* c
              coldCodeSize_2, roDataSize_2, xcptnsCount_2, flag_2, hotCodeBlock_2, coldCodeBlock_2, roDataBlock_2,
              orig_hotCodeBlock_2, orig_coldCodeBlock_2, orig_roDataBlock_2);
 
-    cr1->applyRelocs(hotCodeBlock_1, hotCodeSize_1, orig_hotCodeBlock_1);
-    cr2->applyRelocs(hotCodeBlock_2, hotCodeSize_2, orig_hotCodeBlock_2);
-    cr1->applyRelocs(coldCodeBlock_1, coldCodeSize_1, orig_coldCodeBlock_1);
-    cr2->applyRelocs(coldCodeBlock_2, coldCodeSize_2, orig_coldCodeBlock_2);
-    cr1->applyRelocs(roDataBlock_1, roDataSize_1, orig_roDataBlock_1);
-    cr2->applyRelocs(roDataBlock_2, roDataSize_2, orig_roDataBlock_2);
+    RelocContext rc;
+    rc.mc                      = mc;
+
+    rc.hotCodeAddress          = (size_t)hotCodeBlock_1;
+    rc.hotCodeSize             = hotCodeSize_1;
+    rc.coldCodeAddress         = (size_t)coldCodeBlock_1;
+    rc.coldCodeSize            = coldCodeSize_1;
+    rc.roDataAddress           = (size_t)roDataBlock_1;
+    rc.roDataSize              = roDataSize_1;
+    rc.originalHotCodeAddress  = (size_t)orig_hotCodeBlock_1;
+    rc.originalColdCodeAddress = (size_t)orig_coldCodeBlock_1;
+    rc.originalRoDataAddress   = (size_t)orig_roDataBlock_1;
+
+    cr1->applyRelocs(&rc, hotCodeBlock_1, hotCodeSize_1, orig_hotCodeBlock_1);
+    cr1->applyRelocs(&rc, coldCodeBlock_1, coldCodeSize_1, orig_coldCodeBlock_1);
+    cr1->applyRelocs(&rc, roDataBlock_1, roDataSize_1, orig_roDataBlock_1);
+
+    rc.hotCodeAddress          = (size_t)hotCodeBlock_2;
+    rc.hotCodeSize             = hotCodeSize_2;
+    rc.coldCodeAddress         = (size_t)coldCodeBlock_2;
+    rc.coldCodeSize            = coldCodeSize_2;
+    rc.roDataAddress           = (size_t)roDataBlock_2;
+    rc.roDataSize              = roDataSize_2;
+    rc.originalHotCodeAddress  = (size_t)orig_hotCodeBlock_2;
+    rc.originalColdCodeAddress = (size_t)orig_coldCodeBlock_2;
+    rc.originalRoDataAddress   = (size_t)orig_roDataBlock_2;
+
+    cr2->applyRelocs(&rc, hotCodeBlock_2, hotCodeSize_2, orig_hotCodeBlock_2);
+    cr2->applyRelocs(&rc, coldCodeBlock_2, coldCodeSize_2, orig_coldCodeBlock_2);
+    cr2->applyRelocs(&rc, roDataBlock_2, roDataSize_2, orig_roDataBlock_2);
 
     if (!compareCodeSection(mc, cr1, cr2, hotCodeBlock_1, hotCodeSize_1, roDataBlock_1, roDataSize_1,
                             orig_hotCodeBlock_1, orig_roDataBlock_1, orig_coldCodeBlock_1, coldCodeSize_1,

@@ -466,10 +466,7 @@ namespace System.Transactions
             TimeSpan scopeTimeout,
             bool interopModeSpecified)
         {
-            if (null == transactionToUse)
-            {
-                throw new ArgumentNullException(nameof(transactionToUse));
-            }
+            ArgumentNullException.ThrowIfNull(transactionToUse);
 
             ValidateScopeTimeout(nameof(scopeTimeout), scopeTimeout);
 
@@ -1131,7 +1128,7 @@ namespace System.Transactions
         // ValidateInteropOption
         //
         // Validate a given interop Option
-        private void ValidateInteropOption(EnterpriseServicesInteropOption interopOption)
+        private static void ValidateInteropOption(EnterpriseServicesInteropOption interopOption)
         {
             if (interopOption < EnterpriseServicesInteropOption.None || interopOption > EnterpriseServicesInteropOption.Full)
             {
@@ -1143,7 +1140,7 @@ namespace System.Transactions
         // ValidateScopeTimeout
         //
         // Scope timeouts are not governed by MaxTimeout and therefore need a special validate function
-        private void ValidateScopeTimeout(string? paramName, TimeSpan scopeTimeout)
+        private static void ValidateScopeTimeout(string? paramName, TimeSpan scopeTimeout)
         {
             if (scopeTimeout < TimeSpan.Zero)
             {

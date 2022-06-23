@@ -10,10 +10,10 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [GeneratedDllImport(Libraries.Kernel32, CharSet = CharSet.Ansi)]
-        public static partial IntPtr GetProcAddress(SafeLibraryHandle hModule, string lpProcName);
+        [LibraryImport(Libraries.Kernel32)]
+        public static partial IntPtr GetProcAddress(SafeLibraryHandle hModule, [MarshalAs(UnmanagedType.LPStr)] string lpProcName);
 
-        [GeneratedDllImport(Libraries.Kernel32, CharSet = CharSet.Ansi)]
-        public static partial IntPtr GetProcAddress(IntPtr hModule, string lpProcName);
+        [LibraryImport(Libraries.Kernel32)]
+        public static partial IntPtr GetProcAddress(IntPtr hModule, [MarshalAs(UnmanagedType.LPStr)] string lpProcName);
     }
 }

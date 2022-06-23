@@ -65,6 +65,8 @@ public class MonoRunner extends Instrumentation
             argsToForward = argsList.toArray(new String[argsList.size()]);
         }
 
+%EnvVariables%
+
         super.onCreate(arguments);
         start();
     }

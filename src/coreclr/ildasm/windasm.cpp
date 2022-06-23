@@ -63,6 +63,7 @@ extern char*                    g_pszObjFileName;
 extern FILE*                    g_pFile;
 
 extern BOOL                 g_fLimitedVisibility;
+extern BOOL                 g_fR2RNativeManifestMetadata;
 extern BOOL                 g_fHidePub;
 extern BOOL                 g_fHidePriv;
 extern BOOL                 g_fHideFam;
@@ -244,6 +245,11 @@ int ProcessOneArg(_In_ __nullterminated char* szArg, _Out_ char** ppszObjFileNam
         {
             g_fLimitedVisibility = TRUE;
             g_fHidePub = FALSE;
+        }
+        else if (_stricmp(szOpt, "r2r") == 0)
+        {
+             g_fR2RNativeManifestMetadata = TRUE;
+             g_fDumpMetaInfo = TRUE;
         }
         else if (_stricmp(szOpt, "pre") == 0)
         {

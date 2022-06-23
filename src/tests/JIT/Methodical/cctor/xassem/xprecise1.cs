@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // static method
 using System;
+using Xunit;
 namespace Precise {
-class Driver_xprecise1
+public class Driver_xprecise1
 {
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 		try {
 			byte b = 0xF;

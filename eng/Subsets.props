@@ -27,12 +27,13 @@
        flavor is used to decide when to build the hosts and installers. -->
   <PropertyGroup>
     <PrimaryRuntimeFlavor>CoreCLR</PrimaryRuntimeFlavor>
-    <PrimaryRuntimeFlavor Condition="'$(TargetArchitecture)' == 's390x' or '$(TargetArchitecture)' == 'armv6'">Mono</PrimaryRuntimeFlavor>
+    <PrimaryRuntimeFlavor Condition="'$(TargetArchitecture)' == 's390x' or '$(TargetArchitecture)' == 'ppc64le' or '$(TargetArchitecture)' == 'armv6' or '$(TargetsLinuxBionic)' == 'true'">Mono</PrimaryRuntimeFlavor>
   </PropertyGroup>
 
   <PropertyGroup>
     <DefaultSubsets>clr+mono+libs+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsMobile)' == 'true'">mono+libs+packs</DefaultSubsets>
+    <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true'">mono+libs+host+packs</DefaultSubsets>
     <!-- In source build, mono is only supported as primary runtime flavor. On Windows mono is supported for x86/x64 only. -->
     <DefaultSubsets Condition="('$(DotNetBuildFromSource)' == 'true' and '$(PrimaryRuntimeFlavor)' != 'Mono') or ('$(TargetOS)' == 'windows' and '$(TargetArchitecture)' != 'x86' and '$(TargetArchitecture)' != 'x64')">clr+libs+host+packs</DefaultSubsets>
   </PropertyGroup>
@@ -58,7 +59,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <DefaultCoreClrSubsets>clr.native+linuxdac+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs</DefaultCoreClrSubsets>
+    <DefaultCoreClrSubsets>clr.native+linuxdac+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
     <!-- Even on platforms that do not support the CoreCLR runtime, we still want to build ilasm/ildasm. -->
     <DefaultCoreClrSubsets Condition="'$(PrimaryRuntimeFlavor)' != 'CoreCLR'">clr.iltools+clr.packages</DefaultCoreClrSubsets>
 
@@ -71,8 +72,7 @@
     <DefaultLibrariesSubsets Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or
                                         '$(BuildTargetFramework)' == '' or
                                         '$(BuildAllConfigurations)' == 'true'">libs.native+</DefaultLibrariesSubsets>
-    <DefaultLibrariesSubsets>$(DefaultLibrariesSubsets)libs.ref+libs.src</DefaultLibrariesSubsets>
-    <DefaultLibrariesSubsets Condition="'$(DotNetBuildFromSource)' != 'true'">$(DefaultLibrariesSubsets)+libs.pretest</DefaultLibrariesSubsets>
+    <DefaultLibrariesSubsets>$(DefaultLibrariesSubsets)libs.sfx+libs.oob+libs.pretest</DefaultLibrariesSubsets>
 
     <DefaultHostSubsets>host.native+host.tools</DefaultHostSubsets>
     <DefaultHostSubsets Condition="'$(DotNetBuildFromSource)' != 'true'">$(DefaultHostSubsets)+host.pkg+host.tests</DefaultHostSubsets>
@@ -108,6 +108,7 @@
     <SubsetName Include="Clr.Native" Description="All CoreCLR native non-test components, including the runtime, jits, and other native tools. Includes clr.hosts, clr.runtime, clr.jit, clr.alljits, clr.paltests, clr.iltools, clr.nativeaotruntime, clr.spmi." />
     <SubsetName Include="Clr.NativeAotLibs" Description="The CoreCLR native AOT CoreLib and other low level class libraries." />
     <SubsetName Include="Clr.NativeAotRuntime" Description="The stripped-down CoreCLR native AOT runtime." />
+    <SubsetName Include="Clr.CrossArchTools" Description="The cross-targetted CoreCLR tools." />
     <SubsetName Include="Clr.PalTests" OnDemand="true" Description="The CoreCLR PAL tests." />
     <SubsetName Include="Clr.PalTestList" OnDemand="true" Description="Generate the list of the CoreCLR PAL tests. When using the command line, use Clr.PalTests instead." />
     <SubsetName Include="Clr.Hosts" Description="The CoreCLR corerun test host." />
@@ -144,10 +145,11 @@
     <!-- Libs -->
     <SubsetName Include="Libs" Description="The libraries native part, refs and source assemblies, test infra and packages, but NOT the tests (use Libs.Tests to request those explicitly). Equivalent to: $(DefaultLibrariesSubsets)" />
     <SubsetName Include="Libs.Native" Description="The native libraries used in the shared framework." />
-    <SubsetName Include="Libs.Ref" Description="The managed reference libraries." />
-    <SubsetName Include="Libs.Src" Description="The managed implementation libraries." />
+    <SubsetName Include="Libs.Sfx" Description="The managed shared framework libraries." />
+    <SubsetName Include="Libs.Oob" Description="The managed out-of-band libraries." />
+    <SubsetName Include="Libs.Ref" OnDemand="true" Description="The managed reference libraries." />
+    <SubsetName Include="Libs.Src" OnDemand="true" Description="The managed implementation libraries." />
     <SubsetName Include="Libs.PreTest" Description="Test assets which are necessary to run tests." />
-    <SubsetName Include="Libs.Packages" Description="The projects that produce NuGet packages from libraries." />
     <SubsetName Include="Libs.Tests" OnDemand="true" Description="The test projects. Note that building this doesn't execute tests: you must also pass the '-test' argument." />
 
     <!-- Packs -->
@@ -159,6 +161,7 @@
     <!-- Utility -->
     <SubsetName Include="publish" OnDemand="true" Description="Generate asset manifests and prepare to publish to BAR." />
     <SubsetName Include="RegenerateDownloadTable" OnDemand="true" Description="Regenerates the nightly build download table" />
+    <SubsetName Include="RegenerateThirdPartyNotices" OnDemand="true" Description="Regenerates the THIRD-PARTY-NOTICES.TXT file based on other repos' TPN files." />
 
   </ItemGroup>
 
@@ -218,19 +221,70 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(ClrRuntimeBuildSubsets)' != ''">
-    <ProjectToBuild Include="$(CoreClrProjectRoot)runtime.proj" AdditionalProperties="%(AdditionalProperties);$(ClrRuntimeBuildSubsets)" Category="clr" />
+    <ProjectToBuild
+      Include="$(CoreClrProjectRoot)runtime.proj"
+      AdditionalProperties="%(AdditionalProperties);$(ClrRuntimeBuildSubsets)"
+      Category="clr" />
+  </ItemGroup>
+
+  <!-- Build the CoreCLR cross-arch tools when we're doing a cross-architecture build and either we're building any CoreCLR native tools for platforms CoreCLR fully supports or when someone explicitly requests them -->
+  <ItemGroup Condition="(('$(ClrRuntimeBuildSubsets)' != '' and '$(PrimaryRuntimeFlavor)' == 'CoreCLR' and '$(TargetsMobile)' != 'true') or $(_subset.Contains('+clr.crossarchtools+'))) and '$(BuildArchitecture)' != '$(TargetArchitecture)'">
+    <ProjectToBuild
+      Include="$(CoreClrProjectRoot)runtime.proj"
+      AdditionalProperties="%(AdditionalProperties);
+                            ClrCrossComponentsSubset=true;
+                            HostArchitecture=$(BuildArchitecture);
+                            PgoInstrument=false;
+                            NoPgoOptimize=true;
+                            CrossBuild=false;
+                            CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1"
+      Category="clr" />
+  </ItemGroup>
+
+  <ItemGroup Condition="(('$(ClrRuntimeBuildSubsets)' != '' and '$(PrimaryRuntimeFlavor)' == 'CoreCLR' and '$(TargetsMobile)' != 'true') or $(_subset.Contains('+clr.crossarchtools+'))) and $([MSBuild]::IsOsPlatform(Windows)) and '$(TargetArchitecture)' == 'arm' and '$(BuildArchitecture)' == 'x64'">
+    <ProjectToBuild
+      Include="$(CoreClrProjectRoot)runtime.proj"
+      AdditionalProperties="%(AdditionalProperties);
+                            ClrCrossComponentsSubset=true;
+                            HostArchitecture=x86;
+                            PgoInstrument=false;
+                            NoPgoOptimize=true;
+                            CrossBuild=false;
+                            CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1"
+      Category="clr" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.paltestlist+'))">
     <ProjectToBuild Include="$(CoreClrProjectRoot)pal/tests/palsuite/producepaltestlist.proj" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <CrossDacHostArch>x64</CrossDacHostArch>
+    <CrossDacHostArch Condition="'$(TargetArchitecture)' == 'arm'">x86</CrossDacHostArch>
+  </PropertyGroup>
+
   <ItemGroup Condition="$(_subset.Contains('+linuxdac+')) and $([MSBuild]::IsOsPlatform(Windows)) and '$(TargetArchitecture)' != 'x86'">
-    <ProjectToBuild Include="$(CoreClrProjectRoot)runtime.proj" AdditionalProperties="%(AdditionalProperties);$(ClrDefaultRuntimeBuildSubsets);CrossDac=linux" Category="clr" />
+    <ProjectToBuild
+      Include="$(CoreClrProjectRoot)runtime.proj"
+      AdditionalProperties="%(AdditionalProperties);
+                            ClrCrossComponentsSubset=true;
+                            HostArchitecture=$(CrossDacHostArch);
+                            PgoInstrument=false;
+                            NoPgoOptimize=true;
+                            TargetOS=Linux;
+                            CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1" Category="clr" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+alpinedac+')) and $([MSBuild]::IsOsPlatform(Windows)) and '$(TargetArchitecture)' != 'x86'">
-    <ProjectToBuild Include="$(CoreClrProjectRoot)runtime.proj" AdditionalProperties="%(AdditionalProperties);$(ClrDefaultRuntimeBuildSubsets);CrossDac=alpine" Category="clr" />
+    <ProjectToBuild
+      Include="$(CoreClrProjectRoot)runtime.proj"
+      AdditionalProperties="%(AdditionalProperties);
+                            ClrCrossComponentsSubset=true;
+                            HostArchitecture=$(CrossDacHostArch);
+                            PgoInstrument=false;
+                            NoPgoOptimize=true;
+                            TargetOS=alpine;
+                            CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1" Category="clr" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+crossdacpack+'))">
@@ -258,6 +312,8 @@
       Test="true" Category="clr" Condition="'$(DotNetBuildFromSource)' != 'true'"/>
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.Compiler.Tests\ILCompiler.Compiler.Tests.csproj"
       Test="true" Category="clr" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(NativeAotSupported)' == 'true'"/>
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\Mono.Linker.Tests\Mono.Linker.Tests.csproj"
+      Test="true" Category="clr" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(NativeAotSupported)' == 'true'"/>
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.nativecorelib+'))">
@@ -277,7 +333,7 @@
   </ItemGroup>
 
   <!-- Mono sets -->
-  <ItemGroup Condition="$(_subset.Contains('+mono.llvm+')) or $(_subset.Contains('+mono.aotcross+')) or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'Browser'">
+  <ItemGroup Condition="$(_subset.Contains('+mono.llvm+')) or $(_subset.Contains('+mono.aotcross+')) or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'Browser' or '$(TargetsLinuxBionic)' == 'true'">
     <ProjectToBuild Include="$(MonoProjectRoot)llvm\llvm-init.proj" Category="mono" />
   </ItemGroup>
 
@@ -322,12 +378,20 @@
     <ProjectToBuild Include="$(SharedNativeRoot)libs\build-native.proj" Category="libs" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+libs.ref+'))">
-    <ProjectToBuild Include="$(LibrariesProjectRoot)ref.proj" Category="libs" />
+  <ItemGroup Condition="$(_subset.Contains('+libs.ref+')) or $(_subset.Contains('+libs.src+')) or $(_subset.Contains('+libs.sfx+'))">
+    <ProjectToBuild Include="$(LibrariesProjectRoot)sfx.proj"
+                    Category="libs"
+                    Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or
+                               '$(BuildTargetFramework)' == '' or
+                               '$(BuildAllConfigurations)' == 'true'">
+      <AdditionalProperties Condition="$(_subset.Contains('+libs.ref+'))">%(AdditionalProperties);RefOnly=true</AdditionalProperties>
+    </ProjectToBuild>
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+libs.src+'))">
-    <ProjectToBuild Include="$(LibrariesProjectRoot)src.proj" Category="libs" />
+  <ItemGroup Condition="$(_subset.Contains('+libs.ref+')) or $(_subset.Contains('+libs.src+')) or $(_subset.Contains('+libs.oob+'))">
+    <ProjectToBuild Include="$(LibrariesProjectRoot)oob.proj" Category="libs">
+      <AdditionalProperties Condition="$(_subset.Contains('+libs.ref+'))">%(AdditionalProperties);RefOnly=true</AdditionalProperties>
+    </ProjectToBuild>
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+mono.wasmruntime+'))">
@@ -396,6 +460,10 @@
   <!-- Utility -->
   <ItemGroup Condition="$(_subset.Contains('+regeneratedownloadtable+'))">
     <ProjectToBuild Include="$(RepositoryEngineeringDir)regenerate-download-table.proj" Pack="true" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('regeneratethirdpartynotices'))">
+    <ProjectToBuild Include="$(RepositoryEngineeringDir)regenerate-third-party-notices.proj" Pack="false" BuildInParallel="false" />
   </ItemGroup>
 
   <!-- Set default configurations. -->

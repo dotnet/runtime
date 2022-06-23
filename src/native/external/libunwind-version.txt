@@ -1,0 +1,14 @@
+v1.6.2
+https://github.com/libunwind/libunwind/commit/b3ca1b59a795a617877c01fe5d299ab7a07ff29d
+
+Reapply changes from https://github.com/dotnet/runtime/commit/1b5719c2e3dde393531eaeb5b5cde05dabeef5b8
+Apply https://github.com/libunwind/libunwind/pull/317
+Apply https://github.com/libunwind/libunwind/pull/330
+Apply https://github.com/libunwind/libunwind/pull/333
+Apply https://github.com/libunwind/libunwind/pull/342
+Apply https://github.com/libunwind/libunwind/pull/353
+Apply https://github.com/libunwind/libunwind/pull/358
+Apply https://github.com/libunwind/libunwind/commit/7cf6e84bb86ff5840896b4910ccc3865d4f00ffb
+
+For LoongArch64:
+Apply https://github.com/libunwind/libunwind/pull/316 and https://github.com/libunwind/libunwind/pull/322

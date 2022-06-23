@@ -10,11 +10,11 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
-        [GeneratedDllImport(Interop.Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.Crypt32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CertFreeCertificateContext(IntPtr pCertContext);
 
-        [GeneratedDllImport(Interop.Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.Crypt32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CertVerifyCertificateChainPolicy(
             IntPtr pszPolicyOID,

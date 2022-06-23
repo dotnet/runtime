@@ -103,6 +103,9 @@ REGDEF(STK,    16+XMMBASE,  0x0000,       "STK"  )
 #elif defined(TARGET_ARM64)
  #include "registerarm64.h"
 
+#elif defined(TARGET_LOONGARCH64)
+ #include "registerloongarch64.h"
+
 #else
   #error Unsupported or unset target architecture
 #endif // target type

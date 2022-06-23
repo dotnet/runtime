@@ -152,11 +152,14 @@ namespace System.IO
             => new List<string>(InternalEnumeratePaths(path, searchPattern, SearchTarget.Both, enumerationOptions)).ToArray();
 
         internal static IEnumerable<string> InternalEnumeratePaths(
-            string path!!,
-            string searchPattern!!,
+            string path,
+            string searchPattern,
             SearchTarget searchTarget,
             EnumerationOptions options)
         {
+            ArgumentNullException.ThrowIfNull(path);
+            ArgumentNullException.ThrowIfNull(searchPattern);
+
             FileSystemEnumerableFactory.NormalizeInputs(ref path, ref searchPattern, options.MatchType);
 
             return searchTarget switch
@@ -201,8 +204,10 @@ namespace System.IO
         public static IEnumerable<string> EnumerateFileSystemEntries(string path, string searchPattern, EnumerationOptions enumerationOptions)
             => InternalEnumeratePaths(path, searchPattern, SearchTarget.Both, enumerationOptions);
 
-        public static string GetDirectoryRoot(string path!!)
+        public static string GetDirectoryRoot(string path)
         {
+            ArgumentNullException.ThrowIfNull(path);
+
             string fullPath = Path.GetFullPath(path);
             string root = Path.GetPathRoot(fullPath)!;
 

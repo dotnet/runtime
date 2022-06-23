@@ -390,7 +390,7 @@ namespace System.Text.Json.Serialization.Tests
             void ITestObject.Initialize(INestedObject nested)
             {
                 nested.Initialize();
-                A = new() { { "a", (TNested)nested }, { "b", (TNested)nested } };
+                A = new Dictionary<string, TNested>() { { "a", (TNested)nested }, { "b", (TNested)nested } };
             }
 
             void ITestObject.Verify()

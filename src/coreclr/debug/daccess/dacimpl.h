@@ -822,7 +822,8 @@ class ClrDataAccess
       public ISOSDacInterface8,
       public ISOSDacInterface9,
       public ISOSDacInterface10,
-      public ISOSDacInterface11
+      public ISOSDacInterface11,
+      public ISOSDacInterface12
 {
 public:
     ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget=0);
@@ -1206,6 +1207,12 @@ public:
         CLRDATA_ADDRESS objAddr,
         CLRDATA_ADDRESS *taggedMemory,
         size_t *taggedMemorySizeInBytes);
+
+    // ISOSDacInterface12
+    virtual HRESULT STDMETHODCALLTYPE GetGlobalAllocationContext( 
+        CLRDATA_ADDRESS *allocPtr,
+        CLRDATA_ADDRESS *allocLimit);
+
     //
     // ClrDataAccess.
     //
@@ -1390,6 +1397,7 @@ public:
     ICorDebugMutableDataTarget * m_pMutableTarget;
 
     TADDR m_globalBase;
+    DacGlobals m_dacGlobals;
     DacInstanceManager m_instances;
     ULONG32 m_instanceAge;
     bool m_debugMode;
@@ -1420,8 +1428,8 @@ public:
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
 private:
-    // Read the DAC table and initialize g_dacGlobals
-    HRESULT GetDacGlobals();
+    // Read the DAC table and initialize m_dacGlobals
+    HRESULT GetDacGlobalValues();
 
     // Verify the target mscorwks.dll matches the version expected
     HRESULT VerifyDlls();
@@ -1477,8 +1485,6 @@ private:
     TADDR DACGetManagedObjectWrapperFromCCW(CLRDATA_ADDRESS ccwPtr);
     HRESULT DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr, OBJECTREF* objRef);
 #endif
-
-    static LONG s_procInit;
 
 protected:
 #ifdef FEATURE_COMWRAPPERS
@@ -1806,11 +1812,8 @@ private:
         int count = 0;
         while (seg_start)
         {
-            // If we find this many segments, something is seriously wrong.
-            if (count++ > 4096)
-                break;
-
             seg_start = seg_start->next;
+            count++;
         }
 
         return count;

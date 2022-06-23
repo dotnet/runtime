@@ -5,14 +5,18 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <NoWarn>$(NoWarn);SYSLIB0026;SYSLIB0027;SYSLIB0028</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
-    <EnableDllImportGenerator>true</EnableDllImportGenerator>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Android' or '$(TargetPlatformIdentifier)' == 'OSX' or '$(TargetPlatformIdentifier)' == 'iOS' or '$(TargetPlatformIdentifier)' == 'tvOS'">$(DefineConstants);Unix</DefineConstants>
-    <UseAndroidCrypto Condition="'$(TargetPlatformIdentifier)' == 'Android'">true</UseAndroidCrypto>
     <UseAppleCrypto Condition="'$(TargetPlatformIdentifier)' == 'OSX' or '$(TargetPlatformIdentifier)' == 'iOS' or '$(TargetPlatformIdentifier)' == 'tvOS'">true</UseAppleCrypto>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'Android'">
+    <UseAndroidCrypto>true</UseAndroidCrypto>
+    <XUnitSingleThreadedMode>true</XUnitSingleThreadedMode>
+    <XUnitUseRandomizedTestOrderer>true</XUnitUseRandomizedTestOrderer>
   </PropertyGroup>
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" />
   <ItemGroup>
@@ -30,7 +34,12 @@
     <Compile Include="ContentTypeTests.cs" />
     <Compile Include="CtorTests.cs" />
     <Compile Include="ExportTests.cs" />
-    <Compile Include="ExtensionsTests.cs" />
+    <Compile Include="ExtensionsTests\AuthorityInformationAccessTests.cs" />
+    <Compile Include="ExtensionsTests\BasicConstraintsTests.cs" />
+    <Compile Include="ExtensionsTests\ComprehensiveTests.cs" />
+    <Compile Include="ExtensionsTests\EnhancedKeyUsageTests.cs" />
+    <Compile Include="ExtensionsTests\KeyUsageTests.cs" />
+    <Compile Include="ExtensionsTests\SubjectKeyIdentifierTests.cs" />
     <Compile Include="FindTests.cs" />
     <Compile Include="LoadFromFileTests.cs" />
     <Compile Include="NameTests.cs" />
@@ -115,16 +124,6 @@
   <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true'">
     <Compile Include="X509StoreMutableTests.Android.cs" />
     <Compile Include="RevocationTests\DynamicRevocationTests.Android.cs" />
-    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs"
-             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs" />
-    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509Chain.cs"
-             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509Chain.cs" />
-    <Compile Include="$(CommonPath)Interop\Android\Interop.JObjectLifetime.cs"
-             Link="Common\Interop\Android\Interop.JObjectLifetime.cs" />
-    <Compile Include="$(CommonPath)Interop\Android\Interop.Libraries.cs"
-             Link="Common\Interop\Android\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
-             Link="Common\Interop\Unix\Interop.Libraries.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseAppleCrypto)' == 'true' and '$(TargetPlatformIdentifier)' == 'OSX'">
     <Compile Include="X509StoreMutableTests.OSX.cs" />
@@ -159,7 +158,6 @@
     <Compile Include="X509StoreMutableTests.iOS.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Cng\src\System.Security.Cryptography.Cng.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Pkcs\src\System.Security.Cryptography.Pkcs.csproj" />
     <PackageReference Include="System.Security.Cryptography.X509Certificates.TestData" Version="$(SystemSecurityCryptographyX509CertificatesTestDataVersion)" />
   </ItemGroup>

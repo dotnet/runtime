@@ -4,7 +4,6 @@
 using System.Threading;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Diagnostics.Tracing
 {
@@ -30,6 +29,7 @@ namespace System.Diagnostics.Tracing
         private static class Messages
         {
             public const string WorkerThread = "ActiveWorkerThreadCount={0};\nRetiredWorkerThreadCount={1};\nClrInstanceID={2}";
+            public const string MinMaxThreads = "MinWorkerThreads={0};\nMaxWorkerThreads={1};\nMinIOCompletionThreads={2};\nMaxIOCompletionThreads={3};\nClrInstanceID={4}";
             public const string WorkerThreadAdjustmentSample = "Throughput={0};\nClrInstanceID={1}";
             public const string WorkerThreadAdjustmentAdjustment = "AverageThroughput={0};\nNewWorkerThreadCount={1};\nReason={2};\nClrInstanceID={3}";
             public const string WorkerThreadAdjustmentStats = "Duration={0};\nThroughput={1};\nThreadWave={2};\nThroughputWave={3};\nThroughputErrorEstimate={4};\nAverageThroughputErrorEstimate={5};\nThroughputRatio={6};\nConfidence={7};\nNewControlSetting={8};\nNewThreadWaveMagnitude={9};\nClrInstanceID={10}";
@@ -45,12 +45,14 @@ namespace System.Diagnostics.Tracing
             public const EventTask ThreadPoolWorkerThreadAdjustment = (EventTask)18;
             public const EventTask ThreadPool = (EventTask)23;
             public const EventTask ThreadPoolWorkingThreadCount = (EventTask)22;
+            public const EventTask ThreadPoolMinMaxThreads = (EventTask)38;
         }
 
         public static class Opcodes // this name and visibility is important for EventSource
         {
             public const EventOpcode IOEnqueue = (EventOpcode)13;
             public const EventOpcode IODequeue = (EventOpcode)14;
+            public const EventOpcode IOPack = (EventOpcode)15;
             public const EventOpcode Wait = (EventOpcode)90;
             public const EventOpcode Sample = (EventOpcode)100;
             public const EventOpcode Adjustment = (EventOpcode)101;
@@ -271,6 +273,19 @@ namespace System.Diagnostics.Tracing
             WriteEventCore(63, 4, data);
         }
 
+        [NonEvent]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public unsafe void ThreadPoolIOEnqueue(NativeOverlapped* nativeOverlapped)
+        {
+            if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
+            {
+                ThreadPoolIOEnqueue(
+                    (IntPtr)nativeOverlapped,
+                    (IntPtr)OverlappedData.GetOverlappedFromNative(nativeOverlapped).GetHashCode(),
+                    false);
+            }
+        }
+
         // TODO: This event is fired for minor compat with CoreCLR in this case. Consider removing this method and use
         // FrameworkEventSource's thread transfer send/receive events instead at callers.
         [NonEvent]
@@ -306,6 +321,18 @@ namespace System.Diagnostics.Tracing
             WriteEventCore(64, 3, data);
         }
 
+        [NonEvent]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public unsafe void ThreadPoolIODequeue(NativeOverlapped* nativeOverlapped)
+        {
+            if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
+            {
+                ThreadPoolIODequeue(
+                    (IntPtr)nativeOverlapped,
+                    (IntPtr)OverlappedData.GetOverlappedFromNative(nativeOverlapped).GetHashCode());
+            }
+        }
+
         // TODO: This event is fired for minor compat with CoreCLR in this case. Consider removing this method and use
         // FrameworkEventSource's thread transfer send/receive events instead at callers.
         [NonEvent]
@@ -338,5 +365,77 @@ namespace System.Diagnostics.Tracing
             data[1].Reserved = 0;
             WriteEventCore(60, 2, data);
         }
+
+        [NonEvent]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public unsafe void ThreadPoolIOPack(NativeOverlapped* nativeOverlapped)
+        {
+            if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword))
+            {
+                ThreadPoolIOPack(
+                    (IntPtr)nativeOverlapped,
+                    (IntPtr)OverlappedData.GetOverlappedFromNative(nativeOverlapped).GetHashCode());
+            }
+        }
+
+#if !ES_BUILD_STANDALONE
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+                   Justification = EventSourceSuppressMessage)]
+#endif
+        [Event(65, Level = EventLevel.Verbose, Message = Messages.IO, Task = Tasks.ThreadPool, Opcode = Opcodes.IOPack, Version = 0, Keywords = Keywords.ThreadingKeyword)]
+        private unsafe void ThreadPoolIOPack(
+            IntPtr NativeOverlapped,
+            IntPtr Overlapped,
+            ushort ClrInstanceID = DefaultClrInstanceId)
+        {
+            EventData* data = stackalloc EventData[3];
+            data[0].DataPointer = NativeOverlapped;
+            data[0].Size        = sizeof(IntPtr);
+            data[0].Reserved    = 0;
+            data[1].DataPointer = Overlapped;
+            data[1].Size        = sizeof(IntPtr);
+            data[1].Reserved    = 0;
+            data[2].DataPointer = (IntPtr)(&ClrInstanceID);
+            data[2].Size        = sizeof(ushort);
+            data[2].Reserved    = 0;
+            WriteEventCore(65, 3, data);
+        }
+
+
+#if !ES_BUILD_STANDALONE
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+                   Justification = EventSourceSuppressMessage)]
+#endif
+        [Event(59, Level = EventLevel.Informational, Message = Messages.MinMaxThreads, Task = Tasks.ThreadPoolMinMaxThreads, Opcode = EventOpcode.Info, Version = 0, Keywords = Keywords.ThreadingKeyword)]
+        public unsafe void ThreadPoolMinMaxThreads(
+            ushort MinWorkerThreads,
+            ushort MaxWorkerThreads,
+            ushort MinIOCompletionThreads,
+            ushort MaxIOCompletionThreads,
+            ushort ClrInstanceID = DefaultClrInstanceId)
+        {
+            if (!IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
+            {
+                return;
+            }
+            EventData* data = stackalloc EventData[5];
+            data[0].DataPointer = (IntPtr)(&MinWorkerThreads);
+            data[0].Size = sizeof(ushort);
+            data[0].Reserved = 0;
+            data[1].DataPointer = (IntPtr)(&MaxWorkerThreads);
+            data[1].Size = sizeof(ushort);
+            data[1].Reserved = 0;
+            data[2].DataPointer = (IntPtr)(&MinIOCompletionThreads);
+            data[2].Size = sizeof(ushort);
+            data[2].Reserved = 0;
+            data[3].DataPointer = (IntPtr)(&MaxIOCompletionThreads);
+            data[3].Size = sizeof(ushort);
+            data[3].Reserved = 0;
+            data[4].DataPointer = (IntPtr)(&ClrInstanceID);
+            data[4].Size = sizeof(ushort);
+            data[4].Reserved = 0;
+            WriteEventCore(59, 5, data);
+        }
+
     }
 }

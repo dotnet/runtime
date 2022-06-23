@@ -1,12 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
-using System.Runtime.InteropServices;
 using System.Threading;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
@@ -59,6 +55,10 @@ namespace System.Reflection
         internal virtual Type[] GetParameterTypes()
         {
             ParameterInfo[] paramInfo = GetParametersNoCopy();
+            if (paramInfo.Length == 0)
+            {
+                return Type.EmptyTypes;
+            }
 
             Type[] parameterTypes = new Type[paramInfo.Length];
             for (int i = 0; i < paramInfo.Length; i++)

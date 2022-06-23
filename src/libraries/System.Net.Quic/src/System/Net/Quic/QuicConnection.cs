@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net.Quic.Implementations;
+using System.Net.Quic.Implementations.MsQuic;
+using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -11,41 +13,21 @@ namespace System.Net.Quic
 {
     public sealed class QuicConnection : IDisposable
     {
-        private readonly QuicConnectionProvider _provider;
+        public static bool IsSupported => MsQuicApi.IsQuicSupported;
 
-        /// <summary>
-        /// Create an outbound QUIC connection.
-        /// </summary>
-        /// <param name="remoteEndPoint">The remote endpoint to connect to.</param>
-        /// <param name="sslClientAuthenticationOptions">TLS options</param>
-        /// <param name="localEndPoint">The local endpoint to connect from.</param>
-        public QuicConnection(EndPoint remoteEndPoint, SslClientAuthenticationOptions? sslClientAuthenticationOptions, IPEndPoint? localEndPoint = null)
-            : this(QuicImplementationProviders.Default, remoteEndPoint, sslClientAuthenticationOptions, localEndPoint)
+        public static ValueTask<QuicConnection> ConnectAsync(QuicClientConnectionOptions options, CancellationToken cancellationToken = default)
         {
+            if (!IsSupported)
+            {
+                throw new PlatformNotSupportedException(SR.SystemNetQuic_PlatformNotSupported);
+            }
+
+            return ValueTask.FromResult(new QuicConnection(new MsQuicConnection(options)));
         }
 
-        /// <summary>
-        /// Create an outbound QUIC connection.
-        /// </summary>
-        /// <param name="options">The connection options.</param>
-        public QuicConnection(QuicClientConnectionOptions options)
-            : this(QuicImplementationProviders.Default, options)
-        {
-        }
+        private readonly MsQuicConnection _provider;
 
-        // !!! TEMPORARY: Remove or make internal before shipping
-        public QuicConnection(QuicImplementationProvider implementationProvider, EndPoint remoteEndPoint, SslClientAuthenticationOptions? sslClientAuthenticationOptions, IPEndPoint? localEndPoint = null)
-            : this(implementationProvider, new QuicClientConnectionOptions() { RemoteEndPoint = remoteEndPoint, ClientAuthenticationOptions = sslClientAuthenticationOptions, LocalEndPoint = localEndPoint })
-        {
-        }
-
-        // !!! TEMPORARY: Remove or make internal before shipping
-        public QuicConnection(QuicImplementationProvider implementationProvider, QuicClientConnectionOptions options)
-        {
-            _provider = implementationProvider.CreateConnection(options);
-        }
-
-        internal QuicConnection(QuicConnectionProvider provider)
+        internal QuicConnection(MsQuicConnection provider)
         {
             _provider = provider;
         }
@@ -71,28 +53,17 @@ namespace System.Net.Quic
         public ValueTask ConnectAsync(CancellationToken cancellationToken = default) => _provider.ConnectAsync(cancellationToken);
 
         /// <summary>
-        /// Waits for available unidirectional stream capacity to be announced by the peer. If any capacity is available, returns immediately.
-        /// </summary>
-        /// <returns></returns>
-        public ValueTask WaitForAvailableUnidirectionalStreamsAsync(CancellationToken cancellationToken = default) => _provider.WaitForAvailableUnidirectionalStreamsAsync(cancellationToken);
-
-        /// <summary>
-        /// Waits for available bidirectional stream capacity to be announced by the peer. If any capacity is available, returns immediately.
-        /// </summary>
-        /// <returns></returns>
-        public ValueTask WaitForAvailableBidirectionalStreamsAsync(CancellationToken cancellationToken = default) => _provider.WaitForAvailableBidirectionalStreamsAsync(cancellationToken);
-
-        /// <summary>
         /// Create an outbound unidirectional stream.
         /// </summary>
         /// <returns></returns>
-        public QuicStream OpenUnidirectionalStream() => new QuicStream(_provider.OpenUnidirectionalStream());
+        public async ValueTask<QuicStream> OpenUnidirectionalStreamAsync(CancellationToken cancellationToken = default) => new QuicStream(await _provider.OpenUnidirectionalStreamAsync(cancellationToken).ConfigureAwait(false));
 
         /// <summary>
         /// Create an outbound bidirectional stream.
         /// </summary>
         /// <returns></returns>
-        public QuicStream OpenBidirectionalStream() => new QuicStream(_provider.OpenBidirectionalStream());
+        public async ValueTask<QuicStream> OpenBidirectionalStreamAsync(CancellationToken cancellationToken = default) => new QuicStream(await _provider.OpenBidirectionalStreamAsync(cancellationToken).ConfigureAwait(false));
+
 
         /// <summary>
         /// Accept an incoming stream.

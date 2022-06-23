@@ -9,6 +9,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="Native_DisabledMarshalling/DisabledRuntimeMarshallingNative_DisabledMarshalling.csproj" />
-    <ProjectReference Include="CMakeLists.txt" />
+    <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
 </Project>

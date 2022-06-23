@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
@@ -24,6 +24,7 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static TValue? Deserialize<TValue>(this JsonElement element, JsonSerializerOptions? options = null)
         {
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
@@ -48,8 +49,14 @@ namespace System.Text.Json
         /// for <paramref name="returnType"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        public static object? Deserialize(this JsonElement element, Type returnType!!, JsonSerializerOptions? options = null)
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
+        public static object? Deserialize(this JsonElement element, Type returnType, JsonSerializerOptions? options = null)
         {
+            if (returnType is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
+            }
+
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
             return ReadUsingMetadata<object?>(element, jsonTypeInfo);
         }
@@ -71,8 +78,13 @@ namespace System.Text.Json
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
-        public static TValue? Deserialize<TValue>(this JsonElement element, JsonTypeInfo<TValue> jsonTypeInfo!!)
+        public static TValue? Deserialize<TValue>(this JsonElement element, JsonTypeInfo<TValue> jsonTypeInfo)
         {
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
+
             return ReadUsingMetadata<TValue>(element, jsonTypeInfo);
         }
 
@@ -108,8 +120,17 @@ namespace System.Text.Json
         /// The <see cref="JsonSerializerContext.GetTypeInfo(Type)"/> method of the provided
         /// <paramref name="context"/> returns <see langword="null"/> for the type to convert.
         /// </exception>
-        public static object? Deserialize(this JsonElement element, Type returnType!!, JsonSerializerContext context!!)
+        public static object? Deserialize(this JsonElement element, Type returnType, JsonSerializerContext context)
         {
+            if (returnType is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
+            }
+            if (context is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
+            }
+
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, returnType);
             return ReadUsingMetadata<object?>(element, jsonTypeInfo);
         }

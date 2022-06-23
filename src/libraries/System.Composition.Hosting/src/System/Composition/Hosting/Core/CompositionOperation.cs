@@ -28,8 +28,17 @@ namespace System.Composition.Hosting.Core
         /// to the parents of the context if required).</param>
         /// <param name="compositionRootActivator">Activator that will drive the operation.</param>
         /// <returns>The composed object graph.</returns>
-        public static object Run(LifetimeContext outermostLifetimeContext!!, CompositeActivator compositionRootActivator!!)
+        public static object Run(LifetimeContext outermostLifetimeContext, CompositeActivator compositionRootActivator)
         {
+            if (outermostLifetimeContext is null)
+            {
+                throw new ArgumentNullException(nameof(outermostLifetimeContext));
+            }
+            if (compositionRootActivator is null)
+            {
+                throw new ArgumentNullException(nameof(compositionRootActivator));
+            }
+
             using (var operation = new CompositionOperation())
             {
                 var result = compositionRootActivator(outermostLifetimeContext, operation);
@@ -43,8 +52,13 @@ namespace System.Composition.Hosting.Core
         /// prerequisite part dependencies have been satisfied.
         /// </summary>
         /// <param name="action">Action to run.</param>
-        public void AddNonPrerequisiteAction(Action action!!)
+        public void AddNonPrerequisiteAction(Action action)
         {
+            if (action is null)
+            {
+                throw new ArgumentNullException(nameof(action));
+            }
+
             if (_nonPrerequisiteActions == null)
                 _nonPrerequisiteActions = new List<Action>();
 
@@ -56,8 +70,13 @@ namespace System.Composition.Hosting.Core
         /// all composition has completed. See OnImportsSatisfiedAttribute.
         /// </summary>
         /// <param name="action">Action to run.</param>
-        public void AddPostCompositionAction(Action action!!)
+        public void AddPostCompositionAction(Action action)
         {
+            if (action is null)
+            {
+                throw new ArgumentNullException(nameof(action));
+            }
+
             if (_postCompositionActions == null)
                 _postCompositionActions = new List<Action>();
 

@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Quic;
-using System.Net.Quic.Implementations;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
@@ -20,7 +19,7 @@ namespace System.Net.Test.Common
 
         public override Uri Address => new Uri($"https://{_listener.ListenEndPoint}/");
 
-        public Http3LoopbackServer(QuicImplementationProvider quicImplementationProvider = null, Http3Options options = null)
+        public Http3LoopbackServer(Http3Options options = null)
         {
             options ??= new Http3Options();
 
@@ -43,7 +42,9 @@ namespace System.Net.Test.Common
                 MaxBidirectionalStreams = options.MaxBidirectionalStreams,
             };
 
-            _listener = new QuicListener(quicImplementationProvider ?? QuicImplementationProviders.Default, listenerOptions);
+            ValueTask<QuicListener> valueTask = QuicListener.ListenAsync(listenerOptions);
+            Debug.Assert(valueTask.IsCompleted);
+            _listener = valueTask.Result;
         }
 
         public override void Dispose()
@@ -82,20 +83,13 @@ namespace System.Net.Test.Common
 
     public sealed class Http3LoopbackServerFactory : LoopbackServerFactory
     {
-        private QuicImplementationProvider _quicImplementationProvider;
-
-        public Http3LoopbackServerFactory(QuicImplementationProvider quicImplementationProvider)
-        {
-            _quicImplementationProvider = quicImplementationProvider;
-        }
-
-        public static Http3LoopbackServerFactory Singleton { get; } = new Http3LoopbackServerFactory(null);
+        public static Http3LoopbackServerFactory Singleton { get; } = new Http3LoopbackServerFactory();
 
         public override Version Version { get; } = new Version(3, 0);
 
         public override GenericLoopbackServer CreateServer(GenericLoopbackOptions options = null)
         {
-            return new Http3LoopbackServer(_quicImplementationProvider, CreateOptions(options));
+            return new Http3LoopbackServer(CreateOptions(options));
         }
 
         public override async Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60000, GenericLoopbackOptions options = null)
@@ -113,7 +107,12 @@ namespace System.Net.Test.Common
 
         private static Http3Options CreateOptions(GenericLoopbackOptions options)
         {
-            Http3Options http3Options = new Http3Options();
+            if (options is Http3Options http3Options)
+            {
+                return http3Options;
+            }
+
+            http3Options = new Http3Options();
             if (options != null)
             {
                 http3Options.Address = options.Address;

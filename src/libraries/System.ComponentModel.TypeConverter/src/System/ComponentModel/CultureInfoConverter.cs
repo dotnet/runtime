@@ -22,15 +22,17 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the "default" name for our culture.
         /// </summary>
-        private static string DefaultCultureString => SR.CultureInfoConverterDefaultCultureString;
+        private static string DefaultCultureString => SR.GetResourceString(nameof(SR.CultureInfoConverterDefaultCultureString), "(Default)");
 
         private const string DefaultInvariantCultureString = "(Default)";
 
         /// <summary>
         /// Retrieves the Name for a input CultureInfo.
         /// </summary>
-        protected virtual string GetCultureName(CultureInfo culture!!)
+        protected virtual string GetCultureName(CultureInfo culture)
         {
+            ArgumentNullException.ThrowIfNull(culture);
+
             return culture.Name;
         }
 
@@ -47,7 +49,7 @@ namespace System.ComponentModel
         /// Gets a value indicating whether this converter can convert an object to
         /// the given destination type using the context.
         /// </summary>
-        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType)
         {
             return destinationType == typeof(InstanceDescriptor) || base.CanConvertTo(context, destinationType);
         }

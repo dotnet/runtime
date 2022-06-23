@@ -497,7 +497,7 @@ namespace System.Data.ProviderBase
             return datarowadded;
         }
 
-        private int[] CreateIndexMap(int count, int index)
+        private static int[] CreateIndexMap(int count, int index)
         {
             int[] values = new int[count];
             for (int i = 0; i < index; ++i)
@@ -518,7 +518,7 @@ namespace System.Data.ProviderBase
             return fieldNames;
         }
 
-        private DataColumn[] ResizeColumnArray(DataColumn[] rgcol, int len)
+        private static DataColumn[] ResizeColumnArray(DataColumn[] rgcol, int len)
         {
             Debug.Assert(rgcol != null, "invalid call to ResizeArray");
             Debug.Assert(len <= rgcol.Length, "invalid len passed to ResizeArray");
@@ -527,7 +527,7 @@ namespace System.Data.ProviderBase
             return tmp;
         }
 
-        private void AddItemToAllowRollback(ref List<object>? items, object value)
+        private static void AddItemToAllowRollback(ref List<object>? items, object value)
         {
             if (null == items)
             {
@@ -536,7 +536,7 @@ namespace System.Data.ProviderBase
             items.Add(value);
         }
 
-        private void RollbackAddedItems(List<object>? items)
+        private static void RollbackAddedItems(List<object>? items)
         {
             if (null != items)
             {
@@ -1147,7 +1147,7 @@ namespace System.Data.ProviderBase
         }
 
         [RequiresUnreferencedCode("Members from types used in the expression column may be trimmed if not referenced directly.")]
-        private void AddAdditionalProperties(DataColumn targetColumn, DataRow schemaRow)
+        private static void AddAdditionalProperties(DataColumn targetColumn, DataRow schemaRow)
         {
             DataColumnCollection columns = schemaRow.Table.Columns;
             DataColumn? column;

@@ -158,25 +158,27 @@ namespace System.Runtime
             return RuntimeAugments.TypeLoaderCallbacks.UpdateFloatingDictionary(dictionaryPtr, dictionaryPtr);
         }
 
+#if FEATURE_UNIVERSAL_GENERICS
         public static unsafe IntPtr GetDelegateThunk(object delegateObj, int whichThunk)
         {
-            Entry entry = LookupInCache(s_cache, (IntPtr)delegateObj.MethodTable, new IntPtr(whichThunk));
+            Entry entry = LookupInCache(s_cache, (IntPtr)delegateObj.GetMethodTable(), new IntPtr(whichThunk));
             if (entry == null)
             {
-                entry = CacheMiss((IntPtr)delegateObj.MethodTable, new IntPtr(whichThunk),
+                entry = CacheMiss((IntPtr)delegateObj.GetMethodTable(), new IntPtr(whichThunk),
                     (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult)
                         => RuntimeAugments.TypeLoaderCallbacks.GetDelegateThunk((Delegate)contextObject, (int)signature),
                     delegateObj);
             }
             return entry.Result;
         }
+#endif
 
         public static unsafe IntPtr GVMLookupForSlot(object obj, RuntimeMethodHandle slot)
         {
-            Entry entry = LookupInCache(s_cache, (IntPtr)obj.MethodTable, *(IntPtr*)&slot);
+            Entry entry = LookupInCache(s_cache, (IntPtr)obj.GetMethodTable(), *(IntPtr*)&slot);
             if (entry == null)
             {
-                entry = CacheMiss((IntPtr)obj.MethodTable, *(IntPtr*)&slot,
+                entry = CacheMiss((IntPtr)obj.GetMethodTable(), *(IntPtr*)&slot,
                     (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult)
                         => Internal.Runtime.CompilerServices.GenericVirtualMethodSupport.GVMLookupForSlot(new RuntimeTypeHandle(new EETypePtr(context)), *(RuntimeMethodHandle*)&signature));
             }
@@ -186,10 +188,10 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe IntPtr OpenInstanceMethodLookup(IntPtr openResolver, object obj)
         {
-            Entry entry = LookupInCache(s_cache, (IntPtr)obj.MethodTable, openResolver);
+            Entry entry = LookupInCache(s_cache, (IntPtr)obj.GetMethodTable(), openResolver);
             if (entry == null)
             {
-                entry = CacheMiss((IntPtr)obj.MethodTable, openResolver,
+                entry = CacheMiss((IntPtr)obj.GetMethodTable(), openResolver,
                     (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult)
                         => Internal.Runtime.CompilerServices.OpenMethodResolver.ResolveMethodWorker(signature, contextObject),
                     obj);

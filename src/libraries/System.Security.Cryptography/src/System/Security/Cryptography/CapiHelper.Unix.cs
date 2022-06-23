@@ -18,8 +18,10 @@ namespace System.Security.Cryptography
         private const string OID_SHA512 = "2.16.840.1.101.3.4.2.3";
 
         // For backwards compat with CapiHelper.ObjToHashAlgorithm, use "hashAlg" as name
-        internal static HashAlgorithmName ObjToHashAlgorithmName(object hashAlg!!)
+        internal static HashAlgorithmName ObjToHashAlgorithmName(object hashAlg)
         {
+            ArgumentNullException.ThrowIfNull(hashAlg);
+
             HashAlgorithmName? name = null;
 
             if (hashAlg is string)

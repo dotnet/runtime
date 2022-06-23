@@ -20,9 +20,6 @@ namespace System.Diagnostics.Tracing
     /// DiagnosticCounter is an abstract class that serves as the parent class for various Counter* classes,
     /// namely EventCounter, PollingCounter, IncrementingEventCounter, and IncrementingPollingCounter.
     /// </summary>
-#if NETCOREAPP
-    [UnsupportedOSPlatform("browser")]
-#endif
     public abstract class DiagnosticCounter : IDisposable
     {
         /// <summary>
@@ -31,10 +28,10 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         /// <param name="Name">The name.</param>
         /// <param name="EventSource">The event source.</param>
-        internal DiagnosticCounter(string Name!!, EventSource EventSource!!)
+        internal DiagnosticCounter(string Name, EventSource EventSource)
         {
-            this.Name = Name;
-            this.EventSource = EventSource;
+            this.Name = Name ?? throw new ArgumentNullException(nameof(Name));
+            this.EventSource = EventSource ?? throw new ArgumentNullException(nameof(EventSource));
         }
 
         /// <summary>Adds the counter to the set that the EventSource will report on.</summary>

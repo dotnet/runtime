@@ -28,22 +28,26 @@ Notes:
 - The `--installPath` option affects Build Tools installation only. Visual Studio Installer is always installed into
 the `%ProgramFiles(x86)%\Microsoft Visual Studio\Installer` directory.
 
-# Fedora (31+)
+# Linux
 
-* Install `clang` and developer packages for libraries that .NET Core depends on:
+Install `clang` and developer packages for libraries that .NET runtime depends on:
+
+## Fedora (31+)
 
 ```sh
-sudo dnf install clang zlib-devel krb5-libs krb5-devel ncurses-compat-libs
+sudo dnf install clang zlib-devel ncurses-compat-libs
 ```
 
-This was tested on Fedora 31, but will most likely work on lower versions too.
-
-# Ubuntu (16.04+)
-
-* Install `clang` and developer packages for libraries that .NET Core depends on:
+## Ubuntu (16.04+)
 
 ```sh
-sudo apt-get install clang zlib1g-dev libkrb5-dev
+sudo apt-get install clang zlib1g-dev
+```
+
+## Alpine (3.14+)
+
+```sh
+sudo apk add clang gcc lld musl-dev build-base zlib-dev
 ```
 
 # macOS (10.13+)

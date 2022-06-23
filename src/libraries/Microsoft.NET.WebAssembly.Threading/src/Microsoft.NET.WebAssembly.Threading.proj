@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <IncludeBuildOutput>true</IncludeBuildOutput>
+    <NoTargetsDoNotReferenceOutputAssemblies>false</NoTargetsDoNotReferenceOutputAssemblies>
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Exposes Threading APIs for WebAssembly projects</PackageDescription>
+    <!-- XXX FIXME: NU5128 suppresses a really scary message about missing net7.0 dependencies -->
+    <NoWarn>$(NoWarn);NU5128;NU5131</NoWarn>
+    <!-- Place assemblies in the nuget ref folder -->
+    <BuildOutputTargetFolder>ref</BuildOutputTargetFolder>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference
+	Include="$(LibrariesProjectRoot)System.Threading.Thread.WebAssembly.Threading\ref\System.Threading.Thread.WebAssembly.Threading.csproj;
+		 $(LibrariesProjectRoot)System.Threading.ThreadPool.WebAssembly.Threading\ref\System.Threading.ThreadPool.WebAssembly.Threading.csproj;
+		 $(LibrariesProjectRoot)System.Diagnostics.Tracing.WebAssembly.PerfTracing\ref\System.Diagnostics.Tracing.WebAssembly.PerfTracing.csproj"
+	Pack="true" PrivateAssets="all" Private="true" IncludeReferenceAssemblyInPackage="true" />
+  </ItemGroup>
+
+</Project>

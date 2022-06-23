@@ -275,7 +275,7 @@ static LOSObject*
 get_los_section_memory (size_t size)
 {
 	LOSSection *section;
-	LOSFreeChunks *free_chunks;
+	LOSFreeChunks *free_chunks = NULL;
 	size_t num_chunks;
 	size_t obj_size = size;
 

@@ -44,7 +44,7 @@ namespace System.Globalization
                 else
                 {
                     return "Couldn't find a valid ICU package installed on the system. " +
-                        "Please install libicu using your package manager and try again. " +
+                        "Please install libicu (or icu-libs) using your package manager and try again. " +
                         "Alternatively you can set the configuration flag System.Globalization.Invariant to true if you want to run with no globalization support. " +
                         "Please see https://aka.ms/dotnet-missing-libicu for more information.";
                 }

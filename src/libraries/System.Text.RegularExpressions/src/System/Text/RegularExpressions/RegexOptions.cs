@@ -60,9 +60,5 @@ namespace System.Text.RegularExpressions
         /// the top-level match.
         /// </remarks>
         NonBacktracking         = 0x0400,
-
-        // RegexCompiler internally uses 0x80000000 for its own internal purposes.
-        // If such a value ever needs to be added publicly, RegexCompiler will need
-        // to be changed to avoid it.
     }
 }

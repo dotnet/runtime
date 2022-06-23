@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#pragma warning disable CA1852 // unit test project includes this file and derives from SafeWinHttpHandle
+
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;

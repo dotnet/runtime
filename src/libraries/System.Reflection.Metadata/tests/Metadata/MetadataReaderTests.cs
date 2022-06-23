@@ -126,7 +126,7 @@ namespace System.Reflection.Metadata.Tests
             PEHeaders headers = new PEHeaders(new MemoryStream(peImage));
 
             //find index for mscorlib
-            int mscorlibIndex = IndexOf(peImage, Encoding.ASCII.GetBytes("mscorlib"), headers.MetadataStartOffset);
+            int mscorlibIndex = IndexOf(peImage, "mscorlib"u8.ToArray(), headers.MetadataStartOffset);
             Assert.NotEqual(-1, mscorlibIndex);
             //mutate mscorlib
             peImage[mscorlibIndex + headers.MetadataStartOffset] = 0xFF;
@@ -145,7 +145,7 @@ namespace System.Reflection.Metadata.Tests
 
             // mutate CLR to reach MetadataKind.WindowsMetadata
             // find CLR
-            int clrIndex = IndexOf(peImage, Encoding.ASCII.GetBytes("CLR"), headers.MetadataStartOffset);
+            int clrIndex = IndexOf(peImage, "CLR"u8.ToArray(), headers.MetadataStartOffset);
             Assert.NotEqual(-1, clrIndex);
             //find 5, This is the streamcount and is the last thing that should be read befor the test.
             int fiveIndex = IndexOf(peImage, new byte[] {5}, headers.MetadataStartOffset + clrIndex);
@@ -435,7 +435,7 @@ namespace System.Reflection.Metadata.Tests
                 winrtDef.Attributes);
 
             var strReader = reader.GetBlobReader(winrtDef.Name);
-            Assert.Equal(Encoding.UTF8.GetBytes("Class1"), strReader.ReadBytes("Class1".Length));
+            Assert.Equal("Class1"u8.ToArray(), strReader.ReadBytes("Class1".Length));
             Assert.Equal(0, strReader.RemainingBytes);
 
             // .class /*02000003*/ private auto ansi import windowsruntime sealed beforefieldinit Lib.'<WinRT>Class1'
@@ -449,7 +449,7 @@ namespace System.Reflection.Metadata.Tests
                 clrDef.Attributes);
 
             strReader = reader.GetBlobReader(clrDef.Name);
-            Assert.Equal(Encoding.UTF8.GetBytes("<WinRT>Class1"), strReader.ReadBytes("<WinRT>Class1".Length));
+            Assert.Equal("<WinRT>Class1"u8.ToArray(), strReader.ReadBytes("<WinRT>Class1".Length));
             Assert.Equal(0, strReader.RemainingBytes);
         }
 
@@ -469,7 +469,7 @@ namespace System.Reflection.Metadata.Tests
                 winrtDef.Attributes);
 
             var strReader = reader.GetBlobReader(winrtDef.Name);
-            Assert.Equal(Encoding.UTF8.GetBytes("<CLR>Class1"), strReader.ReadBytes("<CLR>Class1".Length));
+            Assert.Equal("<CLR>Class1"u8.ToArray(), strReader.ReadBytes("<CLR>Class1".Length));
             Assert.Equal(0, strReader.RemainingBytes);
 
             // .class /*02000003*/ public auto ansi windowsruntime sealed beforefieldinit Lib.Class1
@@ -483,7 +483,7 @@ namespace System.Reflection.Metadata.Tests
                 clrDef.Attributes);
 
             strReader = reader.GetBlobReader(clrDef.Name);
-            Assert.Equal(Encoding.UTF8.GetBytes("Class1"), strReader.ReadBytes("Class1".Length));
+            Assert.Equal("Class1"u8.ToArray(), strReader.ReadBytes("Class1".Length));
             Assert.Equal(0, strReader.RemainingBytes);
         }
 
@@ -497,14 +497,14 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal("System.Runtime.CompilerServices", reader.GetString(typeRef.Namespace));
 
             var strReader = reader.GetBlobReader(typeRef.Namespace);
-            Assert.Equal(Encoding.UTF8.GetBytes("System.Runtime.CompilerServices"), strReader.ReadBytes("System.Runtime.CompilerServices".Length));
+            Assert.Equal("System.Runtime.CompilerServices"u8.ToArray(), strReader.ReadBytes("System.Runtime.CompilerServices".Length));
             Assert.Equal(0, strReader.RemainingBytes);
 
             var dotTerminated = typeRef.Namespace.WithDotTermination();
             Assert.Equal("System", reader.GetString(dotTerminated));
 
             strReader = reader.GetBlobReader(dotTerminated);
-            Assert.Equal(Encoding.UTF8.GetBytes("System"), strReader.ReadBytes("System".Length));
+            Assert.Equal("System"u8.ToArray(), strReader.ReadBytes("System".Length));
             Assert.Equal(0, strReader.RemainingBytes);
         }
 

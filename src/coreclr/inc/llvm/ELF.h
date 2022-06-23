@@ -343,6 +343,7 @@ enum {
   EM_NORC          = 218, // Nanoradio Optimized RISC
   EM_CSR_KALIMBA   = 219, // CSR Kalimba architecture family
   EM_AMDGPU        = 224, // AMD GPU architecture
+  EM_LOONGARCH     = 258, // LoongArch processor
 
   // A request has been made to the maintainer of the official registry for
   // such numbers for an official value for WebAssembly. As soon as one is
@@ -547,6 +548,14 @@ enum {
   ODK_PAGESIZE   = 11   // Page size information
 };
 
+// LoongArch Specific e_flags
+enum : unsigned {
+  EF_LARCH_ABI = 0x0003,
+  EF_LARCH_ABI_LP32 = 0x0001,
+  EF_LARCH_ABI_XLP32 = 0x0002,
+  EF_LARCH_ABI_LP64 = 0x0003,
+};
+
 // Hexagon-specific e_flags
 enum {
   // Object processor version flags, bits[11:0]
@@ -666,6 +675,11 @@ enum : unsigned {
   SHT_MIPS_OPTIONS        = 0x7000000d, // General options
   SHT_MIPS_ABIFLAGS       = 0x7000002a, // ABI information.
 
+  SHT_LOONGARCH_REGINFO = 0x70000006,        // Register usage information
+  SHT_LOONGARCH_OPTIONS = 0x7000000d,        // General options
+  SHT_LOONGARCH_DWARF = 0x7000001e,          // DWARF debugging section.
+  SHT_LOONGARCH_ABIFLAGS = 0x7000002a,       // ABI information.
+
   SHT_HIPROC        = 0x7fffffff, // Highest processor arch-specific type.
   SHT_LOUSER        = 0x80000000, // Lowest type reserved for applications.
   SHT_HIUSER        = 0xffffffff  // Highest type reserved for applications.
@@ -762,6 +776,30 @@ enum : unsigned {
   // Section data is string data by default.
   SHF_MIPS_STRING  = 0x80000000,
 
+  // Linker must retain only one copy.
+  SHF_LOONGARCH_NODUPES = 0x01000000,
+
+  // Linker must generate implicit hidden weak names.
+  SHF_LOONGARCH_NAMES = 0x02000000,
+
+  // Section data local to process.
+  SHF_LOONGARCH_LOCAL = 0x04000000,
+
+  // Do not strip this section.
+  SHF_LOONGARCH_NOSTRIP = 0x08000000,
+
+  // Section must be part of global data area.
+  SHF_LOONGARCH_GPREL = 0x10000000,
+
+  // This section should be merged.
+  SHF_LOONGARCH_MERGE = 0x20000000,
+
+  // Address size to be inferred from section entry size.
+  SHF_LOONGARCH_ADDR = 0x40000000,
+
+  // Section data is string data by default.
+  SHF_LOONGARCH_STRING = 0x80000000,
+
   SHF_AMDGPU_HSA_GLOBAL   = 0x00100000,
   SHF_AMDGPU_HSA_READONLY = 0x00200000,
   SHF_AMDGPU_HSA_CODE     = 0x00400000,
@@ -791,7 +829,7 @@ struct Elf32_Sym {
   void setBinding(unsigned char b) { setBindingAndType(b, getType()); }
   void setType(unsigned char t) { setBindingAndType(getBinding(), t); }
   void setBindingAndType(unsigned char b, unsigned char t) {
-    st_info = (b << 4) + (t & 0x0f);
+    st_info = (unsigned char)((b << 4) + (t & 0x0f));
   }
 };
 
@@ -811,7 +849,7 @@ struct Elf64_Sym {
   void setBinding(unsigned char b) { setBindingAndType(b, getType()); }
   void setType(unsigned char t) { setBindingAndType(getBinding(), t); }
   void setBindingAndType(unsigned char b, unsigned char t) {
-    st_info = (b << 4) + (t & 0x0f);
+    st_info = (unsigned char)((b << 4) + (t & 0x0f));
   }
 };
 
@@ -1003,6 +1041,12 @@ enum {
   PT_MIPS_RTPROC   = 0x70000001,  // Runtime procedure table.
   PT_MIPS_OPTIONS  = 0x70000002,  // Options segment.
   PT_MIPS_ABIFLAGS = 0x70000003,  // Abiflags segment.
+
+  // LOONGARCH program header types.
+  PT_LOONGARCH_REGINFO = 0x70000000,  // Register usage information.
+  PT_LOONGARCH_RTPROC = 0x70000001,   // Runtime procedure table.
+  PT_LOONGARCH_OPTIONS = 0x70000002,  // Options segment.
+  PT_LOONGARCH_ABIFLAGS = 0x70000003, // Abiflags segment.
 
   // AMDGPU program header types.
   PT_AMDGPU_HSA_LOAD_GLOBAL_PROGRAM = 0x60000000,

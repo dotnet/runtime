@@ -4,8 +4,9 @@
 //Solving AX=B and the inverse of A with Gauss-Jordan algorithm
 
 using System;
+using Xunit;
 
-internal class jaggedarr
+public class jaggedarr
 {
     public static double[][,] jaggeda;
     public static double[][,] jaggedb;
@@ -87,7 +88,8 @@ internal class jaggedarr
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool pass = false;
 

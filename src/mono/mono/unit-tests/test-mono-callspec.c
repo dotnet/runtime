@@ -26,7 +26,7 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
-#include <mono/mini/jit.h>
+#include <mono/jit/jit.h>
 #include <mono/utils/mono-error-internals.h>
 
 #define TESTPROG "callspec.exe"
@@ -192,7 +192,7 @@ test_mono_callspec_main (void)
 		goto out;
 	}
 
-	domain = mono_jit_init_version_for_test_only ("TEST RUNNER", "mobile");
+	domain = mono_jit_init_version_for_test_only ("TEST RUNNER", NULL);
 	assembly = mono_assembly_open (TESTPROG, &status);
 	if (!domain || !assembly) {
 		res = 1;

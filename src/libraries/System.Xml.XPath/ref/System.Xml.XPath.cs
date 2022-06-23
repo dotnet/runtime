@@ -10,8 +10,8 @@ namespace System.Xml.XPath
     {
         public XPathDocument(System.IO.Stream stream) { }
         public XPathDocument(System.IO.TextReader textReader) { }
-        public XPathDocument(string uri) { }
-        public XPathDocument(string uri, System.Xml.XmlSpace space) { }
+        public XPathDocument([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string uri) { }
+        public XPathDocument([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string uri, System.Xml.XmlSpace space) { }
         public XPathDocument(System.Xml.XmlReader reader) { }
         public XPathDocument(System.Xml.XmlReader reader, System.Xml.XmlSpace space) { }
         public System.Xml.XPath.XPathNavigator CreateNavigator() { throw null; }

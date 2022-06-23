@@ -98,7 +98,7 @@ namespace System.Reflection.Metadata.Ecma335
             int numberOfBytes = Block.PeekCompressedInteger(offset, out bytesRead);
             if (numberOfBytes == BlobReader.InvalidCompressedInteger)
             {
-                return EmptyArray<byte>.Instance;
+                return Array.Empty<byte>();
             }
 
             return Block.PeekBytes(offset + bytesRead, numberOfBytes);
@@ -158,7 +158,7 @@ namespace System.Reflection.Metadata.Ecma335
             return BlobHandle.FromOffset(nextIndex);
         }
 
-        internal byte[] GetVirtualBlobBytes(BlobHandle handle, bool unique)
+        internal static byte[] GetVirtualBlobBytes(BlobHandle handle, bool unique)
         {
             BlobHandle.VirtualIndex index = handle.GetVirtualIndex();
             byte[] result = s_virtualValues![(int)index];

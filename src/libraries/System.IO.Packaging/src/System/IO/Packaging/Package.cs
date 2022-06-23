@@ -316,12 +316,12 @@ namespace System.IO.Packaging
 
             PackUriHelper.ValidatedPartUri validatedPartUri = (PackUriHelper.ValidatedPartUri)PackUriHelper.ValidatePartUri(partUri);
 
-            if (_partList.ContainsKey(validatedPartUri))
+            if (_partList.TryGetValue(validatedPartUri, out PackagePart? value))
             {
                 //This will get the actual casing of the part that
                 //is stored in the partList which is equivalent to the
                 //partUri provided by the user
-                validatedPartUri = (PackUriHelper.ValidatedPartUri)_partList[validatedPartUri].Uri;
+                validatedPartUri = (PackUriHelper.ValidatedPartUri)value.Uri;
                 _partList[validatedPartUri].IsDeleted = true;
                 _partList[validatedPartUri].Close();
 
@@ -823,11 +823,16 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentOutOfRangeException">If FileAccess enumeration [packageAccess] does not have one of the valid values</exception>
         /// <exception cref="ArgumentOutOfRangeException">If FileMode enumeration [packageMode] does not have one of the valid values</exception>
         public static Package Open(
-            string path!!,
+            string path,
             FileMode packageMode,
             FileAccess packageAccess,
             FileShare packageShare)
         {
+            if (path is null)
+            {
+                throw new ArgumentNullException(nameof(path));
+            }
+
             ThrowIfFileModeInvalid(packageMode);
             ThrowIfFileAccessInvalid(packageAccess);
 
@@ -885,8 +890,13 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentOutOfRangeException">If FileAccess enumeration [packageAccess] does not have one of the valid values</exception>
         /// <exception cref="IOException">If package to be created should have readwrite/read access and underlying stream is write only</exception>
         /// <exception cref="IOException">If package to be created should have readwrite/write access and underlying stream is read only</exception>
-        public static Package Open(Stream stream!!, FileMode packageMode, FileAccess packageAccess)
+        public static Package Open(Stream stream, FileMode packageMode, FileAccess packageAccess)
         {
+            if (stream is null)
+            {
+                throw new ArgumentNullException(nameof(stream));
+            }
+
             Package? package = null;
             try
             {
@@ -983,7 +993,7 @@ namespace System.IO.Packaging
         //Throw if the object is in a disposed state
         private void ThrowIfObjectDisposed()
         {
-            if (_disposed == true)
+            if (_disposed)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed);
         }
 
@@ -1115,9 +1125,9 @@ namespace System.IO.Packaging
 
             PackUriHelper.ValidatedPartUri validatePartUri = PackUriHelper.ValidatePartUri(partUri);
 
-            if (_partList.ContainsKey(validatePartUri))
+            if (_partList.TryGetValue(validatePartUri, out PackagePart? value))
             {
-                return _partList[validatePartUri];
+                return value;
             }
             else
             {

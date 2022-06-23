@@ -25,26 +25,25 @@ namespace System.Net.Security
         }
 
         public static SecurityStatusPal AcceptSecurityContext(
-            SecureChannel secureChannel,
             ref SafeFreeCredentials? credential,
             ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
             ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(secureChannel, credential!, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(credential!, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions, null);
         }
 
         public static SecurityStatusPal InitializeSecurityContext(
-            SecureChannel secureChannel,
             ref SafeFreeCredentials? credential,
             ref SafeDeleteSslContext? context,
             string? targetName,
             ReadOnlySpan<byte> inputBuffer,
             ref byte[]? outputBuffer,
-            SslAuthenticationOptions sslAuthenticationOptions)
+            SslAuthenticationOptions sslAuthenticationOptions,
+            SelectClientCertificate? clientCertificateSelectionCallback)
         {
-            return HandshakeInternal(secureChannel, credential!, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(credential!, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions, clientCertificateSelectionCallback);
         }
 
         public static SafeFreeCredentials AcquireCredentialsHandle(SslStreamCertificateContext? certificateContext,
@@ -128,7 +127,6 @@ namespace System.Net.Security
         }
 
         public static SecurityStatusPal Renegotiate(
-            SecureChannel secureChannel,
             ref SafeFreeCredentials? credentialsHandle,
             ref SafeDeleteSslContext? securityContext,
             SslAuthenticationOptions sslAuthenticationOptions,
@@ -142,7 +140,7 @@ namespace System.Net.Security
             {
                 return status;
             }
-            return HandshakeInternal(secureChannel, credentialsHandle!, ref securityContext, null, ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(credentialsHandle!, ref securityContext, null, ref outputBuffer, sslAuthenticationOptions, null);
         }
 
         public static void QueryContextStreamSizes(SafeDeleteContext? securityContext, out StreamSizes streamSizes)
@@ -150,13 +148,13 @@ namespace System.Net.Security
             streamSizes = StreamSizes.Default;
         }
 
-        public static void QueryContextConnectionInfo(SafeDeleteSslContext securityContext, out SslConnectionInfo connectionInfo)
+        public static void QueryContextConnectionInfo(SafeDeleteSslContext securityContext, ref SslConnectionInfo connectionInfo)
         {
-            connectionInfo = new SslConnectionInfo(securityContext.SslContext);
+            connectionInfo.UpdateSslConnectionInfo(securityContext.SslContext);
         }
 
-        private static SecurityStatusPal HandshakeInternal(SecureChannel secureChannel, SafeFreeCredentials credential, ref SafeDeleteSslContext? context,
-            ReadOnlySpan<byte> inputBuffer, ref byte[]? outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
+        private static SecurityStatusPal HandshakeInternal(SafeFreeCredentials credential, ref SafeDeleteSslContext? context,
+            ReadOnlySpan<byte> inputBuffer, ref byte[]? outputBuffer, SslAuthenticationOptions sslAuthenticationOptions, SelectClientCertificate? clientCertificateSelectionCallback)
         {
             Debug.Assert(!credential.IsInvalid);
 
@@ -172,9 +170,9 @@ namespace System.Net.Security
 
                 SecurityStatusPalErrorCode errorCode = Interop.OpenSsl.DoSslHandshake(((SafeDeleteSslContext)context).SslContext, inputBuffer, out output, out outputSize);
 
-                if (errorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
+                if (errorCode == SecurityStatusPalErrorCode.CredentialsNeeded && clientCertificateSelectionCallback != null)
                 {
-                    X509Certificate2? clientCertificate = secureChannel.SelectClientCertificate(out _);
+                    X509Certificate2? clientCertificate = clientCertificateSelectionCallback(out _);
                     if (clientCertificate != null)
                     {
                         sslAuthenticationOptions.CertificateContext = SslStreamCertificateContext.Create(clientCertificate);
@@ -220,14 +218,6 @@ namespace System.Net.Security
 
                 return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, exc);
             }
-        }
-
-        internal static byte[]? GetNegotiatedApplicationProtocol(SafeDeleteSslContext? context)
-        {
-            if (context == null)
-                return null;
-
-            return Interop.Ssl.SslGetAlpnSelected(context.SslContext);
         }
 
         public static SecurityStatusPal ApplyAlertToken(ref SafeFreeCredentials? credentialsHandle, SafeDeleteContext? securityContext, TlsAlertType alertType, TlsAlertMessage alertMessage)

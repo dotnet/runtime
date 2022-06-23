@@ -99,12 +99,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void InvokeActionFloatIntToIntInt()
         {
             HelperMarshal._actionResultValue = 0;
-            Runtime.InvokeJS(@"
+            var ex = Assert.Throws<JSException>(()=>Runtime.InvokeJS(@"
                 var actionDelegate = App.call_test_method (""CreateActionDelegate"", [  ]);
                 actionDelegate(3.14,40);
-            ");
+            "));
 
-            Assert.Equal(43, HelperMarshal._actionResultValue);
+            Assert.Contains("Value is not an integer: 3.14 (number)", ex.Message);
+            Assert.Equal(0, HelperMarshal._actionResultValue);
         }
 
         [Fact]
@@ -165,14 +166,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             _objectPrototype ??= new Function("return Object.prototype.toString;");
             yield return new object[] { _objectPrototype.Call(), "Uint8Array", Uint8Array.From(new byte[10]) };
-            yield return new object[] { _objectPrototype.Call(), "Uint8ClampedArray", Uint8ClampedArray.From(new byte[10]) };
-            yield return new object[] { _objectPrototype.Call(), "Int8Array", Int8Array.From(new sbyte[10]) };
-            yield return new object[] { _objectPrototype.Call(), "Uint16Array", Uint16Array.From(new ushort[10]) };
-            yield return new object[] { _objectPrototype.Call(), "Int16Array", Int16Array.From(new short[10]) };
-            yield return new object[] { _objectPrototype.Call(), "Uint32Array", Uint32Array.From(new uint[10]) };
-            yield return new object[] { _objectPrototype.Call(), "Int32Array", Int32Array.From(new int[10]) };
-            yield return new object[] { _objectPrototype.Call(), "Float32Array", Float32Array.From(new float[10]) };
-            yield return new object[] { _objectPrototype.Call(), "Float64Array", Float64Array.From(new double[10]) };
             yield return new object[] { _objectPrototype.Call(), "Array", new Array(10) };
         }
 
@@ -181,7 +174,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void InvokeFunctionAcceptingArrayTypes(Function objectPrototype, string creator, JSObject arrayType)
         {
             HelperMarshal._funcActionBufferObjectResultValue = arrayType;
-            Assert.Equal(10, HelperMarshal._funcActionBufferObjectResultValue.Length);
+            Assert.Equal(10, HelperMarshal._funcActionBufferObjectResultValue.GetObjectProperty("length"));
             Assert.Equal($"[object {creator}]", objectPrototype.Call(HelperMarshal._funcActionBufferObjectResultValue));
 
             Runtime.InvokeJS($@"
@@ -191,8 +184,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 setAction(buffer);
             ");
 
-            Assert.Equal(50, HelperMarshal._funcActionBufferObjectResultValue.Length);
-            Assert.Equal(HelperMarshal._funcActionBufferObjectResultValue.Length, HelperMarshal._funcActionBufferResultLengthValue);
+            Assert.Equal(50, HelperMarshal._funcActionBufferObjectResultValue.GetObjectProperty("length"));
+            Assert.Equal(HelperMarshal._funcActionBufferObjectResultValue.GetObjectProperty("length"), HelperMarshal._funcActionBufferResultLengthValue);
             Assert.Equal($"[object {creator}]", objectPrototype.Call(HelperMarshal._funcActionBufferObjectResultValue));
         }
 
@@ -296,7 +289,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var value = await promise;
 
             Assert.Equal("foo", (string)value);
-            
+
         }
 
         [Fact]

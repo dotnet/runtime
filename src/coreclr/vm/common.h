@@ -26,10 +26,7 @@
 
     // These don't seem useful, so turning them off is no big deal
 #pragma warning(disable:4201)   // nameless struct/union
-#pragma warning(disable:4510)   // can't generate default constructor
-//#pragma warning(disable:4511)   // can't generate copy constructor
 #pragma warning(disable:4512)   // can't generate assignment constructor
-#pragma warning(disable:4610)   // user defined constructor required
 #pragma warning(disable:4211)   // nonstandard extention used (char name[0] in structs)
 #pragma warning(disable:4268)   // 'const' static/global data initialized with compiler generated default constructor fills the object with zeros
 #pragma warning(disable:4238)   // nonstandard extension used : class rvalue used as lvalue
@@ -38,8 +35,6 @@
 
     // Depending on the code base, you may want to not disable these
 #pragma warning(disable:4245)   // assigning signed / unsigned
-//#pragma warning(disable:4146)   // unary minus applied to unsigned
-//#pragma warning(disable:4244)   // loss of data int -> char ..
 #pragma warning(disable:4127)   // conditional expression is constant
 #pragma warning(disable:4100)   // unreferenced formal parameter
 
@@ -47,7 +42,6 @@
 
 #ifndef DEBUG
 #pragma warning(disable:4505)   // unreferenced local function has been removed
-//#pragma warning(disable:4702)   // unreachable code
 #pragma warning(disable:4313)   // 'format specifier' in format string conflicts with argument %d of type 'type'
 #endif // !DEBUG
 
@@ -56,9 +50,6 @@
 #pragma warning(disable:4710)   // function not inlined
 #pragma warning(disable:4527)   // user-defined destructor required
 #pragma warning(disable:4513)   // destructor could not be generated
-
-    // <TODO>TODO we really probably need this one put back in!!!</TODO>
-//#pragma warning(disable:4701)   // local variable may be used without being initialized
 #endif // _MSC_VER
 
 #define _CRT_DEPENDENCY_   //this code depends on the crt file functions
@@ -163,6 +154,7 @@ typedef DPTR(class TypeHandle)          PTR_TypeHandle;
 typedef VPTR(class VirtualCallStubManager) PTR_VirtualCallStubManager;
 typedef VPTR(class VirtualCallStubManagerManager) PTR_VirtualCallStubManagerManager;
 typedef VPTR(class IGCHeap)             PTR_IGCHeap;
+typedef VPTR(class ModuleBase)          PTR_ModuleBase;
 
 //
 // _UNCHECKED_OBJECTREF is for code that can't deal with DEBUG OBJECTREFs
@@ -301,7 +293,6 @@ inline void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord)
 #include "gcenv.interlocked.inl"
 
 #include "util.hpp"
-#include "ibclogger.h"
 #include "eepolicy.h"
 
 #include "vars.hpp"
@@ -416,7 +407,6 @@ struct DummyGlobalContract
 extern DummyGlobalContract ___contract;
 
 #endif // defined(_DEBUG)
-
 
 // All files get to see all of these .inl files to make sure all files
 // get the benefit of inlining.

@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Threading;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Globalization
 {
@@ -232,7 +231,7 @@ namespace System.Globalization
                             continue;
                         }
 
-                        return a - b;
+                        return aUpper - bUpper;
                     }
 
                     //

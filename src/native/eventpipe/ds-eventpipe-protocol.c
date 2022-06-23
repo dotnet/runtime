@@ -140,7 +140,7 @@ eventpipe_collect_tracing_command_try_parse_rundown_requested (
 	EP_ASSERT (buffer_len != NULL);
 	EP_ASSERT (rundown_requested != NULL);
 
-	return ds_ipc_message_try_parse_value (buffer, buffer_len, (uint8_t *)rundown_requested, (uint32_t)sizeof (bool));
+	return ds_ipc_message_try_parse_value (buffer, buffer_len, (uint8_t *)rundown_requested, 1);
 }
 
 static
@@ -160,6 +160,9 @@ eventpipe_collect_tracing_command_try_parse_config (
 	const uint32_t max_count_configs = 1000;
 	uint32_t count_configs = 0;
 
+	uint8_t *provider_name_byte_array = NULL;
+	uint8_t *filter_data_byte_array = NULL;
+
 	ep_char8_t *provider_name_utf8 = NULL;
 	ep_char8_t *filter_data_utf8 = NULL;
 
@@ -176,20 +179,27 @@ eventpipe_collect_tracing_command_try_parse_config (
 		ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &log_level));
 		ep_raise_error_if_nok (log_level <= EP_EVENT_LEVEL_VERBOSE);
 
-		const ep_char16_t *provider_name = NULL;
-		ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t (buffer, buffer_len, &provider_name));
+		uint32_t provider_name_byte_array_len = 0;
+		ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_byte_array_alloc (buffer, buffer_len, &provider_name_byte_array, &provider_name_byte_array_len));
 
-		provider_name_utf8 = ep_rt_utf16_to_utf8_string (provider_name, -1);
+		provider_name_utf8 = ep_rt_utf16_to_utf8_string ((const ep_char16_t *)provider_name_byte_array, -1);
 		ep_raise_error_if_nok (provider_name_utf8 != NULL);
 
 		ep_raise_error_if_nok (!ep_rt_utf8_string_is_null_or_empty (provider_name_utf8));
 
-		const ep_char16_t *filter_data = NULL; // This parameter is optional.
-		ds_ipc_message_try_parse_string_utf16_t (buffer, buffer_len, &filter_data);
+		ep_rt_byte_array_free (provider_name_byte_array);
+		provider_name_byte_array = NULL;
 
-		if (filter_data) {
-			filter_data_utf8 = ep_rt_utf16_to_utf8_string (filter_data, -1);
+		uint32_t filter_data_byte_array_len = 0;
+		ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_byte_array_alloc (buffer, buffer_len, &filter_data_byte_array, &filter_data_byte_array_len));
+
+		// This parameter is optional.
+		if (filter_data_byte_array) {
+			filter_data_utf8 = ep_rt_utf16_to_utf8_string ((const ep_char16_t *)filter_data_byte_array, -1);
 			ep_raise_error_if_nok (filter_data_utf8 != NULL);
+
+			ep_rt_byte_array_free (filter_data_byte_array);
+			filter_data_byte_array = NULL;
 		}
 
 		EventPipeProviderConfiguration provider_config;
@@ -209,7 +219,9 @@ ep_on_exit:
 
 ep_on_error:
 	count_configs = 0;
+	ep_rt_byte_array_free (provider_name_byte_array);
 	ep_rt_utf8_string_free (provider_name_utf8);
+	ep_rt_byte_array_free (filter_data_byte_array);
 	ep_rt_utf8_string_free (filter_data_utf8);
 	ep_exit_error_handler ();
 }
@@ -548,7 +560,7 @@ ds_eventpipe_protocol_helper_handle_ipc_message (
 #endif /* !defined(DS_INCLUDE_SOURCE_FILES) || defined(DS_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */
 
-#ifndef DS_INCLUDE_SOURCE_FILES
+#if !defined(ENABLE_PERFTRACING) || (defined(DS_INCLUDE_SOURCE_FILES) && !defined(DS_FORCE_INCLUDE_SOURCE_FILES))
 extern const char quiet_linker_empty_file_warning_diagnostics_eventpipe_protocol;
 const char quiet_linker_empty_file_warning_diagnostics_eventpipe_protocol = 0;
 #endif

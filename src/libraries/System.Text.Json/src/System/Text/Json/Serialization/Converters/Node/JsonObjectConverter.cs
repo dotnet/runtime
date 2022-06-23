@@ -50,7 +50,7 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        public JsonObject ReadObject(ref Utf8JsonReader reader, JsonNodeOptions? options)
+        public static JsonObject ReadObject(ref Utf8JsonReader reader, JsonNodeOptions? options)
         {
             JsonElement jElement = JsonElement.ParseValue(ref reader);
             JsonObject jObject = new JsonObject(jElement, options);

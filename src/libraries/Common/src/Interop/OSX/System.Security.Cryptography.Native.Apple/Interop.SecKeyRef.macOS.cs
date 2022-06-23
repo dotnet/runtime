@@ -26,7 +26,7 @@ internal static partial class Interop
                 out ppKeyOut,
                 out pOSStatus);
 
-        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_SecKeyImportEphemeral(
             ref byte pbKeyBlob,
             int cbKeyBlob,
@@ -61,7 +61,7 @@ internal static partial class Interop
             throw new CryptographicException();
         }
 
-        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_SecKeyExport(
             SafeSecKeyRefHandle? key,
             int exportPrivate,

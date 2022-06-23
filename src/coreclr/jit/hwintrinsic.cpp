@@ -314,6 +314,36 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         return NI_Throw_PlatformNotSupportedException;
     }
 
+    // Special case: For Vector64/128/256 we currently don't accelerate any of the methods when
+    // IsHardwareAccelerated reports false. For Vector64 and Vector128 this is when the baseline
+    // ISA is unsupported. For Vector256 this is when AVX2 is unsupported since integer types
+    // can't get properly accelerated.
+
+    if (isa == InstructionSet_Vector128)
+    {
+        if (!comp->IsBaselineSimdIsaSupported())
+        {
+            return NI_Illegal;
+        }
+    }
+#if defined(TARGET_XARCH)
+    else if (isa == InstructionSet_Vector256)
+    {
+        if (!comp->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+        {
+            return NI_Illegal;
+        }
+    }
+#elif defined(TARGET_ARM64)
+    else if (isa == InstructionSet_Vector64)
+    {
+        if (!comp->IsBaselineSimdIsaSupported())
+        {
+            return NI_Illegal;
+        }
+    }
+#endif
+
     for (int i = 0; i < (NI_HW_INTRINSIC_END - NI_HW_INTRINSIC_START - 1); i++)
     {
         const HWIntrinsicInfo& intrinsicInfo = hwIntrinsicInfoArray[i];
@@ -430,7 +460,7 @@ bool HWIntrinsicInfo::isImmOp(NamedIntrinsic id, const GenTree* op)
 //    argType    -- the required type of argument
 //    argClass   -- the class handle of argType
 //    expectAddr -- if true indicates we are expecting type stack entry to be a TYP_BYREF.
-//    newobjThis -- For CEE_NEWOBJ, this is the temp grabbed for the allocated uninitalized object.
+//    newobjThis -- For CEE_NEWOBJ, this is the temp grabbed for the allocated uninitialized object.
 //
 // Return Value:
 //     the validated argument
@@ -574,12 +604,11 @@ GenTree* Compiler::addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound
 //    true iff the given instruction set is enabled via configuration (environment variables, etc.).
 bool Compiler::compSupportsHWIntrinsic(CORINFO_InstructionSet isa)
 {
-    return compHWIntrinsicDependsOn(isa) && (featureSIMD || HWIntrinsicInfo::isScalarIsa(isa)) &&
-           (
+    return compHWIntrinsicDependsOn(isa) && (
 #ifdef DEBUG
-               JitConfig.EnableIncompleteISAClass() ||
+                                                JitConfig.EnableIncompleteISAClass() ||
 #endif
-               HWIntrinsicInfo::isFullyImplementedIsa(isa));
+                                                HWIntrinsicInfo::isFullyImplementedIsa(isa));
 }
 
 //------------------------------------------------------------------------
@@ -626,48 +655,15 @@ static bool isSupportedBaseType(NamedIntrinsic intrinsic, CorInfoType baseJitTyp
         return true;
     }
 
+#ifdef DEBUG
+    CORINFO_InstructionSet isa = HWIntrinsicInfo::lookupIsa(intrinsic);
 #ifdef TARGET_XARCH
-    assert((intrinsic == NI_Vector128_As) || (intrinsic == NI_Vector128_AsByte) ||
-           (intrinsic == NI_Vector128_AsDouble) || (intrinsic == NI_Vector128_AsInt16) ||
-           (intrinsic == NI_Vector128_AsInt32) || (intrinsic == NI_Vector128_AsInt64) ||
-           (intrinsic == NI_Vector128_AsSByte) || (intrinsic == NI_Vector128_AsSingle) ||
-           (intrinsic == NI_Vector128_AsUInt16) || (intrinsic == NI_Vector128_AsUInt32) ||
-           (intrinsic == NI_Vector128_AsUInt64) || (intrinsic == NI_Vector128_get_AllBitsSet) ||
-           (intrinsic == NI_Vector128_get_Count) || (intrinsic == NI_Vector128_get_Zero) ||
-           (intrinsic == NI_Vector128_GetElement) || (intrinsic == NI_Vector128_WithElement) ||
-           (intrinsic == NI_Vector128_ToScalar) || (intrinsic == NI_Vector128_ToVector256) ||
-           (intrinsic == NI_Vector128_ToVector256Unsafe) || (intrinsic == NI_Vector256_As) ||
-           (intrinsic == NI_Vector256_AsByte) || (intrinsic == NI_Vector256_AsDouble) ||
-           (intrinsic == NI_Vector256_AsInt16) || (intrinsic == NI_Vector256_AsInt32) ||
-           (intrinsic == NI_Vector256_AsInt64) || (intrinsic == NI_Vector256_AsSByte) ||
-           (intrinsic == NI_Vector256_AsSingle) || (intrinsic == NI_Vector256_AsUInt16) ||
-           (intrinsic == NI_Vector256_AsUInt32) || (intrinsic == NI_Vector256_AsUInt64) ||
-           (intrinsic == NI_Vector256_get_AllBitsSet) || (intrinsic == NI_Vector256_get_Count) ||
-           (intrinsic == NI_Vector256_get_Zero) || (intrinsic == NI_Vector256_GetElement) ||
-           (intrinsic == NI_Vector256_WithElement) || (intrinsic == NI_Vector256_GetLower) ||
-           (intrinsic == NI_Vector256_ToScalar));
+    assert((isa == InstructionSet_Vector256) || (isa == InstructionSet_Vector128));
 #endif // TARGET_XARCH
 #ifdef TARGET_ARM64
-    assert((intrinsic == NI_Vector64_As) || (intrinsic == NI_Vector64_AsByte) || (intrinsic == NI_Vector64_AsDouble) ||
-           (intrinsic == NI_Vector64_AsInt16) || (intrinsic == NI_Vector64_AsInt32) ||
-           (intrinsic == NI_Vector64_AsInt64) || (intrinsic == NI_Vector64_AsSByte) ||
-           (intrinsic == NI_Vector64_AsSingle) || (intrinsic == NI_Vector64_AsUInt16) ||
-           (intrinsic == NI_Vector64_AsUInt32) || (intrinsic == NI_Vector64_AsUInt64) ||
-           (intrinsic == NI_Vector64_get_AllBitsSet) || (intrinsic == NI_Vector64_get_Count) ||
-           (intrinsic == NI_Vector64_get_Zero) || (intrinsic == NI_Vector64_GetElement) ||
-           (intrinsic == NI_Vector64_ToScalar) || (intrinsic == NI_Vector64_ToVector128) ||
-           (intrinsic == NI_Vector64_ToVector128Unsafe) || (intrinsic == NI_Vector64_WithElement) ||
-           (intrinsic == NI_Vector128_As) || (intrinsic == NI_Vector128_AsByte) ||
-           (intrinsic == NI_Vector128_AsDouble) || (intrinsic == NI_Vector128_AsInt16) ||
-           (intrinsic == NI_Vector128_AsInt32) || (intrinsic == NI_Vector128_AsInt64) ||
-           (intrinsic == NI_Vector128_AsSByte) || (intrinsic == NI_Vector128_AsSingle) ||
-           (intrinsic == NI_Vector128_AsUInt16) || (intrinsic == NI_Vector128_AsUInt32) ||
-           (intrinsic == NI_Vector128_AsUInt64) || (intrinsic == NI_Vector128_get_AllBitsSet) ||
-           (intrinsic == NI_Vector128_get_Count) || (intrinsic == NI_Vector128_get_Zero) ||
-           (intrinsic == NI_Vector128_GetElement) || (intrinsic == NI_Vector128_GetLower) ||
-           (intrinsic == NI_Vector128_GetUpper) || (intrinsic == NI_Vector128_ToScalar) ||
-           (intrinsic == NI_Vector128_WithElement));
+    assert((isa == InstructionSet_Vector64) || (isa == InstructionSet_Vector128));
 #endif // TARGET_ARM64
+#endif // DEBUG
     return false;
 }
 
@@ -765,8 +761,9 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     int                    numArgs         = sig->numArgs;
     var_types              retType         = JITtype2varType(sig->retType);
     CorInfoType            simdBaseJitType = CORINFO_TYPE_UNDEF;
+    GenTree*               retNode         = nullptr;
 
-    if ((retType == TYP_STRUCT) && featureSIMD)
+    if (retType == TYP_STRUCT)
     {
         unsigned int sizeBytes;
         simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(sig->retTypeSigClass, &sizeBytes);
@@ -805,7 +802,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         }
         else
         {
-            assert(featureSIMD);
             unsigned int sizeBytes;
 
             simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(clsHnd, &sizeBytes);
@@ -1007,11 +1003,10 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             return nullptr;
         }
 
-        GenTree*            op1     = nullptr;
-        GenTree*            op2     = nullptr;
-        GenTree*            op3     = nullptr;
-        GenTree*            op4     = nullptr;
-        GenTreeHWIntrinsic* retNode = nullptr;
+        GenTree* op1 = nullptr;
+        GenTree* op2 = nullptr;
+        GenTree* op3 = nullptr;
+        GenTree* op4 = nullptr;
 
         switch (numArgs)
         {
@@ -1054,9 +1049,10 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
                         CorInfoType auxiliaryType = CORINFO_TYPE_UNDEF;
 
-                        if (!varTypeIsSIMD(op1->TypeGet()))
+                        if (!varTypeIsSIMD(op1))
                         {
                             auxiliaryType = CORINFO_TYPE_PTR;
+                            retNode->gtFlags |= (GTF_EXCEPT | GTF_GLOB_REF);
                         }
 
                         retNode->AsHWIntrinsic()->SetAuxiliaryJitType(auxiliaryType);
@@ -1181,31 +1177,23 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, op4, intrinsic, simdBaseJitType, simdSize);
                 break;
 #endif
-
             default:
-                return nullptr;
+                break;
         }
-
-        const bool isMemoryStore = retNode->OperIsMemoryStore();
-
-        if (isMemoryStore || retNode->OperIsMemoryLoad())
-        {
-            if (isMemoryStore)
-            {
-                // A MemoryStore operation is an assignment
-                retNode->gtFlags |= GTF_ASG;
-            }
-
-            // This operation contains an implicit indirection
-            //   it could point into the global heap or
-            //   it could throw a null reference exception.
-            //
-            retNode->gtFlags |= (GTF_GLOB_REF | GTF_EXCEPT);
-        }
-        return retNode;
+    }
+    else
+    {
+        retNode = impSpecialIntrinsic(intrinsic, clsHnd, method, sig, simdBaseJitType, retType, simdSize);
     }
 
-    return impSpecialIntrinsic(intrinsic, clsHnd, method, sig, simdBaseJitType, retType, simdSize);
+    if ((retNode != nullptr) && retNode->OperIs(GT_HWINTRINSIC))
+    {
+        assert(!retNode->OperMayThrow(this) || ((retNode->gtFlags & GTF_EXCEPT) != 0));
+        assert(!retNode->OperRequiresAsgFlag() || ((retNode->gtFlags & GTF_ASG) != 0));
+        assert(!retNode->OperIsImplicitIndir() || ((retNode->gtFlags & GTF_GLOB_REF) != 0));
+    }
+
+    return retNode;
 }
 
 #endif // FEATURE_HW_INTRINSICS

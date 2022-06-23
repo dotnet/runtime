@@ -29,8 +29,8 @@ public:
         LIMITED_METHOD_CONTRACT;
 #if defined(UNIX_AMD64_ABI)
         _ASSERTE((argLocDescForStructInRegs != NULL) || (offset != TransitionBlock::StructInRegsOffset));
-#elif defined(TARGET_ARM64)
-        // This assert is not interesting on arm64. argLocDescForStructInRegs could be
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+        // This assert is not interesting on arm64/loongarch64. argLocDescForStructInRegs could be
         // initialized if the args are being enregistered.
 #else
         _ASSERTE(argLocDescForStructInRegs == NULL);
@@ -82,6 +82,67 @@ public:
 
 #endif // !DACCESS_COMPILE
 #endif // defined(TARGET_ARM64)
+
+#if defined(TARGET_LOONGARCH64)
+    bool IsStructPassedInRegs()
+    {
+        return m_argLocDescForStructInRegs != NULL;
+    }
+
+#ifndef DACCESS_COMPILE
+    void CopyStructToRegisters(void *src, int fieldBytes)
+    {
+        _ASSERTE(IsStructPassedInRegs());
+        _ASSERTE(fieldBytes <= 16);
+
+        int argOfs = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_argLocDescForStructInRegs->m_idxFloatReg * 8;
+
+        if (m_argLocDescForStructInRegs->m_structFields == STRUCT_FLOAT_FIELD_ONLY_TWO)
+        { // struct with two floats.
+            _ASSERTE(m_argLocDescForStructInRegs->m_cFloatReg == 2);
+            _ASSERTE(m_argLocDescForStructInRegs->m_cGenReg == 0);
+            *(INT64*)((char*)m_base + argOfs) = *(INT32*)src;
+            *(INT64*)((char*)m_base + argOfs + 8) = *((INT32*)src + 1);
+        }
+        else if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_FLOAT_FIELD_FIRST) != 0)
+        { // the first field is float or double.
+            if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_FIRST_FIELD_SIZE_IS8) == 0)
+                *(INT64*)((char*)m_base + argOfs) = *(INT32*)src; // the first field is float
+            else
+                *(UINT64*)((char*)m_base + argOfs) = *(UINT64*)src; // the first field is double.
+            _ASSERTE(m_argLocDescForStructInRegs->m_cFloatReg == 1);
+            _ASSERTE(m_argLocDescForStructInRegs->m_cGenReg == 1);
+            _ASSERTE((m_argLocDescForStructInRegs->m_structFields & STRUCT_FLOAT_FIELD_SECOND) == 0);//the second field is integer.
+            argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_argLocDescForStructInRegs->m_idxGenReg * 8;
+            if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_HAS_8BYTES_FIELDS_MASK) != 0)
+                *(UINT64*)((char*)m_base + argOfs) = *((UINT64*)src + 1);
+            else
+                *(INT64*)((char*)m_base + argOfs) = *((INT32*)src + 1); // the second field is int32.
+        }
+        else if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_FLOAT_FIELD_SECOND) != 0)
+        { // the second field is float or double.
+            *(UINT64*)((char*)m_base + argOfs) = *(UINT64*)src; // NOTE: here ignoring the first size.
+            if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_HAS_8BYTES_FIELDS_MASK) == 0)
+                *(UINT64*)((char*)m_base + argOfs) = *((INT32*)src + 1); // the second field is int32.
+            else
+                *(UINT64*)((char*)m_base + argOfs) = *((UINT64*)src + 1);
+            _ASSERTE(m_argLocDescForStructInRegs->m_cFloatReg == 1);
+            _ASSERTE(m_argLocDescForStructInRegs->m_cGenReg == 1);
+            _ASSERTE((m_argLocDescForStructInRegs->m_structFields & STRUCT_FLOAT_FIELD_FIRST) == 0);//the first field is integer.
+            argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_argLocDescForStructInRegs->m_idxGenReg * 8;
+        }
+        else
+            _ASSERTE(!"---------UNReachable-------LoongArch64!!!");
+    }
+#endif // !DACCESS_COMPILE
+
+    PTR_VOID GetStructGenRegDestinationAddress()
+    {
+        _ASSERTE(IsStructPassedInRegs());
+        int argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_argLocDescForStructInRegs->m_idxGenReg * 8;
+        return dac_cast<PTR_VOID>(dac_cast<TADDR>(m_base) + argOfs);
+    }
+#endif // defined(TARGET_LOONGARCH64)
 
 #if defined(UNIX_AMD64_ABI)
 

@@ -15,11 +15,10 @@ using System.Xml.Xsl;
 using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.Runtime;
 using System.Diagnostics.CodeAnalysis;
+using TypeFactory = System.Xml.Xsl.XmlQueryTypeFactory;
 
 namespace System.Xml.Xsl.IlGen
 {
-    using TypeFactory = System.Xml.Xsl.XmlQueryTypeFactory;
-
     /// <summary>
     /// Creates Msil code for an entire QilExpression graph.  Code is generated in one of two modes: push or
     /// pull.  In push mode, code is generated to push the values in an iterator to the XmlWriter
@@ -3821,7 +3820,7 @@ namespace System.Xml.Xsl.IlGen
         /// Get the XsltConvert method that converts from "typSrc" to "typDst".  Return false if no
         /// such method exists.  This conversion matrix should match the one in XsltConvert.ExternalValueToExternalValue.
         /// </summary>
-        private bool GetXsltConvertMethod(XmlQueryType typSrc, XmlQueryType typDst, out MethodInfo? meth)
+        private static bool GetXsltConvertMethod(XmlQueryType typSrc, XmlQueryType typDst, out MethodInfo? meth)
         {
             meth = null;
 
@@ -4465,7 +4464,7 @@ namespace System.Xml.Xsl.IlGen
         /// Returns true if the specified node's owner element might have local namespaces added to it
         /// after attributes have already been added.
         /// </summary>
-        private bool MightHaveNamespacesAfterAttributes(XmlILConstructInfo? info)
+        private static bool MightHaveNamespacesAfterAttributes(XmlILConstructInfo? info)
         {
             // Get parent element
             if (info != null)
@@ -4482,7 +4481,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Returns true if the specified element should cache attributes.
         /// </summary>
-        private bool ElementCachesAttributes(XmlILConstructInfo info)
+        private static bool ElementCachesAttributes(XmlILConstructInfo info)
         {
             // Attributes will be cached if namespaces might be constructed after the attributes
             return info.MightHaveDuplicateAttributes || info.MightHaveNamespacesAfterAttributes;
@@ -4536,7 +4535,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Return true if a runtime check needs to be made in order to transition into the WithinContent state.
         /// </summary>
-        private bool CheckWithinContent(XmlILConstructInfo info)
+        private static bool CheckWithinContent(XmlILConstructInfo info)
         {
             switch (info.InitialStates)
             {
@@ -4553,7 +4552,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Return true if a runtime check needs to be made in order to transition into the EnumAttrs state.
         /// </summary>
-        private bool CheckEnumAttrs(XmlILConstructInfo info)
+        private static bool CheckEnumAttrs(XmlILConstructInfo info)
         {
             switch (info.InitialStates)
             {
@@ -4569,7 +4568,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Map the XmlNodeKindFlags enumeration into the XPathNodeType enumeration.
         /// </summary>
-        private XPathNodeType QilXmlToXPathNodeType(XmlNodeKindFlags xmlTypes)
+        private static XPathNodeType QilXmlToXPathNodeType(XmlNodeKindFlags xmlTypes)
         {
             switch (xmlTypes)
             {
@@ -4585,7 +4584,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Map a QilExpression constructor type into the XPathNodeType enumeration.
         /// </summary>
-        private XPathNodeType QilConstructorToNodeType(QilNodeType typ)
+        private static XPathNodeType QilConstructorToNodeType(QilNodeType typ)
         {
             switch (typ)
             {
@@ -4956,7 +4955,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Shortcut call to XmlILTypeHelper.GetStorageType.
         /// </summary>
-        private Type GetStorageType(QilNode nd)
+        private static Type GetStorageType(QilNode nd)
         {
             return XmlILTypeHelper.GetStorageType(nd.XmlType!);
         }
@@ -4964,7 +4963,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Shortcut call to XmlILTypeHelper.GetStorageType.
         /// </summary>
-        private Type GetStorageType(XmlQueryType typ)
+        private static Type GetStorageType(XmlQueryType typ)
         {
             return XmlILTypeHelper.GetStorageType(typ);
         }
@@ -4972,7 +4971,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Shortcut call to XmlILTypeHelper.GetStorageType, using an expression's prime type.
         /// </summary>
-        private Type GetItemStorageType(QilNode nd)
+        private static Type GetItemStorageType(QilNode nd)
         {
             return XmlILTypeHelper.GetStorageType(nd.XmlType!.Prime);
         }
@@ -4980,7 +4979,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Shortcut call to XmlILTypeHelper.GetStorageType, using the prime type.
         /// </summary>
-        private Type GetItemStorageType(XmlQueryType typ)
+        private static Type GetItemStorageType(XmlQueryType typ)
         {
             return XmlILTypeHelper.GetStorageType(typ.Prime);
         }

@@ -1,9 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <IsNETCoreAppAnalyzer>true</IsNETCoreAppAnalyzer>
     <AnalyzerRoslynVersion>4.0</AnalyzerRoslynVersion>
-    <RoslynApiVersion>$(MicrosoftCodeAnalysisCSharpWorkspacesVersion)</RoslynApiVersion>
+    <RoslynApiVersion>$(MicrosoftCodeAnalysisVersion_4_0)</RoslynApiVersion>
     <DefineConstants>$(DefineConstants);ROSLYN4_0_OR_GREATER</DefineConstants>
   </PropertyGroup>
 

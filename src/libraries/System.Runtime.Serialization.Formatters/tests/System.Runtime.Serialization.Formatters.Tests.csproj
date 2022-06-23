@@ -29,7 +29,7 @@
              Link="Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <Compile Include="$(CommonPath)System\Collections\Generic\ReferenceEqualityComparer.cs"
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ReferenceEqualityComparer.cs"
              Link="Common\System\Collections\Generic\ReferenceEqualityComparer.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">

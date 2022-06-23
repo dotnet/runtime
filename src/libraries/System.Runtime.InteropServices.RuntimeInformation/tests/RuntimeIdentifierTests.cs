@@ -66,6 +66,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         }
 
         [Fact, PlatformSpecific(TestPlatforms.Linux)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "Bionic is not normal Linux, has no LSB /etc/os-release")]
         public void VerifyLinuxRid()
         {
             string expectedOSName = File.ReadAllLines("/etc/os-release")

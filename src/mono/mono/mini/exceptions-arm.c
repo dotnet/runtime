@@ -243,7 +243,7 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 
 	/* Save fp regs */
 	if (!mono_arch_is_soft_float ()) {
-		ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, sizeof (double) * 16);
+		ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, (guint32)(sizeof (double) * 16));
 		cfa_offset += sizeof (double) * 16;
 		mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, cfa_offset);
 		ARM_FSTMD (code, ARM_VFP_D0, 16, ARMREG_SP);

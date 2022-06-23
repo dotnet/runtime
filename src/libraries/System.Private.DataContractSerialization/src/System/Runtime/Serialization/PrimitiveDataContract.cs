@@ -104,13 +104,13 @@ namespace System.Runtime.Serialization
             xmlWriter.WriteAnyType(obj);
         }
 
-        protected object HandleReadValue(object obj, XmlObjectSerializerReadContext context)
+        protected static object HandleReadValue(object obj, XmlObjectSerializerReadContext context)
         {
             context.AddNewObject(obj);
             return obj;
         }
 
-        protected bool TryReadNullAtTopLevel(XmlReaderDelegator reader)
+        protected static bool TryReadNullAtTopLevel(XmlReaderDelegator reader)
         {
             Attributes attributes = new Attributes();
             attributes.Read(reader);
@@ -625,6 +625,10 @@ namespace System.Runtime.Serialization
 
     internal sealed class DateTimeDataContract : PrimitiveDataContract
     {
+        [UnconditionalSuppressMessage ("ReflectionAnalysis", "IL2118",
+            Justification = "DAM on the first parameter of the PrimitiveDataContract constructor references methods of DateTime, " +
+                            "which has a compiler-generated local function LowGranularityNonCachedFallback that calls PInvokes " +
+                            "which are considered potentially dangerous. Data contract serialization will not access this local function.")]
         public DateTimeDataContract() : base(typeof(DateTime), DictionaryGlobals.DateTimeLocalName, DictionaryGlobals.SchemaNamespace)
         {
         }
@@ -847,7 +851,7 @@ namespace System.Runtime.Serialization
         public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
             object obj;
-            if (reader.IsEmptyElement)
+            if (XmlReaderDelegator.IsEmptyElement)
             {
                 reader.Skip();
                 obj = new object();

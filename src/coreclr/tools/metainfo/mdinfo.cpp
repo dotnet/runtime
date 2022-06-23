@@ -360,7 +360,7 @@ void MDInfo::DisplayMD()
         // WriteLine("Unresolved MemberRefs");
         // DisplayMemberRefs(0x00000001, "\t");
 
-        VWrite("\n\nCoff symbol name overhead:  %d\n", g_cbCoffNames);
+        VWrite("\n\nCoff symbol name overhead:  %Iu\n", g_cbCoffNames);
     }
     WriteLine("===========================================================");
     if (m_DumpFilter & dumpUnsat)
@@ -1179,7 +1179,9 @@ void MDInfo::DisplayParamInfo(mdParamDef inParamDef)
                             &nameLen, &flags, &dwCPlusFlags, &pValue, &cbValue);
     if (FAILED(hr)) Error("GetParamProps failed.", hr);
 
+#ifdef FEATURE_COMINTEROP
     _FillVariant((BYTE)dwCPlusFlags, pValue, cbValue, &defValue);
+#endif
 
     char sFlags[STRING_BUFFER_LEN];
     sFlags[0] = 0;
@@ -1379,7 +1381,7 @@ LPCWSTR MDInfo::TypeDefName(mdTypeDef inTypeDef, _Out_writes_(bufLen) LPWSTR buf
         NULL);                  // [OUT] Put base class TypeDef/TypeRef here.
     if (FAILED(hr))
     {
-        swprintf_s(buffer, bufLen, W("[Invalid TypeDef]"));
+        wcscpy_s(buffer, bufLen, W("[Invalid TypeDef]"));
     }
 
     return buffer;
@@ -1451,7 +1453,7 @@ LPCWSTR MDInfo::TypeRefName(mdTypeRef tr, _Out_writes_(bufLen) LPWSTR buffer, UL
         NULL);              // Put actual size of name here.
     if (FAILED(hr))
     {
-        swprintf_s(buffer, bufLen, W("[Invalid TypeRef]"));
+        wcscpy_s(buffer, bufLen, W("[Invalid TypeRef]"));
     }
 
     return (buffer);
@@ -1877,7 +1879,7 @@ void MDInfo::DisplayCustomAttributeInfo(mdCustomAttribute inValue, const char *p
     LPCUTF8     pMethName=0;            // Name of custom attribute ctor, if any.
     CQuickBytes qSigName;               // Buffer to pretty-print signature.
     PCCOR_SIGNATURE pSig=0;             // Signature of ctor.
-    ULONG       cbSig;                  // Size of the signature.
+    ULONG       cbSig=0;                // Size of the signature.
     BOOL        bCoffSymbol = false;    // true for coff symbol CA's.
     WCHAR       rcName[MAX_CLASS_NAME]; // Name of the type.
 
@@ -1939,7 +1941,7 @@ void MDInfo::DisplayCustomAttributeInfo(mdCustomAttribute inValue, const char *p
 
     VWrite("%s\tCustomAttributeName: %ls", preFix, rcName);
     if (pSig && pMethName)
-        VWrite(" :: %S", qSigName.Ptr());
+        VWrite(" :: %S", (LPWSTR)qSigName.Ptr());
 
     // Keep track of coff overhead.
     if (!wcscmp(W("__DecoratedName"), rcName))
@@ -2039,7 +2041,7 @@ void MDInfo::DisplayCustomAttributeInfo(mdCustomAttribute inValue, const char *p
                 case ELEMENT_TYPE_U8:
                     CA.GetU8(&u8);
                     uI64 = u8;
-                    VWrite("%#lx", uI64);
+                    VWrite("%#I64x", uI64);
                     break;
                 case ELEMENT_TYPE_R4:
                     dblVal = CA.GetR4();
@@ -2950,7 +2952,7 @@ void MDInfo::DisplayCorNativeLink(COR_NATIVE_LINK *pCorNLnk, const char *preFix)
 // Fills given varaint with value given in pValue and of type in bCPlusTypeFlag
 //
 // Taken from MetaInternal.cpp
-
+#ifdef FEATURE_COMINTEROP
 HRESULT _FillVariant(
     BYTE        bCPlusTypeFlag,
     const void  *pValue,
@@ -3043,6 +3045,7 @@ HRESULT _FillVariant(
 
     return hr;
 } // HRESULT _FillVariant()
+#endif // FEATURE_COMINTEROP
 
 void MDInfo::DisplayAssembly()
 {

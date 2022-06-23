@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { bind_runtime_method } from "./method-binding";
-import { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr } from "./types/emscripten";
+import { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr } from "./types/emscripten";
 
 export type GCHandle = {
     __brand: "GCHandle"
@@ -15,6 +15,9 @@ export interface MonoObject extends ManagedPointer {
 }
 export interface MonoString extends MonoObject {
     __brand: "MonoString"
+}
+export interface MonoInternedString extends MonoString {
+    __brandString: "MonoInternedString"
 }
 export interface MonoClass extends MonoObject {
     __brand: "MonoClass"
@@ -31,6 +34,15 @@ export interface MonoArray extends MonoObject {
 export interface MonoAssembly extends MonoObject {
     __brand: "MonoAssembly"
 }
+// Pointer to a MonoObject* (i.e. the address of a root)
+export interface MonoObjectRef extends ManagedPointer {
+    __brandMonoObjectRef: "MonoObjectRef"
+}
+// This exists for signature clarity, we need it to be structurally equivalent
+//  so that anything requiring MonoObjectRef will work
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface MonoStringRef extends MonoObjectRef {
+}
 export const MonoMethodNull: MonoMethod = <MonoMethod><any>0;
 export const MonoObjectNull: MonoObject = <MonoObject><any>0;
 export const MonoArrayNull: MonoArray = <MonoArray><any>0;
@@ -38,13 +50,20 @@ export const MonoAssemblyNull: MonoAssembly = <MonoAssembly><any>0;
 export const MonoClassNull: MonoClass = <MonoClass><any>0;
 export const MonoTypeNull: MonoType = <MonoType><any>0;
 export const MonoStringNull: MonoString = <MonoString><any>0;
+export const MonoObjectRefNull: MonoObjectRef = <MonoObjectRef><any>0;
+export const MonoStringRefNull: MonoStringRef = <MonoStringRef><any>0;
 export const JSHandleDisposed: JSHandle = <JSHandle><any>-1;
 export const JSHandleNull: JSHandle = <JSHandle><any>0;
+export const GCHandleNull: GCHandle = <GCHandle><any>0;
 export const VoidPtrNull: VoidPtr = <VoidPtr><any>0;
 export const CharPtrNull: CharPtr = <CharPtr><any>0;
+export const NativePointerNull: NativePointer = <NativePointer><any>0;
 
 export function coerceNull<T extends ManagedPointer | NativePointer>(ptr: T | null | undefined): T {
-    return (<any>ptr | <any>0) as any;
+    if ((ptr === null) || (ptr === undefined))
+        return (0 as any) as T;
+    else
+        return ptr as T;
 }
 
 export type MonoConfig = {
@@ -62,7 +81,8 @@ export type MonoConfig = {
     runtime_options?: string[], // array of runtime options as strings
     aot_profiler_options?: AOTProfilerOptions, // dictionary-style Object. If omitted, aot profiler will not be initialized.
     coverage_profiler_options?: CoverageProfilerOptions, // dictionary-style Object. If omitted, coverage profiler will not be initialized.
-    ignore_pdb_load_errors?: boolean
+    ignore_pdb_load_errors?: boolean,
+    wait_for_debugger?: number
 };
 
 export type MonoConfigError = {
@@ -113,7 +133,7 @@ export const enum AssetBehaviours {
 }
 
 export type RuntimeHelpers = {
-    get_call_sig: MonoMethod;
+    get_call_sig_ref: MonoMethod;
     runtime_namespace: string;
     runtime_classname: string;
     wasm_runtime_class: MonoClass;
@@ -124,6 +144,10 @@ export type RuntimeHelpers = {
 
     _box_buffer: VoidPtr;
     _unbox_buffer: VoidPtr;
+    _i52_error_scratch_buffer: Int32Ptr;
+    _box_root: any;
+    // A WasmRoot that is guaranteed to contain 0
+    _null_root: any;
     _class_int32: MonoClass;
     _class_uint32: MonoClass;
     _class_double: MonoClass;
@@ -133,6 +157,7 @@ export type RuntimeHelpers = {
 
     loaded_files: string[];
     config: MonoConfig | MonoConfigError;
+    wait_for_debugger?: number;
     fetch: (url: string) => Promise<Response>;
 }
 
@@ -154,6 +179,17 @@ export type CoverageProfilerOptions = {
     send_to?: string // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::DumpCoverageProfileData' (DumpCoverageProfileData stores the data into INTERNAL.coverage_profile_data.)
 }
 
+/// Options to configure the event pipe session
+/// The recommended method is to MONO.diagnostics.SesisonOptionsBuilder to create an instance of this type
+export interface EventPipeSessionOptions {
+    /// Whether to collect additional details (such as method and type names) at EventPipeSession.stop() time (default: true)
+    /// This is required for some use cases, and may allow some tools to better understand the events.
+    collectRundownEvents?: boolean;
+    /// The providers that will be used by this session.
+    /// See https://docs.microsoft.com/en-us/dotnet/core/diagnostics/eventpipe#trace-using-environment-variables
+    providers: string;
+}
+
 // how we extended emscripten Module
 export type DotnetModule = EmscriptenModule & DotnetModuleConfig;
 
@@ -166,6 +202,7 @@ export type DotnetModuleConfig = {
     onDotnetReady?: () => void;
 
     imports?: DotnetModuleConfigImports;
+    exports?: string[];
 } & Partial<EmscriptenModule>
 
 export type DotnetModuleConfigImports = {
@@ -188,9 +225,14 @@ export type DotnetModuleConfigImports = {
     url?: any;
 }
 
-export function assert(condition: unknown, messsage: string): asserts condition {
+// see src\mono\wasm\runtime\rollup.config.js
+// inline this, because the lambda could allocate closure on hot path otherwise
+export function mono_assert(condition: unknown, messageFactory: string | (() => string)): asserts condition {
     if (!condition) {
-        throw new Error(`Assert failed: ${messsage}`);
+        const message = typeof messageFactory === "string"
+            ? messageFactory
+            : messageFactory();
+        throw new Error(`Assert failed: ${message}`);
     }
 }
 
@@ -236,4 +278,10 @@ export const enum MarshalError {
     NULL_TYPE_POINTER = 514,
     UNSUPPORTED_TYPE = 515,
     FIRST = BUFFER_TOO_SMALL
+}
+
+// Evaluates whether a value is nullish (same definition used as the ?? operator,
+//  https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Nullish_coalescing_operator)
+export function is_nullish<T>(value: T | null | undefined): value is null | undefined {
+    return (value === undefined) || (value === null);
 }

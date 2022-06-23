@@ -1,3 +1,6 @@
+if(NOT MONO_GC STREQUAL "sgen")
+    return()
+endif()
 
 set(sgen_sources_base
     gc-internal-agnostic.h

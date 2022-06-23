@@ -24,7 +24,7 @@ namespace System.Configuration
         private const string ApplicationSettingsGroupPrefix = ApplicationSettingsGroupName + "/";
         private const string UserSettingsGroupPrefix = UserSettingsGroupName + "/";
 
-        private Configuration GetUserConfig(bool isRoaming)
+        private static Configuration GetUserConfig(bool isRoaming)
         {
             ConfigurationUserLevel userLevel = isRoaming ? ConfigurationUserLevel.PerUserRoaming :
                                                            ConfigurationUserLevel.PerUserRoamingAndLocal;
@@ -32,7 +32,7 @@ namespace System.Configuration
             return ClientSettingsConfigurationHost.OpenExeConfiguration(userLevel);
         }
 
-        private ClientSettingsSection GetConfigSection(Configuration config, string sectionName, bool declare)
+        private static ClientSettingsSection GetConfigSection(Configuration config, string sectionName, bool declare)
         {
             string fullSectionName = UserSettingsGroupPrefix + sectionName;
             ClientSettingsSection section = null;
@@ -54,7 +54,7 @@ namespace System.Configuration
 
         // Declares the section handler of a given section in its section group, if a declaration isn't already
         // present.
-        private void DeclareSection(Configuration config, string sectionName)
+        private static void DeclareSection(Configuration config, string sectionName)
         {
             ConfigurationSectionGroup settingsGroup = config.GetSectionGroup(UserSettingsGroupName);
 
@@ -82,7 +82,7 @@ namespace System.Configuration
             }
         }
 
-        internal IDictionary ReadSettings(string sectionName, bool isUserScoped)
+        internal static IDictionary ReadSettings(string sectionName, bool isUserScoped)
         {
             IDictionary settings = new Hashtable();
 
@@ -146,12 +146,12 @@ namespace System.Configuration
             return settings;
         }
 
-        internal ConnectionStringSettingsCollection ReadConnectionStrings()
+        internal static ConnectionStringSettingsCollection ReadConnectionStrings()
         {
             return PrivilegedConfigurationManager.ConnectionStrings;
         }
 
-        internal void RevertToParent(string sectionName, bool isRoaming)
+        internal static void RevertToParent(string sectionName, bool isRoaming)
         {
             if (!ConfigurationManagerInternalFactory.Instance.SupportsUserConfig)
             {
@@ -169,7 +169,7 @@ namespace System.Configuration
             }
         }
 
-        internal void WriteSettings(string sectionName, bool isRoaming, IDictionary newSettings)
+        internal static void WriteSettings(string sectionName, bool isRoaming, IDictionary newSettings)
         {
             if (!ConfigurationManagerInternalFactory.Instance.SupportsUserConfig)
             {
@@ -277,7 +277,7 @@ namespace System.Configuration
                 Host.InitForConfiguration(ref locationSubPath, out configPath, out locationConfigPath, configRoot, null, null, desiredConfigPath);
             }
 
-            private bool IsKnownConfigFile(string filename)
+            private static bool IsKnownConfigFile(string filename)
             {
                 return
                   string.Equals(filename, ConfigurationManagerInternalFactory.Instance.MachineConfigPath, StringComparison.OrdinalIgnoreCase) ||

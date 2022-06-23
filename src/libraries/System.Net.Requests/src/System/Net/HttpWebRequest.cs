@@ -174,11 +174,13 @@ namespace System.Net
             throw new PlatformNotSupportedException();
         }
 
+        [Obsolete("Serialization has been deprecated for HttpWebRequest.")]
         void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             throw new PlatformNotSupportedException();
         }
 
+        [Obsolete("Serialization has been deprecated for HttpWebRequest.")]
         protected override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             throw new PlatformNotSupportedException();
@@ -1428,8 +1430,10 @@ namespace System.Net
             AddRange(rangeSpecifier, (long)from, (long)to);
         }
 
-        public void AddRange(string rangeSpecifier!!, long from, long to)
+        public void AddRange(string rangeSpecifier, long from, long to)
         {
+            ArgumentNullException.ThrowIfNull(rangeSpecifier);
+
             if ((from < 0) || (to < 0))
             {
                 throw new ArgumentOutOfRangeException(from < 0 ? nameof(from) : nameof(to), SR.net_rangetoosmall);
@@ -1453,8 +1457,10 @@ namespace System.Net
             AddRange(rangeSpecifier, (long)range);
         }
 
-        public void AddRange(string rangeSpecifier!!, long range)
+        public void AddRange(string rangeSpecifier, long range)
         {
+            ArgumentNullException.ThrowIfNull(rangeSpecifier);
+
             if (!HttpValidationHelpers.IsValidToken(rangeSpecifier))
             {
                 throw new ArgumentException(SR.net_nottoken, nameof(rangeSpecifier));
@@ -1519,7 +1525,7 @@ namespace System.Net
             HttpKnownHeaderNames.LastModified
         };
 
-        private bool IsWellKnownContentHeader(string header)
+        private static bool IsWellKnownContentHeader(string header)
         {
             foreach (string contentHeaderName in s_wellKnownContentHeaders)
             {
@@ -1552,10 +1558,9 @@ namespace System.Net
 
         private void SetDateHeaderHelper(string headerName, DateTime dateTime)
         {
-            if (dateTime == DateTime.MinValue)
-                SetSpecialHeaders(headerName, null); // remove header
-            else
-                SetSpecialHeaders(headerName, HttpDateParser.DateToString(dateTime.ToUniversalTime()));
+            SetSpecialHeaders(headerName, dateTime == DateTime.MinValue ?
+                null : // remove header
+                dateTime.ToUniversalTime().ToString("r"));
         }
 
         private bool TryGetHostUri(string hostName, [NotNullWhen(true)] out Uri? hostUri)

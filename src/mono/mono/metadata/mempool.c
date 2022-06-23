@@ -41,7 +41,7 @@
 #define MONO_MEMPOOL_MINSIZE 512
 #endif
 
-// The --with-malloc-mempools debug-build flag causes mempools to be allocated in single-element blocks, so tools like Valgrind can run better.
+// The USE_MALLOC_FOR_MEMPOOLS debug-build flag causes mempools to be allocated in single-element blocks, so tools like Valgrind can run better.
 #if USE_MALLOC_FOR_MEMPOOLS
 #define INDIVIDUAL_ALLOCATIONS
 #define MONO_MEMPOOL_PREFER_INDIVIDUAL_ALLOCATION_SIZE 0
@@ -181,7 +181,7 @@ mono_mempool_stats (MonoMemPool *pool)
 		count++;
 	}
 	if (pool) {
-		still_free = pool->end - pool->pos;
+		still_free = GPTRDIFF_TO_UINT32 (pool->end - pool->pos);
 		g_print ("Mempool %p stats:\n", pool);
 		g_print ("Total mem allocated: %d\n", pool->d.allocated);
 		g_print ("Num chunks: %d\n", count);
@@ -357,14 +357,13 @@ char*
 mono_mempool_strdup (MonoMemPool *pool,
 					 const char *s)
 {
-	int l;
 	char *res;
 
 	if (s == NULL)
 		return NULL;
 
-	l = strlen (s);
-	res = (char *)mono_mempool_alloc (pool, l + 1);
+	size_t l = strlen (s);
+	res = (char *)mono_mempool_alloc (pool, (guint)l + 1);
 	memcpy (res, s, l + 1);
 
 	return res;
@@ -380,7 +379,7 @@ mono_mempool_strdup_vprintf (MonoMemPool *pool, const char *format, va_list args
 	int len = vsnprintf (NULL, 0, format, args2);
 	va_end (args2);
 
-	if (len >= 0 && (buf = (char*)mono_mempool_alloc (pool, (buflen = (size_t) (len + 1)))) != NULL) {
+	if (len >= 0 && (buf = (char*)mono_mempool_alloc (pool, (guint)(buflen = (size_t) (len + 1)))) != NULL) {
 		vsnprintf (buf, buflen, format, args);
 	} else {
 		buf = NULL;
@@ -418,5 +417,5 @@ mono_mempool_get_allocated (MonoMemPool *pool)
 long
 mono_mempool_get_bytes_allocated (void)
 {
-	return UnlockedRead64 (&total_bytes_allocated);
+	return GINT64_TO_LONG (UnlockedRead64 (&total_bytes_allocated));
 }

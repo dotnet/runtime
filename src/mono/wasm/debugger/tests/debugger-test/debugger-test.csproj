@@ -7,6 +7,7 @@
     <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
     <WasmGenerateAppBundle>true</WasmGenerateAppBundle>
     <OutputType>library</OutputType>
+    <WasmEmitSymbolMap>true</WasmEmitSymbolMap>
   </PropertyGroup>
 
   <ItemGroup>

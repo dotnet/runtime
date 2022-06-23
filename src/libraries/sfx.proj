@@ -1,0 +1,73 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
+    <BuildInParallel>false</BuildInParallel>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The sfx ref projects must be built first as sfx src projects don't use P2Ps to reference each other. Instead the
+         references are defined manually via Reference items, therefore the reference assemblies must exist before that. -->
+    <ProjectReference Include="sfx-ref.proj">
+      <OutputItemType Condition="'$(RefOnly)' == 'true'">SharedFrameworkAssembly</OutputItemType>
+    </ProjectReference>
+  </ItemGroup>
+
+  <!-- Support building only the reference assemblies. -->
+  <ItemGroup Condition="'$(RefOnly)' != 'true'">
+    <ProjectReference Include="sfx-src.proj" OutputItemType="SharedFrameworkAssembly" />
+    <ProjectReference Include="sfx-gen.proj" />
+  </ItemGroup>
+
+  <!-- Generate the targeting pack's framework list so that out-of-band projects can leverage it. -->
+  <Import Project="frameworklist.targets" />
+  <!-- Import the illink file which contains some of the logic required to illink the shared framework assemblies. -->
+  <Import Project="$(RepositoryEngineeringDir)illink.targets" />
+
+  <Target Name="GetTrimSharedFrameworkAssembliesInputs">
+    <PropertyGroup>
+      <SharedFrameworkAssembliesMarkerFile>$(IntermediateOutputPath)linker-$(TargetArchitecture)-marker.txt</SharedFrameworkAssembliesMarkerFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <!-- Include suppression XML files bin-placed in earlier per-library linker run. -->
+      <SharedFrameworkSuppressionsXml Include="$(ILLinkTrimAssemblyRuntimePackSuppressionsXmlsDir)*.xml" />
+      <!-- Collect CoreLib suppression XML files not bin-placed in earlier per-library linker run. CoreLib doesn't use bin-place logic. -->
+      <SharedFrameworkSuppressionsXml Include="$(CoreLibSharedDir)ILLink\ILLink.Suppressions.LibraryBuild.xml" />
+      <SharedFrameworkSuppressionsXml Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Include="$(CoreClrProjectRoot)System.Private.CoreLib\src\ILLink\ILLink.Suppressions.LibraryBuild.xml" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="TrimSharedFrameworkAssemblies"
+          AfterTargets="Build"
+          DependsOnTargets="ResolveProjectReferences;GetTrimSharedFrameworkAssembliesInputs;PrepareForAssembliesTrim"
+          Condition="'$(RefOnly)' != 'true'"
+          Inputs="@(SharedFrameworkAssembly);@(SharedFrameworkSuppressionsXml);$(ILLinkTasksAssembly)"
+          Outputs="$(SharedFrameworkAssembliesMarkerFile)">
+    <Message Text="$(MSBuildProjectName) -> Trimming $(PackageRID) shared framework assemblies with ILLinker..." Importance="high" />
+
+    <PropertyGroup>
+      <SharedFrameworkILLinkArgs>$(ILLinkArgs)</SharedFrameworkILLinkArgs>
+      <!-- update debug symbols -->
+      <SharedFrameworkILLinkArgs>$(SharedFrameworkILLinkArgs) -b true</SharedFrameworkILLinkArgs>
+      <SharedFrameworkILLinkArgs Condition="'@(SharedFrameworkSuppressionsXml)' != ''" >$(SharedFrameworkILLinkArgs) --link-attributes &quot;@(SharedFrameworkSuppressionsXml->'%(FullPath)', '&quot; --link-attributes &quot;')&quot;</SharedFrameworkILLinkArgs>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <SharedFrameworkAssembly RootMode="library" />
+    </ItemGroup>
+
+    <ILLink AssemblyPaths=""
+        RootAssemblyNames="@(SharedFrameworkAssembly)"
+        OutputDirectory="$([MSBuild]::NormalizeDirectory('$(ILLinkTrimAssemblyArtifactsRootDir)', 'trimmed-runtimepack'))"
+        ExtraArgs="$(SharedFrameworkILLinkArgs)"
+        ToolExe="$(_DotNetHostFileName)"
+        ToolPath="$(_DotNetHostDirectory)" />
+
+    <!-- Create a marker file which serves as the target's output to enable incremental builds. -->  
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(SharedFrameworkAssembliesMarkerFile)'))" />
+    <Touch Files="$(SharedFrameworkAssembliesMarkerFile)"
+           AlwaysCreate="true" />
+  </Target>
+
+</Project>

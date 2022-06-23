@@ -457,7 +457,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
       InterfaceInfo_t *pIntInfo = (InterfaceInfo_t *) (pMTHead + imapOffset + index * sizeof(InterfaceInfo_t));
       pIntInfo->SetMethodTable((pParentClass->GetInterfaceMap() + index)->GetMethodTable());
     }
-    pMT->SetInterfaceMap(pParentClass->GetNumInterfaces(), (InterfaceInfo_t *)(pMTHead + imapOffset));
+    pMT->SetInterfaceMap((WORD)pParentClass->GetNumInterfaces(), (InterfaceInfo_t *)(pMTHead + imapOffset));
 
     // Copy down flags for these interfaces as well. This is simplified a bit since we know that System.Array
     // only has a few interfaces and the flags will fit inline into the MethodTable's optional members.
@@ -1124,13 +1124,17 @@ void GenerateArrayOpScript(ArrayMethodDesc *pMD, ArrayOpScript *paos)
     ArgIterator argit(&msig);
 
 #ifdef TARGET_X86
-    paos->m_cbretpop = argit.CbStackPop();
+    UINT stackPop = argit.CbStackPop();
+    _ASSERTE(stackPop <= USHRT_MAX);
+    paos->m_cbretpop = (UINT16)stackPop;
 #endif
 
     if (argit.HasRetBuffArg())
     {
         paos->m_flags |= ArrayOpScript::HASRETVALBUFFER;
-        paos->m_fRetBufLoc = argit.GetRetBuffArgOffset();
+        UINT refBuffOffset = argit.GetRetBuffArgOffset();
+        _ASSERTE(refBuffOffset <= USHRT_MAX);
+        paos->m_fRetBufLoc = (UINT16)refBuffOffset;
     }
 
     if (paos->m_op == ArrayOpScript::LOADADDR)
@@ -1149,7 +1153,9 @@ void GenerateArrayOpScript(ArrayMethodDesc *pMD, ArrayOpScript *paos)
 
     if (paos->m_op == paos->STORE)
     {
-        paos->m_fValLoc = argit.GetNextOffset();
+        UINT offset = argit.GetNextOffset();
+        _ASSERTE(offset <= USHRT_MAX);
+        paos->m_fValLoc = (UINT16)offset;
     }
 }
 
@@ -1177,7 +1183,7 @@ public:
         if (s_pArrayStubCache == NULL)
         {
             ArrayStubCache * pArrayStubCache = new ArrayStubCache(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap());
-            if (FastInterlockCompareExchangePointer(&s_pArrayStubCache, pArrayStubCache, NULL) != NULL)
+            if (InterlockedCompareExchangeT(&s_pArrayStubCache, pArrayStubCache, NULL) != NULL)
                 delete pArrayStubCache;
         }
 

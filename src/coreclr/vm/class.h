@@ -48,7 +48,6 @@
 
 #include "packedfields.inl"
 #include "array.h"
-#define IBCLOG(x) g_IBCLogger.##x
 
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr);
 
@@ -1199,7 +1198,7 @@ public:
     inline void SetHasNoGuid()
     {
         WRAPPER_NO_CONTRACT;
-        FastInterlockOr(&m_VMFlags, VMFLAG_NO_GUID);
+        InterlockedOr((LONG*)&m_VMFlags, VMFLAG_NO_GUID);
     }
 
 public:

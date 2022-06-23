@@ -147,25 +147,6 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
 NESTED_END NDirectImportThunk, _TEXT
 
 // ------------------------------------------------------------------
-// The call in fixup precode initally points to this function.
-// The pupose of this function is to load the MethodDesc and forward the call to prestub.
-NESTED_ENTRY PrecodeFixupThunk, _TEXT, NoHandler
-    // x12 = FixupPrecode *
-    // On Exit
-    // x12 = MethodDesc*
-    // x13, x14 Trashed
-    // Inline computation done by FixupPrecode::GetMethodDesc()
-    ldrb    w13, [x12, #Offset_PrecodeChunkIndex]    //m_PrecodeChunkIndex
-    ldrb    w14, [x12, #Offset_MethodDescChunkIndex] // m_MethodDescChunkIndex
-
-    add     x12, x12, w13, uxtw #FixupPrecode_ALIGNMENT_SHIFT_1
-    add     x13, x12, w13, uxtw #FixupPrecode_ALIGNMENT_SHIFT_2
-    ldr     x13, [x13, #SIZEOF__FixupPrecode]
-    add     x12, x13, w14, uxtw #MethodDesc_ALIGNMENT_SHIFT
-
-    b       C_FUNC(ThePreStub)
-NESTED_END PrecodeFixupThunk, _TEXT
-// ------------------------------------------------------------------
 
 NESTED_ENTRY ThePreStub, _TEXT, NoHandler
 
@@ -500,41 +481,6 @@ LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
     ret  lr
 LEAF_END JIT_PatchedCodeLast, _TEXT
 
-//------------------------------------------------
-// ExternalMethodFixupStub
-//
-// In NGEN images, calls to cross-module external methods initially
-// point to a jump thunk that calls into the following function that will
-// call into a VM helper. The VM helper is responsible for patching up the
-// thunk, upon executing the precode, so that all subsequent calls go directly
-// to the actual method body.
-//
-// This is done lazily for performance reasons.
-//
-// On entry:
-//
-// x12 = Address of thunk
-
-NESTED_ENTRY ExternalMethodFixupStub, _TEXT, NoHandler
-
-    PROLOG_WITH_TRANSITION_BLOCK
-
-    add x0, sp, #__PWTB_TransitionBlock // pTransitionBlock
-    mov x1, x12 // pThunk
-    mov x2, #0  // sectionIndex
-    mov x3, #0  // pModule
-
-    bl C_FUNC(ExternalMethodFixupWorker)
-
-    // mov the address we patched to in x12 so that we can tail call to it
-    mov x12, x0
-
-    EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    PATCH_LABEL ExternalMethodFixupPatchLabel
-    EPILOG_BRANCH_REG   x12
-
-NESTED_END ExternalMethodFixupStub, _TEXT
-
 // void SinglecastDelegateInvokeStub(Delegate *pThis)
 LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT
     cmp x0, #0
@@ -858,8 +804,8 @@ C_FUNC(DelayLoad_MethodCall):
     mov x12, x0
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    // Share patch label
-    b C_FUNC(ExternalMethodFixupPatchLabel)
+    PATCH_LABEL ExternalMethodFixupPatchLabel
+    EPILOG_BRANCH_REG   x12
 
 NESTED_END DelayLoad_MethodCall_FakeProlog, _TEXT
 
@@ -1011,7 +957,7 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
     PROLOG_WITH_TRANSITION_BLOCK
 
     add     x0, sp, #__PWTB_TransitionBlock // TransitionBlock *
-    mov     x1, x10 // stub-identifying token
+    mov     x1, x9 // stub-identifying token
     bl      C_FUNC(OnCallCountThresholdReached)
     mov     x9, x0
 

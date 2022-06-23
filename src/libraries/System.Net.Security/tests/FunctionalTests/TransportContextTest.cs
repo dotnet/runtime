@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Net.Sockets;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -14,30 +13,22 @@ namespace System.Net.Security.Tests
 {
     public class TransportContextTest
     {
-        // The following method is invoked by the RemoteCertificateValidationDelegate.
-        public bool AllowAnyServerCertificate(
-              object sender,
-              X509Certificate certificate,
-              X509Chain chain,
-              SslPolicyErrors sslPolicyErrors)
-        {
-            return true;  // allow everything
-        }
-
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task TransportContext_ConnectToServerWithSsl_GetExpectedChannelBindings()
         {
-            using (var testServer = new DummyTcpServer(
-                new IPEndPoint(IPAddress.Loopback, 0), EncryptionPolicy.RequireEncryption))
-            using (var client = new TcpClient())
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
             {
-                await client.ConnectAsync(testServer.RemoteEndPoint.Address, testServer.RemoteEndPoint.Port);
-
-                using (var sslStream = new SslStream(client.GetStream(), false, AllowAnyServerCertificate, null, EncryptionPolicy.RequireEncryption))
+                using (var client = new SslStream(clientStream, false, TestHelper.AllowAnyServerCertificate, null, EncryptionPolicy.RequireEncryption))
+                using (var server = new SslStream(serverStream))
                 {
-                    await sslStream.AuthenticateAsClientAsync("localhost", null, SslProtocols.None, false);
+                    await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                        client.AuthenticateAsClientAsync("localhost", null, SslProtocols.None, false),
+                        server.AuthenticateAsServerAsync(TestConfiguration.ServerCertificate));
 
-                    TransportContext context = sslStream.TransportContext;
+                    TransportContext context = client.TransportContext;
                     CheckTransportContext(context);
                 }
             }

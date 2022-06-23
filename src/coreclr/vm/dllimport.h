@@ -325,7 +325,7 @@ public:
     PInvokeStaticSigInfo(_In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8* pLibName, _Outptr_opt_ LPCUTF8* pEntryPointName);
 
 private:
-    void ThrowError(_In_ WORD errorResourceID);
+    void ThrowError(_In_ UINT errorResourceID);
     void InitCallConv(_In_ CorInfoCallConvExtension callConv, _In_ MethodDesc* pMD);
     void InitCallConv(_In_ CorInfoCallConvExtension callConv, _In_ BOOL bIsVarArg);
     void DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8* pLibName, _Outptr_opt_ LPCUTF8* pEntryPointName);

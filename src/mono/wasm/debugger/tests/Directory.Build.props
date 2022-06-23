@@ -1,5 +1,5 @@
 <Project>
-  <Import Project="$(MSBuildThisFileDirectory)..\..\..\Directory.Build.props" />
+  <Import Project="$(MSBuildThisFileDirectory)..\Directory.Build.props" />
   <Import Project="$(MSBuildThisFileDirectory)..\..\build\WasmApp.InTree.props" />
   <PropertyGroup>
     <TargetFramework>$(AspNetCoreAppCurrent)</TargetFramework>

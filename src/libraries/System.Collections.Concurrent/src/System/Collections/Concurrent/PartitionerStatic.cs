@@ -85,8 +85,10 @@ namespace System.Collections.Concurrent
         /// <returns>
         /// An orderable partitioner based on the input list.
         /// </returns>
-        public static OrderablePartitioner<TSource> Create<TSource>(IList<TSource> list!!, bool loadBalance)
+        public static OrderablePartitioner<TSource> Create<TSource>(IList<TSource> list, bool loadBalance)
         {
+            ArgumentNullException.ThrowIfNull(list);
+
             if (loadBalance)
             {
                 return (new DynamicPartitionerForIList<TSource>(list));
@@ -109,8 +111,10 @@ namespace System.Collections.Concurrent
         /// <returns>
         /// An orderable partitioner based on the input array.
         /// </returns>
-        public static OrderablePartitioner<TSource> Create<TSource>(TSource[] array!!, bool loadBalance)
+        public static OrderablePartitioner<TSource> Create<TSource>(TSource[] array, bool loadBalance)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             // This implementation uses 'ldelem' instructions for element retrieval, rather than using a
             // method call.
 
@@ -158,8 +162,10 @@ namespace System.Collections.Concurrent
         /// The ordering used in the created partitioner is determined by the natural order of the elements
         /// as retrieved from the source enumerable.
         /// </remarks>
-        public static OrderablePartitioner<TSource> Create<TSource>(IEnumerable<TSource> source!!, EnumerablePartitionerOptions partitionerOptions)
+        public static OrderablePartitioner<TSource> Create<TSource>(IEnumerable<TSource> source, EnumerablePartitionerOptions partitionerOptions)
         {
+            ArgumentNullException.ThrowIfNull(source);
+
             if ((partitionerOptions & (~EnumerablePartitionerOptions.NoBuffering)) != 0)
                 throw new ArgumentOutOfRangeException(nameof(partitionerOptions));
 

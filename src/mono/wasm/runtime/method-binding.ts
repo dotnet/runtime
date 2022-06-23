@@ -1,27 +1,26 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { WasmRoot, WasmRootBuffer, mono_wasm_new_root } from "./roots";
-import { MonoClass, MonoMethod, MonoObject, coerceNull, VoidPtrNull, MonoType, MarshalType } from "./types";
+import { WasmRoot, WasmRootBuffer, mono_wasm_new_root, mono_wasm_new_external_root } from "./roots";
+import { MonoClass, MonoMethod, MonoObject, VoidPtrNull, MonoType, MarshalType, mono_assert } from "./types";
 import { BINDING, Module, runtimeHelpers } from "./imports";
-import { js_to_mono_enum, _js_to_mono_obj, _js_to_mono_uri } from "./js-to-cs";
-import { js_string_to_mono_string, js_string_to_mono_string_interned } from "./strings";
+import { js_to_mono_enum, js_to_mono_obj_root, _js_to_mono_uri_root } from "./js-to-cs";
+import { js_string_to_mono_string_root, js_string_to_mono_string_interned_root } from "./strings";
 import { _unbox_mono_obj_root_with_known_nonprimitive_type } from "./cs-to-js";
 import {
-    _create_temp_frame,
+    _create_temp_frame, _zero_region,
     getI32, getU32, getF32, getF64,
-    setI32, setU32, setF32, setF64, setI64,
+    setI32, setU32, setF32, setF64, setI52, setU52,
+    setB32, getB32, setI32_unchecked, setU32_unchecked
 } from "./memory";
 import {
-    _get_args_root_buffer_for_method_call, _get_buffer_for_method_call,
     _handle_exception_for_call, _teardown_after_call
 } from "./method-calls";
-import cwraps from "./cwraps";
+import cwraps, { wrap_c_function } from "./cwraps";
 import { VoidPtr } from "./types/emscripten";
 
 const primitiveConverters = new Map<string, Converter>();
 const _signature_converters = new Map<string, Converter>();
-const _method_descriptions = new Map<MonoMethod, string>();
 
 
 export function _get_type_name(typePtr: MonoType): string {
@@ -43,11 +42,7 @@ export function _get_class_name(classPtr: MonoClass): string {
 }
 
 export function find_method(klass: MonoClass, name: string, n: number): MonoMethod {
-    const result = cwraps.mono_wasm_assembly_find_method(klass, name, n);
-    if (result) {
-        _method_descriptions.set(result, name);
-    }
-    return result;
+    return cwraps.mono_wasm_assembly_find_method(klass, name, n);
 }
 
 export function get_method(method_name: string): MonoMethod {
@@ -122,19 +117,24 @@ export function _create_rebindable_named_function(name: string, argumentNames: s
 export function _create_primitive_converters(): void {
     const result = primitiveConverters;
     result.set("m", { steps: [{}], size: 0 });
-    result.set("s", { steps: [{ convert: js_string_to_mono_string.bind(BINDING) }], size: 0, needs_root: true });
-    result.set("S", { steps: [{ convert: js_string_to_mono_string_interned.bind(BINDING) }], size: 0, needs_root: true });
-    // note we also bind first argument to false for both _js_to_mono_obj and _js_to_mono_uri, 
+    result.set("s", { steps: [{ convert_root: js_string_to_mono_string_root.bind(BINDING) }], size: 0, needs_root: true });
+    result.set("S", { steps: [{ convert_root: js_string_to_mono_string_interned_root.bind(BINDING) }], size: 0, needs_root: true });
+    // note we also bind first argument to false for both _js_to_mono_obj and _js_to_mono_uri,
     // because we will root the reference, so we don't need in-flight reference
     // also as those are callback arguments and we don't have platform code which would release the in-flight reference on C# end
-    result.set("o", { steps: [{ convert: _js_to_mono_obj.bind(BINDING, false) }], size: 0, needs_root: true });
-    result.set("u", { steps: [{ convert: _js_to_mono_uri.bind(BINDING, false) }], size: 0, needs_root: true });
+    result.set("o", { steps: [{ convert_root: js_to_mono_obj_root.bind(BINDING) }], size: 0, needs_root: true });
+    result.set("u", { steps: [{ convert_root: _js_to_mono_uri_root.bind(BINDING, false) }], size: 0, needs_root: true });
+    // ref object aka T&&
+    result.set("R", { steps: [{ convert_root: js_to_mono_obj_root.bind(BINDING), byref: true }], size: 0, needs_root: true });
 
     // result.set ('k', { steps: [{ convert: js_to_mono_enum.bind (this), indirect: 'i64'}], size: 8});
     result.set("j", { steps: [{ convert: js_to_mono_enum.bind(BINDING), indirect: "i32" }], size: 8 });
 
+    result.set("b", { steps: [{ indirect: "bool" }], size: 8 });
     result.set("i", { steps: [{ indirect: "i32" }], size: 8 });
-    result.set("l", { steps: [{ indirect: "i64" }], size: 8 });
+    result.set("I", { steps: [{ indirect: "u32" }], size: 8 });
+    result.set("l", { steps: [{ indirect: "i52" }], size: 8 });
+    result.set("L", { steps: [{ indirect: "u52" }], size: 8 });
     result.set("f", { steps: [{ indirect: "float" }], size: 8 });
     result.set("d", { steps: [{ indirect: "double" }], size: 8 });
 }
@@ -206,30 +206,37 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
     converter.name = converterName;
 
     let body = [];
-    let argumentNames = ["buffer", "rootBuffer", "method"];
-
-    // worst-case allocation size instead of allocating dynamically, plus padding
-    const bufferSizeBytes = converter.size + (args_marshal.length * 4) + 16;
-
-    // ensure the indirect values are 8-byte aligned so that aligned loads and stores will work
-    const indirectBaseOffset = ((((args_marshal.length * 4) + 7) / 8) | 0) * 8;
+    let argumentNames = ["method"];
 
     const closure: any = {
         Module,
-        _malloc: Module._malloc,
-        mono_wasm_unbox_rooted: cwraps.mono_wasm_unbox_rooted,
         setI32,
         setU32,
         setF32,
         setF64,
-        setI64
+        setU52,
+        setI52,
+        setB32,
+        setI32_unchecked,
+        setU32_unchecked,
+        scratchValueRoot: converter.scratchValueRoot,
+        stackAlloc: Module.stackAlloc,
+        _zero_region
     };
     let indirectLocalOffset = 0;
 
+    // ensure the indirect values are 8-byte aligned so that aligned loads and stores will work
+    const indirectBaseOffset = ((((args_marshal.length * 4) + 7) / 8) | 0) * 8;
+    // worst-case allocation size instead of allocating dynamically, plus padding
+    // the padding is necessary to ensure that we don't overrun the buffer due to
+    //  the 8-byte alignment we did above
+    const bufferSizeBytes = converter.size + (args_marshal.length * 4) + 16;
+
     body.push(
         "if (!method) throw new Error('no method provided');",
-        `if (!buffer) buffer = _malloc (${bufferSizeBytes});`,
-        `let indirectStart = buffer + ${indirectBaseOffset};`,
+        `const buffer = stackAlloc(${bufferSizeBytes});`,
+        `_zero_region(buffer, ${bufferSizeBytes});`,
+        `const indirectStart = buffer + ${indirectBaseOffset};`,
         ""
     );
 
@@ -239,31 +246,48 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
         const valueKey = "value" + i;
 
         const argKey = "arg" + i;
+        const offsetText = `(indirectStart + ${indirectLocalOffset})`;
         argumentNames.push(argKey);
 
-        if (step.convert) {
+        if (step.convert_root) {
+            mono_assert(!step.indirect, "converter step cannot both be rooted and indirect");
+            if (!converter.scratchValueRoot) {
+                // HACK: new_external_root rightly won't accept a null address
+                const dummyAddress = Module.stackSave();
+                converter.scratchValueRoot = mono_wasm_new_external_root<MonoObject>(dummyAddress);
+                closure.scratchValueRoot = converter.scratchValueRoot;
+            }
+
+            closure[closureKey] = step.convert_root;
+            // Update our scratch external root to point to the indirect slot where our
+            //  managed pointer is destined to live
+            body.push(`scratchValueRoot._set_address(${offsetText});`);
+            // Convert the object and store the managed reference through our scratch external root
+            body.push(`${closureKey}(${argKey}, scratchValueRoot);`);
+            if (step.byref) {
+                // for T&& we pass the address of the pointer stored on the stack
+                body.push(`let ${valueKey} = ${offsetText};`);
+            } else {
+                // It is safe to pass the pointer by value now since we know it is pinned
+                body.push(`let ${valueKey} = scratchValueRoot.value;`);
+            }
+        } else if (step.convert) {
             closure[closureKey] = step.convert;
             body.push(`let ${valueKey} = ${closureKey}(${argKey}, method, ${i});`);
         } else {
             body.push(`let ${valueKey} = ${argKey};`);
         }
 
-        if (step.needs_root) {
+        if (step.needs_root && !step.convert_root) {
             body.push("if (!rootBuffer) throw new Error('no root buffer provided');");
             body.push(`rootBuffer.set (${i}, ${valueKey});`);
         }
 
-        // HACK: needs_unbox indicates that we were passed a pointer to a managed object, and either
-        //  it was already rooted by our caller or (needs_root = true) by us. Now we can unbox it and
-        //  pass the raw address of its boxed value into the callee.
-        // FIXME: I don't think this is GC safe
-        if (step.needs_unbox)
-            body.push(`${valueKey} = mono_wasm_unbox_rooted (${valueKey});`);
-
         if (step.indirect) {
-            const offsetText = `(indirectStart + ${indirectLocalOffset})`;
-
             switch (step.indirect) {
+                case "bool":
+                    body.push(`setB32(${offsetText}, ${valueKey});`);
+                    break;
                 case "u32":
                     body.push(`setU32(${offsetText}, ${valueKey});`);
                     break;
@@ -276,17 +300,20 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
                 case "double":
                     body.push(`setF64(${offsetText}, ${valueKey});`);
                     break;
-                case "i64":
-                    body.push(`setI64(${offsetText}, ${valueKey});`);
+                case "i52":
+                    body.push(`setI52(${offsetText}, ${valueKey});`);
+                    break;
+                case "u52":
+                    body.push(`setU52(${offsetText}, ${valueKey});`);
                     break;
                 default:
                     throw new Error("Unimplemented indirect type: " + step.indirect);
             }
 
-            body.push(`setU32(buffer + (${i} * 4), ${offsetText});`);
+            body.push(`setU32_unchecked(buffer + (${i} * 4), ${offsetText});`);
             indirectLocalOffset += step.size!;
         } else {
-            body.push(`setI32(buffer + (${i} * 4), ${valueKey});`);
+            body.push(`setU32_unchecked(buffer + (${i} * 4), ${valueKey});`);
             indirectLocalOffset += 4;
         }
         body.push("");
@@ -297,7 +324,7 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
     let bodyJs = body.join("\r\n"), compiledFunction = null, compiledVariadicFunction = null;
     try {
         compiledFunction = _create_named_function("converter_" + converterName, argumentNames, bodyJs, closure);
-        converter.compiled_function = compiledFunction;
+        converter.compiled_function = <ConverterFunction>compiledFunction;
     } catch (exc) {
         converter.compiled_function = null;
         console.warn("compiling converter failed for", bodyJs, "with error", exc);
@@ -305,13 +332,13 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
     }
 
 
-    argumentNames = ["existingBuffer", "rootBuffer", "method", "args"];
+    argumentNames = ["method", "args"];
     const variadicClosure = {
         converter: compiledFunction
     };
     body = [
         "return converter(",
-        "  existingBuffer, rootBuffer, method,"
+        "  method,"
     ];
 
     for (let i = 0; i < converter.steps.length; i++) {
@@ -330,7 +357,7 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
     bodyJs = body.join("\r\n");
     try {
         compiledVariadicFunction = _create_named_function("variadic_converter_" + converterName, argumentNames, bodyJs, variadicClosure);
-        converter.compiled_variadic_function = compiledVariadicFunction;
+        converter.compiled_variadic_function = <VariadicConverterFunction>compiledVariadicFunction;
     } catch (exc) {
         converter.compiled_variadic_function = null;
         console.warn("compiling converter failed for", bodyJs, "with error", exc);
@@ -372,10 +399,9 @@ export function _decide_if_result_is_marshaled(converter: Converter, argc: numbe
     }
 }
 
-export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null, args_marshal: string/*ArgsMarshalString*/, friendly_name: string): Function {
+export function mono_bind_method(method: MonoMethod, this_arg: null, args_marshal: string/*ArgsMarshalString*/, friendly_name: string): Function {
     if (typeof (args_marshal) !== "string")
         throw new Error("args_marshal argument invalid, expected string");
-    this_arg = coerceNull(this_arg);
 
     let converter: Converter | null = null;
     if (typeof (args_marshal) === "string") {
@@ -383,7 +409,7 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
     }
 
     // FIXME
-    const unbox_buffer_size = 8192;
+    const unbox_buffer_size = 128;
     const unbox_buffer = Module._malloc(unbox_buffer_size);
 
     const token: BoundMethodToken = {
@@ -399,22 +425,21 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
         Module,
         mono_wasm_new_root,
         _create_temp_frame,
-        _get_args_root_buffer_for_method_call,
-        _get_buffer_for_method_call,
         _handle_exception_for_call,
         _teardown_after_call,
-        mono_wasm_try_unbox_primitive_and_get_type: cwraps.mono_wasm_try_unbox_primitive_and_get_type,
+        mono_wasm_try_unbox_primitive_and_get_type_ref: wrap_c_function("mono_wasm_try_unbox_primitive_and_get_type_ref"),
         _unbox_mono_obj_root_with_known_nonprimitive_type,
-        invoke_method: cwraps.mono_wasm_invoke_method,
+        invoke_method_ref: wrap_c_function("mono_wasm_invoke_method_ref"),
         method,
-        this_arg,
         token,
         unbox_buffer,
         unbox_buffer_size,
+        getB32,
         getI32,
         getU32,
         getF32,
-        getF64
+        getF64,
+        stackSave: Module.stackSave
     };
 
     const converterKey = converter ? "converter_" + converter.name : "";
@@ -424,7 +449,7 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
     const argumentNames = [];
     const body = [
         "_create_temp_frame();",
-        "let resultRoot = token.scratchResultRoot, exceptionRoot = token.scratchExceptionRoot;",
+        "let resultRoot = token.scratchResultRoot, exceptionRoot = token.scratchExceptionRoot, sp = stackSave();",
         "token.scratchResultRoot = null;",
         "token.scratchExceptionRoot = null;",
         "if (resultRoot === null)",
@@ -436,10 +461,8 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
 
     if (converter) {
         body.push(
-            `let argsRootBuffer = _get_args_root_buffer_for_method_call(${converterKey}, token);`,
-            `let scratchBuffer = _get_buffer_for_method_call(${converterKey}, token);`,
             `let buffer = ${converterKey}.compiled_function(`,
-            "    scratchBuffer, argsRootBuffer, method,"
+            "    method,"
         );
 
         for (let i = 0; i < converter.steps.length; i++) {
@@ -458,7 +481,7 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
         body.push(");");
 
     } else {
-        body.push("let argsRootBuffer = null, buffer = 0;");
+        body.push("let buffer = 0;");
     }
 
     if (converter && converter.is_result_definitely_unmarshaled) {
@@ -480,8 +503,8 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
     // The end result is that bound method invocations don't always allocate, so no more nursery GCs. Yay! -kg
     body.push(
         "",
-        "resultRoot.value = invoke_method (method, this_arg, buffer, exceptionRoot.get_address ());",
-        `_handle_exception_for_call (${converterKey}, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);`,
+        "invoke_method_ref (method, 0, buffer, exceptionRoot.address, resultRoot.address);",
+        `_handle_exception_for_call (${converterKey}, token, buffer, resultRoot, exceptionRoot, sp);`,
         "",
         "let resultPtr = resultRoot.value, result = undefined;"
     );
@@ -495,12 +518,12 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
 
         if (!converter.is_result_definitely_unmarshaled)
             body.push(
-                "if (is_result_marshaled && (resultPtr !== 0)) {",
+                "if (is_result_marshaled) {",
                 // For the common scenario where the return type is a primitive, we want to try and unbox it directly
                 //  into our existing heap allocation and then read it out of the heap. Doing this all in one operation
                 //  means that we only need to enter a gc safe region twice (instead of 3+ times with the normal,
                 //  slower check-type-and-then-unbox flow which has extra checks since unbox verifies the type).
-                "    let resultType = mono_wasm_try_unbox_primitive_and_get_type (resultPtr, unbox_buffer, unbox_buffer_size);",
+                "    let resultType = mono_wasm_try_unbox_primitive_and_get_type_ref (resultRoot.address, unbox_buffer, unbox_buffer_size);",
                 "    switch (resultType) {",
                 `    case ${MarshalType.INT}:`,
                 "        result = getI32(unbox_buffer); break;",
@@ -512,9 +535,11 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
                 `    case ${MarshalType.FP64}:`,
                 "        result = getF64(unbox_buffer); break;",
                 `    case ${MarshalType.BOOL}:`,
-                "        result = getI32(unbox_buffer) !== 0; break;",
+                "        result = getB32(unbox_buffer); break;",
                 `    case ${MarshalType.CHAR}:`,
                 "        result = String.fromCharCode(getI32(unbox_buffer)); break;",
+                `    case ${MarshalType.NULL}:`,
+                "        result = null; break;",
                 "    default:",
                 "        result = _unbox_mono_obj_root_with_known_nonprimitive_type (resultRoot, resultType, unbox_buffer); break;",
                 "    }",
@@ -535,7 +560,7 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
         displayName += "_this" + this_arg;
 
     body.push(
-        `_teardown_after_call (${converterKey}, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);`,
+        `_teardown_after_call (${converterKey}, token, buffer, resultRoot, exceptionRoot, sp);`,
         "return result;"
     );
 
@@ -572,13 +597,18 @@ export type ArgsMarshalString = ""
     | `${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}`;
 */
 
-type ConverterStepIndirects = "u32" | "i32" | "float" | "double" | "i64"
+type ConverterStepIndirects = "u32" | "i32" | "float" | "double" | "u52" | "i52" | "reference" | "bool"
+type VariadicConverterFunction = (method: MonoMethod, ...args: unknown[]) => VoidPtr;
+type ConverterFunction = (method: MonoMethod /* , ... */) => VoidPtr;
 
 export type Converter = {
     steps: {
+        // (value: any, method: MonoMethod, arg_index: int)
         convert?: boolean | Function;
+        // (value: any, result_root: WasmRoot<MonoObject>)
+        convert_root?: Function;
         needs_root?: boolean;
-        needs_unbox?: boolean;
+        byref?: boolean;
         indirect?: ConverterStepIndirects;
         size?: number;
     }[];
@@ -591,11 +621,11 @@ export type Converter = {
     key?: string;
     name?: string;
     needs_root?: boolean;
-    needs_unbox?: boolean;
-    compiled_variadic_function?: Function | null;
-    compiled_function?: Function | null;
+    compiled_variadic_function?: VariadicConverterFunction | null;
+    compiled_function?: ConverterFunction | null;
     scratchRootBuffer?: WasmRootBuffer | null;
     scratchBuffer?: VoidPtr;
+    scratchValueRoot?: WasmRoot<MonoObject>;
     has_warned_about_signature?: boolean;
     convert?: Function | null;
     method?: MonoMethod | null;

@@ -9,6 +9,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Struct that's greater than 32-bits, but not a multiple of 32-bits.
 public struct MyStruct1
@@ -162,7 +163,8 @@ public class MyProgram
         return Check4(w, 1, 2, 3, 4, 5, 6, 7, s4);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int retVal = Pass;
         if (TestStruct1() != Pass)

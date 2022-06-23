@@ -5,7 +5,6 @@ using System.Threading;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Diagnostics.Tracing
 {
@@ -14,27 +13,31 @@ namespace System.Diagnostics.Tracing
     internal sealed partial class NativeRuntimeEventSource : EventSource
     {
         [NonEvent]
-        [GeneratedDllImport(RuntimeHelpers.QCall)]
+        [LibraryImport(RuntimeHelpers.QCall)]
         internal static partial void LogThreadPoolWorkerThreadStart(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
 
         [NonEvent]
-        [GeneratedDllImport(RuntimeHelpers.QCall)]
+        [LibraryImport(RuntimeHelpers.QCall)]
         internal static partial void LogThreadPoolWorkerThreadStop(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
 
         [NonEvent]
-        [GeneratedDllImport(RuntimeHelpers.QCall)]
+        [LibraryImport(RuntimeHelpers.QCall)]
         internal static partial void LogThreadPoolWorkerThreadWait(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
 
         [NonEvent]
-        [GeneratedDllImport(RuntimeHelpers.QCall)]
+        [LibraryImport(RuntimeHelpers.QCall)]
+        internal static partial void LogThreadPoolMinMaxThreads(ushort MinWorkerThreads, ushort MaxWorkerThreads, ushort MinIOCompletionThreads, ushort MaxIOCompletionThreads, ushort ClrInstanceID);
+
+        [NonEvent]
+        [LibraryImport(RuntimeHelpers.QCall)]
         internal static partial void LogThreadPoolWorkerThreadAdjustmentSample(double Throughput, ushort ClrInstanceID);
 
         [NonEvent]
-        [GeneratedDllImport(RuntimeHelpers.QCall)]
+        [LibraryImport(RuntimeHelpers.QCall)]
         internal static partial void LogThreadPoolWorkerThreadAdjustmentAdjustment(double AverageThroughput, uint NewWorkerThreadCount, NativeRuntimeEventSource.ThreadAdjustmentReasonMap Reason, ushort ClrInstanceID);
 
         [NonEvent]
-        [GeneratedDllImport(RuntimeHelpers.QCall)]
+        [LibraryImport(RuntimeHelpers.QCall)]
         internal static partial void LogThreadPoolWorkerThreadAdjustmentStats(
             double Duration,
             double Throughput,
@@ -49,25 +52,32 @@ namespace System.Diagnostics.Tracing
             ushort ClrInstanceID);
 
         [NonEvent]
-        [GeneratedDllImport(RuntimeHelpers.QCall)]
+        [LibraryImport(RuntimeHelpers.QCall)]
         internal static partial void LogThreadPoolIOEnqueue(
             IntPtr NativeOverlapped,
             IntPtr Overlapped,
-            bool MultiDequeues,
+            [MarshalAs(UnmanagedType.Bool)] bool MultiDequeues,
             ushort ClrInstanceID);
 
         [NonEvent]
-        [GeneratedDllImport(RuntimeHelpers.QCall)]
+        [LibraryImport(RuntimeHelpers.QCall)]
         internal static partial void LogThreadPoolIODequeue(
             IntPtr NativeOverlapped,
             IntPtr Overlapped,
             ushort ClrInstanceID);
 
         [NonEvent]
-        [GeneratedDllImport(RuntimeHelpers.QCall)]
+        [LibraryImport(RuntimeHelpers.QCall)]
         internal static partial void LogThreadPoolWorkingThreadCount(
             uint Count,
             ushort ClrInstanceID
         );
+
+        [NonEvent]
+        [LibraryImport(RuntimeHelpers.QCall)]
+        internal static partial void LogThreadPoolIOPack(
+            IntPtr NativeOverlapped,
+            IntPtr Overlapped,
+            ushort ClrInstanceID);
     }
 }

@@ -33,8 +33,13 @@ namespace System.Security.Cryptography
             ImportKey(key);
         }
 
-        public void Encrypt(byte[] nonce!!, byte[] plaintext!!, byte[] ciphertext!!, byte[] tag!!, byte[]? associatedData = null)
+        public void Encrypt(byte[] nonce, byte[] plaintext, byte[] ciphertext, byte[] tag, byte[]? associatedData = null)
         {
+            ArgumentNullException.ThrowIfNull(nonce);
+            ArgumentNullException.ThrowIfNull(plaintext);
+            ArgumentNullException.ThrowIfNull(ciphertext);
+            ArgumentNullException.ThrowIfNull(tag);
+
             Encrypt((ReadOnlySpan<byte>)nonce, plaintext, ciphertext, tag, associatedData);
         }
 
@@ -49,8 +54,13 @@ namespace System.Security.Cryptography
             EncryptCore(nonce, plaintext, ciphertext, tag, associatedData);
         }
 
-        public void Decrypt(byte[] nonce!!, byte[] ciphertext!!, byte[] tag!!, byte[] plaintext!!, byte[]? associatedData = null)
+        public void Decrypt(byte[] nonce, byte[] ciphertext, byte[] tag, byte[] plaintext, byte[]? associatedData = null)
         {
+            ArgumentNullException.ThrowIfNull(nonce);
+            ArgumentNullException.ThrowIfNull(ciphertext);
+            ArgumentNullException.ThrowIfNull(tag);
+            ArgumentNullException.ThrowIfNull(plaintext);
+
             Decrypt((ReadOnlySpan<byte>)nonce, ciphertext, tag, plaintext, associatedData);
         }
 

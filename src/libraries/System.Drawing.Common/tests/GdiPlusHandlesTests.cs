@@ -9,7 +9,6 @@ using Xunit.Sdk;
 
 namespace System.Drawing.Tests
 {
-    [PlatformSpecific(TestPlatforms.Windows)]
     public static class GdiPlusHandlesTests
     {
         public static bool IsDrawingAndRemoteExecutorSupported => Helpers.GetIsDrawingSupported() && RemoteExecutor.IsSupported;

@@ -98,8 +98,8 @@ private:
 
     static bool genShouldRoundFP();
 
-    GenTreeIndir indirForm(var_types type, GenTree* base);
-    GenTreeStoreInd storeIndirForm(var_types type, GenTree* base, GenTree* data);
+    static GenTreeIndir indirForm(var_types type, GenTree* base);
+    static GenTreeStoreInd storeIndirForm(var_types type, GenTree* base, GenTree* data);
 
     GenTreeIntCon intForm(var_types type, ssize_t value);
 
@@ -218,7 +218,7 @@ public:
 protected:
     void genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, regNumber callTarget = REG_NA);
 
-    void genGCWriteBarrier(GenTree* tgt, GCInfo::WriteBarrierForm wbf);
+    void genGCWriteBarrier(GenTreeStoreInd* store, GCInfo::WriteBarrierForm wbf);
 
     BasicBlock* genCreateTempLabel();
 
@@ -229,15 +229,22 @@ protected:
     void genDefineTempLabel(BasicBlock* label);
     void genDefineInlineTempLabel(BasicBlock* label);
 
-    void genAdjustSP(target_ssize_t delta);
-
     void genAdjustStackLevel(BasicBlock* block);
 
     void genExitCode(BasicBlock* block);
 
     void genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKind, BasicBlock* failBlk = nullptr);
 
+#ifdef TARGET_LOONGARCH64
+    void genSetRegToIcon(regNumber reg, ssize_t val, var_types type);
+    void genJumpToThrowHlpBlk_la(SpecialCodeKind codeKind,
+                                 instruction     ins,
+                                 regNumber       reg1,
+                                 BasicBlock*     failBlk = nullptr,
+                                 regNumber       reg2    = REG_R0);
+#else
     void genCheckOverflow(GenTree* tree);
+#endif
 
     //-------------------------------------------------------------------------
     //
@@ -253,7 +260,11 @@ protected:
     //
 
     void genEstablishFramePointer(int delta, bool reportUnwindData);
+#if defined(TARGET_LOONGARCH64)
+    void genFnPrologCalleeRegArgs();
+#else
     void genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbered, RegState* regState);
+#endif
     void genEnregisterIncomingStackArgs();
 #if defined(TARGET_ARM64)
     void genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed);
@@ -265,7 +276,7 @@ protected:
     void genClearStackVec3ArgUpperBits();
 #endif // UNIX_AMD64_ABI && FEATURE_SIMD
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     bool genInstrWithConstant(instruction ins,
                               emitAttr    attr,
                               regNumber   reg1,
@@ -325,9 +336,15 @@ protected:
     void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta);
 
     void genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed);
+
 #else
     void genPushCalleeSavedRegisters();
 #endif
+
+#if defined(TARGET_AMD64)
+    void genOSRRecordTier0CalleeSavedRegistersAndFrame();
+    void genOSRSaveRemainingCalleeSavedRegisters();
+#endif // TARGET_AMD64
 
     void genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn);
 
@@ -405,7 +422,25 @@ protected:
 
     FuncletFrameInfoDsc genFuncletInfo;
 
-#endif // TARGET_AMD64
+#elif defined(TARGET_LOONGARCH64)
+
+    // A set of information that is used by funclet prolog and epilog generation.
+    // It is collected once, before funclet prologs and epilogs are generated,
+    // and used by all funclet prologs and epilogs, which must all be the same.
+    struct FuncletFrameInfoDsc
+    {
+        regMaskTP fiSaveRegs;                // Set of callee-saved registers saved in the funclet prolog (includes RA)
+        int fiFunction_CallerSP_to_FP_delta; // Delta between caller SP and the frame pointer in the parent function
+                                             // (negative)
+        int fiSP_to_FPRA_save_delta;         // FP/RA register save offset from SP (positive)
+        int fiSP_to_PSP_slot_delta;          // PSP slot offset from SP (positive)
+        int fiCallerSP_to_PSP_slot_delta;    // PSP slot offset from Caller SP (negative)
+        int fiFrameType;                     // Funclet frame types are numbered. See genFuncletProlog() for details.
+        int fiSpDelta1;                      // Stack pointer delta 1 (negative)
+    };
+
+    FuncletFrameInfoDsc genFuncletInfo;
+#endif // TARGET_LOONGARCH64
 
 #if defined(TARGET_XARCH)
 
@@ -422,6 +457,7 @@ protected:
     regNumber genGetZeroReg(regNumber initReg, bool* pInitRegZeroed);
 
     void genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed);
+    void genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed);
 
     void genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed);
 
@@ -476,6 +512,10 @@ protected:
 
     void genPopCalleeSavedRegisters(bool jmpEpilog = false);
 
+#if defined(TARGET_XARCH)
+    unsigned genPopCalleeSavedRegistersFromMask(regMaskTP rsPopRegs);
+#endif // !defined(TARGET_XARCH)
+
 #endif // !defined(TARGET_ARM64)
 
     //
@@ -495,6 +535,78 @@ protected:
     void genFuncletEpilog();
     void genCaptureFuncletPrologEpilogInfo();
 
+    /*-----------------------------------------------------------------------------
+     *
+     *  Set the main function PSPSym value in the frame.
+     *  Funclets use different code to load the PSP sym and save it in their frame.
+     *  See the document "CLR ABI.md" for a full description of the PSPSym.
+     *  The PSPSym section of that document is copied here.
+     *
+     ***********************************
+     *  The name PSPSym stands for Previous Stack Pointer Symbol.  It is how a funclet
+     *  accesses locals from the main function body.
+     *
+     *  First, two definitions.
+     *
+     *  Caller-SP is the value of the stack pointer in a function's caller before the call
+     *  instruction is executed. That is, when function A calls function B, Caller-SP for B
+     *  is the value of the stack pointer immediately before the call instruction in A
+     *  (calling B) was executed. Note that this definition holds for both AMD64, which
+     *  pushes the return value when a call instruction is executed, and for ARM, which
+     *  doesn't. For AMD64, Caller-SP is the address above the call return address.
+     *
+     *  Initial-SP is the initial value of the stack pointer after the fixed-size portion of
+     *  the frame has been allocated. That is, before any "alloca"-type allocations.
+     *
+     *  The PSPSym is a pointer-sized local variable in the frame of the main function and
+     *  of each funclet. The value stored in PSPSym is the value of Initial-SP/Caller-SP
+     *  for the main function.  The stack offset of the PSPSym is reported to the VM in the
+     *  GC information header.  The value reported in the GC information is the offset of the
+     *  PSPSym from Initial-SP/Caller-SP. (Note that both the value stored, and the way the
+     *  value is reported to the VM, differs between architectures. In particular, note that
+     *  most things in the GC information header are reported as offsets relative to Caller-SP,
+     *  but PSPSym on AMD64 is one (maybe the only) exception.)
+     *
+     *  The VM uses the PSPSym to find other locals it cares about (such as the generics context
+     *  in a funclet frame). The JIT uses it to re-establish the frame pointer register, so that
+     *  the frame pointer is the same value in a funclet as it is in the main function body.
+     *
+     *  When a funclet is called, it is passed the Establisher Frame Pointer. For AMD64 this is
+     *  true for all funclets and it is passed as the first argument in RCX, but for ARM this is
+     *  only true for first pass funclets (currently just filters) and it is passed as the second
+     *  argument in R1. The Establisher Frame Pointer is a stack pointer of an interesting "parent"
+     *  frame in the exception processing system. For the CLR, it points either to the main function
+     *  frame or a dynamically enclosing funclet frame from the same function, for the funclet being
+     *  invoked. The value of the Establisher Frame Pointer is Initial-SP on AMD64, Caller-SP on ARM.
+     *
+     *  Using the establisher frame, the funclet wants to load the value of the PSPSym. Since we
+     *  don't know if the Establisher Frame is from the main function or a funclet, we design the
+     *  main function and funclet frame layouts to place the PSPSym at an identical, small, constant
+     *  offset from the Establisher Frame in each case. (This is also required because we only report
+     *  a single offset to the PSPSym in the GC information, and that offset must be valid for the main
+     *  function and all of its funclets). Then, the funclet uses this known offset to compute the
+     *  PSPSym address and read its value. From this, it can compute the value of the frame pointer
+     *  (which is a constant offset from the PSPSym value) and set the frame register to be the same
+     *  as the parent function. Also, the funclet writes the value of the PSPSym to its own frame's
+     *  PSPSym. This "copying" of the PSPSym happens for every funclet invocation, in particular,
+     *  for every nested funclet invocation.
+     *
+     *  On ARM, for all second pass funclets (finally, fault, catch, and filter-handler) the VM
+     *  restores all non-volatile registers to their values within the parent frame. This includes
+     *  the frame register (R11). Thus, the PSPSym is not used to recompute the frame pointer register
+     *  in this case, though the PSPSym is copied to the funclet's frame, as for all funclets.
+     *
+     *  Catch, Filter, and Filter-handlers also get an Exception object (GC ref) as an argument
+     *  (REG_EXCEPTION_OBJECT).  On AMD64 it is the second argument and thus passed in RDX.  On
+     *  ARM this is the first argument and passed in R0.
+     *
+     *  (Note that the JIT64 source code contains a comment that says, "The current CLR doesn't always
+     *  pass the correct establisher frame to the funclet. Funclet may receive establisher frame of
+     *  funclet when expecting that of original routine." It indicates this is the reason that a PSPSym
+     *  is required in all funclets as well as the main function, whereas if the establisher frame was
+     *  correctly reported, the PSPSym could be omitted in some cases.)
+     ***********************************
+     */
     void genSetPSPSym(regNumber initReg, bool* pInitRegZeroed);
 
     void genUpdateCurrentFunclet(BasicBlock* block);
@@ -510,19 +622,16 @@ protected:
         return;
     }
 
-#if defined(TARGET_ARM)
-    void genInsertNopForUnwinder(BasicBlock* block)
-    {
-        return;
-    }
-#endif
-
 #endif // !FEATURE_EH_FUNCLETS
 
     void genGeneratePrologsAndEpilogs();
 
 #if defined(DEBUG) && defined(TARGET_ARM64)
     void genArm64EmitterUnitTests();
+#endif
+
+#if defined(DEBUG) && defined(TARGET_LOONGARCH64)
+    void genLoongArch64EmitterUnitTests();
 #endif
 
 #if defined(DEBUG) && defined(LATE_DISASM) && defined(TARGET_AMD64)
@@ -533,6 +642,7 @@ protected:
     virtual void SetSaveFpLrWithAllCalleeSavedRegisters(bool value);
     virtual bool IsSaveFpLrWithAllCalleeSavedRegisters() const;
     bool         genSaveFpLrWithAllCalleeSavedRegisters;
+    bool         genForceFuncletFrameType5;
 #endif // TARGET_ARM64
 
     //-------------------------------------------------------------------------
@@ -1022,6 +1132,7 @@ protected:
     void genPCLMULQDQIntrinsic(GenTreeHWIntrinsic* node);
     void genPOPCNTIntrinsic(GenTreeHWIntrinsic* node);
     void genXCNTIntrinsic(GenTreeHWIntrinsic* node, instruction ins);
+    void genX86SerializeIntrinsic(GenTreeHWIntrinsic* node);
     template <typename HWIntrinsicSwitchCaseBody>
     void genHWIntrinsicJumpTableFallback(NamedIntrinsic            intrinsic,
                                          regNumber                 nonConstImmReg,
@@ -1151,18 +1262,17 @@ protected:
 #endif // TARGET_XARCH
 
     void genCodeForCast(GenTreeOp* tree);
-    void genCodeForLclAddr(GenTree* tree);
+    void genCodeForLclAddr(GenTreeLclVarCommon* lclAddrNode);
     void genCodeForIndexAddr(GenTreeIndexAddr* tree);
     void genCodeForIndir(GenTreeIndir* tree);
     void genCodeForNegNot(GenTree* tree);
     void genCodeForBswap(GenTree* tree);
+    bool genCanOmitNormalizationForBswap16(GenTree* tree);
     void genCodeForLclVar(GenTreeLclVar* tree);
     void genCodeForLclFld(GenTreeLclFld* tree);
     void genCodeForStoreLclFld(GenTreeLclFld* tree);
     void genCodeForStoreLclVar(GenTreeLclVar* tree);
     void genCodeForReturnTrap(GenTreeOp* tree);
-    void genCodeForJcc(GenTreeCC* tree);
-    void genCodeForSetcc(GenTreeCC* setcc);
     void genCodeForStoreInd(GenTreeStoreInd* tree);
     void genCodeForSwap(GenTreeOp* tree);
     void genCodeForCpObj(GenTreeObj* cpObjNode);
@@ -1226,10 +1336,10 @@ protected:
 
     void genPutStructArgStk(GenTreePutArgStk* treeNode);
 
-    unsigned genMove8IfNeeded(unsigned size, regNumber tmpReg, GenTree* srcAddr, unsigned offset);
-    unsigned genMove4IfNeeded(unsigned size, regNumber tmpReg, GenTree* srcAddr, unsigned offset);
-    unsigned genMove2IfNeeded(unsigned size, regNumber tmpReg, GenTree* srcAddr, unsigned offset);
-    unsigned genMove1IfNeeded(unsigned size, regNumber tmpReg, GenTree* srcAddr, unsigned offset);
+    unsigned genMove8IfNeeded(unsigned size, regNumber tmpReg, GenTree* src, unsigned offset);
+    unsigned genMove4IfNeeded(unsigned size, regNumber tmpReg, GenTree* src, unsigned offset);
+    unsigned genMove2IfNeeded(unsigned size, regNumber tmpReg, GenTree* src, unsigned offset);
+    unsigned genMove1IfNeeded(unsigned size, regNumber tmpReg, GenTree* src, unsigned offset);
     void genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst, GenTree* base, unsigned offset);
     void genStoreRegToStackArg(var_types type, regNumber reg, int offset);
     void genStructPutArgRepMovs(GenTreePutArgStk* putArgStkNode);
@@ -1251,20 +1361,28 @@ protected:
     void genTableBasedSwitch(GenTree* tree);
     void genCodeForArrIndex(GenTreeArrIndex* treeNode);
     void genCodeForArrOffset(GenTreeArrOffs* treeNode);
+#if defined(TARGET_LOONGARCH64)
+    instruction genGetInsForOper(GenTree* treeNode);
+#else
     instruction genGetInsForOper(genTreeOps oper, var_types type);
+#endif
     bool genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarrierForm, GenTree* addr, GenTree* data);
     GenTree* getCallTarget(const GenTreeCall* call, CORINFO_METHOD_HANDLE* methHnd);
-    regNumber getCallIndirectionCellReg(const GenTreeCall* call);
+    regNumber getCallIndirectionCellReg(GenTreeCall* call);
     void genCall(GenTreeCall* call);
     void genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackArgBytes));
     void genJmpMethod(GenTree* jmp);
     BasicBlock* genCallFinally(BasicBlock* block);
     void genCodeForJumpTrue(GenTreeOp* jtrue);
-#ifdef TARGET_ARM64
+#if defined(TARGET_LOONGARCH64)
+    // TODO: refactor for LA.
     void genCodeForJumpCompare(GenTreeOp* tree);
-    void genCodeForMadd(GenTreeOp* tree);
+#endif
+#if defined(TARGET_ARM64)
+    void genCodeForJumpCompare(GenTreeOp* tree);
     void genCodeForBfiz(GenTreeOp* tree);
     void genCodeForAddEx(GenTreeOp* tree);
+    void genCodeForCond(GenTreeOp* tree);
 #endif // TARGET_ARM64
 
 #if defined(FEATURE_EH_FUNCLETS)
@@ -1291,9 +1409,9 @@ protected:
     void genFloatReturn(GenTree* treeNode);
 #endif // TARGET_X86
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     void genSimpleReturn(GenTree* treeNode);
-#endif // TARGET_ARM64
+#endif // TARGET_ARM64 || TARGET_LOONGARCH64
 
     void genReturn(GenTree* treeNode);
 
@@ -1355,8 +1473,11 @@ protected:
 
 public:
     void instGen(instruction ins);
-
+#if defined(TARGET_XARCH)
+    void inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock, bool isRemovableJmpCandidate = false);
+#else
     void inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock);
+#endif
 
     void inst_SET(emitJumpKind condition, regNumber reg);
 
@@ -1401,20 +1522,146 @@ public:
 
     void inst_FS_ST(instruction ins, emitAttr size, TempDsc* tmp, unsigned ofs);
 
-    void inst_TT(instruction ins, GenTree* tree, unsigned offs = 0, int shfv = 0, emitAttr size = EA_UNKNOWN);
-
     void inst_TT_RV(instruction ins, emitAttr size, GenTree* tree, regNumber reg);
-
-    void inst_RV_TT(instruction ins,
-                    regNumber   reg,
-                    GenTree*    tree,
-                    unsigned    offs  = 0,
-                    emitAttr    size  = EA_UNKNOWN,
-                    insFlags    flags = INS_FLAGS_DONT_CARE);
 
     void inst_RV_SH(instruction ins, emitAttr size, regNumber reg, unsigned val, insFlags flags = INS_FLAGS_DONT_CARE);
 
 #if defined(TARGET_XARCH)
+
+    enum class OperandKind{
+        ClsVar, // [CLS_VAR_ADDR]                 - "C" in the emitter.
+        Local,  // [Local or spill temp + offset] - "S" in the emitter.
+        Indir,  // [base+index*scale+disp]        - "A" in the emitter.
+        Imm,    // immediate                      - "I" in the emitter.
+        Reg     // reg                            - "R" in the emitter.
+    };
+
+    class OperandDesc
+    {
+        OperandKind m_kind;
+        union {
+            struct
+            {
+                CORINFO_FIELD_HANDLE m_fieldHnd;
+            };
+            struct
+            {
+                int      m_varNum;
+                uint16_t m_offset;
+            };
+            struct
+            {
+                GenTree*      m_addr;
+                GenTreeIndir* m_indir;
+                var_types     m_indirType;
+            };
+            struct
+            {
+                ssize_t m_immediate;
+                bool    m_immediateNeedsReloc;
+            };
+            struct
+            {
+                regNumber m_reg;
+            };
+        };
+
+    public:
+        OperandDesc(CORINFO_FIELD_HANDLE fieldHnd) : m_kind(OperandKind::ClsVar), m_fieldHnd(fieldHnd)
+        {
+        }
+
+        OperandDesc(int varNum, uint16_t offset) : m_kind(OperandKind::Local), m_varNum(varNum), m_offset(offset)
+        {
+        }
+
+        OperandDesc(GenTreeIndir* indir)
+            : m_kind(OperandKind::Indir), m_addr(indir->Addr()), m_indir(indir), m_indirType(indir->TypeGet())
+        {
+        }
+
+        OperandDesc(var_types indirType, GenTree* addr)
+            : m_kind(OperandKind::Indir), m_addr(addr), m_indir(nullptr), m_indirType(indirType)
+        {
+        }
+
+        OperandDesc(ssize_t immediate, bool immediateNeedsReloc)
+            : m_kind(OperandKind::Imm), m_immediate(immediate), m_immediateNeedsReloc(immediateNeedsReloc)
+        {
+        }
+
+        OperandDesc(regNumber reg) : m_kind(OperandKind::Reg), m_reg(reg)
+        {
+        }
+
+        OperandKind GetKind() const
+        {
+            return m_kind;
+        }
+
+        CORINFO_FIELD_HANDLE GetFieldHnd() const
+        {
+            assert(m_kind == OperandKind::ClsVar);
+            return m_fieldHnd;
+        }
+
+        int GetVarNum() const
+        {
+            assert(m_kind == OperandKind::Local);
+            return m_varNum;
+        }
+
+        int GetLclOffset() const
+        {
+            assert(m_kind == OperandKind::Local);
+            return m_offset;
+        }
+
+        // TODO-Cleanup: instead of this rather unsightly workaround with
+        // "indirForm", create a new abstraction for address modes to pass
+        // to the emitter (or at least just use "addr"...).
+        GenTreeIndir* GetIndirForm(GenTreeIndir* pIndirForm)
+        {
+            if (m_indir == nullptr)
+            {
+                GenTreeIndir indirForm = CodeGen::indirForm(m_indirType, m_addr);
+                memcpy(pIndirForm, &indirForm, sizeof(GenTreeIndir));
+            }
+            else
+            {
+                pIndirForm = m_indir;
+            }
+
+            return pIndirForm;
+        }
+
+        ssize_t GetImmediate() const
+        {
+            assert(m_kind == OperandKind::Imm);
+            return m_immediate;
+        }
+
+        emitAttr GetEmitAttrForImmediate(emitAttr baseAttr) const
+        {
+            assert(m_kind == OperandKind::Imm);
+            return m_immediateNeedsReloc ? EA_SET_FLG(baseAttr, EA_CNS_RELOC_FLG) : baseAttr;
+        }
+
+        regNumber GetReg() const
+        {
+            return m_reg;
+        }
+
+        bool IsContained() const
+        {
+            return m_kind != OperandKind::Reg;
+        }
+    };
+
+    OperandDesc genOperandDesc(GenTree* op);
+
+    void inst_TT(instruction ins, emitAttr size, GenTree* op1);
+    void inst_RV_TT(instruction ins, emitAttr size, regNumber op1Reg, GenTree* op2);
     void inst_RV_RV_IV(instruction ins, emitAttr size, regNumber reg1, regNumber reg2, unsigned ival);
     void inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenTree* rmOp, int ival);
     void inst_RV_RV_TT(instruction ins, emitAttr size, regNumber targetReg, regNumber op1Reg, GenTree* op2, bool isRMW);
@@ -1457,6 +1704,7 @@ public:
     instruction genMapShiftInsToShiftByConstantIns(instruction ins, int shiftByValue);
 #endif // TARGET_XARCH
 
+#ifndef TARGET_LOONGARCH64
     // Maps a GenCondition code to a sequence of conditional jumps or other conditional instructions
     // such as X86's SETcc. A sequence of instructions rather than just a single one is required for
     // certain floating point conditions.
@@ -1500,6 +1748,10 @@ public:
 
     void inst_JCC(GenCondition condition, BasicBlock* target);
     void inst_SETCC(GenCondition condition, var_types type, regNumber dstReg);
+
+    void genCodeForJcc(GenTreeCC* tree);
+    void genCodeForSetcc(GenTreeCC* setcc);
+#endif // !TARGET_LOONGARCH64
 };
 
 // A simple phase that just invokes a method on the codegen instance

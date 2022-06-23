@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.DiaSymReader
 {
-    internal unsafe sealed class ILCompilerComWrappers : ComWrappers
+    internal sealed unsafe class ILCompilerComWrappers : ComWrappers
     {
         protected override unsafe ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count)
         {

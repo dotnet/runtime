@@ -81,6 +81,12 @@
   <data name="Arg_RankMultiDimNotSupported" xml:space="preserve">
     <value>Only single dimensional arrays are supported for the requested action.</value>
   </data>
+  <data name="Argument_Asn1_InvalidCharacterString" xml:space="preserve">
+    <value>The specified UniversalTagNumber must be a string type.</value>
+  </data>
+  <data name="Argument_Asn1_InvalidStringContents" xml:space="preserve">
+    <value>The contents of the string are not valid for the '{0}' ASN.1 encoding.</value>
+  </data>
   <data name="Argument_DestinationTooShort" xml:space="preserve">
     <value>Destination is too short.</value>
   </data>
@@ -132,8 +138,17 @@
   <data name="Argument_PemImport_EncryptedPem" xml:space="preserve">
     <value>An encrypted key was found, but no password was provided. Use ImportFromEncryptedPem to import this key.</value>
   </data>
-  <data name="ArgumentOutOfRange_Index" xml:space="preserve">
+  <data name="Argument_X500_EmailTooLong" xml:space="preserve">
+    <value>The email address cannot exceed 255 characters.</value>
+  </data>
+  <data name="Argument_X500_InvalidCountryOrRegion" xml:space="preserve">
+    <value>The country or region code must be exactly two characters and contain characters between A through Z, inclusive.</value>
+  </data>
+  <data name="ArgumentOutOfRange_IndexMustBeLess" xml:space="preserve">
     <value>Index was out of range. Must be non-negative and less than the size of the collection.</value>
+  </data>
+  <data name="ArgumentOutOfRange_IndexMustBeLessOrEqual" xml:space="preserve">
+    <value>Index was out of range. Must be non-negative and less than or equal to the size of the collection.</value>
   </data>
   <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
     <value>Non-negative number required.</value>
@@ -418,10 +433,10 @@
     <value>The key is too small for the requested operation.</value>
   </data>
   <data name="Cryptography_MatchBlockSize" xml:space="preserve">
-    <value>The specified plaintext size is not valid for the the padding and block size.</value>
+    <value>The specified plaintext size is not valid for the padding and block size.</value>
   </data>
   <data name="Cryptography_MatchFeedbackSize" xml:space="preserve">
-    <value>The specified plaintext size is not valid for the the padding and feedback size.</value>
+    <value>The specified plaintext size is not valid for the padding and feedback size.</value>
   </data>
   <data name="Cryptography_Encryption_MessageTooLong" xml:space="preserve">
     <value>The message exceeds the maximum allowable length for the chosen options ({0}).</value>
@@ -581,6 +596,12 @@
   </data>
   <data name="Cryptography_UnsupportedPaddingMode" xml:space="preserve">
     <value>The specified PaddingMode is not supported.</value>
+  </data>
+  <data name="Cryptography_X509_AIA_MustNotBuildEmpty" xml:space="preserve">
+    <value>At least one of the ocspUris or caIssuersUris values must be non-empty.</value>
+  </data>
+  <data name="Cryptography_X509_AIA_NullValue" xml:space="preserve">
+    <value>One of the ocspUris or caIssuersUris enumerables contains a null value.</value>
   </data>
   <data name="Cryptography_X509_CertificateCorrupted" xml:space="preserve">
     <value>Certificate '{0}' is corrupted.</value>

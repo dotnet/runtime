@@ -163,6 +163,8 @@ DECL_OFFSET(MonoMethodILState, il_offset)
 DECL_OFFSET(MonoMethodILState, data)
 
 DECL_OFFSET(MonoMethodRuntimeGenericContext, class_vtable)
+DECL_OFFSET(MonoMethodRuntimeGenericContext, entries)
+DECL_OFFSET(MonoMethodRuntimeGenericContext, infos)
 
 DECL_OFFSET(MonoJitTlsData, lmf)
 DECL_OFFSET(MonoJitTlsData, class_cast_from)

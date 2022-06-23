@@ -53,18 +53,16 @@ public:
 
 struct CPU_Group_Info
 {
-    WORD    nr_active;  // at most 64
-    WORD    reserved[1];
-    WORD    begin;
-    WORD    end;
     DWORD_PTR   active_mask;
-    DWORD   groupWeight;
-    DWORD   activeThreadWeight;
+    WORD        nr_active;  // at most 64
+    WORD        begin;
+    DWORD       groupWeight;
+    DWORD       activeThreadWeight;
 };
 
 static bool g_fEnableGCCPUGroups;
 static bool g_fHadSingleProcessorAtStartup;
-static DWORD  g_nGroups;
+static DWORD g_nGroups;
 static DWORD g_nProcessors;
 static CPU_Group_Info *g_CPUGroupInfoArray;
 
@@ -154,8 +152,8 @@ bool InitCPUGroupInfoArray()
     DWORD dwNumElements = 0;
     DWORD dwWeight = 1;
 
-    if (GetLogicalProcessorInformationEx(RelationGroup, pSLPIEx, &cbSLPIEx) &&
-                      GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+    if (GetLogicalProcessorInformationEx(RelationGroup, pSLPIEx, &cbSLPIEx) ||
+        GetLastError() != ERROR_INSUFFICIENT_BUFFER)
         return false;
 
     assert(cbSLPIEx);
@@ -195,6 +193,7 @@ bool InitCPUGroupInfoArray()
     {
         g_CPUGroupInfoArray[i].nr_active   = (WORD)pRecord->Group.GroupInfo[i].ActiveProcessorCount;
         g_CPUGroupInfoArray[i].active_mask = pRecord->Group.GroupInfo[i].ActiveProcessorMask;
+        g_CPUGroupInfoArray[i].begin       = (WORD)g_nProcessors;
         g_nProcessors += g_CPUGroupInfoArray[i].nr_active;
         dwWeight = LCM(dwWeight, (DWORD)g_CPUGroupInfoArray[i].nr_active);
     }
@@ -216,26 +215,6 @@ bool InitCPUGroupInfoArray()
 #endif
 }
 
-bool InitCPUGroupInfoRange()
-{
-#if (defined(TARGET_AMD64) || defined(TARGET_ARM64))
-    WORD begin   = 0;
-    WORD nr_proc = 0;
-
-    for (WORD i = 0; i < g_nGroups; i++)
-    {
-        nr_proc += g_CPUGroupInfoArray[i].nr_active;
-        g_CPUGroupInfoArray[i].begin = begin;
-        g_CPUGroupInfoArray[i].end   = nr_proc - 1;
-        begin = nr_proc;
-    }
-
-    return true;
-#else
-    return false;
-#endif
-}
-
 void InitCPUGroupInfo()
 {
     g_fEnableGCCPUGroups = false;
@@ -245,9 +224,6 @@ void InitCPUGroupInfo()
         return;
 
     if (!InitCPUGroupInfoArray())
-        return;
-
-    if (!InitCPUGroupInfoRange())
         return;
 
     // only enable CPU groups if more than one group exists
@@ -471,7 +447,7 @@ void GetGroupForProcessor(uint16_t processor_number, uint16_t* group_number, uin
 {
     assert(g_fEnableGCCPUGroups);
 
-#if !defined(FEATURE_REDHAWK) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
+#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
     WORD bTemp = 0;
     WORD bDiff = processor_number - bTemp;
 
@@ -1126,7 +1102,7 @@ bool GCToOSInterface::GetNumaInfo(uint16_t* total_nodes, uint32_t* max_procs_per
         for (uint32_t i = 0; i < g_nNodes; i++)
         {
             GROUP_AFFINITY processorMask;
-            if (GetNumaNodeProcessorMaskEx(i, &processorMask))
+            if (GetNumaNodeProcessorMaskEx((uint16_t)i, &processorMask))
             {
                 DWORD procsOnNode = 0;
                 uintptr_t mask = (uintptr_t)processorMask.Mask;
@@ -1139,7 +1115,7 @@ bool GCToOSInterface::GetNumaInfo(uint16_t* total_nodes, uint32_t* max_procs_per
                 currentProcsOnNode = max(currentProcsOnNode, procsOnNode);
             }
             *max_procs_per_node = currentProcsOnNode;
-            *total_nodes = g_nNodes;
+            *total_nodes = (uint16_t)g_nNodes;
         }
         return true;
     }
@@ -1181,7 +1157,7 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
     bool success = false;
 
     // Locate heap_number-th available processor
-    uint16_t procIndex;
+    uint16_t procIndex = 0;
     size_t cnt = heap_number;
     for (uint16_t i = 0; i < GCToOSInterface::GetTotalProcessorCount(); i++)
     {

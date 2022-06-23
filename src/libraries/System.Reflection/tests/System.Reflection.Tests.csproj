@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
     <!-- LoadFrom_SameIdentityAsAssemblyWithDifferentPath_ReturnsEqualAssemblies test relies on no deps.json -->
     <GenerateDependencyFile>false</GenerateDependencyFile>
@@ -12,6 +12,9 @@
     <!-- these tests depend on the pdb files -->
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
   </PropertyGroup>
+  <ItemGroup>
+    <RdXmlFile Include="default.rd.xml" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Reflection\MockParameterInfo.cs"
              Link="Common\System\Reflection\MockParameterInfo.cs" />

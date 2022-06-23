@@ -4,7 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="IndentedTextWriter.cs" />
@@ -17,6 +17,7 @@
     <Compile Include="StreamWriter\StreamWriter.StringCtorTests.cs" />
     <Compile Include="BinaryWriter\BinaryWriter.DisposeAsync.cs" />
     <Compile Include="BinaryWriter\BinaryWriter.EncodingTests.cs" />
+    <Compile Include="BinaryWriter\BinaryWriter.EncodingTests_Serial.cs" />
     <Compile Include="BinaryWriter\BinaryWriter.WriteByteCharTests.cs" />
     <Compile Include="BinaryWriter\BinaryWriter.WriteTests.cs" />
     <Compile Include="BinaryWriter\BinaryWriterTests.cs" />
@@ -28,12 +29,15 @@
     <Compile Include="MemoryStream\MemoryStreamTests.cs" />
     <Compile Include="StreamReader\StreamReader.CtorTests.cs" />
     <Compile Include="StreamReader\StreamReaderTests.cs" />
+    <Compile Include="StreamReader\StreamReaderTests_Serial.cs" />
     <Compile Include="StreamWriter\StreamWriter.BaseStream.cs" />
     <Compile Include="StreamWriter\StreamWriter.CloseTests.cs" />
     <Compile Include="StreamWriter\StreamWriter.CtorTests.cs" />
     <Compile Include="StreamWriter\StreamWriter.DisposeAsync.cs" />
     <Compile Include="StreamWriter\StreamWriter.FlushTests.cs" />
     <Compile Include="StreamWriter\StreamWriter.WriteTests.cs" />
+    <Compile Include="Stream\Stream.ReadAtLeast.cs" />
+    <Compile Include="Stream\Stream.ReadExactly.cs" />
     <Compile Include="Stream\Stream.DisposeAsync.cs" />
     <Compile Include="Stream\Stream.ReadWriteSpan.cs" />
     <Compile Include="Stream\Stream.NullTests.cs" />
@@ -44,6 +48,7 @@
     <Compile Include="Stream\Stream.ValidateArguments.cs" />
     <Compile Include="StringReader\StringReader.CtorTests.cs" />
     <Compile Include="StringWriter\StringWriterTests.cs" />
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
     <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs" Link="Common\System\Buffers\NativeMemoryManager.cs" />
     <Compile Include="$(CommonTestPath)System\IO\CallTrackingStream.cs" Link="Common\System\IO\CallTrackingStream.cs" />
     <Compile Include="$(CommonTestPath)System\IO\DelegateStream.cs" Link="Common\System\IO\DelegateStream.cs" />

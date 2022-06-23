@@ -426,26 +426,36 @@ namespace System.Net
             }
         }
 
-        public static SafeFreeCertContext? QueryContextAttributes_SECPKG_ATTR_REMOTE_CERT_CONTEXT(ISSPIInterface secModule, SafeDeleteContext securityContext)
+        private static bool QueryCertContextAttribute(ISSPIInterface secModule, SafeDeleteContext securityContext, Interop.SspiCli.ContextAttribute attribute, out SafeFreeCertContext? certContext)
         {
             Span<IntPtr> buffer = stackalloc IntPtr[1];
             int errorCode = secModule.QueryContextAttributes(
                 securityContext,
-                Interop.SspiCli.ContextAttribute.SECPKG_ATTR_REMOTE_CERT_CONTEXT,
+                attribute,
                 MemoryMarshal.AsBytes(buffer),
                 typeof(SafeFreeCertContext),
                 out SafeHandle? sspiHandle);
 
-            if (errorCode != 0)
+            // certificate is not always present (e.g. on server when querying client certificate)
+            // but we still want to consider such case as a success.
+            bool success = errorCode == 0 || errorCode == (int)Interop.SECURITY_STATUS.NoCredentials;
+
+            if (!success)
             {
                 sspiHandle?.Dispose();
+                sspiHandle = null;
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, $"ERROR = {ErrorDescription(errorCode)}");
-                return null;
             }
 
-            var result = (SafeFreeCertContext)sspiHandle!;
-            return result;
+            certContext = sspiHandle as SafeFreeCertContext;
+            return success;
         }
+
+        public static bool QueryContextAttributes_SECPKG_ATTR_REMOTE_CERT_CONTEXT(ISSPIInterface secModule, SafeDeleteContext securityContext, out SafeFreeCertContext? certContext)
+            => QueryCertContextAttribute(secModule, securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_REMOTE_CERT_CONTEXT, out certContext);
+
+        public static bool QueryContextAttributes_SECPKG_ATTR_REMOTE_CERT_CHAIN(ISSPIInterface secModule, SafeDeleteContext securityContext, out SafeFreeCertContext? certContext)
+            => QueryCertContextAttribute(secModule, securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_REMOTE_CERT_CHAIN, out certContext);
 
         public static bool QueryContextAttributes_SECPKG_ATTR_ISSUER_LIST_EX(ISSPIInterface secModule, SafeDeleteContext securityContext, ref Interop.SspiCli.SecPkgContext_IssuerListInfoEx ctx, out SafeHandle? sspiHandle)
         {

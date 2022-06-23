@@ -109,7 +109,7 @@ namespace System.Net.Mail
         //
         // Returns null for failure, Base64 encoded string on
         // success.
-        private string? GetSecurityLayerOutgoingBlob(string? challenge, NTAuthentication clientContext)
+        private static string? GetSecurityLayerOutgoingBlob(string? challenge, NTAuthentication clientContext)
         {
             // must have a security layer challenge
 

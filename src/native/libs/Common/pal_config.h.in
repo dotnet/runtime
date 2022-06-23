@@ -1,6 +1,5 @@
 #pragma once
 
-#cmakedefine PAL_UNIX_NAME @PAL_UNIX_NAME@
 #cmakedefine01 HAVE_LSEEK64
 #cmakedefine01 HAVE_MMAP64
 #cmakedefine01 HAVE_FTRUNCATE64
@@ -33,8 +32,6 @@
 #cmakedefine01 HAVE_NON_LEGACY_STATFS
 #cmakedefine01 HAVE_STRCPY_S
 #cmakedefine01 HAVE_STRLCPY
-#cmakedefine01 HAVE_STRCAT_S
-#cmakedefine01 HAVE_STRLCAT
 #cmakedefine01 HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP
 #cmakedefine01 HAVE_POSIX_ADVISE
 #cmakedefine01 HAVE_FALLOCATE
@@ -107,7 +104,6 @@
 #cmakedefine01 HAVE_TCP_FSM_H
 #cmakedefine01 HAVE_GSSFW_HEADERS
 #cmakedefine01 HAVE_GSS_SPNEGO_MECHANISM
-#cmakedefine01 HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
 #cmakedefine01 HAVE_HEIMDAL_HEADERS
 #cmakedefine01 HAVE_NSGETENVIRON
 #cmakedefine01 HAVE_GETAUXVAL
@@ -137,6 +133,9 @@
 #cmakedefine01 HAVE_MALLOC_USABLE_SIZE
 #cmakedefine01 HAVE_MALLOC_USABLE_SIZE_NP
 #cmakedefine01 HAVE_POSIX_MEMALIGN
+#cmakedefine01 HAVE_MAKEDEV_FILEH
+#cmakedefine01 HAVE_MAKEDEV_SYSMACROSH
+#cmakedefine01 HAVE_GETGRGID_R
 
 // Mac OS X has stat64, but it is deprecated since plain stat now
 // provides the same 64-bit aware struct when targeting OS X > 10.5

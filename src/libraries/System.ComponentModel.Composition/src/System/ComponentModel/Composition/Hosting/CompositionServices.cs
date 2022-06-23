@@ -23,8 +23,10 @@ namespace System.ComponentModel.Composition.Hosting
             CompositionConstants.PartCreationPolicyMetadataName
         };
 
-        internal static Type GetDefaultTypeFromMember(this MemberInfo member!!)
+        internal static Type GetDefaultTypeFromMember(this MemberInfo member)
         {
+            ArgumentNullException.ThrowIfNull(member);
+
             switch (member.MemberType)
             {
                 case MemberTypes.Property:
@@ -56,8 +58,10 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        internal static Type AdjustSpecifiedTypeIdentityType(this Type specifiedContractType!!, Type? memberType)
+        internal static Type AdjustSpecifiedTypeIdentityType(this Type specifiedContractType, Type? memberType)
         {
+            ArgumentNullException.ThrowIfNull(specifiedContractType);
+
             if ((memberType != null) && memberType.IsGenericType && specifiedContractType.IsGenericType)
             {
                 // if the memeber type is closed and the specified contract type is open and they have exatly the same number of parameters
@@ -396,8 +400,10 @@ namespace System.ComponentModel.Composition.Hosting
                 _innerList.Add(item);
             }
 
-            private void InferArrayType(Type itemType!!)
+            private void InferArrayType(Type itemType)
             {
+                ArgumentNullException.ThrowIfNull(itemType);
+
                 if (_arrayType == null)
                 {
                     // this is the first typed element we've been given, it sets the type of the array
@@ -612,8 +618,10 @@ namespace System.ComponentModel.Composition.Hosting
             return IsValidAttributeType(type, true);
         }
 
-        private static bool IsValidAttributeType(Type type!!, bool arrayAllowed)
+        private static bool IsValidAttributeType(Type type, bool arrayAllowed)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             // Definitions of valid attribute type taken from C# 3.0 Specification section 17.1.3.
 
             // One of the following types: bool, byte, char, double, float, int, long, sbyte, short, string, uint, ulong, ushort.

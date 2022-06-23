@@ -232,7 +232,7 @@ binary_protocol_flush_buffer (BinaryProtocolBuffer *buffer)
 	while (binary_protocol_file != invalid_file_value && written < to_write) {
 #if defined(HOST_WIN32)
 		DWORD tmp_written;
-		if (WriteFile (binary_protocol_file, buffer->buffer + written, to_write - written, &tmp_written, NULL))
+		if (WriteFile (binary_protocol_file, buffer->buffer + written, (DWORD)(to_write - written), &tmp_written, NULL))
 			written += tmp_written;
 #elif defined(HAVE_UNISTD_H)
 		ssize_t ret = write (binary_protocol_file, buffer->buffer + written, to_write - written);
@@ -449,11 +449,11 @@ protocol_entry (unsigned char type, gpointer data, int size)
 #define IS_VTABLE_MATCH(_)
 
 #define END_PROTOCOL_ENTRY \
-		protocol_entry (__type, __data, __size); \
+		protocol_entry ((unsigned char)__type, __data, __size); \
 	}
 
 #define END_PROTOCOL_ENTRY_FLUSH \
-		protocol_entry (__type, __data, __size); \
+		protocol_entry ((unsigned char)__type, __data, __size); \
 		sgen_binary_protocol_flush_buffers (FALSE); \
 	}
 

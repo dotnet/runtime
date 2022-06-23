@@ -82,6 +82,45 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(max.Days, max.Hours, max.Minutes, max.Seconds, max.Milliseconds + 1));
         }
 
+        [Fact]
+        public static void Ctor_Int_Int_Int_Int_Int_Int()
+        {
+            var timeSpan = new TimeSpan(10, 9, 8, 7, 6, 5);
+            VerifyTimeSpan(timeSpan, 10, 9, 8, 7, 6, 5);
+        }
+
+        [Fact]
+        public static void Ctor_Int_Int_Int_Int_Int_Int_Invalid()
+        {
+            // TimeSpan > TimeSpan.MinValue
+            TimeSpan min = TimeSpan.MinValue;
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(min.Days - 1, min.Hours, min.Minutes, min.Seconds, min.Milliseconds, min.Microseconds));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(min.Days, min.Hours - 1, min.Minutes, min.Seconds, min.Milliseconds, min.Microseconds));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(min.Days, min.Hours, min.Minutes - 1, min.Seconds, min.Milliseconds, min.Microseconds));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(min.Days, min.Hours, min.Minutes, min.Seconds - 1, min.Milliseconds, min.Microseconds));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(min.Days, min.Hours, min.Minutes, min.Seconds, min.Milliseconds, min.Microseconds - 1));
+
+            // TimeSpan > TimeSpan.MaxValue
+            TimeSpan max = TimeSpan.MaxValue;
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(max.Days + 1, max.Hours, max.Minutes, max.Seconds, max.Milliseconds, max.Microseconds));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(max.Days, max.Hours + 1, max.Minutes, max.Seconds, max.Milliseconds, max.Microseconds));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(max.Days, max.Hours, max.Minutes + 1, max.Seconds, max.Milliseconds, max.Microseconds));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(max.Days, max.Hours, max.Minutes, max.Seconds + 1, max.Milliseconds, max.Microseconds));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(max.Days, max.Hours, max.Minutes, max.Seconds, max.Milliseconds, max.Microseconds + 1));
+        }
+
+        [Theory]
+        [InlineData(100)]
+        [InlineData(300)]
+        [InlineData(900)]
+        public static void Ctor_Int_Int_Int_Int_Int_Int_WithNanosecond(int nanoseconds)
+        {
+            var timeSpan = new TimeSpan(10, 9, 8, 7, 6, 5);
+            timeSpan = new TimeSpan(timeSpan.Ticks + nanoseconds / 100);
+
+            VerifyTimeSpan(timeSpan, 10, 9, 8, 7, 6, 5, nanoseconds);
+        }
+
         public static IEnumerable<object[]> Total_Days_Hours_Minutes_Seconds_Milliseconds_TestData()
         {
             yield return new object[] { new TimeSpan(0, 0, 0, 0, 0), 0.0, 0.0, 0.0, 0.0, 0.0 };
@@ -1233,6 +1272,20 @@ namespace System.Tests
             Assert.Equal(timeSpan, +timeSpan);
         }
 
+        private static void VerifyTimeSpan(TimeSpan timeSpan, int days, int hours, int minutes, int seconds,
+            int milliseconds, int microseconds)
+        {
+            VerifyTimeSpan(timeSpan, days, hours, minutes, seconds, milliseconds);
+            Assert.Equal(microseconds, timeSpan.Microseconds);
+        }
+
+        private static void VerifyTimeSpan(TimeSpan timeSpan, int days, int hours, int minutes, int seconds,
+            int milliseconds, int microseconds, int nanoseconds)
+        {
+            VerifyTimeSpan(timeSpan, days, hours, minutes, seconds, milliseconds, microseconds);
+            Assert.Equal(nanoseconds, timeSpan.Nanoseconds);
+        }
+
         [Theory]
         [MemberData(nameof(CompareTo_TestData))]
         public static void CompareTo_Object(TimeSpan timeSpan1, object obj, int expected)
@@ -1405,6 +1458,26 @@ namespace System.Tests
             Assert.Equal(12345600, TimeSpan.FromSeconds(1.23456).Ticks);
 
             Assert.Equal(1.23456 * 60 * 10_000_000, TimeSpan.FromMinutes(1.23456).Ticks);
+        }
+
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(100, 10)]
+        [InlineData(1_000, 100)]
+        public static void TestTotalMicroseconds(long ticks, double totalMicroseconds)
+        {
+            var timeSpan = new TimeSpan(ticks);
+            Assert.Equal(totalMicroseconds, timeSpan.TotalMicroseconds);
+        }
+
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(100, 10_000)]
+        [InlineData(1_000, 100_000)]
+        public static void TestTotalNanoseconds(long ticks, double totalNanoseconds)
+        {
+            var timeSpan = new TimeSpan(ticks);
+            Assert.Equal(totalNanoseconds, timeSpan.TotalNanoseconds);
         }
     }
 }

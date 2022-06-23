@@ -699,7 +699,6 @@ namespace System.IO.MemoryMappedFiles.Tests
         [Theory]
         [InlineData(MemoryMappedFileAccess.Read)]
         [InlineData(MemoryMappedFileAccess.ReadWrite)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53021", TestPlatforms.Browser)]
         public void WriteToReadOnlyFile_ReadWrite(MemoryMappedFileAccess access)
         {
             WriteToReadOnlyFile(access, access == MemoryMappedFileAccess.Read ||
@@ -707,7 +706,6 @@ namespace System.IO.MemoryMappedFiles.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53021", TestPlatforms.Browser)]
         public void WriteToReadOnlyFile_CopyOnWrite()
         {
             WriteToReadOnlyFile(MemoryMappedFileAccess.CopyOnWrite, PlatformDetection.IsSuperUser);
@@ -975,6 +973,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         [InlineData(0)]
         [InlineData(1)]
         [SkipOnPlatform(TestPlatforms.Browser, "mkfifo is not supported on WASM")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks fifo")]
         public async Task OpeningMemoryMappedFileFromFileStreamThatWrapsPipeThrowsNotSupportedException(long capacity)
         {
             (string pipePath, NamedPipeServerStream? serverStream) = CreatePipe();
@@ -994,6 +993,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         [InlineData(0)]
         [InlineData(1)]
         [SkipOnPlatform(TestPlatforms.Browser, "mkfifo is not supported on WASM")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks fifo")]
         public void OpeningMemoryMappedFileFromPipePathThrowsNotSupportedException(long capacity)
         {
             (string pipePath, NamedPipeServerStream? serverStream) = CreatePipe();

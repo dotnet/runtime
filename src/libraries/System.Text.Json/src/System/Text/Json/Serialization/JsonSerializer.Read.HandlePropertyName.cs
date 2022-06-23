@@ -17,14 +17,20 @@ namespace System.Text.Json
         /// Also sets state.Current.JsonPropertyInfo to a non-null value.
         /// </summary>
         internal static JsonPropertyInfo LookupProperty(
-            object obj,
+            object? obj,
             ReadOnlySpan<byte> unescapedPropertyName,
             ref ReadStack state,
             JsonSerializerOptions options,
             out bool useExtensionProperty,
             bool createExtensionProperty = true)
         {
-            Debug.Assert(state.Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
+#if DEBUG
+            if (state.Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy != ConverterStrategy.Object)
+            {
+                string objTypeName = obj?.GetType().FullName ?? "<null>";
+                Debug.Fail($"obj.GetType() => {objTypeName}; {state.Current.JsonTypeInfo.GetPropertyDebugInfo(unescapedPropertyName)}");
+            }
+#endif
 
             useExtensionProperty = false;
 
@@ -49,6 +55,7 @@ namespace System.Text.Json
 
                     if (createExtensionProperty)
                     {
+                        Debug.Assert(obj != null, "obj is null");
                         CreateDataExtensionProperty(obj, dataExtProperty, options);
                     }
 
@@ -58,7 +65,7 @@ namespace System.Text.Json
             }
 
             state.Current.JsonPropertyInfo = jsonPropertyInfo;
-            state.Current.NumberHandling = jsonPropertyInfo.NumberHandling;
+            state.Current.NumberHandling = jsonPropertyInfo.EffectiveNumberHandling;
             return jsonPropertyInfo;
         }
 
@@ -71,20 +78,18 @@ namespace System.Text.Json
             ReadOnlySpan<byte> unescapedPropertyName;
             ReadOnlySpan<byte> propertyName = reader.GetSpan();
 
-            if (reader._stringHasEscaping)
+            if (reader.ValueIsEscaped)
             {
-                int idx = propertyName.IndexOf(JsonConstants.BackSlash);
-                Debug.Assert(idx != -1);
-                unescapedPropertyName = JsonReaderHelper.GetUnescapedSpan(propertyName, idx);
+                unescapedPropertyName = JsonReaderHelper.GetUnescapedSpan(propertyName);
             }
             else
             {
                 unescapedPropertyName = propertyName;
             }
 
-            if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve)
+            if (state.Current.CanContainMetadata)
             {
-                if (propertyName.Length > 0 && propertyName[0] == '$')
+                if (IsMetadataPropertyName(propertyName, state.Current.BaseJsonTypeInfo.PolymorphicTypeResolver))
                 {
                     ThrowHelper.ThrowUnexpectedMetadataException(propertyName, ref reader, ref state);
                 }

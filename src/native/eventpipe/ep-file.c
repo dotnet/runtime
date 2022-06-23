@@ -152,7 +152,7 @@ file_get_stack_id (
 	EP_ASSERT (file->stack_block != NULL);
 
 	uint32_t stack_id = 0;
-	EventPipeStackContents *stack_contents = ep_event_instance_get_stack_contents_ref (event_instance);
+	EventPipeStackContentsInstance *stack_contents = ep_event_instance_get_stack_contents_instance_ref (event_instance);
 	EventPipeStackBlock *stack_block = file->stack_block;
 	ep_rt_stack_hash_map_t *stack_hash = &file->stack_hash;
 	StackHashEntry *entry = NULL;
@@ -540,13 +540,13 @@ ep_stack_hash_entry_get_key (StackHashEntry *stack_hash_entry)
 
 StackHashEntry *
 ep_stack_hash_entry_alloc (
-	const EventPipeStackContents *stack_contents,
+	const EventPipeStackContentsInstance *stack_contents,
 	uint32_t id,
 	uint32_t hash)
 {
 	EP_ASSERT (stack_contents != NULL);
 
-	uint32_t stack_size = ep_stack_contents_get_size (stack_contents);
+	uint32_t stack_size = ep_stack_contents_instance_get_size (stack_contents);
 	StackHashEntry *entry = (StackHashEntry *)ep_rt_byte_array_alloc (offsetof (StackHashEntry, stack_bytes) + stack_size);
 	ep_raise_error_if_nok (entry != NULL);
 
@@ -554,7 +554,7 @@ ep_stack_hash_entry_alloc (
 	entry->key.hash = hash;
 	entry->key.stack_size_in_bytes = stack_size;
 	entry->key.stack_bytes = entry->stack_bytes;
-	memcpy (entry->stack_bytes, ep_stack_contents_get_pointer (stack_contents), stack_size);
+	memcpy (entry->stack_bytes, ep_stack_contents_instance_get_pointer (stack_contents), stack_size);
 
 ep_on_exit:
 	return entry;
@@ -593,13 +593,13 @@ hash_bytes (const uint8_t *data, size_t data_len)
 StackHashKey *
 ep_stack_hash_key_init (
 	StackHashKey *key,
-	const EventPipeStackContents *stack_contents)
+	const EventPipeStackContentsInstance *stack_contents)
 {
 	EP_ASSERT (key != NULL);
 	EP_ASSERT (stack_contents != NULL);
 
-	key->stack_bytes = ep_stack_contents_get_pointer (stack_contents);
-	key->stack_size_in_bytes = ep_stack_contents_get_size (stack_contents);
+	key->stack_bytes = ep_stack_contents_instance_get_pointer (stack_contents);
+	key->stack_size_in_bytes = ep_stack_contents_instance_get_size (stack_contents);
 	key->hash = hash_bytes (key->stack_bytes, key->stack_size_in_bytes);
 
 	return key;
@@ -634,7 +634,7 @@ ep_stack_hash_key_equal (const void *key1, const void *key2)
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */
 
-#ifndef EP_INCLUDE_SOURCE_FILES
+#if !defined(ENABLE_PERFTRACING) || (defined(EP_INCLUDE_SOURCE_FILES) && !defined(EP_FORCE_INCLUDE_SOURCE_FILES))
 extern const char quiet_linker_empty_file_warning_eventpipe_file;
 const char quiet_linker_empty_file_warning_eventpipe_file = 0;
 #endif

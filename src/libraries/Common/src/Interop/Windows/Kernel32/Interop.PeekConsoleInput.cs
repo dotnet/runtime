@@ -8,7 +8,8 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "PeekConsoleInputW", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static partial bool PeekConsoleInput(IntPtr hConsoleInput, out InputRecord buffer, int numInputRecords_UseOne, out int numEventsRead);
+        [LibraryImport(Libraries.Kernel32, EntryPoint = "PeekConsoleInputW",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool PeekConsoleInput(IntPtr hConsoleInput, out INPUT_RECORD buffer, int numInputRecords_UseOne, out int numEventsRead);
     }
 }

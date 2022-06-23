@@ -343,11 +343,11 @@ namespace System.Diagnostics.Eventing.Reader
         {
             get
             {
-                if (_taskNameReady == true)
+                if (_taskNameReady)
                     return _taskName;
                 lock (_syncObject)
                 {
-                    if (_taskNameReady == false)
+                    if (!_taskNameReady)
                     {
                         _taskNameReady = true;
                         _taskName = _cachedMetadataInformation.GetTaskDisplayName(this.ProviderName, Handle);
@@ -389,8 +389,10 @@ namespace System.Diagnostics.Eventing.Reader
             }
         }
 
-        public IList<object> GetPropertyValues(EventLogPropertySelector propertySelector!!)
+        public IList<object> GetPropertyValues(EventLogPropertySelector propertySelector)
         {
+            ArgumentNullException.ThrowIfNull(propertySelector);
+
             return NativeWrapper.EvtRenderBufferWithContextUserOrValues(propertySelector.Handle, Handle);
         }
 

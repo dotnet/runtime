@@ -64,8 +64,11 @@ namespace System.Security.Cryptography
         public virtual byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) => throw DerivedClassMustOverride();
         public virtual bool VerifyHash(byte[] hash, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) => throw DerivedClassMustOverride();
 
-        protected virtual byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) => throw DerivedClassMustOverride();
-        protected virtual byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) => throw DerivedClassMustOverride();
+        protected virtual byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
+            HashOneShotHelpers.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
+
+        protected virtual byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
+            HashOneShotHelpers.HashData(hashAlgorithm, data);
 
         public virtual bool TryDecrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
         {
@@ -99,6 +102,14 @@ namespace System.Security.Cryptography
 
         protected virtual bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten)
         {
+            // If this is an algorithm that we ship, then we can use the hash one-shot.
+            if (this is IRuntimeAlgorithm)
+            {
+                return HashOneShotHelpers.TryHashData(hashAlgorithm, data, destination, out bytesWritten);
+            }
+
+            // If this is not our algorithm implementation, for compatibility purposes we need to
+            // call out to the HashData virtual.
             byte[] result;
             // Use ArrayPool.Shared instead of CryptoPool because the array is passed out.
             byte[] array = ArrayPool<byte>.Shared.Rent(data.Length);
@@ -151,8 +162,10 @@ namespace System.Security.Cryptography
         public virtual byte[] EncryptValue(byte[] rgb) =>
             throw new NotSupportedException(SR.NotSupported_Method); // Same as Desktop
 
-        public byte[] SignData(byte[] data!!, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
+        public byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
+            ArgumentNullException.ThrowIfNull(data);
+
             return SignData(data, 0, data.Length, hashAlgorithm, padding);
         }
 
@@ -200,8 +213,10 @@ namespace System.Security.Cryptography
             return false;
         }
 
-        public bool VerifyData(byte[] data!!, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
+        public bool VerifyData(byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
+            ArgumentNullException.ThrowIfNull(data);
+
             return VerifyData(data, 0, data.Length, signature, hashAlgorithm, padding);
         }
 
@@ -364,10 +379,12 @@ namespace System.Security.Cryptography
 
         public override bool TryExportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<char> password,
-            PbeParameters pbeParameters!!,
+            PbeParameters pbeParameters,
             Span<byte> destination,
             out int bytesWritten)
         {
+            ArgumentNullException.ThrowIfNull(pbeParameters);
+
             PasswordBasedEncryption.ValidatePbeParameters(
                 pbeParameters,
                 password,
@@ -385,10 +402,12 @@ namespace System.Security.Cryptography
 
         public override bool TryExportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<byte> passwordBytes,
-            PbeParameters pbeParameters!!,
+            PbeParameters pbeParameters,
             Span<byte> destination,
             out int bytesWritten)
         {
+            ArgumentNullException.ThrowIfNull(pbeParameters);
+
             PasswordBasedEncryption.ValidatePbeParameters(
                 pbeParameters,
                 ReadOnlySpan<char>.Empty,
@@ -643,28 +662,15 @@ namespace System.Security.Cryptography
         /// </remarks>
         public override void ImportFromPem(ReadOnlySpan<char> input)
         {
-            PemKeyHelpers.ImportPem(input, label => {
-                if (label.SequenceEqual(PemLabels.RsaPrivateKey))
+            PemKeyHelpers.ImportPem(input, label =>
+                label switch
                 {
-                    return ImportRSAPrivateKey;
-                }
-                else if (label.SequenceEqual(PemLabels.Pkcs8PrivateKey))
-                {
-                    return ImportPkcs8PrivateKey;
-                }
-                else if (label.SequenceEqual(PemLabels.RsaPublicKey))
-                {
-                    return ImportRSAPublicKey;
-                }
-                else if (label.SequenceEqual(PemLabels.SpkiPublicKey))
-                {
-                    return ImportSubjectPublicKeyInfo;
-                }
-                else
-                {
-                    return null;
-                }
-            });
+                    PemLabels.RsaPrivateKey => ImportRSAPrivateKey,
+                    PemLabels.Pkcs8PrivateKey => ImportPkcs8PrivateKey,
+                    PemLabels.RsaPublicKey => ImportRSAPublicKey,
+                    PemLabels.SpkiPublicKey => ImportSubjectPublicKeyInfo,
+                    _ => null,
+                });
         }
 
         /// <summary>
@@ -837,7 +843,7 @@ namespace System.Security.Cryptography
             {
                 try
                 {
-                    return PemKeyHelpers.CreatePemFromData(PemLabels.RsaPrivateKey, exported);
+                    return PemEncoding.WriteString(PemLabels.RsaPrivateKey, exported);
                 }
                 finally
                 {
@@ -868,7 +874,7 @@ namespace System.Security.Cryptography
         public string ExportRSAPublicKeyPem()
         {
             byte[] exported = ExportRSAPublicKey();
-            return PemKeyHelpers.CreatePemFromData(PemLabels.RsaPublicKey, exported);
+            return PemEncoding.WriteString(PemLabels.RsaPublicKey, exported);
         }
 
         /// <summary>

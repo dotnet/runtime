@@ -2305,7 +2305,7 @@ namespace System.Xml
 
         private AttributePSVIInfo AddAttributePSVI(int attIndex)
         {
-            Debug.Assert(attIndex <= _attributePSVINodes.Length);
+            Debug.Assert(attIndex < _attributePSVINodes.Length);
             AttributePSVIInfo attInfo = _attributePSVINodes[attIndex];
             if (attInfo != null)
             {
@@ -2383,7 +2383,7 @@ namespace System.Xml
                     if (_validationState == ValidatingReaderState.OnDefaultAttribute)
                     {
                         XmlSchemaAttribute schemaAttr = _attributePSVI.attributeSchemaInfo.SchemaAttribute!;
-                        originalStringValue = (schemaAttr.DefaultValue != null) ? schemaAttr.DefaultValue : schemaAttr.FixedValue!;
+                        originalStringValue = schemaAttr.DefaultValue ?? schemaAttr.FixedValue!;
                     }
 
                     return ReturnBoxedValue(_attributePSVI.typedAttributeValue, AttributeSchemaInfo.XmlType!, unwrapTypedValue);
@@ -2796,7 +2796,7 @@ namespace System.Xml
                 XmlSchemaElement? schemaElem = _xmlSchemaInfo.SchemaElement;
                 if (schemaElem != null)
                 {
-                    return (schemaElem.DefaultValue != null) ? schemaElem.DefaultValue : schemaElem.FixedValue;
+                    return schemaElem.DefaultValue ?? schemaElem.FixedValue;
                 }
             }
             else

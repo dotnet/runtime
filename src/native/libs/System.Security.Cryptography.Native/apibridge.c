@@ -890,4 +890,12 @@ int local_EVP_PKEY_public_check(EVP_PKEY_CTX* ctx)
     }
 }
 
+
+int local_ASN1_TIME_to_tm(const ASN1_TIME* s, struct tm* tm)
+{
+    (void)s;
+    (void)tm;
+
+    return 0;
+}
 #endif

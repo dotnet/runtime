@@ -50,7 +50,7 @@ namespace System.Xml.XPath
         public XNodeNavigator(XNode node, XmlNameTable? nameTable)
         {
             _source = node;
-            _nameTable = nameTable != null ? nameTable : CreateNameTable();
+            _nameTable = nameTable ?? CreateNameTable();
         }
 
         public XNodeNavigator(XNodeNavigator other)
@@ -863,9 +863,9 @@ namespace System.Xml.XPath
         }
     }
 
-    internal readonly struct XPathEvaluator
+    internal static class XPathEvaluator
     {
-        public object Evaluate<T>(XNode node, string expression, IXmlNamespaceResolver? resolver) where T : class
+        public static object Evaluate<T>(XNode node, string expression, IXmlNamespaceResolver? resolver) where T : class
         {
             XPathNavigator navigator = node.CreateNavigator();
             object result = navigator.Evaluate(expression, resolver);
@@ -878,7 +878,7 @@ namespace System.Xml.XPath
             return (T)result;
         }
 
-        private IEnumerable<T> EvaluateIterator<T>(XPathNodeIterator result)
+        private static IEnumerable<T> EvaluateIterator<T>(XPathNodeIterator result)
         {
             foreach (XPathNavigator navigator in result)
             {
@@ -922,8 +922,10 @@ namespace System.Xml.XPath
         /// <param name="nameTable">The <see cref="XmlNameTable"/> to be used by
         /// the <see cref="XPathNavigator"/></param>
         /// <returns>An <see cref="XPathNavigator"/></returns>
-        public static XPathNavigator CreateNavigator(this XNode node!!, XmlNameTable? nameTable)
+        public static XPathNavigator CreateNavigator(this XNode node, XmlNameTable? nameTable)
         {
+            ArgumentNullException.ThrowIfNull(node);
+
             if (node is XDocumentType) throw new ArgumentException(SR.Format(SR.Argument_CreateNavigator, XmlNodeType.DocumentType));
             XText? text = node as XText;
             if (text != null)
@@ -955,9 +957,11 @@ namespace System.Xml.XPath
         /// prefixes used in the XPath expression</see></param>
         /// <returns>The result of evaluating the expression which can be typed as bool, double, string or
         /// IEnumerable</returns>
-        public static object XPathEvaluate(this XNode node!!, string expression, IXmlNamespaceResolver? resolver)
+        public static object XPathEvaluate(this XNode node, string expression, IXmlNamespaceResolver? resolver)
         {
-            return default(XPathEvaluator).Evaluate<object>(node, expression, resolver);
+            ArgumentNullException.ThrowIfNull(node);
+
+            return XPathEvaluator.Evaluate<object>(node, expression, resolver);
         }
 
         /// <summary>
@@ -1003,9 +1007,11 @@ namespace System.Xml.XPath
         /// <param name="resolver">A <see cref="IXmlNamespaceResolver"/> for the namespace
         /// prefixes used in the XPath expression</param>
         /// <returns>An <see cref="IEnumerable&lt;XElement&gt;"/> corresponding to the resulting set of elements</returns>
-        public static IEnumerable<XElement> XPathSelectElements(this XNode node!!, string expression, IXmlNamespaceResolver? resolver)
+        public static IEnumerable<XElement> XPathSelectElements(this XNode node, string expression, IXmlNamespaceResolver? resolver)
         {
-            return (IEnumerable<XElement>)default(XPathEvaluator).Evaluate<XElement>(node, expression, resolver);
+            ArgumentNullException.ThrowIfNull(node);
+
+            return (IEnumerable<XElement>)XPathEvaluator.Evaluate<XElement>(node, expression, resolver);
         }
 
         private static XText CalibrateText(XText n)

@@ -3,10 +3,9 @@
     <NoWarn>$(NoWarn);0436</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>
     <DefineConstants>UNITTEST</DefineConstants>
-    <EnableDllImportGenerator>true</EnableDllImportGenerator>
-    <Nullable>annotations</Nullable>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <ItemGroup>
     <DefaultReferenceExclusion Include="System.Net.Http.WinHttpHandler" />
@@ -117,6 +116,6 @@
     <Compile Include="WinHttpRequestStreamTest.cs" />
     <Compile Include="WinHttpResponseHeaderReaderTest.cs" />
     <Compile Include="WinHttpResponseStreamTest.cs" />
-    <Compile Include="XunitTestAssemblyAtrributes.cs" />
+    <Compile Include="XunitTestAssemblyAttributes.cs" />
   </ItemGroup>
 </Project>

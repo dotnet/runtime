@@ -676,7 +676,7 @@ namespace System.Diagnostics
             }
         }
 
-        private bool IsLastResponse(HttpWebRequest request, HttpStatusCode statusCode)
+        private static bool IsLastResponse(HttpWebRequest request, HttpStatusCode statusCode)
         {
             if (request.AllowAutoRedirect)
             {

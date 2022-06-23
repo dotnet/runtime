@@ -32,8 +32,11 @@ namespace System.ComponentModel.Composition
                 maximumNumberOfCompositionIterations);
         }
 
-        public static CompositionError CreateImportCardinalityMismatch(ImportCardinalityMismatchException exception!!, ImportDefinition definition!!)
+        public static CompositionError CreateImportCardinalityMismatch(ImportCardinalityMismatchException exception, ImportDefinition definition)
         {
+            ArgumentNullException.ThrowIfNull(exception);
+            ArgumentNullException.ThrowIfNull(definition);
+
             return CompositionError.Create(
                 CompositionErrorId.ImportEngine_ImportCardinalityMismatch,
                 exception.Message,
@@ -41,8 +44,11 @@ namespace System.ComponentModel.Composition
                 (Exception?)null);
         }
 
-        public static CompositionError CreatePartCannotActivate(ComposablePart part!!, Exception innerException!!)
+        public static CompositionError CreatePartCannotActivate(ComposablePart part, Exception innerException)
         {
+            ArgumentNullException.ThrowIfNull(part);
+            ArgumentNullException.ThrowIfNull(innerException);
+
             ICompositionElement element = part.ToElement();
             return CompositionError.Create(
                 CompositionErrorId.ImportEngine_PartCannotActivate,
@@ -52,8 +58,12 @@ namespace System.ComponentModel.Composition
                 element.DisplayName);
         }
 
-        public static CompositionError CreatePartCannotSetImport(ComposablePart part!!, ImportDefinition definition!!, Exception innerException!!)
+        public static CompositionError CreatePartCannotSetImport(ComposablePart part, ImportDefinition definition, Exception innerException)
         {
+            ArgumentNullException.ThrowIfNull(part);
+            ArgumentNullException.ThrowIfNull(definition);
+            ArgumentNullException.ThrowIfNull(innerException);
+
             ICompositionElement element = definition.ToElement();
             return CompositionError.Create(
                 CompositionErrorId.ImportEngine_PartCannotSetImport,
@@ -64,8 +74,12 @@ namespace System.ComponentModel.Composition
                 part.ToElement().DisplayName);
         }
 
-        public static CompositionError CreateCannotGetExportedValue(ComposablePart part!!, ExportDefinition definition!!, Exception innerException!!)
+        public static CompositionError CreateCannotGetExportedValue(ComposablePart part, ExportDefinition definition, Exception innerException)
         {
+            ArgumentNullException.ThrowIfNull(part);
+            ArgumentNullException.ThrowIfNull(definition);
+            ArgumentNullException.ThrowIfNull(innerException);
+
             ICompositionElement element = definition.ToElement();
             return CompositionError.Create(
                 CompositionErrorId.ImportEngine_PartCannotGetExportedValue,
@@ -76,8 +90,10 @@ namespace System.ComponentModel.Composition
                 part.ToElement().DisplayName);
         }
 
-        public static CompositionError CreatePartCycle(ComposablePart part!!)
+        public static CompositionError CreatePartCycle(ComposablePart part)
         {
+            ArgumentNullException.ThrowIfNull(part);
+
             ICompositionElement element = part.ToElement();
             return CompositionError.Create(
                 CompositionErrorId.ImportEngine_PartCycle,

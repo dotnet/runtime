@@ -21,8 +21,10 @@ namespace Microsoft.Extensions.Configuration
         /// Initializes a Configuration root with a list of providers.
         /// </summary>
         /// <param name="providers">The <see cref="IConfigurationProvider"/>s for this configuration.</param>
-        public ConfigurationRoot(IList<IConfigurationProvider> providers!!)
+        public ConfigurationRoot(IList<IConfigurationProvider> providers)
         {
+            ThrowHelper.ThrowIfNull(providers);
+
             _providers = providers;
             _changeTokenRegistrations = new List<IDisposable>(providers.Count);
             foreach (IConfigurationProvider p in providers)

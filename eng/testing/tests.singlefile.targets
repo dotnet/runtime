@@ -16,8 +16,6 @@
     <PublishSingleFile>true</PublishSingleFile>
     <UseAppHost>true</UseAppHost>
     <SelfContained>true</SelfContained>
-    <SingleFileHostSourcePath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(Configuration)', 'corehost'))/singlefilehost</SingleFileHostSourcePath>
-    <SingleFileHostSourcePath Condition="'$(TargetOS)' == 'windows'">$(SingleFileHostSourcePath).exe</SingleFileHostSourcePath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TestNativeAot)' == 'true'">

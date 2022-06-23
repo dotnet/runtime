@@ -146,7 +146,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             return PkcsHelpers.EncodeContentInfo(writer.Encode(), Oids.Pkcs7Enveloped);
         }
 
-        private byte[] EncryptContent(
+        private static byte[] EncryptContent(
             ContentInfo contentInfo,
             AlgorithmIdentifier contentEncryptionAlgorithm,
             out byte[] cek,

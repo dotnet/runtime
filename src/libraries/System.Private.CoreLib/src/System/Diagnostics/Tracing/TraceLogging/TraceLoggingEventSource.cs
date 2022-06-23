@@ -25,7 +25,7 @@ using System.Text;
 using System.Runtime.CompilerServices;
 namespace Microsoft.Diagnostics.Tracing
 #else
-using Internal.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 namespace System.Diagnostics.Tracing
 #endif
 {
@@ -86,12 +86,12 @@ namespace System.Diagnostics.Tracing
         /// </param>
         /// <param name="traits">A collection of key-value strings (must be an even number).</param>
         public EventSource(
-            string eventSourceName!!,
+            string eventSourceName,
             EventSourceSettings config,
             params string[]? traits)
             : this(
-                GenerateGuidFromName(eventSourceName.ToUpperInvariant()),
-                eventSourceName!,
+                GenerateGuidFromName((eventSourceName ?? throw new ArgumentNullException(nameof(eventSourceName))).ToUpperInvariant()),
+                eventSourceName,
                 config, traits)
         {
         }

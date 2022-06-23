@@ -1,14 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 namespace System.Runtime.InteropServices.JavaScript
 {
     /// <summary>
     /// Initializes a new instance of JavaScript Core Array class.
     /// </summary>
-    public class Array : CoreObject
+    public class Array : JSObject
     {
         /// <summary>
         /// Initializes a new instance of the Array class.
@@ -83,7 +81,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 AssertNotDisposed();
 
-                object indexValue = Interop.Runtime.GetByIndex(JSHandle, i, out int exception);
+                Interop.Runtime.GetByIndexRef(JSHandle, i, out int exception, out object indexValue);
 
                 if (exception != 0)
                     throw new JSException((string)indexValue);
@@ -94,12 +92,22 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 AssertNotDisposed();
 
-                object res = Interop.Runtime.SetByIndex(JSHandle, i, value, out int exception);
+                Interop.Runtime.SetByIndexRef(JSHandle, i, value, out int exception, out object res);
 
                 if (exception != 0)
                     throw new JSException((string)res);
 
             }
+        }
+
+        /// <summary>
+        /// Gets or sets the length.
+        /// </summary>
+        /// <value>The length.</value>
+        public int Length
+        {
+            get => Convert.ToInt32(GetObjectProperty("length"));
+            set => SetObjectProperty("length", value, false);
         }
     }
 }

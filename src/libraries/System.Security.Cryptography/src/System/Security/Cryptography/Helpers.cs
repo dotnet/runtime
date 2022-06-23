@@ -61,13 +61,6 @@ namespace Internal.Cryptography
             return oddParityKey;
         }
 
-        internal static byte[] GenerateRandom(int count)
-        {
-            byte[] buffer = new byte[count];
-            RandomNumberGenerator.Fill(buffer);
-            return buffer;
-        }
-
         // Encode a byte array as an array of upper-case hex characters.
         internal static char[] ToHexArrayUpper(this byte[] bytes)
         {
@@ -321,6 +314,11 @@ namespace Internal.Cryptography
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
+        }
+
+        public static int GetPaddingSize(this SymmetricAlgorithm algorithm, CipherMode mode, int feedbackSizeInBits)
+        {
+            return (mode == CipherMode.CFB ? feedbackSizeInBits : algorithm.BlockSize) / 8;
         }
     }
 }

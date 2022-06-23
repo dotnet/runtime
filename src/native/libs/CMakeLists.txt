@@ -43,7 +43,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER)
     endif ()
 
     set(CMAKE_INSTALL_PREFIX $ENV{__CMakeBinDir})
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -Wno-declaration-after-statement")
 
     add_compile_options(-I${CMAKE_CURRENT_SOURCE_DIR}/Common)
     add_compile_options(-I${CMAKE_CURRENT_BINARY_DIR}/Common)
@@ -149,7 +149,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER)
     add_subdirectory(System.Native)
 
     if (CLR_CMAKE_TARGET_BROWSER)
-        # skip for now
+        add_subdirectory(System.Security.Cryptography.Native.Browser)
     elseif (CLR_CMAKE_TARGET_MACCATALYST)
         add_subdirectory(System.Net.Security.Native)
         # System.Security.Cryptography.Native is intentionally disabled on iOS
@@ -162,8 +162,10 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER)
         #add_subdirectory(System.Net.Security.Native) # no gssapi on tvOS, see https://developer.apple.com/documentation/gss
         # System.Security.Cryptography.Native is intentionally disabled on tvOS
         # it is only used for interacting with OpenSSL which isn't useful there
-    elseif (CLR_CMAKE_TARGET_ANDROID)
+    elseif (CLR_CMAKE_TARGET_ANDROID AND NOT FORCE_ANDROID_OPENSSL)
         add_subdirectory(System.Security.Cryptography.Native.Android)
+    elseif (FORCE_ANDROID_OPENSSL)
+        add_subdirectory(System.Security.Cryptography.Native)
     else ()
         add_subdirectory(System.Globalization.Native)
         add_subdirectory(System.Net.Security.Native)

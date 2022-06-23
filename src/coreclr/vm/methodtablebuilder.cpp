@@ -1154,18 +1154,15 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
     if (jitMgr->LoadJIT())
     {
         CORJIT_FLAGS cpuCompileFlags = jitMgr->GetCPUCompileFlags();
-        if (cpuCompileFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_FEATURE_SIMD))
+        unsigned intrinsicSIMDVectorLength = jitMgr->m_jit->getMaxIntrinsicSIMDVectorLength(cpuCompileFlags);
+        if (intrinsicSIMDVectorLength != 0)
         {
-            unsigned intrinsicSIMDVectorLength = jitMgr->m_jit->getMaxIntrinsicSIMDVectorLength(cpuCompileFlags);
-            if (intrinsicSIMDVectorLength != 0)
+            bmtFP->NumInstanceFieldBytes     = intrinsicSIMDVectorLength;
+            if (HasLayout())
             {
-                bmtFP->NumInstanceFieldBytes     = intrinsicSIMDVectorLength;
-                if (HasLayout())
-                {
-                    GetLayoutInfo()->m_cbManagedSize = intrinsicSIMDVectorLength;
-                }
-                return true;
+                GetLayoutInfo()->m_cbManagedSize = intrinsicSIMDVectorLength;
             }
+            return true;
         }
     }
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
@@ -1895,7 +1892,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
             {
                 {
                     MethodDesc *pMD = methIt->GetUnboxedMethodDesc();
-                    StackSString name(SString::Utf8);
+                    StackSString name;
                     TypeString::AppendMethodDebug(name, pMD);
                     StackScratchBuffer buff;
                     const char* pDebugNameUTF8 = name.GetUTF8(buff);
@@ -1910,7 +1907,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
                 {
                     MethodDesc *pMD = methIt->GetMethodDesc();
 
-                    StackSString name(SString::Utf8);
+                    StackSString name;
                     TypeString::AppendMethodDebug(name, pMD);
                     StackScratchBuffer buff;
                     const char* pDebugNameUTF8 = name.GetUTF8(buff);
@@ -2000,18 +1997,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
     // once we're past the commit point.
     EnsureRIDMapsCanBeFilled();
 
-    {
-        // NOTE. NOTE!! the EEclass can now be accessed by other threads.
-        // Do NOT place any initialization after this point.
-        // You may NOT fail the call after this point.
-        FAULT_FORBID();
-        CANNOTTHROWCOMPLUSEXCEPTION();
-
-        /*
-        GetMemTracker()->SuppressRelease();
-        */
-    }
-
 #ifdef _DEBUG
     if (g_pConfig->ShouldDumpOnClassLoad(pszDebugName))
     {
@@ -2023,10 +2008,12 @@ MethodTableBuilder::BuildMethodTableThrowing(
         LOG((LF_ALWAYS, LL_ALWAYS, "Number of declared fields: %d\n", NumDeclaredFields()));
         LOG((LF_ALWAYS, LL_ALWAYS, "Number of declared methods: %d\n", NumDeclaredMethods()));
         LOG((LF_ALWAYS, LL_ALWAYS, "Number of declared non-abstract methods: %d\n", bmtMethod->dwNumDeclaredNonAbstractMethods));
+
+        BOOL debugging = IsDebuggerPresent();
         pMT->Debug_DumpInterfaceMap("Approximate");
-        pMT->DebugDumpVtable(pszDebugName, FALSE);
-        pMT->DebugDumpFieldLayout(pszDebugName, FALSE);
-        pMT->DebugDumpGCDesc(pszDebugName, FALSE);
+        pMT->DebugDumpVtable(pszDebugName, debugging);
+        pMT->DebugDumpFieldLayout(pszDebugName, debugging);
+        pMT->DebugDumpGCDesc(pszDebugName, debugging);
         pMT->Debug_DumpDispatchMap();
     }
 #endif //_DEBUG
@@ -2938,7 +2925,7 @@ MethodTableBuilder::EnumerateClassMethods()
                 {
                     BuildMethodTableThrowException(BFA_AB_METHOD_IN_AB_CLASS);
                 }
-                if(!IsMdVirtual(dwMemberAttrs))
+                if(!IsMdVirtual(dwMemberAttrs) && !IsMdStatic(dwMemberAttrs))
                 {
                     BuildMethodTableThrowException(BFA_NONVIRT_AB_METHOD);
                 }
@@ -4680,7 +4667,7 @@ BOOL MethodTableBuilder::TestOverrideForAccessibility(
         // Cross-Assembly
         else
         {
-            // If the method marks itself as check visibility the the method must be
+            // If the method marks itself as check visibility the method must be
             // public, FamORAssem, or family
             if((dwParentAttrs & mdMemberAccessMask) <= mdAssem)
             {
@@ -4832,8 +4819,8 @@ VOID MethodTableBuilder::TestMethodImpl(
         BuildMethodTableThrowException(IDS_CLASSLOAD_MI_FINAL_DECL);
     }
 
-    // Interface method body that has methodimpl should always be final
-    if (IsInterface() && !IsMdFinal(dwImplAttrs))
+    // Non-static interface method body that has methodimpl should always be final
+    if (IsInterface() && !IsMdStatic(dwDeclAttrs) && !IsMdFinal(dwImplAttrs))
     {
         BuildMethodTableThrowException(IDS_CLASSLOAD_MI_FINAL_IMPL);
     }
@@ -7053,7 +7040,7 @@ VOID MethodTableBuilder::AllocAndInitMethodDescChunk(COUNT_T startIndex, COUNT_T
     }
     _ASSERTE(offset == sizeof(MethodDescChunk) + sizeOfMethodDescs);
 
-    pChunk->SetSizeAndCount((ULONG)sizeOfMethodDescs, methodDescCount);
+    pChunk->SetSizeAndCount(sizeOfMethodDescs, methodDescCount);
 
     GetHalfBakedClass()->AddChunk(pChunk);
 }
@@ -8417,8 +8404,8 @@ MethodTableBuilder::HandleExplicitLayout(
     }
 
     CQuickBytes qb;
-    PREFIX_ASSUME(sizeof(BYTE) == 1);
-    BYTE *pFieldLayout = (BYTE*) qb.AllocThrows(instanceSliceSize * sizeof(BYTE));
+    PREFIX_ASSUME(sizeof(bmtFieldLayoutTag) == 1);
+    bmtFieldLayoutTag *pFieldLayout = (bmtFieldLayoutTag*)qb.AllocThrows(instanceSliceSize * sizeof(bmtFieldLayoutTag));
     for (i=0; i < instanceSliceSize; i++)
     {
         pFieldLayout[i] = empty;
@@ -8437,9 +8424,9 @@ MethodTableBuilder::HandleExplicitLayout(
     // 5. If a BYREF does overlap with another BYREF, the class is marked unverifiable.
     // 6. If an overlap of any kind occurs, the class will be marked NotTightlyPacked (affects ValueType.Equals()).
     //
-    char emptyObject[TARGET_POINTER_SIZE];
-    char isObject[TARGET_POINTER_SIZE];
-    char isByRef[TARGET_POINTER_SIZE];
+    bmtFieldLayoutTag emptyObject[TARGET_POINTER_SIZE];
+    bmtFieldLayoutTag isObject[TARGET_POINTER_SIZE];
+    bmtFieldLayoutTag isByRef[TARGET_POINTER_SIZE];
     for (i = 0; i < TARGET_POINTER_SIZE; i++)
     {
         emptyObject[i] = empty;
@@ -8576,9 +8563,9 @@ MethodTableBuilder::HandleExplicitLayout(
 
             // If we got here, we are trying to place a non-OREF (or a valuetype composed of non-OREFs.)
             // Look for any orefs or byrefs under this field
-            BYTE *loc = NULL;
-            BYTE* currOffset = pFieldLayout + pFD->GetOffset_NoLogging();
-            BYTE* endOffset = currOffset + fieldSize;
+            bmtFieldLayoutTag* loc = NULL;
+            bmtFieldLayoutTag* currOffset = pFieldLayout + pFD->GetOffset_NoLogging();
+            bmtFieldLayoutTag* endOffset = currOffset + fieldSize;
             for (; currOffset < endOffset; ++currOffset)
             {
                 if (*currOffset == oref || *currOffset == byref)
@@ -8620,7 +8607,7 @@ MethodTableBuilder::HandleExplicitLayout(
         // we will put a catchall "break" here which will cause the typeload to abort (albeit with a probably misleading
         // error message.)
         break;
-    } // for(;;)
+    }
 
     // We only break out of the loop above if we detected an error.
     if (i < bmtMetaData->cFields || !explicitClassTrust.IsLegal())
@@ -8723,7 +8710,7 @@ MethodTableBuilder::HandleExplicitLayout(
 
 //*******************************************************************************
 // make sure that no object fields are overlapped incorrectly, returns the trust level
-/*static*/ ExplicitFieldTrust::TrustLevel MethodTableBuilder::CheckValueClassLayout(MethodTable * pMT, BYTE *pFieldLayout)
+/*static*/ ExplicitFieldTrust::TrustLevel MethodTableBuilder::CheckValueClassLayout(MethodTable * pMT, bmtFieldLayoutTag *pFieldLayout)
 {
     STANDARD_VM_CONTRACT;
 
@@ -8741,7 +8728,7 @@ MethodTableBuilder::HandleExplicitLayout(
     UINT fieldSize = pMT->GetNumInstanceFieldBytes();
 
     CQuickBytes qb;
-    BYTE *vcLayout = (BYTE*) qb.AllocThrows(fieldSize * sizeof(BYTE));
+    bmtFieldLayoutTag *vcLayout = (bmtFieldLayoutTag*) qb.AllocThrows(fieldSize * sizeof(bmtFieldLayoutTag));
     memset((void*)vcLayout, nonoref, fieldSize);
 
     // use pointer series to locate the orefs
@@ -8814,7 +8801,7 @@ MethodTableBuilder::HandleExplicitLayout(
 
 //*******************************************************************************
 // make sure that no byref/object fields are overlapped, returns the trust level
-/*static*/ ExplicitFieldTrust::TrustLevel MethodTableBuilder::CheckByRefLikeValueClassLayout(MethodTable * pMT, BYTE *pFieldLayout)
+/*static*/ ExplicitFieldTrust::TrustLevel MethodTableBuilder::CheckByRefLikeValueClassLayout(MethodTable * pMT, bmtFieldLayoutTag *pFieldLayout)
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(pMT->IsByRefLike());
@@ -8864,7 +8851,7 @@ MethodTableBuilder::HandleExplicitLayout(
 
 //*******************************************************************************
 // Set the field's tag type and/or detect invalid overlap
-/*static*/ ExplicitFieldTrust::TrustLevel MethodTableBuilder::MarkTagType(BYTE* field, SIZE_T fieldSize, bmtFieldLayoutTag tagType)
+/*static*/ ExplicitFieldTrust::TrustLevel MethodTableBuilder::MarkTagType(bmtFieldLayoutTag* field, SIZE_T fieldSize, bmtFieldLayoutTag tagType)
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(field != NULL);
@@ -8901,7 +8888,7 @@ MethodTableBuilder::HandleExplicitLayout(
 
 //*******************************************************************************
 void MethodTableBuilder::FindPointerSeriesExplicit(UINT instanceSliceSize,
-                                                   BYTE *pFieldLayout)
+                                                   bmtFieldLayoutTag *pFieldLayout)
 {
     STANDARD_VM_CONTRACT;
 
@@ -8913,19 +8900,19 @@ void MethodTableBuilder::FindPointerSeriesExplicit(UINT instanceSliceSize,
     DWORD sz = (instanceSliceSize + (2 * TARGET_POINTER_SIZE) - 1);
     bmtGCSeries->pSeries = new bmtGCSeriesInfo::Series[sz/2/ TARGET_POINTER_SIZE];
 
-    BYTE *loc = pFieldLayout;
-    BYTE *layoutEnd = pFieldLayout + instanceSliceSize;
+    bmtFieldLayoutTag *loc = pFieldLayout;
+    bmtFieldLayoutTag *layoutEnd = pFieldLayout + instanceSliceSize;
     while (loc < layoutEnd)
     {
         // Find the next OREF entry.
-        loc = (BYTE*)memchr((void*)loc, oref, layoutEnd-loc);
+        loc = (bmtFieldLayoutTag*)memchr((void*)loc, oref, layoutEnd-loc);
         if (loc == NULL)
         {
             break;
         }
 
         // Find the next non-OREF entry
-        BYTE *cur = loc;
+        bmtFieldLayoutTag *cur = loc;
         while(cur < layoutEnd && *cur == oref)
         {
             cur++;
@@ -9299,9 +9286,8 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
     {
         //#LoadExactInterfaceMap_Algorithm2
         // Exact interface instantiation loading TECHNIQUE 2 - The exact instantiation has caused some duplicates to
-        // appear in the interface map!  This may not be an error: if the duplicates
-        // were ones that arose because because of inheritance from
-        // a parent type then we accept that.  For example
+        // appear in the interface map!  This may not be an error: if the duplicates were ones that arose because of
+        // inheritance from a parent type then we accept that.  For example
         //     class C<T> : I<T>
         //     class D<T> : C<T>, I<string>
         // is acceptable even when loading D<string>.  Note that in such a case
@@ -9512,7 +9498,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
 
                     // Compare original and duplicate interface entries in the dispatch map if they contain
                     // different implementation for the same interface method
-                    for (;;)
+                    while (true)
                     {
                         if (!originalIt.IsValid() || !duplicateIt.IsValid())
                         {   // We reached end of one dispatch map iterator
@@ -9847,7 +9833,7 @@ void MethodTableBuilder::CheckForSystemTypes()
 
             if (strcmp(nameSpace, g_IntrinsicsNS) == 0)
             {
-                EEClassLayoutInfo * pLayout = pClass->GetLayoutInfo();
+                EEClassLayoutInfo* pLayout = pClass->GetLayoutInfo();
 
                 // The SIMD Hardware Intrinsic types correspond to fundamental data types in the underlying ABIs:
                 // * Vector64<T>:  __m64
@@ -9856,7 +9842,6 @@ void MethodTableBuilder::CheckForSystemTypes()
 
                 // These __m128 and __m256 types, among other requirements, are special in that they must always
                 // be aligned properly.
-
 
                 if (strcmp(name, g_Vector64Name) == 0)
                 {
@@ -9901,6 +9886,21 @@ void MethodTableBuilder::CheckForSystemTypes()
 
                 return;
             }
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM64)
+            else if (strcmp(nameSpace, g_SystemNS) == 0)
+            {
+                EEClassLayoutInfo* pLayout = pClass->GetLayoutInfo();
+
+                // These types correspond to fundamental data types in the underlying ABIs:
+                // * Int128:  __int128
+                // * UInt128: unsigned __int128
+
+                if ((strcmp(name, g_Int128Name) == 0) || (strcmp(name, g_UInt128Name) == 0))
+                {
+                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16; // sizeof(__int128)
+                }
+            }
+#endif // UNIX_AMD64_ABI || TARGET_ARM64
         }
 
         if (g_pNullableClass != NULL)
@@ -10471,10 +10471,6 @@ MethodTableBuilder::SetupMethodTable2(
 
 #ifdef _DEBUG
     {
-        // disable ibc logging because we can assert in ComputerPreferredZapModule for partially constructed
-        // generic types
-        IBCLoggingDisabler disableLogging;
-
         DeclaredMethodIterator it(*this);
         while (it.Next())
         {

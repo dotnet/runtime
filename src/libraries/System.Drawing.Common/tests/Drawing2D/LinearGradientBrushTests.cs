@@ -42,7 +42,6 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_PointF_PointF_Color_Color_FloatRanges()
         {

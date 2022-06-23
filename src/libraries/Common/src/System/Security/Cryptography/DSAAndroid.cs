@@ -206,8 +206,10 @@ namespace System.Security.Cryptography
             protected override bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
                 HashOneShotHelpers.TryHashData(hashAlgorithm, data, destination, out bytesWritten);
 
-            public override byte[] CreateSignature(byte[] rgbHash!!)
+            public override byte[] CreateSignature(byte[] rgbHash)
             {
+                ArgumentNullException.ThrowIfNull(rgbHash);
+
                 SafeDsaHandle key = GetKey();
                 int signatureSize = Interop.AndroidCrypto.DsaEncodedSignatureSize(key);
                 int signatureFieldSize = Interop.AndroidCrypto.DsaSignatureFieldSize(key) * BitsPerByte;
@@ -315,8 +317,11 @@ namespace System.Security.Cryptography
                 return destination.Slice(0, actualLength);
             }
 
-            public override bool VerifySignature(byte[] rgbHash!!, byte[] rgbSignature!!)
+            public override bool VerifySignature(byte[] rgbHash, byte[] rgbSignature)
             {
+                ArgumentNullException.ThrowIfNull(rgbHash);
+                ArgumentNullException.ThrowIfNull(rgbSignature);
+
                 return VerifySignature((ReadOnlySpan<byte>)rgbHash, (ReadOnlySpan<byte>)rgbSignature);
             }
 

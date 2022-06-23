@@ -101,6 +101,11 @@ namespace ILCompiler.DependencyAnalysis
             return _type.BaseType != null ? factory.ConstructedTypeSymbol(_type.BaseType) : null;
         }
 
+        protected override ISymbolNode GetNonNullableValueTypeArrayElementTypeNode(NodeFactory factory)
+        {
+            return factory.ConstructedTypeSymbol(((ArrayType)_type).ElementType);
+        }
+
         protected override IEETypeNode GetInterfaceTypeNode(NodeFactory factory, TypeDesc interfaceType)
         {
             // The interface type will be visible to reflection and should be considered constructed.

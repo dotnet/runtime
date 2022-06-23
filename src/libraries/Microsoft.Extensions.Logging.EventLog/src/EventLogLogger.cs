@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Logging.EventLog
     {
         private readonly string _name;
         private readonly EventLogSettings _settings;
-        private readonly IExternalScopeProvider _externalScopeProvider;
+        private readonly IExternalScopeProvider? _externalScopeProvider;
 
         private const string ContinuationString = "...";
         private readonly int _beginOrEndMessageSegmentSize;
@@ -27,8 +27,11 @@ namespace Microsoft.Extensions.Logging.EventLog
         /// <param name="name">The name of the logger.</param>
         /// <param name="settings">The <see cref="EventLogSettings"/>.</param>
         /// <param name="externalScopeProvider">The <see cref="IExternalScopeProvider"/>.</param>
-        public EventLogLogger(string name!!, EventLogSettings settings!!, IExternalScopeProvider externalScopeProvider)
+        public EventLogLogger(string name, EventLogSettings settings, IExternalScopeProvider? externalScopeProvider)
         {
+            ThrowHelper.ThrowIfNull(name);
+            ThrowHelper.ThrowIfNull(settings);
+
             _name = name;
             _settings = settings;
 
@@ -48,7 +51,7 @@ namespace Microsoft.Extensions.Logging.EventLog
         public IEventLog EventLog { get; }
 
         /// <inheritdoc />
-        public IDisposable BeginScope<TState>(TState state)
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull
         {
             return _externalScopeProvider?.Push(state);
         }
@@ -65,18 +68,15 @@ namespace Microsoft.Extensions.Logging.EventLog
             LogLevel logLevel,
             EventId eventId,
             TState state,
-            Exception exception,
-            Func<TState, Exception, string> formatter)
+            Exception? exception,
+            Func<TState, Exception?, string> formatter)
         {
             if (!IsEnabled(logLevel))
             {
                 return;
             }
 
-            if (formatter == null)
-            {
-                throw new ArgumentNullException(nameof(formatter));
-            }
+            ThrowHelper.ThrowIfNull(formatter);
 
             string message = formatter(state, exception);
 
@@ -129,7 +129,7 @@ namespace Microsoft.Extensions.Logging.EventLog
             }
 
             int startIndex = 0;
-            string messageSegment = null;
+            string? messageSegment = null;
             while (true)
             {
                 // Begin segment
@@ -179,7 +179,7 @@ namespace Microsoft.Extensions.Logging.EventLog
             }
         }
 
-        private EventLogEntryType GetEventLogEntryType(LogLevel level)
+        private static EventLogEntryType GetEventLogEntryType(LogLevel level)
         {
             switch (level)
             {

@@ -134,7 +134,7 @@ class Program
         MyClass.TestStaticFields();
 
 #if false // TODO: Enable once LDFTN is supported
-        Task.Run(() => { 
+        Task.Run(() => {
            MyClass.ThreadStaticStringField = "Garbage";
            MyClass.ThreadStaticIntField = 0xBAAD;
            MyClass.ThreadStaticDateTimeField = DateTime.Now;
@@ -357,7 +357,7 @@ class Program
 
     static void TestOpenClosedDelegate()
     {
-        // This test is verifying the the fixups for open vs. closed delegate created against the same target
+        // This test is verifying the fixups for open vs. closed delegate created against the same target
         // method are encoded correctly.
 
         Func<string, string, object> idOpen = OpenClosedDelegateExtension.OpenClosedDelegateTarget;
@@ -366,11 +366,11 @@ class Program
         Func<string, object> idClosed = "World".OpenClosedDelegateTarget;
         Assert.AreEqual(idClosed("hey"), "World, hey");
     }
-    
+
     static void GenericLdtokenFieldsTest()
     {
         Func<FieldInfo, string> FieldFullName = (fi) => fi.FieldType + " " + fi.DeclaringType.ToString() + "::" + fi.Name;
-        
+
         IFieldGetter getter1 = new FieldGetter<string>();
         IFieldGetter getter2 = new FieldGetter<object>();
         IFieldGetter getter3 = new FieldGetter<int>();
@@ -390,7 +390,7 @@ class Program
             string expectedDllField3 = "System.Collections.Generic.List`1[???] MyGeneric`2[???,???]::m_Field3".Replace("???", instArg.ToString());
             string expectedDllField4 = "System.Collections.Generic.KeyValuePair`2[???,System.Int32] MyGeneric`2[???,???]::m_Field4".Replace("???", instArg.ToString());
             string expectedDllField5 = "System.Int32 MyGeneric`2[???,???]::m_Field5".Replace("???", instArg.ToString());
-            
+
             Assert.AreEqual(expectedField1, FieldFullName(getter.GetGenT_Field1()));
             Assert.AreEqual(expectedField2, FieldFullName(getter.GetGenT_Field2()));
             Assert.AreEqual(expectedField3, FieldFullName(getter.GetGenT_Field3()));
@@ -415,10 +415,10 @@ class Program
     static void TestLoadR2RImageFromByteArray()
     {
         Assembly assembly1 = typeof(Program).Assembly;
-        
+
         byte[] array = File.ReadAllBytes(assembly1.Location);
         Assembly assembly2 = Assembly.Load(array);
-        
+
         Assert.AreEqual(assembly2.FullName, assembly1.FullName);
     }
 
@@ -470,11 +470,11 @@ class Program
         TestRangeCheckElimination();
 
         TestOpenClosedDelegate();
-        
+
         GenericLdtokenFieldsTest();
 
         RVAFieldTest();
-        
+
         TestLoadR2RImageFromByteArray();
     }
 

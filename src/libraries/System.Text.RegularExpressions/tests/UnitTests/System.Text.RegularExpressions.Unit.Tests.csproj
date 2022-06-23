@@ -1,0 +1,70 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- xUnit2008 is about regexes and isn't appropriate in the test project for regexes -->
+    <!-- SYSLIB0036 is about obsoletion of regex members -->
+    <NoWarn>$(NoWarn);xUnit2008;SYSLIB0036</NoWarn>
+    <StringResourcesPath>..\..\src\Resources\Strings.resx</StringResourcesPath>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);DEBUG</DefineConstants> <!-- always define debug, even in release builds -->
+  </PropertyGroup>
+  <ItemGroup>
+    <DefaultReferenceExclusion Include="System.Text.RegularExpressions" />
+
+    <Compile Include="RegexCharClassTests.cs" />
+    <Compile Include="RegexFindOptimizationsTests.cs" />
+    <Compile Include="RegexPrefixAnalyzerTests.cs" />
+    <Compile Include="RegexReductionTests.cs" />
+    <Compile Include="RegexTreeAnalyzerTests.cs" />
+    <Compile Include="SymbolicRegexTests.cs" />
+
+    <!-- Code included from System.Text.RegularExpressions -->
+    <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Production\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Production\ValueStringBuilder.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
+    <Compile Include="..\..\src\System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
+    <Compile Include="..\..\src\System\Threading\StackHelper.cs" Link="Production\StackHelper.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\RegexCaseEquivalences.Data.cs" Link="Production\RegexCaseEquivalences.Data.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\RegexCaseEquivalences.cs" Link="Production\RegexCaseEquivalences.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\RegexCaseBehavior.cs" Link="Production\RegexCaseBehavior.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\RegexCharClass.cs" Link="Production\RegexCharClass.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\RegexInterpreterCode.cs" Link="Production\RegexInterpreterCode.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\RegexFindOptimizations.cs" Link="Production\RegexFindOptimizations.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\RegexNode.cs" Link="Production\RegexNode.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\RegexNodeKind.cs" Link="Production\RegexNodeKind.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\RegexOpcode.cs" Link="Production\RegexOpcode.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\RegexOptions.cs" Link="Production\RegexOptions.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\RegexParseError.cs" Link="Production\RegexParseError.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\RegexParseException.cs" Link="Production\RegexParseException.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\RegexParser.cs" Link="Production\RegexParser.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\RegexPrefixAnalyzer.cs" Link="Production\RegexPrefixAnalyzer.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\RegexTree.cs" Link="Production\RegexTree.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\RegexTreeAnalyzer.cs" Link="Production\RegexTreeAnalyzer.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\RegexWriter.cs" Link="Production\RegexWriter.cs" />
+    <Compile Include="..\..\src\System\Collections\HashtableExtensions.cs" Link="Production\HashtableExtensions.cs" />
+
+    <!-- Code included from System.Text.RegularExpressions.Symbolic -->
+    <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\BDD.cs" Link="Production\BDD.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\BDDRangeConverter.cs" Link="Production\BDDRangeConverter.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\CharKind.cs" Link="Production\CharKind.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\CharSetSolver.cs" Link="Production\CharSetSolver.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\DerivativeEffect.cs" Link="Production\DerivativeEffect.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\DfaMatchingState.cs" Link="Production\DfaMatchingState.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\DoublyLinkedList.cs" Link="Production\DoublyLinkedList.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\ISolver.cs" Link="Production\ISolver.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\MintermGenerator.cs" Link="Production\MintermGenerator.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\RegexNodeConverter.cs" Link="Production\RegexNodeConverter.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\SymbolicRegexBuilder.cs" Link="Production\SymbolicRegexBuilder.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\SymbolicRegexInfo.cs" Link="Production\SymbolicRegexInfo.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\SymbolicRegexKind.cs" Link="Production\SymbolicRegexKind.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\SymbolicRegexNode.cs" Link="Production\SymbolicRegexNode.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\SymbolicRegexThresholds.cs" Link="Production\SymbolicRegexThresholds.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\UnicodeCategoryConditions.cs" Link="Production\UnicodeCategoryConditions.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\UnicodeCategoryRanges.cs" Link="Production\UnicodeCategoryRanges.cs" />
+
+    <!-- Code used as stubs to avoid pulling in further code from System.Text.RegularExpressions -->
+    <Compile Include="Stubs.cs" />
+  </ItemGroup>
+</Project>

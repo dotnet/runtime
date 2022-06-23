@@ -115,8 +115,10 @@ namespace System.Threading.Tasks.Sources
         /// <param name="state">The state object to pass to <paramref name="continuation"/> when it's invoked.</param>
         /// <param name="token">Opaque value that was provided to the <see cref="ValueTask"/>'s constructor.</param>
         /// <param name="flags">The flags describing the behavior of the continuation.</param>
-        public void OnCompleted(Action<object?> continuation!!, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
+        public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
         {
+            ArgumentNullException.ThrowIfNull(continuation);
+
             ValidateToken(token);
 
             if ((flags & ValueTaskSourceOnCompletedFlags.FlowExecutionContext) != 0)

@@ -17,6 +17,7 @@ struct JitInterfaceCallbacks
     void (* getMethodSig)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, CORINFO_SIG_INFO* sig, CORINFO_CLASS_HANDLE memberParent);
     bool (* getMethodInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_INFO* info);
     CorInfoInline (* canInline)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE callerHnd, CORINFO_METHOD_HANDLE calleeHnd);
+    void (* beginInlining)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE inlinerHnd, CORINFO_METHOD_HANDLE inlineeHnd);
     void (* reportInliningDecision)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE inlinerHnd, CORINFO_METHOD_HANDLE inlineeHnd, CorInfoInline inlineResult, const char* reason);
     bool (* canTailCall)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE callerHnd, CORINFO_METHOD_HANDLE declaredCalleeHnd, CORINFO_METHOD_HANDLE exactCalleeHnd, bool fIsTailPrefix);
     void (* reportTailCallDecision)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE callerHnd, CORINFO_METHOD_HANDLE calleeHnd, bool fIsTailPrefix, CorInfoTailCall tailCallResult, const char* reason);
@@ -46,7 +47,7 @@ struct JitInterfaceCallbacks
     CORINFO_CLASS_HANDLE (* getTokenTypeAsHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken);
     bool (* isValidToken)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned metaTOK);
     bool (* isValidStringRef)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned metaTOK);
-    const char16_t* (* getStringLiteral)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* length);
+    int (* getStringLiteral)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize);
     CorInfoType (* asCorInfoType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     const char* (* getClassName)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     const char* (* getClassNameFromMetadata)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, const char** namespaceName);
@@ -77,7 +78,7 @@ struct JitInterfaceCallbacks
     CorInfoHelpFunc (* getBoxHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CorInfoHelpFunc (* getUnBoxHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     bool (* getReadyToRunHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_LOOKUP_KIND* pGenericLookupKind, CorInfoHelpFunc id, CORINFO_CONST_LOOKUP* pLookup);
-    void (* getReadyToRunDelegateCtorHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pTargetMethod, CORINFO_CLASS_HANDLE delegateType, CORINFO_LOOKUP* pLookup);
+    void (* getReadyToRunDelegateCtorHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pTargetMethod, unsigned int targetConstraint, CORINFO_CLASS_HANDLE delegateType, CORINFO_LOOKUP* pLookup);
     const char* (* getHelperName)(void * thisHandle, CorInfoExceptionClass** ppException, CorInfoHelpFunc helpFunc);
     CorInfoInitClassResult (* initClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, CORINFO_METHOD_HANDLE method, CORINFO_CONTEXT_HANDLE context);
     void (* classMustBeLoadedBeforeCodeIsRun)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
@@ -129,6 +130,7 @@ struct JitInterfaceCallbacks
     unsigned (* getMethodHash)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn);
     size_t (* findNameOfToken)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE moduleHandle, unsigned int token, char* szFQName, size_t FQNameCapacity);
     bool (* getSystemVAmd64PassStructInRegisterDescriptor)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr);
+    uint32_t (* getLoongArch64PassStructInRegisterFlags)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd);
     uint32_t (* getThreadTLSIndex)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppIndirection);
     const void* (* getInlinedCallFrameVptr)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppIndirection);
     int32_t* (* getAddrOfCaptureThreadGlobal)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppIndirection);
@@ -182,7 +184,6 @@ struct JitInterfaceCallbacks
     uint16_t (* getRelocTypeHint)(void * thisHandle, CorInfoExceptionClass** ppException, void* target);
     uint32_t (* getExpectedTargetArchitecture)(void * thisHandle, CorInfoExceptionClass** ppException);
     uint32_t (* getJitFlags)(void * thisHandle, CorInfoExceptionClass** ppException, CORJIT_FLAGS* flags, uint32_t sizeInBytes);
-    bool (* doesFieldBelongToClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE cls);
 
 };
 
@@ -253,6 +254,15 @@ public:
     CorInfoInline temp = _callbacks->canInline(_thisHandle, &pException, callerHnd, calleeHnd);
     if (pException != nullptr) throw pException;
     return temp;
+}
+
+    virtual void beginInlining(
+          CORINFO_METHOD_HANDLE inlinerHnd,
+          CORINFO_METHOD_HANDLE inlineeHnd)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    _callbacks->beginInlining(_thisHandle, &pException, inlinerHnd, inlineeHnd);
+    if (pException != nullptr) throw pException;
 }
 
     virtual void reportInliningDecision(
@@ -539,13 +549,14 @@ public:
     return temp;
 }
 
-    virtual const char16_t* getStringLiteral(
+    virtual int getStringLiteral(
           CORINFO_MODULE_HANDLE module,
           unsigned metaTOK,
-          int* length)
+          char16_t* buffer,
+          int bufferSize)
 {
     CorInfoExceptionClass* pException = nullptr;
-    const char16_t* temp = _callbacks->getStringLiteral(_thisHandle, &pException, module, metaTOK, length);
+    int temp = _callbacks->getStringLiteral(_thisHandle, &pException, module, metaTOK, buffer, bufferSize);
     if (pException != nullptr) throw pException;
     return temp;
 }
@@ -842,11 +853,12 @@ public:
 
     virtual void getReadyToRunDelegateCtorHelper(
           CORINFO_RESOLVED_TOKEN* pTargetMethod,
+          unsigned int targetConstraint,
           CORINFO_CLASS_HANDLE delegateType,
           CORINFO_LOOKUP* pLookup)
 {
     CorInfoExceptionClass* pException = nullptr;
-    _callbacks->getReadyToRunDelegateCtorHelper(_thisHandle, &pException, pTargetMethod, delegateType, pLookup);
+    _callbacks->getReadyToRunDelegateCtorHelper(_thisHandle, &pException, pTargetMethod, targetConstraint, delegateType, pLookup);
     if (pException != nullptr) throw pException;
 }
 
@@ -1318,6 +1330,15 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     bool temp = _callbacks->getSystemVAmd64PassStructInRegisterDescriptor(_thisHandle, &pException, structHnd, structPassInRegDescPtr);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual uint32_t getLoongArch64PassStructInRegisterFlags(
+          CORINFO_CLASS_HANDLE structHnd)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    uint32_t temp = _callbacks->getLoongArch64PassStructInRegisterFlags(_thisHandle, &pException, structHnd);
     if (pException != nullptr) throw pException;
     return temp;
 }
@@ -1843,16 +1864,6 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     uint32_t temp = _callbacks->getJitFlags(_thisHandle, &pException, flags, sizeInBytes);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual bool doesFieldBelongToClass(
-          CORINFO_FIELD_HANDLE fldHnd,
-          CORINFO_CLASS_HANDLE cls)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    bool temp = _callbacks->doesFieldBelongToClass(_thisHandle, &pException, fldHnd, cls);
     if (pException != nullptr) throw pException;
     return temp;
 }

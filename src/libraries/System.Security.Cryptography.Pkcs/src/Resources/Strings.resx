@@ -79,8 +79,11 @@
   <data name="Argument_InvalidRsaSignaturePadding" xml:space="preserve">
     <value>The RSA padding must be Pkcs1 or Pss.</value>
   </data>
-  <data name="ArgumentOutOfRange_Index" xml:space="preserve">
+  <data name="ArgumentOutOfRange_IndexMustBeLess" xml:space="preserve">
     <value>Index was out of range. Must be non-negative and less than the size of the collection.</value>
+  </data>
+  <data name="ArgumentOutOfRange_IndexMustBeLessOrEqual" xml:space="preserve">
+    <value>Index was out of range. Must be non-negative and less than or equal to the size of the collection.</value>
   </data>
   <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
     <value>Positive number required.</value>

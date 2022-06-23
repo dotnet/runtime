@@ -64,7 +64,6 @@
   </PropertyGroup>
 
   <Import Project="$(LibrariesProjectRoot)NetCoreAppLibrary.props" />
-  <Import Project="$(LibrariesProjectRoot)shims/netfxreference.props" />
 
   <ItemGroup>
     <!-- Public libraries and shims -->
@@ -96,6 +95,7 @@
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Apple.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Android.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Android.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Browser.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.OpenSsl.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.OpenSsl.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.OpenSsl.so" IsNative="true" />
@@ -109,9 +109,6 @@
     <PlatformManifestFileEntry Condition="'$(PgoInstrument)' != ''" Include="clrjit.pgd" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrjit.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrjit.dylib" IsNative="true" />
-    <PlatformManifestFileEntry Include="dbgshim.dll" IsNative="true" />
-    <PlatformManifestFileEntry Include="libdbgshim.so" IsNative="true" />
-    <PlatformManifestFileEntry Include="libdbgshim.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="mscordaccore.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libmscordaccore.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libmscordaccore.dylib" IsNative="true" />
@@ -181,6 +178,9 @@
     <PlatformManifestFileEntry Include="mono-aot-cross" IsNative="true" />
     <PlatformManifestFileEntry Include="mono-aot-cross.exe" IsNative="true" />
     <PlatformManifestFileEntry Include="opt" IsNative="true" />
+    <PlatformManifestFileEntry Include="dbgshim.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="libdbgshim.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libdbgshim.dylib" IsNative="true" />
     <!-- Mono components specific files -->
     <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing.so" IsNative="true" />
@@ -208,8 +208,13 @@
     <PlatformManifestFileEntry Include="libmono-icall-table.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-ilgen.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-profiler-aot.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-wasm-eh-js.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-wasm-eh-wasm.a" IsNative="true" />
     <PlatformManifestFileEntry Include="System.Private.Runtime.InteropServices.Javascript.dll" />
+    <PlatformManifestFileEntry Include="dotnet-crypto-worker.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.worker.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.js.symbols" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.d.ts" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.wasm" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.timezones.blat" IsNative="true" />
@@ -234,6 +239,8 @@
     <PlatformManifestFileEntry Include="driver.c" IsNative="true" />
     <PlatformManifestFileEntry Include="pinvoke.c" IsNative="true" />
     <PlatformManifestFileEntry Include="pinvoke.h" IsNative="true" />
+    <PlatformManifestFileEntry Include="gc-common.h" IsNative="true" />
+    <PlatformManifestFileEntry Include="wasm-config.h" IsNative="true" />
     <PlatformManifestFileEntry Include="emcc-default.rsp" IsNative="true" />
     <PlatformManifestFileEntry Include="emcc-link.rsp" IsNative="true" />
     <PlatformManifestFileEntry Include="emcc-props.json" IsNative="true" />

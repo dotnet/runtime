@@ -654,7 +654,7 @@ namespace System.Xml
 
         private ValidatingReaderNodeData AddAttribute(int attIndex)
         {
-            Debug.Assert(attIndex <= _attributeEvents.Length);
+            Debug.Assert(attIndex < _attributeEvents.Length);
             ValidatingReaderNodeData attInfo = _attributeEvents[attIndex];
             if (attInfo != null)
             {

@@ -16,10 +16,13 @@
  */
 
 using System;
+using Xunit;
 
+namespace Test_delegateParamCallTarget_cs
+{
 public delegate int DoIt(int a, int b, int c, DoIt d);
 
-internal class Repro
+public class Repro
 {
     private int DoItWrong(int a, int b, int c, DoIt d)
     {
@@ -40,10 +43,12 @@ internal class Repro
         return d(a, b, c, d2);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Repro r = new Repro();
         DoIt d = r.DoItRight;
         return r.Accomplice(1, 2, 3, d);
     }
+}
 }

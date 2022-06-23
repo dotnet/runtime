@@ -2235,7 +2235,7 @@ public:
 #if defined(FEATURE_DBGIPC_TRANSPORT_DI)
     static COM_METHOD CreateObjectTelesto(REFIID id, void ** pObject);
 #endif // FEATURE_DBGIPC_TRANSPORT_DI
-    static COM_METHOD CreateObject(CorDebugInterfaceVersion iDebuggerVersion, DWORD pid, LPCWSTR lpApplicationGroupId, REFIID id, void **object);
+    static COM_METHOD CreateObject(CorDebugInterfaceVersion iDebuggerVersion, DWORD pid, LPCWSTR lpApplicationGroupId, LPCWSTR lpwstrDacModulePath, REFIID id, void** object);
 
     //-----------------------------------------------------------
     // ICorDebugRemote
@@ -2308,6 +2308,7 @@ public:
 
 private:
     Cordb(CorDebugInterfaceVersion iDebuggerVersion, const ProcessDescriptor& pd);
+    Cordb(CorDebugInterfaceVersion iDebuggerVersion, const ProcessDescriptor& pd, LPCWSTR dacModulePath);
 
     //-----------------------------------------------------------
     // Data members
@@ -2323,6 +2324,8 @@ public:
     CordbRCEventThread*         m_rcEventThread;
 
     CorDebugInterfaceVersion    GetDebuggerVersion() const;
+
+    PathString& GetDacModulePath() { return m_dacModulePath; }
 
     HMODULE GetTargetCLR() { return m_targetCLR; }
 
@@ -2344,6 +2347,8 @@ private:
 
     // Store information about the process to be debugged
     ProcessDescriptor m_pd;
+
+    PathString m_dacModulePath;
 
     HMODULE m_targetCLR;
 };
@@ -4085,7 +4090,7 @@ private:
     // DAC
     //
 
-    // Try to initalize DAC, may fail
+    // Try to initialize DAC, may fail
     BOOL TryInitializeDac();
 
     // Expect DAC initialize to succeed.
@@ -4823,7 +4828,7 @@ public:
                                              CordbClass * tycon,
                                              CordbType ** pRes);
 
-    // Prepare data to send back to left-side during Init() and FuncEval.  Fail if the the exact
+    // Prepare data to send back to left-side during Init() and FuncEval.  Fail if the exact
     // type data is requested but was not fetched correctly during Init()
     HRESULT TypeToBasicTypeData(DebuggerIPCE_BasicTypeData *data);
     void TypeToExpandedTypeData(DebuggerIPCE_ExpandedTypeData *data);
@@ -10064,7 +10069,7 @@ public:
     VMPTR_OBJECTHANDLE  m_vmThreadOldExceptionHandle; // object handle for thread's managed exception object.
 
 #ifdef _DEBUG
-    // Func-eval should perturb the the thread's current appdomain. So we remember it at start
+    // Func-eval should perturb the thread's current appdomain. So we remember it at start
     // and then ensure that the func-eval complete restores it.
     CordbAppDomain *           m_DbgAppDomainStarted;
 #endif

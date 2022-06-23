@@ -27,6 +27,7 @@ public class ApkBuilder
     public string? KeyStorePath { get; set; }
     public bool ForceInterpreter { get; set; }
     public bool ForceAOT { get; set; }
+    public ITaskItem[] EnvironmentVariables { get; set; } = Array.Empty<ITaskItem>();
     public bool InvariantGlobalization { get; set; }
     public bool EnableRuntimeLogging { get; set; }
     public bool StaticLinkedRuntime { get; set; }
@@ -209,6 +210,7 @@ public class ApkBuilder
 
         // tools:
         string dx = Path.Combine(buildToolsFolder, "dx");
+        string d8 = Path.Combine(buildToolsFolder, "d8");
         string aapt = Path.Combine(buildToolsFolder, "aapt");
         string zipalign = Path.Combine(buildToolsFolder, "zipalign");
         string apksigner = Path.Combine(buildToolsFolder, "apksigner");
@@ -290,9 +292,9 @@ public class ApkBuilder
                 nativeLibraries += $"    {componentLibToLink}{Environment.NewLine}";
             }
 
-            // There's a circular dependecy between static mono runtime lib and static component libraries.
+            // There's a circular dependency between static mono runtime lib and static component libraries.
             // Adding mono runtime lib before and after component libs will resolve issues with undefined symbols
-            // due to circular dependecy.
+            // due to circular dependency.
             nativeLibraries += $"    {monoRuntimeLib}{Environment.NewLine}";
         }
 
@@ -371,8 +373,17 @@ public class ApkBuilder
         if (!string.IsNullOrEmpty(NativeMainSource))
             File.Copy(NativeMainSource, javaActivityPath, true);
 
+        string envVariables = "";
+        foreach (ITaskItem item in EnvironmentVariables)
+        {
+            string name = item.ItemSpec;
+            string value = item.GetMetadata("Value");
+            envVariables += $"\t\tsetEnv(\"{name}\", \"{value}\");\n";
+        }
+
         string monoRunner = Utils.GetEmbeddedResource("MonoRunner.java")
-            .Replace("%EntryPointLibName%", Path.GetFileName(mainLibraryFileName));
+            .Replace("%EntryPointLibName%", Path.GetFileName(mainLibraryFileName))
+            .Replace("%EnvVariables%", envVariables);
 
         File.WriteAllText(monoRunnerPath, monoRunner);
 
@@ -384,7 +395,20 @@ public class ApkBuilder
         string javaCompilerArgs = $"-d obj -classpath src -bootclasspath {androidJar} -source 1.8 -target 1.8 ";
         Utils.RunProcess(logger, javac, javaCompilerArgs + javaActivityPath, workingDir: OutputDir);
         Utils.RunProcess(logger, javac, javaCompilerArgs + monoRunnerPath, workingDir: OutputDir);
-        Utils.RunProcess(logger, dx, "--dex --output=classes.dex obj", workingDir: OutputDir);
+
+        if (File.Exists(d8))
+        {
+            string[] classFiles = Directory.GetFiles(Path.Combine(OutputDir, "obj"), "*.class", SearchOption.AllDirectories);
+
+            if (!classFiles.Any())
+                throw new InvalidOperationException("Didn't find any .class files");
+
+            Utils.RunProcess(logger, d8, $"--no-desugaring {string.Join(" ", classFiles)}", workingDir: OutputDir);
+        }
+        else
+        {
+            Utils.RunProcess(logger, dx, "--dex --output=classes.dex obj", workingDir: OutputDir);
+        }
 
         // 3. Generate APK
 
@@ -453,7 +477,7 @@ public class ApkBuilder
         // 4. Align APK
 
         string alignedApk = Path.Combine(OutputDir, "bin", $"{ProjectName}.apk");
-        Utils.RunProcess(logger, zipalign, $"-v 4 {apkFile} {alignedApk}", workingDir: OutputDir);
+        AlignApk(apkFile, alignedApk, zipalign);
         // we don't need the unaligned one any more
         File.Delete(apkFile);
 
@@ -463,6 +487,11 @@ public class ApkBuilder
         logger.LogMessage(MessageImportance.High, $"\nAPK size: {(new FileInfo(alignedApk).Length / 1000_000.0):0.#} Mb.\n");
 
         return (alignedApk, packageId);
+    }
+
+    private void AlignApk(string unalignedApkPath, string apkOutPath, string zipalign)
+    {
+        Utils.RunProcess(logger, zipalign, $"-v 4 {unalignedApkPath} {apkOutPath}", workingDir: OutputDir);
     }
 
     private void SignApk(string apkPath, string apksigner)
@@ -483,6 +512,31 @@ public class ApkBuilder
         }
         Utils.RunProcess(logger, apksigner, $"sign --min-sdk-version {MinApiLevel} --ks debug.keystore " +
             $"--ks-pass pass:android --key-pass pass:android {apkPath}", workingDir: OutputDir);
+    }
+
+    public void ZipAndSignApk(string apkPath)
+    {
+        if (string.IsNullOrEmpty(AndroidSdk))
+            AndroidSdk = Environment.GetEnvironmentVariable("ANDROID_SDK_ROOT");
+
+        if (string.IsNullOrEmpty(AndroidSdk) || !Directory.Exists(AndroidSdk))
+            throw new ArgumentException($"Android SDK='{AndroidSdk}' was not found or incorrect (can be set via ANDROID_SDK_ROOT envvar).");
+
+        if (string.IsNullOrEmpty(BuildToolsVersion))
+            BuildToolsVersion = GetLatestBuildTools(AndroidSdk);
+
+        if (string.IsNullOrEmpty(MinApiLevel))
+            MinApiLevel = DefaultMinApiLevel;
+
+        string buildToolsFolder = Path.Combine(AndroidSdk, "build-tools", BuildToolsVersion);
+        string zipalign = Path.Combine(buildToolsFolder, "zipalign");
+        string apksigner = Path.Combine(buildToolsFolder, "apksigner");
+
+        string alignedApkPath = $"{apkPath}.aligned";
+        AlignApk(apkPath, alignedApkPath, zipalign);
+        logger.LogMessage(MessageImportance.High, $"\nMoving '{alignedApkPath}' to '{apkPath}'.\n");
+        File.Move(alignedApkPath, apkPath, overwrite: true);
+        SignApk(apkPath, apksigner);
     }
 
     public void ReplaceFileInApk(string file)

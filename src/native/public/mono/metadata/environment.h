@@ -15,8 +15,9 @@
 
 MONO_BEGIN_DECLS
 
-MONO_API int32_t mono_environment_exitcode_get (void);
-MONO_API void mono_environment_exitcode_set (int32_t value);
+#define MONO_API_FUNCTION(ret,name,args) MONO_API ret name args;
+#include <mono/metadata/details/environment-functions.h>
+#undef MONO_API_FUNCTION
 
 MONO_END_DECLS
 

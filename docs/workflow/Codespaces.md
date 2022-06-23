@@ -24,8 +24,7 @@ The Codespaces configuration is spread across the following places:
     - `devcontainer.json` file configures the codespace and mostly has VS Code settings
     - The Dockerfile used to create the image
     - The `scripts` folder contains any scripts that are executed during the creation of the codespace. This has the build command that builds the entire repo for prebuilds.
-2. The GitHub Action can be configured at [create-codespaces-prebuild](../../.github/workflows/create-codespaces-prebuild.yml)
-    - This contains when the Action is run, what regions we build prebuilds for, and what size machines
+2. The GitHub Action can be configured by following the instructions at https://docs.github.com/codespaces/prebuilding-your-codespaces/configuring-prebuilds.
 
 To test out changes to the `.devcontainer` files, you can follow the process in [Applying changes to your configuration](https://docs.github.com/codespaces/customizing-your-codespace/configuring-codespaces-for-your-project#applying-changes-to-your-configuration) docs. This allows you to rebuild the Codespace privately before creating a PR.
 

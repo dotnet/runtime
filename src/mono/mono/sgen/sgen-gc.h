@@ -121,8 +121,10 @@ extern guint64 stat_objects_copied_major;
 #endif
 
 #define SGEN_ASSERT(level, a, ...) do {	\
+	MONO_DISABLE_WARNING(4127) \
 	if (G_UNLIKELY ((level) <= SGEN_MAX_ASSERT_LEVEL && !(a))) {	\
 		g_error (__VA_ARGS__);	\
+	MONO_RESTORE_WARNING \
 } } while (0)
 
 #ifdef HAVE_LOCALTIME_R
@@ -146,10 +148,12 @@ extern guint64 stat_objects_copied_major;
 #endif
 
 #define SGEN_LOG(level, format, ...) do {      \
+	MONO_DISABLE_WARNING(4127) \
 	if (G_UNLIKELY ((level) <= SGEN_MAX_DEBUG_LEVEL && (level) <= sgen_gc_debug_level)) {	\
 		char logTime[80];								\
 		LOG_TIMESTAMP;									\
 		mono_gc_printf (sgen_gc_debug_file, "%s " format "\n", logTime, ##__VA_ARGS__);	\
+	MONO_RESTORE_WARNING \
 } } while (0)
 
 #define SGEN_COND_LOG(level, cond, format, ...) do {	\
@@ -339,8 +343,6 @@ enum {
 	INTERNAL_MEM_WORKER_DATA,
 	INTERNAL_MEM_THREAD_POOL_JOB,
 	INTERNAL_MEM_BRIDGE_DATA,
-	INTERNAL_MEM_OLD_BRIDGE_HASH_TABLE,
-	INTERNAL_MEM_OLD_BRIDGE_HASH_TABLE_ENTRY,
 	INTERNAL_MEM_BRIDGE_HASH_TABLE,
 	INTERNAL_MEM_BRIDGE_HASH_TABLE_ENTRY,
 	INTERNAL_MEM_BRIDGE_ALIVE_HASH_TABLE,
@@ -845,7 +847,7 @@ sgen_safe_object_get_size_unaligned (GCObject *obj)
 		obj = (GCObject*)forwarded;
 	}
 
-	return sgen_client_slow_object_get_size (SGEN_LOAD_VTABLE (obj), obj);
+	return (guint)sgen_client_slow_object_get_size (SGEN_LOAD_VTABLE (obj), obj);
 }
 
 #ifdef SGEN_CLIENT_HEADER

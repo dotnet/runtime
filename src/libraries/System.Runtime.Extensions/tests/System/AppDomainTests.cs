@@ -254,7 +254,6 @@ namespace System.Tests
                 Assert.Equal(10, AppDomain.CurrentDomain.ExecuteAssemblyByName(assembly.FullName, new string[2] { "2", "3" }));
                 Assert.Throws<FormatException>(() => AppDomain.CurrentDomain.ExecuteAssemblyByName(assembly.FullName, new string[1] { "a" }));
                 AssemblyName assemblyName = assembly.GetName();
-                assemblyName.CodeBase = null;
                 Assert.Equal(105, AppDomain.CurrentDomain.ExecuteAssemblyByName(assemblyName, new string[3] { "50", "25", "25" }));
             }).Dispose();
         }
@@ -358,7 +357,6 @@ namespace System.Tests
         public void Load()
         {
             AssemblyName assemblyName = typeof(AppDomainTests).Assembly.GetName();
-            assemblyName.CodeBase = null;
             Assert.NotNull(AppDomain.CurrentDomain.Load(assemblyName));
             Assert.NotNull(AppDomain.CurrentDomain.Load(typeof(AppDomainTests).Assembly.FullName));
         }
@@ -815,6 +813,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(TestingCreateInstanceFromObjectHandleData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/65560", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void TestingCreateInstanceFromObjectHandle(string physicalFileName, string assemblyFile, string type, string returnedFullNameType, Type exceptionType)
         {
             ObjectHandle oh = null;

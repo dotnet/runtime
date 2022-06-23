@@ -5,7 +5,7 @@ import ProductVersion from "consts:productVersion";
 import Configuration from "consts:configuration";
 
 import {
-    mono_wasm_new_root, mono_wasm_release_roots,
+    mono_wasm_new_root, mono_wasm_release_roots, mono_wasm_new_external_root,
     mono_wasm_new_root_buffer
 } from "./roots";
 import {
@@ -25,9 +25,13 @@ import {
     mono_wasm_trace_logger,
     mono_wasm_add_dbg_command_received,
     mono_wasm_change_debugger_log_level,
+    mono_wasm_symbolicate_string,
+    mono_wasm_stringify_as_error_with_stack,
+    mono_wasm_debugger_attached,
+    mono_wasm_set_entrypoint_breakpoint,
 } from "./debug";
 import { ENVIRONMENT_IS_WEB, ExitStatusError, runtimeHelpers, setImportsAndExports } from "./imports";
-import { DotnetModuleConfigImports, DotnetModule } from "./types";
+import { DotnetModuleConfigImports, DotnetModule, is_nullish } from "./types";
 import {
     mono_load_runtime_and_bcl_args, mono_wasm_load_config,
     mono_wasm_setenv, mono_wasm_set_runtime_options,
@@ -36,36 +40,36 @@ import {
 } from "./startup";
 import { mono_set_timeout, schedule_background_exec } from "./scheduling";
 import { mono_wasm_load_icu_data, mono_wasm_get_icudt_name } from "./icu";
-import { conv_string, js_string_to_mono_string, mono_intern_string } from "./strings";
-import { js_to_mono_obj, js_typed_array_to_array, mono_wasm_typed_array_to_array } from "./js-to-cs";
+import { conv_string, conv_string_root, js_string_to_mono_string, js_string_to_mono_string_root, mono_intern_string } from "./strings";
+import { js_to_mono_obj, js_typed_array_to_array, mono_wasm_typed_array_to_array_ref, js_to_mono_obj_root, js_typed_array_to_array_root } from "./js-to-cs";
 import {
-    mono_array_to_js_array, mono_wasm_create_cs_owned_object, unbox_mono_obj
+    mono_array_to_js_array, mono_wasm_create_cs_owned_object_ref, unbox_mono_obj, unbox_mono_obj_root, mono_array_root_to_js_array
 } from "./cs-to-js";
 import {
     call_static_method, mono_bind_static_method, mono_call_assembly_entry_point,
     mono_method_resolve,
-    mono_wasm_compile_function,
-    mono_wasm_get_by_index, mono_wasm_get_global_object, mono_wasm_get_object_property,
+    mono_wasm_get_by_index_ref, mono_wasm_get_global_object_ref, mono_wasm_get_object_property_ref,
     mono_wasm_invoke_js,
     mono_wasm_invoke_js_blazor,
-    mono_wasm_invoke_js_with_args, mono_wasm_set_by_index, mono_wasm_set_object_property
+    mono_wasm_invoke_js_with_args_ref, mono_wasm_set_by_index_ref, mono_wasm_set_object_property_ref
 } from "./method-calls";
-import { mono_wasm_typed_array_copy_to, mono_wasm_typed_array_from, mono_wasm_typed_array_copy_from, mono_wasm_load_bytes_into_heap } from "./buffers";
-import { mono_wasm_cancel_promise } from "./cancelable-promise";
-import { mono_wasm_add_event_listener, mono_wasm_remove_event_listener } from "./event-listener";
+import { mono_wasm_typed_array_copy_to_ref, mono_wasm_typed_array_from_ref, mono_wasm_typed_array_copy_from_ref, mono_wasm_load_bytes_into_heap } from "./buffers";
+import { mono_wasm_cancel_promise_ref } from "./cancelable-promise";
 import { mono_wasm_release_cs_owned_object } from "./gc-handles";
-import { mono_wasm_web_socket_open, mono_wasm_web_socket_send, mono_wasm_web_socket_receive, mono_wasm_web_socket_close, mono_wasm_web_socket_abort } from "./web-socket";
+import { mono_wasm_web_socket_open_ref, mono_wasm_web_socket_send, mono_wasm_web_socket_receive, mono_wasm_web_socket_close_ref, mono_wasm_web_socket_abort } from "./web-socket";
 import cwraps from "./cwraps";
 import {
-    setI8, setI16, setI32, setI64,
+    setI8, setI16, setI32, setI52,
     setU8, setU16, setU32, setF32, setF64,
-    getI8, getI16, getI32, getI64,
-    getU8, getU16, getU32, getF32, getF64,
+    getI8, getI16, getI32, getI52,
+    getU8, getU16, getU32, getF32, getF64, afterUpdateGlobalBufferAndViews, getI64Big, setI64Big, getU52, setU52, setB32, getB32,
 } from "./memory";
 import { create_weak_ref } from "./weak-ref";
 import { fetch_like, readAsync_like } from "./polyfills";
 import { EmscriptenModule } from "./types/emscripten";
 import { mono_run_main, mono_run_main_and_exit } from "./run";
+import { diagnostics } from "./diagnostics";
+import { dotnet_browser_can_use_simple_digest_hash, dotnet_browser_simple_digest_hash } from "./crypto-worker";
 
 const MONO = {
     // current "public" MONO API
@@ -78,6 +82,7 @@ const MONO = {
     mono_load_runtime_and_bcl_args,
     mono_wasm_new_root_buffer,
     mono_wasm_new_root,
+    mono_wasm_new_external_root,
     mono_wasm_release_roots,
     mono_run_main,
     mono_run_main_and_exit,
@@ -90,39 +95,86 @@ const MONO = {
     loaded_files: <string[]>[],
 
     // memory accessors
+    setB32,
     setI8,
     setI16,
     setI32,
-    setI64,
+    setI52,
+    setU52,
+    setI64Big,
     setU8,
     setU16,
     setU32,
     setF32,
     setF64,
+    getB32,
     getI8,
     getI16,
     getI32,
-    getI64,
+    getI52,
+    getU52,
+    getI64Big,
     getU8,
     getU16,
     getU32,
     getF32,
     getF64,
+
+    // Diagnostics
+    diagnostics
 };
 export type MONOType = typeof MONO;
 
 const BINDING = {
     //current "public" BINDING API
+    /**
+     * @deprecated Not GC or thread safe
+     */
     mono_obj_array_new: cwraps.mono_wasm_obj_array_new,
+    /**
+     * @deprecated Not GC or thread safe
+     */
     mono_obj_array_set: cwraps.mono_wasm_obj_array_set,
+    /**
+     * @deprecated Not GC or thread safe
+     */
     js_string_to_mono_string,
+    /**
+     * @deprecated Not GC or thread safe
+     */
     js_typed_array_to_array,
-    js_to_mono_obj,
+    /**
+     * @deprecated Not GC or thread safe
+     */
     mono_array_to_js_array,
+    /**
+     * @deprecated Not GC or thread safe
+     */
+    js_to_mono_obj,
+    /**
+     * @deprecated Not GC or thread safe
+     */
     conv_string,
+    /**
+     * @deprecated Not GC or thread safe
+     */
+    unbox_mono_obj,
+    /**
+     * @deprecated Renamed to conv_string_root
+     */
+    conv_string_rooted: conv_string_root,
+
+    mono_obj_array_new_ref: cwraps.mono_wasm_obj_array_new_ref,
+    mono_obj_array_set_ref: cwraps.mono_wasm_obj_array_set_ref,
+    js_string_to_mono_string_root,
+    js_typed_array_to_array_root,
+    js_to_mono_obj_root,
+    conv_string_root,
+    unbox_mono_obj_root,
+    mono_array_root_to_js_array,
+
     bind_static_method: mono_bind_static_method,
     call_assembly_entry_point: mono_call_assembly_entry_point,
-    unbox_mono_obj,
 };
 export type BINDINGType = typeof BINDING;
 
@@ -130,11 +182,12 @@ let exportedAPI: DotnetPublicAPI;
 
 // this is executed early during load of emscripten runtime
 // it exports methods to global objects MONO, BINDING and Module in backward compatible way
+// At runtime this will be referred to as 'createDotnetRuntime'
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 function initializeImportsAndExports(
     imports: { isESM: boolean, isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, locateFile: Function, quit_: Function, ExitStatus: ExitStatusError, requirePromise: Promise<Function> },
     exports: { mono: any, binding: any, internal: any, module: any },
-    replacements: { fetch: any, readAsync: any, require: any, requireOut: any, noExitRuntime: boolean },
+    replacements: { fetch: any, readAsync: any, require: any, requireOut: any, noExitRuntime: boolean, updateGlobalBufferAndViews: Function },
 ): DotnetPublicAPI {
     const module = exports.module as DotnetModule;
     const globalThisAny = globalThis as any;
@@ -191,6 +244,11 @@ function initializeImportsAndExports(
     replacements.fetch = runtimeHelpers.fetch;
     replacements.readAsync = readAsync_like;
     replacements.requireOut = module.imports.require;
+    const originalUpdateGlobalBufferAndViews = replacements.updateGlobalBufferAndViews;
+    replacements.updateGlobalBufferAndViews = (buffer: Buffer) => {
+        originalUpdateGlobalBufferAndViews(buffer);
+        afterUpdateGlobalBufferAndViews(buffer);
+    };
 
     replacements.noExitRuntime = ENVIRONMENT_IS_WEB;
 
@@ -217,7 +275,7 @@ function initializeImportsAndExports(
             let value: any = undefined;
             Object.defineProperty(globalThis, name, {
                 get: () => {
-                    if (!value) {
+                    if (is_nullish(value)) {
                         const stack = (new Error()).stack;
                         const nextLine = stack ? stack.substr(stack.indexOf("\n", 8) + 1) : "";
                         console.warn(`global ${name} is obsolete, please use Module.${name} instead ${nextLine}`);
@@ -253,6 +311,14 @@ function initializeImportsAndExports(
 
     configure_emscripten_startup(module, exportedAPI);
 
+    // HACK: Emscripten expects the return value of this function to always be the Module object,
+    // but we changed ours to return a set of exported namespaces. In order for the emscripten
+    // generated worker code to keep working, we detect that we're running in a worker (via the
+    // presence of globalThis.importScripts) and emulate the old behavior. Note that this will
+    // impact anyone trying to load us in a web worker directly, not just emscripten!
+    if (typeof ((<any>globalThis)["importScripts"]) === "function")
+        return <any>exportedAPI.Module;
+
     return exportedAPI;
 }
 
@@ -277,33 +343,35 @@ export const __linker_exports: any = {
     mono_wasm_invoke_js,
     mono_wasm_invoke_js_blazor,
     mono_wasm_trace_logger,
+    mono_wasm_set_entrypoint_breakpoint,
 
     // also keep in sync with corebindings.c
-    mono_wasm_invoke_js_with_args,
-    mono_wasm_get_object_property,
-    mono_wasm_set_object_property,
-    mono_wasm_get_by_index,
-    mono_wasm_set_by_index,
-    mono_wasm_get_global_object,
-    mono_wasm_create_cs_owned_object,
+    mono_wasm_invoke_js_with_args_ref,
+    mono_wasm_get_object_property_ref,
+    mono_wasm_set_object_property_ref,
+    mono_wasm_get_by_index_ref,
+    mono_wasm_set_by_index_ref,
+    mono_wasm_get_global_object_ref,
+    mono_wasm_create_cs_owned_object_ref,
     mono_wasm_release_cs_owned_object,
-    mono_wasm_typed_array_to_array,
-    mono_wasm_typed_array_copy_to,
-    mono_wasm_typed_array_from,
-    mono_wasm_typed_array_copy_from,
-    mono_wasm_add_event_listener,
-    mono_wasm_remove_event_listener,
-    mono_wasm_cancel_promise,
-    mono_wasm_web_socket_open,
+    mono_wasm_typed_array_to_array_ref,
+    mono_wasm_typed_array_copy_to_ref,
+    mono_wasm_typed_array_from_ref,
+    mono_wasm_typed_array_copy_from_ref,
+    mono_wasm_cancel_promise_ref,
+    mono_wasm_web_socket_open_ref,
     mono_wasm_web_socket_send,
     mono_wasm_web_socket_receive,
-    mono_wasm_web_socket_close,
+    mono_wasm_web_socket_close_ref,
     mono_wasm_web_socket_abort,
-    mono_wasm_compile_function,
 
     //  also keep in sync with pal_icushim_static.c
     mono_wasm_load_icu_data,
     mono_wasm_get_icudt_name,
+
+    // pal_crypto_webworker.c
+    dotnet_browser_simple_digest_hash,
+    dotnet_browser_can_use_simple_digest_hash,
 };
 
 const INTERNAL: any = {
@@ -324,6 +392,10 @@ const INTERNAL: any = {
     // with mono_wasm_debugger_log and mono_wasm_trace_logger
     logging: undefined,
 
+    //
+    mono_wasm_symbolicate_string,
+    mono_wasm_stringify_as_error_with_stack,
+
     // used in debugger DevToolsHelper.cs
     mono_wasm_get_loaded_files,
     mono_wasm_send_dbg_command_with_parms,
@@ -336,6 +408,7 @@ const INTERNAL: any = {
     mono_wasm_detach_debugger,
     mono_wasm_raise_debug_event,
     mono_wasm_change_debugger_log_level,
+    mono_wasm_debugger_attached,
     mono_wasm_runtime_is_ready: runtimeHelpers.mono_wasm_runtime_is_ready,
 };
 

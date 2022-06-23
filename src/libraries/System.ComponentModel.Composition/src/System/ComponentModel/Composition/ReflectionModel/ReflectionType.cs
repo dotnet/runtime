@@ -9,8 +9,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
     {
         private readonly Type _type;
 
-        public ReflectionType(Type type!!)
+        public ReflectionType(Type type)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             _type = type;
         }
 

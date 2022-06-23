@@ -13,7 +13,7 @@ internal static partial class Interop
         internal static bool EcdhDeriveKey(SafeEcKeyHandle ourKey, SafeEcKeyHandle peerKey, Span<byte> buffer, out int usedBuffer) =>
             EcdhDeriveKey(ourKey, peerKey, ref MemoryMarshal.GetReference(buffer), buffer.Length, out usedBuffer);
 
-        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcdhDeriveKey")]
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcdhDeriveKey")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool EcdhDeriveKey(SafeEcKeyHandle ourKey, SafeEcKeyHandle peerKey, ref byte buffer, int bufferLength, out int usedBuffer);
     }

@@ -113,7 +113,7 @@ namespace System.Threading
     ///   - Since <see cref="s_lock"/> provides mutual exclusion for the states of all <see cref="WaitableObject"/>s in the
     ///     process, any operation that does not involve waiting or releasing a wait can occur with minimal p/invokes
     ///
-#if CORERT
+#if NATIVEAOT
     [EagerStaticClassConstruction] // the wait subsystem is used during lazy class construction
 #endif
     internal static partial class WaitSubsystem

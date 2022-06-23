@@ -3,20 +3,31 @@
   <PropertyGroup>
     <TargetFramework>$(AspNetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <RunAnalyzers>false</RunAnalyzers>
     <IsTestProject>true</IsTestProject>
+    <RunAnalyzers>false</RunAnalyzers>
+    <DebuggerHost Condition="'$(DebuggerHost)' == '' or ('$(DebuggerHost)' != 'chrome' and '$(DebuggerHost)' != 'firefox')">chrome</DebuggerHost>
+    <DefineConstants Condition="'$(DebuggerHost)' == 'chrome'">$(DefineConstants);RUN_IN_CHROME</DefineConstants>
+    <BrowserHost Condition="$([MSBuild]::IsOSPlatform('windows'))">windows</BrowserHost>
+    <InstallChromeForTests Condition="'$(InstallChromeForTests)' == '' and '$(DebuggerHost)' == 'chrome' and '$(ContinuousIntegrationBuild)' != 'true' and Exists('/.dockerenv')">true</InstallChromeForTests>
+    <InstallFirefoxForTests Condition="'$(DebuggerHost)' == 'firefox' and '$(InstallFirefoxForTests)' == '' and '$(ContinuousIntegrationBuild)' != 'true' and Exists('/.dockerenv')">true</InstallFirefoxForTests>
   </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)testing\provisioning.targets" />
 
   <ItemGroup>
     <Content Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
 
-    <Compile Include="..\BrowserDebugProxy\DevToolsQueue.cs" />
+    <Compile Include="..\BrowserDebugProxy\Common\*.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\BrowserDebugHost\BrowserDebugHost.csproj" />
     <ProjectReference Include="..\BrowserDebugProxy\BrowserDebugProxy.csproj" />
     <ProjectReference Include="..\tests\debugger-test\debugger-test.csproj" ReferenceOutputAssembly="false" Private="false" />
+
+    <PackageReference Include="Serilog.Extensions.Logging.File" Version="2.0.0" />
+    <!-- needed for ConditionalFact etc -->
+    <ProjectReference Include="$(RepoRoot)src\libraries\Common\tests\TestUtilities\TestUtilities.csproj" />
   </ItemGroup>
 
   <Target Name="CopyTestZipForHelix"
@@ -30,4 +41,5 @@
 
     <Copy SourceFiles="@(_FilesToCopy)" DestinationFiles="$(ArchiveDirForHelix)\%(TargetPath)\%(RecursiveDir)%(FileName)%(Extension)" />
   </Target>
+
 </Project>

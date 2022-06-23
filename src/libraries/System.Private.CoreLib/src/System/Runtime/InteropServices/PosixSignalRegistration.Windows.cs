@@ -99,7 +99,7 @@ namespace System.Runtime.InteropServices
                 {
                     if (token.Signal == signal)
                     {
-                        (tokens ??= new()).Add(token);
+                        (tokens ??= new List<Token>()).Add(token);
                     }
                 }
             }

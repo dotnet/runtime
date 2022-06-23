@@ -18,8 +18,10 @@ namespace System.Xml.Linq
         /// Initializes a new instance of the XText class.
         /// </summary>
         /// <param name="value">The string that contains the value of the text node.</param>
-        public XText(string value!!)
+        public XText(string value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             text = value;
         }
 
@@ -27,8 +29,10 @@ namespace System.Xml.Linq
         /// Initializes a new instance of the XText class from another XText object.
         /// </summary>
         /// <param name="other">The text node to copy from.</param>
-        public XText(XText other!!)
+        public XText(XText other)
         {
+            ArgumentNullException.ThrowIfNull(other);
+
             text = other.text;
         }
 
@@ -76,8 +80,10 @@ namespace System.Xml.Linq
         /// <param name="writer">
         /// The <see cref="XmlWriter"/> to write this <see cref="XText"/> to.
         /// </param>
-        public override void WriteTo(XmlWriter writer!!)
+        public override void WriteTo(XmlWriter writer)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             if (parent is XDocument)
             {
                 writer.WriteWhitespace(text);
@@ -97,8 +103,10 @@ namespace System.Xml.Linq
         /// <param name="cancellationToken">
         /// A cancellation token.
         /// </param>
-        public override Task WriteToAsync(XmlWriter writer!!, CancellationToken cancellationToken)
+        public override Task WriteToAsync(XmlWriter writer, CancellationToken cancellationToken)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled(cancellationToken);
 

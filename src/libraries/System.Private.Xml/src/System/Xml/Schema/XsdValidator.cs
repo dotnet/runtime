@@ -1,18 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.Collections.Specialized;
+using System.Text;
+using System.IO;
+using System.Diagnostics;
+using System.Xml.Schema;
+using System.Xml.XPath;
+using System.Runtime.Versioning;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml.Schema
 {
-    using System.Collections;
-    using System.Collections.Specialized;
-    using System.Text;
-    using System.IO;
-    using System.Diagnostics;
-    using System.Xml.Schema;
-    using System.Xml.XPath;
-    using System.Runtime.Versioning;
-    using System.Diagnostics.CodeAnalysis;
-
 #pragma warning disable 618
     internal sealed class XsdValidator : BaseValidator
     {
@@ -149,7 +149,7 @@ namespace System.Xml.Schema
                     {
                         SchemaInfo inlineSchemaInfo = new SchemaInfo();
                         inlineSchemaInfo.SchemaType = SchemaType.XSD;
-                        inlineNS = schema.TargetNamespace == null ? string.Empty : schema.TargetNamespace;
+                        inlineNS = schema.TargetNamespace ?? string.Empty;
                         if (!SchemaInfo!.TargetNamespaces.ContainsKey(inlineNS))
                         {
                             if (SchemaCollection!.Add(inlineNS, inlineSchemaInfo, schema, true) != null)
@@ -638,7 +638,7 @@ namespace System.Xml.Schema
             {
                 if (schemaInfo.SchemaType != SchemaType.XSD)
                 {
-                    throw new XmlException(SR.Xml_MultipleValidaitonTypes, string.Empty, this.PositionInfo.LineNumber, this.PositionInfo.LinePosition);
+                    throw new XmlException(SR.Xml_MultipleValidationTypes, string.Empty, this.PositionInfo.LineNumber, this.PositionInfo.LinePosition);
                 }
                 SchemaInfo.Add(schemaInfo, EventHandler);
                 return;
@@ -772,7 +772,7 @@ namespace System.Xml.Schema
 
         public override object? FindId(string name)
         {
-            return _IDs == null ? null : _IDs[name];
+            return _IDs?[name];
         }
 
         public bool IsXSDRoot(string localName, string ns)
@@ -864,7 +864,7 @@ namespace System.Xml.Schema
             } // foreach constraint /constraintstruct
 
             // added on June 19, make connections between new keyref tables with key/unique tables in stack
-            // i can't put it in the above loop, coz there will be key on the same level
+            // i can't put it in the above loop, because there will be key on the same level
             for (int i = 0; i < context.Constr.Length; ++i)
             {
                 if (context.Constr[i].constraint.Role == CompiledIdentityConstraint.ConstraintRole.Keyref)
@@ -1012,7 +1012,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private object? UnWrapUnion(object? typedValue)
+        private static object? UnWrapUnion(object? typedValue)
         {
             XsdSimpleValue? simpleValue = typedValue as XsdSimpleValue;
             if (simpleValue != null)
@@ -1087,7 +1087,7 @@ namespace System.Xml.Schema
                                 else if (constraints[i].qualifiedTable!.Contains(ks))
                                 {
                                     // unique or key checking value confliction
-                                    // for redundant key, reporting both occurings
+                                    // for redundant key, reporting both occurrings
                                     // doesn't work... how can i retrieve value out??
                                     SendValidationEvent(new XmlSchemaException(SR.Sch_DuplicateKey,
                                         new string[2] { ks.ToString(), constraints[i].constraint.name.ToString() },
