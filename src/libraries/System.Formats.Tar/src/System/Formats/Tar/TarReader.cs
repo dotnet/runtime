@@ -40,18 +40,10 @@ namespace System.Formats.Tar
             _leaveOpen = leaveOpen;
 
             _previouslyReadEntry = null;
-            GlobalExtendedAttributes = null;
             _isDisposed = false;
             _readFirstEntry = false;
             _reachedEndMarkers = false;
         }
-
-        /// <summary>
-        /// <para>If the archive format is <see cref="TarEntryFormat.Pax"/>, returns a read-only dictionary containing the string key-value pairs of the Global Extended Attributes in the first entry of the archive.</para>
-        /// <para>If there is no Global Extended Attributes entry at the beginning of the archive, this returns an empty read-only dictionary.</para>
-        /// <para>If the first entry has not been read by calling <see cref="GetNextEntry(bool)"/>, this returns <see langword="null"/>.</para>
-        /// </summary>
-        public IReadOnlyDictionary<string, string>? GlobalExtendedAttributes { get; private set; }
 
         /// <summary>
         /// Disposes the current <see cref="TarReader"/> instance, and disposes the streams of all the entries that were read from the archive.
@@ -114,7 +106,8 @@ namespace System.Formats.Tar
 
                 TarEntry entry = header._format switch
                 {
-                    TarEntryFormat.Pax => new PaxTarEntry(header, this),
+                    TarEntryFormat.Pax => header._typeFlag is TarEntryType.GlobalExtendedAttributes ?
+                                          new PaxGlobalExtendedAttributesTarEntry(header, this) : new PaxTarEntry(header, this),
                     TarEntryFormat.Gnu => new GnuTarEntry(header, this),
                     TarEntryFormat.Ustar => new UstarTarEntry(header, this),
                     TarEntryFormat.V7 or TarEntryFormat.Unknown or _ => new V7TarEntry(header, this),
@@ -221,37 +214,6 @@ namespace System.Formats.Tar
                 return false;
             }
 
-            // Special case: First header. Collect GEA from data section, then get next entry.
-            if (header._typeFlag is TarEntryType.GlobalExtendedAttributes)
-            {
-                if (GlobalExtendedAttributes != null)
-                {
-                    // We can only have one extended attributes entry.
-                    throw new FormatException(SR.TarTooManyGlobalExtendedAttributesEntries);
-                }
-
-                GlobalExtendedAttributes = header._extendedAttributes?.AsReadOnly();
-
-                header = default;
-                header._format = TarEntryFormat.Pax;
-                try
-                {
-                    if (!header.TryGetNextHeader(_archiveStream, copyData))
-                    {
-                        return false;
-                    }
-                }
-                catch (EndOfStreamException)
-                {
-                    // Edge case: The only entry in the archive was a Global Extended Attributes entry
-                    return false;
-                }
-                if (header._typeFlag == TarEntryType.GlobalExtendedAttributes)
-                {
-                    throw new FormatException(SR.TarTooManyGlobalExtendedAttributesEntries);
-                }
-            }
-
             // If a metadata typeflag entry is retrieved, handle it here, then read the next entry
 
             // PAX metadata
@@ -287,6 +249,9 @@ namespace System.Formats.Tar
             return true;
         }
 
+        // When an extended attributes entry is retrieved, we need to collect the key-value pairs from the data section in this first header,
+        // then retrieve the next header, and save the collected kvps in that second header's extended attributes dictionary.
+        // Finally, we return the second header, which is what we will give to the user as an entry.
         private bool TryProcessExtendedAttributesHeader(TarHeader extendedAttributesHeader, bool copyData, out TarHeader actualHeader)
         {
             actualHeader = default;
@@ -298,26 +263,26 @@ namespace System.Formats.Tar
                 return false;
             }
 
-            // Should never read a GEA entry at this point
-            if (actualHeader._typeFlag == TarEntryType.GlobalExtendedAttributes)
+            // We're currently processing an extended attributes header, so we can never have two extended entries in a row
+            if (actualHeader._typeFlag is TarEntryType.GlobalExtendedAttributes or
+                TarEntryType.ExtendedAttributes or
+                TarEntryType.LongLink or
+                TarEntryType.LongPath)
             {
-                throw new FormatException(SR.TarTooManyGlobalExtendedAttributesEntries);
-            }
-
-            // Can't have two extended attribute metadata entries in a row
-            if (actualHeader._typeFlag is TarEntryType.ExtendedAttributes)
-            {
-                throw new FormatException(string.Format(SR.TarUnexpectedMetadataEntry, TarEntryType.ExtendedAttributes, TarEntryType.ExtendedAttributes));
+                throw new FormatException(string.Format(SR.TarUnexpectedMetadataEntry, actualHeader._typeFlag, TarEntryType.ExtendedAttributes));
             }
 
             Debug.Assert(extendedAttributesHeader._extendedAttributes != null);
 
-            // Replace all the standard attributes with the extended attributes ones,
+            // Replace all the attributes representing standard fields with the extended ones, if any
             actualHeader.ReplaceNormalAttributesWithExtended(extendedAttributesHeader._extendedAttributes);
 
             return true;
         }
 
+        // When a GNU metadata entry is retrieved, we need to read the long link or long path from the data section,
+        // then collect the next header, replace the long link or long path on that second header.
+        // Finally, we return the second header, which is what we will give to the user as an entry.
         private bool TryProcessGnuMetadataHeader(TarHeader header, bool copyData, out TarHeader finalHeader)
         {
             finalHeader = default;

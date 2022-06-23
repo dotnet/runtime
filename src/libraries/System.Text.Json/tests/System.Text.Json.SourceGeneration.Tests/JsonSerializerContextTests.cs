@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -37,25 +38,20 @@ namespace System.Text.Json.SourceGeneration.Tests
                     Assert.Contains("JsonSerializerOptions", exAsStr);
 
                     // This test uses reflection to:
-                    // - Access JsonSerializerOptions.s_defaultSimpleConverters
-                    // - Access JsonSerializerOptions.s_defaultFactoryConverters
-                    // - Access JsonSerializerOptions.s_typeInfoCreationFunc
+                    // - Access DefaultJsonTypeInfoResolver.s_defaultSimpleConverters
+                    // - Access DefaultJsonTypeInfoResolver.s_defaultFactoryConverters
                     //
                     // If any of them changes, this test will need to be kept in sync.
 
                     // Confirm built-in converters not set.
-                    AssertFieldNull("s_defaultSimpleConverters", optionsInstance: null);
-                    AssertFieldNull("s_defaultFactoryConverters", optionsInstance: null);
+                    AssertFieldNull("s_defaultSimpleConverters");
+                    AssertFieldNull("s_defaultFactoryConverters");
 
-                    // Confirm type info dynamic creator not set.
-                    AssertFieldNull("s_typeInfoCreationFunc", optionsInstance: null);
-
-                    static void AssertFieldNull(string fieldName, JsonSerializerOptions? optionsInstance)
+                    static void AssertFieldNull(string fieldName)
                     {
-                        BindingFlags bindingFlags = BindingFlags.NonPublic | (optionsInstance == null ? BindingFlags.Static : BindingFlags.Instance);
-                        FieldInfo fieldInfo = typeof(JsonSerializerOptions).GetField(fieldName, bindingFlags);
+                        FieldInfo fieldInfo = typeof(DefaultJsonTypeInfoResolver).GetField(fieldName, BindingFlags.Static | BindingFlags.NonPublic);
                         Assert.NotNull(fieldInfo);
-                        Assert.Null(fieldInfo.GetValue(optionsInstance));
+                        Assert.Null(fieldInfo.GetValue(null));
                     }
                 }).Dispose();
         }
@@ -100,6 +96,132 @@ namespace System.Text.Json.SourceGeneration.Tests
             person = JsonSerializer.Deserialize<Person>(utf8Json, PersonJsonContext.Default.Person);
             Assert.Equal("Jane", person.FirstName);
             Assert.Equal("Doe", person.LastName);
+        }
+
+        [Fact]
+        public static void CombiningContexts_ResolveJsonTypeInfo()
+        {
+            IJsonTypeInfoResolver combined = JsonTypeInfoResolver.Combine(NestedContext.Default, PersonJsonContext.Default);
+            var options = new JsonSerializerOptions { TypeInfoResolver = combined };
+
+            JsonTypeInfo messageInfo = combined.GetTypeInfo(typeof(JsonMessage), options);
+            Assert.IsAssignableFrom<JsonTypeInfo<JsonMessage>>(messageInfo);
+            Assert.Same(options, messageInfo.Options);
+
+            JsonTypeInfo personInfo = combined.GetTypeInfo(typeof(Person), options);
+            Assert.IsAssignableFrom<JsonTypeInfo<Person>>(personInfo);
+            Assert.Same(options, personInfo.Options);
+        }
+
+        [Fact]
+        public static void CombiningContexts_ResolveJsonTypeInfo_DifferentCasing()
+        {
+            IJsonTypeInfoResolver combined = JsonTypeInfoResolver.Combine(NestedContext.Default, PersonJsonContext.Default);
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = combined,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            };
+
+            Assert.NotSame(JsonNamingPolicy.CamelCase, NestedContext.Default.Options.PropertyNamingPolicy);
+            Assert.Same(JsonNamingPolicy.CamelCase, PersonJsonContext.Default.Options.PropertyNamingPolicy);
+
+            JsonTypeInfo messageInfo = combined.GetTypeInfo(typeof(JsonMessage), options);
+            Assert.Equal(2, messageInfo.Properties.Count);
+            Assert.Equal("message", messageInfo.Properties[0].Name);
+            Assert.Equal("length", messageInfo.Properties[1].Name);
+
+            JsonTypeInfo personInfo = combined.GetTypeInfo(typeof(Person), options);
+            Assert.Equal(2, personInfo.Properties.Count);
+            Assert.Equal("firstName", personInfo.Properties[0].Name);
+            Assert.Equal("lastName", personInfo.Properties[1].Name);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetCombiningContextsData))]
+        public static void CombiningContexts_Serialization<T>(T value, string expectedJson)
+        {
+            IJsonTypeInfoResolver combined = JsonTypeInfoResolver.Combine(NestedContext.Default, PersonJsonContext.Default);
+            var options = new JsonSerializerOptions { TypeInfoResolver = combined };
+
+            JsonTypeInfo<T> typeInfo = (JsonTypeInfo<T>)combined.GetTypeInfo(typeof(T), options)!;
+
+            string json = JsonSerializer.Serialize(value, typeInfo);
+            JsonTestHelper.AssertJsonEqual(expectedJson, json);
+
+            json = JsonSerializer.Serialize(value, options);
+            JsonTestHelper.AssertJsonEqual(expectedJson, json);
+
+            JsonSerializer.Deserialize<T>(json, typeInfo);
+            JsonSerializer.Deserialize<T>(json, options);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void CombiningContextWithCustomResolver_ReplacePoco()
+        {
+            TestResolver customResolver = new((type, options) =>
+            {
+                if (type != typeof(TestPoco))
+                    return null;
+
+                JsonTypeInfo<TestPoco> typeInfo = JsonTypeInfo.CreateJsonTypeInfo<TestPoco>(options);
+                typeInfo.CreateObject = () => new TestPoco();
+                JsonPropertyInfo property = typeInfo.CreateJsonPropertyInfo(typeof(string), "test");
+                property.Get = (o) => System.Runtime.CompilerServices.Unsafe.Unbox<TestPoco>(o).IntProperty.ToString();
+                property.Set = (o, val) =>
+                {
+                    System.Runtime.CompilerServices.Unsafe.Unbox<TestPoco>(o).StringProperty = (string)val;
+                    System.Runtime.CompilerServices.Unsafe.Unbox<TestPoco>(o).IntProperty = int.Parse((string)val);
+                };
+
+                typeInfo.Properties.Add(property);
+                return typeInfo;
+            });
+
+            JsonSerializerOptions o = new();
+            o.TypeInfoResolver = JsonTypeInfoResolver.Combine(customResolver, ClassWithPocoListDictionaryAndNullablePropertyContext.Default);
+
+            // ensure we're not falling back to reflection serialization
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(new Person("a", "b"), o));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize((byte)1, o));
+
+            ClassWithPocoListDictionaryAndNullable obj = new()
+            {
+                UIntProperty = 13,
+                ListOfPocoProperty = new List<TestPoco>() { new TestPoco() { IntProperty = 4 }, new TestPoco() { IntProperty = 5 } },
+                DictionaryPocoValueProperty = new Dictionary<char, TestPoco>() { ['c'] = new TestPoco() { IntProperty = 6 }, ['d'] = new TestPoco() { IntProperty = 7 } },
+                NullablePocoProperty = new TestPoco() { IntProperty = 8 },
+                PocoProperty = new TestPoco() { IntProperty = 9 },
+            };
+
+            string json = JsonSerializer.Serialize(obj, o);
+            Assert.Equal("""{"UIntProperty":13,"ListOfPocoProperty":[{"test":"4"},{"test":"5"}],"DictionaryPocoValueProperty":{"c":{"test":"6"},"d":{"test":"7"}},"NullablePocoProperty":{"test":"8"},"PocoProperty":{"test":"9"}}""", json);
+
+            ClassWithPocoListDictionaryAndNullable deserialized = JsonSerializer.Deserialize<ClassWithPocoListDictionaryAndNullable>(json, o);
+            Assert.Equal(obj.UIntProperty, deserialized.UIntProperty);
+            Assert.Equal(obj.ListOfPocoProperty.Count, deserialized.ListOfPocoProperty.Count);
+            Assert.Equal(2, obj.ListOfPocoProperty.Count);
+            Assert.Equal(obj.ListOfPocoProperty[0].IntProperty.ToString(), deserialized.ListOfPocoProperty[0].StringProperty);
+            Assert.Equal(obj.ListOfPocoProperty[0].IntProperty, deserialized.ListOfPocoProperty[0].IntProperty);
+            Assert.Equal(obj.ListOfPocoProperty[1].IntProperty.ToString(), deserialized.ListOfPocoProperty[1].StringProperty);
+            Assert.Equal(obj.ListOfPocoProperty[1].IntProperty, deserialized.ListOfPocoProperty[1].IntProperty);
+            Assert.Equal(obj.DictionaryPocoValueProperty.Count, deserialized.DictionaryPocoValueProperty.Count);
+            Assert.Equal(2, obj.DictionaryPocoValueProperty.Count);
+            Assert.Equal(obj.DictionaryPocoValueProperty['c'].IntProperty.ToString(), deserialized.DictionaryPocoValueProperty['c'].StringProperty);
+            Assert.Equal(obj.DictionaryPocoValueProperty['c'].IntProperty, deserialized.DictionaryPocoValueProperty['c'].IntProperty);
+            Assert.Equal(obj.DictionaryPocoValueProperty['d'].IntProperty.ToString(), deserialized.DictionaryPocoValueProperty['d'].StringProperty);
+            Assert.Equal(obj.DictionaryPocoValueProperty['d'].IntProperty, deserialized.DictionaryPocoValueProperty['d'].IntProperty);
+            Assert.Equal(obj.NullablePocoProperty.Value.IntProperty.ToString(), deserialized.NullablePocoProperty.Value.StringProperty);
+            Assert.Equal(obj.NullablePocoProperty.Value.IntProperty, deserialized.NullablePocoProperty.Value.IntProperty);
+            Assert.Equal(obj.PocoProperty.IntProperty.ToString(), deserialized.PocoProperty.StringProperty);
+            Assert.Equal(obj.PocoProperty.IntProperty, deserialized.PocoProperty.IntProperty);
+        }
+
+        public static IEnumerable<object[]> GetCombiningContextsData()
+        {
+            yield return WrapArgs(new JsonMessage { Message = "Hi" }, """{ "Message" : "Hi", "Length" : 2 }""");
+            yield return WrapArgs(new Person("John", "Doe"), """{ "FirstName" : "John", "LastName" : "Doe" }""");
+            static object[] WrapArgs<T>(T value, string expectedJson) => new object[] { value, expectedJson };
         }
 
         [JsonSerializable(typeof(JsonMessage))]
@@ -181,6 +303,39 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(List<TestEnum>))]
         internal partial class GenericParameterWithCustomConverterFactoryContext : JsonSerializerContext
         {
+        }
+
+        [JsonSerializable(typeof(ClassWithPocoListDictionaryAndNullable))]
+        internal partial class ClassWithPocoListDictionaryAndNullablePropertyContext : JsonSerializerContext
+        {
+
+        }
+
+        internal class ClassWithPocoListDictionaryAndNullable
+        {
+            public uint UIntProperty { get; set; }
+            public List<TestPoco> ListOfPocoProperty { get; set; }
+            public Dictionary<char, TestPoco> DictionaryPocoValueProperty { get; set; }
+            public TestPoco? NullablePocoProperty { get; set; }
+            public TestPoco PocoProperty { get; set; }
+        }
+
+        internal struct TestPoco
+        {
+            public string StringProperty { get; set; }
+            public int IntProperty { get; set; }
+        }
+
+        internal class TestResolver : IJsonTypeInfoResolver
+        {
+            private Func<Type, JsonSerializerOptions, JsonTypeInfo?> _getTypeInfo;
+
+            public TestResolver(Func<Type, JsonSerializerOptions, JsonTypeInfo?> getTypeInfo)
+            {
+                _getTypeInfo = getTypeInfo;
+            }
+
+            public JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options) => _getTypeInfo(type, options);
         }
     }
 }

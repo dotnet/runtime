@@ -5334,6 +5334,15 @@ ves_icall_AssemblyExtensions_ApplyUpdate (MonoAssembly *assm,
 	mono_error_set_pending_exception (error);
 }
 
+MonoStringHandle
+ves_icall_AssemblyExtensions_GetApplyUpdateCapabilities (MonoError *error)
+{
+	MonoStringHandle s;
+	s = mono_string_new_handle (mono_enc_capabilities (), error);
+	return_val_if_nok (error, NULL_HANDLE_STRING);
+	return s;
+}
+
 gint32 ves_icall_AssemblyExtensions_ApplyUpdateEnabled (gint32 just_component_check)
 {
 	// if just_component_check is true, we only care whether the hot_reload component is enabled,

@@ -412,59 +412,18 @@ namespace System.Diagnostics
         // Check base\screg\winreg\perfdlls\process\perfsprc.c for details.
         internal static ReadOnlySpan<char> GetProcessShortName(ReadOnlySpan<char> name)
         {
-            if (name.IsEmpty)
+            // Trim off everything up to and including the last slash, if there is one.
+            // If there isn't, LastIndexOf will return -1 and this will end up as a nop.
+            name = name.Slice(name.LastIndexOf('\\') + 1);
+
+            // If the name ends with the ".exe" extension, then drop it, otherwise include
+            // it in the name.
+            if (name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
             {
-                return string.Empty;
+                name = name.Slice(0, name.Length - 4);
             }
 
-            int slash = -1;
-            int period = -1;
-
-            for (int i = 0; i < name.Length; i++)
-            {
-                if (name[i] == '\\')
-                {
-                    slash = i;
-                }
-                else if (name[i] == '.')
-                {
-                    period = i;
-                }
-            }
-
-            if (period == -1)
-            {
-                period = name.Length - 1; // set to end of string
-            }
-            else
-            {
-                // if a period was found, then see if the extension is
-                // .EXE, if so drop it, if not, then use end of string
-                // (i.e. include extension in name)
-                ReadOnlySpan<char> extension = name.Slice(period);
-
-                if (extension.Equals(".exe", StringComparison.OrdinalIgnoreCase))
-                {
-                    period--;                 // point to character before period
-                }
-                else
-                {
-                    period = name.Length - 1; // set to end of string
-                }
-            }
-
-            if (slash == -1)
-            {
-                slash = 0;     // set to start of string
-            }
-            else
-            {
-                slash++;       // point to character next to slash
-            }
-
-            // Slice to the characters between a slash (or start of the string)
-            // and a period (or end of string).
-            return name.Slice(slash, period - slash + 1);
+            return name;
         }
     }
 }

@@ -7051,6 +7051,10 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		buffer_add_moduleid (buf, mono_get_root_domain (), assembly->image);
 		break;
 	}
+	case MDBGPROT_CMD_GET_ENC_CAPABILITIES: {
+		buffer_add_string (buf, mono_enc_capabilities ());
+		break;
+	}
 	default:
 		return ERR_NOT_IMPLEMENTED;
 	}

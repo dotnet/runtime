@@ -803,13 +803,10 @@ namespace System.Net
                 if (authorizationHeader != null && (authenticationScheme & ~AuthenticationSchemes.Anonymous) != AuthenticationSchemes.None)
                 {
                     // Find the end of the scheme name.  Trust that HTTP.SYS parsed out just our header ok.
-                    for (index = 0; index < authorizationHeader.Length; index++)
+                    index = authorizationHeader.AsSpan().IndexOfAny(" \t\r\n");
+                    if (index < 0)
                     {
-                        if (authorizationHeader[index] == ' ' || authorizationHeader[index] == '\t' ||
-                            authorizationHeader[index] == '\r' || authorizationHeader[index] == '\n')
-                        {
-                            break;
-                        }
+                        index = authorizationHeader.Length;
                     }
 
                     // Currently only allow one Authorization scheme/header per request.

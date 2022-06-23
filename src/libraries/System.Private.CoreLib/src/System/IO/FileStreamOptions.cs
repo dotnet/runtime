@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.Versioning;
+
 namespace System.IO
 {
     public sealed class FileStreamOptions
@@ -11,6 +13,7 @@ namespace System.IO
         private FileOptions _options;
         private long _preallocationSize;
         private int _bufferSize = FileStream.DefaultBufferSize;
+        private UnixFileMode? _unixCreateMode;
 
         /// <summary>
         /// One of the enumeration values that determines how to open or create the file.
@@ -108,6 +111,33 @@ namespace System.IO
         {
             get => _bufferSize;
             set => _bufferSize = value >= 0 ? value : throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
+        }
+
+        /// <summary>
+        /// Unix file mode used when a new file is created.
+        /// </summary>
+        /// <exception cref="T:System.ArgumentException">When <paramref name="value" /> is an invalid file mode.</exception>
+        public UnixFileMode? UnixCreateMode
+        {
+            get
+            {
+                return _unixCreateMode;
+            }
+            [UnsupportedOSPlatform("windows")]
+            set
+            {
+                if (OperatingSystem.IsWindows())
+                {
+                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_UnixFileMode);
+                }
+
+                if (value.HasValue && ((value & ~FileSystem.ValidUnixFileModes) != 0))
+                {
+                    throw new ArgumentException(SR.Arg_InvalidUnixFileMode, nameof(UnixCreateMode));
+                }
+
+                _unixCreateMode = value;
+            }
         }
     }
 }

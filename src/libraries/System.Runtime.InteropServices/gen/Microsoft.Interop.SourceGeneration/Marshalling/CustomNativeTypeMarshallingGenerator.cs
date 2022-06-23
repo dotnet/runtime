@@ -14,10 +14,10 @@ namespace Microsoft.Interop
     /// </summary>
     internal sealed class CustomNativeTypeMarshallingGenerator : IMarshallingGenerator
     {
-        private readonly ICustomNativeTypeMarshallingStrategy _nativeTypeMarshaller;
+        private readonly ICustomTypeMarshallingStrategy _nativeTypeMarshaller;
         private readonly bool _enableByValueContentsMarshalling;
 
-        public CustomNativeTypeMarshallingGenerator(ICustomNativeTypeMarshallingStrategy nativeTypeMarshaller, bool enableByValueContentsMarshalling)
+        public CustomNativeTypeMarshallingGenerator(ICustomTypeMarshallingStrategy nativeTypeMarshaller, bool enableByValueContentsMarshalling)
         {
             _nativeTypeMarshaller = nativeTypeMarshaller;
             _enableByValueContentsMarshalling = enableByValueContentsMarshalling;

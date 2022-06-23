@@ -1303,8 +1303,7 @@ TypeName::GetTypeHaveAssemblyHelper(
             if (bIgnoreCase)
                 name.LowerCase();
 
-            StackScratchBuffer buffer;
-            typeName.SetName(name.GetUTF8(buffer));
+            typeName.SetName(name.GetUTF8());
 
             // typeName.m_pBucket gets set here if the type is found
             // it will be used in the next iteration to look up the nested type

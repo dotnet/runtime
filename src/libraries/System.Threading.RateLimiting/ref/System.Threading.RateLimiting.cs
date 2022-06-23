@@ -126,6 +126,7 @@ namespace System.Threading.RateLimiting
         private int _dummyPrimitive;
         public RateLimitPartition(TKey partitionKey, System.Func<TKey, System.Threading.RateLimiting.RateLimiter> factory) { throw null; }
         public readonly TKey PartitionKey { get { throw null; } }
+        public readonly Func<TKey, RateLimiter> Factory { get { throw null; } }
     }
     public abstract partial class ReplenishingRateLimiter : System.Threading.RateLimiting.RateLimiter
     {
