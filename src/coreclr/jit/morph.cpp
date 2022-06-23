@@ -13870,50 +13870,13 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
             }
 #endif
 
-            case NI_Vector128_Create:
-#if defined(TARGET_XARCH)
-            case NI_Vector256_Create:
-#elif defined(TARGET_ARMARCH)
-            case NI_Vector64_Create:
-#endif
-            {
-                bool hwAllArgsAreConst = true;
-                for (GenTree** use : multiOp->UseEdges())
-                {
-                    if (!(*use)->OperIsConst())
-                    {
-                        hwAllArgsAreConst = false;
-                        break;
-                    }
-                }
-
-                // Avoid unexpected CSE for constant arguments for Vector_.Create
-                // but only if all arguments are constants.
-                if (hwAllArgsAreConst)
-                {
-                    for (GenTree** use : multiOp->UseEdges())
-                    {
-                        (*use)->SetDoNotCSE();
-                    }
-                }
-            }
-            break;
-
             default:
                 break;
         }
     }
 #endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
 
-#ifdef FEATURE_HW_INTRINSICS
-    if (multiOp->OperIsHWIntrinsic() && !optValnumCSE_phase)
-    {
-        return fgOptimizeHWIntrinsic(multiOp->AsHWIntrinsic());
-    }
-#endif
-
-#if defined(FEATURE_SIMD)
-    if (opts.OptimizationEnabled() && multiOp->OperIs(GT_SIMD))
+    if (opts.OptimizationEnabled() && multiOp->IsVectorCreate())
     {
         bool allArgsAreConst = true;
         for (GenTree* arg : multiOp->Operands())
@@ -13925,6 +13888,8 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
             }
         }
 
+        // Avoid unexpected CSE for constant arguments for Vector_.Create
+        // but only if all arguments are constants.
         if (allArgsAreConst)
         {
             for (GenTree* arg : multiOp->Operands())
@@ -13932,6 +13897,12 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
                 arg->SetDoNotCSE();
             }
         }
+    }
+
+#ifdef FEATURE_HW_INTRINSICS
+    if (multiOp->OperIsHWIntrinsic() && !optValnumCSE_phase)
+    {
+        return fgOptimizeHWIntrinsic(multiOp->AsHWIntrinsic());
     }
 #endif
 
