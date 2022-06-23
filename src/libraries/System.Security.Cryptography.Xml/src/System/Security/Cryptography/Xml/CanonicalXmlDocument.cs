@@ -110,7 +110,7 @@ namespace System.Security.Cryptography.Xml
 
         public override XmlCDataSection CreateCDataSection(string? data)
         {
-            return new CanonicalXmlCDataSection(data!, this, _defaultNodeSetInclusionState);
+            return new CanonicalXmlCDataSection(data, this, _defaultNodeSetInclusionState);
         }
     }
 }
