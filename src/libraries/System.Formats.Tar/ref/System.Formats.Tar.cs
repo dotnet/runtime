@@ -84,6 +84,8 @@ namespace System.Formats.Tar
     {
         public static void CreateFromDirectory(string sourceDirectoryName, System.IO.Stream destination, bool includeBaseDirectory) { }
         public static void CreateFromDirectory(string sourceDirectoryName, string destinationFileName, bool includeBaseDirectory) { }
+        public static System.Threading.Tasks.Task CreateFromDirectoryAsync(string sourceDirectoryName, System.IO.Stream destination, bool includeBaseDirectory, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task CreateFromDirectoryAsync(string sourceDirectoryName, string destinationFileName, bool includeBaseDirectory, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static void ExtractToDirectory(System.IO.Stream source, string destinationDirectoryName, bool overwriteFiles) { }
         public static void ExtractToDirectory(string sourceFileName, string destinationDirectoryName, bool overwriteFiles) { }
     }
