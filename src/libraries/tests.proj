@@ -28,6 +28,7 @@
   <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
     <!-- https://github.com/dotnet/runtime/issues/65356 - OOM while linking -->
     <HighAOTResourceRequiringProject Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Roslyn3.11.Tests.csproj" />
+    <HighAOTResourceRequiringProject Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\FunctionalTests\System.Text.RegularExpressions.Tests.csproj" />
 
     <!-- https://github.com/dotnet/runtime/issues/65411 - possible OOM when compiling
          System.Text.Json.SourceGeneration.Roslyn4.0.Tests.dll.bc -> .o -->
