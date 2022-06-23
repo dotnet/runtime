@@ -39,6 +39,16 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(expected, Marshal.GetPInvokeErrorMessage(error));
         }
 
+        [Theory]
+        [MemberData(nameof(GetErrorCode_TestData))]
+        public void LastPInvokeErrorMessage_Returns_Correct_Message(int error)
+        {
+            string expected = Marshal.GetPInvokeErrorMessage(error);
+
+            Marshal.SetLastPInvokeError(error);
+            Assert.Equal(expected, Marshal.GetLastPInvokeErrorMessage());
+        }
+
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void PInvokeErrorMessage_Returns_UniqueMessage_Windows()

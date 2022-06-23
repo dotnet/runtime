@@ -586,6 +586,7 @@ namespace System.Runtime.InteropServices
         public static int GetLastPInvokeError() { throw null; }
         public static int GetLastSystemError() { throw null; }
         public static int GetLastWin32Error() { throw null; }
+        public static string GetLastPInvokeErrorMessage() { throw null; }
         public static string GetPInvokeErrorMessage(int error) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]

@@ -131,7 +131,7 @@ namespace System.Security.Principal
                 unsafe
                 {
                     if (!Interop.Advapi32.AllocateLocallyUniqueId(&sourceContext.SourceIdentifier))
-                        throw new SecurityException(Marshal.GetPInvokeErrorMessage(Marshal.GetLastPInvokeError()));
+                        throw new SecurityException(Marshal.GetLastPInvokeErrorMessage());
 
                     sourceName.AsSpan().CopyTo(new Span<byte>(sourceContext.SourceName, TOKEN_SOURCE.TOKEN_SOURCE_LENGTH));
                 }
@@ -264,7 +264,7 @@ namespace System.Security.Principal
                     true,
                     Interop.DuplicateHandleOptions.DUPLICATE_SAME_ACCESS))
             {
-                throw new SecurityException(Marshal.GetPInvokeErrorMessage(Marshal.GetLastPInvokeError()));
+                throw new SecurityException(Marshal.GetLastPInvokeErrorMessage());
             }
 
             return duplicateAccessToken;
@@ -465,7 +465,7 @@ namespace System.Security.Principal
                                                       (uint)TokenImpersonationLevel.Identification,
                                                       (uint)TokenType.TokenImpersonation,
                                                       ref token))
-                        throw new SecurityException(Marshal.GetPInvokeErrorMessage(Marshal.GetLastPInvokeError()));
+                        throw new SecurityException(Marshal.GetLastPInvokeErrorMessage());
                 }
 
 
@@ -473,7 +473,7 @@ namespace System.Security.Principal
                 if (!Interop.Advapi32.CheckTokenMembership((til != TokenImpersonationLevel.None ? _safeTokenHandle : token),
                                                       sid.BinaryForm,
                                                       ref isMember))
-                    throw new SecurityException(Marshal.GetPInvokeErrorMessage(Marshal.GetLastPInvokeError()));
+                    throw new SecurityException(Marshal.GetLastPInvokeErrorMessage());
 
 
             }
@@ -756,7 +756,7 @@ namespace System.Security.Principal
                 delegate
                 {
                     if (!Interop.Advapi32.RevertToSelf())
-                        Environment.FailFast(Marshal.GetPInvokeErrorMessage(Marshal.GetLastPInvokeError()));
+                        Environment.FailFast(Marshal.GetLastPInvokeErrorMessage());
 
                     s_currentImpersonatedToken.Value = null;
 
@@ -776,12 +776,12 @@ namespace System.Security.Principal
                 return; // we handle explicit Value property changes elsewhere.
 
             if (!Interop.Advapi32.RevertToSelf())
-                Environment.FailFast(Marshal.GetPInvokeErrorMessage(Marshal.GetLastPInvokeError()));
+                Environment.FailFast(Marshal.GetLastPInvokeErrorMessage());
 
             if (args.CurrentValue != null && !args.CurrentValue.IsInvalid)
             {
                 if (!Interop.Advapi32.ImpersonateLoggedOnUser(args.CurrentValue))
-                    Environment.FailFast(Marshal.GetPInvokeErrorMessage(Marshal.GetLastPInvokeError()));
+                    Environment.FailFast(Marshal.GetLastPInvokeErrorMessage());
             }
         }
 
@@ -899,7 +899,7 @@ namespace System.Security.Principal
                                                              dwLength,
                                                              out _);
                     if (!result)
-                        throw new SecurityException(Marshal.GetPInvokeErrorMessage(Marshal.GetLastPInvokeError()));
+                        throw new SecurityException(Marshal.GetLastPInvokeErrorMessage());
                     break;
                 case Interop.Errors.ERROR_INVALID_HANDLE:
                     throw new ArgumentException(SR.Argument_InvalidImpersonationToken);

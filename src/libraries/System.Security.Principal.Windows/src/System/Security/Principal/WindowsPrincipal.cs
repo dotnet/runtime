@@ -153,7 +153,7 @@ namespace System.Security.Principal
                                                   (uint)TokenImpersonationLevel.Identification,
                                                   (uint)TokenType.TokenImpersonation,
                                                   ref token))
-                    throw new SecurityException(Marshal.GetPInvokeErrorMessage(Marshal.GetLastPInvokeError()));
+                    throw new SecurityException(Marshal.GetLastPInvokeErrorMessage());
             }
 
             bool isMember = false;
@@ -162,7 +162,7 @@ namespace System.Security.Principal
             if (!Interop.Advapi32.CheckTokenMembership((_identity.ImpersonationLevel != TokenImpersonationLevel.None ? _identity.AccessToken : token),
                                                   sid.BinaryForm,
                                                   ref isMember))
-                throw new SecurityException(Marshal.GetPInvokeErrorMessage(Marshal.GetLastPInvokeError()));
+                throw new SecurityException(Marshal.GetLastPInvokeErrorMessage());
 
             token.Dispose();
             return isMember;
