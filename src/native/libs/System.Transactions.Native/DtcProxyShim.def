@@ -1,0 +1,7 @@
+; dtcproxyshim.def : Declares the module parameters for the DLL.
+
+LIBRARY      DTCPROXYSHIM
+
+EXPORTS
+    ; Explicit exports can go here
+	GetNotificationFactory		@1

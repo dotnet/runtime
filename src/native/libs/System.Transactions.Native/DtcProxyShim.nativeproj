@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <CdfRootPath>$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), 'Microsoft.CDF.Settings.targets'))</CdfRootPath>
+  </PropertyGroup>
+  <Import Project="$(CdfRootPath)\src\Microsoft.CDF.Source.Settings.targets" />
+  <PropertyGroup>
+    <OutputName>DtcProxyShim</OutputName>
+    <OutputPath>$(AdpIntraLibPath)</OutputPath>
+    <OutputLibPath>$(AdpIntraLibPath)</OutputLibPath>
+    <TargetType>LIBRARY</TargetType>
+    <UserIncludes>$(VCPublicIncPath);.</UserIncludes>
+    <DebugSymbols>true</DebugSymbols>
+    <ClAdditionalOptions>$(ClAdditionalOptions) /GS</ClAdditionalOptions>
+    <ClAdditionalOptions Condition="'$(DebugBuild)' == 'true'">$(ClAdditionalOptions) /Zi</ClAdditionalOptions>
+    <LinkAdditionalOptions>/LIBPATH:$(IntermediateOutputPath)\shim $(LinkAdditionalOptions)</LinkAdditionalOptions>
+    <LinkAdditionalOptions Condition="'$(DebugBuild)' == 'true'">$(LinkAdditionalOptions) /debugtype:cv,fixup /safeseh</LinkAdditionalOptions>
+    <ProjectGuid>{a68a0795-1650-4fe6-9eec-741a2274bfda}</ProjectGuid>
+    <PCHHeader>stdafx.h</PCHHeader>
+    <PCHCompile>stdafx.cpp</PCHCompile>
+    <PCHOutput>stdafx.pch</PCHOutput>
+    <PCHObject>stdafx.obj</PCHObject>
+    <EnableCxxPCHHeaders>true</EnableCxxPCHHeaders>
+  </PropertyGroup>
+  <ItemGroup>
+    <TargetLib Include="$(SdkLibPath)\kernel32.lib" />
+    <TargetLib Include="$(SdkLibPath)\version.lib" />
+    <TargetLib Include="$(SdkLibPath)\ole32.lib" />
+    <TargetLib Include="$(SdkLibPath)\uuid.lib" />
+  </ItemGroup>
+  <ItemGroup>
+    <CppCompile Include="DtcProxyShim.cpp" />
+    <CppCompile Include="EnlistmentNotifyShim.cpp" />
+    <CppCompile Include="NotificationShimFactory.cpp" />
+    <CppCompile Include="Phase0NotifyShim.cpp" />
+    <CppCompile Include="ResourceManagerNotifyShim.cpp" />
+    <CppCompile Include="VoterNotifyShim.cpp" />
+    <CppCompile Include="TransactionShim.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <PublishPartLinked Include="$(IntermediateOutputDirectory)\DtcProxyShim.obj">
+      <Visibility>Intra</Visibility>
+      <FileType>Binary</FileType>
+      <DoNotCopyPDB>true</DoNotCopyPDB>
+    </PublishPartLinked>
+    <PublishPartLinked Include="$(IntermediateOutputDirectory)\DtcProxyShim.obj">
+      <Visibility>Intra</Visibility>
+      <FileType>Binary</FileType>
+      <DoNotCopyPDB>true</DoNotCopyPDB>
+    </PublishPartLinked>
+    <PublishPartLinked Include="$(IntermediateOutputDirectory)\enlistmentnotifyshim.obj">
+      <Visibility>Intra</Visibility>
+      <FileType>Binary</FileType>
+      <DoNotCopyPDB>true</DoNotCopyPDB>
+    </PublishPartLinked>
+    <PublishPartLinked Include="$(IntermediateOutputDirectory)\notificationshimfactory.obj">
+      <Visibility>Intra</Visibility>
+      <FileType>Binary</FileType>
+      <DoNotCopyPDB>true</DoNotCopyPDB>
+    </PublishPartLinked>
+    <PublishPartLinked Include="$(IntermediateOutputDirectory)\phase0notifyshim.obj">
+      <Visibility>Intra</Visibility>
+      <FileType>Binary</FileType>
+      <DoNotCopyPDB>true</DoNotCopyPDB>
+    </PublishPartLinked>
+    <PublishPartLinked Include="$(IntermediateOutputDirectory)\resourcemanagernotifyshim.obj">
+      <Visibility>Intra</Visibility>
+      <FileType>Binary</FileType>
+      <DoNotCopyPDB>true</DoNotCopyPDB>
+    </PublishPartLinked>
+    <PublishPartLinked Include="$(IntermediateOutputDirectory)\stdafx.obj">
+      <Visibility>Intra</Visibility>
+      <FileType>Binary</FileType>
+      <DoNotCopyPDB>true</DoNotCopyPDB>
+    </PublishPartLinked>
+    <PublishPartLinked Include="$(IntermediateOutputDirectory)\voternotifyshim.obj">
+      <Visibility>Intra</Visibility>
+      <FileType>Binary</FileType>
+      <DoNotCopyPDB>true</DoNotCopyPDB>
+    </PublishPartLinked>
+    <PublishPartLinked Include="$(IntermediateOutputDirectory)\transactionshim.obj">
+      <Visibility>Intra</Visibility>
+      <FileType>Binary</FileType>
+      <DoNotCopyPDB>true</DoNotCopyPDB>
+    </PublishPartLinked>
+  </ItemGroup>
+  <Import Project="$(CdfRootPath)\..\..\tools\Microsoft.DevDiv.Native.targets" />
+</Project>

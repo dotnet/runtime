@@ -15,7 +15,7 @@ namespace System.Transactions.Oletx
     internal static class NativeMethods
     {
         // Note that this PInvoke does not pass any string params but specifying a charset makes FxCop happy
-        [DllImport("System.Transactions.Dll", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+        [DllImport("System.Transactions.Native.Dll", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
         internal static extern Int32 GetNotificationFactory(
             SafeHandle notificationEventHandle,
             [MarshalAs(UnmanagedType.Interface)] out IDtcProxyShimFactory ppProxyShimFactory

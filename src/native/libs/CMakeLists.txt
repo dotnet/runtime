@@ -176,3 +176,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER)
         add_subdirectory(System.Security.Cryptography.Native.Apple)
     endif ()
 endif ()
+
+if (CLR_CMAKE_TARGET_WIN32)
+    add_subdirectory(System.Transactions.Native)
+endif ()
