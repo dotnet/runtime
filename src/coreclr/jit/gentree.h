@@ -8355,9 +8355,9 @@ inline bool GenTree::IsVectorCreate() const
                 return false;
         }
     }
-#else
-    return false;
 #endif // FEATURE_SIMD
+
+    return false;
 }
 
 //-------------------------------------------------------------------
