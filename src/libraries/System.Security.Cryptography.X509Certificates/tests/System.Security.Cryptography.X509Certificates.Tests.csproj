@@ -91,8 +91,6 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'Browser' and '$(UseAndroidCrypto)' != 'true' and '$(UseAppleCrypto)' != 'true'">
     <Compile Include="X509FilesystemTests.Unix.cs" />
     <Compile Include="X509StoreTests.Unix.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ChMod.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.ChMod.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
