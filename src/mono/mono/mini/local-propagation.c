@@ -350,7 +350,7 @@ mono_strength_reduction_ins (MonoCompile *cfg, MonoInst *ins, const char **spec)
 			ins->opcode = OP_INEG;
 		} else if ((ins->opcode == OP_LMUL_IMM) && (ins->inst_imm == -1)) {
 			ins->opcode = OP_LNEG;
-		} else if (ins->inst_imm > 0) {
+		} else if (ins->inst_imm > 0 && ins->inst_imm <= UINT32_MAX) {
 			int power2 = mono_is_power_of_two (GTMREG_TO_UINT32 (ins->inst_imm));
 			if (power2 >= 0) {
 				ins->opcode = (ins->opcode == OP_MUL_IMM) ? OP_SHL_IMM : ((ins->opcode == OP_LMUL_IMM) ? OP_LSHL_IMM : OP_ISHL_IMM);
