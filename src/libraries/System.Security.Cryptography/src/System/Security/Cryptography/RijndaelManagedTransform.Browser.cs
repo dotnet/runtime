@@ -58,7 +58,7 @@ namespace System.Security.Cryptography
 
             // we only support CBC mode
             if (iv.Length / 4 != BlockSizeInts)
-                throw new CryptographicException(SR.GetResourceString("Cryptography_InvalidIVSize"));
+                throw new CryptographicException(SR.Cryptography_InvalidIVSize);
 
             _IV = new int[BlockSizeInts];
             int index = 0;
@@ -234,7 +234,7 @@ namespace System.Security.Cryptography
             else
             {
                 if (inputBuffer.Length % InputBlockSize != 0)
-                    throw new CryptographicException(SR.GetResourceString("Cryptography_SSD_InvalidDataSize"));
+                    throw new CryptographicException(SR.Cryptography_PartialBlock);
 
                 if (_depadBuffer == null)
                 {
@@ -471,13 +471,13 @@ namespace System.Security.Cryptography
                                             byte[] outputBuffer1 = outputBuffer;
                                             int padSize = 0;
                                             if (inputCount == 0)
-                                                throw new CryptographicException(SR.GetResourceString("Cryptography_PKCS7_InvalidPadding"));
+                                                throw new CryptographicException(SR.Cryptography_InvalidPadding);
                                             padSize = outputBuffer[inputCount - 1];
                                             if (padSize > outputBuffer.Length || padSize > InputBlockSize || padSize <= 0)
-                                                throw new CryptographicException(SR.GetResourceString("Cryptography_PKCS7_InvalidPadding"));
+                                                throw new CryptographicException(SR.Cryptography_InvalidPadding);
                                             for (index = 1; index <= padSize; index++)
                                                 if (outputBuffer[inputCount - index] != padSize)
-                                                    throw new CryptographicException(SR.GetResourceString("Cryptography_PKCS7_InvalidPadding"));
+                                                    throw new CryptographicException(SR.Cryptography_InvalidPadding);
                                             outputBuffer1 = new byte[outputBuffer.Length - padSize];
                                             Buffer.BlockCopy(outputBuffer, 0, outputBuffer1, 0, outputBuffer.Length - padSize);
                                             outputBuffer = outputBuffer1;
@@ -596,7 +596,7 @@ namespace System.Security.Cryptography
                 16 => 10, // 128 bits
                 24 => 12, // 192 bits
                 32 => 14, // 256 bits
-                _ => throw new CryptographicException(SR.GetResourceString("Cryptography_InvalidKeySize"))
+                _ => throw new CryptographicException(SR.Cryptography_InvalidKeySize)
             };
         }
 
