@@ -4066,6 +4066,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			LLVMSetValueName (ctx->addresses [reg]->value, name);
 			LLVMTypeRef el_t = type_to_llvm_type (ctx, ainfo->type);
 			LLVMBuildStore (builder, LLVMBuildLoad2 (builder, el_t, convert (ctx, arg, pointer_type (el_t)), ""), ctx->addresses [reg]->value);
+			ctx->values [reg] = NULL;
 			break;
 		}
 		case LLVMArgGsharedvtVariable:
