@@ -1995,7 +1995,7 @@ encode_cattr_value (MonoAssembly *assembly, char *buffer, char *p, char **retbuf
 	MonoTypeEnum simple_type;
 
 	error_init (error);
-	if ((p-buffer) + 10 >= *buflen) {
+	if ((p-buffer) + (guint)10 >= *buflen) {
 		char *newbuf;
 		*buflen *= 2;
 		newbuf = (char *)g_realloc (buffer, *buflen);
@@ -2449,7 +2449,7 @@ mono_reflection_get_custom_attrs_blob_checked (MonoReflectionAssembly *assembly,
 		}
 	}
 
-	g_assert (p - buffer <= buflen);
+	g_assert (GPTRDIFF_TO_UINT32(p - buffer) <= buflen);
 	buflen = GPTRDIFF_TO_UINT32 (p - buffer);
 	result = mono_array_new_handle (mono_defaults.byte_class, buflen, error);
 	goto_if_nok (error, leave);

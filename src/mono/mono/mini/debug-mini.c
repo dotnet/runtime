@@ -498,7 +498,7 @@ mono_debug_serialize_debug_info (MonoCompile *cfg, guint8 **out_buf, guint32 *bu
 
 	mono_debug_free_method_jit_info (jit);
 
-	g_assert (p - buf < size);
+	g_assert (GPTRDIFF_TO_UINT32(p - buf) < size);
 
 	*out_buf = buf;
 	*buf_len = GPTRDIFF_TO_UINT32 (p - buf);

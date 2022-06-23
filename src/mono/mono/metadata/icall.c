@@ -819,8 +819,8 @@ ves_icall_System_Array_FastCopy (MonoArrayHandle source, int source_idx, MonoArr
 	}
 
 	/* there's no integer overflow since mono_array_length_internal returns an unsigned integer */
-	if ((dest_idx + length > mono_array_handle_length (dest)) ||
-		(source_idx + length > mono_array_handle_length (source)))
+	if ((GINT_TO_UINT(dest_idx + length) > mono_array_handle_length (dest)) ||
+		(GINT_TO_UINT(source_idx + length) > mono_array_handle_length (source)))
 		return FALSE;
 
 	MonoClass * const src_class = m_class_get_element_class (src_vtable->klass);
@@ -5174,7 +5174,7 @@ ves_icall_System_Reflection_RuntimeAssembly_GetExportedTypes (MonoQCallAssemblyH
 
 	if (list || ex_count) {
 		GList *tmp = NULL;
-		int j, length = g_list_length (list) + ex_count;
+		int length = g_list_length (list) + ex_count;
 
 		MonoArrayHandle exl = mono_array_new_handle (mono_defaults.exception_class, length, error);
 		if (!is_ok (error)) {
@@ -5187,7 +5187,7 @@ ves_icall_System_Reflection_RuntimeAssembly_GetExportedTypes (MonoQCallAssemblyH
 			set_class_failure_in_array (exl, i, (MonoClass*)tmp->data);
 		}
 		/* Types for which it don't */
-		for (j = 0; j < mono_array_handle_length (exceptions); ++j) {
+		for (guint j = 0; j < mono_array_handle_length (exceptions); ++j) {
 			MONO_HANDLE_ARRAY_GETREF (exc, exceptions, j);
 			if (!MONO_HANDLE_IS_NULL (exc)) {
 				g_assert (i < length);
@@ -6259,7 +6259,6 @@ void
 ves_icall_System_TypedReference_InternalMakeTypedReference (MonoTypedRef *res, MonoObjectHandle target, MonoArrayHandle fields, MonoReflectionTypeHandle last_field, MonoError *error)
 {
 	MonoType *ftype = NULL;
-	int i;
 
 	memset (res, 0, sizeof (MonoTypedRef));
 
@@ -6268,7 +6267,7 @@ ves_icall_System_TypedReference_InternalMakeTypedReference (MonoTypedRef *res, M
 	(void)mono_handle_class (target);
 
 	int offset = 0;
-	for (i = 0; i < mono_array_handle_length (fields); ++i) {
+	for (guint i = 0; i < mono_array_handle_length (fields); ++i) {
 		MonoClassField *f;
 		MONO_HANDLE_ARRAY_GETVAL (f, fields, MonoClassField*, i);
 
@@ -6776,7 +6775,7 @@ concat_class_name (char *buf, int bufsize, MonoClass *klass)
 	size_t nspacelen, cnamelen;
 	nspacelen = strlen (m_class_get_name_space (klass));
 	cnamelen = strlen (m_class_get_name (klass));
-	if (nspacelen + cnamelen + 2 > bufsize)
+	if (nspacelen + cnamelen + 2 > GINT_TO_UINT(bufsize))
 		return 0;
 	if (nspacelen) {
 		memcpy (buf, m_class_get_name_space (klass), nspacelen);

@@ -5977,7 +5977,7 @@ mono_aot_get_unbox_trampoline (MonoMethod *method, gpointer addr)
 			g_assert (*(guint16*)ptr == method_index);
 			unbox_tramp_idx = (guint16*)ptr - (guint16*)amodule->info.llvm_unbox_tramp_indexes;
 		}
-		g_assert (unbox_tramp_idx < amodule->info.llvm_unbox_tramp_num);
+		g_assert (GPTRDIFF_TO_UINT32(unbox_tramp_idx) < amodule->info.llvm_unbox_tramp_num);
 		code = ((gpointer*)(amodule->info.llvm_unbox_trampolines))[unbox_tramp_idx];
 		g_assert (code);
 
