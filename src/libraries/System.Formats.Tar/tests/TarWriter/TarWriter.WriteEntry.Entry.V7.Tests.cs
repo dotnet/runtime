@@ -9,50 +9,24 @@ namespace System.Formats.Tar.Tests
     // Tests specific to V7 format.
     public class TarWriter_WriteEntry_V7_Tests : TarTestsBase
     {
-        [Fact]
-        public void ThrowIf_WriteEntry_UnsupportedFile()
-        {
-            // Verify that entry types that can be manually constructed in other types, cannot be inserted in a v7 writer
-            using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, archiveFormat: TarFormat.V7, leaveOpen: true))
-            {
-                // Entry types supported in ustar but not in v7
-                Assert.Throws<InvalidOperationException>(() => writer.WriteEntry(new UstarTarEntry(TarEntryType.BlockDevice, InitialEntryName)));
-                Assert.Throws<InvalidOperationException>(() => writer.WriteEntry(new UstarTarEntry(TarEntryType.CharacterDevice, InitialEntryName)));
-                Assert.Throws<InvalidOperationException>(() => writer.WriteEntry(new UstarTarEntry(TarEntryType.Fifo, InitialEntryName)));
-
-                // Entry types supported in pax but not in v7
-                Assert.Throws<InvalidOperationException>(() => writer.WriteEntry(new PaxTarEntry(TarEntryType.BlockDevice, InitialEntryName)));
-                Assert.Throws<InvalidOperationException>(() => writer.WriteEntry(new PaxTarEntry(TarEntryType.CharacterDevice, InitialEntryName)));
-                Assert.Throws<InvalidOperationException>(() => writer.WriteEntry(new PaxTarEntry(TarEntryType.Fifo, InitialEntryName)));
-
-                // Entry types supported in gnu but not in v7
-                Assert.Throws<InvalidOperationException>(() => writer.WriteEntry(new GnuTarEntry(TarEntryType.BlockDevice, InitialEntryName)));
-                Assert.Throws<InvalidOperationException>(() => writer.WriteEntry(new GnuTarEntry(TarEntryType.CharacterDevice, InitialEntryName)));
-                Assert.Throws<InvalidOperationException>(() => writer.WriteEntry(new GnuTarEntry(TarEntryType.Fifo, InitialEntryName)));
-            }
-            // Verify nothing was written, not even the empty records
-            Assert.Equal(0, archiveStream.Length);
-        }
-
         [Theory]
-        [InlineData(TarFormat.Ustar)]
-        [InlineData(TarFormat.Pax)]
-        [InlineData(TarFormat.Gnu)]
-        public void Write_RegularFileEntry_As_V7RegularFileEntry(TarFormat entryFormat)
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void Write_RegularFileEntry_As_V7RegularFileEntry(TarEntryFormat entryFormat)
         {
             using MemoryStream archive = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archive, archiveFormat: TarFormat.V7, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archive, format: TarEntryFormat.V7, leaveOpen: true))
             {
                 TarEntry entry = entryFormat switch
                 {
-                    TarFormat.Ustar => new UstarTarEntry(TarEntryType.RegularFile, InitialEntryName),
-                    TarFormat.Pax => new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName),
-                    TarFormat.Gnu => new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName),
-                    _ => throw new FormatException()
+                    TarEntryFormat.Ustar => new UstarTarEntry(TarEntryType.RegularFile, InitialEntryName),
+                    TarEntryFormat.Pax => new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName),
+                    TarEntryFormat.Gnu => new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName),
+                    _ => throw new FormatException($"Unexpected format: {entryFormat}")
                 };
 
-                // Should be written as V7RegularFile
+                // Should be written in the format of the entry
                 writer.WriteEntry(entry);
             }
 
@@ -60,8 +34,21 @@ namespace System.Formats.Tar.Tests
             using (TarReader reader = new TarReader(archive))
             {
                 TarEntry entry = reader.GetNextEntry();
-                Assert.True(entry is V7TarEntry);
-                Assert.Equal(TarEntryType.V7RegularFile, entry.EntryType);
+                Assert.NotNull(entry);
+                Assert.Equal(entryFormat, entry.Format);
+
+                switch (entryFormat)
+                {
+                    case TarEntryFormat.Ustar:
+                        Assert.True(entry is UstarTarEntry);
+                        break;
+                    case TarEntryFormat.Pax:
+                        Assert.True(entry is PaxTarEntry);
+                        break;
+                    case TarEntryFormat.Gnu:
+                        Assert.True(entry is GnuTarEntry);
+                        break;
+                }
 
                 Assert.Null(reader.GetNextEntry());
             }
@@ -72,7 +59,7 @@ namespace System.Formats.Tar.Tests
         public void WriteRegularFile()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.V7, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.V7, leaveOpen: true))
             {
                 V7TarEntry oldRegularFile = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
                 SetRegularFile(oldRegularFile);
@@ -92,7 +79,7 @@ namespace System.Formats.Tar.Tests
         public void WriteHardLink()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.V7, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.V7, leaveOpen: true))
             {
                 V7TarEntry hardLink = new V7TarEntry(TarEntryType.HardLink, InitialEntryName);
                 SetHardLink(hardLink);
@@ -112,7 +99,7 @@ namespace System.Formats.Tar.Tests
         public void WriteSymbolicLink()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.V7, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.V7, leaveOpen: true))
             {
                 V7TarEntry symbolicLink = new V7TarEntry(TarEntryType.SymbolicLink, InitialEntryName);
                 SetSymbolicLink(symbolicLink);
@@ -132,7 +119,7 @@ namespace System.Formats.Tar.Tests
         public void WriteDirectory()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.V7, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.V7, leaveOpen: true))
             {
                 V7TarEntry directory = new V7TarEntry(TarEntryType.Directory, InitialEntryName);
                 SetDirectory(directory);

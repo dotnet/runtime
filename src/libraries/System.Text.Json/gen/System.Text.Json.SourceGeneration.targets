@@ -20,7 +20,6 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(RoslynApiVersion)" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1460,7 +1460,7 @@ ep_rt_temp_path_get (
 
 	const ep_char8_t *path = g_get_tmp_dir ();
 	int32_t result = snprintf (buffer, buffer_len, "%s", path);
-	if (result <= 0 || result > buffer_len)
+	if (result <= 0 || GINT32_TO_UINT32(result) > buffer_len)
 		ep_raise_error ();
 
 	if (buffer [result - 1] != G_DIR_SEPARATOR) {
@@ -2187,6 +2187,29 @@ ep_rt_volatile_store_ptr_without_barrier (
 bool
 ep_rt_mono_write_event_ee_startup_start (void);
 
+typedef struct _BulkTypeEventLogger BulkTypeEventLogger;
+
+void
+ep_rt_mono_fire_bulk_type_event (BulkTypeEventLogger *p_type_logger);
+
+int
+ep_rt_mono_log_single_type (
+	BulkTypeEventLogger *p_type_logger,
+	MonoType *mono_type);
+
+void
+ep_rt_mono_log_type_and_parameters (
+	BulkTypeEventLogger *p_type_logger,
+	MonoType *mono_type);
+
+void
+ep_rt_mono_log_type_and_parameters_if_necessary (
+	BulkTypeEventLogger *p_type_logger,
+	MonoType *mono_type);
+
+void
+ep_rt_mono_send_method_details_event (MonoMethod *method);
+
 bool
 ep_rt_mono_write_event_jit_start (MonoMethod *method);
 
@@ -2263,6 +2286,14 @@ bool
 ep_rt_write_event_threadpool_worker_thread_wait (
 	uint32_t active_thread_count,
 	uint32_t retired_worker_thread_count,
+	uint16_t clr_instance_id);
+
+bool
+ep_rt_write_event_threadpool_min_max_threads (
+	uint16_t min_worker_threads,
+	uint16_t max_worker_threads,
+	uint16_t min_io_completion_threads,
+	uint16_t max_io_completion_threads,
 	uint16_t clr_instance_id);
 
 bool

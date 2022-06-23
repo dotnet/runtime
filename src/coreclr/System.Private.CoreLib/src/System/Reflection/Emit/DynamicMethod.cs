@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
 using System.Text;
@@ -228,7 +229,6 @@ namespace System.Reflection.Emit
 
         // We create a transparent assembly to host DynamicMethods. Since the assembly does not have any
         // non-public fields (or any fields at all), it is a safe anonymous assembly to host DynamicMethods
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         private static RuntimeModule GetDynamicMethodsModule()
         {
             if (s_anonymouslyHostedDynamicMethodsModule != null)
@@ -561,7 +561,7 @@ namespace System.Reflection.Emit
             // We don't check a max stack size since we are invoking a method which
             // naturally requires a stack size that is dependent on the arg count\size.
             IntPtr* pByRefStorage = stackalloc IntPtr[argCount];
-            Buffer.ZeroMemory((byte*)pByRefStorage, (uint)(argCount * sizeof(IntPtr)));
+            NativeMemory.Clear(pByRefStorage, (uint)(argCount * sizeof(IntPtr)));
 
             ParameterCopyBackAction* copyBackActions = stackalloc ParameterCopyBackAction[argCount];
             Span<ParameterCopyBackAction> shouldCopyBackParameters = new(copyBackActions, argCount);

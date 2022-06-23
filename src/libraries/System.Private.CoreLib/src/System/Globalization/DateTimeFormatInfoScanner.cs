@@ -228,7 +228,7 @@ namespace System.Globalization
                     m_dateWords.Add(str);
                 }
 
-                if (str[^1] == '.')
+                if (str.EndsWith('.'))
                 {
                     // Old version ignore the trailing dot in the date words. Support this as well.
                     string strWithoutDot = str[0..^1];
@@ -655,30 +655,29 @@ namespace System.Globalization
         ////////////////////////////////////////////////////////////////////////////
         private static bool ArrayElementsBeginWithDigit(string[] array)
         {
-            for (int i = 0; i < array.Length; i++)
+            foreach (string s in array)
             {
                 // it is faster to check for space character manually instead of calling IndexOf
                 // so we don't have to go to native code side.
-                if (array[i].Length > 0 &&
-                   array[i][0] >= '0' && array[i][0] <= '9')
+                if (s.Length != 0 && char.IsAsciiDigit(s[0]))
                 {
                     int index = 1;
-                    while (index < array[i].Length && array[i][index] >= '0' && array[i][index] <= '9')
+                    while ((uint)index < (uint)s.Length && char.IsAsciiDigit(s[index]))
                     {
                         // Skip other digits.
                         index++;
                     }
-                    if (index == array[i].Length)
+                    if (index == s.Length)
                     {
                         return false;
                     }
 
-                    if (index == array[i].Length - 1)
+                    if (index == s.Length - 1)
                     {
                         // Skip known CJK month suffix.
                         // CJK uses month name like "1\x6708", since \x6708 is a known month suffix,
                         // we don't need the UseDigitPrefixInTokens since it is slower.
-                        switch (array[i][index])
+                        switch (s[index])
                         {
                             case CJKMonthSuff:
                             case KoreanMonthSuff:
@@ -686,13 +685,13 @@ namespace System.Globalization
                         }
                     }
 
-                    if (index == array[i].Length - 4)
+                    if (index == s.Length - 4)
                     {
                         // Skip known CJK month suffix.
                         // Starting with Windows 8, the CJK months for some cultures looks like: "1' \x6708'"
                         // instead of just "1\x6708"
-                        if (array[i][index] == '\'' && array[i][index + 1] == ' ' &&
-                           array[i][index + 2] == CJKMonthSuff && array[i][index + 3] == '\'')
+                        if (s[index] == '\'' && s[index + 1] == ' ' &&
+                            s[index + 2] == CJKMonthSuff && s[index + 3] == '\'')
                         {
                             return false;
                         }

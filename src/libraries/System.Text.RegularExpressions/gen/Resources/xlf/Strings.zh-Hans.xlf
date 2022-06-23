@@ -14,7 +14,7 @@
       </trans-unit>
       <trans-unit id="AlternationHasMalformedReference">
         <source>Conditional alternation is missing a closing parenthesis after the group number {0}.</source>
-        <target state="new">Conditional alternation is missing a closing parenthesis after the group number {0}.</target>
+        <target state="translated">在组号 {0} 之后，条件交替缺少右括号。</target>
         <note />
       </trans-unit>
       <trans-unit id="AlternationHasNamedCapture">
@@ -29,7 +29,7 @@
       </trans-unit>
       <trans-unit id="AlternationHasUndefinedReference">
         <source>Conditional alternation refers to an undefined group number {0}.</source>
-        <target state="new">Conditional alternation refers to an undefined group number {0}.</target>
+        <target state="translated">条件交替是指未定义的组号 {0}。</target>
         <note />
       </trans-unit>
       <trans-unit id="Arg_ArrayPlusOffTooSmall">
@@ -92,11 +92,6 @@
         <target state="translated">十六进制位数不足。</target>
         <note />
       </trans-unit>
-      <trans-unit id="InternalError_ScanRegex">
-        <source>Internal error in ScanRegex.</source>
-        <target state="translated">ScanRegex 中的内部错误。</target>
-        <note>{Locked="ScanRegex"}</note>
-      </trans-unit>
       <trans-unit id="InvalidGroupingConstruct">
         <source>Unrecognized grouping construct.</source>
         <target state="translated">无法识别的分组构造。</target>
@@ -134,7 +129,7 @@
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationMessage">
         <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation.</source>
-        <target state="new">The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation.</target>
+        <target state="translated">由于内部限制，RegexGenerator 无法为指定的正则表达式生成完整的源实现。</target>
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationTitle">
@@ -194,12 +189,12 @@
       </trans-unit>
       <trans-unit id="QuantifierAfterNothing">
         <source>Quantifier '{0}' following nothing.</source>
-        <target state="new">Quantifier '{0}' following nothing.</target>
+        <target state="translated">限定符 \"{0}\" 前没有任何内容。</target>
         <note />
       </trans-unit>
       <trans-unit id="QuantifierOrCaptureGroupOutOfRange">
         <source>Quantifier and capture group numbers must be less than or equal to Int32.MaxValue.</source>
-        <target state="new">Quantifier and capture group numbers must be less than or equal to Int32.MaxValue.</target>
+        <target state="translated">限定符和捕获组编号必须小于等于 Int32.MaxValue。</target>
         <note>{Locked="Int32.MaxValue"}</note>
       </trans-unit>
       <trans-unit id="RegexMatchTimeoutException_Occurred">
@@ -210,11 +205,6 @@
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
         <source>RegexGenerator method must be partial, parameterless, non-generic, non-abstract, and return Regex</source>
         <target state="translated">RegexGenerator 方法必须是分部、无参数、非泛型、非抽象且返回正则表达式</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ReplacementError">
-        <source>Replacement pattern error.</source>
-        <target state="translated">替换模式错误。</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">
@@ -270,6 +260,16 @@
       <trans-unit id="UnterminatedComment">
         <source>Unterminated (?#...) comment.</source>
         <target state="translated">未终止的(?#...)注释。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UseRegexSourceGeneratorMessage">
+        <source>Use 'RegexGeneratorAttribute' to generate the regular expression implementation at compile-time.</source>
+        <target state="translated">在编译时使用 “RegexGeneratorAttribute” 生成正则表达式实现。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UseRegexSourceGeneratorTitle">
+        <source>Convert to 'RegexGenerator'.</source>
+        <target state="translated">转换为 “RegexGenerator”。</target>
         <note />
       </trans-unit>
     </body>

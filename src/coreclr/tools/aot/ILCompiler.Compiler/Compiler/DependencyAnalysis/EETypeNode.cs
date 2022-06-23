@@ -344,6 +344,8 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         factory.MetadataManager.NoteOverridingMethod(decl, impl);
                     }
+
+                    factory.MetadataManager.GetDependenciesForOverridingMethod(ref result, factory, decl, impl);
                 }
 
                 Debug.Assert(
@@ -389,6 +391,8 @@ namespace ILCompiler.DependencyAnalysis
                             }
 
                             factory.MetadataManager.NoteOverridingMethod(interfaceMethod, implMethod);
+
+                            factory.MetadataManager.GetDependenciesForOverridingMethod(ref result, factory, interfaceMethod, implMethod);
                         }
                         else
                         {
@@ -414,6 +418,8 @@ namespace ILCompiler.DependencyAnalysis
                                 result.Add(new CombinedDependencyListEntry(factory.MethodEntrypoint(defaultIntfMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
 
                                 factory.MetadataManager.NoteOverridingMethod(interfaceMethod, implMethod);
+
+                                factory.MetadataManager.GetDependenciesForOverridingMethod(ref result, factory, interfaceMethod, implMethod);
                             }
                         }
                     }
@@ -751,14 +757,29 @@ namespace ILCompiler.DependencyAnalysis
             return _type.BaseType != null ? factory.NecessaryTypeSymbol(_type.BaseType) : null;
         }
 
+        protected virtual ISymbolNode GetNonNullableValueTypeArrayElementTypeNode(NodeFactory factory)
+        {
+            return factory.NecessaryTypeSymbol(((ArrayType)_type).ElementType);
+        }
+
         private ISymbolNode GetRelatedTypeNode(NodeFactory factory)
         {
             ISymbolNode relatedTypeNode = null;
 
-            if (_type.IsArray || _type.IsPointer || _type.IsByRef)
+            if (_type.IsParameterizedType)
             {
                 var parameterType = ((ParameterizedType)_type).ParameterType;
-                relatedTypeNode = factory.NecessaryTypeSymbol(parameterType);
+                if (_type.IsArray && parameterType.IsValueType && !parameterType.IsNullable)
+                {
+                    // This might be a constructed type symbol. There are APIs on Array that allow allocating element
+                    // types through runtime magic ("((Array)new NeverAllocated[1]).GetValue(0)" or IEnumerable) and we don't have
+                    // visibility into that. Conservatively assume element types of constructed arrays are also constructed.
+                    relatedTypeNode = GetNonNullableValueTypeArrayElementTypeNode(factory);
+                }
+                else
+                {
+                    relatedTypeNode = factory.NecessaryTypeSymbol(parameterType);
+                }
             }
             else
             {

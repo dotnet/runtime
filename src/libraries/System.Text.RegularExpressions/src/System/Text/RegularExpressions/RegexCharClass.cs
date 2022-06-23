@@ -72,6 +72,16 @@ namespace System.Text.RegularExpressions
         internal const string NotSeparatorClass = "\0\0\u0005\0\ufff3\ufff2\ufff4\0"; // \P{Z}
         internal const string SymbolClass = "\0\0\u0006\0\u001b\u001c\u001a\u001d\0"; // \p{S}
         internal const string NotSymbolClass = "\0\0\u0006\0\uffe5\uffe4\uffe6\uffe3\0"; // \P{S}
+        internal const string AsciiLetterClass = "\0\u0004\0A[a{"; // [A-Za-z]
+        internal const string NotAsciiLetterClass = "\u0001\u0004\0A[a{"; // [^A-Za-z]
+        internal const string AsciiLetterOrDigitClass = "\0\u0006\00:A[a{"; // [A-Za-z0-9]
+        internal const string NotAsciiLetterOrDigitClass = "\u0001\u0006\00:A[a{"; // [^A-Za-z0-9]
+        internal const string HexDigitClass = "\0\u0006\00:AGag"; // [A-Fa-f0-9]
+        internal const string NotHexDigitClass = "\u0001\u0006\00:AGag"; // [^A-Fa-f0-9]
+        internal const string HexDigitUpperClass = "\0\u0004\00:AG"; // [A-F0-9]
+        internal const string NotHexDigitUpperClass = "\u0001\u0004\00:AG"; // [A-F0-9]
+        internal const string HexDigitLowerClass = "\0\u0004\00:ag"; // [a-f0-9]
+        internal const string NotHexDigitLowerClass = "\u0001\u0004\00:ag"; // [a-f0-9]
 
         private const string ECMASpaceRanges = "\u0009\u000E\u0020\u0021";
         private const string NotECMASpaceRanges = "\0\u0009\u000E\u0020\u0021";
@@ -379,10 +389,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private void AddRanges(ReadOnlySpan<char> set)
         {
-            if (set.Length == 0)
-            {
-                return;
-            }
+            Debug.Assert(!set.IsEmpty);
 
             List<(char First, char Last)> rangeList = EnsureRangeList();
 
@@ -984,7 +991,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Gets whether the specified character is an ASCII letter.</summary>
-        public static bool IsAsciiLetter(char c) => // TODO https://github.com/dotnet/runtime/issues/28230: Replace once Ascii is available
+        public static bool IsAsciiLetter(char c) =>
             (uint)((c | 0x20) - 'a') <= 'z' - 'a';
 
         /// <summary>Gets whether we can iterate through the set list pairs in order to completely enumerate the set's contents.</summary>

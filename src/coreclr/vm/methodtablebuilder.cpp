@@ -1349,8 +1349,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
     {
         StackSString debugName(SString::Utf8, GetDebugClassName());
         TypeString::AppendInst(debugName, bmtGenerics->GetInstantiation(), TypeString::FormatBasic);
-        StackScratchBuffer buff;
-        const char* pDebugNameUTF8 = debugName.GetUTF8(buff);
+        const char* pDebugNameUTF8 = debugName.GetUTF8();
         S_SIZE_T safeLen = S_SIZE_T(strlen(pDebugNameUTF8)) + S_SIZE_T(1);
         if(safeLen.IsOverflow())
             COMPlusThrowHR(COR_E_OVERFLOW);
@@ -1892,10 +1891,9 @@ MethodTableBuilder::BuildMethodTableThrowing(
             {
                 {
                     MethodDesc *pMD = methIt->GetUnboxedMethodDesc();
-                    StackSString name(SString::Utf8);
+                    StackSString name;
                     TypeString::AppendMethodDebug(name, pMD);
-                    StackScratchBuffer buff;
-                    const char* pDebugNameUTF8 = name.GetUTF8(buff);
+                    const char* pDebugNameUTF8 = name.GetUTF8();
                     S_SIZE_T safeLen = S_SIZE_T(strlen(pDebugNameUTF8)) + S_SIZE_T(1);
                     if(safeLen.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);
                     size_t len = safeLen.Value();
@@ -1907,10 +1905,9 @@ MethodTableBuilder::BuildMethodTableThrowing(
                 {
                     MethodDesc *pMD = methIt->GetMethodDesc();
 
-                    StackSString name(SString::Utf8);
+                    StackSString name;
                     TypeString::AppendMethodDebug(name, pMD);
-                    StackScratchBuffer buff;
-                    const char* pDebugNameUTF8 = name.GetUTF8(buff);
+                    const char* pDebugNameUTF8 = name.GetUTF8();
                     S_SIZE_T safeLen = S_SIZE_T(strlen(pDebugNameUTF8))+S_SIZE_T(1);
                     if(safeLen.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);
                     size_t len = safeLen.Value();
@@ -1997,18 +1994,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
     // once we're past the commit point.
     EnsureRIDMapsCanBeFilled();
 
-    {
-        // NOTE. NOTE!! the EEclass can now be accessed by other threads.
-        // Do NOT place any initialization after this point.
-        // You may NOT fail the call after this point.
-        FAULT_FORBID();
-        CANNOTTHROWCOMPLUSEXCEPTION();
-
-        /*
-        GetMemTracker()->SuppressRelease();
-        */
-    }
-
 #ifdef _DEBUG
     if (g_pConfig->ShouldDumpOnClassLoad(pszDebugName))
     {
@@ -2020,10 +2005,12 @@ MethodTableBuilder::BuildMethodTableThrowing(
         LOG((LF_ALWAYS, LL_ALWAYS, "Number of declared fields: %d\n", NumDeclaredFields()));
         LOG((LF_ALWAYS, LL_ALWAYS, "Number of declared methods: %d\n", NumDeclaredMethods()));
         LOG((LF_ALWAYS, LL_ALWAYS, "Number of declared non-abstract methods: %d\n", bmtMethod->dwNumDeclaredNonAbstractMethods));
+
+        BOOL debugging = IsDebuggerPresent();
         pMT->Debug_DumpInterfaceMap("Approximate");
-        pMT->DebugDumpVtable(pszDebugName, FALSE);
-        pMT->DebugDumpFieldLayout(pszDebugName, FALSE);
-        pMT->DebugDumpGCDesc(pszDebugName, FALSE);
+        pMT->DebugDumpVtable(pszDebugName, debugging);
+        pMT->DebugDumpFieldLayout(pszDebugName, debugging);
+        pMT->DebugDumpGCDesc(pszDebugName, debugging);
         pMT->Debug_DumpDispatchMap();
     }
 #endif //_DEBUG
@@ -2935,7 +2922,7 @@ MethodTableBuilder::EnumerateClassMethods()
                 {
                     BuildMethodTableThrowException(BFA_AB_METHOD_IN_AB_CLASS);
                 }
-                if(!IsMdVirtual(dwMemberAttrs))
+                if(!IsMdVirtual(dwMemberAttrs) && !IsMdStatic(dwMemberAttrs))
                 {
                     BuildMethodTableThrowException(BFA_NONVIRT_AB_METHOD);
                 }
@@ -4829,8 +4816,8 @@ VOID MethodTableBuilder::TestMethodImpl(
         BuildMethodTableThrowException(IDS_CLASSLOAD_MI_FINAL_DECL);
     }
 
-    // Interface method body that has methodimpl should always be final
-    if (IsInterface() && !IsMdFinal(dwImplAttrs))
+    // Non-static interface method body that has methodimpl should always be final
+    if (IsInterface() && !IsMdStatic(dwDeclAttrs) && !IsMdFinal(dwImplAttrs))
     {
         BuildMethodTableThrowException(IDS_CLASSLOAD_MI_FINAL_IMPL);
     }
@@ -8617,7 +8604,7 @@ MethodTableBuilder::HandleExplicitLayout(
         // we will put a catchall "break" here which will cause the typeload to abort (albeit with a probably misleading
         // error message.)
         break;
-    } // for(;;)
+    }
 
     // We only break out of the loop above if we detected an error.
     if (i < bmtMetaData->cFields || !explicitClassTrust.IsLegal())
@@ -9296,9 +9283,8 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
     {
         //#LoadExactInterfaceMap_Algorithm2
         // Exact interface instantiation loading TECHNIQUE 2 - The exact instantiation has caused some duplicates to
-        // appear in the interface map!  This may not be an error: if the duplicates
-        // were ones that arose because because of inheritance from
-        // a parent type then we accept that.  For example
+        // appear in the interface map!  This may not be an error: if the duplicates were ones that arose because of
+        // inheritance from a parent type then we accept that.  For example
         //     class C<T> : I<T>
         //     class D<T> : C<T>, I<string>
         // is acceptable even when loading D<string>.  Note that in such a case
@@ -9509,7 +9495,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
 
                     // Compare original and duplicate interface entries in the dispatch map if they contain
                     // different implementation for the same interface method
-                    for (;;)
+                    while (true)
                     {
                         if (!originalIt.IsValid() || !duplicateIt.IsValid())
                         {   // We reached end of one dispatch map iterator
@@ -9844,7 +9830,7 @@ void MethodTableBuilder::CheckForSystemTypes()
 
             if (strcmp(nameSpace, g_IntrinsicsNS) == 0)
             {
-                EEClassLayoutInfo * pLayout = pClass->GetLayoutInfo();
+                EEClassLayoutInfo* pLayout = pClass->GetLayoutInfo();
 
                 // The SIMD Hardware Intrinsic types correspond to fundamental data types in the underlying ABIs:
                 // * Vector64<T>:  __m64
@@ -9853,7 +9839,6 @@ void MethodTableBuilder::CheckForSystemTypes()
 
                 // These __m128 and __m256 types, among other requirements, are special in that they must always
                 // be aligned properly.
-
 
                 if (strcmp(name, g_Vector64Name) == 0)
                 {
@@ -9898,6 +9883,21 @@ void MethodTableBuilder::CheckForSystemTypes()
 
                 return;
             }
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM64)
+            else if (strcmp(nameSpace, g_SystemNS) == 0)
+            {
+                EEClassLayoutInfo* pLayout = pClass->GetLayoutInfo();
+
+                // These types correspond to fundamental data types in the underlying ABIs:
+                // * Int128:  __int128
+                // * UInt128: unsigned __int128
+
+                if ((strcmp(name, g_Int128Name) == 0) || (strcmp(name, g_UInt128Name) == 0))
+                {
+                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16; // sizeof(__int128)
+                }
+            }
+#endif // UNIX_AMD64_ABI || TARGET_ARM64
         }
 
         if (g_pNullableClass != NULL)
@@ -10468,10 +10468,6 @@ MethodTableBuilder::SetupMethodTable2(
 
 #ifdef _DEBUG
     {
-        // disable ibc logging because we can assert in ComputerPreferredZapModule for partially constructed
-        // generic types
-        IBCLoggingDisabler disableLogging;
-
         DeclaredMethodIterator it(*this);
         while (it.Next())
         {

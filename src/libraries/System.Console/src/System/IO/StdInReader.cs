@@ -344,27 +344,27 @@ namespace System.IO
 
                 default:
                     // 1. Ctrl A to Ctrl Z.
-                    if (x >= 1 && x <= 26)
+                    if (char.IsBetween(x, (char)1, (char)26))
                     {
                         isCtrl = true;
                         return ConsoleKey.A + x - 1;
                     }
 
                     // 2. Numbers from 0 to 9.
-                    if (x >= '0' && x <= '9')
+                    if (char.IsAsciiDigit(x))
                     {
                         return ConsoleKey.D0 + x - '0';
                     }
 
                     //3. A to Z
-                    if (x >= 'A' && x <= 'Z')
+                    if (char.IsAsciiLetterUpper(x))
                     {
                         isShift = true;
                         return ConsoleKey.A + (x - 'A');
                     }
 
                     // 4. a to z.
-                    if (x >= 'a' && x <= 'z')
+                    if (char.IsAsciiLetterLower(x))
                     {
                         return ConsoleKey.A + (x - 'a');
                     }

@@ -21,7 +21,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             factory.MetadataManager.GetDependenciesDueToMethodCodePresence(ref dependencies, factory, method, methodIL);
 
-            factory.InteropStubManager.AddDependeciesDueToPInvoke(ref dependencies, factory, method);
+            factory.InteropStubManager.AddDependenciesDueToPInvoke(ref dependencies, factory, method);
 
             if (method.OwningType is MetadataType mdOwningType
                 && mdOwningType.Module.GetGlobalModuleType().GetStaticConstructor() is MethodDesc moduleCctor)

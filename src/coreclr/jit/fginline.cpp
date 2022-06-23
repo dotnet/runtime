@@ -274,7 +274,7 @@ void Compiler::fgNoteNonInlineCandidate(Statement* stmt, GenTreeCall* call)
         return;
     }
 
-    InlineResult      inlineResult(this, call, nullptr, "fgNoteNonInlineCandidate");
+    InlineResult      inlineResult(this, call, nullptr, "fgNoteNonInlineCandidate", false);
     InlineObservation currentObservation = InlineObservation::CALLSITE_NOT_CANDIDATE;
 
     // Try and recover the reason left behind when the jit decided
@@ -288,7 +288,6 @@ void Compiler::fgNoteNonInlineCandidate(Statement* stmt, GenTreeCall* call)
 
     // Propagate the prior failure observation to this result.
     inlineResult.NotePriorFailure(currentObservation);
-    inlineResult.SetReported();
 
     if (call->gtCallType == CT_USER_FUNC)
     {
@@ -310,8 +309,8 @@ void Compiler::fgNoteNonInlineCandidate(Statement* stmt, GenTreeCall* call)
  */
 GenTree* Compiler::fgGetStructAsStructPtr(GenTree* tree)
 {
-    noway_assert(tree->OperIs(GT_LCL_VAR, GT_FIELD, GT_IND, GT_BLK, GT_OBJ, GT_COMMA) || tree->OperIsSIMD() ||
-                 tree->OperIsHWIntrinsic());
+    noway_assert(tree->OperIs(GT_LCL_VAR, GT_FIELD, GT_IND, GT_BLK, GT_OBJ, GT_COMMA) ||
+                 tree->OperIsSimdOrHWintrinsic() || tree->IsCnsVec());
     // GT_CALL,     cannot get address of call.
     // GT_MKREFANY, inlining should've been aborted due to mkrefany opcode.
     // GT_RET_EXPR, cannot happen after fgUpdateInlineReturnExpressionPlaceHolder
@@ -1535,17 +1534,6 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
             CallArg*          arg            = argInfo.arg;
             GenTree*          argNode        = arg->GetNode();
 
-            // TODO-ARGS: This can probably be relaxed, the old comment was:
-            // argHasPutArg disqualifies the arg from a direct substitution because we don't have information about
-            // its user. For example: replace `LCL_VAR short` with `PUTARG_TYPE short->LCL_VAR int`,
-            // we should keep `PUTARG_TYPE` iff the user is a call that needs `short` and delete it otherwise.
-            //
-            // Today we no longer have this contextual PUTARG_TYPE and morph
-            // should properly handle substituting a TYP_INT node for a
-            // TYP_SHORT LCL_VAR (at least for a call arg).
-            bool argHasPutArg = !varTypeIsStruct(arg->GetSignatureType()) &&
-                                (genTypeSize(argNode) != genTypeSize(arg->GetSignatureType()));
-
             assert(!argNode->OperIs(GT_RET_EXPR));
 
             if (argInfo.argHasTmp)
@@ -1566,8 +1554,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 
                 GenTree* argSingleUseNode = argInfo.argBashTmpNode;
 
-                if ((argSingleUseNode != nullptr) && !(argSingleUseNode->gtFlags & GTF_VAR_CLONED) && argIsSingleDef &&
-                    !argHasPutArg)
+                if ((argSingleUseNode != nullptr) && !(argSingleUseNode->gtFlags & GTF_VAR_CLONED) && argIsSingleDef)
                 {
                     // Change the temp in-place to the actual argument.
                     // We currently do not support this for struct arguments, so it must not be a GT_OBJ.

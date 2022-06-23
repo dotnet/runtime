@@ -94,14 +94,16 @@ exit /b %EXIT_CODE%
 REM Functions
 :SetEnvVars
 if [%TEST_USING_WORKLOADS%] == [true] (
-    set "PATH=%BASE_DIR%\dotnet-workload;%PATH%"
     set SDK_HAS_WORKLOAD_INSTALLED=true
-    set "SDK_FOR_WORKLOAD_TESTING_PATH=%BASE_DIR%\dotnet-workload"
+    robocopy /np /nfl /e %BASE_DIR%\dotnet-workload %EXECUTION_DIR%\dotnet-workload
+    set "SDK_FOR_WORKLOAD_TESTING_PATH=%EXECUTION_DIR%\dotnet-workload"
+    set "PATH=%EXECUTION_DIR%\dotnet-workload;%PATH%"
     set "AppRefDir=%BASE_DIR%\microsoft.netcore.app.ref"
 ) else (
-    set "PATH=%BASE_DIR%\sdk-no-workload;%PATH%"
     set SDK_HAS_WORKLOAD_INSTALLED=false
-    set "SDK_FOR_WORKLOAD_TESTING_PATH=%BASE_DIR%\sdk-no-workload"
-    set "WasmBuildSupportDir=%BASE_DIR%\build"
+    robocopy /np /nfl /e %BASE_DIR%\sdk-no-workload %EXECUTION_DIR%\sdk-no-workload
+    set "SDK_FOR_WORKLOAD_TESTING_PATH=%EXECUTION_DIR%\sdk-no-workload"
+    set "PATH=%EXECUTION_DIR%\sdk-no-workload;%PATH%"
+    set "AppRefDir=%BASE_DIR%\microsoft.netcore.app.ref"
 )
 EXIT /b 0

@@ -32,6 +32,7 @@
     <Compile Include="Samples\SigningVerifyingX509Cert.cs" />
     <Compile Include="Samples\SigningVerifying.cs" />
     <Compile Include="Samples\EncryptingDecryptingSymmetric.cs" />
+    <Compile Include="SignatureSupport.cs" />
     <Compile Include="SignatureTest.cs" />
     <Compile Include="SignedInfoTest.cs" />
     <Compile Include="SignedXmlTest.cs" />

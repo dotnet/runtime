@@ -67,8 +67,7 @@ namespace System.IO
 
             // Now verify that the drive letter could be a real drive name.
             // On Windows this means it's between A and Z, ignoring case.
-            char letter = driveName[0];
-            if (!((letter >= 'A' && letter <= 'Z') || (letter >= 'a' && letter <= 'z')))
+            if (!char.IsAsciiLetter(driveName[0]))
             {
                 throw new ArgumentException(SR.Arg_MustBeDriveLetterOrRootDir, nameof(driveName));
             }

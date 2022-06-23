@@ -424,24 +424,15 @@ namespace System.Net.Security
 
             static async ValueTask<int> ReadAllAsync(Stream stream, Memory<byte> buffer, bool allowZeroRead, CancellationToken cancellationToken)
             {
-                int read = 0;
-
-                do
+                int read = await TIOAdapter.ReadAtLeastAsync(
+                    stream, buffer, buffer.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+                if (read < buffer.Length)
                 {
-                    int bytes = await TIOAdapter.ReadAsync(stream, buffer, cancellationToken).ConfigureAwait(false);
-                    if (bytes == 0)
+                    if (read != 0 || !allowZeroRead)
                     {
-                        if (read != 0 || !allowZeroRead)
-                        {
-                            throw new IOException(SR.net_io_eof);
-                        }
-                        break;
+                        throw new IOException(SR.net_io_eof);
                     }
-
-                    buffer = buffer.Slice(bytes);
-                    read += bytes;
                 }
-                while (!buffer.IsEmpty);
 
                 return read;
             }

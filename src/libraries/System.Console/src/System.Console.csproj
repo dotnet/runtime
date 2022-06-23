@@ -24,6 +24,10 @@
              Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)System\Text\ConsoleEncoding.cs"
              Link="Common\System\Text\ConsoleEncoding.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
+             Link="Common\System\Text\ValueStringBuilder.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.AppendSpanFormattable.cs"
+             Link="Common\System\Text\ValueStringBuilder.AppendSpanFormattable.cs" />
   </ItemGroup>
   <!-- iOS/tvOS -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'iOS' or '$(TargetPlatformIdentifier)' == 'tvOS'">
@@ -150,12 +154,12 @@
              Link="Common\System\IO\EncodingHelper.Windows.cs" />
     <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs"
              Link="Common\System\IO\Win32Marshal.cs" />
-    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
-             Link="Common\System\Text\ValueStringBuilder.cs" />
   </ItemGroup>
   <!-- Unix -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix'">
     <Compile Include="System\ConsolePal.Unix.cs" />
+    <Compile Include="$(CommonPath)System\Console\ConsoleUtils.cs"
+             Link="Common\System\Console\ConsoleUtils.cs" />
     <Compile Include="System\TermInfo.cs" />
     <Compile Include="System\IO\StdInReader.cs" />
     <Compile Include="System\IO\SyncTextReader.Unix.cs" />
@@ -163,8 +167,6 @@
              Link="Common\System\IO\PersistedFiles.Unix.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Names.Unix.cs"
              Link="Common\System\IO\PersistedFiles.Names.Unix.cs" />
-    <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs"
-             Link="Common\System\Text\StringBuilderCache.cs" />
     <Compile Include="$(CommonPath)System\Text\EncodingHelper.Unix.cs"
              Link="Common\System\Text\EncodingHelper.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"

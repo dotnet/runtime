@@ -161,9 +161,6 @@ namespace Amd64InstructionTableGenerator
 
             var match = encDisassemblySplit.Match(disassembly);
 
-            if (match == null)
-                throw new ArgumentException($"Unable to parse disassembly: {disassembly}");
-
             // foreach (Group g in match.Groups)
             // {
             //     Console.WriteLine($"{g.Name}:'{g.ToString()}");
@@ -202,17 +199,10 @@ namespace Amd64InstructionTableGenerator
             {
                 var opMatch = encOperandSplit.Match(rest);
 
-                if (opMatch != null)
-                {
-                    string op = opMatch.Groups["op"].ToString();
-                    operands.Add(op);
-                    allOperands.Add(op);
-                    rest = opMatch.Groups["rest"].ToString();
-                }
-                else
-                {
-                    throw new Exception($"Op parsing failed {operandDisassemby}");
-                }
+                string op = opMatch.Groups["op"].ToString();
+                operands.Add(op);
+                allOperands.Add(op);
+                rest = opMatch.Groups["rest"].ToString();
             }
             return operands;
         }

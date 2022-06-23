@@ -411,8 +411,28 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern MulticastDelegate InternalAllocLike(Delegate d);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool InternalEqualTypes(object a, object b);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe bool InternalEqualTypes(object a, object b)
+        {
+            if (a.GetType() == b.GetType())
+                return true;
+
+            MethodTable* pMTa = RuntimeHelpers.GetMethodTable(a);
+            MethodTable* pMTb = RuntimeHelpers.GetMethodTable(b);
+
+            bool ret;
+
+            // only use QCall to check the type equivalence scenario
+            if (pMTa->HasTypeEquivalence && pMTb->HasTypeEquivalence)
+                ret = RuntimeHelpers.AreTypesEquivalent(pMTa, pMTb);
+            else
+                ret = false;
+
+            GC.KeepAlive(a);
+            GC.KeepAlive(b);
+
+            return ret;
+        }
 
         // Used by the ctor. Do not call directly.
         // The name of this function will appear in managed stacktraces as delegate constructor.
@@ -441,9 +461,6 @@ namespace System
         {
             return (_methodPtrAux == IntPtr.Zero) ? _target : null;
         }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool CompareUnmanagedFunctionPtrs(Delegate d1, Delegate d2);
     }
 
     // These flags effect the way BindToMethodInfo and BindToMethodName are allowed to bind a delegate to a target method. Their

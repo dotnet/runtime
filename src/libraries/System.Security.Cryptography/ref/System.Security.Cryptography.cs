@@ -1352,7 +1352,6 @@ namespace System.Security.Cryptography
         public static bool TryHashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial class HMACSHA1 : System.Security.Cryptography.HMAC
     {
         public const int HashSizeInBits = 160;
@@ -1380,7 +1379,6 @@ namespace System.Security.Cryptography
         public static bool TryHashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial class HMACSHA256 : System.Security.Cryptography.HMAC
     {
         public const int HashSizeInBits = 256;
@@ -1405,7 +1403,6 @@ namespace System.Security.Cryptography
         public static bool TryHashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial class HMACSHA384 : System.Security.Cryptography.HMAC
     {
         public const int HashSizeInBits = 384;
@@ -1432,7 +1429,6 @@ namespace System.Security.Cryptography
         public static bool TryHashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial class HMACSHA512 : System.Security.Cryptography.HMAC
     {
         public const int HashSizeInBits = 512;
@@ -1483,9 +1479,7 @@ namespace System.Security.Cryptography
         public void AppendData(byte[] data, int offset, int count) { }
         public void AppendData(System.ReadOnlySpan<byte> data) { }
         public static System.Security.Cryptography.IncrementalHash CreateHash(System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static System.Security.Cryptography.IncrementalHash CreateHMAC(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[] key) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static System.Security.Cryptography.IncrementalHash CreateHMAC(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.ReadOnlySpan<byte> key) { throw null; }
         public void Dispose() { }
         public byte[] GetCurrentHash() { throw null; }
@@ -1655,6 +1649,7 @@ namespace System.Security.Cryptography
         public static bool TryFind(System.ReadOnlySpan<char> pemData, out System.Security.Cryptography.PemFields fields) { throw null; }
         public static bool TryWrite(System.ReadOnlySpan<char> label, System.ReadOnlySpan<byte> data, System.Span<char> destination, out int charsWritten) { throw null; }
         public static char[] Write(System.ReadOnlySpan<char> label, System.ReadOnlySpan<byte> data) { throw null; }
+        public static string WriteString(System.ReadOnlySpan<char> label, System.ReadOnlySpan<byte> data) { throw null; }
     }
     public readonly partial struct PemFields
     {
@@ -2556,6 +2551,18 @@ namespace System.Security.Cryptography.X509Certificates
         UseUTF8Encoding = 4096,
         UseT61Encoding = 8192,
         ForceUTF8Encoding = 16384,
+    }
+    public sealed partial class X509AuthorityInformationAccessExtension : System.Security.Cryptography.X509Certificates.X509Extension
+    {
+        public X509AuthorityInformationAccessExtension() { }
+        public X509AuthorityInformationAccessExtension(byte[] rawData, bool critical = false) { }
+        public X509AuthorityInformationAccessExtension(System.Collections.Generic.IEnumerable<string>? ocspUris, System.Collections.Generic.IEnumerable<string>? caIssuersUris, bool critical = false) { }
+        public X509AuthorityInformationAccessExtension(System.ReadOnlySpan<byte> rawData, bool critical = false) { }
+        public override void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
+        public System.Collections.Generic.IEnumerable<string> EnumerateCAIssuersUris() { throw null; }
+        public System.Collections.Generic.IEnumerable<string> EnumerateOcspUris() { throw null; }
+        public System.Collections.Generic.IEnumerable<string> EnumerateUris(System.Security.Cryptography.Oid accessMethodOid) { throw null; }
+        public System.Collections.Generic.IEnumerable<string> EnumerateUris(string accessMethodOid) { throw null; }
     }
     public sealed partial class X509BasicConstraintsExtension : System.Security.Cryptography.X509Certificates.X509Extension
     {

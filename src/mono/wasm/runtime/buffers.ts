@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { JSHandle, MonoArray, MonoObject, MonoObjectRef } from "./types";
+import { JSHandle, MonoArray, MonoObject, MonoObjectRef, is_nullish } from "./types";
 import { Module } from "./imports";
 import { mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
 import { wrap_error_root } from "./method-calls";
@@ -139,7 +139,7 @@ export function mono_wasm_typed_array_copy_to_ref(js_handle: JSHandle, pinned_ar
     const resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
     try {
         const js_obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
-        if (!js_obj) {
+        if (is_nullish(js_obj)) {
             wrap_error_root(is_exception, "ERR07: Invalid JS object handle '" + js_handle + "'", resultRoot);
             return;
         }
@@ -173,7 +173,7 @@ export function mono_wasm_typed_array_copy_from_ref(js_handle: JSHandle, pinned_
     const resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
     try {
         const js_obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
-        if (!js_obj) {
+        if (is_nullish(js_obj)) {
             wrap_error_root(is_exception, "ERR08: Invalid JS object handle '" + js_handle + "'", resultRoot);
             return;
         }

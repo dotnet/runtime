@@ -453,7 +453,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 newScript = script.ContinueWith(
                 string.Join("\n", replacer.variableDefinitions) + "\nreturn " + syntaxTree.ToString());
                 var state = await newScript.RunAsync(cancellationToken: token);
-                return JObject.FromObject(ConvertCSharpToJSType(state.ReturnValue, state.ReturnValue?.GetType()));
+                return JObject.FromObject(resolver.ConvertCSharpToJSType(state.ReturnValue, state.ReturnValue.GetType()));
             }
             catch (CompilationErrorException cee)
             {
@@ -466,31 +466,23 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        private static readonly HashSet<Type> NumericTypes = new HashSet<Type>
+        private static JObject ConvertCLRToJSType(object v)
         {
-            typeof(decimal), typeof(byte), typeof(sbyte),
-            typeof(short), typeof(ushort),
-            typeof(int), typeof(uint),
-            typeof(float), typeof(double)
-        };
+            if (v is JObject jobj)
+                return jobj;
 
-        private static object ConvertCSharpToJSType(object v, Type type)
-        {
-            if (v == null)
-                return new { type = "object", subtype = "null", className = type?.ToString(), description = type?.ToString() };
-            if (v is string s)
-                return new { type = "string", value = s, description = s };
-            if (v is char c)
-                return new { type = "symbol", value = c, description = $"{(int)c} '{c}'" };
-            if (NumericTypes.Contains(v.GetType()))
-                return new { type = "number", value = v, description = Convert.ToDouble(v).ToString(CultureInfo.InvariantCulture) };
-            if (v is bool)
-                return new { type = "boolean", value = v, description = v.ToString().ToLowerInvariant(), className = type.ToString() };
-            if (v is JObject)
-                return v;
-            return new { type = "object", value = v, description = v.ToString(), className = type.ToString() };
+            if (v is null)
+                return JObjectValueCreator.CreateNull("<unknown>")?["value"] as JObject;
+
+            string typeName = v.GetType().ToString();
+            jobj = JObjectValueCreator.CreateFromPrimitiveType(v);
+            return jobj is not null
+                ? jobj["value"] as JObject
+                : JObjectValueCreator.Create<object>(value: null,
+                                                    type: "object",
+                                                    description: v.ToString(),
+                                                    className: typeName)?["value"] as JObject;
         }
-
     }
 
     internal sealed class ReturnAsErrorException : Exception

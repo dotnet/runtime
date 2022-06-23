@@ -58,7 +58,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     .Select(uri => uri.ToString())
                                     .FirstOrDefault();
 
-                Console.WriteLine($"{Environment.NewLine}Debug proxy for chrome now listening on {ipAddress}. And expecting chrome at {options.DevToolsUrl}");
+                if (!options.RunningForBlazor)
+                    Console.WriteLine($"Debug proxy for chrome now listening on {ipAddress}. And expecting chrome at {options.DevToolsUrl}");
             });
 
             app.UseDeveloperExceptionPage()
@@ -198,7 +199,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         var loggerFactory = context.RequestServices.GetService<ILoggerFactory>();
                         context.Request.Query.TryGetValue("urlSymbolServer", out StringValues urlSymbolServerList);
-                        var proxy = new DebuggerProxy(loggerFactory, urlSymbolServerList.ToList(), runtimeId);
+                        var proxy = new DebuggerProxy(loggerFactory, urlSymbolServerList.ToList(), runtimeId, options: options);
 
                         System.Net.WebSockets.WebSocket ideSocket = await context.WebSockets.AcceptWebSocketAsync();
 

@@ -14,7 +14,7 @@
       </trans-unit>
       <trans-unit id="AlternationHasMalformedReference">
         <source>Conditional alternation is missing a closing parenthesis after the group number {0}.</source>
-        <target state="new">Conditional alternation is missing a closing parenthesis after the group number {0}.</target>
+        <target state="translated">W zmianie warunkowej brakuje nawiasu zamykającego po numerze grupy {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="AlternationHasNamedCapture">
@@ -29,7 +29,7 @@
       </trans-unit>
       <trans-unit id="AlternationHasUndefinedReference">
         <source>Conditional alternation refers to an undefined group number {0}.</source>
-        <target state="new">Conditional alternation refers to an undefined group number {0}.</target>
+        <target state="translated">Zmiana warunkowa odwołuje się do niezdefiniowanego numeru grupy {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="Arg_ArrayPlusOffTooSmall">
@@ -92,11 +92,6 @@
         <target state="translated">Za mało cyfr szesnastkowych.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InternalError_ScanRegex">
-        <source>Internal error in ScanRegex.</source>
-        <target state="translated">Błąd wewnętrzny w elemencie ScanRegex.</target>
-        <note>{Locked="ScanRegex"}</note>
-      </trans-unit>
       <trans-unit id="InvalidGroupingConstruct">
         <source>Unrecognized grouping construct.</source>
         <target state="translated">Nierozpoznana konstrukcja grupowania.</target>
@@ -134,7 +129,7 @@
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationMessage">
         <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation.</source>
-        <target state="new">The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation.</target>
+        <target state="translated">Narzędzie RegexGenerator nie może wygenerować pełnej implementacji źródła dla określonego wyrażenia regularnego z powodu ograniczenia wewnętrznego.</target>
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationTitle">
@@ -194,12 +189,12 @@
       </trans-unit>
       <trans-unit id="QuantifierAfterNothing">
         <source>Quantifier '{0}' following nothing.</source>
-        <target state="new">Quantifier '{0}' following nothing.</target>
+        <target state="translated">Kwantyfikator „{0}” nie obserwuje niczego.</target>
         <note />
       </trans-unit>
       <trans-unit id="QuantifierOrCaptureGroupOutOfRange">
         <source>Quantifier and capture group numbers must be less than or equal to Int32.MaxValue.</source>
-        <target state="new">Quantifier and capture group numbers must be less than or equal to Int32.MaxValue.</target>
+        <target state="translated">Numery kwantyfikatora i grup przechwytywania muszą być mniejsze lub równe wartości Int32.MaxValue.</target>
         <note>{Locked="Int32.MaxValue"}</note>
       </trans-unit>
       <trans-unit id="RegexMatchTimeoutException_Occurred">
@@ -210,11 +205,6 @@
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
         <source>RegexGenerator method must be partial, parameterless, non-generic, non-abstract, and return Regex</source>
         <target state="translated">Metoda RegexGenerator musi być częściowa, bez parametrów, niestanowa, nieabstrakcyjna i zwracać wyrażenia regularne</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ReplacementError">
-        <source>Replacement pattern error.</source>
-        <target state="translated">Błąd wzorca zastępczego.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">
@@ -270,6 +260,16 @@
       <trans-unit id="UnterminatedComment">
         <source>Unterminated (?#...) comment.</source>
         <target state="translated">Niezakończony komentarz (?#...).</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UseRegexSourceGeneratorMessage">
+        <source>Use 'RegexGeneratorAttribute' to generate the regular expression implementation at compile-time.</source>
+        <target state="translated">Użyj atrybutu „RegexGeneratorAttribute”, aby wygenerować implementację wyrażenia regularnego w czasie kompilacji.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UseRegexSourceGeneratorTitle">
+        <source>Convert to 'RegexGenerator'.</source>
+        <target state="translated">Konwertuj na „RegexGenerator”.</target>
         <note />
       </trans-unit>
     </body>

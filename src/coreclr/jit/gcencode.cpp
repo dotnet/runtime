@@ -4791,7 +4791,7 @@ void GCInfo::gcInfoRecordGCStackArgLive(GcInfoEncoder* gcInfoEncoder, MakeRegPtr
     assert(genStackPtr->rpdArg);
     assert(genStackPtr->rpdArgTypeGet() == rpdARG_PUSH);
 
-    // We only need to report these when we're doing fuly-interruptible
+    // We only need to report these when we're doing fully-interruptible
     assert(compiler->codeGen->GetInterruptible());
 
     GCENCODER_WITH_LOGGING(gcInfoEncoderWithLog, gcInfoEncoder);
@@ -4828,7 +4828,7 @@ void GCInfo::gcInfoRecordGCStackArgsDead(GcInfoEncoder* gcInfoEncoder,
     // Re-walk that list and mark all outgoing arguments that we're marked as live
     // earlier, as going dead after the call.
 
-    // We only need to report these when we're doing fuly-interruptible
+    // We only need to report these when we're doing fully-interruptible
     assert(compiler->codeGen->GetInterruptible());
 
     GCENCODER_WITH_LOGGING(gcInfoEncoderWithLog, gcInfoEncoder);

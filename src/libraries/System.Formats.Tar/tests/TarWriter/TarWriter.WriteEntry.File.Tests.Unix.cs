@@ -12,14 +12,14 @@ namespace System.Formats.Tar.Tests
         private static bool IsRemoteExecutorSupportedAndOnUnixAndSuperUser => RemoteExecutor.IsSupported && PlatformDetection.IsUnixAndSuperUser;
 
         [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndOnUnixAndSuperUser))]
-        [InlineData(TarFormat.Ustar)]
-        [InlineData(TarFormat.Pax)]
-        [InlineData(TarFormat.Gnu)]
-        public void Add_Fifo(TarFormat format)
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void Add_Fifo(TarEntryFormat format)
         {
             RemoteExecutor.Invoke((string strFormat) =>
             {
-                TarFormat expectedFormat = Enum.Parse<TarFormat>(strFormat);
+                TarEntryFormat expectedFormat = Enum.Parse<TarEntryFormat>(strFormat);
 
                 using TempDirectory root = new TempDirectory();
                 string fifoName = "fifofile";
@@ -36,9 +36,8 @@ namespace System.Formats.Tar.Tests
                 archive.Seek(0, SeekOrigin.Begin);
                 using (TarReader reader = new TarReader(archive))
                 {
-                    Assert.Equal(TarFormat.Unknown, reader.Format);
                     PosixTarEntry entry = reader.GetNextEntry() as PosixTarEntry;
-                    Assert.Equal(expectedFormat, reader.Format);
+                    Assert.Equal(expectedFormat, entry.Format);
 
                     Assert.NotNull(entry);
                     Assert.Equal(fifoName, entry.Name);
@@ -55,14 +54,14 @@ namespace System.Formats.Tar.Tests
         }
 
         [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndOnUnixAndSuperUser))]
-        [InlineData(TarFormat.Ustar)]
-        [InlineData(TarFormat.Pax)]
-        [InlineData(TarFormat.Gnu)]
-        public void Add_BlockDevice(TarFormat format)
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void Add_BlockDevice(TarEntryFormat format)
         {
             RemoteExecutor.Invoke((string strFormat) =>
             {
-                TarFormat expectedFormat = Enum.Parse<TarFormat>(strFormat);
+                TarEntryFormat expectedFormat = Enum.Parse<TarEntryFormat>(strFormat);
 
                 using TempDirectory root = new TempDirectory();
                 string blockDevicePath = Path.Join(root.Path, AssetBlockDeviceFileName);
@@ -79,9 +78,8 @@ namespace System.Formats.Tar.Tests
                 archive.Seek(0, SeekOrigin.Begin);
                 using (TarReader reader = new TarReader(archive))
                 {
-                    Assert.Equal(TarFormat.Unknown, reader.Format);
                     PosixTarEntry entry = reader.GetNextEntry() as PosixTarEntry;
-                    Assert.Equal(expectedFormat, reader.Format);
+                    Assert.Equal(expectedFormat, entry.Format);
 
                     Assert.NotNull(entry);
                     Assert.Equal(AssetBlockDeviceFileName, entry.Name);
@@ -91,10 +89,8 @@ namespace System.Formats.Tar.Tests
 
                     VerifyPlatformSpecificMetadata(blockDevicePath, entry);
 
-                    // TODO: Fix how these values are collected, the numbers don't match even though https://github.com/dotnet/runtime/issues/68230
-                    // they come from stat's dev and from the major/minor syscalls
-                    // Assert.Equal(TestBlockDeviceMajor, entry.DeviceMajor);
-                    // Assert.Equal(TestBlockDeviceMinor, entry.DeviceMinor);
+                    Assert.Equal(TestBlockDeviceMajor, entry.DeviceMajor);
+                    Assert.Equal(TestBlockDeviceMinor, entry.DeviceMinor);
 
                     Assert.Null(reader.GetNextEntry());
                 }
@@ -103,14 +99,14 @@ namespace System.Formats.Tar.Tests
         }
 
         [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndOnUnixAndSuperUser))]
-        [InlineData(TarFormat.Ustar)]
-        [InlineData(TarFormat.Pax)]
-        [InlineData(TarFormat.Gnu)]
-        public void Add_CharacterDevice(TarFormat format)
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void Add_CharacterDevice(TarEntryFormat format)
         {
             RemoteExecutor.Invoke((string strFormat) =>
             {
-                TarFormat expectedFormat = Enum.Parse<TarFormat>(strFormat);
+                TarEntryFormat expectedFormat = Enum.Parse<TarEntryFormat>(strFormat);
                 using TempDirectory root = new TempDirectory();
                 string characterDevicePath = Path.Join(root.Path, AssetCharacterDeviceFileName);
 
@@ -126,9 +122,8 @@ namespace System.Formats.Tar.Tests
                 archive.Seek(0, SeekOrigin.Begin);
                 using (TarReader reader = new TarReader(archive))
                 {
-                    Assert.Equal(TarFormat.Unknown, reader.Format);
                     PosixTarEntry entry = reader.GetNextEntry() as PosixTarEntry;
-                    Assert.Equal(expectedFormat, reader.Format);
+                    Assert.Equal(expectedFormat, entry.Format);
 
                     Assert.NotNull(entry);
                     Assert.Equal(AssetCharacterDeviceFileName, entry.Name);
@@ -138,10 +133,8 @@ namespace System.Formats.Tar.Tests
 
                     VerifyPlatformSpecificMetadata(characterDevicePath, entry);
 
-                    // TODO: Fix how these values are collected, the numbers don't match even though https://github.com/dotnet/runtime/issues/68230
-                    // they come from stat's dev and from the major/minor syscalls
-                    // Assert.Equal(TestCharacterDeviceMajor, entry.DeviceMajor);
-                    // Assert.Equal(TestCharacterDeviceMinor, entry.DeviceMinor);
+                    Assert.Equal(TestCharacterDeviceMajor, entry.DeviceMajor);
+                    Assert.Equal(TestCharacterDeviceMinor, entry.DeviceMinor);
 
                     Assert.Null(reader.GetNextEntry());
                 }
@@ -161,8 +154,11 @@ namespace System.Formats.Tar.Tests
 
             if (entry is PosixTarEntry posix)
             {
-                Assert.Equal(DefaultGName, posix.GroupName);
-                Assert.Equal(DefaultUName, posix.UserName);
+                string gname = Interop.Sys.GetGroupName(status.Gid);
+                string uname = Interop.Sys.GetUserNameFromPasswd(status.Uid);
+
+                Assert.Equal(gname, posix.GroupName);
+                Assert.Equal(uname, posix.UserName);
 
                 if (entry.EntryType is not TarEntryType.BlockDevice and not TarEntryType.CharacterDevice)
                 {
@@ -174,26 +170,18 @@ namespace System.Formats.Tar.Tests
             if (entry.EntryType is not TarEntryType.Directory)
             {
                 TarFileMode expectedMode = (TarFileMode)(status.Mode & 4095); // First 12 bits
-                DateTimeOffset expectedMTime = DateTimeOffset.FromUnixTimeSeconds(status.MTime);
-                DateTimeOffset expectedATime = DateTimeOffset.FromUnixTimeSeconds(status.ATime);
-                DateTimeOffset expectedCTime = DateTimeOffset.FromUnixTimeSeconds(status.CTime);
-
+               
                 Assert.Equal(expectedMode, entry.Mode);
-                Assert.Equal(expectedMTime, entry.ModificationTime);
+                Assert.True(entry.ModificationTime > DateTimeOffset.UnixEpoch);
 
                 if (entry is PaxTarEntry pax)
                 {
-                    Assert.NotNull(pax.ExtendedAttributes);
-                    Assert.True(pax.ExtendedAttributes.Count >= 4);
-                    Assert.Contains("path", pax.ExtendedAttributes);
-                    VerifyExtendedAttributeTimestamp(pax, "mtime");
-                    VerifyExtendedAttributeTimestamp(pax, "atime");
-                    VerifyExtendedAttributeTimestamp(pax, "ctime");
+                    VerifyPaxTimestamps(pax);
                 }
-                else if (entry is GnuTarEntry gnu)
+
+                if (entry is GnuTarEntry gnu)
                 {
-                    Assert.Equal(expectedATime, gnu.AccessTime);
-                    Assert.Equal(expectedCTime, gnu.ChangeTime);
+                    VerifyGnuTimestamps(gnu);
                 }
             }
         }

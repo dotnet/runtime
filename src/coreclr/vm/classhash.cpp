@@ -205,14 +205,12 @@ static void ConstructKeyFromDataCaseInsensitive(EEClassHashTable::ConstructKeyCa
     StackSString nameSpace(SString::Utf8, pszNameSpace);
     nameSpace.LowerCase();
 
-    StackScratchBuffer nameSpaceBuffer;
-    Key[0] = (LPUTF8)nameSpace.GetUTF8(nameSpaceBuffer);
+    Key[0] = (LPUTF8)nameSpace.GetUTF8();
 
     StackSString name(SString::Utf8, pszName);
     name.LowerCase();
 
-    StackScratchBuffer nameBuffer;
-    Key[1] = (LPUTF8)name.GetUTF8(nameBuffer);
+    Key[1] = (LPUTF8)name.GetUTF8();
 
     pCallback->UseKeys(Key);
 }
@@ -478,11 +476,6 @@ EEClassHashEntry_t *EEClassHashTable::FindItem(LPCUTF8 pszNamespace, LPCUTF8 psz
             // If (pSearch->pEncloser), we've found a nested class
             if ((IsNested != FALSE) == (pSearch->GetEncloser() != NULL))
             {
-                if (m_bCaseInsensitive)
-                    g_IBCLogger.LogClassHashTableAccess(dac_cast<PTR_EEClassHashEntry>(pSearch->GetData()));
-                else
-                    g_IBCLogger.LogClassHashTableAccess(pSearch);
-
                 return pSearch;
             }
         }

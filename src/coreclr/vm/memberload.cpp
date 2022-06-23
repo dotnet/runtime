@@ -1440,7 +1440,7 @@ MemberLoader::FindConstructor(MethodTable * pMT, PCCOR_SIGNATURE pSignature,DWOR
             continue;
         }
 
-        // Find only the constructor for for this object
+        // Find only the constructor for this object
         _ASSERTE(pCurMethod->GetMethodTable() == pMT->GetCanonicalMethodTable());
 
         PCCOR_SIGNATURE pCurMethodSig;

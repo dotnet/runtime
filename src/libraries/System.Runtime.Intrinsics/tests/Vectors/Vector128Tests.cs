@@ -4351,7 +4351,6 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/63746", TestPlatforms.tvOS)]
         public void Vector128NIntSumTest()
         {
             Vector128<nint> vector = Vector128.Create((nint)0x01);
@@ -4367,7 +4366,6 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/63746", TestPlatforms.tvOS)]
         public void Vector128NUIntSumTest()
         {
             Vector128<nuint> vector = Vector128.Create((nuint)0x01);

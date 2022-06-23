@@ -202,7 +202,7 @@ namespace System.IO.Pipes
             // cross-platform with Windows (which has only '\' as an invalid char).
             if (Path.IsPathRooted(pipeName))
             {
-                if (pipeName.IndexOfAny(s_invalidPathNameChars) >= 0 || pipeName[pipeName.Length - 1] == Path.DirectorySeparatorChar)
+                if (pipeName.IndexOfAny(s_invalidPathNameChars) >= 0 || pipeName.EndsWith(Path.DirectorySeparatorChar))
                     throw new PlatformNotSupportedException(SR.PlatformNotSupported_InvalidPipeNameChars);
 
                 // Caller is in full control of file location.

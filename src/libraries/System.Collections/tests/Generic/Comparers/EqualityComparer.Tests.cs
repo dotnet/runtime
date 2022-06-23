@@ -33,8 +33,10 @@ namespace System.Collections.Generic.Tests
         [MemberData(nameof(Int16EnumData))]
         [MemberData(nameof(SByteEnumData))]
         [MemberData(nameof(Int32EnumData))]
+        [MemberData(nameof(NullableInt32EnumData))]
         [MemberData(nameof(Int64EnumData))]
         [MemberData(nameof(NonEquatableValueTypeData))]
+        [MemberData(nameof(NullableNonEquatableValueTypeData))]
         [MemberData(nameof(ObjectData))]
         public void EqualsTest<T>(T left, T right, bool expected)
         {
@@ -253,6 +255,22 @@ namespace System.Collections.Generic.Tests
             };
         }
 
+        public static EqualsData<Int32Enum?> NullableInt32EnumData()
+        {
+            return new EqualsData<Int32Enum?>
+            {
+                { (Int32Enum)(-2), (Int32Enum)(-4), false },
+                { Int32Enum.Two, Int32Enum.Two, true },
+                { Int32Enum.Min, Int32Enum.Max, false },
+                { Int32Enum.Min, Int32Enum.Min, true },
+                { Int32Enum.One, Int32Enum.Min + 1, false },
+                { (Int32Enum)(-2), null, false },
+                { Int32Enum.Two, null, false },
+                { null, Int32Enum.Max, false },
+                { null, Int32Enum.Min + 1, false }
+            };
+        }
+
         public static EqualsData<Int64Enum> Int64EnumData()
         {
             return new EqualsData<Int64Enum>
@@ -278,6 +296,24 @@ namespace System.Collections.Generic.Tests
                 { one, one, true },
                 { new NonEquatableValueType(-1), new NonEquatableValueType(), false },
                 { new NonEquatableValueType(2), new NonEquatableValueType(2), true }
+            };
+        }
+
+        public static EqualsData<NonEquatableValueType?> NullableNonEquatableValueTypeData()
+        {
+            // Comparisons for structs that do not override ValueType.Equals or
+            // ValueType.GetHashCode should still work as expected.
+
+            var one = new NonEquatableValueType { Value = 1 };
+
+            return new EqualsData<NonEquatableValueType?>
+            {
+                { new NonEquatableValueType(), new NonEquatableValueType(), true },
+                { one, one, true },
+                { new NonEquatableValueType(-1), new NonEquatableValueType(), false },
+                { new NonEquatableValueType(2), new NonEquatableValueType(2), true },
+                { new NonEquatableValueType(-1), null, false },
+                { null, new NonEquatableValueType(2), false }
             };
         }
 

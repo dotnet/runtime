@@ -1,10 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { AllAssetEntryTypes, assert, AssetEntry, CharPtrNull, DotnetModule, GlobalizationMode, MonoConfig, MonoConfigError, wasm_type_symbol, MonoObject } from "./types";
+import { AllAssetEntryTypes, mono_assert, AssetEntry, CharPtrNull, DotnetModule, GlobalizationMode, MonoConfig, MonoConfigError, wasm_type_symbol, MonoObject } from "./types";
 import { ENVIRONMENT_IS_ESM, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, locateFile, Module, MONO, requirePromise, runtimeHelpers } from "./imports";
 import cwraps from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
+import GuardedPromise from "./guarded-promise";
 import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from "./icu";
 import { toBase64StringImpl } from "./base64";
 import { mono_wasm_init_aot_profiler, mono_wasm_init_coverage_profiler } from "./profiler";
@@ -15,10 +16,11 @@ import { VoidPtr, CharPtr } from "./types/emscripten";
 import { DotnetPublicAPI } from "./exports";
 import { mono_on_abort } from "./run";
 import { mono_wasm_new_root } from "./roots";
+import { init_crypto } from "./crypto-worker";
 
-export let runtime_is_initialized_resolve: Function;
-export let runtime_is_initialized_reject: Function;
-export const mono_wasm_runtime_is_initialized = new Promise((resolve, reject) => {
+export let runtime_is_initialized_resolve: () => void;
+export let runtime_is_initialized_reject: (reason?: any) => void;
+export const mono_wasm_runtime_is_initialized = new GuardedPromise<void>((resolve, reject) => {
     runtime_is_initialized_resolve = resolve;
     runtime_is_initialized_reject = reject;
 });
@@ -36,7 +38,7 @@ export function configure_emscripten_startup(module: DotnetModule, exportedAPI: 
         (typeof (globalThis.document.createElement) === "function")
     ) {
         // blazor injects a module preload link element for dotnet.[version].[sha].js
-        const blazorDotNetJS = Array.from (document.head.getElementsByTagName("link")).filter(elt => elt.rel !== undefined && elt.rel == "modulepreload" && elt.href !== undefined && elt.href.indexOf("dotnet") != -1 && elt.href.indexOf (".js") != -1);
+        const blazorDotNetJS = Array.from(document.head.getElementsByTagName("link")).filter(elt => elt.rel !== undefined && elt.rel == "modulepreload" && elt.href !== undefined && elt.href.indexOf("dotnet") != -1 && elt.href.indexOf(".js") != -1);
         if (blazorDotNetJS.length == 1) {
             const hr = blazorDotNetJS[0].href;
             console.log("determined url of main script to be " + hr);
@@ -119,6 +121,8 @@ async function mono_wasm_pre_init(): Promise<void> {
         await requirePromise;
     }
 
+    init_crypto();
+
     if (moduleExt.configSrc) {
         try {
             // sets MONO.config implicitly
@@ -134,9 +138,7 @@ async function mono_wasm_pre_init(): Promise<void> {
                 await moduleExt.onConfigLoaded(<MonoConfig>runtimeHelpers.config);
             }
             catch (err: any) {
-                Module.printErr("MONO_WASM: onConfigLoaded () failed: " + err);
-                Module.printErr("MONO_WASM: Stacktrace: \n");
-                Module.printErr(err.stack);
+                _print_error("MONO_WASM: onConfigLoaded () failed", err);
                 runtime_is_initialized_reject(err);
                 throw err;
             }
@@ -166,6 +168,13 @@ function mono_wasm_after_runtime_initialized(): void {
     finalize_startup(Module.config);
 }
 
+function _print_error(message: string, err: any): void {
+    Module.printErr(`${message}: ${JSON.stringify(err)}`);
+    if (err.stack) {
+        Module.printErr("MONO_WASM: Stacktrace: \n");
+        Module.printErr(err.stack);
+    }
+}
 
 // Set environment variable NAME to VALUE
 // Should be called before mono_load_runtime_and_bcl () in most cases
@@ -191,14 +200,16 @@ export function mono_wasm_set_runtime_options(options: string[]): void {
 
 // this need to be run only after onRuntimeInitialized event, when the memory is ready
 function _handle_fetched_asset(asset: AssetEntry, url?: string) {
-    assert(ctx, "Context is expected");
-    assert(asset.buffer, "asset.buffer is expected");
+    mono_assert(ctx, "Context is expected");
+    mono_assert(asset.buffer, "asset.buffer is expected");
 
     const bytes = new Uint8Array(asset.buffer);
     if (ctx.tracing)
         console.log(`MONO_WASM: Loaded:${asset.name} as ${asset.behavior} size ${bytes.length} from ${url}`);
 
-    const virtualName: string = asset.virtual_path || asset.name;
+    const virtualName: string = typeof (asset.virtual_path) === "string"
+        ? asset.virtual_path
+        : asset.name;
     let offset: VoidPtr | null = null;
 
     switch (asset.behavior) {
@@ -302,18 +313,18 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
 
         const moduleExt = Module as DotnetModule;
 
-        if(!Module.disableDotnet6Compatibility && Module.exports){
+        if (!Module.disableDotnet6Compatibility && Module.exports) {
             // Export emscripten defined in module through EXPORTED_RUNTIME_METHODS
-            // Useful to export IDBFS or other similar types generally exposed as 
+            // Useful to export IDBFS or other similar types generally exposed as
             // global types when emscripten is not modularized.
             for (let i = 0; i < Module.exports.length; ++i) {
                 const exportName = Module.exports[i];
                 const exportValue = (<any>Module)[exportName];
 
-                if(exportValue) {
+                if (exportValue) {
                     globalThisAny[exportName] = exportValue;
                 }
-                else{
+                else {
                     console.warn(`MONO_WASM: The exported symbol ${exportName} could not be found in the emscripten module`);
                 }
             }
@@ -326,9 +337,7 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
             cwraps.mono_wasm_load_runtime("unused", config.debug_level || 0);
             runtimeHelpers.wait_for_debugger = config.wait_for_debugger;
         } catch (err: any) {
-            Module.printErr("MONO_WASM: mono_wasm_load_runtime () failed: " + err);
-            Module.printErr("MONO_WASM: Stacktrace: \n");
-            Module.printErr(err.stack);
+            _print_error("MONO_WASM: mono_wasm_load_runtime () failed", err);
 
             runtime_is_initialized_reject(err);
             if (ENVIRONMENT_IS_SHELL || ENVIRONMENT_IS_NODE) {
@@ -355,9 +364,7 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
                 argsAny.loaded_cb();
             }
             catch (err: any) {
-                Module.printErr("MONO_WASM: loaded_cb () failed: " + err);
-                Module.printErr("MONO_WASM: Stacktrace: \n");
-                Module.printErr(err.stack);
+                _print_error("MONO_WASM: loaded_cb () failed", err);
                 runtime_is_initialized_reject(err);
                 throw err;
             }
@@ -368,9 +375,7 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
                 moduleExt.onDotnetReady();
             }
             catch (err: any) {
-                Module.printErr("MONO_WASM: onDotnetReady () failed: " + err);
-                Module.printErr("MONO_WASM: Stacktrace: \n");
-                Module.printErr(err.stack);
+                _print_error("MONO_WASM: onDotnetReady () failed", err);
                 runtime_is_initialized_reject(err);
                 throw err;
             }
@@ -378,7 +383,7 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
 
         runtime_is_initialized_resolve();
     } catch (err: any) {
-        Module.printErr("MONO_WASM: Error in finalize_startup: " + err);
+        _print_error("MONO_WASM: Error in finalize_startup", err);
         runtime_is_initialized_reject(err);
         throw err;
     }
@@ -401,6 +406,7 @@ export function bindings_lazy_init(): void {
     runtimeHelpers._unbox_buffer_size = 65536;
     runtimeHelpers._box_buffer = Module._malloc(runtimeHelpers._box_buffer_size);
     runtimeHelpers._unbox_buffer = Module._malloc(runtimeHelpers._unbox_buffer_size);
+    runtimeHelpers._i52_error_scratch_buffer = <any>Module._malloc(4);
     runtimeHelpers._class_int32 = find_corlib_class("System", "Int32");
     runtimeHelpers._class_uint32 = find_corlib_class("System", "UInt32");
     runtimeHelpers._class_double = find_corlib_class("System", "Double");
@@ -584,8 +590,8 @@ async function mono_download_assets(config: MonoConfig | MonoConfigError | undef
 }
 
 function finalize_assets(config: MonoConfig | MonoConfigError | undefined): void {
-    assert(config && !config.isError, "Expected config");
-    assert(ctx && ctx.downloading_count == 0, "Expected assets to be downloaded");
+    mono_assert(config && !config.isError, "Expected config");
+    mono_assert(ctx && ctx.downloading_count == 0, "Expected assets to be downloaded");
 
     try {
         for (const fetch_result of ctx.resolved_promises!) {

@@ -993,7 +993,7 @@ namespace System.Runtime.InteropServices
 
             int nb = Encoding.UTF8.GetMaxByteCount(s.Length);
 
-            IntPtr ptr = AllocHGlobal(nb + 1);
+            IntPtr ptr = AllocHGlobal(checked(nb + 1));
 
             int nbWritten;
             byte* pbMem = (byte*)ptr;
@@ -1040,7 +1040,7 @@ namespace System.Runtime.InteropServices
 
             int nb = Encoding.UTF8.GetMaxByteCount(s.Length);
 
-            IntPtr ptr = AllocCoTaskMem(nb + 1);
+            IntPtr ptr = AllocCoTaskMem(checked(nb + 1));
 
             int nbWritten;
             byte* pbMem = (byte*)ptr;
@@ -1203,7 +1203,7 @@ namespace System.Runtime.InteropServices
             {
                 return;
             }
-            Buffer.ZeroMemory((byte*)s, SysStringByteLen(s));
+            NativeMemory.Clear((void*)s, SysStringByteLen(s));
             FreeBSTR(s);
         }
 
@@ -1218,7 +1218,7 @@ namespace System.Runtime.InteropServices
             {
                 return;
             }
-            Buffer.ZeroMemory((byte*)s, (nuint)string.wcslen((char*)s) * sizeof(char));
+            NativeMemory.Clear((void*)s, (nuint)string.wcslen((char*)s) * sizeof(char));
             FreeCoTaskMem(s);
         }
 
@@ -1228,7 +1228,7 @@ namespace System.Runtime.InteropServices
             {
                 return;
             }
-            Buffer.ZeroMemory((byte*)s, (nuint)string.strlen((byte*)s));
+            NativeMemory.Clear((void*)s, (nuint)string.strlen((byte*)s));
             FreeCoTaskMem(s);
         }
 
@@ -1238,7 +1238,7 @@ namespace System.Runtime.InteropServices
             {
                 return;
             }
-            Buffer.ZeroMemory((byte*)s, (nuint)string.strlen((byte*)s));
+            NativeMemory.Clear((void*)s, (nuint)string.strlen((byte*)s));
             FreeHGlobal(s);
         }
 
@@ -1248,7 +1248,7 @@ namespace System.Runtime.InteropServices
             {
                 return;
             }
-            Buffer.ZeroMemory((byte*)s, (nuint)string.wcslen((char*)s) * sizeof(char));
+            NativeMemory.Clear((void*)s, (nuint)string.wcslen((char*)s) * sizeof(char));
             FreeHGlobal(s);
         }
 

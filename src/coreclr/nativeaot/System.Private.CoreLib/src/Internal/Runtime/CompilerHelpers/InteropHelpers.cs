@@ -406,13 +406,8 @@ namespace Internal.Runtime.CompilerHelpers
             // Marshal.AllocCoTaskMem will throw OOMException if out of memory
             Debug.Assert(ptr != null);
 
-            Buffer.ZeroMemory(ptr, (uint)size);
+            NativeMemory.Clear(ptr, (uint)size);
             return ptr;
-        }
-
-        internal static unsafe void CoTaskMemFree(void* p)
-        {
-            Marshal.FreeCoTaskMem((IntPtr)p);
         }
 
         /// <summary>
@@ -662,7 +657,7 @@ namespace Internal.Runtime.CompilerHelpers
         {
             internal static CustomMarshallerTable s_customMarshallersTable = new CustomMarshallerTable();
 
-            protected unsafe override object Factory(CustomMarshallerKey key)
+            protected override unsafe object Factory(CustomMarshallerKey key)
             {
                 return key.GetInstanceMethod(key.Cookie);
             }

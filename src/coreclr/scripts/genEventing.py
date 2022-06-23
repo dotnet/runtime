@@ -275,7 +275,7 @@ def parseTemplateNodes(templateNodes):
         structCounts = {}
         arrays = {}
         templateName    = templateNode.getAttribute('tid')
-        var_Dependecies = {}
+        var_Dependencies = {}
         fnPrototypes    = FunctionSignature()
         dataNodes       = getTopLevelElementsByTagName(templateNode,'data')
 
@@ -318,7 +318,7 @@ def parseTemplateNodes(templateNodes):
             if  wintype == "win:GUID":
                 var_Props = "sizeof(GUID)/sizeof(int)"
 
-            var_Dependecies[variable] = var_dependency
+            var_Dependencies[variable] = var_dependency
             fnparam        = FunctionParameter(wintype,variable,wincount,var_Props)
             fnPrototypes.append(variable,fnparam)
 
@@ -337,11 +337,11 @@ def parseTemplateNodes(templateNodes):
             types = [x.attributes['inType'].value for x in structToBeMarshalled.getElementsByTagName("data")]
 
             structCounts[structName] = countVarName
-            var_Dependecies[structName] = [countVarName, structName]
+            var_Dependencies[structName] = [countVarName, structName]
             fnparam_pointer = FunctionParameter("win:Struct", structName, "win:count", countVarName)
             fnPrototypes.append(structName, fnparam_pointer)
 
-        allTemplates[templateName] = Template(templateName, fnPrototypes, var_Dependecies, structCounts, arrays)
+        allTemplates[templateName] = Template(templateName, fnPrototypes, var_Dependencies, structCounts, arrays)
 
     return allTemplates
 

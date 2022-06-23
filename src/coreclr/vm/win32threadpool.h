@@ -147,7 +147,7 @@ public:
             // VolatileLoad may result in torn read
             Counts result;
 #ifndef DACCESS_COMPILE
-            result.AsLongLong = FastInterlockCompareExchangeLong(&counts.AsLongLong, 0, 0);
+            result.AsLongLong = InterlockedCompareExchange64(&counts.AsLongLong, 0, 0);
             ValidateCounts(result);
 #else
             result.AsLongLong = 0; //prevents prefast warning for DAC builds
@@ -180,7 +180,7 @@ public:
             LIMITED_METHOD_CONTRACT;
             Counts result;
 #ifndef DACCESS_COMPILE
-            result.AsLongLong = FastInterlockCompareExchangeLong(&counts.AsLongLong, newCounts.AsLongLong, oldCounts.AsLongLong);
+            result.AsLongLong = InterlockedCompareExchange64(&counts.AsLongLong, newCounts.AsLongLong, oldCounts.AsLongLong);
             if (result == oldCounts)
             {
                 // can only do validation on success; if we failed, it may have been due to a previous
@@ -699,7 +699,7 @@ public:
 
 	        DWORD dwSwitchCount = 0;
 
-	        while(lock != 0 || FastInterlockExchange( &lock, 1 ) != 0)
+	        while(lock != 0 || InterlockedExchange( &lock, 1 ) != 0)
 	        {
                 YieldProcessorNormalized(); // indicate to the processor that we are spinning
 

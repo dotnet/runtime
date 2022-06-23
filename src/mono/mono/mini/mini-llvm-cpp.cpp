@@ -498,6 +498,25 @@ mono_llvm_add_param_attr (LLVMValueRef param, AttrKind kind)
 }
 
 void
+mono_llvm_add_param_attr_with_type (LLVMValueRef param, AttrKind kind, LLVMTypeRef type)
+{
+	Function *func = unwrap<Argument> (param)->getParent ();
+	int n = unwrap<Argument> (param)->getArgNo ();
+
+	switch (kind) {
+	case LLVM_ATTR_STRUCT_RET:
+#if LLVM_API_VERSION >= 1400
+		func->addParamAttr (n, Attribute::getWithStructRetType (*unwrap (LLVMGetGlobalContext ()), unwrap (type)));
+#else
+		func->addParamAttr (n, convert_attr (kind));
+#endif
+		break;
+	default:
+		g_assert_not_reached ();
+	}
+}
+
+void
 mono_llvm_add_param_byval_attr (LLVMValueRef param, LLVMTypeRef type)
 {
 	Function *func = unwrap<Argument> (param)->getParent ();
@@ -510,6 +529,25 @@ mono_llvm_add_instr_attr (LLVMValueRef val, int index, AttrKind kind)
 {
 #if LLVM_API_VERSION >= 1400
 	unwrap<CallBase> (val)->addParamAttr (index - 1, convert_attr (kind));
+#else
+	unwrap<CallBase> (val)->addAttribute (index, convert_attr (kind));
+#endif
+}
+
+void
+mono_llvm_add_instr_attr_with_type (LLVMValueRef val, int index, AttrKind kind, LLVMTypeRef type)
+{
+#if LLVM_API_VERSION >= 1400
+	Attribute attr;
+
+	switch (kind) {
+	case LLVM_ATTR_STRUCT_RET:
+		attr = Attribute::getWithStructRetType (*unwrap (LLVMGetGlobalContext ()), unwrap (type));
+		unwrap<CallBase> (val)->addParamAttr (index - 1, attr);
+		break;
+	default:
+		g_assert_not_reached ();
+	}
 #else
 	unwrap<CallBase> (val)->addAttribute (index, convert_attr (kind));
 #endif
@@ -757,3 +795,12 @@ mono_llvm_inline_asm (LLVMBuilderRef builder, LLVMTypeRef type,
 #endif
 	return LLVMBuildCall2 (builder, type, asmval, args, num_args, name);
 }
+
+#if LLVM_API_VERSION >= 1400
+LLVMTypeRef
+mono_llvm_get_ptr_type (void)
+{
+	PointerType *t = PointerType::get (*unwrap (LLVMGetGlobalContext ()), 0);
+	return wrap (t);
+}
+#endif

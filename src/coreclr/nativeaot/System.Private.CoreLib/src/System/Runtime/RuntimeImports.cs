@@ -202,6 +202,10 @@ namespace System.Runtime
         internal static unsafe partial void RhAllocateNewObject(IntPtr pEEType, uint flags, void* pResult);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetTotalPauseDuration")]
+        internal static extern long RhGetTotalPauseDuration();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCompareObjectContentsAndPadding")]
         internal static extern bool RhCompareObjectContentsAndPadding(object obj1, object obj2);
 
@@ -281,14 +285,14 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_AreTypesEquivalent")]
-        private static unsafe extern bool AreTypesEquivalent(MethodTable* pType1, MethodTable* pType2);
+        private static extern unsafe bool AreTypesEquivalent(MethodTable* pType1, MethodTable* pType2);
 
         internal static unsafe bool AreTypesEquivalent(EETypePtr pType1, EETypePtr pType2)
             => AreTypesEquivalent(pType1.ToPointer(), pType2.ToPointer());
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_AreTypesAssignable")]
-        private static unsafe extern bool AreTypesAssignable(MethodTable* pSourceType, MethodTable* pTargetType);
+        private static extern unsafe bool AreTypesAssignable(MethodTable* pSourceType, MethodTable* pTargetType);
 
         internal static unsafe bool AreTypesAssignable(EETypePtr pSourceType, EETypePtr pTargetType)
             => AreTypesAssignable(pSourceType.ToPointer(), pTargetType.ToPointer());
@@ -299,18 +303,18 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOf")]
-        private static unsafe extern object IsInstanceOf(MethodTable* pTargetType, object obj);
+        private static extern unsafe object IsInstanceOf(MethodTable* pTargetType, object obj);
 
         internal static unsafe object IsInstanceOf(EETypePtr pTargetType, object obj)
             => IsInstanceOf(pTargetType.ToPointer(), obj);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOfClass")]
-        private  static unsafe extern object IsInstanceOfClass(MethodTable* pTargetType, object obj);
+        private  static extern unsafe object IsInstanceOfClass(MethodTable* pTargetType, object obj);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOfInterface")]
-        internal static unsafe extern object IsInstanceOfInterface(MethodTable* pTargetType, object obj);
+        internal static extern unsafe object IsInstanceOfInterface(MethodTable* pTargetType, object obj);
 
         internal static unsafe object IsInstanceOfInterface(EETypePtr pTargetType, object obj)
             => IsInstanceOfInterface(pTargetType.ToPointer(), obj);
@@ -323,28 +327,28 @@ namespace System.Runtime
         //
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhBoxAny")]
-        private static unsafe extern object RhBoxAny(ref byte pData, MethodTable* pEEType);
+        private static extern unsafe object RhBoxAny(ref byte pData, MethodTable* pEEType);
 
         internal static unsafe object RhBoxAny(ref byte pData, EETypePtr pEEType)
             => RhBoxAny(ref pData, pEEType.ToPointer());
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewObject")]
-        private static unsafe extern object RhNewObject(MethodTable* pEEType);
+        private static extern unsafe object RhNewObject(MethodTable* pEEType);
 
         internal static unsafe object RhNewObject(EETypePtr pEEType)
             => RhNewObject(pEEType.ToPointer());
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewArray")]
-        private static unsafe extern Array RhNewArray(MethodTable* pEEType, int length);
+        private static extern unsafe Array RhNewArray(MethodTable* pEEType, int length);
 
         internal static unsafe Array RhNewArray(EETypePtr pEEType, int length)
             => RhNewArray(pEEType.ToPointer(), length);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewString")]
-        internal static unsafe extern string RhNewString(MethodTable* pEEType, int length);
+        internal static extern unsafe string RhNewString(MethodTable* pEEType, int length);
 
         internal static unsafe string RhNewString(EETypePtr pEEType, int length)
             => RhNewString(pEEType.ToPointer(), length);
@@ -531,19 +535,19 @@ namespace System.Runtime
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetThreadStaticStorageForModule")]
-        internal static unsafe extern object[] RhGetThreadStaticStorageForModule(int moduleIndex);
+        internal static extern unsafe object[] RhGetThreadStaticStorageForModule(int moduleIndex);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhSetThreadStaticStorageForModule")]
-        internal static unsafe extern bool RhSetThreadStaticStorageForModule(object[] storage, int moduleIndex);
+        internal static extern unsafe bool RhSetThreadStaticStorageForModule(object[] storage, int moduleIndex);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCurrentNativeThreadId")]
-        internal static unsafe extern IntPtr RhCurrentNativeThreadId();
+        internal static extern unsafe IntPtr RhCurrentNativeThreadId();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCurrentOSThreadId")]
-        internal static unsafe extern ulong RhCurrentOSThreadId();
+        internal static extern unsafe ulong RhCurrentOSThreadId();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport("*", "RhGetCurrentThunkContext")]

@@ -140,7 +140,7 @@ namespace System.StubHelpers
             // Flags defined in ILFixedCSTRMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit).
             bool throwOnUnmappableChar = 0 != (flags >> 8);
             bool bestFit = 0 != (flags & 0xFF);
-            uint defaultCharUsed = 0;
+            Interop.BOOL defaultCharUsed = Interop.BOOL.FALSE;
 
             int cbWritten;
 
@@ -154,14 +154,14 @@ namespace System.StubHelpers
                     numChars,
                     buffer,
                     length,
-                    IntPtr.Zero,
-                    throwOnUnmappableChar ? new IntPtr(&defaultCharUsed) : IntPtr.Zero);
+                    null,
+                    throwOnUnmappableChar ? &defaultCharUsed : null);
 #else
                 cbWritten = Encoding.UTF8.GetBytes(pwzChar, numChars, buffer, length);
 #endif
             }
 
-            if (defaultCharUsed != 0)
+            if (defaultCharUsed != Interop.BOOL.FALSE)
             {
                 throw new ArgumentException(SR.Interop_Marshal_Unmappable_Char);
             }

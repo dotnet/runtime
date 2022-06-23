@@ -17,7 +17,7 @@ namespace Microsoft.WebAssembly.Diagnostics;
 
 internal sealed class FirefoxMonoProxy : MonoProxy
 {
-    public FirefoxMonoProxy(ILogger logger, string loggerId = null) : base(logger, null, loggerId: loggerId)
+    public FirefoxMonoProxy(ILogger logger, string loggerId = null, ProxyOptions options = null) : base(logger, null, loggerId: loggerId, options: options)
     {
     }
 
@@ -41,7 +41,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
             await browserClient.ConnectAsync("127.0.0.1", portBrowser);
             logger.LogTrace($".. connected to the browser!");
 
-            await StartRunLoop(ideConn, browserConn, cts);
+            await RunLoopAsync(ideConn, browserConn, cts);
             if (Stopped?.reason == RunLoopStopReason.Exception)
                 ExceptionDispatchInfo.Capture(Stopped.exception).Throw();
         }
@@ -64,7 +64,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
         }
         catch (Exception e)
         {
-            side_exception.TrySetException(e);
+            _runLoop.Fail(e);
         }
     }
 
@@ -81,7 +81,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
         catch (Exception e)
         {
             logger.LogError($"OnCommand for id: {id}, {parms} failed: {e}");
-            side_exception.TrySetException(e);
+            _runLoop.Fail(e);
         }
     }
 
@@ -160,10 +160,8 @@ internal sealed class FirefoxMonoProxy : MonoProxy
         }
         catch (Exception ex)
         {
-            // FIXME: using `side_exception` right now because the runloop doesn't
-            // immediately look at all faulted tasks
             logger.LogError(ex.ToString());
-            side_exception.TrySetResult(ex);
+            _runLoop.Fail(ex);
             throw;
         }
     }
@@ -187,7 +185,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
         catch (Exception ex)
         {
             logger.LogError(ex.ToString());
-            side_exception.TrySetResult(ex);
+            _runLoop.Fail(ex);
             throw;
         }
     }
@@ -962,7 +960,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
         if (!SourceId.TryParse(script_id, out SourceId id))
             return false;
 
-        SourceFile src_file = (await LoadStore(msg_id, token)).GetFileById(id);
+        SourceFile src_file = (await LoadStore(msg_id, false, token)).GetFileById(id);
 
         await SendEvent(msg_id, "", JObject.FromObject(new { lines = src_file.BreakableLines.ToArray(), from = script_id }), token);
         return true;
@@ -973,7 +971,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
         if (!SourceId.TryParse(script_id, out SourceId id))
             return false;
 
-        SourceFile src_file = (await LoadStore(msg_id, token)).GetFileById(id);
+        SourceFile src_file = (await LoadStore(msg_id, false, token)).GetFileById(id);
 
         try
         {

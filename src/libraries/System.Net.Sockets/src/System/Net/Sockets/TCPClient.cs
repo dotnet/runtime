@@ -54,7 +54,7 @@ namespace System.Net.Sockets
 
         // Initializes a new instance of the System.Net.Sockets.TcpClient class and connects to the specified port on
         // the specified host.
-        public TcpClient(string hostname, int port)
+        public TcpClient(string hostname, int port) : this(AddressFamily.Unknown)
         {
             ArgumentNullException.ThrowIfNull(hostname);
 
@@ -63,8 +63,6 @@ namespace System.Net.Sockets
             {
                 throw new ArgumentOutOfRangeException(nameof(port));
             }
-
-            _family = AddressFamily.Unknown;
 
             try
             {
@@ -101,6 +99,10 @@ namespace System.Net.Sockets
             {
                 _clientSocket = value;
                 _family = _clientSocket?.AddressFamily ?? AddressFamily.Unknown;
+                if (_clientSocket == null)
+                {
+                    InitializeClientSocket();
+                }
             }
         }
 
@@ -129,87 +131,10 @@ namespace System.Net.Sockets
                 throw new ArgumentOutOfRangeException(nameof(port));
             }
 
-            // Check for already connected and throw here. This check
-            // is not required in the other connect methods as they
-            // will throw from WinSock. Here, the situation is more
-            // complex since we have to resolve a hostname so it's
-            // easier to simply block the request up front.
-            if (_active)
-            {
-                throw new SocketException((int)SocketError.IsConnected);
-            }
+            Client.Connect(hostname, port);
+            _family = Client.AddressFamily;
+            _active = true;
 
-            // IPv6: We need to process each of the addresses returned from
-            //       DNS when trying to connect. Use of AddressList[0] is
-            //       bad form.
-            IPAddress[] addresses = Dns.GetHostAddresses(hostname);
-            ExceptionDispatchInfo? lastex = null;
-
-            try
-            {
-                foreach (IPAddress address in addresses)
-                {
-                    try
-                    {
-                        if (_clientSocket == null)
-                        {
-                            // We came via the <hostname,port> constructor. Set the address family appropriately,
-                            // create the socket and try to connect.
-                            Debug.Assert(address.AddressFamily == AddressFamily.InterNetwork || address.AddressFamily == AddressFamily.InterNetworkV6);
-                            if ((address.AddressFamily == AddressFamily.InterNetwork && Socket.OSSupportsIPv4) || Socket.OSSupportsIPv6)
-                            {
-                                var socket = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-                                if (address.IsIPv4MappedToIPv6)
-                                {
-                                    socket.DualMode = true;
-                                }
-
-                                // Use of Interlocked.Exchanged ensures _clientSocket is written before Disposed is read.
-                                Interlocked.Exchange(ref _clientSocket!, socket);
-                                if (Disposed)
-                                {
-                                    // Dispose the socket so it throws ObjectDisposedException when we Connect.
-                                    socket.Dispose();
-                                }
-
-                                try
-                                {
-                                    socket.Connect(address, port);
-                                }
-                                catch
-                                {
-                                    _clientSocket = null!;
-                                    throw;
-                                }
-                            }
-
-                            _family = address.AddressFamily;
-                            _active = true;
-                            break;
-                        }
-                        else if (address.AddressFamily == _family || _family == AddressFamily.Unknown)
-                        {
-                            // Only use addresses with a matching family
-                            Connect(new IPEndPoint(address, port));
-                            _active = true;
-                            break;
-                        }
-                    }
-                    catch (Exception ex) when (!(ex is OutOfMemoryException))
-                    {
-                        lastex = ExceptionDispatchInfo.Capture(ex);
-                    }
-                }
-            }
-            finally
-            {
-                if (!_active)
-                {
-                    // The connect failed - rethrow the last error we had
-                    lastex?.Throw();
-                    throw new SocketException((int)SocketError.NotConnected);
-                }
-            }
         }
 
         // Connects the Client to the specified port on the specified host.

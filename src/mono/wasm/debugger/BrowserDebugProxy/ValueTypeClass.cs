@@ -68,7 +68,7 @@ namespace BrowserDebugProxy
             JArray fields = new();
             foreach (var field in writableFields)
             {
-                var fieldValue = await sdbAgent.CreateJObjectForVariableValue(cmdReader, field.Name, token, true, field.TypeId, false);
+                var fieldValue = await sdbAgent.ValueCreator.ReadAsVariableValue(cmdReader, field.Name, token, true, field.TypeId, false);
 
                 fieldValue["__section"] = field.Attributes switch
                 {
@@ -114,15 +114,14 @@ namespace BrowserDebugProxy
                 if (displayString != null)
                     description = displayString;
             }
-            return MonoSDBHelper.CreateJObject(
+            return JObjectValueCreator.Create(
                 IsEnum ? fields[0]["value"] : null,
                 "object",
                 description,
-                false,
                 className,
                 Id.ToString(),
-                null, null, true, true,
-                IsEnum);
+                isValueType: true,
+                isEnum: IsEnum);
         }
 
         public async Task<JArray> GetProxy(MonoSDBHelper sdbHelper, CancellationToken token)
@@ -271,7 +270,7 @@ namespace BrowserDebugProxy
                 // isParent:
                 if (i != 0) typeId = getParentsReader.ReadInt32();
 
-                allMembers = await MemberObjectsExplorer.GetNonAutomaticPropertyValues(
+                allMembers = await MemberObjectsExplorer.ExpandPropertyValues(
                     sdbHelper,
                     typeId,
                     className,

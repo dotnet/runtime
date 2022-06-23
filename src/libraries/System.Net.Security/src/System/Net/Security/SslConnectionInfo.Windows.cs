@@ -17,7 +17,20 @@ namespace System.Net.Security
                 alpnContext.ProtoNegoExt == Interop.ApplicationProtocolNegotiationExt.ALPN &&
                 alpnContext.ProtoNegoStatus == Interop.ApplicationProtocolNegotiationStatus.Success)
             {
-                return alpnContext.Protocol;
+                if (alpnContext.Protocol.SequenceEqual(s_http1))
+                {
+                    return s_http1;
+                }
+                else if (alpnContext.Protocol.SequenceEqual(s_http2))
+                {
+                    return s_http2;
+                }
+                else if (alpnContext.Protocol.SequenceEqual(s_http3))
+                {
+                    return s_http3;
+                }
+
+                return alpnContext.Protocol.ToArray();
             }
 
             return null;

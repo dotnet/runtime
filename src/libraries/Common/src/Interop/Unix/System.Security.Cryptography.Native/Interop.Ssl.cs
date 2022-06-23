@@ -20,9 +20,6 @@ internal static partial class Interop
         internal const int SSL_TLSEXT_ERR_ALERT_FATAL = 2;
         internal const int SSL_TLSEXT_ERR_NOACK = 3;
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EnsureLibSslInitialized")]
-        internal static partial void EnsureLibSslInitialized();
-
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslV2_3Method")]
         internal static partial IntPtr SslV2_3Method();
 
@@ -66,18 +63,16 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGet0AlpnSelected")]
         internal static partial void SslGetAlpnSelected(SafeSslHandle ssl, out IntPtr protocol, out int len);
 
-        internal static byte[]? SslGetAlpnSelected(SafeSslHandle ssl)
+        internal static unsafe ReadOnlySpan<byte> SslGetAlpnSelected(SafeSslHandle ssl)
         {
             IntPtr protocol;
             int len;
             SslGetAlpnSelected(ssl, out protocol, out len);
 
             if (len == 0)
-                return null;
+                return ReadOnlySpan<byte>.Empty;
 
-            byte[] result = new byte[len];
-            Marshal.Copy(protocol, result, 0, len);
-            return result;
+            return new ReadOnlySpan<byte>((void*)protocol, len);
         }
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslWrite", SetLastError = true)]
@@ -250,6 +245,19 @@ internal static partial class Interop
             fixed (IntPtr* pHandles = &MemoryMarshal.GetReference(x509handles))
             {
                 return SslAddClientCAs(ssl, pHandles, x509handles.Length);
+            }
+        }
+
+        [LibraryImport(Libraries.CryptoNative)]
+        private static unsafe partial void CryptoNative_SslStapleOcsp(SafeSslHandle ssl, byte* buf, int len);
+
+        internal static unsafe void SslStapleOcsp(SafeSslHandle ssl, ReadOnlySpan<byte> stapledResponse)
+        {
+            Debug.Assert(stapledResponse.Length > 0);
+
+            fixed (byte* ptr = stapledResponse)
+            {
+                CryptoNative_SslStapleOcsp(ssl, ptr, stapledResponse.Length);
             }
         }
 

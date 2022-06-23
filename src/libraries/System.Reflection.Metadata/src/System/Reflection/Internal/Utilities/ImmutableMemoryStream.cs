@@ -72,6 +72,18 @@ namespace System.Reflection.Internal
             return result;
         }
 
+#if NETCOREAPP
+        // Duplicate the Read(byte[]) logic here instead of refactoring both to use Spans
+        // so we don't affect perf on .NET Framework.
+        public override int Read(Span<byte> buffer)
+        {
+            int result = Math.Min(buffer.Length, _array.Length - _position);
+            _array.AsSpan(_position, result).CopyTo(buffer);
+            _position += result;
+            return result;
+        }
+#endif
+
         public override long Seek(long offset, SeekOrigin origin)
         {
             long target;

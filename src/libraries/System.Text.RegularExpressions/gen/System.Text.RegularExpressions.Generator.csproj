@@ -15,7 +15,6 @@
   <ItemGroup>
     <!-- This generator ships as part of the .NET ref pack. Since VS ingests new Roslyn versions at a different cadence than the .NET SDK, we are pinning this generator to build against Roslyn 4.0 to ensure that we don't break users who are using .NET 7 previews in VS. -->
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion_4_0)" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

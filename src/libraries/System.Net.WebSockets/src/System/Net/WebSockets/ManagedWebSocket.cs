@@ -620,7 +620,7 @@ namespace System.Net.WebSockets
                 for (int i = 9; i >= 2; i--)
                 {
                     sendBuffer[i] = unchecked((byte)length);
-                    length = length / 256;
+                    length /= 256;
                 }
                 maskOffset = 2 + sizeof(ulong); // additional 8 bytes for 64-bit length
             }
@@ -779,16 +779,18 @@ namespace System.Net.WebSockets
                                 totalBytesReceived += receiveBufferBytesToCopy;
                             }
 
-                            while (totalBytesReceived < limit)
+                            if (totalBytesReceived < limit)
                             {
-                                int numBytesRead = await _stream.ReadAsync(header.Compressed ?
-                                        _inflater!.Memory.Slice(totalBytesReceived, limit - totalBytesReceived) :
-                                        payloadBuffer.Slice(totalBytesReceived, limit - totalBytesReceived),
-                                    cancellationToken).ConfigureAwait(false);
-                                if (numBytesRead <= 0)
+                                int bytesToRead = limit - totalBytesReceived;
+                                Memory<byte> readBuffer = header.Compressed ?
+                                    _inflater!.Memory.Slice(totalBytesReceived, bytesToRead) :
+                                    payloadBuffer.Slice(totalBytesReceived, bytesToRead);
+
+                                int numBytesRead = await _stream.ReadAtLeastAsync(
+                                    readBuffer, bytesToRead, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+                                if (numBytesRead < bytesToRead)
                                 {
                                     ThrowEOFUnexpected();
-                                    break;
                                 }
                                 totalBytesReceived += numBytesRead;
                             }
@@ -1359,16 +1361,17 @@ namespace System.Net.WebSockets
                 _receiveBufferOffset = 0;
 
                 // While we don't have enough data, read more.
-                while (_receiveBufferCount < minimumRequiredBytes)
+                if (_receiveBufferCount < minimumRequiredBytes)
                 {
-                    int numRead = await _stream.ReadAsync(_receiveBuffer.Slice(_receiveBufferCount), cancellationToken).ConfigureAwait(false);
-                    Debug.Assert(numRead >= 0, $"Expected non-negative bytes read, got {numRead}");
-                    if (numRead <= 0)
+                    int bytesToRead = minimumRequiredBytes - _receiveBufferCount;
+                    int numRead = await _stream.ReadAtLeastAsync(
+                        _receiveBuffer.Slice(_receiveBufferCount), bytesToRead, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+                    _receiveBufferCount += numRead;
+
+                    if (numRead < bytesToRead)
                     {
                         ThrowEOFUnexpected();
-                        break;
                     }
-                    _receiveBufferCount += numRead;
                 }
             }
         }

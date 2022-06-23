@@ -12,13 +12,14 @@ class NativeImage;
 class Assembly;
 class Module;
 class AssemblyLoaderAllocator;
+class AssemblySpec;
 
 class AssemblyBinder
 {
 public:
 
     HRESULT BindAssemblyByName(AssemblyNameData* pAssemblyNameData, BINDER_SPACE::Assembly** ppAssembly);
-    virtual HRESULT BindUsingPEImage(PEImage* pPEImage, BINDER_SPACE::Assembly** ppAssembly) = 0;
+    virtual HRESULT BindUsingPEImage(PEImage* pPEImage, bool excludeAppPaths, BINDER_SPACE::Assembly** ppAssembly) = 0;
     virtual HRESULT BindUsingAssemblyName(BINDER_SPACE::AssemblyName* pAssemblyName, BINDER_SPACE::Assembly** ppAssembly) = 0;
 
     /// <summary>
@@ -48,6 +49,11 @@ public:
 
     NativeImage* LoadNativeImage(Module* componentModule, LPCUTF8 nativeImageName);
     void AddLoadedAssembly(Assembly* loadedAssembly);
+
+    void GetNameForDiagnostics(/*out*/ SString& alcName);
+
+    static void GetNameForDiagnosticsFromManagedALC(INT_PTR managedALC, /* out */ SString& alcName);
+    static void GetNameForDiagnosticsFromSpec(AssemblySpec* spec, /*out*/ SString& alcName);
 
 private:
     BINDER_SPACE::ApplicationContext m_appContext;

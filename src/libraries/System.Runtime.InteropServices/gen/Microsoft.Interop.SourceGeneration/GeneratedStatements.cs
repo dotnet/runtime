@@ -18,9 +18,10 @@ namespace Microsoft.Interop
         public ImmutableArray<StatementSyntax> Setup { get; init; }
         public ImmutableArray<StatementSyntax> Marshal { get; init; }
         public ImmutableArray<FixedStatementSyntax> Pin { get; init; }
+        public ImmutableArray<StatementSyntax> PinnedMarshal { get; init; }
         public StatementSyntax InvokeStatement { get; init; }
         public ImmutableArray<StatementSyntax> Unmarshal { get; init; }
-        public ImmutableArray<StatementSyntax> KeepAlive { get; init; }
+        public ImmutableArray<StatementSyntax> NotifyForSuccessfulInvoke { get; init; }
         public ImmutableArray<StatementSyntax> GuaranteedUnmarshal { get; init; }
         public ImmutableArray<StatementSyntax> Cleanup { get; init; }
 
@@ -31,9 +32,11 @@ namespace Microsoft.Interop
                 Setup = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.Setup }),
                 Marshal = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.Marshal }),
                 Pin = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.Pin }).Cast<FixedStatementSyntax>().ToImmutableArray(),
+                PinnedMarshal = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.PinnedMarshal }),
                 InvokeStatement = GenerateStatementForNativeInvoke(marshallers, context with { CurrentStage = StubCodeContext.Stage.Invoke }, expressionToInvoke),
-                Unmarshal = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.Unmarshal }),
-                KeepAlive = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.KeepAlive }),
+                Unmarshal = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.UnmarshalCapture })
+                            .AddRange(GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.Unmarshal })),
+                NotifyForSuccessfulInvoke = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.NotifyForSuccessfulInvoke }),
                 GuaranteedUnmarshal = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.GuaranteedUnmarshal }),
                 Cleanup = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.Cleanup }),
             };
@@ -48,7 +51,7 @@ namespace Microsoft.Interop
                 statementsToUpdate.AddRange(retStatements);
             }
 
-            if (context.CurrentStage is StubCodeContext.Stage.Unmarshal or StubCodeContext.Stage.GuaranteedUnmarshal)
+            if (context.CurrentStage is StubCodeContext.Stage.UnmarshalCapture or StubCodeContext.Stage.Unmarshal or StubCodeContext.Stage.GuaranteedUnmarshal)
             {
                 // For Unmarshal and GuaranteedUnmarshal stages, use the topologically sorted
                 // marshaller list to generate the marshalling statements
@@ -71,10 +74,7 @@ namespace Microsoft.Interop
             if (statementsToUpdate.Count > 0)
             {
                 // Comment separating each stage
-                SyntaxTriviaList newLeadingTrivia = TriviaList(
-                    Comment($"//"),
-                    Comment($"// {context.CurrentStage}"),
-                    Comment($"//"));
+                SyntaxTriviaList newLeadingTrivia = GenerateStageTrivia(context.CurrentStage);
                 StatementSyntax firstStatementInStage = statementsToUpdate[0];
                 newLeadingTrivia = newLeadingTrivia.AddRange(firstStatementInStage.GetLeadingTrivia());
                 statementsToUpdate[0] = firstStatementInStage.WithLeadingTrivia(newLeadingTrivia);
@@ -107,6 +107,27 @@ namespace Microsoft.Interop
                         SyntaxKind.SimpleAssignmentExpression,
                         IdentifierName(context.GetIdentifiers(marshallers.NativeReturnMarshaller.TypeInfo).native),
                         invoke));
+        }
+
+        private static SyntaxTriviaList GenerateStageTrivia(StubCodeContext.Stage stage)
+        {
+            string comment = stage switch
+            {
+                StubCodeContext.Stage.Setup => "Perform required setup.",
+                StubCodeContext.Stage.Marshal => "Convert managed data to native data.",
+                StubCodeContext.Stage.Pin => "Pin data in preparation for calling the P/Invoke.",
+                StubCodeContext.Stage.PinnedMarshal => "Convert managed data to native data that requires the managed data to be pinned.",
+                StubCodeContext.Stage.Invoke => "Call the P/Invoke.",
+                StubCodeContext.Stage.UnmarshalCapture => "Capture the native data into marshaller instances in case conversion to managed data throws an exception.",
+                StubCodeContext.Stage.Unmarshal => "Convert native data to managed data.",
+                StubCodeContext.Stage.Cleanup => "Perform required cleanup.",
+                StubCodeContext.Stage.NotifyForSuccessfulInvoke => "Keep alive any managed objects that need to stay alive across the call.",
+                StubCodeContext.Stage.GuaranteedUnmarshal => "Convert native data to managed data even in the case of an exception during the non-cleanup phases.",
+                _ => throw new ArgumentOutOfRangeException(nameof(stage))
+            };
+
+            // Comment separating each stage
+            return TriviaList(Comment($"// {stage} - {comment}"));
         }
     }
 }

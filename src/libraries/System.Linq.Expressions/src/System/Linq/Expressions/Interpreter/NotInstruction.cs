@@ -171,15 +171,15 @@ namespace System.Linq.Expressions.Interpreter
         public static Instruction Create(Type type) =>
             type.GetNonNullableType().GetTypeCode() switch
             {
-                TypeCode.Boolean => s_Boolean ?? (s_Boolean = new NotBoolean()),
-                TypeCode.Int64 => s_Int64 ?? (s_Int64 = new NotInt64()),
-                TypeCode.Int32 => s_Int32 ?? (s_Int32 = new NotInt32()),
-                TypeCode.Int16 => s_Int16 ?? (s_Int16 = new NotInt16()),
-                TypeCode.UInt64 => s_UInt64 ?? (s_UInt64 = new NotUInt64()),
-                TypeCode.UInt32 => s_UInt32 ?? (s_UInt32 = new NotUInt32()),
-                TypeCode.UInt16 => s_UInt16 ?? (s_UInt16 = new NotUInt16()),
-                TypeCode.Byte => s_Byte ?? (s_Byte = new NotByte()),
-                TypeCode.SByte => s_SByte ?? (s_SByte = new NotSByte()),
+                TypeCode.Boolean => s_Boolean ??= new NotBoolean(),
+                TypeCode.Int64 => s_Int64 ??= new NotInt64(),
+                TypeCode.Int32 => s_Int32 ??= new NotInt32(),
+                TypeCode.Int16 => s_Int16 ??= new NotInt16(),
+                TypeCode.UInt64 => s_UInt64 ??= new NotUInt64(),
+                TypeCode.UInt32 => s_UInt32 ??= new NotUInt32(),
+                TypeCode.UInt16 => s_UInt16 ??= new NotUInt16(),
+                TypeCode.Byte => s_Byte ??= new NotByte(),
+                TypeCode.SByte => s_SByte ??= new NotSByte(),
                 _ => throw ContractUtils.Unreachable,
             };
     }
