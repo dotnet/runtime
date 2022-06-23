@@ -235,38 +235,29 @@ namespace DependencyLogViewer
             {
                 while (reader.Read())
                 {
-                    if (!(reader.Name.StartsWith("P"))) // skips over 'properties' in the .dgml file
-                    {
-                        IXmlLineInfo lineInfo = (IXmlLineInfo)reader;
-                        int lineNumber = lineInfo.LineNumber;
-                        switch (reader.NodeType)
-                        // fileID is the PID for the system, increments down with the number of files being read.
-                        // There is the same PID and ID because each process will only have one graph, this is why the first two args are the same for each of the functions below.
-                        {
-                            case XmlNodeType.Element:
-                                if (reader.Name == "Node")
-                                {
-                                    int id = int.Parse(reader.GetAttribute("Id"));
-                                    collection.AddNodeToGraph(FileID, FileID, id, reader.GetAttribute("Label"), g);
-                                }
-                                else if (reader.Name == "Link")
-                                {
-                                    int source = int.Parse(reader.GetAttribute("Source"));
-                                    int target = int.Parse(reader.GetAttribute("Target"));
-                                    collection.AddEdgeToGraph(FileID, FileID, source, target, reader.GetAttribute("Reason"), g);
-                                }
-                                else if (reader.Name == "DirectedGraph")
-                                {
-                                    g.ID = FileID;
-                                    g.PID = FileID;
-                                    g.Name = fileContents.Name;
+                    if ((reader.Name == "Property" || reader.Name == "Properties"))
+                        continue;
 
-                                    break;
-                                }
-                                break;
-                            default:
-                                break;
-                        }
+                    if (reader.NodeType != XmlNodeType.Element)
+                        continue;
+                    // fileID is the PID for the system, increments down with the number of files being read.
+                    // There is the same PID and ID because each process will only have one graph, this is why the first two args are the same for each of the functions below.
+                    switch (reader.Name)
+                    {
+                        case "Node":
+                            int id = int.Parse(reader.GetAttribute("Id"));
+                            collection.AddNodeToGraph(FileID, FileID, id, reader.GetAttribute("Label"), g);
+                            break;
+                        case "Link":
+                            int source = int.Parse(reader.GetAttribute("Source"));
+                            int target = int.Parse(reader.GetAttribute("Target"));
+                            collection.AddEdgeToGraph(FileID, FileID, source, target, reader.GetAttribute("Reason"), g);
+                            break;
+                        case "DirectedGraph":
+                            g.ID = FileID;
+                            g.PID = FileID;
+                            g.Name = fileContents.Name;
+                            break;
                     }
                 }
             }

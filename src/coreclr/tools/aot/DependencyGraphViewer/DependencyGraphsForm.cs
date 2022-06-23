@@ -114,7 +114,6 @@ Once the interesting node(s) have been identified in the dependency graph window
             if (dgml.FindXML(argPath))
             {
                 _fileCount -= 1;
-
             }
         }
 
