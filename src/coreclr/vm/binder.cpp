@@ -407,7 +407,7 @@ void CoreLibBinder::BuildConvertedSignature(const BYTE* pSig, SigBuilder * pSigB
     }
     else {
         if ((callConv & IMAGE_CEE_CS_CALLCONV_MASK) != IMAGE_CEE_CS_CALLCONV_FIELD)
-            THROW_BAD_FORMAT(BFA_BAD_SIGNATURE, (ModuleBase*)NULL);
+            THROW_BAD_FORMAT(BFA_BAD_SIGNATURE, (Module*)NULL);
         argCount = 0;
     }
 

@@ -20,12 +20,11 @@
 using namespace NativeFormat;
 
 ReadyToRunCoreInfo::ReadyToRunCoreInfo()
-    : m_fForbidLoadILBodyFixups(false)
 {
 }
 
 ReadyToRunCoreInfo::ReadyToRunCoreInfo(PEImageLayout* pLayout, READYTORUN_CORE_HEADER *pCoreHeader)
-    : m_pLayout(pLayout), m_pCoreHeader(pCoreHeader), m_fForbidLoadILBodyFixups(false)
+    : m_pLayout(pLayout), m_pCoreHeader(pCoreHeader)
 {
 }
 
@@ -627,7 +626,6 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         m_pComposite = m_pCompositeInfo->GetComponentInfo();
         m_component = ReadyToRunCoreInfo(m_pComposite->GetLayout(), pNativeImage->GetComponentAssemblyHeader(pModule->GetSimpleName()));
         m_isComponentAssembly = true;
-        m_pNativeManifestModule = pNativeImage->GetReadyToRunInfo()->GetNativeManifestModule();
     }
     else
     {
@@ -635,23 +633,6 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         m_component = ReadyToRunCoreInfo(pLayout, &pHeader->CoreHeader);
         m_pComposite = &m_component;
         m_isComponentAssembly = false;
-        IMDInternalImport *pNativeMDImport;
-        IMAGE_DATA_DIRECTORY * pNativeMetadataSection = m_pComposite->FindSection(ReadyToRunSectionType::ManifestMetadata);
-        if (pNativeMetadataSection != NULL)
-        {
-            pNativeMDImport = NULL;
-            IfFailThrow(GetMetaDataInternalInterface((void *) m_pComposite->GetLayout()->GetDirectoryData(pNativeMetadataSection),
-                                                        pNativeMetadataSection->Size,
-                                                        ofRead,
-                                                        IID_IMDInternalImport,
-                                                        (void **) &pNativeMDImport));
-        }
-        else
-        {
-            pNativeMDImport = NULL;
-        }
-
-        m_pNativeManifestModule = CreateNativeManifestModule(pLoaderAllocator, pNativeMDImport, pamTracker);
     }
 
     IMAGE_DATA_DIRECTORY * pRuntimeFunctionsDir = m_pComposite->FindSection(ReadyToRunSectionType::RuntimeFunctions);
@@ -725,17 +706,6 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         m_entryPointToMethodDescMap.Init(TRUE, &lock);
     }
 
-    if (IsImageVersionAtLeast(6, 3))
-    {
-        IMAGE_DATA_DIRECTORY* pCrossModuleInlineTrackingInfoDir = m_pComposite->FindSection(ReadyToRunSectionType::CrossModuleInlineInfo);
-        if (pCrossModuleInlineTrackingInfoDir != NULL)
-        {
-            const BYTE* pCrossModuleInlineTrackingMapData = (const BYTE*)m_pComposite->GetImage()->GetDirectoryData(pCrossModuleInlineTrackingInfoDir);
-            CrossModulePersistentInlineTrackingMapR2R::TryLoad(pModule, pLoaderAllocator, pCrossModuleInlineTrackingMapData, pCrossModuleInlineTrackingInfoDir->Size,
-                pamTracker, (CrossModulePersistentInlineTrackingMapR2R**)&m_pCrossModulePersistentInlineTrackingMap);
-        }
-    }
-
     // For format version 4.1 and later, there is an optional inlining table
     if (IsImageVersionAtLeast(4, 1))
     {
@@ -774,27 +744,15 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     }
 }
 
-static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, ModuleBase * pModule)
+static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, Module * pModule)
 {
     STANDARD_VM_CONTRACT;
 
-    ModuleBase *pOrigModule = pModule;
     ZapSig::Context    zapSigContext(pModule, (void *)pModule, ZapSig::NormalTokens);
     ZapSig::Context *  pZapSigContext = &zapSigContext;
 
     uint32_t methodFlags;
     IfFailThrow(sig.GetData(&methodFlags));
-
-    _ASSERTE((methodFlags & ENCODE_METHOD_SIG_SlotInsteadOfToken) == 0);
-    _ASSERTE(((methodFlags & (ENCODE_METHOD_SIG_MemberRefToken | ENCODE_METHOD_SIG_UpdateContext)) == 0) ||
-             ((methodFlags & (ENCODE_METHOD_SIG_MemberRefToken | ENCODE_METHOD_SIG_UpdateContext)) == (ENCODE_METHOD_SIG_MemberRefToken | ENCODE_METHOD_SIG_UpdateContext)));
-
-    if ( methodFlags & ENCODE_METHOD_SIG_UpdateContext)
-    {
-        uint32_t updatedModuleIndex;
-        IfFailThrow(sig.GetData(&updatedModuleIndex));
-        pModule = pZapSigContext->GetZapSigModule()->GetModuleFromIndex(updatedModuleIndex);
-    }
 
     if (methodFlags & ENCODE_METHOD_SIG_OwnerType)
     {
@@ -807,42 +765,11 @@ static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, ModuleBase * 
         IfFailThrow(sig.SkipExactlyOne());
     }
 
+    _ASSERTE((methodFlags & ENCODE_METHOD_SIG_SlotInsteadOfToken) == 0);
+    _ASSERTE((methodFlags & ENCODE_METHOD_SIG_MemberRefToken) == 0);
+
     RID rid;
     IfFailThrow(sig.GetData(&rid));
-
-    if ((methodFlags & ENCODE_METHOD_SIG_MemberRefToken) != 0)
-    {
-        // member referenced via Manifest data
-        // But we've already verified that the owner type is defined, so we can assume the type from the passed in methoddesc
-        IMDInternalImport * pInternalImport = pModule->GetMDImport();
-
-        LPCUTF8     szMember;
-        PCCOR_SIGNATURE pSig;
-        DWORD       cSig;
-
-        IfFailThrow(pInternalImport->GetNameAndSigOfMemberRef(TokenFromRid(rid, mdtMemberRef), &pSig, &cSig, &szMember));
-
-        _ASSERTE(!isCallConv(MetaSig::GetCallingConvention(Signature(pSig, cSig)), IMAGE_CEE_CS_CALLCONV_FIELD));
-
-        if (strcmp(szMember, pMD->GetName()) != 0)
-        {
-            // Name doesn't match
-            return false;
-        }
-
-        PCCOR_SIGNATURE pTargetMethodSig;
-        DWORD       cTargetMethodSig;
-
-        pMD->GetSig(&pTargetMethodSig, &cTargetMethodSig);
-        if (!MetaSig::CompareMethodSigs(pSig, cSig, pModule, NULL, pTargetMethodSig, cTargetMethodSig, pMD->GetModule(), NULL, FALSE))
-        {
-            // Sig doesn't match
-            return false;
-        }
-
-        rid = RidFromToken(pMD->GetMemberDef());
-    }
-
     if (RidFromToken(pMD->GetMemberDef()) != rid)
         return false;
 
@@ -859,7 +786,7 @@ static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, ModuleBase * 
             PCCOR_SIGNATURE pSigArg;
             uint32_t cbSigArg;
             sig.GetSignature(&pSigArg, &cbSigArg);
-            if (!ZapSig::CompareSignatureToTypeHandle(pSigArg, pOrigModule, inst[i], pZapSigContext))
+            if (!ZapSig::CompareSignatureToTypeHandle(pSigArg, pModule, inst[i], pZapSigContext))
                 return false;
 
             IfFailThrow(sig.SkipExactlyOne());
@@ -935,16 +862,10 @@ bool ReadyToRunInfo::GetPgoInstrumentationData(MethodDesc * pMD, BYTE** pAllocat
     return false;
 }
 
+
 PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups)
 {
     STANDARD_VM_CONTRACT;
-#ifdef LOG_R2R_ENTRYPOINT
-    SString tNamespace, tMethodName, tMethodSignature;
-    SString tFullname;
-    StackScratchBuffer scratch;
-    const char* szFullName = "";
-    bool printedStart = false;
-#endif
 
     PCODE pEntryPoint = NULL;
 #ifdef PROFILING_SUPPORTED
@@ -954,6 +875,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     int rid = RidFromToken(token);
     if (rid == 0)
         goto done;
+
     // If R2R code is disabled for this module, simply behave as if it is never found
     if (ReadyToRunCodeDisabled())
         goto done;
@@ -1086,16 +1008,6 @@ void ReadyToRunInfo::MethodIterator::ParseGenericMethodSignatureAndRid(uint *pOf
         return;
     }
 
-    _ASSERTE((methodFlags & ENCODE_METHOD_SIG_SlotInsteadOfToken) == 0);
-    _ASSERTE(((methodFlags & (ENCODE_METHOD_SIG_MemberRefToken | ENCODE_METHOD_SIG_UpdateContext)) == 0) ||
-             ((methodFlags & (ENCODE_METHOD_SIG_MemberRefToken | ENCODE_METHOD_SIG_UpdateContext)) == (ENCODE_METHOD_SIG_MemberRefToken | ENCODE_METHOD_SIG_UpdateContext)));
-
-    if ( methodFlags & ENCODE_METHOD_SIG_UpdateContext)
-    {
-        uint32_t updatedModuleIndex;
-        IfFailThrow(sig.GetData(&updatedModuleIndex));
-    }
-
     if (methodFlags & ENCODE_METHOD_SIG_OwnerType)
     {
         hr = sig.SkipExactlyOne();
@@ -1104,6 +1016,9 @@ void ReadyToRunInfo::MethodIterator::ParseGenericMethodSignatureAndRid(uint *pOf
             return;
         }
     }
+
+    _ASSERTE((methodFlags & ENCODE_METHOD_SIG_SlotInsteadOfToken) == 0);
+    _ASSERTE((methodFlags & ENCODE_METHOD_SIG_MemberRefToken) == 0);
 
     hr = sig.GetData(pRid);
     if (FAILED(hr))
@@ -1309,149 +1224,6 @@ bool ReadyToRunInfo::MayHaveCustomAttribute(WellKnownAttribute attribute, mdToke
 void ReadyToRunInfo::DisableCustomAttributeFilter()
 {
     m_attributesPresence.DisableFilter();
-}
-
-class NativeManifestModule : public ModuleBase
-{
-    IMDInternalImport* m_pMDImport;
-
-    // Mapping of ModuleRef token to Module *
-    LookupMap<PTR_Module>           m_ModuleReferencesMap;
-public:
-
-    NativeManifestModule(LoaderAllocator* pLoaderAllocator, IMDInternalImport *pManifestMetadata, AllocMemTracker *pamTracker)
-    {
-        m_loaderAllocator = pLoaderAllocator;
-        m_pMDImport = pManifestMetadata;
-        m_LookupTableCrst.Init(CrstModuleLookupTable, CrstFlags(CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD));
-        {
-            // Get the number of AssemblyReferences in the map
-            m_ManifestModuleReferencesMap.dwCount = pManifestMetadata->GetCountWithTokenKind(mdtAssemblyRef)+1;
-
-            // Get # ModuleRefs
-            m_ModuleReferencesMap.dwCount = pManifestMetadata->GetCountWithTokenKind(mdtModuleRef)+1;
-
-            // Get # TypeRefs
-            m_TypeRefToMethodTableMap.dwCount = pManifestMetadata->GetCountWithTokenKind(mdtTypeRef)+1;
-
-            // Get # of MemberRefs
-            m_MemberRefMap.dwCount = pManifestMetadata->GetCountWithTokenKind(mdtMemberRef)+1;
-
-            S_SIZE_T nTotal;
-            nTotal += m_ManifestModuleReferencesMap.dwCount;
-            nTotal += m_ModuleReferencesMap.dwCount;
-            nTotal += m_TypeRefToMethodTableMap.dwCount;
-            nTotal += m_MemberRefMap.dwCount;
-            PTR_TADDR pTable = (PTR_TADDR)pamTracker->Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(nTotal * S_SIZE_T(sizeof(TADDR))));
-
-            // Note: Memory allocated on loader heap is zero filled
-            // memset(pTable, 0, nTotal * sizeof(void*));
-
-            m_ManifestModuleReferencesMap.pNext  = NULL;
-            m_ManifestModuleReferencesMap.supportedFlags = MANIFEST_MODULE_MAP_ALL_FLAGS;
-            m_ManifestModuleReferencesMap.pTable = pTable;
-
-            m_ModuleReferencesMap.pNext  = NULL;
-            m_ModuleReferencesMap.supportedFlags = NO_MAP_FLAGS;
-            m_ModuleReferencesMap.pTable = &m_ManifestModuleReferencesMap.pTable[m_ManifestModuleReferencesMap.dwCount];
-
-            m_TypeRefToMethodTableMap.pNext  = NULL;
-            m_TypeRefToMethodTableMap.supportedFlags = TYPE_REF_MAP_ALL_FLAGS;
-            m_TypeRefToMethodTableMap.pTable = &m_ModuleReferencesMap.pTable[m_ModuleReferencesMap.dwCount];
-
-            m_MemberRefMap.pNext = NULL;
-            m_MemberRefMap.supportedFlags = MEMBER_REF_MAP_ALL_FLAGS;
-            m_MemberRefMap.pTable = &m_TypeRefToMethodTableMap.pTable[m_TypeRefToMethodTableMap.dwCount];
-        }
-    }
-
-    IMDInternalImport *GetMDImport() const final
-    {
-        return m_pMDImport;
-    }
-
-    PTR_Module LookupModule(mdToken kFile) final
-    {
-        return GetModuleIfLoaded(kFile);
-    }
-
-    DomainAssembly * LoadAssemblyImpl(mdAssemblyRef kAssemblyRef) final
-    {
-        STANDARD_VM_CONTRACT;
-        // Since we can only load via ModuleRef, this should never fail unless the module is improperly formatted
-        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
-    }
-
-    Module *GetModuleIfLoaded(mdFile kFile) final
-    {
-        CONTRACT(Module *)
-        {
-            INSTANCE_CHECK;
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-            PRECONDITION(TypeFromToken(kFile) == mdtFile
-                        || TypeFromToken(kFile) == mdtModuleRef);
-            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-            FORBID_FAULT;
-            SUPPORTS_DAC;
-        }
-        CONTRACT_END;
-
-        // Native manifest module functionality isn't actually multi-module assemblies, and File tokens are not useable
-        if (TypeFromToken(kFile) == mdtFile)
-            return NULL;
-
-        _ASSERTE(TypeFromToken(kFile) == mdtModuleRef);
-        Module* module = m_ModuleReferencesMap.GetElement(RidFromToken(kFile));
-        if (module != NULL)
-            RETURN module;
-
-        LPCSTR moduleName;
-        if (FAILED(GetMDImport()->GetModuleRefProps(kFile, &moduleName)))
-        {
-            RETURN NULL;
-        }
-
-        if (strcmp(moduleName, "System.Private.CoreLib") == 0)
-        {
-            // Special handling for CoreLib
-            module = SystemDomain::SystemModule();
-#ifndef DACCESS_COMPILE
-            m_ModuleReferencesMap.TrySetElement(RidFromToken(kFile), module);
-#endif
-            RETURN module;
-        }
-
-        RETURN NULL;
-    }
-
-    DomainAssembly *LoadModule(mdFile kFile) final
-    {
-        Module* module = GetModuleIfLoaded(kFile);
-        if (module == NULL)
-        {
-            // Since we can only load via ModuleRef, this should never fail unless the module is improperly formatted
-            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
-        }
-
-        return module->GetDomainAssembly();
-    }
-
-    virtual void DECLSPEC_NORETURN ThrowTypeLoadExceptionImpl(IMDInternalImport *pInternalImport,
-                                                  mdToken token,
-                                                  UINT resIDWhy)
-    {
-        STANDARD_VM_CONTRACT;
-        // This should never fail
-        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
-    }
-};
-
-ModuleBase* CreateNativeManifestModule(LoaderAllocator* pLoaderAllocator, IMDInternalImport *pManifestMetadata, AllocMemTracker *pamTracker)
-{
-    void *mem = pamTracker->Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(NativeManifestModule))));
-    return new (mem) NativeManifestModule(pLoaderAllocator, pManifestMetadata, pamTracker);
 }
 
 #endif // DACCESS_COMPILE

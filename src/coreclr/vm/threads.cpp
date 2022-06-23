@@ -8352,6 +8352,23 @@ void Thread::InitializeSpecialUserModeApc()
 }
 
 #endif // FEATURE_SPECIAL_USER_MODE_APC
+
+#if !(defined(TARGET_WINDOWS) && defined(TARGET_X86))
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+EXTERN_C void STDCALL ClrRestoreNonvolatileContextWorker(PCONTEXT ContextRecord, DWORD64 ssp);
+#endif
+
+void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord)
+{
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    DWORD64 ssp = GetSSP(ContextRecord);
+    ClrRestoreNonvolatileContextWorker(ContextRecord, ssp);
+#else
+    // Falling back to RtlRestoreContext() for now, though it should be possible to have simpler variants for these cases
+    RtlRestoreContext(ContextRecord, NULL);
+#endif
+}
+#endif // !(TARGET_WINDOWS && TARGET_X86)
 #endif // #ifndef DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE

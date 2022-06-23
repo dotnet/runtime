@@ -102,6 +102,8 @@ PEImage::~PEImage()
 
     if (m_pMDImport)
         m_pMDImport->Release();
+    if(m_pNativeMDImport)
+        m_pNativeMDImport->Release();
 #ifdef METADATATRACKER_ENABLED
     if (m_pMDTracker != NULL)
         m_pMDTracker->Deactivate();
@@ -292,6 +294,64 @@ IMDInternalImport* PEImage::GetMDImport()
     if (!m_pMDImport)
         OpenMDImport();
     return m_pMDImport;
+}
+
+IMDInternalImport* PEImage::GetNativeMDImport(BOOL loadAllowed)
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        PRECONDITION(HasReadyToRunHeader());
+        if (loadAllowed) GC_TRIGGERS;                    else GC_NOTRIGGER;
+        if (loadAllowed) THROWS;                         else NOTHROW;
+        if (loadAllowed) INJECT_FAULT(COMPlusThrowOM()); else FORBID_FAULT;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (m_pNativeMDImport == NULL)
+    {
+        if (loadAllowed)
+            OpenNativeMDImport();
+        else
+            return NULL;
+    }
+
+    _ASSERTE(m_pNativeMDImport);
+    return m_pNativeMDImport;
+}
+
+void PEImage::OpenNativeMDImport()
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        PRECONDITION(HasReadyToRunHeader());
+        GC_TRIGGERS;
+        THROWS;
+        MODE_ANY;
+        INJECT_FAULT(COMPlusThrowOM(););
+    }
+    CONTRACTL_END;
+    if (m_pNativeMDImport==NULL)
+    {
+        IMDInternalImport* m_pNewImport;
+        COUNT_T cMeta=0;
+        const void* pMeta=GetNativeManifestMetadata(&cMeta);
+
+        if(pMeta==NULL)
+            return;
+
+        IfFailThrow(GetMetaDataInternalInterface((void *) pMeta,
+                                                 cMeta,
+                                                 ofRead,
+                                                 IID_IMDInternalImport,
+                                                 (void **) &m_pNewImport));
+
+        if(InterlockedCompareExchangeT(&m_pNativeMDImport, m_pNewImport, NULL))
+            m_pNewImport->Release();
+    }
+    _ASSERTE(m_pNativeMDImport);
 }
 
 void PEImage::OpenMDImport()
@@ -655,7 +715,8 @@ PEImage::PEImage():
 #ifdef METADATATRACKER_DATA
     m_pMDTracker(NULL),
 #endif // METADATATRACKER_DATA
-    m_pMDImport(NULL)
+    m_pMDImport(NULL),
+    m_pNativeMDImport(NULL)
 {
     CONTRACTL
     {
