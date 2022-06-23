@@ -4,6 +4,8 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Formats.Tar
 {
@@ -39,18 +41,34 @@ namespace System.Formats.Tar
             CreateFromDirectoryInternal(sourceDirectoryName, destination, includeBaseDirectory, leaveOpen: true);
         }
 
-        // /// <summary>
-        // /// Asynchronously creates a tar stream that contains all the filesystem entries from the specified directory.
-        // /// </summary>
-        // /// <param name="sourceDirectoryName">The path of the directory to archive.</param>
-        // /// <param name="destination">The destination stream of the archive.</param>
-        // /// <param name="includeBaseDirectory"><see langword="true"/> to include the base directory name as the first path segment in all the names of the archive entries. <see langword="false"/> to exclude the base directory name from the entry name paths.</param>
-        // /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
-        // /// <returns>A task that represents the asynchronous creation operation.</returns>
-        // public static Task CreateFromDirectoryAsync(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, CancellationToken cancellationToken = default)
-        // {
-        //     throw new NotImplementedException();
-        // }
+        /// <summary>
+        /// Asynchronously creates a tar stream that contains all the filesystem entries from the specified directory.
+        /// </summary>
+        /// <param name="sourceDirectoryName">The path of the directory to archive.</param>
+        /// <param name="destination">The destination stream of the archive.</param>
+        /// <param name="includeBaseDirectory"><see langword="true"/> to include the base directory name as the first path segment in all the names of the archive entries. <see langword="false"/> to exclude the base directory name from the entry name paths.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
+        /// <returns>A task that represents the asynchronous creation operation.</returns>
+        public static Task CreateFromDirectoryAsync(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, CancellationToken cancellationToken = default)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(sourceDirectoryName);
+            ArgumentNullException.ThrowIfNull(destination);
+
+            if (!destination.CanWrite)
+            {
+                throw new IOException(SR.IO_NotSupported_UnwritableStream);
+            }
+
+            if (!Directory.Exists(sourceDirectoryName))
+            {
+                throw new DirectoryNotFoundException(string.Format(SR.IO_PathNotFound_Path, sourceDirectoryName));
+            }
+
+            // Rely on Path.GetFullPath for validation of paths
+            sourceDirectoryName = Path.GetFullPath(sourceDirectoryName);
+
+            return CreateFromDirectoryInternalAsync(sourceDirectoryName, destination, includeBaseDirectory, leaveOpen: true, cancellationToken);
+        }
 
         /// <summary>
         /// Creates a tar file that contains all the filesystem entries from the specified directory.
@@ -78,18 +96,33 @@ namespace System.Formats.Tar
             CreateFromDirectoryInternal(sourceDirectoryName, fs, includeBaseDirectory, leaveOpen: false);
         }
 
-        // /// <summary>
-        // /// Asynchronously creates a tar archive from the contents of the specified directory, and outputs them into the specified path. Can optionally include the base directory as the prefix for the entry names.
-        // /// </summary>
-        // /// <param name="sourceDirectoryName">The path of the directory to archive.</param>
-        // /// <param name="destinationFileName">The path of the destination archive file.</param>
-        // /// <param name="includeBaseDirectory"><see langword="true"/> to include the base directory name as the first path segment in all the names of the archive entries. <see langword="false"/> to exclude the base directory name from the entry name paths.</param>
-        // /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
-        // /// <returns>A task that represents the asynchronous creation operation.</returns>
-        // public static Task CreateFromDirectoryAsync(string sourceDirectoryName, string destinationFileName, bool includeBaseDirectory, CancellationToken cancellationToken = default)
-        // {
-        //     throw new NotImplementedException();
-        // }
+        /// <summary>
+        /// Asynchronously creates a tar archive from the contents of the specified directory, and outputs them into the specified path. Can optionally include the base directory as the prefix for the entry names.
+        /// </summary>
+        /// <param name="sourceDirectoryName">The path of the directory to archive.</param>
+        /// <param name="destinationFileName">The path of the destination archive file.</param>
+        /// <param name="includeBaseDirectory"><see langword="true"/> to include the base directory name as the first path segment in all the names of the archive entries. <see langword="false"/> to exclude the base directory name from the entry name paths.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
+        /// <returns>A task that represents the asynchronous creation operation.</returns>
+        public static Task CreateFromDirectoryAsync(string sourceDirectoryName, string destinationFileName, bool includeBaseDirectory, CancellationToken cancellationToken = default)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(sourceDirectoryName);
+            ArgumentException.ThrowIfNullOrEmpty(destinationFileName);
+
+            // Rely on Path.GetFullPath for validation of paths
+            sourceDirectoryName = Path.GetFullPath(sourceDirectoryName);
+            destinationFileName = Path.GetFullPath(destinationFileName);
+
+            if (!Directory.Exists(sourceDirectoryName))
+            {
+                throw new DirectoryNotFoundException(string.Format(SR.IO_PathNotFound_Path, sourceDirectoryName));
+            }
+
+            // Throws if the destination file exists
+            using FileStream fs = new(destinationFileName, FileMode.CreateNew, FileAccess.Write);
+
+            return CreateFromDirectoryInternalAsync(sourceDirectoryName, fs, includeBaseDirectory, leaveOpen: false, cancellationToken);
+        }
 
         /// <summary>
         /// Extracts the contents of a stream that represents a tar archive into the specified directory.
@@ -232,6 +265,60 @@ namespace System.Formats.Tar
                         string entryName = ArchivingUtils.EntryFromPath(di.Name, 0, di.Name.Length, ref entryNameBuffer, appendPathSeparator: true);
                         PaxTarEntry entry = new PaxTarEntry(TarEntryType.Directory, entryName);
                         writer.WriteEntry(entry);
+                    }
+                }
+                finally
+                {
+                    ArrayPool<char>.Shared.Return(entryNameBuffer);
+                }
+            }
+        }
+
+        // Asynchronously creates an archive from the contents of a directory.
+        // It assumes the sourceDirectoryName is a fully qualified path, and allows choosing if the archive stream should be left open or not.
+        private static async Task CreateFromDirectoryInternalAsync(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, bool leaveOpen, CancellationToken cancellationToken)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(sourceDirectoryName));
+            Debug.Assert(destination != null);
+            Debug.Assert(Path.IsPathFullyQualified(sourceDirectoryName));
+            Debug.Assert(destination.CanWrite);
+
+            using (TarWriter writer = new TarWriter(destination, TarEntryFormat.Pax, leaveOpen))
+            {
+                bool baseDirectoryIsEmpty = true;
+                DirectoryInfo di = new(sourceDirectoryName);
+                string basePath = di.FullName;
+
+                if (includeBaseDirectory && di.Parent != null)
+                {
+                    basePath = di.Parent.FullName;
+                }
+
+                // Windows' MaxPath (260) is used as an arbitrary default capacity, as it is likely
+                // to be greater than the length of typical entry names from the file system, even
+                // on non-Windows platforms. The capacity will be increased, if needed.
+                const int DefaultCapacity = 260;
+                char[] entryNameBuffer = ArrayPool<char>.Shared.Rent(DefaultCapacity);
+
+                try
+                {
+                    foreach (FileSystemInfo file in di.EnumerateFileSystemInfos("*", SearchOption.AllDirectories))
+                    {
+                        baseDirectoryIsEmpty = false;
+
+                        int entryNameLength = file.FullName.Length - basePath.Length;
+                        Debug.Assert(entryNameLength > 0);
+
+                        bool isDirectory = file.Attributes.HasFlag(FileAttributes.Directory);
+                        string entryName = ArchivingUtils.EntryFromPath(file.FullName, basePath.Length, entryNameLength, ref entryNameBuffer, appendPathSeparator: isDirectory);
+                        await writer.WriteEntryAsync(file.FullName, entryName, cancellationToken).ConfigureAwait(false);
+                    }
+
+                    if (includeBaseDirectory && baseDirectoryIsEmpty)
+                    {
+                        string entryName = ArchivingUtils.EntryFromPath(di.Name, 0, di.Name.Length, ref entryNameBuffer, appendPathSeparator: true);
+                        PaxTarEntry entry = new PaxTarEntry(TarEntryType.Directory, entryName);
+                        await writer.WriteEntryAsync(entry, cancellationToken).ConfigureAwait(false);
                     }
                 }
                 finally
