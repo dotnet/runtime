@@ -5,6 +5,8 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Formats.Tar
 {
@@ -119,16 +121,31 @@ namespace System.Formats.Tar
             ReadFileFromDiskAndWriteToArchiveStreamAsEntry(fullPath, entryName);
         }
 
-        // /// <summary>
-        // /// Asynchronously writes the specified file into the archive stream as a tar entry.
-        // /// </summary>
-        // /// <param name="fileName">The path to the file to write to the archive.</param>
-        // /// <param name="entryName">The name of the file as it should be represented in the archive. It should include the optional relative path and the filename.</param>
-        // /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
-        // public Task WriteEntryAsync(string fileName, string? entryName, CancellationToken cancellationToken = default)
-        // {
-        //     throw new NotImplementedException();
-        // }
+        /// <summary>
+        /// Asynchronously writes the specified file into the archive stream as a tar entry.
+        /// </summary>
+        /// <param name="fileName">The path to the file to write to the archive.</param>
+        /// <param name="entryName">The name of the file as it should be represented in the archive. It should include the optional relative path and the filename.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
+        /// <returns>A task that represents the asynchronous write operation.</returns>
+        /// <exception cref="ObjectDisposedException">The archive stream is disposed.</exception>
+        /// <exception cref="ArgumentException"><paramref name="fileName"/> or <paramref name="entryName"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="IOException">An I/O problem occurred.</exception>
+        public async Task WriteEntryAsync(string fileName, string? entryName, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+
+            ArgumentException.ThrowIfNullOrEmpty(fileName);
+
+            string fullPath = Path.GetFullPath(fileName);
+
+            if (string.IsNullOrEmpty(entryName))
+            {
+                entryName = Path.GetFileName(fileName);
+            }
+
+            await ReadFileFromDiskAndWriteToArchiveStreamAsEntryAsync(fullPath, entryName, cancellationToken).ConfigureAwait(false);
+        }
 
         /// <summary>
         /// Writes the specified entry into the archive stream.
@@ -207,41 +224,75 @@ namespace System.Formats.Tar
             _wroteEntries = true;
         }
 
-        // /// <summary>
-        // /// Asynchronously writes the specified entry into the archive stream.
-        // /// </summary>
-        // /// <param name="entry">The tar entry to write.</param>
-        // /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
-        // /// <remarks><para>Before writing an entry to the archive, if you wrote data into the entry's <see cref="TarEntry.DataStream"/>, make sure to rewind it to the desired start position.</para>
-        // /// <para>These are the entry types supported for writing on each format:</para>
-        // /// <list type="bullet">
-        // /// <item>
-        // /// <para><see cref="TarEntryFormat.V7"/></para>
-        // /// <list type="bullet">
-        // /// <item><see cref="TarEntryType.Directory"/></item>
-        // /// <item><see cref="TarEntryType.HardLink"/></item>
-        // /// <item><see cref="TarEntryType.SymbolicLink"/></item>
-        // /// <item><see cref="TarEntryType.V7RegularFile"/></item>
-        // /// </list>
-        // /// </item>
-        // /// <item>
-        // /// <para><see cref="TarEntryFormat.Ustar"/>, <see cref="TarEntryFormat.Pax"/> and <see cref="TarEntryFormat.Gnu"/></para>
-        // /// <list type="bullet">
-        // /// <item><see cref="TarEntryType.BlockDevice"/></item>
-        // /// <item><see cref="TarEntryType.CharacterDevice"/></item>
-        // /// <item><see cref="TarEntryType.Directory"/></item>
-        // /// <item><see cref="TarEntryType.Fifo"/></item>
-        // /// <item><see cref="TarEntryType.HardLink"/></item>
-        // /// <item><see cref="TarEntryType.RegularFile"/></item>
-        // /// <item><see cref="TarEntryType.SymbolicLink"/></item>
-        // /// </list>
-        // /// </item>
-        // /// </list>
-        // /// </remarks>
-        // public Task WriteEntryAsync(TarEntry entry, CancellationToken cancellationToken = default)
-        // {
-        //     throw new NotImplementedException();
-        // }
+        /// <summary>
+        /// Asynchronously writes the specified entry into the archive stream.
+        /// </summary>
+        /// <param name="entry">The tar entry to write.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
+        /// <remarks><para>Before writing an entry to the archive, if you wrote data into the entry's <see cref="TarEntry.DataStream"/>, make sure to rewind it to the desired start position.</para>
+        /// <para>These are the entry types supported for writing on each format:</para>
+        /// <list type="bullet">
+        /// <item>
+        /// <para><see cref="TarEntryFormat.V7"/></para>
+        /// <list type="bullet">
+        /// <item><see cref="TarEntryType.Directory"/></item>
+        /// <item><see cref="TarEntryType.HardLink"/></item>
+        /// <item><see cref="TarEntryType.SymbolicLink"/></item>
+        /// <item><see cref="TarEntryType.V7RegularFile"/></item>
+        /// </list>
+        /// </item>
+        /// <item>
+        /// <para><see cref="TarEntryFormat.Ustar"/>, <see cref="TarEntryFormat.Pax"/> and <see cref="TarEntryFormat.Gnu"/></para>
+        /// <list type="bullet">
+        /// <item><see cref="TarEntryType.BlockDevice"/></item>
+        /// <item><see cref="TarEntryType.CharacterDevice"/></item>
+        /// <item><see cref="TarEntryType.Directory"/></item>
+        /// <item><see cref="TarEntryType.Fifo"/></item>
+        /// <item><see cref="TarEntryType.HardLink"/></item>
+        /// <item><see cref="TarEntryType.RegularFile"/></item>
+        /// <item><see cref="TarEntryType.SymbolicLink"/></item>
+        /// </list>
+        /// </item>
+        /// </list>
+        /// </remarks>
+        /// <exception cref="ObjectDisposedException">The archive stream is disposed.</exception>
+        /// <exception cref="InvalidOperationException">The entry type of the <paramref name="entry"/> is not supported for writing.</exception>
+        /// <exception cref="IOException">An I/O problem occurred.</exception>
+        public async Task WriteEntryAsync(TarEntry entry, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+
+            IMemoryOwner<byte> rented = MemoryPool<byte>.Shared.Rent(minBufferSize: TarHelpers.RecordSize);
+            Memory<byte> buffer = rented.Memory.Slice(TarHelpers.RecordSize); // minBufferSize means the array could've been larger
+            buffer.Span.Clear(); // Rented arrays aren't clean
+            try
+            {
+                switch (entry.Format)
+                {
+                    case TarEntryFormat.V7:
+                        await entry._header.WriteAsV7Async(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+                        break;
+                    case TarEntryFormat.Ustar:
+                        await entry._header.WriteAsUstarAsync(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+                        break;
+                    case TarEntryFormat.Pax:
+                        await entry._header.WriteAsPaxAsync(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+                        break;
+                    case TarEntryFormat.Gnu:
+                        await entry._header.WriteAsGnuAsync(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+                        break;
+                    case TarEntryFormat.Unknown:
+                    default:
+                        throw new FormatException(string.Format(SR.TarInvalidFormat, Format));
+                }
+            }
+            finally
+            {
+                rented.Dispose();
+            }
+
+            _wroteEntries = true;
+        }
 
         // Disposes the current instance.
         // If 'disposing' is 'false', the method was called from the finalizer.
@@ -289,5 +340,8 @@ namespace System.Formats.Tar
 
         // Partial method for reading an entry from disk and writing it into the archive stream.
         partial void ReadFileFromDiskAndWriteToArchiveStreamAsEntry(string fullPath, string entryName);
+
+        // Partial method for reading an entry from disk and writing it into the archive stream.
+        private partial Task ReadFileFromDiskAndWriteToArchiveStreamAsEntryAsync(string fullPath, string entryName, CancellationToken cancellationToken);
     }
 }

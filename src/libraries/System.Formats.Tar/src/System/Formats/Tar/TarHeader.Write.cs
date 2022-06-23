@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Formats.Tar
 {
@@ -42,6 +44,24 @@ namespace System.Formats.Tar
             }
         }
 
+        // Asynchronously writes the current header as a V7 entry into the archive stream.
+        internal async Task WriteAsV7Async(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
+        {
+            long actualLength = GetTotalDataBytesToWrite();
+            TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.V7);
+
+            int checksum = WriteName(buffer.Span, out _);
+            checksum += WriteCommonFields(buffer.Span, actualLength, actualEntryType);
+            WriteChecksum(checksum, buffer.Span);
+
+            await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+
+            if (_dataStream != null)
+            {
+                await WriteDataAsync(archiveStream, _dataStream, actualLength, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
         // Writes the current header as a Ustar entry into the archive stream.
         internal void WriteAsUstar(Stream archiveStream, Span<byte> buffer)
         {
@@ -72,6 +92,26 @@ namespace System.Formats.Tar
             WriteAsPaxExtendedAttributes(archiveStream, buffer, _extendedAttributes, isGea: true);
         }
 
+        // Asynchronously rites the current header as a Ustar entry into the archive stream.
+        internal async Task WriteAsUstarAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
+        {
+            long actualLength = GetTotalDataBytesToWrite();
+            TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.Ustar);
+
+            int checksum = WritePosixName(buffer.Span);
+            checksum += WriteCommonFields(buffer.Span, actualLength, actualEntryType);
+            checksum += WritePosixMagicAndVersion(buffer.Span);
+            checksum += WritePosixAndGnuSharedFields(buffer.Span);
+            WriteChecksum(checksum, buffer.Span);
+
+            await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+
+            if (_dataStream != null)
+            {
+                await WriteDataAsync(archiveStream, _dataStream, actualLength, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
         // Writes the current header as a PAX entry into the archive stream.
         // Makes sure to add the preceding extended attributes entry before the actual entry.
         internal void WriteAsPax(Stream archiveStream, Span<byte> buffer)
@@ -89,6 +129,23 @@ namespace System.Formats.Tar
             buffer.Clear(); // Reset it to reuse it
             // Second, we write this header as a normal one
             WriteAsPaxInternal(archiveStream, buffer);
+        }
+
+        // Asynchronously writes the current header as a PAX entry into the archive stream.
+        // Makes sure to add the preceding exteded attributes entry before the actual entry.
+        internal async Task WriteAsPaxAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
+        {
+            // First, we write the preceding extended attributes header
+            TarHeader extendedAttributesHeader = default;
+            // Fill the current header's dict
+            CollectExtendedAttributesFromStandardFieldsIfNeeded();
+            // And pass them to the extended attributes header for writing
+            _extendedAttributes ??= new Dictionary<string, string>();
+            await extendedAttributesHeader.WriteAsPaxExtendedAttributesAsync(archiveStream, buffer, _extendedAttributes, isGea: false, cancellationToken).ConfigureAwait(false);
+
+            buffer.Span.Clear(); // Reset it to reuse it
+            // Second, we write this header as a normal one
+            await WriteAsPaxInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
         }
 
         // Writes the current header as a Gnu entry into the archive stream.
@@ -115,6 +172,30 @@ namespace System.Formats.Tar
             WriteAsGnuInternal(archiveStream, buffer);
         }
 
+        // Writes the current header as a Gnu entry into the archive stream.
+        // Makes sure to add the preceding LongLink and/or LongPath entries if necessary, before the actual entry.
+        internal async Task WriteAsGnuAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
+        {
+            // First, we determine if we need a preceding LongLink, and write it if needed
+            if (_linkName.Length > FieldLengths.LinkName)
+            {
+                TarHeader longLinkHeader = GetGnuLongMetadataHeader(TarEntryType.LongLink, _linkName);
+                await longLinkHeader.WriteAsGnuInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+                buffer.Span.Clear(); // Reset it to reuse it
+            }
+
+            // Second, we determine if we need a preceding LongPath, and write it if needed
+            if (_name.Length > FieldLengths.Name)
+            {
+                TarHeader longPathHeader = await GetGnuLongMetadataHeaderAsync(TarEntryType.LongPath, _name, cancellationToken).ConfigureAwait(false);
+                await longPathHeader.WriteAsGnuInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+                buffer.Span.Clear(); // Reset it to reuse it
+            }
+
+            // Third, we write this header as a normal one
+            await WriteAsGnuInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+        }
+
         // Creates and returns a GNU long metadata header, with the specified long text written into its data stream.
         private static TarHeader GetGnuLongMetadataHeader(TarEntryType entryType, string longText)
         {
@@ -132,6 +213,28 @@ namespace System.Formats.Tar
 
             longMetadataHeader._dataStream = new MemoryStream();
             longMetadataHeader._dataStream.Write(Encoding.UTF8.GetBytes(longText));
+            longMetadataHeader._dataStream.Seek(0, SeekOrigin.Begin); // Ensure it gets written into the archive from the beginning
+
+            return longMetadataHeader;
+        }
+
+        // Asynchronously creates and returns a GNU long metadata header, with the specified long text written into its data stream.
+        private static async Task<TarHeader> GetGnuLongMetadataHeaderAsync(TarEntryType entryType, string longText, CancellationToken cancellationToken)
+        {
+            Debug.Assert((entryType is TarEntryType.LongPath && longText.Length > FieldLengths.Name) ||
+                         (entryType is TarEntryType.LongLink && longText.Length > FieldLengths.LinkName));
+
+            TarHeader longMetadataHeader = default;
+
+            longMetadataHeader._name = GnuLongMetadataName; // Same name for both longpath or longlink
+            longMetadataHeader._mode = (int)TarHelpers.DefaultMode;
+            longMetadataHeader._uid = 0;
+            longMetadataHeader._gid = 0;
+            longMetadataHeader._mTime = DateTimeOffset.MinValue; // 0
+            longMetadataHeader._typeFlag = entryType;
+
+            longMetadataHeader._dataStream = new MemoryStream();
+            await longMetadataHeader._dataStream.WriteAsync(Encoding.UTF8.GetBytes(longText), cancellationToken).ConfigureAwait(false);
             longMetadataHeader._dataStream.Seek(0, SeekOrigin.Begin); // Ensure it gets written into the archive from the beginning
 
             return longMetadataHeader;
@@ -163,6 +266,32 @@ namespace System.Formats.Tar
             }
         }
 
+        // Asynchronously writes the current header as a GNU entry into the archive stream.
+        internal async Task WriteAsGnuInternalAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
+        {
+            // Unused GNU fields: offset, longnames, unused, sparse struct, isextended and realsize
+            // If this header came from another archive, it will have a value
+            // If it was constructed by the user, it will be an empty array
+            _gnuUnusedBytes ??= new byte[FieldLengths.AllGnuUnused];
+
+            long actualLength = GetTotalDataBytesToWrite();
+            TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.Gnu);
+
+            int checksum = WriteName(buffer.Span, out _);
+            checksum += WriteCommonFields(buffer.Span, actualLength, actualEntryType);
+            checksum += WriteGnuMagicAndVersion(buffer.Span);
+            checksum += WritePosixAndGnuSharedFields(buffer.Span);
+            checksum += WriteGnuFields(buffer.Span);
+            WriteChecksum(checksum, buffer.Span);
+
+            await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+
+            if (_dataStream != null)
+            {
+                await WriteDataAsync(archiveStream, _dataStream, actualLength, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
         // Writes the current header as a PAX Extended Attributes entry into the archive stream.
         private void WriteAsPaxExtendedAttributes(Stream archiveStream, Span<byte> buffer, IEnumerable<KeyValuePair<string, string>> extendedAttributes, bool isGea)
         {
@@ -180,6 +309,25 @@ namespace System.Formats.Tar
             _dataStream = GenerateExtendedAttributesDataStream(extendedAttributes);
 
             WriteAsPaxInternal(archiveStream, buffer);
+        }
+
+        // Asynchronously writes the current header as a PAX Extended Attributes entry into the archive stream.
+        private async Task WriteAsPaxExtendedAttributesAsync(Stream archiveStream, Memory<byte> buffer, IEnumerable<KeyValuePair<string, string>> extendedAttributes, bool isGea, CancellationToken cancellationToken)
+        {
+            // The ustar fields (uid, gid, linkName, uname, gname, devmajor, devminor) do not get written.
+            // The mode gets the default value.
+            _name = GenerateExtendedAttributeName();
+            _mode = (int)TarHelpers.DefaultMode;
+            _typeFlag = isGea ? TarEntryType.GlobalExtendedAttributes : TarEntryType.ExtendedAttributes;
+            _linkName = string.Empty;
+            _magic = string.Empty;
+            _version = string.Empty;
+            _gName = string.Empty;
+            _uName = string.Empty;
+
+            _dataStream = await GenerateExtendedAttributesDataStreamAsync(extendedAttributes, cancellationToken).ConfigureAwait(false);
+
+            await WriteAsPaxInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
         }
 
         // Both the Extended Attributes and Global Extended Attributes entry headers are written in a similar way, just the data changes
@@ -200,6 +348,27 @@ namespace System.Formats.Tar
             if (_dataStream != null)
             {
                 WriteData(archiveStream, _dataStream, actualLength);
+            }
+        }
+
+        // Both the Extended Attributes and Global Extended Attributes entry headers are written in a similar way, just the data changes
+        // This method asynchronously writes an entry as both entries require, using the data from the current header instance.
+        private async Task WriteAsPaxInternalAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
+        {
+            long actualLength = GetTotalDataBytesToWrite();
+            TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.Pax);
+
+            int checksum = WritePosixName(buffer.Span);
+            checksum += WriteCommonFields(buffer.Span, actualLength, actualEntryType);
+            checksum += WritePosixMagicAndVersion(buffer.Span);
+            checksum += WritePosixAndGnuSharedFields(buffer.Span);
+            WriteChecksum(checksum, buffer.Span);
+
+            await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+
+            if (_dataStream != null)
+            {
+                await WriteDataAsync(archiveStream, _dataStream, actualLength, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -366,6 +535,14 @@ namespace System.Formats.Tar
             archiveStream.Write(new byte[paddingAfterData]);
         }
 
+        // Asynchronously writes the current header's data stream into the archive stream.
+        private static async Task WriteDataAsync(Stream archiveStream, Stream dataStream, long actualLength, CancellationToken cancellationToken)
+        {
+            await dataStream.CopyToAsync(archiveStream, cancellationToken).ConfigureAwait(false); // The data gets copied from the current position
+            int paddingAfterData = TarHelpers.CalculatePadding(actualLength);
+            await archiveStream.WriteAsync(new byte[paddingAfterData], cancellationToken).ConfigureAwait(false);
+        }
+
         // Dumps into the archive stream an extended attribute entry containing metadata of the entry it precedes.
         private static Stream? GenerateExtendedAttributesDataStream(IEnumerable<KeyValuePair<string, string>> extendedAttributes)
         {
@@ -377,6 +554,22 @@ namespace System.Formats.Tar
 
                 byte[] entryBytes = GenerateExtendedAttributeKeyValuePairAsByteArray(Encoding.UTF8.GetBytes(attribute), Encoding.UTF8.GetBytes(value));
                 dataStream.Write(entryBytes);
+            }
+            dataStream?.Seek(0, SeekOrigin.Begin); // Ensure it gets written into the archive from the beginning
+            return dataStream;
+        }
+
+        // Asynchronously dumps into the archive stream an extended attribute entry containing metadata of the entry it precedes.
+        private static async Task<Stream?> GenerateExtendedAttributesDataStreamAsync(IEnumerable<KeyValuePair<string, string>> extendedAttributes, CancellationToken cancellationToken)
+        {
+            MemoryStream? dataStream = null;
+            foreach ((string attribute, string value) in extendedAttributes)
+            {
+                // Need to do this because IEnumerable has no Count property
+                dataStream ??= new MemoryStream();
+
+                byte[] entryBytes = GenerateExtendedAttributeKeyValuePairAsByteArray(Encoding.UTF8.GetBytes(attribute), Encoding.UTF8.GetBytes(value));
+                await dataStream.WriteAsync(entryBytes, cancellationToken).ConfigureAwait(false);
             }
             dataStream?.Seek(0, SeekOrigin.Begin); // Ensure it gets written into the archive from the beginning
             return dataStream;
