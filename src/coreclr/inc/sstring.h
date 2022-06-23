@@ -812,20 +812,6 @@ public:
         SetUTF8(string, count);
     }
 
-    FORCEINLINE InlineSString(enum tagANSI dummytag, const ANSI *string)
-      : SString(m_inline, SBUFFER_PADDED_SIZE(MEMSIZE))
-    {
-        WRAPPER_NO_CONTRACT;
-        SetANSI(string);
-    }
-
-    FORCEINLINE InlineSString(enum tagANSI dummytag, const ANSI *string, COUNT_T count)
-      : SString(m_inline, SBUFFER_PADDED_SIZE(MEMSIZE))
-    {
-        WRAPPER_NO_CONTRACT;
-        SetANSI(string, count);
-    }
-
     FORCEINLINE InlineSString(WCHAR character)
       : SString(m_inline, SBUFFER_PADDED_SIZE(MEMSIZE))
     {
