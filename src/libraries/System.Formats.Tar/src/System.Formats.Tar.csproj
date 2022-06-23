@@ -14,7 +14,6 @@
     <Compile Include="System\Formats\Tar\FieldLengths.cs" />
     <Compile Include="System\Formats\Tar\FieldLocations.cs" />
     <Compile Include="System\Formats\Tar\PosixTarEntry.cs" />
-    <Compile Include="System\Formats\Tar\TarFileMode.cs" />
     <Compile Include="System\Formats\Tar\V7TarEntry.cs" />
     <Compile Include="System\Formats\Tar\TarHeader.cs" />
     <Compile Include="System\Formats\Tar\TarHeader.Read.cs" />
