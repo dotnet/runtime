@@ -204,7 +204,7 @@ VOID DECLSPEC_NORETURN TerminateOnAssert()
 VOID LogAssert(
     LPCSTR      szFile,
     int         iLine,
-    LPCUTF8     szExpr
+    LPCSTR      szExpr
 )
 {
     STATIC_CONTRACT_NOTHROW;
