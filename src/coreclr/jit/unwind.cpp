@@ -268,13 +268,6 @@ void Compiler::unwindEmitFuncCFI(FuncInfoDsc* func, void* pHotCode, void* pColdC
     DWORD          unwindCodeBytes = 0;
     BYTE*          pUnwindBlock    = nullptr;
 
-#ifdef DEBUG
-    if (JitConfig.JitFakeProcedureSplitting())
-    {
-        pColdCode = nullptr;
-    }
-#endif // DEBUG
-
     if (func->startLoc == nullptr)
     {
         startOffset = 0;
