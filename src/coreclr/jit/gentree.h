@@ -8348,9 +8348,6 @@ inline bool GenTree::IsVectorCreate() const
         switch (AsSIMD()->GetSIMDIntrinsicId())
         {
             case SIMDIntrinsicInit:
-            case SIMDIntrinsicInitFixed:
-            case SIMDIntrinsicInitArray:
-            case SIMDIntrinsicInitArrayX:
             case SIMDIntrinsicInitN:
                 return true;
 
