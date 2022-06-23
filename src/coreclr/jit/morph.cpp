@@ -10807,13 +10807,6 @@ DONE_MORPHING_CHILDREN:
     {
         case GT_ASG:
 
-            if (op1->OperIs(GT_LCL_VAR) && ((op1->gtFlags & GTF_VAR_FOLDED_IND) != 0))
-            {
-                op1->gtFlags &= ~GTF_VAR_FOLDED_IND;
-                tree = fgDoNormalizeOnStore(tree);
-                op2  = tree->gtGetOp2();
-            }
-
             lclVarTree = fgIsIndirOfAddrOfLocal(op1);
             if (lclVarTree != nullptr)
             {
@@ -11230,46 +11223,8 @@ DONE_MORPHING_CHILDREN:
                                 }
                             }
                         }
-                        // If the type of the IND (typ) is a "small int", and the type of the local has the
-                        // same width, then we can reduce to just the local variable -- it will be
-                        // correctly normalized.
-                        //
-                        // The below transformation cannot be applied if the local var needs to be normalized on load.
-                        else if (varTypeIsSmall(typ) && (genTypeSize(varDsc) == genTypeSize(typ)) &&
-                                 !lvaTable[lclNum].lvNormalizeOnLoad())
-                        {
-                            const bool definitelyLoad = (tree->gtFlags & GTF_DONT_CSE) == 0;
-                            const bool possiblyStore  = !definitelyLoad;
-
-                            if (possiblyStore || (varTypeIsUnsigned(varDsc) == varTypeIsUnsigned(typ)))
-                            {
-                                typ               = temp->TypeGet();
-                                tree->gtType      = typ;
-                                foldAndReturnTemp = true;
-
-                                if (possiblyStore)
-                                {
-                                    // This node can be on the left-hand-side of an assignment node.
-                                    // Mark this node with GTF_VAR_FOLDED_IND to make sure that fgDoNormalizeOnStore()
-                                    // is called on its parent in post-order morph.
-                                    temp->gtFlags |= GTF_VAR_FOLDED_IND;
-                                }
-                            }
-                        }
-                        // For matching types we can fold
-                        else if (!varTypeIsStruct(typ) && (lvaTable[lclNum].lvType == typ) &&
-                                 !lvaTable[lclNum].lvNormalizeOnLoad())
-                        {
-                            tree->gtType = typ = temp->TypeGet();
-                            foldAndReturnTemp  = true;
-                        }
                         // Otherwise will will fold this into a GT_LCL_FLD below
                         //   where we check (temp != nullptr)
-                    }
-                    else // !temp->OperIsLocal()
-                    {
-                        // We don't try to fold away the GT_IND/GT_ADDR for this case
-                        temp = nullptr;
                     }
                 }
                 else
