@@ -12,7 +12,7 @@ namespace Microsoft.Interop
     /// <summary>
     /// The base interface for implementing various aspects of the custom native type and collection marshalling specs.
     /// </summary>
-    internal interface ICustomTypeMarshallingStrategy
+    internal interface ICustomTypeMarshallingStrategyBase
     {
         TypeSyntax AsNativeType(TypePositionInfo info);
 
@@ -35,6 +35,11 @@ namespace Microsoft.Interop
         bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context);
     }
 
+    internal interface ICustomTypeMarshallingStrategy : ICustomTypeMarshallingStrategyBase
+    {
+        IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(TypePositionInfo info, StubCodeContext context);
+    }
+
     /// <summary>
     /// Stateless marshalling support for a type that has a custom unmanaged type.
     /// </summary>
@@ -42,13 +47,13 @@ namespace Microsoft.Interop
     {
         private readonly TypeSyntax _marshallerTypeSyntax;
         private readonly TypeSyntax _nativeTypeSyntax;
-        private readonly CustomTypeMarshallerFeatures _features;
+        private readonly MarshallerShape _shape;
 
-        public StatelessValueMarshalling(TypeSyntax marshallerTypeSyntax, TypeSyntax nativeTypeSyntax, CustomTypeMarshallerFeatures features)
+        public StatelessValueMarshalling(TypeSyntax marshallerTypeSyntax, TypeSyntax nativeTypeSyntax, MarshallerShape shape)
         {
             _marshallerTypeSyntax = marshallerTypeSyntax;
             _nativeTypeSyntax = nativeTypeSyntax;
-            _features = features;
+            _shape = shape;
         }
 
         public TypeSyntax AsNativeType(TypePositionInfo info)
@@ -60,7 +65,7 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
         {
-            if (!_features.HasFlag(CustomTypeMarshallerFeatures.UnmanagedResources))
+            if (!_shape.HasFlag(MarshallerShape.Free))
                 yield break;
 
             // <managedIdentifier> = <marshallerType>.ConvertToManaged(<nativeIdentifier>);
@@ -73,8 +78,31 @@ namespace Microsoft.Interop
                         Argument(IdentifierName(context.GetIdentifiers(info).native))))));
         }
 
+        public IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(TypePositionInfo info, StubCodeContext context)
+        {
+            if (!_shape.HasFlag(MarshallerShape.GuaranteedUnmarshal))
+                yield break;
+
+            (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
+
+            // <managedIdentifier> = <marshallerType>.ConvertToManagedGuaranteed(<nativeIdentifier>);
+            yield return ExpressionStatement(
+                AssignmentExpression(
+                    SyntaxKind.SimpleAssignmentExpression,
+                    IdentifierName(managedIdentifier),
+                    InvocationExpression(
+                        MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                            _marshallerTypeSyntax,
+                            IdentifierName(ShapeMemberNames.Value.Stateless.ConvertToManagedGuaranteed)),
+                        ArgumentList(SingletonSeparatedList(
+                            Argument(IdentifierName(nativeIdentifier)))))));
+        }
+
         public IEnumerable<StatementSyntax> GenerateMarshalStatements(TypePositionInfo info, StubCodeContext context, IEnumerable<ArgumentSyntax> nativeTypeConstructorArguments)
         {
+            if (!_shape.HasFlag(MarshallerShape.ToUnmanaged))
+                yield break;
+
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
 
             // <nativeIdentifier> = <marshallerType>.ConvertToUnmanaged(<managedIdentifier>);
@@ -97,6 +125,9 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateUnmarshalStatements(TypePositionInfo info, StubCodeContext context)
         {
+            if (!_shape.HasFlag(MarshallerShape.ToManaged))
+                yield break;
+
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
 
             // <managedIdentifier> = <marshallerType>.ConvertToManaged(<nativeIdentifier>);
