@@ -894,7 +894,7 @@ void ClassLoader::LazyPopulateCaseInsensitiveHashTables()
 
             amTracker.SuppressRelease();
             pModule->SetAvailableClassCaseInsHash(pNewClassCaseInsHash);
-            FastInterlockDecrement((LONG*)&m_cUnhashedModules);
+            InterlockedDecrement((LONG*)&m_cUnhashedModules);
 
             _ASSERT(m_cUnhashedModules >= 0);
         }
@@ -1748,15 +1748,13 @@ VOID ClassLoader::CreateCanonicallyCasedKey(LPCUTF8 pszNameSpace, LPCUTF8 pszNam
     StackSString nameSpace(SString::Utf8, pszNameSpace);
     nameSpace.LowerCase();
 
-    StackScratchBuffer nameSpaceBuffer;
-    pszNameSpace = nameSpace.GetUTF8(nameSpaceBuffer);
+    pszNameSpace = nameSpace.GetUTF8();
 
 
     StackSString name(SString::Utf8, pszName);
     name.LowerCase();
 
-    StackScratchBuffer nameBuffer;
-    pszName = name.GetUTF8(nameBuffer);
+    pszName = name.GetUTF8();
 
 
    size_t iNSLength = strlen(pszNameSpace);

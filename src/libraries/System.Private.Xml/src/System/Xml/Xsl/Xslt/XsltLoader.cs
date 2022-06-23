@@ -12,15 +12,14 @@ using System.Text;
 using System.IO;
 using System.Xml.XPath;
 using System.Xml.Xsl.Qil;
+using ContextInfo = System.Xml.Xsl.Xslt.XsltInput.ContextInfo;
+using F = System.Xml.Xsl.Xslt.AstFactory;
+using TypeFactory = System.Xml.Xsl.XmlQueryTypeFactory;
+using QName = System.Xml.Xsl.Xslt.XsltInput.DelayedQName;
+using XsltAttribute = System.Xml.Xsl.Xslt.XsltInput.XsltAttribute;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using ContextInfo = XsltInput.ContextInfo;
-    using F = AstFactory;
-    using TypeFactory = XmlQueryTypeFactory;
-    using QName = XsltInput.DelayedQName;
-    using XsltAttribute = XsltInput.XsltAttribute;
-
     internal sealed class XsltLoader : IErrorHelper
     {
         private Compiler _compiler = null!;
@@ -1848,13 +1847,7 @@ namespace System.Xml.Xsl.Xslt
             string? separator = ParseStringAttribute(1, "separator");
             bool doe = ParseYesNoAttribute(2, /*attName:*/"disable-output-escaping") == TriState.True;
 
-            if (separator == null)
-            {
-                if (!_input.BackwardCompatibility)
-                {
-                }
-            }
-            else
+            if (separator != null)
             {
                 ReportNYI("xsl:value-of/@separator");
             }

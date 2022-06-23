@@ -168,7 +168,7 @@ namespace System.Data
 
         public DataViewRowState RecordStates => _recordStates;
 
-        public IFilter? RowFilter => (IFilter?)((null != _rowFilter) ? _rowFilter.Target : null);
+        public IFilter? RowFilter => (IFilter?)(_rowFilter?.Target);
 
         public int GetRecord(int recordIndex)
         {

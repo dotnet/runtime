@@ -34,12 +34,13 @@ namespace System.Text.Json.Serialization.Metadata
             }
             else
             {
-                SetCreateObjectFunc(objectInfo.ObjectCreator);
+                SetCreateObject(objectInfo.ObjectCreator);
+                CreateObjectForExtensionDataProperty = ((JsonTypeInfo)this).CreateObject;
             }
-
 
             PropInitFunc = objectInfo.PropertyMetadataInitializer;
             SerializeHandler = objectInfo.SerializeHandler;
+
             NumberHandling = objectInfo.NumberHandling;
         }
 
@@ -52,7 +53,7 @@ namespace System.Text.Json.Serialization.Metadata
             Func<JsonConverter<T>> converterCreator,
             object? createObjectWithArgs = null,
             object? addFunc = null)
-            : base(GetConverter(collectionInfo, converterCreator), options)
+            : base(new JsonMetadataServicesConverter<T>(converterCreator()), options)
         {
             if (collectionInfo is null)
             {
@@ -60,12 +61,13 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             KeyTypeInfo = collectionInfo.KeyInfo;
-            ElementTypeInfo = collectionInfo.ElementInfo ?? throw new ArgumentNullException(nameof(collectionInfo.ElementInfo));
+            ElementTypeInfo = collectionInfo.ElementInfo;
+            Debug.Assert(Kind != JsonTypeInfoKind.None);
             NumberHandling = collectionInfo.NumberHandling;
             SerializeHandler = collectionInfo.SerializeHandler;
             CreateObjectWithArgs = createObjectWithArgs;
             AddMethodDelegate = addFunc;
-            SetCreateObjectFunc(collectionInfo.ObjectCreator);
+            CreateObject = collectionInfo.ObjectCreator;
         }
 
         private static JsonConverter GetConverter(JsonObjectInfoValues<T> objectInfo)
@@ -86,12 +88,6 @@ namespace System.Text.Json.Serialization.Metadata
 #pragma warning restore CS8714
         }
 
-        private static JsonConverter GetConverter(JsonCollectionInfoValues<T> collectionInfo, Func<JsonConverter<T>> converterCreator)
-        {
-            ConverterStrategy strategy = collectionInfo.KeyInfo == null ? ConverterStrategy.Enumerable : ConverterStrategy.Dictionary;
-            return new JsonMetadataServicesConverter<T>(converterCreator, strategy);
-        }
-
         internal override void LateAddProperties()
         {
             AddPropertiesUsingSourceGenInfo();
@@ -99,9 +95,9 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal override JsonParameterInfoValues[] GetParameterInfoValues()
         {
-            JsonSerializerContext? context = Options.JsonSerializerContext;
+            JsonSerializerContext? context = Options.SerializerContext;
             JsonParameterInfoValues[] array;
-            if (context == null || CtorParamInitFunc == null || (array = CtorParamInitFunc()) == null)
+            if (CtorParamInitFunc == null || (array = CtorParamInitFunc()) == null)
             {
                 ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeCtorParams(context, Type);
                 return null!;
@@ -117,22 +113,22 @@ namespace System.Text.Json.Serialization.Metadata
                 return;
             }
 
-            JsonSerializerContext? context = Options.JsonSerializerContext;
+            JsonSerializerContext? context = Options.SerializerContext;
             JsonPropertyInfo[] array;
-            if (context == null || PropInitFunc == null || (array = PropInitFunc(context)) == null)
+            if (PropInitFunc == null || (array = PropInitFunc(context!)) == null)
             {
                 if (typeof(T) == typeof(object))
                 {
                     return;
                 }
 
-                if (PropertyInfoForTypeInfo.ConverterBase.ElementType != null)
+                if (Converter.ElementType != null)
                 {
                     // Nullable<> or F# optional converter's strategy is set to element's strategy
                     return;
                 }
 
-                if (SerializeHandler != null && Options.JsonSerializerContext?.CanUseSerializationLogic == true)
+                if (SerializeHandler != null && Options.SerializerContext?.CanUseSerializationLogic == true)
                 {
                     ThrowOnDeserialize = true;
                     return;
@@ -143,7 +139,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             Dictionary<string, JsonPropertyInfo>? ignoredMembers = null;
-            JsonPropertyDictionary<JsonPropertyInfo> propertyCache = new(Options.PropertyNameCaseInsensitive, array.Length);
+            JsonPropertyDictionary<JsonPropertyInfo> propertyCache = CreatePropertyCache(capacity: array.Length);
 
             for (int i = 0; i < array.Length; i++)
             {
@@ -154,7 +150,8 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     if (hasJsonInclude)
                     {
-                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(jsonPropertyInfo.ClrName!, jsonPropertyInfo.DeclaringType);
+                        Debug.Assert(jsonPropertyInfo.ClrName != null, "ClrName is not set by source gen");
+                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(jsonPropertyInfo.ClrName, jsonPropertyInfo.DeclaringType);
                     }
 
                     continue;
@@ -180,14 +177,6 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             PropertyCache = propertyCache;
-        }
-
-        private void SetCreateObjectFunc(Func<T>? createObjectFunc)
-        {
-            if (createObjectFunc != null)
-            {
-                CreateObject = () => createObjectFunc();
-            }
         }
     }
 }

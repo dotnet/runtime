@@ -269,7 +269,7 @@ namespace System.Xml
             else
             {
                 string? defaultNs = _predefinedNamespaces.LookupNamespace(string.Empty);
-                _nsStack[2].Set(string.Empty, (defaultNs == null ? string.Empty : defaultNs), NamespaceKind.Implied);
+                _nsStack[2].Set(string.Empty, defaultNs ?? string.Empty, NamespaceKind.Implied);
             }
             _nsTop = 2;
 
@@ -1307,7 +1307,7 @@ namespace System.Xml
                         return prefix;
                     }
                 }
-                return (_predefinedNamespaces != null) ? _predefinedNamespaces.LookupPrefix(ns) : null;
+                return _predefinedNamespaces?.LookupPrefix(ns);
             }
             catch
             {
@@ -2074,7 +2074,7 @@ namespace System.Xml
                     return _nsStack[i].namespaceUri;
                 }
             }
-            return (_predefinedNamespaces != null) ? _predefinedNamespaces.LookupNamespace(prefix) : null;
+            return _predefinedNamespaces?.LookupNamespace(prefix);
         }
 
         private string? LookupLocalNamespace(string prefix)

@@ -523,7 +523,7 @@ protected:
 
     void emitRecomputeIGoffsets();
 
-    void emitDispCommentForHandle(size_t handle, GenTreeFlags flags);
+    void emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlags flags);
 
     /************************************************************************/
     /*          The following describes a single instruction                */
@@ -554,7 +554,7 @@ protected:
 
 #endif // TARGET_XARCH
 
-#ifdef DEBUG // This information is used in DEBUG builds to display the method name for call instructions
+#ifdef DEBUG // This information is used in DEBUG builds for additional diagnostics
 
     struct instrDesc;
 
@@ -997,7 +997,7 @@ protected:
                 case IF_LARGELDC:
                     if (isVectorRegister(idReg1()))
                     {
-                        // adrp + ldr + fmov
+                        // (adrp + ldr + fmov) or (adrp + add + ld1)
                         size = 12;
                     }
                     else
@@ -2555,7 +2555,7 @@ public:
 
     void emitOutputDataSec(dataSecDsc* sec, BYTE* dst);
 #ifdef DEBUG
-    void emitDispDataSec(dataSecDsc* section);
+    void emitDispDataSec(dataSecDsc* section, BYTE* dst);
 #endif
 
     /************************************************************************/

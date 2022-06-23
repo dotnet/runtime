@@ -338,10 +338,10 @@ void InvokeUtil::CreatePrimitiveValue(CorElementType dstType,
             *pDst = data;
             break;
         case ELEMENT_TYPE_R4:
-            *pDst = (I8)(*(R4*)pSrc);
+            *pDst = (CLR_I8)(*(CLR_R4*)pSrc);
             break;
         case ELEMENT_TYPE_R8:
-            *pDst = (I8)(*(R8*)pSrc);
+            *pDst = (CLR_I8)(*(CLR_R8*)pSrc);
             break;
         default:
             _ASSERTE(!"Unknown conversion");
@@ -352,35 +352,35 @@ void InvokeUtil::CreatePrimitiveValue(CorElementType dstType,
     case ELEMENT_TYPE_R4:
     case ELEMENT_TYPE_R8:
         {
-        R8 r8 = 0;
+        CLR_R8 r8 = 0;
         switch (srcType) {
         case ELEMENT_TYPE_BOOLEAN:
         case ELEMENT_TYPE_I1:
         case ELEMENT_TYPE_I2:
         case ELEMENT_TYPE_I4:
         IN_TARGET_32BIT(case ELEMENT_TYPE_I:)
-            r8 = (R8)((INT32)data);
+            r8 = (CLR_R8)((INT32)data);
             break;
         case ELEMENT_TYPE_U1:
         case ELEMENT_TYPE_CHAR:
         case ELEMENT_TYPE_U2:
         case ELEMENT_TYPE_U4:
         IN_TARGET_32BIT(case ELEMENT_TYPE_U:)
-            r8 = (R8)((UINT32)data);
+            r8 = (CLR_R8)((UINT32)data);
             break;
         case ELEMENT_TYPE_U8:
         IN_TARGET_64BIT(case ELEMENT_TYPE_U:)
-            r8 = (R8)((UINT64)data);
+            r8 = (CLR_R8)((UINT64)data);
             break;
         case ELEMENT_TYPE_I8:
         IN_TARGET_64BIT(case ELEMENT_TYPE_I:)
-            r8 = (R8)((INT64)data);
+            r8 = (CLR_R8)((INT64)data);
             break;
         case ELEMENT_TYPE_R4:
-            r8 = *(R4*)pSrc;
+            r8 = *(CLR_R4*)pSrc;
             break;
         case ELEMENT_TYPE_R8:
-            r8 = *(R8*)pSrc;
+            r8 = *(CLR_R8*)pSrc;
             break;
         default:
             _ASSERTE(!"Unknown R4 or R8 conversion");
@@ -389,7 +389,7 @@ void InvokeUtil::CreatePrimitiveValue(CorElementType dstType,
         }
 
         if (dstType == ELEMENT_TYPE_R4) {
-            R4 r4 = (R4)r8;
+            CLR_R4 r4 = (CLR_R4)r8;
             *pDst = (UINT32&)r4;
         }
         else {

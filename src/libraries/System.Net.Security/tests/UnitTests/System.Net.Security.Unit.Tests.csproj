@@ -27,10 +27,14 @@
     <Compile Include="TlsAlertsMatchWindowsInterop.cs" />
     <Compile Include="MD4Tests.cs" />
     <Compile Include="NTAuthenticationTests.cs" />
+    <Compile Include="NegotiateAuthenticationTests.cs" />
     <!-- Fakes -->
     <Compile Include="Fakes\FakeSslStream.Implementation.cs" />
     <Compile Include="Fakes\FakeAuthenticatedStream.cs" />
-    <Compile Include="Fakes\FakeNtlmServer.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Security\FakeNtlmServer.cs"
+             Link="Common\System\Net\Security\FakeNtlmServer.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Security\FakeNegotiateServer.cs"
+             Link="Common\System\Net\Security\FakeNegotiateServer.cs" />
     <!-- Common test files -->
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />

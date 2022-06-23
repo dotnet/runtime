@@ -1,19 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
+using System.Runtime.CompilerServices;
+using System.Security;
+using System.Text;
+using System.Xml;
+using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+
 namespace System.Runtime.Serialization
 {
-    using System;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.IO;
-    using System.Xml;
-    using System.Runtime.CompilerServices;
-    using System.Text;
-    using System.Security;
-    using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, DataContract>;
-    using System.Diagnostics.CodeAnalysis;
-
     public abstract class XmlObjectSerializer
     {
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
@@ -426,7 +426,7 @@ namespace System.Runtime.Serialization
 
         internal virtual Type? GetSerializeType(object? graph)
         {
-            return (graph == null) ? null : graph.GetType();
+            return graph?.GetType();
         }
 
         internal virtual Type? GetDeserializeType()

@@ -2,14 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.InteropServices;
+#if DEBUG
+using System.Globalization;
+using System.Text;
+#endif
 
 namespace System.Data.OleDb
 {
-#if DEBUG
-    using Globalization;
-    using Text;
-#endif
-
     internal enum DBBindStatus
     {
         OK = 0,

@@ -146,7 +146,6 @@ BOOL IsCOMPlusExceptionHandlerInstalled();
 #endif
 
 BOOL InstallUnhandledExceptionFilter();
-void UninstallUnhandledExceptionFilter();
 
 #if !defined(TARGET_UNIX)
 // Section naming is a strategy by itself. Ideally, we could have named the UEF section
@@ -741,8 +740,6 @@ void CPFH_AdjustContextForThreadSuspensionRace(T_CONTEXT *pContext, Thread *pThr
 
 DWORD GetGcMarkerExceptionCode(LPVOID ip);
 bool IsGcMarker(T_CONTEXT *pContext, EXCEPTION_RECORD *pExceptionRecord);
-
-void InitSavedExceptionInfo();
 
 bool ShouldHandleManagedFault(
                         EXCEPTION_RECORD*               pExceptionRecord,
