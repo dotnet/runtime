@@ -65,7 +65,7 @@ function initRunArgs() {
     runArgs.debugging = runArgs.debugging === undefined ? false : runArgs.debugging;
 }
 
-function applyArguments() {
+function mergeArguments() {
     let incomingArguments = argv.slice(2);
 
     while (incomingArguments && incomingArguments.length > 0) {
@@ -114,7 +114,7 @@ try {
         console.debug(`could not load ./runArgs.json: ${err}. Ignoring`);
     }
     initRunArgs();
-    applyArguments();
+    mergeArguments();
 
     createDotnetRuntime(({ MONO, INTERNAL, BINDING, Module }) => ({
         disableDotnet6Compatibility: true,
@@ -129,7 +129,7 @@ try {
             }
             // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
             for (let variable in runArgs.environmentVariables) {
-                config.environmentVariables[variable] = runArgs.environmentVariables[variable];
+                config.environment_variables[variable] = runArgs.environmentVariables[variable];
             }
             config.diagnostic_tracing = !!runArgs.diagnosticTracing;
             if (is_debugging) {

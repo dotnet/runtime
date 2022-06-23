@@ -28,8 +28,6 @@ const originalConsole = {
 
 let runArgs = {};
 let consoleWebSocket;
-let is_debugging = false;
-let forward_console = true;
 
 function proxyConsoleMethod(prefix, func, asJson) {
     return function () {
@@ -155,7 +153,7 @@ function initRunArgs() {
     runArgs.applicationArguments = runArgs.applicationArguments === undefined ? [] : runArgs.applicationArguments;
     runArgs.profilers = runArgs.profilers === undefined ? [] : runArgs.profilers;
     runArgs.workingDirectory = runArgs.workingDirectory === undefined ? '/' : runArgs.workingDirectory;
-    runArgs.environment_variables = runArgs.environment_variables === undefined ? {} : runArgs.environment_variables;
+    runArgs.environmentVariables = runArgs.environmentVariables === undefined ? {} : runArgs.environmentVariables;
     runArgs.runtimeArgs = runArgs.runtimeArgs === undefined ? [] : runArgs.runtimeArgs;
     runArgs.enableGC = runArgs.enableGC === undefined ? true : runArgs.enableGC;
     runArgs.diagnosticTracing = runArgs.diagnosticTracing === undefined ? false : runArgs.diagnosticTracing;
@@ -178,7 +176,7 @@ function processQueryArguments(incomingArguments) {
             const parts = arg.split('=');
             if (parts.length != 2)
                 set_exit_code(1, "Error: malformed argument: '" + currentArg);
-            runArgs.environment_variables[parts[0]] = parts[1];
+            runArgs.environmentVariables[parts[0]] = parts[1];
         } else if (currentArg.startsWith("--runtime-arg=")) {
             const arg = currentArg.substring("--runtime-arg=".length);
             runArgs.runtimeArgs.push(arg);
@@ -228,13 +226,10 @@ function processQueryArguments(incomingArguments) {
 function applyArguments() {
     initRunArgs();
 
-    // set defaults
-    is_debugging = runArgs.debugging === true;
-    forward_console = runArgs.forwardConsole === true;
 
     console.log("Application arguments: " + runArgs.applicationArguments.join(' '));
 
-    if (forward_console) {
+    if (!!runArgs.forwardConsole) {
         const methods = ["debug", "trace", "warn", "info", "error"];
         for (let m of methods) {
             if (typeof (console[m]) !== "function") {
@@ -406,11 +401,11 @@ Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntim
                 throw err;
             }
             // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
-            for (let variable in runArgs.environment_variables) {
-                config.environment_variables[variable] = runArgs.environment_variables[variable];
+            for (let variable in runArgs.environmentVariables) {
+                config.environment_variables[variable] = runArgs.environmentVariables[variable];
             }
             config.diagnostic_tracing = !!runArgs.diagnosticTracing;
-            if (is_debugging) {
+            if (!!runArgs.debugging) {
                 if (config.debug_level == 0)
                     config.debug_level = -1;
 

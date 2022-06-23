@@ -93,8 +93,6 @@ function stringify_as_error_with_stack(err) {
 
 let runArgs = {};
 let consoleWebSocket;
-let is_debugging = false;
-let forward_console = false;
 
 function initRunArgs() {
     // set defaults
@@ -108,10 +106,7 @@ function initRunArgs() {
 }
 
 function applyArguments() {
-    is_debugging = runArgs.debugging === true;
-    forward_console = runArgs.forwardConsole === true;
-
-    if (forward_console) {
+    if (!!runArgs.forwardConsole) {
         const methods = ["debug", "trace", "warn", "info", "error"];
         for (let m of methods) {
             if (typeof (console[m]) !== "function") {
@@ -177,10 +172,10 @@ try {
             }
             // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
             for (let variable in runArgs.environmentVariables) {
-                config.environmentVariables[variable] = runArgs.environmentVariables[variable];
+                config.environment_variables[variable] = runArgs.environmentVariables[variable];
             }
             config.diagnostic_tracing = !!runArgs.diagnosticTracing;
-            if (is_debugging) {
+            if (!!runArgs.debugging) {
                 if (config.debug_level == 0)
                     config.debug_level = -1;
 
