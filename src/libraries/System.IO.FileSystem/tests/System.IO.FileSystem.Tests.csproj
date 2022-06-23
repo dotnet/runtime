@@ -34,7 +34,6 @@
     <Compile Include="FileStream\LockUnlock.cs" />
     <Compile Include="FileSystemTest.cs" />
     <Compile Include="File\EncryptDecrypt.cs" />
-    <Compile Include="File\GetSetAttributesCommon.cs" />
     <Compile Include="File\GetSetAttributes_String.cs" />
     <Compile Include="File\GetSetAttributes_SafeFileHandle.cs" />
     <Compile Include="File\GetSetTimes.cs" />

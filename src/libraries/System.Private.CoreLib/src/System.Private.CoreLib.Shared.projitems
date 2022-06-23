@@ -2021,9 +2021,6 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.UnixFileSystemTypes.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.UnixFileSystemTypes.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FChMod.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.FChMod.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FLock.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.FLock.cs</Link>
     </Compile>

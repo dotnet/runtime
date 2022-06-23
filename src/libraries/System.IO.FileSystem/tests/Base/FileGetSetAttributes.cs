@@ -16,10 +16,11 @@ namespace System.IO.Tests
             AssertSettingAttributes(path, FileAttributes.Normal);
         }
 
-        [ConditionalFact(nameof(CanBeReadOnly))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void SettingAttributes_Unix_ReadOnly()
         {
+            if (!CanBeReadOnly) return;
             string path = CreateItem();
             AssertSettingAttributes(path, FileAttributes.ReadOnly);
         }
@@ -39,6 +40,7 @@ namespace System.IO.Tests
         [InlineData(FileAttributes.Archive)]
         [InlineData(FileAttributes.Normal)]
         [InlineData(FileAttributes.Temporary)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void SettingAttributes_Windows(FileAttributes attributes)
         {
             string path = CreateItem();
