@@ -135,7 +135,7 @@ void CHECK::Trigger(LPCSTR reason)
 #if _DEBUG
     DbgAssertDialog((char*)m_file, m_line, (char *)messageString);
 #else
-    OutputDebugStringA(messageString);
+    OutputDebugStringUtf8(messageString);
     DebugBreak();
 #endif
 

@@ -204,7 +204,7 @@ VOID DECLSPEC_NORETURN TerminateOnAssert()
 VOID LogAssert(
     LPCSTR      szFile,
     int         iLine,
-    LPCSTR      szExpr
+    LPCUTF8     szExpr
 )
 {
     STATIC_CONTRACT_NOTHROW;
@@ -322,7 +322,7 @@ static const char * szLowMemoryAssertMessage = "Assert failure (unable to format
 bool _DbgBreakCheck(
     LPCSTR      szFile,
     int         iLine,
-    LPCSTR      szExpr,
+    LPCUTF8     szExpr,
     BOOL        fConstrained)
 {
     STATIC_CONTRACT_THROWS;
@@ -387,7 +387,7 @@ bool _DbgBreakCheck(
         OutputDebugStringA("\n");
         OutputDebugStringA(szFile);
         OutputDebugStringA("\n");
-        OutputDebugStringA(szExpr);
+        OutputDebugStringUtf8(szExpr);
         OutputDebugStringA("\n");
         printf(szLowMemoryAssertMessage);
         printf("\n");

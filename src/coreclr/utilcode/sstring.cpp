@@ -1795,12 +1795,14 @@ void SString::VPrintf(const CHAR *format, va_list args)
     CONTRACT_VOID
     {
         INSTANCE_CHECK;
-        PRECONDITION(GetRepresentation() == REPRESENTATION_ASCII || GetRepresentation() == REPRESENTATION_UTF8);
         PRECONDITION(CheckPointer(format));
         THROWS;
         GC_NOTRIGGER;
     }
     CONTRACT_END;
+
+    // This method overrides the content of the SString, so it can come in with any format.
+    // We're going to change the representation here.
 
     va_list ap;
     // sprintf gives us no means to know how many characters are written

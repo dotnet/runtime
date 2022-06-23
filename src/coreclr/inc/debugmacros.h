@@ -26,7 +26,7 @@ extern "C" {
 class SString;
 bool GetStackTraceAtContext(SString & s, struct _CONTEXT * pContext);
 
-bool _DbgBreakCheck(LPCSTR szFile, int iLine, LPCSTR szExpr, BOOL fConstrained = FALSE);
+bool _DbgBreakCheck(LPCSTR szFile, int iLine, LPCUTF8 szExpr, BOOL fConstrained = FALSE);
 
 extern VOID ANALYZER_NORETURN DbgAssertDialog(const char *szFile, int iLine, const char *szExpr);
 
