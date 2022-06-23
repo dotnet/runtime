@@ -3578,14 +3578,14 @@ void Compiler::fgDebugCheckNodesUniqueness()
 //    - The loop flags are valid
 //    - no loop shares `top` with any of its children
 //    - no loop shares `bottom` with the header of any of its siblings
-//    - no top-entry loop has an that comes from outside the loop other than from lpHead
+//    - no top-entry loop has a predecessor that comes from outside the loop other than from lpHead
 //
 void Compiler::fgDebugCheckLoopTable()
 {
 #ifdef DEBUG
     if (!optLoopTableValid)
     {
-        JITDUMP("*************** In fgDebugCheckLoopTable: not checking, loop table no longer maintained\n");
+        JITDUMP("*************** In fgDebugCheckLoopTable: loop table not valid\n");
         return;
     }
     JITDUMP("*************** In fgDebugCheckLoopTable\n");

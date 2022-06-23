@@ -6407,8 +6407,7 @@ PhaseStatus Lowering::DoPhase()
     // local var liveness can delete code, which may create empty blocks
     if (comp->opts.OptimizationEnabled())
     {
-        comp->optLoopsMarked = false;
-        bool modified        = comp->fgUpdateFlowGraph();
+        bool modified = comp->fgUpdateFlowGraph();
         modified |= comp->fgRemoveDeadBlocks();
 
         if (modified)

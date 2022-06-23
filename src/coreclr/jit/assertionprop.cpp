@@ -462,12 +462,13 @@ Compiler::fgWalkResult Compiler::optAddCopiesCallback(GenTree** pTree, fgWalkDat
     return WALK_CONTINUE;
 }
 
-/*****************************************************************************
- *
- *  Add new copies before Assertion Prop.
- */
-
-void Compiler::optAddCopies()
+//------------------------------------------------------------------------------
+// optAddCopies: Add new copies before Assertion Prop.
+//
+// Returns:
+//    suitable phase satus
+//
+PhaseStatus Compiler::optAddCopies()
 {
     unsigned   lclNum;
     LclVarDsc* varDsc;
@@ -477,18 +478,15 @@ void Compiler::optAddCopies()
     {
         printf("\n*************** In optAddCopies()\n\n");
     }
-    if (verboseTrees)
-    {
-        printf("Blocks/Trees at start of phase\n");
-        fgDispBasicBlocks(true);
-    }
 #endif
 
     // Don't add any copies if we have reached the tracking limit.
     if (lvaHaveManyLocals())
     {
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
+
+    bool modified = false;
 
     for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
     {
@@ -893,6 +891,8 @@ void Compiler::optAddCopies()
             tree->gtFlags |= (copyAsgn->gtFlags & GTF_ALL_EFFECT);
         }
 
+        modified = true;
+
 #ifdef DEBUG
         if (verbose)
         {
@@ -902,6 +902,8 @@ void Compiler::optAddCopies()
         }
 #endif
     }
+
+    return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------------

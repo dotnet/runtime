@@ -3245,7 +3245,7 @@ public:
 
     void lvaSortByRefCount();
 
-    void lvaMarkLocalVars(); // Local variable ref-counting
+    PhaseStatus lvaMarkLocalVars(); // Local variable ref-counting
     void lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers);
     void lvaMarkLocalVars(BasicBlock* block, bool isRecompute);
 
@@ -4713,7 +4713,7 @@ public:
     inline bool PreciseRefCountsRequired();
 
     // Performs SSA conversion.
-    void fgSsaBuild();
+    PhaseStatus fgSsaBuild();
 
     // Reset any data structures to the state expected by "fgSsaBuild", so it can be run again.
     void fgResetForSsa();
@@ -4737,7 +4737,7 @@ public:
 
     // Do value numbering (assign a value number to each
     // tree node).
-    void fgValueNumber();
+    PhaseStatus fgValueNumber();
 
     void fgValueNumberLocalStore(GenTree*             storeNode,
                                  GenTreeLclVarCommon* lclDefNode,
@@ -6018,7 +6018,7 @@ private:
     void optPerformHoistExpr(GenTree* expr, BasicBlock* exprBb, unsigned lnum);
 
 public:
-    void optOptimizeBools();
+    PhaseStatus optOptimizeBools();
 
 public:
     PhaseStatus optInvertLoops();    // Invert loops so they're entered at top and tested at bottom.
@@ -6299,7 +6299,7 @@ public:
                        BasicBlock*   exit,
                        unsigned char exitCnt);
 
-    void optClearLoopIterInfo();
+    PhaseStatus optClearLoopIterInfo();
 
 #ifdef DEBUG
     void optPrintLoopInfo(unsigned lnum, bool printVerbose = false);
@@ -6910,9 +6910,9 @@ public:
     GenTree* optPropGetValue(unsigned lclNum, unsigned ssaNum, optPropKind valueKind);
     GenTree* optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap);
     bool optDoEarlyPropForBlock(BasicBlock* block);
-    bool optDoEarlyPropForFunc();
-    void optEarlyProp();
-    void optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap);
+    bool        optDoEarlyPropForFunc();
+    PhaseStatus optEarlyProp();
+    bool optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap);
     GenTree* optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap);
     bool optIsNullCheckFoldingLegal(GenTree*    tree,
                                     GenTree*    nullCheckTree,
@@ -7311,7 +7311,7 @@ public:
     static void optDumpAssertionIndices(const char* header, ASSERT_TP assertions, const char* footer = nullptr);
     static void optDumpAssertionIndices(ASSERT_TP assertions, const char* footer = nullptr);
 
-    void optAddCopies();
+    PhaseStatus optAddCopies();
 
     /**************************************************************************
      *                          Range checks
@@ -7366,9 +7366,6 @@ protected:
     ssize_t optGetArrayRefScaleAndIndex(GenTree* mul, GenTree** pIndex DEBUGARG(bool bRngChk));
 
     bool optReachWithoutCall(BasicBlock* srcBB, BasicBlock* dstBB);
-
-protected:
-    bool optLoopsMarked;
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

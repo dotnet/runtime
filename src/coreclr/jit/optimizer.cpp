@@ -19,7 +19,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 void Compiler::optInit()
 {
-    optLoopsMarked      = false;
     fgHasLoops          = false;
     loopAlignCandidates = 0;
 
@@ -393,7 +392,7 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
 
 void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmarkLoop)
 {
-    if (!optLoopsMarked)
+    if (!optLoopTableValid)
     {
         return;
     }
@@ -592,7 +591,7 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
 // but becomes invalid afterwards. Clear the info that might be used incorrectly afterwards
 // in JitDump or by subsequent phases.
 //
-void Compiler::optClearLoopIterInfo()
+PhaseStatus Compiler::optClearLoopIterInfo()
 {
     for (unsigned lnum = 0; lnum < optLoopCount; lnum++)
     {
@@ -605,6 +604,8 @@ void Compiler::optClearLoopIterInfo()
         loop.lpConstInit = -1;
         loop.lpTestTree  = nullptr;
     }
+
+    return PhaseStatus::MODIFIED_NOTHING;
 }
 
 #ifdef DEBUG
@@ -5323,7 +5324,8 @@ void Compiler::optResetLoopInfo()
     // TODO: the loop table is always allocated as the same (maximum) size, so this is wasteful.
     // We could zero it out (possibly only in DEBUG) to be paranoid, but there's no reason to
     // force it to be re-allocated.
-    optLoopTable = nullptr;
+    optLoopTable      = nullptr;
+    optLoopTableValid = false;
 
     for (BasicBlock* const block : Blocks())
     {
@@ -5466,11 +5468,7 @@ void Compiler::optFindLoops()
         optIdentifyLoopsForAlignment(); // Check if any of the loops need alignment
     }
 
-    optLoopsMarked = true;
-
-#ifdef DEBUG
     optLoopTableValid = true;
-#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -9701,6 +9699,9 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
 //-----------------------------------------------------------------------------
 // optOptimizeBools:    Folds boolean conditionals for GT_JTRUE/GT_RETURN nodes
 //
+// Returns:
+//    suitable phase status
+//
 // Notes:
 //      If the operand of GT_JTRUE/GT_RETURN node is GT_EQ/GT_NE of the form
 //      "if (boolVal ==/!=  0/1)", the GT_EQ/GT_NE nodes are translated into a
@@ -9754,7 +9755,7 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
 //          - x == 1 || y == 1 ==> (x|y)!=0: Skip cases where either x or y is greater than 1, e.g., x=2, y=0
 //          - x == 0 || y == 0 ==> (x&y)==0: Skip cases where x and y have opposite bits set, e.g., x=2, y=1
 //
-void Compiler::optOptimizeBools()
+PhaseStatus Compiler::optOptimizeBools()
 {
 #ifdef DEBUG
     if (verbose)
@@ -9767,10 +9768,14 @@ void Compiler::optOptimizeBools()
         }
     }
 #endif
-    bool change;
+    bool     change    = false;
+    unsigned numCond   = 0;
+    unsigned numReturn = 0;
+    unsigned numPasses = 0;
 
     do
     {
+        numPasses++;
         change = false;
 
         for (BasicBlock* const b1 : Blocks())
@@ -9812,6 +9817,7 @@ void Compiler::optOptimizeBools()
                 if (optBoolsDsc.optOptimizeBoolsCondBlock())
                 {
                     change = true;
+                    numCond++;
                 }
             }
             else if (b2->bbJumpKind == BBJ_RETURN)
@@ -9836,6 +9842,7 @@ void Compiler::optOptimizeBools()
                 if (optBoolsDsc.optOptimizeBoolsReturnBlock(b3))
                 {
                     change = true;
+                    numReturn++;
                 }
             }
             else
@@ -9847,9 +9854,9 @@ void Compiler::optOptimizeBools()
         }
     } while (change);
 
-#ifdef DEBUG
-    fgDebugCheckBBlist();
-#endif
+    JITDUMP("\noptimized %u BBJ_COND cases, %u BBJ_RETURN cases in %u passes\n", numCond, numReturn, numPasses);
+
+    return ((numCond + numReturn) == 0) ? PhaseStatus::MODIFIED_NOTHING : PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, unsigned> LclVarRefCounts;
