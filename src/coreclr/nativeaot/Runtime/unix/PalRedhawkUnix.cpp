@@ -14,6 +14,8 @@
 #include <pthread.h>
 #include "gcenv.h"
 #include "holder.h"
+#include "UnixSignals.h"
+#include "UnixContext.h"
 #include "HardwareExceptions.h"
 #include "cgroupcpu.h"
 
@@ -942,12 +944,81 @@ extern "C" uint16_t RtlCaptureStackBackTrace(uint32_t arg1, uint32_t arg2, void*
     return 0;
 }
 
-typedef uint32_t (__stdcall *HijackCallback)(HANDLE hThread, _In_ PAL_LIMITED_CONTEXT* pThreadContext, _In_opt_ void* pCallbackContext);
+static PalHijackCallback g_pHijackCallback;
+static struct sigaction g_previousActivationHandler;
 
-REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_ HijackCallback callback, _In_opt_ void* pCallbackContext)
+static void ActivationHandler(int code, siginfo_t* siginfo, void* context)
 {
-    // UNIXTODO: Implement PalHijack
-    return E_FAIL;
+    ASSERT(g_pHijackCallback != NULL);
+
+    // Only accept activations from the current process
+    if (siginfo->si_pid == getpid()
+#ifdef HOST_OSX
+        // On OSX si_pid is sometimes 0. It was confirmed by Apple to be expected, as the si_pid is tracked at the process level. So when multiple
+        // signals are in flight in the same process at the same time, it may be overwritten / zeroed.
+        || siginfo->si_pid == 0
+#endif
+        )
+    {
+        PAL_LIMITED_CONTEXT palContext;
+        NativeContextToPalContext(context, &palContext);
+        g_pHijackCallback(&palContext, NULL);
+        //TODO: VS update conditionally, this is rare
+        UpdateNativeContextFromPalContext(context, &palContext);
+    }
+    else
+    {
+        // Call the original handler when it is not ignored or default (terminate).
+        if (g_previousActivationHandler.sa_flags & SA_SIGINFO)
+        {
+            _ASSERTE(g_previousActivationHandler.sa_sigaction != NULL);
+            g_previousActivationHandler.sa_sigaction(code, siginfo, context);
+        }
+        else
+        {
+            if (g_previousActivationHandler.sa_handler != SIG_IGN &&
+                g_previousActivationHandler.sa_handler != SIG_DFL)
+            {
+                _ASSERTE(g_previousActivationHandler.sa_handler != NULL);
+                g_previousActivationHandler.sa_handler(code);
+            }
+        }
+    }
+}
+
+REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalHijackCallback callback)
+{
+    ASSERT(g_pHijackCallback == NULL);
+    g_pHijackCallback = callback;
+
+    return AddSignalHandler(INJECT_ACTIVATION_SIGNAL, ActivationHandler, &g_previousActivationHandler);
+}
+
+REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* pCallbackContext)
+{
+    ThreadUnixHandle* threadHandle = (ThreadUnixHandle*)hThread;
+    int status = pthread_kill(*threadHandle->GetObject(), INJECT_ACTIVATION_SIGNAL);
+    // We can get EAGAIN when printing stack overflow stack trace and when other threads hit
+    // stack overflow too. Those are held in the sigsegv_handler with blocked signals until
+    // the process exits.
+
+#ifdef __APPLE__
+    // On Apple, pthread_kill is not allowed to be sent to dispatch queue threads
+    if (status == ENOTSUP)
+    {
+        return status;
+    }
+#endif
+
+    if ((status != 0) && (status != EAGAIN))
+    {
+        // Failure to send the signal is fatal. There are only two cases when sending
+        // the signal can fail. First, if the signal ID is invalid and second,
+        // if the thread doesn't exist anymore.
+        abort();
+    }
+
+    return status;
 }
 
 extern "C" uint32_t WaitForSingleObjectEx(HANDLE handle, uint32_t milliseconds, UInt32_BOOL alertable)

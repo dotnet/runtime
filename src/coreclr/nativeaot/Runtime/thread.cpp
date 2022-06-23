@@ -610,7 +610,6 @@ bool Thread::IsHijackTarget(void * address)
 bool Thread::Hijack()
 {
     ASSERT(ThreadStore::GetCurrentThread() == ThreadStore::GetSuspendingThread());
-
     ASSERT_MSG(ThreadStore::GetSuspendingThread() != this, "You may not hijack a thread from itself.");
 
     if (m_hPalThread == INVALID_HANDLE_VALUE)
@@ -622,13 +621,20 @@ bool Thread::Hijack()
     // requires THREAD_SUSPEND_RESUME / THREAD_GET_CONTEXT / THREAD_SET_CONTEXT permissions
 
     Thread* pCurrentThread = ThreadStore::GetCurrentThread();
-    uint32_t result = PalHijack(m_hPalThread, HijackCallback, this);
+    uint32_t result = PalHijack(m_hPalThread, this);
     return result == 0;
 }
 
-UInt32_BOOL Thread::HijackCallback(HANDLE /*hThread*/, PAL_LIMITED_CONTEXT* pThreadContext, void* pCallbackContext)
+UInt32_BOOL Thread::HijackCallback(PAL_LIMITED_CONTEXT* pThreadContext, void* pCallbackContext)
 {
     Thread* pThread = (Thread*) pCallbackContext;
+    if (pThread == NULL)
+    {
+        pThread = ThreadStore::GetCurrentThread();
+
+        ASSERT(pThread != NULL);
+        ASSERT(pThread != ThreadStore::GetSuspendingThread());
+    }
 
     // we have a thread stopped, and we do not know where exactly.
     // it could be in a system call or in our own runtime holding locks
@@ -660,7 +666,7 @@ UInt32_BOOL Thread::HijackCallback(HANDLE /*hThread*/, PAL_LIMITED_CONTEXT* pThr
 #endif //FEATURE_SUSPEND_REDIRECTION
     }
 
-    return pThread->InternalHijack(pThreadContext, NormalHijackTargets);
+    return pThread->HijackReturnAddress(pThreadContext, NormalHijackTargets);
 }
 
 #ifdef FEATURE_GC_STRESS
@@ -701,18 +707,20 @@ void Thread::HijackForGcStress(PAL_LIMITED_CONTEXT * pSuspendCtx)
     }
     if (bForceGC || pInstance->ShouldHijackCallsiteForGcStress(ip))
     {
-        pCurrentThread->InternalHijack(pSuspendCtx, GcStressHijackTargets);
+        pCurrentThread->HijackReturnAddress(pSuspendCtx, GcStressHijackTargets);
     }
 }
 #endif // FEATURE_GC_STRESS
 
 // This function is called in one of two scenarios:
-// 1) from a thread to place a return hijack onto its own stack. This is only done for GC stress cases
-//    via Thread::HijackForGcStress above.
-// 2) from another thread to place a return hijack onto this thread's stack. In this case the target
-//    thread is OS suspended someplace in managed code. The only constraint on the suspension is that the
+// 1) from a thread to place a return hijack onto its own stack for GC stress cases
+//    via Thread::HijackForGcStress above. The only constraint on the suspension is that the
 //    stack be crawlable enough to yield the location of the return address.
-bool Thread::InternalHijack(PAL_LIMITED_CONTEXT * pSuspendCtx, void * pvHijackTargets[])
+// 2) from another thread to place a return hijack onto this thread's stack. In this case the target
+//    thread is OS suspended someplace in managed code.
+// 3) from a thread to place a return hijack onto its own stack for GC suspension. In this case the target
+//    thread is interrupted at pSuspendCtx in managed code via a signal or similar.
+bool Thread::HijackReturnAddress(PAL_LIMITED_CONTEXT * pSuspendCtx, void * pvHijackTargets[])
 {
     bool fSuccess = false;
 

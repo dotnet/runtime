@@ -127,19 +127,9 @@ PTR_VOID UnixNativeCodeManager::GetFramePointer(MethodInfo *   pMethodInfo,
     return NULL;
 }
 
-bool UnixNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
+uint32_t UnixNativeCodeManager::GetCodeOffset(MethodInfo* pMethodInfo, PTR_VOID address, /*out*/ PTR_UInt8* gcInfo)
 {
-    // @TODO: IsSafePoint
-    return false;
-}
-
-void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
-                                       PTR_VOID        safePointAddress,
-                                       REGDISPLAY *    pRegisterSet,
-                                       GCEnumContext * hCallback,
-                                       bool            isActiveStackFrame)
-{
-    UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
+    UnixNativeMethodInfo* pNativeMethodInfo = (UnixNativeMethodInfo*)pMethodInfo;
 
     PTR_UInt8 p = pNativeMethodInfo->pMainLSDA;
 
@@ -151,23 +141,71 @@ void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
     if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
         p += sizeof(int32_t);
 
+    *gcInfo = p;
+
     uint32_t codeOffset = (uint32_t)(PINSTRToPCODE(dac_cast<TADDR>(safePointAddress)) - PINSTRToPCODE(dac_cast<TADDR>(pNativeMethodInfo->pMethodStartAddress)));
+    return codeOffset;
+}
+
+bool UnixNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
+{
+    MethodInfo pMethodInfo;
+    if (!FindMethodInfo(pvAddress, &pMethodInfo))
+    {
+        return false;
+    }
+
+    PTR_UInt8 gcInfo;
+    uint32_t codeOffset = GetCodeOffset(&pMethodInfo, pvAddress, &gcInfo);
 
     GcInfoDecoder decoder(
-        GCInfoToken(p),
+        GCInfoToken(gcInfo),
+        GcInfoDecoderFlags(DECODE_INTERRUPTIBILITY),
+        codeOffset
+    );
+
+    return decoder.IsInterruptible();
+}
+
+void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
+                                       PTR_VOID        safePointAddress,
+                                       REGDISPLAY *    pRegisterSet,
+                                       GCEnumContext * hCallback,
+                                       bool            isActiveStackFrame)
+{
+    PTR_UInt8 gcInfo;
+    uint32_t codeOffset = GetCodeOffset(pMethodInfo, safePointAddress, &gcInfo);
+
+    if (!isActiveStackFrame)
+    {
+        // If we are not in the active method, we are currently pointing
+        // to the return address. That may not be reachable after a call (if call does not return)
+        // or reachable via a jump and thus have a different live set.
+        // Therefore we simply adjust the offset to inside of call instruction.
+        // NOTE: The GcInfoDecoder depends on this; if you change it, you must
+        // revisit the GcInfoEncoder/Decoder
+        codeOffset--;
+    }
+
+    GcInfoDecoder decoder(
+        GCInfoToken(gcInfo),
         GcInfoDecoderFlags(DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
-        codeOffset - 1 // TODO: isActiveStackFrame
+        codeOffset
     );
 
     ICodeManagerFlags flags = (ICodeManagerFlags)0;
     if (pNativeMethodInfo->executionAborted)
         flags = ICodeManagerFlags::ExecutionAborted;
+
     if (IsFilter(pMethodInfo))
         flags = (ICodeManagerFlags)(flags | ICodeManagerFlags::NoReportUntracked);
 
+    if (isActiveStackFrame)
+        flags = (ICodeManagerFlags)(flags | ICodeManagerFlags::ActiveStackFrame);
+
     if (!decoder.EnumerateLiveSlots(
         pRegisterSet,
-        false /* reportScratchSlots */,
+        isActiveStackFrame /* reportScratchSlots */,
         flags,
         hCallback->pCallback,
         hCallback
@@ -289,13 +327,104 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
     return true;
 }
 
+// Convert the return kind that was encoded by RyuJIT to the
+// enum used by the runtime.
+GCRefKind GetGcRefKind(ReturnKind returnKind)
+{
+    static_assert((GCRefKind)ReturnKind::RT_Scalar == GCRK_Scalar, "ReturnKind::RT_Scalar does not match GCRK_Scalar");
+    static_assert((GCRefKind)ReturnKind::RT_Object == GCRK_Object, "ReturnKind::RT_Object does not match GCRK_Object");
+    static_assert((GCRefKind)ReturnKind::RT_ByRef == GCRK_Byref, "ReturnKind::RT_ByRef does not match GCRK_Byref");
+    ASSERT((returnKind == RT_Scalar) || (returnKind == RT_Object) || (returnKind == RT_ByRef));
+
+    return (GCRefKind)returnKind;
+}
+
 bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
                                                        REGDISPLAY *    pRegisterSet,       // in
                                                        PTR_PTR_VOID *  ppvRetAddrLocation, // out
                                                        GCRefKind *     pRetValueKind)      // out
 {
-    // @TODO: GetReturnAddressHijackInfo
+    UnixNativeMethodInfo* pNativeMethodInfo = (UnixNativeMethodInfo*)pMethodInfo;
+
+    PTR_UInt8 p = pNativeMethodInfo->pMainLSDA;
+
+    uint8_t unwindBlockFlags = *p++;
+
+    if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
+        p += sizeof(int32_t);
+
+    // Check whether this is a funclet
+    if ((unwindBlockFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT)
+        return false;
+
+    // Skip hijacking a reverse-pinvoke method - it doesn't get us much because we already synchronize
+    // with the GC on the way back to native code.
+    if ((unwindBlockFlags & UBF_FUNC_REVERSE_PINVOKE) != 0)
+        return false;
+
+    if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
+        p += sizeof(int32_t);
+
+    // Decode the GC info for the current method to determine its return type
+    GcInfoDecoderFlags flags = DECODE_RETURN_KIND;
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+    flags = (GcInfoDecoderFlags)(flags | DECODE_HAS_TAILCALLS);
+#endif // TARGET_ARM || TARGET_ARM64
+    GcInfoDecoder decoder(GCInfoToken(p), flags);
+
+    GCRefKind gcRefKind = GetGcRefKind(decoder.GetReturnKind());
+
+    // Unwind the current method context to the caller's context to get its stack pointer
+    // and obtain the location of the return address on the stack
+#if defined(TARGET_AMD64)
+
+    if (!VirtualUnwind(pRegisterSet))
+    {
+        return false;
+    }
+
+    *ppvRetAddrLocation = (PTR_PTR_VOID)(pRegisterSet->GetSP() - sizeof(TADDR));
+    *pRetValueKind = gcRefKind;
+    return true;
+
+#elif defined(TARGET_ARM64)
+
+    if (decoder.HasTailCalls())
+    {
+        // Do not hijack functions that have tail calls, since there are two problems:
+        // 1. When a function that tail calls another one is hijacked, the LR may be
+        //    stored at a different location in the stack frame of the tail call target.
+        //    So just by performing tail call, the hijacked location becomes invalid and
+        //    unhijacking would corrupt stack by writing to that location.
+        // 2. There is a small window after the caller pops LR from the stack in its
+        //    epilog and before the tail called function pushes LR in its prolog when
+        //    the hijacked return address would not be not on the stack and so we would
+        //    not be able to unhijack.
+        return false;
+    }
+
+    PTR_UIntNative pLR = pRegisterSet->pLR;
+    if (!VirtualUnwind(pRegisterSet))
+    {
+        return false;
+    }
+
+    if (pRegisterSet->pLR == pLR)
+    {
+        // This is the case when we are either:
+        //
+        // 1) In a leaf method that does not push LR on stack, OR
+        // 2) In the prolog/epilog of a non-leaf method that has not yet pushed LR on stack
+        //    or has LR already popped off.
+        return false;
+    }
+
+    *ppvRetAddrLocation = (PTR_PTR_VOID)pRegisterSet->pLR;
+    *pRetValueKind = gcRefKind;
+    return true;
+#else
     return false;
+#endif // defined(TARGET_AMD64)
 }
 
 PTR_VOID UnixNativeCodeManager::RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, PTR_VOID controlPC)

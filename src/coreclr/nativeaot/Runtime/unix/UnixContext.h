@@ -6,6 +6,8 @@
 
 // Convert Unix native context to PAL_LIMITED_CONTEXT
 void NativeContextToPalContext(const void* context, PAL_LIMITED_CONTEXT* palContext);
+// Update integer registers in Unix native context from PAL_LIMITED_CONTEXT
+void UpdateNativeContextFromPalContext(const void* context, PAL_LIMITED_CONTEXT* palContext);
 // Redirect Unix native context to the PAL_LIMITED_CONTEXT and also set the first two argument registers
 void RedirectNativeContext(void* context, const PAL_LIMITED_CONTEXT* palContext, uintptr_t arg0Reg, uintptr_t arg1Reg);
 

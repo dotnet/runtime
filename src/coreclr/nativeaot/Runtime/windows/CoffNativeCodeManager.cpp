@@ -683,7 +683,7 @@ GCRefKind GetGcRefKind(ReturnKind returnKind)
     static_assert((GCRefKind)ReturnKind::RT_Scalar == GCRK_Scalar, "ReturnKind::RT_Scalar does not match GCRK_Scalar");
     static_assert((GCRefKind)ReturnKind::RT_Object == GCRK_Object, "ReturnKind::RT_Object does not match GCRK_Object");
     static_assert((GCRefKind)ReturnKind::RT_ByRef  == GCRK_Byref, "ReturnKind::RT_ByRef does not match GCRK_Byref");
-    ASSERT((returnKind == RT_Scalar) || (returnKind == GCRK_Object) || (returnKind == GCRK_Byref));
+    ASSERT((returnKind == RT_Scalar) || (returnKind == RT_Object) || (returnKind == RT_ByRef));
 
     return (GCRefKind)returnKind;
 }

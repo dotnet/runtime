@@ -508,8 +508,17 @@ REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalGetThreadContext(HAND
     return true;
 }
 
+static PalHijackCallback g_pHijackCallback;
 
-REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_ PalHijackCallback callback, _In_opt_ void* pCallbackContext)
+REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalHijackCallback callback)
+{
+    ASSERT(g_pHijackCallback == NULL);
+    g_pHijackCallback = callback;
+
+    return true;
+}
+
+REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* pCallbackContext)
 {
     if (hThread == INVALID_HANDLE_VALUE)
     {
@@ -529,7 +538,7 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_ PalHija
     }
     else
     {
-        result = callback(hThread, &ctx, pCallbackContext) ? S_OK : E_FAIL;
+        result = g_pHijackCallback(&ctx, pCallbackContext) ? S_OK : E_FAIL;
     }
 
     ResumeThread(hThread);
