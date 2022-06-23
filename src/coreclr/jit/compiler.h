@@ -5257,6 +5257,10 @@ public:
 
     bool fgReorderBlocks(bool useProfile);
 
+#ifdef FEATURE_EH_FUNCLETS
+    bool fgFuncletsAreCold();
+#endif // FEATURE_EH_FUNCLETS
+
     PhaseStatus fgDetermineFirstColdBlock();
 
     bool fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bSrc = nullptr);
