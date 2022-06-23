@@ -164,11 +164,9 @@ export function mono_wasm_debugger_attached(): void {
     cwraps.mono_wasm_set_is_debugger_attached(true);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function mono_wasm_set_entrypoint_breakpoint(assembly_name: CharPtr, entrypoint_method_token: number): void {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    //keep these assignments, these values are used by BrowserDebugProxy
     _assembly_name_str = Module.UTF8ToString(assembly_name).concat(".dll");
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _entrypoint_method_token = entrypoint_method_token;
     console.log(`Adding an entrypoint breakpoint ${_assembly_name_str} at method token  ${_entrypoint_method_token}`);
     // eslint-disable-next-line no-debugger    
