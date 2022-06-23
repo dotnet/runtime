@@ -129,8 +129,8 @@ try {
                 throw err;
             }
             // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
-            for (let variable in runArgs.runtimeArgs) {
-                config.environment_variables[variable] = runArgs.runtimeArgs[variable];
+            for (let variable in runArgs.environment_variables) {
+                config.environment_variables[variable] = runArgs.environment_variables[variable];
             }
             config.diagnostic_tracing = !!runArgs.diagnosticTracing;
             if (is_debugging) {
