@@ -1364,7 +1364,8 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
                 GenTree* argx = arg->GetEarlyNode();
                 assert(argx != nullptr);
 
-                if ((argx->gtOper == GT_LCL_VAR) || (argx->gtOper == GT_LCL_FLD))
+                // As a CQ heuristic, sort TYP_STRUCT args using the cost estimation below.
+                if (!argx->TypeIs(TYP_STRUCT) && argx->OperIs(GT_LCL_VAR, GT_LCL_FLD))
                 {
                     noway_assert(curInx <= endTab);
 
@@ -1410,9 +1411,8 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
                 assert(argx != nullptr);
 
                 // We should have already handled these kinds of args
-                assert(argx->gtOper != GT_LCL_VAR);
-                assert(argx->gtOper != GT_LCL_FLD);
-                assert(argx->gtOper != GT_CNS_INT);
+                assert((!argx->OperIs(GT_LCL_VAR, GT_LCL_FLD) || argx->TypeIs(TYP_STRUCT)) &&
+                       !argx->OperIs(GT_CNS_INT));
 
                 // This arg should either have no persistent side effects or be the last one in our table
                 // assert(((argx->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0) || (curInx == (argCount-1)));
@@ -3261,6 +3261,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                 // - This is irrelevant for X86, since structs are always passed by value on the stack.
 
                 GenTree* lclVar       = fgIsIndirOfAddrOfLocal(argObj);
+                bool     argIsLocal   = (lclVar != nullptr) || argObj->OperIsLocalRead();
                 bool     canTransform = false;
 
                 if (structBaseType != TYP_STRUCT)
@@ -3278,7 +3279,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     // or UNIX_AMD64_ABI cases where they will be passed in registers.
                     else
                     {
-                        canTransform = (lclVar != nullptr);
+                        canTransform = argIsLocal;
                         passingSize  = genTypeSize(structBaseType);
                     }
 #endif //  TARGET_ARM64 || UNIX_AMD64_ABI || TARGET_LOONGARCH64
@@ -3308,7 +3309,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                                 makeOutArgCopy = true;
                             }
                         }
-                        else if (lclVar == nullptr)
+                        else if (!argIsLocal)
                         {
                             // This should only be the case of a value directly producing a known struct type.
                             assert(argObj->TypeGet() != TYP_STRUCT);
@@ -3786,9 +3787,10 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
             {
                 argNode = fgMorphLclArgToFieldlist(lcl);
             }
+#ifndef TARGET_XARCH
             else if (argNode->TypeGet() == TYP_STRUCT)
             {
-                // If this is a non-register struct, it must be referenced from memory.
+                // ARM/ARM64/LoongArch64 backends do not support local nodes as sources of some stack args.
                 if (!actualArg->OperIs(GT_OBJ))
                 {
                     // Create an Obj of the temp to use it as a call argument.
@@ -3796,8 +3798,9 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
                     argNode = gtNewObjNode(lvaGetStruct(lcl->GetLclNum()), argNode);
                 }
                 // Its fields will need to be accessed by address.
-                lvaSetVarDoNotEnregister(lcl->GetLclNum() DEBUG_ARG(DoNotEnregisterReason::IsStructArg));
+                lvaSetVarDoNotEnregister(lcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::IsStructArg));
             }
+#endif // !TARGET_XARCH
         }
 
         return argNode;
