@@ -8343,6 +8343,21 @@ inline bool GenTree::IsVectorCreate() const
 #endif // FEATURE_HW_INTRINSICS
 
 #ifdef FEATURE_SIMD
+    if (OperIs(GT_SIMD))
+    {
+        switch (AsSIMD()->GetSIMDIntrinsicId())
+        {
+            case SIMDIntrinsicInit:
+            case SIMDIntrinsicInitFixed:
+            case SIMDIntrinsicInitArray:
+            case SIMDIntrinsicInitArrayX:
+            case SIMDIntrinsicInitN:
+                return true;
+
+            default:
+                return false;
+        }
+    }
     return OperIs(GT_SIMD);
 #else
     return false;

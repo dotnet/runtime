@@ -13881,7 +13881,7 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
         bool allArgsAreConst = true;
         for (GenTree* arg : multiOp->Operands())
         {
-            if (!arg->OperIsConst())
+            if (!arg->OperIsConst() || arg->OperIs(GT_CNS_VEC))
             {
                 allArgsAreConst = false;
                 break;
