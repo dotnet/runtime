@@ -6,9 +6,6 @@
 #include "mono/component/event_pipe.h"
 #include "mono/component/event_pipe-wasm.h"
 #include "mono/metadata/components.h"
-#ifdef HOST_WASM
-#include <emscripten/emscripten.h>
-#endif
 
 static EventPipeSessionID _dummy_session_id;
 
@@ -555,11 +552,7 @@ mono_wasm_event_pipe_session_disable (MonoWasmEventPipeSessionID session_id)
 void
 mono_wasm_event_pipe_set_early_startup_callback (mono_wasm_event_pipe_early_startup_cb callback)
 {
-#ifdef HOST_BROWSER
-	EM_ASM({
-			console.log ('in stub early callback\n');
-		});
-#endif
+	g_assert_not_reached ();
 }
 
 #endif /* HOST_WASM */
