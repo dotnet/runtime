@@ -752,6 +752,9 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
     STATIC_CONTRACT_GC_TRIGGERS; // Sends IPC event
     STATIC_CONTRACT_THROWS;
 
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    DWORD64 ssp = GetSSP(pContext);
+#endif
     // Create local copies of all structs passed as arguments to prevent them from being overwritten
     CONTEXT context;
     memcpy(&context, pContext, sizeof(CONTEXT));
@@ -832,6 +835,8 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
 
 #if defined(TARGET_X86)
     ResumeAtJit(pContext, oldSP);
+#elif defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    ClrRestoreNonvolatileContextWorker(pContext, ssp);
 #else
     ClrRestoreNonvolatileContext(pContext);
 #endif

@@ -194,7 +194,7 @@ namespace ILCompiler
             int methodNameHashCode = NameHashCode(method.Name);
 
             // Todo: Add signature to hash.
-            if (method.HasInstantiation && !method.IsGenericMethodDefinition)
+            if (method.HasInstantiation)
             {
                 hashCode ^= GenericInstanceHashCode(methodNameHashCode, method.Instantiation);
             }

@@ -204,4 +204,16 @@
   <data name="MarshallingCharAsStringMarshallingCustomNotSupported" xml:space="preserve">
     <value>Marshalling char with 'StringMarshalling.Custom' is not supported. To use a custom type marshaller, specify 'MarshalUsingAttribute'.</value>
   </data>
+  <data name="BidirectionalMissingRequiredMarshaller" xml:space="preserve">
+    <value>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</value>
+  </data>
+  <data name="ManagedToUnmanagedMissingRequiredMarshaller" xml:space="preserve">
+    <value>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</value>
+  </data>
+  <data name="UnmanagedToManagedMissingRequiredMarshaller" xml:space="preserve">
+    <value>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</value>
+  </data>
+  <data name="MarshallerTypeMustBeStatic" xml:space="preserve">
+    <value>The marshaller type '{0}' for managed type '{1}' must be static.</value>
+  </data>
 </root>

@@ -46,16 +46,6 @@ inline ReadyToRunImportSectionFlags operator &( const ReadyToRunImportSectionFla
     return static_cast<ReadyToRunImportSectionFlags>(static_cast<uint16_t>(left) & static_cast<uint16_t>(right));
 }
 
-inline ReadyToRunCrossModuleInlineFlags operator |( const ReadyToRunCrossModuleInlineFlags left, const ReadyToRunCrossModuleInlineFlags right)
-{
-    return static_cast<ReadyToRunCrossModuleInlineFlags>(static_cast<uint32_t>(left) | static_cast<uint32_t>(right));
-}
-
-inline ReadyToRunCrossModuleInlineFlags operator &( const ReadyToRunCrossModuleInlineFlags left, const ReadyToRunCrossModuleInlineFlags right)
-{
-    return static_cast<ReadyToRunCrossModuleInlineFlags>(static_cast<uint32_t>(left) & static_cast<uint32_t>(right));
-}
-
 #ifdef TARGET_X86
 
 typedef DPTR(RUNTIME_FUNCTION) PTR_RUNTIME_FUNCTION;
@@ -159,11 +149,9 @@ enum CORCOMPILE_FIXUP_BLOB_KIND
     ENCODE_CHECK_VIRTUAL_FUNCTION_OVERRIDE,         /* Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, code will not be used */
     ENCODE_VERIFY_VIRTUAL_FUNCTION_OVERRIDE,        /* Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, generate runtime failure. */
 
-    ENCODE_CHECK_IL_BODY,                           /* Check to see if an IL method is defined the same at runtime as at compile time. A failed match will cause code not to be used. */
-    ENCODE_VERIFY_IL_BODY,                          /* Verify an IL body is defined the same at compile time and runtime. A failed match will cause a hard runtime failure. */
-
     ENCODE_MODULE_HANDLE                = 0x50,     /* Module token */
     ENCODE_STATIC_FIELD_ADDRESS,                    /* For accessing a static field */
+    ENCODE_MODULE_ID_FOR_STATICS,                   /* For accessing static fields */
     ENCODE_MODULE_ID_FOR_GENERIC_STATICS,           /* For accessing static fields */
     ENCODE_CLASS_ID_FOR_STATICS,                    /* For accessing static fields */
     ENCODE_SYNC_LOCK,                               /* For synchronizing access to a type */
@@ -171,6 +159,7 @@ enum CORCOMPILE_FIXUP_BLOB_KIND
     ENCODE_VARARGS_METHODDEF,                       /* For calling a varargs method */
     ENCODE_VARARGS_METHODREF,
     ENCODE_VARARGS_SIG,
+    ENCODE_ACTIVE_DEPENDENCY,                       /* Conditional active dependency */
 };
 
 enum EncodeMethodSigFlags

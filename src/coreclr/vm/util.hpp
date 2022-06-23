@@ -754,7 +754,6 @@ private:
 
 class MethodDesc;
 class Module;
-class ModuleBase;
 
 class DACNotify
 {

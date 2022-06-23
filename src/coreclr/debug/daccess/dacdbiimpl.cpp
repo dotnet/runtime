@@ -6463,7 +6463,7 @@ bool DacHeapWalker::GetSize(TADDR tMT, size_t &size)
         if (cs)
         {
             DWORD tmp = 0;
-            if (mCache.Read(mCurrObj+sizeof(TADDR), &tmp))
+            if (mCache.Read(mCurrObj + sizeof(TADDR), &tmp))
                 cs *= tmp;
             else
                 ret = false;
@@ -6483,7 +6483,7 @@ bool DacHeapWalker::GetSize(TADDR tMT, size_t &size)
         // we will stuck in an infinite loop, so better fail the call now.
         ret &= (0 < size);
         // Also guard for cases where the size reported is too large and exceeds the high allocation mark.
-        ret &= ((tMT + size) <= mHeaps[mCurrHeap].Segments[mCurrSeg].End);
+        ret &= ((mCurrObj + size) <= mHeaps[mCurrHeap].Segments[mCurrSeg].End);
     }
     EX_CATCH
     {

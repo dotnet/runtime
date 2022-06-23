@@ -40,6 +40,7 @@
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsiOS)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetstvOS)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsMacCatalyst)' == 'true'">true</BuildMonoAOTCrossCompiler>
+    <BuildMonoAOTCrossCompiler Condition="'$(TargetsOSX)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsBrowser)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsAndroid)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <MonoObjCrossDir>$([MSBuild]::NormalizeDirectory('$(MonoObjDir)', 'cross'))</MonoObjCrossDir>

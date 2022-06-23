@@ -3193,7 +3193,12 @@ namespace System.Net.Http.Functional.Tests
                 },
                 async server =>
                 {
-                    await server.AcceptConnectionSendResponseAndCloseAsync(content: "foo");
+                    HttpRequestData request = await server.AcceptConnectionSendResponseAndCloseAsync(content: "foo");
+                    if (request.Version == HttpVersion20.Value)
+                    {
+                        HttpHeaderData schemeHeader = Assert.Single(request.Headers, headerData => headerData.Name == ":scheme");
+                        Assert.Equal(useSsl ? "https" : "http", schemeHeader.Value);
+                    }
                 }, options: options);
         }
 

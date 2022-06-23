@@ -1706,7 +1706,7 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
         ModuleData->TypeRefToMethodTableMap = PTR_CDADDR(pModule->m_TypeRefToMethodTableMap.pTable);
         ModuleData->MethodDefToDescMap = PTR_CDADDR(pModule->m_MethodDefToDescMap.pTable);
         ModuleData->FieldDefToDescMap = PTR_CDADDR(pModule->m_FieldDefToDescMap.pTable);
-        ModuleData->MemberRefToDescMap = PTR_CDADDR(pModule->m_MemberRefMap.pTable);
+        ModuleData->MemberRefToDescMap = NULL;
         ModuleData->FileReferencesMap = PTR_CDADDR(pModule->m_FileReferencesMap.pTable);
         ModuleData->ManifestModuleReferencesMap = PTR_CDADDR(pModule->m_ManifestModuleReferencesMap.pTable);
 

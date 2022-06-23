@@ -36,9 +36,9 @@ namespace System.Text.Json
                 }
             }
 
-            public void Add(T? jsonNode) => ThrowHelper.ThrowNotSupportedException_NodeCollectionIsReadOnly();
+            public void Add(T? jsonNode) => ThrowHelper.ThrowNotSupportedException_CollectionIsReadOnly();
 
-            public void Clear() => ThrowHelper.ThrowNotSupportedException_NodeCollectionIsReadOnly();
+            public void Clear() => ThrowHelper.ThrowNotSupportedException_CollectionIsReadOnly();
 
             public bool Contains(T? jsonNode) => _parent.ContainsValue(jsonNode);
 
@@ -46,14 +46,14 @@ namespace System.Text.Json
             {
                 if (index < 0)
                 {
-                    ThrowHelper.ThrowArgumentOutOfRangeException_NodeArrayIndexNegative(nameof(index));
+                    ThrowHelper.ThrowArgumentOutOfRangeException_ArrayIndexNegative(nameof(index));
                 }
 
                 foreach (KeyValuePair<string, T?> item in _parent)
                 {
                     if (index >= nodeArray.Length)
                     {
-                        ThrowHelper.ThrowArgumentException_NodeArrayTooSmall(nameof(nodeArray));
+                        ThrowHelper.ThrowArgumentException_ArrayTooSmall(nameof(nodeArray));
                     }
 
                     nodeArray[index++] = item.Value;
@@ -68,7 +68,7 @@ namespace System.Text.Json
                 }
             }
 
-            bool ICollection<T?>.Remove(T? node) => throw ThrowHelper.GetNotSupportedException_NodeCollectionIsReadOnly();
+            bool ICollection<T?>.Remove(T? node) => throw ThrowHelper.GetNotSupportedException_CollectionIsReadOnly();
         }
     }
 }

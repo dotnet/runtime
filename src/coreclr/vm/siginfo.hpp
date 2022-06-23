@@ -203,13 +203,13 @@ private:
 
         // SigPointer should be just after E_T_VAR or E_T_MVAR
         TypeHandle GetTypeVariable(CorElementType et,const SigTypeContext *pTypeContext);
-        TypeHandle GetTypeVariableThrowing(ModuleBase *pModule,
+        TypeHandle GetTypeVariableThrowing(Module *pModule,
                                            CorElementType et,
                                            ClassLoader::LoadTypesFlag fLoadTypes,
                                            const SigTypeContext *pTypeContext);
 
         // Parse type following E_T_GENERICINST
-        TypeHandle GetGenericInstType(ModuleBase *        pModule,
+        TypeHandle GetGenericInstType(Module *        pModule,
                                       ClassLoader::LoadTypesFlag = ClassLoader::LoadTypes,
                                       ClassLoadLevel level = CLASS_LOADED,
                                       const ZapSig::Context *pZapSigContext = NULL);
@@ -247,7 +247,7 @@ public:
         //   occurring in the type arguments
         // This semantics is used by the class loader to load tricky recursive definitions in phases
         // (e.g. class C : D<C>, or struct S : I<S>)
-        TypeHandle GetTypeHandleThrowing(ModuleBase* pModule,
+        TypeHandle GetTypeHandleThrowing(Module* pModule,
                                          const SigTypeContext *pTypeContext,
                                          ClassLoader::LoadTypesFlag fLoadTypes = ClassLoader::LoadTypes,
                                          ClassLoadLevel level = CLASS_LOADED,
@@ -401,7 +401,7 @@ private:
 class Substitution
 {
 private:
-    ModuleBase *         m_pModule; // Module in which instantiation lives (needed to resolve typerefs)
+    Module *             m_pModule; // Module in which instantiation lives (needed to resolve typerefs)
     SigPointer           m_sigInst;
     const Substitution * m_pNext;
 
@@ -414,7 +414,7 @@ public:
     }
 
     Substitution(
-        ModuleBase *         pModuleArg,
+        Module *             pModuleArg,
         const SigPointer &   sigInst,
         const Substitution * pNextSubstitution)
     {
@@ -426,7 +426,7 @@ public:
 
     Substitution(
         mdToken              parentTypeDefOrRefOrSpec,
-        ModuleBase *         pModuleArg,
+        Module *             pModuleArg,
         const Substitution * nextArg);
 
     Substitution(const Substitution & subst)
@@ -438,7 +438,7 @@ public:
     }
     void DeleteChain();
 
-    ModuleBase * GetModule() const { LIMITED_METHOD_DAC_CONTRACT; return m_pModule; }
+    Module * GetModule() const { LIMITED_METHOD_DAC_CONTRACT; return m_pModule; }
     const Substitution * GetNext() const { LIMITED_METHOD_DAC_CONTRACT; return m_pNext; }
     const SigPointer & GetInst() const { LIMITED_METHOD_DAC_CONTRACT; return m_sigInst; }
     DWORD GetLength() const;
@@ -457,14 +457,14 @@ class TokenPairList
 {
 public:
     // Chain using this constructor when comparing two typedefs for equivalence.
-    TokenPairList(mdToken token1, ModuleBase *pModule1, mdToken token2, ModuleBase *pModule2, TokenPairList *pNext)
+    TokenPairList(mdToken token1, Module *pModule1, mdToken token2, Module *pModule2, TokenPairList *pNext)
         : m_token1(token1), m_token2(token2),
           m_pModule1(pModule1), m_pModule2(pModule2),
           m_bInTypeEquivalenceForbiddenScope(pNext == NULL ? FALSE : pNext->m_bInTypeEquivalenceForbiddenScope),
           m_pNext(pNext)
     { LIMITED_METHOD_CONTRACT; }
 
-    static BOOL Exists(TokenPairList *pList, mdToken token1, ModuleBase *pModule1, mdToken token2, ModuleBase *pModule2)
+    static BOOL Exists(TokenPairList *pList, mdToken token1, Module *pModule1, mdToken token2, Module *pModule2)
     {
         LIMITED_METHOD_CONTRACT;
         while (pList != NULL)
@@ -488,7 +488,7 @@ public:
     }
 
     // Chain using this method when comparing type specs.
-    static TokenPairList AdjustForTypeSpec(TokenPairList *pTemplate, ModuleBase *pTypeSpecModule, PCCOR_SIGNATURE pTypeSpecSig, DWORD cbTypeSpecSig);
+    static TokenPairList AdjustForTypeSpec(TokenPairList *pTemplate, Module *pTypeSpecModule, PCCOR_SIGNATURE pTypeSpecSig, DWORD cbTypeSpecSig);
     static TokenPairList AdjustForTypeEquivalenceForbiddenScope(TokenPairList *pTemplate);
 
 private:
@@ -502,7 +502,7 @@ private:
     { LIMITED_METHOD_CONTRACT; }
 
     mdToken m_token1, m_token2;
-    ModuleBase *m_pModule1, *m_pModule2;
+    Module *m_pModule1, *m_pModule2;
     BOOL m_bInTypeEquivalenceForbiddenScope;
     TokenPairList *m_pNext;
 };  // class TokenPairList
@@ -808,9 +808,9 @@ class MetaSig
                 // We should not hit ELEMENT_TYPE_END in the middle of the signature
                 if (mt == ELEMENT_TYPE_END)
                 {
-                    THROW_BAD_FORMAT(BFA_BAD_SIGNATURE, (ModuleBase*)NULL);
+                    THROW_BAD_FORMAT(BFA_BAD_SIGNATURE, (Module *)NULL);
                 }
-                IfFailThrowBF(m_pWalk.SkipExactlyOne(), BFA_BAD_SIGNATURE, (ModuleBase*)NULL);
+                IfFailThrowBF(m_pWalk.SkipExactlyOne(), BFA_BAD_SIGNATURE, (Module *)NULL);
                 return mt;
             }
         } // NextArgNormalized
@@ -934,7 +934,7 @@ class MetaSig
                                              BOOL dropGenericArgumentLevel = FALSE) const
         {
              WRAPPER_NO_CONTRACT;
-             return m_pLastType.GetTypeHandleThrowing((ModuleBase*)m_pModule, &m_typeContext, fLoadTypes,
+             return m_pLastType.GetTypeHandleThrowing(m_pModule, &m_typeContext, fLoadTypes,
                                                       level, dropGenericArgumentLevel);
         }
 
@@ -951,7 +951,7 @@ class MetaSig
                                             ClassLoadLevel level = CLASS_LOADED) const
         {
              WRAPPER_NO_CONTRACT;
-             return m_pRetType.GetTypeHandleThrowing((ModuleBase*)m_pModule, &m_typeContext, fLoadTypes, level);
+             return m_pRetType.GetTypeHandleThrowing(m_pModule, &m_typeContext, fLoadTypes, level);
         }
 
         //------------------------------------------------------------------
@@ -975,8 +975,8 @@ class MetaSig
             PCCOR_SIGNATURE &    pSig2,
             PCCOR_SIGNATURE      pEndSig1,
             PCCOR_SIGNATURE      pEndSig2,
-            ModuleBase *         pModule1,
-            ModuleBase *         pModule2,
+            Module *             pModule1,
+            Module *             pModule2,
             const Substitution * pSubst1,
             const Substitution * pSubst2,
             TokenPairList *      pVisited = NULL);
@@ -999,11 +999,11 @@ class MetaSig
         static BOOL CompareMethodSigs(
             PCCOR_SIGNATURE     pSig1,
             DWORD               cSig1,
-            ModuleBase*         pModule1,
+            Module*             pModule1,
             const Substitution* pSubst1,
             PCCOR_SIGNATURE     pSig2,
             DWORD               cSig2,
-            ModuleBase*         pModule2,
+            Module*             pModule2,
             const Substitution* pSubst2,
             BOOL                skipReturnTypeSig,
             TokenPairList*      pVisited = NULL
@@ -1030,10 +1030,10 @@ class MetaSig
         static BOOL CompareFieldSigs(
             PCCOR_SIGNATURE pSig1,
             DWORD       cSig1,
-            ModuleBase* pModule1,
+            Module*     pModule1,
             PCCOR_SIGNATURE pSig2,
             DWORD       cSig2,
-            ModuleBase* pModule2,
+            Module*     pModule2,
             TokenPairList *pVisited = NULL
         );
 
@@ -1058,23 +1058,23 @@ private:
                                                const Substitution *pSubst2,
                                                Module *pModule2, mdGenericParam tok2); //overridden
 
-        static BOOL CompareTypeDefOrRefOrSpec(ModuleBase *pModule1, mdToken tok1,
+        static BOOL CompareTypeDefOrRefOrSpec(Module *pModule1, mdToken tok1,
                                               const Substitution *pSubst1,
-                                              ModuleBase *pModule2, mdToken tok2,
+                                              Module *pModule2, mdToken tok2,
                                               const Substitution *pSubst2,
                                               TokenPairList *pVisited);
         static BOOL CompareTypeSpecToToken(mdTypeSpec tk1,
                                            mdToken tk2,
-                                           ModuleBase *pModule1,
-                                           ModuleBase *pModule2,
+                                           Module *pModule1,
+                                           Module *pModule2,
                                            const Substitution *pSubst1,
                                            TokenPairList *pVisited);
 
         static BOOL CompareElementTypeToToken(PCCOR_SIGNATURE &pSig1,
                                              PCCOR_SIGNATURE pEndSig1, // end of sig1
                                              mdToken         tk2,
-                                             ModuleBase*         pModule1,
-                                             ModuleBase*         pModule2,
+                                             Module*         pModule1,
+                                             Module*         pModule2,
                                              const Substitution*   pSubst1,
                                              TokenPairList *pVisited);
 
@@ -1169,7 +1169,7 @@ private:
 
 // fResolved is TRUE when one of the tokens is a resolved TypeRef. This is used to restrict
 // type equivalence checks for value types.
-BOOL CompareTypeTokens(mdToken tk1, mdToken tk2, ModuleBase *pModule1, ModuleBase *pModule2, TokenPairList *pVisited = NULL);
+BOOL CompareTypeTokens(mdToken tk1, mdToken tk2, Module *pModule1, Module *pModule2, TokenPairList *pVisited = NULL);
 
 // Nonthrowing version of CompareTypeTokens.
 //

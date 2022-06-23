@@ -3894,29 +3894,33 @@ void emitter::emitDispJumpList()
     unsigned int jmpCount = 0;
     for (instrDescJmp* jmp = emitJumpList; jmp != nullptr; jmp = jmp->idjNext)
     {
+        printf("IG%02u IN%04x %3s[%u]", jmp->idjIG->igNum, jmp->idDebugOnlyInfo()->idNum,
+               codeGen->genInsDisplayName(jmp), jmp->idCodeSize());
+
+        if (!jmp->idIsBound())
+        {
+
 #if defined(TARGET_ARM64)
-        if ((jmp->idInsFmt() == IF_LARGEADR) || (jmp->idInsFmt() == IF_LARGELDC))
-        {
-            printf("IG%02u IN%04x %3s[%u] -> %s\n", jmp->idjIG->igNum, jmp->idDebugOnlyInfo()->idNum,
-                   codeGen->genInsDisplayName(jmp), jmp->idCodeSize(), getRegName(jmp->idReg1()));
-        }
-        else
-        {
-            printf("IG%02u IN%04x %3s[%u] -> IG%02u\n", jmp->idjIG->igNum, jmp->idDebugOnlyInfo()->idNum,
-                   codeGen->genInsDisplayName(jmp), jmp->idCodeSize(),
-                   ((insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel))->igNum);
-        }
+            if ((jmp->idInsFmt() == IF_LARGEADR) || (jmp->idInsFmt() == IF_LARGELDC))
+            {
+                printf(" -> %s", getRegName(jmp->idReg1()));
+            }
+            else
+            {
+                printf(" -> IG%02u", ((insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel))->igNum);
+            }
 #else
-        printf("IG%02u IN%04x %3s[%u] -> IG%02u %s\n", jmp->idjIG->igNum, jmp->idDebugOnlyInfo()->idNum,
-               codeGen->genInsDisplayName(jmp), jmp->idCodeSize(),
-               ((insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel))->igNum,
+            printf(" -> IG%02u", ((insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel))->igNum);
+
 #if defined(TARGET_XARCH)
-               jmp->idjIsRemovableJmpCandidate ? " ; removal candidate" : ""
-#else
-               ""
-#endif
-               );
-#endif
+            if (jmp->idjIsRemovableJmpCandidate)
+            {
+                printf(" ; removal candidate");
+            }
+#endif // TARGET_XARCH
+#endif // !TARGET_ARM64
+        }
+        printf("\n");
         jmpCount += 1;
     }
     printf("  total jump count: %u\n", jmpCount);
@@ -4557,7 +4561,6 @@ AGAIN:
         else if (emitIsUncondJump(jmp))
         {
             // Nothing to do; we don't shrink these.
-            assert(jmp->idjShort);
             ssz = JMP_SIZE_SMALL;
         }
         else if (emitIsLoadLabel(jmp))
@@ -6260,7 +6263,13 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
     coldCodeBlock = nullptr;
 
-    CorJitAllocMemFlag allocMemFlag = CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN;
+    // This restricts the data alignment to: 4, 8, 16, or 32 bytes
+    // Alignments greater than 32 would require VM support in ICorJitInfo::allocMem
+    uint32_t dataAlignment = emitConsDsc.alignment;
+    assert((dataSection::MIN_DATA_ALIGN <= dataAlignment) && (dataAlignment <= dataSection::MAX_DATA_ALIGN) &&
+           isPow2(dataAlignment));
+
+    uint32_t codeAlignment = TARGET_POINTER_SIZE;
 
 #ifdef TARGET_X86
     //
@@ -6280,14 +6289,14 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
         const weight_t scenarioHotWeight = 256.0;
         if (emitComp->fgCalledCount > (scenarioHotWeight * emitComp->fgProfileRunsCount()))
         {
-            allocMemFlag = CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN;
+            codeAlignment = 16;
         }
     }
     else
     {
         if (emitTotalHotCodeSize <= 16)
         {
-            allocMemFlag = CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN;
+            codeAlignment = 16;
         }
     }
 #endif
@@ -6299,61 +6308,46 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     if (emitComp->opts.OptimizationEnabled() && !emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) &&
         (emitTotalHotCodeSize > 16) && emitComp->fgHasLoops)
     {
-        allocMemFlag = CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN;
+        codeAlignment = 32;
     }
 #endif
 
-    // This restricts the emitConsDsc.alignment to: 1, 2, 4, 8, 16, or 32 bytes
-    // Alignments greater than 32 would require VM support in ICorJitInfo::allocMem
-    assert(isPow2(emitConsDsc.alignment) && (emitConsDsc.alignment <= 32));
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+    // For arm64/LoongArch64, we're going to put the data in the code section. So make sure the code section has
+    // adequate alignment.
+    if (emitConsDsc.dsdOffs > 0)
+    {
+        codeAlignment = max(codeAlignment, dataAlignment);
+    }
+#endif
 
-    if (emitConsDsc.alignment == 16)
+    // Note that we don't support forcing code alignment of 8 bytes on 32-bit platforms; an omission?
+    assert((TARGET_POINTER_SIZE <= codeAlignment) && (codeAlignment <= 32) && isPow2(codeAlignment));
+
+    CorJitAllocMemFlag allocMemFlagCodeAlign = CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN;
+    if (codeAlignment == 32)
     {
-        allocMemFlag = static_cast<CorJitAllocMemFlag>(allocMemFlag | CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN);
+        allocMemFlagCodeAlign = CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN;
     }
-    else if (emitConsDsc.alignment == 32)
+    else if (codeAlignment == 16)
     {
-        allocMemFlag = static_cast<CorJitAllocMemFlag>(allocMemFlag | CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN);
+        allocMemFlagCodeAlign = CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN;
     }
+
+    CorJitAllocMemFlag allocMemFlagDataAlign = static_cast<CorJitAllocMemFlag>(0);
+    if (dataAlignment == 16)
+    {
+        allocMemFlagDataAlign = CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN;
+    }
+    else if (dataAlignment == 32)
+    {
+        allocMemFlagDataAlign = CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN;
+    }
+
+    CorJitAllocMemFlag allocMemFlag = static_cast<CorJitAllocMemFlag>(allocMemFlagCodeAlign | allocMemFlagDataAlign);
 
     AllocMemArgs args;
     memset(&args, 0, sizeof(args));
-
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
-    // For arm64/LoongArch64, we want to allocate JIT data always adjacent to code similar to what native compiler does.
-    // This way allows us to use a single `ldr` to access such data like float constant/jmp table.
-    // For LoongArch64 using `pcaddi + ld` to access such data.
-    if (emitTotalColdCodeSize > 0)
-    {
-        // JIT data might be far away from the cold code.
-        NYI("Need to handle fix-up to data from cold code.");
-    }
-
-    UNATIVE_OFFSET roDataAlignmentDelta = 0;
-    if (emitConsDsc.dsdOffs && (emitConsDsc.alignment == TARGET_POINTER_SIZE))
-    {
-        UNATIVE_OFFSET roDataAlignment = TARGET_POINTER_SIZE; // 8 Byte align by default.
-        roDataAlignmentDelta = (UNATIVE_OFFSET)ALIGN_UP(emitTotalHotCodeSize, roDataAlignment) - emitTotalHotCodeSize;
-        assert((roDataAlignmentDelta == 0) || (roDataAlignmentDelta == 4));
-    }
-
-    args.hotCodeSize  = emitTotalHotCodeSize + roDataAlignmentDelta + emitConsDsc.dsdOffs;
-    args.coldCodeSize = emitTotalColdCodeSize;
-    args.roDataSize   = 0;
-    args.xcptnsCount  = xcptnsCount;
-    args.flag         = allocMemFlag;
-
-    emitComp->eeAllocMem(&args);
-
-    codeBlock       = (BYTE*)args.hotCodeBlock;
-    codeBlockRW     = (BYTE*)args.hotCodeBlockRW;
-    coldCodeBlock   = (BYTE*)args.coldCodeBlock;
-    coldCodeBlockRW = (BYTE*)args.coldCodeBlockRW;
-
-    consBlock   = codeBlock + emitTotalHotCodeSize + roDataAlignmentDelta;
-    consBlockRW = codeBlockRW + emitTotalHotCodeSize + roDataAlignmentDelta;
-
-#else
 
     args.hotCodeSize  = emitTotalHotCodeSize;
     args.coldCodeSize = emitTotalColdCodeSize;
@@ -6361,7 +6355,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     args.xcptnsCount  = xcptnsCount;
     args.flag         = allocMemFlag;
 
-    emitComp->eeAllocMem(&args);
+    emitComp->eeAllocMem(&args, emitConsDsc.alignment);
 
     codeBlock       = (BYTE*)args.hotCodeBlock;
     codeBlockRW     = (BYTE*)args.hotCodeBlockRW;
@@ -6370,13 +6364,27 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     consBlock       = (BYTE*)args.roDataBlock;
     consBlockRW     = (BYTE*)args.roDataBlockRW;
 
-#endif
-
 #ifdef DEBUG
     if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
     {
         assert(((size_t)codeBlock & 31) == 0);
     }
+#if 0
+    // TODO: we should be able to assert the following, but it appears crossgen2 doesn't respect them,
+    // or maybe it respects them in the written image but not in the buffer pointer given to the JIT.
+    if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
+    {
+        assert(((size_t)codeBlock & 15) == 0);
+    }
+    if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
+    {
+        assert(((size_t)consBlock & 31) == 0);
+    }
+    if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
+    {
+        assert(((size_t)consBlock & 15) == 0);
+    }
+#endif // 0
 #endif
 
     // if (emitConsDsc.dsdOffs)
@@ -7275,7 +7283,12 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(unsigned size, unsigned alignment, var_ty
     }
 
     assert((secOffs % alignment) == 0);
-    emitConsDsc.alignment = max(emitConsDsc.alignment, alignment);
+    if (emitConsDsc.alignment < alignment)
+    {
+        JITDUMP("Increasing data section alignment from %u to %u for type %s\n", emitConsDsc.alignment, alignment,
+                varTypeName(dataType));
+        emitConsDsc.alignment = alignment;
+    }
 
     /* Advance the current offset */
     emitConsDsc.dsdOffs += size;
@@ -7673,7 +7686,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
 
     if (emitComp->opts.disAsm)
     {
-        emitDispDataSec(sec);
+        emitDispDataSec(sec, dst);
     }
 
     unsigned secNum = 0;
@@ -7794,13 +7807,14 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
 //
 // Arguments:
 //    section - the data section description
+//    dst     - address of the data section
 //
 // Notes:
 //    The output format attempts to mirror typical assembler syntax.
 //    Data section entries lack type information so float/double entries
 //    are displayed as if they are integers/longs.
 //
-void emitter::emitDispDataSec(dataSecDsc* section)
+void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
 {
     printf("\n");
 
@@ -7808,11 +7822,17 @@ void emitter::emitDispDataSec(dataSecDsc* section)
 
     for (dataSection* data = section->dsdList; data != nullptr; data = data->dsNext)
     {
+        if (emitComp->opts.disAddr)
+        {
+            printf("; @" FMT_ADDR "\n", DBG_ADDR(dst));
+        }
+
         const char* labelFormat = "%-7s";
         char        label[64];
         sprintf_s(label, ArrLen(label), "RWD%02u", offset);
         printf(labelFormat, label);
         offset += data->dsSize;
+        dst += data->dsSize;
 
         if ((data->dsType == dataSection::blockRelative32) || (data->dsType == dataSection::blockAbsoluteAddr))
         {

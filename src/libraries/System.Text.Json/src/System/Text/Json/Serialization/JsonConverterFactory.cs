@@ -32,7 +32,7 @@ namespace System.Text.Json.Serialization
         /// </returns>
         public abstract JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options);
 
-        internal override JsonPropertyInfo CreateJsonPropertyInfo()
+        internal override JsonPropertyInfo CreateJsonPropertyInfo(JsonTypeInfo parentTypeInfo)
         {
             Debug.Fail("We should never get here.");
 
@@ -132,6 +132,12 @@ namespace System.Text.Json.Serialization
             Debug.Fail("We should never get here.");
 
             throw new InvalidOperationException();
+        }
+
+        internal sealed override JsonConverter<TTarget> CreateCastingConverter<TTarget>()
+        {
+            ThrowHelper.ThrowInvalidOperationException_ConverterCanConvertMultipleTypes(typeof(TTarget), this);
+            return null!;
         }
     }
 }

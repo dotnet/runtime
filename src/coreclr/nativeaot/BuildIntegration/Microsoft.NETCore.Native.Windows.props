@@ -86,6 +86,12 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Condition="'$(ControlFlowGuard)' == 'Guard'" Include="/guard:cf" />
     </ItemGroup>
 
+    <ItemGroup Condition="!Exists('$(IlcSdkPath)debugucrt.txt')">
+      <!-- Force ucrt to be dynamically linked for release runtime -->
+      <LinkerArg Include="/NODEFAULTLIB:libucrt.lib" />
+      <LinkerArg Include="/DEFAULTLIB:ucrt.lib" />
+    </ItemGroup>
+
     <ItemGroup Condition="'$(Configuration)' != 'Debug'">
       <LinkerArg Include="/OPT:REF" />
       <LinkerArg Include="/OPT:ICF" />

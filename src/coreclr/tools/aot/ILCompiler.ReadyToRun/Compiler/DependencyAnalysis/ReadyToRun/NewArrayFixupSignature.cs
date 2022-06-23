@@ -30,7 +30,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 dataBuilder.AddSymbol(this);
 
-                IEcmaModule targetModule = factory.SignatureContext.GetTargetModule(_arrayType);
+                EcmaModule targetModule = factory.SignatureContext.GetTargetModule(_arrayType);
                 SignatureContext innerContext = dataBuilder.EmitFixup(factory, ReadyToRunFixupKind.NewArray, targetModule, factory.SignatureContext);
                 dataBuilder.EmitTypeSignature(_arrayType, innerContext);
             }

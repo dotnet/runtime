@@ -19,8 +19,8 @@ namespace System.Formats.Tar
         }
 
         // Constructor called when the user creates a TarEntry instance from scratch.
-        internal PosixTarEntry(TarEntryType entryType, string entryName, TarEntryFormat format)
-            : base(entryType, entryName, format)
+        internal PosixTarEntry(TarEntryType entryType, string entryName, TarEntryFormat format, bool isGea)
+            : base(entryType, entryName, format, isGea)
         {
             _header._uName = string.Empty;
             _header._gName = string.Empty;

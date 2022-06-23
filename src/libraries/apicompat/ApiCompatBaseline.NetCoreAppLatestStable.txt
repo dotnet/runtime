@@ -178,4 +178,6 @@ CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatfo
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.TripleDES' in the contract but not the implementation.
 Compat issues with assembly System.Security.Cryptography.X509Certificates:
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' on 'System.Security.Cryptography.X509Certificates.PublicKey.GetDSAPublicKey()' changed from '[UnsupportedOSPlatformAttribute("ios")]' in the contract to '[UnsupportedOSPlatformAttribute("browser")]' in the implementation.
-Total Issues: 167
+Compat issues with assembly System.Text.Json:
+CannotMakeTypeAbstract : Type 'System.Text.Json.Serialization.Metadata.JsonTypeInfo' is abstract in the implementation but is not abstract in the contract.
+Total Issues: 168
