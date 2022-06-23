@@ -320,7 +320,7 @@ namespace System
             ref byte pos = ref MemoryMarshal.GetReference(value);
             ref byte end = ref Unsafe.Add(ref pos, value.Length);
 
-            if (Unsafe.ByteOffset(ref pos, ref end) < (sizeof(int) * 4))
+            if (value.Length < (sizeof(int) * 4))
             {
                 goto Small;
             }
@@ -332,7 +332,7 @@ namespace System
             }
             else
             {
-                // If we have more than 16 bytes to hash, we can add them in 16-byte batches,
+                // If we have at least 16 bytes to hash, we can add them in 16-byte batches,
                 // but we first have to add enough data to flush any queued values.
                 switch (_length % 4)
                 {
@@ -359,7 +359,7 @@ namespace System
             ref byte blockEnd = ref Unsafe.Subtract(ref end, Unsafe.ByteOffset(ref pos, ref end) % (sizeof(int) * 4));
             while (Unsafe.IsAddressLessThan(ref pos, ref blockEnd))
             {
-                Debug.Assert((nint)Unsafe.ByteOffset(ref pos, ref blockEnd) >= (sizeof(int) * 4));
+                Debug.Assert(Unsafe.ByteOffset(ref pos, ref blockEnd) >= (sizeof(int) * 4));
                 uint v1 = Unsafe.ReadUnaligned<uint>(ref pos);
                 _v1 = Round(_v1, v1);
                 uint v2 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref pos, sizeof(int) * 1));
@@ -375,7 +375,7 @@ namespace System
 
         Small:
             // Add four bytes at a time until the input has fewer than four bytes remaining.
-            while ((nint)Unsafe.ByteOffset(ref pos, ref end) >= sizeof(int))
+            while (Unsafe.ByteOffset(ref pos, ref end) >= sizeof(int))
             {
                 Add(Unsafe.ReadUnaligned<int>(ref pos));
                 pos = ref Unsafe.Add(ref pos, sizeof(int));
