@@ -341,6 +341,13 @@ export const __initializeImportsAndExports: any = initializeImportsAndExports; /
 
 // the methods would be visible to EMCC linker
 // --- keep in sync with dotnet.cjs.lib.js ---
+const mono_wasm_threads_exports = !MonoWasmThreads ? undefined : {
+    // mono-threads-wasm.c
+    mono_wasm_pthread_on_pthread_created,
+};
+
+// the methods would be visible to EMCC linker
+// --- keep in sync with dotnet.cjs.lib.js ---
 export const __linker_exports: any = {
     // mini-wasm.c
     mono_set_timeout,
@@ -389,10 +396,8 @@ export const __linker_exports: any = {
     dotnet_browser_simple_digest_hash,
     dotnet_browser_sign,
 
-    // mono-threads-wasm.c
-    ...(MonoWasmThreads) && {
-        mono_wasm_pthread_on_pthread_created,
-    },
+    // threading exports, if threading is enabled
+    ...mono_wasm_threads_exports,
 };
 
 const INTERNAL: any = {
