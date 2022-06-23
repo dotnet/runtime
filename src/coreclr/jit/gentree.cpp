@@ -8661,6 +8661,19 @@ GenTree* Compiler::gtCloneExpr(
                                    gtCloneExpr(tree->AsStoreDynBlk()->gtDynamicSize, addFlags, deepVarNum, deepVarVal));
             break;
 
+        case GT_SELECT:
+        case GT_CEQ:
+        case GT_CNE:
+        case GT_CLT:
+        case GT_CLE:
+        case GT_CGE:
+        case GT_CGT:
+            copy = new (this, oper)
+                GenTreeConditional(oper, tree->TypeGet(),
+                                   gtCloneExpr(tree->AsConditional()->gtCond, addFlags, deepVarNum, deepVarVal),
+                                   gtCloneExpr(tree->AsConditional()->gtOp1, addFlags, deepVarNum, deepVarVal),
+                                   gtCloneExpr(tree->AsConditional()->gtOp2, addFlags, deepVarNum, deepVarVal));
+            break;
         default:
 #ifdef DEBUG
             gtDispTree(tree);
