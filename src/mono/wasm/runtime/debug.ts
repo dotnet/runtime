@@ -12,6 +12,8 @@ let _call_function_res_cache: any = {};
 let _next_call_function_res_id = 0;
 let _debugger_buffer_len = -1;
 let _debugger_buffer: VoidPtr;
+let _assembly_name_str: string;
+let _entrypoint_method_token: number;
 
 const regexes:any[] = [];
 
@@ -165,8 +167,11 @@ export function mono_wasm_debugger_attached(): void {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function mono_wasm_set_entrypoint_breakpoint(assembly_name: CharPtr, entrypoint_method_token: number): void {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const assembly_name_str = Module.UTF8ToString(assembly_name).concat(".dll");
-    // eslint-disable-next-line no-debugger
+    _assembly_name_str = Module.UTF8ToString(assembly_name).concat(".dll");
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _entrypoint_method_token = entrypoint_method_token;
+    console.log(`Adding an entrypoint breakpoint ${_assembly_name_str} at method token  ${_entrypoint_method_token}`);
+    // eslint-disable-next-line no-debugger    
     debugger;
 }
 
