@@ -12,7 +12,6 @@ const is_browser = false;
 const is_node = !is_browser && typeof process === 'object' && typeof process.versions === 'object' && typeof process.versions.node === 'string';
 export const App = {};
 
-
 if (!is_node)
     throw new Error(`This file only supports nodejs`);
 
