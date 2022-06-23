@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Text;
 
@@ -390,20 +389,6 @@ namespace System.Formats.Tar
             _extendedAttributes ??= new Dictionary<string, string>();
             _extendedAttributes.Add(PaxEaName, _name);
 
-            bool containsATime = _extendedAttributes.ContainsKey(PaxEaATime);
-            bool containsCTime = _extendedAttributes.ContainsKey(PaxEaATime);
-            if (!containsATime || !containsCTime)
-            {
-                DateTimeOffset now = DateTimeOffset.UtcNow;
-                if (!containsATime)
-                {
-                    AddTimestampAsUnixSeconds(_extendedAttributes, PaxEaATime, now);
-                }
-                if (!containsCTime)
-                {
-                    AddTimestampAsUnixSeconds(_extendedAttributes, PaxEaCTime, now);
-                }
-            }
             if (!_extendedAttributes.ContainsKey(PaxEaMTime))
             {
                 AddTimestampAsUnixSeconds(_extendedAttributes, PaxEaMTime, _mTime);

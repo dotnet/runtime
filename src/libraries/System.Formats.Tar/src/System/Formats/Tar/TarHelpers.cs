@@ -119,20 +119,20 @@ namespace System.Formats.Tar
             new DateTimeOffset((secondsSinceUnixEpoch * TimeSpan.TicksPerSecond) + DateTime.UnixEpoch.Ticks, TimeSpan.Zero);
 
         // Converts the specified number of seconds that have passed since the Unix Epoch to a DateTimeOffset.
-        internal static DateTimeOffset GetDateTimeOffsetFromSecondsSinceEpoch(double secondsSinceUnixEpoch) =>
+        private static DateTimeOffset GetDateTimeOffsetFromSecondsSinceEpoch(decimal secondsSinceUnixEpoch) =>
             new DateTimeOffset((long)(secondsSinceUnixEpoch * TimeSpan.TicksPerSecond) + DateTime.UnixEpoch.Ticks, TimeSpan.Zero);
 
         // Converts the specified DateTimeOffset to the number of seconds that have passed since the Unix Epoch.
-        internal static double GetSecondsSinceEpochFromDateTimeOffset(DateTimeOffset dateTimeOffset) =>
-            ((double)(dateTimeOffset.UtcDateTime - DateTime.UnixEpoch).Ticks) / TimeSpan.TicksPerSecond;
+        private static decimal GetSecondsSinceEpochFromDateTimeOffset(DateTimeOffset dateTimeOffset) =>
+            ((decimal)(dateTimeOffset.UtcDateTime - DateTime.UnixEpoch).Ticks) / TimeSpan.TicksPerSecond;
 
-        // If the specified fieldName is found in the provided dictionary and it is a valid double number, returns true and sets the value in 'dateTimeOffset'.
+        // If the specified fieldName is found in the provided dictionary and it is a valid decimal number, returns true and sets the value in 'dateTimeOffset'.
         internal static bool TryGetDateTimeOffsetFromTimestampString(Dictionary<string, string>? dict, string fieldName, out DateTimeOffset dateTimeOffset)
         {
             dateTimeOffset = default;
             if (dict != null &&
                 dict.TryGetValue(fieldName, out string? value) &&
-                double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out double secondsSinceEpoch))
+                decimal.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal secondsSinceEpoch))
             {
                 dateTimeOffset = GetDateTimeOffsetFromSecondsSinceEpoch(secondsSinceEpoch);
                 return true;
@@ -143,8 +143,10 @@ namespace System.Formats.Tar
         // Converts the specified DateTimeOffset to the string representation of seconds since the Unix Epoch.
         internal static string GetTimestampStringFromDateTimeOffset(DateTimeOffset timestamp)
         {
-            double secondsSinceEpoch = GetSecondsSinceEpochFromDateTimeOffset(timestamp);
-            return secondsSinceEpoch.ToString("F9", CultureInfo.InvariantCulture); // 6 decimals, no commas
+            decimal secondsSinceEpoch = GetSecondsSinceEpochFromDateTimeOffset(timestamp);
+
+            // Use 'G' to ensure the decimals get preserved (avoid losing precision).
+            return secondsSinceEpoch.ToString("G", CultureInfo.InvariantCulture);
         }
 
         // If the specified fieldName is found in the provided dictionary and is a valid string representation of a number, returns true and sets the value in 'baseTenInteger'.
@@ -177,6 +179,14 @@ namespace System.Formats.Tar
         {
             string str = GetTrimmedAsciiString(buffer);
             return string.IsNullOrEmpty(str) ? 0 : Convert.ToInt32(str, fromBase: 8);
+        }
+
+        // Receives a byte array that represents an ASCII string containing a number in octal base.
+        // Converts the array to an octal base number, then transforms it to ten base and returns it.
+        internal static long GetTenBaseLongFromOctalAsciiChars(Span<byte> buffer)
+        {
+            string str = GetTrimmedAsciiString(buffer);
+            return string.IsNullOrEmpty(str) ? 0 : Convert.ToInt64(str, fromBase: 8);
         }
 
         // Returns the string contained in the specified buffer of bytes,

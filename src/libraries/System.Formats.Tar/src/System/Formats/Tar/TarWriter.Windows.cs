@@ -46,9 +46,9 @@ namespace System.Formats.Tar
 
             FileSystemInfo info = attributes.HasFlag(FileAttributes.Directory) ? new DirectoryInfo(fullPath) : new FileInfo(fullPath);
 
-            entry._header._mTime = new DateTimeOffset(info.LastWriteTimeUtc);
-            entry._header._aTime = new DateTimeOffset(info.LastAccessTimeUtc);
-            entry._header._cTime = new DateTimeOffset(info.LastWriteTimeUtc); // There is no "change time" property
+            entry._header._mTime = info.LastWriteTimeUtc;
+            entry._header._aTime = info.LastAccessTimeUtc;
+            entry._header._cTime = info.LastWriteTimeUtc; // There is no "change time" property
 
             entry.Mode = DefaultWindowsMode;
 
