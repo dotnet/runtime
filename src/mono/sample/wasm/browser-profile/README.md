@@ -13,16 +13,15 @@
 
 ```
 await createDotnetRuntime(() => ({
-  onConfigLoaded: () => {
-    ...
-
-    if (config.enable_profiler)
-    {
-      config.aot_profiler_options = {
-        write_at: "<Namespace.Class::StopProfile>",
-        send_to: "System.Runtime.InteropServices.JavaScript.Runtime::DumpAotProfileData"
-    }
-  }
+    onConfigLoaded: () => {
+        if (config.enable_profiler) {
+            config.aot_profiler_options = {
+                write_at: "<Namespace.Class::StopProfile>",
+                send_to: "System.Runtime.InteropServices.JavaScript.Runtime::DumpAotProfileData"
+            }
+        }
+    },
+}));
 ```
 
 3. Call the `write_at` method at the end of the app, either in C# or in JS. To call the `write_at` method in JS, make use of bindings:
