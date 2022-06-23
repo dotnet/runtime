@@ -11,7 +11,12 @@ namespace System.Runtime.InteropServices.Marshalling
     /// For the following attribute types, any marshaller types that are provided will be validated by an analyzer to have the correct members to prevent
     /// developers from accidentally typoing a member like Free() and causing memory leaks.
     /// </remarks>
-    public abstract class CustomUnmanagedTypeMarshallersAttributeBase : Attribute
+#if LIBRARYIMPORT_GENERATOR_TEST
+    public
+#else
+    internal
+#endif
+    abstract class CustomUnmanagedTypeMarshallersAttributeBase : Attribute
     {
         /// <summary>
         /// Placeholder type for generic parameter
