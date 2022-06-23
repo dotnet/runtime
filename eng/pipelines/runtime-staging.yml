@@ -27,24 +27,6 @@ schedules:
       - main
     always: false # run only if there were changes since the last successful scheduled run.
 
-pr:
-  branches:
-    include:
-    - main
-    - release/*.*
-  paths:
-    include:
-    - '*'
-    - docs/manpages/*
-    exclude:
-    - /**/*.md
-    - eng/Version.Details.xml
-    - .github/*
-    - docs/*
-    - LICENSE.TXT
-    - PATENTS.TXT
-    - THIRD-PARTY-NOTICES.TXT
-
 variables:
   - template: /eng/pipelines/common/variables.yml
 
