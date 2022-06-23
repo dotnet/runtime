@@ -52,7 +52,6 @@
 // Flag to check if atomics feature is available on
 // the machine. OFF for GCSample.
 bool g_arm64_atomics_present = false;
-// #endif
 #endif
 
 //

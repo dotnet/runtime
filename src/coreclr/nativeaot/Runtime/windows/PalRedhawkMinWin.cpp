@@ -35,6 +35,12 @@ uint32_t PalEventWrite(REGHANDLE arg1, const EVENT_DESCRIPTOR * arg2, uint32_t a
 #define REDHAWK_PALEXPORT extern "C"
 #define REDHAWK_PALAPI __stdcall
 
+#if defined(HOST_ARM64)
+// Flag to check if atomics feature is available on
+// the machine. OFF for GCSample.
+bool g_arm64_atomics_present = false;
+#endif
+
 // Index for the fiber local storage of the attached thread pointer
 static uint32_t g_flsIndex = FLS_OUT_OF_INDEXES;
 
@@ -690,6 +696,7 @@ REDHAWK_PALIMPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
     if (IsProcessorFeaturePresent(PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE))
     {
         *flags |= ARM64IntrinsicConstants_Atomics;
+        g_arm64_atomics_present = true;
     }
 }
 
