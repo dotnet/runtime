@@ -96,7 +96,7 @@ StringLiteralMap::~StringLiteralMap()
 
     // We do need to take the globalstringliteralmap lock because we are manipulating
     // StringLiteralEntry objects that belong to it.
-    // Note that we remember the current entry and relaese it only when the
+    // Note that we remember the current entry and release it only when the
     // enumerator has advanced to the next entry so that we don't endup deleteing the
     // current entry itself and killing the enumerator.
 

@@ -1596,7 +1596,7 @@ namespace System.Numerics.Tests
             List<char> out2 = new List<char>();
             for (int i = 0; i < output.Length; i++)
             {
-                if ((output[i] >= '0') & (output[i] <= '9'))
+                if (char.IsAsciiDigit(output[i]))
                 {
                     out2.Add(output[i]);
                 }
@@ -1729,7 +1729,7 @@ namespace System.Numerics.Tests
             return ret;
         }
 
-        private static string GenerateGroups(int[] sizes, string seperator, Random random)
+        private static string GenerateGroups(int[] sizes, string separator, Random random)
         {
             List<int> total_sizes = new List<int>();
             int total;
@@ -1780,14 +1780,14 @@ namespace System.Numerics.Tests
                 num_digits -= group_size;
                 if (num_digits > 0)
                 {
-                    digits += seperator;
+                    digits += separator;
                 }
             }
 
             return digits;
         }
 
-        private static string GroupFormatDigits(string input, string seperator, int[] sizes, string point, int places)
+        private static string GroupFormatDigits(string input, string separator, int[] sizes, string point, int places)
         {
             string output = string.Empty;
             int currentspot = input.Length - 1;
@@ -1813,7 +1813,7 @@ namespace System.Numerics.Tests
                     }
                     else
                     {
-                        output = seperator + ZeroString(size) + output;
+                        output = separator + ZeroString(size) + output;
                         currentspot -= size;
                     }
                     if (currentsize < sizes.Length - 1)
@@ -1840,7 +1840,7 @@ namespace System.Numerics.Tests
                 }
                 else
                 {
-                    output = seperator + input.Substring(currentspot - size + 1, size) + output;
+                    output = separator + input.Substring(currentspot - size + 1, size) + output;
                     currentspot -= size;
                 }
                 if (currentsize < sizes.Length - 1)

@@ -759,7 +759,7 @@ namespace System
                     throw new InvalidOperationException(SR.net_uri_NotAbsolute);
                 }
 
-                // Note: Compatibilty with V1 that does not report user info
+                // Note: Compatibility with V1 that does not report user info
                 return GetParts(UriComponents.Host | UriComponents.Port, UriFormat.UriEscaped);
             }
         }
@@ -1279,7 +1279,7 @@ namespace System
             {
                 fixed (char* fixedName = name)
                 {
-                    if (name[0] == '[' && name[name.Length - 1] == ']')
+                    if (name.StartsWith('[') && name.EndsWith(']'))
                     {
                         // we require that _entire_ name is recognized as ipv6 address
                         if (IPv6AddressHelper.IsValid(fixedName, 1, ref end) && end == name.Length)
@@ -1472,8 +1472,8 @@ namespace System
             return
                 (pattern.Length - index) >= 3 &&
                 pattern[index] == '%' &&
-                IsHexDigit(pattern[index + 1]) &&
-                IsHexDigit(pattern[index + 2]);
+                char.IsAsciiHexDigit(pattern[index + 1]) &&
+                char.IsAsciiHexDigit(pattern[index + 2]);
         }
 
         //
@@ -1485,14 +1485,14 @@ namespace System
         //
         public static bool CheckSchemeName([NotNullWhen(true)] string? schemeName)
         {
-            if (string.IsNullOrEmpty(schemeName) || !UriHelper.IsAsciiLetter(schemeName[0]))
+            if (string.IsNullOrEmpty(schemeName) || !char.IsAsciiLetter(schemeName[0]))
             {
                 return false;
             }
 
             for (int i = schemeName.Length - 1; i > 0; --i)
             {
-                if (!(UriHelper.IsAsciiLetterOrDigit(schemeName[i])
+                if (!(char.IsAsciiLetterOrDigit(schemeName[i])
                     || (schemeName[i] == '+')
                     || (schemeName[i] == '-')
                     || (schemeName[i] == '.')))
@@ -1522,7 +1522,7 @@ namespace System
         //
         public static bool IsHexDigit(char character)
         {
-            return HexConverter.IsHexChar(character);
+            return char.IsAsciiHexDigit(character);
         }
 
         //
@@ -1952,7 +1952,7 @@ namespace System
                         }
                         // DOS-like path?
                         if (i + 1 < length && ((c = pUriString[i + 1]) == ':' || c == '|') &&
-                            UriHelper.IsAsciiLetter(pUriString[i]))
+                            char.IsAsciiLetter(pUriString[i]))
                         {
                             if (i + 2 >= length || ((c = pUriString[i + 2]) != '\\' && c != '/'))
                             {
@@ -2690,10 +2690,7 @@ namespace System
                             }
                             else
                             {
-                                if (InFact(Flags.E_UserNotCanonical))
-                                {
-                                    // We should throw here but currently just accept user input known as invalid
-                                }
+                                // We would ideally throw here if InFact(Flags.E_UserNotCanonical) but currently just accept user input known as invalid
                                 dest.Append(slice);
                             }
                             break;
@@ -3570,7 +3567,7 @@ namespace System
                 if ((c = uriString[idx + 1]) == ':' || c == '|')
                 {
                     //DOS-like path?
-                    if (UriHelper.IsAsciiLetter(uriString[idx]))
+                    if (char.IsAsciiLetter(uriString[idx]))
                     {
                         if ((c = uriString[idx + 2]) == '\\' || c == '/')
                         {
@@ -3782,7 +3779,7 @@ namespace System
         //
         private static unsafe ParsingError CheckSchemeSyntax(ReadOnlySpan<char> span, ref UriParser? syntax)
         {
-            static char ToLowerCaseAscii(char c) => (uint)(c - 'A') <= 'Z' - 'A' ? (char)(c | 0x20) : c;
+            static char ToLowerCaseAscii(char c) => char.IsAsciiLetterUpper(c) ? (char)(c | 0x20) : c;
 
             if (span.Length == 0)
             {
@@ -3792,11 +3789,11 @@ namespace System
             // The first character must be an alpha.  Validate that and store it as lower-case, as
             // all of the fast-path checks need that value.
             char firstLower = span[0];
-            if ((uint)(firstLower - 'A') <= 'Z' - 'A')
+            if (char.IsAsciiLetterUpper(firstLower))
             {
                 firstLower = (char)(firstLower | 0x20);
             }
-            else if ((uint)(firstLower - 'a') > 'z' - 'a')
+            else if (!char.IsAsciiLetterLower(firstLower))
             {
                 return ParsingError.BadScheme;
             }
@@ -3861,10 +3858,7 @@ namespace System
             for (int i = 1; i < span.Length; i++)
             {
                 char c = span[i];
-                if ((uint)(c - 'a') > 'z' - 'a' &&
-                    (uint)(c - 'A') > 'Z' - 'A' &&
-                    (uint)(c - '0') > '9' - '0' &&
-                    c != '+' && c != '-' && c != '.')
+                if (!char.IsAsciiLetterOrDigit(c) && c != '+' && c != '-' && c != '.')
                 {
                     return ParsingError.BadScheme;
                 }
@@ -4002,7 +3996,7 @@ namespace System
                     justNormalized = true;
                 }
             }
-            else if (ch <= '9' && ch >= '0' && syntax.InFact(UriSyntaxFlags.AllowIPv4Host) &&
+            else if (char.IsAsciiDigit(ch) && syntax.InFact(UriSyntaxFlags.AllowIPv4Host) &&
                 IPv4AddressHelper.IsValid(pString, start, ref end, false, StaticNotAny(flags, Flags.ImplicitFile), syntax.InFact(UriSyntaxFlags.V1_UnknownUri)))
             {
                 flags |= Flags.IPv4HostType;

@@ -45,7 +45,11 @@ namespace Microsoft.Interop
             {
                 return new DelegateTypeInfo(typeName, diagonsticFormattedName);
             }
-            return new SimpleManagedTypeInfo(typeName, diagonsticFormattedName);
+            if (type.IsValueType)
+            {
+                return new ValueTypeInfo(typeName, diagonsticFormattedName, type.IsRefLikeType);
+            }
+            return new ReferenceTypeInfo(typeName, diagonsticFormattedName);
         }
     }
 
@@ -74,5 +78,7 @@ namespace Microsoft.Interop
 
     public sealed record DelegateTypeInfo(string FullTypeName, string DiagnosticFormattedName) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
 
-    public sealed record SimpleManagedTypeInfo(string FullTypeName, string DiagnosticFormattedName) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
+    public sealed record ValueTypeInfo(string FullTypeName, string DiagnosticFormattedName, bool IsByRefLike) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
+
+    public sealed record ReferenceTypeInfo(string FullTypeName, string DiagnosticFormattedName) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
 }

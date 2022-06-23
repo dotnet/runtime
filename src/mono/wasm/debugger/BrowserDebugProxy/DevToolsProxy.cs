@@ -209,7 +209,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             JObject o = result.ToJObject(id);
             if (!result.IsOk)
-                logger.LogError($"sending error response for id: {id} -> {result}");
+                logger.LogDebug($"sending error response for id: {id} -> {result}");
 
             return Send(this.ide, o, token);
         }

@@ -4,6 +4,8 @@ As part of the new source-generated direction for .NET Interop, we are looking a
 
 These types pose an interesting problem for a number of reasons listed below. With a few constraints, I believe we can create a system that will enable users to use their own user-defined types and pass them by-value to native code.
 
+> NOTE: These design docs are kept for historical purposes. The designs in this file are superseded by the designs in [UserTypeMarshallingV2.md](UserTypeMarshallingV2.md).
+
 ## Problems
 
 - What types require marshalling and what types can be passed as-is to native code?
@@ -139,7 +141,7 @@ When these `CallerAllocatedBuffer` feature flag is present, the source generator
 
 Type authors can pass down the `buffer` pointer to native code by using the `TwoStageMarshalling` feature to provide a `ToNativeValue` method that returns a pointer to the first element, generally through code using `MemoryMarshal.GetReference()` and `Unsafe.AsPointer`. The `buffer` span must be pinned to be used safely. The `buffer` span can be pinned by defining a `GetPinnableReference()` method on the native type that returns a reference to the first element of the span.
 
-### Determining if a type is doesn't need marshalling
+### Determining if a type doesn't need marshalling
 
 For this design, we need to decide how to determine a type doesn't need to be marshalled and already has a representation we can pass directly to native code - that is, we need a definition for "does not require marshalling". We have two designs that we have experimented with below, and we have decided to go with design 2.
 

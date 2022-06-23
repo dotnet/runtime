@@ -11,11 +11,6 @@
 
 #include "stdafx.h"
 #include "threadsuspend.h"
-#ifndef TARGET_UNIX
-
-#include "securitywrapper.h"
-#endif
-#include <aclapi.h>
 
 #ifndef SM_REMOTESESSION
 #define SM_REMOTESESSION 0x1000

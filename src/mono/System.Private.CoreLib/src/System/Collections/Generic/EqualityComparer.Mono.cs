@@ -48,10 +48,7 @@ namespace System.Collections.Generic
             if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Nullable<>))
             {
                 RuntimeType u = (RuntimeType)t.GetGenericArguments()[0];
-                if (typeof(IEquatable<>).MakeGenericType(u).IsAssignableFrom(u))
-                {
-                    return (EqualityComparer<T>)RuntimeType.CreateInstanceForAnotherGenericParameter(typeof(NullableEqualityComparer<>), u);
-                }
+                return (EqualityComparer<T>)RuntimeType.CreateInstanceForAnotherGenericParameter(typeof(NullableEqualityComparer<>), u);
             }
 
             if (t.IsEnum)

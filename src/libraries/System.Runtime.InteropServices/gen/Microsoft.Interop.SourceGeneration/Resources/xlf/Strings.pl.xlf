@@ -12,6 +12,11 @@
         <target state="translated">Wartość „SizeParamIndex” w atrybucie „MarshalAsAttribute” jest poza zakresem.</target>
         <note />
       </trans-unit>
+      <trans-unit id="BidirectionalMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
+        <target state="new">The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="CannotHaveMultipleMarshallingAttributesDescription">
         <source>The 'BlittableTypeAttribute' and 'NativeMarshallingAttribute' attributes are mutually exclusive.</source>
         <target state="translated">Atrybuty „BlittableTypeAttribute” i „NativeMarshallingAttribute” wzajemnie się wykluczają.</target>
@@ -92,6 +97,16 @@
         <target state="translated">Podane atrybuty „[In]” i „[Out]” w tym parametrze nie są obsługiwane w tym parametrze.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</source>
+        <target state="new">The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeStatic">
+        <source>The marshaller type '{0}' for managed type '{1}' must be static.</source>
+        <target state="new">The marshaller type '{0}' for managed type '{1}' must be static.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MarshallingBoolAsUndefinedNotSupported">
         <source>Marshalling bool without explicit marshalling information is not supported. Specify either 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
         <target state="translated">Skierowanie wartości logicznej bez wyraźnych informacji o skierowaniu nie jest obsługiwane. Określ atrybut „MarshalUsingAttribute” lub atrybut „MarshalAsAttribute”.</target>
@@ -140,6 +155,11 @@
       <trans-unit id="TypeNotSupportedTitle">
         <source>Specified type is not supported by source-generated P/Invokes</source>
         <target state="translated">Określony typ nie jest obsługiwany przez funkcję P/Invokes generowaną przez źródło</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
+        <target state="new">The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</target>
         <note />
       </trans-unit>
       <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorMessage">

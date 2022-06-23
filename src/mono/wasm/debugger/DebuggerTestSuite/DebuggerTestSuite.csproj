@@ -3,8 +3,8 @@
   <PropertyGroup>
     <TargetFramework>$(AspNetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <RunAnalyzers>false</RunAnalyzers>
     <IsTestProject>true</IsTestProject>
+    <RunAnalyzers>false</RunAnalyzers>
     <DebuggerHost Condition="'$(DebuggerHost)' == '' or ('$(DebuggerHost)' != 'chrome' and '$(DebuggerHost)' != 'firefox')">chrome</DebuggerHost>
     <DefineConstants Condition="'$(DebuggerHost)' == 'chrome'">$(DefineConstants);RUN_IN_CHROME</DefineConstants>
     <BrowserHost Condition="$([MSBuild]::IsOSPlatform('windows'))">windows</BrowserHost>

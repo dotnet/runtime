@@ -238,10 +238,10 @@ namespace System
                     if (tmpEnumerator.MoveNext())
                     {
                         Rune r1 = tmpEnumerator.Current;
-                        if (r1.IsAscii && IsHexDigit((char)r1.Value) && tmpEnumerator.MoveNext())
+                        if (r1.IsAscii && char.IsAsciiHexDigit((char)r1.Value) && tmpEnumerator.MoveNext())
                         {
                             Rune r2 = tmpEnumerator.Current;
-                            if (r2.IsAscii && IsHexDigit((char)r2.Value))
+                            if (r2.IsAscii && char.IsAsciiHexDigit((char)r2.Value))
                             {
                                 vsb.Append('%');
                                 vsb.Append((char)r1.Value);
@@ -569,15 +569,6 @@ namespace System
         {
             return (ch <= ' ') && (ch == ' ' || ch == '\n' || ch == '\r' || ch == '\t');
         }
-
-        internal static bool IsAsciiLetter(char character) =>
-            (((uint)character - 'A') & ~0x20) < 26;
-
-        internal static bool IsAsciiLetterOrDigit(char character) =>
-            ((((uint)character - 'A') & ~0x20) < 26) ||
-            (((uint)character - '0') < 10);
-
-        internal static bool IsHexDigit(char character) => HexConverter.IsHexChar(character);
 
         //
         // Is this a Bidirectional control char.. These get stripped

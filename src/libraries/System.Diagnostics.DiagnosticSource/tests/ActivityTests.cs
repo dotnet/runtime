@@ -1169,7 +1169,7 @@ namespace System.Diagnostics.Tests
             activity.Stop();
 
             /****************************************************/
-            // Confirm that that flags are propagated to children.
+            // Confirm that the flags are propagated to children.
             activity = new Activity("activity4");
             activity.SetParentId("00-0123456789abcdef0123456789abcdef-0123456789abcdef-01");
             activity.Start();

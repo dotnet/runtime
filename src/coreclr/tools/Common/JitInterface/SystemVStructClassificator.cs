@@ -239,14 +239,15 @@ namespace Internal.JitInterface
                 return false;
             }
 
-            // The SIMD Intrinsic types are meant to be handled specially and should not be passed as struct registers
+            // The SIMD and Int128 Intrinsic types are meant to be handled specially and should not be passed as struct registers
             if (typeDesc.IsIntrinsic)
             {
                 InstantiatedType instantiatedType = typeDesc as InstantiatedType;
                 if (instantiatedType != null)
                 {
                     if (VectorFieldLayoutAlgorithm.IsVectorType(instantiatedType) ||
-                        VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(instantiatedType))
+                        VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(instantiatedType) ||
+                        Int128FieldLayoutAlgorithm.IsIntegerType(instantiatedType))
                     {
                         return false;
                     }

@@ -3,6 +3,8 @@
 
 #include "createdump.h"
 
+int g_readProcessMemoryErrno = 0;
+
 bool GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, std::string* name);
 
 bool
@@ -14,7 +16,17 @@ CrashInfo::Initialize()
     m_fd = open(memPath, O_RDONLY);
     if (m_fd == -1)
     {
-        printf_error("open(%s) FAILED %d (%s)\n", memPath, errno, strerror(errno));
+        int err = errno;
+        const char* message = "Problem accessing memory";
+        if (err == EPERM || err == EACCES)
+        {
+            message = "The process or container does not have permissions or access";
+        }
+        else if (err == ENOENT)
+        {
+            message = "Invalid process id";
+        }
+        printf_error("%s: open(%s) FAILED %s (%d)\n", message, memPath, strerror(err), err);
         return false;
     }
     // Get the process info
@@ -58,7 +70,7 @@ CrashInfo::EnumerateAndSuspendThreads()
     DIR* taskDir = opendir(taskPath);
     if (taskDir == nullptr)
     {
-        printf_error("opendir(%s) FAILED %s\n", taskPath, strerror(errno));
+        printf_error("Problem enumerating threads: opendir(%s) FAILED %s (%d)\n", taskPath, strerror(errno), errno);
         return false;
     }
 
@@ -76,7 +88,7 @@ CrashInfo::EnumerateAndSuspendThreads()
             }
             else
             {
-                printf_error("ptrace(ATTACH, %d) FAILED %s\n", tid, strerror(errno));
+                printf_error("Problem suspending threads: ptrace(ATTACH, %d) FAILED %s (%d)\n", tid, strerror(errno), errno);
                 closedir(taskDir);
                 return false;
             }
@@ -102,7 +114,7 @@ CrashInfo::GetAuxvEntries()
     int fd = open(auxvPath, O_RDONLY, 0);
     if (fd == -1)
     {
-        printf_error("open(%s) FAILED %s\n", auxvPath, strerror(errno));
+        printf_error("Problem reading aux info: open(%s) FAILED %s (%d)\n", auxvPath, strerror(errno), errno);
         return false;
     }
     bool result = false;
@@ -159,7 +171,7 @@ CrashInfo::EnumerateModuleMappings()
     FILE* mapsFile = fopen(mapPath, "r");
     if (mapsFile == nullptr)
     {
-        printf_error("fopen(%s) FAILED %s\n", mapPath, strerror(errno));
+        printf_error("Problem reading maps file: fopen(%s) FAILED %s (%d)\n", mapPath, strerror(errno), errno);
         return false;
     }
     // linuxGateAddress is the beginning of the kernel's mapping of
@@ -394,8 +406,9 @@ CrashInfo::ReadProcessMemory(void* address, void* buffer, size_t size, size_t* r
 
     if (*read == (size_t)-1)
     {
-        int readErrno = errno;
-        TRACE_VERBOSE("ReadProcessMemory FAILED, addr: %" PRIA PRIx ", size: %zu, ERRNO %d: %s\n", address, size, readErrno, strerror(readErrno));
+        // Preserve errno for the ELF dump writer call
+        g_readProcessMemoryErrno = errno;
+        TRACE_VERBOSE("ReadProcessMemory FAILED addr: %" PRIA PRIx " size: %zu error: %s (%d)\n", address, size, strerror(g_readProcessMemoryErrno), g_readProcessMemoryErrno);
         return false;
     }
     return true;
@@ -413,7 +426,7 @@ GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, std::string* name)
     FILE *statusFile = fopen(statusPath, "r");
     if (statusFile == nullptr)
     {
-        printf_error("GetStatus fopen(%s) FAILED\n", statusPath);
+        printf_error("GetStatus fopen(%s) FAILED %s (%d)\n", statusPath, strerror(errno), errno);
         return false;
     }
 

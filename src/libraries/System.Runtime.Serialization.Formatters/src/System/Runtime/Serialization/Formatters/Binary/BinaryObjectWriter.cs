@@ -155,9 +155,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     for (int i = 0; i < memberTypes.Length; i++)
                     {
                         Type type =
-                            memberTypes[i] != null ? memberTypes[i] :
-                            memberData[i] != null ? GetType(memberData[i]!) :
-                            Converter.s_typeofObject;
+                            memberTypes[i] ?? (memberData[i] != null ? GetType(memberData[i]!) :
+                            Converter.s_typeofObject);
 
                         InternalPrimitiveTypeE code = ToCode(type);
                         if ((code == InternalPrimitiveTypeE.Invalid) &&

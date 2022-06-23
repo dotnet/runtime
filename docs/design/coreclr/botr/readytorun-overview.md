@@ -265,7 +265,7 @@ Experiments with disabled cross-module inlining with the selectively enabled inl
 
 ## Non-Virtual calls as the baseline solution to all other versioning issues
 
-It is important to observe that once you have a mechanism for doing non-virtual function calls in a version resilient way (by having an indirect CALL through a slot that that can be fixed lazily at runtime, all other versioning problems _can_ be solved in that way by calling back to the 'definer' module, and having the operation occur there instead. Issues associated with this technique
+It is important to observe that once you have a mechanism for doing non-virtual function calls in a version resilient way (by having an indirect CALL through a slot that can be fixed lazily at runtime, all other versioning problems _can_ be solved in that way by calling back to the 'definer' module, and having the operation occur there instead. Issues associated with this technique
 
 1. You will pay the cost of a true indirection function call and return, as well as any argument setup cost. This cost may be visible in constructs that do not contain a call naturally, like fetching string literals or other constants. You may be able to get better performance from another technique (for example, we did so with instance field access).
 2. It introduces a lot of indirect calls. It is not friendly to systems that disallow on the fly code generation. A small helper stub has to be created at runtime in the most straightforward implementation, or there has to be a scheme how to pre-create or recycle the stubs.

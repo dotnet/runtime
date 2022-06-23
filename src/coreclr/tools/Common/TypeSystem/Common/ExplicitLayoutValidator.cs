@@ -52,7 +52,7 @@ namespace Internal.TypeSystem
 
         private readonly int _pointerSize;
 
-        // Represent field layout bits as as a series of intervals to prevent pathological bad behavior
+        // Represent field layout bits as a series of intervals to prevent pathological bad behavior
         // involving excessively large explicit layout structures.
         private readonly List<FieldLayoutInterval> _fieldLayout;
 
@@ -233,7 +233,7 @@ namespace Internal.TypeSystem
                         previousInterval.EndSentinel = newInterval.EndSentinel;
 
                         fieldLayoutInterval[newIntervalLocation - 1] = previousInterval;
-                        newIntervalLocation = newIntervalLocation - 1;
+                        newIntervalLocation--;
                     }
                     else
                     {

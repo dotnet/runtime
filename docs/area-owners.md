@@ -151,6 +151,7 @@ Note: Editing this file doesn't update the mapping used by `@msftbot` for area-s
 | os-mac-os-x      |               |                                                     |              |
 | os-maccatalyst   | @steveisok    |                                                     |              |
 | os-ios           | @steveisok    | @vargaz                                             |              |
+| os-tizen         | @alpencolt    | @gbalykov, @hjleee, @wscho77, @clamp03              |              |
 | os-tvos          | @steveisok    | @vargaz                                             |              |
 
 ## Architectures

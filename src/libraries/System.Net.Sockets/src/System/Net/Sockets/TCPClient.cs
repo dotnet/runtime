@@ -99,6 +99,10 @@ namespace System.Net.Sockets
             {
                 _clientSocket = value;
                 _family = _clientSocket?.AddressFamily ?? AddressFamily.Unknown;
+                if (_clientSocket == null)
+                {
+                    InitializeClientSocket();
+                }
             }
         }
 

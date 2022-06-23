@@ -247,7 +247,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             foreach (char c in decimalString)
             {
-                if (c >= '0' && c <= '9')
+                if (char.IsAsciiDigit(c))
                 {
                     accum = BigInteger.Multiply(accum, ten);
                     accum = BigInteger.Add(accum, c - '0');

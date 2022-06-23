@@ -3,6 +3,8 @@
 
 #include "createdump.h"
 
+extern int g_readProcessMemoryErrno;
+
 // Write the core dump file:
 //   ELF header
 //   Single section header (Shdr) for 64 bit program header count
@@ -161,7 +163,7 @@ DumpWriter::WriteDump()
     // and then laydown the memory blocks
     if (finalNoteAlignment > 0) {
         if (finalNoteAlignment > sizeof(m_tempBuffer)) {
-            printf_error("finalNoteAlignment %zu > sizeof(m_tempBuffer)\n", finalNoteAlignment);
+            printf_error("Internal error: finalNoteAlignment %zu > sizeof(m_tempBuffer)\n", finalNoteAlignment);
             return false;
         }
         memset(m_tempBuffer, 0, finalNoteAlignment);
@@ -189,13 +191,13 @@ DumpWriter::WriteDump()
                 size_t read = 0;
 
                 if (!m_crashInfo.ReadProcessMemory((void*)address, m_tempBuffer, bytesToRead, &read)) {
-                    printf_error("ReadProcessMemory(%" PRIA PRIx64 ", %08zx) FAILED\n", address, bytesToRead);
+                    printf_error("Error reading memory at %" PRIA PRIx64 " size %08zx FAILED %s (%d)\n", address, bytesToRead, strerror(g_readProcessMemoryErrno), g_readProcessMemoryErrno);
                     return false;
                 }
 
                 // This can happen if the target process dies before createdump is finished
                 if (read == 0) {
-                    printf_error("ReadProcessMemory(%" PRIA PRIx64 ", %08zx) returned 0 bytes read\n", address, bytesToRead);
+                    printf_error("Error reading memory at %" PRIA PRIx64 " size %08zx returned 0 bytes read: %s (%d)\n", address, bytesToRead, strerror(g_readProcessMemoryErrno), g_readProcessMemoryErrno);
                     return false;
                 }
 

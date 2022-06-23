@@ -78,7 +78,7 @@ build_native()
         cmakeArgs="-DCMAKE_SYSTEM_VARIANT=MacCatalyst $cmakeArgs"
     fi
 
-    if [[ "$targetOS" == Android && -z "$ROOTFS_DIR" ]]; then
+    if [[ ( "$targetOS" == Android || "$targetOS" == linux-bionic ) && -z "$ROOTFS_DIR" ]]; then
         if [[ -z "$ANDROID_NDK_ROOT" ]]; then
             echo "Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root."
             exit 1
@@ -197,7 +197,7 @@ usage()
     echo ""
     echo "Common Options:"
     echo ""
-    echo "BuildArch can be: -arm, -armv6, -armel, -arm64, -loongarch64, -s390x, x64, x86, -wasm"
+    echo "BuildArch can be: -arm, -armv6, -armel, -arm64, -loongarch64, -s390x, -ppc64le, x64, x86, -wasm"
     echo "BuildType can be: -debug, -checked, -release"
     echo "-os: target OS (defaults to running OS)"
     echo "-bindir: output directory (defaults to $__ProjectRoot/artifacts)"
@@ -390,6 +390,10 @@ while :; do
 
         wasm|-wasm)
             __TargetArch=wasm
+            ;;
+
+        ppc64le|-ppc64le)
+            __TargetArch=ppc64le
             ;;
 
         os|-os)

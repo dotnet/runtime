@@ -198,13 +198,10 @@ namespace System.Xml
 
             if (first)
             {
-                if ((!XmlCharType.IsStartNCNameCharXml4e(name[0]) && (local || (!local && name[0] != ':'))) ||
+                if ((!XmlCharType.IsStartNCNameCharXml4e(name[0]) && (local || name[0] != ':')) ||
                      matchPos == 0)
                 {
-                    if (bufBld == null)
-                    {
-                        bufBld = new StringBuilder(length + 20);
-                    }
+                    bufBld ??= new StringBuilder(length + 20);
 
                     bufBld.Append("_x");
                     if (length > 1 && XmlCharType.IsHighSurrogate(name[0]) && XmlCharType.IsLowSurrogate(name[1]))
@@ -429,7 +426,10 @@ namespace System.Xml
                 return token;
             }
 
-            if (token[0] == ' ' || token[token.Length - 1] == ' ' || token.IndexOfAny(crt) != -1 || token.IndexOf("  ", StringComparison.Ordinal) != -1)
+            if (token.StartsWith(' ') ||
+                token.EndsWith(' ') ||
+                token.IndexOfAny(crt) >= 0 ||
+                token.Contains("  "))
             {
                 throw new XmlException(SR.Sch_NotTokenString, token);
             }
@@ -438,12 +438,15 @@ namespace System.Xml
 
         internal static Exception? TryVerifyTOKEN(string token)
         {
-            if (token == null || token.Length == 0)
+            if (string.IsNullOrEmpty(token))
             {
                 return null;
             }
 
-            if (token[0] == ' ' || token[token.Length - 1] == ' ' || token.IndexOfAny(crt) != -1 || token.IndexOf("  ", StringComparison.Ordinal) != -1)
+            if (token.StartsWith(' ') ||
+                token.EndsWith(' ') ||
+                token.IndexOfAny(crt) >= 0 ||
+                token.Contains("  "))
             {
                 return new XmlException(SR.Sch_NotTokenString, token);
             }

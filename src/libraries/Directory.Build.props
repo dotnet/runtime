@@ -91,7 +91,7 @@
   <PropertyGroup>
     <GenFacadesIgnoreBuildAndRevisionMismatch>true</GenFacadesIgnoreBuildAndRevisionMismatch>
     <!-- Disable analyzers for tests and unsupported projects -->
-    <RunAnalyzers Condition="'$(IsTestProject)' != 'true' and '$(IsSourceProject)' != 'true'">false</RunAnalyzers>
+    <RunAnalyzers Condition="'$(IsTestProject)' != 'true' and '$(IsSourceProject)' != 'true' and '$(IsGeneratorProject)' != 'true'">false</RunAnalyzers>
     <!-- Enable documentation file generation by the compiler for all libraries except for vbproj. -->
     <GenerateDocumentationFile Condition="'$(IsSourceProject)' == 'true' and '$(MSBuildProjectExtension)' != '.vbproj'">true</GenerateDocumentationFile>
     <CLSCompliant Condition="'$(CLSCompliant)' == '' and '$(IsTestProject)' != 'true' and '$(IsTestSupportProject)' != 'true'">true</CLSCompliant>

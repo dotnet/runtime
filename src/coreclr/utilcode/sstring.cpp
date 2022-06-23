@@ -470,6 +470,29 @@ void SString::SetANSI(const ANSI *string, COUNT_T count)
 }
 
 //-----------------------------------------------------------------------------
+// Set this string to a copy of the given UTF16 string transcoded to UTF8
+//-----------------------------------------------------------------------------
+void SString::SetAndConvertToUTF8(const WCHAR *string)
+{
+    SS_CONTRACT_VOID
+    {
+        // !!! Check for illegal UTF8 encoding?
+        INSTANCE_CHECK;
+        PRECONDITION(CheckPointer(string, NULL_OK));
+        THROWS;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC_HOST_ONLY;
+    }
+    SS_CONTRACT_END;
+
+    SString utf16Str(Literal, string);
+
+    utf16Str.ConvertToUTF8(*this);
+
+    SS_RETURN;
+}
+
+//-----------------------------------------------------------------------------
 // Set this string to the given unicode character
 //-----------------------------------------------------------------------------
 void SString::Set(WCHAR character)
@@ -771,6 +794,39 @@ void SString::ConvertToUnicode(const CIterator &i) const
         if (i.m_ptr != NULL)
         {
             i.Resync(this, (BYTE *) (GetRawUnicode() + index));
+        }
+    }
+
+    RETURN;
+}
+
+//-----------------------------------------------------------------------------
+// Convert the internal representation for this String to UTF8.
+//-----------------------------------------------------------------------------
+void SString::ConvertToUTF8() const
+{
+    CONTRACT_VOID
+    {
+        POSTCONDITION(IsRepresentation(REPRESENTATION_UTF8));
+        if (IsRepresentation(REPRESENTATION_UTF8)) NOTHROW; else THROWS;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC_HOST_ONLY;
+    }
+    CONTRACT_END;
+
+    if (!IsRepresentation(REPRESENTATION_UTF8))
+    {
+        if (IsRepresentation(REPRESENTATION_ASCII))
+        {
+            // ASCII is a subset of UTF8, so we can just set the representation.
+            (const_cast<SString*>(this))->SetRepresentation(REPRESENTATION_UTF8);
+        }
+        else
+        {
+            StackSString s;
+            ConvertToUTF8(s);
+            PREFIX_ASSUME(!s.IsImmutable());
+            (const_cast<SString*>(this))->Set(s);
         }
     }
 
@@ -1788,66 +1844,6 @@ const CHAR *SString::GetANSI(AbstractScratchBuffer &scratch) const
 }
 
 //-----------------------------------------------------------------------------
-// Get a const pointer to the internal buffer as a UTF8 string.
-//-----------------------------------------------------------------------------
-const UTF8 *SString::GetUTF8(AbstractScratchBuffer &scratch) const
-{
-    CONTRACT(const UTF8 *)
-    {
-        INSTANCE_CHECK_NULL;
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACT_END;
-
-    if (IsRepresentation(REPRESENTATION_UTF8))
-        RETURN GetRawUTF8();
-
-    ConvertToUTF8((SString&)scratch);
-    RETURN ((SString&)scratch).GetRawUTF8();
-}
-
-const UTF8 *SString::GetUTF8(AbstractScratchBuffer &scratch, COUNT_T *pcbUtf8) const
-{
-    CONTRACT(const UTF8 *)
-    {
-        INSTANCE_CHECK_NULL;
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACT_END;
-
-    if (IsRepresentation(REPRESENTATION_UTF8))
-    {
-        *pcbUtf8 = GetRawCount() + 1;
-        RETURN GetRawUTF8();
-    }
-
-    *pcbUtf8 = ConvertToUTF8((SString&)scratch);
-    RETURN ((SString&)scratch).GetRawUTF8();
-}
-
-//-----------------------------------------------------------------------------
-// Get a const pointer to the internal buffer which must already be a UTF8 string.
-// This avoids the need to create a scratch buffer we know will never be used.
-//-----------------------------------------------------------------------------
-const UTF8 *SString::GetUTF8NoConvert() const
-{
-    CONTRACT(const UTF8 *)
-    {
-        INSTANCE_CHECK_NULL;
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACT_END;
-
-    if (IsRepresentation(REPRESENTATION_UTF8))
-        RETURN GetRawUTF8();
-
-    ThrowHR(E_INVALIDARG);
-}
-
-//-----------------------------------------------------------------------------
 // Safe version of sprintf.
 // Prints formatted ansi text w/ var args to this buffer.
 //-----------------------------------------------------------------------------
@@ -2016,16 +2012,6 @@ void SString::VPrintf(const CHAR *format, va_list args)
 
 void SString::Printf(const WCHAR *format, ...)
 {
-    WRAPPER_NO_CONTRACT;
-
-    va_list args;
-    va_start(args, format);
-    VPrintf(format, args);
-    va_end(args);
-}
-
-void SString::VPrintf(const WCHAR *format, va_list args)
-{
     CONTRACT_VOID
     {
         INSTANCE_CHECK;
@@ -2035,16 +2021,16 @@ void SString::VPrintf(const WCHAR *format, va_list args)
     }
     CONTRACT_END;
 
-    va_list ap;
     // sprintf gives us no means to know how many characters are written
     // other than guessing and trying
 
     if (GetRawCount() > 0)
     {
         // First, try to use the existing buffer
-        va_copy(ap, args);
-        int result = _vsnwprintf_s(GetRawUnicode(), GetRawCount()+1, _TRUNCATE, format, ap);
-        va_end(ap);
+        va_list args;
+        va_start(args, format);
+        int result = _vsnwprintf_s(GetRawUnicode(), GetRawCount()+1, _TRUNCATE, format, args);
+        va_end(args);
 
         if (result >= 0)
         {
@@ -2073,9 +2059,10 @@ void SString::VPrintf(const WCHAR *format, va_list args)
         // Clear errno to avoid false alarms
         errno = 0;
 
-        va_copy(ap, args);
-        int result = _vsnwprintf_s(GetRawUnicode(), GetRawCount()+1, _TRUNCATE, format, ap);
-        va_end(ap);
+        va_list args;
+        va_start(args, format);
+        int result = _vsnwprintf_s(GetRawUnicode(), GetRawCount()+1, _TRUNCATE, format, args);
+        va_end(args);
 
         if (result >= 0)
         {
@@ -2110,25 +2097,6 @@ void SString::AppendPrintf(const CHAR *format, ...)
 }
 
 void SString::AppendVPrintf(const CHAR *format, va_list args)
-{
-    WRAPPER_NO_CONTRACT;
-
-    StackSString s;
-    s.VPrintf(format, args);
-    Append(s);
-}
-
-void SString::AppendPrintf(const WCHAR *format, ...)
-{
-    WRAPPER_NO_CONTRACT;
-
-    va_list args;
-    va_start(args, format);
-    AppendVPrintf(format, args);
-    va_end(args);
-}
-
-void SString::AppendVPrintf(const WCHAR *format, va_list args)
 {
     WRAPPER_NO_CONTRACT;
 

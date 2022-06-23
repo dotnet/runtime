@@ -51,8 +51,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public override byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm)
         {
-            byte[] ieeeFormat = _key.SignData(data, hashAlgorithm);
-            return AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(ieeeFormat);
+            return _key.SignData(data, hashAlgorithm, DSASignatureFormat.Rfc3279DerSequence);
         }
 
         protected override PublicKey BuildPublicKey()

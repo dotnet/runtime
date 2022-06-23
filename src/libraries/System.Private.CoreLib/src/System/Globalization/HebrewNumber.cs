@@ -80,9 +80,8 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////////
 
-        internal static void Append(StringBuilder outputBuffer, int Number)
+        internal static void Append(ref ValueStringBuilder outputBuffer, int Number)
         {
-            Debug.Assert(outputBuffer != null);
             int outputBufferStartingLength = outputBuffer.Length;
 
             char cTens = '\x0';
@@ -199,7 +198,10 @@ namespace System.Globalization
 
             if (outputBuffer.Length - outputBufferStartingLength > 1)
             {
-                outputBuffer.Insert(outputBuffer.Length - 1, '"');
+                char last = outputBuffer[outputBuffer.Length - 1];
+                outputBuffer.Length--;
+                outputBuffer.Append('"');
+                outputBuffer.Append(last);
             }
             else
             {

@@ -1443,14 +1443,14 @@ eventpipe_fire_method_events (
 
 		if (verbose) {
 			method_name = method->name;
-			method_signature = mono_signature_full_name (method->signature);
+			method_signature = mono_signature_full_name (mono_method_signature_internal (method));
 			if (method->klass)
 				method_namespace = mono_type_get_name_full (m_class_get_byval_arg (method->klass), MONO_TYPE_NAME_FORMAT_IL);
 		}
 
 	}
 
-	uint16_t offset_entries = 0;
+	uint32_t offset_entries = 0;
 	uint32_t *il_offsets = NULL;
 	uint32_t *native_offsets = NULL;
 
@@ -1469,7 +1469,7 @@ eventpipe_fire_method_events (
 				il_offsets = (uint32_t*)events_data->buffer;
 				native_offsets = il_offsets + offset_entries;
 
-				for (int32_t offset_count = 0; offset_count < offset_entries; ++offset_count) {
+				for (uint32_t offset_count = 0; offset_count < offset_entries; ++offset_count) {
 					il_offsets [offset_count] = debug_info->line_numbers [offset_count].il_offset;
 					native_offsets [offset_count] = debug_info->line_numbers [offset_count].native_offset;
 				}
@@ -1499,7 +1499,7 @@ eventpipe_fire_method_events (
 		(ep_char8_t *)method_namespace,
 		(ep_char8_t *)method_name,
 		(ep_char8_t *)method_signature,
-		offset_entries,
+		GUINT32_TO_UINT16 (offset_entries),
 		il_offsets,
 		native_offsets,
 		(ji->from_aot || ji->from_llvm),
@@ -1555,7 +1555,7 @@ eventpipe_fire_assembly_events (
 	// Native methods are part of JIT table and already emitted.
 	// TODO: FireEtwMethodDCEndVerbose_V1_or_V2 for all native methods in module as well?
 
-	uint64_t binding_id = 0;
+	uint32_t binding_id = 0;
 
 	ModuleEventData module_data;
 	memset (&module_data, 0, sizeof (module_data));
@@ -2511,7 +2511,7 @@ ep_rt_mono_system_time_get (EventPipeSystemTime *system_time)
 		int old_seconds;
 		int new_seconds;
 
-		milliseconds = time_val.tv_usec / MSECS_TO_MIS;
+		milliseconds = (uint16_t)(time_val.tv_usec / MSECS_TO_MIS);
 
 		old_seconds = ut_ptr->tm_sec;
 		new_seconds = time_val.tv_sec % 60;
@@ -2523,13 +2523,13 @@ ep_rt_mono_system_time_get (EventPipeSystemTime *system_time)
 
 	ep_system_time_set (
 		system_time,
-		1900 + ut_ptr->tm_year,
-		ut_ptr->tm_mon + 1,
-		ut_ptr->tm_wday,
-		ut_ptr->tm_mday,
-		ut_ptr->tm_hour,
-		ut_ptr->tm_min,
-		ut_ptr->tm_sec,
+		(uint16_t)(1900 + ut_ptr->tm_year),
+		(uint16_t)ut_ptr->tm_mon + 1,
+		(uint16_t)ut_ptr->tm_wday,
+		(uint16_t)ut_ptr->tm_mday,
+		(uint16_t)ut_ptr->tm_hour,
+		(uint16_t)ut_ptr->tm_min,
+		(uint16_t)ut_ptr->tm_sec,
 		milliseconds);
 }
 
@@ -2609,7 +2609,7 @@ void
 ep_rt_mono_provider_config_init (EventPipeProviderConfiguration *provider_config)
 {
 	if (!ep_rt_utf8_string_compare (ep_config_get_rundown_provider_name_utf8 (), ep_provider_config_get_provider_name (provider_config))) {
-		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context.Level = ep_provider_config_get_logging_level (provider_config);
+		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context.Level = (uint8_t)ep_provider_config_get_logging_level (provider_config);
 		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context.EnabledKeywordsBitmask = ep_provider_config_get_keywords (provider_config);
 		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context.IsEnabled = true;
 	}
@@ -2792,7 +2792,7 @@ ep_rt_mono_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkp
 	ep_char8_t runtime_module_path [256];
 	const uint8_t object_guid [EP_GUID_SIZE] = { 0 };
 	const uint16_t runtime_product_qfe_version = 0;
-	const uint32_t startup_flags = 0;
+	const uint8_t startup_flags = 0;
 	const uint8_t startup_mode = 0;
 	const ep_char8_t *command_line = "";
 
@@ -2857,6 +2857,583 @@ ep_rt_mono_write_event_ee_startup_start (void)
 		NULL);
 }
 
+#define STACK_ALLOC 256
+
+// The maximum number of type parameters for a BulkTypeValue instance
+// Aligned with coreCLR StackSArray<ULONGLONG> rgTypeParameters
+#define INIT_SIZE_OF_TYPE_PARAMETER_ARRAY ((uint32_t)(STACK_ALLOC / sizeof (intptr_t)))
+
+// !!!!!!! NOTE !!!!!!!!
+// The flags must match those in the ETW manifest exactly
+// !!!!!!! NOTE !!!!!!!!
+
+typedef enum {
+	TYPE_FLAGS_DELEGATE = 0x1,
+	TYPE_FLAGS_FINALIZABLE = 0x2,
+	TYPE_FLAGS_EXTERNALLY_IMPLEMENTED_COM_OBJECT = 0x4,
+	TYPE_FLAGS_ARRAY = 0x8,
+
+	TYPE_FLAGS_ARRAY_RANK_MASK = 0x3F00,
+	TYPE_FLAGS_ARRAY_RANK_SHIFT = 8,
+	TYPE_FLAGS_ARRAY_RANK_MAX = TYPE_FLAGS_ARRAY_RANK_MASK >> TYPE_FLAGS_ARRAY_RANK_SHIFT
+} TypeFlags;
+
+// This only contains the fixed-size data at the top of each struct in
+// the bulk type event.  These fields must still match exactly the initial
+// fields of the struct described in the manifest.
+typedef struct _EventStructBulkTypeFixedSizedData {
+	uint64_t type_id;
+	uint64_t module_id;
+	uint32_t type_name_id;
+	uint32_t flags;
+	uint8_t cor_element_type;
+} EventStructBulkTypeFixedSizedData;
+
+// Represents one instance of the Value struct inside a single BulkType event
+typedef struct _BulkTypeValue {
+	EventStructBulkTypeFixedSizedData fixed_sized_data;
+	uint32_t type_parameters_count;
+	MonoType **mono_type_parameters;
+	ep_char8_t *name; // Currently should only be NULL, TODO if we want to provide the name in the BulkTypeEvent data, figure out memory management to use
+} BulkTypeValue;
+
+static
+void
+ep_rt_bulk_type_value_clear (BulkTypeValue *bulk_type_value);
+
+static
+int
+ep_rt_mono_get_byte_count_in_event (BulkTypeValue *bulk_type_value);
+
+static
+BulkTypeEventLogger*
+ep_rt_bulk_type_event_logger_alloc (void);
+
+static
+void
+ep_rt_bulk_type_event_logger_free (BulkTypeEventLogger *type_logger);
+
+static
+int
+write_event_buffer (
+	const uint8_t *val,
+	int size,
+	char *buf_start,
+	char **buf_next);
+
+static
+int
+write_event_buffer_int8 (
+	int8_t val,
+	char *buf_start,
+	char **buf_next);
+
+static
+int
+write_event_buffer_int16 (
+	int16_t val,
+	char *buf_start,
+	char **buf_next);
+
+static
+int
+write_event_buffer_int32 (
+	int32_t val,
+	char *buf_start,
+	char **buf_next);
+
+static
+int
+write_event_buffer_int64 (
+	int64_t val,
+	char *buf_start,
+	char **buf_next);
+
+static
+uint64_t
+get_typeid_for_type (MonoType *t);
+
+static
+uint64_t
+get_typeid_for_class (MonoClass *c);
+
+// Clear out BulkTypeValue before filling it out (array elements can get reused if there
+// are enough types that we need to flush to multiple events).
+static
+void
+ep_rt_bulk_type_value_clear (BulkTypeValue *bulk_type_value)
+{
+	memset (bulk_type_value, 0, sizeof(BulkTypeValue));
+}
+
+static
+int
+ep_rt_mono_get_byte_count_in_event (BulkTypeValue *bulk_type_value)
+{
+	int name_len = 0;
+
+	return sizeof (bulk_type_value->fixed_sized_data.type_id) + 	// Fixed Sized Data
+		sizeof (bulk_type_value->fixed_sized_data.module_id) +
+		sizeof (bulk_type_value->fixed_sized_data.type_name_id) +
+		sizeof (bulk_type_value->fixed_sized_data.flags) +
+		sizeof (bulk_type_value->fixed_sized_data.cor_element_type) +
+		sizeof (bulk_type_value->type_parameters_count) +		// Type parameters
+		(name_len + 1) * sizeof (ep_char8_t) +		// Size of name, including null terminator
+		bulk_type_value->type_parameters_count * sizeof (uint64_t);	// Type parameters
+}
+
+// ETW has a limitation of 64K for TOTAL event Size, however there is overhead associated with
+// the event headers.   It is unclear exactly how much that is, but 1K should be sufficiently
+// far away to avoid problems without sacrificing the perf of bulk processing.
+#define MAX_EVENT_BYTE_COUNT (63 * 1024)
+
+// The maximum event size, and the size of the buffer that we allocate to hold the event contents.
+#define MAX_SIZE_OF_EVENT_BUFFER 65536
+
+// Estimate of how many bytes we can squeeze in the event data for the value struct
+// array. (Intentionally overestimate the size of the non-array parts to keep it safe.)
+// This follows CoreCLR's kMaxBytesTypeValues.
+#define MAX_TYPE_VALUES_BYTES (MAX_EVENT_BYTE_COUNT - 0x30)
+
+// Estimate of how many type value elements we can put into the struct array, while
+// staying under the ETW event size limit. Note that this is impossible to calculate
+// perfectly, since each element of the struct array has variable size.
+//
+// In addition to the byte-size limit per event, Windows always forces on us a
+// max-number-of-descriptors per event, which in the case of BulkType, will kick in
+// far sooner. There's a max number of 128 descriptors allowed per event. 2 are used
+// for Count + ClrInstanceID. Then 4 per batched value. (Might actually be 3 if there
+// are no type parameters to log, but let's overestimate at 4 per value).
+#define K_MAX_COUNT_TYPE_VALUES ((uint32_t)(128 - 2) / 4)
+
+struct _BulkTypeEventLogger {
+	BulkTypeValue bulk_type_values [K_MAX_COUNT_TYPE_VALUES];
+	uint8_t *bulk_type_event_buffer;
+	uint32_t bulk_type_value_count;
+	uint32_t bulk_type_value_byte_count;
+	MonoMemPool *mem_pool;
+};
+
+static
+BulkTypeEventLogger*
+ep_rt_bulk_type_event_logger_alloc ()
+{
+	BulkTypeEventLogger *type_logger = g_malloc0 (sizeof (BulkTypeEventLogger));
+	type_logger->bulk_type_event_buffer = g_malloc0 (sizeof (uint8_t) * MAX_SIZE_OF_EVENT_BUFFER);
+	type_logger->mem_pool = mono_mempool_new ();
+	return type_logger;
+}
+
+static
+void
+ep_rt_bulk_type_event_logger_free (BulkTypeEventLogger *type_logger)
+{
+	mono_mempool_destroy (type_logger->mem_pool);
+	g_free (type_logger->bulk_type_event_buffer);
+	g_free (type_logger);
+}
+
+static
+int
+write_event_buffer (
+	const uint8_t *val,
+	int size,
+	char *buf_start,
+	char **buf_next)
+{
+	memcpy (buf_start, val, size);
+	*buf_next = buf_start + size;
+	return size;
+}
+
+static
+int
+write_event_buffer_int8 (
+	int8_t val,
+	char *buf_start,
+	char **buf_next)
+{
+	return write_event_buffer ((const uint8_t *)&val, sizeof (int8_t), buf_start, buf_next);
+}
+
+static
+int
+write_event_buffer_int16 (
+	int16_t val,
+	char *buf_start,
+	char **buf_next)
+{
+	return write_event_buffer ((const uint8_t *)&val, sizeof (int16_t), buf_start, buf_next);
+}
+
+static
+int
+write_event_buffer_int32 (
+	int32_t val,
+	char *buf_start,
+	char **buf_next)
+{
+	return write_event_buffer ((const uint8_t *)&val, sizeof (int32_t), buf_start, buf_next);
+}
+
+static
+int
+write_event_buffer_int64 (
+	int64_t val,
+	char *buf_start,
+	char **buf_next)
+{
+	return write_event_buffer ((const uint8_t *)&val, sizeof (int64_t), buf_start, buf_next);
+}
+
+//---------------------------------------------------------------------------------------
+//
+// ep_rt_mono_fire_bulk_type_event fires an ETW event for all the types batched so far,
+// it then resets the state to start batching new types at the beginning of the
+// bulk_type_values array.
+//
+// This follows CoreCLR's BulkTypeEventLogger::FireBulkTypeEvent
+
+void
+ep_rt_mono_fire_bulk_type_event (BulkTypeEventLogger *type_logger)
+{
+	if (type_logger->bulk_type_value_count == 0)
+		return;
+
+	uint16_t clr_instance_id = clr_instance_get_id ();
+
+	uint32_t values_element_size = 0;
+
+	char *ptr = (char *)type_logger->bulk_type_event_buffer;
+
+	for (uint32_t type_value_index = 0; type_value_index < type_logger->bulk_type_value_count; type_value_index++) {
+		BulkTypeValue *target = &type_logger->bulk_type_values [type_value_index];
+
+		values_element_size += write_event_buffer_int64 (target->fixed_sized_data.type_id, ptr, &ptr);
+		values_element_size += write_event_buffer_int64 (target->fixed_sized_data.module_id, ptr, &ptr);
+		values_element_size += write_event_buffer_int32 (target->fixed_sized_data.type_name_id, ptr, &ptr);
+		values_element_size += write_event_buffer_int32 (target->fixed_sized_data.flags, ptr, &ptr);
+		values_element_size += write_event_buffer_int8 (target->fixed_sized_data.cor_element_type, ptr, &ptr);
+
+		g_assert (target->name == NULL);
+		values_element_size += write_event_buffer_int16 (0, ptr, &ptr);
+
+		values_element_size += write_event_buffer_int32 (target->type_parameters_count, ptr, &ptr);
+
+		for (uint32_t i = 0; i < target->type_parameters_count; i++) {
+			uint64_t type_parameter = get_typeid_for_type (target->mono_type_parameters [i]);
+			values_element_size += write_event_buffer_int64 ((int64_t)type_parameter, ptr, &ptr);
+		}
+	}
+
+	FireEtwBulkType (
+		type_logger->bulk_type_value_count,
+		clr_instance_id,
+		values_element_size,
+		type_logger->bulk_type_event_buffer,
+		NULL,
+		NULL);
+
+	memset (type_logger->bulk_type_event_buffer, 0, sizeof (uint8_t) * MAX_SIZE_OF_EVENT_BUFFER);
+	type_logger->bulk_type_value_count = 0;
+	type_logger->bulk_type_value_byte_count = 0;
+}
+
+//---------------------------------------------------------------------------------------
+//
+// get_typeid_for_type is responsible for obtaining the unique type identifier for a
+// particular MonoType. MonoTypes are structs that are not unique pointers. There
+// can be two different MonoTypes that both System.Thread or int32 or bool []. There
+// is exactly one MonoClass * for any type, so we leverage the MonoClass a MonoType
+// points to in order to obtain a unique type identifier in mono. With that unique
+// MonoClass, its fields this_arg and _byval_arg are unique as well.
+//
+// Arguments:
+//      * mono_type - MonoType to be logged
+//
+// Return Value:
+//      type_id - Unique type identifier of mono_type
+
+static
+uint64_t
+get_typeid_for_type (MonoType *t)
+{
+	if (m_type_is_byref (t))
+		return (uint64_t)m_class_get_this_arg (mono_class_from_mono_type_internal (t));
+	else
+		return (uint64_t)m_class_get_byval_arg (mono_class_from_mono_type_internal (t));
+}
+
+static
+uint64_t
+get_typeid_for_class (MonoClass *c)
+{
+	return get_typeid_for_type (m_class_get_byval_arg (c));
+}
+
+//---------------------------------------------------------------------------------------
+//
+// ep_rt_mono_log_single_type batches a single type into the bulk type array and flushes
+// the array to ETW if it fills up. Most interaction with the type system (type analysis)
+// is done here. This does not recursively batch up any parameter types (arrays or generics),
+// but does add their unique identifiers to the mono_type_parameters array.
+// ep_rt_mono_log_type_and_parameters is responsible for initiating any recursive calls to
+// deal with type parameters.
+//
+// Arguments:
+//	* type_logger - BulkTypeEventLogger instance
+//      * mono_type - MonoType to be logged
+//
+// Return Value:
+//      Index into array of where this type got batched. -1 if there was a failure.
+//
+// This follows CoreCLR's BulkTypeEventLogger::LogSingleType
+
+int
+ep_rt_mono_log_single_type (
+	BulkTypeEventLogger *type_logger,
+	MonoType *mono_type)
+{
+	// If there's no room for another type, flush what we've got
+	if (type_logger->bulk_type_value_count == K_MAX_COUNT_TYPE_VALUES)
+		ep_rt_mono_fire_bulk_type_event (type_logger);
+
+	EP_ASSERT (type_logger->bulk_type_value_count < K_MAX_COUNT_TYPE_VALUES);
+
+	BulkTypeValue *val = &type_logger->bulk_type_values [type_logger->bulk_type_value_count];
+	ep_rt_bulk_type_value_clear (val);
+
+	MonoClass *klass = mono_class_from_mono_type_internal (mono_type);
+	MonoType *mono_underlying_type = mono_type_get_underlying_type (mono_type);
+
+	// Initialize val fixed_sized_data
+	val->fixed_sized_data.type_id = get_typeid_for_type (mono_type);
+	val->fixed_sized_data.module_id = (uint64_t)m_class_get_image (klass);
+	val->fixed_sized_data.type_name_id = m_class_get_type_token (klass) ? mono_metadata_make_token (MONO_TABLE_TYPEDEF, mono_metadata_token_index (m_class_get_type_token (klass))) : 0;
+	if (mono_class_has_finalizer (klass))
+		val->fixed_sized_data.flags |= TYPE_FLAGS_FINALIZABLE;
+	if (m_class_is_delegate (klass))
+		val->fixed_sized_data.flags |= TYPE_FLAGS_DELEGATE;
+	if (mono_class_is_com_object (klass))
+		val->fixed_sized_data.flags |= TYPE_FLAGS_EXTERNALLY_IMPLEMENTED_COM_OBJECT;
+	val->fixed_sized_data.cor_element_type = (uint8_t)mono_underlying_type->type;
+
+	// Sets val variable sized parameter type data, type_parameters_count, and mono_type_parameters associated
+	// with arrays or generics to be recursively batched in the same ep_rt_mono_log_type_and_parameters call
+	switch (mono_underlying_type->type) {
+	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_SZARRAY:
+	{
+		MonoArrayType *mono_array_type = mono_type_get_array_type (mono_type);
+		val->fixed_sized_data.flags |= TYPE_FLAGS_ARRAY;
+		if (mono_underlying_type->type == MONO_TYPE_ARRAY) {
+			// Only ranks less than TypeFlagsArrayRankMax are supported.
+			// Fortunately TypeFlagsArrayRankMax should be greater than the
+			// number of ranks the type loader will support
+			uint32_t rank = mono_array_type->rank;
+			if (rank < TYPE_FLAGS_ARRAY_RANK_MAX) {
+				rank <<= 8;
+				val->fixed_sized_data.flags |= rank;
+			}
+		}
+
+		// mono arrays are always arrays of by value types
+		val->mono_type_parameters = mono_mempool_alloc0 (type_logger->mem_pool, 1 * sizeof (MonoType*));
+		*val->mono_type_parameters = m_class_get_byval_arg (mono_array_type->eklass);
+		val->type_parameters_count++;
+		break;
+	}
+	case MONO_TYPE_GENERICINST:
+	{
+		MonoGenericInst *class_inst = mono_type->data.generic_class->context.class_inst;
+		val->type_parameters_count = class_inst->type_argc;
+		val->mono_type_parameters = mono_mempool_alloc0 (type_logger->mem_pool, val->type_parameters_count * sizeof (MonoType*));
+		memcpy (val->mono_type_parameters, class_inst->type_argv, val->type_parameters_count * sizeof (MonoType*));
+		break;
+	}
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_BYREF:
+	{
+		if (mono_underlying_type == mono_type)
+			break;
+		val->mono_type_parameters = mono_mempool_alloc0 (type_logger->mem_pool, 1 * sizeof (MonoType*));
+		*val->mono_type_parameters = mono_underlying_type;
+		val->type_parameters_count++;
+		break;
+	}
+	default:
+		break;
+	}
+
+	// Now that we know the full size of this type's data, see if it fits in our
+	// batch or whether we need to flush
+	int val_byte_count = ep_rt_mono_get_byte_count_in_event (val);
+	if (val_byte_count > MAX_TYPE_VALUES_BYTES) {
+		// NOTE: If name is actively used, set it to NULL and relevant memory management to reduce byte count
+		// This type is apparently so huge, it's too big to squeeze into an event, even
+		// if it were the only type batched in the whole event.  Bail
+		mono_trace (G_LOG_LEVEL_ERROR, MONO_TRACE_DIAGNOSTICS, "Failed to log single mono type %p with typeID %llu. Type is too large for the BulkType Event.\n", (gpointer)mono_type, (unsigned long long)val->fixed_sized_data.type_id);
+		return -1;
+	}
+
+	if (type_logger->bulk_type_value_byte_count + val_byte_count > MAX_TYPE_VALUES_BYTES) {
+		// Although this type fits into the array, its size is so big that the entire
+		// array can't be logged via ETW. So flush the array, and start over by
+		// calling ourselves--this refetches the type info and puts it at the
+		// beginning of the array.  Since we know this type is small enough to be
+		// batched into an event on its own, this recursive call will not try to
+		// call itself again.
+		g_assert (type_logger->bulk_type_value_byte_count + val_byte_count > MAX_TYPE_VALUES_BYTES);
+		ep_rt_mono_fire_bulk_type_event (type_logger);
+		return ep_rt_mono_log_single_type (type_logger, mono_type);
+	}
+
+	// The type fits into the batch, so update our state
+	type_logger->bulk_type_value_count++;
+	type_logger->bulk_type_value_byte_count += val_byte_count;
+	return type_logger->bulk_type_value_count - 1;
+}
+
+//---------------------------------------------------------------------------------------
+//
+// High-level method to batch a type and (recursively) its type parameters, flushing to
+// ETW as needed.  This is called by ep_rt_mono_log_type_and_parameters_if_necessary.
+//
+// Arguments:
+//	* type_logger - BulkTypeEventLogger instance
+//      * mono_type - MonoType to be logged
+//
+// This follows CoreCLR's BulkTypeEventLogger::LogTypeAndParameter
+
+void
+ep_rt_mono_log_type_and_parameters (
+	BulkTypeEventLogger *type_logger,
+	MonoType *mono_type)
+{
+	// Batch up this type.  This grabs useful info about the type, including any
+	// type parameters it may have, and sticks it in bulk_type_values
+	int bulk_type_value_index = ep_rt_mono_log_single_type (type_logger, mono_type);
+	if (bulk_type_value_index == -1) {
+		// There was a failure trying to log the type, so don't bother with its type
+		// parameters
+		return;
+	}
+
+	// Look at the type info we just batched, so we can get the type parameters
+	BulkTypeValue *val = &type_logger->bulk_type_values [bulk_type_value_index];
+
+	// We're about to recursively call ourselves for the type parameters, so make a
+	// local copy of their type handles first (else, as we log them we could flush
+	// and clear out bulk_type_values, thus trashing val)
+	uint32_t param_count = val->type_parameters_count;
+	if (param_count == 0)
+		return;
+
+	MonoType **mono_type_parameters = mono_mempool_alloc0 (type_logger->mem_pool, param_count * sizeof (MonoType*));
+	memcpy (mono_type_parameters, val->mono_type_parameters, sizeof (MonoType*) * param_count);
+
+	for (uint32_t i = 0; i < param_count; i++)
+		ep_rt_mono_log_type_and_parameters_if_necessary (type_logger, mono_type_parameters [i]);
+}
+
+//---------------------------------------------------------------------------------------
+//
+// Outermost level of ETW-type-logging.  This method is used to log a unique type identifier
+// (in this case a MonoType) and (recursively) its type parameters when present.
+//
+// Arguments:
+//	* type_logger - BulkTypeEventLogger instance
+//      * mono_type - MonoType to be logged
+//
+// This follows CoreCLR's BulkTypeEventLogger::LogTypeAndParameters
+
+void
+ep_rt_mono_log_type_and_parameters_if_necessary (
+	BulkTypeEventLogger *type_logger,
+	MonoType *mono_type)
+{
+	// TODO Log the type if necessary
+
+	ep_rt_mono_log_type_and_parameters (type_logger, mono_type);
+}
+
+// ETW has a limit for maximum event size. Do not log overly large method type argument sets
+static const uint32_t MAX_METHOD_TYPE_ARGUMENT_COUNT = 1024;
+
+//---------------------------------------------------------------------------------------
+//
+// ep_rt_mono_send_method_details_event is the method responsible for sending details of
+// methods involved in events such as JitStart, Load/Unload, Rundown, R2R, and other
+// eventpipe events. It calls ep_rt_mono_log_type_and_parameters_if_necessary to log
+// unique types from the method type and available method instantiation parameter types
+// that are ultimately emitted as a BulkType event in ep_rt_mono_fire_bulk_type_event.
+// After appropraitely logging type information, it sends method details outlined by
+// the generated dotnetruntime.c and ClrEtwAll manifest.
+//
+// Arguments:
+//      * method - a MonoMethod hit during an eventpipe event
+//
+// This follows CoreCLR's ETW::MethodLog::SendMethodDetailsEvent
+
+void
+ep_rt_mono_send_method_details_event (MonoMethod *method)
+{
+	if (method->wrapper_type != MONO_WRAPPER_NONE || method->dynamic)
+		return;
+
+	MonoGenericContext *method_ctx = mono_method_get_context (method);
+
+	MonoGenericInst *method_inst = NULL;
+	if (method_ctx)
+		method_inst = method_ctx->method_inst;
+
+	if (method_inst && method_inst->type_argc > MAX_METHOD_TYPE_ARGUMENT_COUNT)
+		return;
+
+	BulkTypeEventLogger *type_logger = ep_rt_bulk_type_event_logger_alloc ();
+
+	uint64_t method_type_id = 0;
+	g_assert (mono_metadata_token_index (method->token) != 0);
+	uint32_t method_token = mono_metadata_make_token (MONO_TABLE_METHOD, mono_metadata_token_index (method->token));
+	uint64_t loader_module_id = 0;
+	MonoClass *klass = method->klass;
+	if (klass) {
+		MonoType *method_mono_type = m_class_get_byval_arg (klass);
+		method_type_id = get_typeid_for_class (klass);
+
+		ep_rt_mono_log_type_and_parameters_if_necessary (type_logger, method_mono_type);
+
+		loader_module_id = (uint64_t)mono_class_get_image (klass);
+	}
+
+	uint32_t method_inst_parameter_types_count = 0;
+	if (method_inst)
+		method_inst_parameter_types_count = method_inst->type_argc;
+
+	uint64_t *method_inst_parameters_type_ids = mono_mempool_alloc0 (type_logger->mem_pool, method_inst_parameter_types_count * sizeof (uint64_t));
+	for (uint32_t i = 0; i < method_inst_parameter_types_count; i++) {
+		method_inst_parameters_type_ids [i] = get_typeid_for_type (method_inst->type_argv [i]);
+
+		ep_rt_mono_log_type_and_parameters_if_necessary (type_logger, method_inst->type_argv [i]);
+	}
+
+	ep_rt_mono_fire_bulk_type_event (type_logger);
+
+	FireEtwMethodDetails (
+		(uint64_t)method,
+		method_type_id,
+		method_token,
+		method_inst_parameter_types_count,
+		loader_module_id,
+		(uint64_t*)method_inst_parameters_type_ids,
+		NULL,
+		NULL);
+
+	ep_rt_bulk_type_event_logger_free (type_logger);
+}
+
 bool
 ep_rt_mono_write_event_jit_start (MonoMethod *method)
 {
@@ -2873,7 +3450,7 @@ ep_rt_mono_write_event_jit_start (MonoMethod *method)
 		const char *method_name = NULL;
 		char *method_signature = NULL;
 
-		//TODO: SendMethodDetailsEvent
+		ep_rt_mono_send_method_details_event(method);
 
 		method_id = (uint64_t)method;
 
@@ -2888,7 +3465,7 @@ ep_rt_mono_write_event_jit_start (MonoMethod *method)
 		}
 
 		method_name = method->name;
-		method_signature = mono_signature_full_name (method->signature);
+		method_signature = mono_signature_full_name (mono_method_signature_internal (method));
 
 		if (method->klass) {
 			module_id = (uint64_t)m_class_get_image (method->klass);
@@ -2930,7 +3507,7 @@ ep_rt_mono_write_event_method_il_to_native_map (
 		uint32_t fixed_buffer [64];
 		uint8_t *buffer = NULL;
 
-		uint16_t offset_entries = 0;
+		uint32_t offset_entries = 0;
 		uint32_t *il_offsets = NULL;
 		uint32_t *native_offsets = NULL;
 
@@ -2947,7 +3524,7 @@ ep_rt_mono_write_event_method_il_to_native_map (
 				}
 				if (il_offsets) {
 					native_offsets = il_offsets + offset_entries;
-					for (int32_t offset_count = 0; offset_count < offset_entries; ++offset_count) {
+					for (uint32_t offset_count = 0; offset_count < offset_entries; ++offset_count) {
 						il_offsets [offset_count] = debug_info->line_numbers [offset_count].il_offset;
 						native_offsets [offset_count] = debug_info->line_numbers [offset_count].native_offset;
 					}
@@ -2971,7 +3548,7 @@ ep_rt_mono_write_event_method_il_to_native_map (
 			method_id,
 			0,
 			0,
-			offset_entries,
+			GUINT32_TO_UINT16 (offset_entries),
 			il_offsets,
 			native_offsets,
 			clr_instance_get_id (),
@@ -3039,11 +3616,11 @@ ep_rt_mono_write_event_method_load (
 				method_flags |= METHOD_FLAGS_GENERIC_METHOD;
 		}
 
-		//TODO: SendMethodDetailsEvent
+		ep_rt_mono_send_method_details_event(method);
 
 		if (verbose) {
 			method_name = method->name;
-			method_signature = mono_signature_full_name (method->signature);
+			method_signature = mono_signature_full_name (mono_method_signature_internal (method));
 
 			if (method->klass)
 				method_namespace = mono_type_get_name_full (m_class_get_byval_arg (method->klass), MONO_TYPE_NAME_FORMAT_IL);
@@ -3339,13 +3916,13 @@ ep_rt_mono_write_event_thread_created (ep_rt_thread_id_t tid)
 		return true;
 
 	uint64_t managed_thread = 0;
-	uint64_t native_thread_id = ep_rt_thread_id_t_to_uint64_t (tid);
-	uint64_t managed_thread_id = 0;
+	uint32_t native_thread_id = MONO_NATIVE_THREAD_ID_TO_UINT (tid);
+	uint32_t managed_thread_id = 0;
 	uint32_t flags = 0;
 
 	MonoThread *thread = mono_thread_current ();
 	if (thread && mono_thread_info_get_tid (thread->thread_info) == tid) {
-		managed_thread_id = (uint64_t)mono_thread_get_managed_id (thread);
+		managed_thread_id = mono_thread_get_managed_id (thread);
 		managed_thread = (uint64_t)thread;
 
 		switch (mono_thread_info_get_flags (thread->thread_info)) {
@@ -3406,7 +3983,7 @@ get_type_start_id (MonoType *type)
 MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	// Mix in highest bits on 64-bit systems only
 	if (sizeof (type) > 4)
-		start_id = start_id ^ (((uint64_t)type >> 31) >> 1);
+		start_id = start_id ^ GUINT64_TO_UINT32 ((((uint64_t)type >> 31) >> 1));
 MONO_RESTORE_WARNING
 
 	return start_id;
@@ -3699,6 +4276,24 @@ ep_rt_write_event_threadpool_worker_thread_wait (
 	return FireEtwThreadPoolWorkerThreadWait (
 		active_thread_count,
 		retired_worker_thread_count,
+		clr_instance_id,
+		NULL,
+		NULL) == 0 ? true : false;
+}
+
+bool
+ep_rt_write_event_threadpool_min_max_threads (
+	uint16_t min_worker_threads,
+	uint16_t max_worker_threads,
+	uint16_t min_io_completion_threads,
+	uint16_t max_io_completion_threads,
+	uint16_t clr_instance_id)
+{
+	return FireEtwThreadPoolMinMaxThreads (
+		min_worker_threads,
+		max_worker_threads,
+		min_io_completion_threads,
+		max_io_completion_threads,
 		clr_instance_id,
 		NULL,
 		NULL) == 0 ? true : false;
@@ -4918,15 +5513,17 @@ mono_profiler_fire_buffered_gc_event_heap_dump_object_reference (
 	object_size += 7;
 	object_size &= ~7;
 
-	MonoProfilerBufferedGCEvent gc_event_data;
-	gc_event_data.type = MONO_PROFILER_BUFFERED_GC_EVENT_OBJECT_REF;
-	gc_event_data.payload_size =
+	size_t payload_size =
 		sizeof (object_id) +
 		sizeof (vtable_id) +
 		sizeof (object_size) +
 		sizeof (object_gen) +
 		sizeof (object_ref_count) +
 		(object_ref_count * (sizeof (uint32_t) + sizeof (uintptr_t)));
+
+	MonoProfilerBufferedGCEvent gc_event_data;
+	gc_event_data.type = MONO_PROFILER_BUFFERED_GC_EVENT_OBJECT_REF;
+	gc_event_data.payload_size = GSIZE_TO_UINT32 (payload_size);
 
 	uint8_t *buffer = mono_profiler_buffered_gc_event_alloc (gc_event_data.payload_size);
 	if (buffer) {
@@ -4961,7 +5558,7 @@ mono_profiler_fire_buffered_gc_event_heap_dump_object_reference (
 		uintptr_t last_offset = 0;
 		for (uintptr_t i = 0; i < object_ref_count; i++) {
 			// GCEvent.Values[].ReferencesOffset
-			object_ref_offset = offsets [i] - last_offset;
+			object_ref_offset = GUINTPTR_TO_UINT32 (offsets [i] - last_offset);
 			memcpy (buffer, &object_ref_offset, sizeof (object_ref_offset));
 			buffer += sizeof (object_ref_offset);
 
@@ -5319,7 +5916,7 @@ mono_profiler_jit_done (
 	if (verbose) {
 		//TODO: Optimize string formatting into functions accepting GString to reduce heap alloc.
 		method_name = method->name;
-		method_signature = mono_signature_full_name (method->signature);
+		method_signature = mono_signature_full_name (mono_method_signature_internal (method));
 		if (method->klass)
 			method_namespace = mono_type_get_name_full (m_class_get_byval_arg (method->klass), MONO_TYPE_NAME_FORMAT_IL);
 	}

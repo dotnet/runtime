@@ -48,7 +48,7 @@ namespace System.Reflection
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                m_invoker ??= new MethodInvoker(this);
+                m_invoker ??= new MethodInvoker(this, Signature);
                 return m_invoker;
             }
         }
@@ -351,7 +351,7 @@ namespace System.Reflection
                 StackAllocedArguments argStorage = default;
                 Span<object?> copyOfParameters = new(ref argStorage._arg0, 1);
                 ReadOnlySpan<object?> parameters = new(in parameter);
-                Span<bool> shouldCopyBackParameters = new(ref argStorage._copyBack0, 1);
+                Span<ParameterCopyBackAction> shouldCopyBackParameters = new(ref argStorage._copyBack0, 1);
 
                 StackAllocatedByRefs byrefStorage = default;
                 IntPtr* pByRefStorage = (IntPtr*)&byrefStorage;
@@ -366,31 +366,14 @@ namespace System.Reflection
                     culture,
                     invokeAttr);
 
-                retValue = Invoker.InvokeUnsafe(obj, pByRefStorage, copyOfParameters, invokeAttr);
+#if MONO // Temporary until Mono is updated.
+                retValue = Invoker.InlinedInvoke(obj, copyOfParameters, invokeAttr);
+#else
+                retValue = Invoker.InlinedInvoke(obj, pByRefStorage, invokeAttr);
+#endif
             }
 
             return retValue;
-        }
-
-        [DebuggerHidden]
-        [DebuggerStepThrough]
-        internal unsafe object? InvokeNonEmitUnsafe(object? obj, IntPtr* arguments, Span<object?> argsForTemporaryMonoSupport, BindingFlags invokeAttr)
-        {
-            if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
-            {
-                try
-                {
-                    return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false);
-                }
-                catch (Exception e)
-                {
-                    throw new TargetInvocationException(e);
-                }
-            }
-            else
-            {
-                return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false);
-            }
         }
 
         #endregion

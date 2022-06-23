@@ -918,8 +918,8 @@ void __stdcall UpdateGenerationBounds()
         GC_NOTRIGGER;
         MODE_ANY; // can be called even on GC threads
 #ifdef PROFILING_SUPPORTED
-        PRECONDITION(FastInterlockIncrement(&s_generationTableWriterCount) == 1);
-        POSTCONDITION(FastInterlockDecrement(&s_generationTableWriterCount) == 0);
+        PRECONDITION(InterlockedIncrement(&s_generationTableWriterCount) == 1);
+        POSTCONDITION(InterlockedDecrement(&s_generationTableWriterCount) == 0);
 #endif // PROFILING_SUPPORTED
     } CONTRACT_END;
 
@@ -4156,7 +4156,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleInfo2(ModuleID     moduleId,
         if (pAssemblyId != NULL)
         {
             // Lie and say the assembly isn't available until we are loaded (even though it is.)
-            // This is for backward compatibilty - we may want to change it
+            // This is for backward compatibility - we may want to change it
             if (pModule->IsProfilerNotified())
             {
                 Assembly *pAssembly = pModule->GetAssembly();

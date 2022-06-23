@@ -49,31 +49,19 @@ namespace System.Text.RegularExpressions
             // for the whole expression, we can use that to quickly jump to the right location in the input.
             if (!_rightToLeft) // haven't added FindNextStartingPositionMode trailing anchor support for RTL
             {
-                bool triedToComputeMaxLength = false;
-
                 TrailingAnchor = RegexPrefixAnalyzer.FindTrailingAnchor(root);
-                if (TrailingAnchor is RegexNodeKind.End or RegexNodeKind.EndZ)
+                if (TrailingAnchor is RegexNodeKind.End or RegexNodeKind.EndZ &&
+                    root.ComputeMaxLength() is int maxLength)
                 {
-                    triedToComputeMaxLength = true;
-                    if (root.ComputeMaxLength() is int maxLength)
+                    Debug.Assert(maxLength >= MinRequiredLength, $"{maxLength} should have been greater than {MinRequiredLength} minimum");
+                    MaxPossibleLength = maxLength;
+                    if (MinRequiredLength == maxLength)
                     {
-                        Debug.Assert(maxLength >= MinRequiredLength, $"{maxLength} should have been greater than {MinRequiredLength} minimum");
-                        MaxPossibleLength = maxLength;
-                        if (MinRequiredLength == maxLength)
-                        {
-                            FindMode = TrailingAnchor == RegexNodeKind.End ?
-                                FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_End :
-                                FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ;
-                            return;
-                        }
+                        FindMode = TrailingAnchor == RegexNodeKind.End ?
+                            FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_End :
+                            FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ;
+                        return;
                     }
-                }
-
-                if ((options & RegexOptions.NonBacktracking) != 0 && !triedToComputeMaxLength)
-                {
-                    // NonBacktracking also benefits from knowing whether the pattern is a fixed length, as it can use that
-                    // knowledge to avoid multiple match phases in some situations.
-                    MaxPossibleLength = root.ComputeMaxLength();
                 }
             }
 
@@ -205,6 +193,11 @@ namespace System.Text.RegularExpressions
                 return;
             }
         }
+
+        /// <summary>true iff <see cref="TryFindNextStartingPosition"/> might advance the position.</summary>
+        public bool IsUseful =>
+            FindMode != FindNextStartingPositionMode.NoSearch || // there's a searching scheme available
+            LeadingAnchor == RegexNodeKind.Bol; // there's a leading BOL anchor we can otherwise search for
 
         /// <summary>Gets the selected mode for performing the next <see cref="TryFindNextStartingPosition"/> operation</summary>
         public FindNextStartingPositionMode FindMode { get; } = FindNextStartingPositionMode.NoSearch;

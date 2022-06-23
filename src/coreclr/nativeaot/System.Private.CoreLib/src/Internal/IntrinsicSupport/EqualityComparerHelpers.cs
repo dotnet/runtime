@@ -62,11 +62,8 @@ namespace Internal.IntrinsicSupport
             if (RuntimeAugments.IsNullable(t))
             {
                 RuntimeTypeHandle nullableType = RuntimeAugments.GetNullableType(t);
-                if (ImplementsIEquatable(nullableType))
-                {
-                    openComparerType = typeof(NullableEqualityComparer<>).TypeHandle;
-                    comparerTypeArgument = nullableType;
-                }
+                openComparerType = typeof(NullableEqualityComparer<>).TypeHandle;
+                comparerTypeArgument = nullableType;
             }
             if (IsEnum(t))
             {

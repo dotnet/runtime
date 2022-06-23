@@ -1438,6 +1438,10 @@ namespace ILCompiler.DependencyAnalysis
                 if (instantiatedConstrainedMethod.Signature.IsStatic)
                 {
                     implMethod = instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(instantiatedConstrainedMethod);
+                    if (implMethod == null && !instantiatedConstrainedMethod.IsAbstract)
+                    {
+                        implMethod = instantiatedConstrainedMethod;
+                    }
                 }
                 else
                 {
@@ -1451,7 +1455,6 @@ namespace ILCompiler.DependencyAnalysis
 
             // AOT use of this generic lookup is restricted to finding methods on valuetypes (runtime usage of this slot in universal generics is more flexible)
             Debug.Assert(instantiatedConstraintType.IsValueType || (instantiatedConstrainedMethod.OwningType.IsInterface && instantiatedConstrainedMethod.Signature.IsStatic));
-            Debug.Assert(!instantiatedConstraintType.IsValueType || implMethod.OwningType == instantiatedConstraintType);
 
             if (implMethod.Signature.IsStatic)
             {

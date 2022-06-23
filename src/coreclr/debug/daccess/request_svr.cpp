@@ -48,6 +48,18 @@ HRESULT GetServerHeapData(CLRDATA_ADDRESS addr, DacpHeapSegmentData *pSegment)
     pSegment->next = (CLRDATA_ADDRESS)dac_cast<TADDR>(pHeapSegment->next);
     pSegment->gc_heap = (CLRDATA_ADDRESS)pHeapSegment->heap;
 
+    TADDR heapAddress = TO_TADDR(pSegment->gc_heap);
+    dac_gc_heap heap = LoadGcHeapData(heapAddress);
+
+    if (pSegment->segmentAddr == heap.ephemeral_heap_segment.GetAddr())
+    {
+        pSegment->highAllocMark = (CLRDATA_ADDRESS)(ULONG_PTR)heap.alloc_allocated;
+    }
+    else
+    {
+        pSegment->highAllocMark = pSegment->allocated;
+    }
+
     return S_OK;
 }
 

@@ -74,6 +74,7 @@ enum gc_reason
     reason_bgc_tuning_soh = 14,
     reason_bgc_tuning_loh = 15,
     reason_bgc_stepping = 16,
+    reason_induced_aggressive = 17,
     reason_max
 };
 
@@ -251,10 +252,6 @@ struct alloc_context : gc_alloc_context
 };
 
 class IGCHeapInternal : public IGCHeap {
-public:
-
-    virtual ~IGCHeapInternal() {}
-
 public:
     virtual int GetNumberOfHeaps () = 0;
     virtual int GetHomeHeapNumber () = 0;

@@ -303,7 +303,7 @@ namespace System.Net.Mail
 #endif
                 try
                 {
-                    ExecutionContext? x = context == null ? null : context.ContextCopy;
+                    ExecutionContext? x = context?.ContextCopy;
                     if (x != null)
                     {
                         AuthenticateCallbackContext authenticationContext =

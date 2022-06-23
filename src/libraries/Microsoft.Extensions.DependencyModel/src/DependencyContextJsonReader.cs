@@ -147,7 +147,7 @@ namespace Microsoft.Extensions.DependencyModel
                     case DependencyContextStrings.RuntimeTargetPropertyName:
                         ReadRuntimeTarget(ref reader, out runtimeTargetName, out runtimeSignature);
                         break;
-                    case DependencyContextStrings.CompilationOptionsPropertName:
+                    case DependencyContextStrings.CompilationOptionsPropertyName:
                         compilationOptions = ReadCompilationOptions(ref reader);
                         break;
                     case DependencyContextStrings.TargetsPropertyName:

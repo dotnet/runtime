@@ -92,11 +92,6 @@
         <target state="translated">16진수가 충분하지 않습니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InternalError_ScanRegex">
-        <source>Internal error in ScanRegex.</source>
-        <target state="translated">ScanRegex에 내부 오류가 있습니다.</target>
-        <note>{Locked="ScanRegex"}</note>
-      </trans-unit>
       <trans-unit id="InvalidGroupingConstruct">
         <source>Unrecognized grouping construct.</source>
         <target state="translated">인식할 수 없는 그룹화 구성입니다.</target>
@@ -212,11 +207,6 @@
         <target state="translated">RegexGenerator 메서드는 부분적이고 매개 변수가 없고 제네릭이 아니어야 하며 비추상적이고 regex 반환이어야 합니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="ReplacementError">
-        <source>Replacement pattern error.</source>
-        <target state="translated">교체 패턴 오류입니다.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="ReversedCharacterRange">
         <source>[x-y] range in reverse order.</source>
         <target state="translated">[x-y] 범위가 역순으로 되어 있습니다.</target>
@@ -270,6 +260,16 @@
       <trans-unit id="UnterminatedComment">
         <source>Unterminated (?#...) comment.</source>
         <target state="translated">종결되지 않은 (?#...) 주석입니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UseRegexSourceGeneratorMessage">
+        <source>Use 'RegexGeneratorAttribute' to generate the regular expression implementation at compile-time.</source>
+        <target state="translated">'RegexGeneratorAttribute'를 사용하여 컴파일 시간에 정규식 구현을 생성합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UseRegexSourceGeneratorTitle">
+        <source>Convert to 'RegexGenerator'.</source>
+        <target state="translated">'RegexGenerator'로 변환합니다.</target>
         <note />
       </trans-unit>
     </body>

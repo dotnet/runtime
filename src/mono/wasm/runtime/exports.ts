@@ -28,6 +28,7 @@ import {
     mono_wasm_symbolicate_string,
     mono_wasm_stringify_as_error_with_stack,
     mono_wasm_debugger_attached,
+    mono_wasm_set_entrypoint_breakpoint,
 } from "./debug";
 import { ENVIRONMENT_IS_WEB, ExitStatusError, runtimeHelpers, setImportsAndExports } from "./imports";
 import { DotnetModuleConfigImports, DotnetModule, is_nullish } from "./types";
@@ -58,15 +59,21 @@ import { mono_wasm_release_cs_owned_object } from "./gc-handles";
 import { mono_wasm_web_socket_open_ref, mono_wasm_web_socket_send, mono_wasm_web_socket_receive, mono_wasm_web_socket_close_ref, mono_wasm_web_socket_abort } from "./web-socket";
 import cwraps from "./cwraps";
 import {
-    setI8, setI16, setI32, setI64,
+    setI8, setI16, setI32, setI52,
     setU8, setU16, setU32, setF32, setF64,
-    getI8, getI16, getI32, getI64,
-    getU8, getU16, getU32, getF32, getF64,
+    getI8, getI16, getI32, getI52,
+    getU8, getU16, getU32, getF32, getF64, afterUpdateGlobalBufferAndViews, getI64Big, setI64Big, getU52, setU52, setB32, getB32,
 } from "./memory";
 import { create_weak_ref } from "./weak-ref";
 import { fetch_like, readAsync_like } from "./polyfills";
 import { EmscriptenModule } from "./types/emscripten";
 import { mono_run_main, mono_run_main_and_exit } from "./run";
+import { diagnostics } from "./diagnostics";
+import {
+    dotnet_browser_can_use_subtle_crypto_impl,
+    dotnet_browser_simple_digest_hash,
+    dotnet_browser_sign
+} from "./crypto-worker";
 
 const MONO = {
     // current "public" MONO API
@@ -92,24 +99,33 @@ const MONO = {
     loaded_files: <string[]>[],
 
     // memory accessors
+    setB32,
     setI8,
     setI16,
     setI32,
-    setI64,
+    setI52,
+    setU52,
+    setI64Big,
     setU8,
     setU16,
     setU32,
     setF32,
     setF64,
+    getB32,
     getI8,
     getI16,
     getI32,
-    getI64,
+    getI52,
+    getU52,
+    getI64Big,
     getU8,
     getU16,
     getU32,
     getF32,
     getF64,
+
+    // Diagnostics
+    diagnostics
 };
 export type MONOType = typeof MONO;
 
@@ -175,7 +191,7 @@ let exportedAPI: DotnetPublicAPI;
 function initializeImportsAndExports(
     imports: { isESM: boolean, isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, locateFile: Function, quit_: Function, ExitStatus: ExitStatusError, requirePromise: Promise<Function> },
     exports: { mono: any, binding: any, internal: any, module: any },
-    replacements: { fetch: any, readAsync: any, require: any, requireOut: any, noExitRuntime: boolean },
+    replacements: { fetch: any, readAsync: any, require: any, requireOut: any, noExitRuntime: boolean, updateGlobalBufferAndViews: Function },
 ): DotnetPublicAPI {
     const module = exports.module as DotnetModule;
     const globalThisAny = globalThis as any;
@@ -232,6 +248,11 @@ function initializeImportsAndExports(
     replacements.fetch = runtimeHelpers.fetch;
     replacements.readAsync = readAsync_like;
     replacements.requireOut = module.imports.require;
+    const originalUpdateGlobalBufferAndViews = replacements.updateGlobalBufferAndViews;
+    replacements.updateGlobalBufferAndViews = (buffer: Buffer) => {
+        originalUpdateGlobalBufferAndViews(buffer);
+        afterUpdateGlobalBufferAndViews(buffer);
+    };
 
     replacements.noExitRuntime = ENVIRONMENT_IS_WEB;
 
@@ -326,6 +347,7 @@ export const __linker_exports: any = {
     mono_wasm_invoke_js,
     mono_wasm_invoke_js_blazor,
     mono_wasm_trace_logger,
+    mono_wasm_set_entrypoint_breakpoint,
 
     // also keep in sync with corebindings.c
     mono_wasm_invoke_js_with_args_ref,
@@ -350,6 +372,11 @@ export const __linker_exports: any = {
     //  also keep in sync with pal_icushim_static.c
     mono_wasm_load_icu_data,
     mono_wasm_get_icudt_name,
+
+    // pal_crypto_webworker.c
+    dotnet_browser_can_use_subtle_crypto_impl,
+    dotnet_browser_simple_digest_hash,
+    dotnet_browser_sign
 };
 
 const INTERNAL: any = {

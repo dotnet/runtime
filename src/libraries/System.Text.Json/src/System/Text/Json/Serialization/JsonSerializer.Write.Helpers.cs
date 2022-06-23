@@ -41,7 +41,7 @@ namespace System.Text.Json
 
             if (jsonTypeInfo.HasSerialize &&
                 jsonTypeInfo is JsonTypeInfo<TValue> typedInfo &&
-                typedInfo.Options.JsonSerializerContext?.CanUseSerializationLogic == true)
+                typedInfo.Options.SerializerContext?.CanUseSerializationLogic == true)
             {
                 Debug.Assert(typedInfo.SerializeHandler != null);
                 typedInfo.SerializeHandler(writer, value);
@@ -59,15 +59,15 @@ namespace System.Text.Json
 
             Debug.Assert(!jsonTypeInfo.HasSerialize ||
                 jsonTypeInfo is not JsonTypeInfo<TValue> ||
-                jsonTypeInfo.Options.JsonSerializerContext == null ||
-                !jsonTypeInfo.Options.JsonSerializerContext.CanUseSerializationLogic,
+                jsonTypeInfo.Options.SerializerContext == null ||
+                !jsonTypeInfo.Options.SerializerContext.CanUseSerializationLogic,
                 "Incorrect method called. WriteUsingGeneratedSerializer() should have been called instead.");
 
             WriteStack state = default;
             jsonTypeInfo.EnsureConfigured();
             state.Initialize(jsonTypeInfo, supportContinuation: false, supportAsync: false);
 
-            JsonConverter converter = jsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase;
+            JsonConverter converter = jsonTypeInfo.Converter;
             Debug.Assert(converter != null);
             Debug.Assert(jsonTypeInfo.Options != null);
 

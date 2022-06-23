@@ -563,7 +563,7 @@ namespace System.Web.Tests
 
         static bool IsUrlSafeChar(char c)
         {
-            if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'))
+            if (char.IsAsciiLetterOrDigit(c))
             {
                 return true;
             }

@@ -556,7 +556,7 @@ namespace System.IO.Compression
                             if (expectException)
                                 continue;
 
-                            throw new XunitException($"An unexpected error occured while decompressing data:{e}");
+                            throw new XunitException($"An unexpected error occurred while decompressing data:{e}");
                         }
 
                         if (expectException)

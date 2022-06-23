@@ -154,12 +154,12 @@ namespace System.Runtime.InteropServices.JavaScript
 
             switch (typeCode)
             {
-                case TypeCode.Byte:
                 case TypeCode.SByte:
                 case TypeCode.Int16:
-                case TypeCode.UInt16:
                 case TypeCode.Int32:
                     return MarshalType.INT;
+                case TypeCode.Byte:
+                case TypeCode.UInt16:
                 case TypeCode.UInt32:
                     return MarshalType.UINT32;
                 case TypeCode.Boolean:
@@ -232,11 +232,14 @@ namespace System.Runtime.InteropServices.JavaScript
             switch (t)
             {
                 case MarshalType.BOOL:
-                case MarshalType.INT:
+                    return 'b';
                 case MarshalType.UINT32:
                 case MarshalType.POINTER:
+                    return 'I';
+                case MarshalType.INT:
                     return 'i';
                 case MarshalType.UINT64:
+                    return 'L';
                 case MarshalType.INT64:
                     return 'l';
                 case MarshalType.FP32:
@@ -250,9 +253,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 case MarshalType.SAFEHANDLE:
                     return 'h';
                 case MarshalType.ENUM:
-                    return 'j';
+                    return 'j'; // this is wrong for uint enums
                 case MarshalType.ENUM64:
-                    return 'k';
+                    return 'k'; // this is wrong for ulong enums
                 case MarshalType.TASK:
                 case MarshalType.DELEGATE:
                 case MarshalType.OBJECT:

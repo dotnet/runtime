@@ -125,7 +125,7 @@ export function mono_intern_string(string: string): string {
     const result = interned_string_table.get(ptr);
     if (is_nullish(result))
         throw new Error("internal error: interned_string_table did not contain string after js_string_to_mono_string_interned");
-    return result!;
+    return result;
 }
 
 function _store_string_in_intern_table(string: string, root: WasmRoot<MonoString>, internIt: boolean): void {

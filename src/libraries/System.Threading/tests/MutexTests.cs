@@ -227,6 +227,7 @@ namespace System.Threading.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/mono/mono/issues/15159", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/70127", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void Ctor_InvalidNames_Unix()
         {

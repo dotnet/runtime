@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -22,15 +23,14 @@ public class WasmAppBuilder : Task
     [Required]
     public string? MainJS { get; set; }
 
-    [NotNull]
     [Required]
-    public string[]? Assemblies { get; set; }
+    public string[] Assemblies { get; set; } = Array.Empty<string>();
 
     [NotNull]
     [Required]
     public ITaskItem[]? NativeAssets { get; set; }
 
-    private List<string> _fileWrites = new();
+    private readonly List<string> _fileWrites = new();
 
     [Output]
     public string[]? FileWrites => _fileWrites.ToArray();
@@ -45,6 +45,7 @@ public class WasmAppBuilder : Task
     public ITaskItem[]? RemoteSources { get; set; }
     public bool InvariantGlobalization { get; set; }
     public ITaskItem[]? ExtraFilesToDeploy { get; set; }
+    public string? MainHTMLPath { get; set; }
 
     // <summary>
     // Extra json elements to add to mono-config.json
@@ -59,6 +60,16 @@ public class WasmAppBuilder : Task
     //       <WasmExtraConfig Include="string_with_json" Value="&quot;{ &quot;abc&quot;: 4 }&quot;" />
     // </summary>
     public ITaskItem[]? ExtraConfig { get; set; }
+
+    public string? DefaultHostConfig { get; set; }
+
+    [Required, NotNull]
+    public string? MainAssemblyName { get; set; }
+
+    [Required]
+    public ITaskItem[] HostConfigs { get; set; } = Array.Empty<ITaskItem>();
+
+    public ITaskItem[] RuntimeArgsForHost { get; set; } = Array.Empty<ITaskItem>();
 
     private sealed class WasmAppConfig
     {
@@ -137,7 +148,7 @@ public class WasmAppBuilder : Task
         if (!InvariantGlobalization && string.IsNullOrEmpty(IcuDataFileName))
             throw new LogAsErrorException("IcuDataFileName property shouldn't be empty if InvariantGlobalization=false");
 
-        if (Assemblies?.Length == 0)
+        if (Assemblies.Length == 0)
         {
             Log.LogError("Cannot build Wasm app without any assemblies");
             return false;
@@ -149,6 +160,7 @@ public class WasmAppBuilder : Task
             if (!_assemblies.Contains(asm))
                 _assemblies.Add(asm);
         }
+        MainAssemblyName = Path.GetFileName(MainAssemblyName);
 
         var config = new WasmAppConfig ();
 
@@ -179,10 +191,19 @@ public class WasmAppBuilder : Task
         FileCopyChecked(MainJS!, Path.Combine(AppDir, mainFileName), string.Empty);
 
         string indexHtmlPath = Path.Combine(AppDir, "index.html");
-        if (!File.Exists(indexHtmlPath))
+        if (string.IsNullOrEmpty(MainHTMLPath))
         {
-            var html = @"<html><body><script type=""text/javascript"" src=""" + mainFileName + @"""></script></body></html>";
-            File.WriteAllText(indexHtmlPath, html);
+            if (!File.Exists(indexHtmlPath))
+            {
+                var html = @"<html><body><script type=""text/javascript"" src=""" + mainFileName + @"""></script></body></html>";
+                File.WriteAllText(indexHtmlPath, html);
+            }
+        }
+        else
+        {
+            FileCopyChecked(MainHTMLPath, Path.Combine(AppDir, indexHtmlPath), "html");
+            //var html = @"<html><body><script type=""text/javascript"" src=""" + mainFileName + @"""></script></body></html>";
+            //File.WriteAllText(indexHtmlPath, html);
         }
 
         foreach (var assembly in _assemblies)
@@ -319,7 +340,79 @@ public class WasmAppBuilder : Task
             }
         }
 
+        UpdateRuntimeConfigJson();
         return !Log.HasLoggedErrors;
+    }
+
+    private void UpdateRuntimeConfigJson()
+    {
+        string[] matchingAssemblies = Assemblies.Where(asm => Path.GetFileName(asm) == MainAssemblyName).ToArray();
+        if (matchingAssemblies.Length == 0)
+            throw new LogAsErrorException($"Could not find main assembly named {MainAssemblyName} in the list of assemblies");
+
+        if (matchingAssemblies.Length > 1)
+            throw new LogAsErrorException($"Found more than one assembly matching the main assembly name {MainAssemblyName}: {string.Join(",", matchingAssemblies)}");
+
+        string runtimeConfigPath = Path.ChangeExtension(matchingAssemblies[0], ".runtimeconfig.json");
+        if (!File.Exists(runtimeConfigPath))
+        {
+            Log.LogMessage(MessageImportance.Low, $"Could not find {runtimeConfigPath}. Ignoring.");
+            return;
+        }
+
+        var rootNode = JsonNode.Parse(File.ReadAllText(runtimeConfigPath),
+                                            new JsonNodeOptions { PropertyNameCaseInsensitive = true });
+        if (rootNode == null)
+            throw new LogAsErrorException($"Failed to parse {runtimeConfigPath}");
+
+        JsonObject? rootObject = rootNode.AsObject();
+        if (!rootObject.TryGetPropertyValue("runtimeOptions", out JsonNode? runtimeOptionsNode)
+                || !(runtimeOptionsNode is JsonObject runtimeOptionsObject))
+        {
+            throw new LogAsErrorException($"Could not find node named 'runtimeOptions' in {runtimeConfigPath}");
+        }
+
+        JsonObject wasmHostProperties = runtimeOptionsObject.GetOrCreate<JsonObject>("wasmHostProperties", () => new JsonObject());
+        JsonArray runtimeArgsArray = wasmHostProperties.GetOrCreate<JsonArray>("runtimeArgs", () => new JsonArray());
+        JsonArray perHostConfigs = wasmHostProperties.GetOrCreate<JsonArray>("perHostConfig", () => new JsonArray());
+
+        if (string.IsNullOrEmpty(DefaultHostConfig) && HostConfigs.Length > 0)
+            DefaultHostConfig = HostConfigs[0].ItemSpec;
+
+        if (!string.IsNullOrEmpty(DefaultHostConfig))
+            wasmHostProperties["defaultConfig"] = DefaultHostConfig;
+
+        wasmHostProperties["mainAssembly"] = MainAssemblyName;
+
+        foreach (JsonValue? rarg in RuntimeArgsForHost.Select(ri => JsonValue.Create(ri.ItemSpec)))
+        {
+            if (rarg is not null)
+                runtimeArgsArray.Add(rarg);
+        }
+
+        foreach (ITaskItem hostConfigItem in HostConfigs)
+        {
+            var hostConfigObject = new JsonObject();
+
+            string name = hostConfigItem.ItemSpec;
+            string host = hostConfigItem.GetMetadata("host");
+            if (string.IsNullOrEmpty(host))
+                throw new LogAsErrorException($"BUG: Could not find required metadata 'host' for host config named '{name}'");
+
+            hostConfigObject.Add("name", name);
+            foreach (KeyValuePair<string, string> kvp in hostConfigItem.CloneCustomMetadata().Cast<KeyValuePair<string, string>>())
+                hostConfigObject.Add(kvp.Key, kvp.Value);
+
+            perHostConfigs.Add(hostConfigObject);
+        }
+
+        string dstPath = Path.Combine(AppDir!, Path.GetFileName(runtimeConfigPath));
+        using FileStream? fs = File.OpenWrite(dstPath);
+        using var writer = new Utf8JsonWriter(fs, new JsonWriterOptions { Indented = true });
+        rootObject.WriteTo(writer);
+        _fileWrites.Add(dstPath);
+
+        Log.LogMessage(MessageImportance.Low, $"Generated {dstPath} from {runtimeConfigPath}");
     }
 
     private bool TryParseExtraConfigValue(ITaskItem extraItem, out object? valueObject)
@@ -361,7 +454,7 @@ public class WasmAppBuilder : Task
             value = Convert.ChangeType(str, type);
             return true;
         }
-        catch (Exception ex) when (ex is FormatException || ex is InvalidCastException || ex is OverflowException)
+        catch (Exception ex) when (ex is FormatException or InvalidCastException or OverflowException)
         {
             return false;
         }

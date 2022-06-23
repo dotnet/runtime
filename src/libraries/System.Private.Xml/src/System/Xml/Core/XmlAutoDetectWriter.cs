@@ -1,17 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Text;
+using System.Xml;
+using System.Xml.Schema;
+
 namespace System.Xml
 {
-    using System;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
-    using System.IO;
-    using System.Text;
-    using System.Xml;
-    using System.Xml.Schema;
-
-
     /// <summary>
     /// This writer implements XmlOutputMethod.AutoDetect.  If the first element is "html", then output will be
     /// directed to an Html writer.  Otherwise, output will be directed to an Xml writer.

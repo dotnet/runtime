@@ -176,8 +176,7 @@ public:
     static FCDECL1(MethodDesc *, GetFirstIntroducedMethod, ReflectClassBaseObject* pType);
     static FCDECL1(void, GetNextIntroducedMethod, MethodDesc **ppMethod);
 
-    static
-    FCDECL1(IMDInternalImport*, GetMetadataImport, ReflectClassBaseObject * pModuleUNSAFE);
+    static FCDECL1(IMDInternalImport*, GetMetadataImport, ReflectClassBaseObject * pModuleUNSAFE);
 
     // Helper methods not called by managed code
 
@@ -223,6 +222,9 @@ public:
     static FCDECL1(ReflectMethodObject*, GetCurrentMethod, StackCrawlMark* stackMark);
 
     static FCDECL4(Object*, InvokeMethod, Object *target, PVOID* args, SignatureNative* pSig, CLR_BOOL fConstructor);
+
+    static FCDECL2(Object*, ReboxToNullable, Object *pBoxedValUNSAFE, ReflectClassBaseObject *pDestUNSAFE);
+    static FCDECL1(Object*, ReboxFromNullable, Object *pBoxedValUNSAFE);
 
     struct StreamingContextData {
         Object * additionalContext;  // additionalContex was changed from OBJECTREF to Object to avoid having a

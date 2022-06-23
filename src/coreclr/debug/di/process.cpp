@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // File: process.cpp
 //
-
-//
 //*****************************************************************************
+
 #include "stdafx.h"
 #include "primitives.h"
 #include "safewrap.h"
@@ -604,7 +604,7 @@ void CordbProcess::Free(void * p)
 //          runtime then DBI matches DAC. Technically because the DBI only matches runtime on major version number
 //          runtime and DAC could be from different builds. However because we service all three binaries together
 //          and DBI always loads the DAC that is sitting in the same directory DAC and DBI generally get tight
-//          version coupling. A user with admin privleges could put different builds together and no version check
+//          version coupling. A user with admin privileges could put different builds together and no version check
 //          would ever fail though.
 //
 //      - Desktop and Windows CoreCLR (new architecture)
@@ -6406,7 +6406,7 @@ HRESULT CordbProcess::SafeWriteThreadContext(LSPTR_CONTEXT pContext, const DT_CO
 #endif
 
 // 64 bit windows puts space for the first 6 stack parameters in the CONTEXT structure so that
-// kernel to usermode transitions don't have to allocate a CONTEXT and do a seperate sub rsp
+// kernel to usermode transitions don't have to allocate a CONTEXT and do a separate sub rsp
 // to allocate stack spill space for the arguments. This means that writing to P1Home - P6Home
 // will overwrite the arguments of some function higher on the stack, very bad. Conceptually you
 // can think of these members as not being part of the context, ie they don't represent something
