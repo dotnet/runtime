@@ -431,7 +431,8 @@ namespace System.Collections.Specialized
         ///    <para>Returns an array of the specified type containing
         ///       all the values in the <see cref='System.Collections.Specialized.NameObjectCollectionBase'/> instance.</para>
         /// </devdoc>
-        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "The cast is safe for created array")]
         protected object?[] BaseGetAllValues(Type type)
         {
             ArgumentNullException.ThrowIfNull(type);

@@ -108,7 +108,6 @@ namespace System.Collections.Specialized
         protected object? BaseGet(string? name) { throw null; }
         protected string?[] BaseGetAllKeys() { throw null; }
         protected object?[] BaseGetAllValues() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         protected object?[] BaseGetAllValues(System.Type type) { throw null; }
         protected string? BaseGetKey(int index) { throw null; }
         protected bool BaseHasKeys() { throw null; }
