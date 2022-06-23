@@ -364,9 +364,9 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
         if (codeVersion.IsDefaultVersion())
         {
             pConfig->GetMethodDesc()->GetLoaderAllocator()->GetCallCountingManager()->DisableCallCounting(codeVersion);
-            _ASSERTE(codeVersion.GetOptimizationTier() != NativeCodeVersion::OptimizationTier0);
+            _ASSERTE(!codeVersion.IsUnoptimizedTier());
         }
-        else if (codeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0)
+        else if (codeVersion.IsUnoptimizedTier())
         {
             codeVersion.SetOptimizationTier(NativeCodeVersion::OptimizationTierOptimized);
         }
@@ -465,7 +465,7 @@ PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier
 #ifdef FEATURE_TIERED_COMPILATION
                 if (shouldCountCalls)
                 {
-                    _ASSERTE(pConfig->GetCodeVersion().GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
+                    _ASSERTE(pConfig->GetCodeVersion().IsUnoptimizedTier());
                     pConfig->SetShouldCountCalls();
                 }
 #endif
@@ -1217,6 +1217,7 @@ PrepareCodeConfig::JitOptimizationTier PrepareCodeConfig::GetJitOptimizationTier
             switch (config->GetCodeVersion().GetOptimizationTier())
             {
                 case NativeCodeVersion::OptimizationTier0:
+                case NativeCodeVersion::OptimizationTier0Instrumented:
                     return JitOptimizationTier::QuickJitted;
 
                 case NativeCodeVersion::OptimizationTier1:
@@ -1299,6 +1300,7 @@ bool PrepareCodeConfig::FinalizeOptimizationTierForTier0LoadOrJit()
         NativeCodeVersion::OptimizationTier previousOptimizationTier = GetCodeVersion().GetOptimizationTier();
         _ASSERTE(
             previousOptimizationTier == NativeCodeVersion::OptimizationTier0 ||
+            previousOptimizationTier == NativeCodeVersion::OptimizationTier0Instrumented ||
             previousOptimizationTier == NativeCodeVersion::OptimizationTierOptimized);
     #endif // _DEBUG
 

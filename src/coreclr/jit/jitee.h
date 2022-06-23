@@ -87,7 +87,7 @@ public:
         JIT_FLAG_UNUSED16                = 43,
 #endif // !defined(TARGET_ARM)
 
-        JIT_FLAG_UNUSED17                = 44,
+        JIT_FLAG_PROMOTED                = 44, // Method was promoted at least once and is likely hot
         JIT_FLAG_UNUSED18                = 45,
         JIT_FLAG_UNUSED19                = 46,
         JIT_FLAG_UNUSED20                = 47,

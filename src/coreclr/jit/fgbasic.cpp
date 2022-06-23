@@ -3568,6 +3568,12 @@ void Compiler::fgCheckForLoopsInHandlers()
         return;
     }
 
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PROMOTED))
+    {
+        // This method will likely make it to tier1 on its own soon
+        return;
+    }
+
     if (info.compXcptnsCount == 0)
     {
         return;

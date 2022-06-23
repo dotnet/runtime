@@ -147,13 +147,18 @@ FORCEINLINE void CallCountingManager::CallCountingInfo::SetStage(Stage stage)
             --s_activeCallCountingStubCount;
             break;
 
+        case Stage::PendingReset:
+            _ASSERT(m_stage >= Stage::PendingCompletion);
+            --s_activeCallCountingStubCount;
+            break;
+
         case Stage::StubMayBeActive:
             _ASSERTE(m_callCountingStub != nullptr);
             FALLTHROUGH;
 
         case Stage::PendingCompletion:
-            _ASSERTE(m_stage == Stage::StubIsNotActive || m_stage == Stage::StubMayBeActive);
-            if (m_stage == Stage::StubIsNotActive && m_callCountingStub != nullptr)
+            _ASSERTE(m_stage == Stage::StubIsNotActive || m_stage == Stage::StubMayBeActive || m_stage == Stage::PendingReset);
+            if ((m_stage == Stage::StubIsNotActive || m_stage == Stage::PendingReset) && m_callCountingStub != nullptr)
             {
                 ++s_activeCallCountingStubCount;
             }
@@ -177,6 +182,13 @@ FORCEINLINE void CallCountingManager::CallCountingInfo::SetStage(Stage stage)
     }
 
     m_stage = stage;
+}
+
+void CallCountingManager::CallCountingInfo::ReuseForNewVersion(NativeCodeVersion version)
+{
+    WRAPPER_NO_CONTRACT;
+    m_codeVersion = version;
+    SetStage(Stage::PendingReset);
 }
 #endif
 
@@ -539,6 +551,28 @@ void CallCountingManager::DisableCallCounting(NativeCodeVersion codeVersion)
     callCountingInfoHolder.SuppressRelease();
 }
 
+void CallCountingManager::ReuseStubForNewVersion(NativeCodeVersion oldVersion, NativeCodeVersion newVersion)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    CodeVersionManager::LockHolder codeVersioningLockHolder;
+    CallCountingInfo* callCountingInfo = m_callCountingInfoByCodeVersionHash.Lookup(oldVersion);
+
+    // No problem if it's null, it's just an optimization to allocate less call counting stubs
+    if (callCountingInfo != nullptr)
+    {
+        m_callCountingInfoByCodeVersionHash.Remove(oldVersion);
+        callCountingInfo->ReuseForNewVersion(newVersion);
+        m_callCountingInfoByCodeVersionHash.Add(callCountingInfo);
+    }
+}
+
 // Returns true if the code entry point was updated to reflect the active code version, false otherwise. In normal paths, the
 // code entry point is not updated only when the use of call counting stubs is disabled, as in that case returning to the
 // prestub is necessary for further call counting. On exception, the code entry point may or may not have been updated and it's
@@ -574,7 +608,7 @@ bool CallCountingManager::SetCodeEntryPoint(
             // For a default code version that is not tier 0, call counting will have been disabled by this time (checked
             // below). Avoid the redundant and not-insignificant expense of GetOptimizationTier() on a default code version.
             !activeCodeVersion.IsDefaultVersion() &&
-            activeCodeVersion.GetOptimizationTier() != NativeCodeVersion::OptimizationTier0
+            !activeCodeVersion.IsUnoptimizedTier()
         ) ||
         !g_pConfig->TieredCompilation_CallCounting())
     {
@@ -602,7 +636,7 @@ bool CallCountingManager::SetCodeEntryPoint(
                 return true;
             }
 
-            _ASSERTE(activeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
+            _ASSERTE(activeCodeVersion.IsUnoptimizedTier());
 
             // If the tiering delay is active, postpone further work
             if (GetAppDomain()
@@ -618,6 +652,15 @@ bool CallCountingManager::SetCodeEntryPoint(
 
             do
             {
+                if (callCountingStage == CallCountingInfo::Stage::PendingReset)
+                {
+                    // Consider using a different threshold here
+                    CallCount callCountThreshold = g_pConfig->TieredCompilation_CallCountThreshold();
+                    _ASSERTE(callCountThreshold != 0);
+                    *callCountingInfo->GetRemainingCallCountCell() = callCountThreshold;
+                    break;
+                }
+
                 if (!wasMethodCalled)
                 {
                     break;
@@ -649,7 +692,7 @@ bool CallCountingManager::SetCodeEntryPoint(
         }
         else
         {
-            _ASSERTE(activeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
+            _ASSERTE(activeCodeVersion.IsUnoptimizedTier());
 
             // If the tiering delay is active, postpone further work
             if (GetAppDomain()
@@ -659,7 +702,7 @@ bool CallCountingManager::SetCodeEntryPoint(
                 return true;
             }
 
-            CallCount callCountThreshold = (CallCount)g_pConfig->TieredCompilation_CallCountThreshold();
+            CallCount callCountThreshold = g_pConfig->TieredCompilation_CallCountThreshold();
             _ASSERTE(callCountThreshold != 0);
 
             NewHolder<CallCountingInfo> callCountingInfoHolder = new CallCountingInfo(activeCodeVersion, callCountThreshold);
@@ -780,7 +823,7 @@ PCODE CallCountingManager::OnCallCountThresholdReached(TransitionBlock *transiti
     // used going forward under appropriate locking to synchronize further with deletion.
     GCX_PREEMP_THREAD_EXISTS(CURRENT_THREAD);
 
-    _ASSERTE(codeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
+    _ASSERTE(codeVersion.IsUnoptimizedTier());
 
     codeEntryPoint = codeVersion.GetNativeCode();
     do
@@ -797,7 +840,7 @@ PCODE CallCountingManager::OnCallCountThresholdReached(TransitionBlock *transiti
             }
 
             CallCountingInfo::Stage callCountingStage = callCountingInfo->GetStage();
-            if (callCountingStage >= CallCountingInfo::Stage::PendingCompletion)
+            if (callCountingStage >= CallCountingInfo::Stage::PendingReset)
             {
                 break;
             }
@@ -930,7 +973,11 @@ void CallCountingManager::CompleteCallCounting()
                     methodDesc->ResetCodeEntryPoint();
                 } while (false);
 
-                callCountingInfo->SetStage(CallCountingInfo::Stage::Complete);
+                // stub was about to be completed but we decided to re-use it
+                if (callCountingInfo->GetStage() != CallCountingInfo::Stage::PendingReset)
+                {
+                    callCountingInfo->SetStage(CallCountingInfo::Stage::Complete);
+                }
             }
             EX_CATCH
             {

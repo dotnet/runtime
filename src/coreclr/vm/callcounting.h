@@ -182,6 +182,9 @@ private:
             // Stub may be called, don't know if it's actually active (changes to code versions, etc.)
             StubMayBeActive,
 
+            // Stub is being considered to re-use
+            PendingReset,
+
             // Stub may be active, call counting complete, not yet promoted
             PendingCompletion,
 
@@ -193,7 +196,7 @@ private:
         };
 
     private:
-        const NativeCodeVersion m_codeVersion;
+        NativeCodeVersion m_codeVersion;
         const CallCountingStub *m_callCountingStub;
         CallCount m_remainingCallCount;
         Stage m_stage;
@@ -224,6 +227,7 @@ private:
     #ifndef DACCESS_COMPILE
     public:
         void SetStage(Stage stage);
+        void ReuseForNewVersion(NativeCodeVersion version);
     #endif
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -355,6 +359,7 @@ public:
 #ifndef DACCESS_COMPILE
 public:
     void DisableCallCounting(NativeCodeVersion codeVersion);
+    void ReuseStubForNewVersion(NativeCodeVersion oldVersion, NativeCodeVersion newVersion);
 
 public:
     static bool SetCodeEntryPoint(

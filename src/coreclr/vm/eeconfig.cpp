@@ -740,6 +740,14 @@ HRESULT EEConfig::sync()
             }
         }
 
+        if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TieredPGO) != 0)
+        {
+            DWORD divider = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TC_DelayPgoDivider);
+            _ASSERT(divider != 0);
+            tieredCompilation_CallCountingDelayMs /= divider;
+            tieredCompilation_CallCountingDelayMs = max(1, tieredCompilation_CallCountingDelayMs);
+        }
+
         if (fTieredCompilation_CallCounting)
         {
             fTieredCompilation_UseCallCountingStubs =

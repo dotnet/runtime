@@ -251,7 +251,7 @@ void TieredCompilationManager::AsyncPromoteToTier1(
 
     _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
     _ASSERTE(!tier0NativeCodeVersion.IsNull());
-    _ASSERTE(tier0NativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
+    _ASSERTE(tier0NativeCodeVersion.IsUnoptimizedTier());
     _ASSERTE(createTieringBackgroundWorkerRef != nullptr);
 
     NativeCodeVersion t1NativeCodeVersion;
@@ -263,12 +263,37 @@ void TieredCompilationManager::AsyncPromoteToTier1(
     // occur between now and when jitting completes. If the IL does change in that
     // interval the new code entry won't be activated.
     MethodDesc *pMethodDesc = tier0NativeCodeVersion.GetMethodDesc();
+
+    NativeCodeVersion::OptimizationTier nextTier = NativeCodeVersion::OptimizationTier1;
+
+    // Compile to Tier0 with instrumentation if we promote from R2R and PGO is enabled.
+    // If that R2R has a static profile we might consider skipping it if we can rely on it being accurate
+    // e.g. if the current R2R image is Composite (in the default mode we might lose cross-module
+    // likely classes in the current implementation)
+    // Also, this Tier0 likely doesn't need any patchpoints since it's already survived a promotion and will
+    // likely survive it once again
+    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TieredPGO) != 0 &&
+        pMethodDesc->IsEligibleForTieredCompilation() &&
+        tier0NativeCodeVersion.IsDefaultVersion() &&
+        tier0NativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0 &&
+        ExecutionManager::IsReadyToRunCode(tier0NativeCodeVersion.GetNativeCode()))
+    {
+        _ASSERT(!pMethodDesc->RequestedAggressiveOptimization());
+        nextTier = NativeCodeVersion::OptimizationTier0Instrumented;
+    }
+
     ILCodeVersion ilCodeVersion = tier0NativeCodeVersion.GetILCodeVersion();
     _ASSERTE(!ilCodeVersion.HasAnyOptimizedNativeCodeVersion(tier0NativeCodeVersion));
-    hr = ilCodeVersion.AddNativeCodeVersion(pMethodDesc, NativeCodeVersion::OptimizationTier1, &t1NativeCodeVersion);
+    hr = ilCodeVersion.AddNativeCodeVersion(pMethodDesc, nextTier, &t1NativeCodeVersion);
     if (FAILED(hr))
     {
         ThrowHR(hr);
+    }
+
+    // Try to re-use previous callcounting stub for instrumented tier0
+    if (nextTier == NativeCodeVersion::OptimizationTier0Instrumented)
+    {
+        pMethodDesc->GetLoaderAllocator()->GetCallCountingManager()->ReuseStubForNewVersion(tier0NativeCodeVersion, t1NativeCodeVersion);
     }
 
     // Insert the method into the optimization queue and trigger a thread to service
@@ -993,7 +1018,7 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
     _ASSERTE(config != nullptr);
     _ASSERTE(
         !config->WasTieringDisabledBeforeJitting() ||
-        config->GetCodeVersion().GetOptimizationTier() != NativeCodeVersion::OptimizationTier0);
+        !config->GetCodeVersion().IsUnoptimizedTier());
 
     CORJIT_FLAGS flags;
 
@@ -1018,7 +1043,11 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
         {
             if (g_pConfig->TieredCompilation_QuickJit())
             {
-                _ASSERTE(nativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
+                if ((nativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0Instrumented))
+                {
+                    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PROMOTED);
+                }
+                _ASSERTE(nativeCodeVersion.IsUnoptimizedTier());
                 flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
                 return flags;
             }
@@ -1029,6 +1058,7 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
         {
             newOptimizationTier = NativeCodeVersion::OptimizationTier1;
             flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
+            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PROMOTED);
         }
 
         methodDesc->GetLoaderAllocator()->GetCallCountingManager()->DisableCallCounting(nativeCodeVersion);
@@ -1041,6 +1071,14 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
 
     switch (nativeCodeVersion.GetOptimizationTier())
     {
+        case NativeCodeVersion::OptimizationTier0Instrumented:
+            if (g_pConfig->TieredCompilation_QuickJit())
+            {
+                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
+                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PROMOTED);
+            }
+            FALLTHROUGH;
+
         case NativeCodeVersion::OptimizationTier0:
             if (g_pConfig->TieredCompilation_QuickJit())
             {

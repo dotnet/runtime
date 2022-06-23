@@ -12388,6 +12388,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
     bool enablePatchpoints = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0);
 
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PROMOTED))
+    {
+        // This method will likely make it to tier1 on its own soon
+        enablePatchpoints = false;
+    }
+
 #ifdef DEBUG
 
     // Optionally suppress patchpoints by method hash

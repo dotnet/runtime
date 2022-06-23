@@ -1802,7 +1802,7 @@ void Interpreter::JitMethodIfAppropriate(InterpreterMethodInfo* interpMethInfo, 
             CodeVersionManager::LockHolder _lockHolder;
             NativeCodeVersion activeCodeVersion = md->GetCodeVersionManager()->GetActiveILCodeVersion(md).GetActiveNativeCodeVersion(md);
             ILCodeVersion ilCodeVersion = activeCodeVersion.GetILCodeVersion();
-            if (activeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0 &&
+            if (activeCodeVersion.IsUnoptimizedTier() &&
                 !ilCodeVersion.HasAnyOptimizedNativeCodeVersion(activeCodeVersion))
             {
                 tieredCompilationManager->AsyncPromoteToTier1(activeCodeVersion, &scheduleTieringBackgroundWork);

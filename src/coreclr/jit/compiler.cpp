@@ -6668,7 +6668,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
             }
         }
 
-        if (reason != nullptr)
+        if ((reason != nullptr) && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PROMOTED))
         {
             fgSwitchToOptimized(reason);
         }

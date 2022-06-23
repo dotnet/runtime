@@ -4759,6 +4759,11 @@ inline bool Compiler::compCanHavePatchpoints(const char** reason)
     {
         whyNot = "OSR can't handle reverse pinvoke";
     }
+    else if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PROMOTED))
+    {
+        // This method will likely make it to tier1 on its own soon
+        whyNot = "OSR is not needed in an already promoted tier";
+    }
 #else
     whyNot = "OSR feature not defined in build";
 #endif
