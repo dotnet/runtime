@@ -2136,6 +2136,11 @@ public:
         gtFlags |= sourceFlags;
     }
 
+    void AddAllEffectsFlags(GenTree* source)
+    {
+        AddAllEffectsFlags(source->gtFlags & GTF_ALL_EFFECT);
+    }
+
     void AddAllEffectsFlags(GenTree* firstSource, GenTree* secondSource)
     {
         AddAllEffectsFlags((firstSource->gtFlags | secondSource->gtFlags) & GTF_ALL_EFFECT);

@@ -1451,6 +1451,8 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
             // Instead, we're going to sink the assignment below the COMMA.
             src->AsOp()->gtOp2 =
                 impAssignStructPtr(destAddr, src->AsOp()->gtOp2, structHnd, curLevel, pAfterStmt, usedDI, block);
+            src->AddAllEffectsFlags(src->AsOp()->gtOp2);
+
             return src;
         }
 

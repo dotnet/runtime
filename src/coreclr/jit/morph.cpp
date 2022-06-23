@@ -998,76 +998,78 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
         bool isMultiRegArg = (arg.AbiInfo.NumRegs > 1);
 #endif
 
-        if (varTypeIsStruct(argx->TypeGet()) && !arg.m_needTmp)
+        if (varTypeIsStruct(argx) && !arg.m_needTmp)
         {
-            if (isMultiRegArg && ((argx->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0))
+            if (isMultiRegArg)
             {
-                // Spill multireg struct arguments that have Assignments or Calls embedded in them
-                SetNeedsTemp(&arg);
-            }
-            else
-            {
-                // We call gtPrepareCost to measure the cost of evaluating this tree
-                comp->gtPrepareCost(argx);
+                if ((argx->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0)
+                {
+                    // Spill multireg struct arguments that have Assignments or Calls embedded in them.
+                    SetNeedsTemp(&arg);
+                }
+                else if (!argx->OperIsLocalRead() && !argx->OperIsIndir())
+                {
+                    // TODO-CQ: handle HWI/SIMD/COMMA nodes in multi-reg morphing.
+                    SetNeedsTemp(&arg);
+                }
+                else
+                {
+                    // Finally, we call gtPrepareCost to measure the cost of evaluating this tree.
+                    comp->gtPrepareCost(argx);
 
-                if (isMultiRegArg && (argx->GetCostEx() > (6 * IND_COST_EX)))
-                {
-                    // Spill multireg struct arguments that are expensive to evaluate twice
-                    SetNeedsTemp(&arg);
-                }
-#if defined(FEATURE_SIMD) && defined(TARGET_ARM64)
-                else if (isMultiRegArg && varTypeIsSIMD(argx) && (argx->OperIsSimdOrHWintrinsic() || argx->IsCnsVec()))
-                {
-                    // Multi-reg morphing does not handle these SIMD nodes.
-                    SetNeedsTemp(&arg);
-                }
-#endif
-#ifndef TARGET_ARM
-                // TODO-Arm: This optimization is not implemented for ARM32
-                // so we skip this for ARM32 until it is ported to use RyuJIT backend
-                //
-                else if (argx->OperGet() == GT_OBJ)
-                {
-                    GenTreeObj* argObj     = argx->AsObj();
-                    unsigned    structSize = argObj->GetLayout()->GetSize();
-                    switch (structSize)
+                    if (argx->GetCostEx() > (6 * IND_COST_EX))
                     {
-                        case 3:
-                        case 5:
-                        case 6:
-                        case 7:
-                            // If we have a stack based LclVar we can perform a wider read of 4 or 8 bytes
-                            //
-                            if (argObj->AsObj()->gtOp1->IsLocalAddrExpr() == nullptr) // Is the source not a LclVar?
-                            {
-                                // If we don't have a LclVar we need to read exactly 3,5,6 or 7 bytes
-                                // For now we use a GT_CPBLK to copy the exact size into a GT_LCL_VAR temp.
-                                //
-                                SetNeedsTemp(&arg);
-                            }
-                            break;
-                        case 11:
-                        case 13:
-                        case 14:
-                        case 15:
-                            // Spill any GT_OBJ multireg structs that are difficult to extract
-                            //
-                            // When we have a GT_OBJ of a struct with the above sizes we would need
-                            // to use 3 or 4 load instructions to load the exact size of this struct.
-                            // Instead we spill the GT_OBJ into a new GT_LCL_VAR temp and this sequence
-                            // will use a GT_CPBLK to copy the exact size into the GT_LCL_VAR temp.
-                            // Then we can just load all 16 bytes of the GT_LCL_VAR temp when passing
-                            // the argument.
-                            //
-                            SetNeedsTemp(&arg);
-                            break;
-
-                        default:
-                            break;
+                        // Spill multireg struct arguments that are expensive to evaluate twice.
+                        SetNeedsTemp(&arg);
                     }
                 }
-#endif // !TARGET_ARM
             }
+
+#ifndef TARGET_ARM
+            // TODO-Arm: This optimization is not implemented for ARM32
+            // so we skip this for ARM32 until it is ported to use RyuJIT backend
+            //
+            if (argx->OperGet() == GT_OBJ)
+            {
+                GenTreeObj* argObj     = argx->AsObj();
+                unsigned    structSize = argObj->GetLayout()->GetSize();
+                switch (structSize)
+                {
+                    case 3:
+                    case 5:
+                    case 6:
+                    case 7:
+                        // If we have a stack based LclVar we can perform a wider read of 4 or 8 bytes
+                        //
+                        if (argObj->AsObj()->gtOp1->IsLocalAddrExpr() == nullptr) // Is the source not a LclVar?
+                        {
+                            // If we don't have a LclVar we need to read exactly 3,5,6 or 7 bytes
+                            // For now we use a GT_CPBLK to copy the exact size into a GT_LCL_VAR temp.
+                            //
+                            SetNeedsTemp(&arg);
+                        }
+                        break;
+                    case 11:
+                    case 13:
+                    case 14:
+                    case 15:
+                        // Spill any GT_OBJ multireg structs that are difficult to extract
+                        //
+                        // When we have a GT_OBJ of a struct with the above sizes we would need
+                        // to use 3 or 4 load instructions to load the exact size of this struct.
+                        // Instead we spill the GT_OBJ into a new GT_LCL_VAR temp and this sequence
+                        // will use a GT_CPBLK to copy the exact size into the GT_LCL_VAR temp.
+                        // Then we can just load all 16 bytes of the GT_LCL_VAR temp when passing
+                        // the argument.
+                        //
+                        SetNeedsTemp(&arg);
+                        break;
+
+                    default:
+                        break;
+                }
+            }
+#endif // !TARGET_ARM
         }
 #endif // FEATURE_MULTIREG_ARGS
     }
@@ -3754,7 +3756,7 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
 GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
 {
     GenTree* argNode = arg->GetNode();
-    assert(varTypeIsStruct(argNode->TypeGet()));
+    assert(varTypeIsStruct(argNode));
 
 #if !defined(TARGET_ARMARCH) && !defined(UNIX_AMD64_ABI) && !defined(TARGET_LOONGARCH64)
     NYI("fgMorphMultiregStructArg requires implementation for this target");
