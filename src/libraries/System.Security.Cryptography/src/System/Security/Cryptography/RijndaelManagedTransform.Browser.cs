@@ -128,11 +128,20 @@ namespace System.Security.Cryptography
 
         public int Transform(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            byte[] outputBuffer = new byte[output.Length];
+            byte[] rented = CryptoPool.Rent(output.Length);
 
-            int written = TransformBlock(input, outputBuffer, 0);
-            outputBuffer.AsSpan(0, written).CopyTo(output);
-            return written;
+            int numBytesWritten = 0;
+            try
+            {
+                numBytesWritten = TransformBlock(input, rented, 0);
+                rented.AsSpan(0, numBytesWritten).CopyTo(output);
+            }
+            finally
+            {
+                CryptoPool.Return(rented, clearSize: numBytesWritten);
+            }
+
+            return numBytesWritten;
         }
 
         public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
@@ -164,8 +173,7 @@ namespace System.Security.Cryptography
             }
             else
             {
-                // OK, now we're in the special case.  Check to see if this is the *first* block we've seen
-                // If so, buffer it and return null zero bytes
+                // Check to see if this is the *first* block we've seen
                 if (_depadBuffer == null)
                 {
                     _depadBuffer = new byte[InputBlockSize];
@@ -240,15 +248,24 @@ namespace System.Security.Cryptography
                 }
                 else
                 {
-                    byte[] temp = new byte[_depadBuffer.Length + inputBuffer.Length];
-                    Buffer.BlockCopy(_depadBuffer, 0, temp, 0, _depadBuffer.Length);
-                    inputBuffer.CopyTo(temp.AsSpan(_depadBuffer.Length));
                     byte[]? transformedBytes = null;
-                    DecryptData(temp,
-                                ref transformedBytes,
-                                0,
-                                true);
-                    Reset();
+
+                    byte[] temp = CryptoPool.Rent(_depadBuffer.Length + inputBuffer.Length);
+                    try
+                    {
+                        Buffer.BlockCopy(_depadBuffer, 0, temp, 0, _depadBuffer.Length);
+                        inputBuffer.CopyTo(temp.AsSpan(_depadBuffer.Length));
+                        DecryptData(temp,
+                                    ref transformedBytes,
+                                    0,
+                                    true);
+                        Reset();
+                    }
+                    finally
+                    {
+                        CryptoPool.Return(temp);
+                    }
+
                     return transformedBytes;
                 }
             }
@@ -277,22 +294,14 @@ namespace System.Security.Cryptography
                                        bool fLast)
         {
             int inputCount = inputBuffer.Length;
-            int padSize = 0;
+            byte padSize = 0;
             int lonelyBytes = inputCount % InputBlockSize;
 
             // Check the padding mode and make sure we have enough outputBuffer to handle any padding we have to do.
-            byte[]? padBytes = null;
             int workBaseIndex = 0, index = 0;
             if (fLast)
             {
-                padSize = InputBlockSize - lonelyBytes;
-
-                if (padSize != 0)
-                {
-                    padBytes = new byte[padSize];
-                    for (index = 0; index < padSize; index++)
-                        padBytes[index] = (byte)padSize;
-                }
+                padSize = (byte)(InputBlockSize - lonelyBytes);
             }
 
             if (outputBuffer == null)
@@ -331,16 +340,13 @@ namespace System.Security.Cryptography
                                 }
                                 else
                                 {
-                                    Debug.Assert(padBytes is not null);
-
-                                    int padIndex = 0;
                                     index = workBaseIndex;
                                     for (int i = 0; i < BlockSizeInts; ++i)
                                     {
-                                        int i0 = (index >= workBaseIndex + lonelyBytes) ? padBytes[padIndex++] : inputBuffer[index++];
-                                        int i1 = (index >= workBaseIndex + lonelyBytes) ? padBytes[padIndex++] : inputBuffer[index++];
-                                        int i2 = (index >= workBaseIndex + lonelyBytes) ? padBytes[padIndex++] : inputBuffer[index++];
-                                        int i3 = (index >= workBaseIndex + lonelyBytes) ? padBytes[padIndex++] : inputBuffer[index++];
+                                        int i0 = (index >= workBaseIndex + lonelyBytes) ? padSize : inputBuffer[index++];
+                                        int i1 = (index >= workBaseIndex + lonelyBytes) ? padSize : inputBuffer[index++];
+                                        int i2 = (index >= workBaseIndex + lonelyBytes) ? padSize : inputBuffer[index++];
+                                        int i3 = (index >= workBaseIndex + lonelyBytes) ? padSize : inputBuffer[index++];
                                         work[i] = i3 << 24 | i2 << 16 | i1 << 8 | i0;
                                     }
                                 }
