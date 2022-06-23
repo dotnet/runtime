@@ -101,27 +101,27 @@ struct Limit
         assert(type == keBinOpArray);
     }
 
-    bool IsUndef()
+    bool IsUndef() const
     {
         return type == keUndef;
     }
-    bool IsDependent()
+    bool IsDependent() const
     {
         return type == keDependent;
     }
-    bool IsUnknown()
+    bool IsUnknown() const
     {
         return type == keUnknown;
     }
-    bool IsConstant()
+    bool IsConstant() const
     {
         return type == keConstant;
     }
-    int GetConstant()
+    int GetConstant() const
     {
         return cns;
     }
-    bool IsBinOpArray()
+    bool IsBinOpArray() const
     {
         return type == keBinOpArray;
     }
@@ -160,6 +160,27 @@ struct Limit
                     return false;
                 }
                 cns *= i;
+                return true;
+            case keUndef:
+            case keUnknown:
+                // For these values of 'type', conservatively return false
+                break;
+        }
+
+        return false;
+    }
+
+    bool ShiftRightConstant(int i)
+    {
+        switch (type)
+        {
+            case keDependent:
+                return true;
+            case keBinOpArray:
+            case keConstant:
+                // >> never overflows
+                assert((unsigned)i <= 31);
+                cns >>= i;
                 return true;
             case keUndef:
             case keUnknown:
@@ -257,34 +278,40 @@ struct Range
 // Helpers for operations performed on ranges
 struct RangeOps
 {
-    // Given a constant limit in "l1", add it to l2 and mutate "l2".
-    static Limit AddConstantLimit(Limit& l1, Limit& l2)
+    // Perform 'value' + 'cns'
+    static Limit AddConstantLimit(const Limit& value, const Limit& cns)
     {
-        assert(l1.IsConstant());
-        Limit l = l2;
-        if (l.AddConstant(l1.GetConstant()))
+        assert(cns.IsConstant());
+        Limit l = value;
+        if (l.AddConstant(cns.GetConstant()))
         {
             return l;
         }
-        else
-        {
-            return Limit(Limit::keUnknown);
-        }
+        return Limit(Limit::keUnknown);
     }
 
-    // Given a constant limit in "l1", multiply it to l2 and mutate "l2".
-    static Limit MultiplyConstantLimit(Limit& l1, Limit& l2)
+    // Perform 'value' * 'cns'
+    static Limit MultiplyConstantLimit(const Limit& value, const Limit& cns)
     {
-        assert(l1.IsConstant());
-        Limit l = l2;
-        if (l.MultiplyConstant(l1.GetConstant()))
+        assert(cns.IsConstant());
+        Limit l = value;
+        if (l.MultiplyConstant(cns.GetConstant()))
         {
             return l;
         }
-        else
+        return Limit(Limit::keUnknown);
+    }
+
+    // Perform 'value' >> 'cns'
+    static Limit ShiftRightConstantLimit(const Limit& value, const Limit& cns)
+    {
+        assert(value.IsConstant());
+        Limit result = value;
+        if (result.ShiftRightConstant(cns.GetConstant()))
         {
-            return Limit(Limit::keUnknown);
+            return result;
         }
+        return Limit(Limit::keUnknown);
     }
 
     // Given two ranges "r1" and "r2", perform an add operation on the
@@ -311,20 +338,57 @@ struct RangeOps
 
         if (r1lo.IsConstant())
         {
-            result.lLimit = AddConstantLimit(r1lo, r2lo);
+            result.lLimit = AddConstantLimit(r2lo, r1lo);
         }
         if (r2lo.IsConstant())
         {
-            result.lLimit = AddConstantLimit(r2lo, r1lo);
+            result.lLimit = AddConstantLimit(r1lo, r2lo);
         }
         if (r1hi.IsConstant())
         {
-            result.uLimit = AddConstantLimit(r1hi, r2hi);
+            result.uLimit = AddConstantLimit(r2hi, r1hi);
         }
         if (r2hi.IsConstant())
         {
-            result.uLimit = AddConstantLimit(r2hi, r1hi);
+            result.uLimit = AddConstantLimit(r1hi, r2hi);
         }
+        return result;
+    }
+
+    static Range ShiftRight(Range& r1, Range& r2)
+    {
+        Limit& r1lo = r1.LowerLimit();
+        Limit& r1hi = r1.UpperLimit();
+        Limit& r2lo = r2.LowerLimit();
+        Limit& r2hi = r2.UpperLimit();
+
+        Range result = Limit(Limit::keUnknown);
+
+        // For now we only support r1 >> positive_cns (to simplify)
+        if (!r2lo.IsConstant() || !r2hi.IsConstant() || (r2lo.cns < 0) || (r2hi.cns < 0))
+        {
+            return result;
+        }
+
+        // Check lo ranges if they are dependent and not unknown.
+        if (r1lo.IsDependent())
+        {
+            result.lLimit = Limit(Limit::keDependent);
+        }
+        else if (r1lo.IsConstant())
+        {
+            result.lLimit = ShiftRightConstantLimit(r1lo, r2lo);
+        }
+
+        if (r1hi.IsDependent())
+        {
+            result.uLimit = Limit(Limit::keDependent);
+        }
+        else if (r1hi.IsConstant())
+        {
+            result.uLimit = ShiftRightConstantLimit(r1hi, r2hi);
+        }
+
         return result;
     }
 
@@ -352,19 +416,19 @@ struct RangeOps
 
         if (r1lo.IsConstant())
         {
-            result.lLimit = MultiplyConstantLimit(r1lo, r2lo);
+            result.lLimit = MultiplyConstantLimit(r2lo, r1lo);
         }
         if (r2lo.IsConstant())
         {
-            result.lLimit = MultiplyConstantLimit(r2lo, r1lo);
+            result.lLimit = MultiplyConstantLimit(r1lo, r2lo);
         }
         if (r1hi.IsConstant())
         {
-            result.uLimit = MultiplyConstantLimit(r1hi, r2hi);
+            result.uLimit = MultiplyConstantLimit(r2hi, r1hi);
         }
         if (r2hi.IsConstant())
         {
-            result.uLimit = MultiplyConstantLimit(r2hi, r1hi);
+            result.uLimit = MultiplyConstantLimit(r1hi, r2hi);
         }
         return result;
     }
@@ -559,6 +623,9 @@ public:
     // If "monIncreasing" is true, the calculations are made more liberally assuming initial values
     // at phi definitions for the lower bound.
     Range GetRange(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent));
+
+    // Compute the range from the given type
+    Range GetRangeFromType(var_types type);
 
     // Given the local variable, first find the definition of the local and find the range of the rhs.
     // Helper for GetRange.

@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.Cryptography;
-
 namespace System.Security.Cryptography
 {
     internal static partial class HashProviderDispenser
     {
-        internal static readonly bool CanUseSubtleCryptoImpl = Interop.BrowserCrypto.CanUseSimpleDigestHash() == 1;
+        internal static readonly bool CanUseSubtleCryptoImpl = Interop.BrowserCrypto.CanUseSubtleCryptoImpl() == 1;
 
         public static HashProvider CreateHashProvider(string hashAlgorithmId)
         {
@@ -32,20 +30,46 @@ namespace System.Security.Cryptography
                 ReadOnlySpan<byte> source,
                 Span<byte> destination)
             {
-                throw new PlatformNotSupportedException(SR.SystemSecurityCryptography_PlatformNotSupported);
+                if (CanUseSubtleCryptoImpl)
+                {
+                    return HMACNativeHashProvider.MacDataOneShot(hashAlgorithmId, key, source, destination);
+                }
+                else
+                {
+                    using HashProvider provider = CreateMacProvider(hashAlgorithmId, key);
+                    provider.AppendHashData(source);
+                    return provider.FinalizeHashAndReset(destination);
+                }
             }
 
             public static int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
             {
-                HashProvider provider = CreateHashProvider(hashAlgorithmId);
-                provider.AppendHashData(source);
-                return provider.FinalizeHashAndReset(destination);
+                if (CanUseSubtleCryptoImpl)
+                {
+                    return SHANativeHashProvider.HashOneShot(hashAlgorithmId, source, destination);
+                }
+                else
+                {
+                    HashProvider provider = CreateHashProvider(hashAlgorithmId);
+                    provider.AppendHashData(source);
+                    return provider.FinalizeHashAndReset(destination);
+                }
             }
         }
 
         public static unsafe HashProvider CreateMacProvider(string hashAlgorithmId, ReadOnlySpan<byte> key)
         {
-            throw new PlatformNotSupportedException(SR.SystemSecurityCryptography_PlatformNotSupported);
+            switch (hashAlgorithmId)
+            {
+                case HashAlgorithmNames.SHA1:
+                case HashAlgorithmNames.SHA256:
+                case HashAlgorithmNames.SHA384:
+                case HashAlgorithmNames.SHA512:
+                    return CanUseSubtleCryptoImpl
+                        ? new HMACNativeHashProvider(hashAlgorithmId, key)
+                        : new HMACManagedHashProvider(hashAlgorithmId, key);
+            }
+            throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
         }
     }
 }

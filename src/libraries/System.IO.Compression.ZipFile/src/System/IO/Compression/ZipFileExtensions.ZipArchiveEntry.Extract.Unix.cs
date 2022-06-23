@@ -22,7 +22,9 @@ namespace System.IO.Compression
             // include the permissions, or was made on Windows.
             if (permissions != 0)
             {
-                Interop.CheckIo(Interop.Sys.FChMod(fs.SafeFileHandle, permissions), fs.Name);
+#pragma warning disable CA1416 // Validate platform compatibility
+                File.SetUnixFileMode(fs.SafeFileHandle, (UnixFileMode)permissions);
+#pragma warning restore CA1416
             }
         }
     }

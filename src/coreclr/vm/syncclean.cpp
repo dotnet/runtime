@@ -38,7 +38,7 @@ void SyncClean::AddHashMap (Bucket *bucket)
         pTempBucket = (Bucket *)m_HashMap;
         NextObsolete (bucket) = pTempBucket;
     }
-    while (FastInterlockCompareExchangePointer(m_HashMap.GetPointer(), bucket, pTempBucket) != pTempBucket);
+    while (InterlockedCompareExchangeT(m_HashMap.GetPointer(), bucket, pTempBucket) != pTempBucket);
 }
 
 void SyncClean::AddEEHashTable (EEHashEntry** entry)
@@ -58,7 +58,7 @@ void SyncClean::AddEEHashTable (EEHashEntry** entry)
         pTempHashEntry = (EEHashEntry**)m_EEHashTable;
         entry[-1] = (EEHashEntry *)pTempHashEntry;
     }
-    while (FastInterlockCompareExchangePointer(m_EEHashTable.GetPointer(), entry, pTempHashEntry) != pTempHashEntry);
+    while (InterlockedCompareExchangeT(m_EEHashTable.GetPointer(), entry, pTempHashEntry) != pTempHashEntry);
 }
 
 void SyncClean::CleanUp ()
@@ -71,7 +71,7 @@ void SyncClean::CleanUp ()
               (GCHeapUtilities::IsGCInProgress()  && GetThreadNULLOk() == ThreadSuspend::GetSuspensionThread()));
     if (m_HashMap)
     {
-        Bucket * pTempBucket = FastInterlockExchangePointer(m_HashMap.GetPointer(), NULL);
+        Bucket * pTempBucket = InterlockedExchangeT(m_HashMap.GetPointer(), NULL);
 
         while (pTempBucket)
         {
@@ -83,7 +83,7 @@ void SyncClean::CleanUp ()
 
     if (m_EEHashTable)
     {
-        EEHashEntry ** pTempHashEntry = FastInterlockExchangePointer(m_EEHashTable.GetPointer(), NULL);
+        EEHashEntry ** pTempHashEntry = InterlockedExchangeT(m_EEHashTable.GetPointer(), NULL);
 
         while (pTempHashEntry) {
             EEHashEntry **pNextHashEntry = (EEHashEntry **)pTempHashEntry[-1];

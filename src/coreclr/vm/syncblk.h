@@ -382,13 +382,21 @@ private:
         LockState CompareExchange(LockState toState, LockState fromState)
         {
             LIMITED_METHOD_CONTRACT;
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+            return (UINT32)FastInterlockedCompareExchange((LONG *)&m_state, (LONG)toState, (LONG)fromState);
+#else
             return (UINT32)InterlockedCompareExchange((LONG *)&m_state, (LONG)toState, (LONG)fromState);
+#endif
         }
 
         LockState CompareExchangeAcquire(LockState toState, LockState fromState)
         {
             LIMITED_METHOD_CONTRACT;
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+            return (UINT32)FastInterlockedCompareExchangeAcquire((LONG *)&m_state, (LONG)toState, (LONG)fromState);
+#else
             return (UINT32)InterlockedCompareExchangeAcquire((LONG *)&m_state, (LONG)toState, (LONG)fromState);
+#endif
         }
 
     public:
@@ -567,7 +575,7 @@ public:
     void    IncrementTransientPrecious()
     {
         LIMITED_METHOD_CONTRACT;
-        FastInterlockIncrement(&m_TransientPrecious);
+        InterlockedIncrement(&m_TransientPrecious);
         _ASSERTE(m_TransientPrecious > 0);
     }
 
@@ -575,7 +583,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(m_TransientPrecious > 0);
-        FastInterlockDecrement(&m_TransientPrecious);
+        InterlockedDecrement(&m_TransientPrecious);
     }
 
     DWORD GetSyncBlockIndex();
@@ -738,7 +746,7 @@ public:
     bool SetUMEntryThunk(void* pUMEntryThunk)
     {
         WRAPPER_NO_CONTRACT;
-        return (FastInterlockCompareExchangePointer(&m_pUMEntryThunk,
+        return (InterlockedCompareExchangeT(&m_pUMEntryThunk,
                                                     pUMEntryThunk,
                                                     NULL) == NULL);
     }
@@ -801,7 +809,7 @@ public:
         if (m_managedObjectComWrapperMap == NULL)
         {
             NewHolder<ManagedObjectComWrapperByIdMap> map = new ManagedObjectComWrapperByIdMap();
-            if (FastInterlockCompareExchangePointer((ManagedObjectComWrapperByIdMap**)&m_managedObjectComWrapperMap, (ManagedObjectComWrapperByIdMap *)map, NULL) == NULL)
+            if (InterlockedCompareExchangeT((ManagedObjectComWrapperByIdMap**)&m_managedObjectComWrapperMap, (ManagedObjectComWrapperByIdMap *)map, NULL) == NULL)
             {
                 map.SuppressRelease();
             }
@@ -880,7 +888,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        return (FastInterlockCompareExchangePointer(
+        return (InterlockedCompareExchangeT(
                         &m_externalComObjectContext,
                         eoc,
                         curr) == curr);
@@ -1117,7 +1125,7 @@ class SyncBlock
     DWORD SetHashCode(DWORD hashCode)
     {
         WRAPPER_NO_CONTRACT;
-        DWORD result = FastInterlockCompareExchange((LONG*)&m_dwHashCode, hashCode, 0);
+        DWORD result = InterlockedCompareExchange((LONG*)&m_dwHashCode, hashCode, 0);
         if (result == 0)
         {
             // the sync block now holds a hash code, which we can't afford to lose.
@@ -1473,7 +1481,7 @@ class ObjHeader
             // note that indx could be carrying the BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX bit that we need to preserve
             newValue = (indx |
                 (oldValue & ~(BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE | MASK_SYNCBLOCKINDEX)));
-            if (FastInterlockCompareExchange((LONG*)&m_SyncBlockValue,
+            if (InterlockedCompareExchange((LONG*)&m_SyncBlockValue,
                                              newValue,
                                              oldValue)
                 == oldValue)
@@ -1489,7 +1497,7 @@ class ObjHeader
         LIMITED_METHOD_CONTRACT;
 
         _ASSERTE(m_SyncBlockValue & BIT_SBLK_SPIN_LOCK);
-        FastInterlockAnd(&m_SyncBlockValue, ~(BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE | MASK_SYNCBLOCKINDEX));
+        InterlockedAnd((LONG*)&m_SyncBlockValue, ~(BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE | MASK_SYNCBLOCKINDEX));
     }
 
     // Used only GC
@@ -1509,14 +1517,14 @@ class ObjHeader
         LIMITED_METHOD_CONTRACT;
 
         _ASSERTE((bit & MASK_SYNCBLOCKINDEX) == 0);
-        FastInterlockOr(&m_SyncBlockValue, bit);
+        InterlockedOr((LONG*)&m_SyncBlockValue, bit);
     }
     void ClrBit(DWORD bit)
     {
         LIMITED_METHOD_CONTRACT;
 
         _ASSERTE((bit & MASK_SYNCBLOCKINDEX) == 0);
-        FastInterlockAnd(&m_SyncBlockValue, ~bit);
+        InterlockedAnd((LONG*)&m_SyncBlockValue, ~bit);
     }
     //GC accesses this bit when all threads are stopped.
     void SetGCBit()
@@ -1554,7 +1562,7 @@ class ObjHeader
         LIMITED_METHOD_CONTRACT;
 
         _ASSERTE((oldBits & BIT_SBLK_SPIN_LOCK) == 0);
-        DWORD result = FastInterlockCompareExchange((LONG*)&m_SyncBlockValue, newBits, oldBits);
+        DWORD result = InterlockedCompareExchange((LONG*)&m_SyncBlockValue, newBits, oldBits);
         return result;
     }
 

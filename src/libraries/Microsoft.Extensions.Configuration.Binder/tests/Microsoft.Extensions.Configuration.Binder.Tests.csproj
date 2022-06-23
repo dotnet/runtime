@@ -10,6 +10,7 @@
              Link="Common\ConfigurationProviderExtensions.cs" />
     <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\Common\TestStreamHelpers.cs"
              Link="Common\TestStreamHelpers.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" /> 
   </ItemGroup>
 
   <ItemGroup>

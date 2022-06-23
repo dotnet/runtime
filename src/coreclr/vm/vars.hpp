@@ -717,4 +717,15 @@ enum HostCallPreference
     NoHostCalls,
 };
 
+#ifdef TARGET_WINDOWS
+typedef BOOL(WINAPI* PINITIALIZECONTEXT2)(PVOID Buffer, DWORD ContextFlags, PCONTEXT* Context, PDWORD ContextLength, ULONG64 XStateCompactionMask);
+extern PINITIALIZECONTEXT2 g_pfnInitializeContext2;
+
+#ifdef TARGET_X86
+typedef VOID(__cdecl* PRTLRESTORECONTEXT)(PCONTEXT ContextRecord, struct _EXCEPTION_RECORD* ExceptionRecord);
+extern PRTLRESTORECONTEXT g_pfnRtlRestoreContext;
+#endif // TARGET_X86
+
+#endif // TARGET_WINDOWS
+
 #endif /* _VARS_HPP */
