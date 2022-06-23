@@ -599,8 +599,6 @@
              Link="Common\Interop\Unix\System.Native\Interop.GetEUid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs"
              Link="Common\Interop\Unix\System.Native\Interop.GetPwUid.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Permissions.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.Permissions.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ReadLink.cs"
              Link="Common\Interop\Unix\System.Native\Interop.ReadLink.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs"
