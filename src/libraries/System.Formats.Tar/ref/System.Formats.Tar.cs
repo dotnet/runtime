@@ -103,6 +103,8 @@ namespace System.Formats.Tar
         public void Dispose() { }
         public void WriteEntry(System.Formats.Tar.TarEntry entry) { }
         public void WriteEntry(string fileName, string? entryName) { }
+        public System.Threading.Tasks.Task WriteEntryAsync(System.Formats.Tar.TarEntry entry, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Threading.Tasks.Task WriteEntryAsync(string fileName, string? entryName, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public sealed partial class UstarTarEntry : System.Formats.Tar.PosixTarEntry
     {
