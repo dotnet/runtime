@@ -48,8 +48,6 @@ namespace System
 
         private bool HasBeenThrown => _traceIPs != null;
 
-        private readonly object frameLock = new object();
-
         public MethodBase? TargetSite
         {
             get
