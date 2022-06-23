@@ -133,6 +133,25 @@ jobs:
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
 
 #
+# CoreCLR Test builds using live libraries release build
+# Only when CoreCLR is changed
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
+    buildConfig: checked
+    platforms:
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+    jobParameters:
+      testGroup: innerloop
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(variables['isRollingBuild'], true))
+
+
+#
 # CoreCLR Test executions using live libraries
 # Only when CoreCLR is changed
 #
