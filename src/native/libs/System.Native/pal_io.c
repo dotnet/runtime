@@ -944,6 +944,14 @@ void* SystemNative_MMap(void* address,
     }
 
     assert(ret != NULL);
+#ifdef MADV_MERGEABLE
+    bool isPrivateAnon = (flags & (MAP_ANON | MAP_PRIVATE)) == (MAP_ANON | MAP_PRIVATE);
+    // Hint to Kernel Samepage Merging if memory space is MAP_ANON | MAP_PRIVATE
+    if (isPrivateAnon)
+    {
+        madvise(ret, (size_t)length, MADV_MERGEABLE);
+    }
+#endif
     return ret;
 }
 

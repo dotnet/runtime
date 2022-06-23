@@ -1038,6 +1038,11 @@ static LPVOID ReserveVirtualMemory(
     madvise(pRetVal, MemSize, MADV_DONTDUMP);
 #endif
 
+#ifdef MADV_MERGEABLE
+    // Hint to Kernel Samepage Merging
+    madvise(pRetVal, MemSize, MADV_MERGEABLE);
+#endif
+
     return pRetVal;
 }
 

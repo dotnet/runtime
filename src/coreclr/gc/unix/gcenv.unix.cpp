@@ -387,6 +387,10 @@ bool GCToOSInterface::Initialize()
         {
             return false;
         }
+#ifdef MADV_MERGEABLE
+        // Hint to Kernel Samepage Merging
+        madvise(g_helperPage, OS_PAGE_SIZE, MADV_MERGEABLE);
+#endif
 
         // Verify that the s_helperPage is really aligned to the g_SystemInfo.dwPageSize
         assert((((size_t)g_helperPage) & (OS_PAGE_SIZE - 1)) == 0);

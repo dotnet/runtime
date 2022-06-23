@@ -2705,6 +2705,10 @@ InitializeFlushProcessWriteBuffers()
     {
         return FALSE;
     }
+#ifdef MADV_MERGEABLE
+    // Hint to Kernel Samepage Merging
+    madvise(s_helperPage, GetVirtualPageSize(), MADV_MERGEABLE);
+#endif
 
     // Verify that the s_helperPage is really aligned to the GetVirtualPageSize()
     _ASSERTE((((SIZE_T)s_helperPage) & (GetVirtualPageSize() - 1)) == 0);

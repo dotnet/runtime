@@ -1049,6 +1049,15 @@ CorUnix::InternalMapViewOfFile(
             pProcessLocalData->UnixFd,
             offset
             );
+#ifdef MADV_MERGEABLE
+        bool isPrivateAnon = (flags & (MAP_ANON | MAP_PRIVATE)) == (MAP_ANON | MAP_PRIVATE);
+        // Hint to Kernel Samepage Merging if memory space is MAP_ANON | MAP_PRIVATE
+        if (isPrivateAnon)
+        {
+            madvise(pvBaseAddress, dwNumberOfBytesToMap, MADV_MERGEABLE);
+        }
+#endif
+
     }
     else
     {
@@ -2258,6 +2267,10 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
         {
             TRACE_(LOADER)("Attempt to take preferred base of %p to force relocation failed; actually got %p\n", (void*)preferredBase, pForceRelocBase);
         }
+#ifdef MADV_MERGEABLE
+        // Hint to Kernel Samepage Merging
+        madvise(pForceRelocBase, GetVirtualPageSize(), MADV_MERGEABLE);
+#endif
     }
 #endif // _DEBUG
 
@@ -2321,6 +2334,11 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
         loadedBase = NULL; // clear it so we don't try to use it during clean-up
         goto doneReleaseMappingCriticalSection;
     }
+
+#ifdef MADV_MERGEABLE
+    // Hint to Kernel Samepage Merging
+    madvise(loadedBase, reserveSize, MADV_MERGEABLE);
+#endif
 
     // All subsequent mappings of the PE file will be in the range [loadedBase, loadedBase + virtualSize)
 
