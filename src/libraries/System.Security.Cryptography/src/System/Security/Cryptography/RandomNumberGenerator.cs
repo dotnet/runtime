@@ -13,6 +13,7 @@ namespace System.Security.Cryptography
 
         public static RandomNumberGenerator Create() => RandomNumberGeneratorImplementation.s_singleton;
 
+        [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static RandomNumberGenerator? Create(string rngName)
         {
