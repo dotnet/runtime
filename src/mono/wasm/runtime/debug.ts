@@ -12,8 +12,8 @@ let _call_function_res_cache: any = {};
 let _next_call_function_res_id = 0;
 let _debugger_buffer_len = -1;
 let _debugger_buffer: VoidPtr;
-let _assembly_name_str: string;
-let _entrypoint_method_token: number;
+let _assembly_name_str: string; //keep this variable, it's used by BrowserDebugProxy
+let _entrypoint_method_token: number; //keep this variable, it's used by BrowserDebugProxy
 
 const regexes:any[] = [];
 
@@ -168,6 +168,7 @@ export function mono_wasm_set_entrypoint_breakpoint(assembly_name: CharPtr, entr
     //keep these assignments, these values are used by BrowserDebugProxy
     _assembly_name_str = Module.UTF8ToString(assembly_name).concat(".dll");
     _entrypoint_method_token = entrypoint_method_token;
+    //keep this console.trace, otherwise optimization will remove the assigments
     console.trace(`Adding an entrypoint breakpoint ${_assembly_name_str} at method token  ${_entrypoint_method_token}`);
     // eslint-disable-next-line no-debugger
     debugger;
