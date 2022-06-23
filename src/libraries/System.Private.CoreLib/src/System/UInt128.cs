@@ -23,8 +23,8 @@ namespace System
         internal const int Size = 16;
 
 #if BIGENDIAN
-		private readonly ulong _upper;
-		private readonly ulong _lower;
+        private readonly ulong _upper;
+        private readonly ulong _lower;
 #else
         private readonly ulong _lower;
         private readonly ulong _upper;
