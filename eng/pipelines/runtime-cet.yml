@@ -143,7 +143,7 @@ jobs:
     buildConfig: checked
     platforms:
     - windows_x64
-    helixQueueGroup: pr
+    helixQueueGroup: cet
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
       testGroup: innerloop
@@ -185,7 +185,7 @@ jobs:
     platforms:
     - windows_x64
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    helixQueueGroup: libraries
+    helixQueueGroup: cet
     jobParameters:
       testScope: innerloop
       liveRuntimeBuildConfig: checked
