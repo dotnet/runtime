@@ -168,8 +168,8 @@ export function mono_wasm_set_entrypoint_breakpoint(assembly_name: CharPtr, entr
     //keep these assignments, these values are used by BrowserDebugProxy
     _assembly_name_str = Module.UTF8ToString(assembly_name).concat(".dll");
     _entrypoint_method_token = entrypoint_method_token;
-    console.log(`Adding an entrypoint breakpoint ${_assembly_name_str} at method token  ${_entrypoint_method_token}`);
-    // eslint-disable-next-line no-debugger    
+    console.trace(`Adding an entrypoint breakpoint ${_assembly_name_str} at method token  ${_entrypoint_method_token}`);
+    // eslint-disable-next-line no-debugger
     debugger;
 }
 
