@@ -206,6 +206,8 @@ namespace System.Net.WebSockets
             _buffer = buffer;
         }
 
+        public bool CollectHttpResponseDetails { get; set; }
+
         #endregion WebSocket settings
 
         #region Helpers

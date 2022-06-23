@@ -4,6 +4,8 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.Collections.Generic;
+
 namespace System.Net.WebSockets
 {
     public sealed partial class ClientWebSocket : System.Net.WebSockets.WebSocket
@@ -11,6 +13,8 @@ namespace System.Net.WebSockets
         public ClientWebSocket() { }
         public override System.Net.WebSockets.WebSocketCloseStatus? CloseStatus { get { throw null; } }
         public override string? CloseStatusDescription { get { throw null; } }
+        public System.Net.HttpStatusCode HttpStatusCode { get; }
+        public IReadOnlyDictionary<string, IEnumerable<string>>? HttpResponseHeaders { get; set; }
         public System.Net.WebSockets.ClientWebSocketOptions Options { get { throw null; } }
         public override System.Net.WebSockets.WebSocketState State { get { throw null; } }
         public override string? SubProtocol { get { throw null; } }
@@ -31,6 +35,7 @@ namespace System.Net.WebSockets
         public System.Security.Cryptography.X509Certificates.X509CertificateCollection ClientCertificates { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Net.CookieContainer? Cookies { get { throw null; } set { } }
+        public bool CollectHttpResponseDetails { get; set; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Net.ICredentials? Credentials { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]

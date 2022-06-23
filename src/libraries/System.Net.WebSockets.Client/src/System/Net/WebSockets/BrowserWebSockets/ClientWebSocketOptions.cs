@@ -67,6 +67,8 @@ namespace System.Net.WebSockets
             set => throw new PlatformNotSupportedException();
         }
 
+        public bool CollectHttpResponseDetails { get; set; }
+
         #endregion HTTP Settings
 
         #region WebSocket Settings

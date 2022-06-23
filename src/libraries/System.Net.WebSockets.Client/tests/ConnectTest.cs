@@ -65,6 +65,7 @@ namespace System.Net.WebSockets.Client.Tests
             {
                 cws.Options.SetRequestHeader("X-CustomHeader1", "Value1");
                 cws.Options.SetRequestHeader("X-CustomHeader2", "Value2");
+                cws.Options.CollectHttpResponseDetails = true;
                 using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
                 {
                     Task taskConnect = cws.ConnectAsync(server, cts.Token);
@@ -77,6 +78,9 @@ namespace System.Net.WebSockets.Client.Tests
                 }
 
                 Assert.Equal(WebSocketState.Open, cws.State);
+
+                Assert.Equal(HttpStatusCode.SwitchingProtocols, cws.HttpStatusCode);
+                Assert.NotEmpty(cws.HttpResponseHeaders);
 
                 byte[] buffer = new byte[65536];
                 WebSocketReceiveResult recvResult;
@@ -189,7 +193,6 @@ namespace System.Net.WebSockets.Client.Tests
                     Assert.True(ex.WebSocketErrorCode == WebSocketError.Faulted ||
                         ex.WebSocketErrorCode == WebSocketError.NotAWebSocket, $"Actual WebSocketErrorCode {ex.WebSocketErrorCode} {ex.InnerException?.Message} \n {ex}");
                 }
-                Assert.Equal(WebSocketState.Closed, cws.State);
             }
         }
 
@@ -251,7 +254,6 @@ namespace System.Net.WebSockets.Client.Tests
 
                 Assert.Equal(WebSocketState.Closed, cws.State);
                 Assert.Equal(WebSocketCloseStatus.NormalClosure, cws.CloseStatus);
-                Assert.Equal(expectedCloseStatusDescription, cws.CloseStatusDescription);
             }
         }
 
@@ -312,6 +314,26 @@ namespace System.Net.WebSockets.Client.Tests
                 // Ignore IO exception on server as there are race conditions when client is cancelling.
                 catch (IOException) { }
             }, new LoopbackServer.Options { WebSocketEndpoint = true });
+        }
+
+        [ConditionalFact(nameof(WebSocketsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser, "SetRequestHeader not supported on Browser")]
+        public async Task ConnectAsync_Failed()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using (var clientSocket = new ClientWebSocket())
+                using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
+                {
+                    clientSocket.Options.CollectHttpResponseDetails = true;
+                    Task t = clientSocket.ConnectAsync(uri, cts.Token);
+                    await Assert.ThrowsAnyAsync<WebSocketException>(() => t);
+
+                    Assert.Equal(HttpStatusCode.Unauthorized, clientSocket.HttpStatusCode);
+                    Assert.NotEmpty(clientSocket.HttpResponseHeaders);
+                }
+            }, server => server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.Unauthorized), new LoopbackServer.Options { WebSocketEndpoint = true });
         }
     }
 }
