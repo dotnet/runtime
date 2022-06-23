@@ -808,9 +808,9 @@ void Lowering::LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIn
     node->gtType = TYP_VOID;
     node->ClearUnusedValue();
 
-    bool swapOperands    = false;
-    bool canSwapOperands = false;
-    GenCondition ccCondition = cc->AsCC()->gtCondition;
+    bool         swapOperands    = false;
+    bool         canSwapOperands = false;
+    GenCondition ccCondition     = cc->AsCC()->gtCondition;
 
     switch (newIntrinsicId)
     {

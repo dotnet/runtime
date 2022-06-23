@@ -3249,7 +3249,7 @@ GenTree* Lowering::LowerNodeCC(GenTree* node, GenCondition condition)
                 {
                     // Don't replace if the use is a conditional (Ideally GTF_SET_FLAGS
                     // would have been set on the node already).
-                    cc = (GenTreeCC*)node;
+                    cc           = (GenTreeCC*)node;
                     node->gtType = TYP_VOID;
                 }
                 else
