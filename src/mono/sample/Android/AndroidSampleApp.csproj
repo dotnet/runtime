@@ -86,6 +86,7 @@
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)runtimes\android-$(TargetArchitecture)\native\include\mono-2.0"
         Assemblies="@(BundleAssemblies)"
         MainLibraryFileName="$(AssemblyName).dll"
+        IncludeNetworkSecurityConfig="$(IncludeNetworkSecurityConfig)"
         StripDebugSymbols="$(StripDebugSymbols)"
         RuntimeComponents="$(RuntimeComponents)"
         DiagnosticPorts="$(DiagnosticPorts)"

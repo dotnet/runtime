@@ -1,13 +1,41 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
+#nullable enable
 
 using System;
+using System.Net;
+using System.Net.Sockets;
+using System.Net.Security;
+using System.Security;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 
-public static class Program
+TestAuthenticateAsClient(hostname: "microsoft.com");
+TestAuthenticateAsClient(hostname: "self-signed.badssl.com");
+TestAuthenticateAsClient(hostname: "expired.badssl.com");
+
+void TestAuthenticateAsClient(string hostname, int port = 443)
 {
-    public static int Main(string[] args)
+    using var tcpClient = new TcpClient();
+    IAsyncResult result = tcpClient.BeginConnect(hostname, port, null, null);
+    var connected = result.AsyncWaitHandle.WaitOne(2000, true);
+    if (connected)
     {
-        Console.WriteLine("Hello, Android!"); // logcat
-        return 42;
+        tcpClient.EndConnect(result);
+        var stream = new SslStream(tcpClient.GetStream(), false, ValidateServerCertificate, null);
+        try
+        {
+            stream.AuthenticateAsClient(hostname);
+
+            Console.WriteLine($"OK - {hostname}:{port}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"!! - {hostname}:{port} ({ex.Message})");
+            Console.WriteLine(ex);
+        }
     }
+}
+
+bool ValidateServerCertificate(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors)
+{
+    return true;
 }
