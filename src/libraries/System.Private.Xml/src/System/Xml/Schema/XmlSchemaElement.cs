@@ -115,7 +115,7 @@ namespace System.Xml.Schema
         public XmlQualifiedName RefName
         {
             get { return _refName; }
-            set { _refName = value ?? XmlQualifiedName.Empty; }
+            set { _refName = (value == null ? XmlQualifiedName.Empty : value); }
         }
 
         [XmlAttribute("substitutionGroup")]
@@ -123,7 +123,7 @@ namespace System.Xml.Schema
         public XmlQualifiedName SubstitutionGroup
         {
             get { return _substitutionGroup; }
-            set { _substitutionGroup = value ?? XmlQualifiedName.Empty; }
+            set { _substitutionGroup = (value == null ? XmlQualifiedName.Empty : value); }
         }
 
         [XmlAttribute("type")]
@@ -131,7 +131,7 @@ namespace System.Xml.Schema
         public XmlQualifiedName SchemaTypeName
         {
             get { return _typeName; }
-            set { _typeName = value ?? XmlQualifiedName.Empty; }
+            set { _typeName = (value == null ? XmlQualifiedName.Empty : value); }
         }
 
         [XmlElement("complexType", typeof(XmlSchemaComplexType)),

@@ -640,14 +640,9 @@ enum CorInfoHelpFunc
     CORINFO_HELP_STACK_PROBE,               // Probes each page of the allocated stack frame
 
     CORINFO_HELP_PATCHPOINT,                // Notify runtime that code has reached a patchpoint
-    CORINFO_HELP_PARTIAL_COMPILATION_PATCHPOINT,  // Notify runtime that code has reached a part of the method that wasn't originally jitted.
-
     CORINFO_HELP_CLASSPROFILE32,            // Update 32-bit class profile for a call site
     CORINFO_HELP_CLASSPROFILE64,            // Update 64-bit class profile for a call site
-    CORINFO_HELP_DELEGATEPROFILE32,         // Update 32-bit method profile for a delegate call site
-    CORINFO_HELP_DELEGATEPROFILE64,         // Update 64-bit method profile for a delegate call site
-    CORINFO_HELP_VTABLEPROFILE32,           // Update 32-bit method profile for a vtable call site
-    CORINFO_HELP_VTABLEPROFILE64,           // Update 64-bit method profile for a vtable call site
+    CORINFO_HELP_PARTIAL_COMPILATION_PATCHPOINT,  // Notify runtime that code has reached a part of the method that wasn't originally jitted.
 
     CORINFO_HELP_VALIDATE_INDIRECT_CALL,    // CFG: Validate function pointer
     CORINFO_HELP_DISPATCH_INDIRECT_CALL,    // CFG: Validate and dispatch to pointer
@@ -959,14 +954,11 @@ enum CorInfoClassId
 
 enum CorInfoInline
 {
-    INLINE_PASS                     = 0,    // Inlining OK
-    INLINE_PREJIT_SUCCESS           = 1,    // Inline check for prejit checking usage succeeded
-    INLINE_CHECK_CAN_INLINE_SUCCESS = 2,    // JIT detected it is permitted to try to actually inline
-    INLINE_CHECK_CAN_INLINE_VMFAIL  = 3,    // VM specified that inline must fail via the CanInline api
+    INLINE_PASS                 = 0,    // Inlining OK
 
     // failures are negative
-    INLINE_FAIL                     = -1,   // Inlining not OK for this case only
-    INLINE_NEVER                    = -2,   // This method should never be inlined, regardless of context
+    INLINE_FAIL                 = -1,   // Inlining not OK for this case only
+    INLINE_NEVER                = -2,   // This method should never be inlined, regardless of context
 };
 
 enum CorInfoInlineTypeCheck
@@ -2041,11 +2033,6 @@ public:
             CORINFO_METHOD_HANDLE       callerHnd,                  /* IN  */
             CORINFO_METHOD_HANDLE       calleeHnd                   /* IN  */
             ) = 0;
-
-    // Report that an inlining related process has begun. This will always be paired with
-    // a call to reportInliningDecision unless the jit fails.
-    virtual void beginInlining (CORINFO_METHOD_HANDLE inlinerHnd,
-                                CORINFO_METHOD_HANDLE inlineeHnd) = 0;
 
     // Reports whether or not a method can be inlined, and why.  canInline is responsible for reporting all
     // inlining results when it returns INLINE_FAIL and INLINE_NEVER.  All other results are reported by the

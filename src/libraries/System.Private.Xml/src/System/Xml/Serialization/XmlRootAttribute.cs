@@ -44,7 +44,7 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public string ElementName
         {
-            get { return _elementName ?? string.Empty; }
+            get { return _elementName == null ? string.Empty : _elementName; }
             set { _elementName = value; }
         }
 
@@ -63,7 +63,7 @@ namespace System.Xml.Serialization
         [AllowNull]
         public string DataType
         {
-            get { return _dataType ?? string.Empty; }
+            get { return _dataType == null ? string.Empty : _dataType; }
             set { _dataType = value; }
         }
 
@@ -92,7 +92,7 @@ namespace System.Xml.Serialization
 
         internal string Key
         {
-            get { return $"{_ns ?? string.Empty}:{ElementName}:{_nullable}"; }
+            get { return $"{(_ns == null ? string.Empty : _ns)}:{ElementName}:{_nullable}"; }
         }
 
         internal string GetKey()

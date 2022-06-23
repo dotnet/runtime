@@ -333,57 +333,101 @@ namespace System.Speech.Recognition
 
         private void StateChangedProxy(object sender, StateChangedEventArgs e)
         {
-            StateChanged?.Invoke(this, e);
+            EventHandler<StateChangedEventArgs> stateChangedHandler = StateChanged;
+            if (stateChangedHandler != null)
+            {
+                stateChangedHandler(this, e);
+            }
         }
 
         private void EmulateRecognizeCompletedProxy(object sender, EmulateRecognizeCompletedEventArgs e)
         {
-            EmulateRecognizeCompleted?.Invoke(this, e);
+            EventHandler<EmulateRecognizeCompletedEventArgs> emulateRecognizeCompletedHandler = EmulateRecognizeCompleted;
+            if (emulateRecognizeCompletedHandler != null)
+            {
+                emulateRecognizeCompletedHandler(this, e);
+            }
         }
 
         private void LoadGrammarCompletedProxy(object sender, LoadGrammarCompletedEventArgs e)
         {
-            LoadGrammarCompleted?.Invoke(this, e);
+            EventHandler<LoadGrammarCompletedEventArgs> loadGrammarCompletedHandler = LoadGrammarCompleted;
+            if (loadGrammarCompletedHandler != null)
+            {
+                loadGrammarCompletedHandler(this, e);
+            }
         }
 
         private void SpeechDetectedProxy(object sender, SpeechDetectedEventArgs e)
         {
-            SpeechDetected?.Invoke(this, e);
+            EventHandler<SpeechDetectedEventArgs> speechDetectedHandler = SpeechDetected;
+            if (speechDetectedHandler != null)
+            {
+                speechDetectedHandler(this, e);
+            }
         }
 
         private void SpeechRecognizedProxy(object sender, SpeechRecognizedEventArgs e)
         {
-            SpeechRecognized?.Invoke(this, e);
+            EventHandler<SpeechRecognizedEventArgs> speechRecognizedHandler = SpeechRecognized;
+            if (speechRecognizedHandler != null)
+            {
+                speechRecognizedHandler(this, e);
+            }
         }
 
         private void SpeechRecognitionRejectedProxy(object sender, SpeechRecognitionRejectedEventArgs e)
         {
-            SpeechRecognitionRejected?.Invoke(this, e);
+            EventHandler<SpeechRecognitionRejectedEventArgs> speechRecognitionRejectedHandler = SpeechRecognitionRejected;
+            if (speechRecognitionRejectedHandler != null)
+            {
+                speechRecognitionRejectedHandler(this, e);
+            }
         }
 
         private void RecognizerUpdateReachedProxy(object sender, RecognizerUpdateReachedEventArgs e)
         {
-            RecognizerUpdateReached?.Invoke(this, e);
+            EventHandler<RecognizerUpdateReachedEventArgs> recognizerUpdateReachedHandler = RecognizerUpdateReached;
+            if (recognizerUpdateReachedHandler != null)
+            {
+                recognizerUpdateReachedHandler(this, e);
+            }
         }
 
         private void SpeechHypothesizedProxy(object sender, SpeechHypothesizedEventArgs e)
         {
-            _speechHypothesizedDelegate?.Invoke(this, e);
+            EventHandler<SpeechHypothesizedEventArgs> speechHypothesizedHandler = _speechHypothesizedDelegate;
+            if (speechHypothesizedHandler != null)
+            {
+                speechHypothesizedHandler(this, e);
+            }
         }
 
         private void AudioSignalProblemOccurredProxy(object sender, AudioSignalProblemOccurredEventArgs e)
         {
-            _audioSignalProblemOccurredDelegate?.Invoke(this, e);
+            EventHandler<AudioSignalProblemOccurredEventArgs> audioSignalProblemOccurredHandler = _audioSignalProblemOccurredDelegate;
+            if (audioSignalProblemOccurredHandler != null)
+            {
+                audioSignalProblemOccurredHandler(this, e);
+            }
         }
 
         private void AudioLevelUpdatedProxy(object sender, AudioLevelUpdatedEventArgs e)
         {
-            _audioLevelUpdatedDelegate?.Invoke(this, e);
+            EventHandler<AudioLevelUpdatedEventArgs> audioLevelUpdatedHandler = _audioLevelUpdatedDelegate;
+            if (audioLevelUpdatedHandler != null)
+            {
+                audioLevelUpdatedHandler(this, e);
+            }
         }
 
         private void AudioStateChangedProxy(object sender, AudioStateChangedEventArgs e)
         {
-            _audioStateChangedDelegate?.Invoke(this, e);
+            EventHandler<AudioStateChangedEventArgs> audioStateChangedHandler = _audioStateChangedDelegate;
+            if (audioStateChangedHandler != null)
+            {
+                audioStateChangedHandler(this, e);
+            }
         }
 
         #endregion

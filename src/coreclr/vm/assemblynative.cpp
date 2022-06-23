@@ -76,7 +76,7 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* p
         COMPlusThrow(kArgumentException, W("Format_StringZeroLength"));
 
     StackSString ssName;
-    ssName.SetAndConvertToUTF8(pAssemblyNameParts->_pName);
+    SString(SString::Literal, pAssemblyNameParts->_pName).ConvertToUTF8(ssName);
 
     AssemblyMetaDataInternal asmInfo;
 
@@ -87,11 +87,11 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* p
 
     SmallStackSString ssLocale;
     if (pAssemblyNameParts->_pCultureName != NULL)
-        ssLocale.SetAndConvertToUTF8(pAssemblyNameParts->_pCultureName);
-    asmInfo.szLocale = (pAssemblyNameParts->_pCultureName != NULL) ? ssLocale.GetUTF8() : NULL;
+        SString(SString::Literal, pAssemblyNameParts->_pCultureName).ConvertToUTF8(ssLocale);
+    asmInfo.szLocale = (pAssemblyNameParts->_pCultureName != NULL) ? ssLocale.GetUTF8NoConvert() : NULL;
 
     // Initialize spec
-    spec.Init(ssName.GetUTF8(), &asmInfo,
+    spec.Init(ssName.GetUTF8NoConvert(), &asmInfo,
         pAssemblyNameParts->_pPublicKeyOrToken, pAssemblyNameParts->_cbPublicKeyOrToken, pAssemblyNameParts->_flags);
 
     if (pParentAssembly != NULL)
@@ -124,7 +124,7 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* p
 }
 
 /* static */
-Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pImage, bool excludeAppPaths)
+Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pImage)
 {
     CONTRACT(Assembly*)
     {
@@ -152,7 +152,7 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
 
     HRESULT hr = S_OK;
     PTR_AppDomain pCurDomain = GetAppDomain();
-    hr = pBinder->BindUsingPEImage(pImage, excludeAppPaths, &pAssembly);
+    hr = pBinder->BindUsingPEImage(pImage, &pAssembly);
 
     if (hr != S_OK)
     {
@@ -541,10 +541,10 @@ extern "C" BYTE * QCALLTYPE AssemblyNative_GetResource(QCall::AssemblyHandle pAs
         COMPlusThrow(kArgumentNullException, W("ArgumentNull_String"));
 
     // Get the name in UTF8
-    StackSString name;
-    name.SetAndConvertToUTF8(wszName);
+    SString name(SString::Literal, wszName);
 
-    LPCUTF8 pNameUTF8 = name.GetUTF8();
+    StackScratchBuffer scratch;
+    LPCUTF8 pNameUTF8 = name.GetUTF8(scratch);
 
     if (*pNameUTF8 == '\0')
         COMPlusThrow(kArgumentException, W("Format_StringZeroLength"));
@@ -571,9 +571,10 @@ extern "C" INT32 QCALLTYPE AssemblyNative_GetManifestResourceInfo(QCall::Assembl
         COMPlusThrow(kArgumentNullException, W("ArgumentNull_String"));
 
     // Get the name in UTF8
-    StackSString name;
-    name.SetAndConvertToUTF8(wszName);
-    LPCUTF8 pNameUTF8 = name.GetUTF8();
+    SString name(SString::Literal, wszName);
+
+    StackScratchBuffer scratch;
+    LPCUTF8 pNameUTF8 = name.GetUTF8(scratch);
 
     if (*pNameUTF8 == '\0')
         COMPlusThrow(kArgumentException, W("Format_StringZeroLength"));

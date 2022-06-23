@@ -38,8 +38,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
             fixed (byte* pAppName = "System.Net.Quic"u8)
             {
-                var cfg = new QUIC_REGISTRATION_CONFIG
-                {
+                var cfg = new QUIC_REGISTRATION_CONFIG {
                     AppName = (sbyte*)pAppName,
                     ExecutionProfile = QUIC_EXECUTION_PROFILE.LOW_LATENCY
                 };
@@ -55,8 +54,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         internal static bool IsQuicSupported { get; }
 
-        internal static bool Tls13ServerMayBeDisabled { get; }
-        internal static bool Tls13ClientMayBeDisabled { get; }
+        internal static bool Tls13MayBeDisabled { get; }
 
         static MsQuicApi()
         {
@@ -72,8 +70,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     return;
                 }
 
-                Tls13ServerMayBeDisabled = IsTls13Disabled(true);
-                Tls13ClientMayBeDisabled = IsTls13Disabled(false);
+                Tls13MayBeDisabled = IsTls13Disabled();
             }
 
             IntPtr msQuicHandle;
@@ -123,28 +120,24 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         private static bool IsWindowsVersionSupported() => OperatingSystem.IsWindowsVersionAtLeast(MinWindowsVersion.Major,
             MinWindowsVersion.Minor, MinWindowsVersion.Build, MinWindowsVersion.Revision);
 
-        private static bool IsTls13Disabled(bool isServer)
+        private static bool IsTls13Disabled()
         {
 #if TARGET_WINDOWS
-            string SChannelTls13RegistryKey = isServer
-                ? @"SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Server"
-                : @"SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Client";
+            string[] SChannelTLS13RegKeys = {
+                @"SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Client",
+                @"SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Server"
+            };
 
-            using var regKey = Registry.LocalMachine.OpenSubKey(SChannelTls13RegistryKey);
-
-            if (regKey is null)
+            foreach (var key in SChannelTLS13RegKeys)
             {
-                return false;
-            }
+                using var regKey = Registry.LocalMachine.OpenSubKey(key);
 
-            if (regKey.GetValue("Enabled") is int enabled && enabled == 0)
-            {
-                return true;
-            }
+                if (regKey is null) return false;
 
-            if (regKey.GetValue("DisabledByDefault") is int disabled && disabled == 1)
-            {
-                return true;
+                if (regKey.GetValue("Enabled") is int enabled && enabled == 0)
+                {
+                    return true;
+                }
             }
 #endif
             return false;

@@ -153,7 +153,7 @@ public:
         }
         CONTRACTL_END;
 
-        InterlockedIncrement((LONG*)&m_dwRefCount);
+        FastInterlockIncrement((LONG*)&m_dwRefCount);
     }
 
     void Release()
@@ -169,7 +169,7 @@ public:
 
         ListLockHolder lock(m_pList);
 
-        if (InterlockedDecrement((LONG*)&m_dwRefCount) == 0)
+        if (FastInterlockDecrement((LONG*)&m_dwRefCount) == 0)
         {
             // Remove from list
             m_pList->Unlink(this);

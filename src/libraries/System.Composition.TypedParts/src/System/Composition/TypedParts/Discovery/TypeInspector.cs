@@ -33,7 +33,7 @@ namespace System.Composition.TypedParts.Discovery
 
             foreach (var export in DiscoverExports(type))
             {
-                part ??= new DiscoveredPart(type, _attributeContext, _activationFeatures);
+                part = part ?? new DiscoveredPart(type, _attributeContext, _activationFeatures);
                 part.AddDiscoveredExport(export);
             }
 

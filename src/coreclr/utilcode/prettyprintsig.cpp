@@ -788,12 +788,8 @@ static HRESULT PrettyPrintTypeA(
         break;
 
     case ELEMENT_TYPE_FNPTR:
-        {
-            IfFailGo(appendStrA(out, "fnptr "));
-            CQuickBytes qbOut;
-            IfFailGo(PrettyPrintSigWorkerInternal(typePtr, (typeEnd - typePtr), "", &qbOut,pIMDI));
-            IfFailGo(appendStrA(out, (char *)qbOut.Ptr()));
-        }
+        IfFailGo(appendStrA(out, "fnptr "));
+        IfFailGo(PrettyPrintSigWorkerInternal(typePtr, (typeEnd - typePtr), "", out,pIMDI));
         break;
 
     case ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG:

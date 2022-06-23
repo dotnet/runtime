@@ -379,8 +379,6 @@ private:
     // returns true iff vn is known to be a constant int32 that is > 0
     bool IsVNPositiveInt32Constant(ValueNum vn);
 
-    GenTreeFlags GetFoldedArithOpResultHandleFlags(ValueNum vn);
-
 public:
     // Initializes any static variables of ValueNumStore.
     static void InitValueNumStoreStatics();
@@ -687,8 +685,9 @@ public:
                                       op3VN.GetConservative(), op4VN.GetConservative()));
     }
 
-    ValueNum VNForExpr(BasicBlock* block, var_types type = TYP_UNKNOWN);
-    ValueNumPair VNPairForExpr(BasicBlock* block, var_types type);
+    // Get a new, unique value number for an expression that we're not equating to some function,
+    // which is the value of a tree in the given block.
+    ValueNum VNForExpr(BasicBlock* block, var_types typ = TYP_UNKNOWN);
 
 // This controls extra tracing of the "evaluation" of "VNF_MapSelect" functions.
 #define FEATURE_VN_TRACE_APPLY_SELECTORS 1

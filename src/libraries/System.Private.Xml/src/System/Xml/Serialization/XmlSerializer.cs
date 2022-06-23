@@ -489,8 +489,9 @@ namespace System.Xml.Serialization
                 if (e is TargetInvocationException)
                     e = e.InnerException;
 
-                if (xmlReader is IXmlLineInfo lineInfo)
+                if (xmlReader is IXmlLineInfo)
                 {
+                    IXmlLineInfo lineInfo = (IXmlLineInfo)xmlReader;
                     throw new InvalidOperationException(SR.Format(SR.XmlSerializeErrorDetails, lineInfo.LineNumber.ToString(CultureInfo.InvariantCulture), lineInfo.LinePosition.ToString(CultureInfo.InvariantCulture)), e);
                 }
                 else

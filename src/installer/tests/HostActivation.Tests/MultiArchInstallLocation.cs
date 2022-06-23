@@ -4,7 +4,6 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
-using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.DotNet.CoreSetup.Test.HostActivation;
@@ -148,44 +147,6 @@ namespace HostActivation.Tests
         }
 
         [Fact]
-        public void EnvironmentVariable_DotNetInfo_ListEnvironment()
-        {
-            var dotnet = new DotNetCli(sharedTestState.RepoDirectories.BuiltDotnet);
-
-            var command = dotnet.Exec("--info")
-                .CaptureStdOut();
-
-            var envVars = new (string Architecture, string Path)[] {
-                ("arm64", "/arm64/dotnet/root"),
-                ("x64", "/x64/dotnet/root"),
-                ("x86", "/x86/dotnet/root")
-            };
-            foreach(var envVar in envVars)
-            {
-                command = command.DotNetRoot(envVar.Path, envVar.Architecture);
-            }
-
-            string dotnetRootNoArch = "/dotnet/root";
-            command = command.DotNetRoot(dotnetRootNoArch);
-
-            (string Architecture, string Path) unknownEnvVar = ("unknown", "/unknown/dotnet/root");
-            command = command.DotNetRoot(unknownEnvVar.Path, unknownEnvVar.Architecture);
-
-            var result = command.Execute();
-            result.Should().Pass()
-                .And.HaveStdOutContaining("Environment variables:")
-                .And.HaveStdOutMatching($@"{Constants.DotnetRoot.EnvironmentVariable}\s*\[{dotnetRootNoArch}\]")
-                .And.NotHaveStdOutContaining($"{Constants.DotnetRoot.ArchitectureEnvironmentVariablePrefix}{unknownEnvVar.Architecture.ToUpper()}")
-                .And.NotHaveStdOutContaining($"[{unknownEnvVar.Path}]");
-
-            foreach ((string architecture, string path) in envVars)
-            {
-                result.Should()
-                    .HaveStdOutMatching($@"{Constants.DotnetRoot.ArchitectureEnvironmentVariablePrefix}{architecture.ToUpper()}\s*\[{path}\]");
-            }
-        }
-
-        [Fact]
         public void RegisteredInstallLocation_ArchSpecificLocationIsPickedFirst()
         {
             var fixture = sharedTestState.PortableAppFixture
@@ -277,49 +238,6 @@ namespace HostActivation.Tests
                     .DotNetRoot(null)
                     .Execute()
                     .Should().NotHaveStdErrContaining("The install_location file");
-            }
-        }
-
-        [Fact]
-        public void RegisteredInstallLocation_DotNetInfo_ListOtherArchitectures()
-        {
-            using (var testArtifact = new TestArtifact(SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "listOtherArchs"))))
-            {
-                var dotnet = new DotNetBuilder(testArtifact.Location, sharedTestState.RepoDirectories.BuiltDotnet, "exe").Build();
-                using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(dotnet.GreatestVersionHostFxrFilePath))
-                {
-                    var installLocations = new (string, string)[] {
-                        ("arm64", "/arm64/install/path"),
-                        ("x64", "/x64/install/path"),
-                        ("x86", "/x86/install/path")
-                    };
-                    (string Architecture, string Path) unknownArchInstall = ("unknown", "/unknown/install/path");
-                    registeredInstallLocationOverride.SetInstallLocation(installLocations);
-                    registeredInstallLocationOverride.SetInstallLocation(unknownArchInstall);
-
-                    var result = dotnet.Exec("--info")
-                        .CaptureStdOut()
-                        .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
-                        .Execute();
-
-                    result.Should().Pass()
-                        .And.HaveStdOutContaining("Other architectures found:")
-                        .And.NotHaveStdOutContaining(unknownArchInstall.Architecture)
-                        .And.NotHaveStdOutContaining($"[{unknownArchInstall.Path}]");
-
-                    string pathOverride = OperatingSystem.IsWindows() // Host uses short form of base key for Windows
-                        ? registeredInstallLocationOverride.PathValueOverride.Replace(Microsoft.Win32.Registry.CurrentUser.Name, "HKCU")
-                        : registeredInstallLocationOverride.PathValueOverride;
-                    pathOverride = System.Text.RegularExpressions.Regex.Escape(pathOverride);
-                    foreach ((string arch, string path) in installLocations)
-                    {
-                        if (arch == sharedTestState.RepoDirectories.BuildArchitecture)
-                            continue;
-
-                        result.Should()
-                            .HaveStdOutMatching($@"{arch}\s*\[{path}\]\r?$\s*registered at \[{pathOverride}.*{arch}.*\]", System.Text.RegularExpressions.RegexOptions.Multiline);
-                    }
-                }
             }
         }
 

@@ -55,17 +55,14 @@ namespace System.Reflection.Metadata
 
         private static string InitializeApplyUpdateCapabilities()
         {
-            string caps = GetApplyUpdateCapabilities();
-            return ApplyUpdateEnabled(justComponentCheck: 1) != 0 ? caps : string.Empty;
+            const string caps = "Baseline AddMethodToExistingType AddStaticFieldToExistingType NewTypeDefinition";
+            return ApplyUpdateEnabled(justComponentCheck: 1) != 0 ? caps : string.Empty ;
         }
 
         [MethodImpl (MethodImplOptions.InternalCall)]
         private static extern int ApplyUpdateEnabled (int justComponentCheck);
 
         [MethodImpl (MethodImplOptions.InternalCall)]
-        private static extern string GetApplyUpdateCapabilities();
-
-        [MethodImpl (MethodImplOptions.InternalCall)]
-        private static extern unsafe void ApplyUpdate_internal (IntPtr base_assm, byte* dmeta_bytes, int dmeta_length, byte *dil_bytes, int dil_length, byte *dpdb_bytes, int dpdb_length);
+        private static unsafe extern void ApplyUpdate_internal (IntPtr base_assm, byte* dmeta_bytes, int dmeta_length, byte *dil_bytes, int dil_length, byte *dpdb_bytes, int dpdb_length);
     }
 }

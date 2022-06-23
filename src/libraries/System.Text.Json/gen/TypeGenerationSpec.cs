@@ -31,11 +31,6 @@ namespace System.Text.Json.SourceGeneration
         /// </summary>
         public string TypeInfoPropertyName { get; set; }
 
-        /// <summary>
-        /// Method used to generate JsonTypeInfo given options instance
-        /// </summary>
-        public string CreateTypeInfoMethodName => $"Create_{TypeInfoPropertyName}";
-
         public JsonSourceGenerationMode GenerationMode { get; set; }
 
         public bool GenerateMetadata => GenerationModeIsSpecified(JsonSourceGenerationMode.Metadata);

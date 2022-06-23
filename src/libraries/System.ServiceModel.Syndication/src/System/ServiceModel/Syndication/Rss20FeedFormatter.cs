@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#pragma warning disable 1634, 1691
+
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -736,7 +738,7 @@ namespace System.ServiceModel.Syndication
                         }
                         else if (reader.IsStartElement(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace))
                         {
-                            feedItems ??= new NullNotAllowedCollection<SyndicationItem>();
+                            feedItems = feedItems ?? new NullNotAllowedCollection<SyndicationItem>();
                             IEnumerable<SyndicationItem> items = ReadItems(reader, result, out areAllItemsRead);
                             foreach (SyndicationItem item in items)
                             {

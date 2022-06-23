@@ -353,7 +353,7 @@ namespace System.Threading.Tasks.Dataflow
             /// <summary>Gets any postponed messages.</summary>
             public QueuedMap<ISourceBlock<TInput>, DataflowMessageHeader>? PostponedMessages
             {
-                get { return _defaultDebugInfo?.PostponedMessages; }
+                get { return _defaultDebugInfo != null ? _defaultDebugInfo.PostponedMessages : null; }
             }
 
             /// <summary>Gets the number of outstanding input operations.</summary>

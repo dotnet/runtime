@@ -9,11 +9,12 @@ using System.Threading.Tasks;
 
 namespace System.IO.Packaging
 {
-    internal sealed class ZipStreamManager
+    internal sealed class ZipStreamManager : IDisposable
     {
         private readonly ZipArchive _zipArchive;
         private readonly FileAccess _packageFileAccess;
         private readonly FileMode _packageFileMode;
+        private bool _disposed;
 
         public ZipStreamManager(ZipArchive zipArchive, FileMode packageFileMode, FileAccess packageFileAccess)
         {
@@ -83,6 +84,28 @@ namespace System.IO.Packaging
 
             Stream ns = zipArchiveEntry.Open();
             return new ZipWrappingStream(zipArchiveEntry, ns, _packageFileMode, _packageFileAccess, canRead, canWrite);
+        }
+
+        //
+        // IDisposable interface
+        //
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        // Protected implementation of Dispose pattern.
+        private void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
+            }
+
+            _disposed = true;
         }
     }
 }

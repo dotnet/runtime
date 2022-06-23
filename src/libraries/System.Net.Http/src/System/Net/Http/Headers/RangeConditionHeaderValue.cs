@@ -139,7 +139,7 @@ namespace System.Net.Http.Headers
                     return 0;
                 }
 
-                current += entityTagLength;
+                current = current + entityTagLength;
 
                 // RangeConditionHeaderValue only allows 1 value. There must be no delimiter/other chars after an
                 // entity tag.

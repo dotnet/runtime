@@ -289,7 +289,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.DER);
+                AsnReader reader = new AsnReader(rawData, AsnEncodingRules.DER);
                 int inhibitAnyPolicy;
                 reader.TryReadInt32(out inhibitAnyPolicy);
                 reader.ThrowIfNotEmpty();
@@ -317,8 +317,8 @@ namespace System.Security.Cryptography.X509Certificates
 
             try
             {
-                AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.DER);
-                AsnValueReader sequenceReader = reader.ReadSequence();
+                AsnReader reader = new AsnReader(rawData, AsnEncodingRules.DER);
+                AsnReader sequenceReader = reader.ReadSequence();
                 reader.ThrowIfNotEmpty();
 
                 //OidCollection usages

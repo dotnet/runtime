@@ -886,7 +886,7 @@ public:
         PRECONDITION(!HasApproxParent());
         PRECONDITION(IsRestored_NoLogging());
 
-        InterlockedAnd((LONG*)&GetWriteableDataForWrite()->m_dwFlags, ~MethodTableWriteableData::enum_flag_IsNotFullyLoaded);
+        FastInterlockAnd(&GetWriteableDataForWrite()->m_dwFlags, ~MethodTableWriteableData::enum_flag_IsNotFullyLoaded);
     }
 
     // Equivalent to GetLoadLevel() == CLASS_LOADED
@@ -911,7 +911,7 @@ public:
         if (canCompare)
         {
             // Set checked and canCompare flags in one interlocked operation.
-            InterlockedOr((LONG*)&GetWriteableDataForWrite_NoLogging()->m_dwFlags,
+            FastInterlockOr(&GetWriteableDataForWrite_NoLogging()->m_dwFlags,
                 MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode | MethodTableWriteableData::enum_flag_CanCompareBitsOrUseFastGetHashCode);
         }
         else
@@ -929,7 +929,7 @@ public:
     inline void SetHasCheckedCanCompareBitsOrUseFastGetHashCode()
     {
         WRAPPER_NO_CONTRACT;
-        InterlockedOr((LONG*)&GetWriteableDataForWrite_NoLogging()->m_dwFlags, MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
+        FastInterlockOr(&GetWriteableDataForWrite_NoLogging()->m_dwFlags, MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
     }
 
     inline void SetIsDependenciesLoaded()
@@ -945,7 +945,7 @@ public:
         PRECONDITION(!HasApproxParent());
         PRECONDITION(IsRestored_NoLogging());
 
-        InterlockedOr((LONG*)&GetWriteableDataForWrite()->m_dwFlags, MethodTableWriteableData::enum_flag_DependenciesLoaded);
+        FastInterlockOr(&GetWriteableDataForWrite()->m_dwFlags, MethodTableWriteableData::enum_flag_DependenciesLoaded);
     }
 
     inline ClassLoadLevel GetLoadLevel()
@@ -1747,7 +1747,7 @@ public:
     inline void SetHasExactParent()
     {
         WRAPPER_NO_CONTRACT;
-        InterlockedAnd((LONG*)&GetWriteableDataForWrite()->m_dwFlags, ~MethodTableWriteableData::enum_flag_HasApproxParent);
+        FastInterlockAnd(&(GetWriteableDataForWrite()->m_dwFlags), ~MethodTableWriteableData::enum_flag_HasApproxParent);
     }
 
 
@@ -2094,15 +2094,13 @@ public:
     // Specify allowVariantMatches to permit generic interface variance
     // Specify uniqueResolution to store the flag saying whether the resolution was unambiguous;
     // when NULL, throw an AmbiguousResolutionException upon hitting ambiguous SVM resolution.
-    // The 'level' parameter specifies the load level for the class containing the resolved MethodDesc.
     MethodDesc *ResolveVirtualStaticMethod(
         MethodTable* pInterfaceType,
         MethodDesc* pInterfaceMD,
         BOOL allowNullResult,
         BOOL verifyImplemented = FALSE,
         BOOL allowVariantMatches = TRUE,
-        BOOL *uniqueResolution = NULL,
-        ClassLoadLevel level = CLASS_LOADED);
+        BOOL *uniqueResolution = NULL);
 
     // Try a partial resolve of the constraint call, up to generic code sharing.
     //
@@ -2181,8 +2179,7 @@ public:
         MethodTable *pObjectMT,
         MethodDesc **ppDefaultMethod,
         BOOL allowVariance,
-        BOOL throwOnConflict,
-        ClassLoadLevel level = CLASS_LOADED);
+        BOOL throwOnConflict);
 #endif // DACCESS_COMPILE
 
     DispatchSlot FindDispatchSlot(UINT32 typeID, UINT32 slotNumber, BOOL throwOnConflict);
@@ -2221,7 +2218,7 @@ public:
 
     // Try to resolve a given static virtual method override on this type. Return nullptr
     // when not found.
-    MethodDesc *TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL verifyImplemented, ClassLoadLevel level);
+    MethodDesc *TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL verifyImplemented);
 
 public:
     static MethodDesc *MapMethodDeclToMethodImpl(MethodDesc *pMDDecl);

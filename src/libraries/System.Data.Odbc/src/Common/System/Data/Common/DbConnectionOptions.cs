@@ -45,7 +45,7 @@ namespace System.Data.Common
         {
             _useOdbcRules = useOdbcRules;
             _parsetable = new Dictionary<string, string?>();
-            _usersConnectionString = connectionString ?? "";
+            _usersConnectionString = ((null != connectionString) ? connectionString : "");
 
             // first pass on parsing, initial syntax check
             if (0 < _usersConnectionString.Length)
@@ -77,13 +77,14 @@ namespace System.Data.Common
             {
                 if (!ConvertValueToIntegratedSecurity())
                 {
-                    if (_parsetable.TryGetValue(KEY.Password, out string? value))
+                    if (_parsetable.ContainsKey(KEY.Password))
                     {
-                        return string.IsNullOrEmpty(value);
+                        return string.IsNullOrEmpty(_parsetable[KEY.Password]);
                     }
-                    else if (_parsetable.TryGetValue(SYNONYM.Pwd, out string? val))
+                    else
+                    if (_parsetable.ContainsKey(SYNONYM.Pwd))
                     {
-                        return string.IsNullOrEmpty(val); // MDAC 83097
+                        return string.IsNullOrEmpty(_parsetable[SYNONYM.Pwd]); // MDAC 83097
                     }
                     else
                     {
@@ -248,7 +249,8 @@ namespace System.Data.Common
 
         public string ConvertValueToString(string keyName, string defaultValue)
         {
-            return _parsetable[keyName] ?? defaultValue;
+            string? value = _parsetable[keyName];
+            return ((null != value) ? value : defaultValue);
         }
 
         public bool ContainsKey(string keyword)

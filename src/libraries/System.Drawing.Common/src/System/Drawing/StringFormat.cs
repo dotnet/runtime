@@ -437,6 +437,6 @@ namespace System.Drawing
         /// <summary>
         /// Converts this <see cref='StringFormat'/> to a human-readable string.
         /// </summary>
-        public override string ToString() => $"[StringFormat, FormatFlags={FormatFlags}]";
+        public override string ToString() => $"[StringFormat, FormatFlags={FormatFlags.ToString()}]";
     }
 }

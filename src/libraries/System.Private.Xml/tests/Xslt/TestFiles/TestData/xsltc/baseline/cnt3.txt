@@ -1,0 +1,5 @@
+Microsoft (R) XSLT Compiler version 2.0.60220
+for Microsoft (R) Windows (R) 2005 Framework version 2.0.50727
+Copyright (C) Microsoft Corporation 2006. All rights reserved.
+
+fatal error : Class name cannot be empty.

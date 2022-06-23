@@ -852,7 +852,7 @@ namespace System.Xml
                 Debug.Assert(!Convert.IsDBNull(row[_column, rowVersion]));
 
                 // If we are on the Text column, we should always have fOnValue == true
-                Debug.Assert((_column.ColumnMapping == MappingType.SimpleContent) ? _fOnValue : true);
+                Debug.Assert((_column.ColumnMapping == MappingType.SimpleContent) ? (_fOnValue == true) : true);
             }
         }
 

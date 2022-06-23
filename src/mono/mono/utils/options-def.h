@@ -57,8 +57,7 @@ DEFINE_BOOL_READONLY(readonly_flag, "readonly-flag", FALSE, "Example")
 #endif
 */
 
-DEFINE_BOOL(wasm_exceptions, "wasm-exceptions", FALSE, "Enable codegen for WASM exceptions")
-DEFINE_BOOL(wasm_gc_safepoints, "wasm-gc-safepoints", FALSE, "Use GC safepoints on WASM")
+DEFINE_BOOL(wasm_exceptions, "wasm-exceptions", FALSE, "Enable codegen for wasm exceptions")
 DEFINE_BOOL(aot_lazy_assembly_load, "aot-lazy-assembly-load", FALSE, "Load assemblies referenced by AOT images lazily")
 
 /* Cleanup */

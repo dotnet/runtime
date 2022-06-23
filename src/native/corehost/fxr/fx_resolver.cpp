@@ -448,7 +448,7 @@ StatusCode fx_resolver_t::read_framework(
                     _X("App: %s\n")
                     _X("Architecture: %s"),
                     app_display_name != nullptr ? app_display_name : host_info.host_path.c_str(),
-                    get_current_arch_name());
+                    get_arch());
                 display_missing_framework_error(fx_name, new_effective_fx_ref.get_fx_version(), pal::string_t(), host_info.dotnet_root, disable_multilevel_lookup);
                 return FrameworkMissingFailure;
             }

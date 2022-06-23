@@ -186,7 +186,7 @@ void Compiler::fgInit()
     fgPgoInlineeNoPgo            = 0;
     fgPgoInlineeNoPgoSingleBlock = 0;
     fgCountInstrumentor          = nullptr;
-    fgHistogramInstrumentor      = nullptr;
+    fgClassInstrumentor          = nullptr;
     fgPredListSortVector         = nullptr;
 }
 

@@ -8,7 +8,9 @@
 #include <crtwrap.h>
 #include "comcache.h"
 #include "runtimecallablewrapper.h"
-#include <mtx.h>
+#include "mtx.h"
+#include "contxt.h"
+#include "ctxtcall.h"
 #include "win32threadpool.h"
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -1100,7 +1102,7 @@ HRESULT IUnkEntry::MarshalIUnknownToStream()
 
     // Try to set the stream in the IUnkEntry. If another thread already set it,
     // then we need to release the stream we just set up.
-    if (InterlockedCompareExchangeT(&m_pStream, pStream, NULL) != NULL)
+    if (FastInterlockCompareExchangePointer(&m_pStream, pStream, NULL) != NULL)
         SafeReleaseStream(pStream);
 
     return hr;
@@ -1248,7 +1250,7 @@ DWORD CtxEntry::AddRef()
     }
     CONTRACTL_END;
 
-    ULONG cbRef = InterlockedIncrement((LONG*)&m_dwRefCount);
+    ULONG cbRef = FastInterlockIncrement((LONG*)&m_dwRefCount);
     LOG((LF_INTEROP, LL_INFO100, "CtxEntry::Addref %8.8x with %d\n", this, cbRef));
     return cbRef;
 }
@@ -1269,7 +1271,7 @@ DWORD CtxEntry::Release()
 
     LPVOID pCtxCookie = m_pCtxCookie;
 
-    LONG cbRef = InterlockedDecrement((LONG*)&m_dwRefCount);
+    LONG cbRef = FastInterlockDecrement((LONG*)&m_dwRefCount);
     LOG((LF_INTEROP, LL_INFO100, "CtxEntry::Release %8.8x with %d\n", this, cbRef));
 
     // If the ref count falls to 0, try and delete the ctx entry.

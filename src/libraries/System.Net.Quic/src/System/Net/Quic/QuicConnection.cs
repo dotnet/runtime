@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net.Quic.Implementations;
-using System.Net.Quic.Implementations.MsQuic;
-using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -13,21 +11,41 @@ namespace System.Net.Quic
 {
     public sealed class QuicConnection : IDisposable
     {
-        public static bool IsSupported => MsQuicApi.IsQuicSupported;
+        private readonly QuicConnectionProvider _provider;
 
-        public static ValueTask<QuicConnection> ConnectAsync(QuicClientConnectionOptions options, CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Create an outbound QUIC connection.
+        /// </summary>
+        /// <param name="remoteEndPoint">The remote endpoint to connect to.</param>
+        /// <param name="sslClientAuthenticationOptions">TLS options</param>
+        /// <param name="localEndPoint">The local endpoint to connect from.</param>
+        public QuicConnection(EndPoint remoteEndPoint, SslClientAuthenticationOptions? sslClientAuthenticationOptions, IPEndPoint? localEndPoint = null)
+            : this(QuicImplementationProviders.Default, remoteEndPoint, sslClientAuthenticationOptions, localEndPoint)
         {
-            if (!IsSupported)
-            {
-                throw new PlatformNotSupportedException(SR.SystemNetQuic_PlatformNotSupported);
-            }
-
-            return ValueTask.FromResult(new QuicConnection(new MsQuicConnection(options)));
         }
 
-        private readonly MsQuicConnection _provider;
+        /// <summary>
+        /// Create an outbound QUIC connection.
+        /// </summary>
+        /// <param name="options">The connection options.</param>
+        public QuicConnection(QuicClientConnectionOptions options)
+            : this(QuicImplementationProviders.Default, options)
+        {
+        }
 
-        internal QuicConnection(MsQuicConnection provider)
+        // !!! TEMPORARY: Remove or make internal before shipping
+        public QuicConnection(QuicImplementationProvider implementationProvider, EndPoint remoteEndPoint, SslClientAuthenticationOptions? sslClientAuthenticationOptions, IPEndPoint? localEndPoint = null)
+            : this(implementationProvider, new QuicClientConnectionOptions() { RemoteEndPoint = remoteEndPoint, ClientAuthenticationOptions = sslClientAuthenticationOptions, LocalEndPoint = localEndPoint })
+        {
+        }
+
+        // !!! TEMPORARY: Remove or make internal before shipping
+        public QuicConnection(QuicImplementationProvider implementationProvider, QuicClientConnectionOptions options)
+        {
+            _provider = implementationProvider.CreateConnection(options);
+        }
+
+        internal QuicConnection(QuicConnectionProvider provider)
         {
             _provider = provider;
         }

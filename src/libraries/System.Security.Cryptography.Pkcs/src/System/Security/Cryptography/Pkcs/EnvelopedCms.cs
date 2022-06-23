@@ -246,7 +246,7 @@ namespace System.Security.Cryptography.Pkcs
         private void DecryptContent(RecipientInfoCollection recipientInfos, X509Certificate2Collection? extraStore)
         {
             CheckStateForDecryption();
-            extraStore ??= new X509Certificate2Collection();
+            extraStore = extraStore ?? new X509Certificate2Collection();
 
             X509Certificate2Collection certs = new X509Certificate2Collection();
             PkcsPal.Instance.AddCertsFromStoreForDecryption(certs);

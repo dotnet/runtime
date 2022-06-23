@@ -29,7 +29,8 @@ namespace System.Linq.Expressions
         private readonly TextWriter _out;
         private int _column;
 
-        private int _depth;
+        private readonly Stack<int> _stack = new Stack<int>();
+        private int _delta;
         private Flow _flow;
 
         // All the unique lambda expressions in the ET, will be used for displaying all
@@ -56,16 +57,20 @@ namespace System.Linq.Expressions
             _out = file;
         }
 
-        private int Depth => _depth;
+        private int Base => _stack.Count > 0 ? _stack.Peek() : 0;
+
+        private int Delta => _delta;
+
+        private int Depth => Base + Delta;
 
         private void Indent()
         {
-            _depth += Tab;
+            _delta += Tab;
         }
 
         private void Dedent()
         {
-            _depth -= Tab;
+            _delta -= Tab;
         }
 
         private void NewLine()
@@ -132,6 +137,7 @@ namespace System.Linq.Expressions
             else
             {
                 Visit(node);
+                Debug.Assert(_stack.Count == 0);
             }
 
             //
@@ -1179,6 +1185,7 @@ namespace System.Linq.Expressions
             Visit(lambda.Body);
             Dedent();
             Out(Flow.NewLine, "}");
+            Debug.Assert(_stack.Count == 0);
         }
 
         private string GetLambdaName(LambdaExpression lambda)

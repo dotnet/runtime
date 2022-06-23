@@ -659,7 +659,7 @@ namespace System.Security.Cryptography
         }
 
         /// <inheritdoc/>
-        public override unsafe void CopyTo(Stream destination, int bufferSize)
+        public unsafe override void CopyTo(Stream destination, int bufferSize)
         {
             CheckCopyToArguments(destination, bufferSize);
 

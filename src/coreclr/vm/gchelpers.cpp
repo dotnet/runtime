@@ -86,7 +86,7 @@ public:
         } CONTRACTL_END;
 
         DWORD spinCount = 0;
-        while(InterlockedExchange(&m_lock, 0) != -1)
+        while(FastInterlockExchange(&m_lock, 0) != -1)
         {
             GCX_PREEMP();
             __SwitchToThread(0, spinCount++);

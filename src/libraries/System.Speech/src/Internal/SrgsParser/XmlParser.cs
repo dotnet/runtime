@@ -175,7 +175,10 @@ namespace System.Speech.Internal.SrgsParser
                 }
 
                 // Parse the token.
-                createTokens?.Invoke(parent, sToken, pronunciation, display, reqConfidence);
+                if (createTokens != null)
+                {
+                    createTokens(parent, sToken, pronunciation, display, reqConfidence);
+                }
             }
         }
 

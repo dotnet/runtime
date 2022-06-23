@@ -3,8 +3,6 @@
     <OutputType>Exe</OutputType>
     <RestorePackages>true</RestorePackages>
     <CLRTestPriority>1</CLRTestPriority>
-    <!-- ildasm cannot support field RVAs precisely -->
-    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>

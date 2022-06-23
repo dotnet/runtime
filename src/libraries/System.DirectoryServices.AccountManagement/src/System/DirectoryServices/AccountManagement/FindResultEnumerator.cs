@@ -26,7 +26,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 CheckDisposed();
 
-                if (_beforeStart || _endReached || _resultSet == null)
+                if (_beforeStart == true || _endReached == true || _resultSet == null)
                 {
                     // Either we're before the beginning or after the end of the collection.
                     GlobalDebug.WriteLineIf(
@@ -84,7 +84,7 @@ namespace System.DirectoryServices.AccountManagement
             lock (_resultSet)
             {
                 // If before the first ResultSet, move to the first ResultSet
-                if (_beforeStart)
+                if (_beforeStart == true)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "FindResultEnumerator", "MoveNext: Moving to first resultSet");
 

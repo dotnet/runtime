@@ -326,10 +326,12 @@ namespace System.Xml.Schema
 
             if (complexType.ContentModel != null)
             { //simpleContent or complexContent
-                if (complexType.ContentModel is XmlSchemaSimpleContent simpleContent)
+                if (complexType.ContentModel is XmlSchemaSimpleContent)
                 {
-                    if (simpleContent.Content is XmlSchemaSimpleContentExtension simpleExtension)
+                    XmlSchemaSimpleContent simpleContent = (XmlSchemaSimpleContent)complexType.ContentModel;
+                    if (simpleContent.Content is XmlSchemaSimpleContentExtension)
                     {
+                        XmlSchemaSimpleContentExtension simpleExtension = (XmlSchemaSimpleContentExtension)simpleContent.Content;
                         CleanupAttributes(simpleExtension.Attributes);
                     }
                     else
@@ -341,8 +343,9 @@ namespace System.Xml.Schema
                 else
                 { // complexType.ContentModel is XmlSchemaComplexContent
                     XmlSchemaComplexContent complexContent = (XmlSchemaComplexContent)complexType.ContentModel;
-                    if (complexContent.Content is XmlSchemaComplexContentExtension complexExtension)
+                    if (complexContent.Content is XmlSchemaComplexContentExtension)
                     {
+                        XmlSchemaComplexContentExtension complexExtension = (XmlSchemaComplexContentExtension)complexContent.Content;
                         CleanupParticle(complexExtension.Particle);
                         CleanupAttributes(complexExtension.Attributes);
                     }
@@ -634,8 +637,9 @@ namespace System.Xml.Schema
             simpleType.IsProcessing = true;
             try
             {
-                if (simpleType.Content is XmlSchemaSimpleTypeList list)
+                if (simpleType.Content is XmlSchemaSimpleTypeList)
                 {
+                    XmlSchemaSimpleTypeList list = (XmlSchemaSimpleTypeList)simpleType.Content;
                     XmlSchemaDatatype datatype;
                     simpleType.SetBaseSchemaType(DatatypeImplementation.AnySimpleType);
                     if (list.ItemTypeName.IsEmpty)
@@ -666,8 +670,9 @@ namespace System.Xml.Schema
                     simpleType.SetDatatype(datatype.DeriveByList(simpleType));
                     simpleType.SetDerivedBy(XmlSchemaDerivationMethod.List);
                 }
-                else if (simpleType.Content is XmlSchemaSimpleTypeRestriction restriction)
+                else if (simpleType.Content is XmlSchemaSimpleTypeRestriction)
                 {
+                    XmlSchemaSimpleTypeRestriction restriction = (XmlSchemaSimpleTypeRestriction)simpleType.Content;
                     XmlSchemaDatatype datatype;
                     if (restriction.BaseTypeName.IsEmpty)
                     {
@@ -827,8 +832,9 @@ namespace System.Xml.Schema
             {
                 if (complexType.ContentModel != null)
                 { //simpleContent or complexContent
-                    if (complexType.ContentModel is XmlSchemaSimpleContent simpleContent)
+                    if (complexType.ContentModel is XmlSchemaSimpleContent)
                     {
+                        XmlSchemaSimpleContent simpleContent = (XmlSchemaSimpleContent)complexType.ContentModel;
                         complexType.SetContentType(XmlSchemaContentType.TextOnly);
                         if (simpleContent.Content is XmlSchemaSimpleContentExtension)
                         {
@@ -1545,12 +1551,14 @@ namespace System.Xml.Schema
             {
                 return false;
             }
-            if (derivedParticle is XmlSchemaElement derivedElem)
+            if (derivedParticle is XmlSchemaElement)
             { //check for derived element being head of substitutionGroup
+                XmlSchemaElement derivedElem = (XmlSchemaElement)derivedParticle;
                 derivedParticle = CannonicalizeElement(derivedElem);
             }
-            if (baseParticle is XmlSchemaElement baseElem)
+            if (baseParticle is XmlSchemaElement)
             {
+                XmlSchemaElement baseElem = (XmlSchemaElement)baseParticle;
                 XmlSchemaParticle newBaseParticle;
                 newBaseParticle = CannonicalizeElement(baseElem);
                 if (newBaseParticle is XmlSchemaChoice)
@@ -2166,7 +2174,7 @@ namespace System.Xml.Schema
 
         private void CompileLocalAttributes(XmlSchemaComplexType? baseType, XmlSchemaComplexType derivedType, XmlSchemaObjectCollection attributes, XmlSchemaAnyAttribute? anyAttribute, XmlSchemaDerivationMethod derivedBy)
         {
-            XmlSchemaAnyAttribute? baseAttributeWildcard = baseType?.AttributeWildcard;
+            XmlSchemaAnyAttribute? baseAttributeWildcard = baseType != null ? baseType.AttributeWildcard : null;
             for (int i = 0; i < attributes.Count; ++i)
             {
                 XmlSchemaAttribute? attr = attributes[i] as XmlSchemaAttribute;
@@ -2735,8 +2743,9 @@ namespace System.Xml.Schema
                     if (decl == null)
                     {
                         Debug.Assert(xe.ElementSchemaType != null);
-                        if (xe.ElementSchemaType is XmlSchemaComplexType complexType)
+                        if (xe.ElementSchemaType is XmlSchemaComplexType)
                         {
+                            XmlSchemaComplexType complexType = (XmlSchemaComplexType)xe.ElementSchemaType;
                             CompileComplexType(complexType);
                             if (complexType.ElementDecl != null)
                             {
@@ -2744,8 +2753,9 @@ namespace System.Xml.Schema
                                 //                                decl.LocalElements = complexType.LocalElementDecls;
                             }
                         }
-                        else if (xe.ElementSchemaType is XmlSchemaSimpleType simpleType)
+                        else if (xe.ElementSchemaType is XmlSchemaSimpleType)
                         {
+                            XmlSchemaSimpleType simpleType = (XmlSchemaSimpleType)xe.ElementSchemaType;
                             CompileSimpleType(simpleType);
                             if (simpleType.ElementDecl != null)
                             {
@@ -2861,8 +2871,9 @@ namespace System.Xml.Schema
                 }
             }
             PushComplexType(complexType);
-            if (particle is XmlSchemaAll all)
+            if (particle is XmlSchemaAll)
             {
+                XmlSchemaAll all = (XmlSchemaAll)particle;
                 AllElementsContentValidator contentValidator = new AllElementsContentValidator(complexType.ContentType, all.Items.Count, all.MinOccurs == decimal.Zero);
                 for (int i = 0; i < all.Items.Count; ++i)
                 {
@@ -2920,8 +2931,9 @@ namespace System.Xml.Schema
         private bool BuildParticleContentModel(ParticleContentValidator contentValidator, XmlSchemaParticle particle)
         {
             bool hasWildCard = false;
-            if (particle is XmlSchemaElement element)
+            if (particle is XmlSchemaElement)
             {
+                XmlSchemaElement element = (XmlSchemaElement)particle;
                 contentValidator.AddName(element.QualifiedName, element);
             }
             else if (particle is XmlSchemaAny)
@@ -2984,8 +2996,9 @@ namespace System.Xml.Schema
 
         private void CompileParticleElements(XmlSchemaComplexType complexType, XmlSchemaParticle particle)
         {
-            if (particle is XmlSchemaElement localElement)
+            if (particle is XmlSchemaElement)
             {
+                XmlSchemaElement localElement = (XmlSchemaElement)particle;
                 CompileElement(localElement);
                 if (complexType.LocalElements[localElement.QualifiedName] == null)
                 {
@@ -3012,8 +3025,9 @@ namespace System.Xml.Schema
 
         private void CompileParticleElements(XmlSchemaParticle particle)
         { //For checking redefined group particle derivation
-            if (particle is XmlSchemaElement localElement)
+            if (particle is XmlSchemaElement)
             {
+                XmlSchemaElement localElement = (XmlSchemaElement)particle;
                 CompileElement(localElement);
             }
             else if (particle is XmlSchemaGroupBase)

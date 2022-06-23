@@ -341,7 +341,7 @@ namespace System.Reflection.Emit
             current.MarkFilterAddr(ILOffset);
         }
 
-        public override void BeginCatchBlock(Type? exceptionType)
+        public override void BeginCatchBlock(Type exceptionType)
         {
             if (CurrExcStackCount == 0)
                 throw new NotSupportedException(SR.Argument_NotInExceptionBlock);

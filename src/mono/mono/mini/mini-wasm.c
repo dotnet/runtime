@@ -11,12 +11,6 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/metadata/components.h>
 
-#ifdef HOST_BROWSER
-#ifndef DISABLE_THREADS
-#include <mono/utils/mono-threads-wasm.h>
-#endif
-#endif
-
 static int mono_wasm_debug_level = 0;
 #ifndef DISABLE_JIT
 
@@ -623,13 +617,7 @@ void
 mono_wasm_set_timeout (int timeout)
 {
 #ifdef HOST_BROWSER
-#ifndef DISABLE_THREADS
-    if (!mono_threads_wasm_is_browser_thread ()) {
-        mono_threads_wasm_async_run_in_main_thread_vi ((void (*)(gpointer))mono_wasm_set_timeout, GINT_TO_POINTER(timeout));
-        return;
-    }
-#endif
-    mono_set_timeout (timeout);
+	mono_set_timeout (timeout);
 #endif
 }
 

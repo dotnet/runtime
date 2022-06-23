@@ -47,7 +47,7 @@ jobs:
     helixQueueGroup: libraries
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
-      timeoutInMinutes: 600
+      timeoutInMinutes: 150
       testScope: innerloop
       liveRuntimeBuildConfig: checked
       dependsOnTestBuildConfiguration: Release

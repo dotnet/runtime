@@ -225,7 +225,7 @@ namespace System.Net.Http.Headers
             }
 
             int current = startIndex + dispositionTypeLength;
-            current += HttpRuleParser.GetWhitespaceLength(input, current);
+            current = current + HttpRuleParser.GetWhitespaceLength(input, current);
             ContentDispositionHeaderValue contentDispositionHeader = new ContentDispositionHeaderValue();
             contentDispositionHeader._dispositionType = dispositionType!;
 

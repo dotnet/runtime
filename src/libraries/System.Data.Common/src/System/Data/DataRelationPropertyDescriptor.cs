@@ -21,9 +21,15 @@ namespace System.Data
 
         public override Type PropertyType => typeof(IBindingList);
 
-        public override bool Equals([NotNullWhen(true)] object? other) =>
-            other is DataRelationPropertyDescriptor descriptor &&
-            descriptor.Relation == Relation;
+        public override bool Equals([NotNullWhen(true)] object? other)
+        {
+            if (other is DataRelationPropertyDescriptor)
+            {
+                DataRelationPropertyDescriptor descriptor = (DataRelationPropertyDescriptor)other;
+                return (descriptor.Relation == Relation);
+            }
+            return false;
+        }
 
         public override int GetHashCode() => Relation.GetHashCode();
 

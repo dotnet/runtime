@@ -8,9 +8,8 @@ using Xunit.Abstractions;
 
 namespace System.Net.Quic.Tests
 {
-    [Collection(nameof(DisableParallelization))]
-    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported))]
-    public sealed class QuicConnectionTests : QuicTestBase
+    public abstract class QuicConnectionTests<T> : QuicTestBase<T>
+        where T : IQuicImplProviderFactory, new()
     {
         const int ExpectedErrorCode = 1234;
 
@@ -19,9 +18,9 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task TestConnect()
         {
-            using QuicListener listener = await CreateQuicListener();
+            using QuicListener listener = CreateQuicListener();
 
-            using QuicConnection clientConnection = await CreateQuicConnection(listener.ListenEndPoint);
+            using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
 
             Assert.False(clientConnection.Connected);
             Assert.Equal(listener.ListenEndPoint, clientConnection.RemoteEndPoint);
@@ -83,8 +82,16 @@ namespace System.Net.Quic.Tests
 
                     // Subsequent attempts should fail
                     // TODO: Which exception is correct?
-                    await Assert.ThrowsAsync<QuicOperationAbortedException>(async () => await serverConnection.AcceptStreamAsync());
-                    await Assert.ThrowsAnyAsync<QuicException>(() => OpenAndUseStreamAsync(serverConnection));
+                    if (IsMockProvider)
+                    {
+                        await Assert.ThrowsAsync<ObjectDisposedException>(async () => await serverConnection.AcceptStreamAsync());
+                        await Assert.ThrowsAsync<ObjectDisposedException>(async () => await OpenAndUseStreamAsync(serverConnection));
+                    }
+                    else
+                    {
+                        await Assert.ThrowsAsync<QuicOperationAbortedException>(async () => await serverConnection.AcceptStreamAsync());
+                        await Assert.ThrowsAnyAsync<QuicException>(() => OpenAndUseStreamAsync(serverConnection));
+                    }
                 });
         }
 
@@ -129,6 +136,11 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task ConnectionClosedByPeer_WithPendingAcceptAndConnect_PendingAndSubsequentThrowConnectionAbortedException()
         {
+            if (IsMockProvider)
+            {
+                return;
+            }
+
             using var sync = new SemaphoreSlim(0);
 
             await RunClientServer(
@@ -186,6 +198,11 @@ namespace System.Net.Quic.Tests
         [InlineData(10)]
         public async Task CloseAsync_WithOpenStream_LocalAndPeerStreamsFailWithQuicOperationAbortedException(int writesBeforeClose)
         {
+            if (IsMockProvider)
+            {
+                return;
+            }
+
             using var sync = new SemaphoreSlim(0);
 
             await RunClientServer(
@@ -224,6 +241,11 @@ namespace System.Net.Quic.Tests
         [InlineData(10)]
         public async Task Dispose_WithOpenLocalStream_LocalStreamFailsWithQuicOperationAbortedException(int writesBeforeClose)
         {
+            if (IsMockProvider)
+            {
+                return;
+            }
+
             // Set a short idle timeout so that after we dispose the connection, the peer will discover the connection is dead before too long.
             QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
             listenerOptions.IdleTimeout = TimeSpan.FromSeconds(1);
@@ -257,5 +279,19 @@ namespace System.Net.Quic.Tests
                     await Assert.ThrowsAsync<QuicConnectionAbortedException>(async () => await serverStream.WriteAsync(new byte[1]));
                 }, listenerOptions: listenerOptions);
         }
+    }
+
+    [ConditionalClass(typeof(QuicTestBase<MockProviderFactory>), nameof(QuicTestBase<MockProviderFactory>.IsSupported))]
+    public sealed class QuicConnectionTests_MockProvider : QuicConnectionTests<MockProviderFactory>
+    {
+        public QuicConnectionTests_MockProvider(ITestOutputHelper output) : base(output) { }
+    }
+
+    [ConditionalClass(typeof(QuicTestBase<MsQuicProviderFactory>), nameof(QuicTestBase<MsQuicProviderFactory>.IsSupported))]
+    [Collection(nameof(DisableParallelization))]
+
+    public sealed class QuicConnectionTests_MsQuicProvider : QuicConnectionTests<MsQuicProviderFactory>
+    {
+        public QuicConnectionTests_MsQuicProvider(ITestOutputHelper output) : base(output) { }
     }
 }

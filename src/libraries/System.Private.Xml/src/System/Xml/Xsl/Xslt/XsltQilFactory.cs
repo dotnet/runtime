@@ -7,10 +7,11 @@ using System.Xml.Schema;
 using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.Runtime;
 using System.Xml.Xsl.XPath;
-using T = System.Xml.Xsl.XmlQueryTypeFactory;
 
 namespace System.Xml.Xsl.Xslt
 {
+    using T = XmlQueryTypeFactory;
+
     internal sealed class XsltQilFactory : XPathQilFactory
     {
         public XsltQilFactory(QilFactory f, bool debug) : base(f, debug) { }

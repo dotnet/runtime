@@ -3291,7 +3291,7 @@ namespace System.Net.Sockets
                 // DualMode: When bound to IPv6Any you must enable both socket options.
                 // When bound to an IPv4 mapped IPv6 address you must enable the IPv4 socket option.
                 IPEndPoint? ipEndPoint = _rightEndPoint as IPEndPoint;
-                IPAddress? boundAddress = ipEndPoint?.Address;
+                IPAddress? boundAddress = (ipEndPoint != null ? ipEndPoint.Address : null);
                 Debug.Assert(boundAddress != null, "Not Bound");
                 if (_addressFamily == AddressFamily.InterNetwork)
                 {

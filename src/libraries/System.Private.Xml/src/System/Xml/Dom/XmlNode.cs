@@ -1166,7 +1166,8 @@ namespace System.Xml
         // the prefix defined in that declaration.
         public virtual string GetPrefixOfNamespace(string namespaceURI)
         {
-            return GetPrefixOfNamespaceStrict(namespaceURI) ?? string.Empty;
+            string? prefix = GetPrefixOfNamespaceStrict(namespaceURI);
+            return prefix != null ? prefix : string.Empty;
         }
 
         internal string? GetPrefixOfNamespaceStrict(string namespaceURI)

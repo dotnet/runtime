@@ -39,8 +39,6 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        public override EmbeddedSignatureData[] GetEmbeddedSignatureData() => null;
-
         public override bool HasRva
         {
             get

@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net.Quic.Implementations;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -16,12 +17,18 @@ using System.Net.Sockets;
 
 namespace System.Net.Quic.Tests
 {
-    public abstract class QuicTestBase
+    public abstract class QuicTestBase<T>
+        where T : IQuicImplProviderFactory, new()
     {
         private static readonly byte[] s_ping = "PING"u8.ToArray();
         private static readonly byte[] s_pong = "PONG"u8.ToArray();
+        private static readonly IQuicImplProviderFactory s_factory = new T();
 
-        public static bool IsSupported => QuicListener.IsSupported && QuicConnection.IsSupported;
+        public static QuicImplementationProvider ImplementationProvider { get; } = s_factory.GetProvider();
+        public static bool IsSupported => ImplementationProvider.IsSupported;
+
+        public static bool IsMockProvider => typeof(T) == typeof(MockProviderFactory);
+        public static bool IsMsQuicProvider => typeof(T) == typeof(MsQuicProviderFactory);
 
         public static SslApplicationProtocol ApplicationProtocol { get; } = new SslApplicationProtocol("quictest");
 
@@ -69,16 +76,14 @@ namespace System.Net.Quic.Tests
             };
         }
 
-        internal ValueTask<QuicConnection> CreateQuicConnection(IPEndPoint endpoint)
+        internal QuicConnection CreateQuicConnection(IPEndPoint endpoint)
         {
-            var options = CreateQuicClientOptions();
-            options.RemoteEndPoint = endpoint;
-            return CreateQuicConnection(options);
+            return new QuicConnection(ImplementationProvider, endpoint, GetSslClientAuthenticationOptions());
         }
 
-        internal ValueTask<QuicConnection> CreateQuicConnection(QuicClientConnectionOptions clientOptions)
+        internal QuicConnection CreateQuicConnection(QuicClientConnectionOptions clientOptions)
         {
-            return QuicConnection.ConnectAsync(clientOptions);
+            return new QuicConnection(ImplementationProvider, clientOptions);
         }
 
         internal QuicListenerOptions CreateQuicListenerOptions()
@@ -90,7 +95,7 @@ namespace System.Net.Quic.Tests
             };
         }
 
-        internal ValueTask<QuicListener> CreateQuicListener(int maxUnidirectionalStreams = 100, int maxBidirectionalStreams = 100)
+        internal QuicListener CreateQuicListener(int maxUnidirectionalStreams = 100, int maxBidirectionalStreams = 100)
         {
             var options = CreateQuicListenerOptions();
             options.MaxUnidirectionalStreams = maxUnidirectionalStreams;
@@ -99,7 +104,7 @@ namespace System.Net.Quic.Tests
             return CreateQuicListener(options);
         }
 
-        internal ValueTask<QuicListener> CreateQuicListener(IPEndPoint endpoint)
+        internal QuicListener CreateQuicListener(IPEndPoint endpoint)
         {
             var options = new QuicListenerOptions()
             {
@@ -109,12 +114,12 @@ namespace System.Net.Quic.Tests
             return CreateQuicListener(options);
         }
 
-        internal ValueTask<QuicListener> CreateQuicListener(QuicListenerOptions options) => QuicListener.ListenAsync(options);
+        internal QuicListener CreateQuicListener(QuicListenerOptions options) => new QuicListener(ImplementationProvider, options);
 
         internal Task<(QuicConnection, QuicConnection)> CreateConnectedQuicConnection(QuicListener listener) => CreateConnectedQuicConnection(null, listener);
         internal async Task<(QuicConnection, QuicConnection)> CreateConnectedQuicConnection(QuicClientConnectionOptions? clientOptions, QuicListenerOptions listenerOptions)
         {
-            using (QuicListener listener = await CreateQuicListener(listenerOptions))
+            using (QuicListener listener = CreateQuicListener(listenerOptions))
             {
                 clientOptions ??= new QuicClientConnectionOptions()
                 {
@@ -133,7 +138,7 @@ namespace System.Net.Quic.Tests
 
             if (listener == null)
             {
-                listener = await CreateQuicListener();
+                listener = CreateQuicListener();
                 disposeListener = true;
             }
 
@@ -147,7 +152,7 @@ namespace System.Net.Quic.Tests
             ValueTask<QuicConnection> serverTask = listener.AcceptConnectionAsync();
             while (retry > 0)
             {
-                clientConnection = await CreateQuicConnection(clientOptions);
+                clientConnection = CreateQuicConnection(clientOptions);
                 retry--;
                 try
                 {
@@ -215,7 +220,7 @@ namespace System.Net.Quic.Tests
             const long ClientCloseErrorCode = 11111;
             const long ServerCloseErrorCode = 22222;
 
-            using QuicListener listener = await CreateQuicListener(listenerOptions ?? CreateQuicListenerOptions());
+            using QuicListener listener = CreateQuicListener(listenerOptions ?? CreateQuicListenerOptions());
 
             using var serverFinished = new SemaphoreSlim(0);
             using var clientFinished = new SemaphoreSlim(0);
@@ -318,5 +323,20 @@ namespace System.Net.Quic.Tests
                 ArrayPool<byte>.Shared.Return(buffer);
             }
         }
+    }
+
+    public interface IQuicImplProviderFactory
+    {
+        QuicImplementationProvider GetProvider();
+    }
+
+    public sealed class MsQuicProviderFactory : IQuicImplProviderFactory
+    {
+        public QuicImplementationProvider GetProvider() => QuicImplementationProviders.MsQuic;
+    }
+
+    public sealed class MockProviderFactory : IQuicImplProviderFactory
+    {
+        public QuicImplementationProvider GetProvider() => QuicImplementationProviders.Mock;
     }
 }

@@ -237,7 +237,7 @@ namespace System.Diagnostics
             if (category == null)
                 Write(message);
             else
-                Write(category + ": " + (message ?? string.Empty));
+                Write(category + ": " + ((message == null) ? string.Empty : message));
         }
 
         /// <devdoc>
@@ -310,7 +310,7 @@ namespace System.Diagnostics
             if (category == null)
                 WriteLine(message);
             else
-                WriteLine(category + ": " + (message ?? string.Empty));
+                WriteLine(category + ": " + ((message == null) ? string.Empty : message));
         }
 
         /// <devdoc>

@@ -338,7 +338,7 @@ namespace System.Net.Http.Headers
             {
                 foreach (var noCacheHeader in _noCacheHeaders)
                 {
-                    result ^= StringComparer.OrdinalIgnoreCase.GetHashCode(noCacheHeader);
+                    result = result ^ StringComparer.OrdinalIgnoreCase.GetHashCode(noCacheHeader);
                 }
             }
 
@@ -346,7 +346,7 @@ namespace System.Net.Http.Headers
             {
                 foreach (var privateHeader in _privateHeaders)
                 {
-                    result ^= StringComparer.OrdinalIgnoreCase.GetHashCode(privateHeader);
+                    result = result ^ StringComparer.OrdinalIgnoreCase.GetHashCode(privateHeader);
                 }
             }
 
@@ -354,7 +354,7 @@ namespace System.Net.Http.Headers
             {
                 foreach (var extension in _extensions)
                 {
-                    result ^= extension.GetHashCode();
+                    result = result ^ extension.GetHashCode();
                 }
             }
 
@@ -568,7 +568,7 @@ namespace System.Net.Http.Headers
                 destination ??= new TokenObjectCollection();
                 destination.Add(valueString.Substring(current, tokenLength));
 
-                current += tokenLength;
+                current = current + tokenLength;
             }
 
             // After parsing a valid token list, we expect to have at least one value

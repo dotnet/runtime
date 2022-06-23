@@ -17,7 +17,6 @@ class Program
         TestAbstractNeverDerivedWithDevirtualizedCall.Run();
         TestAbstractDerivedByUnrelatedTypeWithDevirtualizedCall.Run();
         TestUnusedDefaultInterfaceMethod.Run();
-        TestArrayElementTypeOperations.Run();
 
         return 100;
     }
@@ -48,7 +47,9 @@ class Program
             public Type DoSomething() => typeof(UnreferencedType);
         }
 
-#if !DEBUG
+#if DEBUG
+        static NeverAllocatedType s_instance = null;
+#else
         static object s_instance = new object[10];
 #endif
 
@@ -57,9 +58,8 @@ class Program
             Console.WriteLine("Testing instance methods on unallocated types");
 
 #if DEBUG
-            NeverAllocatedType instance = null;
-            if (instance != null)
-                instance.DoSomething();
+            if (s_instance != null)
+                s_instance.DoSomething();
 #else
             // In release builds additionally test that the "is" check didn't introduce the constructed type
             if (s_instance is NeverAllocatedType never)
@@ -220,60 +220,6 @@ class Program
         }
     }
 
-    class TestArrayElementTypeOperations
-    {
-        public static void Run()
-        {
-            Console.WriteLine("Testing array element type optimizations");
-
-            // We consider valuetype elements of arrays constructed...
-            {
-                Array arr = new NeverAllocated1[1];
-                ThrowIfNotPresent(typeof(TestArrayElementTypeOperations), nameof(Marker1));
-
-                // The reason they're considered constructed is runtime magic here
-                // Make sure that works too.
-                object o = arr.GetValue(0);
-                if (!o.ToString().Contains(nameof(Marker1)))
-                    throw new Exception();
-            }
-
-            // ...but not nullable...
-            {
-                Array arr = new Nullable<NeverAllocated2>[1];
-                arr.GetValue(0);
-                ThrowIfPresent(typeof(TestArrayElementTypeOperations), nameof(Marker2));
-            }
-
-
-            // ...or reference type element types
-            {
-                Array arr = new NeverAllocated3[1];
-                arr.GetValue(0);
-                ThrowIfPresent(typeof(TestArrayElementTypeOperations), nameof(Marker3));
-            }
-        }
-
-        class Marker1 { }
-        struct NeverAllocated1
-        {
-            public override string ToString() => typeof(Marker1).ToString();
-        }
-
-        class Marker2 { }
-        struct NeverAllocated2
-        {
-            public override string ToString() => typeof(Marker2).ToString();
-        }
-
-        class Marker3 { }
-        class NeverAllocated3
-        {
-            public override string ToString() => typeof(Marker3).ToString();
-        }
-    }
-
-
     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
         Justification = "That's the point")]
     private static bool IsTypePresent(Type testType, string typeName) => testType.GetNestedType(typeName, BindingFlags.NonPublic | BindingFlags.Public) != null;
@@ -281,14 +227,6 @@ class Program
     private static void ThrowIfPresent(Type testType, string typeName)
     {
         if (IsTypePresent(testType, typeName))
-        {
-            throw new Exception(typeName);
-        }
-    }
-
-    private static void ThrowIfNotPresent(Type testType, string typeName)
-    {
-        if (!IsTypePresent(testType, typeName))
         {
             throw new Exception(typeName);
         }

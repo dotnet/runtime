@@ -654,7 +654,7 @@ ExecutionManager::ReaderLockHolder::ReaderLockHolder(HostCallPreference hostCall
 
     IncCantAllocCount();
 
-    InterlockedIncrement(&m_dwReaderCount);
+    FastInterlockIncrement(&m_dwReaderCount);
 
     EE_LOCK_TAKEN(GetPtrForLockContract());
 
@@ -687,7 +687,7 @@ ExecutionManager::ReaderLockHolder::~ReaderLockHolder()
     }
     CONTRACTL_END;
 
-    InterlockedDecrement(&m_dwReaderCount);
+    FastInterlockDecrement(&m_dwReaderCount);
     DecCantAllocCount();
 
     EE_LOCK_RELEASED(GetPtrForLockContract());
@@ -725,10 +725,10 @@ ExecutionManager::WriterLockHolder::WriterLockHolder()
         // or allow a profiler to walk its stack
         Thread::IncForbidSuspendThread();
 
-        InterlockedIncrement(&m_dwWriterLock);
+        FastInterlockIncrement(&m_dwWriterLock);
         if (m_dwReaderCount == 0)
             break;
-        InterlockedDecrement(&m_dwWriterLock);
+        FastInterlockDecrement(&m_dwWriterLock);
 
         // Before we loop and retry, it's safe to suspend or hijack and inspect
         // this thread
@@ -743,7 +743,7 @@ ExecutionManager::WriterLockHolder::~WriterLockHolder()
 {
     LIMITED_METHOD_CONTRACT;
 
-    InterlockedDecrement(&m_dwWriterLock);
+    FastInterlockDecrement(&m_dwWriterLock);
 
     // Writer lock released, so it's safe again for this thread to be
     // suspended or have its stack walked by a profiler
@@ -1552,29 +1552,6 @@ void EEJitManager::SetCpuInfo()
     {
         CPUCompileFlags.Set(InstructionSet_Crc32);
     }
-
-// Older version of SDK would return false for these intrinsics
-// but make sure we pass the right values to the APIs
-#ifndef PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE
-#define PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE 34
-#endif
-#ifndef PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE
-# define PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE 43
-#endif
-
-    // PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE (34)
-    if (IsProcessorFeaturePresent(PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE))
-    {
-        CPUCompileFlags.Set(InstructionSet_Atomics);
-        g_arm64_atomics_present = true;
-    }
-
-    // PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE (43)
-    if (IsProcessorFeaturePresent(PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE))
-    {
-        CPUCompileFlags.Set(InstructionSet_Dp);
-    }
-
 #endif // HOST_64BIT
     if (GetDataCacheZeroIDReg() == 4)
     {

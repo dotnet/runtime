@@ -14,10 +14,11 @@ using System.Xml.XPath;
 using System.Runtime.Versioning;
 using System.Diagnostics.CodeAnalysis;
 using System.Xml.Xsl.Xslt;
-using System.Reflection;
 
 namespace System.Xml.Xsl.Runtime
 {
+    using Reflection;
+
     /// <summary>
     /// The context of a query consists of all user-provided information which influences the operation of the
     /// query. The context manages the following information:
@@ -93,7 +94,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public XmlNameTable DefaultNameTable
         {
-            get { return _defaultDataSource?.NameTable; }
+            get { return _defaultDataSource != null ? _defaultDataSource.NameTable : null; }
         }
 
         /// <summary>
@@ -170,7 +171,7 @@ namespace System.Xml.Xsl.Runtime
             if (stream != null)
             {
                 // Create document from stream
-                XmlReader reader = _readerSettings.CreateReader(stream, uriResolved?.ToString());
+                XmlReader reader = _readerSettings.CreateReader(stream, uriResolved != null ? uriResolved.ToString() : null);
 
                 try
                 {
@@ -212,7 +213,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public object GetParameter(string localName, string namespaceUri)
         {
-            return _argList?.GetParam(localName, namespaceUri);
+            return (_argList != null) ? _argList.GetParam(localName, namespaceUri) : null;
         }
 
 
@@ -227,7 +228,7 @@ namespace System.Xml.Xsl.Runtime
             Justification = XsltArgumentList.ExtensionObjectSuppresion)]
         public object GetLateBoundObject(string namespaceUri)
         {
-            return _argList?.GetExtensionObject(namespaceUri);
+            return (_argList != null) ? _argList.GetExtensionObject(namespaceUri) : null;
         }
 
         /// <summary>
@@ -262,7 +263,7 @@ namespace System.Xml.Xsl.Runtime
             object objRet;
 
             // Get external object instance from argument list (throw if either the list or the instance doesn't exist)
-            instance = _argList?.GetExtensionObject(namespaceUri);
+            instance = (_argList != null) ? _argList.GetExtensionObject(namespaceUri) : null;
             if (instance == null)
                 throw new XslTransformException(SR.XmlIl_UnknownExtObj, namespaceUri);
 
@@ -330,7 +331,10 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public void OnXsltMessageEncountered(string message)
         {
-            _argList?.xsltMessageEncountered?.Invoke(this, new XmlILQueryEventArgs(message));
+            XsltMessageEncounteredEventHandler onMessage = (_argList != null) ? _argList.xsltMessageEncountered : null;
+
+            if (onMessage != null)
+                onMessage(this, new XmlILQueryEventArgs(message));
         }
     }
 

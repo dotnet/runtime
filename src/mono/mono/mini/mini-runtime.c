@@ -1867,12 +1867,13 @@ void
 mini_init_gsctx (MonoMemPool *mp, MonoGenericContext *context, MonoGenericSharingContext *gsctx)
 {
 	MonoGenericInst *inst;
+	int i;
 
 	memset (gsctx, 0, sizeof (MonoGenericSharingContext));
 
 	if (context && context->class_inst) {
 		inst = context->class_inst;
-		for (guint i = 0; i < inst->type_argc; ++i) {
+		for (i = 0; i < inst->type_argc; ++i) {
 			MonoType *type = inst->type_argv [i];
 
 			if (mini_is_gsharedvt_gparam (type))
@@ -1882,7 +1883,7 @@ mini_init_gsctx (MonoMemPool *mp, MonoGenericContext *context, MonoGenericSharin
 	if (context && context->method_inst) {
 		inst = context->method_inst;
 
-		for (guint i = 0; i < inst->type_argc; ++i) {
+		for (i = 0; i < inst->type_argc; ++i) {
 			MonoType *type = inst->type_argv [i];
 
 			if (mini_is_gsharedvt_gparam (type))
@@ -2252,7 +2253,8 @@ unlock_compilation_data (void)
 static JitCompilationEntry*
 find_method (MonoMethod *method)
 {
-	for (guint i = 0; i < compilation_data.in_flight_methods->len; ++i){
+	int i;
+	for (i = 0; i < compilation_data.in_flight_methods->len; ++i){
 		JitCompilationEntry *e = (JitCompilationEntry*)compilation_data.in_flight_methods->pdata [i];
 		if (e->method == method)
 			return e;
@@ -4186,7 +4188,7 @@ mini_create_ftnptr (gpointer addr)
 	mono_jit_unlock ();
 	if (desc)
 		return desc;
-#if defined(TARGET_POWERPC64)
+#if defined(__mono_ppc64__)
 	desc = mono_mem_manager_alloc0 (jit_mm->mem_manager, 3 * sizeof (gpointer));
 
 	desc [0] = addr;
@@ -5155,7 +5157,7 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 	GHashTable *assemblies = (GHashTable*)user_data;
 	MonoImage *image = mono_assembly_get_image_internal (ass);
 	MonoMethod *method, *invoke;
-	int count = 0;
+	int i, count = 0;
 
 	if (g_hash_table_lookup (assemblies, ass))
 		return;
@@ -5165,7 +5167,7 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 	if (mini_verbose > 0)
 		printf ("PRECOMPILE: %s.\n", mono_image_get_filename (image));
 
-	for (guint32 i = 0; i < table_info_get_rows (&image->tables [MONO_TABLE_METHOD]); ++i) {
+	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
 		ERROR_DECL (error);
 
 		method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, error);
@@ -5197,7 +5199,7 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 	}
 
 	/* Load and precompile referenced assemblies as well */
-	for (guint32 i = 0; i < table_info_get_rows (&image->tables [MONO_TABLE_ASSEMBLYREF]); ++i) {
+	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_ASSEMBLYREF); ++i) {
 		mono_assembly_load_reference (image, i);
 		if (image->references [i])
 			mono_precompile_assembly (image->references [i], assemblies);

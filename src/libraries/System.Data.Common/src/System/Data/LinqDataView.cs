@@ -63,7 +63,7 @@ namespace System.Data
                 comparison,
                 DataViewRowState.CurrentRows)
         {
-            this.sortExpressionBuilder = sortExpressionBuilder ?? this.sortExpressionBuilder;
+            this.sortExpressionBuilder = (sortExpressionBuilder == null) ? this.sortExpressionBuilder : sortExpressionBuilder;
             this.comparerKeyRow = comparerKeyRow;
         }
 

@@ -395,7 +395,8 @@ namespace System.Security.Cryptography.Xml
                         {
                             // If we get here, then we are constructing a Reference to an embedded DataObject
                             // referenced by an Id = attribute. Go find the relevant object
-                            string idref = Utils.GetIdFromLocalUri(_uri, out bool discardComments);
+                            bool discardComments = true;
+                            string idref = Utils.GetIdFromLocalUri(_uri, out discardComments);
                             if (idref == "xpointer(/)")
                             {
                                 // This is a self referencial case

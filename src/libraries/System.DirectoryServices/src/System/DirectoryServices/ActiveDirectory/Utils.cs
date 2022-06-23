@@ -705,7 +705,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             if (result != 0)
             {
-                throw ExceptionHelper.GetExceptionFromErrorCode(result, domainControllerName ?? domainName);
+                throw ExceptionHelper.GetExceptionFromErrorCode(result, (domainControllerName != null) ? domainControllerName : domainName);
             }
             return handle;
         }
@@ -1951,7 +1951,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             //extract IPv6 port number if any
             bool isBrace = serverName.StartsWith("[", StringComparison.Ordinal);
-            if (isBrace)
+            if (isBrace == true)
             {
                 if (serverName.EndsWith("]", StringComparison.Ordinal))
                 {
@@ -2049,7 +2049,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     bool success = global::Interop.Advapi32.EqualDomainSid(pCopyOfUserSid, pMachineDomainSid, ref sameDomain);
 
                     // Since both pCopyOfUserSid and pMachineDomainSid should always be account SIDs
-                    Debug.Assert(success);
+                    Debug.Assert(success == true);
 
                     // If user SID is the same domain as the machine domain, and the machine is not a DC then the user is a local (machine) user
                     return sameDomain ? !IsMachineDC(null) : false;

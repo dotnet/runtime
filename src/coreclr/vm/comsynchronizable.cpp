@@ -295,7 +295,7 @@ void ThreadNative::Start(Thread* pNewThread, int threadStackSize, int priority, 
     pNewThread->SetThreadPriority(MapToNTPriority(priority));
     pNewThread->ChooseThreadCPUGroupAffinity();
 
-    pNewThread->SetThreadState(Thread::TS_LegalToJoin);
+    FastInterlockOr((ULONG *) &pNewThread->m_State, Thread::TS_LegalToJoin);
 
     DWORD ret = pNewThread->StartThread();
 
@@ -463,6 +463,7 @@ FCIMPL2(FC_BOOL_RET, ThreadNative::Join, ThreadBaseObject* pThisUNSAFE, INT32 Ti
 }
 FCIMPLEND
 
+#undef Sleep
 FCIMPL1(void, ThreadNative::Sleep, INT32 iTime)
 {
     FCALL_CONTRACT;
@@ -474,6 +475,8 @@ FCIMPL1(void, ThreadNative::Sleep, INT32 iTime)
     HELPER_METHOD_FRAME_END();
 }
 FCIMPLEND
+
+#define Sleep(dwMilliseconds) Dont_Use_Sleep(dwMilliseconds)
 
 extern "C" void QCALLTYPE ThreadNative_UninterruptibleSleep0()
 {

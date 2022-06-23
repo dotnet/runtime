@@ -18,7 +18,7 @@ namespace System.Reflection.Internal
             _length = length;
         }
 
-        public override unsafe int ReadByte()
+        public unsafe override int ReadByte()
         {
             if (_position >= _length)
             {

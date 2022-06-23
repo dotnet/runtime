@@ -31,10 +31,10 @@ namespace System.IO.Strategies
                 new AsyncWindowsFileStreamStrategy(handle, access) :
                 new SyncWindowsFileStreamStrategy(handle, access);
 
-        private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize, UnixFileMode? unixCreateMode) =>
+        private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize) =>
             (options & FileOptions.Asynchronous) != 0 ?
-                new AsyncWindowsFileStreamStrategy(path, mode, access, share, options, preallocationSize, unixCreateMode) :
-                new SyncWindowsFileStreamStrategy(path, mode, access, share, options, preallocationSize, unixCreateMode);
+                new AsyncWindowsFileStreamStrategy(path, mode, access, share, options, preallocationSize) :
+                new SyncWindowsFileStreamStrategy(path, mode, access, share, options, preallocationSize);
 
         internal static void FlushToDisk(SafeFileHandle handle)
         {

@@ -115,7 +115,7 @@ namespace System.Net.Http
                     if (reader.TryCopyTo(temp))
                     {
                         bool result = TryRead(temp, out value, out int bytesRead);
-                        Debug.Assert(result);
+                        Debug.Assert(result == true);
                         Debug.Assert(bytesRead == length);
 
                         reader.Advance(bytesRead);
@@ -190,7 +190,7 @@ namespace System.Net.Http
         public static int WriteInteger(Span<byte> buffer, long longToEncode)
         {
             bool res = TryWrite(buffer, longToEncode, out int bytesWritten);
-            Debug.Assert(res);
+            Debug.Assert(res == true);
             return bytesWritten;
         }
 

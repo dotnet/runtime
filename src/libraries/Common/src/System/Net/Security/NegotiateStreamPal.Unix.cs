@@ -97,7 +97,7 @@ namespace System.Net.Security
             ChannelBinding? channelBinding,
             SafeGssNameHandle? targetName,
             Interop.NetSecurityNative.GssFlags inFlags,
-            ReadOnlySpan<byte> buffer,
+            byte[]? buffer,
             out byte[]? outputBuffer,
             out uint outFlags,
             out bool isNtlmUsed)
@@ -139,6 +139,7 @@ namespace System.Net.Security
                                                                       targetName,
                                                                       (uint)inFlags,
                                                                       buffer,
+                                                                      (buffer == null) ? 0 : buffer.Length,
                                                                       ref token,
                                                                       out outFlags,
                                                                       out isNtlmUsed);
@@ -152,6 +153,7 @@ namespace System.Net.Security
                                                                       targetName,
                                                                       (uint)inFlags,
                                                                       buffer,
+                                                                      (buffer == null) ? 0 : buffer.Length,
                                                                       ref token,
                                                                       out outFlags,
                                                                       out isNtlmUsed);
@@ -181,7 +183,7 @@ namespace System.Net.Security
         private static bool GssAcceptSecurityContext(
             ref SafeGssContextHandle? context,
             SafeGssCredHandle credential,
-            ReadOnlySpan<byte> buffer,
+            byte[]? buffer,
             out byte[] outputBuffer,
             out uint outFlags,
             out bool isNtlmUsed)
@@ -205,6 +207,7 @@ namespace System.Net.Security
                                                                     credential,
                                                                     ref context,
                                                                     buffer,
+                                                                    buffer?.Length ?? 0,
                                                                     ref token,
                                                                     out outFlags,
                                                                     out isNtlmUsed);
@@ -273,7 +276,7 @@ namespace System.Net.Security
           ChannelBinding? channelBinding,
           string? targetName,
           ContextFlagsPal inFlags,
-          ReadOnlySpan<byte> incomingBlob,
+          byte[]? incomingBlob,
           ref byte[]? resultBuffer,
           ref ContextFlagsPal outFlags)
         {
@@ -351,7 +354,7 @@ namespace System.Net.Security
             ref SafeDeleteContext? securityContext,
             string? spn,
             ContextFlagsPal requestedContextFlags,
-            ReadOnlySpan<byte> incomingBlob,
+            byte[]? incomingBlob,
             ChannelBinding? channelBinding,
             ref byte[]? resultBlob,
             ref ContextFlagsPal contextFlags)
@@ -373,6 +376,16 @@ namespace System.Net.Security
                 ref resultBlob,
                 ref contextFlags);
 
+            // Confidentiality flag should not be set if not requested
+            if (status.ErrorCode == SecurityStatusPalErrorCode.CompleteNeeded)
+            {
+                ContextFlagsPal mask = ContextFlagsPal.Confidentiality;
+                if ((requestedContextFlags & mask) != (contextFlags & mask))
+                {
+                    throw new PlatformNotSupportedException(SR.net_nego_protection_level_not_supported);
+                }
+            }
+
             return status;
         }
 
@@ -380,7 +393,7 @@ namespace System.Net.Security
             SafeFreeCredentials? credentialsHandle,
             ref SafeDeleteContext? securityContext,
             ContextFlagsPal requestedContextFlags,
-            ReadOnlySpan<byte> incomingBlob,
+            byte[]? incomingBlob,
             ChannelBinding? channelBinding,
             ref byte[] resultBlob,
             ref ContextFlagsPal contextFlags)
@@ -512,12 +525,6 @@ namespace System.Net.Security
             {
                 // NTLM authentication is not possible with default credentials which are no-op
                 throw new PlatformNotSupportedException(SR.net_ntlm_not_possible_default_cred);
-            }
-
-            if (!ntlmOnly && !string.Equals(package, NegotiationInfoClass.Negotiate))
-            {
-                // Native shim currently supports only NTLM and Negotiate
-                throw new PlatformNotSupportedException(SR.net_securitypackagesupport);
             }
 
             try

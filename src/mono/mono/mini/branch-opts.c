@@ -41,6 +41,7 @@ mono_branch_optimize_exception_target (MonoCompile *cfg, MonoBasicBlock *bb, con
 	MonoMethodHeader *header = cfg->header;
 	MonoExceptionClause *clause;
 	MonoClass *exclass;
+	int i;
 
 	if (!(cfg->opt & MONO_OPT_EXCEPTION))
 		return NULL;
@@ -50,7 +51,7 @@ mono_branch_optimize_exception_target (MonoCompile *cfg, MonoBasicBlock *bb, con
 
 	exclass = mono_class_load_from_name (mono_get_corlib (), "System", exname);
 	/* search for the handler */
-	for (guint i = 0; i < header->num_clauses; ++i) {
+	for (i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
 		if (MONO_OFFSET_IN_CLAUSE (clause, bb->real_offset)) {
 			if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE && clause->data.catch_class && mono_class_is_assignable_from_internal (clause->data.catch_class, exclass)) {

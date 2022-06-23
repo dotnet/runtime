@@ -65,11 +65,5 @@
     <UnofficialBuildRID Include="linux-musl-s390x">
       <Platform>s390x</Platform>
     </UnofficialBuildRID>
-    <UnofficialBuildRID Include="linux-ppc64le">
-      <Platform>ppc64le</Platform>
-    </UnofficialBuildRID>
-    <UnofficialBuildRID Include="linux-musl-ppc64le">
-      <Platform>ppc64le</Platform>
-    </UnofficialBuildRID>
   </ItemGroup>
 </Project>

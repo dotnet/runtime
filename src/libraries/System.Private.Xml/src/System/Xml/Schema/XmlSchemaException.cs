@@ -213,7 +213,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                return _message ?? base.Message;
+                return (_message == null) ? base.Message : _message;
             }
         }
     };

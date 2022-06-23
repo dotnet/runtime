@@ -793,7 +793,7 @@ encode_sleb128 (intptr_t value, uint8_t *buf, uint8_t **endbuf)
 static void
 emit_byte (LogBuffer *logbuffer, int value)
 {
-	logbuffer->cursor [0] = GINT_TO_UINT8 (value);
+	logbuffer->cursor [0] = value;
 	logbuffer->cursor++;
 
 	g_assert (logbuffer->cursor <= logbuffer->buf_end && "Why are we writing past the buffer end?");
@@ -956,7 +956,7 @@ write_int16 (char *buf, int32_t value)
 {
 	int i;
 	for (i = 0; i < 2; ++i) {
-		buf [i] = GINT32_TO_UINT8 (value);
+		buf [i] = value;
 		value >>= 8;
 	}
 	return buf + 2;
@@ -967,7 +967,7 @@ write_int32 (char *buf, int32_t value)
 {
 	int i;
 	for (i = 0; i < 4; ++i) {
-		buf [i] = GINT_TO_UINT8 (value);
+		buf [i] = value;
 		value >>= 8;
 	}
 	return buf + 4;
@@ -978,7 +978,7 @@ write_int64 (char *buf, int64_t value)
 {
 	int i;
 	for (i = 0; i < 8; ++i) {
-		buf [i] = GINT_TO_UINT8 (value);
+		buf [i] = value;
 		value >>= 8;
 	}
 	return buf + 8;
@@ -3271,7 +3271,7 @@ proflog_icall_SetSampleMode (MonoProfilerSampleMode mode, gint32 frequency)
 
 	mono_coop_mutex_unlock (&log_profiler.api_mutex);
 
-	return !!result;
+	return result;
 }
 
 ICALL_EXPORT MonoBoolean

@@ -51,7 +51,7 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public string MemberName
         {
-            get { return _memberName ?? string.Empty; }
+            get { return _memberName == null ? string.Empty : _memberName; }
             set { _memberName = value; }
         }
 

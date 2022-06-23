@@ -269,7 +269,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             set
             {
-                if (value && _containsInnerAtomicComposition)
+                if (value == true && _containsInnerAtomicComposition == true)
                 {
                     throw new InvalidOperationException(SR.AtomicComposition_AlreadyNested);
                 }

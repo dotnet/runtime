@@ -119,7 +119,6 @@ static MonoComponentEventPipe fn_table = {
 	&ep_rt_write_event_threadpool_worker_thread_start,
 	&ep_rt_write_event_threadpool_worker_thread_stop,
 	&ep_rt_write_event_threadpool_worker_thread_wait,
-	&ep_rt_write_event_threadpool_min_max_threads,
 	&ep_rt_write_event_threadpool_worker_thread_adjustment_sample,
 	&ep_rt_write_event_threadpool_worker_thread_adjustment_adjustment,
 	&ep_rt_write_event_threadpool_worker_thread_adjustment_stats,

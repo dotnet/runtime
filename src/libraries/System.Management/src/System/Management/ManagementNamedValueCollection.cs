@@ -21,7 +21,8 @@ namespace System.Management
         //Fires IdentifierChanged event
         private void FireIdentifierChanged()
         {
-            IdentifierChanged?.Invoke(this, null);
+            if (IdentifierChanged != null)
+                IdentifierChanged(this, null);
         }
 
         //default constructor

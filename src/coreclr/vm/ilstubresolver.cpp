@@ -311,7 +311,7 @@ ILStubResolver::AllocGeneratedIL(
 #ifdef _DEBUG
         LPVOID pPrevCompileTimeState =
 #endif // _DEBUG
-            InterlockedExchangeT(&m_pCompileTimeState, pNewCompileTimeState.GetValue());
+            FastInterlockExchangePointer(&m_pCompileTimeState, pNewCompileTimeState.GetValue());
         CONSISTENCY_CHECK(ILNotYetGenerated == (UINT_PTR)pPrevCompileTimeState);
 
         pNewLocalSig.SuppressRelease();
@@ -338,7 +338,7 @@ ILStubResolver::AllocGeneratedIL(
 #ifdef _DEBUG
         LPVOID pPrevCompileTimeState =
 #endif // _DEBUG
-            InterlockedExchangeT(&m_pCompileTimeState, (CompileTimeState*)pNewCompileTimeState);
+            FastInterlockExchangePointer(&m_pCompileTimeState, (CompileTimeState*)pNewCompileTimeState);
         CONSISTENCY_CHECK(ILNotYetGenerated == (UINT_PTR)pPrevCompileTimeState);
 
         pNewLocalSig.SuppressRelease();
@@ -458,7 +458,7 @@ ILStubResolver::ClearCompileTimeState(CompileTimeStatePtrSpecialValues newState)
 
     delete m_pCompileTimeState;
 
-    InterlockedExchangeT(&m_pCompileTimeState, dac_cast<PTR_CompileTimeState>((TADDR)newState));
+    FastInterlockExchangePointer(&m_pCompileTimeState, dac_cast<PTR_CompileTimeState>((TADDR)newState));
 } // ILStubResolver::ClearCompileTimeState
 
 //---------------------------------------------------------------------------------------

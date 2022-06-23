@@ -106,7 +106,7 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        public override unsafe UnicastIPAddressInformationCollection GetUnicastAddresses()
+        public unsafe override UnicastIPAddressInformationCollection GetUnicastAddresses()
         {
             Context context;
             context._collection = new UnicastIPAddressInformationCollection();

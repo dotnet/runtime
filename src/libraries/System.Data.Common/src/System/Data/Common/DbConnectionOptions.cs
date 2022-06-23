@@ -37,7 +37,7 @@ namespace System.Data.Common
         {
             _useOdbcRules = useOdbcRules;
             _parsetable = new Dictionary<string, string?>();
-            _usersConnectionString = connectionString ?? "";
+            _usersConnectionString = ((null != connectionString) ? connectionString : "");
 
             // first pass on parsing, initial syntax check
             if (0 < _usersConnectionString.Length)

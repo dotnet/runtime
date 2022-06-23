@@ -227,13 +227,13 @@ jobs:
         timeoutInMinutes: 300
       ${{ else }}:
         timeoutInMinutes: 200
-    ${{ if in(parameters.testGroup, 'outerloop', 'jit-experimental', 'jit-cfg') }}:
+    ${{ if in(parameters.testGroup, 'outerloop', 'jit-experimental', 'pgo', 'jit-cfg') }}:
       timeoutInMinutes: 270
     ${{ if in(parameters.testGroup, 'gc-longrunning', 'gc-simulator') }}:
       timeoutInMinutes: 480
     ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-isas-arm', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'gcstress0x3-gcstress0xc', 'ilasm') }}:
       timeoutInMinutes: 390
-    ${{ if in(parameters.testGroup, 'gcstress-extra', 'r2r-extra', 'clrinterpreter', 'pgo') }}:
+    ${{ if in(parameters.testGroup, 'gcstress-extra', 'r2r-extra', 'clrinterpreter') }}:
       timeoutInMinutes: 510
     ${{ if eq(parameters.testGroup, 'jitstress-isas-x86') }}:
       timeoutInMinutes: 960
@@ -397,7 +397,7 @@ jobs:
           ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
             # tiered compilation isn't done on mono yet
             scenarios:
-            - normal
+            - normal 
           ${{ elseif eq(variables['Build.Reason'], 'PullRequest') }}:
             scenarios:
             - no_tiered_compilation
@@ -545,9 +545,7 @@ jobs:
           - defaultpgo
           - dynamicpgo
           - fullpgo
-          - fullpgo_methodprofiling
           - fullpgo_random_gdv
-          - fullpgo_random_gdv_methodprofiling_only
           - fullpgo_random_edge
           - fullpgo_random_gdv_edge
         ${{ if in(parameters.testGroup, 'gc-longrunning') }}:
@@ -570,6 +568,7 @@ jobs:
           - jitelthookenabled_tiered
         ${{ if in(parameters.testGroup, 'jit-experimental') }}:
           scenarios:
+          - jitosr
           - jitosr_stress
           - jitosr_pgo
           - jitosr_stress_random

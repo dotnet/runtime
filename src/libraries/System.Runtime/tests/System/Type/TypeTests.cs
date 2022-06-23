@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -150,9 +149,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(FindMembers_TestData))]
-        [UnconditionalSuppressMessage ("ReflectionAnalysis", "IL2118",
-            Justification = "DAM on FindMembers references compiler-generated members which use reflection. " +
-                            "These members are not accessed by the test.")]
         public void FindMembers_Invoke_ReturnsExpected(MemberTypes memberType, BindingFlags bindingAttr, MemberFilter filter, object filterCriteria, int expectedLength)
         {
             Assert.Equal(expectedLength, typeof(TypeTests).FindMembers(memberType, bindingAttr, filter, filterCriteria).Length);

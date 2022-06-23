@@ -100,7 +100,7 @@ void need_newer_framework_error(const pal::string_t& dotnet_root, const pal::str
         _X("Download the .NET runtime:\n")
         _X("%s&apphost_version=%s"),
         host_path.c_str(),
-        get_current_arch_name(),
+        get_arch(),
         _STRINGIFY(COMMON_HOST_PKG_VER),
         dotnet_root.c_str(),
         get_download_url().c_str(),
@@ -225,7 +225,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
         else
         {
             // An outdated hostfxr can only be found for framework-related apps.
-            trace::error(_X("The required library %s does not support single-file apps."), fxr.fxr_path().c_str());
+            trace::error(_X("The required library %s does not support single-file apps."), fxr.fxr_path().c_str());			
             need_newer_framework_error(fxr.dotnet_root(), host_path);
             rc = StatusCode::FrameworkMissingFailure;
         }

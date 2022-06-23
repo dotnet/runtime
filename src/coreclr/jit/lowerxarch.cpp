@@ -174,35 +174,24 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 {
 #ifdef FEATURE_HW_INTRINSICS
-    if (comp->opts.OptimizationEnabled() && varTypeIsIntegral(binOp))
+    if (comp->opts.OptimizationEnabled() && binOp->OperIs(GT_AND) && varTypeIsIntegral(binOp))
     {
-        if (binOp->OperIs(GT_AND))
+        GenTree* replacementNode = TryLowerAndOpToAndNot(binOp);
+        if (replacementNode != nullptr)
         {
-            GenTree* replacementNode = TryLowerAndOpToAndNot(binOp);
-            if (replacementNode != nullptr)
-            {
-                return replacementNode->gtNext;
-            }
-
-            replacementNode = TryLowerAndOpToResetLowestSetBit(binOp);
-            if (replacementNode != nullptr)
-            {
-                return replacementNode->gtNext;
-            }
-
-            replacementNode = TryLowerAndOpToExtractLowestSetBit(binOp);
-            if (replacementNode != nullptr)
-            {
-                return replacementNode->gtNext;
-            }
+            return replacementNode->gtNext;
         }
-        else if (binOp->OperIs(GT_XOR))
+
+        replacementNode = TryLowerAndOpToResetLowestSetBit(binOp);
+        if (replacementNode != nullptr)
         {
-            GenTree* replacementNode = TryLowerXorOpToGetMaskUpToLowestSetBit(binOp);
-            if (replacementNode != nullptr)
-            {
-                return replacementNode->gtNext;
-            }
+            return replacementNode->gtNext;
+        }
+
+        replacementNode = TryLowerAndOpToExtractLowestSetBit(binOp);
+        if (replacementNode != nullptr)
+        {
+            return replacementNode->gtNext;
         }
     }
 #endif
@@ -466,11 +455,14 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
 // LowerPutArgStk: Lower a GT_PUTARG_STK.
 //
 // Arguments:
-//    putArgStk - The node of interest
+//    tree      - The node of interest
+//
+// Return Value:
+//    None.
 //
 void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
 {
-    GenTree* src        = putArgStk->Data();
+    GenTree* src        = putArgStk->gtGetOp1();
     bool     srcIsLocal = src->OperIsLocalRead();
 
     if (src->OperIs(GT_FIELD_LIST))
@@ -541,11 +533,9 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
     if (src->TypeIs(TYP_STRUCT))
     {
-        assert(src->OperIs(GT_OBJ) || src->OperIsLocalRead());
-
-        ClassLayout* layout  = src->GetLayout(comp);
+        ClassLayout* layout  = src->AsObj()->GetLayout();
         var_types    regType = layout->GetRegisterType();
-        srcIsLocal |= src->OperIs(GT_OBJ) && src->AsObj()->Addr()->OperIsLocalAddr();
+        srcIsLocal |= src->AsObj()->Addr()->OperIsLocalAddr();
 
         if (regType == TYP_UNDEF)
         {
@@ -555,24 +545,30 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
             // The cpyXXXX code is rather complex and this could cause it to be more complex, but
             // it might be the right thing to do.
 
-            // If possible, widen the load, this results in more compact code.
-            unsigned loadSize = srcIsLocal ? roundUp(layout->GetSize(), TARGET_POINTER_SIZE) : layout->GetSize();
-            putArgStk->SetArgLoadSize(loadSize);
+            unsigned size     = putArgStk->GetStackByteSize();
+            unsigned loadSize = layout->GetSize();
+
+            assert(loadSize <= size);
 
             // TODO-X86-CQ: The helper call either is not supported on x86 or required more work
             // (I don't know which).
+
             if (!layout->HasGCPtr())
             {
 #ifdef TARGET_X86
                 // Codegen for "Kind::Push" will always load bytes in TARGET_POINTER_SIZE
-                // chunks. As such, we'll only use this path for correctly-sized sources.
-                if ((loadSize < XMM_REGSIZE_BYTES) && ((loadSize % TARGET_POINTER_SIZE) == 0))
+                // chunks. As such, the correctness of this code depends on the fact that
+                // morph will copy any "mis-sized" (too small) non-local OBJs into a temp,
+                // thus preventing any possible out-of-bounds memory reads.
+                assert(((layout->GetSize() % TARGET_POINTER_SIZE) == 0) || src->OperIsLocalRead() ||
+                       (src->OperIsIndir() && src->AsIndir()->Addr()->IsLocalAddrExpr()));
+                if (size < XMM_REGSIZE_BYTES)
                 {
                     putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Push;
                 }
                 else
 #endif // TARGET_X86
-                    if (loadSize <= CPBLK_UNROLL_LIMIT)
+                    if (size <= CPBLK_UNROLL_LIMIT)
                 {
                     putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Unroll;
                 }
@@ -593,25 +589,14 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
 #endif // !TARGET_X86
             }
 
+            // Always mark the OBJ and ADDR as contained trees by the putarg_stk. The codegen will deal with this tree.
+            MakeSrcContained(putArgStk, src);
             if (src->OperIs(GT_OBJ) && src->AsObj()->Addr()->OperIsLocalAddr())
             {
-                // TODO-ADDR: always perform this transformation in local morph and delete this code.
-                GenTreeLclVarCommon* lclAddrNode = src->AsObj()->Addr()->AsLclVarCommon();
-                BlockRange().Remove(lclAddrNode);
-
-                src->ChangeOper(GT_LCL_FLD);
-                src->AsLclFld()->SetLclNum(lclAddrNode->GetLclNum());
-                src->AsLclFld()->SetLclOffs(lclAddrNode->GetLclOffs());
-                src->AsLclFld()->SetLayout(layout);
+                // If the source address is the address of a lclVar, make the source address contained to avoid
+                // unnecessary copies.
+                MakeSrcContained(putArgStk, src->AsObj()->Addr());
             }
-            else if (src->OperIs(GT_LCL_VAR))
-            {
-                comp->lvaSetVarDoNotEnregister(src->AsLclVar()->GetLclNum()
-                                                   DEBUGARG(DoNotEnregisterReason::IsStructArg));
-            }
-
-            // Always mark the OBJ/LCL_VAR/LCL_FLD as contained trees.
-            MakeSrcContained(putArgStk, src);
         }
         else
         {
@@ -619,17 +604,13 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
             // so if possible, widen the load to avoid the sign/zero-extension.
             if (varTypeIsSmall(regType) && srcIsLocal)
             {
-                assert(genTypeSize(TYP_INT) <= putArgStk->GetStackByteSize());
+                assert(putArgStk->GetStackByteSize() <= genTypeSize(TYP_INT));
                 regType = TYP_INT;
             }
 
+            src->SetOper(GT_IND);
             src->ChangeType(regType);
-
-            if (src->OperIs(GT_OBJ))
-            {
-                src->SetOper(GT_IND);
-                LowerIndir(src->AsIndir());
-            }
+            LowerIndir(src->AsIndir());
         }
     }
 
@@ -4076,93 +4057,6 @@ GenTree* Lowering::TryLowerAndOpToAndNot(GenTreeOp* andNode)
 }
 
 //----------------------------------------------------------------------------------------------
-// Lowering::TryLowerXorOpToGetMaskUpToLowestSetBit: Lowers a tree XOR(X, ADD(X, -1)) to
-// HWIntrinsic::GetMaskUpToLowestSetBit
-//
-// Arguments:
-//    xorNode - GT_XOR node of integral type
-//
-// Return Value:
-//    Returns the replacement node if one is created else nullptr indicating no replacement
-//
-// Notes:
-//    Performs containment checks on the replacement node if one is created
-GenTree* Lowering::TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode)
-{
-    assert(xorNode->OperIs(GT_XOR) && varTypeIsIntegral(xorNode));
-
-    GenTree* op1 = xorNode->gtGetOp1();
-    if (!op1->OperIs(GT_LCL_VAR) || comp->lvaGetDesc(op1->AsLclVar())->IsAddressExposed())
-    {
-        return nullptr;
-    }
-
-    GenTree* op2 = xorNode->gtGetOp2();
-    if (!op2->OperIs(GT_ADD))
-    {
-        return nullptr;
-    }
-
-    GenTree* addOp2 = op2->gtGetOp2();
-    if (!addOp2->IsIntegralConst(-1))
-    {
-        return nullptr;
-    }
-
-    GenTree* addOp1 = op2->gtGetOp1();
-    if (!addOp1->OperIs(GT_LCL_VAR) || (addOp1->AsLclVar()->GetLclNum() != op1->AsLclVar()->GetLclNum()))
-    {
-        return nullptr;
-    }
-
-    // Subsequent nodes may rely on CPU flags set by these nodes in which case we cannot remove them
-    if (((addOp2->gtFlags & GTF_SET_FLAGS) != 0) || ((op2->gtFlags & GTF_SET_FLAGS) != 0) ||
-        ((xorNode->gtFlags & GTF_SET_FLAGS) != 0))
-    {
-        return nullptr;
-    }
-
-    NamedIntrinsic intrinsic;
-    if (xorNode->TypeIs(TYP_LONG) && comp->compOpportunisticallyDependsOn(InstructionSet_BMI1_X64))
-    {
-        intrinsic = NamedIntrinsic::NI_BMI1_X64_GetMaskUpToLowestSetBit;
-    }
-    else if (comp->compOpportunisticallyDependsOn(InstructionSet_BMI1))
-    {
-        intrinsic = NamedIntrinsic::NI_BMI1_GetMaskUpToLowestSetBit;
-    }
-    else
-    {
-        return nullptr;
-    }
-
-    LIR::Use use;
-    if (!BlockRange().TryGetUse(xorNode, &use))
-    {
-        return nullptr;
-    }
-
-    GenTreeHWIntrinsic* blsmskNode = comp->gtNewScalarHWIntrinsicNode(xorNode->TypeGet(), op1, intrinsic);
-
-    JITDUMP("Lower: optimize XOR(X, ADD(X, -1)))\n");
-    DISPNODE(xorNode);
-    JITDUMP("to:\n");
-    DISPNODE(blsmskNode);
-
-    use.ReplaceWith(blsmskNode);
-
-    BlockRange().InsertBefore(xorNode, blsmskNode);
-    BlockRange().Remove(xorNode);
-    BlockRange().Remove(op2);
-    BlockRange().Remove(addOp1);
-    BlockRange().Remove(addOp2);
-
-    ContainCheckHWIntrinsic(blsmskNode);
-
-    return blsmskNode;
-}
-
-//----------------------------------------------------------------------------------------------
 // Lowering::LowerBswapOp: Tries to contain GT_BSWAP node when possible
 //
 // Arguments:
@@ -4717,6 +4611,22 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
             // contained we must clear it.
             ctrlExpr->SetRegNum(REG_NA);
             MakeSrcContained(call, ctrlExpr);
+        }
+    }
+
+    for (CallArg& arg : call->gtArgs.EarlyArgs())
+    {
+        if (arg.GetEarlyNode()->OperIs(GT_PUTARG_STK))
+        {
+            LowerPutArgStk(arg.GetEarlyNode()->AsPutArgStk());
+        }
+    }
+
+    for (CallArg& arg : call->gtArgs.LateArgs())
+    {
+        if (arg.GetLateNode()->OperIs(GT_PUTARG_STK))
+        {
+            LowerPutArgStk(arg.GetLateNode()->AsPutArgStk());
         }
     }
 }

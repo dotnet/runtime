@@ -186,7 +186,6 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
             JITDUMP("Frame type 5 (save FP/LR at top). #outsz=%d; #framesz=%d; localloc? %s\n",
                     unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, dspBool(compiler->compLocallocUsed));
 
-            assert(genSaveFpLrWithAllCalleeSavedRegisters);
             assert((calleeSaveSpOffset == 0) || (calleeSaveSpOffset == REGSIZE_BYTES));
 
             // Restore sp from fp:
@@ -1078,13 +1077,9 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *      |-----------------------|
  *      |  incoming arguments   |
  *      +=======================+ <---- Caller's SP
- *      |      OSR padding      | // If required
- *      |-----------------------|
  *      |  Varargs regs space   | // Only for varargs main functions; 64 bytes
  *      |-----------------------|
  *      |Callee saved registers | // multiple of 8 bytes
- *      |-----------------------|
- *      |    MonitorAcquired    | // 8 bytes; for synchronized methods
  *      |-----------------------|
  *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
  *      |-----------------------|
@@ -1109,13 +1104,9 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *      |-----------------------|
  *      |  incoming arguments   |
  *      +=======================+ <---- Caller's SP
- *      |      OSR padding      | // If required
- *      |-----------------------|
  *      |  Varargs regs space   | // Only for varargs main functions; 64 bytes
  *      |-----------------------|
  *      |Callee saved registers | // multiple of 8 bytes
- *      |-----------------------|
- *      |    MonitorAcquired    | // 8 bytes; for synchronized methods
  *      |-----------------------|
  *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
  *      |-----------------------|
@@ -1143,24 +1134,20 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *      |-----------------------|
  *      |  incoming arguments   |
  *      +=======================+ <---- Caller's SP
- *      |      OSR padding      | // If required
- *      |-----------------------|
  *      |  Varargs regs space   | // Only for varargs main functions; 64 bytes
  *      |-----------------------|
  *      |Callee saved registers | // multiple of 8 bytes
- *      |-----------------------|
- *      |    MonitorAcquired    | // 8 bytes; for synchronized methods
  *      |-----------------------|
  *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
  *      |-----------------------|
  *      ~  alignment padding    ~ // To make the first SP subtraction 16 byte aligned
  *      |-----------------------|
- *      |      Saved FP, LR     | // 16 bytes <-- SP after first adjustment (points at saved FP)
+ *      |      Saved FP, LR     | // 16 bytes
  *      |-----------------------|
  *      ~  alignment padding    ~ // To make the whole frame 16 byte aligned (specifically, to 16-byte align the outgoing argument space).
  *      |-----------------------|
  *      |   Outgoing arg space  | // multiple of 8 bytes
- *      |-----------------------| <---- Ambient SP (SP after second adjustment)
+ *      |-----------------------| <---- Ambient SP
  *      |       |               |
  *      ~       | Stack grows   ~
  *      |       | downward      |
@@ -1175,7 +1162,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *     8 float callee-saved registers v8-v15
  *     8 saved integer argument registers x0-x7, if varargs function
  *     1 PSP slot
- *     1 alignment slot or monitor acquired slot
+ *     1 alignment slot
  *     == 30 slots * 8 bytes = 240 bytes.
  *
  * The outgoing argument size, however, can be very large, if we call a function that takes a large number of
@@ -1211,8 +1198,6 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *      |-----------------------|
  *      |  incoming arguments   |
  *      +=======================+ <---- Caller's SP
- *      |      OSR padding      | // If required
- *      |-----------------------|
  *      |  Varargs regs space   | // Only for varargs main functions; 64 bytes
  *      |-----------------------|
  *      |      Saved LR         | // 8 bytes
@@ -1220,8 +1205,6 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *      |      Saved FP         | // 8 bytes
  *      |-----------------------|
  *      |Callee saved registers | // multiple of 8 bytes
- *      |-----------------------|
- *      |    MonitorAcquired    | // 8 bytes; for synchronized methods
  *      |-----------------------|
  *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
  *      |-----------------------|
@@ -1252,8 +1235,6 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *      |-----------------------|
  *      |  incoming arguments   |
  *      +=======================+ <---- Caller's SP
- *      |      OSR padding      | // If required
- *      |-----------------------|
  *      |  Varargs regs space   | // Only for varargs main functions; 64 bytes
  *      |-----------------------|
  *      |      Saved LR         | // 8 bytes
@@ -1262,16 +1243,14 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *      |-----------------------|
  *      |Callee saved registers | // multiple of 8 bytes
  *      |-----------------------|
- *      |    MonitorAcquired    | // 8 bytes; for synchronized methods
- *      |-----------------------|
  *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
  *      |-----------------------|
- *      ~  alignment padding    ~ // To make the first SP subtraction 16 byte aligned <-- SP after first adjustment (points at alignment padding or PSP slot)
+ *      ~  alignment padding    ~ // To make the first SP subtraction 16 byte aligned
  *      |-----------------------|
  *      ~  alignment padding    ~ // To make the whole frame 16 byte aligned (specifically, to 16-byte align the outgoing argument space).
  *      |-----------------------|
  *      |   Outgoing arg space  | // multiple of 8 bytes
- *      |-----------------------| <---- Ambient SP (SP after second adjustment)
+ *      |-----------------------| <---- Ambient SP
  *      |       |               |
  *      ~       | Stack grows   ~
  *      |       | downward      |
@@ -1331,8 +1310,6 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *     ldp fp,lr,[sp],#framesz
  *     ret lr
  *
- * See CodeGen::genPushCalleeSavedRegisters() for a description of the main function frame layout.
- * See Compiler::lvaAssignVirtualFrameOffsetsToLocals() for calculation of main frame local variable offsets.
  */
 // clang-format on
 
@@ -1377,12 +1354,10 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     if (genFuncletInfo.fiFrameType == 1)
     {
+        // With OSR we may see large values for fiSpDelta1
+        // (we really need to probe the frame, sigh)
         if (compiler->opts.IsOSR())
         {
-            // With OSR we may see large values for fiSpDelta1.
-            // We repurpose genAllocLclFram to do the necessary probing.
-            bool scratchRegIsZero = false;
-            genAllocLclFrame(-genFuncletInfo.fiSpDelta1, REG_SCRATCH, &scratchRegIsZero, maskArgRegsLiveIn);
             genStackPointerAdjustment(genFuncletInfo.fiSpDelta1, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
             GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, 0);
             compiler->unwindSaveRegPair(REG_FP, REG_LR, 0);
@@ -1418,12 +1393,10 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     }
     else if (genFuncletInfo.fiFrameType == 3)
     {
+        // With OSR we may see large values for fiSpDelta1
+        // (we really need to probe the frame, sigh)
         if (compiler->opts.IsOSR())
         {
-            // With OSR we may see large values for fiSpDelta1
-            // We repurpose genAllocLclFram to do the necessary probing.
-            bool scratchRegIsZero = false;
-            genAllocLclFrame(-genFuncletInfo.fiSpDelta1, REG_SCRATCH, &scratchRegIsZero, maskArgRegsLiveIn);
             genStackPointerAdjustment(genFuncletInfo.fiSpDelta1, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
             GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, 0);
             compiler->unwindSaveRegPair(REG_FP, REG_LR, 0);
@@ -1454,17 +1427,11 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
         if (compiler->opts.IsOSR())
         {
-            // With OSR we may see large values for fiSpDelta1.
-            // We repurpose genAllocLclFram to do the necessary probing.
-            bool scratchRegIsZero = false;
-            genAllocLclFrame(-genFuncletInfo.fiSpDelta1, REG_SCRATCH, &scratchRegIsZero, maskArgRegsLiveIn);
             genStackPointerAdjustment(genFuncletInfo.fiSpDelta1, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
         }
         else
         {
-            assert(genFuncletInfo.fiSpDelta1 < 0);
-            assert(genFuncletInfo.fiSpDelta1 >= -240);
-            genStackPointerAdjustment(genFuncletInfo.fiSpDelta1, REG_NA, nullptr, /* reportUnwindData */ true);
+            // Nothing to do here; the first SP adjustment will be done by saving the callee-saved registers.
         }
     }
 
@@ -1534,8 +1501,6 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 /*****************************************************************************
  *
  *  Generates code for an EH funclet epilog.
- *
- *  See the description of frame shapes at genFuncletProlog().
  */
 
 void CodeGen::genFuncletEpilog()
@@ -1710,9 +1675,6 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     if (compiler->opts.IsOSR() && (PSPSize > 0))
     {
         osrPad = compiler->info.compPatchpointInfo->TotalFrameSize();
-
-        // OSR pad must be already aligned to stack size.
-        assert((osrPad % STACK_ALIGN) == 0);
     }
 
     genFuncletInfo.fiFunction_CallerSP_to_FP_delta = genCallerSPtoFPdelta() - osrPad;
@@ -1743,41 +1705,31 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     assert(compiler->lvaOutgoingArgSpaceSize % REGSIZE_BYTES == 0);
     unsigned const outgoingArgSpaceAligned = roundUp(compiler->lvaOutgoingArgSpaceSize, STACK_ALIGN);
 
-    // If do two SP adjustments, each one must be aligned. This represents the largest possible stack size, if two
-    // separate alignment slots are required.
-    unsigned const twoSpAdjustmentFuncletFrameSizeAligned =
-        osrPad + saveRegsPlusPSPSizeAligned + outgoingArgSpaceAligned;
-    assert((twoSpAdjustmentFuncletFrameSizeAligned % STACK_ALIGN) == 0);
+    unsigned const maxFuncletFrameSizeAligned = saveRegsPlusPSPSizeAligned + osrPad + outgoingArgSpaceAligned;
+    assert((maxFuncletFrameSizeAligned % STACK_ALIGN) == 0);
 
     int SP_to_FPLR_save_delta;
     int SP_to_PSP_slot_delta;
     int CallerSP_to_PSP_slot_delta;
 
-    // Are we stressing frame type 5? Don't do it unless we have non-zero outgoing arg space.
-    const bool useFrameType5 =
-        genSaveFpLrWithAllCalleeSavedRegisters && genForceFuncletFrameType5 && (compiler->lvaOutgoingArgSpaceSize > 0);
+    unsigned const funcletFrameSize        = saveRegsPlusPSPSize + osrPad + compiler->lvaOutgoingArgSpaceSize;
+    unsigned const funcletFrameSizeAligned = roundUp(funcletFrameSize, STACK_ALIGN);
+    assert(funcletFrameSizeAligned <= maxFuncletFrameSizeAligned);
 
-    if ((twoSpAdjustmentFuncletFrameSizeAligned <= 512) && !useFrameType5)
+    unsigned const funcletFrameAlignmentPad = funcletFrameSizeAligned - funcletFrameSize;
+    assert((funcletFrameAlignmentPad == 0) || (funcletFrameAlignmentPad == REGSIZE_BYTES));
+
+    if (maxFuncletFrameSizeAligned <= 512)
     {
-        unsigned const oneSpAdjustmentFuncletFrameSize =
-            osrPad + saveRegsPlusPSPSize + compiler->lvaOutgoingArgSpaceSize;
-        unsigned const oneSpAdjustmentFuncletFrameSizeAligned = roundUp(oneSpAdjustmentFuncletFrameSize, STACK_ALIGN);
-        assert(oneSpAdjustmentFuncletFrameSizeAligned <= twoSpAdjustmentFuncletFrameSizeAligned);
-
-        unsigned const oneSpAdjustmentFuncletFrameSizeAlignmentPad =
-            oneSpAdjustmentFuncletFrameSizeAligned - oneSpAdjustmentFuncletFrameSize;
-        assert((oneSpAdjustmentFuncletFrameSizeAlignmentPad == 0) ||
-               (oneSpAdjustmentFuncletFrameSizeAlignmentPad == REGSIZE_BYTES));
-
         if (genSaveFpLrWithAllCalleeSavedRegisters)
         {
-            SP_to_FPLR_save_delta = oneSpAdjustmentFuncletFrameSizeAligned - (2 /* FP, LR */ * REGSIZE_BYTES);
+            SP_to_FPLR_save_delta = funcletFrameSizeAligned - (2 /* FP, LR */ * REGSIZE_BYTES);
             if (compiler->info.compIsVarArgs)
             {
                 SP_to_FPLR_save_delta -= MAX_REG_ARG * REGSIZE_BYTES;
             }
 
-            SP_to_PSP_slot_delta = compiler->lvaOutgoingArgSpaceSize + oneSpAdjustmentFuncletFrameSizeAlignmentPad;
+            SP_to_PSP_slot_delta       = compiler->lvaOutgoingArgSpaceSize + funcletFrameAlignmentPad + osrPad;
             CallerSP_to_PSP_slot_delta = -(int)(osrPad + saveRegsPlusPSPSize);
 
             genFuncletInfo.fiFrameType = 4;
@@ -1785,8 +1737,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         else
         {
             SP_to_FPLR_save_delta = compiler->lvaOutgoingArgSpaceSize;
-            SP_to_PSP_slot_delta =
-                SP_to_FPLR_save_delta + 2 /* FP, LR */ * REGSIZE_BYTES + oneSpAdjustmentFuncletFrameSizeAlignmentPad;
+            SP_to_PSP_slot_delta  = SP_to_FPLR_save_delta + 2 /* FP, LR */ * REGSIZE_BYTES + funcletFrameAlignmentPad;
             CallerSP_to_PSP_slot_delta = -(int)(osrPad + saveRegsPlusPSPSize - 2 /* FP, LR */ * REGSIZE_BYTES);
 
             if (compiler->lvaOutgoingArgSpaceSize == 0)
@@ -1799,25 +1750,26 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
             }
         }
 
-        genFuncletInfo.fiSpDelta1 = -(int)oneSpAdjustmentFuncletFrameSizeAligned;
+        genFuncletInfo.fiSpDelta1 = -(int)funcletFrameSizeAligned;
         genFuncletInfo.fiSpDelta2 = 0;
 
-        assert(genFuncletInfo.fiSpDelta1 + genFuncletInfo.fiSpDelta2 == -(int)oneSpAdjustmentFuncletFrameSizeAligned);
+        assert(genFuncletInfo.fiSpDelta1 + genFuncletInfo.fiSpDelta2 == -(int)funcletFrameSizeAligned);
     }
     else
     {
-        unsigned const saveRegsPlusPSPAlignmentPad = saveRegsPlusPSPSizeAligned - saveRegsPlusPSPSize;
+        unsigned saveRegsPlusPSPAlignmentPad = saveRegsPlusPSPSizeAligned - saveRegsPlusPSPSize;
         assert((saveRegsPlusPSPAlignmentPad == 0) || (saveRegsPlusPSPAlignmentPad == REGSIZE_BYTES));
 
         if (genSaveFpLrWithAllCalleeSavedRegisters)
         {
-            SP_to_FPLR_save_delta = twoSpAdjustmentFuncletFrameSizeAligned - (2 /* FP, LR */ * REGSIZE_BYTES);
+            SP_to_FPLR_save_delta = funcletFrameSizeAligned - (2 /* FP, LR */ * REGSIZE_BYTES);
             if (compiler->info.compIsVarArgs)
             {
                 SP_to_FPLR_save_delta -= MAX_REG_ARG * REGSIZE_BYTES;
             }
 
-            SP_to_PSP_slot_delta       = outgoingArgSpaceAligned + saveRegsPlusPSPAlignmentPad;
+            SP_to_PSP_slot_delta =
+                compiler->lvaOutgoingArgSpaceSize + funcletFrameAlignmentPad + saveRegsPlusPSPAlignmentPad;
             CallerSP_to_PSP_slot_delta = -(int)(osrPad + saveRegsPlusPSPSize);
 
             genFuncletInfo.fiFrameType = 5;
@@ -1835,7 +1787,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         genFuncletInfo.fiSpDelta1 = -(int)(osrPad + saveRegsPlusPSPSizeAligned);
         genFuncletInfo.fiSpDelta2 = -(int)outgoingArgSpaceAligned;
 
-        assert(genFuncletInfo.fiSpDelta1 + genFuncletInfo.fiSpDelta2 == -(int)twoSpAdjustmentFuncletFrameSizeAligned);
+        assert(genFuncletInfo.fiSpDelta1 + genFuncletInfo.fiSpDelta2 == -(int)maxFuncletFrameSizeAligned);
     }
 
     /* Now save it for future use */
@@ -2226,7 +2178,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
     {
         if (emitter::emitIns_valid_imm_for_mov(imm, size))
         {
-            GetEmitter()->emitIns_R_I(INS_mov, size, reg, imm, INS_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+            GetEmitter()->emitIns_R_I(INS_mov, size, reg, imm);
         }
         else
         {
@@ -2272,9 +2224,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
                         imm16 = ~imm16;
                     }
 
-                    GetEmitter()->emitIns_R_I_I(ins, size, reg, imm16, i,
-                                                INS_OPTS_LSL DEBUGARG(i == 0 ? targetHandle : 0)
-                                                    DEBUGARG(i == 0 ? gtFlags : GTF_EMPTY));
+                    GetEmitter()->emitIns_R_I_I(ins, size, reg, imm16, i, INS_OPTS_LSL);
 
                     // Once the initial movz/movn is emitted the remaining instructions will all use movk
                     ins = INS_movk;
@@ -2308,8 +2258,8 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
     {
         case GT_CNS_INT:
         {
-            GenTreeIntCon* con    = tree->AsIntCon();
-            ssize_t        cnsVal = con->IconValue();
+            GenTreeIntConCommon* con    = tree->AsIntConCommon();
+            ssize_t              cnsVal = con->IconValue();
 
             emitAttr attr = emitActualTypeSize(targetType);
             // TODO-CQ: Currently we cannot do this for all handles because of
@@ -2325,7 +2275,8 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             }
 
             instGen_Set_Reg_To_Imm(attr, targetReg, cnsVal,
-                                   INS_FLAGS_DONT_CARE DEBUGARG(con->gtTargetHandle) DEBUGARG(con->gtFlags));
+                                   INS_FLAGS_DONT_CARE DEBUGARG(tree->AsIntCon()->gtTargetHandle)
+                                       DEBUGARG(tree->AsIntCon()->gtFlags));
             regSet.verifyRegUsed(targetReg);
         }
         break;
@@ -4576,19 +4527,6 @@ void CodeGen::SetSaveFpLrWithAllCalleeSavedRegisters(bool value)
 {
     JITDUMP("Setting genSaveFpLrWithAllCalleeSavedRegisters to %s\n", dspBool(value));
     genSaveFpLrWithAllCalleeSavedRegisters = value;
-
-    if (genSaveFpLrWithAllCalleeSavedRegisters)
-    {
-        // We'll use frame type 4 or 5. Frame type 5 only occurs if there is a very large outgoing argument
-        // space. This is extremely rare, so under stress force using this frame type. However, frame type 5
-        // isn't used if there is no outgoing argument space; this is checked elsewhere.
-
-        if ((compiler->opts.compJitSaveFpLrWithCalleeSavedRegisters == 3) ||
-            compiler->compStressCompile(Compiler::STRESS_GENERIC_VARN, 50))
-        {
-            genForceFuncletFrameType5 = true;
-        }
-    }
 }
 
 //---------------------------------------------------------------------
@@ -10343,34 +10281,18 @@ void CodeGen::genCodeForAddEx(GenTreeOp* tree)
 //
 void CodeGen::genCodeForCond(GenTreeOp* tree)
 {
-    assert(tree->OperIs(GT_CSNEG_MI, GT_CNEG_LT));
-    assert(!(tree->gtFlags & GTF_SET_FLAGS));
+    assert(tree->OperIs(GT_CSNEG_MI));
+    assert(!(tree->gtFlags & GTF_SET_FLAGS) && (tree->gtFlags & GTF_USE_FLAGS));
     genConsumeOperands(tree);
 
+    instruction ins;
+    insCond     cond;
     switch (tree->OperGet())
     {
         case GT_CSNEG_MI:
         {
-            instruction ins  = INS_csneg;
-            insCond     cond = INS_COND_MI;
-
-            regNumber dstReg = tree->GetRegNum();
-            regNumber op1Reg = tree->gtGetOp1()->GetRegNum();
-            regNumber op2Reg = tree->gtGetOp2()->GetRegNum();
-
-            GetEmitter()->emitIns_R_R_R_COND(ins, emitActualTypeSize(tree), dstReg, op1Reg, op2Reg, cond);
-            break;
-        }
-
-        case GT_CNEG_LT:
-        {
-            instruction ins  = INS_cneg;
-            insCond     cond = INS_COND_LT;
-
-            regNumber dstReg = tree->GetRegNum();
-            regNumber op1Reg = tree->gtGetOp1()->GetRegNum();
-
-            GetEmitter()->emitIns_R_R_COND(ins, emitActualTypeSize(tree), dstReg, op1Reg, cond);
+            ins  = INS_csneg;
+            cond = INS_COND_MI;
             break;
         }
 
@@ -10378,6 +10300,11 @@ void CodeGen::genCodeForCond(GenTreeOp* tree)
             unreached();
     }
 
+    regNumber dstReg = tree->GetRegNum();
+    regNumber op1Reg = tree->gtGetOp1()->GetRegNum();
+    regNumber op2Reg = tree->gtGetOp2()->GetRegNum();
+
+    GetEmitter()->emitIns_R_R_R_COND(ins, emitActualTypeSize(tree), dstReg, op1Reg, op2Reg, cond);
     genProduceReg(tree);
 }
 

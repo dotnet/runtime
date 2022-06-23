@@ -526,32 +526,32 @@ enum BasicBlockFlags : unsigned __int64
 
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
-    BBF_BACKWARD_JUMP                  = MAKE_BBFLAG(24), // BB is surrounded by a backward jump/switch arc
-    BBF_RETLESS_CALL                   = MAKE_BBFLAG(25), // BBJ_CALLFINALLY that will never return (and therefore, won't need a paired
-                                                          // BBJ_ALWAYS); see isBBCallAlwaysPair().
-    BBF_LOOP_PREHEADER                 = MAKE_BBFLAG(26), // BB is a loop preheader block
-    BBF_COLD                           = MAKE_BBFLAG(27), // BB is cold
+    BBF_BACKWARD_JUMP        = MAKE_BBFLAG(24), // BB is surrounded by a backward jump/switch arc
+    BBF_RETLESS_CALL         = MAKE_BBFLAG(25), // BBJ_CALLFINALLY that will never return (and therefore, won't need a paired
+                                                // BBJ_ALWAYS); see isBBCallAlwaysPair().
+    BBF_LOOP_PREHEADER       = MAKE_BBFLAG(26), // BB is a loop preheader block
+    BBF_COLD                 = MAKE_BBFLAG(27), // BB is cold
 
-    BBF_PROF_WEIGHT                    = MAKE_BBFLAG(28), // BB weight is computed from profile data
-    BBF_IS_LIR                         = MAKE_BBFLAG(29), // Set if the basic block contains LIR (as opposed to HIR)
-    BBF_KEEP_BBJ_ALWAYS                = MAKE_BBFLAG(30), // A special BBJ_ALWAYS block, used by EH code generation. Keep the jump kind
-                                                          // as BBJ_ALWAYS. Used for the paired BBJ_ALWAYS block following the
-                                                          // BBJ_CALLFINALLY block, as well as, on x86, the final step block out of a
-                                                          // finally.
-    BBF_CLONED_FINALLY_BEGIN           = MAKE_BBFLAG(31), // First block of a cloned finally region
+    BBF_PROF_WEIGHT          = MAKE_BBFLAG(28), // BB weight is computed from profile data
+    BBF_IS_LIR               = MAKE_BBFLAG(29), // Set if the basic block contains LIR (as opposed to HIR)
+    BBF_KEEP_BBJ_ALWAYS      = MAKE_BBFLAG(30), // A special BBJ_ALWAYS block, used by EH code generation. Keep the jump kind
+                                                // as BBJ_ALWAYS. Used for the paired BBJ_ALWAYS block following the
+                                                // BBJ_CALLFINALLY block, as well as, on x86, the final step block out of a
+                                                // finally.
+    BBF_CLONED_FINALLY_BEGIN = MAKE_BBFLAG(31), // First block of a cloned finally region
 
-    BBF_CLONED_FINALLY_END             = MAKE_BBFLAG(32), // Last block of a cloned finally region
-    BBF_HAS_CALL                       = MAKE_BBFLAG(33), // BB contains a call
+    BBF_CLONED_FINALLY_END   = MAKE_BBFLAG(32), // Last block of a cloned finally region
+    BBF_HAS_CALL             = MAKE_BBFLAG(33), // BB contains a call
     BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY = MAKE_BBFLAG(34), // Block is dominated by exceptional entry.
-    BBF_BACKWARD_JUMP_TARGET           = MAKE_BBFLAG(35), // Block is a target of a backward jump
+    BBF_BACKWARD_JUMP_TARGET = MAKE_BBFLAG(35), // Block is a target of a backward jump
 
-    BBF_PATCHPOINT                     = MAKE_BBFLAG(36), // Block is a patchpoint
-    BBF_HAS_HISTOGRAM_PROFILE          = MAKE_BBFLAG(37), // BB contains a call needing a histogram profile
-    BBF_PARTIAL_COMPILATION_PATCHPOINT = MAKE_BBFLAG(38), // Block is a partial compilation patchpoint
-    BBF_HAS_ALIGN                      = MAKE_BBFLAG(39), // BB ends with 'align' instruction
-    BBF_TAILCALL_SUCCESSOR             = MAKE_BBFLAG(40), // BB has pred that has potential tail call
+    BBF_PATCHPOINT           = MAKE_BBFLAG(36), // Block is a patchpoint
+    BBF_HAS_CLASS_PROFILE    = MAKE_BBFLAG(37), // BB contains a call needing a class profile
+    BBF_PARTIAL_COMPILATION_PATCHPOINT  = MAKE_BBFLAG(38), // Block is a partial compilation patchpoint
+    BBF_HAS_ALIGN            = MAKE_BBFLAG(39), // BB ends with 'align' instruction
+    BBF_TAILCALL_SUCCESSOR   = MAKE_BBFLAG(40), // BB has pred that has potential tail call
 
-    BBF_BACKWARD_JUMP_SOURCE           = MAKE_BBFLAG(41), // Block is a source of a backward jump
+    BBF_BACKWARD_JUMP_SOURCE = MAKE_BBFLAG(41), // Block is a source of a backward jump
 
     // The following are sets of flags.
 
@@ -582,7 +582,7 @@ enum BasicBlockFlags : unsigned __int64
     // TODO: Should BBF_RUN_RARELY be added to BBF_SPLIT_GAINED ?
 
     BBF_SPLIT_GAINED = BBF_DONT_REMOVE | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_HAS_IDX_LEN | BBF_HAS_NEWARRAY | BBF_PROF_WEIGHT | \
-                       BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK | BBF_HAS_HISTOGRAM_PROFILE,
+                       BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK | BBF_HAS_CLASS_PROFILE,
 };
 
 inline constexpr BasicBlockFlags operator ~(BasicBlockFlags a)
@@ -918,8 +918,8 @@ struct BasicBlock : private LIR::Range
     };
 
     union {
-        unsigned bbStkTempsOut;          // base# for output stack temps
-        int      bbHistogramSchemaIndex; // schema index for histogram instrumentation
+        unsigned bbStkTempsOut;      // base# for output stack temps
+        int      bbClassSchemaIndex; // schema index for class instrumentation
     };
 
 #define MAX_XCPTN_INDEX (USHRT_MAX - 1)

@@ -144,8 +144,8 @@ namespace System.Net.Http.Headers
 
                 comment = input.Substring(current, commentLength);
 
-                current += commentLength;
-                current += HttpRuleParser.GetWhitespaceLength(input, current);
+                current = current + commentLength;
+                current = current + HttpRuleParser.GetWhitespaceLength(input, current);
 
                 parsedValue = new ProductInfoHeaderValue(comment);
             }
@@ -159,7 +159,7 @@ namespace System.Net.Http.Headers
                     return 0;
                 }
 
-                current += productLength;
+                current = current + productLength;
 
                 parsedValue = new ProductInfoHeaderValue(product!);
             }

@@ -31,7 +31,8 @@ namespace System.Management
         //Fires IdentifierChanged event
         internal void FireIdentifierChanged()
         {
-            IdentifierChanged?.Invoke(this, null);
+            if (IdentifierChanged != null)
+                IdentifierChanged(this, null);
         }
 
         private string queryLanguage;
@@ -73,7 +74,7 @@ namespace System.Management
         /// </value>
         public virtual string QueryString
         {
-            get { return queryString ?? string.Empty; }
+            get { return (null != queryString) ? queryString : string.Empty; }
             set
             {
                 if (queryString != value)
@@ -95,7 +96,7 @@ namespace System.Management
         /// </value>
         public virtual string QueryLanguage
         {
-            get { return queryLanguage ?? string.Empty; }
+            get { return (null != queryLanguage) ? queryLanguage : string.Empty; }
             set
             {
                 if (queryLanguage != value)
@@ -843,7 +844,7 @@ namespace System.Management
         /// </example>
         public string ClassName
         {
-            get { return className ?? string.Empty; }
+            get { return (null != className) ? className : string.Empty; }
             set { className = value; BuildQuery(); FireIdentifierChanged(); }
         }
 
@@ -862,7 +863,7 @@ namespace System.Management
         /// </remarks>
         public string Condition
         {
-            get { return condition ?? string.Empty; }
+            get { return (null != condition) ? condition : string.Empty; }
             set { condition = value; BuildQuery(); FireIdentifierChanged(); }
         }
 
@@ -932,7 +933,7 @@ namespace System.Management
                         s = s + selectedProperties[i] + ((i == (count - 1)) ? " " : ",");
                 }
                 else
-                    s += "* ";
+                    s = s + "* ";
 
                 //From clause
                 s = s + "from " + className;
@@ -1403,7 +1404,7 @@ namespace System.Management
         /// </remarks>
         public string SourceObject
         {
-            get { return sourceObject ?? string.Empty; }
+            get { return (null != sourceObject) ? sourceObject : string.Empty; }
             set { sourceObject = value; BuildQuery(); FireIdentifierChanged(); }
         }
 
@@ -1431,7 +1432,7 @@ namespace System.Management
         /// </example>
         public string RelatedClass
         {
-            get { return relatedClass ?? string.Empty; }
+            get { return (null != relatedClass) ? relatedClass : string.Empty; }
             set { relatedClass = value; BuildQuery(); FireIdentifierChanged(); }
         }
 
@@ -1459,7 +1460,7 @@ namespace System.Management
         /// </example>
         public string RelationshipClass
         {
-            get { return relationshipClass ?? string.Empty; }
+            get { return (null != relationshipClass) ? relationshipClass : string.Empty; }
             set { relationshipClass = value; BuildQuery(); FireIdentifierChanged(); }
         }
 
@@ -1477,7 +1478,7 @@ namespace System.Management
         /// </remarks>
         public string RelatedQualifier
         {
-            get { return relatedQualifier ?? string.Empty; }
+            get { return (null != relatedQualifier) ? relatedQualifier : string.Empty; }
             set { relatedQualifier = value; BuildQuery(); FireIdentifierChanged(); }
         }
 
@@ -1495,7 +1496,7 @@ namespace System.Management
         /// </remarks>
         public string RelationshipQualifier
         {
-            get { return relationshipQualifier ?? string.Empty; }
+            get { return (null != relationshipQualifier) ? relationshipQualifier : string.Empty; }
             set { relationshipQualifier = value; BuildQuery(); FireIdentifierChanged(); }
         }
 
@@ -1513,7 +1514,7 @@ namespace System.Management
         /// </remarks>
         public string RelatedRole
         {
-            get { return relatedRole ?? string.Empty; }
+            get { return (null != relatedRole) ? relatedRole : string.Empty; }
             set { relatedRole = value; BuildQuery(); FireIdentifierChanged(); }
         }
 
@@ -1530,7 +1531,7 @@ namespace System.Management
         /// </remarks>
         public string ThisRole
         {
-            get { return thisRole ?? string.Empty; }
+            get { return (null != thisRole) ? thisRole : string.Empty; }
             set { thisRole = value; BuildQuery(); FireIdentifierChanged(); }
         }
 
@@ -2013,7 +2014,7 @@ namespace System.Management
         /// </remarks>
         public string SourceObject
         {
-            get { return sourceObject ?? string.Empty; }
+            get { return (null != sourceObject) ? sourceObject : string.Empty; }
             set { sourceObject = value; BuildQuery(); FireIdentifierChanged(); }
         }
 
@@ -2031,7 +2032,7 @@ namespace System.Management
         /// </remarks>
         public string RelationshipClass
         {
-            get { return relationshipClass ?? string.Empty; }
+            get { return (null != relationshipClass) ? relationshipClass : string.Empty; }
             set { relationshipClass = value; BuildQuery(); FireIdentifierChanged(); }
         }
 
@@ -2049,7 +2050,7 @@ namespace System.Management
         /// </remarks>
         public string RelationshipQualifier
         {
-            get { return relationshipQualifier ?? string.Empty; }
+            get { return (null != relationshipQualifier) ? relationshipQualifier : string.Empty; }
             set { relationshipQualifier = value; BuildQuery(); FireIdentifierChanged(); }
         }
 
@@ -2067,7 +2068,7 @@ namespace System.Management
         /// </remarks>
         public string ThisRole
         {
-            get { return thisRole ?? string.Empty; }
+            get { return (null != thisRole) ? thisRole : string.Empty; }
             set { thisRole = value; BuildQuery(); FireIdentifierChanged(); }
         }
 
@@ -2761,7 +2762,7 @@ namespace System.Management
         /// </example>
         public string EventClassName
         {
-            get { return eventClassName ?? string.Empty; }
+            get { return (null != eventClassName) ? eventClassName : string.Empty; }
             set { eventClassName = value; BuildQuery(); }
         }
 
@@ -2795,7 +2796,7 @@ namespace System.Management
         /// </example>
         public string Condition
         {
-            get { return condition ?? string.Empty; }
+            get { return (null != condition) ? condition : string.Empty; }
             set { condition = value; BuildQuery(); }
         }
 
@@ -2952,7 +2953,7 @@ namespace System.Management
         /// </example>
         public string HavingCondition
         {
-            get { return havingCondition ?? string.Empty; }
+            get { return (null != havingCondition) ? havingCondition : string.Empty; }
             set { havingCondition = value; BuildQuery(); }
         }
 
@@ -2993,7 +2994,7 @@ namespace System.Management
                 if ((null != groupByPropertyList) && (0 < groupByPropertyList.Count))
                 {
                     int count = groupByPropertyList.Count;
-                    s += " by ";
+                    s = s + " by ";
 
                     for (int i = 0; i < count; i++)
                         s = s + groupByPropertyList[i] + (i == (count - 1) ? "" : ",");

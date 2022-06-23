@@ -316,12 +316,12 @@ namespace System.IO.Packaging
 
             PackUriHelper.ValidatedPartUri validatedPartUri = (PackUriHelper.ValidatedPartUri)PackUriHelper.ValidatePartUri(partUri);
 
-            if (_partList.TryGetValue(validatedPartUri, out PackagePart? value))
+            if (_partList.ContainsKey(validatedPartUri))
             {
                 //This will get the actual casing of the part that
                 //is stored in the partList which is equivalent to the
                 //partUri provided by the user
-                validatedPartUri = (PackUriHelper.ValidatedPartUri)value.Uri;
+                validatedPartUri = (PackUriHelper.ValidatedPartUri)_partList[validatedPartUri].Uri;
                 _partList[validatedPartUri].IsDeleted = true;
                 _partList[validatedPartUri].Close();
 
@@ -993,7 +993,7 @@ namespace System.IO.Packaging
         //Throw if the object is in a disposed state
         private void ThrowIfObjectDisposed()
         {
-            if (_disposed)
+            if (_disposed == true)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed);
         }
 
@@ -1125,9 +1125,9 @@ namespace System.IO.Packaging
 
             PackUriHelper.ValidatedPartUri validatePartUri = PackUriHelper.ValidatePartUri(partUri);
 
-            if (_partList.TryGetValue(validatePartUri, out PackagePart? value))
+            if (_partList.ContainsKey(validatePartUri))
             {
-                return value;
+                return _partList[validatePartUri];
             }
             else
             {

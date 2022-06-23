@@ -568,6 +568,8 @@ namespace System.IO
                         }
 
                         uint mask = nextEvent.mask;
+                        ReadOnlySpan<char> expandedName = ReadOnlySpan<char>.Empty;
+                        WatchedDirectory? associatedDirectoryEntry = null;
 
                         // An overflow event means that we can't trust our state without restarting since we missed events and
                         // some of those events could be a directory create, meaning we wouldn't have added the directory to the
@@ -583,23 +585,23 @@ namespace System.IO
                             }
                             break;
                         }
-
-                        // Look up the directory information for the supplied wd
-                        WatchedDirectory? associatedDirectoryEntry = null;
-                        lock (SyncObj)
+                        else
                         {
-                            if (!_wdToPathMap.TryGetValue(nextEvent.wd, out associatedDirectoryEntry))
+                            // Look up the directory information for the supplied wd
+                            lock (SyncObj)
                             {
-                                // The watch descriptor could be missing from our dictionary if it was removed
-                                // due to cancellation, or if we already removed it and this is a related event
-                                // like IN_IGNORED.  In any case, just ignore it... even if for some reason we
-                                // should have the value, there's little we can do about it at this point,
-                                // and there's no more processing of this event we can do without it.
-                                continue;
+                                if (!_wdToPathMap.TryGetValue(nextEvent.wd, out associatedDirectoryEntry))
+                                {
+                                    // The watch descriptor could be missing from our dictionary if it was removed
+                                    // due to cancellation, or if we already removed it and this is a related event
+                                    // like IN_IGNORED.  In any case, just ignore it... even if for some reason we
+                                    // should have the value, there's little we can do about it at this point,
+                                    // and there's no more processing of this event we can do without it.
+                                    continue;
+                                }
                             }
+                            expandedName = associatedDirectoryEntry.GetPath(true, nextEvent.name);
                         }
-
-                        ReadOnlySpan<char> expandedName = associatedDirectoryEntry.GetPath(true, nextEvent.name);
 
                         // To match Windows, ignore all changes that happen on the root folder itself
                         if (expandedName.IsEmpty)
@@ -841,11 +843,16 @@ namespace System.IO
                 Debug.Assert(position > 0);
                 Debug.Assert(nameLength >= 0 && (position + nameLength) <= _buffer.Length);
 
-                int lengthWithoutNullTerm = _buffer.AsSpan(position, nameLength).IndexOf((byte)'\0');
-                if (lengthWithoutNullTerm < 0)
+                int lengthWithoutNullTerm = nameLength;
+                for (int i = 0; i < nameLength; i++)
                 {
-                    lengthWithoutNullTerm = nameLength;
+                    if (_buffer[position + i] == '\0')
+                    {
+                        lengthWithoutNullTerm = i;
+                        break;
+                    }
                 }
+                Debug.Assert(lengthWithoutNullTerm <= nameLength); // should be null terminated or empty
 
                 return lengthWithoutNullTerm > 0 ?
                     Encoding.UTF8.GetString(_buffer, position, lengthWithoutNullTerm) :

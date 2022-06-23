@@ -30,7 +30,6 @@
   #define FEATURE_TAILCALL_OPT     0       // opportunistic Tail calls (without ".tail" prefix) made as fast tail calls.
   #define FEATURE_SET_FLAGS        0       // Set to true to force the JIT to mark the trees with GTF_SET_FLAGS when
                                            // the flags need to be set
-  #define FEATURE_IMPLICIT_BYREFS       0  // Support for struct parameters passed via pointers to shadow copies
   #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register
   #define FEATURE_MULTIREG_ARGS         0  // Support for passing a single argument in more than one register
   #define FEATURE_MULTIREG_RET          1  // Support for returning a single value in more than one register

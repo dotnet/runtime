@@ -540,7 +540,7 @@ namespace System.Runtime.CompilerServices
             for (; i >= 0; i--)
             {
                 chars[i] = GetHexChar((uint)(u % 16));
-                u /= 16;
+                u = u / 16;
 
                 if ((i == 0) || (!zeroPrepad && (u == 0)))
                     break;

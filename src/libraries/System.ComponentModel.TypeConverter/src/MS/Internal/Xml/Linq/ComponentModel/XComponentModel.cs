@@ -240,7 +240,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
             {
                 case XObjectChange.Name:
                     XElement? e = sender as XElement;
-                    _changeState = e?.Name;
+                    _changeState = e != null ? e.Name : null;
                     break;
             }
         }
@@ -368,11 +368,11 @@ namespace MS.Internal.Xml.Linq.ComponentModel
             {
                 case XObjectChange.Remove:
                     XElement? e = sender as XElement;
-                    _changeState = e?.Parent;
+                    _changeState = e != null ? e.Parent : null;
                     break;
                 case XObjectChange.Name:
                     e = sender as XElement;
-                    _changeState = e?.Name;
+                    _changeState = e != null ? e.Name : null;
                     break;
             }
         }

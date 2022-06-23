@@ -148,7 +148,7 @@ namespace System.Reflection.Emit
 
         internal void SetRVAData(byte[] data)
         {
-            attrs |= FieldAttributes.HasFieldRVA;
+            attrs = attrs | FieldAttributes.HasFieldRVA;
             rva_data = (byte[])data.Clone();
         }
 

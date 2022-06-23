@@ -65,7 +65,7 @@ namespace System.Data.Odbc
             get
             {
                 System.Data.ProviderBase.DbConnectionPoolGroup? poolGroup = PoolGroup;
-                return poolGroup?.ConnectionOptions;
+                return ((null != poolGroup) ? poolGroup.ConnectionOptions : null);
             }
         }
 
@@ -198,7 +198,7 @@ namespace System.Data.Odbc
         {
             Debug.Assert(DbConnectionClosedConnecting.SingletonInstance == _innerConnection, "not connecting");
             System.Data.ProviderBase.DbConnectionPoolGroup? poolGroup = PoolGroup;
-            DbConnectionOptions? connectionOptions = poolGroup?.ConnectionOptions;
+            DbConnectionOptions? connectionOptions = ((null != poolGroup) ? poolGroup.ConnectionOptions : null);
             if ((null == connectionOptions) || connectionOptions.IsEmpty)
             {
                 throw ADP.NoConnectionString();

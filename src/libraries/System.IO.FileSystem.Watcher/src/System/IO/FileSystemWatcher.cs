@@ -250,7 +250,7 @@ namespace System.IO
             }
             set
             {
-                value ??= string.Empty;
+                value = (value == null) ? string.Empty : value;
                 if (!string.Equals(_directory, value, PathInternal.StringComparison))
                 {
                     if (value.Length == 0)

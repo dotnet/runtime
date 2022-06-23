@@ -2690,7 +2690,10 @@ namespace System
                             }
                             else
                             {
-                                // We would ideally throw here if InFact(Flags.E_UserNotCanonical) but currently just accept user input known as invalid
+                                if (InFact(Flags.E_UserNotCanonical))
+                                {
+                                    // We should throw here but currently just accept user input known as invalid
+                                }
                                 dest.Append(slice);
                             }
                             break;

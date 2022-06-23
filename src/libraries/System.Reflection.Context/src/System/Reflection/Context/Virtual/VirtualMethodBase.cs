@@ -18,22 +18,22 @@ namespace System.Reflection.Context.Virtual
             get { return MethodAttributes.Public | MethodAttributes.HideBySig; }
         }
 
-        public sealed override CallingConventions CallingConvention
+        public override sealed CallingConventions CallingConvention
         {
             get { return CallingConventions.HasThis | CallingConventions.Standard; }
         }
 
-        public sealed override bool ContainsGenericParameters
+        public override sealed bool ContainsGenericParameters
         {
             get { return false; }
         }
 
-        public sealed override bool IsGenericMethod
+        public override sealed bool IsGenericMethod
         {
             get { return false; }
         }
 
-        public sealed override bool IsGenericMethodDefinition
+        public override sealed bool IsGenericMethodDefinition
         {
             get { return false; }
         }
@@ -43,42 +43,42 @@ namespace System.Reflection.Context.Virtual
             get { throw new NotSupportedException(); }
         }
 
-        public sealed override Module Module
+        public override sealed Module Module
         {
             get { return DeclaringType!.Module; }
         }
 
-        public sealed override Type? ReflectedType
+        public override sealed Type? ReflectedType
         {
             get { return DeclaringType; }
         }
 
-        public sealed override ParameterInfo ReturnParameter
+        public override sealed ParameterInfo ReturnParameter
         {
             get { return _returnParameter ??= new VirtualReturnParameter(this); }
         }
 
-        public sealed override ICustomAttributeProvider ReturnTypeCustomAttributes
+        public override sealed ICustomAttributeProvider ReturnTypeCustomAttributes
         {
             get { return ReturnParameter; }
         }
 
-        public sealed override MethodInfo GetBaseDefinition()
+        public override sealed MethodInfo GetBaseDefinition()
         {
             return this;
         }
 
-        public sealed override Type[] GetGenericArguments()
+        public override sealed Type[] GetGenericArguments()
         {
             return CollectionServices.Empty<Type>();
         }
 
-        public sealed override MethodInfo GetGenericMethodDefinition()
+        public override sealed MethodInfo GetGenericMethodDefinition()
         {
             throw new InvalidOperationException();
         }
 
-        public sealed override MethodImplAttributes GetMethodImplementationFlags()
+        public override sealed MethodImplAttributes GetMethodImplementationFlags()
         {
             return MethodImplAttributes.IL;
         }
@@ -89,7 +89,7 @@ namespace System.Reflection.Context.Virtual
         }
 
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
-        public sealed override MethodInfo MakeGenericMethod(params Type[] typeArguments)
+        public override sealed MethodInfo MakeGenericMethod(params Type[] typeArguments)
         {
             throw new InvalidOperationException(SR.Format(SR.InvalidOperation_NotGenericMethodDefinition, this));
         }

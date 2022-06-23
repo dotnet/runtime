@@ -13,7 +13,7 @@ namespace System.Text.Json.Serialization.Metadata
     [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
     internal sealed class ReflectionEmitMemberAccessor : MemberAccessor
     {
-        public override Func<object>? CreateConstructor(
+        public override JsonTypeInfo.ConstructorDelegate? CreateConstructor(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
         {
             Debug.Assert(type != null);
@@ -59,7 +59,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             generator.Emit(OpCodes.Ret);
 
-            return (Func<object>)dynamicMethod.CreateDelegate(typeof(Func<object>));
+            return (JsonTypeInfo.ConstructorDelegate)dynamicMethod.CreateDelegate(typeof(JsonTypeInfo.ConstructorDelegate));
         }
 
         public override Func<object[], T>? CreateParameterizedConstructor<T>(ConstructorInfo constructor) =>

@@ -46,7 +46,7 @@ namespace System.Xml
         {
             get { return _encoding; }
             [MemberNotNull(nameof(_encoding))]
-            set { _encoding = value ?? string.Empty; }
+            set { _encoding = ((value == null) ? string.Empty : value); }
         }
 
         // Specifies the value of the standalone attribute.

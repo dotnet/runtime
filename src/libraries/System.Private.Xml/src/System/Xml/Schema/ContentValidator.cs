@@ -1929,7 +1929,7 @@ namespace System.Xml.Schema
                 { //If the first bitset itself matched, then no need to remove anything
                     runningPositions!.RemoveRange(0, k); //Delete entries from 0 to k-1
                 }
-                matchCount -= k;
+                matchCount = matchCount - k;
                 k = 0; // Since we re-sized the array
                 while (k < matchCount)
                 {

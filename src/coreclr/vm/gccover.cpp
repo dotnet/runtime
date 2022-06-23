@@ -1359,21 +1359,19 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
 #if defined(USE_REDIRECT_FOR_GCSTRESS) && !defined(TARGET_UNIX)
     // If we're unable to redirect, then we simply won't test GC at this
     // location.
-    if (Thread::UseRedirectForGcStress())
+    if (!pThread->CheckForAndDoRedirectForGCStress(regs))
     {
-        if (!pThread->CheckForAndDoRedirectForGCStress(regs))
-        {
-            RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr, gcCover, offset);
-        }
+        RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr, gcCover, offset);
     }
-    else
-#endif // !USE_REDIRECT_FOR_GCSTRESS
-    {
+
+#else // !USE_REDIRECT_FOR_GCSTRESS
+
 #ifdef _DEBUG
-        if (!g_pConfig->SkipGCCoverage(pMD->GetModule()->GetSimpleName()))
+    if (!g_pConfig->SkipGCCoverage(pMD->GetModule()->GetSimpleName()))
 #endif
-        DoGcStress(regs, codeInfo.GetNativeCodeVersion());
-    }
+    DoGcStress(regs, codeInfo.GetNativeCodeVersion());
+
+#endif // !USE_REDIRECT_FOR_GCSTRESS
 
     return TRUE;
 }
@@ -1496,7 +1494,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     bool bShouldUpdateProlog = true;
     if (gcCover->doingEpilogChecks) {
         if (offset == 0) {
-            if ((gcCover->callerThread == 0) && (InterlockedCompareExchangeT(&gcCover->callerThread, pThread, 0) == 0)) {
+            if ((gcCover->callerThread == 0) && (FastInterlockCompareExchangePointer(&gcCover->callerThread, pThread, 0) == 0)) {
                 gcCover->callerRegs = *regs;
                 gcCover->gcCount = GCHeapUtilities::GetGCHeap()->GetGcCount();
                 bShouldUpdateProlog = false;
@@ -1709,15 +1707,16 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     }
 #endif // 0
 
+
+#if !defined(USE_REDIRECT_FOR_GCSTRESS)
     //
     // If we redirect for gc stress, we don't need this frame on the stack,
     // the redirection will push a resumable frame.
     //
     FrameWithCookie<ResumableFrame> frame(regs);
-    if (!Thread::UseRedirectForGcStress())
-    {
-        frame.Push(pThread);
-    }
+    frame.Push(pThread);
+#endif // USE_REDIRECT_FOR_GCSTRESS
+
 
     DWORD_PTR retValRegs[2] = { 0 };
     UINT  numberOfRegs = 0;
@@ -1802,10 +1801,9 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
         }
     }
 
-    if (!Thread::UseRedirectForGcStress())
-    {
-        frame.Pop(pThread);
-    }
+#if !defined(USE_REDIRECT_FOR_GCSTRESS)
+    frame.Pop(pThread);
+#endif // USE_REDIRECT_FOR_GCSTRESS
 
     if (enableWhenDone)
     {

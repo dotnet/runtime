@@ -4,7 +4,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
     <EnableDefaultItems>true</EnableDefaultItems>
-    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
 
   <ItemGroup>

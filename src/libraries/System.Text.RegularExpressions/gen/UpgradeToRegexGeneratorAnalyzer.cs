@@ -39,9 +39,9 @@ namespace System.Text.RegularExpressions.Generator
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
 
-            context.RegisterCompilationStartAction(context =>
+            context.RegisterCompilationStartAction(async compilationContext =>
             {
-                Compilation compilation = context.Compilation;
+                Compilation compilation = compilationContext.Compilation;
 
                 // Validate that the project supports the Regex Source Generator based on target framework,
                 // language version, etc.
@@ -53,7 +53,7 @@ namespace System.Text.RegularExpressions.Generator
                 // Validate that the project is not using top-level statements, since if it were, the code-fixer
                 // can't easily convert to the source generator without having to make the program not use top-level
                 // statements any longer.
-                if (ProjectUsesTopLevelStatements(compilation))
+                if (await ProjectUsesTopLevelStatements(compilation, compilationContext.CancellationToken).ConfigureAwait(false))
                 {
                     return;
                 }
@@ -64,10 +64,10 @@ namespace System.Text.RegularExpressions.Generator
                     new HashSet<string> { "Count", "EnumerateMatches", "IsMatch", "Match", "Matches", "Split", "Replace" });
 
                 // Register analysis of calls to the Regex constructors
-                context.RegisterOperationAction(context => AnalyzeObjectCreation(context, regexTypeSymbol), OperationKind.ObjectCreation);
+                compilationContext.RegisterOperationAction(context => AnalyzeObjectCreation(context, regexTypeSymbol), OperationKind.ObjectCreation);
 
                 // Register analysis of calls to Regex static methods
-                context.RegisterOperationAction(context => AnalyzeInvocation(context, regexTypeSymbol, staticMethodsToDetect), OperationKind.Invocation);
+                compilationContext.RegisterOperationAction(context => AnalyzeInvocation(context, regexTypeSymbol, staticMethodsToDetect), OperationKind.Invocation);
             });
 
             // Creates a HashSet of all of the method Symbols containing the static methods to analyze.
@@ -82,7 +82,7 @@ namespace System.Text.RegularExpressions.Generator
 #pragma warning restore RS1024 // Compare symbols correctly
                 ImmutableArray<ISymbol> allMembers = regexTypeSymbol.GetMembers();
 
-                foreach (ISymbol member in allMembers)
+                foreach(ISymbol member in allMembers)
                 {
                     if (member is IMethodSymbol method &&
                         method.IsStatic &&
@@ -253,10 +253,15 @@ namespace System.Text.RegularExpressions.Generator
         /// <summary>
         /// Detects whether or not the current project is using top-level statements.
         /// </summary>
-        private static bool ProjectUsesTopLevelStatements(Compilation compilation)
+        private static async Task<bool> ProjectUsesTopLevelStatements(Compilation compilation, CancellationToken cancellationToken)
         {
-            INamedTypeSymbol? programType = compilation.GetTypeByMetadataName("Program");
-            return programType is not null && !programType.GetMembers("<Main>$").IsEmpty;
+            SyntaxNode? root = await compilation.SyntaxTrees.FirstOrDefault().GetRootAsync(cancellationToken).ConfigureAwait(false);
+            if (root is null)
+            {
+                return false;
+            }
+
+            return root.DescendantNodesAndSelf().Where(node => node.IsKind(SyntaxKind.GlobalStatement)).Any();
         }
 
         /// <summary>
@@ -280,7 +285,7 @@ namespace System.Text.RegularExpressions.Generator
                 return false;
             }
 
-            if (((CSharpCompilation)compilation).LanguageVersion <= (LanguageVersion)1000)
+            if (compilation.SyntaxTrees.FirstOrDefault().Options is CSharpParseOptions options && options.LanguageVersion <= (LanguageVersion)1000)
             {
                 return false;
             }

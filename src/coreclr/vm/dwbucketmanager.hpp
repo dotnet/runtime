@@ -451,14 +451,13 @@ void BaseBucketParamsManager::GetAppName(_Out_writes_(maxLength) WCHAR* targetPa
     }
     CONTRACTL_END;
 
+    HMODULE hModule = WszGetModuleHandle(NULL);
     PathString appPath;
+
+
     if (GetCurrentModuleFileName(appPath) == S_OK)
     {
-        // Get just the module name; remove the path
-        const WCHAR* appName = wcsrchr(appPath, DIRECTORY_SEPARATOR_CHAR_W);
-        appName = appName ? appName + 1 : appPath;
-
-        CopyStringToBucket(targetParam, maxLength, appName);
+        CopyStringToBucket(targetParam, maxLength, appPath);
     }
     else
     {
@@ -476,7 +475,10 @@ void BaseBucketParamsManager::GetAppVersion(_Out_writes_(maxLength) WCHAR* targe
     }
     CONTRACTL_END;
 
+    HMODULE hModule = WszGetModuleHandle(NULL);
     PathString appPath;
+
+
     WCHAR verBuf[23] = {0};
     USHORT major, minor, build, revision;
 

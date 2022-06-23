@@ -537,8 +537,9 @@ namespace System.Xml.Serialization
         internal Type LoadMember(MemberInfo memberInfo)
         {
             Type? memberType;
-            if (memberInfo is FieldInfo fieldInfo)
+            if (memberInfo is FieldInfo)
             {
+                FieldInfo fieldInfo = (FieldInfo)memberInfo;
                 memberType = fieldInfo.FieldType;
                 if (fieldInfo.IsStatic)
                 {
@@ -575,8 +576,9 @@ namespace System.Xml.Serialization
         internal Type LoadMemberAddress(MemberInfo memberInfo)
         {
             Type? memberType;
-            if (memberInfo is FieldInfo fieldInfo)
+            if (memberInfo is FieldInfo)
             {
+                FieldInfo fieldInfo = (FieldInfo)memberInfo;
                 memberType = fieldInfo.FieldType;
                 if (fieldInfo.IsStatic)
                 {
@@ -616,8 +618,9 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode("calls GetPropertyMethodFromBaseType")]
         internal void StoreMember(MemberInfo memberInfo)
         {
-            if (memberInfo is FieldInfo fieldInfo)
+            if (memberInfo is FieldInfo)
             {
+                FieldInfo fieldInfo = (FieldInfo)memberInfo;
                 if (fieldInfo.IsStatic)
                 {
                     _ilGen!.Emit(OpCodes.Stsfld, fieldInfo);

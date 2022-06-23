@@ -844,7 +844,7 @@ namespace System.Data.Odbc
                 int flags;
 
                 flags = GetInfoInt32Unhandled((ODBC32.SQL_INFO)sqlconvert);
-                flags &= (int)sqlcvt;
+                flags = flags & (int)sqlcvt;
 
                 ProviderInfo.TestedSQLTypes |= (int)sqlcvt;
                 ProviderInfo.SupportedSQLTypes |= flags;

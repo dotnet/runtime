@@ -1972,8 +1972,8 @@ namespace System.Data.OleDb
                 MetaData info = _metadata[i];
                 if ((null != info.baseTableName) && (0 < info.baseTableName.Length))
                 {
-                    catalogName = info.baseCatalogName ?? "";
-                    schemaName = info.baseSchemaName ?? "";
+                    catalogName = ((null != info.baseCatalogName) ? info.baseCatalogName : "");
+                    schemaName = ((null != info.baseSchemaName) ? info.baseSchemaName : "");
                     if (null == baseTableName)
                     {
                         baseSchemaName = schemaName;

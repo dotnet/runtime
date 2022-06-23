@@ -23,7 +23,7 @@ namespace System.Runtime.Serialization.Json
             string xmlContent = jsonReader.ReadElementContentAsString();
 
             DataContractSerializer dataContractSerializer = new DataContractSerializer(TraditionalDataContract.UnderlyingType,
-                GetKnownTypesFromContext(context, context?.SerializerKnownTypeList), 1, false, false); //  maxItemsInObjectGraph //  ignoreExtensionDataObject //  preserveObjectReferences
+                GetKnownTypesFromContext(context, (context == null) ? null : context.SerializerKnownTypeList), 1, false, false); //  maxItemsInObjectGraph //  ignoreExtensionDataObject //  preserveObjectReferences
 
             MemoryStream memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(xmlContent));
             object? xmlValue;
@@ -47,7 +47,7 @@ namespace System.Runtime.Serialization.Json
         public override void WriteJsonValueCore(XmlWriterDelegator jsonWriter, object obj, XmlObjectSerializerWriteContextComplexJson? context, RuntimeTypeHandle declaredTypeHandle)
         {
             DataContractSerializer dataContractSerializer = new DataContractSerializer(Type.GetTypeFromHandle(declaredTypeHandle)!,
-                GetKnownTypesFromContext(context, context?.SerializerKnownTypeList), 1, false, false); //  maxItemsInObjectGraph //  ignoreExtensionDataObject //  preserveObjectReferences
+                GetKnownTypesFromContext(context, (context == null) ? null : context.SerializerKnownTypeList), 1, false, false); //  maxItemsInObjectGraph //  ignoreExtensionDataObject //  preserveObjectReferences
 
             MemoryStream memoryStream = new MemoryStream();
             dataContractSerializer.WriteObject(memoryStream, obj);

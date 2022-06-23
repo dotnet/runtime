@@ -61,15 +61,7 @@ namespace System.IO.Tests
             try
             {
                 Assert.Equal(FileAttributes.ReadOnly, FileAttributes.ReadOnly & GetAttributes(path));
-                if (OperatingSystem.IsWindows())
-                {
-                    Assert.NotEqual(FileAttributes.ReadOnly, FileAttributes.ReadOnly & GetAttributes(linkPath));   
-                }
-                else
-                {
-                    // On Unix, Get/SetAttributes FileAttributes.ReadOnly operates on the target of the link.
-                    Assert.Equal(FileAttributes.ReadOnly, FileAttributes.ReadOnly & GetAttributes(linkPath));   
-                }
+                Assert.NotEqual(FileAttributes.ReadOnly, FileAttributes.ReadOnly & GetAttributes(linkPath));
             }
             finally
             {

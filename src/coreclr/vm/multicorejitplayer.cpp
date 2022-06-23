@@ -318,7 +318,7 @@ void PlayerModuleInfo::Dump(const CHAR * prefix, int index)
         i ++;
     }
 
-    MulticoreJitTrace(("%s", ssBuff.GetUTF8()));
+    MulticoreJitTrace(("%s", ssBuff.GetUTF8NoConvert()));
 }
 
 #endif

@@ -16,7 +16,7 @@
 
 // Keep these in sync with src/coreclr/tools/Common/Internal/Runtime/ModuleHeaders.cs
 #define READYTORUN_MAJOR_VERSION 0x0006
-#define READYTORUN_MINOR_VERSION 0x0002
+#define READYTORUN_MINOR_VERSION 0x0001
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 0x006
 

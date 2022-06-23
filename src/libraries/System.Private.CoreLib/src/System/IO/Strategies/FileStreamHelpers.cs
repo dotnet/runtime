@@ -19,10 +19,10 @@ namespace System.IO.Strategies
             return WrapIfDerivedType(fileStream, strategy);
         }
 
-        internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize, UnixFileMode? unixCreateMode)
+        internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
         {
             FileStreamStrategy strategy =
-                EnableBufferingIfNeeded(ChooseStrategyCore(path, mode, access, share, options, preallocationSize, unixCreateMode), bufferSize);
+                EnableBufferingIfNeeded(ChooseStrategyCore(path, mode, access, share, options, preallocationSize), bufferSize);
 
             return WrapIfDerivedType(fileStream, strategy);
         }

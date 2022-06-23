@@ -343,7 +343,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public virtual void BeginCatchBlock(Type? exceptionType)
+        public virtual void BeginCatchBlock(Type exceptionType)
         {
             if (!InExceptionBlock)
                 throw new NotSupportedException("Not in an exception block");

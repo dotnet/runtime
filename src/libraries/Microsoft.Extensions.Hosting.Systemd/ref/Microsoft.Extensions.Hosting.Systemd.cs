@@ -8,7 +8,6 @@ namespace Microsoft.Extensions.Hosting
 {
     public static partial class SystemdHostBuilderExtensions
     {
-        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddSystemd(this Microsoft.Extensions.DependencyInjection.IServiceCollection services) { throw null; }
         public static Microsoft.Extensions.Hosting.IHostBuilder UseSystemd(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder) { throw null; }
     }
 }
@@ -32,11 +31,11 @@ namespace Microsoft.Extensions.Hosting.Systemd
     {
         public static bool IsSystemdService() { throw null; }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("maccatalyst")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
     public partial class SystemdLifetime : Microsoft.Extensions.Hosting.IHostLifetime, System.IDisposable
     {
         public SystemdLifetime(Microsoft.Extensions.Hosting.IHostEnvironment environment, Microsoft.Extensions.Hosting.IHostApplicationLifetime applicationLifetime, Microsoft.Extensions.Hosting.Systemd.ISystemdNotifier systemdNotifier, Microsoft.Extensions.Logging.ILoggerFactory loggerFactory) { }
@@ -44,7 +43,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
         public System.Threading.Tasks.Task StopAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task WaitForStartAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public partial class SystemdNotifier : Microsoft.Extensions.Hosting.Systemd.ISystemdNotifier
     {
         public SystemdNotifier() { }

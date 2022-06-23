@@ -32,8 +32,9 @@ namespace System
 
         public override bool Equals(object? obj)
         {
-            if (obj is RuntimeTypeHandle handle)
+            if (obj is RuntimeTypeHandle)
             {
+                RuntimeTypeHandle handle = (RuntimeTypeHandle)obj;
                 return Equals(handle);
             }
             return false;

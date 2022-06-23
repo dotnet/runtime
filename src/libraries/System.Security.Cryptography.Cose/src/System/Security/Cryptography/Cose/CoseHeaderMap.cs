@@ -11,6 +11,7 @@ namespace System.Security.Cryptography.Cose
 {
     public sealed class CoseHeaderMap : IEnumerable<(CoseHeaderLabel Label, ReadOnlyMemory<byte> EncodedValue)>
     {
+        private static readonly byte[] s_emptyBstrEncoded = new byte[] { 0x40 };
         private static readonly CoseHeaderMap s_emptyMap = new CoseHeaderMap(isReadOnly: true);
 
         public bool IsReadOnly { get; internal set; }
@@ -198,9 +199,8 @@ namespace System.Security.Cryptography.Cose
 
             if (map._headerParameters.Count == 0 && mustReturnEmptyBstrIfEmpty && !shouldSlipAlgHeader)
             {
-                // Empty Bstr encoded
-                destination[0] = 0x40;
-                return 1;
+                s_emptyBstrEncoded.CopyTo(destination);
+                return s_emptyBstrEncoded.Length;
             }
 
             int mapLength = map._headerParameters.Count;

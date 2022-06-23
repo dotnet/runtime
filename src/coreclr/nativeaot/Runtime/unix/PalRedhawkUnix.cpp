@@ -734,9 +734,6 @@ static int W32toUnixAccessControl(uint32_t flProtect)
     case PAGE_EXECUTE_READWRITE:
         prot = PROT_READ | PROT_WRITE | PROT_EXEC;
         break;
-    case PAGE_READONLY:
-        prot = PROT_READ;
-        break;
     default:
         ASSERT(false);
         break;
@@ -815,11 +812,7 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualProtect(_In_ void* pAddre
 {
     int unixProtect = W32toUnixAccessControl(protect);
 
-    // mprotect expects the address to be page-aligned
-    uint8_t* pPageStart = ALIGN_DOWN((uint8_t*)pAddress, OS_PAGE_SIZE);
-    size_t memSize = ALIGN_UP((uint8_t*)pAddress + size, OS_PAGE_SIZE) - pPageStart;
-
-    return mprotect(pPageStart, memSize, unixProtect) == 0;
+    return mprotect(pAddress, size, unixProtect) == 0;
 }
 
 REDHAWK_PALEXPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ void* pNewBuffer)

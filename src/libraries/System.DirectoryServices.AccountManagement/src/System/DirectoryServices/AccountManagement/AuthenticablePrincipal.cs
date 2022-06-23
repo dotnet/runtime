@@ -444,7 +444,7 @@ namespace System.DirectoryServices.AccountManagement
                     // to add some type of tag to the property names to differentiate them here
                     bool? val = rosf.GetChangeStatusForProperty(propertyName);
 
-                    if (val.HasValue)
+                    if (val.HasValue == true)
                         return val.Value;
 
                     if (propertyName.StartsWith(PropertyNames.AcctInfoPrefix, StringComparison.Ordinal))

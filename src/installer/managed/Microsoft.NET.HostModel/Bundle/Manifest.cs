@@ -139,7 +139,7 @@ namespace Microsoft.NET.HostModel.Bundle
 
         public long Write(BinaryWriter writer)
         {
-            BundleID ??= GenerateDeterministicId();
+            BundleID = BundleID ?? GenerateDeterministicId();
 
             long startOffset = writer.BaseStream.Position;
 

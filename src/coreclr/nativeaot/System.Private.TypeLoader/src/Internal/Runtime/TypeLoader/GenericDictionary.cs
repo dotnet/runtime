@@ -59,7 +59,7 @@ namespace Internal.Runtime.TypeLoader
             : base(cells)
         { }
 
-        public override unsafe IntPtr Allocate()
+        public unsafe override IntPtr Allocate()
         {
             Debug.Assert(_addressOfFirstCellSlot == IntPtr.Zero);
 

@@ -749,8 +749,8 @@ namespace System.Collections.Concurrent
                             // the bit-masking, because we only do this if tail == int.MaxValue, meaning that all
                             // bits are set, so all of the bits we're keeping will also be set.  Thus it's impossible
                             // for the head to end up > than the tail, since you can't set any more bits than all of them.
-                            _headIndex &= _mask;
-                            _tailIndex = tail &= _mask;
+                            _headIndex = _headIndex & _mask;
+                            _tailIndex = tail = tail & _mask;
                             Debug.Assert(_headIndex - _tailIndex <= 0);
 
                             Interlocked.Exchange(ref _currentOp, (int)Operation.Add); // ensure subsequent reads aren't reordered before this

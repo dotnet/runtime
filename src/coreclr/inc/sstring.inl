@@ -651,25 +651,6 @@ inline const WCHAR *SString::GetUnicode() const
     SS_RETURN GetRawUnicode();
 }
 
-// Get a const pointer to the internal buffer as a UTF8 string.
-inline const UTF8 *SString::GetUTF8() const
-{
-    SS_CONTRACT(const UTF8 *)
-    {
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(this));
-        SS_POSTCONDITION(CheckPointer(RETVAL));
-        if (IsRepresentation(REPRESENTATION_UTF8)) NOTHROW; else THROWS;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    }
-    SS_CONTRACT_END;
-
-    ConvertToUTF8();
-
-    SS_RETURN GetRawUTF8();
-}
-
 // Normalize the string to unicode.  This will make many operations nonfailing.
 inline void SString::Normalize() const
 {
@@ -1926,6 +1907,44 @@ inline void SString::ConvertToIteratable() const
 }
 
 //-----------------------------------------------------------------------------
+// Create iterators on the string.
+//-----------------------------------------------------------------------------
+
+inline SString::UIterator SString::BeginUnicode()
+{
+    SS_CONTRACT(SString::UIterator)
+    {
+        GC_NOTRIGGER;
+        PRECONDITION(CheckPointer(this));
+        SS_POSTCONDITION(CheckValue(RETVAL));
+        THROWS;
+    }
+    SS_CONTRACT_END;
+
+    ConvertToUnicode();
+    EnsureWritable();
+
+    SS_RETURN UIterator(this, 0);
+}
+
+inline SString::UIterator SString::EndUnicode()
+{
+    SS_CONTRACT(SString::UIterator)
+    {
+        GC_NOTRIGGER;
+        PRECONDITION(CheckPointer(this));
+        SS_POSTCONDITION(CheckValue(RETVAL));
+        THROWS;
+    }
+    SS_CONTRACT_END;
+
+    ConvertToUnicode();
+    EnsureWritable();
+
+    SS_RETURN UIterator(this, GetCount());
+}
+
+//-----------------------------------------------------------------------------
 // Create CIterators on the string.
 //-----------------------------------------------------------------------------
 
@@ -2114,6 +2133,74 @@ inline WCHAR SString::Index::operator[](int index) const
         return *(CHAR*)&GetAt(index);
     else
         return *(WCHAR*)&GetAt(index);
+}
+
+//-----------------------------------------------------------------------------
+// Iterator support routines
+//-----------------------------------------------------------------------------
+
+inline SString::UIndex::UIndex()
+{
+    LIMITED_METHOD_CONTRACT;
+}
+
+inline SString::UIndex::UIndex(SString *string, SCOUNT_T index)
+  : SBuffer::Index(string, index*sizeof(WCHAR))
+{
+    SS_CONTRACT_VOID
+    {
+        GC_NOTRIGGER;
+        PRECONDITION(CheckPointer(string));
+        PRECONDITION(string->IsRepresentation(REPRESENTATION_UNICODE));
+        PRECONDITION(DoCheck(0));
+        SS_POSTCONDITION(CheckPointer(this));
+        NOTHROW;
+        CANNOT_TAKE_LOCK;
+    }
+    SS_CONTRACT_END;
+
+    SS_RETURN;
+}
+
+inline WCHAR &SString::UIndex::GetAt(SCOUNT_T delta) const
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return ((WCHAR*)m_ptr)[delta];
+}
+
+inline void SString::UIndex::Skip(SCOUNT_T delta)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_ptr += delta * sizeof(WCHAR);
+}
+
+inline SCOUNT_T SString::UIndex::Subtract(const UIndex &i) const
+{
+    WRAPPER_NO_CONTRACT;
+
+    return (SCOUNT_T) (GetUnicode() - i.GetUnicode());
+}
+
+inline CHECK SString::UIndex::DoCheck(SCOUNT_T delta) const
+{
+    CANNOT_HAVE_CONTRACT;
+#if _DEBUG
+    const SString *string = (const SString *) GetContainerDebug();
+
+    CHECK(GetUnicode() + delta >= string->GetRawUnicode());
+    CHECK(GetUnicode() + delta <= string->GetRawUnicode() + string->GetCount());
+#endif
+
+    CHECK_OK;
+}
+
+inline WCHAR *SString::UIndex::GetUnicode() const
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return (WCHAR*) m_ptr;
 }
 
 //-----------------------------------------------------------------------------

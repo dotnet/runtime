@@ -903,7 +903,7 @@ OBJECTREF AppDomain::GetMissingObject()
         // Retrieve the value static field and store it.
         OBJECTHANDLE hndMissing = CreateHandle(pValueFD->GetStaticOBJECTREF());
 
-        if (InterlockedCompareExchangeT(&m_hndMissing, hndMissing, NULL) != NULL)
+        if (FastInterlockCompareExchangePointer(&m_hndMissing, hndMissing, NULL) != NULL)
         {
             // Exchanged failed. The m_hndMissing did not equal NULL and was returned.
             DestroyHandle(hndMissing);
@@ -2390,7 +2390,7 @@ void FileLoadLock::SetError(Exception *ex)
 void FileLoadLock::AddRef()
 {
     LIMITED_METHOD_CONTRACT;
-    InterlockedIncrement((LONG *) &m_dwRefCount);
+    FastInterlockIncrement((LONG *) &m_dwRefCount);
 }
 
 UINT32 FileLoadLock::Release()
@@ -2403,7 +2403,7 @@ UINT32 FileLoadLock::Release()
     }
     CONTRACTL_END;
 
-    LONG count = InterlockedDecrement((LONG *) &m_dwRefCount);
+    LONG count = FastInterlockDecrement((LONG *) &m_dwRefCount);
     if (count == 0)
         delete this;
 
@@ -4034,7 +4034,7 @@ RCWRefCache *AppDomain::GetRCWRefCache()
 
     if (!m_pRCWRefCache) {
         NewHolder<RCWRefCache> pRCWRefCache = new RCWRefCache(this);
-        if (InterlockedCompareExchangeT(&m_pRCWRefCache, (RCWRefCache *)pRCWRefCache, NULL) == NULL)
+        if (FastInterlockCompareExchangePointer(&m_pRCWRefCache, (RCWRefCache *)pRCWRefCache, NULL) == NULL)
         {
             pRCWRefCache.SuppressRelease();
         }

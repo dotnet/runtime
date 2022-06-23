@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         public X509SubjectKeyIdentifierExtension(ReadOnlySpan<byte> subjectKeyIdentifier, bool critical)
-            : base(Oids.SubjectKeyIdentifierOid, EncodeExtension(subjectKeyIdentifier), critical, skipCopy: true)
+            : base(Oids.SubjectKeyIdentifierOid, EncodeExtension(subjectKeyIdentifier), critical)
         {
         }
 
@@ -35,12 +35,12 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         public X509SubjectKeyIdentifierExtension(PublicKey key, X509SubjectKeyIdentifierHashAlgorithm algorithm, bool critical)
-            : base(Oids.SubjectKeyIdentifierOid, EncodeExtension(key, algorithm), critical, skipCopy: true)
+            : base(Oids.SubjectKeyIdentifierOid, EncodeExtension(key, algorithm), critical)
         {
         }
 
         public X509SubjectKeyIdentifierExtension(string subjectKeyIdentifier, bool critical)
-            : base(Oids.SubjectKeyIdentifierOid, EncodeExtension(subjectKeyIdentifier), critical, skipCopy: true)
+            : base(Oids.SubjectKeyIdentifierOid, EncodeExtension(subjectKeyIdentifier), critical)
         {
         }
 

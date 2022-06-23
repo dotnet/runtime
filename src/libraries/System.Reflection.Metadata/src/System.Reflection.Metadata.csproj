@@ -109,6 +109,7 @@ System.Reflection.PortableExecutable.ManagedPEBuilder</PackageDescription>
     <Compile Include="System\Reflection\Internal\MemoryBlocks\StreamMemoryBlockProvider.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\BitArithmetic.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\StringUtils.cs" />
+    <Compile Include="System\Reflection\Internal\Utilities\EmptyArray.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\EncodingHelper.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
     <Compile Include="System\Reflection\Internal\Utilities\EncodingHelper.netcoreapp.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
     <Compile Include="System\Reflection\Internal\Utilities\StreamExtensions.netcoreapp.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />

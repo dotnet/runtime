@@ -436,7 +436,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	MonoClass *klass, *parent = NULL;
 	guint32 cols [MONO_TYPEDEF_SIZE];
 	guint32 cols_next [MONO_TYPEDEF_SIZE];
-	guint32 tidx = mono_metadata_token_index (type_token);
+	guint tidx = mono_metadata_token_index (type_token);
 	MonoGenericContext *context = NULL;
 	const char *name, *nspace;
 	guint icount = 0;
@@ -2020,8 +2020,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	int i;
 	const int top = mono_class_get_field_count (klass);
 	guint32 layout = mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK;
-	guint32 pass, passes;
-	gint32 real_size;
+	guint32 pass, passes, real_size;
 	gboolean gc_aware_layout = FALSE;
 	gboolean has_static_fields = FALSE;
 	gboolean has_references = FALSE;
@@ -2271,7 +2270,8 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	case TYPE_ATTRIBUTE_EXPLICIT_LAYOUT: {
 		real_size = 0;
 		for (i = 0; i < top; i++) {
-			gint32 align, size;
+			gint32 align;
+			guint32 size;
 			MonoType *ftype;
 
 			field = &klass->fields [i];
@@ -2815,7 +2815,7 @@ mono_get_unique_iid (MonoClass *klass)
 
 	iid = mono_bitset_find_first_unset (global_interface_bitset, -1);
 	if (iid < 0) {
-		guint32 old_size = mono_bitset_size (global_interface_bitset);
+		int old_size = mono_bitset_size (global_interface_bitset);
 		MonoBitSet *new_set = mono_bitset_clone (global_interface_bitset, old_size * 2);
 		mono_bitset_free (global_interface_bitset);
 		global_interface_bitset = new_set;
@@ -2825,7 +2825,7 @@ mono_get_unique_iid (MonoClass *klass)
 	/* set the bit also in the per-image set */
 	if (!mono_class_is_ginst (klass)) {
 		if (klass->image->interface_bitset) {
-			if (GINT_TO_UINT32(iid) >= mono_bitset_size (klass->image->interface_bitset)) {
+			if (iid >= mono_bitset_size (klass->image->interface_bitset)) {
 				MonoBitSet *new_set = mono_bitset_clone (klass->image->interface_bitset, iid + 1);
 				mono_bitset_free (klass->image->interface_bitset);
 				klass->image->interface_bitset = new_set;
@@ -3567,11 +3567,12 @@ mono_class_setup_methods (MonoClass *klass)
 void
 mono_class_setup_properties (MonoClass *klass)
 {
-	guint startm, endm;
+	guint startm, endm, i, j;
 	guint32 cols [MONO_PROPERTY_SIZE];
 	MonoTableInfo *msemt = &klass->image->tables [MONO_TABLE_METHODSEMANTICS];
 	MonoProperty *properties;
-	guint32 first, last, count;
+	guint32 last;
+	int first, count;
 	MonoClassPropertyInfo *info;
 
 	info = mono_class_get_property_info (klass);
@@ -3589,7 +3590,7 @@ mono_class_setup_properties (MonoClass *klass)
 		MonoClassPropertyInfo *ginfo = mono_class_get_property_info (gklass);
 		properties = mono_class_new0 (klass, MonoProperty, ginfo->count + 1);
 
-		for (guint32 i = 0; i < ginfo->count; i++) {
+		for (i = 0; i < ginfo->count; i++) {
 			ERROR_DECL (error);
 			MonoProperty *prop = &properties [i];
 
@@ -3610,7 +3611,6 @@ mono_class_setup_properties (MonoClass *klass)
 		count = ginfo->count;
 	} else {
 		first = mono_metadata_properties_from_typedef (klass->image, mono_metadata_token_index (klass->type_token) - 1, &last);
-		g_assert ((last - first) >= 0);
 		count = last - first;
 
 		if (count) {
@@ -3620,7 +3620,7 @@ mono_class_setup_properties (MonoClass *klass)
 		}
 
 		properties = (MonoProperty *)mono_class_alloc0 (klass, sizeof (MonoProperty) * count);
-		for (guint32 i = first; i < last; ++i) {
+		for (i = first; i < last; ++i) {
 			mono_metadata_decode_table_row (klass->image, MONO_TABLE_PROPERTY, i, cols, MONO_PROPERTY_SIZE);
 			properties [i - first].parent = klass;
 			properties [i - first].attrs = cols [MONO_PROPERTY_FLAGS];
@@ -3628,7 +3628,7 @@ mono_class_setup_properties (MonoClass *klass)
 
 			startm = mono_metadata_methods_from_property (klass->image, i, &endm);
 			int first_idx = mono_class_get_first_method_idx (klass);
-			for (guint j = startm; j < endm; ++j) {
+			for (j = startm; j < endm; ++j) {
 				MonoMethod *method;
 
 				mono_metadata_decode_row (msemt, j, cols, MONO_METHOD_SEMA_SIZE);
@@ -3690,10 +3690,11 @@ inflate_method_listz (MonoMethod **methods, MonoClass *klass, MonoGenericContext
 void
 mono_class_setup_events (MonoClass *klass)
 {
-	guint32 first, last, count;
-	guint startm, endm;
+	int first, count;
+	guint startm, endm, i, j;
 	guint32 cols [MONO_EVENT_SIZE];
 	MonoTableInfo *msemt = &klass->image->tables [MONO_TABLE_METHODSEMANTICS];
+	guint32 last;
 	MonoEvent *events;
 
 	MonoClassEventInfo *info = mono_class_get_event_info (klass);
@@ -3717,7 +3718,7 @@ mono_class_setup_events (MonoClass *klass)
 		if (count)
 			context = mono_class_get_context (klass);
 
-		for (guint32 i = 0; i < count; i++) {
+		for (i = 0; i < count; i++) {
 			ERROR_DECL (error);
 			MonoEvent *event = &events [i];
 			MonoEvent *gevent = &ginfo->events [i];
@@ -3738,7 +3739,6 @@ mono_class_setup_events (MonoClass *klass)
 		}
 	} else {
 		first = mono_metadata_events_from_typedef (klass->image, mono_metadata_token_index (klass->type_token) - 1, &last);
-		g_assert ((last - first) >= 0);
 		count = last - first;
 
 		if (count) {
@@ -3749,7 +3749,7 @@ mono_class_setup_events (MonoClass *klass)
 		}
 
 		events = (MonoEvent *)mono_class_alloc0 (klass, sizeof (MonoEvent) * count);
-		for (guint32 i = first; i < last; ++i) {
+		for (i = first; i < last; ++i) {
 			MonoEvent *event = &events [i - first];
 
 			mono_metadata_decode_table_row (klass->image, MONO_TABLE_EVENT, i, cols, MONO_EVENT_SIZE);
@@ -3759,7 +3759,7 @@ mono_class_setup_events (MonoClass *klass)
 
 			startm = mono_metadata_methods_from_event (klass->image, i, &endm);
 			int first_idx = mono_class_get_first_method_idx (klass);
-			for (guint j = startm; j < endm; ++j) {
+			for (j = startm; j < endm; ++j) {
 				MonoMethod *method;
 
 				mono_metadata_decode_row (msemt, j, cols, MONO_METHOD_SEMA_SIZE);

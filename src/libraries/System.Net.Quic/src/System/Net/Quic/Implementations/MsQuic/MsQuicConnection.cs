@@ -19,7 +19,7 @@ using static Microsoft.Quic.MsQuic;
 
 namespace System.Net.Quic.Implementations.MsQuic
 {
-    internal sealed class MsQuicConnection : IDisposable
+    internal sealed class MsQuicConnection : QuicConnectionProvider
     {
         private static readonly Oid s_clientAuthOid = new Oid("1.3.6.1.5.5.7.3.2", "1.3.6.1.5.5.7.3.2");
         private static readonly Oid s_serverAuthOid = new Oid("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.1");
@@ -194,15 +194,15 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        internal IPEndPoint? LocalEndPoint => _localEndPoint;
+        internal override IPEndPoint? LocalEndPoint => _localEndPoint;
 
-        internal EndPoint RemoteEndPoint => _remoteEndPoint;
+        internal override EndPoint RemoteEndPoint => _remoteEndPoint;
 
-        internal X509Certificate? RemoteCertificate => _state.RemoteCertificate;
+        internal override X509Certificate? RemoteCertificate => _state.RemoteCertificate;
 
-        internal SslApplicationProtocol NegotiatedApplicationProtocol => _negotiatedAlpnProtocol;
+        internal override SslApplicationProtocol NegotiatedApplicationProtocol => _negotiatedAlpnProtocol;
 
-        internal bool Connected => _state.Connected;
+        internal override bool Connected => _state.Connected;
 
         private static unsafe int HandleEventConnected(State state, ref QUIC_CONNECTION_EVENT connectionEvent)
         {
@@ -439,7 +439,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        internal async ValueTask<MsQuicStream> AcceptStreamAsync(CancellationToken cancellationToken = default)
+        internal override async ValueTask<QuicStreamProvider> AcceptStreamAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
 
@@ -457,7 +457,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return stream;
         }
 
-        private async ValueTask<MsQuicStream> OpenStreamAsync(QUIC_STREAM_OPEN_FLAGS flags, CancellationToken cancellationToken)
+        private async ValueTask<QuicStreamProvider> OpenStreamAsync(QUIC_STREAM_OPEN_FLAGS flags, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
             if (!Connected)
@@ -480,24 +480,24 @@ namespace System.Net.Quic.Implementations.MsQuic
             return stream;
         }
 
-        internal ValueTask<MsQuicStream> OpenUnidirectionalStreamAsync(CancellationToken cancellationToken = default)
+        internal override ValueTask<QuicStreamProvider> OpenUnidirectionalStreamAsync(CancellationToken cancellationToken = default)
             => OpenStreamAsync(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL, cancellationToken);
-        internal ValueTask<MsQuicStream> OpenBidirectionalStreamAsync(CancellationToken cancellationToken = default)
+        internal override ValueTask<QuicStreamProvider> OpenBidirectionalStreamAsync(CancellationToken cancellationToken = default)
             => OpenStreamAsync(QUIC_STREAM_OPEN_FLAGS.NONE, cancellationToken);
 
-        internal int GetRemoteAvailableUnidirectionalStreamCount()
+        internal override int GetRemoteAvailableUnidirectionalStreamCount()
         {
             Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
             return MsQuicParameterHelpers.GetUShortParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_CONN_LOCAL_UNIDI_STREAM_COUNT);
         }
 
-        internal int GetRemoteAvailableBidirectionalStreamCount()
+        internal override int GetRemoteAvailableBidirectionalStreamCount()
         {
             Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
             return MsQuicParameterHelpers.GetUShortParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_CONN_LOCAL_BIDI_STREAM_COUNT);
         }
 
-        internal unsafe ValueTask ConnectAsync(CancellationToken cancellationToken = default)
+        internal unsafe override ValueTask ConnectAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
 
@@ -680,7 +680,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
@@ -757,7 +757,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         // TODO: this appears abortive and will cause prior successfully shutdown and closed streams to drop data.
         // It's unclear how to gracefully wait for a connection to be 100% done.
-        internal ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default)
+        internal override ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default)
         {
             if (_disposed == 1)
             {

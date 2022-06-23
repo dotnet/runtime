@@ -90,9 +90,9 @@ namespace System.Composition.Hosting.Core
         {
             var hc = _contractType.GetHashCode();
             if (_contractName != null)
-                hc ^= _contractName.GetHashCode();
+                hc = hc ^ _contractName.GetHashCode();
             if (_metadataConstraints != null)
-                hc ^= ConstraintHashCode(_metadataConstraints);
+                hc = hc ^ ConstraintHashCode(_metadataConstraints);
             return hc;
         }
 

@@ -29,14 +29,14 @@ namespace System.Security.Cryptography.Tests
 
         public static IEnumerable<object[]> GetHMACs()
         {
-            if (!PlatformDetection.IsBrowser)
+            return new[]
             {
-                yield return new object[] { new HMACMD5(), HashAlgorithmName.MD5 };
-            }
-            yield return new object[] { new HMACSHA1(), HashAlgorithmName.SHA1 };
-            yield return new object[] { new HMACSHA256(), HashAlgorithmName.SHA256 };
-            yield return new object[] { new HMACSHA384(), HashAlgorithmName.SHA384 };
-            yield return new object[] { new HMACSHA512(), HashAlgorithmName.SHA512 };
+                new object[] { new HMACMD5(), HashAlgorithmName.MD5 },
+                new object[] { new HMACSHA1(), HashAlgorithmName.SHA1 },
+                new object[] { new HMACSHA256(), HashAlgorithmName.SHA256 },
+                new object[] { new HMACSHA384(), HashAlgorithmName.SHA384 },
+                new object[] { new HMACSHA512(), HashAlgorithmName.SHA512 },
+            };
         }
 
         [Fact]
@@ -81,6 +81,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         [MemberData(nameof(GetHMACs))]
         public static void VerifyIncrementalHMAC(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithm)
         {
@@ -94,6 +95,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         [MemberData(nameof(GetHMACs))]
         public static void VerifyIncrementalHMAC_SpanKey(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithm)
         {
@@ -160,6 +162,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         [MemberData(nameof(GetHMACs))]
         public static void VerifyEmptyHMAC(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithm)
         {
@@ -195,6 +198,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         [MemberData(nameof(GetHMACs))]
         public static void VerifyTrivialHMAC(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithm)
         {
@@ -225,6 +229,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public static void AppendDataAfterHMACClose()
         {
             using (IncrementalHash hash = IncrementalHash.CreateHMAC(HashAlgorithmName.SHA256, s_hmacKey))
@@ -251,6 +256,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public static void GetHMACTwice()
         {
             using (IncrementalHash hash = IncrementalHash.CreateHMAC(HashAlgorithmName.SHA256, s_hmacKey))
@@ -274,6 +280,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public static void ModifyAfterHMACDispose()
         {
             using (IncrementalHash hash = IncrementalHash.CreateHMAC(HashAlgorithmName.SHA256, s_hmacKey))
@@ -292,6 +299,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public static void UnknownHmacAlgorithm()
         {
             Assert.ThrowsAny<CryptographicException>(
@@ -310,6 +318,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         [MemberData(nameof(GetHMACs))]
         public static void VerifyIncrementalHMAC_Span(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithm)
         {
@@ -386,6 +395,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         [MemberData(nameof(GetHMACs))]
         public static void VerifyEmptyHMAC_Span(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithm)
         {
@@ -423,6 +433,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         [MemberData(nameof(GetHMACs))]
         public static void VerifyTrivialHMAC_Span(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithm)
         {
@@ -463,6 +474,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         [MemberData(nameof(GetHMACs))]
         public static void Dispose_HMAC_ThrowsException(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithm)
         {
@@ -499,6 +511,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         [SkipOnPlatform(TestPlatforms.Android, "Android doesn't support cloning the current state for HMAC, so it doesn't support GetCurrentHash.")]
         [MemberData(nameof(GetHMACs))]
         public static void VerifyGetCurrentHash_HMAC(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithm)
@@ -513,6 +526,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         [SkipOnPlatform(TestPlatforms.Android, "Android doesn't support cloning the current state for HMAC, so it doesn't support GetCurrentHash.")]
         [MemberData(nameof(GetHMACs))]
         public static void VerifyBounds_GetCurrentHash_HMAC(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithm)
@@ -534,6 +548,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         [MemberData(nameof(GetHMACs))]
         public static void VerifyBounds_GetHashAndReset_HMAC(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithm)
         {

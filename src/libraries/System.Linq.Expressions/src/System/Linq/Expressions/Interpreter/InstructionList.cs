@@ -357,8 +357,9 @@ namespace System.Linq.Expressions.Interpreter
                     return;
                 }
 
-                if (value is int i)
+                if (value is int)
                 {
+                    int i = (int)value;
                     if (i >= PushIntMinCachedValue && i <= PushIntMaxCachedValue)
                     {
                         if (s_Ints == null)

@@ -191,7 +191,7 @@ namespace System.Runtime.Serialization.Json
                 long tickCount = value.Ticks;
                 if (lowBound > tickCount || highBound < tickCount) // We could potentially under/over flow
                 {
-                    tickCount -= TimeZoneInfo.Local.GetUtcOffset(value).Ticks;
+                    tickCount = tickCount - TimeZoneInfo.Local.GetUtcOffset(value).Ticks;
                     if ((tickCount > DateTime.MaxValue.Ticks) || (tickCount < DateTime.MinValue.Ticks))
                     {
                         throw XmlObjectSerializer.CreateSerializationException(SR.JsonDateTimeOutOfRange, new ArgumentOutOfRangeException(nameof(value)));

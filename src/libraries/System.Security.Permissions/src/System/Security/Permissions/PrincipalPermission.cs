@@ -151,12 +151,12 @@ namespace System.Security.Permissions
 
                         if (operandIdRole.ID == null || idRole.ID == null || idRole.ID.Equals(operandIdRole.ID))
                         {
-                            newID = operandIdRole.ID ?? idRole.ID;
+                            newID = operandIdRole.ID == null ? idRole.ID : operandIdRole.ID;
                             addToNewIDRoles = true;
                         }
                         if (operandIdRole.Role == null || idRole.Role == null || idRole.Role.Equals(operandIdRole.Role))
                         {
-                            newRole = operandIdRole.Role ?? idRole.Role;
+                            newRole = operandIdRole.Role == null ? idRole.Role : operandIdRole.Role;
                             addToNewIDRoles = true;
                         }
                         if (addToNewIDRoles)

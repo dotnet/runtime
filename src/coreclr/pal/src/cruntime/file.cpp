@@ -522,7 +522,7 @@ PAL_fread(void * buffer, size_t size, size_t count, PAL_FILE * f)
                     }
                     else
                     {
-                        temp[nCount++]= (char)nChar;
+                        temp[nCount++]=nChar;
                     }
                 }
             }

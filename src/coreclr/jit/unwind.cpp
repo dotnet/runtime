@@ -69,16 +69,7 @@ void Compiler::unwindGetFuncLocations(FuncInfoDsc*             func,
                 // The hot section only goes up to the cold section
                 assert(fgFirstFuncletBB == nullptr);
 
-#ifdef DEBUG
-                if (JitConfig.JitFakeProcedureSplitting())
-                {
-                    *ppEndLoc = nullptr; // If fake-splitting, "trick" VM by pretending entire function is hot.
-                }
-                else
-#endif // DEBUG
-                {
-                    *ppEndLoc = new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(fgFirstColdBlock));
-                }
+                *ppEndLoc = new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(fgFirstColdBlock));
             }
             else
             {
@@ -267,13 +258,6 @@ void Compiler::unwindEmitFuncCFI(FuncInfoDsc* func, void* pHotCode, void* pColdC
     UNATIVE_OFFSET endOffset;
     DWORD          unwindCodeBytes = 0;
     BYTE*          pUnwindBlock    = nullptr;
-
-#ifdef DEBUG
-    if (JitConfig.JitFakeProcedureSplitting())
-    {
-        pColdCode = nullptr;
-    }
-#endif // DEBUG
 
     if (func->startLoc == nullptr)
     {

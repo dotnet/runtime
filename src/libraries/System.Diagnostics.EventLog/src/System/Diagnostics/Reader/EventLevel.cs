@@ -35,12 +35,12 @@ namespace System.Diagnostics.Eventing.Reader
 
         internal void PrepareData()
         {
-            if (_dataReady)
+            if (_dataReady == true)
                 return;
 
             lock (_syncObject)
             {
-                if (_dataReady)
+                if (_dataReady == true)
                     return;
 
                 IEnumerable<EventLevel> result = _pmReference.Levels;

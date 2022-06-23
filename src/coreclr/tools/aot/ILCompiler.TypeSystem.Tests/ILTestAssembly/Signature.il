@@ -39,8 +39,6 @@
   {
      ret
   }
-
-  .field private bool modreq([CoreTestAssembly]System.Void) fieldWithModOpt
 }
 
 .class private auto ansi beforefieldinit Atom

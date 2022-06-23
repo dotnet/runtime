@@ -2955,6 +2955,9 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         //
         private static bool ParseISO8601(ref DateTimeRawInfo raw, ref __DTString str, DateTimeStyles styles, ref DateTimeResult result)
         {
+            if (raw.year < 0 || raw.GetNumber(0) < 0 || raw.GetNumber(1) < 0)
+            {
+            }
             str.Index--;
             int second = 0;
             double partSecond = 0;

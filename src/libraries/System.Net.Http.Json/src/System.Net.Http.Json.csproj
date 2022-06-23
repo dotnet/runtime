@@ -12,7 +12,6 @@ System.Net.Http.Json.JsonContent</PackageDescription>
 
   <ItemGroup>
     <Compile Include="System\Net\Http\Json\JsonHelpers.cs" />
-    <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Delete.cs" />
     <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Get.cs" />
     <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Post.cs" />
     <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Put.cs" />

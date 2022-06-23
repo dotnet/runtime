@@ -80,7 +80,8 @@ namespace System.Net
             get
             {
                 CheckDisposed();
-                return _httpResponseMessage.Content?.Headers.ContentLength ?? -1;
+                long? length = _httpResponseMessage.Content?.Headers.ContentLength;
+                return length.HasValue ? length.Value : -1;
             }
         }
 
@@ -346,7 +347,7 @@ namespace System.Net
         {
             CheckDisposed();
             string? headerValue = Headers[headerName];
-            return headerValue ?? string.Empty;
+            return (headerValue == null) ? string.Empty : headerValue;
         }
 
         public override void Close()

@@ -785,18 +785,18 @@ public:
 
 typedef DPTR(TypedByRef) PTR_TypedByRef;
 
-typedef Array<CLR_I1>   I1Array;
-typedef Array<CLR_I2>   I2Array;
-typedef Array<CLR_I4>   I4Array;
-typedef Array<CLR_I8>   I8Array;
-typedef Array<CLR_R4>   R4Array;
-typedef Array<CLR_R8>   R8Array;
-typedef Array<CLR_U1>   U1Array;
-typedef Array<CLR_U1>   BOOLArray;
-typedef Array<CLR_U2>   U2Array;
-typedef Array<CLR_CHAR> CHARArray;
-typedef Array<CLR_U4>   U4Array;
-typedef Array<CLR_U8>   U8Array;
+typedef Array<I1>   I1Array;
+typedef Array<I2>   I2Array;
+typedef Array<I4>   I4Array;
+typedef Array<I8>   I8Array;
+typedef Array<R4>   R4Array;
+typedef Array<R8>   R8Array;
+typedef Array<U1>   U1Array;
+typedef Array<U1>   BOOLArray;
+typedef Array<U2>   U2Array;
+typedef Array<WCHAR>   CHARArray;
+typedef Array<U4>   U4Array;
+typedef Array<U8>   U8Array;
 typedef Array<UPTR> UPTRArray;
 typedef PtrArray    PTRArray;
 
@@ -2184,7 +2184,7 @@ private:
         return dac_cast<PTR_StackTraceElement>(GetRaw() + sizeof(ArrayHeader));
     }
 
-    CLR_I1 const * GetRaw() const
+    I1 const * GetRaw() const
     {
         WRAPPER_NO_CONTRACT;
         assert(!!m_array);
@@ -2192,13 +2192,13 @@ private:
         return const_cast<I1ARRAYREF &>(m_array)->GetDirectPointerToNonObjectElements();
     }
 
-    PTR_INT8 GetRaw()
+    PTR_I1 GetRaw()
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
         assert(!!m_array);
 
-        return dac_cast<PTR_INT8>(m_array->GetDirectPointerToNonObjectElements());
+        return dac_cast<PTR_I1>(m_array->GetDirectPointerToNonObjectElements());
     }
 
     ArrayHeader const * GetHeader() const

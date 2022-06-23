@@ -891,7 +891,7 @@ protected:
     VOID SetIsTenured()
     {
         LIMITED_METHOD_CONTRACT;
-        InterlockedOr((LONG*)&m_dwTransientFlags, MODULE_IS_TENURED);
+        FastInterlockOr(&m_dwTransientFlags, MODULE_IS_TENURED);
     }
 #endif // !DACCESS_COMPILE
 
@@ -909,7 +909,7 @@ protected:
     VOID SetIsReadyForTypeLoad()
     {
         LIMITED_METHOD_CONTRACT;
-        InterlockedOr((LONG*)&m_dwTransientFlags, MODULE_READY_FOR_TYPELOAD);
+        FastInterlockOr(&m_dwTransientFlags, MODULE_READY_FOR_TYPELOAD);
     }
 #endif
 

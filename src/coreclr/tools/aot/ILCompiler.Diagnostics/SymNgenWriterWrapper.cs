@@ -21,7 +21,6 @@ namespace Microsoft.DiaSymReader
         {
             var iid = ISymNGenWriter2.IID;
             int hr = Marshal.QueryInterface(ptr, ref iid, out IntPtr ngenWriterInst);
-            Marshal.Release(ptr);
             if (hr != 0)
             {
                 return null;

@@ -151,7 +151,7 @@ namespace System.Data.OleDb
             for (int indexWithinAccessor = 0; indexWithinAccessor < columns.Length; ++indexWithinAccessor)
             {
                 int index = indexStart + indexWithinAccessor;
-                OleDbParameter? parameter = parameters?[index];
+                OleDbParameter? parameter = ((null != parameters) ? parameters[index] : null);
                 columns[indexWithinAccessor] = new ColumnBinding(
                     dataReader!, index, indexForAccessor, indexWithinAccessor,
                     parameter, this, bindings, dbbindings[indexWithinAccessor], _headerLength,
@@ -191,7 +191,7 @@ namespace System.Data.OleDb
                 }
             }
 
-            return value ?? DBNull.Value;
+            return ((null != value) ? value : DBNull.Value);
         }
 
         // translate to native

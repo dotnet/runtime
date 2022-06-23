@@ -49,7 +49,7 @@ namespace System.Xml
         {
             Debug.Assert(name != null && name.Length > 0);
 
-            if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
+            if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
 
             RawText("<!DOCTYPE ");
 
@@ -102,7 +102,7 @@ namespace System.Xml
             {
                 Debug.Assert(prefix.Length == 0);
 
-                if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
+                if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
 
                 _currentElementProperties = TernaryTreeReadOnly.FindElementProperty(localName);
                 base._bufChars[_bufPos++] = (char)'<';
@@ -142,7 +142,7 @@ namespace System.Xml
             {
                 Debug.Assert(prefix.Length == 0);
 
-                if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
+                if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
 
                 if ((_currentElementProperties & ElementProperties.EMPTY) == 0)
                 {
@@ -167,7 +167,7 @@ namespace System.Xml
             {
                 Debug.Assert(prefix.Length == 0);
 
-                if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
+                if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
 
                 if ((_currentElementProperties & ElementProperties.EMPTY) == 0)
                 {
@@ -291,7 +291,7 @@ namespace System.Xml
             {
                 Debug.Assert(prefix.Length == 0);
 
-                if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
+                if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
 
                 if (base._attrEndPos == _bufPos)
                 {
@@ -342,7 +342,7 @@ namespace System.Xml
                     _endsWithAmpersand = false;
                 }
 
-                if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
+                if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
 
                 base._bufChars[_bufPos++] = (char)'"';
             }
@@ -355,7 +355,7 @@ namespace System.Xml
         {
             Debug.Assert(target != null && target.Length != 0 && text != null);
 
-            if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
+            if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
 
             _bufChars[base._bufPos++] = (char)'<';
             _bufChars[base._bufPos++] = (char)'?';
@@ -816,7 +816,7 @@ namespace System.Xml
         {
             Debug.Assert(localName != null && localName.Length != 0 && prefix != null && ns != null);
 
-            if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
+            if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
 
             base._elementScope.Push((byte)base._currentElementProperties);
 

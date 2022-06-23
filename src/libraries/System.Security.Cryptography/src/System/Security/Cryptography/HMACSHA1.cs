@@ -16,6 +16,7 @@ namespace System.Security.Cryptography
     // preexisting contract from the .NET Framework locks all of these into deriving directly from HMAC, it can't be helped.
     //
 
+    [UnsupportedOSPlatform("browser")]
     public class HMACSHA1 : HMAC
     {
         /// <summary>

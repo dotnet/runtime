@@ -1,17 +1,12 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- Use "$(NetCoreAppCurrent)-windows" to avoid PlatformNotSupportedExceptions from ServiceController. -->
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetFrameworkMinimum)</TargetFrameworks> 
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\src\Microsoft.Extensions.Hosting.WindowsServices.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <Reference Include="System.ServiceProcess" />
   </ItemGroup>
 
 </Project>

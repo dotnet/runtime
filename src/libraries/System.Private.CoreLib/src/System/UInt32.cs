@@ -414,6 +414,9 @@ namespace System
         /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
         static uint IDivisionOperators<uint, uint, uint>.operator /(uint left, uint right) => left / right;
 
+        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
+        static uint IDivisionOperators<uint, uint, uint>.operator checked /(uint left, uint right) => left / right;
+
         //
         // IEqualityOperators
         //

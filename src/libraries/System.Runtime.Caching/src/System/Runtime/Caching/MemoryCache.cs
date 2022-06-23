@@ -149,7 +149,7 @@ namespace System.Runtime.Caching
                 {
                     CacheEntryUpdateArguments args = new CacheEntryUpdateArguments(cache, reason, entry.Key, null);
                     entry.CacheEntryUpdateCallback(args);
-                    object expensiveObject = args.UpdatedCacheItem?.Value;
+                    object expensiveObject = (args.UpdatedCacheItem != null) ? args.UpdatedCacheItem.Value : null;
                     CacheItemPolicy policy = args.UpdatedCacheItemPolicy;
                     // Only update the "expensive" object if the user returns a new object,
                     // a policy with update callback, and the change monitors haven't changed.  (Inserting
@@ -446,7 +446,7 @@ namespace System.Runtime.Caching
             MemoryCacheKey cacheKey = new MemoryCacheKey(key);
             MemoryCacheStore store = GetStore(cacheKey);
             MemoryCacheEntry entry = store.AddOrGetExisting(cacheKey, new MemoryCacheEntry(key, value, absExp, slidingExp, priority, changeMonitors, removedCallback, this));
-            return entry?.Value;
+            return (entry != null) ? entry.Value : null;
         }
 
         public override CacheEntryChangeMonitor CreateCacheEntryChangeMonitor(IEnumerable<string> keys, string regionName = null)
@@ -532,7 +532,7 @@ namespace System.Runtime.Caching
                 throw new ArgumentNullException(nameof(key));
             }
             MemoryCacheEntry entry = GetEntry(key);
-            return entry?.Value;
+            return (entry != null) ? entry.Value : null;
         }
 
         internal MemoryCacheEntry GetEntry(string key)
@@ -833,7 +833,7 @@ namespace System.Runtime.Caching
                 return null;
             }
             MemoryCacheEntry entry = RemoveEntry(key, null, reason);
-            return entry?.Value;
+            return (entry != null) ? entry.Value : null;
         }
 
         public override long GetCount(string regionName = null)

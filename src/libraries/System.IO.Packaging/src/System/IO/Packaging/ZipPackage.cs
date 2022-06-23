@@ -209,14 +209,29 @@ namespace System.IO.Packaging
             {
                 if (disposing)
                 {
-                    _contentTypeHelper?.SaveToFile();
-                    _zipArchive?.Dispose();
+                    if (_contentTypeHelper != null)
+                    {
+                        _contentTypeHelper.SaveToFile();
+                    }
+
+                    if (_zipStreamManager != null)
+                    {
+                        _zipStreamManager.Dispose();
+                    }
+
+                    if (_zipArchive != null)
+                    {
+                        _zipArchive.Dispose();
+                    }
 
                     // _containerStream may be opened given a file name, in which case it should be closed here.
                     // _containerStream may be passed into the constructor, in which case, it should not be closed here.
                     if (_shouldCloseContainerStream)
                     {
                         _containerStream.Dispose();
+                    }
+                    else
+                    {
                     }
                     _containerStream = null!;
                 }
@@ -591,8 +606,9 @@ namespace System.IO.Packaging
 
                 // Need to create an override entry?
                 if (extension.Length == 0
-                    || (_defaultDictionary.TryGetValue(extension, out ContentType? value)
-                        && !(foundMatchingDefault = value.AreTypeAndSubTypeEqual(contentType))))
+                    || (_defaultDictionary.ContainsKey(extension)
+                        && !(foundMatchingDefault =
+                               _defaultDictionary[extension].AreTypeAndSubTypeEqual(contentType))))
                 {
                     AddOverrideElement(partUri, contentType);
                 }
@@ -613,16 +629,16 @@ namespace System.IO.Packaging
                 //partUri provided. Override takes precedence over the default entries
                 if (_overrideDictionary != null)
                 {
-                    if (_overrideDictionary.TryGetValue(partUri, out ContentType? val))
-                        return val;
+                    if (_overrideDictionary.ContainsKey(partUri))
+                        return _overrideDictionary[partUri];
                 }
 
                 //Step 2: Check if there is a default entry corresponding to the
                 //extension of the partUri provided.
                 string extension = partUri.PartUriExtension;
 
-                if (_defaultDictionary.TryGetValue(extension, out ContentType? value))
-                    return value;
+                if (_defaultDictionary.ContainsKey(extension))
+                    return _defaultDictionary[extension];
 
                 //Step 3: If we did not find an entry in the override and the default
                 //dictionaries, this is an error condition

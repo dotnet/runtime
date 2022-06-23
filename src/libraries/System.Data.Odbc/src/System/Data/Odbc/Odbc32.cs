@@ -985,7 +985,7 @@ namespace System.Data.Odbc
         {
             // upgrade unsigned types to be able to hold data that has the highest bit set
             //
-            if (unsigned)
+            if (unsigned == true)
             {
                 return typeMap._dbType switch
                 {

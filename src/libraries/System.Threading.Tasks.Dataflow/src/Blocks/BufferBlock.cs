@@ -453,13 +453,13 @@ namespace System.Threading.Tasks.Dataflow
             /// <summary>Gets the collection of postponed message headers.</summary>
             public QueuedMap<ISourceBlock<T>, DataflowMessageHeader>? PostponedMessages
             {
-                get { return _bufferBlock._boundingState?.PostponedMessages; }
+                get { return _bufferBlock._boundingState != null ? _bufferBlock._boundingState.PostponedMessages : null; }
             }
             /// <summary>Gets the messages in the buffer.</summary>
             public IEnumerable<T> Queue { get { return _sourceDebuggingInformation.OutputQueue; } }
 
             /// <summary>The task used to process messages.</summary>
-            public Task? TaskForInputProcessing { get { return _bufferBlock._boundingState?.TaskForInputProcessing; } }
+            public Task? TaskForInputProcessing { get { return _bufferBlock._boundingState != null ? _bufferBlock._boundingState.TaskForInputProcessing : null; } }
             /// <summary>Gets the task being used for output processing.</summary>
             public Task? TaskForOutputProcessing { get { return _sourceDebuggingInformation.TaskForOutputProcessing; } }
 

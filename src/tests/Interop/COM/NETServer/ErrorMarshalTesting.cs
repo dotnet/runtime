@@ -30,13 +30,4 @@ public class ErrorMarshalTesting : Server.Contract.IErrorMarshalTesting
     {
         return new Server.Contract.HResult { hr = hresultToReturn };
     }
-
-    public void Throw_HResult_HelpLink(int hresultToReturn, string helpLink, uint helpContext)
-    {
-        Marshal.GetExceptionForHR(hresultToReturn);
-
-        Exception e = Marshal.GetExceptionForHR(hresultToReturn);
-        e.HelpLink = $"{helpLink}#{helpContext}";
-        throw e;
-    }
 }

@@ -19,7 +19,7 @@ namespace System.Text.Json.Serialization.Metadata
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         internal ReflectionJsonTypeInfo(JsonSerializerOptions options)
             : this(
-                  GetEffectiveConverter(
+                  GetConverter(
                     typeof(T),
                     parentClassType: null, // A TypeInfo never has a "parent" class.
                     memberInfo: null, // A TypeInfo never has a "parent" property.
@@ -40,23 +40,17 @@ namespace System.Text.Json.Serialization.Metadata
                 AddPropertiesAndParametersUsingReflection();
             }
 
-            Func<object>? createObject = Options.MemberAccessorStrategy.CreateConstructor(typeof(T));
-            if (converter.UsesDefaultConstructor)
-            {
-                SetCreateObject(createObject);
-            }
-
-            CreateObjectForExtensionDataProperty = createObject;
+            CreateObject = Options.MemberAccessorStrategy.CreateConstructor(typeof(T));
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "The ctor is marked as RequiresUnreferencedCode")]
+                Justification = "The ctor is marked as RequiresUnreferencedCode")]
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
             Justification = "The ctor is marked RequiresDynamicCode.")]
         internal override void Configure()
         {
             base.Configure();
-            Converter.ConfigureJsonTypeInfoUsingReflection(this, Options);
+            PropertyInfoForTypeInfo.ConverterBase.ConfigureJsonTypeInfoUsingReflection(this, Options);
         }
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
@@ -78,7 +72,7 @@ namespace System.Text.Json.Serialization.Metadata
             // PropertyCache is not accessed by other threads until the current JsonTypeInfo instance
             //  is finished initializing and added to the cache on JsonSerializerOptions.
             // Default 'capacity' to the common non-polymorphic + property case.
-            PropertyCache = CreatePropertyCache(capacity: properties.Length);
+            PropertyCache = new JsonPropertyDictionary<JsonPropertyInfo>(Options.PropertyNameCaseInsensitive, capacity: properties.Length);
 
             // We start from the most derived type.
             Type? currentType = Type;
@@ -187,13 +181,7 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateTypeAttribute(Type, typeof(JsonExtensionDataAttribute));
             }
 
-            JsonPropertyInfo? jsonPropertyInfo = AddProperty(memberInfo, memberType, declaringType, isVirtual, Options);
-            if (jsonPropertyInfo == null)
-            {
-                // ignored invalid property
-                return;
-            }
-
+            JsonPropertyInfo jsonPropertyInfo = AddProperty(memberInfo, memberType, declaringType, isVirtual, Options);
             Debug.Assert(jsonPropertyInfo.Name != null);
 
             if (hasExtensionAttribute)
@@ -209,7 +197,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        private JsonPropertyInfo? AddProperty(
+        private static JsonPropertyInfo AddProperty(
             MemberInfo memberInfo,
             Type memberType,
             Type parentClassType,
@@ -217,31 +205,18 @@ namespace System.Text.Json.Serialization.Metadata
             JsonSerializerOptions options)
         {
             JsonIgnoreCondition? ignoreCondition = JsonPropertyInfo.GetAttribute<JsonIgnoreAttribute>(memberInfo)?.Condition;
-
-            if (IsInvalidForSerialization(memberType))
+            if (ignoreCondition == JsonIgnoreCondition.Always)
             {
-                if (ignoreCondition == JsonIgnoreCondition.Always)
-                    return null;
-
-                ThrowHelper.ThrowInvalidOperationException_CannotSerializeInvalidType(memberType, parentClassType, memberInfo);
+                return JsonPropertyInfo.CreateIgnoredPropertyPlaceholder(memberInfo, memberType, isVirtual, options);
             }
 
-            JsonConverter? customConverter;
-            JsonConverter converter;
+            ValidateType(memberType, parentClassType, memberInfo, options);
 
-            try
-            {
-                converter = GetConverter(
+            JsonConverter converter = GetConverter(
                 memberType,
                 parentClassType,
                 memberInfo,
-                options,
-                out customConverter);
-            }
-            catch (InvalidOperationException) when (ignoreCondition == JsonIgnoreCondition.Always)
-            {
-                return null;
-            }
+                options);
 
             return CreateProperty(
                 declaredPropertyType: memberType,
@@ -250,8 +225,7 @@ namespace System.Text.Json.Serialization.Metadata
                 isVirtual,
                 converter,
                 options,
-                ignoreCondition,
-                customConverter: customConverter);
+                ignoreCondition);
         }
 
         private static JsonNumberHandling? GetNumberHandlingForType(Type type)
@@ -260,6 +234,22 @@ namespace System.Text.Json.Serialization.Metadata
                 (JsonNumberHandlingAttribute?)JsonSerializerOptions.GetAttributeThatCanHaveMultiple(type, typeof(JsonNumberHandlingAttribute));
 
             return numberHandlingAttribute?.Handling;
+        }
+
+        // This method gets the runtime information for a given type or property.
+        // The runtime information consists of the following:
+        // - class type,
+        // - element type (if the type is a collection),
+        // - the converter (either native or custom), if one exists.
+        private static JsonConverter GetConverter(
+            Type type,
+            Type? parentClassType,
+            MemberInfo? memberInfo,
+            JsonSerializerOptions options)
+        {
+            Debug.Assert(type != null);
+            Debug.Assert(!IsInvalidForSerialization(type), $"Type `{type.FullName}` should already be validated.");
+            return options.GetConverterFromMember(parentClassType, type, memberInfo);
         }
 
         private static bool PropertyIsOverridenAndIgnored(
@@ -280,7 +270,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal override JsonParameterInfoValues[] GetParameterInfoValues()
         {
-            ParameterInfo[] parameters = Converter.ConstructorInfo!.GetParameters();
+            ParameterInfo[] parameters = PropertyInfoForTypeInfo.ConverterBase.ConstructorInfo!.GetParameters();
             return GetParameterInfoArray(parameters);
         }
 

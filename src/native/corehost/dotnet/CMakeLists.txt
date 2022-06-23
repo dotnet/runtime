@@ -6,8 +6,7 @@ set(DOTNET_PROJECT_NAME "dotnet")
 
 if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES
-        dotnet.manifest
-        dotnet.rc)
+        dotnet.manifest)
 endif()
 
 list(APPEND SOURCES

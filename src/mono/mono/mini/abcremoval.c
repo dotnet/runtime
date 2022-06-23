@@ -1307,6 +1307,7 @@ mono_perform_abc_removal (MonoCompile *cfg)
 {
 	MonoVariableRelationsEvaluationArea area;
 	MonoBasicBlock *bb;
+	int i;
 
 	verbose_level = cfg->verbose_level;
 
@@ -1323,7 +1324,7 @@ mono_perform_abc_removal (MonoCompile *cfg)
 	area.variable_value_kind = (MonoIntegerValueKind *)
 		mono_mempool_alloc (cfg->mempool, sizeof (MonoIntegerValueKind) * (cfg->next_vreg));
 	area.defs = (MonoInst **)mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * cfg->next_vreg);
-	for (guint32 i = 0; i < cfg->next_vreg; i++) {
+	for (i = 0; i < cfg->next_vreg; i++) {
 		area.variable_value_kind [i] = MONO_UNKNOWN_INTEGER_VALUE;
 		area.relations [i].relation = MONO_EQ_RELATION;
 		area.relations [i].relation_is_static_definition = TRUE;
@@ -1409,7 +1410,7 @@ mono_perform_abc_removal (MonoCompile *cfg)
 	}
 
 	/* Add symmetric relations */
-	for (guint32 i = 0; i < cfg->next_vreg; i++) {
+	for (i = 0; i < cfg->next_vreg; i++) {
 		if (area.relations [i].related_value.type == MONO_VARIABLE_SUMMARIZED_VALUE) {
 			int related_index = cfg->next_vreg + i;
 			int related_variable = area.relations [i].related_value.value.variable.variable;

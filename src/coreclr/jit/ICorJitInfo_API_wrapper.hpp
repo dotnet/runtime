@@ -69,15 +69,6 @@ CorInfoInline WrapICorJitInfo::canInline(
     return temp;
 }
 
-void WrapICorJitInfo::beginInlining(
-          CORINFO_METHOD_HANDLE inlinerHnd,
-          CORINFO_METHOD_HANDLE inlineeHnd)
-{
-    API_ENTER(beginInlining);
-    wrapHnd->beginInlining(inlinerHnd, inlineeHnd);
-    API_LEAVE(beginInlining);
-}
-
 void WrapICorJitInfo::reportInliningDecision(
           CORINFO_METHOD_HANDLE inlinerHnd,
           CORINFO_METHOD_HANDLE inlineeHnd,

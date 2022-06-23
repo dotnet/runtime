@@ -178,7 +178,7 @@ BOOL Module::SetTransientFlagInterlocked(DWORD dwFlag)
         DWORD dwTransientFlags = m_dwTransientFlags;
         if ((dwTransientFlags & dwFlag) != 0)
             return FALSE;
-        if ((DWORD)InterlockedCompareExchange((LONG*)&m_dwTransientFlags, dwTransientFlags | dwFlag, dwTransientFlags) == dwTransientFlags)
+        if ((DWORD)FastInterlockCompareExchange((LONG*)&m_dwTransientFlags, dwTransientFlags | dwFlag, dwTransientFlags) == dwTransientFlags)
             return TRUE;
     }
 }
@@ -434,7 +434,7 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 #ifdef FEATURE_COLLECTIBLE_TYPES
     if (GetAssembly()->IsCollectible())
     {
-        InterlockedOr((LONG*)&m_dwPersistedFlags, COLLECTIBLE_MODULE);
+        FastInterlockOr(&m_dwPersistedFlags, COLLECTIBLE_MODULE);
     }
 #endif // FEATURE_COLLECTIBLE_TYPES
 
@@ -962,7 +962,7 @@ MethodTable *Module::GetGlobalMethodTable()
                                                    ClassLoader::FailIfUninstDefOrRef).AsMethodTable();
         }
 
-        InterlockedOr((LONG*)&m_dwPersistedFlags, COMPUTED_GLOBAL_CLASS);
+        FastInterlockOr(&m_dwPersistedFlags, COMPUTED_GLOBAL_CLASS);
         RETURN pMT;
     }
     else
@@ -1580,11 +1580,11 @@ BOOL Module::HasDefaultDllImportSearchPathsAttribute()
     attributeIsFound = GetDefaultDllImportSearchPathsAttributeValue(this, TokenFromRid(1, mdtAssembly),&m_DefaultDllImportSearchPathsAttributeValue);
     if(attributeIsFound)
     {
-        InterlockedOr((LONG*)&m_dwPersistedFlags, DEFAULT_DLL_IMPORT_SEARCH_PATHS_IS_CACHED | DEFAULT_DLL_IMPORT_SEARCH_PATHS_STATUS);
+        FastInterlockOr(&m_dwPersistedFlags, DEFAULT_DLL_IMPORT_SEARCH_PATHS_IS_CACHED | DEFAULT_DLL_IMPORT_SEARCH_PATHS_STATUS);
     }
     else
     {
-        InterlockedOr((LONG*)&m_dwPersistedFlags, DEFAULT_DLL_IMPORT_SEARCH_PATHS_IS_CACHED);
+        FastInterlockOr(&m_dwPersistedFlags, DEFAULT_DLL_IMPORT_SEARCH_PATHS_IS_CACHED);
     }
 
     return (m_dwPersistedFlags & DEFAULT_DLL_IMPORT_SEARCH_PATHS_STATUS) != 0 ;
@@ -1644,7 +1644,7 @@ BOOL Module::IsRuntimeWrapExceptions()
                 fRuntimeWrapExceptions = TRUE;
         }
 ErrExit:
-        InterlockedOr((LONG*)&m_dwPersistedFlags, COMPUTED_WRAP_EXCEPTIONS |
+        FastInterlockOr(&m_dwPersistedFlags, COMPUTED_WRAP_EXCEPTIONS |
             (fRuntimeWrapExceptions ? WRAP_EXCEPTIONS : 0));
     }
 
@@ -1681,7 +1681,7 @@ BOOL Module::IsRuntimeMarshallingEnabled()
                         (const void**)&pVal, &cbVal);
     }
 
-    InterlockedOr((LONG*)&m_dwPersistedFlags, RUNTIME_MARSHALLING_ENABLED_IS_CACHED |
+    FastInterlockOr(&m_dwPersistedFlags, RUNTIME_MARSHALLING_ENABLED_IS_CACHED |
         (hr == S_OK ? 0 : RUNTIME_MARSHALLING_ENABLED));
 
     return hr != S_OK;
@@ -1712,7 +1712,7 @@ BOOL Module::IsPreV4Assembly()
             }
         }
 
-        InterlockedOr((LONG*)&m_dwPersistedFlags, COMPUTED_IS_PRE_V4_ASSEMBLY |
+        FastInterlockOr(&m_dwPersistedFlags, COMPUTED_IS_PRE_V4_ASSEMBLY |
             (fIsPreV4Assembly ? IS_PRE_V4_ASSEMBLY : 0));
     }
 
@@ -1731,7 +1731,7 @@ DWORD Module::AllocateDynamicEntry(MethodTable *pMT)
     }
     CONTRACTL_END;
 
-    DWORD newId = InterlockedExchangeAdd((LONG*)&m_cDynamicEntries, 1);
+    DWORD newId = FastInterlockExchangeAdd((LONG*)&m_cDynamicEntries, 1);
 
     if (newId >= VolatileLoad(&m_maxDynamicEntries))
     {
@@ -2123,7 +2123,7 @@ void Module::FreeClassTables()
     if (m_dwTransientFlags & CLASSES_FREED)
         return;
 
-    InterlockedOr((LONG*)&m_dwTransientFlags, CLASSES_FREED);
+    FastInterlockOr(&m_dwTransientFlags, CLASSES_FREED);
 
 #if _DEBUG
     DebugLogRidMapOccupancy();
@@ -2698,7 +2698,7 @@ ILStubCache* Module::GetILStubCache()
     {
         ILStubCache *pILStubCache = new ILStubCache(GetLoaderAllocator()->GetHighFrequencyHeap());
 
-        if (InterlockedCompareExchangeT(&m_pILStubCache, pILStubCache, NULL) != NULL)
+        if (FastInterlockCompareExchangePointer(&m_pILStubCache, pILStubCache, NULL) != NULL)
         {
             // some thread swooped in and set the field
             delete pILStubCache;
@@ -4398,7 +4398,7 @@ LoaderHeap *Module::GetThunkHeap()
             ThunkHeapStubManager::g_pManager->GetRangeList(),
             UnlockedLoaderHeap::HeapKind::Executable);
 
-        if (InterlockedCompareExchangeT(&m_pThunkHeap, pNewHeap, 0) != 0)
+        if (FastInterlockCompareExchangePointer(&m_pThunkHeap, pNewHeap, 0) != 0)
         {
             delete pNewHeap;
         }
@@ -4732,7 +4732,7 @@ void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
 void Module::SetIsIJWFixedUp()
 {
     LIMITED_METHOD_CONTRACT;
-    InterlockedOr((LONG*)&m_dwTransientFlags, IS_IJW_FIXED_UP);
+    FastInterlockOr(&m_dwTransientFlags, IS_IJW_FIXED_UP);
 }
 #endif // !DACCESS_COMPILE
 
@@ -4740,7 +4740,7 @@ void Module::SetIsIJWFixedUp()
 void Module::SetBeingUnloaded()
 {
     LIMITED_METHOD_CONTRACT;
-    InterlockedOr((LONG*)&m_dwTransientFlags, IS_BEING_UNLOADED);
+    FastInterlockOr((ULONG*)&m_dwTransientFlags, IS_BEING_UNLOADED);
 }
 
 // ===========================================================================

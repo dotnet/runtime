@@ -326,7 +326,7 @@ namespace System.DirectoryServices.AccountManagement
             StoreCtx storeCtxToUse = _owningGroup.GetStoreCtxToUse();
             string explanation;
 
-            Debug.Assert(storeCtxToUse != null || _owningGroup.unpersisted);
+            Debug.Assert(storeCtxToUse != null || _owningGroup.unpersisted == true);
 
             if ((storeCtxToUse != null) && (!storeCtxToUse.CanGroupBeCleared(_owningGroup, out explanation)))
                 throw new InvalidOperationException(explanation);
@@ -379,7 +379,7 @@ namespace System.DirectoryServices.AccountManagement
             StoreCtx storeCtxToUse = _owningGroup.GetStoreCtxToUse();
             string explanation;
 
-            Debug.Assert(storeCtxToUse != null || _owningGroup.unpersisted);
+            Debug.Assert(storeCtxToUse != null || _owningGroup.unpersisted == true);
 
             if ((storeCtxToUse != null) && (!storeCtxToUse.CanGroupMemberBeRemoved(_owningGroup, principal, out explanation)))
                 throw new InvalidOperationException(explanation);

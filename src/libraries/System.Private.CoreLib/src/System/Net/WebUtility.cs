@@ -185,7 +185,7 @@ namespace System.Net
 
             ReadOnlySpan<char> valueSpan = value.AsSpan();
 
-            int index = valueSpan.IndexOf('&');
+            int index = IndexOfHtmlDecodingChars(valueSpan);
             if (index < 0)
             {
                 return value;
@@ -215,7 +215,7 @@ namespace System.Net
 
             ReadOnlySpan<char> valueSpan = value.AsSpan();
 
-            int index = valueSpan.IndexOf('&');
+            int index = IndexOfHtmlDecodingChars(valueSpan);
             if (index == -1)
             {
                 output.Write(value);
@@ -699,6 +699,21 @@ namespace System.Net
             }
 
             return true;
+        }
+
+        private static int IndexOfHtmlDecodingChars(ReadOnlySpan<char> input)
+        {
+            // this string requires html decoding if it contains '&' or a surrogate character
+            for (int i = 0; i < input.Length; i++)
+            {
+                char c = input[i];
+                if (c == '&' || char.IsSurrogate(c))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
         }
 
         #endregion

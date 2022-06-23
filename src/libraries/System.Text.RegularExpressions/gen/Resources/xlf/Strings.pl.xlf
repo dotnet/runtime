@@ -264,12 +264,12 @@
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorMessage">
         <source>Use 'RegexGeneratorAttribute' to generate the regular expression implementation at compile-time.</source>
-        <target state="translated">Użyj atrybutu „RegexGeneratorAttribute”, aby wygenerować implementację wyrażenia regularnego w czasie kompilacji.</target>
+        <target state="new">Use 'RegexGeneratorAttribute' to generate the regular expression implementation at compile-time.</target>
         <note />
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorTitle">
         <source>Convert to 'RegexGenerator'.</source>
-        <target state="translated">Konwertuj na „RegexGenerator”.</target>
+        <target state="new">Convert to 'RegexGenerator'.</target>
         <note />
       </trans-unit>
     </body>

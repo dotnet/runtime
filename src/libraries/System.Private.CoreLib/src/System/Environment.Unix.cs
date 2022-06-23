@@ -31,13 +31,5 @@ namespace System
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Avoid inlining PInvoke frame into the hot path
         private static string? GetProcessPath() => Interop.Sys.GetProcessPath();
-
-        private static string[] GetCommandLineArgsNative()
-        {
-            // This is only used for delegate created from native host
-
-            // Consider to use /proc/self/cmdline to get command line
-            return Array.Empty<string>();
-        }
     }
 }

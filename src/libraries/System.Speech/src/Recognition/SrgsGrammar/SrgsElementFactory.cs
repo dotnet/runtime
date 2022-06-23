@@ -151,7 +151,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             SrgsRule rule = srgsGrammar.Rules[sRule];
             if (rule != null)
             {
-                rule.Script += code;
+                rule.Script = rule.Script + code;
             }
             else
             {

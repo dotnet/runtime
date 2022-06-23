@@ -60,9 +60,8 @@ BundleFileLocation Bundle::Probe(const SString& path, bool pathIsBundleRelative)
     //    Bundle.Probe("path/to/exe/lib.dll") => m_probe("lib.dll")
     //    Bundle.Probe("path/to/exe/and/some/more/lib.dll") => m_probe("and/some/more/lib.dll")
 
-    StackSString pathBuffer;
-    pathBuffer.SetAndConvertToUTF8(path.GetUnicode());
-    LPCSTR utf8Path(pathBuffer.GetUTF8());
+    StackScratchBuffer scratchBuffer;
+    LPCSTR utf8Path(path.GetUTF8(scratchBuffer));
 
     if (!pathIsBundleRelative)
     {

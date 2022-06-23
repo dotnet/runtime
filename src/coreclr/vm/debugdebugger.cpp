@@ -474,11 +474,11 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
             pElem[iNumValidFrames] = (size_t)pFunc;
 
             // Native offset
-            CLR_I4 *pI4 = (CLR_I4 *)((I4ARRAYREF)pStackFrameHelper->rgiOffset)->GetDirectPointerToNonObjectElements();
+            I4 *pI4 = (I4 *)((I4ARRAYREF)pStackFrameHelper->rgiOffset)->GetDirectPointerToNonObjectElements();
             pI4[iNumValidFrames] = data.pElements[i].dwOffset;
 
             // IL offset
-            CLR_I4 *pILI4 = (CLR_I4 *)((I4ARRAYREF)pStackFrameHelper->rgiILOffset)->GetDirectPointerToNonObjectElements();
+            I4 *pILI4 = (I4 *)((I4ARRAYREF)pStackFrameHelper->rgiILOffset)->GetDirectPointerToNonObjectElements();
             pILI4[iNumValidFrames] = data.pElements[i].dwILOffset;
 
             // Assembly
@@ -488,9 +488,9 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
             if (data.fDoWeHaveAnyFramesFromForeignStackTrace)
             {
                 // Set the BOOL indicating if the frame represents the last frame from a foreign exception stack trace.
-                CLR_U1 *pIsLastFrameFromForeignExceptionStackTraceU1 = (CLR_U1 *)((BOOLARRAYREF)pStackFrameHelper->rgiLastFrameFromForeignExceptionStackTrace)
+                U1 *pIsLastFrameFromForeignExceptionStackTraceU1 = (U1 *)((BOOLARRAYREF)pStackFrameHelper->rgiLastFrameFromForeignExceptionStackTrace)
                                             ->GetDirectPointerToNonObjectElements();
-                pIsLastFrameFromForeignExceptionStackTraceU1 [iNumValidFrames] = (CLR_U1)(data.pElements[i].flags & STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE);
+                pIsLastFrameFromForeignExceptionStackTraceU1 [iNumValidFrames] = (U1)(data.pElements[i].flags & STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE);
             }
 
             MethodDesc *pMethod = data.pElements[i].pFunc;
@@ -727,10 +727,10 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                     if (fFileInfoSet)
                     {
                         // Set the line and column numbers
-                        CLR_I4 *pI4Line = (CLR_I4 *)((I4ARRAYREF)pStackFrameHelper->rgiLineNumber)->GetDirectPointerToNonObjectElements();
+                        I4 *pI4Line = (I4 *)((I4ARRAYREF)pStackFrameHelper->rgiLineNumber)->GetDirectPointerToNonObjectElements();
                         pI4Line[iNumValidFrames] = sourceLine;
 
-                        CLR_I4 *pI4Column = (CLR_I4 *)((I4ARRAYREF)pStackFrameHelper->rgiColumnNumber)->GetDirectPointerToNonObjectElements();
+                        I4 *pI4Column = (I4 *)((I4ARRAYREF)pStackFrameHelper->rgiColumnNumber)->GetDirectPointerToNonObjectElements();
                         pI4Column[iNumValidFrames] = sourceColumn;
 
                         // Set the file name
@@ -745,7 +745,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
 #endif // FEATURE_ISYM_READER
                 {
                     // Save MethodToken for the function
-                    CLR_I4 *pMethodToken = (CLR_I4 *)((I4ARRAYREF)pStackFrameHelper->rgiMethodToken)->GetDirectPointerToNonObjectElements();
+                    I4 *pMethodToken = (I4 *)((I4ARRAYREF)pStackFrameHelper->rgiMethodToken)->GetDirectPointerToNonObjectElements();
                     pMethodToken[iNumValidFrames] = pMethod->GetMemberDef();
 
                     PEAssembly *pPEAssembly = pModule->GetPEAssembly();
@@ -758,15 +758,15 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                     PTR_CVOID *pLoadedPeAddress = (PTR_CVOID *)pStackFrameHelper->rgLoadedPeAddress->GetDataPtr();
                     pLoadedPeAddress[iNumValidFrames] = peAddress;
 
-                    CLR_I4 *pLoadedPeSize = (CLR_I4 *)((I4ARRAYREF)pStackFrameHelper->rgiLoadedPeSize)->GetDirectPointerToNonObjectElements();
-                    pLoadedPeSize[iNumValidFrames] = (CLR_I4)peSize;
+                    I4 *pLoadedPeSize = (I4 *)((I4ARRAYREF)pStackFrameHelper->rgiLoadedPeSize)->GetDirectPointerToNonObjectElements();
+                    pLoadedPeSize[iNumValidFrames] = (I4)peSize;
 
                     // Set flag indicating PE file in memory has the on disk layout
                     if (!pPEAssembly->IsDynamic())
                     {
                         // This flag is only available for non-dynamic assemblies.
-                        CLR_U1 *pIsFileLayout = (CLR_U1 *)((BOOLARRAYREF)pStackFrameHelper->rgiIsFileLayout)->GetDirectPointerToNonObjectElements();
-                        pIsFileLayout[iNumValidFrames] = (CLR_U1) pPEAssembly->GetLoadedLayout()->IsFlat();
+                        U1 *pIsFileLayout = (U1 *)((BOOLARRAYREF)pStackFrameHelper->rgiIsFileLayout)->GetDirectPointerToNonObjectElements();
+                        pIsFileLayout[iNumValidFrames] = (U1) pPEAssembly->GetLoadedLayout()->IsFlat();
                     }
 
                     // If there is a in memory symbol stream
@@ -779,8 +779,8 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                         PTR_VOID *pInMemoryPdbAddress = (PTR_VOID *)pStackFrameHelper->rgInMemoryPdbAddress->GetDataPtr();
                         pInMemoryPdbAddress[iNumValidFrames] = range.StartAddress();
 
-                        CLR_I4 *pInMemoryPdbSize = (CLR_I4 *)((I4ARRAYREF)pStackFrameHelper->rgiInMemoryPdbSize)->GetDirectPointerToNonObjectElements();
-                        pInMemoryPdbSize[iNumValidFrames] = (CLR_I4)range.Size();
+                        I4 *pInMemoryPdbSize = (I4 *)((I4ARRAYREF)pStackFrameHelper->rgiInMemoryPdbSize)->GetDirectPointerToNonObjectElements();
+                        pInMemoryPdbSize[iNumValidFrames] = (I4)range.Size();
                     }
                     else
                     {

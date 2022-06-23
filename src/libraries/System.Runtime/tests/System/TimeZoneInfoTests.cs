@@ -11,7 +11,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text.RegularExpressions;
 using Microsoft.DotNet.RemoteExecutor;
-using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Tests
@@ -2949,7 +2948,6 @@ namespace System.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Android | TestPlatforms.iOS | TestPlatforms.tvOS)]
-        [Trait(XunitConstants.Category, "AdditionalTimezoneChecks")]
         public static void LocalTzIsNotUtc()
         {
             Assert.NotEqual(TimeZoneInfo.Utc.StandardName, TimeZoneInfo.Local.StandardName);

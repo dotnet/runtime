@@ -604,7 +604,7 @@ namespace System.Data.Odbc
             {
                 info._dbtype = unchecked((ODBC32.SQL_TYPE)(int)GetColAttribute(i, ODBC32.SQL_DESC.CONCISE_TYPE, ODBC32.SQL_COLUMN.TYPE, ODBC32.HANDLER.THROW));
                 typeMap = TypeMap.FromSqlType(info._dbtype.Value);
-                if (typeMap._signType)
+                if (typeMap._signType == true)
                 {
                     bool sign = (GetColAttribute(i, ODBC32.SQL_DESC.UNSIGNED, ODBC32.SQL_COLUMN.UNSIGNED, ODBC32.HANDLER.THROW).ToInt64() != 0);
                     typeMap = TypeMap.UpgradeSignedType(typeMap, sign);
@@ -2040,7 +2040,7 @@ namespace System.Data.Odbc
                 // furthermore size needs to be special cased for wchar types
                 //
                 typeMap = TypeMap.FromSqlType((ODBC32.SQL_TYPE)unchecked((int)GetColAttribute(i, ODBC32.SQL_DESC.CONCISE_TYPE, ODBC32.SQL_COLUMN.TYPE, ODBC32.HANDLER.THROW)));
-                if (typeMap._signType)
+                if (typeMap._signType == true)
                 {
                     bool sign = (GetColAttribute(i, ODBC32.SQL_DESC.UNSIGNED, ODBC32.SQL_COLUMN.UNSIGNED, ODBC32.HANDLER.THROW).ToInt64() != 0);
                     // sign = true if the column is unsigned
@@ -2749,16 +2749,16 @@ namespace System.Data.Odbc
             int idx;
             CStringTokenizer tokenstmt = new CStringTokenizer(localcmdtext, Connection!.QuoteChar(ADP.GetSchemaTable)[0], Connection.EscapeChar(ADP.GetSchemaTable));
 
-            if (tokenstmt.StartsWith("select"))
+            if (tokenstmt.StartsWith("select") == true)
             {
                 // select command, search for from clause
                 idx = tokenstmt.FindTokenIndex("from");
             }
             else
             {
-                if (tokenstmt.StartsWith("insert") ||
-                    tokenstmt.StartsWith("update") ||
-                    tokenstmt.StartsWith("delete"))
+                if ((tokenstmt.StartsWith("insert") == true) ||
+                    (tokenstmt.StartsWith("update") == true) ||
+                    (tokenstmt.StartsWith("delete") == true))
                 {
                     // Get the following word
                     idx = tokenstmt.CurrentPosition;

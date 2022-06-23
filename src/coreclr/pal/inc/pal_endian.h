@@ -16,7 +16,7 @@
 extern "C++" {
 inline UINT16 SWAP16(UINT16 x)
 {
-    return (UINT16)((x >> 8) | (x << 8));
+    return (x >> 8) | (x << 8);
 }
 
 inline UINT32 SWAP32(UINT32 x)

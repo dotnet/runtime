@@ -244,7 +244,7 @@ namespace System.Net.Mime
                     if (_encodeCRLF)
                     {
                         // The encoding for CRLF is =0D=0A
-                        WriteState.Append("=0D=0A"u8);
+                        WriteState.Append((byte)'=', (byte)'0', (byte)'D', (byte)'=', (byte)'0', (byte)'A');
                     }
                     else
                     {

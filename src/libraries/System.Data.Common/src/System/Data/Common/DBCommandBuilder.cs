@@ -477,7 +477,8 @@ namespace System.Data.Common
         {
             get
             {
-                return (_quoteSuffix ?? string.Empty);
+                string? quoteSuffix = _quoteSuffix;
+                return ((null != quoteSuffix) ? quoteSuffix : string.Empty);
             }
             set
             {
@@ -1570,7 +1571,7 @@ namespace System.Data.Common
                             if ((null != command) && (null == command.Connection))
                             {
                                 DbDataAdapter? adapter = DataAdapter;
-                                DbCommand? select = adapter?.SelectCommand;
+                                DbCommand? select = ((null != adapter) ? adapter.SelectCommand : null);
                                 if (null != select)
                                 {
                                     command.Connection = select.Connection;

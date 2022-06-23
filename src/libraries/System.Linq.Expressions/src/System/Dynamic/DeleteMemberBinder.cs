@@ -36,7 +36,7 @@ namespace System.Dynamic
         /// <summary>
         /// The result type of the operation.
         /// </summary>
-        public sealed override Type ReturnType => typeof(void);
+        public override sealed Type ReturnType => typeof(void);
 
         /// <summary>
         /// Performs the binding of the dynamic delete member operation if the target dynamic object cannot bind.
@@ -73,6 +73,6 @@ namespace System.Dynamic
         /// <summary>
         /// Always returns <c>true</c> because this is a standard <see cref="DynamicMetaObjectBinder"/>.
         /// </summary>
-        internal sealed override bool IsStandardBinder => true;
+        internal override sealed bool IsStandardBinder => true;
     }
 }

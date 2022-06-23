@@ -1,12 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
@@ -373,7 +375,7 @@ namespace System.Text.Json
             }
 
             JsonTypeInfo jsonTypeInfo = options.GetOrAddJsonTypeInfoForRootType(typeof(TValue));
-            return CreateAsyncEnumerableDeserializer(utf8Json, CreateQueueTypeInfo<TValue>(jsonTypeInfo), cancellationToken);
+            return CreateAsyncEnumerableDeserializer<TValue>(utf8Json, jsonTypeInfo, cancellationToken);
         }
 
         /// <summary>
@@ -404,30 +406,28 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
-            return CreateAsyncEnumerableDeserializer(utf8Json, CreateQueueTypeInfo<TValue>(jsonTypeInfo), cancellationToken);
-        }
-
-        private static JsonTypeInfo<Queue<TValue>> CreateQueueTypeInfo<TValue>(JsonTypeInfo jsonTypeInfo)
-        {
-            return JsonMetadataServices.CreateQueueInfo<Queue<TValue>, TValue>(
-                options: jsonTypeInfo.Options,
-                collectionInfo: new()
-                {
-                    ObjectCreator = static () => new Queue<TValue>(),
-                    ElementInfo = jsonTypeInfo,
-                    NumberHandling = jsonTypeInfo.Options.NumberHandling
-                });
+            return CreateAsyncEnumerableDeserializer<TValue>(utf8Json, jsonTypeInfo, cancellationToken);
         }
 
         private static async IAsyncEnumerable<TValue> CreateAsyncEnumerableDeserializer<TValue>(
             Stream utf8Json,
-            JsonTypeInfo<Queue<TValue>> queueTypeInfo,
+            JsonTypeInfo jsonTypeInfo,
             [EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            queueTypeInfo.EnsureConfigured();
-            JsonSerializerOptions options = queueTypeInfo.Options;
+            JsonSerializerOptions options = jsonTypeInfo.Options;
+            JsonTypeInfo<Queue<TValue>> queueTypeInfo =
+                JsonMetadataServices.CreateQueueInfo<Queue<TValue>, TValue>(
+                    options: options,
+                    collectionInfo: new()
+                    {
+                        ObjectCreator = () => new Queue<TValue>(),
+                        ElementInfo = jsonTypeInfo,
+                        NumberHandling = options.NumberHandling
+                    });
+
             var bufferState = new ReadBufferState(options.DefaultBufferSize);
             ReadStack readStack = default;
+            queueTypeInfo.EnsureConfigured();
             readStack.Initialize(queueTypeInfo, supportContinuation: true);
             var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
 
@@ -435,12 +435,12 @@ namespace System.Text.Json
             {
                 do
                 {
-                    bufferState = await bufferState.ReadFromStreamAsync(utf8Json, cancellationToken, fillBuffer: false).ConfigureAwait(false);
+                    bufferState = await ReadFromStreamAsync(utf8Json, bufferState, cancellationToken).ConfigureAwait(false);
                     ContinueDeserialize<Queue<TValue>>(
                         ref bufferState,
                         ref jsonReaderState,
                         ref readStack,
-                        queueTypeInfo.Converter,
+                        queueTypeInfo.PropertyInfoForTypeInfo.ConverterBase,
                         options);
 
                     if (readStack.Current.ReturnValue is Queue<TValue> queue)
@@ -469,14 +469,14 @@ namespace System.Text.Json
             ReadStack readStack = default;
             jsonTypeInfo.EnsureConfigured();
             readStack.Initialize(jsonTypeInfo, supportContinuation: true);
-            JsonConverter converter = readStack.Current.JsonPropertyInfo!.EffectiveConverter;
+            JsonConverter converter = readStack.Current.JsonPropertyInfo!.ConverterBase;
             var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
 
             try
             {
                 while (true)
                 {
-                    bufferState = await bufferState.ReadFromStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);
+                    bufferState = await ReadFromStreamAsync(utf8Json, bufferState, cancellationToken).ConfigureAwait(false);
                     TValue value = ContinueDeserialize<TValue>(ref bufferState, ref jsonReaderState, ref readStack, converter, options);
 
                     if (bufferState.IsFinalBlock)
@@ -500,14 +500,14 @@ namespace System.Text.Json
             ReadStack readStack = default;
             jsonTypeInfo.EnsureConfigured();
             readStack.Initialize(jsonTypeInfo, supportContinuation: true);
-            JsonConverter converter = readStack.Current.JsonPropertyInfo!.EffectiveConverter;
+            JsonConverter converter = readStack.Current.JsonPropertyInfo!.ConverterBase;
             var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
 
             try
             {
                 while (true)
                 {
-                    bufferState.ReadFromStream(utf8Json);
+                    bufferState = ReadFromStream(utf8Json, bufferState);
                     TValue value = ContinueDeserialize<TValue>(ref bufferState, ref jsonReaderState, ref readStack, converter, options);
 
                     if (bufferState.IsFinalBlock)
@@ -522,6 +522,78 @@ namespace System.Text.Json
             }
         }
 
+        /// <summary>
+        /// Read from the stream until either our buffer is filled or we hit EOF.
+        /// Calling ReadCore is relatively expensive, so we minimize the number of times
+        /// we need to call it.
+        /// </summary>
+        internal static async ValueTask<ReadBufferState> ReadFromStreamAsync(
+            Stream utf8Json,
+            ReadBufferState bufferState,
+            CancellationToken cancellationToken)
+        {
+            while (true)
+            {
+                int bytesRead = await utf8Json.ReadAsync(
+#if BUILDING_INBOX_LIBRARY
+                    bufferState.Buffer.AsMemory(bufferState.BytesInBuffer),
+#else
+                    bufferState.Buffer, bufferState.BytesInBuffer, bufferState.Buffer.Length - bufferState.BytesInBuffer,
+#endif
+                    cancellationToken).ConfigureAwait(false);
+
+                if (bytesRead == 0)
+                {
+                    bufferState.IsFinalBlock = true;
+                    break;
+                }
+
+                bufferState.BytesInBuffer += bytesRead;
+
+                if (bufferState.BytesInBuffer == bufferState.Buffer.Length)
+                {
+                    break;
+                }
+            }
+
+            return bufferState;
+        }
+
+        /// <summary>
+        /// Read from the stream until either our buffer is filled or we hit EOF.
+        /// Calling ReadCore is relatively expensive, so we minimize the number of times
+        /// we need to call it.
+        /// </summary>
+        internal static ReadBufferState ReadFromStream(
+            Stream utf8Json,
+            ReadBufferState bufferState)
+        {
+            while (true)
+            {
+                int bytesRead = utf8Json.Read(
+#if BUILDING_INBOX_LIBRARY
+                    bufferState.Buffer.AsSpan(bufferState.BytesInBuffer));
+#else
+                    bufferState.Buffer, bufferState.BytesInBuffer, bufferState.Buffer.Length - bufferState.BytesInBuffer);
+#endif
+
+                if (bytesRead == 0)
+                {
+                    bufferState.IsFinalBlock = true;
+                    break;
+                }
+
+                bufferState.BytesInBuffer += bytesRead;
+
+                if (bufferState.BytesInBuffer == bufferState.Buffer.Length)
+                {
+                    break;
+                }
+            }
+
+            return bufferState;
+        }
+
         internal static TValue ContinueDeserialize<TValue>(
             ref ReadBufferState bufferState,
             ref JsonReaderState jsonReaderState,
@@ -529,17 +601,67 @@ namespace System.Text.Json
             JsonConverter converter,
             JsonSerializerOptions options)
         {
+            if (bufferState.BytesInBuffer > bufferState.ClearMax)
+            {
+                bufferState.ClearMax = bufferState.BytesInBuffer;
+            }
+
+            int start = 0;
+            if (bufferState.IsFirstIteration)
+            {
+                bufferState.IsFirstIteration = false;
+
+                // Handle the UTF-8 BOM if present
+                Debug.Assert(bufferState.Buffer.Length >= JsonConstants.Utf8Bom.Length);
+                if (bufferState.Buffer.AsSpan().StartsWith(JsonConstants.Utf8Bom))
+                {
+                    start += JsonConstants.Utf8Bom.Length;
+                    bufferState.BytesInBuffer -= JsonConstants.Utf8Bom.Length;
+                }
+            }
+
             // Process the data available
             TValue value = ReadCore<TValue>(
                 ref jsonReaderState,
                 bufferState.IsFinalBlock,
-                bufferState.Bytes,
+                new ReadOnlySpan<byte>(bufferState.Buffer, start, bufferState.BytesInBuffer),
                 options,
                 ref readStack,
                 converter);
 
-            Debug.Assert(readStack.BytesConsumed <= bufferState.Bytes.Length);
-            bufferState.AdvanceBuffer((int)readStack.BytesConsumed);
+            Debug.Assert(readStack.BytesConsumed <= bufferState.BytesInBuffer);
+            int bytesConsumed = checked((int)readStack.BytesConsumed);
+
+            bufferState.BytesInBuffer -= bytesConsumed;
+
+            // The reader should have thrown if we have remaining bytes.
+            Debug.Assert(!bufferState.IsFinalBlock || bufferState.BytesInBuffer == 0);
+
+            if (!bufferState.IsFinalBlock)
+            {
+                // Check if we need to shift or expand the buffer because there wasn't enough data to complete deserialization.
+                if ((uint)bufferState.BytesInBuffer > ((uint)bufferState.Buffer.Length / 2))
+                {
+                    // We have less than half the buffer available, double the buffer size.
+                    byte[] oldBuffer = bufferState.Buffer;
+                    int oldClearMax = bufferState.ClearMax;
+                    byte[] newBuffer = ArrayPool<byte>.Shared.Rent((bufferState.Buffer.Length < (int.MaxValue / 2)) ? bufferState.Buffer.Length * 2 : int.MaxValue);
+
+                    // Copy the unprocessed data to the new buffer while shifting the processed bytes.
+                    Buffer.BlockCopy(oldBuffer, bytesConsumed + start, newBuffer, 0, bufferState.BytesInBuffer);
+                    bufferState.Buffer = newBuffer;
+                    bufferState.ClearMax = bufferState.BytesInBuffer;
+
+                    // Clear and return the old buffer
+                    new Span<byte>(oldBuffer, 0, oldClearMax).Clear();
+                    ArrayPool<byte>.Shared.Return(oldBuffer);
+                }
+                else if (bufferState.BytesInBuffer != 0)
+                {
+                    // Shift the processed bytes to the beginning of buffer to make more room.
+                    Buffer.BlockCopy(bufferState.Buffer, bytesConsumed + start, bufferState.Buffer, 0, bufferState.BytesInBuffer);
+                }
+            }
 
             return value;
         }

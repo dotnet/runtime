@@ -44,8 +44,6 @@ const ep_char8_t* _ep_arch_info = "arm64";
 const ep_char8_t* _ep_arch_info = "s390x";
 #elif defined(TARGET_LOONGARCH64)
 const ep_char8_t* _ep_arch_info = "loongarch64";
-#elif defined(TARGET_POWERPC64)
-const ep_char8_t* _ep_arch_info = "ppc64le";
 #else
 const ep_char8_t* _ep_arch_info = "Unknown";
 #endif

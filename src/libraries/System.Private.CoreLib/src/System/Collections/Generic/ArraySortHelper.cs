@@ -576,7 +576,7 @@ namespace System.Collections.Generic
             if (typeof(T) == typeof(float)) return (float)(object)left < (float)(object)right;
             if (typeof(T) == typeof(double)) return (double)(object)left < (double)(object)right;
             if (typeof(T) == typeof(Half)) return (Half)(object)left < (Half)(object)right;
-            return left.CompareTo(right) < 0 ? true : false;
+            return left.CompareTo(right) < 0;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // compiles to a single comparison or method call
@@ -595,7 +595,7 @@ namespace System.Collections.Generic
             if (typeof(T) == typeof(float)) return (float)(object)left > (float)(object)right;
             if (typeof(T) == typeof(double)) return (double)(object)left > (double)(object)right;
             if (typeof(T) == typeof(Half)) return (Half)(object)left > (Half)(object)right;
-            return left.CompareTo(right) > 0 ? true : false;
+            return left.CompareTo(right) > 0;
         }
     }
 

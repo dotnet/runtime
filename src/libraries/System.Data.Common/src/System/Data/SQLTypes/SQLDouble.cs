@@ -366,8 +366,10 @@ namespace System.Data.SqlTypes
         // If object is not of same type, this method throws an ArgumentException.
         public int CompareTo(object? value)
         {
-            if (value is SqlDouble i)
+            if (value is SqlDouble)
             {
+                SqlDouble i = (SqlDouble)value;
+
                 return CompareTo(i);
             }
             throw ADP.WrongType(value!.GetType(), typeof(SqlDouble));

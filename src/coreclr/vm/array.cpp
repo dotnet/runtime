@@ -402,7 +402,8 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
             StackSString ssElemName;
             elemTypeHnd.GetName(ssElemName);
 
-            elemTypeHnd.GetAssembly()->ThrowTypeLoadException(ssElemName.GetUTF8(), IDS_CLASSLOAD_VALUECLASSTOOLARGE);
+            StackScratchBuffer scratch;
+            elemTypeHnd.GetAssembly()->ThrowTypeLoadException(ssElemName.GetUTF8(scratch), IDS_CLASSLOAD_VALUECLASSTOOLARGE);
         }
     }
 
@@ -509,7 +510,8 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
 #ifdef _DEBUG
     StackSString debugName;
     TypeString::AppendType(debugName, TypeHandle(pMT));
-    const char* pDebugNameUTF8 = debugName.GetUTF8();
+    StackScratchBuffer buff;
+    const char* pDebugNameUTF8 = debugName.GetUTF8(buff);
     S_SIZE_T safeLen = S_SIZE_T(strlen(pDebugNameUTF8))+S_SIZE_T(1);
     if(safeLen.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);
     size_t len = safeLen.Value();
@@ -655,7 +657,8 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
                     StackSString ssElemName;
                     elemTypeHnd.GetName(ssElemName);
 
-                    elemTypeHnd.GetAssembly()->ThrowTypeLoadException(ssElemName.GetUTF8(),
+                    StackScratchBuffer scratch;
+                    elemTypeHnd.GetAssembly()->ThrowTypeLoadException(ssElemName.GetUTF8(scratch),
                                                                       IDS_CLASSLOAD_VALUECLASSTOOLARGE);
                 }
 
@@ -1180,7 +1183,7 @@ public:
         if (s_pArrayStubCache == NULL)
         {
             ArrayStubCache * pArrayStubCache = new ArrayStubCache(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap());
-            if (InterlockedCompareExchangeT(&s_pArrayStubCache, pArrayStubCache, NULL) != NULL)
+            if (FastInterlockCompareExchangePointer(&s_pArrayStubCache, pArrayStubCache, NULL) != NULL)
                 delete pArrayStubCache;
         }
 

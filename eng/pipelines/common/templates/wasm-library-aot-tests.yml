@@ -8,7 +8,6 @@ parameters:
   platforms: []
   runAOT: false 
   runSmokeOnlyArg: ''
-  shouldContinueOnError: false
 
 jobs:
 
@@ -24,4 +23,3 @@ jobs:
     extraHelixArgs: /p:NeedsToBuildWasmAppsOnHelix=true ${{ parameters.extraHelixArgs }}
     alwaysRun: ${{ parameters.alwaysRun }}
     runSmokeOnlyArg: $(_runSmokeTestsOnlyArg)
-    shouldContinueOnError: ${{ parameters.shouldContinueOnError }}

@@ -58,7 +58,7 @@ namespace System.ServiceModel.Syndication
             _extensions = source._extensions.Clone();
             _authors = FeedUtils.ClonePersons(source._authors);
             _categories = FeedUtils.CloneCategories(source._categories);
-            Content = source.Content?.Clone();
+            Content = (source.Content != null) ? source.Content.Clone() : null;
             _contributors = FeedUtils.ClonePersons(source._contributors);
             Copyright = FeedUtils.CloneTextContent(source.Copyright);
             Id = source.Id;

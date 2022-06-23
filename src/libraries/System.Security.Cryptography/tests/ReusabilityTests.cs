@@ -6,6 +6,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class ReusabilityTests
     {
         [Theory]
@@ -24,19 +25,18 @@ namespace System.Security.Cryptography.Tests
 
         public static IEnumerable<object[]> ReusabilityHashAlgorithms()
         {
-            if (!PlatformDetection.IsBrowser)
+            return new[]
             {
-                yield return new object[] { MD5.Create(), };
-            }
-
-            yield return new object[] { SHA1.Create(), };
-            yield return new object[] { SHA256.Create(), };
-            yield return new object[] { SHA384.Create(), };
-            yield return new object[] { SHA512.Create(), };
-            yield return new object[] { new HMACSHA1(), };
-            yield return new object[] { new HMACSHA256(), };
-            yield return new object[] { new HMACSHA384(), };
-            yield return new object[] { new HMACSHA512(), };
+                new object[] { MD5.Create(), },
+                new object[] { SHA1.Create(), },
+                new object[] { SHA256.Create(), },
+                new object[] { SHA384.Create(), },
+                new object[] { SHA512.Create(), },
+                new object[] { new HMACSHA1(), },
+                new object[] { new HMACSHA256(), },
+                new object[] { new HMACSHA384(), },
+                new object[] { new HMACSHA512(), },
+            };
         }
     }
 }

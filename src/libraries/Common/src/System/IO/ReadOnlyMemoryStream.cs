@@ -159,7 +159,6 @@ namespace System.IO
             if (_content.Length > _position)
             {
                 destination.Write(_content.Span.Slice(_position));
-                _position = _content.Length;
             }
         }
 
@@ -167,16 +166,9 @@ namespace System.IO
         {
             ValidateCopyToArguments(destination, bufferSize);
             EnsureNotClosed();
-            if (_content.Length > _position)
-            {
-                ReadOnlyMemory<byte> content = _content.Slice(_position);
-                _position = _content.Length;
-                return destination.WriteAsync(content, cancellationToken).AsTask();
-            }
-            else
-            {
-                return Task.CompletedTask;
-            }
+            return _content.Length > _position ?
+                destination.WriteAsync(_content.Slice(_position), cancellationToken).AsTask() :
+                Task.CompletedTask;
         }
 #endif
 

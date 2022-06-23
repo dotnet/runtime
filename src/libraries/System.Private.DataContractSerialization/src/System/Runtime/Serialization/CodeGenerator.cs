@@ -609,8 +609,9 @@ namespace System.Runtime.Serialization
         internal Type LoadMember(MemberInfo memberInfo)
         {
             Type? memberType;
-            if (memberInfo is FieldInfo fieldInfo)
+            if (memberInfo is FieldInfo)
             {
+                FieldInfo fieldInfo = (FieldInfo)memberInfo;
                 memberType = fieldInfo.FieldType;
                 if (fieldInfo.IsStatic)
                 {
@@ -636,8 +637,9 @@ namespace System.Runtime.Serialization
                     Call(getMethod);
                 }
             }
-            else if (memberInfo is MethodInfo method)
+            else if (memberInfo is MethodInfo)
             {
+                MethodInfo method = (MethodInfo)memberInfo;
                 memberType = method.ReturnType;
                 Call(method);
             }
@@ -650,8 +652,9 @@ namespace System.Runtime.Serialization
 
         internal void StoreMember(MemberInfo memberInfo)
         {
-            if (memberInfo is FieldInfo fieldInfo)
+            if (memberInfo is FieldInfo)
             {
+                FieldInfo fieldInfo = (FieldInfo)memberInfo;
                 if (fieldInfo.IsStatic)
                 {
                     if (_codeGenTrace != CodeGenTrace.None)

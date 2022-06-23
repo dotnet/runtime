@@ -5,10 +5,11 @@ using System.Data.Common;
 using System.Data.ProviderBase;
 using System.Diagnostics;
 using System.Threading;
-using SysTx = System.Transactions;
 
 namespace System.Data.OleDb
 {
+    using SysTx = Transactions;
+
     public sealed partial class OleDbConnection : DbConnection
     {
         private static readonly DbConnectionFactory _connectionFactory = OleDbConnectionFactory.SingletonInstance;
@@ -56,7 +57,7 @@ namespace System.Data.OleDb
             get
             {
                 System.Data.ProviderBase.DbConnectionPoolGroup? poolGroup = PoolGroup;
-                return poolGroup?.ConnectionOptions;
+                return ((null != poolGroup) ? poolGroup.ConnectionOptions : null);
             }
         }
 
@@ -249,7 +250,7 @@ namespace System.Data.OleDb
             Debug.Assert(DbConnectionClosedConnecting.SingletonInstance == _innerConnection, "not connecting");
 
             System.Data.ProviderBase.DbConnectionPoolGroup? poolGroup = PoolGroup;
-            DbConnectionOptions? connectionOptions = poolGroup?.ConnectionOptions;
+            DbConnectionOptions? connectionOptions = ((null != poolGroup) ? poolGroup.ConnectionOptions : null);
             if ((null == connectionOptions) || connectionOptions.IsEmpty)
             {
                 throw ADP.NoConnectionString();

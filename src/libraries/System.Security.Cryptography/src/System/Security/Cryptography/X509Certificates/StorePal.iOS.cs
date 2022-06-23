@@ -23,7 +23,7 @@ namespace System.Security.Cryptography.X509Certificates
                 rawData,
                 (derData, contentType) =>
                 {
-                    certificateList ??= new List<ICertificatePal>();
+                    certificateList = certificateList ?? new List<ICertificatePal>();
                     certificateList.Add(AppleCertificatePal.FromDerBlob(derData, contentType, password, keyStorageFlags));
                     return true;
                 });

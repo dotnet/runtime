@@ -32,7 +32,7 @@ namespace System.ComponentModel.Composition.Hosting
             Action<ComposablePartCatalogChangeEventArgs>? onChanged,
             Action<ComposablePartCatalogChangeEventArgs>? onChanging)
         {
-            catalogs ??= Enumerable.Empty<ComposablePartCatalog>();
+            catalogs = catalogs ?? Enumerable.Empty<ComposablePartCatalog>();
             _catalogs = new List<ComposablePartCatalog>(catalogs);
             _onChanged = onChanged;
             _onChanging = onChanging;
@@ -308,7 +308,11 @@ namespace System.ComponentModel.Composition.Hosting
 
         public void OnChanged(object sender, ComposablePartCatalogChangeEventArgs e)
         {
-            Changed?.Invoke(sender, e);
+            var changedEvent = Changed;
+            if (changedEvent != null)
+            {
+                changedEvent(sender, e);
+            }
         }
 
         private void RaiseChangingEvent(
@@ -328,7 +332,11 @@ namespace System.ComponentModel.Composition.Hosting
 
         public void OnChanging(object sender, ComposablePartCatalogChangeEventArgs e)
         {
-            Changing?.Invoke(sender, e);
+            var changingEvent = Changing;
+            if (changingEvent != null)
+            {
+                changingEvent(sender, e);
+            }
         }
 
         private void OnContainedCatalogChanged(object? sender, ComposablePartCatalogChangeEventArgs e)

@@ -1099,7 +1099,7 @@ namespace System.Data.Common
             {
                 using (RegistryKey? key = Registry.ClassesRoot.OpenSubKey(subkey, false))
                 {
-                    return key?.GetValue(queryvalue);
+                    return ((null != key) ? key.GetValue(queryvalue) : null);
                 }
             }
             catch (SecurityException e)
@@ -1117,7 +1117,7 @@ namespace System.Data.Common
             {
                 using (RegistryKey? key = Registry.LocalMachine.OpenSubKey(subkey, false))
                 {
-                    return key?.GetValue(queryvalue);
+                    return ((null != key) ? key.GetValue(queryvalue) : null);
                 }
             }
             catch (SecurityException e)

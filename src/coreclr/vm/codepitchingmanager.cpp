@@ -78,7 +78,7 @@ static void CreateRWLock(SimpleRWLock** lock)
         void *pLockSpace = SystemDomain::GetGlobalLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(SimpleRWLock)));
         SimpleRWLock *pLock = new (pLockSpace) SimpleRWLock(COOPERATIVE_OR_PREEMPTIVE, LOCK_TYPE_DEFAULT);
 
-        if (InterlockedCompareExchangeT(lock, pLock, NULL) != NULL)
+        if (FastInterlockCompareExchangePointer(lock, pLock, NULL) != NULL)
             SystemDomain::GetGlobalLoaderAllocator()->GetLowFrequencyHeap()->BackoutMem(pLockSpace, sizeof(SimpleRWLock));
     }
 }
@@ -232,8 +232,9 @@ static void LookupOrCreateInPitchingCandidate(MethodDesc* pMD, ULONG sizeOfCode)
             SString className, methodName, methodSig;
             pMD->GetMethodInfo(className, methodName, methodSig);
 
-            const char* szClassName = className.GetUTF8();
-            const char* szMethodSig = methodSig.GetUTF8();
+            StackScratchBuffer scratch;
+            const char* szClassName = className.GetUTF8(scratch);
+            const char* szMethodSig = methodSig.GetUTF8(scratch);
 
             printf("Candidate %lu %s :: %s %s\n",
                    sizeOfCode, szClassName, pMD->GetName(), szMethodSig);
@@ -417,8 +418,9 @@ void MethodDesc::PitchNativeCode()
         SString className, methodName, methodSig;
         GetMethodInfo(className, methodName, methodSig);
 
-        const char* szClassName = className.GetUTF8();
-        const char* szMethodSig = methodSig.GetUTF8();
+        StackScratchBuffer scratch;
+        const char* szClassName = className.GetUTF8(scratch);
+        const char* szMethodSig = methodSig.GetUTF8(scratch);
 
         printf("Pitched %lu %lu %s :: %s %s\n",
                s_PitchedMethodCounter, pitchedBytes, szClassName, GetName(), szMethodSig);

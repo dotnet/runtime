@@ -23,18 +23,6 @@
 
 #if defined(TARGET_OSX) && defined(TARGET_AMD64)
 #include <mach/mach.h>
-#include <sys/sysctl.h>
-
-bool IsProcessTranslated()
-{
-   int ret = 0;
-   size_t size = sizeof(ret);
-   if (sysctlbyname("sysctl.proc_translated", &ret, &size, NULL, 0) == -1)
-   {
-      return false;
-   }
-   return ret == 1;
-}
 #endif // TARGET_OSX && TARGET_AMD64
 
 #ifndef TARGET_OSX
@@ -77,15 +65,6 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
     *pMaxExecutableCodeSize = MaxDoubleMappedSize;
     *pHandle = (void*)(size_t)fd;
 #else // !TARGET_OSX
-
-#ifdef TARGET_AMD64
-    if (IsProcessTranslated())
-    {
-        // Rosetta doesn't support double mapping correctly
-        return false;
-    }
-#endif // TARGET_AMD64
-
     *pMaxExecutableCodeSize = SIZE_MAX;
     *pHandle = NULL;
 #endif // !TARGET_OSX

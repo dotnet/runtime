@@ -1,17 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
-using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.ComponentModel;
-using System.Globalization;
-using System.Runtime.Versioning;
-using System.Diagnostics.CodeAnalysis;
-
 namespace System.Xml.Schema
 {
+    using System.IO;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.ComponentModel;
+    using System.Globalization;
+    using System.Runtime.Versioning;
+    using System.Diagnostics.CodeAnalysis;
+
     /*
      * The XdrBuilder class parses the XDR Schema and
      * builds internal validation information
@@ -1655,7 +1655,7 @@ namespace System.Xml.Schema
                 builder.SendValidationEvent(SR.Sch_DupDtMaxLength);
             }
 
-            if (!ParseInteger((string)obj, ref cVal))
+            if (!ParseInteger((string)obj, ref cVal) || cVal < 0)
             {
                 builder.SendValidationEvent(SR.Sch_DtMaxLengthInvalid, obj.ToString());
             }
@@ -1668,7 +1668,7 @@ namespace System.Xml.Schema
                 builder.SendValidationEvent(SR.Sch_DupDtMinLength);
             }
 
-            if (!ParseInteger((string)obj, ref cVal))
+            if (!ParseInteger((string)obj, ref cVal) || cVal < 0)
             {
                 builder.SendValidationEvent(SR.Sch_DtMinLengthInvalid, obj.ToString());
             }

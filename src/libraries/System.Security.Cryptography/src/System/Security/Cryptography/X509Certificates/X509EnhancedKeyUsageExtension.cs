@@ -18,7 +18,7 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         public X509EnhancedKeyUsageExtension(OidCollection enhancedKeyUsages, bool critical)
-            : base(Oids.EnhancedKeyUsageOid, EncodeExtension(enhancedKeyUsages), critical, skipCopy: true)
+            : base(Oids.EnhancedKeyUsageOid, EncodeExtension(enhancedKeyUsages), critical)
         {
         }
 

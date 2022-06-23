@@ -1,15 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Threading;
-using System.Collections;
-using System.Xml.Schema;
-using System.Runtime.Versioning;
-
 namespace System.Xml.Schema
 {
+    using System;
+    using System.Diagnostics.CodeAnalysis;
+    using System.Threading;
+    using System.Collections;
+    using System.Xml.Schema;
+    using System.Runtime.Versioning;
+
+
     /// <summary>
     /// The XmlSchemaCollection contains a set of namespace URI's.
     /// Each namespace also have an associated private data cache
@@ -194,8 +195,8 @@ namespace System.Xml.Schema
         {
             get
             {
-                XmlSchemaCollectionNode? node = (XmlSchemaCollectionNode?)_collection[ns ?? string.Empty];
-                return node?.Schema;
+                XmlSchemaCollectionNode? node = (XmlSchemaCollectionNode?)_collection[(ns != null) ? ns : string.Empty];
+                return (node != null) ? node.Schema : null;
             }
         }
 
@@ -208,7 +209,7 @@ namespace System.Xml.Schema
 
         public bool Contains(string? ns)
         {
-            return _collection[ns ?? string.Empty] != null;
+            return _collection[(ns != null) ? ns : string.Empty] != null;
         }
 
         /// <summary>
@@ -278,8 +279,8 @@ namespace System.Xml.Schema
 
         internal SchemaInfo? GetSchemaInfo(string? ns)
         {
-            XmlSchemaCollectionNode? node = (XmlSchemaCollectionNode?)_collection[ns ?? string.Empty];
-            return node?.SchemaInfo;
+            XmlSchemaCollectionNode? node = (XmlSchemaCollectionNode?)_collection[(ns != null) ? ns : string.Empty];
+            return (node != null) ? node.SchemaInfo : null;
         }
 
         internal SchemaNames GetSchemaNames(XmlNameTable nt)
@@ -315,7 +316,7 @@ namespace System.Xml.Schema
                         errorCount = 1;
                     }
 
-                    ns = schema.TargetNamespace ?? string.Empty;
+                    ns = schema.TargetNamespace == null ? string.Empty : schema.TargetNamespace;
                 }
                 errorCount += schema.ErrorCount;
             }

@@ -8,7 +8,7 @@ using System.Security.Cryptography;
 
 using SimpleDigest = Interop.BrowserCrypto.SimpleDigest;
 
-namespace System.Security.Cryptography
+namespace Internal.Cryptography
 {
     internal sealed class SHANativeHashProvider : HashProvider
     {
@@ -19,7 +19,28 @@ namespace System.Security.Cryptography
         public SHANativeHashProvider(string hashAlgorithmId)
         {
             Debug.Assert(HashProviderDispenser.CanUseSubtleCryptoImpl);
-            (_impl, _hashSizeInBytes) = HashAlgorithmToPal(hashAlgorithmId);
+
+            switch (hashAlgorithmId)
+            {
+                case HashAlgorithmNames.SHA1:
+                    _impl = SimpleDigest.Sha1;
+                    _hashSizeInBytes = 20;
+                    break;
+                case HashAlgorithmNames.SHA256:
+                    _impl = SimpleDigest.Sha256;
+                    _hashSizeInBytes = 32;
+                    break;
+                case HashAlgorithmNames.SHA384:
+                    _impl = SimpleDigest.Sha384;
+                    _hashSizeInBytes = 48;
+                    break;
+                case HashAlgorithmNames.SHA512:
+                    _impl = SimpleDigest.Sha512;
+                    _hashSizeInBytes = 64;
+                    break;
+                default:
+                    throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
+            }
         }
 
         public override void AppendHashData(ReadOnlySpan<byte> data)
@@ -61,21 +82,6 @@ namespace System.Security.Cryptography
             return _hashSizeInBytes;
         }
 
-        public static unsafe int HashOneShot(string hashAlgorithmId, ReadOnlySpan<byte> data, Span<byte> destination)
-        {
-            (SimpleDigest impl, int hashSizeInBytes) = HashAlgorithmToPal(hashAlgorithmId);
-            Debug.Assert(destination.Length >= hashSizeInBytes);
-
-            fixed (byte* src = data)
-            fixed (byte* dest = destination)
-            {
-                int res = Interop.BrowserCrypto.SimpleDigestHash(impl, src, data.Length, dest, destination.Length);
-                Debug.Assert(res != 0);
-            }
-
-            return hashSizeInBytes;
-        }
-
         public override int HashSizeInBytes => _hashSizeInBytes;
 
         public override void Dispose(bool disposing)
@@ -85,18 +91,6 @@ namespace System.Security.Cryptography
         public override void Reset()
         {
             _buffer = null;
-        }
-
-        internal static (SimpleDigest HashName, int HashSizeInBytes) HashAlgorithmToPal(string hashAlgorithmId)
-        {
-            return hashAlgorithmId switch
-            {
-                HashAlgorithmNames.SHA256 => (SimpleDigest.Sha256, SHA256.HashSizeInBytes),
-                HashAlgorithmNames.SHA1 => (SimpleDigest.Sha1, SHA1.HashSizeInBytes),
-                HashAlgorithmNames.SHA384 => (SimpleDigest.Sha384, SHA384.HashSizeInBytes),
-                HashAlgorithmNames.SHA512 => (SimpleDigest.Sha512, SHA512.HashSizeInBytes),
-                _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId)),
-            };
         }
     }
 }

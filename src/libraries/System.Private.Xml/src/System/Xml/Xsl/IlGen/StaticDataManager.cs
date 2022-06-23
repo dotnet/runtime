@@ -86,7 +86,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public string[]? Names
         {
-            get { return _uniqueNames?.ToArray(); }
+            get { return (_uniqueNames != null) ? _uniqueNames.ToArray() : null; }
         }
 
         /// <summary>
@@ -107,7 +107,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public Int32Pair[]? NameFilters
         {
-            get { return _uniqueFilters?.ToArray(); }
+            get { return (_uniqueFilters != null) ? _uniqueFilters.ToArray() : null; }
         }
 
         /// <summary>
@@ -143,7 +143,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public StringPair[][]? PrefixMappingsList
         {
-            get { return _prefixMappingsList?.ToArray(); }
+            get { return (_prefixMappingsList != null) ? _prefixMappingsList.ToArray() : null; }
         }
 
         /// <summary>
@@ -166,7 +166,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public string[]? GlobalNames
         {
-            get { return _globalNames?.ToArray(); }
+            get { return (_globalNames != null) ? _globalNames.ToArray() : null; }
         }
 
         /// <summary>
@@ -213,7 +213,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public XmlQueryType[]? XmlTypes
         {
-            get { return _uniqueXmlTypes?.ToArray(); }
+            get { return (_uniqueXmlTypes != null) ? _uniqueXmlTypes.ToArray() : null; }
         }
 
         /// <summary>
@@ -233,7 +233,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public XmlCollation[]? Collations
         {
-            get { return _uniqueCollations?.ToArray(); }
+            get { return (_uniqueCollations != null) ? _uniqueCollations.ToArray() : null; }
         }
     }
 }

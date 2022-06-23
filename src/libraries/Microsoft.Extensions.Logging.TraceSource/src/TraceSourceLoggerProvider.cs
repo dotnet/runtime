@@ -53,9 +53,10 @@ namespace Microsoft.Extensions.Logging.TraceSource
             return new TraceSourceLogger(GetOrAddTraceSource(name));
         }
 
-        private DiagnosticsTraceSource GetOrAddTraceSource(string name) =>
-            _sources.TryGetValue(name, out DiagnosticsTraceSource? source) ? source :
-            _sources.GetOrAdd(name, InitializeTraceSource(name));
+        private DiagnosticsTraceSource GetOrAddTraceSource(string name)
+        {
+            return _sources.GetOrAdd(name, InitializeTraceSource);
+        }
 
         private DiagnosticsTraceSource InitializeTraceSource(string traceSourceName)
         {

@@ -22,19 +22,21 @@ namespace Wasm.Build.Tests
         public static IEnumerable<object?[]> SatelliteAssemblyTestData(bool aot, bool relinking, RunHost host)
             => ConfigWithAOTData(aot)
                     .Multiply(
-                        new object?[] { relinking, "es-ES" },
-                        new object?[] { relinking, null },
-                        new object?[] { relinking, "ja-JP" })
+                        new object?[] { relinking, "es-ES", "got: hola" },
+                        new object?[] { relinking, null,    "got: hello" },
+                        new object?[] { relinking, "ja-JP", "got: \u3053\u3093\u306B\u3061\u306F" })
                     .WithRunHosts(host)
                     .UnwrapItemsAsArrays();
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61725", TestPlatforms.Windows)]
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ false, RunHost.All })]
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ true,  RunHost.All })]
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ true,  /*relinking*/ false, RunHost.All })]
         public void ResourcesFromMainAssembly(BuildArgs buildArgs,
                                               bool nativeRelink,
                                               string? argCulture,
+                                              string expectedOutput,
                                               RunHost host,
                                               string id)
         {
@@ -60,21 +62,25 @@ namespace Wasm.Build.Tests
                                 },
                                 DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack));
 
-            RunAndTestWasmApp(
-                            buildArgs, expectedExitCode: 42,
-                            args: argCulture,
-                            host: host, id: id,
-                            // check that downloading assets doesn't have timing race conditions
-                            extraXHarnessMonoArgs: "--fetch-random-delay=200");
+            string output = RunAndTestWasmApp(
+                                buildArgs, expectedExitCode: 42,
+                                args: argCulture,
+                                host: host, id: id,
+                                // check that downloading assets doesn't have timing race conditions
+                                extraXHarnessMonoArgs: "--fetch-random-delay=200");
+
+            Assert.Contains(expectedOutput, output);
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61725", TestPlatforms.Windows)]
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ false, RunHost.All })]
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ true,  RunHost.All })]
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ true,  /*relinking*/ false, RunHost.All })]
         public void ResourcesFromProjectReference(BuildArgs buildArgs,
                                                   bool nativeRelink,
                                                   string? argCulture,
+                                                  string expectedOutput,
                                                   RunHost host,
                                                   string id)
         {
@@ -101,10 +107,12 @@ namespace Wasm.Build.Tests
                                     CreateProgramForCultureTest(_projectDir, "LibraryWithResources.resx.words", "LibraryWithResources.Class1");
                                 }));
 
-            RunAndTestWasmApp(buildArgs,
-                              expectedExitCode: 42,
-                              args: argCulture,
-                              host: host, id: id);
+            string output = RunAndTestWasmApp(buildArgs,
+                                              expectedExitCode: 42,
+                                              args: argCulture,
+                                              host: host, id: id);
+
+            Assert.Contains(expectedOutput, output);
         }
 
 #pragma warning disable xUnit1026
@@ -172,23 +180,12 @@ namespace ResourcesTest
     {
         public static int Main(string[] args)
         {
-            string expected;
             if (args.Length == 1)
             {
                 string cultureToTest = args[0];
                 var newCulture = new CultureInfo(cultureToTest);
                 Thread.CurrentThread.CurrentCulture = newCulture;
                 Thread.CurrentThread.CurrentUICulture = newCulture;
-
-                if (cultureToTest == ""es-ES"")
-                    expected = ""hola"";
-                else if (cultureToTest == ""ja-JP"")
-                    expected = ""\u3053\u3093\u306B\u3061\u306F"";
-                else
-                    throw new Exception(""Cannot determine the expected output for {cultureToTest}"");
-
-            } else {
-                expected = ""hello"";
             }
 
             var currentCultureName = Thread.CurrentThread.CurrentCulture.Name;
@@ -196,7 +193,7 @@ namespace ResourcesTest
             var rm = new ResourceManager(""##RESOURCE_NAME##"", typeof(##TYPE_NAME##).Assembly);
             Console.WriteLine($""For '{currentCultureName}' got: {rm.GetString(""hello"")}"");
 
-            return rm.GetString(""hello"") == expected ? 42 : -1;
+            return 42;
         }
     }
 }";

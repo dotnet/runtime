@@ -46,9 +46,9 @@ namespace Microsoft.NET.HostModel.ComHost
                     Guid guid = GetTypeGuid(metadataReader, definition);
                     string guidString = GetTypeGuid(metadataReader, definition).ToString("B");
 
-                    if (clsidMap.TryGetValue(guidString, out ClsidEntry value))
+                    if (clsidMap.ContainsKey(guidString))
                     {
-                        throw new ConflictingGuidException(value.Type, GetTypeName(metadataReader, definition), guid);
+                        throw new ConflictingGuidException(clsidMap[guidString].Type, GetTypeName(metadataReader, definition), guid);
                     }
 
                     string progId = GetProgId(metadataReader, definition);

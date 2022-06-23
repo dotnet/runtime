@@ -1004,8 +1004,10 @@ namespace Microsoft.Win32
 
             lock (s_eventLockObject)
             {
-                if (s_handlers != null && s_handlers.TryGetValue(key, out List<SystemEventInvokeInfo>? invokeItems))
+                if (s_handlers != null && s_handlers.ContainsKey(key))
                 {
+                    List<SystemEventInvokeInfo> invokeItems = s_handlers[key];
+
                     // clone the list so we don't have this type locked and cause
                     // a deadlock if someone tries to modify handlers during an invoke.
                     if (invokeItems != null)
@@ -1066,8 +1068,10 @@ namespace Microsoft.Win32
 
             lock (s_eventLockObject)
             {
-                if (s_handlers != null && s_handlers.TryGetValue(key, out List<SystemEventInvokeInfo>? invokeItems))
+                if (s_handlers != null && s_handlers.ContainsKey(key))
                 {
+                    List<SystemEventInvokeInfo> invokeItems = s_handlers[key];
+
                     invokeItems.Remove(new SystemEventInvokeInfo(value));
                 }
             }

@@ -141,8 +141,5 @@ namespace System
 
         internal const string EcDhPublicKeyBlobMessage = "ECDiffieHellmanPublicKey.ToByteArray() and the associated constructor do not have a consistent and interoperable implementation on all platforms. Use ECDiffieHellmanPublicKey.ExportSubjectPublicKeyInfo() instead.";
         internal const string EcDhPublicKeyBlobDiagId = "SYSLIB0043";
-
-        internal const string AssemblyNameCodeBaseMessage = "AssemblyName.CodeBase and AssemblyName.EscapedCodeBase are obsolete. Using them for loading an assembly is not supported.";
-        internal const string AssemblyNameCodeBaseDiagId = "SYSLIB0044";
     }
 }

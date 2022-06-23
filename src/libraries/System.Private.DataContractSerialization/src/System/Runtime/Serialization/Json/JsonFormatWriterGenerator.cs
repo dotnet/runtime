@@ -2,16 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Security;
 using System.Xml;
 
 namespace System.Runtime.Serialization.Json
 {
+    using System;
+    using System.Collections;
+    using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
+    using System.Reflection;
+    using System.Reflection.Emit;
+    using System.Security;
+    using System.Xml;
+
     internal delegate void JsonFormatClassWriterDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContextComplexJson context, ClassDataContract dataContract, XmlDictionaryString[]? memberNames);
     internal delegate void JsonFormatCollectionWriterDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContextComplexJson context, CollectionDataContract dataContract);
 

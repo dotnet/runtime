@@ -370,7 +370,7 @@ encode_value (gint32 value, guint8 *buf, guint8 **endbuf)
 		p [1] = value & 0xff;
 		p += 2;
 	} else if ((value >= 0) && (value <= 0x1fffffff)) {
-		p [0] = GINT32_TO_UINT8 ((value >> 24) | 0xc0);
+		p [0] = (value >> 24) | 0xc0;
 		p [1] = (value >> 16) & 0xff;
 		p [2] = (value >> 8) & 0xff;
 		p [3] = value & 0xff;

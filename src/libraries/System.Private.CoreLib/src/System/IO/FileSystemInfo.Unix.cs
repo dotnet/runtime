@@ -63,12 +63,6 @@ namespace System.IO
 
         internal long LengthCore => _fileStatus.GetLength(FullPath);
 
-        internal UnixFileMode UnixFileModeCore
-        {
-            get => _fileStatus.GetUnixFileMode(FullPath);
-            set => _fileStatus.SetUnixFileMode(FullPath, value);
-        }
-
         public void Refresh()
         {
             _linkTargetIsValid = false;

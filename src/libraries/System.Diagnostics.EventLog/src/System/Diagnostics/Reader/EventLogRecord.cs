@@ -343,11 +343,11 @@ namespace System.Diagnostics.Eventing.Reader
         {
             get
             {
-                if (_taskNameReady)
+                if (_taskNameReady == true)
                     return _taskName;
                 lock (_syncObject)
                 {
-                    if (!_taskNameReady)
+                    if (_taskNameReady == false)
                     {
                         _taskNameReady = true;
                         _taskName = _cachedMetadataInformation.GetTaskDisplayName(this.ProviderName, Handle);

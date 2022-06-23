@@ -147,7 +147,7 @@ namespace System.Net.Mail
                     {
                         // Store the decoded value, we'll re-encode before sending
                         value = MimeBasePart.DecodeHeaderValue(value);
-                        _subjectEncoding ??= inputEncoding;
+                        _subjectEncoding = _subjectEncoding ?? inputEncoding;
                     }
                     // Failed to decode, just pass it through as ascii (legacy)
                     catch (FormatException) { }

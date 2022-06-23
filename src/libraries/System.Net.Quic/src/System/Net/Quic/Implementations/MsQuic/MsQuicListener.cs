@@ -19,7 +19,7 @@ using static Microsoft.Quic.MsQuic;
 
 namespace System.Net.Quic.Implementations.MsQuic
 {
-    internal sealed class MsQuicListener : IDisposable
+    internal sealed class MsQuicListener : QuicListenerProvider, IDisposable
     {
         private readonly State _state;
         private GCHandle _stateHandle;
@@ -118,7 +118,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        internal IPEndPoint ListenEndPoint
+        internal override IPEndPoint ListenEndPoint
         {
             get
             {
@@ -126,7 +126,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        internal async ValueTask<MsQuicConnection> AcceptConnectionAsync(CancellationToken cancellationToken = default)
+        internal override async ValueTask<QuicConnectionProvider> AcceptConnectionAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
 
@@ -140,7 +140,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
@@ -188,11 +188,10 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 QuicAddr address = listenEndPoint.ToQuicAddr();
 
-                if (listenEndPoint.Address.Equals(IPAddress.IPv6Any))
+                if (listenEndPoint.Address == IPAddress.IPv6Any)
                 {
-                    // For IPv6Any, MsQuic would listen only for IPv6 connections. This would make it impossible
-                    // to connect the listener by using the IPv4 address (which could have been e.g. resolved by DNS).
-                    // Using the Unspecified family makes MsQuic handle connections from all IP addresses.
+                    // For IPv6Any, MsQuic would listen only for IPv6 connections. To mimic the behavior of TCP sockets,
+                    // we leave the address family unspecified and let MsQuic handle connections from all IP addresses.
                     address.Family = QUIC_ADDRESS_FAMILY_UNSPEC;
                 }
 

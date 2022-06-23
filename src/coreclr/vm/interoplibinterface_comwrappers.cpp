@@ -236,7 +236,7 @@ namespace
                 ExtObjCxtCache* instMaybe = new ExtObjCxtCache();
 
                 // Attempt to set the global instance.
-                if (NULL != InterlockedCompareExchangeT(&g_Instance, instMaybe, NULL))
+                if (NULL != FastInterlockCompareExchangePointer(&g_Instance, instMaybe, NULL))
                     delete instMaybe;
             }
 
@@ -1166,11 +1166,12 @@ namespace InteropLibImports
         }
         CONTRACTL_END;
 
+        bool isValid = false;
         ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
 
-        // A valid target is one that is not null.
-        bool isNotNull = ObjectHandleIsNull(objectHandle) == FALSE;
-        return isNotNull;
+        isValid = ObjectHandleIsNull(objectHandle) != FALSE;
+
+        return isValid;
     }
 
     bool GetGlobalPeggingState() noexcept

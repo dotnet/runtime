@@ -66,7 +66,7 @@ namespace System.Xml.Serialization
         [AllowNull]
         public string AttributeName
         {
-            get { return _attributeName ?? string.Empty; }
+            get { return _attributeName == null ? string.Empty : _attributeName; }
             set { _attributeName = value; }
         }
 
@@ -85,7 +85,7 @@ namespace System.Xml.Serialization
         [AllowNull]
         public string DataType
         {
-            get { return _dataType ?? string.Empty; }
+            get { return _dataType == null ? string.Empty : _dataType; }
             set { _dataType = value; }
         }
 

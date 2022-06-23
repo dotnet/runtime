@@ -172,7 +172,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal ActiveDirectorySite(DirectoryContext context, string siteName, bool existing)
         {
-            Debug.Assert(existing);
+            Debug.Assert(existing == true);
 
             this.context = context;
             _name = siteName;

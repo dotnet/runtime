@@ -506,7 +506,7 @@ OBJECTREF ParamTypeDesc::GetManagedClassObject()
         // Only the winner can set m_hExposedClassObject from NULL.
         LOADERHANDLE hExposedClassObject = pLoaderAllocator->AllocateHandle(refClass);
 
-        if (InterlockedCompareExchangeT(&m_hExposedClassObject, hExposedClassObject, static_cast<LOADERHANDLE>(NULL)))
+        if (FastInterlockCompareExchangePointer(&m_hExposedClassObject, hExposedClassObject, static_cast<LOADERHANDLE>(NULL)))
         {
             pLoaderAllocator->FreeHandle(hExposedClassObject);
         }
@@ -668,7 +668,7 @@ void TypeDesc::DoFullyLoad(Generics::RecursionGraph *pVisited, ClassLoadLevel le
     switch (level)
     {
         case CLASS_DEPENDENCIES_LOADED:
-            InterlockedOr((LONG*)&m_typeAndFlags, TypeDesc::enum_flag_DependenciesLoaded);
+            FastInterlockOr(&m_typeAndFlags, TypeDesc::enum_flag_DependenciesLoaded);
             break;
 
         case CLASS_LOADED:
@@ -1624,7 +1624,7 @@ OBJECTREF TypeVarTypeDesc::GetManagedClassObject()
         // Only the winner can set m_hExposedClassObject from NULL.
         LOADERHANDLE hExposedClassObject = pLoaderAllocator->AllocateHandle(refClass);
 
-        if (InterlockedCompareExchangeT(&m_hExposedClassObject, hExposedClassObject, static_cast<LOADERHANDLE>(NULL)))
+        if (FastInterlockCompareExchangePointer(&m_hExposedClassObject, hExposedClassObject, static_cast<LOADERHANDLE>(NULL)))
         {
             pLoaderAllocator->FreeHandle(hExposedClassObject);
         }

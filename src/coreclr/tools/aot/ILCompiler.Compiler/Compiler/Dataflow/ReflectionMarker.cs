@@ -161,9 +161,7 @@ namespace ILCompiler.Dataflow
         {
             if (!type.IsGenericDefinition && !type.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true) && type.HasStaticConstructor)
             {
-                // Mark the GC static base - it contains a pointer to the class constructor, but also info
-                // about whether the class constructor already executed and it's what is looked at at runtime.
-                _dependencies.Add(_factory.TypeNonGCStaticsSymbol((MetadataType)type), "RunClassConstructor reference");
+                _dependencies.Add(_factory.CanonicalEntrypoint(type.GetStaticConstructor()), "RunClassConstructor reference");
             }
         }
 

@@ -90,7 +90,7 @@ STDMETHODIMP CorHost2::Start()
         else
         {
             // Increment the global (and dynamic) refCount...
-            InterlockedIncrement(&m_RefCount);
+            FastInterlockIncrement(&m_RefCount);
 
             // And set our flag that this host has invoked the Start...
             m_fStarted = TRUE;
@@ -113,7 +113,7 @@ STDMETHODIMP CorHost2::Start()
             // So, if you want to do that, just make sure you are the first host to load the
             // specific version of CLR in memory AND start it.
             m_fFirstToLoadCLR = TRUE;
-            InterlockedIncrement(&m_RefCount);
+            FastInterlockIncrement(&m_RefCount);
         }
     }
 
@@ -159,7 +159,7 @@ HRESULT CorHost2::Stop()
                 break;
             }
             else
-            if (InterlockedCompareExchange(&m_RefCount, refCount - 1, refCount) == refCount)
+            if (FastInterlockCompareExchange(&m_RefCount, refCount - 1, refCount) == refCount)
             {
                 // Indicate that we have got a Stop for a corresponding Start call from the
                 // Host. Semantically, CoreCLR has stopped for them.
@@ -249,7 +249,7 @@ HRESULT CorHost2::ExecuteApplication(LPCWSTR   pwzAppFullName,
  * ActualCmdLine - Foo arg1 arg2.
  * (Host1)       - Full_path_to_Foo arg1 arg2
 */
-static PTRARRAYREF SetCommandLineArgs(PCWSTR pwzAssemblyPath, int argc, PCWSTR* argv)
+void SetCommandLineArgs(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR* argv)
 {
     CONTRACTL
     {
@@ -262,17 +262,34 @@ static PTRARRAYREF SetCommandLineArgs(PCWSTR pwzAssemblyPath, int argc, PCWSTR* 
     // Record the command line.
     SaveManagedCommandLine(pwzAssemblyPath, argc, argv);
 
-    PCWSTR exePath = Bundle::AppIsBundle() ? static_cast<PCWSTR>(Bundle::AppBundle->Path()) : pwzAssemblyPath;
+    // Send the command line to System.Environment.
+    struct _gc
+    {
+        PTRARRAYREF cmdLineArgs;
+    } gc;
 
-    PTRARRAYREF result;
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__ENVIRONMENT__INITIALIZE_COMMAND_LINE_ARGS);
-    DECLARE_ARGHOLDER_ARRAY(args, 3);
-    args[ARGNUM_0] = PTR_TO_ARGHOLDER(exePath);
-    args[ARGNUM_1] = DWORD_TO_ARGHOLDER(argc);
-    args[ARGNUM_2] = PTR_TO_ARGHOLDER(argv);
-    CALL_MANAGED_METHOD_RETREF(result, PTRARRAYREF, args);
+    ZeroMemory(&gc, sizeof(gc));
+    GCPROTECT_BEGIN(gc);
 
-    return result;
+    gc.cmdLineArgs = (PTRARRAYREF)AllocateObjectArray(argc + 1 /* arg[0] should be the exe name*/, g_pStringClass);
+    OBJECTREF orAssemblyPath = StringObject::NewString(Bundle::AppIsBundle() ? static_cast<LPCWSTR>(Bundle::AppBundle->Path()) : pwzAssemblyPath);
+    gc.cmdLineArgs->SetAt(0, orAssemblyPath);
+
+    for (int i = 0; i < argc; ++i)
+    {
+        OBJECTREF argument = StringObject::NewString(argv[i]);
+        gc.cmdLineArgs->SetAt(i + 1, argument);
+    }
+
+    MethodDescCallSite setCmdLineArgs(METHOD__ENVIRONMENT__SET_COMMAND_LINE_ARGS);
+
+    ARG_SLOT args[] =
+    {
+        ObjToArgSlot(gc.cmdLineArgs),
+    };
+    setCmdLineArgs.Call(args);
+
+    GCPROTECT_END();
 }
 
 HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
@@ -339,11 +356,18 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
     {
         GCX_COOP();
 
+        // Here we call the managed method that gets the cmdLineArgs array.
+        SetCommandLineArgs(pwzAssemblyPath, argc, argv);
+
         PTRARRAYREF arguments = NULL;
         GCPROTECT_BEGIN(arguments);
 
-        // Here we call the managed method that gets the cmdLineArgs array.
-        arguments = SetCommandLineArgs(pwzAssemblyPath, argc, argv);
+        arguments = (PTRARRAYREF)AllocateObjectArray(argc, g_pStringClass);
+        for (int i = 0; i < argc; ++i)
+        {
+            STRINGREF argument = StringObject::NewString(argv[i]);
+            arguments->SetAt(i, argument);
+        }
 
         if(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_Corhost_Swallow_Uncaught_Exceptions))
         {
@@ -426,13 +450,15 @@ HRESULT CorHost2::ExecuteInDefaultAppDomain(LPCWSTR pwzAssemblyPath,
         Assembly *pAssembly = AssemblySpec::LoadAssembly(pwzAssemblyPath);
 
         SString szTypeName(pwzTypeName);
-        const char* szTypeNameUTF8 = szTypeName.GetUTF8();
+        StackScratchBuffer buff1;
+        const char* szTypeNameUTF8 = szTypeName.GetUTF8(buff1);
         MethodTable *pMT = ClassLoader::LoadTypeByNameThrowing(pAssembly,
                                                             NULL,
                                                             szTypeNameUTF8).AsMethodTable();
 
         SString szMethodName(pwzMethodName);
-        const char* szMethodNameUTF8 = szMethodName.GetUTF8();
+        StackScratchBuffer buff;
+        const char* szMethodNameUTF8 = szMethodName.GetUTF8(buff);
         MethodDesc *pMethodMD = MemberLoader::FindMethod(pMT, szMethodNameUTF8, &gsig_SM_Str_RetInt);
 
         if (!pMethodMD)

@@ -9,6 +9,32 @@ namespace System.Formats.Tar.Tests
     // Tests specific to V7 format.
     public class TarWriter_WriteEntry_V7_Tests : TarTestsBase
     {
+        [Fact]
+        public void ThrowIf_WriteEntry_UnsupportedFile()
+        {
+            // Verify that entry types that can be manually constructed in other types, cannot be inserted in a v7 writer
+            using MemoryStream archiveStream = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archiveStream, archiveFormat: TarEntryFormat.V7, leaveOpen: true))
+            {
+                // Entry types supported in ustar but not in v7
+                Assert.Throws<InvalidOperationException>(() => writer.WriteEntry(new UstarTarEntry(TarEntryType.BlockDevice, InitialEntryName)));
+                Assert.Throws<InvalidOperationException>(() => writer.WriteEntry(new UstarTarEntry(TarEntryType.CharacterDevice, InitialEntryName)));
+                Assert.Throws<InvalidOperationException>(() => writer.WriteEntry(new UstarTarEntry(TarEntryType.Fifo, InitialEntryName)));
+
+                // Entry types supported in pax but not in v7
+                Assert.Throws<InvalidOperationException>(() => writer.WriteEntry(new PaxTarEntry(TarEntryType.BlockDevice, InitialEntryName)));
+                Assert.Throws<InvalidOperationException>(() => writer.WriteEntry(new PaxTarEntry(TarEntryType.CharacterDevice, InitialEntryName)));
+                Assert.Throws<InvalidOperationException>(() => writer.WriteEntry(new PaxTarEntry(TarEntryType.Fifo, InitialEntryName)));
+
+                // Entry types supported in gnu but not in v7
+                Assert.Throws<InvalidOperationException>(() => writer.WriteEntry(new GnuTarEntry(TarEntryType.BlockDevice, InitialEntryName)));
+                Assert.Throws<InvalidOperationException>(() => writer.WriteEntry(new GnuTarEntry(TarEntryType.CharacterDevice, InitialEntryName)));
+                Assert.Throws<InvalidOperationException>(() => writer.WriteEntry(new GnuTarEntry(TarEntryType.Fifo, InitialEntryName)));
+            }
+            // Verify nothing was written, not even the empty records
+            Assert.Equal(0, archiveStream.Length);
+        }
+
         [Theory]
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
@@ -16,17 +42,17 @@ namespace System.Formats.Tar.Tests
         public void Write_RegularFileEntry_As_V7RegularFileEntry(TarEntryFormat entryFormat)
         {
             using MemoryStream archive = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archive, format: TarEntryFormat.V7, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archive, archiveFormat: TarEntryFormat.V7, leaveOpen: true))
             {
                 TarEntry entry = entryFormat switch
                 {
                     TarEntryFormat.Ustar => new UstarTarEntry(TarEntryType.RegularFile, InitialEntryName),
                     TarEntryFormat.Pax => new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName),
                     TarEntryFormat.Gnu => new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName),
-                    _ => throw new FormatException($"Unexpected format: {entryFormat}")
+                    _ => throw new FormatException()
                 };
 
-                // Should be written in the format of the entry
+                // Should be written as V7RegularFile
                 writer.WriteEntry(entry);
             }
 
@@ -34,21 +60,8 @@ namespace System.Formats.Tar.Tests
             using (TarReader reader = new TarReader(archive))
             {
                 TarEntry entry = reader.GetNextEntry();
-                Assert.NotNull(entry);
-                Assert.Equal(entryFormat, entry.Format);
-
-                switch (entryFormat)
-                {
-                    case TarEntryFormat.Ustar:
-                        Assert.True(entry is UstarTarEntry);
-                        break;
-                    case TarEntryFormat.Pax:
-                        Assert.True(entry is PaxTarEntry);
-                        break;
-                    case TarEntryFormat.Gnu:
-                        Assert.True(entry is GnuTarEntry);
-                        break;
-                }
+                Assert.True(entry is V7TarEntry);
+                Assert.Equal(TarEntryType.V7RegularFile, entry.EntryType);
 
                 Assert.Null(reader.GetNextEntry());
             }

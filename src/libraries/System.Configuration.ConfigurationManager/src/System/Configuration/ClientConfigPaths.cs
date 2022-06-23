@@ -248,6 +248,7 @@ namespace System.Configuration
             if (assembly != null && !isSingleFile)
             {
                 AssemblyName assemblyName = assembly.GetName();
+                Uri codeBase = new Uri(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, assembly.ManifestModule.Name));
 
                 try
                 {
@@ -260,7 +261,7 @@ namespace System.Configuration
                 {
                     typeName = StrongNameDesc;
                 }
-                else if (Uri.TryCreate(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, assembly.ManifestModule.Name), UriKind.Absolute, out Uri codeBase))
+                else
                 {
                     try
                     {

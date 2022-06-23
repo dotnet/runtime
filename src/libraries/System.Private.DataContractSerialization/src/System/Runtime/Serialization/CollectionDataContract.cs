@@ -1,21 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Security;
-using System.Threading;
-using System.Xml;
-using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
 
 namespace System.Runtime.Serialization
 {
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Reflection;
+    using System.Runtime.CompilerServices;
+    using System.Threading;
+    using System.Xml;
+    using System.Linq;
+    using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, DataContract>;
+    using System.Security;
+    using System.Diagnostics.CodeAnalysis;
+
     // The interface is a perf optimization.
     // Only KeyValuePairAdapter should implement the interface.
     internal interface IKeyValuePairAdapter { }

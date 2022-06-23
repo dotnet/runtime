@@ -174,13 +174,13 @@ namespace System.IO.MemoryMappedFiles
             flags |= Interop.Sys.OpenFlags.O_CREAT | Interop.Sys.OpenFlags.O_EXCL; // CreateNew
 
             // Determine the permissions with which to create the file
-            var perms = UnixFileMode.None;
+            Interop.Sys.Permissions perms = default(Interop.Sys.Permissions);
             if ((protections & Interop.Sys.MemoryMappedProtections.PROT_READ) != 0)
-                perms |= UnixFileMode.UserRead;
+                perms |= Interop.Sys.Permissions.S_IRUSR;
             if ((protections & Interop.Sys.MemoryMappedProtections.PROT_WRITE) != 0)
-                perms |= UnixFileMode.UserWrite;
+                perms |= Interop.Sys.Permissions.S_IWUSR;
             if ((protections & Interop.Sys.MemoryMappedProtections.PROT_EXEC) != 0)
-                perms |= UnixFileMode.UserExecute;
+                perms |= Interop.Sys.Permissions.S_IXUSR;
 
             string mapName;
             SafeFileHandle fd;

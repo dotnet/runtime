@@ -597,7 +597,10 @@ namespace System.Diagnostics.Eventing.Reader
                         case UnsafeNativeMethods.EvtChannelConfigPropertyId.EvtChannelConfigEnabled:
                             {
                                 varVal.Type = (uint)UnsafeNativeMethods.EvtVariantType.EvtVarTypeBoolean;
-                                varVal.Bool = (bool)val ? 1u : 0u;
+                                if ((bool)val == true)
+                                    varVal.Bool = 1;
+                                else
+                                    varVal.Bool = 0;
                             }
                             break;
                         case UnsafeNativeMethods.EvtChannelConfigPropertyId.EvtChannelConfigAccess:
@@ -635,13 +638,19 @@ namespace System.Diagnostics.Eventing.Reader
                         case UnsafeNativeMethods.EvtChannelConfigPropertyId.EvtChannelLoggingConfigRetention:
                             {
                                 varVal.Type = (uint)UnsafeNativeMethods.EvtVariantType.EvtVarTypeBoolean;
-                                varVal.Bool = (bool)val ? 1u : 0u;
+                                if ((bool)val == true)
+                                    varVal.Bool = 1;
+                                else
+                                    varVal.Bool = 0;
                             }
                             break;
                         case UnsafeNativeMethods.EvtChannelConfigPropertyId.EvtChannelLoggingConfigAutoBackup:
                             {
                                 varVal.Type = (uint)UnsafeNativeMethods.EvtVariantType.EvtVarTypeBoolean;
-                                varVal.Bool = (bool)val ? 1u : 0u;
+                                if ((bool)val == true)
+                                    varVal.Bool = 1;
+                                else
+                                    varVal.Bool = 0;
                             }
                             break;
                         default:

@@ -484,7 +484,7 @@ namespace System.Runtime.Serialization
 
         internal static string GetPrefix(string? ns)
         {
-            ns ??= string.Empty;
+            ns = ns ?? string.Empty;
             string? prefix = (string?)s_nsToPrefixTable[ns];
             if (prefix == null)
             {

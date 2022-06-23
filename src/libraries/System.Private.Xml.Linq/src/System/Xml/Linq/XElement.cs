@@ -215,7 +215,7 @@ namespace System.Xml.Linq
         /// </summary>
         public XAttribute? FirstAttribute
         {
-            get { return lastAttr?.next; }
+            get { return lastAttr != null ? lastAttr.next : null; }
         }
 
         /// <summary>

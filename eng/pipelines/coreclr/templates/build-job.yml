@@ -224,8 +224,6 @@ jobs:
 
     # Run CoreCLR Tools unit tests
     - ${{ if eq(parameters.testGroup, 'clrTools') }}:
-      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset libs $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci
-        displayName: Build libs
       - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.toolstests $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci -test
         displayName: Run CoreCLR Tools unit tests
 

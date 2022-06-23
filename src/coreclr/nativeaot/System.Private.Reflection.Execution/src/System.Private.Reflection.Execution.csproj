@@ -2,6 +2,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
     <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.csproj" />
+    <ProjectReference Include="..\..\System.Private.Reflection.Core\src\System.Private.Reflection.Core.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

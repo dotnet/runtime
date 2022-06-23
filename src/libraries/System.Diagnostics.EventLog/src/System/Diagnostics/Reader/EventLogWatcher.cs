@@ -256,7 +256,10 @@ namespace System.Diagnostics.Eventing.Reader
 
         private void IssueCallback(EventRecordWrittenEventArgs eventArgs)
         {
-            EventRecordWritten?.Invoke(this, eventArgs);
+            if (EventRecordWritten != null)
+            {
+                EventRecordWritten(this, eventArgs);
+            }
         }
 
         private void HandleEventsRequestCompletion()

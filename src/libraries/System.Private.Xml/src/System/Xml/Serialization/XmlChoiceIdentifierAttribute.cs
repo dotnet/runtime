@@ -38,7 +38,7 @@ namespace System.Xml.Serialization
         [AllowNull]
         public string MemberName
         {
-            get { return _name ?? string.Empty; }
+            get { return _name == null ? string.Empty : _name; }
             set { _name = value; }
         }
 

@@ -131,6 +131,8 @@ mono_custom_modifiers_get_desc (GString *res, const MonoType *type, gboolean inc
 void
 mono_type_get_desc (GString *res, MonoType *type, gboolean include_namespace)
 {
+	int i;
+
 	switch (type->type) {
 	case MONO_TYPE_VOID:
 		g_string_append (res, "void"); break;
@@ -175,7 +177,7 @@ mono_type_get_desc (GString *res, MonoType *type, gboolean include_namespace)
 	case MONO_TYPE_ARRAY:
 		mono_type_get_desc (res, &type->data.array->eklass->_byval_arg, include_namespace);
 		g_string_append_c (res, '[');
-		for (guint8 i = 1; i < type->data.array->rank; ++i)
+		for (i = 1; i < type->data.array->rank; ++i)
 			g_string_append_c (res, ',');
 		g_string_append_c (res, ']');
 		break;
@@ -194,7 +196,7 @@ mono_type_get_desc (GString *res, MonoType *type, gboolean include_namespace)
 		g_string_append (res, "<");
 		context = &type->data.generic_class->context;
 		if (context->class_inst) {
-			for (guint i = 0; i < context->class_inst->type_argc; ++i) {
+			for (i = 0; i < context->class_inst->type_argc; ++i) {
 				if (i > 0)
 					g_string_append (res, ", ");
 				mono_type_get_desc (res, context->class_inst->type_argv [i], include_namespace);
@@ -203,7 +205,7 @@ mono_type_get_desc (GString *res, MonoType *type, gboolean include_namespace)
 		if (context->method_inst) {
 			if (context->class_inst)
 					g_string_append (res, "; ");
-			for (guint i = 0; i < context->method_inst->type_argc; ++i) {
+			for (i = 0; i < context->method_inst->type_argc; ++i) {
 				if (i > 0)
 					g_string_append (res, ", ");
 				mono_type_get_desc (res, context->method_inst->type_argv [i], include_namespace);
@@ -303,7 +305,9 @@ mono_signature_full_name (MonoMethodSignature *sig)
 void
 mono_ginst_get_desc (GString *str, MonoGenericInst *ginst)
 {
-	for (guint i = 0; i < ginst->type_argc; ++i) {
+	int i;
+
+	for (i = 0; i < ginst->type_argc; ++i) {
 		if (i > 0)
 			g_string_append (str, ", ");
 		mono_type_get_desc (str, ginst->type_argv [i], TRUE);
@@ -595,6 +599,7 @@ mono_method_desc_search_in_image (MonoMethodDesc *desc, MonoImage *image)
 	MonoClass *klass;
 	const MonoTableInfo *methods;
 	MonoMethod *method;
+	int i;
 
 	/* Handle short names for system classes */
 	if (!desc->name_space && image == mono_defaults.corlib) {
@@ -613,7 +618,7 @@ mono_method_desc_search_in_image (MonoMethodDesc *desc, MonoImage *image)
 	/* FIXME: Is this call necessary?  We don't use its result. */
 	mono_image_get_table_info (image, MONO_TABLE_TYPEDEF);
 	methods = mono_image_get_table_info (image, MONO_TABLE_METHOD);
-	for (guint32 i = 0; i < table_info_get_rows (methods); ++i) {
+	for (i = 0; i < mono_table_info_get_rows (methods); ++i) {
 		ERROR_DECL (error);
 		guint32 token = mono_metadata_decode_row_col (methods, i, MONO_METHOD_NAME);
 		const char *n = mono_metadata_string_heap (image, token);

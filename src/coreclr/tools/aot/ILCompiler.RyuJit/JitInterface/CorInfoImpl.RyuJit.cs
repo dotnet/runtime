@@ -1854,10 +1854,19 @@ namespace Internal.JitInterface
 
         private void getGSCookie(IntPtr* pCookieVal, IntPtr** ppCookieVal)
         {
-            if (ppCookieVal != null)
+            // TODO: fully implement GS cookies
+
+            if (pCookieVal != null)
             {
-                *ppCookieVal = (IntPtr*)ObjectToHandle(_compilation.NodeFactory.ExternSymbol("__security_cookie"));
-                *pCookieVal = IntPtr.Zero;
+                if (PointerSize == 4)
+                {
+                    *pCookieVal = (IntPtr)0x3F796857;
+                }
+                else
+                {
+                    *pCookieVal = unchecked((IntPtr)0x216D6F6D202C6948);
+                }
+                *ppCookieVal = null;
             }
             else
             {
@@ -1968,10 +1977,6 @@ namespace Internal.JitInterface
         private void setEHinfo(uint EHnumber, ref CORINFO_EH_CLAUSE clause)
         {
             _ehClauses[EHnumber] = clause;
-        }
-
-        private void beginInlining(CORINFO_METHOD_STRUCT_* inlinerHnd, CORINFO_METHOD_STRUCT_* inlineeHnd)
-        {
         }
 
         private void reportInliningDecision(CORINFO_METHOD_STRUCT_* inlinerHnd, CORINFO_METHOD_STRUCT_* inlineeHnd, CorInfoInline inlineResult, byte* reason)

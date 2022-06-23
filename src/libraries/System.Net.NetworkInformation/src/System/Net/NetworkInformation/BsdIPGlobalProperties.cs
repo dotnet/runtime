@@ -83,7 +83,7 @@ namespace System.Net.NetworkInformation
             return endPoints;
         }
 
-        public override unsafe IPEndPoint[] GetActiveUdpListeners()
+        public unsafe override IPEndPoint[] GetActiveUdpListeners()
         {
             int realCount = Interop.Sys.GetEstimatedUdpListenerCount();
             int infoCount = realCount * 2;

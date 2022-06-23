@@ -1,19 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
-using System.ComponentModel;
-using System.Configuration;
-#if DEBUG
-using System.Diagnostics;
-#endif
-using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
-using System.Xml.Schema;
-using System.Xml.Serialization.Configuration;
-
 namespace System.Xml.Serialization
 {
+    using System;
+    using System.Xml.Schema;
+    using System.Collections;
+    using System.ComponentModel;
+    using System.Diagnostics.CodeAnalysis;
+    using System.Reflection;
+    using System.Configuration;
+    using System.Xml.Serialization.Configuration;
+
+#if DEBUG
+    using System.Diagnostics;
+#endif
+
     public abstract class SchemaImporter
     {
         private XmlSchemas _schemas;

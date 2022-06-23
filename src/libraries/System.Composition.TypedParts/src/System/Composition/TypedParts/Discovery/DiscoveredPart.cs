@@ -212,8 +212,9 @@ namespace System.Composition.TypedParts.Discovery
             var partMetadata = new Dictionary<string, object>();
             foreach (var attr in _attributeContext.GetDeclaredAttributes(partType.AsType(), partType))
             {
-                if (attr is PartMetadataAttribute ma)
+                if (attr is PartMetadataAttribute)
                 {
+                    var ma = (PartMetadataAttribute)attr;
                     partMetadata.Add(ma.Name, ma.Value);
                 }
             }

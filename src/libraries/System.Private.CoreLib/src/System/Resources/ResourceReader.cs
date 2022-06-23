@@ -15,11 +15,9 @@ namespace System.Resources
     .Extensions
 #endif
 {
-#pragma warning disable IDE0065
 #if RESOURCES_EXTENSIONS
     using ResourceReader = DeserializingResourceReader;
 #endif
-#pragma warning restore IDE0065
 
     // Provides the default implementation of IResourceReader, reading
     // .resources file from the system default binary format.  This class

@@ -1689,6 +1689,10 @@ namespace System.Xml.Serialization
                             };
                             member.ArraySource = member.Source;
                         }
+                        else if (!mapping.TypeDesc.IsArray)
+                        {
+
+                        }
                     }
 
                     if (member.Source == null)

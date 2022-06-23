@@ -41,6 +41,69 @@
 
 #include "arraynative.inl"
 
+/*===================================IsDigit====================================
+**Returns a bool indicating whether the character passed in represents a   **
+**digit.
+==============================================================================*/
+bool IsDigit(WCHAR c, int radix, int *result)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        PRECONDITION(CheckPointer(result));
+    }
+    CONTRACTL_END;
+
+    if (IS_DIGIT(c)) {
+        *result = DIGIT_TO_INT(c);
+    }
+    else if (c>='A' && c<='Z') {
+        //+10 is necessary because A is actually 10, etc.
+        *result = c-'A'+10;
+    }
+    else if (c>='a' && c<='z') {
+        //+10 is necessary because a is actually 10, etc.
+        *result = c-'a'+10;
+    }
+    else {
+        *result = -1;
+    }
+
+    if ((*result >=0) && (*result < radix))
+        return true;
+
+    return false;
+}
+
+INT32 wtoi(_In_reads_(length) WCHAR* wstr, DWORD length)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        PRECONDITION(CheckPointer(wstr));
+        PRECONDITION(length >= 0);
+    }
+    CONTRACTL_END;
+
+    DWORD i = 0;
+    int value;
+    INT32 result = 0;
+
+    while ( (i < length) && (IsDigit(wstr[i], 10 ,&value)) ) {
+        //Read all of the digits and convert to a number
+        result = result*10 + value;
+        i++;
+    }
+
+    return result;
+}
+
+
+
 //
 //
 // EXCEPTION NATIVE
@@ -308,17 +371,79 @@ static void GetExceptionHelp(OBJECTREF objException, BSTR *pbstrHelpFile, DWORD 
 
     GCPROTECT_BEGIN(objException);
 
-    // call managed code to parse help context
-    MethodDescCallSite getHelpContext(METHOD__EXCEPTION__GET_HELP_CONTEXT, &objException);
+    // read Exception.HelpLink property
+    MethodDescCallSite getHelpLink(METHOD__EXCEPTION__GET_HELP_LINK, &objException);
 
-    ARG_SLOT GetHelpContextArgs[] =
-    {
-        ObjToArgSlot(objException),
-        PtrToArgSlot(pdwHelpContext)
-    };
-    *pbstrHelpFile = BStrFromString(getHelpContext.Call_RetSTRINGREF(GetHelpContextArgs));
+    ARG_SLOT GetHelpLinkArgs[] = { ObjToArgSlot(objException)};
+    *pbstrHelpFile = BStrFromString(getHelpLink.Call_RetSTRINGREF(GetHelpLinkArgs));
 
     GCPROTECT_END();
+
+    // parse the help file to check for the presence of helpcontext
+    int len = SysStringLen(*pbstrHelpFile);
+    int pos = len;
+    WCHAR *pwstr = *pbstrHelpFile;
+    if (pwstr) {
+        BOOL fFoundPound = FALSE;
+
+        for (pos = len - 1; pos >= 0; pos--) {
+            if (pwstr[pos] == W('#')) {
+                fFoundPound = TRUE;
+                break;
+            }
+        }
+
+        if (fFoundPound) {
+            int PoundPos = pos;
+            int NumberStartPos = -1;
+            BOOL bNumberStarted = FALSE;
+            BOOL bNumberFinished = FALSE;
+            BOOL bInvalidDigitsFound = FALSE;
+
+            _ASSERTE(pwstr[pos] == W('#'));
+
+            // Check to see if the string to the right of the pound a valid number.
+            for (pos++; pos < len; pos++) {
+                if (bNumberFinished) {
+                    if (!COMCharacter::nativeIsWhiteSpace(pwstr[pos])) {
+                        bInvalidDigitsFound = TRUE;
+                        break;
+                    }
+                }
+                else if (bNumberStarted) {
+                    if (COMCharacter::nativeIsWhiteSpace(pwstr[pos])) {
+                        bNumberFinished = TRUE;
+                    }
+                    else if (!COMCharacter::nativeIsDigit(pwstr[pos])) {
+                        bInvalidDigitsFound = TRUE;
+                        break;
+                    }
+                }
+                else {
+                    if (COMCharacter::nativeIsDigit(pwstr[pos])) {
+                        NumberStartPos = pos;
+                        bNumberStarted = TRUE;
+                    }
+                    else if (!COMCharacter::nativeIsWhiteSpace(pwstr[pos])) {
+                        bInvalidDigitsFound = TRUE;
+                        break;
+                    }
+                }
+            }
+
+            if (bNumberStarted && !bInvalidDigitsFound) {
+                // Grab the help context and remove it from the help file.
+                *pdwHelpContext = (DWORD)wtoi(&pwstr[NumberStartPos], len - NumberStartPos);
+
+                // Allocate a new help file string of the right length.
+                BSTR strOld = *pbstrHelpFile;
+                *pbstrHelpFile = SysAllocStringLen(strOld, PoundPos);
+                SysFreeString(strOld);
+                if (!*pbstrHelpFile)
+                    COMPlusThrowOM();
+            }
+        }
+    }
 }
 
 // NOTE: caller cleans up any partially initialized BSTRs in pED
@@ -987,7 +1112,7 @@ FCIMPL1(INT64, GCInterface::GetTotalAllocatedBytes, CLR_BOOL precise)
 #else
         // As it could be noticed we read 64bit values that may be concurrently updated.
         // Such reads are not guaranteed to be atomic on 32bit so extra care should be taken.
-        uint64_t unused_bytes = InterlockedCompareExchange64((LONG64*)& Thread::dead_threads_non_alloc_bytes, 0, 0);
+        uint64_t unused_bytes = FastInterlockCompareExchangeLong((LONG64*)& Thread::dead_threads_non_alloc_bytes, 0, 0);
 #endif
 
         uint64_t allocated_bytes = GCHeapUtilities::GetGCHeap()->GetTotalAllocatedBytes() - unused_bytes;
@@ -998,7 +1123,7 @@ FCIMPL1(INT64, GCInterface::GetTotalAllocatedBytes, CLR_BOOL precise)
         uint64_t current_high = high_watermark;
         while (allocated_bytes > current_high)
         {
-            uint64_t orig = InterlockedCompareExchange64((LONG64*)& high_watermark, allocated_bytes, current_high);
+            uint64_t orig = FastInterlockCompareExchangeLong((LONG64*)& high_watermark, allocated_bytes, current_high);
             if (orig == current_high)
                 return allocated_bytes;
 
@@ -1402,7 +1527,7 @@ FCIMPL2(INT32,COMInterlocked::Exchange, INT32 *location, INT32 value)
         FCThrow(kNullReferenceException);
     }
 
-    return InterlockedExchange((LONG *) location, value);
+    return FastInterlockExchange((LONG *) location, value);
 }
 FCIMPLEND
 
@@ -1414,7 +1539,7 @@ FCIMPL2_IV(INT64,COMInterlocked::Exchange64, INT64 *location, INT64 value)
         FCThrow(kNullReferenceException);
     }
 
-    return InterlockedExchange64((INT64 *) location, value);
+    return FastInterlockExchangeLong((INT64 *) location, value);
 }
 FCIMPLEND
 
@@ -1426,7 +1551,7 @@ FCIMPL3(INT32, COMInterlocked::CompareExchange, INT32* location, INT32 value, IN
         FCThrow(kNullReferenceException);
     }
 
-    return InterlockedCompareExchange((LONG*)location, value, comparand);
+    return FastInterlockCompareExchange((LONG*)location, value, comparand);
 }
 FCIMPLEND
 
@@ -1438,7 +1563,7 @@ FCIMPL3_IVV(INT64, COMInterlocked::CompareExchange64, INT64* location, INT64 val
         FCThrow(kNullReferenceException);
     }
 
-    return InterlockedCompareExchange64((INT64*)location, value, comparand);
+    return FastInterlockCompareExchangeLong((INT64*)location, value, comparand);
 }
 FCIMPLEND
 
@@ -1450,7 +1575,7 @@ FCIMPL2_IV(float,COMInterlocked::ExchangeFloat, float *location, float value)
         FCThrow(kNullReferenceException);
     }
 
-    LONG ret = InterlockedExchange((LONG *) location, *(LONG*)&value);
+    LONG ret = FastInterlockExchange((LONG *) location, *(LONG*)&value);
     return *(float*)&ret;
 }
 FCIMPLEND
@@ -1464,7 +1589,7 @@ FCIMPL2_IV(double,COMInterlocked::ExchangeDouble, double *location, double value
     }
 
 
-    INT64 ret = InterlockedExchange64((INT64 *) location, *(INT64*)&value);
+    INT64 ret = FastInterlockExchangeLong((INT64 *) location, *(INT64*)&value);
     return *(double*)&ret;
 }
 FCIMPLEND
@@ -1477,7 +1602,7 @@ FCIMPL3_IVV(float,COMInterlocked::CompareExchangeFloat, float *location, float v
         FCThrow(kNullReferenceException);
     }
 
-    LONG ret = (LONG)InterlockedCompareExchange((LONG*) location, *(LONG*)&value, *(LONG*)&comparand);
+    LONG ret = (LONG)FastInterlockCompareExchange((LONG*) location, *(LONG*)&value, *(LONG*)&comparand);
     return *(float*)&ret;
 }
 FCIMPLEND
@@ -1490,7 +1615,7 @@ FCIMPL3_IVV(double,COMInterlocked::CompareExchangeDouble, double *location, doub
         FCThrow(kNullReferenceException);
     }
 
-    INT64 ret = (INT64)InterlockedCompareExchange64((INT64*) location, *(INT64*)&value, *(INT64*)&comparand);
+    INT64 ret = (INT64)FastInterlockCompareExchangeLong((INT64*) location, *(INT64*)&value, *(INT64*)&comparand);
     return *(double*)&ret;
 }
 FCIMPLEND
@@ -1503,7 +1628,7 @@ FCIMPL2(LPVOID,COMInterlocked::ExchangeObject, LPVOID*location, LPVOID value)
         FCThrow(kNullReferenceException);
     }
 
-    LPVOID ret = InterlockedExchangeT(location, value);
+    LPVOID ret = FastInterlockExchangePointer(location, value);
 #ifdef _DEBUG
     Thread::ObjectRefAssign((OBJECTREF *)location);
 #endif
@@ -1521,7 +1646,7 @@ FCIMPL3(LPVOID,COMInterlocked::CompareExchangeObject, LPVOID *location, LPVOID v
     }
 
     // <TODO>@todo: only set ref if is updated</TODO>
-    LPVOID ret = InterlockedCompareExchangeT(location, value, comparand);
+    LPVOID ret = FastInterlockCompareExchangePointer(location, value, comparand);
     if (ret == comparand) {
 #ifdef _DEBUG
         Thread::ObjectRefAssign((OBJECTREF *)location);
@@ -1540,7 +1665,7 @@ FCIMPL2(INT32,COMInterlocked::ExchangeAdd32, INT32 *location, INT32 value)
         FCThrow(kNullReferenceException);
     }
 
-    return InterlockedExchangeAdd((LONG *) location, value);
+    return FastInterlockExchangeAdd((LONG *) location, value);
 }
 FCIMPLEND
 
@@ -1552,7 +1677,7 @@ FCIMPL2_IV(INT64,COMInterlocked::ExchangeAdd64, INT64 *location, INT64 value)
         FCThrow(kNullReferenceException);
     }
 
-    return InterlockedExchangeAdd64((INT64 *) location, value);
+    return FastInterlockExchangeAddLong((INT64 *) location, value);
 }
 FCIMPLEND
 

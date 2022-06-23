@@ -49,7 +49,7 @@ namespace LibraryImportGenerator.IntegrationTests
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "and_all_members")]
             [return: MarshalAs(UnmanagedType.U1)]
-            public static partial bool AndAllMembers([MarshalUsing(typeof(SpanMarshaller<BoolStruct_V1>))] Span<BoolStruct_V1> pArray, int length);
+            public static partial bool AndAllMembers([MarshalUsing(typeof(SpanMarshaller<BoolStruct>))] Span<BoolStruct> pArray, int length);
         }
     }
 
@@ -135,21 +135,21 @@ namespace LibraryImportGenerator.IntegrationTests
         [InlineData(false)]
         public void SpanWithSimpleNonBlittableTypeMarshalling(bool result)
         {
-            var boolValues = new BoolStruct_V1[]
+            var boolValues = new BoolStruct[]
             {
-                new BoolStruct_V1
+                new BoolStruct
                 {
                     b1 = true,
                     b2 = true,
                     b3 = true,
                 },
-                new BoolStruct_V1
+                new BoolStruct
                 {
                     b1 = true,
                     b2 = true,
                     b3 = true,
                 },
-                new BoolStruct_V1
+                new BoolStruct
                 {
                     b1 = true,
                     b2 = true,

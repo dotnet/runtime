@@ -170,29 +170,13 @@ namespace System.Security.Cryptography.X509Certificates
                     }
                 }
 
-                const UnixFileMode UserReadWrite = UnixFileMode.UserRead | UnixFileMode.UserWrite;
-
                 string destinationFilename;
-                FileStreamOptions options = new()
-                {
-                    Mode = FileMode.CreateNew,
-                    UnixCreateMode = UserReadWrite,
-                    Access = FileAccess.Write
-                };
+                FileMode mode = FileMode.CreateNew;
 
                 if (existingFilename != null)
                 {
                     destinationFilename = existingFilename;
-                    options.Mode = FileMode.Create;
-
-                    // Before we open the file for writing the certificate,
-                    // ensure it is only accessible to the owner.
-                    try
-                    {
-                        File.SetUnixFileMode(existingFilename, UserReadWrite);
-                    }
-                    catch (IOException) // Ignore errors. We verify permissions when we've opened the file.
-                    { }
+                    mode = FileMode.Create;
                 }
                 else if (findOpenSlot)
                 {
@@ -203,15 +187,9 @@ namespace System.Security.Cryptography.X509Certificates
                     destinationFilename = Path.Combine(_storePath, thumbprint + PfxExtension);
                 }
 
-                using (FileStream stream = new FileStream(destinationFilename, options))
+                using (FileStream stream = new FileStream(destinationFilename, mode))
                 {
-                    // Verify the file can only be read/written to by the owner.
-                    UnixFileMode actualMode = File.GetUnixFileMode(stream.SafeFileHandle);
-                    if (actualMode != UserReadWrite)
-                    {
-                        throw new CryptographicException(SR.Format(SR.Cryptography_InvalidFilePermissions, stream.Name));
-                    }
-
+                    EnsureFilePermissions(stream, userId);
                     byte[] pkcs12 = copy.Export(X509ContentType.Pkcs12)!;
                     stream.Write(pkcs12, 0, pkcs12.Length);
                 }
@@ -375,11 +353,70 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new CryptographicException(SR.Format(SR.Cryptography_OwnerNotCurrentUser, path));
             }
 
-            const UnixFileMode UserReadWriteExecute = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
-            UnixFileMode permissions = File.GetUnixFileMode(path);
-            if ((permissions & UserReadWriteExecute) != UserReadWriteExecute)
+            if ((dirStat.Mode & (int)Interop.Sys.Permissions.S_IRWXU) != (int)Interop.Sys.Permissions.S_IRWXU)
             {
                 throw new CryptographicException(SR.Format(SR.Cryptography_InvalidDirectoryPermissions, path));
+            }
+        }
+
+        /// <summary>
+        /// Checks the file has the correct permissions and attempts to modify them if they're inappropriate.
+        /// </summary>
+        /// <param name="stream">
+        /// The file stream to check.
+        /// </param>
+        /// <param name="userId">
+        /// The current userId from GetEUid().
+        /// </param>
+        private static void EnsureFilePermissions(FileStream stream, uint userId)
+        {
+            // Verify that we're creating files with u+rw and g-rw, o-rw.
+            const Interop.Sys.Permissions requiredPermissions =
+                Interop.Sys.Permissions.S_IRUSR | Interop.Sys.Permissions.S_IWUSR;
+
+            const Interop.Sys.Permissions forbiddenPermissions =
+                Interop.Sys.Permissions.S_IRGRP | Interop.Sys.Permissions.S_IWGRP |
+                Interop.Sys.Permissions.S_IROTH | Interop.Sys.Permissions.S_IWOTH;
+
+            Interop.Sys.FileStatus stat;
+            if (Interop.Sys.FStat(stream.SafeFileHandle, out stat) != 0)
+            {
+                Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                throw new CryptographicException(
+                    SR.Cryptography_FileStatusError,
+                    new IOException(error.GetErrorMessage(), error.RawErrno));
+            }
+
+            if (stat.Uid != userId)
+            {
+                throw new CryptographicException(SR.Format(SR.Cryptography_OwnerNotCurrentUser, stream.Name));
+            }
+
+            if ((stat.Mode & (int)requiredPermissions) != (int)requiredPermissions ||
+                (stat.Mode & (int)forbiddenPermissions) != 0)
+            {
+                if (Interop.Sys.FChMod(stream.SafeFileHandle, (int)requiredPermissions) < 0)
+                {
+                    Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                    throw new CryptographicException(
+                        SR.Format(SR.Cryptography_InvalidFilePermissions, stream.Name),
+                        new IOException(error.GetErrorMessage(), error.RawErrno));
+                }
+
+                // Verify the chmod applied.
+                if (Interop.Sys.FStat(stream.SafeFileHandle, out stat) != 0)
+                {
+                    Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                    throw new CryptographicException(
+                        SR.Cryptography_FileStatusError,
+                        new IOException(error.GetErrorMessage(), error.RawErrno));
+                }
+
+                if ((stat.Mode & (int)requiredPermissions) != (int)requiredPermissions ||
+                    (stat.Mode & (int)forbiddenPermissions) != 0)
+                {
+                    throw new CryptographicException(SR.Format(SR.Cryptography_InvalidFilePermissions, stream.Name));
+                }
             }
         }
 

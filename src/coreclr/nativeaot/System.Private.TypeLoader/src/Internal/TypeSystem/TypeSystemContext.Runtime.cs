@@ -321,8 +321,10 @@ namespace Internal.TypeSystem
 
                 protected override bool CompareKeyToValue(RuntimeMethodKey key, MethodDesc value)
                 {
-                    if (value is RuntimeMethodDesc runtimeMethod)
+                    if (value is RuntimeMethodDesc)
                     {
+                        RuntimeMethodDesc runtimeMethod = (RuntimeMethodDesc)value;
+
                         if (key._unboxingStub != runtimeMethod.UnboxingStub)
                             return false;
 

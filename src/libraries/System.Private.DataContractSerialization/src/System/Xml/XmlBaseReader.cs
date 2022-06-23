@@ -1014,7 +1014,7 @@ namespace System.Xml
 
             return _node.IsNamespaceUri(namespaceUri);
         }
-        public sealed override bool IsStartElement()
+        public override sealed bool IsStartElement()
         {
             XmlNodeType nodeType = _node.NodeType;
             if (nodeType == XmlNodeType.Element)
@@ -1485,7 +1485,7 @@ namespace System.Xml
                     {
                         if (_trailChars == null)
                             _trailChars = new char[4];
-                        charCount -= _trailCharCount;
+                        charCount = charCount - _trailCharCount;
                         Array.Copy(chars, charCount, _trailChars, 0, _trailCharCount);
                     }
                 }

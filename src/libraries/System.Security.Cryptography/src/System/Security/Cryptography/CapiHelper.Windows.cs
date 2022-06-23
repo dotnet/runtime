@@ -109,7 +109,9 @@ namespace System.Security.Cryptography
                 wszUpgrade = UpgradeDSS(dwType, providerNameString);
             }
 
-            return wszUpgrade ?? providerNameString;
+            return wszUpgrade != null ?
+                wszUpgrade : // Overwrite the provider name with the upgraded provider name
+                providerNameString;
         }
 
         /// <summary>

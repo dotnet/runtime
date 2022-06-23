@@ -245,7 +245,7 @@ void append_probe_realpath(const pal::string_t& path, std::vector<pal::string_t>
 
         if (pos_placeholder != pal::string_t::npos)
         {
-            pal::string_t segment = get_current_arch_name();
+            pal::string_t segment = get_arch();
             segment.push_back(DIR_SEPARATOR);
             segment.append(tfm);
             probe_path.replace(pos_placeholder, placeholder.length(), segment);
@@ -1066,7 +1066,8 @@ int fx_muxer_t::handle_cli(
         }
         else if (pal::strcasecmp(_X("--info"), argv[1]) == 0)
         {
-            command_line::print_muxer_info(host_info.dotnet_root, resolver.global_file_path());
+            resolver.print_global_file_path();
+            command_line::print_muxer_info(host_info.dotnet_root);
             return StatusCode::Success;
         }
 
@@ -1123,7 +1124,8 @@ int fx_muxer_t::handle_cli(
 
     if (pal::strcasecmp(_X("--info"), argv[1]) == 0)
     {
-        command_line::print_muxer_info(host_info.dotnet_root, resolver.global_file_path());
+        resolver.print_global_file_path();
+        command_line::print_muxer_info(host_info.dotnet_root);
     }
 
     return result;

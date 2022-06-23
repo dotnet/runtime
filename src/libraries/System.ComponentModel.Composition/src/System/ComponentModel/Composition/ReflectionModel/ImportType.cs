@@ -28,7 +28,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         {
             get
             {
-                return _castSingleValueCache ??= new Dictionary<Type, Func<Export, object>?>();
+                return _castSingleValueCache = _castSingleValueCache ?? new Dictionary<Type, Func<Export, object>?>();
             }
         }
 

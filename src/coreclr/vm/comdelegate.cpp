@@ -834,7 +834,7 @@ Stub* COMDelegate::SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMe
 
     if (!pTargetMeth->IsStatic() && pTargetMeth->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
     {
-        if (InterlockedCompareExchangeT(&pClass->m_pInstRetBuffCallStub, pShuffleThunk, NULL ) != NULL)
+        if (FastInterlockCompareExchangePointer(&pClass->m_pInstRetBuffCallStub, pShuffleThunk, NULL ) != NULL)
         {
             ExecutableWriterHolder<Stub> shuffleThunkWriterHolder(pShuffleThunk, sizeof(Stub));
             shuffleThunkWriterHolder.GetRW()->DecRef();
@@ -843,7 +843,7 @@ Stub* COMDelegate::SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMe
     }
     else
     {
-        if (InterlockedCompareExchangeT(&pClass->m_pStaticCallStub, pShuffleThunk, NULL ) != NULL)
+        if (FastInterlockCompareExchangePointer(&pClass->m_pStaticCallStub, pShuffleThunk, NULL ) != NULL)
         {
             ExecutableWriterHolder<Stub> shuffleThunkWriterHolder(pShuffleThunk, sizeof(Stub));
             shuffleThunkWriterHolder.GetRW()->DecRef();
@@ -924,9 +924,9 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
     //
 
     // get the name in UTF8 format
-    StackSString szName;
-    szName.SetAndConvertToUTF8(gc.methodName->GetBuffer());
-    LPCUTF8 szNameStr = szName.GetUTF8();
+    SString wszName(SString::Literal, gc.methodName->GetBuffer());
+    StackScratchBuffer utf8Name;
+    LPCUTF8 szNameStr = wszName.GetUTF8(utf8Name);
 
     // pick a proper compare function
     typedef int (__cdecl *UTF8StringCompareFuncPtr)(const char *, const char *);
@@ -1273,7 +1273,7 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
                 ExecutableWriterHolder<UMThunkMarshInfo> uMThunkMarshInfoWriterHolder(pUMThunkMarshInfo, sizeof(UMThunkMarshInfo));
                 uMThunkMarshInfoWriterHolder.GetRW()->LoadTimeInit(pInvokeMeth);
 
-                if (InterlockedCompareExchangeT(&(pClass->m_pUMThunkMarshInfo),
+                if (FastInterlockCompareExchangePointer(&(pClass->m_pUMThunkMarshInfo),
                                                         pUMThunkMarshInfo,
                                                         NULL ) != NULL)
                 {

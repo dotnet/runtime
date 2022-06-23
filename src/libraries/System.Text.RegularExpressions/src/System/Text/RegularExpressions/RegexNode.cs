@@ -1126,7 +1126,7 @@ namespace System.Text.RegularExpressions
                     }
 
                     // If this alternation is wrapped as atomic, we need to do the same for the new alternation.
-                    if (alternation.Parent is RegexNode { Kind: RegexNodeKind.Atomic })
+                    if (alternation.Parent is RegexNode { Kind: RegexNodeKind.Atomic } parent)
                     {
                         var atomic = new RegexNode(RegexNodeKind.Atomic, alternation.Options);
                         atomic.AddChild(newAlternate);

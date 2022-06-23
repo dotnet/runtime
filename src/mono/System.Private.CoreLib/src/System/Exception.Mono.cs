@@ -49,8 +49,6 @@ namespace System
 
         private bool HasBeenThrown => _traceIPs != null;
 
-        private readonly object frameLock = new object();
-
         public MethodBase? TargetSite
         {
             [RequiresUnreferencedCode("Metadata for the method might be incomplete or removed")]
@@ -74,17 +72,11 @@ namespace System
                 if (stackFrames.Length > 0)
                     stackFrames[stackFrames.Length - 1].isLastFrameFromForeignException = true;
 
-                // Make sure foreignExceptionsFrames does not change at this point.
-                // Otherwise, the Array.Copy into combinedStackFrames can fail due to size differences
-                //
-                // See https://github.com/dotnet/runtime/issues/70081
-                MonoStackFrame[]? feFrames = foreignExceptionsFrames;
-
-                if (feFrames != null)
+                if (foreignExceptionsFrames != null)
                 {
-                    var combinedStackFrames = new MonoStackFrame[stackFrames.Length + feFrames.Length];
-                    Array.Copy(feFrames, 0, combinedStackFrames, 0, feFrames.Length);
-                    Array.Copy(stackFrames, 0, combinedStackFrames, feFrames.Length, stackFrames.Length);
+                    var combinedStackFrames = new MonoStackFrame[stackFrames.Length + foreignExceptionsFrames.Length];
+                    Array.Copy(foreignExceptionsFrames, 0, combinedStackFrames, 0, foreignExceptionsFrames.Length);
+                    Array.Copy(stackFrames, 0, combinedStackFrames, foreignExceptionsFrames.Length, stackFrames.Length);
 
                     stackFrames = combinedStackFrames;
                 }
@@ -100,6 +92,7 @@ namespace System
         internal void RestoreDispatchState(in DispatchState state)
         {
             foreignExceptionsFrames = state.StackFrames;
+
             _stackTraceString = null;
         }
 

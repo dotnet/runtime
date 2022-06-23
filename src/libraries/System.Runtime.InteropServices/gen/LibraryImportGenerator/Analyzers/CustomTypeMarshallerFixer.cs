@@ -214,7 +214,7 @@ namespace Microsoft.Interop.Analyzers
 
             SyntaxNode featureAttributeArgument = gen.AttributeArgument("Features",
                 gen.GetEnumValueAsFlagsExpression(
-                    customTypeMarshallerAttribute.AttributeClass.GetMembers(ManualTypeMarshallingHelper_V1.CustomMarshallerAttributeFields.Features).OfType<IPropertySymbol>().First().Type,
+                    customTypeMarshallerAttribute.AttributeClass.GetMembers(ManualTypeMarshallingHelper.CustomMarshallerAttributeFields.Features).OfType<IPropertySymbol>().First().Type,
                     (int)newFeaturesValue,
                     includeZeroValueFlags: false));
 
@@ -251,12 +251,12 @@ namespace Microsoft.Interop.Analyzers
             SyntaxNode updatedDeclaration = node;
 
 
-            (_, ITypeSymbol managedType, _) = ManualTypeMarshallingHelper_V1.GetMarshallerShapeInfo(marshallerType);
+            (_, ITypeSymbol managedType, _) = ManualTypeMarshallingHelper.GetMarshallerShapeInfo(marshallerType);
 
-            IMethodSymbol? fromNativeValueMethod = ManualTypeMarshallingHelper_V1.FindFromNativeValueMethod(marshallerType);
-            IMethodSymbol? toNativeValueMethod = ManualTypeMarshallingHelper_V1.FindToNativeValueMethod(marshallerType);
-            IMethodSymbol? getManagedValuesSourceMethod = ManualTypeMarshallingHelper_V1.FindGetManagedValuesSourceMethod(marshallerType, readOnlySpanOfT);
-            IMethodSymbol? getManagedValuesDestinationMethod = ManualTypeMarshallingHelper_V1.FindGetManagedValuesDestinationMethod(marshallerType, spanOfT);
+            IMethodSymbol? fromNativeValueMethod = ManualTypeMarshallingHelper.FindFromNativeValueMethod(marshallerType);
+            IMethodSymbol? toNativeValueMethod = ManualTypeMarshallingHelper.FindToNativeValueMethod(marshallerType);
+            IMethodSymbol? getManagedValuesSourceMethod = ManualTypeMarshallingHelper.FindGetManagedValuesSourceMethod(marshallerType, readOnlySpanOfT);
+            IMethodSymbol? getManagedValuesDestinationMethod = ManualTypeMarshallingHelper.FindGetManagedValuesDestinationMethod(marshallerType, spanOfT);
 
             SyntaxNode[] throwNotImplementedStatements = new[]
             {
@@ -321,21 +321,21 @@ namespace Microsoft.Interop.Analyzers
                             accessibility: Accessibility.Public,
                             statements: throwNotImplementedStatements));
                         break;
-                    case ShapeMemberNames_V1.Value.ToManaged:
+                    case ShapeMemberNames.Value.ToManaged:
                         updatedDeclaration = gen.AddMembers(updatedDeclaration, gen.MethodDeclaration(
-                            ShapeMemberNames_V1.Value.ToManaged,
+                            ShapeMemberNames.Value.ToManaged,
                             returnType: gen.TypeExpression(managedType),
                             accessibility: Accessibility.Public,
                             statements: throwNotImplementedStatements));
                         break;
-                    case ShapeMemberNames_V1.Value.FreeNative:
-                        updatedDeclaration = gen.AddMembers(updatedDeclaration, gen.MethodDeclaration(ShapeMemberNames_V1.Value.FreeNative,
+                    case ShapeMemberNames.Value.FreeNative:
+                        updatedDeclaration = gen.AddMembers(updatedDeclaration, gen.MethodDeclaration(ShapeMemberNames.Value.FreeNative,
                             accessibility: Accessibility.Public,
                             statements: throwNotImplementedStatements));
                         break;
-                    case ShapeMemberNames_V1.Value.FromNativeValue:
+                    case ShapeMemberNames.Value.FromNativeValue:
                         updatedDeclaration = gen.AddMembers(updatedDeclaration, gen.MethodDeclaration(
-                            ShapeMemberNames_V1.Value.FromNativeValue,
+                            ShapeMemberNames.Value.FromNativeValue,
                             parameters: new[]
                             {
                                 gen.ParameterDeclaration("value",
@@ -344,33 +344,33 @@ namespace Microsoft.Interop.Analyzers
                             accessibility: Accessibility.Public,
                             statements: throwNotImplementedStatements));
                         break;
-                    case ShapeMemberNames_V1.Value.ToNativeValue:
+                    case ShapeMemberNames.Value.ToNativeValue:
                         updatedDeclaration = gen.AddMembers(updatedDeclaration, gen.MethodDeclaration(
-                            ShapeMemberNames_V1.Value.ToNativeValue,
+                            ShapeMemberNames.Value.ToNativeValue,
                             returnType: gen.TypeExpression(fromNativeValueMethod?.Parameters[0].Type ?? @byte),
                             accessibility: Accessibility.Public,
                             statements: throwNotImplementedStatements));
                         break;
-                    case ShapeMemberNames_V1.LinearCollection.GetManagedValuesSource:
+                    case ShapeMemberNames.LinearCollection.GetManagedValuesSource:
                         INamedTypeSymbol? getManagedValuesDestinationReturnType = (INamedTypeSymbol?)getManagedValuesDestinationMethod?.ReturnType;
                         updatedDeclaration = gen.AddMembers(updatedDeclaration, gen.MethodDeclaration(
-                            ShapeMemberNames_V1.LinearCollection.GetManagedValuesSource,
+                            ShapeMemberNames.LinearCollection.GetManagedValuesSource,
                             returnType: gen.TypeExpression(
                                 readOnlySpanOfT.Construct(
                                     getManagedValuesDestinationReturnType?.TypeArguments[0] ?? @object)),
                             accessibility: Accessibility.Public,
                             statements: throwNotImplementedStatements));
                         break;
-                    case ShapeMemberNames_V1.LinearCollection.GetNativeValuesDestination:
+                    case ShapeMemberNames.LinearCollection.GetNativeValuesDestination:
                         updatedDeclaration = gen.AddMembers(updatedDeclaration, gen.MethodDeclaration(
-                            ShapeMemberNames_V1.LinearCollection.GetNativeValuesDestination,
+                            ShapeMemberNames.LinearCollection.GetNativeValuesDestination,
                             returnType: gen.TypeExpression(spanOfByte),
                             accessibility: Accessibility.Public,
                             statements: throwNotImplementedStatements));
                         break;
-                    case ShapeMemberNames_V1.LinearCollection.GetNativeValuesSource:
+                    case ShapeMemberNames.LinearCollection.GetNativeValuesSource:
                         updatedDeclaration = gen.AddMembers(updatedDeclaration, gen.MethodDeclaration(
-                            ShapeMemberNames_V1.LinearCollection.GetNativeValuesSource,
+                            ShapeMemberNames.LinearCollection.GetNativeValuesSource,
                             parameters: new[]
                             {
                                 gen.ParameterDeclaration("numElements", type: gen.TypeExpression(int32))
@@ -379,10 +379,10 @@ namespace Microsoft.Interop.Analyzers
                             accessibility: Accessibility.Public,
                             statements: throwNotImplementedStatements));
                         break;
-                    case ShapeMemberNames_V1.LinearCollection.GetManagedValuesDestination:
+                    case ShapeMemberNames.LinearCollection.GetManagedValuesDestination:
                         INamedTypeSymbol? getManagedValuesSourceReturnType = (INamedTypeSymbol?)getManagedValuesSourceMethod?.ReturnType;
                         updatedDeclaration = gen.AddMembers(updatedDeclaration, gen.MethodDeclaration(
-                            ShapeMemberNames_V1.LinearCollection.GetNativeValuesDestination,
+                            ShapeMemberNames.LinearCollection.GetNativeValuesDestination,
                             parameters: new[]
                             {
                                 gen.ParameterDeclaration("numElements", type: gen.TypeExpression(int32))

@@ -11,7 +11,15 @@ namespace System.Reflection.Metadata
     {
         internal const string ClrPrefix = "<CLR>";
 
-        internal static readonly byte[] WinRTPrefix = "<WinRT>"u8.ToArray();
+        internal static readonly byte[] WinRTPrefix = new[] {
+            (byte)'<',
+            (byte)'W',
+            (byte)'i',
+            (byte)'n',
+            (byte)'R',
+            (byte)'T',
+            (byte)'>'
+        };
 
         #region Projection Tables
 

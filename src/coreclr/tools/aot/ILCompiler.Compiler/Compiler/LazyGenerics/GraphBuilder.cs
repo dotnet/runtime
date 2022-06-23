@@ -201,11 +201,8 @@ namespace ILCompiler
                                      && _metadataReader.GetMemberReference((MemberReferenceHandle)accessedMethod).Parent.Kind == HandleKind.TypeSpecification))
                             {
                                 var m = methodIL.GetObject(MetadataTokens.GetToken(accessedMethod), NotFoundBehavior.ReturnNull) as MethodDesc;
-                                if (m != null)
-                                {
-                                    ProcessTypeReference(m.OwningType, typeContext, methodContext);
-                                    ProcessMethodCall(m, typeContext, methodContext);
-                                }
+                                ProcessTypeReference(m.OwningType, typeContext, methodContext);
+                                ProcessMethodCall(m, typeContext, methodContext);
                             }
                             break;
 

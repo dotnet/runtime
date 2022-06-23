@@ -525,7 +525,7 @@ namespace System.Xml
 
             if (parentNode == null)
             { //Did not find any type info all the way to the root, currentNode is Document || DocumentFragment
-                nodeIndex--; //Subtract the one for document and set the node to null
+                nodeIndex = nodeIndex - 1; //Subtract the one for document and set the node to null
                 _nodeSequenceToValidate![nodeIndex] = null;
                 return GetTypeFromAncestors(elementToValidate, null, nodeIndex);
             }

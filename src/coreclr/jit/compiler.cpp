@@ -3199,10 +3199,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     opts.compProcedureSplitting = jitFlags->IsSet(JitFlags::JIT_FLAG_PROCSPLIT) || enableFakeSplitting;
 
-#ifdef TARGET_LOONGARCH64
-    // Hot/cold splitting is not being tested on LoongArch64.
+#ifdef TARGET_ARM64
+    // TODO-ARM64-NYI: enable hot/cold splitting
     opts.compProcedureSplitting = false;
-#endif // TARGET_LOONGARCH64
+#endif // TARGET_ARM64
 
 #ifdef DEBUG
     opts.compProcedureSplittingEH = opts.compProcedureSplitting;
@@ -5199,41 +5199,25 @@ void Compiler::placeLoopAlignInstructions()
         {
             // Loop alignment is disabled for cold blocks
             assert((block->bbFlags & BBF_COLD) == 0);
-            BasicBlock* const loopTop = block->bbNext;
 
             // If jmp was not found, then block before the loop start is where align instruction will be added.
-            //
             if (bbHavingAlign == nullptr)
             {
-                // In some odd cases we may see blocks within the loop before we see the
-                // top block of the loop. Just bail on aligning such loops.
-                //
-                if ((block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) && (block->bbNatLoopNum == loopTop->bbNatLoopNum))
-                {
-                    loopTop->unmarkLoopAlign(this DEBUG_ARG("loop block appears before top of loop"));
-                }
-                else
-                {
-                    bbHavingAlign = block;
-                    JITDUMP("Marking " FMT_BB " before the loop with BBF_HAS_ALIGN for loop at " FMT_BB "\n",
-                            block->bbNum, loopTop->bbNum);
-                }
+                bbHavingAlign = block;
+                JITDUMP("Marking " FMT_BB " before the loop with BBF_HAS_ALIGN for loop at " FMT_BB "\n", block->bbNum,
+                        block->bbNext->bbNum);
             }
             else
             {
                 JITDUMP("Marking " FMT_BB " that ends with unconditional jump with BBF_HAS_ALIGN for loop at " FMT_BB
                         "\n",
-                        bbHavingAlign->bbNum, loopTop->bbNum);
+                        bbHavingAlign->bbNum, block->bbNext->bbNum);
             }
 
-            if (bbHavingAlign != nullptr)
-            {
-                bbHavingAlign->bbFlags |= BBF_HAS_ALIGN;
-            }
-
+            bbHavingAlign->bbFlags |= BBF_HAS_ALIGN;
             minBlockSoFar         = BB_MAX_WEIGHT;
             bbHavingAlign         = nullptr;
-            currentAlignedLoopNum = loopTop->bbNatLoopNum;
+            currentAlignedLoopNum = block->bbNext->bbNatLoopNum;
 
             if (--loopsToProcess == 0)
             {
@@ -6400,10 +6384,10 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     compHndBBtabCount      = 0;
     compHndBBtabAllocCount = 0;
 
-    info.compNativeCodeSize            = 0;
-    info.compTotalHotCodeSize          = 0;
-    info.compTotalColdCodeSize         = 0;
-    info.compHandleHistogramProbeCount = 0;
+    info.compNativeCodeSize    = 0;
+    info.compTotalHotCodeSize  = 0;
+    info.compTotalColdCodeSize = 0;
+    info.compClassProbeCount   = 0;
 
     compHasBackwardJump          = false;
     compHasBackwardJumpInHandler = false;
@@ -6579,7 +6563,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         {
             // This looks like a viable inline candidate.  Since
             // we're not actually inlining, don't report anything.
-            prejitResult.SetSuccessResult(INLINE_PREJIT_SUCCESS);
+            prejitResult.SetReported();
         }
     }
     else

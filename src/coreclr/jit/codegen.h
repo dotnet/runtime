@@ -642,7 +642,6 @@ protected:
     virtual void SetSaveFpLrWithAllCalleeSavedRegisters(bool value);
     virtual bool IsSaveFpLrWithAllCalleeSavedRegisters() const;
     bool         genSaveFpLrWithAllCalleeSavedRegisters;
-    bool         genForceFuncletFrameType5;
 #endif // TARGET_ARM64
 
     //-------------------------------------------------------------------------
@@ -1336,10 +1335,10 @@ protected:
 
     void genPutStructArgStk(GenTreePutArgStk* treeNode);
 
-    unsigned genMove8IfNeeded(unsigned size, regNumber tmpReg, GenTree* src, unsigned offset);
-    unsigned genMove4IfNeeded(unsigned size, regNumber tmpReg, GenTree* src, unsigned offset);
-    unsigned genMove2IfNeeded(unsigned size, regNumber tmpReg, GenTree* src, unsigned offset);
-    unsigned genMove1IfNeeded(unsigned size, regNumber tmpReg, GenTree* src, unsigned offset);
+    unsigned genMove8IfNeeded(unsigned size, regNumber tmpReg, GenTree* srcAddr, unsigned offset);
+    unsigned genMove4IfNeeded(unsigned size, regNumber tmpReg, GenTree* srcAddr, unsigned offset);
+    unsigned genMove2IfNeeded(unsigned size, regNumber tmpReg, GenTree* srcAddr, unsigned offset);
+    unsigned genMove1IfNeeded(unsigned size, regNumber tmpReg, GenTree* srcAddr, unsigned offset);
     void genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst, GenTree* base, unsigned offset);
     void genStoreRegToStackArg(var_types type, regNumber reg, int offset);
     void genStructPutArgRepMovs(GenTreePutArgStk* putArgStkNode);

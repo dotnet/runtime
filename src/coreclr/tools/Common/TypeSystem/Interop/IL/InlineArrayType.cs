@@ -441,7 +441,6 @@ namespace Internal.TypeSystem.Interop
                     return _owningType.ElementType;
                 }
             }
-            public override EmbeddedSignatureData[] GetEmbeddedSignatureData() => null;
 
             public override bool HasRva
             {

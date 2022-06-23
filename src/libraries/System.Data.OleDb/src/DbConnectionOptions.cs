@@ -128,7 +128,7 @@ namespace System.Data.Common
         {
             UseOdbcRules = useOdbcRules;
             _parsetable = new Hashtable();
-            _usersConnectionString = connectionString ?? "";
+            _usersConnectionString = ((null != connectionString) ? connectionString : "");
 
             // first pass on parsing, initial syntax check
             if (0 < _usersConnectionString.Length)
@@ -151,7 +151,7 @@ namespace System.Data.Common
             {
                 ReplacePasswordPwd(out connectionString, false);
             }
-            return connectionString ?? "";
+            return ((null != connectionString) ? connectionString : "");
         }
 
         internal bool HasPersistablePassword
@@ -307,7 +307,8 @@ namespace System.Data.Common
 
         public string? ConvertValueToString(string keyName, string? defaultValue)
         {
-            return (string?)_parsetable[keyName] ?? defaultValue;
+            string? value = (string?)_parsetable[keyName];
+            return ((null != value) ? value : defaultValue);
         }
 
         private static bool CompareInsensitiveInvariant(string strvalue, string strconst)

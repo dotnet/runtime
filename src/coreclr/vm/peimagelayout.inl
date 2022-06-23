@@ -19,7 +19,7 @@ inline void PEImageLayout::AddRef()
     }
     CONTRACT_END;
 
-    InterlockedIncrement(&m_refCount);
+    FastInterlockIncrement(&m_refCount);
 
     RETURN;
 }
@@ -41,7 +41,7 @@ inline ULONG PEImageLayout::Release()
         return m_refCount;
 #endif
 
-    ULONG result=InterlockedDecrement(&m_refCount);
+    ULONG result=FastInterlockDecrement(&m_refCount);
     if (result == 0 )
     {
         delete this;

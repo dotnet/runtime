@@ -310,7 +310,7 @@ namespace System.DirectoryServices.AccountManagement
                     return (_storedNewPassword != null);
 
                 case (PropertyNames.PwdInfoExpireImmediately):
-                    return (_expirePasswordImmediately);
+                    return (_expirePasswordImmediately != false);
 
                 default:
                     Debug.Fail($"PasswordInfo.GetChangeStatusForProperty: fell off end looking for {propertyName}");

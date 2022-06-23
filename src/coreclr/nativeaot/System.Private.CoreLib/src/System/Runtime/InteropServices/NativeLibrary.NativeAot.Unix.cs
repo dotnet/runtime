@@ -51,14 +51,7 @@ namespace System.Runtime.InteropServices
 
             public void TrackErrorMessage(string? message)
             {
-                if (_errorMessage == null)
-                {
-                    _errorMessage = Environment.NewLine;
-                }
-                if (!_errorMessage.Contains(message))
-                {
-                    _errorMessage += message + Environment.NewLine;
-                }
+                _errorMessage = message;
             }
         }
     }

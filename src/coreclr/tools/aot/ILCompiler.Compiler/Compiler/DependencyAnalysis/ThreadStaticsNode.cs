@@ -19,8 +19,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public ThreadStaticsNode(MetadataType type, NodeFactory factory)
         {
-            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Specific));
-            Debug.Assert(!type.IsGenericDefinition);
+            Debug.Assert(factory.Target.Abi == TargetAbi.NativeAot || factory.Target.Abi == TargetAbi.CppCodegen);
             _type = type;
         }
 

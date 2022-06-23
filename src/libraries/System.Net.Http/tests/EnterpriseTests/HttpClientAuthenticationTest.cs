@@ -38,6 +38,7 @@ namespace System.Net.Http.Enterprise.Tests
             }, url, useAltPort ? "true" : "" , useDomain ? "true" : "").Dispose();
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/416")]
         [Fact]
         public async Task HttpClient_InvalidAuthentication_Failure()
         {

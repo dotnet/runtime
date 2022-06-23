@@ -57,7 +57,8 @@ namespace System.Data.OleDb
         {
             get
             {
-                return this.oledbErrors ?? new OleDbErrorCollection(null);
+                OleDbErrorCollection errors = this.oledbErrors;
+                return ((null != errors) ? errors : new OleDbErrorCollection(null));
             }
         }
 

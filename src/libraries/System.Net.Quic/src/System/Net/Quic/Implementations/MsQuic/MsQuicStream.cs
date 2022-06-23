@@ -15,7 +15,7 @@ using static Microsoft.Quic.MsQuic;
 
 namespace System.Net.Quic.Implementations.MsQuic
 {
-    internal sealed class MsQuicStream : IAsyncDisposable, IDisposable
+    internal sealed class MsQuicStream : QuicStreamProvider
     {
         // The state is passed to msquic and then it's passed back by msquic to the callback handler.
         private readonly State _state = new State();
@@ -201,19 +201,17 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        internal bool CanRead => _disposed == 0 && _canRead;
+        internal override bool CanRead => _disposed == 0 && _canRead;
 
-        internal bool CanWrite => _disposed == 0 && _canWrite;
+        internal override bool CanWrite => _disposed == 0 && _canWrite;
 
-        internal bool ReadsCompleted => _state.ReadState == ReadState.ReadsCompleted;
+        internal override bool ReadsCompleted => _state.ReadState == ReadState.ReadsCompleted;
 
-#pragma warning disable CA1822
-        internal bool CanTimeout => true;
-#pragma warning restore CA1822
+        internal override bool CanTimeout => true;
 
         private int _readTimeout = Timeout.Infinite;
 
-        internal int ReadTimeout
+        internal override int ReadTimeout
         {
             get
             {
@@ -232,7 +230,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         }
 
         private int _writeTimeout = Timeout.Infinite;
-        internal int WriteTimeout
+        internal override int WriteTimeout
         {
             get
             {
@@ -250,7 +248,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        internal long StreamId
+        internal override long StreamId
         {
             get
             {
@@ -260,32 +258,32 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        internal ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        internal override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             return WriteAsync(buffer, endStream: false, cancellationToken);
         }
 
-        internal ValueTask WriteAsync(ReadOnlySequence<byte> buffers, CancellationToken cancellationToken = default)
+        internal override ValueTask WriteAsync(ReadOnlySequence<byte> buffers, CancellationToken cancellationToken = default)
         {
             return WriteAsync(buffers, endStream: false, cancellationToken);
         }
 
-        internal ValueTask WriteAsync(ReadOnlySequence<byte> buffers, bool endStream, CancellationToken cancellationToken = default)
+        internal override ValueTask WriteAsync(ReadOnlySequence<byte> buffers, bool endStream, CancellationToken cancellationToken = default)
         {
             return WriteAsync(static (state, buffers) => state.SendBuffers.Initialize(buffers), buffers, buffers.IsEmpty, endStream, cancellationToken);
         }
 
-        internal ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, CancellationToken cancellationToken = default)
+        internal override ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, CancellationToken cancellationToken = default)
         {
             return WriteAsync(buffers, endStream: false, cancellationToken);
         }
 
-        internal ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, bool endStream, CancellationToken cancellationToken = default)
+        internal override ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, bool endStream, CancellationToken cancellationToken = default)
         {
             return WriteAsync(static (state, buffers) => state.SendBuffers.Initialize(buffers), buffers, buffers.IsEmpty, endStream, cancellationToken);
         }
 
-        internal ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool endStream, CancellationToken cancellationToken = default)
+        internal override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool endStream, CancellationToken cancellationToken = default)
         {
             return WriteAsync(static (state, buffer) => state.SendBuffers.Initialize(buffer), buffer, buffer.IsEmpty, endStream, cancellationToken);
         }
@@ -294,6 +292,52 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             ThrowIfDisposed();
 
+            using CancellationTokenRegistration registration = SetupWriteStartState(isEmpty, cancellationToken);
+
+            await WriteAsyncCore<TBuffer>(stateSetup, buffer, isEmpty, endStream).ConfigureAwait(false);
+
+            CleanupWriteCompletedState();
+        }
+
+        private unsafe ValueTask WriteAsyncCore<TBuffer>(Action<State, TBuffer> stateSetup, TBuffer buffer, bool isEmpty, bool endStream)
+        {
+            if (isEmpty)
+            {
+                if (endStream)
+                {
+                    // Start graceful shutdown sequence if passed in the fin flag and there is an empty buffer.
+                    StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL, errorCode: 0);
+                }
+                return default;
+            }
+
+            stateSetup(_state, buffer);
+
+            Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
+            int status = MsQuicApi.Api.ApiTable->StreamSend(
+                _state.Handle.QuicHandle,
+                _state.SendBuffers.Buffers,
+                (uint)_state.SendBuffers.Count,
+                endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE,
+                (void*)IntPtr.Zero);
+
+            if (StatusFailed(status))
+            {
+                CleanupWriteFailedState();
+                CleanupSendState(_state);
+
+                if (status == QUIC_STATUS_ABORTED)
+                {
+                    throw ThrowHelper.GetConnectionAbortedException(_state.ConnectionState.AbortErrorCode);
+                }
+                ThrowIfFailure(status, "Could not send data to peer.");
+            }
+
+            return _state.SendResettableCompletionSource.GetTypelessValueTask();
+        }
+
+        private CancellationTokenRegistration SetupWriteStartState(bool emptyBuffer, CancellationToken cancellationToken)
+        {
             if (cancellationToken.IsCancellationRequested)
             {
                 lock (_state)
@@ -325,7 +369,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
 
             // if token was already cancelled, this would execute synchronously
-            using CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (s, token) =>
+            CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (s, token) =>
             {
                 var state = (State)s!;
                 bool shouldComplete = false;
@@ -373,11 +417,14 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 // Change the state in the same lock where we check for final states to prevent coming back from Aborted/ConnectionClosed.
                 Debug.Assert(_state.SendState != SendState.Pending);
-                _state.SendState = isEmpty ? SendState.Finished : SendState.Pending;
+                _state.SendState = emptyBuffer ? SendState.Finished : SendState.Pending;
             }
 
-            await WriteAsyncCore<TBuffer>(stateSetup, buffer, isEmpty, endStream).ConfigureAwait(false);
+            return registration;
+        }
 
+        private void CleanupWriteCompletedState()
+        {
             lock (_state)
             {
                 if (_state.SendState == SendState.Finished)
@@ -387,57 +434,19 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        private unsafe ValueTask WriteAsyncCore<TBuffer>(Action<State, TBuffer> stateSetup, TBuffer buffer, bool isEmpty, bool endStream)
+        private void CleanupWriteFailedState()
         {
-            if (isEmpty)
+            lock (_state)
             {
-                if (endStream)
+                if (_state.SendState == SendState.Pending)
                 {
-                    // Start graceful shutdown sequence if passed in the fin flag and there is an empty buffer.
-                    StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL, errorCode: 0);
+                    _state.SendState = SendState.Finished;
                 }
-                return default;
             }
-
-            stateSetup(_state, buffer);
-
-            Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-            int status = MsQuicApi.Api.ApiTable->StreamSend(
-                _state.Handle.QuicHandle,
-                _state.SendBuffers.Buffers,
-                (uint)_state.SendBuffers.Count,
-                endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE,
-                (void*)IntPtr.Zero);
-
-            if (StatusFailed(status))
-            {
-                lock (_state)
-                {
-                    if (_state.SendState == SendState.Pending)
-                    {
-                        _state.SendState = SendState.Finished;
-                    }
-                }
-
-                CleanupSendState(_state);
-
-                if (status == QUIC_STATUS_ABORTED)
-                {
-                    throw ThrowHelper.GetConnectionAbortedException(_state.ConnectionState.AbortErrorCode);
-                }
-                ThrowIfFailure(status, "Could not send data to peer.");
-            }
-
-            return _state.SendResettableCompletionSource.GetTypelessValueTask();
         }
 
-        internal async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
+        internal override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
         {
-            //
-            // If MsQuic indicated that some data were received (QUIC_STREAM_EVENT_RECEIVE), we use it to complete the request
-            // synchronously. Otherwise we setup the request to be completed by the HandleEventReceive handler.
-            //
-
             ThrowIfDisposed();
 
             if (_state.ReadState == ReadState.Closed)
@@ -611,7 +620,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return originalDestinationLength - destinationBuffer.Length;
         }
 
-        internal void AbortRead(long errorCode)
+        internal override void AbortRead(long errorCode)
         {
             if (_disposed == 1)
             {
@@ -634,7 +643,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_RECEIVE, errorCode);
         }
 
-        internal void AbortWrite(long errorCode)
+        internal override void AbortWrite(long errorCode)
         {
             if (_disposed == 1)
             {
@@ -690,7 +699,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 (uint)errorCode), "StreamShutdown failed");
         }
 
-        internal async ValueTask ShutdownCompleted(CancellationToken cancellationToken = default)
+        internal override async ValueTask ShutdownCompleted(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
 
@@ -725,7 +734,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             await _state.ShutdownCompletionSource.Task.ConfigureAwait(false);
         }
 
-        internal ValueTask WaitForWriteCompletionAsync(CancellationToken cancellationToken = default)
+        internal override ValueTask WaitForWriteCompletionAsync(CancellationToken cancellationToken = default)
         {
             // TODO: What should happen if this is called for a unidirectional stream and there are no writes?
 
@@ -742,7 +751,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return new ValueTask(_state.ShutdownWriteCompletionSource.Task.WaitAsync(cancellationToken));
         }
 
-        internal void Shutdown()
+        internal override void Shutdown()
         {
             ThrowIfDisposed();
 
@@ -759,7 +768,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         }
 
         // TODO consider removing sync-over-async with blocking calls.
-        internal int Read(Span<byte> buffer)
+        internal override int Read(Span<byte> buffer)
         {
             ThrowIfDisposed();
             byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length);
@@ -786,7 +795,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        internal void Write(ReadOnlySpan<byte> buffer)
+        internal override void Write(ReadOnlySpan<byte> buffer)
         {
             ThrowIfDisposed();
             CancellationTokenSource? cts = null;
@@ -814,20 +823,20 @@ namespace System.Net.Quic.Implementations.MsQuic
         }
 
         // MsQuic doesn't support explicit flushing
-        internal void Flush()
+        internal override void Flush()
         {
             ThrowIfDisposed();
         }
 
         // MsQuic doesn't support explicit flushing
-        internal Task FlushAsync(CancellationToken cancellationToken = default)
+        internal override Task FlushAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
 
             return Task.CompletedTask;
         }
 
-        public ValueTask DisposeAsync()
+        public override ValueTask DisposeAsync()
         {
             // TODO: perform a graceful shutdown and wait for completion?
 
@@ -835,7 +844,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return default;
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
@@ -1000,13 +1009,6 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private static unsafe int HandleEventReceive(State state, ref QUIC_STREAM_EVENT streamEvent)
         {
-            //
-            // Handle MsQuic QUIC_STREAM_EVENT_RECEIVE event
-            //
-            // If there is a pending ReadAsync call, then we complete it. Otherwise we keep a pointer to the received data
-            // and use it to complete the next ReadAsync operation synchronously.
-            //
-
             ref var receiveEvent = ref streamEvent.RECEIVE;
 
             if (NetEventSource.Log.IsEnabled())

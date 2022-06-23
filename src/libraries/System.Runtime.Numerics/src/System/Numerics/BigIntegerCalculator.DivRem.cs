@@ -226,7 +226,7 @@ namespace System.Numerics
             {
                 carry += right[i] * q;
                 uint digit = unchecked((uint)carry);
-                carry >>= 32;
+                carry = carry >> 32;
                 ref uint leftElement = ref left[i];
                 if (leftElement < digit)
                     ++carry;
@@ -249,8 +249,8 @@ namespace System.Numerics
             ulong chkHi = divHi * q;
             ulong chkLo = divLo * q;
 
-            chkHi += (chkLo >> 32);
-            chkLo &= 0xFFFFFFFF;
+            chkHi = chkHi + (chkLo >> 32);
+            chkLo = chkLo & 0xFFFFFFFF;
 
             if (chkHi < valHi)
                 return false;

@@ -31,17 +31,28 @@ namespace System.Threading
             /// </summary>
             public short NumProcessingWork
             {
-                get
-                {
-                    short value = GetInt16Value(NumProcessingWorkShift);
-                    Debug.Assert(value >= 0);
-                    return value;
-                }
+                get => GetInt16Value(NumProcessingWorkShift);
                 set
                 {
                     Debug.Assert(value >= 0);
-                    SetInt16Value(Math.Max((short)0, value), NumProcessingWorkShift);
+                    SetInt16Value(value, NumProcessingWorkShift);
                 }
+            }
+
+            public void SubtractNumProcessingWork(short value)
+            {
+                Debug.Assert(value >= 0);
+                Debug.Assert(value <= NumProcessingWork);
+
+                _data -= (ulong)(ushort)value << NumProcessingWorkShift;
+            }
+
+            public void InterlockedDecrementNumProcessingWork()
+            {
+                Debug.Assert(NumProcessingWorkShift == 0);
+
+                ThreadCounts counts = new ThreadCounts(Interlocked.Decrement(ref _data));
+                Debug.Assert(counts.NumProcessingWork >= 0);
             }
 
             /// <summary>
@@ -49,17 +60,20 @@ namespace System.Threading
             /// </summary>
             public short NumExistingThreads
             {
-                get
-                {
-                    short value = GetInt16Value(NumExistingThreadsShift);
-                    Debug.Assert(value >= 0);
-                    return value;
-                }
+                get => GetInt16Value(NumExistingThreadsShift);
                 set
                 {
                     Debug.Assert(value >= 0);
-                    SetInt16Value(Math.Max((short)0, value), NumExistingThreadsShift);
+                    SetInt16Value(value, NumExistingThreadsShift);
                 }
+            }
+
+            public void SubtractNumExistingThreads(short value)
+            {
+                Debug.Assert(value >= 0);
+                Debug.Assert(value <= NumExistingThreads);
+
+                _data -= (ulong)(ushort)value << NumExistingThreadsShift;
             }
 
             /// <summary>
@@ -67,16 +81,11 @@ namespace System.Threading
             /// </summary>
             public short NumThreadsGoal
             {
-                get
-                {
-                    short value = GetInt16Value(NumThreadsGoalShift);
-                    Debug.Assert(value > 0);
-                    return value;
-                }
+                get => GetInt16Value(NumThreadsGoalShift);
                 set
                 {
                     Debug.Assert(value > 0);
-                    SetInt16Value(Math.Max((short)1, value), NumThreadsGoalShift);
+                    SetInt16Value(value, NumThreadsGoalShift);
                 }
             }
 

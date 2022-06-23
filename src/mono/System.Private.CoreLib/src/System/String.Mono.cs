@@ -47,8 +47,8 @@ namespace System
             }
             if (val != 0)
             {
-                val |= (val << 8);
-                val |= (val << 16);
+                val = val | (val << 8);
+                val = val | (val << 16);
             }
             // align to 4
             int rest = (int)dest & 3;

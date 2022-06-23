@@ -104,12 +104,13 @@ MonoImage *
 mono_find_dynamic_image_owner (void *ptr)
 {
 	MonoImage *owner = NULL;
+	int i;
 
 	dynamic_images_lock ();
 
 	if (dynamic_images)
 	{
-		for (guint i = 0; !owner && i < dynamic_images->len; ++i) {
+		for (i = 0; !owner && i < dynamic_images->len; ++i) {
 			MonoImage *image = (MonoImage *)g_ptr_array_index (dynamic_images, i);
 			if (mono_mempool_contains_addr (image->mempool, ptr))
 				owner = image;

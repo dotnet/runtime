@@ -4,25 +4,30 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 
 namespace System.Text.Json.Serialization
 {
     /// <summary>
-    /// A list of configuration items that can be locked for modification
+    /// A list of configuration items that respects the options class being immutable once (de)serialization occurs.
     /// </summary>
-    internal abstract class ConfigurationList<TItem> : IList<TItem>
+    internal sealed class ConfigurationList<TItem> : IList<TItem>
     {
         private readonly List<TItem> _list;
+        private readonly JsonSerializerOptions _options;
 
-        public ConfigurationList(IList<TItem>? source = null)
+        public Action<TItem>? OnElementAdded { get; set; }
+
+        public ConfigurationList(JsonSerializerOptions options)
         {
-            _list = source is null ? new List<TItem>() : new List<TItem>(source);
+            _options = options;
+            _list = new List<TItem>();
         }
 
-        protected abstract bool IsLockedInstance { get; }
-        protected abstract void VerifyMutable();
-        protected virtual void OnItemAdded(TItem item) { }
+        public ConfigurationList(JsonSerializerOptions options, IList<TItem> source)
+        {
+            _options = options;
+            _list = new List<TItem>(source is ConfigurationList<TItem> cl ? cl._list : source);
+        }
 
         public TItem this[int index]
         {
@@ -37,15 +42,15 @@ namespace System.Text.Json.Serialization
                     throw new ArgumentNullException(nameof(value));
                 }
 
-                VerifyMutable();
+                _options.VerifyMutable();
                 _list[index] = value;
-                OnItemAdded(value);
+                OnElementAdded?.Invoke(value);
             }
         }
 
         public int Count => _list.Count;
 
-        public bool IsReadOnly => IsLockedInstance;
+        public bool IsReadOnly => false;
 
         public void Add(TItem item)
         {
@@ -54,14 +59,14 @@ namespace System.Text.Json.Serialization
                 ThrowHelper.ThrowArgumentNullException(nameof(item));
             }
 
-            VerifyMutable();
+            _options.VerifyMutable();
             _list.Add(item);
-            OnItemAdded(item);
+            OnElementAdded?.Invoke(item);
         }
 
         public void Clear()
         {
-            VerifyMutable();
+            _options.VerifyMutable();
             _list.Clear();
         }
 
@@ -92,20 +97,20 @@ namespace System.Text.Json.Serialization
                 ThrowHelper.ThrowArgumentNullException(nameof(item));
             }
 
-            VerifyMutable();
+            _options.VerifyMutable();
             _list.Insert(index, item);
-            OnItemAdded(item);
+            OnElementAdded?.Invoke(item);
         }
 
         public bool Remove(TItem item)
         {
-            VerifyMutable();
+            _options.VerifyMutable();
             return _list.Remove(item);
         }
 
         public void RemoveAt(int index)
         {
-            VerifyMutable();
+            _options.VerifyMutable();
             _list.RemoveAt(index);
         }
 

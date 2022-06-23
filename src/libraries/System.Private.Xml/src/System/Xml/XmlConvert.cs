@@ -198,10 +198,13 @@ namespace System.Xml
 
             if (first)
             {
-                if ((!XmlCharType.IsStartNCNameCharXml4e(name[0]) && (local || name[0] != ':')) ||
+                if ((!XmlCharType.IsStartNCNameCharXml4e(name[0]) && (local || (!local && name[0] != ':'))) ||
                      matchPos == 0)
                 {
-                    bufBld ??= new StringBuilder(length + 20);
+                    if (bufBld == null)
+                    {
+                        bufBld = new StringBuilder(length + 20);
+                    }
 
                     bufBld.Append("_x");
                     if (length > 1 && XmlCharType.IsHighSurrogate(name[0]) && XmlCharType.IsLowSurrogate(name[1]))

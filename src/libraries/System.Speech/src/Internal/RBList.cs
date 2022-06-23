@@ -237,7 +237,7 @@ namespace System.Speech.Internal
                     node = node.Parent;
                 }
 
-                return node.Parent ?? null;
+                return node.Parent == null ? null : node.Parent;
             }
             else
             {
@@ -410,7 +410,7 @@ namespace System.Speech.Internal
             // This node must have at most 1 child
             Debug.Assert(node.Left == null || node.Right == null);
 
-            TreeNode onlyChild = node.Left ?? node.Right;
+            TreeNode onlyChild = node.Left == null ? node.Right : node.Left;
 
             // This node should have been deleted already, and the child has replaced the this node.
             Debug.Assert(node.Parent == null || node.Parent.Left == onlyChild || node.Parent.Right == onlyChild);

@@ -9,7 +9,6 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Reflection;
@@ -31,9 +30,6 @@ internal static class ReflectionTest
         TestSimpleDelegateTargets.Run();
         TestVirtualDelegateTargets.Run();
         TestRunClassConstructor.Run();
-        TestFieldMetadata.Run();
-        TestLinqInvocation.Run();
-        TestGenericMethodsHaveSameReflectability.Run();
 #if !OPTIMIZED_MODE_WITHOUT_SCANNER
         TestContainment.Run();
         TestInterfaceMethod.Run();
@@ -58,10 +54,6 @@ internal static class ReflectionTest
         TestNotReflectedIsNotReflectable.Run();
         TestGenericInstantiationsAreEquallyReflectable.Run();
 #endif
-        TestAttributeInheritance2.Run();
-        TestInvokeMethodMetadata.Run();
-        TestVTableOfNullableUnderlyingTypes.Run();
-        TestInterfaceLists.Run();
 
         //
         // Mostly functionality tests
@@ -1764,146 +1756,6 @@ internal static class ReflectionTest
         }
     }
 
-    class TestFieldMetadata
-    {
-        class ClassWithTwoFields
-        {
-            public static int UsedField;
-            public static UnusedClass UnusedField;
-        }
-
-        class UnusedClass { }
-
-        interface IMessWithYou { }
-        class GenericTypeWithUnsatisfiableConstrains<T> where T : struct, IMessWithYou
-        {
-            public static int SomeField;
-        }
-
-        class GenericClass<T>
-        {
-            public static string SomeField;
-        }
-
-        struct Atom1 { }
-        struct Atom2 { }
-        struct Atom3 { }
-
-        public static void Run()
-        {
-            ClassWithTwoFields.UsedField = 123;
-
-#if REFLECTION_FROM_USAGE
-            // Merely accessing a field should trigger full reflectability of it when reflection from
-            // usage is active.
-            Type classWithTwoFields = GetTestType(nameof(TestFieldMetadata), nameof(ClassWithTwoFields));
-            if ((int)classWithTwoFields.GetField(nameof(ClassWithTwoFields.UsedField)).GetValue(null) != 123)
-            {
-                throw new Exception();
-            }
-
-            // But the unused field should not exist
-            if (classWithTwoFields.GetField(nameof(ClassWithTwoFields.UnusedField)) != null)
-            {
-                throw new Exception();
-            }
-#else
-            // If reflection from usage is not active, we shouldn't even see the owning type, despite the field use
-            if (SecretGetType(nameof(TestFieldMetadata), nameof(ClassWithTwoFields)) != null)
-            {
-                throw new Exception();
-            }
-#endif
-            // The type of the unused field shouldn't be generated under any circumstances
-            if (SecretGetType(nameof(TestFieldMetadata), nameof(UnusedClass)) != null)
-            {
-                throw new Exception();
-            }
-
-            // The compiler cannot fulfil this instantiation without universal shared code.
-            // We should get a working metadata-only type that can be inspected.
-            if (typeof(GenericTypeWithUnsatisfiableConstrains<>).GetField("SomeField").Name != "SomeField")
-            {
-                throw new Exception();
-            }
-
-            // Access a field on a generic type in an obvious way
-            if (typeof(GenericClass<Atom1>).GetField(nameof(GenericClass<Atom1>.SomeField)).Name != "SomeField")
-            {
-                throw new Exception();
-            }
-
-            // We should be able to reflection-see the field on other reflection visible generic instances
-            // of the same generic type definition.
-            GetGenericClassOfAtom2().GetField("SomeField").SetValue(null, "Cookie");
-            static Type GetGenericClassOfAtom2() => typeof(GenericClass<Atom2>);
-
-            GenericClass<Atom3>.SomeField = "1234";
-#if REFLECTION_FROM_USAGE
-            // If we're doing reflection from usage, we used the field and we expect it to be reflectable
-            typeof(GenericClass<>).MakeGenericType(GetAtom3()).GetField("SomeField").SetValue(null, "Cookie");
-#else
-            // If we're not doing reflection from usage, the generic instance shouldn't even exist.
-            // We only touched the static base of the type, not the whole type.
-            bool exists = false;
-            try
-            {
-                typeof(GenericClass<>).MakeGenericType(GetAtom3());
-                exists = true;
-            }
-            catch
-            {
-                exists = false;
-            }
-            if (exists)
-                throw new Exception();
-#endif
-            static Type GetAtom3() => typeof(Atom3);
-        }
-    }
-
-    class TestLinqInvocation
-    {
-        delegate void RunMeDelegate();
-
-        static void RunMe() { }
-
-        public static void Run()
-        {
-            Expression<Action<RunMeDelegate>> ex = (RunMeDelegate m) => m();
-            ex.Compile()(RunMe);
-        }
-    }
-
-    class TestGenericMethodsHaveSameReflectability
-    {
-        public interface IHardToGuess { }
-
-        struct SomeStruct<T> : IHardToGuess { }
-
-        public static void TakeAGuess<T>() where T : struct, IHardToGuess { }
-
-        class Atom1 { }
-        class Atom2 { }
-
-        static Type s_someStructOverAtom1 = typeof(SomeStruct<Atom1>);
-
-        public static void Run()
-        {
-            // Statically call with SomeStruct over Atom2
-            TakeAGuess<SomeStruct<Atom2>>();
-
-            // MakeGenericMethod the method with SomeStruct over Atom1
-            // Note the compiler cannot figure out a suitable instantiation here because
-            // of the "struct, interface" constraint on T. But the expected side effect is that the static
-            // call above now became reflection-visible and will let the type loader make this
-            // work at runtime. All generic instantiations share the same refection visibility.
-            var mi = typeof(TestGenericMethodsHaveSameReflectability).GetMethod(nameof(TakeAGuess)).MakeGenericMethod(s_someStructOverAtom1);
-
-            mi.Invoke(null, Array.Empty<object>());
-        }
-    }
-
     class TestRunClassConstructor
     {
         static class TypeWithNoStaticFieldsButACCtor
@@ -1924,110 +1776,14 @@ internal static class ReflectionTest
         }
     }
 
-    class TestAttributeInheritance2
-    {
-        [AttributeUsage(AttributeTargets.All, Inherited = true)]
-        class AttAttribute : Attribute { }
-
-        class Base
-        {
-            [Att]
-            public virtual void VirtualMethodWithAttribute() { }
-        }
-
-        class Derived : Base
-        {
-            public override void VirtualMethodWithAttribute() { }
-        }
-
-        public static void Run()
-        {
-            object[] attrs = typeof(Derived).GetMethod(nameof(Derived.VirtualMethodWithAttribute)).GetCustomAttributes(inherit: true);
-            if (attrs.Length != 1 || attrs[0].GetType().Name != nameof(AttAttribute))
-            {
-                throw new Exception();
-            }
-        }
-    }
-
-    class TestInvokeMethodMetadata
-    {
-        delegate int WithDefaultParameter1(int value = 1234);
-        delegate DateTime WithDefaultParameter2(DateTime value);
-
-        public static int Method(int value) => value;
-
-        public static DateTime Method(DateTime value) => value;
-
-        public static void Run()
-        {
-            // Check that we have metadata for the Invoke method to convert Type.Missing to the actual value.
-            WithDefaultParameter1 del1 = Method;
-            int val = (int)del1.DynamicInvoke(new object[] { Type.Missing });
-            if (val != 1234)
-                throw new Exception();
-
-            // Check that we have metadata for the Invoke method to find a matching method
-            Delegate del2 = Delegate.CreateDelegate(typeof(WithDefaultParameter2), typeof(TestInvokeMethodMetadata), nameof(Method));
-            if (del2.Method.ReturnType != typeof(DateTime))
-                throw new Exception();
-        }
-    }
-
-    class TestVTableOfNullableUnderlyingTypes
-    {
-        struct NeverAllocated
-        {
-            public override string ToString() => "Never allocated";
-        }
-
-        static Type s_hidden = typeof(Nullable<NeverAllocated>);
-
-        public static void Run()
-        {
-            // Underlying type of a Nullable needs to be considered constructed.
-            // Trimming warning suppressions in the libraries depend on this invariant.
-            var instance = RuntimeHelpers.GetUninitializedObject(s_hidden);
-            if (instance.ToString() != "Never allocated")
-                throw new Exception();
-        }
-    }
-
-    class TestInterfaceLists
-    {
-        interface IGeneric<T> { }
-
-        class Class<T> : IGeneric<T> { }
-
-        static Type s_hidden = typeof(Class<string>);
-
-        public static void Run()
-        {
-            // Can't drop an interface from the interface list if the interface is referenced.
-            // Trimming warning suppressions in the libraries depend on this invariant.
-            foreach (var intface in s_hidden.GetInterfaces())
-            {
-                if (intface.HasSameMetadataDefinitionAs(typeof(IGeneric<object>)))
-                    return;
-            }
-
-            throw new Exception();
-        }
-    }
-
     #region Helpers
-
-    private static Type SecretGetType(string testName, string typeName)
-    {
-        string fullTypeName = $"{nameof(ReflectionTest)}+{testName}+{typeName}";
-        return Type.GetType(fullTypeName);
-    }
 
     private static Type GetTestType(string testName, string typeName)
     {
-        Type result = SecretGetType(testName, typeName);
+        string fullTypeName = $"{nameof(ReflectionTest)}+{testName}+{typeName}";
+        Type result = Type.GetType(fullTypeName);
         if (result == null)
-            throw new Exception($"'{testName}.{typeName}' could not be located");
+            throw new Exception($"'{fullTypeName}' could not be located");
         return result;
     }
 

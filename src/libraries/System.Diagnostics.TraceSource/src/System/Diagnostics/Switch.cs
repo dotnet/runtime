@@ -115,7 +115,7 @@ namespace System.Diagnostics
         {
             get
             {
-                return _description ?? string.Empty;
+                return (_description == null) ? string.Empty : _description;
             }
         }
 
@@ -124,7 +124,9 @@ namespace System.Diagnostics
             get
             {
                 Initialize();
-                return _attributes ??= new StringDictionary();
+                if (_attributes == null)
+                    _attributes = new StringDictionary();
+                return _attributes;
             }
         }
 

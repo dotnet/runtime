@@ -46,9 +46,9 @@ namespace System.ComponentModel.Composition.AttributedModel
                     metadata.Add(CompositionConstants.ExportTypeIdentityMetadataName, typeIdentity);
 
                     var partMetadata = _partCreationInfo.GetMetadata();
-                    if (partMetadata != null && partMetadata.TryGetValue(CompositionConstants.PartCreationPolicyMetadataName, out object? value))
+                    if (partMetadata != null && partMetadata.ContainsKey(CompositionConstants.PartCreationPolicyMetadataName))
                     {
-                        metadata.Add(CompositionConstants.PartCreationPolicyMetadataName, value);
+                        metadata.Add(CompositionConstants.PartCreationPolicyMetadataName, partMetadata[CompositionConstants.PartCreationPolicyMetadataName]);
                     }
 
                     if ((_typeIdentityType != null) && (_member.MemberType != MemberTypes.Method) && _typeIdentityType.ContainsGenericParameters)

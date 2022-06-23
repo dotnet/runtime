@@ -44,10 +44,11 @@ namespace System.DirectoryServices.AccountManagement
 
         protected void BuildPropertySet(Type p, StringCollection propertySet)
         {
-            if (TypeToLdapPropListMap[this.MappingTableIndex].TryGetValue(p, out StringCollection value))
+            if (TypeToLdapPropListMap[this.MappingTableIndex].ContainsKey(p))
             {
-                string[] props = new string[value.Count];
-                value.CopyTo(props, 0);
+                Debug.Assert(TypeToLdapPropListMap[this.MappingTableIndex].ContainsKey(p));
+                string[] props = new string[TypeToLdapPropListMap[this.MappingTableIndex][p].Count];
+                TypeToLdapPropListMap[this.MappingTableIndex][p].CopyTo(props, 0);
                 propertySet.AddRange(props);
             }
             else
@@ -980,7 +981,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 foreach (KeyValuePair<string, ExtensionCacheValue> kvp in ec.properties)
                 {
-                    Type type = kvp.Value.Type ?? kvp.Value.Value.GetType();
+                    Type type = kvp.Value.Type == null ? kvp.Value.Value.GetType() : kvp.Value.Type;
 
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "ExtensionCacheConverter filter type " + type.ToString());
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "ExtensionCacheConverter match type " + kvp.Value.MatchType.ToString());

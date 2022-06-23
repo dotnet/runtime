@@ -1878,9 +1878,12 @@ namespace System.Data.SqlTypes
         //Precision        Length
         //    0            invalid
         //    1-9            1
-        //    10-19          2
-        //    20-28          3
-        //    29-38          4
+        //    10-19        2
+        //    20-28        3
+        //    29-38        4
+        // The array in Shiloh. Listed here for comparison.
+        //private static readonly byte[] rgCLenFromPrec = new byte[] {5,5,5,5,5,5,5,5,5,9,9,9,9,9,
+        //    9,9,9,9,9,13,13,13,13,13,13,13,13,13,17,17,17,17,17,17,17,17,17,17};
         private static ReadOnlySpan<byte> RgCLenFromPrec => new byte[] // rely on C# compiler optimization to eliminate allocation
         {
             1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2,
@@ -2222,7 +2225,7 @@ namespace System.Data.SqlTypes
                 ulQuotientCur = (uint)(dwlAccum / dwlDivisor);
                 rguiData[iData - 1] = ulQuotientCur;
                 //Remainder to be carried to the next lower significant byte.
-                dwlAccum %= dwlDivisor;
+                dwlAccum = dwlAccum % dwlDivisor;
 
                 // While current part of quotient still 0, reduce length
                 if (fAllZero && (ulQuotientCur == 0))
@@ -2830,7 +2833,7 @@ namespace System.Data.SqlTypes
 
         private static void CheckValidPrecScale(byte bPrec, byte bScale)
         {
-            if (bPrec < 1 || bPrec > MaxPrecision || bScale > MaxScale || bScale > bPrec)
+            if (bPrec < 1 || bPrec > MaxPrecision || bScale < 0 || bScale > MaxScale || bScale > bPrec)
                 throw new SqlTypeException(SQLResource.InvalidPrecScaleMessage);
         }
 

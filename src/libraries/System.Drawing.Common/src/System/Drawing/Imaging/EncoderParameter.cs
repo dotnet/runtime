@@ -97,7 +97,10 @@ namespace System.Drawing.Imaging
         {
             _parameterGuid = encoder.Guid;
 
-            _parameterValueType = undefined ? EncoderParameterValueType.ValueTypeUndefined : EncoderParameterValueType.ValueTypeByte;
+            if (undefined == true)
+                _parameterValueType = EncoderParameterValueType.ValueTypeUndefined;
+            else
+                _parameterValueType = EncoderParameterValueType.ValueTypeByte;
             _numberOfValues = 1;
             _parameterValue = Marshal.AllocHGlobal(sizeof(byte));
 
@@ -199,7 +202,10 @@ namespace System.Drawing.Imaging
         {
             _parameterGuid = encoder.Guid;
 
-            _parameterValueType = undefined ? EncoderParameterValueType.ValueTypeUndefined : EncoderParameterValueType.ValueTypeByte;
+            if (undefined == true)
+                _parameterValueType = EncoderParameterValueType.ValueTypeUndefined;
+            else
+                _parameterValueType = EncoderParameterValueType.ValueTypeByte;
 
             _numberOfValues = value.Length;
             _parameterValue = Marshal.AllocHGlobal(_numberOfValues);

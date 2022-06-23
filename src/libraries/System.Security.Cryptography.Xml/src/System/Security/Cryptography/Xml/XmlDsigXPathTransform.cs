@@ -172,7 +172,7 @@ namespace System.Security.Cryptography.Xml
                     XmlNode node = ((IHasXmlNode)it.Current).GetNode();
 
                     bool include = (bool)it.Current.Evaluate(xpathExpr);
-                    if (include)
+                    if (include == true)
                         resultNodeList.Add(node);
                 }
 

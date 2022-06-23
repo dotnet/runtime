@@ -12,7 +12,7 @@ namespace Microsoft.DotNet.Cli.Build
     {
         public string BinPath { get; }
         public string GreatestVersionSharedFxPath { get; }
-        public string GreatestVersionHostFxrPath { get; }
+        public string GreatestVersionHostFxrPath { get; } 
         public string GreatestVersionHostFxrFilePath { get => Path.Combine(
             GreatestVersionHostFxrPath,
             RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr")); }
@@ -29,22 +29,30 @@ namespace Microsoft.DotNet.Cli.Build
             BinPath = binPath;
 
             var sharedFxBaseDirectory = Path.Combine(BinPath, "shared", "Microsoft.NETCore.App");
-            if (Directory.Exists(sharedFxBaseDirectory))
+            if (!Directory.Exists(sharedFxBaseDirectory))
             {
-                var sharedFxVersionDirectories = Directory.EnumerateDirectories(sharedFxBaseDirectory);
-                GreatestVersionSharedFxPath = sharedFxVersionDirectories
-                    .OrderByDescending(p => p.ToLower())
-                    .First();
+                GreatestVersionSharedFxPath = null;
+                return;
             }
 
             var hostFxrBaseDirectory = Path.Combine(BinPath, "host", "fxr");
-            if (Directory.Exists(hostFxrBaseDirectory))
+
+            if (!Directory.Exists(hostFxrBaseDirectory))
             {
-                var hostFxrVersionDirectories = Directory.EnumerateDirectories(hostFxrBaseDirectory);
-                GreatestVersionHostFxrPath = hostFxrVersionDirectories
-                    .OrderByDescending(p => p.ToLower())
-                    .First();
+                GreatestVersionHostFxrPath = null;
+                return;
             }
+
+            var sharedFxVersionDirectories = Directory.EnumerateDirectories(sharedFxBaseDirectory);
+
+            GreatestVersionSharedFxPath = sharedFxVersionDirectories
+                .OrderByDescending(p => p.ToLower())
+                .First();
+
+            var hostFxrVersionDirectories = Directory.EnumerateDirectories(hostFxrBaseDirectory);
+            GreatestVersionHostFxrPath = hostFxrVersionDirectories
+                .OrderByDescending(p => p.ToLower())
+                .First();
         }
 
         public Command Exec(string command, params string[] args)

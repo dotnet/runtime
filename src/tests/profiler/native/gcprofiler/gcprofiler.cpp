@@ -70,9 +70,6 @@ HRESULT GCProfiler::GarbageCollectionStarted(int cGenerations, BOOL generationCo
         printf("GCProfiler::GarbageCollectionStarted: FAIL: Expected GCStart <= GCFinish+2. GCStart=%d, GCFinish=%d\n", (int)_gcStarts, (int)_gcFinishes);
     }
 
-    _objectReferencesSeen = {};
-    _rootReferencesSeen = {};
-
     return S_OK;
 }
 
@@ -87,9 +84,9 @@ HRESULT GCProfiler::GarbageCollectionFinished()
         printf("GCProfiler::GarbageCollectionFinished: FAIL: Expected GCStart >= GCFinish. Start=%d, Finish=%d\n", (int)_gcStarts, (int)_gcFinishes);
     }
 
-    _pohObjectsSeenObjectReferences += NumPOHObjectsSeen(std::move(_objectReferencesSeen));
-    _pohObjectsSeenRootReferences += NumPOHObjectsSeen(std::move(_rootReferencesSeen));
-
+    _pohObjectsSeenObjectReferences += NumPOHObjectsSeen(_objectReferencesSeen);
+    _pohObjectsSeenRootReferences += NumPOHObjectsSeen(_rootReferencesSeen);
+    
     return S_OK;
 }
 

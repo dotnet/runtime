@@ -23,14 +23,6 @@ namespace System.Text.Json.Serialization.Converters
 
         internal sealed override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNullWhen(false)] out T value)
         {
-            JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
-
-            if (jsonTypeInfo.CreateObject != null)
-            {
-                // Contract customization: fall back to default object converter if user has set a default constructor delegate.
-                return base.OnTryRead(ref reader, typeToConvert, options, ref state, out value);
-            }
-
             object obj;
             ArgumentState argumentState = state.Current.CtorArgumentState!;
 
@@ -99,6 +91,7 @@ namespace System.Text.Json.Serialization.Converters
             else
             {
                 // Slower path that supports continuation and metadata reads.
+                JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
 
                 if (state.Current.ObjectState == StackFrameObjectState.None)
                 {
@@ -296,7 +289,7 @@ namespace System.Text.Json.Serialization.Converters
                         out _,
                         createExtensionProperty: false);
 
-                    if (jsonPropertyInfo.CanDeserialize)
+                    if (jsonPropertyInfo.ShouldDeserialize)
                     {
                         ArgumentState argumentState = state.Current.CtorArgumentState!;
 
@@ -461,7 +454,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             if (state.Current.PropertyState < StackFramePropertyState.ReadValue)
             {
-                if (!jsonPropertyInfo.CanDeserialize)
+                if (!jsonPropertyInfo.ShouldDeserialize)
                 {
                     if (!reader.TrySkip())
                     {
@@ -495,7 +488,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
             }
 
-            Debug.Assert(jsonPropertyInfo.CanDeserialize);
+            Debug.Assert(jsonPropertyInfo.ShouldDeserialize);
 
             // Ensure that the cache has enough capacity to add this property.
 

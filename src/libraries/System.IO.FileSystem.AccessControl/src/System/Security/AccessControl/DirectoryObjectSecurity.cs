@@ -108,7 +108,7 @@ namespace System.Security.AccessControl
                             continue;
                         }
 
-                        if (ace.IsCallback)
+                        if (ace.IsCallback == true)
                         {
                             //
                             // Ignore callback ACEs
@@ -162,7 +162,7 @@ namespace System.Security.AccessControl
                         }
                     }
 
-                    if (ace.IsCallback)
+                    if (ace.IsCallback == true)
                     {
                         //
                         // Ignore callback ACEs

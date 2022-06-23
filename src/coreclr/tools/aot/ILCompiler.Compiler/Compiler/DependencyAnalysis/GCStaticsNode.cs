@@ -19,7 +19,6 @@ namespace ILCompiler.DependencyAnalysis
         public GCStaticsNode(MetadataType type, PreinitializationManager preinitManager)
         {
             Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Specific));
-            Debug.Assert(!type.IsGenericDefinition);
             _type = type;
 
             if (preinitManager.IsPreinitialized(type))

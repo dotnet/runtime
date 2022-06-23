@@ -291,7 +291,7 @@ void trace_hostpolicy_entrypoint_invocation(const pal::string_t& entryPointName)
         _STRINGIFY(HOST_POLICY_PKG_NAME),
         _STRINGIFY(HOST_POLICY_PKG_VER),
         _STRINGIFY(HOST_POLICY_PKG_REL_DIR),
-        get_current_arch_name(),
+        get_arch(),
         entryPointName.c_str());
 }
 

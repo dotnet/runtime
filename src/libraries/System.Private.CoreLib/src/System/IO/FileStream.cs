@@ -200,26 +200,17 @@ namespace System.IO
                 FileStreamHelpers.ValidateArgumentsForPreallocation(options.Mode, options.Access);
             }
 
-            if (options.UnixCreateMode.HasValue)
-            {
-                // Only allow UnixCreateMode for file modes that can create a new file.
-                if (options.Mode == FileMode.Truncate || options.Mode == FileMode.Open)
-                {
-                    throw new ArgumentException(SR.Argument_InvalidUnixCreateMode, nameof(options));
-                }
-            }
-
             FileStreamHelpers.SerializationGuard(options.Access);
 
             _strategy = FileStreamHelpers.ChooseStrategy(
-                this, path, options.Mode, options.Access, options.Share, options.BufferSize, options.Options, options.PreallocationSize, options.UnixCreateMode);
+                this, path, options.Mode, options.Access, options.Share, options.BufferSize, options.Options, options.PreallocationSize);
         }
 
         private FileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
         {
             FileStreamHelpers.ValidateArguments(path, mode, access, share, bufferSize, options, preallocationSize);
 
-            _strategy = FileStreamHelpers.ChooseStrategy(this, path, mode, access, share, bufferSize, options, preallocationSize, unixCreateMode: null);
+            _strategy = FileStreamHelpers.ChooseStrategy(this, path, mode, access, share, bufferSize, options, preallocationSize);
         }
 
         [Obsolete("FileStream.Handle has been deprecated. Use FileStream's SafeFileHandle property instead.")]
@@ -508,7 +499,7 @@ namespace System.IO
         // _strategy can be null only when ctor has thrown
         protected override void Dispose(bool disposing) => _strategy?.DisposeInternal(disposing);
 
-        public override async ValueTask DisposeAsync()
+        public async override ValueTask DisposeAsync()
         {
             await _strategy.DisposeAsync().ConfigureAwait(false);
             Dispose(false);

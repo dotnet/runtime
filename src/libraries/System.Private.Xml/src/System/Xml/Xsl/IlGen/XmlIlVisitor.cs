@@ -15,10 +15,11 @@ using System.Xml.Xsl;
 using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.Runtime;
 using System.Diagnostics.CodeAnalysis;
-using TypeFactory = System.Xml.Xsl.XmlQueryTypeFactory;
 
 namespace System.Xml.Xsl.IlGen
 {
+    using TypeFactory = System.Xml.Xsl.XmlQueryTypeFactory;
+
     /// <summary>
     /// Creates Msil code for an entire QilExpression graph.  Code is generated in one of two modes: push or
     /// pull.  In push mode, code is generated to push the values in an iterator to the XmlWriter

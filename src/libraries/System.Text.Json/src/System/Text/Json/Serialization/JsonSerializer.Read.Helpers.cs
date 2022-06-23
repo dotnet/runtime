@@ -35,7 +35,7 @@ namespace System.Text.Json
             state.Initialize(jsonTypeInfo);
 
             TValue? value;
-            JsonConverter jsonConverter = jsonTypeInfo.Converter;
+            JsonConverter jsonConverter = jsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase;
 
             // For performance, the code below is a lifted ReadCore() above.
             if (jsonConverter is JsonConverter<TValue> converter)

@@ -218,12 +218,7 @@ namespace ILCompiler.Diagnostics
                 const int capacity = 1024;
                 var pdbFilePathBuilder = new char[capacity];
                 _ngenWriter.QueryPDBNameExW(pdbFilePathBuilder, new IntPtr(capacity - 1) /* remove 1 byte for null */);
-                int length = 0;
-                while (length < pdbFilePathBuilder.Length && pdbFilePathBuilder[length] != '\0')
-                {
-                    length++;
-                }
-                _pdbFilePath = new string(pdbFilePathBuilder, 0, length);
+                _pdbFilePath = pdbFilePathBuilder.ToString();
             }
 
             _ngenWriter.OpenModW(originalDllPath, Path.GetFileName(originalDllPath), out _pdbMod);

@@ -29,8 +29,6 @@ if(CLR_CMAKE_HOST_UNIX)
       set(arch s390x)
     elseif(CLR_CMAKE_HOST_ARCH_LOONGARCH64)
       set(arch loongarch64)
-    elseif(CLR_CMAKE_HOST_ARCH_POWERPC64)
-      set(arch ppc64le)
     endif ()
 
     # Disable warning due to incorrect format specifier in debugging printf via the Debug macro

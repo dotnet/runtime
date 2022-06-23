@@ -90,8 +90,9 @@ namespace System.Runtime.Serialization
             {
                 XmlSchema schema = GetSchema(dataContract.StableName.Namespace);
 
-                if (dataContract is ClassDataContract classDataContract)
+                if (dataContract is ClassDataContract)
                 {
+                    ClassDataContract classDataContract = (ClassDataContract)dataContract;
                     if (classDataContract.IsISerializable)
                         ExportISerializableDataContract(classDataContract, schema);
                     else
@@ -776,7 +777,7 @@ namespace System.Runtime.Serialization
             type.Name = localName;
             type.Particle = new XmlSchemaSequence();
             XmlSchemaAny any = new XmlSchemaAny();
-            any.Namespace = datasetSchema.TargetNamespace ?? string.Empty;
+            any.Namespace = (datasetSchema.TargetNamespace == null) ? string.Empty : datasetSchema.TargetNamespace;
             ((XmlSchemaSequence)type.Particle).Items.Add(any);
             schemas.Add(datasetSchema);
             XmlSchema schema = SchemaHelper.GetSchema(ns, schemas);

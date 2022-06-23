@@ -909,7 +909,7 @@ namespace System.ServiceProcess
                 _commandPropsFrozen = true;
                 if ((_status.controlsAccepted & AcceptOptions.ACCEPT_STOP) != 0)
                 {
-                    _status.controlsAccepted |= AcceptOptions.ACCEPT_SHUTDOWN;
+                    _status.controlsAccepted = _status.controlsAccepted | AcceptOptions.ACCEPT_SHUTDOWN;
                 }
 
                 _status.currentState = ServiceControlStatus.STATE_START_PENDING;

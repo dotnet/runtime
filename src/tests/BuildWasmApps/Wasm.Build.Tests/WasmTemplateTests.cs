@@ -148,7 +148,6 @@ namespace Wasm.Build.Tests
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/70675", TestPlatforms.Windows)]
         [InlineData("Debug", false)]
         [InlineData("Debug", true)]
         [InlineData("Release", false)]

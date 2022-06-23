@@ -1041,32 +1041,12 @@ namespace System
                 // we need to get a Span<uint> containing the value represented
                 // in the least number of elements possible.
 
-                // We need to ensure that we end up with 4x uints representing the bits from
-                // least significant to most significant so the math will be correct on both
-                // little and big endian systems. So we'll just allocate the relevant buffer
-                // space and then write out the four parts using the native endianness of the
-                // system.
-
                 uint* pLeft = stackalloc uint[Size / sizeof(uint)];
-
-                Unsafe.WriteUnaligned(ref *(byte*)(pLeft + 0), (uint)(quotient._lower >> 00));
-                Unsafe.WriteUnaligned(ref *(byte*)(pLeft + 1), (uint)(quotient._lower >> 32));
-
-                Unsafe.WriteUnaligned(ref *(byte*)(pLeft + 2), (uint)(quotient._upper >> 00));
-                Unsafe.WriteUnaligned(ref *(byte*)(pLeft + 3), (uint)(quotient._upper >> 32));
-
+                quotient.WriteLittleEndianUnsafe(new Span<byte>(pLeft, Size));
                 Span<uint> left = new Span<uint>(pLeft, (Size / sizeof(uint)) - (BitOperations.LeadingZeroCount(quotient) / 32));
 
-                // Repeat the same operation with the divisor
-
                 uint* pRight = stackalloc uint[Size / sizeof(uint)];
-
-                Unsafe.WriteUnaligned(ref *(byte*)(pRight + 0), (uint)(divisor._lower >> 00));
-                Unsafe.WriteUnaligned(ref *(byte*)(pRight + 1), (uint)(divisor._lower >> 32));
-
-                Unsafe.WriteUnaligned(ref *(byte*)(pRight + 2), (uint)(divisor._upper >> 00));
-                Unsafe.WriteUnaligned(ref *(byte*)(pRight + 3), (uint)(divisor._upper >> 32));
-
+                divisor.WriteLittleEndianUnsafe(new Span<byte>(pRight, Size));
                 Span<uint> right = new Span<uint>(pRight, (Size / sizeof(uint)) - (BitOperations.LeadingZeroCount(divisor) / 32));
 
                 Span<uint> rawBits = stackalloc uint[Size / sizeof(uint)];

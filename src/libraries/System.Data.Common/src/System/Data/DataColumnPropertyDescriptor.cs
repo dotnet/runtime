@@ -43,9 +43,16 @@ namespace System.Data
 
         public override Type PropertyType => Column.DataType;
 
-        public override bool Equals([NotNullWhen(true)] object? other) =>
-            other is DataColumnPropertyDescriptor descriptor &&
-            descriptor.Column == Column;
+        public override bool Equals([NotNullWhen(true)] object? other)
+        {
+            if (other is DataColumnPropertyDescriptor)
+            {
+                DataColumnPropertyDescriptor descriptor = (DataColumnPropertyDescriptor)other;
+                return (descriptor.Column == Column);
+            }
+
+            return false;
+        }
 
         public override int GetHashCode() => Column.GetHashCode();
 

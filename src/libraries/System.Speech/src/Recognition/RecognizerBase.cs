@@ -1590,7 +1590,7 @@ ISpGrammarResourceLoader
 
                         sapiGrammar.SetGrammarLoader(_recoThunk);
                     }
-                    sapiGrammar.LoadCmdFromMemory2(dataPtr, SPLOADOPTIONS.SPLO_STATIC, null, baseUri?.ToString());
+                    sapiGrammar.LoadCmdFromMemory2(dataPtr, SPLOADOPTIONS.SPLO_STATIC, null, baseUri == null ? null : baseUri.ToString());
                 }
                 else
                 {
@@ -1762,7 +1762,12 @@ ISpGrammarResourceLoader
             Debug.WriteLine("Raising LoadGrammarCompleted event.");
 
             Grammar grammar = (Grammar)grammarObject;
-            LoadGrammarCompleted?.Invoke(this, new LoadGrammarCompletedEventArgs(grammar, grammar.LoadException, false, null));
+            EventHandler<LoadGrammarCompletedEventArgs> loadGrammarCompletedHandler = LoadGrammarCompleted;
+            if (loadGrammarCompletedHandler != null)
+            {
+                // When a LoadGrammarAsync completes all we must do is raise the LoadGrammarCompleted event.
+                loadGrammarCompletedHandler(this, new LoadGrammarCompletedEventArgs(grammar, grammar.LoadException, false, null));
+            }
         }
 
         // Create a new sapi grammarId and SapiGrammar object.
@@ -2086,7 +2091,11 @@ ISpGrammarResourceLoader
             }
 
             // Now raise RecognizeCompleted event.
-            RecognizeCompleted?.Invoke(this, (RecognizeCompletedEventArgs)eventArgs);
+            EventHandler<RecognizeCompletedEventArgs> recognizeCompletedHandler = RecognizeCompleted;
+            if (recognizeCompletedHandler != null)
+            {
+                recognizeCompletedHandler(this, (RecognizeCompletedEventArgs)eventArgs);
+            }
         }
 
         // This method will be called asynchronously
@@ -2255,7 +2264,11 @@ ISpGrammarResourceLoader
                 {
                     object userToken = GetBookmarkItemAndRemove(bookmarkId);
 
-                    RecognizerUpdateReached?.Invoke(this, new RecognizerUpdateReachedEventArgs(userToken, speechEvent.AudioPosition));
+                    EventHandler<RecognizerUpdateReachedEventArgs> updateHandler = RecognizerUpdateReached;
+                    if (updateHandler != null)
+                    {
+                        updateHandler(this, new RecognizerUpdateReachedEventArgs(userToken, speechEvent.AudioPosition));
+                    }
                 }
             }
             catch (COMException e)

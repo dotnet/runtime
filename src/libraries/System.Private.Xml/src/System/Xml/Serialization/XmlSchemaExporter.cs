@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections;
-using System.Xml.Schema;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Globalization;
-using System.Reflection;
-
 namespace System.Xml.Serialization
 {
+    using System;
+    using System.Collections;
+    using System.Xml.Schema;
+    using System.ComponentModel;
+    using System.Diagnostics;
+    using System.Globalization;
+    using System.Reflection;
+
     public class XmlSchemaExporter
     {
         internal const XmlSchemaForm elementFormDefault = XmlSchemaForm.Qualified;
@@ -119,8 +119,9 @@ namespace System.Xml.Serialization
             {
                 if (complexType.IsMixed != mixed)
                     return false;
-                if (complexType.Particle is XmlSchemaSequence sequence)
+                if (complexType.Particle is XmlSchemaSequence)
                 {
+                    XmlSchemaSequence sequence = (XmlSchemaSequence)complexType.Particle;
                     if (sequence.Items.Count == 1 && sequence.Items[0] is XmlSchemaAny)
                     {
                         XmlSchemaAny any = (XmlSchemaAny)sequence.Items[0];
@@ -285,14 +286,16 @@ namespace System.Xml.Serialization
                 schema = AddSchema(ns);
             }
 
-            if (item is XmlSchemaElement e)
+            if (item is XmlSchemaElement)
             {
+                XmlSchemaElement e = (XmlSchemaElement)item;
                 if (e.Form == XmlSchemaForm.Unqualified)
                     throw new InvalidOperationException(SR.Format(SR.XmlIllegalForm, e.Name));
                 e.Form = XmlSchemaForm.None;
             }
-            else if (item is XmlSchemaAttribute a)
+            else if (item is XmlSchemaAttribute)
             {
+                XmlSchemaAttribute a = (XmlSchemaAttribute)item;
                 if (a.Form == XmlSchemaForm.Unqualified)
                     throw new InvalidOperationException(SR.Format(SR.XmlIllegalForm, a.Name));
                 a.Form = XmlSchemaForm.None;
@@ -341,8 +344,9 @@ namespace System.Xml.Serialization
         {
             foreach (object item in schema.Includes)
             {
-                if (item is XmlSchemaImport import)
+                if (item is XmlSchemaImport)
                 {
+                    XmlSchemaImport import = (XmlSchemaImport)item;
                     if (NamespacesEqual(import.Namespace, ns))
                     {
                         return import;
@@ -376,8 +380,9 @@ namespace System.Xml.Serialization
         {
             if (mapping is ArrayMapping)
                 ExportArrayMapping((ArrayMapping)mapping, ns, element);
-            else if (mapping is PrimitiveMapping pm)
+            else if (mapping is PrimitiveMapping)
             {
+                PrimitiveMapping pm = (PrimitiveMapping)mapping;
                 if (pm.IsAnonymousType)
                 {
                     element.SchemaType = ExportAnonymousPrimitiveMapping(pm);
@@ -508,7 +513,7 @@ namespace System.Xml.Serialization
                             seq.Items.Add(any);
                             type.Particle = seq;
                             string? anyNs = serializableMapping.Schema.TargetNamespace;
-                            any.Namespace = anyNs ?? "";
+                            any.Namespace = anyNs == null ? "" : anyNs;
                             XmlSchema? existingSchema = _schemas[anyNs];
                             if (existingSchema == null)
                             {
@@ -718,8 +723,9 @@ namespace System.Xml.Serialization
                         XmlSchemaComplexContentExtension extension = (XmlSchemaComplexContentExtension)content;
                         extension.AnyAttribute = new XmlSchemaAnyAttribute();
                     }
-                    else if (content is XmlSchemaComplexContentRestriction restriction)
+                    else if (content is XmlSchemaComplexContentRestriction)
                     {
+                        XmlSchemaComplexContentRestriction restriction = (XmlSchemaComplexContentRestriction)content;
                         restriction.AnyAttribute = new XmlSchemaAnyAttribute();
                     }
                     else if (type.ContentModel.Content is XmlSchemaSimpleContentExtension)
@@ -766,8 +772,9 @@ namespace System.Xml.Serialization
                     attributes.Add(refAttribute);
                     AddSchemaImport(accessor.Namespace, ns);
                 }
-                if (accessor.Mapping is PrimitiveMapping pm)
+                if (accessor.Mapping is PrimitiveMapping)
                 {
+                    PrimitiveMapping pm = (PrimitiveMapping)accessor.Mapping;
                     if (pm.IsList)
                     {
                         // create local simple type for the list-like attributes
@@ -779,7 +786,7 @@ namespace System.Xml.Serialization
                         }
                         else
                         {
-                            list.ItemTypeName = ExportPrimitiveMapping(pm, accessor.Namespace ?? ns);
+                            list.ItemTypeName = ExportPrimitiveMapping(pm, accessor.Namespace == null ? ns : accessor.Namespace);
                         }
                         dataType.Content = list;
                         attribute.SchemaType = dataType;
@@ -792,7 +799,7 @@ namespace System.Xml.Serialization
                         }
                         else
                         {
-                            attribute.SchemaTypeName = ExportPrimitiveMapping(pm, accessor.Namespace ?? ns);
+                            attribute.SchemaTypeName = ExportPrimitiveMapping(pm, accessor.Namespace == null ? ns : accessor.Namespace);
                         }
                     }
                 }
@@ -877,8 +884,10 @@ namespace System.Xml.Serialization
             if (value == null || value == DBNull.Value)
                 return null;
 
-            if (mapping is EnumMapping em)
+            if (mapping is EnumMapping)
             {
+                EnumMapping em = (EnumMapping)mapping;
+
 #if DEBUG
                 // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
                 if (value.GetType() != typeof(string)) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, SR.Format(SR.XmlInvalidDefaultValue, value, value.GetType().FullName)));

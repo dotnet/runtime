@@ -83,8 +83,9 @@ namespace System.Data
             if (_op == Operators.Is)
             {
                 // only 'Is Null' or 'Is Not Null' are valid
-                if (_right is UnaryNode un)
+                if (_right is UnaryNode)
                 {
+                    UnaryNode un = (UnaryNode)_right;
                     if (un._op != Operators.Not)
                     {
                         throw ExprException.InvalidIsSyntax();
@@ -983,7 +984,7 @@ namespace System.Data
                                 break;
                             }
 
-                            if ((bool)vLeft)
+                            if ((bool)vLeft == true)
                             {
                                 value = true;
                                 break;

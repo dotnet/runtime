@@ -141,7 +141,7 @@ namespace System.IO
                     }
                 }
 
-                startIndex += key.Length;
+                startIndex = startIndex + key.Length;
             }
         }
 

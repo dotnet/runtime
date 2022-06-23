@@ -1278,7 +1278,7 @@ namespace System.Configuration
                 {
                     Entry entry = (Entry)_itemsEnumerator.Current;
                     if (entry.EntryType == EntryType.Removed) continue;
-                    _current.Key = entry.GetKey(_thisCollection) ?? "key";
+                    _current.Key = entry.GetKey(_thisCollection) != null ? entry.GetKey(_thisCollection) : "key";
                     _current.Value = entry.Value;
                     return true;
                 }

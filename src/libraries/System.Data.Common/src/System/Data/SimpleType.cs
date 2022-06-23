@@ -53,8 +53,10 @@ namespace System.Data
                 (node.Content is XmlSchemaSimpleTypeUnion))
                 throw ExceptionBuilder.SimpleTypeNotSupported();
 
-            if (node.Content is XmlSchemaSimpleTypeRestriction content)
+            if (node.Content is XmlSchemaSimpleTypeRestriction)
             {
+                XmlSchemaSimpleTypeRestriction content = (XmlSchemaSimpleTypeRestriction)node.Content;
+
                 XmlSchemaSimpleType? ancestor = node.BaseXmlSchemaType as XmlSchemaSimpleType;
                 if ((ancestor != null) && (ancestor.QualifiedName.Namespace != Keywords.XSDNS))
                 {

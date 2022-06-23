@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using Microsoft.Win32.SafeHandles;
-using System.IO;
 
 namespace System.Formats.Tar
 {
@@ -54,7 +53,7 @@ namespace System.Formats.Tar
             // If the permissions weren't set at all, don't write the file's permissions.
             if (permissions != 0)
             {
-                File.SetUnixFileMode(handle, (UnixFileMode)permissions);
+                Interop.CheckIo(Interop.Sys.FChMod(handle, permissions), destinationFileName);
             }
         }
     }

@@ -70,7 +70,7 @@ namespace System.Xml.Xsl.IlGen
         public static OptimizerPatterns Read(QilNode nd)
         {
             XmlILAnnotation? ann = nd.Annotation as XmlILAnnotation;
-            OptimizerPatterns? optPatt = ann?.Patterns;
+            OptimizerPatterns? optPatt = (ann != null) ? ann.Patterns : null;
 
             if (optPatt == null)
             {

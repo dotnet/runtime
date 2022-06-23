@@ -1982,6 +1982,23 @@ BOOL COMCharacter::nativeIsWhiteSpace(WCHAR c)
 #endif // !TARGET_UNIX
 }
 
+/*================================nativeIsDigit=================================
+**The locally available version of IsDigit.  Designed to be called by other
+**native methods.  The work is mostly done by GetCharacterInfoHelper
+**Args:  c -- the character to check.
+**Returns: true if c is whitespace, false otherwise.
+**Exceptions:  Only those thrown by GetCharacterInfoHelper.
+==============================================================================*/
+BOOL COMCharacter::nativeIsDigit(WCHAR c)
+{
+    WRAPPER_NO_CONTRACT;
+#ifndef TARGET_UNIX
+    return((GetCharacterInfoHelper(c, CT_CTYPE1) & C1_DIGIT)!=0);
+#else // !TARGET_UNIX
+    return iswdigit(c);
+#endif // !TARGET_UNIX
+}
+
 BOOL RuntimeFileNotFound(HRESULT hr)
 {
     LIMITED_METHOD_CONTRACT;

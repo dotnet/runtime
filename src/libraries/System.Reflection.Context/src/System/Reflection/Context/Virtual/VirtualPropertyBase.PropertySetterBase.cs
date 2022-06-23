@@ -14,19 +14,21 @@ namespace System.Reflection.Context.Virtual
             {
             }
 
-            public sealed override string Name
+            public override sealed string Name
             {
                 get { return "set_" + DeclaringProperty.Name; }
             }
 
-            public sealed override Type ReturnType
+            public override sealed Type ReturnType
             {
                 get { return DeclaringProperty.ReflectionContext.MapType(IntrospectionExtensions.GetTypeInfo(typeof(void))); }
             }
 
             protected override Type[] GetParameterTypes()
             {
-                return _parameterTypes ??= new Type[1] { DeclaringProperty.PropertyType };
+                return (_parameterTypes != null) ?
+                       _parameterTypes :
+                       _parameterTypes = new Type[1] { DeclaringProperty.PropertyType };
             }
         }
     }

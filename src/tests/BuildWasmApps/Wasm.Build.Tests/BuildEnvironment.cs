@@ -94,6 +94,7 @@ namespace Wasm.Build.Tests
             EnvVars["DOTNET_INSTALL_DIR"] = sdkForWorkloadPath;
             EnvVars["DOTNET_MULTILEVEL_LOOKUP"] = "0";
             EnvVars["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1";
+            EnvVars["_WasmStrictVersionMatch"] = "true";
             EnvVars["MSBuildSDKsPath"] = string.Empty;
             EnvVars["PATH"] = $"{sdkForWorkloadPath}{Path.PathSeparator}{Environment.GetEnvironmentVariable("PATH")}";
             EnvVars["EM_WORKAROUND_PYTHON_BUG_34780"] = "1";

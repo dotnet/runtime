@@ -114,11 +114,11 @@ namespace System.Text
                                 if (bytes >= 0xfa40 && bytes <= 0xfa5b)
                                 {
                                     if (bytes <= 0xfa49)
-                                        bytes -= 0x0b51;
+                                        bytes = bytes - 0x0b51;
                                     else if (bytes >= 0xfa4a && bytes <= 0xfa53)
-                                        bytes -= 0x072f6;
+                                        bytes = bytes - 0x072f6;
                                     else if (bytes >= 0xfa54 && bytes <= 0xfa57)
-                                        bytes -= 0x0b5b;
+                                        bytes = bytes - 0x0b5b;
                                     else if (bytes == 0xfa58)
                                         bytes = 0x878a;
                                     else if (bytes == 0xfa59)
@@ -132,11 +132,11 @@ namespace System.Text
                                 {
                                     byte tc = unchecked((byte)bytes);
                                     if (tc < 0x5c)
-                                        bytes -= 0x0d5f;
+                                        bytes = bytes - 0x0d5f;
                                     else if (tc >= 0x80 && tc <= 0x9B)
-                                        bytes -= 0x0d1d;
+                                        bytes = bytes - 0x0d1d;
                                     else
-                                        bytes -= 0x0d1c;
+                                        bytes = bytes - 0x0d1c;
                                 }
                             }
 
@@ -1031,7 +1031,7 @@ namespace System.Text
                     // escape, so use 0x8e00 as katakana lead byte and keep same trail byte.
                     // 0x2a lead byte range is normally unused in JIS 0208, so shouldn't have
                     // any weird compatibility issues.
-                    if (b2Bytes && ((iBytes & 0xff00) == 0x2a00))
+                    if ((b2Bytes == true) && ((iBytes & 0xff00) == 0x2a00))
                     {
                         iBytes = (ushort)(iBytes & 0xff);
                         iBytes |= (LEADBYTE_HALFWIDTH << 8);   // Put us in the halfwidth katakana range

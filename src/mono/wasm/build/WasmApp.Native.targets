@@ -531,7 +531,6 @@
       <MonoAOTCompilerDefaultAotArguments Include="deterministic" />
       <MonoAOTCompilerDefaultAotArguments Include="mattr=simd" Condition="'$(WasmSIMD)' == 'true'" />
       <MonoAOTCompilerDefaultProcessArguments Include="--wasm-exceptions" Condition="'$(WasmExceptionHandling)' == 'true'" />
-      <MonoAOTCompilerDefaultProcessArguments Include="--wasm-gc-safepoints" Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true'" />
       <AotProfilePath Include="$(WasmAotProfilePath)"/>
     </ItemGroup>
     <ItemGroup>

@@ -158,8 +158,8 @@ static FORCE_INLINE (uint16_t)
 read_uint16_endian (unsigned char *inptr, unsigned endian)
 {
 	if (endian == G_LITTLE_ENDIAN)
-		return (uint16_t)((inptr[1] << 8) | inptr[0]);
-	return (uint16_t)((inptr[0] << 8) | inptr[1]);
+		return (inptr[1] << 8) | inptr[0];
+	return (inptr[0] << 8) | inptr[1];
 }
 
 static FORCE_INLINE (int)

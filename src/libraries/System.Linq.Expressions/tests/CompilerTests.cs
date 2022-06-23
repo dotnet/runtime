@@ -184,7 +184,7 @@ namespace System.Linq.Expressions.Tests
             f.VerifyIL(
                 @".method int32 ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure,int32)
                   {
-                    .maxstack 2
+                    .maxstack 4
                     .locals init (
                       [0] int32
                     )

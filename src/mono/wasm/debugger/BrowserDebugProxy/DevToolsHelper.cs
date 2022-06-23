@@ -401,12 +401,11 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal class ExecutionContext
     {
-        public ExecutionContext(MonoSDBHelper sdbAgent, int id, object auxData, PauseOnExceptionsKind pauseOnExceptions)
+        public ExecutionContext(MonoSDBHelper sdbAgent, int id, object auxData)
         {
             Id = id;
             AuxData = auxData;
             SdbAgent = sdbAgent;
-            PauseOnExceptions = pauseOnExceptions;
         }
 
         public string DebugId { get; set; }

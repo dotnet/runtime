@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Security;
@@ -11,6 +10,7 @@ using System.Security.Authentication.ExtendedProtection;
 
 namespace System.Net
 {
+    [UnsupportedOSPlatform("tvos")]
     internal sealed partial class NTAuthentication
     {
         private bool _isServer;
@@ -81,17 +81,12 @@ namespace System.Net
         {
             get
             {
-                _lastProtocolName ??= ProtocolName;
-                return _lastProtocolName == NegotiationInfoClass.Kerberos;
-            }
-        }
+                if (_lastProtocolName == null)
+                {
+                    _lastProtocolName = ProtocolName;
+                }
 
-        internal bool IsNTLM
-        {
-            get
-            {
-                _lastProtocolName ??= ProtocolName;
-                return _lastProtocolName == NegotiationInfoClass.NTLM;
+                return (object)_lastProtocolName == (object)NegotiationInfoClass.Kerberos;
             }
         }
 
@@ -155,7 +150,6 @@ namespace System.Net
             {
                 _securityContext.Dispose();
             }
-            _isCompleted = false;
         }
 
         internal int VerifySignature(byte[] buffer, int offset, int count)
@@ -170,11 +164,6 @@ namespace System.Net
 
         internal string? GetOutgoingBlob(string? incomingBlob)
         {
-            return GetOutgoingBlob(incomingBlob, throwOnError: true, out _);
-        }
-
-        internal string? GetOutgoingBlob(string? incomingBlob, bool throwOnError, out SecurityStatusPal statusCode)
-        {
             byte[]? decodedIncomingBlob = null;
             if (incomingBlob != null && incomingBlob.Length > 0)
             {
@@ -187,11 +176,10 @@ namespace System.Net
                 // we tried auth previously, now we got a null blob, we're done. this happens
                 // with Kerberos & valid credentials on the domain but no ACLs on the resource
                 _isCompleted = true;
-                statusCode = new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
             }
             else
             {
-                decodedOutgoingBlob = GetOutgoingBlob(decodedIncomingBlob, throwOnError, out statusCode);
+                decodedOutgoingBlob = GetOutgoingBlob(decodedIncomingBlob, true);
             }
 
             string? outgoingBlob = null;
@@ -210,16 +198,11 @@ namespace System.Net
 
         internal byte[]? GetOutgoingBlob(byte[]? incomingBlob, bool throwOnError)
         {
-            return GetOutgoingBlob(incomingBlob.AsSpan(), throwOnError, out _);
+            return GetOutgoingBlob(incomingBlob, throwOnError, out _);
         }
 
         // Accepts an incoming binary security blob and returns an outgoing binary security blob.
         internal byte[]? GetOutgoingBlob(byte[]? incomingBlob, bool throwOnError, out SecurityStatusPal statusCode)
-        {
-            return GetOutgoingBlob(incomingBlob.AsSpan(), throwOnError, out statusCode);
-        }
-
-        internal byte[]? GetOutgoingBlob(ReadOnlySpan<byte> incomingBlob, bool throwOnError, out SecurityStatusPal statusCode)
         {
             byte[]? result = new byte[_tokenSize];
 
@@ -322,30 +305,6 @@ namespace System.Net
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"The client specified SPN is [{spn}]");
 
             return spn;
-        }
-
-        internal int Encrypt(ReadOnlySpan<byte> buffer, [NotNull] ref byte[]? output, uint sequenceNumber)
-        {
-            return NegotiateStreamPal.Encrypt(
-                _securityContext!,
-                buffer,
-                (_contextFlags & ContextFlagsPal.Confidentiality) != 0,
-                IsNTLM,
-                ref output,
-                sequenceNumber);
-        }
-
-        internal int Decrypt(byte[] payload, int offset, int count, out int newOffset, uint expectedSeqNumber)
-        {
-            return NegotiateStreamPal.Decrypt(
-                _securityContext!,
-                payload,
-                offset,
-                count,
-                (_contextFlags & ContextFlagsPal.Confidentiality) != 0,
-                IsNTLM,
-                out newOffset,
-                expectedSeqNumber);
         }
     }
 }

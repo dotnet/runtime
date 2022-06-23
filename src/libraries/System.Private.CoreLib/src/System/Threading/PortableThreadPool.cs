@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -112,15 +111,6 @@ namespace System.Threading
             _legacy_minIOCompletionThreads = 1;
             _legacy_maxIOCompletionThreads = 1000;
 
-            if (NativeRuntimeEventSource.Log.IsEnabled())
-            {
-                NativeRuntimeEventSource.Log.ThreadPoolMinMaxThreads(
-                    (ushort)_minThreads,
-                    (ushort)_maxThreads,
-                    (ushort)_legacy_minIOCompletionThreads,
-                    (ushort)_legacy_maxIOCompletionThreads);
-            }
-
             _separated.counts.NumThreadsGoal = _minThreads;
 
 #if TARGET_WINDOWS
@@ -196,15 +186,6 @@ namespace System.Threading
                         addWorker = true;
                     }
                 }
-
-                if (NativeRuntimeEventSource.Log.IsEnabled())
-                {
-                    NativeRuntimeEventSource.Log.ThreadPoolMinMaxThreads(
-                        (ushort)_minThreads,
-                        (ushort)_maxThreads,
-                        (ushort)_legacy_minIOCompletionThreads,
-                        (ushort)_legacy_maxIOCompletionThreads);
-                }
             }
             finally
             {
@@ -274,15 +255,6 @@ namespace System.Threading
                 if (_separated.counts.NumThreadsGoal > newMaxThreads)
                 {
                     _separated.counts.InterlockedSetNumThreadsGoal(newMaxThreads);
-                }
-
-                if (NativeRuntimeEventSource.Log.IsEnabled())
-                {
-                    NativeRuntimeEventSource.Log.ThreadPoolMinMaxThreads(
-                        (ushort)_minThreads,
-                        (ushort)_maxThreads,
-                        (ushort)_legacy_minIOCompletionThreads,
-                        (ushort)_legacy_maxIOCompletionThreads);
                 }
                 return true;
             }

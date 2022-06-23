@@ -41,7 +41,7 @@ namespace Internal.Runtime.TypeLoader
 
         private class NamedTypeRuntimeTypeHandleToMetadataHashtable : LockFreeReaderHashtable<RuntimeTypeHandle, NamedTypeLookupResult>
         {
-            protected override unsafe int GetKeyHashCode(RuntimeTypeHandle key)
+            protected unsafe override int GetKeyHashCode(RuntimeTypeHandle key)
             {
                 return (int)key.ToEETypePtr()->HashCode;
             }
@@ -50,7 +50,7 @@ namespace Internal.Runtime.TypeLoader
                 return key.Equals(value.RuntimeTypeHandle);
             }
 
-            protected override unsafe int GetValueHashCode(NamedTypeLookupResult value)
+            protected unsafe override int GetValueHashCode(NamedTypeLookupResult value)
             {
                 return value.RuntimeTypeHandleHashcode;
             }
@@ -122,7 +122,7 @@ namespace Internal.Runtime.TypeLoader
                 return (int)(((uint)value << shift) | ((uint)value >> (32 - shift)));
             }
 
-            protected override unsafe int GetKeyHashCode(QTypeDefinition key)
+            protected unsafe override int GetKeyHashCode(QTypeDefinition key)
             {
                 return key.Token.GetHashCode() ^ _rotl(key.Reader.GetHashCode(), 8);
             }
@@ -132,7 +132,7 @@ namespace Internal.Runtime.TypeLoader
                        key.Reader.Equals(value.QualifiedTypeDefinition.Reader);
             }
 
-            protected override unsafe int GetValueHashCode(NamedTypeLookupResult value)
+            protected unsafe override int GetValueHashCode(NamedTypeLookupResult value)
             {
                 return value.QualifiedTypeDefinition.Token.GetHashCode() ^ _rotl(value.QualifiedTypeDefinition.Reader.GetHashCode(), 8);
             }

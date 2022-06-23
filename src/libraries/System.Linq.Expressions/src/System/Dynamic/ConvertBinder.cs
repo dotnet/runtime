@@ -68,11 +68,11 @@ namespace System.Dynamic
         /// <summary>
         /// Always returns <c>true</c> because this is a standard <see cref="DynamicMetaObjectBinder"/>.
         /// </summary>
-        internal sealed override bool IsStandardBinder => true;
+        internal override sealed bool IsStandardBinder => true;
 
         /// <summary>
         /// The result type of the operation.
         /// </summary>
-        public sealed override Type ReturnType => Type;
+        public override sealed Type ReturnType => Type;
     }
 }

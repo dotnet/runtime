@@ -60,7 +60,7 @@ public:
 
         if (m_pMngStdItfMap == NULL) {
             MngStdInterfaceMap *tmp = new MngStdInterfaceMap;
-            if (InterlockedCompareExchangeT(&m_pMngStdItfMap, tmp, NULL) != NULL) {
+            if (FastInterlockCompareExchangePointer(&m_pMngStdItfMap, tmp, NULL) != NULL) {
                 tmp->m_TypeNameToNativeIIDMap.ClearHashTable();
                 delete tmp;
             }

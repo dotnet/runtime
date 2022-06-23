@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.ComponentModel;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
-using System.Net.Security;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Security.Authentication.ExtendedProtection;
@@ -156,7 +154,7 @@ namespace System.Net.Http
                             NetEventSource.Info(connection, $"Authentication: {challenge.AuthenticationType}, SPN: {spn}");
                         }
 
-                        ProtectionLevel requiredProtectionLevel = ProtectionLevel.None;
+                        ContextFlagsPal contextFlags = ContextFlagsPal.Connection;
                         // When connecting to proxy server don't enforce the integrity to avoid
                         // compatibility issues. The assumption is that the proxy server comes
                         // from a trusted source. On macOS we always need to enforce the integrity
@@ -164,57 +162,49 @@ namespace System.Net.Http
                         // tokens.
                         if (!isProxyAuth || OperatingSystem.IsMacOS())
                         {
-                            requiredProtectionLevel = ProtectionLevel.Sign;
+                            contextFlags |= ContextFlagsPal.InitIntegrity;
                         }
 
-                        NegotiateAuthenticationClientOptions authClientOptions = new NegotiateAuthenticationClientOptions
-                        {
-                            Package = challenge.SchemeName,
-                            Credential = challenge.Credential,
-                            TargetName = spn,
-                            RequiredProtectionLevel = requiredProtectionLevel,
-                            Binding = connection.TransportContext?.GetChannelBinding(ChannelBindingKind.Endpoint)
-                        };
-
-                        using NegotiateAuthentication authContext = new NegotiateAuthentication(authClientOptions);
+                        ChannelBinding? channelBinding = connection.TransportContext?.GetChannelBinding(ChannelBindingKind.Endpoint);
+                        NTAuthentication authContext = new NTAuthentication(isServer: false, challenge.SchemeName, challenge.Credential, spn, contextFlags, channelBinding);
                         string? challengeData = challenge.ChallengeData;
-                        NegotiateAuthenticationStatusCode statusCode;
-                        while (true)
+                        try
                         {
-                            string? challengeResponse = authContext.GetOutgoingBlob(challengeData, out statusCode);
-                            if (statusCode > NegotiateAuthenticationStatusCode.ContinueNeeded || challengeResponse == null)
+                            while (true)
                             {
-                                // Response indicated denial even after login, so stop processing and return current response.
-                                break;
-                            }
-
-                            if (needDrain)
-                            {
-                                await connection.DrainResponseAsync(response!, cancellationToken).ConfigureAwait(false);
-                            }
-
-                            SetRequestAuthenticationHeaderValue(request, new AuthenticationHeaderValue(challenge.SchemeName, challengeResponse), isProxyAuth);
-
-                            response = await InnerSendAsync(request, async, isProxyAuth, connectionPool, connection, cancellationToken).ConfigureAwait(false);
-                            if (authContext.IsAuthenticated || !TryGetChallengeDataForScheme(challenge.SchemeName, GetResponseAuthenticationHeaderValues(response, isProxyAuth), out challengeData))
-                            {
-                                break;
-                            }
-
-                            if (!IsAuthenticationChallenge(response, isProxyAuth))
-                            {
-                                // Tail response for Negoatiate on successful authentication. Validate it before we proceed.
-                                authContext.GetOutgoingBlob(challengeData, out statusCode);
-                                if (statusCode > NegotiateAuthenticationStatusCode.ContinueNeeded)
+                                string? challengeResponse = authContext.GetOutgoingBlob(challengeData);
+                                if (challengeResponse == null)
                                 {
-                                    isNewConnection = false;
-                                    connection.Dispose();
-                                    throw new HttpRequestException(SR.Format(SR.net_http_authvalidationfailure, statusCode), null, HttpStatusCode.Unauthorized);
+                                    // Response indicated denial even after login, so stop processing and return current response.
+                                    break;
                                 }
-                                break;
-                            }
 
-                            needDrain = true;
+                                if (needDrain)
+                                {
+                                    await connection.DrainResponseAsync(response!, cancellationToken).ConfigureAwait(false);
+                                }
+
+                                SetRequestAuthenticationHeaderValue(request, new AuthenticationHeaderValue(challenge.SchemeName, challengeResponse), isProxyAuth);
+
+                                response = await InnerSendAsync(request, async, isProxyAuth, connectionPool, connection, cancellationToken).ConfigureAwait(false);
+                                if (authContext.IsCompleted || !TryGetChallengeDataForScheme(challenge.SchemeName, GetResponseAuthenticationHeaderValues(response, isProxyAuth), out challengeData))
+                                {
+                                    break;
+                                }
+
+                                if (!IsAuthenticationChallenge(response, isProxyAuth))
+                                {
+                                    // Tail response for Negoatiate on successful authentication. Validate it before we proceed.
+                                    authContext.GetOutgoingBlob(challengeData);
+                                    break;
+                                }
+
+                                needDrain = true;
+                            }
+                        }
+                        finally
+                        {
+                            authContext.CloseContext();
                         }
                     }
                     finally

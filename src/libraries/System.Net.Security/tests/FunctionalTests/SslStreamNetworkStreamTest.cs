@@ -1019,7 +1019,7 @@ namespace System.Net.Security.Tests
 
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls10))]
+        [Theory]
         [InlineData(true)]
         [InlineData(false)]
         [PlatformSpecific(TestPlatforms.Windows)]

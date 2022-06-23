@@ -64,7 +64,6 @@ MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY void, mono_assembly_name_free, (MonoAsse
 
 MONO_API_FUNCTION(void, mono_register_bundled_assemblies, (const MonoBundledAssembly **assemblies))
 MONO_API_FUNCTION(void, mono_register_symfile_for_assembly, (const char* assembly_name, const mono_byte *raw_contents, int size))
-MONO_API_FUNCTION(const mono_byte *, mono_get_symfile_bytes_from_bundle, (const char* assembly_name, int *size))
 
 MONO_API_FUNCTION(void, mono_set_assemblies_path, (const char* path))
 

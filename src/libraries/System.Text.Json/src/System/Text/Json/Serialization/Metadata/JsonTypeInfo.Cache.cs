@@ -10,7 +10,7 @@ using System.Threading;
 
 namespace System.Text.Json.Serialization.Metadata
 {
-    public abstract partial class JsonTypeInfo
+    public partial class JsonTypeInfo
     {
         /// <summary>
         /// Cached typeof(object). It is faster to cache this than to call typeof(object) multiple times.
@@ -51,7 +51,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal Func<JsonParameterInfoValues[]>? CtorParamInitFunc;
 
-        internal JsonPropertyInfo CreateProperty(
+        internal static JsonPropertyInfo CreateProperty(
             Type declaredPropertyType,
             MemberInfo? memberInfo,
             Type parentClassType,
@@ -59,12 +59,10 @@ namespace System.Text.Json.Serialization.Metadata
             JsonConverter converter,
             JsonSerializerOptions options,
             JsonIgnoreCondition? ignoreCondition = null,
-            JsonTypeInfo? jsonTypeInfo = null,
-            JsonConverter? customConverter = null,
-            bool isUserDefinedProperty = false)
+            JsonTypeInfo? jsonTypeInfo = null)
         {
             // Create the JsonPropertyInfo instance.
-            JsonPropertyInfo jsonPropertyInfo = converter.CreateJsonPropertyInfo(parentTypeInfo: this);
+            JsonPropertyInfo jsonPropertyInfo = converter.CreateJsonPropertyInfo();
 
             jsonPropertyInfo.Initialize(
                 parentClassType,
@@ -75,10 +73,7 @@ namespace System.Text.Json.Serialization.Metadata
                 converter,
                 ignoreCondition,
                 options,
-                jsonTypeInfo,
-                isUserDefinedProperty: isUserDefinedProperty);
-
-            jsonPropertyInfo.CustomConverter = customConverter;
+                jsonTypeInfo);
 
             return jsonPropertyInfo;
         }
@@ -87,7 +82,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// Create a <see cref="JsonPropertyInfo"/> for a given Type.
         /// See <seealso cref="PropertyInfoForTypeInfo"/>.
         /// </summary>
-        private JsonPropertyInfo CreatePropertyInfoForTypeInfo(
+        private static JsonPropertyInfo CreatePropertyInfoForTypeInfo(
             Type declaredPropertyType,
             JsonConverter converter,
             JsonSerializerOptions options,

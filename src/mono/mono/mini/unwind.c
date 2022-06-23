@@ -393,7 +393,7 @@ guint8*
 mono_unwind_ops_encode_full (GSList *unwind_ops, guint32 *out_len, gboolean enable_extensions)
 {
 	MonoUnwindOp *op;
-	guint32 loc = 0;
+	int loc = 0;
 	guint8 buf [4096];
 	guint8 *p, *res;
 

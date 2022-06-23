@@ -211,7 +211,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public bool IsSealed()
         {
-            return _isSealed;
+            return _isSealed == true;
         }
 
         public void SetSealed(bool @sealed)
@@ -248,7 +248,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public bool HasPubNoArgCtor()
         {
-            return _hasPubNoArgCtor;
+            return _hasPubNoArgCtor == true;
         }
 
         public void SetHasPubNoArgCtor(bool hasPubNoArgCtor)
@@ -258,7 +258,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public bool IsSkipUDOps()
         {
-            return _isSkipUDOps;
+            return _isSkipUDOps == true;
         }
 
         public void SetSkipUDOps(bool skipUDOps)

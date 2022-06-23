@@ -93,9 +93,8 @@ void DumpMap(int index, MethodContext* mc)
     bool hasClassProfile = false;
     bool hasMethodProfile = false;
     bool hasLikelyClass = false;
-    bool hasLikelyMethod = false;
     ICorJitInfo::PgoSource pgoSource = ICorJitInfo::PgoSource::Unknown;
-    if (mc->hasPgoData(hasEdgeProfile, hasClassProfile, hasMethodProfile, hasLikelyClass, hasLikelyMethod, pgoSource))
+    if (mc->hasPgoData(hasEdgeProfile, hasClassProfile, hasMethodProfile, hasLikelyClass, pgoSource))
     {
         rawFlags |= 1ULL << (EXTRA_JIT_FLAGS::HAS_PGO);
 
@@ -117,11 +116,6 @@ void DumpMap(int index, MethodContext* mc)
         if (hasLikelyClass)
         {
             rawFlags |= 1ULL << (EXTRA_JIT_FLAGS::HAS_LIKELY_CLASS);
-        }
-
-        if (hasLikelyMethod)
-        {
-            rawFlags |= 1ULL << (EXTRA_JIT_FLAGS::HAS_LIKELY_METHOD);
         }
 
         if (pgoSource == ICorJitInfo::PgoSource::Static)

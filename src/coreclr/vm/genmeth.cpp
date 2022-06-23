@@ -475,7 +475,8 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
 #ifdef _DEBUG
                 SString name;
                 TypeString::AppendMethodDebug(name, pNewMD);
-                const char* pDebugNameUTF8 = name.GetUTF8();
+                StackScratchBuffer buff;
+                const char* pDebugNameUTF8 = name.GetUTF8(buff);
                 const char* verb = "Created";
                 if (pWrappedMD)
                     LOG((LF_CLASSLOADER, LL_INFO1000,

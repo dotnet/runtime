@@ -5019,7 +5019,7 @@ BOOL ThisPtrRetBufPrecode::SetTargetInterlocked(TADDR target, TADDR expected)
 
     _ASSERTE(IS_ALIGNED(&m_rel32, sizeof(INT32)));
     ExecutableWriterHolder<INT32> rel32WriterHolder(&m_rel32, sizeof(INT32));
-    InterlockedExchange((LONG*)rel32WriterHolder.GetRW(), (LONG)newRel32);
+    FastInterlockExchange((LONG*)rel32WriterHolder.GetRW(), (LONG)newRel32);
 
     return TRUE;
 }

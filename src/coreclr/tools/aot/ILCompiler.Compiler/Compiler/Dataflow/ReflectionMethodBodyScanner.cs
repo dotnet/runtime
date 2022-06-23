@@ -597,12 +597,6 @@ namespace ILCompiler.Dataflow
                                 if (systemTypeValue.RepresentedType.Type.IsDefType)
                                 {
                                     _reflectionMarker.Dependencies.Add(_factory.StructMarshallingData((DefType)systemTypeValue.RepresentedType.Type), "Marshal API");
-                                    if (intrinsicId == IntrinsicId.Marshal_PtrToStructure
-                                        && systemTypeValue.RepresentedType.Type.GetParameterlessConstructor() is MethodDesc ctorMethod
-                                        && !_factory.MetadataManager.IsReflectionBlocked(ctorMethod))
-                                    {
-                                        _reflectionMarker.Dependencies.Add(_factory.ReflectableMethod(ctorMethod), "Marshal API");
-                                    }
                                 }
                             }
                             else
@@ -625,7 +619,7 @@ namespace ILCompiler.Dataflow
                                 && !systemTypeValue.RepresentedType.Type.IsGenericDefinition
                                 && !systemTypeValue.RepresentedType.Type.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true))
                             {
-                                if (systemTypeValue.RepresentedType.Type.IsDelegate)
+                                if (systemTypeValue.RepresentedType.Type.IsDefType)
                                 {
                                     _reflectionMarker.Dependencies.Add(_factory.DelegateMarshallingData((DefType)systemTypeValue.RepresentedType.Type), "Marshal API");
                                 }

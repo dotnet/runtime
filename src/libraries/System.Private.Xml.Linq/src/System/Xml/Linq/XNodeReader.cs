@@ -24,7 +24,7 @@ namespace System.Xml.Linq
         {
             _source = node;
             _root = node;
-            _nameTable = nameTable ?? CreateNameTable();
+            _nameTable = nameTable != null ? nameTable : CreateNameTable();
             _omitDuplicateNamespaces = (options & ReaderOptions.OmitDuplicateNamespaces) != 0 ? true : false;
         }
 

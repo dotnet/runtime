@@ -6,15 +6,17 @@
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
-#include "olecontexthelpers.h"
+#include "mtx.h"
 #include "oletls.h"
+#include "contxt.h"
+#include "ctxtcall.h"
 
 HRESULT GetCurrentObjCtx(IUnknown **ppObjCtx)
 {
     CONTRACTL
     {
         NOTHROW;
-        GC_TRIGGERS; // This can occur if IMallocSpy is implemented in managed code.
+        GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(CheckPointer(ppObjCtx));
 #ifdef FEATURE_COMINTEROP
@@ -33,7 +35,7 @@ LPVOID SetupOleContext()
     CONTRACT (LPVOID)
     {
         NOTHROW;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_ANY;
         ENTRY_POINT;
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK));

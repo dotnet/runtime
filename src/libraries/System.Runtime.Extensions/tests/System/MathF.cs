@@ -1090,29 +1090,6 @@ namespace System.Tests
         public static void Max(float x, float y, float expectedResult)
         {
             AssertExtensions.Equal(expectedResult, MathF.Max(x, y), 0.0f);
-
-            if (float.IsNaN(x))
-            {
-                // Toggle the sign of the NaN to validate both +NaN and -NaN behave the same.
-                // Negate should work as well but the JIT may constant fold or do other tricks
-                // and normalize to a single NaN form so we do bitwise tricks to ensure we test
-                // the right thing.
-
-                uint bits = BitConverter.SingleToUInt32Bits(x);
-                bits ^= BitConverter.SingleToUInt32Bits(-0.0f);
-                x = BitConverter.UInt32BitsToSingle(bits);
-
-                AssertExtensions.Equal(expectedResult, Math.Max(x, y), 0.0f);
-            }
-
-            if (float.IsNaN(y))
-            {
-                uint bits = BitConverter.SingleToUInt32Bits(y);
-                bits ^= BitConverter.SingleToUInt32Bits(-0.0f);
-                y = BitConverter.UInt32BitsToSingle(bits);
-
-                AssertExtensions.Equal(expectedResult, Math.Max(x, y), 0.0f);
-            }
         }
 
         [Theory]
@@ -1136,29 +1113,6 @@ namespace System.Tests
         public static void MaxMagnitude(float x, float y, float expectedResult)
         {
             AssertExtensions.Equal(expectedResult, MathF.MaxMagnitude(x, y), 0.0f);
-
-            if (float.IsNaN(x))
-            {
-                // Toggle the sign of the NaN to validate both +NaN and -NaN behave the same.
-                // Negate should work as well but the JIT may constant fold or do other tricks
-                // and normalize to a single NaN form so we do bitwise tricks to ensure we test
-                // the right thing.
-
-                uint bits = BitConverter.SingleToUInt32Bits(x);
-                bits ^= BitConverter.SingleToUInt32Bits(-0.0f);
-                x = BitConverter.UInt32BitsToSingle(bits);
-
-                AssertExtensions.Equal(expectedResult, Math.MaxMagnitude(x, y), 0.0f);
-            }
-
-            if (float.IsNaN(y))
-            {
-                uint bits = BitConverter.SingleToUInt32Bits(y);
-                bits ^= BitConverter.SingleToUInt32Bits(-0.0f);
-                y = BitConverter.UInt32BitsToSingle(bits);
-
-                AssertExtensions.Equal(expectedResult, Math.MaxMagnitude(x, y), 0.0f);
-            }
         }
 
         [Theory]
@@ -1182,24 +1136,6 @@ namespace System.Tests
         public static void Min(float x, float y, float expectedResult)
         {
             AssertExtensions.Equal(expectedResult, MathF.Min(x, y), 0.0f);
-
-            if (float.IsNaN(x))
-            {
-                uint bits = BitConverter.SingleToUInt32Bits(x);
-                bits ^= BitConverter.SingleToUInt32Bits(-0.0f);
-                x = BitConverter.UInt32BitsToSingle(bits);
-
-                AssertExtensions.Equal(expectedResult, Math.Min(x, y), 0.0f);
-            }
-
-            if (float.IsNaN(y))
-            {
-                uint bits = BitConverter.SingleToUInt32Bits(y);
-                bits ^= BitConverter.SingleToUInt32Bits(-0.0f);
-                y = BitConverter.UInt32BitsToSingle(bits);
-
-                AssertExtensions.Equal(expectedResult, Math.Min(x, y), 0.0f);
-            }
         }
 
         [Theory]
@@ -1223,24 +1159,6 @@ namespace System.Tests
         public static void MinMagnitude(float x, float y, float expectedResult)
         {
             AssertExtensions.Equal(expectedResult, MathF.MinMagnitude(x, y), 0.0f);
-
-            if (float.IsNaN(x))
-            {
-                uint bits = BitConverter.SingleToUInt32Bits(x);
-                bits ^= BitConverter.SingleToUInt32Bits(-0.0f);
-                x = BitConverter.UInt32BitsToSingle(bits);
-
-                AssertExtensions.Equal(expectedResult, Math.MinMagnitude(x, y), 0.0f);
-            }
-
-            if (float.IsNaN(y))
-            {
-                uint bits = BitConverter.SingleToUInt32Bits(y);
-                bits ^= BitConverter.SingleToUInt32Bits(-0.0f);
-                y = BitConverter.UInt32BitsToSingle(bits);
-
-                AssertExtensions.Equal(expectedResult, Math.MinMagnitude(x, y), 0.0f);
-            }
         }
 
         [Theory]

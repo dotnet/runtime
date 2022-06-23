@@ -38,10 +38,6 @@ SET_DEFAULT_DEBUG_CHANNEL(MISC);
 #define CGROUP1_MEMORY_LIMIT_FILENAME "/memory.limit_in_bytes"
 #define CGROUP2_MEMORY_LIMIT_FILENAME "/memory.max"
 #define CGROUP_MEMORY_STAT_FILENAME "/memory.stat"
-#define CGROUP1_MEMORY_USAGE_FILENAME "/memory.usage_in_bytes"
-#define CGROUP2_MEMORY_USAGE_FILENAME "/memory.current"
-#define CGROUP1_MEMORY_STAT_INACTIVE_FIELD "total_inactive_file "
-#define CGROUP2_MEMORY_STAT_INACTIVE_FIELD "inactive_file "
 #define CGROUP1_CFS_QUOTA_FILENAME "/cpu.cfs_quota_us"
 #define CGROUP1_CFS_PERIOD_FILENAME "/cpu.cfs_period_us"
 #define CGROUP2_CPU_MAX_FILENAME "/cpu.max"
@@ -53,12 +49,37 @@ class CGroup
 
     static char *s_memory_cgroup_path;
     static char *s_cpu_cgroup_path;
+
+    static const char *s_mem_stat_key_names[];
+    static size_t s_mem_stat_key_lengths[];
+    static size_t s_mem_stat_n_keys;
 public:
     static void Initialize()
     {
         s_cgroup_version = FindCGroupVersion();
         s_memory_cgroup_path = FindCGroupPath(s_cgroup_version == 1 ? &IsCGroup1MemorySubsystem : nullptr);
         s_cpu_cgroup_path = FindCGroupPath(s_cgroup_version == 1 ? &IsCGroup1CpuSubsystem : nullptr);
+
+        if (s_cgroup_version == 1)
+        {
+            s_mem_stat_n_keys = 4;
+            s_mem_stat_key_names[0] = "total_inactive_anon ";
+            s_mem_stat_key_names[1] = "total_active_anon ";
+            s_mem_stat_key_names[2] = "total_dirty ";
+            s_mem_stat_key_names[3] = "total_unevictable ";
+        }
+        else
+        {
+            s_mem_stat_n_keys = 3;
+            s_mem_stat_key_names[0] = "anon ";
+            s_mem_stat_key_names[1] = "file_dirty ";
+            s_mem_stat_key_names[2] = "unevictable ";
+        }
+
+        for (size_t i = 0; i < s_mem_stat_n_keys; i++)
+        {
+            s_mem_stat_key_lengths[i] = strlen(s_mem_stat_key_names[i]);
+        }
     }
 
     static void Cleanup()
@@ -87,9 +108,9 @@ public:
         if (s_cgroup_version == 0)
             return false;
         else if (s_cgroup_version == 1)
-            return GetCGroupMemoryUsage(val, CGROUP1_MEMORY_USAGE_FILENAME, CGROUP1_MEMORY_STAT_INACTIVE_FIELD);
+            return GetCGroupMemoryUsage(val);
         else if (s_cgroup_version == 2)
-            return GetCGroupMemoryUsage(val, CGROUP2_MEMORY_USAGE_FILENAME, CGROUP2_MEMORY_STAT_INACTIVE_FIELD);
+            return GetCGroupMemoryUsage(val);
         else
         {
             _ASSERTE(!"Unknown cgroup version.");
@@ -395,38 +416,8 @@ private:
         return result;
     }
 
-    static bool GetCGroupMemoryUsage(size_t *val, const char *filename, const char *inactiveFileFieldName)
+    static bool GetCGroupMemoryUsage(size_t *val)
     {
-        // Use the same way to calculate memory load as popular container tools (Docker, Kubernetes, Containerd etc.)
-        // For cgroup v1: value of 'memory.usage_in_bytes' minus 'total_inactive_file' value of 'memory.stat'
-        // For cgroup v2: value of 'memory.current' minus 'inactive_file' value of 'memory.stat'
-
-        char* mem_usage_filename = nullptr;
-        if (asprintf(&mem_usage_filename, "%s%s", s_memory_cgroup_path, filename) < 0)
-            return false;
-
-        uint64_t temp = 0;
-
-        size_t usage = 0;
-
-        bool result = ReadMemoryValueFromFile(mem_usage_filename, &temp);
-        if (result)
-        {
-            if (temp > std::numeric_limits<size_t>::max())
-            {
-                usage = std::numeric_limits<size_t>::max();
-            }
-            else
-            {
-                usage = (size_t)temp;
-            }
-        }
-
-        free(mem_usage_filename);
-
-        if (!result)
-            return result;
-
         if (s_memory_cgroup_path == nullptr)
             return false;
 
@@ -441,32 +432,34 @@ private:
 
         char *line = nullptr;
         size_t lineLen = 0;
-        bool foundInactiveFileValue = false;
+        size_t readValues = 0;
         char* endptr;
 
-        size_t inactiveFileFieldNameLength = strlen(inactiveFileFieldName);
-
-        while (getline(&line, &lineLen, stat_file) != -1)
+        *val = 0;
+        while (getline(&line, &lineLen, stat_file) != -1 && readValues < s_mem_stat_n_keys)
         {
-            if (strncmp(line, inactiveFileFieldName, inactiveFileFieldNameLength) == 0)
+            for (size_t i = 0; i < s_mem_stat_n_keys; i++)
             {
-                errno = 0;
-                const char* startptr = line + inactiveFileFieldNameLength;
-                size_t inactiveFileValue = strtoll(startptr, &endptr, 10);
-                if (endptr != startptr && errno == 0)
+                if (strncmp(line, s_mem_stat_key_names[i], s_mem_stat_key_lengths[i]) == 0)
                 {
-                    foundInactiveFileValue = true;
-                    *val = usage - inactiveFileValue;
-                }
+                    errno = 0;
+                    const char* startptr = line + s_mem_stat_key_lengths[i];
+                    *val += strtoll(startptr, &endptr, 10);
+                    if (endptr != startptr && errno == 0)
+                        readValues++;
 
-                break;
+                    break;
+                }
             }
         }
 
         fclose(stat_file);
         free(line);
 
-        return foundInactiveFileValue;
+        if (readValues == s_mem_stat_n_keys)
+            return true;
+
+        return false;
     }
 
     static bool ReadMemoryValueFromFile(const char* filename, uint64_t* val)
@@ -630,6 +623,10 @@ private:
 int CGroup::s_cgroup_version = 0;
 char *CGroup::s_memory_cgroup_path = nullptr;
 char *CGroup::s_cpu_cgroup_path = nullptr;
+
+const char *CGroup::s_mem_stat_key_names[4] = {};
+size_t CGroup::s_mem_stat_key_lengths[4] = {};
+size_t CGroup::s_mem_stat_n_keys = 0;
 
 void InitializeCGroup()
 {

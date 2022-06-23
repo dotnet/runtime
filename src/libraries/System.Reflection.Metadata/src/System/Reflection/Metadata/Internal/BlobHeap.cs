@@ -98,7 +98,7 @@ namespace System.Reflection.Metadata.Ecma335
             int numberOfBytes = Block.PeekCompressedInteger(offset, out bytesRead);
             if (numberOfBytes == BlobReader.InvalidCompressedInteger)
             {
-                return Array.Empty<byte>();
+                return EmptyArray<byte>.Instance;
             }
 
             return Block.PeekBytes(offset + bytesRead, numberOfBytes);

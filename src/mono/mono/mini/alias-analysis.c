@@ -321,11 +321,14 @@ handle_instruction:
 static gboolean
 recompute_aliased_variables (MonoCompile *cfg, int *restored_vars)
 {
+	int i;
+	MonoBasicBlock *bb;
+	MonoInst *ins;
 	int kills = 0;
 	int adds = 0;
 	*restored_vars = 0;
 
-	for (guint i = 0; i < cfg->num_varinfo; i++) {
+	for (i = 0; i < cfg->num_varinfo; i++) {
 		MonoInst *var = cfg->varinfo [i];
 		if (var->flags & MONO_INST_INDIRECT) {
 			if (cfg->verbose_level > 2) {
@@ -339,8 +342,8 @@ recompute_aliased_variables (MonoCompile *cfg, int *restored_vars)
 	if (!kills)
 		return FALSE;
 
-	for (MonoBasicBlock *bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-		for (MonoInst *ins = bb->code; ins; ins = ins->next) {
+	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+		for (ins = bb->code; ins; ins = ins->next) {
 			if (ins->opcode == OP_LDADDR) {
 				MonoInst *var;
 

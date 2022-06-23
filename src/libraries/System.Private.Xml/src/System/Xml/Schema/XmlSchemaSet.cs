@@ -486,9 +486,10 @@ namespace System.Xml.Schema
                     //Removal list is all schemas imported by this schema directly or indirectly
                     //Need to check if other schemas in the set import schemaToRemove / any of its imports
                     ArrayList needToCheckSchemaList = new ArrayList();
+                    XmlSchema? mainSchema;
                     for (int i = 0; i < _schemas.Count; i++)
                     {
-                        XmlSchema mainSchema = (XmlSchema)_schemas.GetByIndex(i)!;
+                        mainSchema = (XmlSchema)_schemas.GetByIndex(i)!;
                         if (mainSchema == schemaToRemove ||
                             schemaToRemove.ImportedSchemas.Contains(mainSchema))
                         {
@@ -497,9 +498,10 @@ namespace System.Xml.Schema
                         needToCheckSchemaList.Add(mainSchema);
                     }
 
+                    mainSchema = null;
                     for (int i = 0; i < needToCheckSchemaList.Count; i++)
                     { //Perf: Not using nested foreach here
-                        XmlSchema mainSchema = (XmlSchema)needToCheckSchemaList[i]!;
+                        mainSchema = (XmlSchema)needToCheckSchemaList[i]!;
 
                         if (mainSchema.ImportedNamespaces.Count > 0)
                         {
@@ -944,7 +946,7 @@ namespace System.Xml.Schema
             if (schema != null)
             {
                 Debug.Assert(ns != null);
-                string tns = schema.TargetNamespace ?? string.Empty;
+                string tns = schema.TargetNamespace == null ? string.Empty : schema.TargetNamespace;
                 if (tns == ns)
                 {
                     return schema;
@@ -1167,9 +1169,10 @@ namespace System.Xml.Schema
             SchemaNames schemaNames = GetSchemaNames(readerNameTable);
             Parser parser = new Parser(SchemaType.XSD, readerNameTable, schemaNames, _eventHandler);
             parser.XmlResolver = _readerSettings.GetXmlResolver_CheckConfig();
+            SchemaType schemaType;
             try
             {
-                parser.Parse(reader, targetNamespace);
+                schemaType = parser.Parse(reader, targetNamespace);
             }
             catch (XmlSchemaException e)
             {
@@ -1380,7 +1383,7 @@ namespace System.Xml.Schema
 
         internal static string GetTargetNamespace(XmlSchema schema)
         {
-            return schema.TargetNamespace ?? string.Empty;
+            return schema.TargetNamespace == null ? string.Empty : schema.TargetNamespace;
         }
 
         internal SortedList SortedSchemas

@@ -323,13 +323,11 @@ replay_parser = subparsers.add_parser("replay", description=replay_description, 
 replay_parser.add_argument("-jit_path", help="Path to clrjit. Defaults to Core_Root JIT.")
 replay_parser.add_argument("-jitoption", action="append", help="Pass option through to the jit. Format is key=value, where key is the option name without leading COMPlus_")
 
-# common subparser for asmdiffs and throughput
 base_diff_parser = argparse.ArgumentParser(add_help=False)
 base_diff_parser.add_argument("-base_jit_path", help="Path to baseline clrjit. Defaults to baseline JIT from rolling build, by computing baseline git hash.")
 base_diff_parser.add_argument("-diff_jit_path", help="Path to diff clrjit. Defaults to Core_Root JIT.")
 base_diff_parser.add_argument("-git_hash", help="Use this git hash as the current hash for use to find a baseline JIT. Defaults to current git hash of source tree.")
 base_diff_parser.add_argument("-base_git_hash", help="Use this git hash as the baseline JIT hash. Default: search for the baseline hash.")
-base_diff_parser.add_argument("-jitoption", action="append", help="Option to pass to both baseline and diff JIT. Format is key=value, where key is the option name without leading COMPlus_")
 base_diff_parser.add_argument("-base_jit_option", action="append", help="Option to pass to the baseline JIT. Format is key=value, where key is the option name without leading COMPlus_...")
 base_diff_parser.add_argument("-diff_jit_option", action="append", help="Option to pass to the diff JIT. Format is key=value, where key is the option name without leading COMPlus_...")
 
@@ -1467,19 +1465,12 @@ class SuperPMIReplayAsmDiffs:
         if self.coreclr_args.base_jit_option:
             for o in self.coreclr_args.base_jit_option:
                 base_option_flags += "-jitoption", o
-        if self.coreclr_args.jitoption:
-            for o in self.coreclr_args.jitoption:
-                base_option_flags += "-jitoption", o
         base_option_flags_for_diff_artifact = base_option_flags
 
         diff_option_flags = []
         diff_option_flags_for_diff_artifact = []
         if self.coreclr_args.diff_jit_option:
             for o in self.coreclr_args.diff_jit_option:
-                diff_option_flags += "-jit2option", o
-                diff_option_flags_for_diff_artifact += "-jitoption", o
-        if self.coreclr_args.jitoption:
-            for o in self.coreclr_args.jitoption:
                 diff_option_flags += "-jit2option", o
                 diff_option_flags_for_diff_artifact += "-jitoption", o
 
@@ -3384,11 +3375,6 @@ def setup_args(args):
                             "base_git_hash",
                             lambda unused: True,
                             "Unable to set base_git_hash")
-
-        coreclr_args.verify(args,
-                            "jitoption",
-                            lambda unused: True,
-                            "Unable to set jitoption")
 
         coreclr_args.verify(args,
                             "base_jit_option",

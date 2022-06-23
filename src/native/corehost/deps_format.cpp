@@ -130,7 +130,7 @@ pal::string_t deps_json_t::get_current_rid(const rid_fallback_graph_t& rid_fallb
     // We do the same even when the RID is empty.
     if (currentRid.empty() || (rid_fallback_graph.count(currentRid) == 0))
     {
-        currentRid = pal::get_current_os_fallback_rid() + pal::string_t(_X("-")) + get_current_arch_name();
+        currentRid = pal::get_current_os_fallback_rid() + pal::string_t(_X("-")) + get_arch();
 
         trace::info(_X("Falling back to base HostRID: %s"), currentRid.c_str());
     }

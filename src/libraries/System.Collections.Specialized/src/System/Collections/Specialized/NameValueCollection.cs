@@ -41,7 +41,7 @@ namespace System.Collections.Specialized
         ///    provider and the default case-insensitive comparer.</para>
         /// </devdoc>
         public NameValueCollection(NameValueCollection col)
-            : base(col?.Comparer)
+            : base(col != null ? col.Comparer : null)
         {
             Add(col!);
         }

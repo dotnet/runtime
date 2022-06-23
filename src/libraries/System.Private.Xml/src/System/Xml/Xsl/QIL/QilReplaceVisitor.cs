@@ -38,7 +38,7 @@ namespace System.Xml.Xsl.Qil
             for (int i = 0; i < parent.Count; i++)
             {
                 QilNode oldChild = parent[i], newChild;
-                XmlQueryType? oldChildType = oldChild?.XmlType;
+                XmlQueryType? oldChildType = oldChild != null ? oldChild.XmlType : null;
 
                 // Visit child
                 if (IsReference(parent, i))

@@ -330,9 +330,10 @@ namespace System
             #endregion
 
             #region Filter by name wrt prefixLookup and implicitly by case sensitivity
-            if (prefixLookup && !FilterApplyPrefixLookup(memberInfo, name, (bindingFlags & BindingFlags.IgnoreCase) != 0))
+            if (prefixLookup == true)
             {
-                return false;
+                if (!FilterApplyPrefixLookup(memberInfo, name, (bindingFlags & BindingFlags.IgnoreCase) != 0))
+                    return false;
             }
             #endregion
 
@@ -928,7 +929,7 @@ namespace System
                         if (ReferenceEquals(fieldInfo.DeclaringType, match.DeclaringType))
                             throw new AmbiguousMatchException();
 
-                        if (match.DeclaringType!.IsInterface && fieldInfo.DeclaringType!.IsInterface)
+                        if ((match.DeclaringType!.IsInterface == true) && (fieldInfo.DeclaringType!.IsInterface == true))
                             multipleStaticFieldMatches = true;
                     }
 

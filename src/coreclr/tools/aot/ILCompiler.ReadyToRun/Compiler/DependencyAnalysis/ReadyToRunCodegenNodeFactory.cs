@@ -663,7 +663,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (inputModule == TypeSystemContext.SystemModule)
                 {
                     AttributePresenceFilterNode attributePresenceTable = new AttributePresenceFilterNode(inputModule);
-                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.AttributePresence, attributePresenceTable, attributePresenceTable);
+                    Header.Add(Internal.Runtime.ReadyToRunSectionType.AttributePresence, attributePresenceTable, attributePresenceTable);
                 }
             }
 

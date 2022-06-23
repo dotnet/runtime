@@ -139,7 +139,8 @@ namespace System.Data.Odbc
         {
             get
             {
-                return _sourceColumn ?? string.Empty;
+                string? sourceColumn = _sourceColumn;
+                return ((null != sourceColumn) ? sourceColumn : string.Empty);
             }
             set
             {
@@ -242,8 +243,8 @@ namespace System.Data.Odbc
                     string svalue => svalue.Length,
                     byte[] bvalue => bvalue.Length,
                     char[] cvalue => cvalue.Length,
-                    byte => 1,
-                    char => 1,
+                    byte _ => 1,
+                    char _ => 1,
                     _ => 0
                 };
             }

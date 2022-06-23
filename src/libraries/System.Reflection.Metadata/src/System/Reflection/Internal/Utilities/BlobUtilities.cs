@@ -16,7 +16,7 @@ namespace System.Reflection
         {
             if (byteCount == 0)
             {
-                return Array.Empty<byte>();
+                return EmptyArray<byte>.Instance;
             }
 
             byte[] result = new byte[byteCount];

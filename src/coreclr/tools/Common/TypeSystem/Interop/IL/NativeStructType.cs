@@ -348,8 +348,6 @@ namespace Internal.TypeSystem.Interop
                 }
             }
 
-            public override EmbeddedSignatureData[] GetEmbeddedSignatureData() => null;
-
             public override bool HasRva
             {
                 get

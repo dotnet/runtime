@@ -129,7 +129,7 @@ namespace System.Text.Json
             }
 
             PolymorphicSerializationState = PolymorphicSerializationState.PolymorphicReEntryStarted;
-            return PolymorphicJsonTypeInfo.EffectiveConverter;
+            return PolymorphicJsonTypeInfo.ConverterBase;
         }
 
         /// <summary>
@@ -141,7 +141,7 @@ namespace System.Text.Json
 
             PolymorphicJsonTypeInfo = derivedJsonTypeInfo.PropertyInfoForTypeInfo;
             PolymorphicSerializationState = PolymorphicSerializationState.PolymorphicReEntryStarted;
-            return PolymorphicJsonTypeInfo.EffectiveConverter;
+            return PolymorphicJsonTypeInfo.ConverterBase;
         }
 
         /// <summary>
@@ -152,7 +152,7 @@ namespace System.Text.Json
             Debug.Assert(PolymorphicSerializationState == PolymorphicSerializationState.PolymorphicReEntrySuspended);
             Debug.Assert(PolymorphicJsonTypeInfo is not null);
             PolymorphicSerializationState = PolymorphicSerializationState.PolymorphicReEntryStarted;
-            return PolymorphicJsonTypeInfo.EffectiveConverter;
+            return PolymorphicJsonTypeInfo.ConverterBase;
         }
 
         /// <summary>

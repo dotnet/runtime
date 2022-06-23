@@ -8,12 +8,14 @@ internal static partial class Interop
 {
     internal static partial class IpHlpApi
     {
-        [StructLayout(LayoutKind.Sequential)]
-        public unsafe struct IP_ADDR_STRING
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+        public struct IP_ADDR_STRING
         {
-            public IP_ADDR_STRING* Next;
-            public fixed byte IpAddress[16];
-            public fixed byte IpMask[16];
+            public IntPtr Next; // struct _IpAddressList*
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 16)]
+            public string IpAddress;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 16)]
+            public string IpMask;
             public uint Context;
         }
     }

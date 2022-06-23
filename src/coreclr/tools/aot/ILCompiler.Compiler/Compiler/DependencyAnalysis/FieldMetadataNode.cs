@@ -41,7 +41,7 @@ namespace ILCompiler.DependencyAnalysis
         }
         protected override string GetName(NodeFactory factory)
         {
-            return "Field metadata: " + _field.ToString();
+            return "Reflectable field: " + _field.ToString();
         }
 
         protected override void OnMarked(NodeFactory factory)

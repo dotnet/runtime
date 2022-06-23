@@ -1094,7 +1094,7 @@ TypeHandle TypeName::GetTypeFromAsm()
         {
             if (bThrowIfNotFound)
             {
-                COMPlusThrow(kArgumentException, W("Argument_AssemblyGetTypeCannotSpecifyAssembly"));
+                COMPlusThrow(kArgumentException, IDS_EE_ASSEMBLY_GETTYPE_CANNONT_HAVE_ASSEMBLY_SPEC);
             }
             else
             {
@@ -1303,7 +1303,8 @@ TypeName::GetTypeHaveAssemblyHelper(
             if (bIgnoreCase)
                 name.LowerCase();
 
-            typeName.SetName(name.GetUTF8());
+            StackScratchBuffer buffer;
+            typeName.SetName(name.GetUTF8(buffer));
 
             // typeName.m_pBucket gets set here if the type is found
             // it will be used in the next iteration to look up the nested type

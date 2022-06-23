@@ -285,4 +285,7 @@
   <data name="UsingSpanAPIsWithCompiledToAssembly" xml:space="preserve">
     <value>Searching an input span using a pre-compiled Regex assembly is not supported. Please use the string overloads or use a newer Regex implementation.</value>
   </data>
+  <data name="UseRegexSourceGeneratorTitle" xml:space="preserve">
+    <value>Use the RegEx source generator.</value>
+  </data>
 </root>

@@ -240,11 +240,11 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         if (bSet)
-            InterlockedIncrement(&m_cannotLeave);
+            FastInterlockIncrement(&m_cannotLeave);
         else
         {
             _ASSERTE(m_cannotLeave);
-            InterlockedDecrement(&m_cannotLeave);
+            FastInterlockDecrement(&m_cannotLeave);
         }
     };
     //-----------------------------------------------------------------

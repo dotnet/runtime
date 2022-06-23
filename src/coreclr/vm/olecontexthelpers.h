@@ -13,7 +13,9 @@
 #error FEATURE_COMINTEROP_APARTMENT_SUPPORT
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
-#include <mtx.h>
+#include "contxt.h"
+#include "mtx.h"
+#include "ctxtcall.h"
 
 //================================================================
 // OLE32 Context helpers.

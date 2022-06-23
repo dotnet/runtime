@@ -534,7 +534,7 @@ namespace System.Xml
                 totalRead += read;
                 if (read < buffer.Length)
                     break;
-                count *= 2;
+                count = count * 2;
             }
             buffer = new byte[totalRead];
             int offset = 0;

@@ -195,7 +195,7 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
     else
         m_pModule = Module::Create(this, mdFileNil, pPEAssembly, pamTracker);
 
-    InterlockedIncrement((LONG*)&g_cAssemblies);
+    FastInterlockIncrement((LONG*)&g_cAssemblies);
 
     PrepareModuleForAssembly(m_pModule, pamTracker);
 
@@ -312,7 +312,7 @@ void Assembly::Terminate( BOOL signalProfiler )
         m_pClassLoader = NULL;
     }
 
-    InterlockedDecrement((LONG*)&g_cAssemblies);
+    FastInterlockDecrement((LONG*)&g_cAssemblies);
 
 #ifdef PROFILING_SUPPORTED
     if (CORProfilerTrackAssemblyLoads())
@@ -993,7 +993,8 @@ Module *Assembly::FindModuleByName(LPCSTR pszModuleName)
     SString moduleName(SString::Utf8, pszModuleName);
     moduleName.LowerCase();
 
-    pszModuleName = moduleName.GetUTF8();
+    StackScratchBuffer buffer;
+    pszModuleName = moduleName.GetUTF8(buffer);
 
     mdFile kFile = GetManifestFileToken(pszModuleName);
     if (kFile == mdTokenNil)
@@ -1083,7 +1084,7 @@ void Assembly::PublishModuleIntoAssembly(Module *module)
     CONTRACTL_END
 
     GetModule()->EnsuredStoreFile(module->GetModuleRef(), module);
-    InterlockedIncrement((LONG*)&m_pClassLoader->m_cUnhashedModules);
+    FastInterlockIncrement((LONG*)&m_pClassLoader->m_cUnhashedModules);
 }
 
 

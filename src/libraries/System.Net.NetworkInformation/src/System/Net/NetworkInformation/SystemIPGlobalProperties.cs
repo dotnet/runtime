@@ -19,7 +19,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return HostInformationPal.GetHostName();
+                return HostInformationPal.FixedInfo.hostName;
             }
         }
 
@@ -28,7 +28,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return HostInformationPal.GetDomainName();
+                return HostInformationPal.FixedInfo.domainName;
             }
         }
 
@@ -48,7 +48,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return (NetBiosNodeType)HostInformationPal.GetNodeType();
+                return (NetBiosNodeType)HostInformationPal.FixedInfo.nodeType;
             }
         }
 
@@ -57,7 +57,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return HostInformationPal.GetScopeId();
+                return HostInformationPal.FixedInfo.scopeId;
             }
         }
 
@@ -66,7 +66,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return HostInformationPal.GetEnableProxy();
+                return (HostInformationPal.FixedInfo.enableProxy);
             }
         }
 
@@ -211,7 +211,7 @@ namespace System.Net.NetworkInformation
         }
 
         /// Gets the active UDP listeners. Uses the native GetUdpTable API.
-        public override unsafe IPEndPoint[] GetActiveUdpListeners()
+        public unsafe override IPEndPoint[] GetActiveUdpListeners()
         {
             uint size = 0;
             uint result;

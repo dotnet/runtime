@@ -56,7 +56,7 @@ inline ULONG PEAssembly::AddRef()
     }
     CONTRACTL_END;
 
-    return InterlockedIncrement(&m_refCount);
+    return FastInterlockIncrement(&m_refCount);
 }
 
 inline ULONG PEAssembly::Release()
@@ -70,7 +70,7 @@ inline ULONG PEAssembly::Release()
     }
     CONTRACT_END;
 
-    LONG result = InterlockedDecrement(&m_refCount);
+    LONG result = FastInterlockDecrement(&m_refCount);
     _ASSERTE(result >= 0);
     if (result == 0)
         delete this;

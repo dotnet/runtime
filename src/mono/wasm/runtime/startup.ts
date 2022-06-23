@@ -5,7 +5,6 @@ import { AllAssetEntryTypes, mono_assert, AssetEntry, CharPtrNull, DotnetModule,
 import { ENVIRONMENT_IS_ESM, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, locateFile, Module, MONO, requirePromise, runtimeHelpers } from "./imports";
 import cwraps from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
-import GuardedPromise from "./guarded-promise";
 import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from "./icu";
 import { toBase64StringImpl } from "./base64";
 import { mono_wasm_init_aot_profiler, mono_wasm_init_coverage_profiler } from "./profiler";
@@ -18,9 +17,9 @@ import { mono_on_abort } from "./run";
 import { mono_wasm_new_root } from "./roots";
 import { init_crypto } from "./crypto-worker";
 
-export let runtime_is_initialized_resolve: () => void;
-export let runtime_is_initialized_reject: (reason?: any) => void;
-export const mono_wasm_runtime_is_initialized = new GuardedPromise<void>((resolve, reject) => {
+export let runtime_is_initialized_resolve: Function;
+export let runtime_is_initialized_reject: Function;
+export const mono_wasm_runtime_is_initialized = new Promise((resolve, reject) => {
     runtime_is_initialized_resolve = resolve;
     runtime_is_initialized_reject = reject;
 });

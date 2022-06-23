@@ -119,12 +119,12 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
             return method;
         }
 
-        public FieldDesc GetOrAddField(string name, TypeDesc fieldType, EmbeddedSignatureData[] embeddedSigData)
+        public FieldDesc GetOrAddField(string name, TypeDesc fieldType)
         {
             FieldDesc fld = GetField(name);
             if (fld == null)
             {
-                TypeRefTypeSystemField newField = new TypeRefTypeSystemField(this, name, fieldType, embeddedSigData);
+                TypeRefTypeSystemField newField = new TypeRefTypeSystemField(this, name, fieldType);
                 fld = newField;
                 _fields.Add(newField);
             }

@@ -441,7 +441,7 @@ namespace System.Data.Odbc
                 reader.GetValues(values);
                 if (IncludeIndexRow(values[positionOfIndexName],
                                     restrictionIndexName,
-                                    Convert.ToInt16(values[positionOfType], null)))
+                                    Convert.ToInt16(values[positionOfType], null)) == true)
                 {
                     resultTable.Rows.Add(values);
                 }
@@ -463,8 +463,8 @@ namespace System.Data.Odbc
                 // the column type should always be short but need to check just in case
                 if (values[positionOfColumnType].GetType() == typeof(short))
                 {
-                    if ((((short)values[positionOfColumnType] == ODBC32.SQL_RESULT_COL) && isColumn) ||
-                        (((short)values[positionOfColumnType] != ODBC32.SQL_RESULT_COL) && !isColumn))
+                    if ((((short)values[positionOfColumnType] == ODBC32.SQL_RESULT_COL) && (isColumn == true)) ||
+                        (((short)values[positionOfColumnType] != ODBC32.SQL_RESULT_COL) && (isColumn == false)))
                     {
                         resultTable.Rows.Add(values);
                     }
@@ -636,19 +636,19 @@ namespace System.Data.Odbc
                 Common.SupportedJoinOperators supportedJoinOperators = Common.SupportedJoinOperators.None;
                 if ((int32Value & (int)ODBC32.SQL_OJ_CAPABILITIES.LEFT) != 0)
                 {
-                    supportedJoinOperators |= Common.SupportedJoinOperators.LeftOuter;
+                    supportedJoinOperators = supportedJoinOperators | Common.SupportedJoinOperators.LeftOuter;
                 }
                 if ((int32Value & (int)ODBC32.SQL_OJ_CAPABILITIES.RIGHT) != 0)
                 {
-                    supportedJoinOperators |= Common.SupportedJoinOperators.RightOuter;
+                    supportedJoinOperators = supportedJoinOperators | Common.SupportedJoinOperators.RightOuter;
                 }
                 if ((int32Value & (int)ODBC32.SQL_OJ_CAPABILITIES.FULL) != 0)
                 {
-                    supportedJoinOperators |= Common.SupportedJoinOperators.FullOuter;
+                    supportedJoinOperators = supportedJoinOperators | Common.SupportedJoinOperators.FullOuter;
                 }
                 if ((int32Value & (int)ODBC32.SQL_OJ_CAPABILITIES.INNER) != 0)
                 {
-                    supportedJoinOperators |= Common.SupportedJoinOperators.Inner;
+                    supportedJoinOperators = supportedJoinOperators | Common.SupportedJoinOperators.Inner;
                 }
 
                 dataSourceInformation[DbMetaDataColumnNames.SupportedJoinOperators] = supportedJoinOperators;
@@ -900,7 +900,7 @@ namespace System.Data.Odbc
                 dataReader = command.ExecuteReaderFromSQLMethod(allRestrictions, ODBC32.SQL_API.SQLPROCEDURECOLUMNS);
 
                 string collectionName;
-                if (isColumns)
+                if (isColumns == true)
                 {
                     collectionName = OdbcMetaDataCollectionNames.ProcedureColumns;
                 }
@@ -1046,7 +1046,7 @@ namespace System.Data.Odbc
                 //command = (OdbcCommand) connection.CreateCommand();
                 command = GetCommand(connection);
                 string[] allArguments = new string[tablesRestrictionsCount + 1];
-                if (isTables)
+                if (isTables == true)
                 {
                     includedTableTypes = includedTableTypesTables;
                     dataTableName = OdbcMetaDataCollectionNames.Tables;

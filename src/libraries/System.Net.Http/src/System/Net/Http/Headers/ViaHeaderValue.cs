@@ -123,12 +123,12 @@ namespace System.Net.Http.Headers
 
             if (!string.IsNullOrEmpty(_protocolName))
             {
-                result ^= StringComparer.OrdinalIgnoreCase.GetHashCode(_protocolName);
+                result = result ^ StringComparer.OrdinalIgnoreCase.GetHashCode(_protocolName);
             }
 
             if (!string.IsNullOrEmpty(_comment))
             {
-                result ^= _comment.GetHashCode();
+                result = result ^ _comment.GetHashCode();
             }
 
             return result;
@@ -183,9 +183,9 @@ namespace System.Net.Http.Headers
             }
 
             string receivedBy = input.Substring(current, receivedByLength);
-            current += receivedByLength;
+            current = current + receivedByLength;
 
-            current += HttpRuleParser.GetWhitespaceLength(input, current);
+            current = current + HttpRuleParser.GetWhitespaceLength(input, current);
 
             string? comment = null;
             if ((current < input.Length) && (input[current] == '('))
@@ -199,8 +199,8 @@ namespace System.Net.Http.Headers
 
                 comment = input.Substring(current, commentLength);
 
-                current += commentLength;
-                current += HttpRuleParser.GetWhitespaceLength(input, current);
+                current = current + commentLength;
+                current = current + HttpRuleParser.GetWhitespaceLength(input, current);
             }
 
             parsedValue = new ViaHeaderValue(protocolVersion, receivedBy!, protocolName, comment);
@@ -227,7 +227,7 @@ namespace System.Net.Http.Headers
 
             current = startIndex + protocolVersionOrNameLength;
             int whitespaceLength = HttpRuleParser.GetWhitespaceLength(input, current);
-            current += whitespaceLength;
+            current = current + whitespaceLength;
 
             if (current == input.Length)
             {
@@ -240,7 +240,7 @@ namespace System.Net.Http.Headers
                 protocolName = input.Substring(startIndex, protocolVersionOrNameLength);
 
                 current++; // skip the '/' delimiter
-                current += HttpRuleParser.GetWhitespaceLength(input, current);
+                current = current + HttpRuleParser.GetWhitespaceLength(input, current);
 
                 protocolVersionOrNameLength = HttpRuleParser.GetTokenLength(input, current);
 
@@ -251,9 +251,9 @@ namespace System.Net.Http.Headers
 
                 protocolVersion = input.Substring(current, protocolVersionOrNameLength);
 
-                current += protocolVersionOrNameLength;
+                current = current + protocolVersionOrNameLength;
                 whitespaceLength = HttpRuleParser.GetWhitespaceLength(input, current);
-                current += whitespaceLength;
+                current = current + whitespaceLength;
             }
             else
             {

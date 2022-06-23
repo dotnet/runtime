@@ -223,6 +223,8 @@ void InitializeExceptionHandling()
 {
     EH_LOG((LL_INFO100, "InitializeExceptionHandling(): ExceptionTracker size: 0x%x bytes\n", sizeof(ExceptionTracker)));
 
+    InitSavedExceptionInfo();
+
     CLRAddVectoredHandlers();
 
     g_theTrackerAllocator.Init();
@@ -905,7 +907,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
             // We should be in cooperative mode if we are going to handle the SO.
             // We track SO state for the thread.
             EEPolicy::HandleStackOverflow();
-            InterlockedAnd((LONG*)&pThread->m_fPreemptiveGCDisabled, 0);
+            FastInterlockAnd (&pThread->m_fPreemptiveGCDisabled, 0);
             return ExceptionContinueSearch;
         }
     }
@@ -950,6 +952,14 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
     // begin Early Processing
     //
     {
+#ifndef USE_REDIRECT_FOR_GCSTRESS
+        if (IsGcMarker(pContextRecord, pExceptionRecord))
+        {
+            returnDisposition = ExceptionContinueExecution;
+            goto lExit;
+        }
+#endif // !USE_REDIRECT_FOR_GCSTRESS
+
         EH_LOG((LL_INFO100, "..................................................................................\n"));
         EH_LOG((LL_INFO100, "ProcessCLRException enter, sp = 0x%p, ControlPc = 0x%p\n", MemoryStackFp, pDispatcherContext->ControlPc));
         DebugLogExceptionRecord(pExceptionRecord);
@@ -5477,7 +5487,7 @@ void TrackerAllocator::FreeTrackerMemory(ExceptionTracker* pTracker)
     // mark this entry as free
     EH_LOG((LL_INFO100, "TrackerAllocator: freeing tracker 0x%p, thread = 0x%p\n", pTracker, pTracker->m_pThread));
     CONSISTENCY_CHECK(pTracker->IsValid());
-    InterlockedExchangeT(&(pTracker->m_pThread), NULL);
+    FastInterlockExchangePointer(&(pTracker->m_pThread), NULL);
 }
 
 #ifndef TARGET_UNIX
@@ -5729,6 +5739,39 @@ NOT_BIT64_ARG(IN     ULONG               MemoryStackFp),
 }
 
 
+EXTERN_C VOID FixContextForFaultingExceptionFrame (
+        EXCEPTION_RECORD* pExceptionRecord,
+        CONTEXT *pContextRecord);
+
+EXTERN_C EXCEPTION_DISPOSITION
+FixContextHandler(IN     PEXCEPTION_RECORD   pExceptionRecord
+        BIT64_ARG(IN     ULONG64             MemoryStackFp)
+    NOT_BIT64_ARG(IN     ULONG               MemoryStackFp),
+                  IN OUT PCONTEXT            pContextRecord,
+                  IN OUT PDISPATCHER_CONTEXT pDispatcherContext
+                 )
+{
+    CONTEXT* pNewContext = NULL;
+
+    if (FirstCallToHandler(pDispatcherContext, &pNewContext))
+    {
+        //
+        // We've pushed a Frame, but it is not initialized yet, so we
+        // must not be in preemptive mode
+        //
+        CONSISTENCY_CHECK(GetThread()->PreemptiveGCDisabled());
+
+        FixContextForFaultingExceptionFrame(pExceptionRecord, pNewContext);
+    }
+
+    FixupDispatcherContext(pDispatcherContext, pNewContext, pContextRecord);
+
+    // Returning ExceptionCollidedUnwind will cause the OS to take our new context record
+    // and dispatcher context and restart the exception dispatching on this call frame,
+    // which is exactly the behavior we want in order to restore our thread's unwindability
+    // (which was broken when we whacked the IP to get control over the thread)
+    return ExceptionCollidedUnwind;
+}
 #endif // !TARGET_UNIX
 
 #ifdef _DEBUG
@@ -5892,7 +5935,7 @@ UMThunkUnwindFrameChainHandler(IN     PEXCEPTION_RECORD   pExceptionRecord
         if (fIsSO)
         {
             // We don't have stack to do full-version EnablePreemptiveGC.
-            InterlockedAnd((LONG*)&pThread->m_fPreemptiveGCDisabled, 0);
+            FastInterlockAnd (&pThread->m_fPreemptiveGCDisabled, 0);
         }
         else
         {
@@ -5977,7 +6020,7 @@ CallDescrWorkerUnwindFrameChainHandler(IN     PEXCEPTION_RECORD   pExceptionReco
             CleanUpForSecondPass(pThread, true, (void*)MemoryStackFp, (void*)MemoryStackFp);
         }
 
-        InterlockedAnd((LONG*)&pThread->m_fPreemptiveGCDisabled, 0);
+        FastInterlockAnd (&pThread->m_fPreemptiveGCDisabled, 0);
         // We'll let the SO infrastructure handle this exception... at that point, we
         // know that we'll have enough stack to do it.
         return ExceptionContinueSearch;

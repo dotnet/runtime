@@ -73,7 +73,7 @@ namespace
     pal::string_t get_apphost_details_message()
     {
         pal::string_t msg = _X("Architecture: ");
-        msg.append(get_current_arch_name());
+        msg.append(get_arch());
         msg.append(_X("\n")
             _X("App host version: ") _STRINGIFY(COMMON_HOST_PKG_VER) _X("\n\n"));
         return msg;
@@ -168,10 +168,10 @@ namespace
         }
 
         dialogMsg.append(
+            _X("Would you like to download it now?\n\n")
             _X("Learn about "));
         dialogMsg.append(error_code == StatusCode::FrameworkMissingFailure ? _X("framework resolution:") : _X("runtime installation:"));
-        dialogMsg.append(_X("\n") DOTNET_APP_LAUNCH_FAILED_URL _X("\n\n")
-            _X("Would you like to download it now?"));
+        dialogMsg.append(_X("\n") DOTNET_APP_LAUNCH_FAILED_URL);
 
         assert(url.length() > 0);
         assert(is_gui_application());

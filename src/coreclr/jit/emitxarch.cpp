@@ -3219,11 +3219,6 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
 
         id->idAddr()->iiaFieldHnd = fldHnd;
         id->idInsFmt(emitMapFmtForIns(emitMapFmtAtoM(fmt), ins));
-
-#ifdef DEBUG
-        id->idDebugOnlyInfo()->idFlags     = GTF_ICON_STATIC_HDL;
-        id->idDebugOnlyInfo()->idMemCookie = reinterpret_cast<size_t>(fldHnd);
-#endif
     }
     else if ((memBase != nullptr) && memBase->IsCnsIntOrI() && memBase->isContained())
     {
@@ -3284,14 +3279,6 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
         // disp must have already been set in the instrDesc constructor.
         assert(emitGetInsAmdAny(id) == indir->Offset()); // make sure "disp" is stored properly
     }
-
-#ifdef DEBUG
-    if ((memBase != nullptr) && memBase->IsIconHandle() && memBase->isContained())
-    {
-        id->idDebugOnlyInfo()->idFlags     = memBase->gtFlags;
-        id->idDebugOnlyInfo()->idMemCookie = memBase->AsIntCon()->gtTargetHandle;
-    }
-#endif
 }
 
 // Takes care of storing all incoming register parameters
@@ -4139,10 +4126,7 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
  *  Add an instruction referencing a register and a constant.
  */
 
-void emitter::emitIns_R_I(instruction ins,
-                          emitAttr    attr,
-                          regNumber   reg,
-                          ssize_t val DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
+void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t val DEBUGARG(GenTreeFlags gtFlags))
 {
     emitAttr size = EA_SIZE(attr);
 
@@ -4275,11 +4259,7 @@ void emitter::emitIns_R_I(instruction ins,
     id->idInsFmt(fmt);
     id->idReg1(reg);
     id->idCodeSize(sz);
-
-#ifdef DEBUG
-    id->idDebugOnlyInfo()->idFlags     = gtFlags;
-    id->idDebugOnlyInfo()->idMemCookie = targetHandle;
-#endif
+    INDEBUG(id->idDebugOnlyInfo()->idFlags = gtFlags);
 
     dispIns(id);
     emitCurIGsize += sz;
@@ -9138,7 +9118,7 @@ void emitter::emitDispIns(
                 { // (val < 0)
                     printf("-0x%IX", -val);
                 }
-                emitDispCommentForHandle(srcVal, id->idDebugOnlyInfo()->idMemCookie, id->idDebugOnlyInfo()->idFlags);
+                emitDispCommentForHandle(srcVal, id->idDebugOnlyInfo()->idFlags);
             }
             break;
 
@@ -9209,9 +9189,6 @@ void emitter::emitDispIns(
             }
             printf("%s, %s", emitRegName(id->idReg1(), attr), sstr);
             emitDispAddrMode(id);
-
-            emitDispCommentForHandle(emitGetInsAmdAny(id), id->idDebugOnlyInfo()->idMemCookie,
-                                     id->idDebugOnlyInfo()->idFlags);
             break;
 
         case IF_RRW_ARD_CNS:

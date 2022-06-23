@@ -12,12 +12,12 @@ namespace System.Reflection.Context.Virtual
             {
             }
 
-            public sealed override string Name
+            public override sealed string Name
             {
                 get { return "get_" + DeclaringProperty.Name; }
             }
 
-            public sealed override Type ReturnType
+            public override sealed Type ReturnType
             {
                 get { return DeclaringProperty.PropertyType; }
             }

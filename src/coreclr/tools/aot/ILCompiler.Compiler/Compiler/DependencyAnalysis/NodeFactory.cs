@@ -294,11 +294,6 @@ namespace ILCompiler.DependencyAnalysis
                 return new ReflectableMethodNode(method);
             });
 
-            _reflectableFields = new NodeCache<FieldDesc, ReflectableFieldNode>(field =>
-            {
-                return new ReflectableFieldNode(field);
-            });
-
             _objectGetTypeFlowDependencies = new NodeCache<MetadataType, ObjectGetTypeFlowDependenciesNode>(type =>
             {
                 return new ObjectGetTypeFlowDependenciesNode(type);
@@ -855,12 +850,6 @@ namespace ILCompiler.DependencyAnalysis
         public ReflectableMethodNode ReflectableMethod(MethodDesc method)
         {
             return _reflectableMethods.GetOrAdd(method);
-        }
-
-        private NodeCache<FieldDesc, ReflectableFieldNode> _reflectableFields;
-        public ReflectableFieldNode ReflectableField(FieldDesc field)
-        {
-            return _reflectableFields.GetOrAdd(field);
         }
 
         private NodeCache<MetadataType, ObjectGetTypeFlowDependenciesNode> _objectGetTypeFlowDependencies;

@@ -146,20 +146,18 @@ namespace Microsoft.Interop
             var tryStatements = new List<StatementSyntax>();
             tryStatements.AddRange(statements.Marshal);
 
-            BlockSyntax fixedBlock = Block(statements.PinnedMarshal);
+            var invokeStatement = statements.InvokeStatement;
             if (_setLastError)
             {
                 StatementSyntax clearLastError = MarshallerHelpers.CreateClearLastSystemErrorStatement(SuccessErrorCode);
 
                 StatementSyntax getLastError = MarshallerHelpers.CreateGetLastSystemErrorStatement(LastErrorIdentifier);
 
-                fixedBlock = fixedBlock.AddStatements(clearLastError, statements.InvokeStatement, getLastError);
+                invokeStatement = Block(clearLastError, invokeStatement, getLastError);
             }
-            else
-            {
-                fixedBlock = fixedBlock.AddStatements(statements.InvokeStatement);
-            }
-            tryStatements.Add(statements.Pin.NestFixedStatements(fixedBlock));
+            invokeStatement = statements.Pin.NestFixedStatements(invokeStatement);
+
+            tryStatements.Add(invokeStatement);
             // <invokeSucceeded> = true;
             if (!statements.GuaranteedUnmarshal.IsEmpty)
             {
@@ -168,7 +166,7 @@ namespace Microsoft.Interop
                     LiteralExpression(SyntaxKind.TrueLiteralExpression))));
             }
 
-            tryStatements.AddRange(statements.NotifyForSuccessfulInvoke);
+            tryStatements.AddRange(statements.KeepAlive);
             tryStatements.AddRange(statements.Unmarshal);
 
             List<StatementSyntax> allStatements = setupStatements;

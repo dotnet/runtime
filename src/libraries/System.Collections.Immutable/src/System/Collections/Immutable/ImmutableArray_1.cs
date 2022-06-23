@@ -166,7 +166,7 @@ namespace System.Collections.Immutable
             Requires.Range(startIndex >= 0 && startIndex < self.Length, nameof(startIndex));
             Requires.Range(count >= 0 && startIndex + count <= self.Length, nameof(count));
 
-            equalityComparer ??= EqualityComparer<T>.Default;
+            equalityComparer = equalityComparer ?? EqualityComparer<T>.Default;
             if (equalityComparer == EqualityComparer<T>.Default)
             {
                 return Array.IndexOf(self.array!, item, startIndex, count);
@@ -251,7 +251,7 @@ namespace System.Collections.Immutable
             Requires.Range(startIndex >= 0 && startIndex < self.Length, nameof(startIndex));
             Requires.Range(count >= 0 && startIndex - count + 1 >= 0, nameof(count));
 
-            equalityComparer ??= EqualityComparer<T>.Default;
+            equalityComparer = equalityComparer ?? EqualityComparer<T>.Default;
             if (equalityComparer == EqualityComparer<T>.Default)
             {
                 return Array.LastIndexOf(self.array!, item, startIndex, count);

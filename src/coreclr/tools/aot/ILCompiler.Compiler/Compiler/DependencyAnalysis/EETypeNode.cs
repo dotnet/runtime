@@ -757,29 +757,14 @@ namespace ILCompiler.DependencyAnalysis
             return _type.BaseType != null ? factory.NecessaryTypeSymbol(_type.BaseType) : null;
         }
 
-        protected virtual ISymbolNode GetNonNullableValueTypeArrayElementTypeNode(NodeFactory factory)
-        {
-            return factory.NecessaryTypeSymbol(((ArrayType)_type).ElementType);
-        }
-
         private ISymbolNode GetRelatedTypeNode(NodeFactory factory)
         {
             ISymbolNode relatedTypeNode = null;
 
-            if (_type.IsParameterizedType)
+            if (_type.IsArray || _type.IsPointer || _type.IsByRef)
             {
                 var parameterType = ((ParameterizedType)_type).ParameterType;
-                if (_type.IsArray && parameterType.IsValueType && !parameterType.IsNullable)
-                {
-                    // This might be a constructed type symbol. There are APIs on Array that allow allocating element
-                    // types through runtime magic ("((Array)new NeverAllocated[1]).GetValue(0)" or IEnumerable) and we don't have
-                    // visibility into that. Conservatively assume element types of constructed arrays are also constructed.
-                    relatedTypeNode = GetNonNullableValueTypeArrayElementTypeNode(factory);
-                }
-                else
-                {
-                    relatedTypeNode = factory.NecessaryTypeSymbol(parameterType);
-                }
+                relatedTypeNode = factory.NecessaryTypeSymbol(parameterType);
             }
             else
             {

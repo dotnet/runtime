@@ -272,7 +272,7 @@ namespace System.Xml
         {
             get
             {
-                return _message ?? base.Message;
+                return (_message == null) ? base.Message : _message;
             }
         }
 

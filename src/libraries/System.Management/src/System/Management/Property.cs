@@ -121,7 +121,7 @@ namespace System.Management
         /// </value>
         public string Name
         { //doesn't change for this object so we don't need to refresh
-            get { return propertyName ?? ""; }
+            get { return propertyName != null ? propertyName : ""; }
         }
 
         /// <summary>

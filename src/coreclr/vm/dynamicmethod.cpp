@@ -88,7 +88,7 @@ void DynamicMethodTable::CreateDynamicMethodTable(DynamicMethodTable **ppLocatio
 
     if (*ppLocation) RETURN;
 
-    if (InterlockedCompareExchangeT(ppLocation, pDynMT, NULL) != NULL)
+    if (FastInterlockCompareExchangePointer(ppLocation, pDynMT, NULL) != NULL)
     {
         LOG((LF_BCL, LL_INFO100, "Level2 - Another thread got here first - deleting DynamicMethodTable {0x%p}...\n", pDynMT));
         RETURN;

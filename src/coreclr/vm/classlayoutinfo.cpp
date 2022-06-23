@@ -56,7 +56,7 @@ namespace
                 pfwalk->m_sequence = (ULONG)-1;
 
                 // Treat base class as an initial member.
-                if (!ClrSafeInt<UINT32>::addition(pfwalk->m_placement.m_offset, cbAdjustedParentLayoutNativeSize, pfwalk->m_placement.m_offset))
+                if (!SafeAddUINT32(&(pfwalk->m_placement.m_offset), cbAdjustedParentLayoutNativeSize))
                     COMPlusThrowOM();
             }
         }
@@ -172,7 +172,7 @@ namespace
                 // Insert enough padding to align the current data member.
                 while (cbCurOffset % alignmentRequirement)
                 {
-                    if (!ClrSafeInt<UINT32>::addition(cbCurOffset, 1, cbCurOffset))
+                    if (!SafeAddUINT32(&cbCurOffset, 1))
                         COMPlusThrowOM();
                 }
 
@@ -192,8 +192,8 @@ namespace
 
         if (classSizeInMetadata != 0)
         {
-            ULONG classSize;
-            if (!ClrSafeInt<ULONG>::addition(classSizeInMetadata, (ULONG)parentSize, classSize))
+            ULONG classSize = classSizeInMetadata;
+            if (!SafeAddULONG(&classSize, (ULONG)parentSize))
                 COMPlusThrowOM();
 
             // size must be large enough to accomodate layout. If not, we use the layout size instead.
@@ -207,7 +207,7 @@ namespace
 
             if (calcTotalSize % LargestAlignmentRequirement != 0)
             {
-                if (!ClrSafeInt<uint32_t>::addition(calcTotalSize, LargestAlignmentRequirement - (calcTotalSize % LargestAlignmentRequirement), calcTotalSize))
+                if (!SafeAddUINT32(&calcTotalSize, LargestAlignmentRequirement - (calcTotalSize % LargestAlignmentRequirement)))
                     COMPlusThrowOM();
             }
         }

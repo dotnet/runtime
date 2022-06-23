@@ -47,7 +47,7 @@ namespace System.Text.Json
         {
             if (_currentDepth < AllocationFreeMaxDepth)
             {
-                _allocationFreeContainer <<= 1;
+                _allocationFreeContainer = _allocationFreeContainer << 1;
             }
             else
             {

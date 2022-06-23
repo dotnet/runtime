@@ -69,11 +69,7 @@ import { fetch_like, readAsync_like } from "./polyfills";
 import { EmscriptenModule } from "./types/emscripten";
 import { mono_run_main, mono_run_main_and_exit } from "./run";
 import { diagnostics } from "./diagnostics";
-import {
-    dotnet_browser_can_use_subtle_crypto_impl,
-    dotnet_browser_simple_digest_hash,
-    dotnet_browser_sign
-} from "./crypto-worker";
+import { dotnet_browser_can_use_simple_digest_hash, dotnet_browser_simple_digest_hash } from "./crypto-worker";
 
 const MONO = {
     // current "public" MONO API
@@ -374,9 +370,8 @@ export const __linker_exports: any = {
     mono_wasm_get_icudt_name,
 
     // pal_crypto_webworker.c
-    dotnet_browser_can_use_subtle_crypto_impl,
     dotnet_browser_simple_digest_hash,
-    dotnet_browser_sign
+    dotnet_browser_can_use_simple_digest_hash,
 };
 
 const INTERNAL: any = {

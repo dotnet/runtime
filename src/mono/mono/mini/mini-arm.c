@@ -598,14 +598,14 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 		offset += 4;
 	}
 
-	arg_info [0].offset = GINT32_TO_UINT16 (offset);
+	arg_info [0].offset = offset;
 
 	if (csig->hasthis) {
 		frame_size += sizeof (target_mgreg_t);
 		offset += 4;
 	}
 
-	arg_info [0].size = GINT32_TO_UINT16 (frame_size);
+	arg_info [0].size = frame_size;
 
 	for (k = 0; k < param_count; k++) {
 		size = mini_type_stack_size_full (csig->params [k], &align, csig->pinvoke && !csig->marshalling_disabled);
@@ -614,18 +614,18 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 		align = 1;
 
 		frame_size += pad = (align - (frame_size & (align - 1))) & (align - 1);
-		arg_info [k].pad = GUINT32_TO_UINT8 (pad);
+		arg_info [k].pad = pad;
 		frame_size += size;
 		arg_info [k + 1].pad = 0;
-		arg_info [k + 1].size = GINT32_TO_UINT16 (size);
+		arg_info [k + 1].size = size;
 		offset += pad;
-		arg_info [k + 1].offset = GINT32_TO_UINT16 (offset);
+		arg_info [k + 1].offset = offset;
 		offset += size;
 	}
 
 	align = MONO_ARCH_FRAME_ALIGNMENT;
 	frame_size += pad = (align - (frame_size & (align - 1))) & (align - 1);
-	arg_info [k].pad = GUINT32_TO_UINT8 (pad);
+	arg_info [k].pad = pad;
 
 	return frame_size;
 }
@@ -1083,7 +1083,7 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 			*stack_size += 4;
 		} else {
 			ainfo->storage = RegTypeGeneral;
-			ainfo->reg = GUINT32_TO_UINT8 (*gr);
+			ainfo->reg = *gr;
 		}
 	} else {
 		gboolean split;
@@ -1118,7 +1118,7 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 					(*gr) ++;
 			}
 			ainfo->storage = RegTypeIRegPair;
-			ainfo->reg = GUINT32_TO_UINT8 (*gr);
+			ainfo->reg = *gr;
 		}
 		(*gr) ++;
 	}
@@ -1170,7 +1170,7 @@ add_float (guint *fpr, guint *stack_size, ArgInfo *ainfo, gboolean is_double, gi
 			 * At this point, we have an even register
 			 * so we assign that and move along.
 			 */
-			ainfo->reg = GUINT32_TO_UINT8 (*fpr);
+			ainfo->reg = *fpr;
 			*fpr += 2;
 		} else if (*float_spare >= 0) {
 			/*
@@ -1180,7 +1180,7 @@ add_float (guint *fpr, guint *stack_size, ArgInfo *ainfo, gboolean is_double, gi
 			 * use it.
 			 */
 
-			ainfo->reg = GINT32_TO_UINT8 (*float_spare);
+			ainfo->reg = *float_spare;
 			*float_spare = -1;
 		} else {
 			/*
@@ -1189,7 +1189,7 @@ add_float (guint *fpr, guint *stack_size, ArgInfo *ainfo, gboolean is_double, gi
 			 * use the next available register.
 			 */
 
-			ainfo->reg = GUINT32_TO_UINT8 (*fpr);
+			ainfo->reg = *fpr;
 			(*fpr)++;
 		}
 	} else {
@@ -1387,7 +1387,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			pstart = 1;
 		}
 		n ++;
-		cinfo->ret.reg = GUINT32_TO_UINT8 (gr);
+		cinfo->ret.reg = gr;
 		gr ++;
 		cinfo->vret_arg_index = 1;
 	} else {
@@ -1397,7 +1397,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			n ++;
 		}
 		if (vtype_retaddr) {
-			cinfo->ret.reg = GUINT32_TO_UINT8 (gr);
+			cinfo->ret.reg = gr;
 			gr ++;
 		}
 	}
@@ -1480,7 +1480,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			if (IS_HARD_FLOAT && sig->pinvoke && is_hfa (t, &nfields, &esize)) {
 				if (fpr + nfields < ARM_VFP_F16) {
 					ainfo->storage = RegTypeHFA;
-					ainfo->reg = GUINT32_TO_UINT8 (fpr);
+					ainfo->reg = fpr;
 					ainfo->nregs = nfields;
 					ainfo->esize = esize;
 					if (esize == 4)
@@ -1540,14 +1540,14 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			}
 			if (gr > ARMREG_R3) {
 				ainfo->size = 0;
-				ainfo->vtsize = GINT32_TO_UINT16 (nwords);
+				ainfo->vtsize = nwords;
 			} else {
 				int rest = ARMREG_R3 - gr + 1;
 				int n_in_regs = rest >= nwords? nwords: rest;
 
-				ainfo->size = GINT32_TO_UINT8 (n_in_regs);
-				ainfo->vtsize = GINT32_TO_UINT16 (nwords - n_in_regs);
-				ainfo->reg = GUINT32_TO_UINT8 (gr);
+				ainfo->size = n_in_regs;
+				ainfo->vtsize = nwords - n_in_regs;
+				ainfo->reg = gr;
 				gr += n_in_regs;
 				nwords -= n_in_regs;
 			}
@@ -3100,16 +3100,16 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 		*(gpointer*)ret = (gpointer)(gsize)res;
 		break;
 	case MONO_TYPE_I1:
-		*(gint8*)ret = GINT32_TO_INT8 (res);
+		*(gint8*)ret = res;
 		break;
 	case MONO_TYPE_U1:
-		*(guint8*)ret = GINT32_TO_UINT8 (res);
+		*(guint8*)ret = res;
 		break;
 	case MONO_TYPE_I2:
-		*(gint16*)ret = GINT32_TO_INT16 (res);
+		*(gint16*)ret = res;
 		break;
 	case MONO_TYPE_U2:
-		*(guint16*)ret = GINT32_TO_UINT16 (res);
+		*(guint16*)ret = res;
 		break;
 	case MONO_TYPE_I4:
 		*(gint32*)ret = res;
@@ -3449,7 +3449,7 @@ loop_start:
 				ins->sreg2 = temp->dreg;
 				if (opcode2 == -1)
 					g_error ("mono_op_imm_to_op failed for %s\n", mono_inst_name (ins->opcode));
-				ins->opcode = GUINT32_TO_OPCODE (opcode2);
+				ins->opcode = opcode2;
 			}
 			if (ins->opcode == OP_SBB || ins->opcode == OP_ISBB || ins->opcode == OP_SUBCC)
 				goto loop_start;
@@ -3507,7 +3507,7 @@ loop_start:
 			ins->sreg2 = temp->dreg;
 			if (opcode2 == -1)
 				g_error ("mono_op_imm_to_op failed for %s\n", mono_inst_name (ins->opcode));
-			ins->opcode = GINT32_TO_UINT16 (opcode2);
+			ins->opcode = opcode2;
 			break;
 		}
 		case OP_LOCALLOC_IMM:
@@ -3532,7 +3532,7 @@ loop_start:
 			temp->inst_c0 = ins->inst_offset;
 			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg2 = temp->dreg;
-			ins->opcode = GINT32_TO_UINT16 (map_to_reg_reg_op (ins->opcode));
+			ins->opcode = map_to_reg_reg_op (ins->opcode);
 			break;
 		case OP_LOADI2_MEMBASE:
 		case OP_LOADU2_MEMBASE:
@@ -3543,7 +3543,7 @@ loop_start:
 			temp->inst_c0 = ins->inst_offset;
 			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg2 = temp->dreg;
-			ins->opcode = GINT32_TO_UINT16 (map_to_reg_reg_op (ins->opcode));
+			ins->opcode = map_to_reg_reg_op (ins->opcode);
 			break;
 		case OP_LOADR4_MEMBASE:
 		case OP_LOADR8_MEMBASE:
@@ -3582,7 +3582,7 @@ loop_start:
 			temp->inst_c0 = ins->inst_offset;
 			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg2 = temp->dreg;
-			ins->opcode = GINT32_TO_UINT16 (map_to_reg_reg_op (ins->opcode));
+			ins->opcode = map_to_reg_reg_op (ins->opcode);
 			break;
 		case OP_STOREI2_MEMBASE_REG:
 			if (arm_is_imm8 (ins->inst_offset))
@@ -3591,7 +3591,7 @@ loop_start:
 			temp->inst_c0 = ins->inst_offset;
 			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg2 = temp->dreg;
-			ins->opcode = GINT32_TO_UINT16 (map_to_reg_reg_op (ins->opcode));
+			ins->opcode = map_to_reg_reg_op (ins->opcode);
 			break;
 		case OP_STORER4_MEMBASE_REG:
 		case OP_STORER8_MEMBASE_REG:
@@ -3629,7 +3629,7 @@ loop_start:
 			temp->inst_c0 = ins->inst_imm;
 			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg1 = temp->dreg;
-			ins->opcode = GINT32_TO_UINT16 (map_to_reg_reg_op (ins->opcode));
+			ins->opcode = map_to_reg_reg_op (ins->opcode);
 			last_ins = temp;
 			goto loop_start; /* make it handle the possibly big ins->inst_offset */
 		case OP_FCOMPARE:

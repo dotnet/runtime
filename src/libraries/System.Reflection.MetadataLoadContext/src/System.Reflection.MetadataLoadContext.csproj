@@ -4,8 +4,11 @@
     <RootNamespace>System.Reflection</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>true</IsPackable>
-    <PackageDescription>Provides read-only reflection on assemblies in an isolated context with support for assemblies that target different processor architectures and runtimes. Using MetadataLoadContext enables you to inspect assemblies without loading them into the main execution context. Assemblies in MetadataLoadContext are treated only as metadata, that is, you can read information about their members, but cannot execute any code contained in them.</PackageDescription>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageDescription>Provides read-only reflection on assemblies in an isolated context with support for assemblies that have different architectures and runtimes.
+
+Commonly Used Types:
+System.Reflection.MetadataLoadContext
+System.Reflection.MetadataAssemblyResolver</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
@@ -142,7 +145,6 @@
     <Compile Include="System\Reflection\TypeLoading\Types\RoType.TypeClassification.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoWrappedType.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
-    <None Include="README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

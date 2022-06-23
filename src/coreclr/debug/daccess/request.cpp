@@ -647,10 +647,9 @@ ClrDataAccess::GetRegisterName(int regNum, unsigned int count, _Inout_updates_z_
         return E_UNEXPECTED;
 
     const WCHAR callerPrefix[] = W("caller.");
-    // Include null terminator in prefixLen/regLen because wcscpy_s will fail otherwise
-    unsigned int prefixLen = (unsigned int)ARRAY_SIZE(callerPrefix);
-    unsigned int regLen = (unsigned int)wcslen(regs[regNum]) + 1;
-    unsigned int needed = (callerFrame ? prefixLen - 1 : 0) + regLen;
+    unsigned int prefixLen = (unsigned int)ARRAY_SIZE(callerPrefix) - 1;
+    unsigned int regLen = (unsigned int)wcslen(regs[regNum]);
+    unsigned int needed = (callerFrame?prefixLen:0) + regLen + 1;
     if (pNeeded)
         *pNeeded = needed;
 
@@ -663,8 +662,6 @@ ClrDataAccess::GetRegisterName(int regNum, unsigned int count, _Inout_updates_z_
         {
             unsigned int toCopy = prefixLen < destSize ? prefixLen : destSize;
             wcscpy_s(curr, toCopy, callerPrefix);
-            // Point to null terminator
-            toCopy--;
             curr += toCopy;
             destSize -= toCopy;
         }
@@ -673,8 +670,6 @@ ClrDataAccess::GetRegisterName(int regNum, unsigned int count, _Inout_updates_z_
         {
             unsigned int toCopy = regLen < destSize ? regLen : destSize;
             wcscpy_s(curr, toCopy, regs[regNum]);
-            // Point to null terminator
-            toCopy--;
             curr += toCopy;
             destSize -= toCopy;
         }

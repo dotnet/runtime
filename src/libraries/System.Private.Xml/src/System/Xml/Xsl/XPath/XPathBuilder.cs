@@ -8,13 +8,14 @@ using System.Globalization;
 using System.Xml.Schema;
 using System.Xml.XPath;
 using System.Xml.Xsl.Qil;
-using FunctionInfo = System.Xml.Xsl.XPath.XPathBuilder.FunctionInfo<System.Xml.Xsl.XPath.XPathBuilder.FuncId>;
-using T = System.Xml.Xsl.XmlQueryTypeFactory;
 
 //#define StopMaskOptimisation
 
 namespace System.Xml.Xsl.XPath
 {
+    using FunctionInfo = XPathBuilder.FunctionInfo<XPathBuilder.FuncId>;
+    using T = XmlQueryTypeFactory;
+
     internal class XPathBuilder : IXPathBuilder<QilNode>, IXPathEnvironment
     {
         private readonly XPathQilFactory _f;

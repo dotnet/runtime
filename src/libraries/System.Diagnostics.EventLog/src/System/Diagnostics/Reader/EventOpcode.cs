@@ -39,7 +39,7 @@ namespace System.Diagnostics.Eventing.Reader
         {
             lock (_syncObject)
             {
-                if (_dataReady)
+                if (_dataReady == true)
                     return;
 
                 // Get the data

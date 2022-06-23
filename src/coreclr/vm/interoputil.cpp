@@ -1018,7 +1018,7 @@ namespace
         if (FAILED(cap.ValidateProlog()))
             return COR_E_BADIMAGEFORMAT;
 
-        UINT8 u1;
+        U1 u1;
         if (FAILED(cap.GetU1(&u1)))
             return COR_E_BADIMAGEFORMAT;
 

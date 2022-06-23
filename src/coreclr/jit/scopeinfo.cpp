@@ -295,7 +295,7 @@ void CodeGenInterface::siVarLoc::siFillStackVarLoc(
         case TYP_LONG:
         case TYP_DOUBLE:
 #endif // TARGET_64BIT
-#if FEATURE_IMPLICIT_BYREFS
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
             // In the AMD64 ABI we are supposed to pass a struct by reference when its
             // size is not 1, 2, 4 or 8 bytes in size. During fgMorph, the compiler modifies
             // the IR to comply with the ABI and therefore changes the type of the lclVar
@@ -314,7 +314,7 @@ void CodeGenInterface::siVarLoc::siFillStackVarLoc(
                 this->vlType = VLT_STK_BYREF;
             }
             else
-#endif // FEATURE_IMPLICIT_BYREFS
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
             {
                 this->vlType = VLT_STK;
             }

@@ -1,18 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
-using System.Collections.Specialized;
-using System.Text;
-using System.IO;
-using System.Diagnostics;
-using System.Xml.Schema;
-using System.Xml.XPath;
-using System.Runtime.Versioning;
-using System.Diagnostics.CodeAnalysis;
-
 namespace System.Xml.Schema
 {
+    using System.Collections;
+    using System.Collections.Specialized;
+    using System.Text;
+    using System.IO;
+    using System.Diagnostics;
+    using System.Xml.Schema;
+    using System.Xml.XPath;
+    using System.Runtime.Versioning;
+    using System.Diagnostics.CodeAnalysis;
+
 #pragma warning disable 618
     internal sealed class XsdValidator : BaseValidator
     {
@@ -149,7 +149,7 @@ namespace System.Xml.Schema
                     {
                         SchemaInfo inlineSchemaInfo = new SchemaInfo();
                         inlineSchemaInfo.SchemaType = SchemaType.XSD;
-                        inlineNS = schema.TargetNamespace ?? string.Empty;
+                        inlineNS = schema.TargetNamespace == null ? string.Empty : schema.TargetNamespace;
                         if (!SchemaInfo!.TargetNamespaces.ContainsKey(inlineNS))
                         {
                             if (SchemaCollection!.Add(inlineNS, inlineSchemaInfo, schema, true) != null)
@@ -772,7 +772,7 @@ namespace System.Xml.Schema
 
         public override object? FindId(string name)
         {
-            return _IDs?[name];
+            return _IDs == null ? null : _IDs[name];
         }
 
         public bool IsXSDRoot(string localName, string ns)

@@ -55,7 +55,7 @@ namespace System.Collections.Generic
 
         public LinkedListNode<T>? Last
         {
-            get { return head?.prev; }
+            get { return head == null ? null : head.prev; }
         }
 
         bool ICollection<T>.IsReadOnly

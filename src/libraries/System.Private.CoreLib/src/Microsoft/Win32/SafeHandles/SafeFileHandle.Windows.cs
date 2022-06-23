@@ -35,10 +35,8 @@ namespace Microsoft.Win32.SafeHandles
             return _lengthCanBeCached && cachedLength >= 0;
         }
 
-        internal static unsafe SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize, UnixFileMode? unixCreateMode = null)
+        internal static unsafe SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
         {
-            Debug.Assert(!unixCreateMode.HasValue);
-
             using (DisableMediaInsertionPrompt.Create())
             {
                 // we don't use NtCreateFile as there is no public and reliable way

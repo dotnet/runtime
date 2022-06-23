@@ -36,7 +36,7 @@ namespace System.Xml.XPath
         // XPathItem
         //-----------------------------------------------
 
-        public sealed override bool IsNode
+        public override sealed bool IsNode
         {
             get { return true; }
         }

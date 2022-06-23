@@ -294,16 +294,16 @@ BOOL PALAPI FileTimeToSystemTime( CONST FILETIME * lpFileTime,
 #endif  /* HAVE_GMTIME_R */
 
         /* Convert unix system time to Windows system time. */
-        lpSystemTime->wDay      = (WORD)UnixSystemTime->tm_mday;
+        lpSystemTime->wDay      = UnixSystemTime->tm_mday;
 
         /* Unix time counts January as a 0, under Windows it is 1*/
-        lpSystemTime->wMonth    = (WORD)UnixSystemTime->tm_mon + 1;
+        lpSystemTime->wMonth    = UnixSystemTime->tm_mon + 1;
         /* Unix time returns the year - 1900, Windows returns the current year*/
-        lpSystemTime->wYear     = (WORD)UnixSystemTime->tm_year + 1900;
+        lpSystemTime->wYear     = UnixSystemTime->tm_year + 1900;
 
-        lpSystemTime->wSecond   = (WORD)UnixSystemTime->tm_sec;
-        lpSystemTime->wMinute   = (WORD)UnixSystemTime->tm_min;
-        lpSystemTime->wHour     = (WORD)UnixSystemTime->tm_hour;
+        lpSystemTime->wSecond   = UnixSystemTime->tm_sec;
+        lpSystemTime->wMinute   = UnixSystemTime->tm_min;
+        lpSystemTime->wHour     = UnixSystemTime->tm_hour;
         return TRUE;
     }
     else

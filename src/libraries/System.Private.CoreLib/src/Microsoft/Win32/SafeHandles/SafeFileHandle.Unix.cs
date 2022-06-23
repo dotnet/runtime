@@ -11,29 +11,6 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        private const UnixFileMode PermissionMask =
-            UnixFileMode.UserRead |
-            UnixFileMode.UserWrite |
-            UnixFileMode.UserExecute |
-            UnixFileMode.GroupRead |
-            UnixFileMode.GroupWrite |
-            UnixFileMode.GroupExecute |
-            UnixFileMode.OtherRead |
-            UnixFileMode.OtherWrite |
-            UnixFileMode.OtherExecute;
-
-        // If the file gets created a new, we'll select the permissions for it.  Most Unix utilities by default use 666 (read and
-        // write for all), so we do the same (even though this doesn't match Windows, where by default it's possible to write out
-        // a file and then execute it). No matter what we choose, it'll be subject to the umask applied by the system, such that the
-        // actual permissions will typically be less than what we select here.
-        internal const UnixFileMode DefaultCreateMode =
-            UnixFileMode.UserRead |
-            UnixFileMode.UserWrite |
-            UnixFileMode.GroupRead |
-            UnixFileMode.GroupWrite |
-            UnixFileMode.OtherRead |
-            UnixFileMode.OtherWrite;
-
         internal static bool DisableFileLocking { get; } = OperatingSystem.IsBrowser() // #40065: Emscripten does not support file locking
             || AppContextConfigHelper.GetBooleanConfig("System.IO.DisableFileLocking", "DOTNET_SYSTEM_IO_DISABLEFILELOCKING", defaultValue: false);
 
@@ -187,23 +164,35 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
+        // If the file gets created a new, we'll select the permissions for it.  Most Unix utilities by default use 666 (read and
+        // write for all), so we do the same (even though this doesn't match Windows, where by default it's possible to write out
+        // a file and then execute it). No matter what we choose, it'll be subject to the umask applied by the system, such that the
+        // actual permissions will typically be less than what we select here.
+        private const Interop.Sys.Permissions DefaultOpenPermissions =
+                Interop.Sys.Permissions.S_IRUSR | Interop.Sys.Permissions.S_IWUSR |
+                Interop.Sys.Permissions.S_IRGRP | Interop.Sys.Permissions.S_IWGRP |
+                Interop.Sys.Permissions.S_IROTH | Interop.Sys.Permissions.S_IWOTH;
+
         // Specialized Open that returns the file length and permissions of the opened file.
         // This information is retrieved from the 'stat' syscall that must be performed to ensure the path is not a directory.
-        internal static SafeFileHandle OpenReadOnly(string fullPath, FileOptions options, out long fileLength, out UnixFileMode filePermissions)
+        internal static SafeFileHandle OpenReadOnly(string fullPath, FileOptions options, out long fileLength, out Interop.Sys.Permissions filePermissions)
         {
-            SafeFileHandle handle = Open(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, options, preallocationSize: 0, DefaultCreateMode, out fileLength, out filePermissions, null);
+            SafeFileHandle handle = Open(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, options, preallocationSize: 0, DefaultOpenPermissions, out fileLength, out filePermissions, null);
             Debug.Assert(fileLength >= 0);
             return handle;
         }
 
-        internal static SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize, UnixFileMode? unixCreateMode = null,
+        internal static SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize,
+                                            Interop.Sys.Permissions openPermissions = DefaultOpenPermissions,
                                             Func<Interop.ErrorInfo, Interop.Sys.OpenFlags, string, Exception?>? createOpenException = null)
         {
-            return Open(fullPath, mode, access, share, options, preallocationSize, unixCreateMode ?? DefaultCreateMode, out _, out _, createOpenException);
+            return Open(fullPath, mode, access, share, options, preallocationSize, openPermissions, out _, out _, createOpenException);
         }
 
-        private static SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize, UnixFileMode openPermissions,
-                                            out long fileLength, out UnixFileMode filePermissions,
+        private static SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize,
+                                            Interop.Sys.Permissions openPermissions,
+                                            out long fileLength,
+                                            out Interop.Sys.Permissions filePermissions,
                                             Func<Interop.ErrorInfo, Interop.Sys.OpenFlags, string, Exception?>? createOpenException = null)
         {
             // Translate the arguments into arguments for an open call.
@@ -316,7 +305,7 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         private bool Init(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize,
-                          out long fileLength, out UnixFileMode filePermissions)
+                          out long fileLength, out Interop.Sys.Permissions filePermissions)
         {
             Interop.Sys.FileStatus status = default;
             bool statusHasValue = false;
@@ -345,7 +334,7 @@ namespace Microsoft.Win32.SafeHandles
                 }
 
                 fileLength = status.Size;
-                filePermissions = ((UnixFileMode)status.Mode) & PermissionMask;
+                filePermissions = (Interop.Sys.Permissions)(status.Mode & (int)Interop.Sys.Permissions.Mask);
             }
 
             IsAsync = (options & FileOptions.Asynchronous) != 0;

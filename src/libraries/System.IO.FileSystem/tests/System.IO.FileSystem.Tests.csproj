@@ -10,7 +10,6 @@
   <ItemGroup>
     <Compile Include="Base\BaseGetSetAttributes.cs" />
     <Compile Include="Base\BaseGetSetTimes.cs" />
-    <Compile Include="Base\BaseGetSetUnixFileMode.cs" />
     <Compile Include="Base\FileGetSetAttributes.cs" />
     <Compile Include="Base\InfoGetSetAttributes.cs" />
     <Compile Include="Base\InfoGetSetTimes.cs" />
@@ -22,9 +21,7 @@
     <Compile Include="Directory\EnumerableTests.cs" />
     <Compile Include="Directory\SymbolicLinks.cs" />
     <Compile Include="DirectoryInfo\SymbolicLinks.cs" />
-    <Compile Include="DirectoryInfo\GetSetUnixFileMode.cs" />
     <Compile Include="FileInfo\GetSetAttributesCommon.cs" />
-    <Compile Include="FileInfo\GetSetUnixFileMode.cs" />
     <Compile Include="FileInfo\IsReadOnly.cs" />
     <Compile Include="FileInfo\Replace.cs" />
     <Compile Include="FileInfo\SymbolicLinks.cs" />
@@ -39,8 +36,6 @@
     <Compile Include="File\GetSetTimes.cs" />
     <Compile Include="File\GetSetTimes_SafeFileHandle.cs" />
     <Compile Include="File\GetSetTimes_SafeFileHandle_Pathless.cs" />
-    <Compile Include="File\GetSetUnixFileMode.cs" />
-    <Compile Include="File\GetSetUnixFileMode_SafeFileHandle.cs" />
     <Compile Include="File\Replace.cs" />
     <Compile Include="File\AppendAsync.cs" />
     <Compile Include="File\ReadWriteAllLinesAsync.cs" />
@@ -84,11 +79,9 @@
     <Compile Include="FileSystemTest.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="FileStream\ctor_options.Unix.cs" />
-    <Compile Include="Directory\CreateDirectory_UnixFileMode.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="Directory\Delete.Windows.cs" />
-    <Compile Include="Directory\CreateDirectory_UnixFileMode.Windows.cs" />
     <Compile Include="File\EncryptDecrypt.Windows.cs" />
     <Compile Include="FileSystemTest.Windows.cs" />
     <Compile Include="FileStream\ctor_options.Windows.cs" />

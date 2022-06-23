@@ -270,6 +270,7 @@
     <Compile Include="Internal\Runtime\TypeLoader\MethodTable.Runtime.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\EETypeCreator.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\Empty.cs" />
+    <Compile Include="Internal\Reflection\Core\AssemblyBinder.cs" />
     <Compile Include="Internal\Reflection\Execution\AssemblyBinderImplementation.cs" />
     <Compile Include="$(CompilerCommonPath)\Internal\Metadata\NativeFormat\MetadataTypeHashingAlgorithms.cs" />
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\TypeHashingAlgorithms.cs" />
@@ -280,6 +281,7 @@
     <Compile Include="Internal\Runtime\TypeLoader\LockFreeObjectInterner.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\LowLevelStringConverter.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\MetadataNameExtensions.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\MetadataReaderExtensions.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\MetadataReaderHelpers.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\ModuleList.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\NativeLayoutFieldAlgorithm.cs" />
@@ -326,6 +328,8 @@
     <Compile Include="Internal\TypeSystem\ThrowHelper.cs" />
     <Compile Include="Internal\TypeSystem\TypeDesc.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\TypeSystemContext.Runtime.cs" />
+    <Compile Include="System\Reflection\Runtime\General\QHandles.cs" />
+    <Compile Include="System\Reflection\Runtime\General\QHandles.NativeFormat.cs" />
     <Compile Include="$(AotCommonPath)\System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs">
       <Link>System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs</Link>
     </Compile>

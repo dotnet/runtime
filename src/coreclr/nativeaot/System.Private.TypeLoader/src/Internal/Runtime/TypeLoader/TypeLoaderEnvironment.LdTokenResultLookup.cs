@@ -100,8 +100,9 @@ namespace Internal.Runtime.TypeLoader
 
             public override bool Equals(object obj)
             {
-                if (obj is RuntimeFieldHandleKey other)
+                if (obj is RuntimeFieldHandleKey)
                 {
+                    RuntimeFieldHandleKey other = (RuntimeFieldHandleKey)obj;
                     return Equals(other);
                 }
                 return false;
@@ -144,8 +145,9 @@ namespace Internal.Runtime.TypeLoader
 
             public override bool Equals(object obj)
             {
-                if (obj is RuntimeMethodHandleKey other)
+                if (obj is RuntimeMethodHandleKey)
                 {
+                    RuntimeMethodHandleKey other = (RuntimeMethodHandleKey)obj;
                     return Equals(other);
                 }
                 return false;
@@ -207,7 +209,7 @@ namespace Internal.Runtime.TypeLoader
                     fieldData->FieldName = fieldName;
 
                     // Special flag (lowest bit set) in the handle value to indicate it was dynamically allocated
-                    runtimeFieldHandleValue++;
+                    runtimeFieldHandleValue = runtimeFieldHandleValue + 1;
                     runtimeFieldHandle = *(RuntimeFieldHandle*)&runtimeFieldHandleValue;
 
                     _runtimeFieldHandles.Add(key, runtimeFieldHandle);
@@ -230,7 +232,7 @@ namespace Internal.Runtime.TypeLoader
 
             // Special flag in the handle value to indicate it was dynamically allocated
             Debug.Assert((runtimeFieldHandleValue.ToInt64() & 0x1) == 0x1);
-            runtimeFieldHandleValue--;
+            runtimeFieldHandleValue = runtimeFieldHandleValue - 1;
 
             DynamicFieldHandleInfo* fieldData = (DynamicFieldHandleInfo*)runtimeFieldHandleValue.ToPointer();
             declaringTypeHandle = *(RuntimeTypeHandle*)&(fieldData->DeclaringType);
@@ -315,7 +317,7 @@ namespace Internal.Runtime.TypeLoader
                     }
 
                     // Special flag in the handle value to indicate it was dynamically allocated, and doesn't point into the InvokeMap blob
-                    runtimeMethodHandleValue++;
+                    runtimeMethodHandleValue = runtimeMethodHandleValue + 1;
                     runtimeMethodHandle = * (RuntimeMethodHandle*)&runtimeMethodHandleValue;
 
                     _runtimeMethodHandles.Add(key, runtimeMethodHandle);
@@ -342,7 +344,7 @@ namespace Internal.Runtime.TypeLoader
             Debug.Assert((runtimeMethodHandleValue.ToInt64() & 0x1) == 0x1);
 
             // Special flag in the handle value to indicate it was dynamically allocated, and doesn't point into the InvokeMap blob
-            runtimeMethodHandleValue--;
+            runtimeMethodHandleValue = runtimeMethodHandleValue - 1;
 
             DynamicMethodHandleInfo* methodData = (DynamicMethodHandleInfo*)runtimeMethodHandleValue.ToPointer();
             declaringTypeHandle = *(RuntimeTypeHandle*)&(methodData->DeclaringType);

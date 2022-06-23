@@ -47,9 +47,5 @@
       <Type Name="System.Reflection.Tests.MemberInfoTests+GenericTestClass`1[[System.Double, System.Private.CoreLib]]" Dynamic="Required All" />
 
     </Assembly>
-
-    <Assembly Name="System.Private.CoreLib">
-      <Type Name="System.Collections.Generic.Dictionary`2" Dynamic="Required All" />
-    </Assembly>
   </Application>
 </Directives>

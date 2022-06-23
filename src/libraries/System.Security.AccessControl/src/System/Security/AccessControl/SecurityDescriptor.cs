@@ -904,7 +904,7 @@ namespace System.Security.AccessControl
                 actualFlags |= (ControlFlags.SystemAclPresent);
             }
 
-            _rawSd = new RawSecurityDescriptor(actualFlags, owner, group, systemAcl?.RawAcl, discretionaryAcl.RawAcl);
+            _rawSd = new RawSecurityDescriptor(actualFlags, owner, group, systemAcl == null ? null : systemAcl.RawAcl, discretionaryAcl.RawAcl);
         }
 
         #endregion

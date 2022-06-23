@@ -24,7 +24,7 @@ namespace System.Dynamic
         /// <summary>
         /// The result type of the operation.
         /// </summary>
-        public sealed override Type ReturnType
+        public override sealed Type ReturnType
         {
             get
             {
@@ -79,7 +79,7 @@ namespace System.Dynamic
         /// <summary>
         /// Always returns <c>true</c> because this is a standard <see cref="DynamicMetaObjectBinder"/>.
         /// </summary>
-        internal sealed override bool IsStandardBinder => true;
+        internal override sealed bool IsStandardBinder => true;
 
         internal static bool OperationIsValid(ExpressionType operation)
         {

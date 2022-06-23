@@ -478,7 +478,7 @@ BOOL ShouldLogInEventLog()
     }
 
     static LONG fOnce = 0;
-    if (fOnce == 1 || InterlockedExchange(&fOnce, 1) == 1)
+    if (fOnce == 1 || FastInterlockExchange(&fOnce, 1) == 1)
     {
         return FALSE;
     }

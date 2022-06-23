@@ -233,7 +233,7 @@ namespace Internal.TypeSystem
                         previousInterval.EndSentinel = newInterval.EndSentinel;
 
                         fieldLayoutInterval[newIntervalLocation - 1] = previousInterval;
-                        newIntervalLocation--;
+                        newIntervalLocation = newIntervalLocation - 1;
                     }
                     else
                     {

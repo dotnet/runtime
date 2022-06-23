@@ -246,14 +246,11 @@ namespace System.Reflection.Emit
 
         private void Append(string pStr)
         {
-            int i = pStr.IndexOf('\0');
-            if (i < 0)
+            foreach (char c in pStr)
             {
-                _str.Append(pStr);
-            }
-            else if (i > 0)
-            {
-                _str.Append(pStr.AsSpan(0, i));
+                if (c == '\0')
+                    break;
+                _str.Append(c);
             }
         }
 

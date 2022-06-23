@@ -3,7 +3,12 @@
 
 namespace System
 {
-    internal sealed class Empty
+#if NATIVEAOT
+    public // Needs to be public so that Reflection.Core can see it.
+#else
+    internal
+#endif
+    sealed class Empty
     {
         private Empty()
         {

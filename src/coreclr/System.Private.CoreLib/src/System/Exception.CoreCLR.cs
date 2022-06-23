@@ -274,32 +274,5 @@ namespace System
 
             return true;
         }
-
-        // used by vm
-        internal string? GetHelpContext(out uint helpContext)
-        {
-            helpContext = 0;
-            string? helpFile = HelpLink;
-
-            int poundPos, digitEnd;
-
-            if (helpFile is null || (poundPos = helpFile.LastIndexOf('#')) == -1)
-            {
-                return helpFile;
-            }
-
-            for (digitEnd = poundPos + 1; digitEnd < helpFile.Length; digitEnd++)
-            {
-                if (char.IsWhiteSpace(helpFile[digitEnd]))
-                    break;
-            }
-
-            if (uint.TryParse(helpFile.AsSpan(poundPos + 1, digitEnd - poundPos - 1), out helpContext))
-            {
-                helpFile = helpFile.Substring(0, poundPos);
-            }
-
-            return helpFile;
-        }
     }
 }

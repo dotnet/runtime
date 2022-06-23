@@ -457,7 +457,7 @@ namespace System.IO.Pipes
 
         // Gets the transmission mode for the pipe.  This is virtual so that subclassing types can
         // override this in cases where only one mode is legal (such as anonymous pipes)
-        public virtual unsafe PipeTransmissionMode TransmissionMode
+        public unsafe virtual PipeTransmissionMode TransmissionMode
         {
             get
             {
@@ -488,7 +488,7 @@ namespace System.IO.Pipes
 
         // Gets the buffer size in the inbound direction for the pipe. This checks if pipe has read
         // access. If that passes, call to GetNamedPipeInfo will succeed.
-        public virtual unsafe int InBufferSize
+        public unsafe virtual int InBufferSize
         {
             get
             {
@@ -512,7 +512,7 @@ namespace System.IO.Pipes
         // if it's an outbound only pipe because GetNamedPipeInfo requires read access to the pipe.
         // However, returning cached is good fallback, especially if user specified a value in
         // the ctor.
-        public virtual unsafe int OutBufferSize
+        public unsafe virtual int OutBufferSize
         {
             get
             {

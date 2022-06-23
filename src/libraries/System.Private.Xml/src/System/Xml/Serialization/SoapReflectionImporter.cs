@@ -1,19 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection;
-using System;
-using System.Globalization;
-using System.Xml.Schema;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Threading;
-using System.Xml;
-using System.Xml.Serialization;
-using System.Diagnostics.CodeAnalysis;
-
 namespace System.Xml.Serialization
 {
+    using System.Reflection;
+    using System;
+    using System.Globalization;
+    using System.Xml.Schema;
+    using System.Collections.Generic;
+    using System.ComponentModel;
+    using System.Threading;
+    using System.Xml;
+    using System.Xml.Serialization;
+    using System.Diagnostics.CodeAnalysis;
+
     public class SoapReflectionImporter
     {
         private readonly TypeScope _typeScope;
@@ -89,7 +89,7 @@ namespace System.Xml.Serialization
             element.IsSoap = true;
             element.Mapping = ImportTypeMapping(_modelScope.GetTypeModel(type), new RecursionLimiter());
             element.Name = element.Mapping.DefaultElementName;
-            element.Namespace = element.Mapping.Namespace ?? defaultNamespace;
+            element.Namespace = element.Mapping.Namespace == null ? defaultNamespace : element.Mapping.Namespace;
             element.Form = XmlSchemaForm.Qualified;
             XmlTypeMapping xmlMapping = new XmlTypeMapping(_typeScope, element);
             xmlMapping.SetKeyInternal(XmlMapping.GenerateKey(type, null, defaultNamespace));
@@ -125,7 +125,7 @@ namespace System.Xml.Serialization
 
             element.Mapping = ImportMembersMapping(members, ns, hasWrapperElement, writeAccessors, validate, new RecursionLimiter());
             element.Mapping.TypeName = elementName;
-            element.Namespace = element.Mapping.Namespace ?? ns;
+            element.Namespace = element.Mapping.Namespace == null ? ns : element.Mapping.Namespace;
             element.Form = XmlSchemaForm.Qualified;
             XmlMembersMapping xmlMapping = new XmlMembersMapping(_typeScope, element, access);
             xmlMapping.IsSoap = true;
@@ -508,8 +508,9 @@ namespace System.Xml.Serialization
             TypeMapping? existingMapping = (TypeMapping?)_types[uniqueName, ns];
             while (existingMapping != null)
             {
-                if (existingMapping is ArrayMapping arrayMapping)
+                if (existingMapping is ArrayMapping)
                 {
+                    ArrayMapping arrayMapping = (ArrayMapping)existingMapping;
                     if (AccessorMapping.ElementsMatch(arrayMapping.Elements, mapping.Elements))
                     {
                         break;

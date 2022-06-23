@@ -636,7 +636,7 @@ namespace System.Collections.Immutable
             {
                 Requires.Range(index >= 0, nameof(index));
                 Requires.Range(count >= 0, nameof(count));
-                comparer ??= Comparer<T>.Default;
+                comparer = comparer ?? Comparer<T>.Default;
 
                 if (this.IsEmpty || count <= 0)
                 {
@@ -748,7 +748,7 @@ namespace System.Collections.Immutable
                 Requires.Range(count <= this.Count, nameof(count));
                 Requires.Range(index + count <= this.Count, nameof(count));
 
-                equalityComparer ??= EqualityComparer<T>.Default;
+                equalityComparer = equalityComparer ?? EqualityComparer<T>.Default;
                 using (var enumerator = new Enumerator(this, startIndex: index, count: count))
                 {
                     while (enumerator.MoveNext())
@@ -789,7 +789,7 @@ namespace System.Collections.Immutable
                 Requires.Range(count >= 0 && count <= this.Count, nameof(count));
                 Requires.Argument(index - count + 1 >= 0);
 
-                equalityComparer ??= EqualityComparer<T>.Default;
+                equalityComparer = equalityComparer ?? EqualityComparer<T>.Default;
                 using (var enumerator = new Enumerator(this, startIndex: index, count: count, reversed: true))
                 {
                     while (enumerator.MoveNext())

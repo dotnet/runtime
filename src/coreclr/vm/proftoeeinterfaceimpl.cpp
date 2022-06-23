@@ -918,8 +918,8 @@ void __stdcall UpdateGenerationBounds()
         GC_NOTRIGGER;
         MODE_ANY; // can be called even on GC threads
 #ifdef PROFILING_SUPPORTED
-        PRECONDITION(InterlockedIncrement(&s_generationTableWriterCount) == 1);
-        POSTCONDITION(InterlockedDecrement(&s_generationTableWriterCount) == 0);
+        PRECONDITION(FastInterlockIncrement(&s_generationTableWriterCount) == 1);
+        POSTCONDITION(FastInterlockDecrement(&s_generationTableWriterCount) == 0);
 #endif // PROFILING_SUPPORTED
     } CONTRACT_END;
 

@@ -12,7 +12,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
-    public static class DisplayNameHelpers
+    internal static class DisplayNameHelpers
     {
         public static string GetDisplayName(this TypeSystemEntity entity)
         {

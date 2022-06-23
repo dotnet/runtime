@@ -76,22 +76,24 @@ internal static partial class Interop
         // IP_ADAPTER_WINS_SERVER_ADDRESS
         // IP_ADAPTER_GATEWAY_ADDRESS
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct IpAdapterAddress
+        internal struct IpAdapterAddress
         {
             internal uint length;
             internal AdapterAddressFlags flags;
-            internal IpAdapterAddress* next;
+            internal IntPtr next;
             internal IpSocketAddress address;
 
             internal static InternalIPAddressCollection MarshalIpAddressCollection(IntPtr ptr)
             {
                 InternalIPAddressCollection addressList = new InternalIPAddressCollection();
 
-                IpAdapterAddress* pIpAdapterAddress = (IpAdapterAddress*)ptr;
-                while (pIpAdapterAddress != null)
+                while (ptr != IntPtr.Zero)
                 {
-                    addressList.InternalAdd(pIpAdapterAddress->address.MarshalIPAddress());
-                    pIpAdapterAddress = pIpAdapterAddress->next;
+                    IpAdapterAddress addressStructure = Marshal.PtrToStructure<IpAdapterAddress>(ptr);
+                    IPAddress address = addressStructure.address.MarshalIPAddress();
+                    addressList.InternalAdd(address);
+
+                    ptr = addressStructure.next;
                 }
 
                 return addressList;
@@ -101,12 +103,13 @@ internal static partial class Interop
             {
                 IPAddressInformationCollection addressList = new IPAddressInformationCollection();
 
-                IpAdapterAddress* pIpAdapterAddress = (IpAdapterAddress*)ptr;
-                while (pIpAdapterAddress != null)
+                while (ptr != IntPtr.Zero)
                 {
-                    addressList.InternalAdd(new SystemIPAddressInformation(
-                        pIpAdapterAddress->address.MarshalIPAddress(), pIpAdapterAddress->flags));
-                    pIpAdapterAddress = pIpAdapterAddress->next;
+                    IpAdapterAddress addressStructure = Marshal.PtrToStructure<IpAdapterAddress>(ptr);
+                    IPAddress address = addressStructure.address.MarshalIPAddress();
+                    addressList.InternalAdd(new SystemIPAddressInformation(address, addressStructure.flags));
+
+                    ptr = addressStructure.next;
                 }
 
                 return addressList;
@@ -114,11 +117,11 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct IpAdapterUnicastAddress
+        internal struct IpAdapterUnicastAddress
         {
             internal uint length;
             internal AdapterAddressFlags flags;
-            internal IpAdapterUnicastAddress* next;
+            internal IntPtr next;
             internal IpSocketAddress address;
             internal PrefixOrigin prefixOrigin;
             internal SuffixOrigin suffixOrigin;
@@ -129,45 +132,37 @@ internal static partial class Interop
             internal byte prefixLength;
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct IpAdapterAddresses
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        internal struct IpAdapterAddresses
         {
             internal const int MAX_ADAPTER_ADDRESS_LENGTH = 8;
 
             internal uint length;
             internal uint index;
-            internal IpAdapterAddresses* next;
+            internal IntPtr next;
 
-            private IntPtr _adapterName; // ANSI string
-            internal string AdapterName => Marshal.PtrToStringAnsi(_adapterName)!;
+            // Needs to be ANSI.
+            [MarshalAs(UnmanagedType.LPStr)]
+            internal string AdapterName;
 
             internal IntPtr firstUnicastAddress;
             internal IntPtr firstAnycastAddress;
             internal IntPtr firstMulticastAddress;
             internal IntPtr firstDnsServerAddress;
 
-            private IntPtr _dnsSuffix;
-            internal string DnsSuffix => Marshal.PtrToStringUni(_dnsSuffix)!;
-
-            private IntPtr _description;
-            internal string Description => Marshal.PtrToStringUni(_description)!;
-
-            private IntPtr _friendlyName;
-            internal string FriendlyName => Marshal.PtrToStringUni(_friendlyName)!;
-
-            private fixed byte _address[MAX_ADAPTER_ADDRESS_LENGTH];
-            private uint _addressLength;
-            internal byte[] Address => MemoryMarshal.CreateReadOnlySpan<byte>(ref _address[0], (int)_addressLength).ToArray();
-
+            internal string dnsSuffix;
+            internal string description;
+            internal string friendlyName;
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = MAX_ADAPTER_ADDRESS_LENGTH)]
+            internal byte[] address;
+            internal uint addressLength;
             internal AdapterFlags flags;
             internal uint mtu;
             internal NetworkInterfaceType type;
             internal OperationalStatus operStatus;
             internal uint ipv6Index;
-
-            private fixed uint _zoneIndices[16];
-            internal uint[] ZoneIndices => MemoryMarshal.CreateReadOnlySpan<uint>(ref _zoneIndices[0], 16).ToArray();
-
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
+            internal uint[] zoneIndices;
             internal IntPtr firstPrefix;
 
             internal ulong transmitLinkSpeed;
@@ -179,11 +174,13 @@ internal static partial class Interop
             internal ulong luid;
             internal IpSocketAddress dhcpv4Server;
             internal uint compartmentId;
-            internal fixed byte networkGuid[16];
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
+            internal byte[] networkGuid;
             internal InterfaceConnectionType connectionType;
             internal InterfaceTunnelType tunnelType;
             internal IpSocketAddress dhcpv6Server; // Never available in Windows.
-            internal fixed byte dhcpv6ClientDuid[130];
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 130)]
+            internal byte[] dhcpv6ClientDuid;
             internal uint dhcpv6ClientDuidLength;
             internal uint dhcpV6Iaid;
 
@@ -214,11 +211,11 @@ internal static partial class Interop
         /// <summary>
         ///   IP_PER_ADAPTER_INFO - per-adapter IP information such as DNS server list.
         /// </summary>
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
         internal struct IpPerAdapterInfo
         {
-            internal uint autoconfigEnabled;
-            internal uint autoconfigActive;
+            internal bool autoconfigEnabled;
+            internal bool autoconfigActive;
             internal IntPtr currentDnsServer; /* IpAddressList* */
             internal IpAddrString dnsServerList;
         };
@@ -227,12 +224,14 @@ internal static partial class Interop
         ///   Store an IP address with its corresponding subnet mask,
         ///   both as dotted decimal strings.
         /// </summary>
-        [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct IpAddrString
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+        internal struct IpAddrString
         {
-            internal IpAddrString* Next;      /* struct _IpAddressList* */
-            internal fixed byte IpAddress[16];
-            internal fixed byte IpMask[16];
+            internal IntPtr Next;      /* struct _IpAddressList* */
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 16)]
+            internal string IpAddress;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 16)]
+            internal string IpMask;
             internal uint Context;
         }
 

@@ -941,7 +941,7 @@ namespace Internal.Runtime.TypeLoader
                         }
                         else
                         {
-                            seriesSize -= size;
+                            seriesSize = seriesSize - size;
                             *ptr-- = (void*)seriesOffset;
                             *ptr-- = (void*)seriesSize;
                         }

@@ -585,7 +585,7 @@ typedef struct {
 
 #define MONO_ARCH_HAS_MONO_CONTEXT 1
 
-#elif (defined (HOST_POWERPC) && !defined (MONO_CROSS_COMPILE)) || defined (TARGET_POWERPC) /* defined(__arm__) */
+#elif defined(__mono_ppc__) /* defined(__arm__) */
 
 /* we define our own structure and we'll copy the data
  * from sigcontext/ucontext/mach when we need it.
@@ -593,7 +593,7 @@ typedef struct {
  * We might also want to add an additional field to propagate
  * the original context from the signal handler.
  */
-#if (defined (HOST_POWERPC64) && !defined (MONO_CROSS_COMPILE)) || defined (TARGET_POWERPC64)
+#ifdef __mono_ppc64__
 
 typedef struct {
 	gulong sc_ir;          // pc
@@ -683,7 +683,7 @@ typedef struct {
 		: "memory"			\
 	)
 
-#else /* !defined(HOST_POWERPC64) */
+#else /* !defined(__mono_ppc64__) */
 
 typedef struct {
 	host_mgreg_t sc_ir;          // pc

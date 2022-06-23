@@ -76,6 +76,9 @@ ASMCONSTANTS_C_ASSERT(MethodTable__m_BaseSize == offsetof(MethodTable, m_BaseSiz
 #define MethodTable__m_dwFlags         0x0
 ASMCONSTANTS_C_ASSERT(MethodTable__m_dwFlags == offsetof(MethodTable, m_dwFlags));
 
+#define MethodTable__m_pWriteableData   DBG_FRE(0x1c, 0x18)
+ASMCONSTANTS_C_ASSERT(MethodTable__m_pWriteableData == offsetof(MethodTable, m_pWriteableData));
+
 #define MethodTable__enum_flag_ContainsPointers 0x01000000
 ASMCONSTANTS_C_ASSERT(MethodTable__enum_flag_ContainsPointers == MethodTable::enum_flag_ContainsPointers);
 
@@ -84,6 +87,12 @@ ASMCONSTANTS_C_ASSERT(MethodTable__m_ElementType == offsetof(MethodTable, m_pMul
 
 #define SIZEOF__MethodTable             DBG_FRE(0x2c, 0x28)
 ASMCONSTANTS_C_ASSERT(SIZEOF__MethodTable == sizeof(MethodTable));
+
+#define MethodTableWriteableData__m_dwFlags 0x00
+ASMCONSTANTS_C_ASSERT(MethodTableWriteableData__m_dwFlags == offsetof(MethodTableWriteableData, m_dwFlags));
+
+#define MethodTableWriteableData__enum_flag_Unrestored 0x04
+ASMCONSTANTS_C_ASSERT(MethodTableWriteableData__enum_flag_Unrestored == MethodTableWriteableData::enum_flag_Unrestored);
 
 #define ArrayBase__m_NumComponents     0x4
 ASMCONSTANTS_C_ASSERT(ArrayBase__m_NumComponents == offsetof(ArrayBase, m_NumComponents));

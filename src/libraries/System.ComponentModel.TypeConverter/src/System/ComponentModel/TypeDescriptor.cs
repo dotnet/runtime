@@ -1576,9 +1576,11 @@ namespace System.ComponentModel
             {
                 TypeDescriptionNode? head = (TypeDescriptionNode?)s_providerTable[key];
                 TypeDescriptionNode? target = head;
+                TypeDescriptionNode? prev = null;
 
                 while (target != null && target.Provider != provider)
                 {
+                    prev = target;
                     target = target.Next;
                 }
 

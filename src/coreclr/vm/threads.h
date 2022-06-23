@@ -1068,13 +1068,13 @@ public:
     void SetThreadState(ThreadState ts)
     {
         LIMITED_METHOD_CONTRACT;
-        InterlockedOr((LONG*)&m_State, ts);
+        FastInterlockOr((DWORD*)&m_State, ts);
     }
 
     void ResetThreadState(ThreadState ts)
     {
         LIMITED_METHOD_CONTRACT;
-        InterlockedAnd((LONG*)&m_State, ~ts);
+        FastInterlockAnd((DWORD*)&m_State, ~ts);
     }
 
     BOOL HasThreadState(ThreadState ts)
@@ -1138,13 +1138,13 @@ public:
     void SetSyncBlockCleanup()
     {
         LIMITED_METHOD_CONTRACT;
-        InterlockedOr((LONG*)&m_ThreadTasks, TT_CleanupSyncBlock);
+        FastInterlockOr((ULONG *)&m_ThreadTasks, TT_CleanupSyncBlock);
     }
 
     void ResetSyncBlockCleanup()
     {
         LIMITED_METHOD_CONTRACT;
-        InterlockedAnd((LONG*)&m_ThreadTasks, ~TT_CleanupSyncBlock);
+        FastInterlockAnd((ULONG *)&m_ThreadTasks, ~TT_CleanupSyncBlock);
     }
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -1157,14 +1157,14 @@ public:
     void SetCoInitialized()
     {
         LIMITED_METHOD_CONTRACT;
-        InterlockedOr((LONG*)&m_State, TS_CoInitialized);
-        InterlockedAnd((LONG*)&m_ThreadTasks, ~TT_CallCoInitialize);
+        FastInterlockOr((ULONG *)&m_State, TS_CoInitialized);
+        FastInterlockAnd((ULONG*)&m_ThreadTasks, ~TT_CallCoInitialize);
     }
 
     void ResetCoInitialized()
     {
         LIMITED_METHOD_CONTRACT;
-        ResetThreadState(TS_CoInitialized);
+        FastInterlockAnd((ULONG *)&m_State,~TS_CoInitialized);
     }
 
 #ifdef FEATURE_COMINTEROP
@@ -1190,13 +1190,13 @@ public:
     void SetRequiresCoInitialize()
     {
         LIMITED_METHOD_CONTRACT;
-        InterlockedOr((LONG*)&m_ThreadTasks, TT_CallCoInitialize);
+        FastInterlockOr((ULONG *)&m_ThreadTasks, TT_CallCoInitialize);
     }
 
     void ResetRequiresCoInitialize()
     {
         LIMITED_METHOD_CONTRACT;
-        InterlockedAnd((LONG*)&m_ThreadTasks,~TT_CallCoInitialize);
+        FastInterlockAnd((ULONG *)&m_ThreadTasks,~TT_CallCoInitialize);
     }
 
     void CleanupCOMState();
@@ -1265,7 +1265,7 @@ public:
     void SetExecutingOnAltStack()
     {
         LIMITED_METHOD_CONTRACT;
-        SetThreadState(TS_ExecutingOnAltStack);
+        FastInterlockOr((ULONG *) &m_State, TS_ExecutingOnAltStack);
     }
 
     DWORD IsBackground()
@@ -2103,7 +2103,7 @@ public:
 #else   // _DEBUG
         return
 #endif //_DEBUG
-            InterlockedIncrement((LONG*)&m_ExternalRefCount);
+            FastInterlockIncrement((LONG*)&m_ExternalRefCount);
 
 #ifdef _DEBUG
         // This should never be called on a thread being destroyed
@@ -2121,7 +2121,7 @@ public:
         return
 #endif //_DEBUG
 
-            InterlockedDecrement((LONG*)&m_ExternalRefCount);
+            FastInterlockDecrement((LONG*)&m_ExternalRefCount);
 
 #ifdef _DEBUG
         // This should never cause the last reference on the thread to be released
@@ -2215,7 +2215,6 @@ public:
     {
         SuspendForGC,
         SuspendForDebugger,
-        ThreadAbort,
     };
 
     bool InjectActivation(ActivationReason reason);
@@ -2322,7 +2321,7 @@ public:
     void        SetIsThreadPoolThread()
     {
         LIMITED_METHOD_CONTRACT;
-        SetThreadState(TS_TPWorkerThread);
+        FastInterlockOr((ULONG *)&m_State, Thread::TS_TPWorkerThread);
     }
 
     // public suspend functions.  System ones are internal, like for GC.  User ones
@@ -2357,14 +2356,14 @@ private:
     static void AcquireAbortControl(Thread *pThread)
     {
         LIMITED_METHOD_CONTRACT;
-        InterlockedIncrement (&pThread->m_AbortController);
+        FastInterlockIncrement (&pThread->m_AbortController);
     }
 
     static void ReleaseAbortControl(Thread *pThread)
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE (pThread->m_AbortController > 0);
-        InterlockedDecrement (&pThread->m_AbortController);
+        FastInterlockDecrement (&pThread->m_AbortController);
     }
 
     typedef Holder<Thread*, Thread::AcquireAbortControl, Thread::ReleaseAbortControl> AbortControlHolder;
@@ -2445,7 +2444,7 @@ public:
         if (IsRudeAbort()) {
             m_fRudeAbortInitiated = TRUE;
         }
-        SetThreadState(TS_AbortInitiated);
+        FastInterlockOr((ULONG *)&m_State, TS_AbortInitiated);
         // The following should be factored better, but I'm looking for a minimal V1 change.
         ResetUserInterrupted();
     }
@@ -2453,7 +2452,7 @@ public:
     inline void ResetAbortInitiated()
     {
         LIMITED_METHOD_CONTRACT;
-        ResetThreadState(TS_AbortInitiated);
+        FastInterlockAnd((ULONG *)&m_State, ~TS_AbortInitiated);
         m_fRudeAbortInitiated = FALSE;
     }
 
@@ -2823,13 +2822,13 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         Thread *pThread = GetThread();
-        InterlockedIncrement((LONG*)&pThread->m_PreventAsync);
+        FastInterlockIncrement((LONG*)&pThread->m_PreventAsync);
     }
     static void        DecPreventAsync()
     {
         WRAPPER_NO_CONTRACT;
         Thread *pThread = GetThread();
-        InterlockedDecrement((LONG*)&pThread->m_PreventAsync);
+        FastInterlockDecrement((LONG*)&pThread->m_PreventAsync);
     }
 
     bool IsAsyncPrevented()
@@ -3101,7 +3100,7 @@ private:
             //
             ThreadState newState = (ThreadState)(oldState & ~(TS_DebugSuspendPending | TS_SyncSuspended));
 
-            if (InterlockedCompareExchange((LONG *)&m_State, newState, oldState) == (LONG)oldState)
+            if (FastInterlockCompareExchange((LONG *)&m_State, newState, oldState) == (LONG)oldState)
             {
                 break;
             }
@@ -3125,7 +3124,7 @@ public:
         if (m_State & TS_Hijacked)
         {
             *m_ppvHJRetAddrPtr = m_pvHJRetAddr;
-            ResetThreadState(TS_Hijacked);
+            FastInterlockAnd((ULONG *) &m_State, ~TS_Hijacked);
         }
 #endif
     }
@@ -3193,7 +3192,7 @@ private:
     void        ResetUserInterrupted()
     {
         LIMITED_METHOD_CONTRACT;
-        InterlockedExchange(&m_UserInterrupt, 0);
+        FastInterlockExchange(&m_UserInterrupt, 0);
     }
 
     void        HandleThreadInterrupt();
@@ -3265,7 +3264,7 @@ private:
             || m_OSThreadId == 0xbaadf00d
             || ::MatchThreadHandleToOsId(h, (DWORD)m_OSThreadId) );
 #endif
-        InterlockedExchangeT(&m_ThreadHandle, h);
+        FastInterlockExchangePointer(&m_ThreadHandle, h);
     }
 
     // We maintain a correspondence between this object, the ThreadId and ThreadHandle
@@ -3826,7 +3825,7 @@ private:
     bool m_RedirectContextInUse;
 #endif
 
-    BOOL IsContextSafeToRedirect(const T_CONTEXT* pContext);
+    BOOL IsContextSafeToRedirect(T_CONTEXT* pContext);
 
 public:
     PT_CONTEXT GetSavedRedirectContext()
@@ -4089,12 +4088,12 @@ public:
 
         if(HasPendingGCStressInstructionUpdate())
         {
-            *ppbDestCode = InterlockedExchangeT(&m_pbDestCode, NULL);
+            *ppbDestCode = FastInterlockExchangePointer(&m_pbDestCode, NULL);
 
             if(*ppbDestCode != NULL)
             {
                 result = true;
-                *ppbSrcCode = InterlockedExchangeT(&m_pbSrcCode, NULL);
+                *ppbSrcCode = FastInterlockExchangePointer(&m_pbSrcCode, NULL);
 
                 CONSISTENCY_CHECK(*ppbSrcCode != NULL);
             }
@@ -4142,7 +4141,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(!m_debuggerActivePatchSkipper.Load());
-        InterlockedExchangeT(m_debuggerActivePatchSkipper.GetPointer(), patchSkipper);
+        FastInterlockExchangePointer(m_debuggerActivePatchSkipper.GetPointer(), patchSkipper);
         _ASSERTE(m_debuggerActivePatchSkipper.Load());
     }
 
@@ -4150,7 +4149,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(m_debuggerActivePatchSkipper.Load());
-        InterlockedExchangeT(m_debuggerActivePatchSkipper.GetPointer(), NULL);
+        FastInterlockExchangePointer(m_debuggerActivePatchSkipper.GetPointer(), NULL);
         _ASSERTE(!m_debuggerActivePatchSkipper.Load());
     }
 
@@ -4507,17 +4506,6 @@ public:
     #else
         return false;
     #endif
-    }
-
-    static bool UseRedirectForGcStress()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-#ifdef USE_REDIRECT_FOR_GCSTRESS
-        return UseContextBasedThreadRedirection();
-#else
-        return false;
-#endif
     }
 
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
@@ -4980,9 +4968,9 @@ DWORD MsgWaitHelper(int numWaiters, HANDLE* phEvent, BOOL bWaitAll, DWORD millis
 inline void Thread::MarkForDebugSuspend(void)
 {
     WRAPPER_NO_CONTRACT;
-    if (!HasThreadState(TS_DebugSuspendPending))
+    if (!(m_State & TS_DebugSuspendPending))
     {
-        SetThreadState(TS_DebugSuspendPending);
+        FastInterlockOr((ULONG *) &m_State, TS_DebugSuspendPending);
         ThreadStore::TrapReturningThreads(TRUE);
     }
 }
@@ -4993,7 +4981,7 @@ inline void Thread::MarkForDebugSuspend(void)
 inline void Thread::IncrementTraceCallCount()
 {
     WRAPPER_NO_CONTRACT;
-    InterlockedIncrement(&m_TraceCallCount);
+    FastInterlockIncrement(&m_TraceCallCount);
     ThreadStore::TrapReturningThreads(TRUE);
 }
 
@@ -5001,7 +4989,7 @@ inline void Thread::DecrementTraceCallCount()
 {
     WRAPPER_NO_CONTRACT;
     ThreadStore::TrapReturningThreads(FALSE);
-    InterlockedDecrement(&m_TraceCallCount);
+    FastInterlockDecrement(&m_TraceCallCount);
 }
 
 // When we enter an Object.Wait() we are logically inside the synchronized
@@ -6104,7 +6092,7 @@ public:
         if (m_fNeed)
         {
             Thread *pThread = GetThread();
-            InterlockedAnd((LONG*)&pThread->m_State, ~m_state);
+            FastInterlockAnd((ULONG *) &pThread->m_State, ~m_state);
         }
     }
 private:
@@ -6248,14 +6236,5 @@ public:
 private:
     Thread* m_PreviousValue;
 };
-
-#ifndef DACCESS_COMPILE
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-EXTERN_C void STDCALL ClrRestoreNonvolatileContextWorker(PCONTEXT ContextRecord, DWORD64 ssp);
-#endif
-#if !(defined(TARGET_WINDOWS) && defined(TARGET_X86))
-void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord);
-#endif
-#endif // DACCESS_COMPILE
 
 #endif //__threads_h__

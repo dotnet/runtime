@@ -236,9 +236,9 @@ namespace System.Speech.Internal
                         _syncContext.Post(_workerPostCallback, null);
                     }
                 }
-                else
+                else if (WorkItemPending != null)
                 {
-                    WorkItemPending?.Invoke(null);
+                    WorkItemPending(null);
                 }
             }
         }

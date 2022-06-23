@@ -568,49 +568,13 @@ void Compiler::fgWalkAllTreesPre(fgWalkPreFn* visitor, void* pCallBackData)
 }
 
 //-----------------------------------------------------------
-// GetLayout: Get the struct layout for this node.
-//
-// Arguments:
-//     compiler - The Compiler instance
-//
-// Return Value:
-//     The struct layout of this node; it must have one.
-//
-// Notes:
-//     This is the "general" method for getting the layout,
-//     the more efficient node-specific ones should be used
-//     in case the node's oper is known.
-//
-ClassLayout* GenTree::GetLayout(Compiler* compiler) const
-{
-    assert(varTypeIsStruct(TypeGet()));
-
-    switch (OperGet())
-    {
-        case GT_LCL_VAR:
-            return compiler->lvaGetDesc(AsLclVar())->GetLayout();
-
-        case GT_LCL_FLD:
-            return AsLclFld()->GetLayout();
-
-        case GT_OBJ:
-        case GT_BLK:
-            return AsBlk()->GetLayout();
-
-        case GT_MKREFANY:
-            return compiler->typGetObjLayout(compiler->impGetRefAnyClass());
-
-        default:
-            unreached();
-    }
-}
-
-//-----------------------------------------------------------
 // CopyReg: Copy the _gtRegNum/gtRegTag fields.
 //
 // Arguments:
 //     from   -  GenTree node from which to copy
 //
+// Return Value:
+//     None
 void GenTree::CopyReg(GenTree* from)
 {
     _gtRegNum = from->_gtRegNum;
@@ -2432,8 +2396,7 @@ AGAIN:
 
             case GT_LCL_FLD:
                 if ((op1->AsLclFld()->GetLclNum() != op2->AsLclFld()->GetLclNum()) ||
-                    (op1->AsLclFld()->GetLclOffs() != op2->AsLclFld()->GetLclOffs()) ||
-                    (op1->AsLclFld()->GetLayout() != op2->AsLclFld()->GetLayout()))
+                    (op1->AsLclFld()->GetLclOffs() != op2->AsLclFld()->GetLclOffs()))
                 {
                     break;
                 }
@@ -2829,7 +2792,6 @@ AGAIN:
                 break;
             case GT_LCL_FLD:
                 hash = genTreeHashAdd(hash, tree->AsLclFld()->GetLclNum());
-                hash = genTreeHashAdd(hash, tree->AsLclFld()->GetLayout());
                 add  = tree->AsLclFld()->GetLclOffs();
                 break;
 
@@ -4437,11 +4399,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 {
                     costSz = 10;
                     costEx = 2;
-                    if (con->IsIconHandle())
-                    {
-                        // A sort of a hint for CSE to try harder for class handles
-                        costEx += 1;
-                    }
                 }
 #endif // TARGET_AMD64
                 else
@@ -4682,11 +4639,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 {
                     costEx += 1;
                     costSz += 1;
-                }
-                else if (tree->TypeIs(TYP_STRUCT))
-                {
-                    costEx += IND_COST_EX;
-                    costSz += 2;
                 }
                 break;
 
@@ -6354,20 +6306,16 @@ bool GenTree::OperIsImplicitIndir() const
 }
 
 //------------------------------------------------------------------------------
-// OperExceptions : Get exception set this tree may throw.
+// OperMayThrow : Check whether the operation may throw.
 //
 //
 // Arguments:
 //    comp      -  Compiler instance
 //
 // Return Value:
-//    A bit set of exceptions this tree may throw.
-//
-// Remarks:
-//    Should not be used on calls given that we can say nothing precise about
-//    those.
-//
-ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
+//    True if the given operator may cause an exception
+
+bool GenTree::OperMayThrow(Compiler* comp)
 {
     GenTree* op;
 
@@ -6384,40 +6332,26 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 
             if (varTypeIsFloating(op->TypeGet()))
             {
-                return ExceptionSetFlags::None;
+                return false; // Floating point division does not throw.
             }
 
             // For integers only division by 0 or by -1 can throw
-            if (op->IsIntegralConst())
+            if (op->IsIntegralConst() && !op->IsIntegralConst(0) && !op->IsIntegralConst(-1))
             {
-                if (op->IsIntegralConst(0))
-                {
-                    return ExceptionSetFlags::DivideByZeroException;
-                }
-                if (op->IsIntegralConst(-1))
-                {
-                    return ExceptionSetFlags::ArithmeticException;
-                }
-
-                return ExceptionSetFlags::None;
+                return false;
             }
-
-            return ExceptionSetFlags::DivideByZeroException | ExceptionSetFlags::ArithmeticException;
+            return true;
 
         case GT_INTRINSIC:
             // If this is an intrinsic that represents the object.GetType(), it can throw an NullReferenceException.
             // Currently, this is the only intrinsic that can throw an exception.
-            if (AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType)
-            {
-                return ExceptionSetFlags::NullReferenceException;
-            }
-
-            return ExceptionSetFlags::None;
+            return AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType;
 
         case GT_CALL:
-            assert(!"Unexpected GT_CALL in OperExceptions");
 
-            return ExceptionSetFlags::All;
+            CorInfoHelpFunc helper;
+            helper = comp->eeGetHelperNum(this->AsCall()->gtCallMethHnd);
+            return ((helper == CORINFO_HELP_UNDEF) || !comp->s_helperCallProperties.NoThrow(helper));
 
         case GT_IND:
         case GT_BLK:
@@ -6425,28 +6359,14 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
         case GT_NULLCHECK:
         case GT_STORE_BLK:
         case GT_STORE_DYN_BLK:
-            if (((this->gtFlags & GTF_IND_NONFAULTING) == 0) && comp->fgAddrCouldBeNull(this->AsIndir()->Addr()))
-            {
-                return ExceptionSetFlags::NullReferenceException;
-            }
-
-            return ExceptionSetFlags::None;
+            return (((this->gtFlags & GTF_IND_NONFAULTING) == 0) && comp->fgAddrCouldBeNull(this->AsIndir()->Addr()));
 
         case GT_ARR_LENGTH:
-            if (((this->gtFlags & GTF_IND_NONFAULTING) == 0) && comp->fgAddrCouldBeNull(this->AsArrLen()->ArrRef()))
-            {
-                return ExceptionSetFlags::NullReferenceException;
-            }
-
-            return ExceptionSetFlags::None;
+            return (((this->gtFlags & GTF_IND_NONFAULTING) == 0) &&
+                    comp->fgAddrCouldBeNull(this->AsArrLen()->ArrRef()));
 
         case GT_ARR_ELEM:
-            if (comp->fgAddrCouldBeNull(this->AsArrElem()->gtArrObj))
-            {
-                return ExceptionSetFlags::NullReferenceException;
-            }
-
-            return ExceptionSetFlags::None;
+            return comp->fgAddrCouldBeNull(this->AsArrElem()->gtArrObj);
 
         case GT_FIELD:
         {
@@ -6454,28 +6374,19 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 
             if (fldObj != nullptr)
             {
-                if (comp->fgAddrCouldBeNull(fldObj))
-                {
-                    return ExceptionSetFlags::NullReferenceException;
-                }
+                return comp->fgAddrCouldBeNull(fldObj);
             }
 
-            return ExceptionSetFlags::None;
+            return false;
         }
 
         case GT_BOUNDS_CHECK:
-        case GT_INDEX_ADDR:
-            return ExceptionSetFlags::IndexOutOfRangeException;
-
         case GT_ARR_INDEX:
         case GT_ARR_OFFSET:
-            return ExceptionSetFlags::NullReferenceException;
-
-        case GT_CKFINITE:
-            return ExceptionSetFlags::ArithmeticException;
-
         case GT_LCLHEAP:
-            return ExceptionSetFlags::StackOverflowException;
+        case GT_CKFINITE:
+        case GT_INDEX_ADDR:
+            return true;
 
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
@@ -6487,42 +6398,23 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
                 // This operation contains an implicit indirection
                 //   it could throw a null reference exception.
                 //
-                return ExceptionSetFlags::NullReferenceException;
+                return true;
             }
-
-            return ExceptionSetFlags::None;
+            break;
         }
 #endif // FEATURE_HW_INTRINSICS
         default:
-            if (gtOverflowEx())
-            {
-                return ExceptionSetFlags::OverflowException;
-            }
-
-            return ExceptionSetFlags::None;
+            break;
     }
-}
 
-//------------------------------------------------------------------------------
-// OperMayThrow : Check whether the operation may throw.
-//
-//
-// Arguments:
-//    comp      -  Compiler instance
-//
-// Return Value:
-//    True if the given operator may cause an exception
-//
-bool GenTree::OperMayThrow(Compiler* comp)
-{
-    if (OperIs(GT_CALL))
+    /* Overflow arithmetic operations also throw exceptions */
+
+    if (gtOverflowEx())
     {
-        CorInfoHelpFunc helper;
-        helper = comp->eeGetHelperNum(this->AsCall()->gtCallMethHnd);
-        return ((helper == CORINFO_HELP_UNDEF) || !comp->s_helperCallProperties.NoThrow(helper));
+        return true;
     }
 
-    return OperExceptions(comp) != ExceptionSetFlags::None;
+    return false;
 }
 
 //-----------------------------------------------------------------------------------
@@ -6853,8 +6745,8 @@ GenTree* Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenT
 
 GenTree* Compiler::gtNewIconEmbHndNode(void* value, void* pValue, GenTreeFlags iconFlags, void* compileTimeHandle)
 {
-    GenTreeIntCon* iconNode;
-    GenTree*       handleNode;
+    GenTree* iconNode;
+    GenTree* handleNode;
 
     if (value != nullptr)
     {
@@ -6887,13 +6779,7 @@ GenTree* Compiler::gtNewIconEmbHndNode(void* value, void* pValue, GenTreeFlags i
         handleNode->gtFlags |= GTF_IND_INVARIANT;
     }
 
-    iconNode->gtCompileTimeHandle = (size_t)compileTimeHandle;
-#ifdef DEBUG
-    if (iconFlags == GTF_ICON_FTN_ADDR)
-    {
-        iconNode->gtTargetHandle = (size_t)compileTimeHandle;
-    }
-#endif
+    iconNode->AsIntCon()->gtCompileTimeHandle = (size_t)compileTimeHandle;
 
     return handleNode;
 }
@@ -6933,10 +6819,8 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
             tree = gtNewOperNode(GT_IND, TYP_REF, tree);
             // This indirection won't cause an exception.
             tree->gtFlags |= GTF_IND_NONFAULTING;
-            // String literal objects are also ok to model as invariant.
-            tree->gtFlags |= GTF_IND_INVARIANT;
-            // ..and they are never null.
-            tree->gtFlags |= GTF_IND_NONNULL;
+            // This indirection points into the gloabal heap (it is String Object)
+            tree->gtFlags |= GTF_GLOB_REF;
             break;
 
         default:
@@ -9226,10 +9110,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             m_state = -1;
             return;
 
-// Standard unary operators
-#ifdef TARGET_ARM64
-        case GT_CNEG_LT:
-#endif // TARGET_ARM64
+        // Standard unary operators
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
         case GT_NOT:
@@ -16176,7 +16057,7 @@ bool Compiler::gtIsTypeHandleToRuntimeTypeHelper(GenTreeCall* call)
 //
 // Return Value:
 //    True if so
-//
+
 bool Compiler::gtIsTypeHandleToRuntimeTypeHandleHelper(GenTreeCall* call, CorInfoHelpFunc* pHelper)
 {
     CorInfoHelpFunc helper = CORINFO_HELP_UNDEF;
@@ -16201,61 +16082,6 @@ bool Compiler::gtIsTypeHandleToRuntimeTypeHandleHelper(GenTreeCall* call, CorInf
 bool Compiler::gtIsActiveCSE_Candidate(GenTree* tree)
 {
     return (optValnumCSE_phase && IS_CSE_INDEX(tree->gtCSEnum));
-}
-
-//------------------------------------------------------------------------
-// gtCollectExceptions: walk a tree collecting a bit set of exceptions the tree
-// may throw.
-//
-// Arguments:
-//    tree - tree to examine
-//
-// Return Value:
-//    Bit set of exceptions the tree may throw.
-//
-ExceptionSetFlags Compiler::gtCollectExceptions(GenTree* tree)
-{
-    class ExceptionsWalker final : public GenTreeVisitor<ExceptionsWalker>
-    {
-        ExceptionSetFlags m_preciseExceptions = ExceptionSetFlags::None;
-
-    public:
-        ExceptionsWalker(Compiler* comp) : GenTreeVisitor<ExceptionsWalker>(comp)
-        {
-        }
-
-        enum
-        {
-            DoPreOrder = true,
-        };
-
-        ExceptionSetFlags GetFlags()
-        {
-            return m_preciseExceptions;
-        }
-
-        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
-        {
-            GenTree* tree = *use;
-            if ((tree->gtFlags & GTF_EXCEPT) == 0)
-            {
-                return WALK_SKIP_SUBTREES;
-            }
-
-            m_preciseExceptions |= tree->OperExceptions(m_compiler);
-            return WALK_CONTINUE;
-        }
-    };
-
-    // We only expect the caller to ask for precise exceptions for cases where
-    // it may help with disambiguating between exceptions. If the tree contains
-    // a call it can always throw arbitrary exceptions.
-    assert((tree->gtFlags & GTF_CALL) == 0);
-
-    ExceptionsWalker walker(this);
-    walker.WalkTree(&tree, nullptr);
-    assert(((tree->gtFlags & GTF_EXCEPT) == 0) || (walker.GetFlags() != ExceptionSetFlags::None));
-    return walker.GetFlags();
 }
 
 /*****************************************************************************/
@@ -16576,7 +16402,7 @@ const GenTreeLclVarCommon* GenTree::IsLocalAddrExpr() const
 //
 GenTreeLclVar* GenTree::IsImplicitByrefParameterValue(Compiler* compiler)
 {
-#if FEATURE_IMPLICIT_BYREFS && !defined(TARGET_LOONGARCH64) // TODO-LOONGARCH64-CQ: enable this.
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
     GenTreeLclVar* lcl = nullptr;
 
@@ -16608,7 +16434,7 @@ GenTreeLclVar* GenTree::IsImplicitByrefParameterValue(Compiler* compiler)
         return lcl;
     }
 
-#endif // FEATURE_IMPLICIT_BYREFS && !defined(TARGET_LOONGARCH64)
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
     return nullptr;
 }
@@ -17368,11 +17194,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
                     }
 #endif
                 }
-                else
 #endif
-                {
-                    structHnd = tree->AsLclFld()->GetLayout()->GetClassHandle();
-                }
                 break;
             case GT_LCL_VAR:
             {
@@ -18580,16 +18402,14 @@ var_types GenTreeJitIntrinsic::GetSimdBaseType() const
     return JitType2PreciseVarType(simdBaseJitType);
 }
 
-//------------------------------------------------------------------------
-// OperIsMemoryLoad: Does this SIMD intrinsic have memory load semantics?
-//
-// Return Value:
-//    Whether this intrinsic may throw NullReferenceException if the
-//    address is "null".
-//
+// Returns true for the SIMD Intrinsic instructions that have MemoryLoad semantics, false otherwise
 bool GenTreeSIMD::OperIsMemoryLoad() const
 {
-    return GetSIMDIntrinsicId() == SIMDIntrinsicInitArray;
+    if (GetSIMDIntrinsicId() == SIMDIntrinsicInitArray)
+    {
+        return true;
+    }
+    return false;
 }
 
 // TODO-Review: why are layouts not compared here?
@@ -22588,56 +22408,26 @@ GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(
                            /* isSimdAsHWIntrinsic */ false, op1, op2, op3);
 }
 
-//------------------------------------------------------------------------
-// OperIsMemoryLoad: Does this HWI node have memory load semantics?
-//
-// Arguments:
-//    pAddr - optional [out] parameter for the address
-//
-// Return Value:
-//    Whether this intrinsic may throw NullReferenceException if the
-//    address is "null".
-//
-bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
+// Returns true for the HW Intrinsic instructions that have MemoryLoad semantics, false otherwise
+bool GenTreeHWIntrinsic::OperIsMemoryLoad() const
 {
-    GenTree* addr = nullptr;
-
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     NamedIntrinsic      intrinsicId = GetHWIntrinsicId();
     HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
 
     if (category == HW_Category_MemoryLoad)
     {
-        switch (intrinsicId)
-        {
-#ifdef TARGET_XARCH
-            case NI_SSE_LoadLow:
-            case NI_SSE_LoadHigh:
-            case NI_SSE2_LoadLow:
-            case NI_SSE2_LoadHigh:
-                addr = Op(2);
-                break;
-#endif // TARGET_XARCH
-
-#ifdef TARGET_ARM64
-            case NI_AdvSimd_LoadAndInsertScalar:
-                addr = Op(3);
-                break;
-#endif // TARGET_ARM64
-
-            default:
-                addr = Op(1);
-                break;
-        }
+        return true;
     }
 #ifdef TARGET_XARCH
-    else if (HWIntrinsicInfo::MaybeMemoryLoad(intrinsicId))
+    else if (HWIntrinsicInfo::MaybeMemoryLoad(GetHWIntrinsicId()))
     {
         // Some intrinsics (without HW_Category_MemoryLoad) also have MemoryLoad semantics
         // This is generally because they have both vector and pointer overloads, e.g.,
         // * Vector128<byte> BroadcastScalarToVector128(Vector128<byte> value)
         // * Vector128<byte> BroadcastScalarToVector128(byte* source)
-        //
+        // So, we need to check the argument's type is memory-reference or Vector128
+
         if ((category == HW_Category_SimpleSIMD) || (category == HW_Category_SIMDScalar))
         {
             assert(GetOperandCount() == 1);
@@ -22652,91 +22442,53 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
                 case NI_AVX2_ConvertToVector256Int16:
                 case NI_AVX2_ConvertToVector256Int32:
                 case NI_AVX2_ConvertToVector256Int64:
-                    if (GetAuxiliaryJitType() == CORINFO_TYPE_PTR)
+                {
+                    CorInfoType auxiliaryType = GetAuxiliaryJitType();
+
+                    if (auxiliaryType == CORINFO_TYPE_PTR)
                     {
-                        addr = Op(1);
+                        return true;
                     }
-                    else
-                    {
-                        assert(GetAuxiliaryJitType() == CORINFO_TYPE_UNDEF);
-                    }
-                    break;
+
+                    assert(auxiliaryType == CORINFO_TYPE_UNDEF);
+                    return false;
+                }
 
                 default:
+                {
                     unreached();
+                }
             }
         }
         else if (category == HW_Category_IMM)
         {
-            switch (intrinsicId)
+            // Do we have less than 3 operands?
+            if (GetOperandCount() < 3)
             {
-                case NI_AVX2_GatherVector128:
-                case NI_AVX2_GatherVector256:
-                    addr = Op(1);
-                    break;
-
-                case NI_AVX2_GatherMaskVector128:
-                case NI_AVX2_GatherMaskVector256:
-                    addr = Op(2);
-                    break;
-
-                default:
-                    break;
+                return false;
+            }
+            else if (HWIntrinsicInfo::isAVX2GatherIntrinsic(GetHWIntrinsicId()))
+            {
+                return true;
             }
         }
     }
 #endif // TARGET_XARCH
 #endif // TARGET_XARCH || TARGET_ARM64
-
-    if (pAddr != nullptr)
-    {
-        *pAddr = addr;
-    }
-
-    if (addr != nullptr)
-    {
-        assert(varTypeIsI(addr));
-        return true;
-    }
-
     return false;
 }
 
-//------------------------------------------------------------------------
-// OperIsMemoryLoad: Does this HWI node have memory store semantics?
-//
-// Arguments:
-//    pAddr - optional [out] parameter for the address
-//
-// Return Value:
-//    Whether this intrinsic may mutate heap state and/or throw a
-//    NullReferenceException if the address is "null".
-//
-bool GenTreeHWIntrinsic::OperIsMemoryStore(GenTree** pAddr) const
+// Returns true for the HW Intrinsic instructions that have MemoryStore semantics, false otherwise
+bool GenTreeHWIntrinsic::OperIsMemoryStore() const
 {
-    GenTree* addr = nullptr;
-
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-    NamedIntrinsic      intrinsicId = GetHWIntrinsicId();
-    HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
-
+    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(GetHWIntrinsicId());
     if (category == HW_Category_MemoryStore)
     {
-        switch (intrinsicId)
-        {
-#ifdef TARGET_XARCH
-            case NI_SSE2_MaskMove:
-                addr = Op(3);
-                break;
-#endif // TARGET_XARCH
-
-            default:
-                addr = Op(1);
-                break;
-        }
+        return true;
     }
 #ifdef TARGET_XARCH
-    else if (HWIntrinsicInfo::MaybeMemoryStore(intrinsicId) &&
+    else if (HWIntrinsicInfo::MaybeMemoryStore(GetHWIntrinsicId()) &&
              (category == HW_Category_IMM || category == HW_Category_Scalar))
     {
         // Some intrinsics (without HW_Category_MemoryStore) also have MemoryStore semantics
@@ -22747,44 +22499,29 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore(GenTree** pAddr) const
         // So, the 3-argument form is MemoryStore
         if (GetOperandCount() == 3)
         {
-            switch (intrinsicId)
+            switch (GetHWIntrinsicId())
             {
                 case NI_BMI2_MultiplyNoFlags:
                 case NI_BMI2_X64_MultiplyNoFlags:
-                    addr = Op(3);
-                    break;
-
+                    return true;
                 default:
-                    break;
+                    return false;
             }
         }
     }
 #endif // TARGET_XARCH
 #endif // TARGET_XARCH || TARGET_ARM64
-
-    if (pAddr != nullptr)
-    {
-        *pAddr = addr;
-    }
-
-    if (addr != nullptr)
-    {
-        assert(varTypeIsI(addr));
-        return true;
-    }
-
     return false;
 }
 
-//------------------------------------------------------------------------
-// OperIsMemoryLoadOrStore: Does this HWI node have memory load or store semantics?
-//
-// Return Value:
-//    Whether "this" is "OperIsMemoryLoad" or "OperIsMemoryStore".
-//
+// Returns true for the HW Intrinsic instructions that have MemoryLoad or MemoryStore semantics, false otherwise
 bool GenTreeHWIntrinsic::OperIsMemoryLoadOrStore() const
 {
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     return OperIsMemoryLoad() || OperIsMemoryStore();
+#else
+    return false;
+#endif
 }
 
 NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicId() const
@@ -23385,7 +23122,7 @@ unsigned GenTreeHWIntrinsic::GetResultOpNumForFMA(GenTree* use, GenTree* op1, Ge
 
 unsigned GenTreeLclFld::GetSize() const
 {
-    return TypeIs(TYP_STRUCT) ? GetLayout()->GetSize() : genTypeSize(TypeGet());
+    return genTypeSize(TypeGet());
 }
 
 #ifdef TARGET_ARM

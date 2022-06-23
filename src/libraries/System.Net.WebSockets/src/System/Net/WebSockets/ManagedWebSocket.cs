@@ -620,7 +620,7 @@ namespace System.Net.WebSockets
                 for (int i = 9; i >= 2; i--)
                 {
                     sendBuffer[i] = unchecked((byte)length);
-                    length /= 256;
+                    length = length / 256;
                 }
                 maskOffset = 2 + sizeof(ulong); // additional 8 bytes for 64-bit length
             }

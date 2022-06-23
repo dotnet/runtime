@@ -351,12 +351,11 @@ private:
     GenTree* TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToAndNot(GenTreeOp* andNode);
-    GenTree* TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode);
     void LowerBswapOp(GenTreeOp* node);
 #elif defined(TARGET_ARM64)
     bool IsValidConstForMovImm(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node);
-    void LowerModPow2(GenTree* node);
+    GenTree* LowerModPow2(GenTree* node);
     GenTree* LowerAddForPossibleContainment(GenTreeOp* node);
 #endif // !TARGET_XARCH && !TARGET_ARM64
 #endif // FEATURE_HW_INTRINSICS

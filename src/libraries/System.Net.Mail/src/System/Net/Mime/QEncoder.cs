@@ -21,7 +21,7 @@ namespace System.Net.Mime
         protected override void AppendEncodedCRLF()
         {
             //the encoding for CRLF is =0D=0A
-            WriteState.Append("=0D=0A"u8);
+            WriteState.Append((byte)'=', (byte)'0', (byte)'D', (byte)'=', (byte)'0', (byte)'A');
         }
 
         protected override bool LineBreakNeeded(byte b)

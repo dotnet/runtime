@@ -710,7 +710,10 @@ namespace Internal.Runtime.TypeLoader
 
                     updatedModules[oldModuleCount + newModuleIndex] = newModuleInfo;
 
-                    _moduleRegistrationCallbacks?.Invoke(newModuleInfo);
+                    if (_moduleRegistrationCallbacks != null)
+                    {
+                        _moduleRegistrationCallbacks(newModuleInfo);
+                    }
                 }
 
                 // Atomically update the module map
@@ -731,7 +734,10 @@ namespace Internal.Runtime.TypeLoader
                     Array.Copy(_loadedModuleMap.Modules, 0, updatedModules, 0, oldModuleCount);
                 }
                 updatedModules[oldModuleCount] = newModuleInfo;
-                _moduleRegistrationCallbacks?.Invoke(newModuleInfo);
+                if (_moduleRegistrationCallbacks != null)
+                {
+                    _moduleRegistrationCallbacks(newModuleInfo);
+                }
 
                 // Atomically update the module map
                 _loadedModuleMap = new ModuleMap(updatedModules);

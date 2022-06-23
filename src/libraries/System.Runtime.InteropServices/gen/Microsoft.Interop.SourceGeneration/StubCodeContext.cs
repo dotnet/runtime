@@ -34,11 +34,6 @@ namespace Microsoft.Interop
             Pin,
 
             /// <summary>
-            /// Convert managed data to native data, assuming that any values pinned in the <see cref="Pin"/> stage are pinned.
-            /// </summary>
-            PinnedMarshal,
-
-            /// <summary>
             /// Call the generated P/Invoke
             /// </summary>
             /// <remarks>
@@ -48,25 +43,19 @@ namespace Microsoft.Interop
             Invoke,
 
             /// <summary>
-            /// Capture native values to ensure that we do not leak if an exception is thrown during unmarshalling
-            /// </summary>
-            UnmarshalCapture,
-
-            /// <summary>
             /// Convert native data to managed data
             /// </summary>
             Unmarshal,
 
             /// <summary>
-            /// Notify a marshaller object that the Invoke stage and all stages preceeding the Invoke stage
-            /// successfully completed without any exceptions.
-            /// </summary>
-            NotifyForSuccessfulInvoke,
-
-            /// <summary>
             /// Perform any cleanup required
             /// </summary>
             Cleanup,
+
+            /// <summary>
+            /// Keep alive any managed objects that need to stay alive across the call.
+            /// </summary>
+            KeepAlive,
 
             /// <summary>
             /// Convert native data to managed data even in the case of an exception during

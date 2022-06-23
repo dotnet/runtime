@@ -312,7 +312,7 @@ namespace System.DirectoryServices.AccountManagement
                     bool success = Interop.Advapi32.EqualDomainSid(pCopyOfUserSid, pMachineDomainSid, ref sameDomain);
 
                     // Since both pCopyOfUserSid and pMachineDomainSid should always be account SIDs
-                    Debug.Assert(success);
+                    Debug.Assert(success == true);
 
                     // If user SID is the same domain as the machine domain, and the machine is not a DC then the user is a local (machine) user
                     return sameDomain ? !IsMachineDC(null) : false;
@@ -656,8 +656,8 @@ namespace System.DirectoryServices.AccountManagement
                         "Utils",
                         "ConstructFakePrincipalFromSID: Build principal for SID={0}, server={1}, authority={2}",
                         Utils.ByteArrayToString(sid),
-                        serverName ?? "NULL",
-                        authorityName ?? "NULL");
+                        (serverName != null ? serverName : "NULL"),
+                        (authorityName != null ? authorityName : "NULL"));
 
             Debug.Assert(ClassifySID(sid) == SidType.FakeObject);
 

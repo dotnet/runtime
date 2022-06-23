@@ -8,19 +8,12 @@ namespace System.Formats.Tar
 {
     public sealed partial class GnuTarEntry : System.Formats.Tar.PosixTarEntry
     {
-        public GnuTarEntry(System.Formats.Tar.TarEntry other) { }
         public GnuTarEntry(System.Formats.Tar.TarEntryType entryType, string entryName) { }
         public System.DateTimeOffset AccessTime { get { throw null; } set { } }
         public System.DateTimeOffset ChangeTime { get { throw null; } set { } }
     }
-    public sealed partial class PaxGlobalExtendedAttributesTarEntry : System.Formats.Tar.PosixTarEntry
-    {
-        public PaxGlobalExtendedAttributesTarEntry(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> globalExtendedAttributes) { }
-        public System.Collections.Generic.IReadOnlyDictionary<string, string> GlobalExtendedAttributes { get { throw null; } }
-    }
     public sealed partial class PaxTarEntry : System.Formats.Tar.PosixTarEntry
     {
-        public PaxTarEntry(System.Formats.Tar.TarEntry other) { }
         public PaxTarEntry(System.Formats.Tar.TarEntryType entryType, string entryName) { }
         public PaxTarEntry(System.Formats.Tar.TarEntryType entryType, string entryName, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> extendedAttributes) { }
         public System.Collections.Generic.IReadOnlyDictionary<string, string> ExtendedAttributes { get { throw null; } }
@@ -39,7 +32,6 @@ namespace System.Formats.Tar
         public int Checksum { get { throw null; } }
         public System.IO.Stream? DataStream { get { throw null; } set { } }
         public System.Formats.Tar.TarEntryType EntryType { get { throw null; } }
-        public System.Formats.Tar.TarEntryFormat Format { get { throw null; } }
         public int Gid { get { throw null; } set { } }
         public long Length { get { throw null; } }
         public string LinkName { get { throw null; } set { } }
@@ -106,14 +98,15 @@ namespace System.Formats.Tar
     public sealed partial class TarReader : System.IDisposable
     {
         public TarReader(System.IO.Stream archiveStream, bool leaveOpen = false) { }
+        public System.Formats.Tar.TarEntryFormat Format { get { throw null; } }
+        public System.Collections.Generic.IReadOnlyDictionary<string, string>? GlobalExtendedAttributes { get { throw null; } }
         public void Dispose() { }
         public System.Formats.Tar.TarEntry? GetNextEntry(bool copyData = false) { throw null; }
     }
     public sealed partial class TarWriter : System.IDisposable
     {
-        public TarWriter(System.IO.Stream archiveStream) { }
-        public TarWriter(System.IO.Stream archiveStream, bool leaveOpen = false) { }
-        public TarWriter(System.IO.Stream archiveStream, System.Formats.Tar.TarEntryFormat format = System.Formats.Tar.TarEntryFormat.Pax, bool leaveOpen = false) { }
+        public TarWriter(System.IO.Stream archiveStream, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>? globalExtendedAttributes = null, bool leaveOpen = false) { }
+        public TarWriter(System.IO.Stream archiveStream, System.Formats.Tar.TarEntryFormat archiveFormat, bool leaveOpen = false) { }
         public System.Formats.Tar.TarEntryFormat Format { get { throw null; } }
         public void Dispose() { }
         public void WriteEntry(System.Formats.Tar.TarEntry entry) { }
@@ -121,12 +114,10 @@ namespace System.Formats.Tar
     }
     public sealed partial class UstarTarEntry : System.Formats.Tar.PosixTarEntry
     {
-        public UstarTarEntry(System.Formats.Tar.TarEntry other) { }
         public UstarTarEntry(System.Formats.Tar.TarEntryType entryType, string entryName) { }
     }
     public sealed partial class V7TarEntry : System.Formats.Tar.TarEntry
     {
-        public V7TarEntry(System.Formats.Tar.TarEntry other) { }
         public V7TarEntry(System.Formats.Tar.TarEntryType entryType, string entryName) { }
     }
 }

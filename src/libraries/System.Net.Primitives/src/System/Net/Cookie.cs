@@ -200,7 +200,7 @@ namespace System.Net
             }
             set
             {
-                if (value)
+                if (value == true)
                 {
                     m_expires = DateTime.Now;
                 }
@@ -229,7 +229,7 @@ namespace System.Net
             {
                 if (string.IsNullOrEmpty(value) || !InternalSetName(value))
                 {
-                    throw new CookieException(SR.Format(SR.net_cookie_attribute, "Name", value ?? "<null>"));
+                    throw new CookieException(SR.Format(SR.net_cookie_attribute, "Name", value == null ? "<null>" : value));
                 }
             }
         }
@@ -351,7 +351,7 @@ namespace System.Net
             {
                 if (shouldThrow)
                 {
-                    throw new CookieException(SR.Format(SR.net_cookie_attribute, "Name", m_name ?? "<null>"));
+                    throw new CookieException(SR.Format(SR.net_cookie_attribute, "Name", m_name == null ? "<null>" : m_name));
                 }
                 return false;
             }
@@ -362,7 +362,7 @@ namespace System.Net
             {
                 if (shouldThrow)
                 {
-                    throw new CookieException(SR.Format(SR.net_cookie_attribute, "Value", m_value ?? "<null>"));
+                    throw new CookieException(SR.Format(SR.net_cookie_attribute, "Value", m_value == null ? "<null>" : m_value));
                 }
                 return false;
             }
@@ -392,7 +392,7 @@ namespace System.Net
             // Check/set domain
             //
             // If domain is implicit => assume a) uri is valid, b) just set domain to uri hostname.
-            if (setDefault && m_domain_implicit)
+            if (setDefault && m_domain_implicit == true)
             {
                 m_domain = host;
             }
@@ -413,7 +413,7 @@ namespace System.Net
                     {
                         if (shouldThrow)
                         {
-                            throw new CookieException(SR.Format(SR.net_cookie_attribute, CookieFields.DomainAttributeName, domain ?? "<null>"));
+                            throw new CookieException(SR.Format(SR.net_cookie_attribute, CookieFields.DomainAttributeName, domain == null ? "<null>" : domain));
                         }
                         return false;
                     }
@@ -491,7 +491,7 @@ namespace System.Net
             }
 
             // Check/Set Path
-            if (setDefault && m_path_implicit)
+            if (setDefault && m_path_implicit == true)
             {
                 // This code assumes that the URI path is always valid and contains at least one '/'.
                 switch (m_cookieVariant)

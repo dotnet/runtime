@@ -281,10 +281,10 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 		if ((info->native_size == 1) || (info->native_size == 2) || (info->native_size == 4) || (info->native_size == 8)) {
 			ainfo->storage = ArgValuetypeInReg;
 			ainfo->pair_storage [0] = ArgInIReg;
-			ainfo->pair_regs [0] = GINT32_TO_UINT8 (return_regs [0]);
+			ainfo->pair_regs [0] = return_regs [0];
 			if (info->native_size > 4) {
 				ainfo->pair_storage [1] = ArgInIReg;
-				ainfo->pair_regs [1] = GINT32_TO_UINT8 (return_regs [1]);
+				ainfo->pair_regs [1] = return_regs [1];
 			}
 			return;
 		}

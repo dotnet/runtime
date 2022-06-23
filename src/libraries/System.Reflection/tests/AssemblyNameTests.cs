@@ -235,7 +235,7 @@ namespace System.Reflection.Tests
             AssemblyName an = new AssemblyName("MyAssemblyName");
             Assert.Null(an.CultureName);
         }
-#pragma warning disable SYSLIB0044 // AssemblyName.CodeBase .AssemblyName.EscapedCodeBase are obsolete
+
         [Fact]
         public void Verify_CodeBase()
         {
@@ -259,7 +259,6 @@ namespace System.Reflection.Tests
             n.CodeBase = @"file:///c:/program files/MyAssemblyName.dll";
             Assert.Equal(n.EscapedCodeBase, Uri.EscapeUriString(n.CodeBase));
         }
-#pragma warning restore SYSLIB0044
 
         [Fact]
         public static void Verify_HashAlgorithm()

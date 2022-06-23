@@ -25,13 +25,56 @@
 #define MAX_CACHE_LINE_SIZE 64
 #endif
 
-#ifndef DACCESS_COMPILE
-#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-// Flag to check if atomics feature is available on
-// the machine
-extern bool g_arm64_atomics_present;
-#endif
-#endif
+//========================================================================
+// More convenient names for integer types of a guaranteed size.
+//========================================================================
+
+typedef __int8              I1;
+typedef ArrayDPTR(I1)       PTR_I1;
+typedef unsigned __int8     U1;
+typedef __int16             I2;
+typedef unsigned __int16    U2;
+typedef __int32             I4;
+typedef unsigned __int32    U4;
+typedef __int64             I8;
+typedef unsigned __int64    U8;
+typedef float               R4;
+typedef double              R8;
+
+//
+// Forward the FastInterlock methods to the matching Win32 APIs. They are implemented
+// using compiler intrinsics so they are as fast as they can possibly be.
+//
+
+#define FastInterlockIncrement              InterlockedIncrement
+#define FastInterlockDecrement              InterlockedDecrement
+#define FastInterlockExchange               InterlockedExchange
+#define FastInterlockCompareExchange        InterlockedCompareExchange
+#define FastInterlockExchangeAdd            InterlockedExchangeAdd
+#define FastInterlockExchangeLong           InterlockedExchange64
+#define FastInterlockCompareExchangeLong    InterlockedCompareExchange64
+#define FastInterlockExchangeAddLong        InterlockedExchangeAdd64
+
+//
+// Forward FastInterlock[Compare]ExchangePointer to the
+// Utilcode Interlocked[Compare]ExchangeT.
+//
+#define FastInterlockExchangePointer        InterlockedExchangeT
+#define FastInterlockCompareExchangePointer InterlockedCompareExchangeT
+
+FORCEINLINE void FastInterlockOr(DWORD RAW_KEYWORD(volatile) *p, const int msk)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    InterlockedOr((LONG *)p, msk);
+}
+
+FORCEINLINE void FastInterlockAnd(DWORD RAW_KEYWORD(volatile) *p, const int msk)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    InterlockedAnd((LONG *)p, msk);
+}
 
 #ifndef TARGET_UNIX
 // Copied from malloc.h: don't want to bring in the whole header file.
@@ -79,64 +122,98 @@ BOOL inline FitsInU4(unsigned __int64 val)
     return val == (unsigned __int64)(unsigned __int32)val;
 }
 
-#if defined(DACCESS_COMPILE)
-#define FastInterlockedCompareExchange InterlockedCompareExchange
-#define FastInterlockedCompareExchangeAcquire InterlockedCompareExchangeAcquire
-#define FastInterlockedCompareExchangeRelease InterlockedCompareExchangeRelease
-#else
-
-#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-
-FORCEINLINE LONG  FastInterlockedCompareExchange(
-    LONG volatile *Destination,
-    LONG Exchange,
-    LONG Comperand)
+// returns FALSE if overflows 15 bits: otherwise, (*pa) is incremented by b
+BOOL inline SafeAddUINT15(UINT16 *pa, ULONG b)
 {
-    if (g_arm64_atomics_present)
+    LIMITED_METHOD_CONTRACT;
+
+    UINT16 a = *pa;
+    // first check if overflows 16 bits
+    if ( ((UINT16)b) != b )
     {
-        return (LONG) __casal32((unsigned __int32*) Destination, (unsigned  __int32)Comperand, (unsigned __int32)Exchange);
+        return FALSE;
     }
-    else
+    // now make sure that doesn't overflow 15 bits
+    if (((ULONG)a + b) > 0x00007FFF)
     {
-        return InterlockedCompareExchange(Destination, Exchange, Comperand);
+        return FALSE;
     }
+    (*pa) += (UINT16)b;
+    return TRUE;
 }
 
-FORCEINLINE LONG FastInterlockedCompareExchangeAcquire(
-  IN OUT LONG volatile *Destination,
-  IN LONG Exchange,
-  IN LONG Comperand
-)
+
+// returns FALSE if overflows 16 bits: otherwise, (*pa) is incremented by b
+BOOL inline SafeAddUINT16(UINT16 *pa, ULONG b)
 {
-    if (g_arm64_atomics_present)
+    UINT16 a = *pa;
+    if ( ((UINT16)b) != b )
     {
-        return (LONG) __casa32((unsigned __int32*) Destination, (unsigned  __int32)Comperand, (unsigned __int32)Exchange);
+        return FALSE;
     }
-    else
+    // now make sure that doesn't overflow 16 bits
+    if (((ULONG)a + b) > 0x0000FFFF)
     {
-        return InterlockedCompareExchangeAcquire(Destination, Exchange, Comperand);
+        return FALSE;
     }
+    (*pa) += (UINT16)b;
+    return TRUE;
 }
 
-FORCEINLINE LONG FastInterlockedCompareExchangeRelease(
-  IN OUT LONG volatile *Destination,
-  IN LONG Exchange,
-  IN LONG Comperand
-)
+
+// returns FALSE if overflow: otherwise, (*pa) is incremented by b
+BOOL inline SafeAddUINT32(UINT32 *pa, UINT32 b)
 {
-    if (g_arm64_atomics_present)
+    LIMITED_METHOD_CONTRACT;
+
+    UINT32 a = *pa;
+    if ( ((UINT32)(a + b)) < a)
     {
-        return (LONG) __casl32((unsigned __int32*) Destination, (unsigned  __int32)Comperand, (unsigned __int32)Exchange);
+        return FALSE;
     }
-    else
-    {
-        return InterlockedCompareExchangeRelease(Destination, Exchange, Comperand);
-    }
+    (*pa) += b;
+    return TRUE;
 }
 
-#endif // defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+// returns FALSE if overflow: otherwise, (*pa) is incremented by b
+BOOL inline SafeAddULONG(ULONG *pa, ULONG b)
+{
+    LIMITED_METHOD_CONTRACT;
 
-#endif //defined(DACCESS_COMPILE)
+    ULONG a = *pa;
+    if ( ((ULONG)(a + b)) < a)
+    {
+        return FALSE;
+    }
+    (*pa) += b;
+    return TRUE;
+}
+
+// returns FALSE if overflow: otherwise, (*pa) is multiplied by b
+BOOL inline SafeMulSIZE_T(SIZE_T *pa, SIZE_T b)
+{
+    LIMITED_METHOD_CONTRACT;
+
+#ifdef _DEBUG_IMPL
+    {
+        //Make sure SIZE_T is unsigned
+        SIZE_T m = ((SIZE_T)(-1));
+        SIZE_T z = 0;
+        _ASSERTE(m > z);
+    }
+#endif
+
+
+    SIZE_T a = *pa;
+    const SIZE_T m = ((SIZE_T)(-1));
+    if ( (m / b) < a )
+    {
+        return FALSE;
+    }
+    (*pa) *= b;
+    return TRUE;
+}
+
 
 
 //************************************************************************
@@ -814,6 +891,7 @@ class COMCharacter {
 public:
     //These are here for support from native code.  They are never called from our managed classes.
     static BOOL nativeIsWhiteSpace(WCHAR c);
+    static BOOL nativeIsDigit(WCHAR c);
 };
 
 // ======================================================================================

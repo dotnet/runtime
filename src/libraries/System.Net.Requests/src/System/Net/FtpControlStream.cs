@@ -845,7 +845,7 @@ namespace System.Net
         {
             get
             {
-                return _bannerMessage?.ToString();
+                return (_bannerMessage != null) ? _bannerMessage.ToString() : null;
             }
         }
 
@@ -856,7 +856,7 @@ namespace System.Net
         {
             get
             {
-                return _welcomeMessage?.ToString();
+                return (_welcomeMessage != null) ? _welcomeMessage.ToString() : null;
             }
         }
 
@@ -867,7 +867,7 @@ namespace System.Net
         {
             get
             {
-                return _exitMessage?.ToString();
+                return (_exitMessage != null) ? _exitMessage.ToString() : null;
             }
         }
 
@@ -1039,7 +1039,8 @@ namespace System.Net
                 index--;
 
             int port = Convert.ToByte(parsedList[index--], NumberFormatInfo.InvariantInfo);
-            port |= (Convert.ToByte(parsedList[index--], NumberFormatInfo.InvariantInfo) << 8);
+            port = port |
+                   (Convert.ToByte(parsedList[index--], NumberFormatInfo.InvariantInfo) << 8);
 
             return port;
         }

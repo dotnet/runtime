@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+using System.Net.Quic.Implementations;
 using System.Net.Security;
 using System.Threading.Tasks;
 using Xunit;
@@ -7,10 +8,10 @@ using Xunit.Abstractions;
 
 namespace System.Net.Quic.Tests
 {
+    [ConditionalClass(typeof(QuicTestBase<MsQuicProviderFactory>), nameof(IsSupported))]
     [Collection(nameof(DisableParallelization))]
-    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported))]
     [SkipOnPlatform(TestPlatforms.Windows, "CipherSuitesPolicy is not supported on Windows")]
-    public class MsQuicCipherSuitesPolicyTests : QuicTestBase
+    public class MsQuicCipherSuitesPolicyTests : QuicTestBase<MsQuicProviderFactory>
     {
         public MsQuicCipherSuitesPolicyTests(ITestOutputHelper output) : base(output) { }
 
@@ -18,12 +19,12 @@ namespace System.Net.Quic.Tests
         {
             var listenerOptions = CreateQuicListenerOptions();
             listenerOptions.ServerAuthenticationOptions.CipherSuitesPolicy = serverPolicy;
-            using QuicListener listener = await CreateQuicListener(listenerOptions);
+            using QuicListener listener = CreateQuicListener(listenerOptions);
 
             var clientOptions = CreateQuicClientOptions();
             clientOptions.ClientAuthenticationOptions.CipherSuitesPolicy = clientPolicy;
             clientOptions.RemoteEndPoint = listener.ListenEndPoint;
-            using QuicConnection clientConnection = await CreateQuicConnection(clientOptions);
+            using QuicConnection clientConnection = CreateQuicConnection(clientOptions);
 
             await clientConnection.ConnectAsync();
             await clientConnection.CloseAsync(0);
@@ -44,12 +45,12 @@ namespace System.Net.Quic.Tests
             CipherSuitesPolicy policy = new CipherSuitesPolicy(ciphers);
             var listenerOptions = CreateQuicListenerOptions();
             listenerOptions.ServerAuthenticationOptions.CipherSuitesPolicy = policy;
-            Assert.ThrowsAsync<ArgumentException>(async () => await CreateQuicListener(listenerOptions));
+            Assert.Throws<ArgumentException>(() => CreateQuicListener(listenerOptions));
 
             var clientOptions = CreateQuicClientOptions();
             clientOptions.ClientAuthenticationOptions.CipherSuitesPolicy = policy;
             clientOptions.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, 5000);
-            Assert.ThrowsAsync<ArgumentException>(async () => await CreateQuicConnection(clientOptions));
+            Assert.Throws<ArgumentException>(() => CreateQuicConnection(clientOptions));
         }
 
         [Fact]

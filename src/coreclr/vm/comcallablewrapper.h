@@ -1249,14 +1249,14 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        InterlockedOr((LONG*)&m_flags, enum_IsAggregated);
+        FastInterlockOr((ULONG*)&m_flags, enum_IsAggregated);
     }
 
     void UnMarkAggregated()
     {
         WRAPPER_NO_CONTRACT;
 
-        InterlockedAnd((LONG*)&m_flags, ~enum_IsAggregated);
+        FastInterlockAnd((ULONG*)&m_flags, ~enum_IsAggregated);
     }
 
     BOOL IsHandleWeak()
@@ -1270,14 +1270,14 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        InterlockedOr((LONG*)&m_flags, enum_IsHandleWeak);
+        FastInterlockOr((ULONG*)&m_flags, enum_IsHandleWeak);
     }
 
     VOID ResetHandleStrength()
     {
         WRAPPER_NO_CONTRACT;
 
-        InterlockedAnd((LONG*)&m_flags, ~enum_IsHandleWeak);
+        FastInterlockAnd((ULONG*)&m_flags, ~enum_IsHandleWeak);
     }
 
     // is the object extends from (aggregates) a COM component
@@ -1297,7 +1297,7 @@ public:
     void MarkComActivated()
     {
         LIMITED_METHOD_CONTRACT;
-        InterlockedOr((LONG*)&m_flags, enum_IsComActivated);
+        FastInterlockOr((ULONG*)&m_flags, enum_IsComActivated);
     }
 
     // Determines if the type associated with the ComCallWrapper supports exceptions.

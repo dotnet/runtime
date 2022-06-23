@@ -15,7 +15,7 @@ namespace System.Reflection.TypeLoading
     {
         private const TypeAttributes TypeAttributesSentinel = (TypeAttributes)(-1);
 
-        private protected RoType()
+        protected private RoType()
             : base()
         {
         }

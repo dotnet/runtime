@@ -657,7 +657,7 @@ namespace Internal.Runtime.CompilerHelpers
         {
             internal static CustomMarshallerTable s_customMarshallersTable = new CustomMarshallerTable();
 
-            protected override unsafe object Factory(CustomMarshallerKey key)
+            protected unsafe override object Factory(CustomMarshallerKey key)
             {
                 return key.GetInstanceMethod(key.Cookie);
             }

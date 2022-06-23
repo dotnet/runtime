@@ -231,7 +231,7 @@ namespace System.Globalization
                             continue;
                         }
 
-                        return aUpper - bUpper;
+                        return a - b;
                     }
 
                     //

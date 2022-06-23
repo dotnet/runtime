@@ -121,16 +121,12 @@ namespace System.Text.Json
                     genericArgs[1].UnderlyingSystemType == typeof(JsonElement) ||
                     genericArgs[1].UnderlyingSystemType == typeof(Nodes.JsonNode));
 #endif
-
-                Func<object>? createObjectForExtensionDataProp = jsonPropertyInfo.JsonTypeInfo.CreateObject
-                    ?? jsonPropertyInfo.JsonTypeInfo.CreateObjectForExtensionDataProperty;
-
-                if (createObjectForExtensionDataProp == null)
+                if (jsonPropertyInfo.JsonTypeInfo.CreateObject == null)
                 {
                     // Avoid a reference to the JsonNode type for trimming
                     if (jsonPropertyInfo.PropertyType.FullName == JsonTypeInfo.JsonObjectTypeName)
                     {
-                        extensionData = jsonPropertyInfo.EffectiveConverter.CreateObject(options);
+                        extensionData = jsonPropertyInfo.ConverterBase.CreateObject(options);
                     }
                     else
                     {
@@ -139,7 +135,7 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    extensionData = createObjectForExtensionDataProp();
+                    extensionData = jsonPropertyInfo.JsonTypeInfo.CreateObject();
                 }
 
                 jsonPropertyInfo.SetExtensionDictionaryAsObject(obj, extensionData);

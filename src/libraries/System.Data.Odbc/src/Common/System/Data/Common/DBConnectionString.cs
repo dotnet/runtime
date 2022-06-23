@@ -180,7 +180,7 @@ namespace System.Data.Common
                         restrictions = builder.ToString();
                     }
                 }
-                return restrictions ?? "";
+                return ((null != restrictions) ? restrictions : "");
             }
         }
 

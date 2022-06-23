@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         public virtual TOptions Get(string? name)
         {
-            name ??= Options.DefaultName;
+            name = name ?? Options.DefaultName;
 
             if (!_cache.TryGetValue(name, out TOptions? options))
             {

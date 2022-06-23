@@ -199,7 +199,7 @@ namespace System.Net.Mime
                 ++offset;
             }
             int start = offset;
-            StringBuilder localBuilder = builder ?? new StringBuilder();
+            StringBuilder localBuilder = (builder != null ? builder : new StringBuilder());
             for (; offset < data.Length; offset++)
             {
                 if (data[offset] == '\\')
@@ -278,7 +278,7 @@ namespace System.Net.Mime
 
         internal static string? GetDateTimeString(DateTime value, StringBuilder? builder)
         {
-            StringBuilder localBuilder = builder ?? new StringBuilder();
+            StringBuilder localBuilder = (builder != null ? builder : new StringBuilder());
             localBuilder.Append(value.Day);
             localBuilder.Append(' ');
             localBuilder.Append(s_months[value.Month]);
@@ -379,12 +379,23 @@ namespace System.Net.Mime
             return true;
         }
 
-        internal static bool IsAllowedWhiteSpace(char c) =>
+        internal static bool IsAllowedWhiteSpace(char c)
+        {
             // all allowed whitespace characters
-            c == Tab || c == Space || c == CR || c == LF;
+            return c == Tab || c == Space || c == CR || c == LF;
+        }
 
-        internal static bool HasCROrLF(string data) =>
-            data.AsSpan().IndexOfAny(CR, LF) >= 0;
+        internal static bool HasCROrLF(string data)
+        {
+            for (int i = 0; i < data.Length; i++)
+            {
+                if (data[i] == '\r' || data[i] == '\n')
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
 
         // Is there a FWS ("\r\n " or "\r\n\t") starting at the given index?
         internal static bool IsFWSAt(string data, int index)

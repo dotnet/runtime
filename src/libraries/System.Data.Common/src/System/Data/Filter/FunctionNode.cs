@@ -378,7 +378,7 @@ namespace System.Data
 
                     object first = _arguments![0].Eval(row, version);
 
-                    if (DataExpression.ToBoolean(first))
+                    if (DataExpression.ToBoolean(first) != false)
                     {
                         return _arguments[1].Eval(row, version);
                     }

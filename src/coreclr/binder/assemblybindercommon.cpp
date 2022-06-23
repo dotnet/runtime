@@ -1180,7 +1180,6 @@ HRESULT AssemblyBinderCommon::BindUsingHostAssemblyResolver(/* in */ INT_PTR pMa
 HRESULT AssemblyBinderCommon::BindUsingPEImage(/* in */  AssemblyBinder* pBinder,
                                                /* in */  BINDER_SPACE::AssemblyName *pAssemblyName,
                                                /* in */  PEImage            *pPEImage,
-                                               /* in */  bool               excludeAppPaths,
                                                /* [retval] [out] */  Assembly **ppAssembly)
 {
     HRESULT hr = E_FAIL;
@@ -1209,7 +1208,7 @@ Retry:
                         pAssemblyName,
                         true,  // skipFailureCaching
                         true,  // skipVersionCompatibilityCheck
-                        excludeAppPaths, // excludeAppPaths
+                        false, // excludeAppPaths
                         &bindResult);
 
         if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))

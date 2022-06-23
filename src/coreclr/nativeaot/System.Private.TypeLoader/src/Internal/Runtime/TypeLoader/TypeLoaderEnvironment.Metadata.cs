@@ -417,7 +417,7 @@ namespace Internal.Runtime.TypeLoader
 
                     // what we have now is the base address of the non-gc statics of the type
                     // what we need is the cctor context, which is just before that
-                    ptr -= sizeof(System.Runtime.CompilerServices.StaticClassConstructionContext);
+                    ptr = ptr - sizeof(System.Runtime.CompilerServices.StaticClassConstructionContext);
 
                     return (IntPtr)ptr;
                 }

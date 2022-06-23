@@ -327,9 +327,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 typedef class ICorJitInfo* COMP_HANDLE;
 
-const CORINFO_CLASS_HANDLE  NO_CLASS_HANDLE  = nullptr;
-const CORINFO_FIELD_HANDLE  NO_FIELD_HANDLE  = nullptr;
-const CORINFO_METHOD_HANDLE NO_METHOD_HANDLE = nullptr;
+const CORINFO_CLASS_HANDLE NO_CLASS_HANDLE = nullptr;
+const CORINFO_FIELD_HANDLE NO_FIELD_HANDLE = nullptr;
 
 /*****************************************************************************/
 
@@ -337,8 +336,7 @@ typedef unsigned IL_OFFSET;
 
 const IL_OFFSET BAD_IL_OFFSET = 0xffffffff;
 
-const unsigned BAD_VAR_NUM    = UINT_MAX;
-const uint16_t BAD_LCL_OFFSET = UINT16_MAX;
+const unsigned BAD_VAR_NUM = UINT_MAX;
 
 // Code can't be more than 2^31 in any direction.  This is signed, so it should be used for anything that is
 // relative to something else.
@@ -840,21 +838,14 @@ T dspOffset(T o)
 
 #endif // !defined(DEBUG)
 
-struct LikelyClassMethodRecord
+struct LikelyClassRecord
 {
-    intptr_t handle;
-    UINT32   likelihood;
+    CORINFO_CLASS_HANDLE clsHandle;
+    UINT32               likelihood;
 };
 
-extern "C" UINT32 WINAPI getLikelyClasses(LikelyClassMethodRecord*               pLikelyClasses,
+extern "C" UINT32 WINAPI getLikelyClasses(LikelyClassRecord*                     pLikelyClasses,
                                           UINT32                                 maxLikelyClasses,
-                                          ICorJitInfo::PgoInstrumentationSchema* schema,
-                                          UINT32                                 countSchemaItems,
-                                          BYTE*                                  pInstrumentationData,
-                                          int32_t                                ilOffset);
-
-extern "C" UINT32 WINAPI getLikelyMethods(LikelyClassMethodRecord*               pLikelyMethods,
-                                          UINT32                                 maxLikelyMethods,
                                           ICorJitInfo::PgoInstrumentationSchema* schema,
                                           UINT32                                 countSchemaItems,
                                           BYTE*                                  pInstrumentationData,

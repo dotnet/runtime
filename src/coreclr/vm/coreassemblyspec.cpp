@@ -186,7 +186,7 @@ extern "C" void QCALLTYPE AssemblyName_InitializeAssemblySpec(NativeAssemblyName
     BEGIN_QCALL;
 
     StackSString ssName;
-    ssName.SetAndConvertToUTF8(pAssemblyNameParts->_pName);
+    SString(SString::Literal, pAssemblyNameParts->_pName).ConvertToUTF8(ssName);
 
     AssemblyMetaDataInternal asmInfo;
 
@@ -197,11 +197,11 @@ extern "C" void QCALLTYPE AssemblyName_InitializeAssemblySpec(NativeAssemblyName
 
     SmallStackSString ssLocale;
     if (pAssemblyNameParts->_pCultureName != NULL)
-        ssLocale.SetAndConvertToUTF8(pAssemblyNameParts->_pCultureName);
-    asmInfo.szLocale = (pAssemblyNameParts->_pCultureName != NULL) ? ssLocale.GetUTF8() : NULL;
+        SString(SString::Literal, pAssemblyNameParts->_pCultureName).ConvertToUTF8(ssLocale);
+    asmInfo.szLocale = (pAssemblyNameParts->_pCultureName != NULL) ? ssLocale.GetUTF8NoConvert() : NULL;
 
     // Initialize spec
-    pAssemblySpec->Init(ssName.GetUTF8(), &asmInfo,
+    pAssemblySpec->Init(ssName.GetUTF8NoConvert(), &asmInfo,
         pAssemblyNameParts->_pPublicKeyOrToken, pAssemblyNameParts->_cbPublicKeyOrToken, pAssemblyNameParts->_flags);
 
     // Copy and own any fields we do not own

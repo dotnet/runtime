@@ -309,7 +309,7 @@ namespace System.Reflection.Emit
         {
             if (m_ilGenerator != null)
             {
-                return m_ilGenerator.GetMaxStackSize();
+                return m_ilGenerator.GetMaxStackSize() + ExceptionHandlerCount;
             }
             else
             {
@@ -322,6 +322,8 @@ namespace System.Reflection.Emit
         {
             return m_exceptions;
         }
+
+        internal int ExceptionHandlerCount => m_exceptions != null ? m_exceptions.Length : 0;
 
         internal static int CalculateNumberOfExceptions(__ExceptionInfo[]? excp)
         {

@@ -57,7 +57,6 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (bytesRead != pkcs8.Length)
             {
-                key.Dispose();
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 

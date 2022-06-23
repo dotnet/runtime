@@ -3807,7 +3807,7 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
         else
         {
             BOOL fWatsonAlreadyLaunched = FALSE;
-            if (InterlockedCompareExchange(&g_watsonAlreadyLaunched, 1, 0) != 0)
+            if (FastInterlockCompareExchange(&g_watsonAlreadyLaunched, 1, 0) != 0)
             {
                 fWatsonAlreadyLaunched = TRUE;
             }
@@ -4455,10 +4455,18 @@ LONG DefaultCatchNoSwallowFilter(EXCEPTION_POINTERS *ep, PVOID pv)
     return EXCEPTION_CONTINUE_SEARCH;
 } // LONG DefaultCatchNoSwallowFilter()
 
+// Note: This is used only for CoreCLR on WLC.
+//
 // We keep a pointer to the previous unhandled exception filter.  After we install, we use
-// this to call the previous guy.
+// this to call the previous guy.  When we un-install, we put them back.  Putting them back
+// is a bug -- we have no guarantee that the DLL unload order matches the DLL load order -- we
+// may in fact be putting back a pointer to a DLL that has been unloaded.
+//
 
-static LPTOP_LEVEL_EXCEPTION_FILTER g_pOriginalUnhandledExceptionFilter = NULL;
+// initialize to -1 because NULL won't detect difference between us not having installed our handler
+// yet and having installed it but the original handler was NULL.
+static LPTOP_LEVEL_EXCEPTION_FILTER g_pOriginalUnhandledExceptionFilter = (LPTOP_LEVEL_EXCEPTION_FILTER)-1;
+#define FILTER_NOT_INSTALLED (LPTOP_LEVEL_EXCEPTION_FILTER) -1
 
 
 BOOL InstallUnhandledExceptionFilter() {
@@ -4468,13 +4476,44 @@ BOOL InstallUnhandledExceptionFilter() {
     STATIC_CONTRACT_FORBID_FAULT;
 
 #ifndef TARGET_UNIX
-    g_pOriginalUnhandledExceptionFilter = SetUnhandledExceptionFilter(COMUnhandledExceptionFilter);
+    // We will be here only for CoreCLR on WLC since we dont
+    // register UEF for SL.
+    if (g_pOriginalUnhandledExceptionFilter == FILTER_NOT_INSTALLED) {
 
-    LOG((LF_EH, LL_INFO10, "InstallUnhandledExceptionFilter registered UEF with OS for CoreCLR!\n"));
+        #pragma prefast(push)
+        #pragma prefast(suppress:28725, "Calling to SetUnhandledExceptionFilter is intentional in this case.")
+        g_pOriginalUnhandledExceptionFilter = SetUnhandledExceptionFilter(COMUnhandledExceptionFilter);
+        #pragma prefast(pop)
+
+        // make sure is set (ie. is not our special value to indicate unset)
+        LOG((LF_EH, LL_INFO10, "InstallUnhandledExceptionFilter registered UEF with OS for CoreCLR!\n"));
+    }
+    _ASSERTE(g_pOriginalUnhandledExceptionFilter != FILTER_NOT_INSTALLED);
 #endif // !TARGET_UNIX
 
     // All done - successfully!
     return TRUE;
+}
+
+void UninstallUnhandledExceptionFilter() {
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+    STATIC_CONTRACT_MODE_ANY;
+    STATIC_CONTRACT_FORBID_FAULT;
+
+#ifndef TARGET_UNIX
+    // We will be here only for CoreCLR on WLC or on Mac SL.
+    if (g_pOriginalUnhandledExceptionFilter != FILTER_NOT_INSTALLED) {
+
+        #pragma prefast(push)
+        #pragma prefast(suppress:28725, "Calling to SetUnhandledExceptionFilter is intentional in this case.")
+        SetUnhandledExceptionFilter(g_pOriginalUnhandledExceptionFilter);
+        #pragma prefast(pop)
+
+        g_pOriginalUnhandledExceptionFilter = FILTER_NOT_INSTALLED;
+        LOG((LF_EH, LL_INFO10, "UninstallUnhandledExceptionFilter unregistered UEF from OS for CoreCLR!\n"));
+    }
+#endif // !TARGET_UNIX
 }
 
 //
@@ -4930,9 +4969,48 @@ LONG InternalUnhandledExceptionFilter(
         return retval;
     }
 
-    if (g_pOriginalUnhandledExceptionFilter != NULL)
+    // Chaining back to previous UEF handler could be a potential security risk. See
+    // http://uninformed.org/index.cgi?v=4&a=5&p=1 for details. We are not alone in
+    // stopping the chain - CRT (as of Orcas) is also doing that.
+    //
+    // The change below applies to a thread that starts in native mode and transitions to managed.
+
+    // Let us assume the process loaded two CoreCLRs, C1 and C2, in that order. Thus, in the UEF chain
+    // (assuming no other entity setup their UEF), C2?s UEF will be the topmost.
+    //
+    // Now, assume the stack looks like the following (stack grows down):
+    //
+    // Native frame
+    // Managed Frame (C1)
+    // Managed Frame (C2)
+    // Managed Frame (C1)
+    // Managed Frame (C2)
+    // Managed Frame (C1)
+    //
+    // Suppose an exception is thrown in C1 instance in the last managed frame and it goes unhandled. Eventually
+    // it will reach the OS which will invoke the UEF.  Note that the topmost UEF belongs to C2 instance and it
+    // will start processing the exception. C2?s UEF could return EXCEPTION_CONTINUE_SEARCH to indicate
+    // that we should handoff the processing to the last installed UEF. In the example above, we would handoff
+    // the control to the UEF of the CoreCLR instance that actually threw the exception today. In reality, it
+    // could be some unknown code too.
+    //
+    // Not chaining back to the last UEF, in the case of this example, would imply that certain notifications
+    // (e.g. Unhandled Exception Notification to the  AppDomain) specific to the instance that raised the exception
+    // will not get fired. However, similar behavior can happen today if another UEF sits between
+    // C1 and C2 and that may not callback to C1 or perhaps just terminate process.
+    //
+    // For CoreCLR, this will not be an issue. See
+    // http://sharepoint/sites/clros/Shared%20Documents/Design%20Documents/EH/Chaining%20in%20%20UEF%20-%20One%20Pager.docx
+    // for details.
+    //
+    // Note: Also see the conditional UEF registration with the OS in EEStartupHelper.
+
+    // We would be here only on CoreCLR for WLC since we dont register
+    // the UEF with the OS for SL.
+    if (g_pOriginalUnhandledExceptionFilter != FILTER_NOT_INSTALLED
+        && g_pOriginalUnhandledExceptionFilter != NULL)
     {
-        return g_pOriginalUnhandledExceptionFilter(pExceptionInfo);
+        STRESS_LOG1(LF_EH, LL_INFO100, "InternalUnhandledExceptionFilter: Not chaining back to previous UEF at address %p on CoreCLR!\n", g_pOriginalUnhandledExceptionFilter);
     }
 
     return retval;
@@ -6582,6 +6660,66 @@ struct SavedExceptionInfo
     }
 };
 
+SavedExceptionInfo g_SavedExceptionInfo;  // Globals are guaranteed zero-init;
+
+void InitSavedExceptionInfo()
+{
+    g_SavedExceptionInfo.Init();
+}
+
+EXTERN_C VOID FixContextForFaultingExceptionFrame (
+        EXCEPTION_RECORD* pExceptionRecord,
+        CONTEXT *pContextRecord)
+{
+    WRAPPER_NO_CONTRACT;
+
+    // don't copy parm args as have already supplied them on the throw
+    memcpy((void*) pExceptionRecord,
+           (void*) &g_SavedExceptionInfo.m_ExceptionRecord,
+           offsetof(EXCEPTION_RECORD, ExceptionInformation)
+          );
+
+    ReplaceExceptionContextRecord(pContextRecord, &g_SavedExceptionInfo.m_ExceptionContext);
+
+    g_SavedExceptionInfo.Leave();
+
+    GetThread()->ResetThreadStateNC(Thread::TSNC_DebuggerIsManagedException);
+}
+
+EXTERN_C VOID __fastcall
+LinkFrameAndThrow(FaultingExceptionFrame* pFrame)
+{
+    WRAPPER_NO_CONTRACT;
+
+    *(TADDR*)pFrame = FaultingExceptionFrame::GetMethodFrameVPtr();
+    *pFrame->GetGSCookiePtr() = GetProcessGSCookie();
+
+    pFrame->InitAndLink(&g_SavedExceptionInfo.m_ExceptionContext);
+
+    GetThread()->SetThreadStateNC(Thread::TSNC_DebuggerIsManagedException);
+
+    ULONG       argcount = g_SavedExceptionInfo.m_ExceptionRecord.NumberParameters;
+    ULONG       flags    = g_SavedExceptionInfo.m_ExceptionRecord.ExceptionFlags;
+    ULONG       code     = g_SavedExceptionInfo.m_ExceptionRecord.ExceptionCode;
+    ULONG_PTR*  args     = &g_SavedExceptionInfo.m_ExceptionRecord.ExceptionInformation[0];
+
+    RaiseException(code, flags, argcount, args);
+}
+
+void SetNakedThrowHelperArgRegistersInContext(CONTEXT* pContext)
+{
+#if defined(TARGET_AMD64)
+    pContext->Rcx = (UINT_PTR)GetIP(pContext);
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
+    // Save the original IP in LR
+    pContext->Lr = (DWORD)GetIP(pContext);
+#else
+    PORTABILITY_WARNING("NakedThrowHelper argument not defined");
+#endif
+}
+
+EXTERN_C VOID STDCALL NakedThrowHelper(VOID);
+
 void HandleManagedFault(EXCEPTION_RECORD*               pExceptionRecord,
                         CONTEXT*                        pContext,
                         EXCEPTION_REGISTRATION_RECORD*  pEstablisherFrame,
@@ -6590,16 +6728,37 @@ void HandleManagedFault(EXCEPTION_RECORD*               pExceptionRecord,
     WRAPPER_NO_CONTRACT;
 
     // Ok.  Now we have a brand new fault in jitted code.
-    FrameWithCookie<FaultingExceptionFrame> frameWithCookie;
-    FaultingExceptionFrame *frame = &frameWithCookie;
-#if defined(FEATURE_EH_FUNCLETS)
-    *frame->GetGSCookiePtr() = GetProcessGSCookie();
-#endif // FEATURE_EH_FUNCLETS
-    frame->InitAndLink(pContext);
+    if (!Thread::UseContextBasedThreadRedirection())
+    {
+        // Once this code path gets enough bake time, perhaps this path could always be used instead of the alternative path to
+        // redirect the thread
+        FrameWithCookie<FaultingExceptionFrame> frameWithCookie;
+        FaultingExceptionFrame *frame = &frameWithCookie;
+    #if defined(FEATURE_EH_FUNCLETS)
+        *frame->GetGSCookiePtr() = GetProcessGSCookie();
+    #endif // FEATURE_EH_FUNCLETS
+        frame->InitAndLink(pContext);
 
-    SEHException exception(pExceptionRecord);
-    OBJECTREF managedException = CLRException::GetThrowableFromException(&exception);
-    RaiseTheExceptionInternalOnly(managedException, FALSE);
+        SEHException exception(pExceptionRecord);
+        OBJECTREF managedException = CLRException::GetThrowableFromException(&exception);
+        RaiseTheExceptionInternalOnly(managedException, FALSE);
+    }
+    else
+    {
+        g_SavedExceptionInfo.Enter();
+        g_SavedExceptionInfo.SaveExceptionRecord(pExceptionRecord);
+        g_SavedExceptionInfo.SaveContext(pContext);
+
+        SetNakedThrowHelperArgRegistersInContext(pContext);
+
+        SetIP(pContext, GetEEFuncEntryPoint(NakedThrowHelper));
+    }
+}
+
+#else // USE_FEF && !TARGET_UNIX
+
+void InitSavedExceptionInfo()
+{
 }
 
 #endif // USE_FEF && !TARGET_UNIX
@@ -6927,6 +7086,12 @@ LONG WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExceptionInfo
 
     if (action == VEH_EXECUTE_HANDLE_MANAGED_EXCEPTION)
     {
+        //
+        // If the exception context was unwound by Phase3 then
+        // we'll jump here to save the managed context and resume execution at
+        // NakedThrowHelper.  This needs to be done outside of any holder's
+        // scope, because HandleManagedFault may not return.
+        //
         HandleManagedFault(pExceptionInfo->ExceptionRecord,
                            pExceptionInfo->ContextRecord,
                            NULL, // establisher frame (x86 only)
@@ -7087,12 +7252,9 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
     // NOTE: this is effectively ifdef (TARGET_AMD64 || TARGET_ARM), and does not actually trigger
     // a GC.  This will redirect the exception context to a stub which will
     // push a frame and cause GC.
-    if (Thread::UseRedirectForGcStress())
+    if (IsGcMarker(pContext, pExceptionRecord))
     {
-        if (IsGcMarker(pContext, pExceptionRecord))
-        {
-            return VEH_CONTINUE_EXECUTION;;
-        }
+        return VEH_CONTINUE_EXECUTION;;
     }
 #endif // USE_REDIRECT_FOR_GCSTRESS
 

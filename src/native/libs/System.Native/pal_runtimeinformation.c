@@ -64,7 +64,6 @@ enum
     ARCH_S390X,
     ARCH_LOONGARCH64,
     ARCH_ARMV6,
-    ARCH_POWERPC64,
 };
 
 int32_t SystemNative_GetOSArchitecture()
@@ -126,11 +125,6 @@ int32_t SystemNative_GetOSArchitecture()
         else if (strcmp("s390x", isa) == 0)
         {
             result = ARCH_S390X;
-        }
-
-        else if (strcmp("ppc64le", isa) == 0)
-        {
-            result = ARCH_POWERPC64;
         }
 
         else if (strcmp("loongarch64", isa) == 0)

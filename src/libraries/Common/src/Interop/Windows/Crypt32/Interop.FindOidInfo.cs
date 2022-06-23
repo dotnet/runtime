@@ -48,7 +48,7 @@ internal static partial class Interop
             CRYPT_OID_INFO_CNG_SIGN_KEY = 6,
         }
 
-        internal static unsafe CRYPT_OID_INFO FindOidInfo(CryptOidInfoKeyType keyType, string key, OidGroup group, bool fallBackToAllGroups)
+        internal static CRYPT_OID_INFO FindOidInfo(CryptOidInfoKeyType keyType, string key, OidGroup group, bool fallBackToAllGroups)
         {
             const OidGroup CRYPT_OID_DISABLE_SEARCH_DS_FLAG = unchecked((OidGroup)0x80000000);
             Debug.Assert(key != null);
@@ -75,28 +75,28 @@ internal static partial class Interop
                 if (!OidGroupWillNotUseActiveDirectory(group))
                 {
                     OidGroup localGroup = group | CRYPT_OID_DISABLE_SEARCH_DS_FLAG;
-                    CRYPT_OID_INFO* localOidInfo = CryptFindOIDInfo(keyType, rawKey, localGroup);
-                    if (localOidInfo != null)
+                    IntPtr localOidInfo = CryptFindOIDInfo(keyType, rawKey, localGroup);
+                    if (localOidInfo != IntPtr.Zero)
                     {
-                        return *localOidInfo;
+                        return Marshal.PtrToStructure<CRYPT_OID_INFO>(localOidInfo);
                     }
                 }
 
                 // Attempt to query with a specific group, to make try to avoid an AD lookup if possible
-                CRYPT_OID_INFO* fullOidInfo = CryptFindOIDInfo(keyType, rawKey, group);
-                if (fullOidInfo != null)
+                IntPtr fullOidInfo = CryptFindOIDInfo(keyType, rawKey, group);
+                if (fullOidInfo != IntPtr.Zero)
                 {
-                    return *fullOidInfo;
+                    return Marshal.PtrToStructure<CRYPT_OID_INFO>(fullOidInfo);
                 }
 
                 if (fallBackToAllGroups && group != OidGroup.All)
                 {
                     // Finally, for compatibility with previous runtimes, if we have a group specified retry the
                     // query with no group
-                    CRYPT_OID_INFO*  allGroupOidInfo = CryptFindOIDInfo(keyType, rawKey, OidGroup.All);
-                    if (allGroupOidInfo != null)
+                    IntPtr allGroupOidInfo = CryptFindOIDInfo(keyType, rawKey, OidGroup.All);
+                    if (allGroupOidInfo != IntPtr.Zero)
                     {
-                        return *allGroupOidInfo;
+                        return Marshal.PtrToStructure<CRYPT_OID_INFO>(allGroupOidInfo);
                     }
                 }
 
@@ -125,6 +125,6 @@ internal static partial class Interop
         }
 
         [LibraryImport(Interop.Libraries.Crypt32)]
-        private static unsafe partial CRYPT_OID_INFO* CryptFindOIDInfo(CryptOidInfoKeyType dwKeyType, IntPtr pvKey, OidGroup group);
+        private static partial IntPtr CryptFindOIDInfo(CryptOidInfoKeyType dwKeyType, IntPtr pvKey, OidGroup group);
     }
 }

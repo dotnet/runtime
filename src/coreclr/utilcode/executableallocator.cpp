@@ -249,8 +249,7 @@ bool ExecutableAllocator::Initialize()
     {
         if (!VMToOSInterface::CreateDoubleMemoryMapper(&m_doubleMemoryMapperHandle, &m_maxExecutableCodeSize))
         {
-            g_isWXorXEnabled = false;
-            return true;
+            return false;
         }
 
         m_CriticalSection = ClrCreateCriticalSection(CrstExecutableAllocatorLock,CrstFlags(CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD));

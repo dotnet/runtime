@@ -344,12 +344,11 @@ class InlineResult
 public:
     // Construct a new InlineResult to help evaluate a
     // particular call for inlining.
-    InlineResult(
-        Compiler* compiler, GenTreeCall* call, Statement* stmt, const char* description, bool doNotReport = false);
+    InlineResult(Compiler* compiler, GenTreeCall* call, Statement* stmt, const char* description);
 
     // Construct a new InlineResult to evaluate a particular
     // method to see if it is inlineable.
-    InlineResult(Compiler* compiler, CORINFO_METHOD_HANDLE method, const char* description, bool doNotReport = false);
+    InlineResult(Compiler* compiler, CORINFO_METHOD_HANDLE method, const char* description);
 
     // Has the policy determined this inline should fail?
     bool IsFailure() const
@@ -484,42 +483,18 @@ public:
     // Result that can be reported back to the runtime
     CorInfoInline Result() const
     {
-        if (m_reportFailureAsVmFailure)
-            return INLINE_CHECK_CAN_INLINE_VMFAIL;
-
-        if (m_successResult != INLINE_PASS)
-            return m_successResult;
-
         return InlGetCorInfoInlineDecision(m_Policy->GetDecision());
     }
 
     // String describing the decision made
     const char* ResultString() const
     {
-        if (m_reportFailureAsVmFailure)
-            return "VM Reported !CanInline";
-
-        if (m_successResult == INLINE_PREJIT_SUCCESS)
-            return "PreJIT Success";
-
-        if (m_successResult == INLINE_CHECK_CAN_INLINE_SUCCESS)
-            return "CheckCanInline Success";
-
         return InlGetDecisionString(m_Policy->GetDecision());
     }
 
     // String describing the reason for the decision
     const char* ReasonString() const
     {
-        if (m_reportFailureAsVmFailure)
-            return "VM Reported !CanInline";
-
-        if (m_successResult == INLINE_PREJIT_SUCCESS)
-            return "PreJIT Success";
-
-        if (m_successResult == INLINE_CHECK_CAN_INLINE_SUCCESS)
-            return "CheckCanInline Success";
-
         return InlGetObservationString(m_Policy->GetObservation());
     }
 
@@ -529,15 +504,12 @@ public:
         return m_Policy;
     }
 
-    // Set the code that shall be reported if the InlineResult is a success
-    void SetSuccessResult(CorInfoInline inlineSuccessCode)
+    // SetReported indicates that this particular result doesn't need
+    // to be reported back to the runtime, either because the runtime
+    // already knows, or we aren't actually inlining yet.
+    void SetReported()
     {
-        m_successResult = inlineSuccessCode;
-    }
-
-    void SetVMFailure()
-    {
-        m_reportFailureAsVmFailure = true;
+        m_Reported = true;
     }
 
     // Get the InlineContext for this inline.
@@ -572,15 +544,13 @@ private:
     CORINFO_METHOD_HANDLE m_Callee;
     unsigned              m_ImportedILSize; // estimated size of imported IL
     const char*           m_Description;
-    CorInfoInline         m_successResult;
-    bool                  m_DoNotReport;
-    bool                  m_reportFailureAsVmFailure;
+    bool                  m_Reported;
 };
 
-// HandleHistogramProfileCandidateInfo provides information about
+// ClassProfileCandidateInfo provides information about
 // profiling an indirect or virtual call.
 //
-struct HandleHistogramProfileCandidateInfo
+struct ClassProfileCandidateInfo
 {
     IL_OFFSET ilOffset;
     unsigned  probeIndex;
@@ -589,7 +559,7 @@ struct HandleHistogramProfileCandidateInfo
 // GuardedDevirtualizationCandidateInfo provides information about
 // a potential target of a virtual or interface call.
 //
-struct GuardedDevirtualizationCandidateInfo : HandleHistogramProfileCandidateInfo
+struct GuardedDevirtualizationCandidateInfo : ClassProfileCandidateInfo
 {
     CORINFO_CLASS_HANDLE  guardedClassHandle;
     CORINFO_METHOD_HANDLE guardedMethodHandle;

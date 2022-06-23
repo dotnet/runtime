@@ -50,7 +50,7 @@ namespace System.Net.Http.HPack
                     return false;
                 }
 
-                value -= ((1 << numBits) - 1);
+                value = value - ((1 << numBits) - 1);
                 int i = 1;
 
                 while (value >= 128)
@@ -63,7 +63,7 @@ namespace System.Net.Http.HPack
                         return false;
                     }
 
-                    value /= 128;
+                    value = value / 128;
                 }
                 destination[i++] = (byte)value;
 

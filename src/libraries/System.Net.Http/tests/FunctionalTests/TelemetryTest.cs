@@ -7,6 +7,7 @@ using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
 using System.Net.Quic;
+using System.Net.Quic.Implementations;
 using System.Net.Test.Common;
 using System.Text;
 using System.Threading;
@@ -20,6 +21,13 @@ namespace System.Net.Http.Functional.Tests
     public abstract class TelemetryTest : HttpClientHandlerTestBase
     {
         public TelemetryTest(ITestOutputHelper output) : base(output) { }
+
+        private string QuicImplementationProvider => UseQuicImplementationProvider?.GetType().Name ?? string.Empty;
+
+        private static QuicImplementationProvider GetQuicImplementationProvider(string provider) =>
+            provider.Contains(nameof(QuicImplementationProviders.MsQuic)) ? QuicImplementationProviders.MsQuic :
+            provider.Contains(nameof(QuicImplementationProviders.Mock)) ? QuicImplementationProviders.Mock :
+            null;
 
         [Fact]
         public static void EventSource_ExistsWithCorrectId()
@@ -59,7 +67,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            RemoteExecutor.Invoke(static async (useVersionString, testMethod) =>
+            RemoteExecutor.Invoke(static async (useVersionString, quicProvider, testMethod) =>
             {
                 const int ResponseContentLength = 42;
 
@@ -71,10 +79,10 @@ namespace System.Net.Http.Functional.Tests
                 var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
                 await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
                 {
-                    await GetFactoryForVersion(version).CreateClientAndServerAsync(
+                    await GetFactoryForVersion(version, GetQuicImplementationProvider(quicProvider)).CreateClientAndServerAsync(
                         async uri =>
                         {
-                            using HttpClientHandler handler = CreateHttpClientHandler(version);
+                            using HttpClientHandler handler = CreateHttpClientHandler(version, GetQuicImplementationProvider(quicProvider));
                             using HttpClient client = CreateHttpClient(handler, useVersionString);
                             using var invoker = new HttpMessageInvoker(handler);
 
@@ -186,7 +194,7 @@ namespace System.Net.Http.Functional.Tests
                     count: 1);
 
                 ValidateEventCounters(events, requestCount: 1, shouldHaveFailures: false, versionMajor: version.Major);
-            }, UseVersion.ToString(), testMethod).Dispose();
+            }, UseVersion.ToString(), QuicImplementationProvider, testMethod).Dispose();
         }
 
         [OuterLoop]
@@ -200,7 +208,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            RemoteExecutor.Invoke(static async (useVersionString, testMethod) =>
+            RemoteExecutor.Invoke(static async (useVersionString, quicProvider, testMethod) =>
             {
                 Version version = Version.Parse(useVersionString);
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
@@ -212,10 +220,10 @@ namespace System.Net.Http.Functional.Tests
                     var semaphore = new SemaphoreSlim(0, 1);
                     var cts = new CancellationTokenSource();
 
-                    await GetFactoryForVersion(version).CreateClientAndServerAsync(
+                    await GetFactoryForVersion(version, GetQuicImplementationProvider(quicProvider)).CreateClientAndServerAsync(
                         async uri =>
                         {
-                            using HttpClientHandler handler = CreateHttpClientHandler(version);
+                            using HttpClientHandler handler = CreateHttpClientHandler(version, GetQuicImplementationProvider(quicProvider));
                             using HttpClient client = CreateHttpClient(handler, useVersionString);
                             using var invoker = new HttpMessageInvoker(handler);
 
@@ -289,7 +297,7 @@ namespace System.Net.Http.Functional.Tests
                 ValidateConnectionEstablishedClosed(events, version);
 
                 ValidateEventCounters(events, requestCount: 1, shouldHaveFailures: true, versionMajor: version.Major);
-            }, UseVersion.ToString(), testMethod).Dispose();
+            }, UseVersion.ToString(), QuicImplementationProvider, testMethod).Dispose();
         }
 
         [OuterLoop]
@@ -308,7 +316,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            RemoteExecutor.Invoke(static async (useVersionString, testMethod) =>
+            RemoteExecutor.Invoke(static async (useVersionString, quicProvider, testMethod) =>
             {
                 const int RequestContentLength = 42;
                 const int ResponseContentLength = 43;
@@ -320,10 +328,10 @@ namespace System.Net.Http.Functional.Tests
                 var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
                 await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
                 {
-                    await GetFactoryForVersion(version).CreateClientAndServerAsync(
+                    await GetFactoryForVersion(version, GetQuicImplementationProvider(quicProvider)).CreateClientAndServerAsync(
                         async uri =>
                         {
-                            using HttpClientHandler handler = CreateHttpClientHandler(version);
+                            using HttpClientHandler handler = CreateHttpClientHandler(version, GetQuicImplementationProvider(quicProvider));
                             using HttpClient client = CreateHttpClient(handler, useVersionString);
                             using var invoker = new HttpMessageInvoker(handler);
 
@@ -390,7 +398,7 @@ namespace System.Net.Http.Functional.Tests
                     count: 1);
 
                 ValidateEventCounters(events, requestCount: 1, shouldHaveFailures: false, versionMajor: version.Major);
-            }, UseVersion.ToString(), testMethod).Dispose();
+            }, UseVersion.ToString(), QuicImplementationProvider, testMethod).Dispose();
         }
 
         private static void ValidateStartFailedStopEvents(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, Version version, bool shouldHaveFailures = false, int count = 1)
@@ -610,7 +618,12 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void EventSource_ConnectionPoolAtMaxConnections_LogsRequestLeftQueue()
         {
-            RemoteExecutor.Invoke(static async (useVersionString) =>
+            if (UseVersion.Major == 3 && UseQuicImplementationProvider == QuicImplementationProviders.Mock)
+            {
+                return;
+            }
+
+            RemoteExecutor.Invoke(static async (useVersionString, quicProvider) =>
             {
                 Version version = Version.Parse(useVersionString);
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
@@ -623,10 +636,10 @@ namespace System.Net.Http.Functional.Tests
                     var secondRequestSent = new SemaphoreSlim(0, 1);
                     var firstRequestFinished = new SemaphoreSlim(0, 1);
 
-                    await GetFactoryForVersion(version).CreateClientAndServerAsync(
+                    await GetFactoryForVersion(version, GetQuicImplementationProvider(quicProvider)).CreateClientAndServerAsync(
                         async uri =>
                         {
-                            using HttpClientHandler handler = CreateHttpClientHandler(version);
+                            using HttpClientHandler handler = CreateHttpClientHandler(version, GetQuicImplementationProvider(quicProvider));
                             using HttpClient client = CreateHttpClient(handler, useVersionString);
 
                             var socketsHttpHandler = GetUnderlyingSocketsHttpHandler(handler);
@@ -716,7 +729,7 @@ namespace System.Net.Http.Functional.Tests
                 ValidateRequestResponseStartStopEvents(events, requestContentLength: null, responseContentLength: 0, count: 3);
 
                 ValidateEventCounters(events, requestCount: 3, shouldHaveFailures: false, versionMajor: version.Major, requestLeftQueue: true);
-            }, UseVersion.ToString()).Dispose();
+            }, UseVersion.ToString(), QuicImplementationProvider).Dispose();
         }
 
         private static async Task WaitForEventCountersAsync(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events)
@@ -755,11 +768,20 @@ namespace System.Net.Http.Functional.Tests
         public TelemetryTest_Http20(ITestOutputHelper output) : base(output) { }
     }
 
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
     [Collection(nameof(DisableParallelization))]
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
-    public sealed class TelemetryTest_Http30 : TelemetryTest
+    public sealed class TelemetryTest_Http30_MsQuic : TelemetryTest
     {
         protected override Version UseVersion => HttpVersion.Version30;
-        public TelemetryTest_Http30(ITestOutputHelper output) : base(output) { }
+        protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
+        public TelemetryTest_Http30_MsQuic(ITestOutputHelper output) : base(output) { }
+    }
+
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMockQuicSupported))]
+    public sealed class TelemetryTest_Http30_Mock : TelemetryTest
+    {
+        protected override Version UseVersion => HttpVersion.Version30;
+        protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
+        public TelemetryTest_Http30_Mock(ITestOutputHelper output) : base(output) { }
     }
 }

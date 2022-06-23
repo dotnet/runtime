@@ -1561,31 +1561,21 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
         return BuildOperandUses(src);
     }
 
-    unsigned loadSize = putArgStk->GetArgLoadSize();
+    ssize_t size = putArgStk->GetStackByteSize();
     switch (putArgStk->gtPutArgStkKind)
     {
         case GenTreePutArgStk::Kind::Unroll:
             // If we have a remainder smaller than XMM_REGSIZE_BYTES, we need an integer temp reg.
-            if ((loadSize % XMM_REGSIZE_BYTES) != 0)
+            if ((size % XMM_REGSIZE_BYTES) != 0)
             {
                 regMaskTP regMask = allRegs(TYP_INT);
-#ifdef TARGET_X86
-                // Storing at byte granularity requires a byteable register.
-                if ((loadSize & 1) != 0)
-                {
-                    regMask &= allByteRegs();
-                }
-#endif // TARGET_X86
                 buildInternalIntRegisterDefForNode(putArgStk, regMask);
             }
 
-#ifdef TARGET_X86
-            if (loadSize >= 8)
-#else
-            if (loadSize >= XMM_REGSIZE_BYTES)
-#endif
+            if (size >= XMM_REGSIZE_BYTES)
             {
-                // See "genStructPutArgUnroll" -- we will use this XMM register for wide stores.
+                // If we have a buffer larger than or equal to XMM_REGSIZE_BYTES, reserve
+                // an XMM register to use it for a series of 16-byte loads and stores.
                 buildInternalFloatRegisterDefForNode(putArgStk, internalFloatRegCandidates());
                 SetContainsAVXFlags();
             }
@@ -2491,9 +2481,9 @@ int LinearScan::BuildCast(GenTreeCast* cast)
 
     assert(!varTypeIsLong(srcType) || (src->OperIs(GT_LONG) && src->isContained()));
 #else
-    // Overflow checking cast from TYP_(U)LONG to TYP_(U)INT requires a temporary
+    // Overflow checking cast from TYP_(U)LONG to TYP_UINT requires a temporary
     // register to extract the upper 32 bits of the 64 bit source register.
-    if (cast->gtOverflow() && varTypeIsLong(srcType) && varTypeIsInt(castType))
+    if (cast->gtOverflow() && varTypeIsLong(srcType) && (castType == TYP_UINT))
     {
         // Here we don't need internal register to be different from targetReg,
         // rather require it to be different from operand's reg.

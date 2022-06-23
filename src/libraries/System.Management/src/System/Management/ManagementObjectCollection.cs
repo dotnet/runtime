@@ -145,7 +145,7 @@ namespace System.Management
                 int count = 0;
 
                 IEnumerator enumCol = this.GetEnumerator();
-                while (enumCol.MoveNext())
+                while (enumCol.MoveNext() == true)
                 {
                     count++;
                 }
@@ -287,7 +287,7 @@ namespace System.Management
 
             // Unless this is the first enumerator, we have
             // to clone. This may throw if we are non-rewindable.
-            if (this.options.Rewindable)
+            if (this.options.Rewindable == true)
             {
                 IEnumWbemClassObject enumWbemClone = null;
                 int status = (int)ManagementStatus.NoError;

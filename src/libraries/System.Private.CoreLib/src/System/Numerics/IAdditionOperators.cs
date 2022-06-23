@@ -21,6 +21,6 @@ namespace System.Numerics
         /// <param name="right">The value which is added to <paramref name="left" />.</param>
         /// <returns>The sum of <paramref name="left" /> and <paramref name="right" />.</returns>
         /// <exception cref="OverflowException">The sum of <paramref name="left" /> and <paramref name="right" /> is not representable by <typeparamref name="TResult" />.</exception>
-        static virtual TResult operator checked +(TSelf left, TOther right) => left + right;
+        static abstract TResult operator checked +(TSelf left, TOther right);
     }
 }

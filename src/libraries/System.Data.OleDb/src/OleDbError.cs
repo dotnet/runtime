@@ -74,7 +74,8 @@ namespace System.Data.OleDb
         {
             get
             {
-                return this.message ?? string.Empty;
+                string? message = this.message;
+                return ((null != message) ? message : string.Empty);
             }
         }
 
@@ -90,7 +91,8 @@ namespace System.Data.OleDb
         {
             get
             {
-                return this.source ?? string.Empty;
+                string? source = this.source;
+                return ((null != source) ? source : string.Empty);
             }
         }
 
@@ -98,7 +100,8 @@ namespace System.Data.OleDb
         {
             get
             {
-                return this.sqlState ?? string.Empty;
+                string? sqlState = this.sqlState;
+                return ((null != sqlState) ? sqlState : string.Empty);
             }
         }
 

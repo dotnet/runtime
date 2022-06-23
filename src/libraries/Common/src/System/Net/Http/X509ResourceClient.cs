@@ -227,14 +227,7 @@ namespace System.Net.Http
                     using Stream responseStream = (Stream)readAsStreamMethod.Invoke(content, null)!;
 
                     var result = new MemoryStream();
-                    if (async)
-                    {
-                        await responseStream.CopyToAsync(result).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        responseStream.CopyTo(result);
-                    }
+                    responseStream.CopyTo(result);
                     ((IDisposable)responseMessage).Dispose();
                     return result.ToArray();
                 };

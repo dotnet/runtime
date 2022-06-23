@@ -103,6 +103,7 @@ FCFuncStart(gEnvironmentFuncs)
     FCFuncElement("get_TickCount64", SystemNative::GetTickCount64)
     FCFuncElement("set_ExitCode", SystemNative::SetExitCode)
     FCFuncElement("get_ExitCode", SystemNative::GetExitCode)
+    FCFuncElement("GetCommandLineArgsNative", SystemNative::GetCommandLineArgs)
 
     FCFuncElementSig("FailFast", &gsig_SM_Str_RetVoid, SystemNative::FailFast)
     FCFuncElementSig("FailFast", &gsig_SM_Str_Exception_RetVoid, SystemNative::FailFastWithException)
@@ -368,7 +369,9 @@ FCFuncEnd()
 
 FCFuncStart(gThreadFuncs)
     FCFuncElement("InternalGetCurrentThread", GetThread)
+#undef Sleep
     FCFuncElement("SleepInternal", ThreadNative::Sleep)
+#define Sleep(a) Dont_Use_Sleep(a)
     FCFuncElement("Initialize", ThreadNative::Initialize)
     FCFuncElement("SpinWaitInternal", ThreadNative::SpinWait)
     FCFuncElement("GetCurrentThreadNative", ThreadNative::GetCurrentThread)

@@ -1128,7 +1128,7 @@ namespace System.Xml
                     int copyCharsCount = _ps.charsUsed - _ps.charPos;
                     if (copyCharsCount < charsLen - 1)
                     {
-                        _ps.lineStartPos -= _ps.charPos;
+                        _ps.lineStartPos = _ps.lineStartPos - _ps.charPos;
                         if (copyCharsCount > 0)
                         {
                             BlockCopyChars(_ps.chars, _ps.charPos, _ps.chars, 0, copyCharsCount);
@@ -1349,7 +1349,10 @@ namespace System.Xml
                         if (XmlConvert.StrEqual(_ps.chars, _ps.charPos, nameEndPos - _ps.charPos, "standalone") &&
                              (xmlDeclState == 1 || xmlDeclState == 2) && !isTextDecl)
                         {
-                            attr = AddAttributeNoChecks("standalone", 1);
+                            if (!isTextDecl)
+                            {
+                                attr = AddAttributeNoChecks("standalone", 1);
+                            }
                             xmlDeclState = 2;
                             break;
                         }
@@ -3923,7 +3926,7 @@ namespace System.Xml
                 {
                     await PushExternalEntityAsync(entity).ConfigureAwait(false);
                     _curNode.entityId = _ps.entityId;
-                    return EntityType.Expanded;
+                    return (isInAttributeValue && _validatingReaderCompatFlag) ? EntityType.ExpandedInAttribute : EntityType.Expanded;
                 }
             }
             else
@@ -5196,7 +5199,7 @@ namespace System.Xml
 
             if (entityName == null)
             {
-                ThrowWithoutLineInfo(SR.Xml_CannotResolveExternalSubset, new string?[] { publicId ?? string.Empty, systemId }, null);
+                ThrowWithoutLineInfo(SR.Xml_CannotResolveExternalSubset, new string?[] { (publicId != null ? publicId : string.Empty), systemId }, null);
             }
             else
             {

@@ -51,12 +51,28 @@ namespace System.Xml
         private Encoding? _encoding;
         private char[]? _chars;
 
-        private static readonly byte[] s_startDecl = "<?xml version=\"1.0\" encoding=\""u8.ToArray();
-        private static readonly byte[] s_endDecl = "\"?>"u8.ToArray();
-        private static readonly byte[] s_utf8Decl = "<?xml version=\"1.0\" encoding=\"utf-8\"?>"u8.ToArray();
-
-        private static ReadOnlySpan<byte> Digits => "0123456789ABCDEF"u8;
-
+        private static readonly byte[] s_startDecl =
+        {
+            (byte)'<', (byte)'?', (byte)'x', (byte)'m', (byte)'l', (byte)' ',
+            (byte)'v', (byte)'e', (byte)'r', (byte)'s', (byte)'i', (byte)'o', (byte)'n', (byte)'=', (byte)'"', (byte)'1', (byte)'.', (byte)'0', (byte)'"', (byte)' ',
+            (byte)'e', (byte)'n', (byte)'c', (byte)'o', (byte)'d', (byte)'i', (byte)'n', (byte)'g', (byte)'=', (byte)'"',
+        };
+        private static readonly byte[] s_endDecl =
+        {
+            (byte)'"', (byte)'?', (byte)'>'
+        };
+        private static readonly byte[] s_utf8Decl =
+        {
+            (byte)'<', (byte)'?', (byte)'x', (byte)'m', (byte)'l', (byte)' ',
+            (byte)'v', (byte)'e', (byte)'r', (byte)'s', (byte)'i', (byte)'o', (byte)'n', (byte)'=', (byte)'"', (byte)'1', (byte)'.', (byte)'0', (byte)'"', (byte)' ',
+            (byte)'e', (byte)'n', (byte)'c', (byte)'o', (byte)'d', (byte)'i', (byte)'n', (byte)'g', (byte)'=', (byte)'"', (byte)'u', (byte)'t', (byte)'f', (byte)'-', (byte)'8', (byte)'"',
+            (byte)'?', (byte)'>'
+        };
+        private static ReadOnlySpan<byte> Digits => new byte[]
+        {
+            (byte) '0', (byte) '1', (byte) '2', (byte) '3', (byte) '4', (byte) '5', (byte) '6', (byte) '7',
+            (byte) '8', (byte) '9', (byte) 'A', (byte) 'B', (byte) 'C', (byte) 'D', (byte) 'E', (byte) 'F'
+        };
         private static readonly bool[] s_defaultIsEscapedAttributeChar = new bool[]
         {
             true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true,
@@ -414,7 +430,7 @@ namespace System.Xml
             WriteEscapedText(s.Value);
         }
 
-        public override unsafe void WriteEscapedText(string s)
+        public unsafe override void WriteEscapedText(string s)
         {
             int count = s.Length;
             if (count > 0)
@@ -426,7 +442,7 @@ namespace System.Xml
             }
         }
 
-        public override unsafe void WriteEscapedText(char[] s, int offset, int count)
+        public unsafe override void WriteEscapedText(char[] s, int offset, int count)
         {
             if (count > 0)
             {
@@ -497,7 +513,7 @@ namespace System.Xml
             WriteUTF8Chars(chars, offset, count);
         }
 
-        public override unsafe void WriteText(char[] chars, int offset, int count)
+        public unsafe override void WriteText(char[] chars, int offset, int count)
         {
             if (count > 0)
             {

@@ -92,7 +92,7 @@ namespace System.Data.ProviderBase
 
             foreach (DataRow row in sourceTable.Rows)
             {
-                if (SupportedByCurrentVersion(row))
+                if (SupportedByCurrentVersion(row) == true)
                 {
                     newRow = destinationTable.NewRow();
                     for (int i = 0; i < destinationColumns.Count; i++)
@@ -218,7 +218,7 @@ namespace System.Data.ProviderBase
             int columnCount = 0;
             foreach (DataColumn sourceColumn in sourceTable.Columns)
             {
-                if (IncludeThisColumn(sourceColumn, hiddenColumnNames))
+                if (IncludeThisColumn(sourceColumn, hiddenColumnNames) == true)
                 {
                     columnCount++;
                 }
@@ -234,7 +234,7 @@ namespace System.Data.ProviderBase
 
             foreach (DataColumn sourceColumn in sourceTable.Columns)
             {
-                if (IncludeThisColumn(sourceColumn, hiddenColumnNames))
+                if (IncludeThisColumn(sourceColumn, hiddenColumnNames) == true)
                 {
                     newDestinationColumn = new DataColumn(sourceColumn.ColumnName, sourceColumn.DataType);
                     destinationColumns.Add(newDestinationColumn);
@@ -291,7 +291,7 @@ namespace System.Data.ProviderBase
                     {
                         if (collectionName == candidateCollectionName)
                         {
-                            if (haveExactMatch)
+                            if (haveExactMatch == true)
                             {
                                 throw ADP.CollectionNameIsNotUnique(collectionName);
                             }
@@ -326,7 +326,7 @@ namespace System.Data.ProviderBase
                 }
             }
 
-            if (!haveExactMatch && haveMultipleInexactMatches)
+            if ((haveExactMatch == false) && (haveMultipleInexactMatches == true))
             {
                 throw ADP.AmbigousCollectionName(collectionName);
             }
@@ -540,7 +540,7 @@ namespace System.Data.ProviderBase
             }
 
             // if the minmum version was ok what about the maximum version
-            if (result)
+            if (result == true)
             {
                 versionColumn = tableColumns[_maximumVersion];
                 if (versionColumn != null)

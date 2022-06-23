@@ -25,11 +25,6 @@ namespace Internal.Runtime.TypeLoader
 {
     internal class Callbacks : TypeLoaderCallbacks
     {
-        public override TypeManagerHandle GetModuleForMetadataReader(MetadataReader reader)
-        {
-            return TypeLoaderEnvironment.Instance.ModuleList.GetModuleForMetadataReader(reader);
-        }
-
         public override bool TryGetConstructedGenericTypeForComponents(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles, out RuntimeTypeHandle runtimeTypeHandle)
         {
             return TypeLoaderEnvironment.Instance.TryGetConstructedGenericTypeForComponents(genericTypeDefinitionHandle, genericTypeArgumentHandles, out runtimeTypeHandle);
@@ -48,11 +43,6 @@ namespace Internal.Runtime.TypeLoader
         public override bool GetRuntimeMethodHandleComponents(RuntimeMethodHandle runtimeMethodHandle, out RuntimeTypeHandle declaringTypeHandle, out MethodNameAndSignature nameAndSignature, out RuntimeTypeHandle[] genericMethodArgs)
         {
             return TypeLoaderEnvironment.Instance.TryGetRuntimeMethodHandleComponents(runtimeMethodHandle, out declaringTypeHandle, out nameAndSignature, out genericMethodArgs);
-        }
-
-        public override RuntimeMethodHandle GetRuntimeMethodHandleForComponents(RuntimeTypeHandle declaringTypeHandle, string methodName, RuntimeSignature methodSignature, RuntimeTypeHandle[] genericMethodArgs)
-        {
-            return TypeLoaderEnvironment.Instance.GetRuntimeMethodHandleForComponents(declaringTypeHandle, methodName, methodSignature, genericMethodArgs);
         }
 
         public override bool CompareMethodSignatures(RuntimeSignature signature1, RuntimeSignature signature2)
@@ -80,11 +70,6 @@ namespace Internal.Runtime.TypeLoader
         public override bool GetRuntimeFieldHandleComponents(RuntimeFieldHandle runtimeFieldHandle, out RuntimeTypeHandle declaringTypeHandle, out string fieldName)
         {
             return TypeLoaderEnvironment.Instance.TryGetRuntimeFieldHandleComponents(runtimeFieldHandle, out declaringTypeHandle, out fieldName);
-        }
-
-        public override RuntimeFieldHandle GetRuntimeFieldHandleForComponents(RuntimeTypeHandle declaringTypeHandle, string fieldName)
-        {
-            return TypeLoaderEnvironment.Instance.GetRuntimeFieldHandleForComponents(declaringTypeHandle, fieldName);
         }
 
         public override IntPtr ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(IntPtr unboxingFunctionPointer, RuntimeTypeHandle declaringType)

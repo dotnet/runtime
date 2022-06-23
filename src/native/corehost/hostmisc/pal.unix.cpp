@@ -414,19 +414,16 @@ bool pal::get_global_dotnet_dirs(std::vector<pal::string_t>* recv)
     return false;
 }
 
-pal::string_t pal::get_dotnet_self_registered_config_location(pal::architecture arch)
+pal::string_t pal::get_dotnet_self_registered_config_location()
 {
-    pal::string_t config_location = _X("/etc/dotnet");
-
     //  ***Used only for testing***
     pal::string_t environment_install_location_override;
     if (test_only_getenv(_X("_DOTNET_TEST_INSTALL_LOCATION_PATH"), &environment_install_location_override))
     {
-        config_location = environment_install_location_override;
+        return environment_install_location_override;
     }
 
-    append_path(&config_location, (_X("install_location_") + to_lower(get_arch_name(arch))).c_str());
-    return config_location;
+    return _X("/etc/dotnet");
 }
 
 namespace
@@ -490,6 +487,8 @@ bool get_install_location_from_file(const pal::string_t& file_path, bool& file_f
 
 bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
 {
+    recv->clear();
+
     //  ***Used only for testing***
     pal::string_t environment_override;
     if (test_only_getenv(_X("_DOTNET_TEST_GLOBALLY_REGISTERED_PATH"), &environment_override))
@@ -499,14 +498,9 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
     }
     //  ***************************
 
-    return pal::get_dotnet_self_registered_dir_for_arch(get_current_arch(), recv);
-}
-
-bool pal::get_dotnet_self_registered_dir_for_arch(pal::architecture arch, pal::string_t* recv)
-{
-    recv->clear();
-
-    pal::string_t arch_specific_install_location_file_path = get_dotnet_self_registered_config_location(arch);
+    pal::string_t install_location_path = get_dotnet_self_registered_config_location();
+    pal::string_t arch_specific_install_location_file_path = install_location_path;
+    append_path(&arch_specific_install_location_file_path, (_X("install_location_") + to_lower(get_arch())).c_str());
     trace::verbose(_X("Looking for architecture-specific install_location file in '%s'."), arch_specific_install_location_file_path.c_str());
 
     pal::string_t install_location;
@@ -518,19 +512,11 @@ bool pal::get_dotnet_self_registered_dir_for_arch(pal::architecture arch, pal::s
             return false;
         }
 
-        // If looking for the current architecture, also look for the non-architecture-specific file
-        if (arch == get_current_arch())
-        {
-            pal::string_t legacy_install_location_file_path = get_directory(arch_specific_install_location_file_path);
-            append_path(&legacy_install_location_file_path, _X("install_location"));
-            trace::verbose(_X("Looking for install_location file in '%s'."), legacy_install_location_file_path.c_str());
+        pal::string_t legacy_install_location_file_path = install_location_path;
+        append_path(&legacy_install_location_file_path, _X("install_location"));
+        trace::verbose(_X("Looking for install_location file in '%s'."), legacy_install_location_file_path.c_str());
 
-            if (!get_install_location_from_file(legacy_install_location_file_path, file_found, install_location))
-            {
-                return false;
-            }
-        }
-        else
+        if (!get_install_location_from_file(legacy_install_location_file_path, file_found, install_location))
         {
             return false;
         }
@@ -538,21 +524,7 @@ bool pal::get_dotnet_self_registered_dir_for_arch(pal::architecture arch, pal::s
 
     recv->assign(install_location);
     trace::verbose(_X("Found registered install location '%s'."), recv->c_str());
-    return file_found;
-}
-
-namespace
-{
-    bool is_supported_multi_arch_install(pal::architecture arch)
-    {
-#if defined(TARGET_OSX) && defined(TARGET_ARM64)
-        // arm64, looking for x64 install
-        return arch == pal::architecture::x64;
-#else
-        // Others do not support default install locations on a different architecture
-        return false;
-#endif
-    }
+    return true;
 }
 
 bool pal::get_default_installation_dir(pal::string_t* recv)
@@ -566,31 +538,12 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
     }
     //  ***************************
 
-    return get_default_installation_dir_for_arch(get_current_arch(), recv);
-}
-
-bool pal::get_default_installation_dir_for_arch(pal::architecture arch, pal::string_t* recv)
-{
-    bool is_current_arch = arch == get_current_arch();
-
-    // Bail out early for unsupported requests for different architectures
-    if (!is_current_arch && !is_supported_multi_arch_install(arch))
-        return false;
-
 #if defined(TARGET_OSX)
     recv->assign(_X("/usr/local/share/dotnet"));
-    if (is_current_arch && pal::is_emulating_x64())
+    if (pal::is_emulating_x64())
     {
-        append_path(recv, get_arch_name(arch));
+        append_path(recv, _X("x64"));
     }
-#if defined(TARGET_ARM64)
-    else if (!is_current_arch)
-    {
-        // Running arm64, looking for x64 install
-        assert(arch == pal::architecture::x64);
-        append_path(recv, get_arch_name(arch));
-    }
-#endif
 #else
     recv->assign(_X("/usr/share/dotnet"));
 #endif

@@ -28,7 +28,7 @@ mono_dynstream_init (MonoDynamicStream *sh)
 }
 
 static void
-make_room_in_stream (MonoDynamicStream *stream, guint32 size)
+make_room_in_stream (MonoDynamicStream *stream, int size)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
@@ -60,7 +60,7 @@ mono_dynstream_insert_string (MonoDynamicStream *sh, const char *str)
 	len = strlen (str) + 1;
 	idx = sh->index;
 
-	make_room_in_stream (sh, idx + GSIZE_TO_UINT32(len));
+	make_room_in_stream (sh, (int)(idx + len));
 
 	/*
 	 * We strdup the string even if we already copy them in sh->data

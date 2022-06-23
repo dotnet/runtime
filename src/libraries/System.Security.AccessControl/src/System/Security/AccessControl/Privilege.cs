@@ -201,7 +201,7 @@ namespace System.Security.AccessControl
 
                     if (error != 0)
                     {
-                        if (success)
+                        if (success == true)
                         {
                             this.threadHandle = threadHandleBefore;
 
@@ -212,7 +212,7 @@ namespace System.Security.AccessControl
 
                             System.Diagnostics.Debug.Assert(this.isImpersonating == false, "Incorrect isImpersonating state");
 
-                            if (success)
+                            if (success == true)
                             {
                                 error = 0;
                                 if (false == Interop.Advapi32.DuplicateTokenEx(
@@ -228,7 +228,7 @@ namespace System.Security.AccessControl
                                 }
                             }
 
-                            if (success)
+                            if (success == true)
                             {
                                 error = SetThreadToken(this.threadHandle);
                                 unchecked { error &= ~(int)0x80070000; }
@@ -239,7 +239,7 @@ namespace System.Security.AccessControl
                                 }
                             }
 
-                            if (success)
+                            if (success == true)
                             {
                                 this.isImpersonating = true;
                             }

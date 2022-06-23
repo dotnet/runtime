@@ -6681,7 +6681,6 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			gboolean flag = FALSE;
 			gint64 *dest = LOCAL_VAR (ip [2], gint64*);
 			gint64 exch = LOCAL_VAR (ip [3], gint64);
-			NULL_CHECK(dest);
 #if SIZEOF_VOID_P == 4
 			if (G_UNLIKELY (((size_t)dest) & 0x7)) {
 				gint64 result;
