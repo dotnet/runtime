@@ -9712,15 +9712,17 @@ GenTree* Compiler::getSIMDStructFromField(GenTree*     tree,
                 {
                     CorInfoType simdBaseJitType = varDsc->GetSimdBaseJitType();
                     var_types   simdBaseType    = JITtype2varType(simdBaseJitType);
+                    unsigned    fieldOffset     = tree->AsField()->gtFldOffset;
+                    unsigned    baseTypeSize    = genTypeSize(simdBaseType);
 
-                    // Below is a convervative condition. We don't actually need these
-                    // two to match (only the tree type is relevant), but we don't have
-                    // a convenient way to convert the tree type into "CorInfoType".
-                    if (tree->TypeGet() == simdBaseType)
+                    // Below condition is convervative. We don't actually need the two types to
+                    // match (only the tree type is relevant), but we don't have a convenient way
+                    // to turn the tree type into "CorInfoType".
+                    if ((tree->TypeGet() == simdBaseType) && ((fieldOffset % baseTypeSize) == 0))
                     {
-                        *simdSizeOut        = lvaLclExactSize(lvaGetLclNum(varDsc));
+                        *simdSizeOut        = varDsc->lvExactSize;
                         *simdBaseJitTypeOut = simdBaseJitType;
-                        *indexOut           = tree->AsField()->gtFldOffset / genTypeSize(simdBaseType);
+                        *indexOut           = fieldOffset / baseTypeSize;
 
                         return obj;
                     }
