@@ -168,6 +168,7 @@ private:
     void SetASCII(const ASCII *string);
     void SetUTF8(const UTF8 *string);
     void SetANSI(const ANSI *string);
+    void SetAndConvertToUTF8(const WCHAR* string);
 
     // Set this string to a copy of the first count chars of the given string
     void Set(const WCHAR *string, COUNT_T count);
@@ -492,17 +493,15 @@ private:
     // SString *s = ...;
     // {
     //   StackScratchBuffer buffer;
-    //   const UTF8 *utf8 = s->GetUTF8(buffer);
-    //   CallFoo(utf8);
+    //   const ANSI *ansi = s->GetANSI(buffer);
+    //   CallFoo(ansi);
     // }
     // // No more pointers to returned buffer allowed.
-
-    const UTF8 *GetUTF8(AbstractScratchBuffer &scratch) const;
-    const UTF8 *GetUTF8(AbstractScratchBuffer &scratch, COUNT_T *pcbUtf8) const;
     const ANSI *GetANSI(AbstractScratchBuffer &scratch) const;
 
-    // Used when the representation is known, throws if the representation doesn't match
-    const UTF8 *GetUTF8NoConvert() const;
+    // You can always get a UTF8 string.  This will force a conversion
+    // if necessary.
+    const UTF8 *GetUTF8() const;
 
     // Converts/copies into the given output string
     void ConvertToUnicode(SString &dest) const;
@@ -727,6 +726,7 @@ public:
     void ConvertASCIIToUnicode(SString &dest) const;
     void ConvertToUnicode() const;
     void ConvertToUnicode(const CIterator &i) const;
+    void ConvertToUTF8() const;
 
     const SString &GetCompatibleString(const SString &s, SString &scratch) const;
     const SString &GetCompatibleString(const SString &s, SString &scratch, const CIterator &i) const;

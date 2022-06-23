@@ -364,7 +364,7 @@ bool _DbgBreakCheck(
                 "    Image: %s\n\n",
                 GetCurrentProcessId(), GetCurrentProcessId(),
                 GetCurrentThreadId(), GetCurrentThreadId(),
-                szExpr, szFile, iLine, modulePath.GetUTF8NoConvert());
+                szExpr, szFile, iLine, modulePath.GetUTF8());
 
             formattedMessages = TRUE;
         }
@@ -680,11 +680,11 @@ void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, cons
                 "    File: %s, Line: %d Image:\n%s\n",
                 GetCurrentProcessId(), GetCurrentProcessId(),
                 GetCurrentThreadId(), GetCurrentThreadId(),
-                szExpr, szFile, iLine, modulePath.GetUTF8NoConvert());
-    OutputDebugStringUtf8(buffer.GetUTF8NoConvert());
+                szExpr, szFile, iLine, modulePath.GetUTF8());
+    OutputDebugStringUtf8(buffer.GetUTF8());
 
     // Write out the error to the console
-    printf(buffer.GetUTF8NoConvert());
+    printf(buffer.GetUTF8());
 
     // Log to the stress log. Note that we can't include the szExpr b/c that
     // may not be a string literal (particularly for formatt-able asserts).
