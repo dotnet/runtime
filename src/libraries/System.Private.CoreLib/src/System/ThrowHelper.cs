@@ -646,7 +646,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ThrowForUnsupportedNumericsVectorBaseType<T>() where T : struct
         {
-            if (!Vector<T>.IsTypeSupported)
+            if (!Vector<T>.IsSupported)
             {
                 ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
             }
@@ -658,7 +658,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ThrowForUnsupportedIntrinsicsVector64BaseType<T>() where T : struct
         {
-            if (!Vector64<T>.IsTypeSupported)
+            if (!Vector64<T>.IsSupported)
             {
                 ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
             }
@@ -670,7 +670,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ThrowForUnsupportedIntrinsicsVector128BaseType<T>() where T : struct
         {
-            if (!Vector128<T>.IsTypeSupported)
+            if (!Vector128<T>.IsSupported)
             {
                 ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
             }
@@ -682,7 +682,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ThrowForUnsupportedIntrinsicsVector256BaseType<T>() where T : struct
         {
-            if (!Vector256<T>.IsTypeSupported)
+            if (!Vector256<T>.IsSupported)
             {
                 ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
             }
