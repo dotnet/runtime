@@ -12,6 +12,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 {
 	[ExpectedNoWarnings]
 	[KeptPrivateImplementationDetails ("ThrowSwitchExpressionException")]
+	[KeptAttributeAttribute (typeof (UnconditionalSuppressMessageAttribute))]
+	[UnconditionalSuppressMessage ("AOT", "IL3050", Justification = "These tests are not targetted at AOT scenarios")]
 	class NullableAnnotations
 	{
 		[Kept]

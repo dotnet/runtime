@@ -20,6 +20,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 {
 	[SkipKeptItemsValidation]
 	[ExpectedNoWarnings]
+	[UnconditionalSuppressMessage ("AOT", "IL3050", Justification = "These tests are not targetted at AOT scenarios")]
 	class AnnotatedMembersAccessedViaReflection
 	{
 		public static void Main ()
