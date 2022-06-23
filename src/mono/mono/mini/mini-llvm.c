@@ -4218,7 +4218,21 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		findex = data_start;
 		if (sig->ret->type != MONO_TYPE_VOID) {
 			LLVMTypeRef ret_type = type_to_llvm_type (ctx, sig->ret);
-			ctx->il_state_ret = build_alloca_llvm_type_name (ctx, ret_type, 0, "il_state_ret");
+			switch (ctx->linfo->ret.storage) {
+			case LLVMArgGsharedvtFixed:
+			case LLVMArgGsharedvtFixedVtype:
+			case LLVMArgGsharedvtVariable:
+				/*
+				 * The return value is returned by ref, but copying it from the interpreter is hard to do for variable length types, so
+				 * pass the vret var as the return buffer to the interpreter.
+				 */
+				g_assert (cfg->vret_addr);
+				ctx->il_state_ret = ctx->values[cfg->vret_addr->dreg];
+				break;
+			default:
+				ctx->il_state_ret = build_alloca_llvm_type_name (ctx, ret_type, 0, "il_state_ret");
+				break;
+			}
 
 			index [0] = const_int32 (0);
 			index [1] = const_int32 (findex);
@@ -5047,7 +5061,8 @@ emit_llvmonly_landing_pad (EmitContext *ctx, int group_index, int group_size)
 		break;
 	case LLVMArgNormal:
 	case LLVMArgWasmVtypeAsScalar:
-	case LLVMArgVtypeInReg: {
+	case LLVMArgVtypeInReg:
+	case LLVMArgVtypeAsScalar: {
 		if (ctx->sig->ret->type == MONO_TYPE_VOID) {
 			LLVMBuildRetVoid (builder);
 			break;
@@ -5063,7 +5078,8 @@ emit_llvmonly_landing_pad (EmitContext *ctx, int group_index, int group_size)
 		LLVMBuildRet (builder, LLVMBuildLoad2 (builder, ret_type, gep, ""));
 		break;
 	}
-	case LLVMArgVtypeRetAddr: {
+	case LLVMArgVtypeRetAddr:
+	case LLVMArgVtypeByRef: {
 		LLVMValueRef ret_addr;
 
 		g_assert (cfg->vret_addr);
@@ -5079,6 +5095,13 @@ emit_llvmonly_landing_pad (EmitContext *ctx, int group_index, int group_size)
 		retval = LLVMBuildLoad2 (builder, ret_type, gep, "");
 
 		LLVMBuildStore (builder, retval, convert (ctx, ret_addr, pointer_type (ret_type)));
+		LLVMBuildRetVoid (builder);
+		break;
+	}
+	case LLVMArgGsharedvtFixed:
+	case LLVMArgGsharedvtFixedVtype:
+	case LLVMArgGsharedvtVariable: {
+		/* Already set */
 		LLVMBuildRetVoid (builder);
 		break;
 	}
