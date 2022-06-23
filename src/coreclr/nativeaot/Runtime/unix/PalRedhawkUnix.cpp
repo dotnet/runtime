@@ -949,21 +949,23 @@ static struct sigaction g_previousActivationHandler;
 
 static void ActivationHandler(int code, siginfo_t* siginfo, void* context)
 {
-    ASSERT(g_pHijackCallback != NULL);
-
     // Only accept activations from the current process
-    if (siginfo->si_pid == getpid()
+    if (g_pHijackCallback != NULL && (siginfo->si_pid == getpid()
 #ifdef HOST_OSX
         // On OSX si_pid is sometimes 0. It was confirmed by Apple to be expected, as the si_pid is tracked at the process level. So when multiple
         // signals are in flight in the same process at the same time, it may be overwritten / zeroed.
         || siginfo->si_pid == 0
 #endif
-        )
+        ))
     {
         PAL_LIMITED_CONTEXT palContext;
         NativeContextToPalContext(context, &palContext);
+        int savedErrNo = errno; // Make sure that errno is not modified
         g_pHijackCallback(&palContext, NULL);
+        errno = savedErrNo;
+
         //TODO: VS update conditionally, this is rare
+        // Activation function may have modified the context, so update it.
         UpdateNativeContextFromPalContext(context, &palContext);
     }
     else
