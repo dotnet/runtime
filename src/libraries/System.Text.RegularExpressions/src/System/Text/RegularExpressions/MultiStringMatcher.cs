@@ -2,108 +2,33 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 
 namespace System.Text.RegularExpressions
 {
-    internal sealed class TrieNode
-    {
-        public const int Root = 0;
-
-        public TrieNode(int parent, string word, int wordId, int charIndex)
-        {
-            Parent = parent;
-            AccessingCharacter = word[charIndex];
-            WordId = charIndex == word.Length - 1 ? wordId : -1;
-            Depth = charIndex + 1;
-#if DEBUG
-            Path = word.AsSpan(0, charIndex + 1).ToString();
-#endif
-        }
-
-        public TrieNode()
-        {
-            Parent = -1;
-            AccessingCharacter = '\0';
-            WordId = -1;
-            Depth = 0;
-#if DEBUG
-            Path = "<root>";
-#endif
-        }
-
-        public Dictionary<char, int> Children = new();
-
-        public bool IsMatch => WordId != -1;
-
-        public readonly int Parent;
-
-        public readonly char AccessingCharacter;
-
-        public readonly int WordId = -1;
-
-        public readonly int Depth;
-
-        public int SuffixLink = -1;
-
-        public int DictionaryLink = -1;
-
-#if DEBUG
-        public readonly string Path;
-        public string? SuffixLinkPath;
-        public string? DictionaryLinkPath;
-
-        public override string ToString() =>
-            $"Path: {Path} Suffix Link: {SuffixLinkPath} Dictionary Link: {DictionaryLinkPath}";
-#endif
-    }
     internal sealed class MultiStringMatcher
     {
-
-        private readonly List<TrieNode> _trie;
-        private readonly string[] _words;
-
-        public ReadOnlySpan<string> Words => _words;
+        private readonly Trie _trie;
 
         public MultiStringMatcher(ReadOnlySpan<string> words)
         {
             _trie = BuildTrie(words);
-            _words = words.ToArray();
         }
 
-        private static List<TrieNode> BuildTrie(ReadOnlySpan<string> words)
+        private static Trie BuildTrie(ReadOnlySpan<string> words)
         {
-            List<TrieNode> trie = new() { new TrieNode() };
+            Trie trie = new Trie();
 
             for (int i = 0; i < words.Length; i++)
             {
-                AddStringToTrie(trie, words[i], i);
+                trie.Add(TrieNode.Root, words[i], true);
             }
 
-            // That gives us the assurance that no new trie nodes will be created.
-            BuildTrieLinks(CollectionsMarshal.AsSpan(trie));
+            BuildTrieLinks(trie);
 
             return trie;
         }
 
-        private static void AddStringToTrie(List<TrieNode> trie, string word, int wordID)
-        {
-            int currentVertex = TrieNode.Root;
-            for (int i = 0; i < word.Length; i++)
-            {
-                TrieNode currentNode = trie[currentVertex];
-                char c = word[i];
-                if (!currentNode.Children.TryGetValue(c, out int nextVertex))
-                {
-                    TrieNode newNode = new TrieNode(currentVertex, word, wordID, i);
-                    currentNode.Children[c] = nextVertex = trie.Count;
-                    trie.Add(newNode);
-                }
-                currentVertex = nextVertex; // Move to the new vertex in the trie
-            }
-        }
-
-        private static void BuildTrieLinks(ReadOnlySpan<TrieNode> trie)
+        private static void BuildTrieLinks(Trie trie)
         {
             Queue<int> vertexQueue = new Queue<int>();
             vertexQueue.Enqueue(TrieNode.Root);
@@ -118,7 +43,7 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        private static void CalculateSuffixAndDictionaryLinks(ReadOnlySpan<TrieNode> trie, int vertex)
+        private static void CalculateSuffixAndDictionaryLinks(Trie trie, int vertex)
         {
             TrieNode node = trie[vertex];
             if (vertex == TrieNode.Root)
@@ -203,8 +128,8 @@ namespace System.Text.RegularExpressions
                 if (dictLink != TrieNode.Root)
                 {
                     // Found a match. We mark it and continue searching hoping it is getting bigger.
-                    int wordId = _trie[dictLink].WordId;
-                    int indexOfMatch = i + 1 - _words[wordId].Length;
+                    // The depth of the node we are in is the length of the word we found.
+                    int indexOfMatch = i + 1 - _trie[dictLink].Depth;
 
                     // We want to return the leftmost-longest match.
                     // If this match starts later than the match we might have found before,
