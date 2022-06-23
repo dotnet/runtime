@@ -65,7 +65,7 @@ namespace System.Security.Cryptography.Xml
         public override XmlElement CreateElement(string prefix, string localName, string namespaceURI)
 #pragma warning restore CS8765
         {
-            return new CanonicalXmlElement(prefix!, localName, namespaceURI!, this, _defaultNodeSetInclusionState);
+            return new CanonicalXmlElement(prefix, localName, namespaceURI, this, _defaultNodeSetInclusionState);
         }
 
         public override XmlAttribute CreateAttribute(string? prefix, string localName, string? namespaceURI)

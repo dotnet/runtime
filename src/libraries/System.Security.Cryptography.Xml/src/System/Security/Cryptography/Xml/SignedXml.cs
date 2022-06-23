@@ -458,7 +458,7 @@ namespace System.Security.Cryptography.Xml
 
             SignedXmlDebugLog.LogSigning(this, hash);
             m_signature.SignatureValue = new byte[signatureLength / 8];
-            Buffer.BlockCopy(hashValue!, 0, m_signature.SignatureValue, 0, signatureLength / 8);
+            Buffer.BlockCopy(hashValue, 0, m_signature.SignatureValue, 0, signatureLength / 8);
         }
 
         //
@@ -663,7 +663,7 @@ namespace System.Security.Cryptography.Xml
         // of approved algorithm URIs.
         private bool DoesSignatureUseSafeCanonicalizationMethod()
         {
-            foreach (string safeAlgorithm in SafeCanonicalizationMethods!)
+            foreach (string safeAlgorithm in SafeCanonicalizationMethods)
             {
                 if (string.Equals(safeAlgorithm, SignedInfo!.CanonicalizationMethod, StringComparison.OrdinalIgnoreCase))
                 {
@@ -696,7 +696,7 @@ namespace System.Security.Cryptography.Xml
         private bool IsSafeTransform(string transformAlgorithm)
         {
             // All canonicalization algorithms are valid transform algorithms.
-            foreach (string safeAlgorithm in SafeCanonicalizationMethods!)
+            foreach (string safeAlgorithm in SafeCanonicalizationMethods)
             {
                 if (string.Equals(safeAlgorithm, transformAlgorithm, StringComparison.OrdinalIgnoreCase))
                 {
@@ -1028,7 +1028,7 @@ namespace System.Security.Cryptography.Xml
                                                   asymmetricSignatureDeformatter,
                                                   hashval,
                                                   m_signature.SignatureValue);
-            return asymmetricSignatureDeformatter.VerifySignature(hashval!, m_signature.SignatureValue!);
+            return asymmetricSignatureDeformatter.VerifySignature(hashval, m_signature.SignatureValue!);
         }
 
         private bool CheckSignedInfo(KeyedHashAlgorithm macAlg)
