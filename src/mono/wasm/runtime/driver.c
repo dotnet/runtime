@@ -1254,11 +1254,8 @@ mono_wasm_exec_regression (int verbose_level, char *image)
 EMSCRIPTEN_KEEPALIVE int
 mono_wasm_exit (int exit_code)
 {
-	printf("BEGIN  mono_wasm_exit: %d\n", exit_code);
 	mono_jit_cleanup (root_domain);
-	printf("MID    mono_wasm_exit: %d\n", exit_code);
-	emscripten_force_exit (exit_code);
-	printf("END NR mono_wasm_exit: %d\n", exit_code);
+	exit (exit_code);
 }
 
 EMSCRIPTEN_KEEPALIVE void
