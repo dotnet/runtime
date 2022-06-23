@@ -4983,7 +4983,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #endif
 
     // Dominator and reachability sets are no longer valid.
-    fgDomsComputed = false;
+    // The loop table is no longer valid.
+    fgDomsComputed    = false;
+    optLoopTableValid = false;
 
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);

@@ -24,9 +24,10 @@ void Compiler::optInit()
     loopAlignCandidates = 0;
 
     /* Initialize the # of tracked loops to 0 */
-    optLoopCount    = 0;
-    optLoopTable    = nullptr;
-    optCurLoopEpoch = 0;
+    optLoopCount      = 0;
+    optLoopTable      = nullptr;
+    optLoopTableValid = false;
+    optCurLoopEpoch   = 0;
 
 #ifdef DEBUG
     loopsAligned = 0;
@@ -4557,7 +4558,6 @@ PhaseStatus Compiler::optUnrollLoops()
 
 #ifdef DEBUG
     fgDebugCheckBBlist(true);
-    fgDebugCheckLoopTable();
 #endif // DEBUG
 
     return PhaseStatus::MODIFIED_EVERYTHING;
@@ -5466,11 +5466,11 @@ void Compiler::optFindLoops()
         optIdentifyLoopsForAlignment(); // Check if any of the loops need alignment
     }
 
-#ifdef DEBUG
-    fgDebugCheckLoopTable();
-#endif
-
     optLoopsMarked = true;
+
+#ifdef DEBUG
+    optLoopTableValid = true;
+#endif
 }
 
 //-----------------------------------------------------------------------------

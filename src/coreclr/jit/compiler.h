@@ -6273,6 +6273,7 @@ protected:
 
 public:
     LoopDsc*      optLoopTable;        // loop descriptor table
+    bool          optLoopTableValid;   // info in loop table should be valid
     unsigned char optLoopCount;        // number of tracked loops
     unsigned char loopAlignCandidates; // number of loops identified for alignment
 

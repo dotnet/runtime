@@ -232,6 +232,7 @@ void Phase::PostPhase(PhaseStatus status)
             comp->fgDebugCheckLinks();
             comp->fgDebugCheckNodesUniqueness();
             comp->fgVerifyHandlerTab();
+            comp->fgDebugCheckLoopTable();
         }
     }
 
