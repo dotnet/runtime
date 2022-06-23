@@ -8333,6 +8333,7 @@ inline bool GenTree::IsVectorCreate() const
             case NI_Vector256_Create:
 #elif defined(TARGET_ARMARCH)
             case NI_Vector64_Create:
+#endif
                 return true;
 
             default:
