@@ -4,7 +4,12 @@
 using System.Collections;
 using System.Collections.Generic;
 
+#if smolloy_codedom_full_internalish
+namespace System.Runtime.Serialization.CodeDom
+#nullable disable
+#else
 namespace System.CodeDom
+#endif
 {
     public class CodeNamespaceImportCollection : IList
     {

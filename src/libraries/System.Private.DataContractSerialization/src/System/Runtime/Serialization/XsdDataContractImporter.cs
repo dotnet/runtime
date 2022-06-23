@@ -5,7 +5,11 @@
 namespace System.Runtime.Serialization
 {
     using System;
-    using System.CodeDom;
+#if smolloy_codedom_stubbed
+    using System.CodeDom.Stubs;
+#elif smolloy_codedom_full_internalish
+    using System.Runtime.Serialization.CodeDom;
+#endif
     using System.Collections.Generic;
     using System.Xml;
     using System.Xml.Schema;

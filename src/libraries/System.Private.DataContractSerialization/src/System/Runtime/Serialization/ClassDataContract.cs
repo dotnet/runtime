@@ -1736,7 +1736,7 @@ namespace System.Runtime.Serialization
             return base.GetHashCode();
         }
 
-        internal class DataMemberComparer : IComparer<DataMember>
+        internal sealed class DataMemberComparer : IComparer<DataMember>
         {
             public int Compare(DataMember? x, DataMember? y)
             {

@@ -4,7 +4,13 @@
 namespace System.Runtime.Serialization
 {
     using System;
-    using System.CodeDom;
+#if smolloy_add_ext_surrogate
+#if smolloy_codedom_stubbed
+    using System.CodeDom.Stubs;
+#elif smolloy_codedom_full_internalish
+    using System.Runtime.Serialization.CodeDom;
+#endif
+#endif
     using System.Reflection;
     using System.Collections.ObjectModel;
     using System.Diagnostics.CodeAnalysis;

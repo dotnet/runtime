@@ -1,8 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if smolloy_add_ext_surrogate
 using System.Collections.ObjectModel;
-using System.CodeDom;
+#if smolloy_codedom_stubbed
+using System.CodeDom.Stubs;
+#elif smolloy_codedom_full_internalish
+using System.Runtime.Serialization.CodeDom;
+#endif
 using System.Reflection;
 
 namespace System.Runtime.Serialization
@@ -21,3 +26,4 @@ namespace System.Runtime.Serialization
         CodeTypeDeclaration? ProcessImportedType(CodeTypeDeclaration typeDeclaration, CodeCompileUnit compileUnit);
     }
 }
+#endif

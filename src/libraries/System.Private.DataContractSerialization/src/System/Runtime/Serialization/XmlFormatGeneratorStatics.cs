@@ -71,7 +71,7 @@ namespace System.Runtime.Serialization
         internal static PropertyInfo ExtensionDataProperty => s_extensionDataProperty ??= typeof(IExtensibleDataObject).GetProperty("ExtensionData")!;
 
         private static MethodInfo? s_boxPointer;
-        internal static MethodInfo BoxPointer => s_boxPointer ?? (s_boxPointer = typeof(Pointer).GetMethod("Box")!);
+        internal static MethodInfo BoxPointer => s_boxPointer ??= typeof(Pointer).GetMethod("Box")!;
 
         private static ConstructorInfo? s_dictionaryEnumeratorCtor;
         internal static ConstructorInfo DictionaryEnumeratorCtor
@@ -166,7 +166,7 @@ namespace System.Runtime.Serialization
             {
                 if (s_getUninitializedObjectMethod == null)
                 {
-                    s_getUninitializedObjectMethod = typeof(XmlFormatReaderGenerator).GetMethod("UnsafeGetUninitializedObject", Globals.ScanAllMembers, new Type[] { typeof(int) });
+                    s_getUninitializedObjectMethod = typeof(XmlFormatReaderGenerator).GetMethod("UnsafeGetUninitializedObject", Globals.ScanAllMembers, new Type[] { typeof(int) })!;
                     Debug.Assert(s_getUninitializedObjectMethod != null);
                 }
                 return s_getUninitializedObjectMethod;
@@ -188,7 +188,7 @@ namespace System.Runtime.Serialization
         }
 
         private static MethodInfo? s_unboxPointer;
-        internal static MethodInfo UnboxPointer => s_unboxPointer ?? (s_unboxPointer = typeof(Pointer).GetMethod("Unbox")!);
+        internal static MethodInfo UnboxPointer => s_unboxPointer ??= typeof(Pointer).GetMethod("Unbox")!;
 
         private static PropertyInfo? s_nodeTypeProperty;
         internal static PropertyInfo NodeTypeProperty
@@ -205,12 +205,10 @@ namespace System.Runtime.Serialization
         }
 
         private static ConstructorInfo? s_serializationExceptionCtor;
-        internal static ConstructorInfo SerializationExceptionCtor => s_serializationExceptionCtor ??
-                                                                    (s_serializationExceptionCtor = typeof(SerializationException).GetConstructor(new Type[] { typeof(string) })!);
+        internal static ConstructorInfo SerializationExceptionCtor => s_serializationExceptionCtor ??= typeof(SerializationException).GetConstructor(new Type[] { typeof(string) })!;
 
         private static ConstructorInfo? s_extensionDataObjectCtor;
-        internal static ConstructorInfo ExtensionDataObjectCtor => s_extensionDataObjectCtor ??=
-                                                                       typeof(ExtensionDataObject).GetConstructor(Globals.ScanAllMembers, Type.EmptyTypes)!;
+        internal static ConstructorInfo ExtensionDataObjectCtor => s_extensionDataObjectCtor ??= typeof(ExtensionDataObject).GetConstructor(Globals.ScanAllMembers, Type.EmptyTypes)!;
 
         private static ConstructorInfo? s_hashtableCtor;
         internal static ConstructorInfo HashtableCtor

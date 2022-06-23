@@ -5,8 +5,13 @@
 namespace System.Runtime.Serialization
 {
     using System;
-    using System.CodeDom;
-    using System.CodeDom.Compiler;
+#if smolloy_codedom_stubbed
+    using System.CodeDom.Stubs;
+    using System.CodeDom.Stubs.Compiler;
+#elif smolloy_codedom_full_internalish
+    using System.Runtime.Serialization.CodeDom;
+    using System.Runtime.Serialization.CodeDom.Compiler;
+#endif
     using System.Collections;
     using System.Collections.Generic;
     using System.ComponentModel;
@@ -20,7 +25,13 @@ namespace System.Runtime.Serialization
     using System.Xml.Schema;
     using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, DataContract>;
 
-    internal class CodeExporter
+#if smolloy_codedom_stubbed
+    using CodeDomCodeGenerator = System.CodeDom.Stubs.Compiler.CodeGenerator;
+#elif smolloy_codedom_full_internalish
+    using CodeDomCodeGenerator = System.Runtime.Serialization.CodeDom.Compiler.CodeGenerator;
+#endif
+
+    internal sealed class CodeExporter
     {
         private const string WildcardNamespaceMapping = "*";
         private const string TypeNameFieldName = "typeName";
@@ -126,7 +137,7 @@ namespace System.Runtime.Serialization
                 assemblyName = $"[{assembly.FullName}]";
 #pragma warning restore IL3000 // Avoid accessing Assembly file path when publishing as a single file
 
-            foreach (string existingName in _codeCompileUnit.ReferencedAssemblies)
+            foreach (string? existingName in _codeCompileUnit.ReferencedAssemblies)
             {
                 if (string.Equals(existingName, assemblyName, StringComparison.OrdinalIgnoreCase))
                 {
@@ -280,7 +291,7 @@ namespace System.Runtime.Serialization
             }
             finally
             {
-                System.CodeDom.Compiler.CodeGenerator.ValidateIdentifiers(_codeCompileUnit);
+                CodeDomCodeGenerator.ValidateIdentifiers(_codeCompileUnit);
             }
         }
 
@@ -1473,7 +1484,7 @@ namespace System.Runtime.Serialization
 
         private static string GetClrIdentifier(string identifier, string defaultIdentifier)
         {
-            if (identifier.Length <= MaxIdentifierLength && System.CodeDom.Compiler.CodeGenerator.IsValidLanguageIndependentIdentifier(identifier))
+            if (identifier.Length <= MaxIdentifierLength && CodeDomCodeGenerator.IsValidLanguageIndependentIdentifier(identifier))
                 return identifier;
 
             bool isStart = true;

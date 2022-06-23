@@ -12,16 +12,36 @@
     <JsonSources>System\Runtime\Serialization\Json</JsonSources>
     <XmlSources>System\Xml</XmlSources>
     <TextSources>System\Text</TextSources>
-    <DefineConstants>CODEDOM;smolloy_add_schema_import;smolloy_add_json_surrogate;smolloy_add_ext_surrogate</DefineConstants>
-    <!--<DefineConstants>smolloy_keep_codegentrace;smolloy_keep_known_serializable_types;smolloy_keep_kvpadapter;smolloy_add_ext_surrogate;smolloy_add_schema_import;CODEDOM;smolloy_add_json_surrogate</DefineConstants>-->
   </PropertyGroup>
+
+  <PropertyGroup>
+    <!--
+    smolloy_codedom_partial_internal => same as existing - only CodeTypeReference et al - Serializers/internal
+    smolloy_codedom_stubbed
+    smolloy_codedom_full_internalish
+    :nothing: ==> old 'CODEDOM', meaning we build/include full public implementation of any codedom class we include. Not what we want.
+    -->
+    <CodeDomMode>smolloy_codedom_full_internalish</CodeDomMode>
+
+    <!-- Adding Schema Import requires adding the extended surrogate support, which in turn requires choosing a non-status-quo codedom implementation. -->
+    <DefineConstants>smolloy_add_json_surrogate;$(CodeDomMode);smolloy_add_ext_surrogate;smolloy_add_schema_import</DefineConstants>
+    <!--<DefineConstants>smolloy_keep_codegentrace;smolloy_keep_known_serializable_types;smolloy_keep_kvpadapter;
+                         smolloy_add_json_surrogate;smolloy_add_ext_surrogate;smolloy_add_schema_import</DefineConstants>-->
+
+  </PropertyGroup>
+
+
 
   <ItemGroup>
     <Compile Include="$(CommonPath)System\NotImplemented.cs" Link="Common\System\NotImplemented.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\AccessorBuilder.cs" />
     <Compile Include="$(RuntimeSerializationSources)\Attributes.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\BitFlagsGenerator.cs" />
     <Compile Include="$(RuntimeSerializationSources)\CodeGenerator.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\ContractCodeDomInfo.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ClassDataContract.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\CodeExporter.cs" />
     <Compile Include="$(RuntimeSerializationSources)\CollectionDataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DateTimeOffsetAdapter.cs" />
@@ -29,42 +49,60 @@
     <Compile Include="$(RuntimeSerializationSources)\DictionaryGlobals.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DataContractResolver.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DataContractSerializer.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\DataContractSerializerExtensions.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DataContractSerializerSettings.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\DataContractSet.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\DataContractSurrogateCaller.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DataMember.cs" />
     <Compile Include="$(RuntimeSerializationSources)\EnumDataContract.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\ExportOptions.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ExtensionDataObject.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ExtensionDataReader.cs" />
     <Compile Include="$(RuntimeSerializationSources)\Globals.cs" />
     <Compile Include="$(RuntimeSerializationSources)\GenericParameterDataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\HybridObjectCache.cs" />
-    <Compile Include="$(RuntimeSerializationSources)\ObjectToIdCache.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\IExtensibleDataObject.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\ImportOptions.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\ISerializationExtendedSurrogateProvider.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\KnownTypeDataContractResolver.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\MemoryStreamAdapter.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ObjectReferenceStack.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\ObjectToIdCache.cs" />
     <Compile Include="$(RuntimeSerializationSources)\PrimitiveDataContract.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\ReflectionClassWriter.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\ReflectionFeature.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\ReflectionReader.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\ReflectionXmlFormatReader.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\ReflectionXmlFormatWriter.cs" />
     <Compile Include="$(RuntimeSerializationSources)\SchemaExporter.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\SchemaHelper.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\SchemaImporter.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ScopedKnownTypes.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\SerializationOption.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\SpecialTypeDataContract.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\SurrogateDataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlDataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlFormatGeneratorStatics.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlFormatReaderGenerator.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlFormatWriterGenerator.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializer.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializerContext.cs" />
-    <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializerWriteContext.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializerReadContext.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializerReadContextComplex.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializerWriteContext.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializerWriteContextComplex.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlReaderDelegator.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlSerializableReader.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\XmlSerializableServices.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlSerializableWriter.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlWriterDelegator.cs" />
-    <Compile Include="$(RuntimeSerializationSources)\SpecialTypeDataContract.cs" />
-    <Compile Include="$(RuntimeSerializationSources)\KnownTypeDataContractResolver.cs" />
-    <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializerReadContextComplex.cs" />
-    <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializerWriteContextComplex.cs" />
-    <Compile Include="$(RuntimeSerializationSources)\BitFlagsGenerator.cs" />
-    <Compile Include="$(RuntimeSerializationSources)\DataContractSurrogateCaller.cs" />
-    <Compile Include="$(RuntimeSerializationSources)\DataContractSerializerExtensions.cs" />
-    <Compile Include="$(RuntimeSerializationSources)\XmlSerializableServices.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\XPathQueryGenerator.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\XsdDataContractExporter.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\XsdDataContractImporter.cs" />
     <Compile Include="$(XmlSources)\ArrayHelper.cs" />
     <Compile Include="$(XmlSources)\BytesWithOffset.cs" />
     <Compile Include="$(XmlSources)\XmlDictionaryAsyncCheckWriter.cs" />
+    <Compile Include="$(XmlSources)\IFragmentCapableXmlDictionaryWriter.cs" />
     <Compile Include="$(XmlSources)\IStreamProvider.cs" />
     <Compile Include="$(XmlSources)\IXmlDictionary.cs" />
     <Compile Include="$(XmlSources)\PrefixHandle.cs" />
@@ -79,6 +117,7 @@
     <Compile Include="$(XmlSources)\XmlBinaryWriter.cs" />
     <Compile Include="$(XmlSources)\XmlBinaryWriterSession.cs" />
     <Compile Include="$(XmlSources)\XmlBufferReader.cs" />
+    <Compile Include="$(XmlSources)\XmlCanonicalWriter.cs" />
     <Compile Include="$(XmlSources)\XmlConverter.cs" />
     <Compile Include="$(XmlSources)\XmlDictionary.cs" />
     <Compile Include="$(XmlSources)\XmlDictionaryWriter.cs" />
@@ -87,6 +126,7 @@
     <Compile Include="$(XmlSources)\XmlDictionaryString.cs" />
     <Compile Include="$(XmlSources)\XmlExceptionHelper.cs" />
     <Compile Include="$(XmlSources)\XmlNodeWriter.cs" />
+    <Compile Include="$(XmlSources)\XmlSigningNodeWriter.cs" />
     <Compile Include="$(XmlSources)\XmlStreamNodeWriter.cs" />
     <Compile Include="$(XmlSources)\XmlUTF8TextReader.cs" />
     <Compile Include="$(XmlSources)\XmlUTF8TextWriter.cs" />
@@ -94,67 +134,114 @@
     <Compile Include="$(TextSources)\Base64Encoding.cs" />
     <Compile Include="$(TextSources)\SurrogateChar.cs" />
     <Compile Include="$(TextSources)\BinHexEncoding.cs" />
+    <Compile Include="$(JsonSources)\ByteArrayHelperWithString.cs" />
     <Compile Include="$(JsonSources)\DataContractJsonSerializer.cs" />
+    <Compile Include="$(JsonSources)\DataContractJsonSerializerExtensions.cs" />
+    <Compile Include="$(JsonSources)\DataContractJsonSerializerSettings.cs" />
+    <Compile Include="$(JsonSources)\DateTimeFormat.cs" />
+    <Compile Include="$(JsonSources)\EmitTypeInformation.cs" />
+    <Compile Include="$(JsonSources)\IXmlJsonReaderInitializer.cs" />
+    <Compile Include="$(JsonSources)\IXmlJsonWriterInitializer.cs" />
     <Compile Include="$(JsonSources)\JsonByteArrayDataContract.cs" />
     <Compile Include="$(JsonSources)\JsonClassDataContract.cs" />
     <Compile Include="$(JsonSources)\JsonCollectionDataContract.cs" />
     <Compile Include="$(JsonSources)\JsonDataContract.cs" />
+    <Compile Include="$(JsonSources)\JsonEncodingStreamWrapper.cs" />
     <Compile Include="$(JsonSources)\JsonEnumDataContract.cs" />
-    <Compile Include="$(JsonSources)\JsonFormatWriterGenerator.cs" />
+    <Compile Include="$(JsonSources)\JsonFormatGeneratorStatics.cs" />
     <Compile Include="$(JsonSources)\JsonFormatReaderGenerator.cs" />
+    <Compile Include="$(JsonSources)\JsonFormatWriterGenerator.cs" />
+    <Compile Include="$(JsonSources)\JsonGlobals.cs" />
+    <Compile Include="$(JsonSources)\JsonNodeType.cs" />
     <Compile Include="$(JsonSources)\JsonObjectDataContract.cs" />
     <Compile Include="$(JsonSources)\JsonQNameDataContract.cs" />
     <Compile Include="$(JsonSources)\JsonReaderDelegator.cs" />
+    <Compile Include="$(JsonSources)\JsonReaderWriterFactory.cs" />
     <Compile Include="$(JsonSources)\JsonWriterDelegator.cs" />
     <Compile Include="$(JsonSources)\JsonStringDataContract.cs" />
     <Compile Include="$(JsonSources)\JsonUriDataContract.cs" />
     <Compile Include="$(JsonSources)\JsonXmlDataContract.cs" />
-    <Compile Include="$(JsonSources)\JsonGlobals.cs" />
-    <Compile Include="$(JsonSources)\XmlObjectSerializerReadContextComplexJson.cs" />
-    <Compile Include="$(JsonSources)\XmlObjectSerializerWriteContextComplexJson.cs" />
-    <Compile Include="$(JsonSources)\DateTimeFormat.cs" />
-    <Compile Include="$(JsonSources)\EmitTypeInformation.cs" />
-    <Compile Include="$(JsonSources)\DataContractJsonSerializerSettings.cs" />
+    <Compile Include="$(JsonSources)\ReflectionJsonFormatReader.cs" />
+    <Compile Include="$(JsonSources)\ReflectionJsonFormatWriter.cs" />
     <Compile Include="$(JsonSources)\XmlJsonReader.cs" />
     <Compile Include="$(JsonSources)\XmlJsonWriter.cs" />
-    <Compile Include="$(JsonSources)\JsonReaderWriterFactory.cs" />
-    <Compile Include="$(JsonSources)\JsonNodeType.cs" />
-    <Compile Include="$(JsonSources)\IXmlJsonReaderInitializer.cs" />
-    <Compile Include="$(JsonSources)\IXmlJsonWriterInitializer.cs" />
-    <Compile Include="$(JsonSources)\ByteArrayHelperWithString.cs" />
-    <Compile Include="$(JsonSources)\JsonEncodingStreamWrapper.cs" />
-    <Compile Include="$(JsonSources)\JsonFormatGeneratorStatics.cs" />
-    <Compile Include="D:\Enlistments\dotnet\runtime\src\libraries\System.Private.DataContractSerialization\src\System\Runtime\Serialization\CodeExporter.cs" />
-    <Compile Include="D:\Enlistments\dotnet\runtime\src\libraries\System.Private.DataContractSerialization\src\System\Runtime\Serialization\ImportOptions.cs" />
-    <Compile Include="D:\Enlistments\dotnet\runtime\src\libraries\System.Private.DataContractSerialization\src\System\Runtime\Serialization\SchemaImporter.cs" />
-    <Compile Include="D:\Enlistments\dotnet\runtime\src\libraries\System.Private.DataContractSerialization\src\System\Runtime\Serialization\XsdDataContractImporter.cs" />
-    <Compile Include="System\Runtime\Serialization\ISerializationExtendedSurrogateProvider.cs" />
-    <Compile Include="System\Runtime\Serialization\AccessorBuilder.cs" />
-    <Compile Include="$(CommonPath)System\CodeDom\CodeTypeReference.cs" />
-    <Compile Include="$(CommonPath)System\CodeDom\CodeTypeReferenceCollection.cs" />
-    <Compile Include="$(CommonPath)System\CodeDom\CodeObject.cs" />
-    <Compile Include="System\Runtime\Serialization\ContractCodeDomInfo.cs" />
-    <Compile Include="System\Runtime\Serialization\CodeDomPlaceholder.cs" />
-    <Compile Include="System\Runtime\Serialization\DataContractSet.cs" />
-    <Compile Include="System\Runtime\Serialization\ExportOptions.cs" />
-    <Compile Include="System\Runtime\Serialization\IExtensibleDataObject.cs" />
-    <Compile Include="System\Runtime\Serialization\Json\DataContractJsonSerializerExtensions.cs" />
-    <Compile Include="System\Runtime\Serialization\Json\ReflectionJsonFormatReader.cs" />
-    <Compile Include="System\Runtime\Serialization\Json\ReflectionJsonFormatWriter.cs" />
-    <Compile Include="System\Runtime\Serialization\MemoryStreamAdapter.cs" />
-    <Compile Include="System\Runtime\Serialization\ReflectionFeature.cs" />
-    <Compile Include="System\Runtime\Serialization\ReflectionReader.cs" />
-    <Compile Include="System\Runtime\Serialization\ReflectionClassWriter.cs" />
-    <Compile Include="System\Runtime\Serialization\ReflectionXmlFormatReader.cs" />
-    <Compile Include="System\Runtime\Serialization\ReflectionXmlFormatWriter.cs" />
-    <Compile Include="System\Runtime\Serialization\SchemaHelper.cs" />
-    <Compile Include="System\Runtime\Serialization\SerializationOption.cs" />
-    <Compile Include="System\Runtime\Serialization\XPathQueryGenerator.cs" />
-    <Compile Include="System\Runtime\Serialization\XsdDataContractExporter.cs" />
-    <Compile Include="System\Runtime\Serialization\SurrogateDataContract.cs" />
-    <Compile Include="System\Xml\IFragmentCapableXmlDictionaryWriter.cs" />
-    <Compile Include="System\Xml\XmlCanonicalWriter.cs" />
-    <Compile Include="System\Xml\XmlSigningNodeWriter.cs" />
+    <Compile Include="$(JsonSources)\XmlObjectSerializerReadContextComplexJson.cs" />
+    <Compile Include="$(JsonSources)\XmlObjectSerializerWriteContextComplexJson.cs" />
+  </ItemGroup>
+  <ItemGroup Label="CodeDomCommon">
+    <Compile Include="$(CommonPath)System\CodeDom\CodeTypeReference.cs" Link="System\Runtime\Serialization\CodeDom\CodeTypeReference.cs" />
+    <Compile Include="$(CommonPath)System\CodeDom\CodeTypeReferenceCollection.cs" Link="System\Runtime\Serialization\CodeDom\CodeTypeReferenceCollection.cs" />
+    <Compile Include="$(CommonPath)System\CodeDom\CodeObject.cs" Link="System\Runtime\Serialization\CodeDom\CodeObject.cs" />
+  </ItemGroup>
+  <ItemGroup Label="CodeDomStubs" Condition="'$(CodeDomMode)' != 'smolloy_codedom_partial_internal'">
+    <Compile Include="$(RuntimeSerializationSources)\CodeDom\CodeDomStubs.cs" />
+  </ItemGroup>
+  <ItemGroup Label="CodeDomExtended_Publics" Condition="'$(CodeDomMode)' == 'smolloy_codedom_full_internalish'">
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeCompileUnit.cs" Link="System\Runtime\Serialization\CodeDom\CodeCompileUnit.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeTypeDeclaration.cs" Link="System\Runtime\Serialization\CodeDom\CodeTypeDeclaration.cs" />
+    <!-- And CodeTypeReference from the common group above. -->
+    <!-- And CodeDomProvider... but we only use it as a source for boolean options. So it probably makes more sense to use a new interface for getting these options. -->
+  </ItemGroup>
+  <ItemGroup Label="CodeDomExtended_GrayArea" Condition="'$(CodeDomMode)' == 'smolloy_codedom_full_internalish'">
+    <!-- Items in here are not directly exposed and can be internal if we restrict what the classes above expose. -->
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeAttributeArgument.cs" Link="System\Runtime\Serialization\CodeDom\CodeAttributeArgument.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeAttributeArgumentCollection.cs" Link="System\Runtime\Serialization\CodeDom\CodeAttributeArgumentCollection.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeAttributeDeclaration.cs" Link="System\Runtime\Serialization\CodeDom\CodeAttributeDeclaration.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeAttributeDeclarationCollection.cs" Link="System\Runtime\Serialization\CodeDom\CodeAttributeDeclarationCollection.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeComment.cs" Link="System\Runtime\Serialization\CodeDom\CodeComment.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeCommentStatement.cs" Link="System\Runtime\Serialization\CodeDom\CodeCommentStatement.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeCommentStatementCollection.cs" Link="System\Runtime\Serialization\CodeDom\CodeCommentStatementCollection.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeDirective.cs" Link="System\Runtime\Serialization\CodeDom\CodeDirective.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeDirectiveCollection.cs" Link="System\Runtime\Serialization\CodeDom\CodeDirectiveCollection.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeExpression.cs" Link="System\Runtime\Serialization\CodeDom\CodeExpression.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeLinePragma.cs" Link="System\Runtime\Serialization\CodeDom\CodeLinePragma.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeNamespace.cs" Link="System\Runtime\Serialization\CodeDom\CodeNamespace.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeNamespaceCollection.cs" Link="System\Runtime\Serialization\CodeDom\CodeNamespaceCollection.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeNamespaceImport.cs" Link="System\Runtime\Serialization\CodeDom\CodeNamespaceImport.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeNamespaceImportCollection.cs" Link="System\Runtime\Serialization\CodeDom\CodeNamespaceImportCollection.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeStatement.cs" Link="System\Runtime\Serialization\CodeDom\CodeStatement.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeTypeDeclarationCollection.cs" Link="System\Runtime\Serialization\CodeDom\CodeTypeDeclarationCollection.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeTypeMember.cs" Link="System\Runtime\Serialization\CodeDom\CodeTypeMember.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeTypeMemberCollection.cs" Link="System\Runtime\Serialization\CodeDom\CodeTypeMemberCollection.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeTypeParameter.cs" Link="System\Runtime\Serialization\CodeDom\CodeTypeParameter.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeTypeParameterCollection.cs" Link="System\Runtime\Serialization\CodeDom\CodeTypeParameterCollection.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\MemberAttributes.cs" Link="System\Runtime\Serialization\CodeDom\MemberAttributes.cs" />
+  </ItemGroup>
+  <ItemGroup Label="CodeDomExtended_Internals" Condition="'$(CodeDomMode)' == 'smolloy_codedom_full_internalish'">
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeArgumentReferenceExpression.cs" Link="System\Runtime\Serialization\CodeDom\CodeArgumentReferenceExpression.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeAssignStatement.cs" Link="System\Runtime\Serialization\CodeDom\CodeAssignStatement.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeBinaryOperatorExpression.cs" Link="System\Runtime\Serialization\CodeDom\CodeBinaryOperatorExpression.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeBinaryOperatorType.cs" Link="System\Runtime\Serialization\CodeDom\CodeBinaryOperatorType.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeConditionStatement.cs" Link="System\Runtime\Serialization\CodeDom\CodeConditionStatement.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeConstructor.cs" Link="System\Runtime\Serialization\CodeDom\CodeConstructor.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeDelegateInvokeExpression.cs" Link="System\Runtime\Serialization\CodeDom\CodeDelegateInvokeExpression.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeEventReferenceExpression.cs" Link="System\Runtime\Serialization\CodeDom\CodeEventReferenceExpression.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeExpressionCollection.cs" Link="System\Runtime\Serialization\CodeDom\CodeExpressionCollection.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeExpressionStatement.cs" Link="System\Runtime\Serialization\CodeDom\CodeExpressionStatement.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeFieldReferenceExpression.cs" Link="System\Runtime\Serialization\CodeDom\CodeFieldReferenceExpression.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeIterationStatement.cs" Link="System\Runtime\Serialization\CodeDom\CodeIterationStatement.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeMemberEvent.cs" Link="System\Runtime\Serialization\CodeDom\CodeMemberEvent.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeMemberField.cs" Link="System\Runtime\Serialization\CodeDom\CodeMemberField.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeMemberMethod.cs" Link="System\Runtime\Serialization\CodeDom\CodeMemberMethod.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeMemberProperty.cs" Link="System\Runtime\Serialization\CodeDom\CodeMemberProperty.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeMethodInvokeExpression.cs" Link="System\Runtime\Serialization\CodeDom\CodeMethodInvokeExpression.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\codemethodreferenceexpression.cs" Link="System\Runtime\Serialization\CodeDom\codemethodreferenceexpression.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeMethodReturnStatement.cs" Link="System\Runtime\Serialization\CodeDom\CodeMethodReturnStatement.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeObjectCreateExpression.cs" Link="System\Runtime\Serialization\CodeDom\CodeObjectCreateExpression.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeParameterDeclarationExpression.cs" Link="System\Runtime\Serialization\CodeDom\CodeParameterDeclarationExpression.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeParameterDeclarationExpressionCollection.cs" Link="System\Runtime\Serialization\CodeDom\CodeParameterDeclarationExpressionCollection.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodePrimitiveExpression.cs" Link="System\Runtime\Serialization\CodeDom\CodePrimitiveExpression.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodePropertyReferenceExpression.cs" Link="System\Runtime\Serialization\CodeDom\CodePropertyReferenceExpression.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodePropertySetValueReferenceExpression.cs" Link="System\Runtime\Serialization\CodeDom\CodePropertySetValueReferenceExpression.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeSnippetExpression.cs" Link="System\Runtime\Serialization\CodeDom\CodeSnippetExpression.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeSnippetStatement.cs" Link="System\Runtime\Serialization\CodeDom\CodeSnippetStatement.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeStatementCollection.cs" Link="System\Runtime\Serialization\CodeDom\CodeStatementCollection.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeThisReferenceExpression.cs" Link="System\Runtime\Serialization\CodeDom\CodeThisReferenceExpression.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeTypeOfExpression.cs" Link="System\Runtime\Serialization\CodeDom\CodeTypeOfExpression.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeTypeReferenceExpression.cs" Link="System\Runtime\Serialization\CodeDom\CodeTypeReferenceExpression.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeVariableDeclarationStatement.cs" Link="System\Runtime\Serialization\CodeDom\CodeVariableDeclarationStatement.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\CodeVariableReferenceExpression.cs" Link="System\Runtime\Serialization\CodeDom\CodeVariableReferenceExpression.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.CodeDom\src\System\CodeDom\FieldDirection.cs" Link="System\Runtime\Serialization\CodeDom\FieldDirection.cs" />
   </ItemGroup>
 
   <ItemGroup>

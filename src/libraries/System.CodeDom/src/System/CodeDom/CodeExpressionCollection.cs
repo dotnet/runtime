@@ -3,9 +3,18 @@
 
 using System.Collections;
 
+#if smolloy_codedom_full_internalish
+namespace System.Runtime.Serialization.CodeDom
+#nullable disable
+#else
 namespace System.CodeDom
+#endif
 {
+#if smolloy_codedom_full_internalish
+    internal sealed class CodeExpressionCollection : CollectionBase
+#else
     public class CodeExpressionCollection : CollectionBase
+#endif
     {
         public CodeExpressionCollection() { }
 

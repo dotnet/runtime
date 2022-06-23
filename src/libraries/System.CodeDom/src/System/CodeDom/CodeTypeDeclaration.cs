@@ -3,7 +3,12 @@
 
 using System.Reflection;
 
+#if smolloy_codedom_full_internalish
+namespace System.Runtime.Serialization.CodeDom
+#nullable disable
+#else
 namespace System.CodeDom
+#endif
 {
     public class CodeTypeDeclaration : CodeTypeMember
     {

@@ -5,12 +5,16 @@
 using System;
 using System.Xml;
 using System.Xml.Schema;
-using System.CodeDom;
+#if smolloy_codedom_stubbed
+using System.CodeDom.Stubs;
+#elif smolloy_codedom_full_internalish
+using System.Runtime.Serialization.CodeDom;
+#endif
 using System.Collections.Generic;
 
 namespace System.Runtime.Serialization
 {
-    internal class ContractCodeDomInfo
+    internal sealed class ContractCodeDomInfo
     {
         private string? _clrNamespace;
         private Dictionary<string, object?>? _memberNames;  // NOTE TODO smolloy - This is weird. The only entries ever added to this dictionary are always null. Seems like we really just need a list of keys.

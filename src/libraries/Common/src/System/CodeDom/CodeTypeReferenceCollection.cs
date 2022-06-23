@@ -3,16 +3,21 @@
 
 using System.Collections;
 
-#if CODEDOM
-namespace System.CodeDom
-#else
+#if smolloy_codedom_stubbed
+namespace System.CodeDom.Stubs
+#elif smolloy_codedom_partial_internal
 namespace System.Runtime.Serialization
+#elif smolloy_codedom_full_internalish
+namespace System.Runtime.Serialization.CodeDom
+#nullable disable
+#else // CODEDOM
+namespace System.CodeDom
 #endif
 {
-#if CODEDOM
-    public class CodeTypeReferenceCollection : CollectionBase
-#else
+#if smolloy_codedom_partial_internal
     internal sealed class CodeTypeReferenceCollection : CollectionBase
+#else // smolloy_codedom_stubbed || smolloy_codedom_full_internalish || CODEDOM
+    public class CodeTypeReferenceCollection : CollectionBase
 #endif
     {
         public CodeTypeReferenceCollection() { }

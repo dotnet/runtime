@@ -7,27 +7,31 @@ using System.Globalization;
 
 #nullable enable
 
-#if CODEDOM
-namespace System.CodeDom
-#else
+#if smolloy_codedom_stubbed
+namespace System.CodeDom.Stubs
+#elif smolloy_codedom_partial_internal
 namespace System.Runtime.Serialization
+#elif smolloy_codedom_full_internalish
+namespace System.Runtime.Serialization.CodeDom
+#else // CODEDOM
+namespace System.CodeDom
 #endif
 {
     [Flags]
-#if CODEDOM
-    public enum CodeTypeReferenceOptions
-#else
+#if smolloy_codedom_partial_internal
     internal enum CodeTypeReferenceOptions
+#else // smolloy_codedom_stubbed || smolloy_codedom_full_internalish || CODEDOM
+    public enum CodeTypeReferenceOptions
 #endif
     {
         GlobalReference = 0x00000001,
         GenericTypeParameter = 0x00000002
     }
 
-#if CODEDOM
-    public class CodeTypeReference : CodeObject
-#else
+#if smolloy_codedom_partial_internal
     internal sealed class CodeTypeReference : CodeObject
+#else // smolloy_codedom_stubbed || smolloy_codedom_full_internalish || CODEDOM
+    public class CodeTypeReference : CodeObject
 #endif
     {
         private string? _baseType;

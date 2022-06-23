@@ -28,7 +28,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-    internal class SchemaTypePlaceholder
+    internal sealed class SchemaTypePlaceholder
     {
         private XmlQualifiedName _stableName;
 

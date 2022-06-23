@@ -20,10 +20,12 @@ namespace System.Runtime.Serialization
     using System.Diagnostics;
     using System.Threading;
     using System.Collections;
-
-#if CODEDOM
-    using CodeTypeReference = System.CodeDom.CodeTypeReference;
+#if smolloy_codedom_stubbed
+    using System.CodeDom.Stubs;
+#elif smolloy_codedom_full_internalish
+    using System.Runtime.Serialization.CodeDom;
 #endif
+
 
     internal abstract class DataContract
     {
@@ -2454,7 +2456,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-    internal class GenericInfo : IGenericNameProvider
+    internal sealed class GenericInfo : IGenericNameProvider
     {
         private string? _genericTypeName;
         private XmlQualifiedName _stableName;
@@ -2569,7 +2571,7 @@ namespace System.Runtime.Serialization
 
     }
 
-    internal class DataContractPairKey
+    internal sealed class DataContractPairKey
     {
         private object _object1;
         private object _object2;

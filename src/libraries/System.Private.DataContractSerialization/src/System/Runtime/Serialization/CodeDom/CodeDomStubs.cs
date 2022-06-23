@@ -1,20 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 
-#if CODEDOM
-#else
-using CodeObject = System.Runtime.Serialization.CodeObject;
+#if smolloy_codedom_stubbed
+namespace System.CodeDom.Stubs.Compiler
+#elif smolloy_codedom_full_internalish
+namespace System.Runtime.Serialization.CodeDom.Compiler
 #endif
-
-
-namespace System.CodeDom.Compiler
+#if smolloy_codedom_stubbed || smolloy_codedom_full_internalish
 {
-    public class CodeDomProvider { public string FileExtension = ""; public bool Supports(GeneratorSupport gs) { return true; } }
-    public class CodeGenerator { public static bool IsValidLanguageIndependentIdentifier(string id) { return true; } public static bool ValidateIdentifiers(CodeCompileUnit ccu) { return true; } }
+    [AttributeUsage(AttributeTargets.All, Inherited = false, AllowMultiple = false)]
+    internal sealed class GeneratedCodeAttribute : Attribute { }
+    public class CodeDomProvider { public virtual string FileExtension => ""; public virtual bool Supports(GeneratorSupport gs) { return true; } }
+    internal abstract class CodeGenerator { public static bool IsValidLanguageIndependentIdentifier(string id) { return true; } public static bool ValidateIdentifiers(CodeCompileUnit ccu) { return true; } }
     public enum GeneratorSupport {
         ArraysOfArrays = 0x1,
         EntryPointMethod = 0x2,
@@ -44,8 +44,10 @@ namespace System.CodeDom.Compiler
         DeclareIndexerProperties = 0x02000000,
     }
 }
+#endif
 
-namespace System.CodeDom
+#if smolloy_codedom_stubbed
+namespace System.CodeDom.Stubs
 {
     public class GenCollection<T> : CollectionBase, IList<T>
     {
@@ -61,15 +63,6 @@ namespace System.CodeDom
         public bool Remove(T item) => throw new NotImplementedException();
         IEnumerator<T> IEnumerable<T>.GetEnumerator() => throw new NotImplementedException();
     }
-
-    // CodeTypeReference - already included internally with different namespace... but it's internal. And we expose it publicly. So create another version here. Or just define CODEDOM and fix our DataContract code to be aware-ish of both.
-    // CodeObject also comes along already... but since it's internal, we can't use it with our initial sweep of "public" Codedom stuff we're fleshing out here. Since it's only referenced in this file, it is not ambiguous with the internal version available elsewhere.
-#if CODEDOM
-    //public class CodeObject { public IDictionary UserData = new System.Collections.Specialized.ListDictionary(); }
-#endif
-    // Going the #if CODEDOM route however means we need to add a little extra to satisfy the code files we have in our project borrowed from the CodeDom project:
-    public class CodeTypeParameter : CodeObject { public string Name = ""; }
-
 
     // ==========================================================================================================
     // Stuff we need to bring back one way or another below here
@@ -88,7 +81,7 @@ namespace System.CodeDom
     }
     public class CodeTypeDeclaration : CodeTypeMember
     {
-        public CodeTypeDeclaration(object one) { }
+        public CodeTypeDeclaration(object obj) { }
 
         public List<object?> BaseTypes = new List<object?>();
         public bool IsClass;
@@ -132,7 +125,7 @@ namespace System.CodeDom
     public enum CodeBinaryOperatorType { IdentityEquality, IdentityInequality }
     public class CodeBinaryOperatorExpression : CodeExpression { public CodeBinaryOperatorExpression(object one, object two, object three) { } }
     public class CodeConditionStatement { public CodeConditionStatement() { } public CodeConditionStatement(object one) { } public object? Condition; public List<object?> TrueStatements = new List<object?>(); }
-    public class CodeConstructor : CodeMemberMethod {
+    internal sealed class CodeConstructor : CodeMemberMethod {
         public List<object?> BaseConstructorArgs = new List<object?>();
     }
     public class CodeDelegateInvokeExpression : CodeExpression { public CodeDelegateInvokeExpression(object one, object two, object three) { } }
@@ -156,7 +149,7 @@ namespace System.CodeDom
         public object? InitExpression;
         public object? Type;
     }
-    public class CodeMemberMethod : CodeTypeMember {
+    internal class CodeMemberMethod : CodeTypeMember {
         public List<object?> ImplementationTypes = new List<object?>();
         public List<object?> Parameters = new List<object?>();
         public CodeTypeReference ReturnType = new CodeTypeReference(typeof(void).FullName);
@@ -193,6 +186,7 @@ namespace System.CodeDom
     public class CodeSnippetStatement { public CodeSnippetStatement(object one) { } }
     public class CodeThisReferenceExpression : CodeExpression { }
     public class CodeTypeOfExpression : CodeExpression { public CodeTypeOfExpression(object one) { } }
+    public class CodeTypeParameter : CodeObject { public string Name = ""; }
     public class CodeTypeReferenceExpression : CodeExpression { public CodeTypeReferenceExpression(object one) { } }
     public class CodeVariableDeclarationStatement {
         public CodeVariableDeclarationStatement() { }
@@ -203,3 +197,4 @@ namespace System.CodeDom
     }
     public class CodeVariableReferenceExpression : CodeExpression { public CodeVariableReferenceExpression(object one) { } public string VariableName = ""; }
 }
+#endif

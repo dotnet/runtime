@@ -6,7 +6,11 @@ namespace System.Runtime.Serialization
 {
     using System;
     using System.Collections.Generic;
-    using System.CodeDom.Compiler;
+#if smolloy_codedom_stubbed
+    using System.CodeDom.Stubs.Compiler;
+#elif smolloy_codedom_full_internalish
+    using System.Runtime.Serialization.CodeDom.Compiler;
+#endif
 
     public class ImportOptions
     {

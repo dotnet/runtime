@@ -2,6 +2,8 @@
   <PropertyGroup>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <!-- TODO smolloy - remove this flag turning off APICompat, and get the ref project sorted out -->
+    <RunApiCompat>false</RunApiCompat>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj" />
