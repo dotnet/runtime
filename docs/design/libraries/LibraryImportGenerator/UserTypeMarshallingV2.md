@@ -753,8 +753,8 @@ struct HResult
 [ElementMarshaller(typeof(HResult), typeof(HResultMarshaller))]
 public static class HResultMarshaller
 {
-    public int ConvertToUnmanaged(HResult hr);
-    public HResult ConvertToManaged(int hr);
+    public static int ConvertToUnmanaged(HResult hr);
+    public static HResult ConvertToManaged(int hr);
 }
 
 public static class NativeLib
