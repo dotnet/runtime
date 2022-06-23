@@ -6,6 +6,9 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System;
 
 namespace System.Formats.Tar
 {
@@ -46,6 +49,30 @@ namespace System.Formats.Tar
             }
         }
 
+        // Asynchronously helps advance the stream a total number of bytes larger than int.MaxValue.
+        internal static async ValueTask AdvanceStreamAsync(Stream archiveStream, long bytesToDiscard, CancellationToken cancellationToken)
+        {
+            if (archiveStream.CanSeek)
+            {
+                archiveStream.Position += bytesToDiscard;
+            }
+            else if (bytesToDiscard > 0)
+            {
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength: MaxBufferLength);
+                while (bytesToDiscard > 0)
+                {
+                    int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToDiscard);
+                    int bytesRead = await archiveStream.ReadAsync(buffer.AsMemory(0, currentLengthToRead), cancellationToken).ConfigureAwait(false);
+                    if (bytesRead != currentLengthToRead)
+                    {
+                        throw new EndOfStreamException();
+                    }
+                    bytesToDiscard -= currentLengthToRead;
+                }
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
+        }
+
         // Helps copy a specific number of bytes from one stream into another.
         internal static void CopyBytes(Stream origin, Stream destination, long bytesToCopy)
         {
@@ -58,6 +85,25 @@ namespace System.Formats.Tar
                     throw new EndOfStreamException();
                 }
                 destination.Write(buffer.AsSpan(0, currentLengthToRead));
+                bytesToCopy -= currentLengthToRead;
+            }
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+
+        // Asynchronously helps copy a specific number of bytes from one stream into another.
+        internal static async ValueTask CopyBytesAsync(Stream origin, Stream destination, long bytesToCopy, CancellationToken cancellationToken)
+        {
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength: MaxBufferLength);
+            while (bytesToCopy > 0)
+            {
+                int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToCopy);
+                Memory<byte> memory = buffer.AsMemory(0, currentLengthToRead);
+                int bytesRead = await origin.ReadAsync(memory, cancellationToken).ConfigureAwait(false);
+                if (bytesRead != currentLengthToRead)
+                {
+                    throw new EndOfStreamException();
+                }
+                await destination.WriteAsync(memory, cancellationToken).ConfigureAwait(false);
                 bytesToCopy -= currentLengthToRead;
             }
             ArrayPool<byte>.Shared.Return(buffer);
@@ -219,6 +265,16 @@ namespace System.Formats.Tar
         {
             int bytesToSkip = CalculatePadding(size);
             AdvanceStream(archiveStream, bytesToSkip);
+            return bytesToSkip;
+        }
+
+        // After the file contents, there may be zero or more null characters,
+        // which exist to ensure the data is aligned to the record size.
+        // Asynchronously skip them and set the stream position to the first byte of the next entry.
+        internal static async ValueTask<int> SkipBlockAlignmentPaddingAsync(Stream archiveStream, long size, CancellationToken cancellationToken)
+        {
+            int bytesToSkip = CalculatePadding(size);
+            await AdvanceStreamAsync(archiveStream, bytesToSkip, cancellationToken).ConfigureAwait(false);
             return bytesToSkip;
         }
 

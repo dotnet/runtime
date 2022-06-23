@@ -7,6 +7,8 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Formats.Tar
 {
@@ -66,6 +68,59 @@ namespace System.Formats.Tar
             finally
             {
                 ArrayPool<byte>.Shared.Return(rented);
+            }
+        }
+
+        // Asynchronously attempts read all the fields of the next header.
+        // Throws if end of stream is reached or if any data type conversion fails.
+        // Returns true if all the attributes were read successfully, false otherwise.
+        internal async ValueTask<bool> TryGetNextHeaderAsync(Stream archiveStream, bool copyData, CancellationToken cancellationToken)
+        {
+            // The four supported formats have a header that fits in the default record size
+            IMemoryOwner<byte> rented = MemoryPool<byte>.Shared.Rent(minBufferSize: TarHelpers.RecordSize);
+
+            Memory<byte> buffer = rented.Memory.Slice(0, TarHelpers.RecordSize); // minBufferSize means the array could've been larger
+
+            await archiveStream.ReadExactlyAsync(buffer, cancellationToken).ConfigureAwait(false);
+
+            try
+            {
+                // Confirms if v7 or pax, or tentatively selects ustar
+                if (!TryReadCommonAttributes(buffer.Span))
+                {
+                    return false;
+                }
+
+                // Confirms if gnu, or tentatively selects ustar
+                ReadMagicAttribute(buffer.Span);
+
+                if (_format != TarEntryFormat.V7)
+                {
+                    // Confirms if gnu
+                    ReadVersionAttribute(buffer.Span);
+
+                    // Fields that ustar, pax and gnu share identically
+                    ReadPosixAndGnuSharedAttributes(buffer.Span);
+
+                    Debug.Assert(_format is TarEntryFormat.Ustar or TarEntryFormat.Pax or TarEntryFormat.Gnu);
+                    if (_format == TarEntryFormat.Ustar)
+                    {
+                        ReadUstarAttributes(buffer.Span);
+                    }
+                    else if (_format == TarEntryFormat.Gnu)
+                    {
+                        ReadGnuAttributes(buffer.Span);
+                    }
+                    // In PAX, there is nothing to read in this section (empty space)
+                }
+
+                await ProcessDataBlockAsync(archiveStream, copyData, cancellationToken).ConfigureAwait(false);
+
+                return true;
+            }
+            finally
+            {
+                rented.Dispose();
             }
         }
 
@@ -218,6 +273,69 @@ namespace System.Formats.Tar
             }
         }
 
+        // Asynchronously determines what kind of stream needs to be saved for the data section.
+        // - Metadata typeflag entries (Extended Attributes and Global Extended Attributes in PAX, LongLink and LongPath in GNU)
+        //   will get all the data section read and the stream pointer positioned at the beginning of the next header.
+        // - Block, Character, Directory, Fifo, HardLink and SymbolicLink typeflag entries have no data section so the archive stream pointer will be positioned at the beginning of the next header.
+        // - All other typeflag entries with a data section will generate a stream wrapping the data section: SeekableSubReadStream for seekable archive streams, and SubReadStream for unseekable archive streams.
+        private async ValueTask ProcessDataBlockAsync(Stream archiveStream, bool copyData, CancellationToken cancellationToken)
+        {
+            bool skipBlockAlignmentPadding = true;
+
+            switch (_typeFlag)
+            {
+                case TarEntryType.ExtendedAttributes or TarEntryType.GlobalExtendedAttributes:
+                    await ReadExtendedAttributesBlockAsync(archiveStream, cancellationToken).ConfigureAwait(false);
+                    break;
+                case TarEntryType.LongLink or TarEntryType.LongPath:
+                    await ReadGnuLongPathDataBlockAsync(archiveStream, cancellationToken).ConfigureAwait(false);
+                    break;
+                case TarEntryType.BlockDevice:
+                case TarEntryType.CharacterDevice:
+                case TarEntryType.Directory:
+                case TarEntryType.Fifo:
+                case TarEntryType.HardLink:
+                case TarEntryType.SymbolicLink:
+                    // No data section
+                    break;
+                case TarEntryType.RegularFile:
+                case TarEntryType.V7RegularFile: // Treated as regular file
+                case TarEntryType.ContiguousFile: // Treated as regular file
+                case TarEntryType.DirectoryList: // Contains the list of filesystem entries in the data section
+                case TarEntryType.MultiVolume: // Contains portion of a file
+                case TarEntryType.RenamedOrSymlinked: // Might contain data
+                case TarEntryType.SparseFile: // Contains portion of a file
+                case TarEntryType.TapeVolume: // Might contain data
+                default: // Unrecognized entry types could potentially have a data section
+                    _dataStream = await GetDataStreamAsync(archiveStream, copyData, cancellationToken).ConfigureAwait(false);
+                    if (_dataStream is SeekableSubReadStream)
+                    {
+                        await TarHelpers.AdvanceStreamAsync(archiveStream, _size, cancellationToken).ConfigureAwait(false);
+                    }
+                    else if (_dataStream is SubReadStream)
+                    {
+                        // This stream gives the user the chance to optionally read the data section
+                        // when the underlying archive stream is unseekable
+                        skipBlockAlignmentPadding = false;
+                    }
+
+                    break;
+            }
+
+            if (skipBlockAlignmentPadding)
+            {
+                if (_size > 0)
+                {
+                    await TarHelpers.SkipBlockAlignmentPaddingAsync(archiveStream, _size, cancellationToken).ConfigureAwait(false);
+                }
+
+                if (archiveStream.CanSeek)
+                {
+                    _endOfHeaderAndDataAndBlockAlignment = archiveStream.Position;
+                }
+            }
+        }
+
         // Returns a stream that represents the data section of the current header.
         // If copyData is true, then a total number of _size bytes will be copied to a new MemoryStream, which is then returned.
         // Otherwise, if the archive stream is seekable, returns a seekable wrapper stream.
@@ -233,6 +351,29 @@ namespace System.Formats.Tar
             {
                 MemoryStream copiedData = new MemoryStream();
                 TarHelpers.CopyBytes(archiveStream, copiedData, _size);
+                return copiedData;
+            }
+
+            return archiveStream.CanSeek
+                ? new SeekableSubReadStream(archiveStream, archiveStream.Position, _size)
+                : new SubReadStream(archiveStream, 0, _size);
+        }
+
+        // Asynchronously returns a stream that represents the data section of the current header.
+        // If copyData is true, then a total number of _size bytes will be copied to a new MemoryStream, which is then returned.
+        // Otherwise, if the archive stream is seekable, returns a seekable wrapper stream.
+        // Otherwise, it returns an unseekable wrapper stream.
+        private async ValueTask<Stream?> GetDataStreamAsync(Stream archiveStream, bool copyData, CancellationToken cancellationToken)
+        {
+            if (_size == 0)
+            {
+                return null;
+            }
+
+            if (copyData)
+            {
+                MemoryStream copiedData = new MemoryStream();
+                await TarHelpers.CopyBytesAsync(archiveStream, copiedData, _size, cancellationToken).ConfigureAwait(false);
                 return copiedData;
             }
 
@@ -447,6 +588,45 @@ namespace System.Formats.Tar
             }
         }
 
+        // Asynchronously collects the extended attributes found in the data section of a PAX entry of type 'x' or 'g'.
+        // Throws if end of stream is reached or if an attribute is malformed.
+        private async ValueTask ReadExtendedAttributesBlockAsync(Stream archiveStream, CancellationToken cancellationToken)
+        {
+            Debug.Assert(_typeFlag is TarEntryType.ExtendedAttributes or TarEntryType.GlobalExtendedAttributes);
+
+            // Regardless of the size, this entry should always have a valid dictionary object
+            _extendedAttributes ??= new Dictionary<string, string>();
+
+            if (_size == 0)
+            {
+                return;
+            }
+
+            // It is not expected that the extended attributes data section will be longer than int.MaxValue, considering
+            // 4096 is a common max path length, and also the size field is 12 bytes long, which is under int.MaxValue.
+            if (_size > int.MaxValue)
+            {
+                throw new InvalidOperationException(string.Format(SR.TarSizeFieldTooLargeForExtendedAttribute, _typeFlag.ToString()));
+            }
+
+            byte[] buffer = new byte[(int)_size];
+            await archiveStream.ReadExactlyAsync(buffer, cancellationToken).ConfigureAwait(false);
+
+            string dataAsString = TarHelpers.GetTrimmedUtf8String(buffer);
+
+            using StringReader reader = new(dataAsString);
+
+            while (TryGetNextExtendedAttribute(reader, out string? key, out string? value))
+            {
+                _extendedAttributes ??= new Dictionary<string, string>();
+                if (_extendedAttributes.ContainsKey(key))
+                {
+                    throw new FormatException(string.Format(SR.TarDuplicateExtendedAttribute, _name));
+                }
+                _extendedAttributes.Add(key, value);
+            }
+        }
+
         // Reads the long path found in the data section of a GNU entry of type 'K' or 'L'
         // and replaces Name or LinkName, respectively, with the found string.
         // Throws if end of stream is reached.
@@ -461,6 +641,33 @@ namespace System.Formats.Tar
 
             byte[] buffer = new byte[(int)_size];
             archiveStream.ReadExactly(buffer);
+
+            string longPath = TarHelpers.GetTrimmedUtf8String(buffer);
+
+            if (_typeFlag == TarEntryType.LongLink)
+            {
+                _linkName = longPath;
+            }
+            else if (_typeFlag == TarEntryType.LongPath)
+            {
+                _name = longPath;
+            }
+        }
+
+        // Asynchronously reads the long path found in the data section of a GNU entry of type 'K' or 'L'
+        // and replaces Name or LinkName, respectively, with the found string.
+        // Throws if end of stream is reached.
+        private async ValueTask ReadGnuLongPathDataBlockAsync(Stream archiveStream, CancellationToken cancellationToken)
+        {
+            Debug.Assert(_typeFlag is TarEntryType.LongLink or TarEntryType.LongPath);
+
+            if (_size == 0)
+            {
+                return;
+            }
+
+            byte[] buffer = new byte[(int)_size];
+            await archiveStream.ReadExactlyAsync(buffer, cancellationToken).ConfigureAwait(false);
 
             string longPath = TarHelpers.GetTrimmedUtf8String(buffer);
 
