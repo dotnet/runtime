@@ -59,7 +59,7 @@ function initRunArgs() {
     // set defaults
     runArgs.applicationArguments = runArgs.applicationArguments === undefined ? [] : runArgs.applicationArguments;
     runArgs.workingDirectory = runArgs.workingDirectory === undefined ? '/' : runArgs.workingDirectory;
-    runArgs.environment_variables = runArgs.environment_variables === undefined ? {} : runArgs.environment_variables;
+    runArgs.environmentVariables = runArgs.environmentVariables === undefined ? {} : runArgs.environmentVariables;
     runArgs.runtimeArgs = runArgs.runtimeArgs === undefined ? [] : runArgs.runtimeArgs;
     runArgs.diagnosticTracing = runArgs.diagnosticTracing === undefined ? false : runArgs.diagnosticTracing;
     runArgs.debugging = runArgs.debugging === undefined ? false : runArgs.debugging;
@@ -75,7 +75,7 @@ function applyArguments() {
             const parts = arg.split('=');
             if (parts.length != 2)
                 set_exit_code(1, "Error: malformed argument: '" + currentArg);
-            runArgs.environment_variables[parts[0]] = parts[1];
+            runArgs.environmentVariables[parts[0]] = parts[1];
         } else if (currentArg.startsWith("--runtime-arg=")) {
             const arg = currentArg.substring("--runtime-arg=".length);
             runArgs.runtimeArgs.push(arg);
@@ -104,7 +104,6 @@ let toAbsoluteUrl = function (path, prefix) {
 }
 
 try {
-    initRunArgs();
     try {
         if (await stat('./runArgs.json')) {
             const argsJson = await readFile('./runArgs.json', { encoding: "utf8" });
@@ -114,6 +113,7 @@ try {
     } catch (err) {
         console.debug(`could not load ./runArgs.json: ${err}. Ignoring`);
     }
+    initRunArgs();
     applyArguments();
 
     createDotnetRuntime(({ MONO, INTERNAL, BINDING, Module }) => ({
@@ -128,8 +128,8 @@ try {
                 throw err;
             }
             // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
-            for (let variable in runArgs.environment_variables) {
-                config.environment_variables[variable] = runArgs.environment_variables[variable];
+            for (let variable in runArgs.environmentVariables) {
+                config.environmentVariables[variable] = runArgs.environmentVariables[variable];
             }
             config.diagnostic_tracing = !!runArgs.diagnosticTracing;
             if (is_debugging) {

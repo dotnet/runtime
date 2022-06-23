@@ -15,7 +15,7 @@
       <NpmPackageFiles Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)/dotnet.d.ts"/>
       <NpmPackageFiles Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)/package.json"/>
     </ItemGroup>
-    <Copy SourceFiles="@(NpmPackageFiles)" DestinationFolder="bin/$(Configuration)/AppBundle" />
+    <Copy SourceFiles="@(NpmPackageFiles)" DestinationFolder="bin/$(Configuration)/AppBundle" SkipUnchangedFiles="true"/>
     <Touch Files="bin/$(Configuration)/AppBundle/.npm-stamp" AlwaysCreate="true" />
   </Target>
 
