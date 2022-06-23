@@ -31,12 +31,17 @@ namespace System.Formats.Tar
         private const string PaxEaUName = "uname";
         private const string PaxEaGid = "gid";
         private const string PaxEaUid = "uid";
-        private const string PaxEaATime = "atime";
-        private const string PaxEaCTime = "ctime";
+        internal const string PaxEaATime = "atime";
+        internal const string PaxEaCTime = "ctime";
         private const string PaxEaMTime = "mtime";
         private const string PaxEaSize = "size";
         private const string PaxEaDevMajor = "devmajor";
         private const string PaxEaDevMinor = "devminor";
+
+        // Global Extended Attribute entries have a special format in the Name field:
+        // "{tmpFolder}/GlobalHead.{processId}.{GEAEntryNumber}"
+        // Excludes ".{GEAEntryNumber}" because the number gets added on write.
+        internal const string GlobalHeadFormatPrefix = "{0}/GlobalHead.{1}";
 
         internal Stream? _dataStream;
 
@@ -72,7 +77,7 @@ namespace System.Formats.Tar
 
         // PAX attributes
 
-        internal Dictionary<string, string> _extendedAttributes;
+        internal Dictionary<string, string>? _extendedAttributes;
 
         // GNU attributes
 

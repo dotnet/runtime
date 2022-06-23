@@ -198,7 +198,8 @@
 
     <ItemGroup>
       <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
-                                  $(ICULibDir)/libicui18n.a" />
+                                  $(ICULibDir)/libicui18n.a;
+                                  $(ICULibDir)/libicudata.a" />
       <ICULibFiles Include="$(ICULibDir)/*.dat" />
     </ItemGroup>
     <PropertyGroup>
@@ -249,7 +250,6 @@
     <Copy SourceFiles="runtime/driver.c;
                        runtime/pinvoke.c;
                        runtime/corebindings.c;
-                       runtime/dotnet-crypto-worker.js;
                        $(SharedNativeRoot)libs\System.Native\pal_random.lib.js;"
           DestinationFolder="$(NativeBinDir)src"
           SkipUnchangedFiles="true" />
@@ -346,6 +346,8 @@
 
   <ItemGroup>
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/*.ts"/>
+    <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/workers/**/*.js"/>
+    <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/workers/**/*.ts"/>
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/types/*.ts"/>
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtimetypes/*.d.ts"/>
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/*.json"/>

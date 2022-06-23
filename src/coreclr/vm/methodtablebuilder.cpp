@@ -1349,8 +1349,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
     {
         StackSString debugName(SString::Utf8, GetDebugClassName());
         TypeString::AppendInst(debugName, bmtGenerics->GetInstantiation(), TypeString::FormatBasic);
-        StackScratchBuffer buff;
-        const char* pDebugNameUTF8 = debugName.GetUTF8(buff);
+        const char* pDebugNameUTF8 = debugName.GetUTF8();
         S_SIZE_T safeLen = S_SIZE_T(strlen(pDebugNameUTF8)) + S_SIZE_T(1);
         if(safeLen.IsOverflow())
             COMPlusThrowHR(COR_E_OVERFLOW);
@@ -1894,8 +1893,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
                     MethodDesc *pMD = methIt->GetUnboxedMethodDesc();
                     StackSString name;
                     TypeString::AppendMethodDebug(name, pMD);
-                    StackScratchBuffer buff;
-                    const char* pDebugNameUTF8 = name.GetUTF8(buff);
+                    const char* pDebugNameUTF8 = name.GetUTF8();
                     S_SIZE_T safeLen = S_SIZE_T(strlen(pDebugNameUTF8)) + S_SIZE_T(1);
                     if(safeLen.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);
                     size_t len = safeLen.Value();
@@ -1909,8 +1907,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
                     StackSString name;
                     TypeString::AppendMethodDebug(name, pMD);
-                    StackScratchBuffer buff;
-                    const char* pDebugNameUTF8 = name.GetUTF8(buff);
+                    const char* pDebugNameUTF8 = name.GetUTF8();
                     S_SIZE_T safeLen = S_SIZE_T(strlen(pDebugNameUTF8))+S_SIZE_T(1);
                     if(safeLen.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);
                     size_t len = safeLen.Value();

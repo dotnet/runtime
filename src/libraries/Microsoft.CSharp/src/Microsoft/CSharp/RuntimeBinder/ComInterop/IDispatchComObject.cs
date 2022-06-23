@@ -101,7 +101,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 typeName = "IDispatch";
             }
 
-            return $"{RuntimeCallableWrapper.ToString()} ({typeName})";
+            return $"{RuntimeCallableWrapper} ({typeName})";
         }
 
         public ComTypeDesc ComTypeDesc

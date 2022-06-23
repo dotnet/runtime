@@ -3,9 +3,11 @@
 
 using System.Collections.Generic;
 using Xunit;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Emit.Tests
 {
+    [RequiresUnreferencedCode("Uses reflection to construct test cases")]
     public class ModuleBuilderDefineType
     {
         public static IEnumerable<object[]> TestData()

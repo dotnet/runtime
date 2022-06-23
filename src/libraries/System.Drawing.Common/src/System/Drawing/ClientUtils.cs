@@ -143,8 +143,8 @@ namespace System.Drawing
                     // We need to copy from the back forward to prevent overwrite if source and
                     // destination lists are the same, so we need to flip the source/dest indices
                     // to point at the end of the spans to be copied.
-                    sourceIndex = sourceIndex + length;
-                    destinationIndex = destinationIndex + length;
+                    sourceIndex += length;
+                    destinationIndex += length;
                     for (; length > 0; length--)
                     {
                         destinationList.InnerList[--destinationIndex] = sourceList.InnerList[--sourceIndex];

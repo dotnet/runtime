@@ -836,10 +836,10 @@ private:
 
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(val.LclNum());
 
-        if (varDsc->lvPromoted || varDsc->lvIsStructField || m_compiler->lvaIsImplicitByRefLocal(val.LclNum()))
+        if (varDsc->lvPromoted || varDsc->lvIsStructField)
         {
-            // TODO-ADDR: For now we ignore promoted and "implicit by ref" variables,
-            // they require additional changes in subsequent phases.
+            // TODO-ADDR: For now we ignore promoted variables, they require
+            // additional changes in subsequent phases.
             return;
         }
 
@@ -1017,11 +1017,10 @@ private:
             return IndirTransform::None;
         }
 
-        if (varDsc->lvPromoted || varDsc->lvIsStructField || m_compiler->lvaIsImplicitByRefLocal(val.LclNum()))
+        if (varDsc->lvPromoted || varDsc->lvIsStructField)
         {
-            // TODO-ADDR: For now we ignore promoted and "implicit by ref" variables,
-            // they require additional changes in subsequent phases
-            // (e.g. fgMorphImplicitByRefArgs does not handle LCL_FLD nodes).
+            // TODO-ADDR: For now we ignore promoted variables, they require additional
+            // changes in subsequent phases.
             return IndirTransform::None;
         }
 
@@ -1037,7 +1036,6 @@ private:
         {
             // TODO-ADDR: Skip SIMD indirs for now, SIMD typed LCL_FLDs works most of the time
             // but there are exceptions - fgMorphFieldAssignToSimdSetElement for example.
-            // And more importantly, SIMD call args have to be wrapped in OBJ nodes currently.
             return IndirTransform::None;
         }
 
@@ -1050,10 +1048,9 @@ private:
             return IndirTransform::None;
         }
 
-        if ((user == nullptr) || !user->OperIs(GT_ASG, GT_RETURN))
+        if ((user == nullptr) || !user->OperIs(GT_ASG, GT_CALL, GT_RETURN))
         {
-            // TODO-ADDR: call args require extra work because currently they must
-            // be wrapped in OBJ nodes so we can't replace those with local nodes.
+            // TODO-ADDR: remove unused indirections.
             return IndirTransform::None;
         }
 
@@ -1076,7 +1073,6 @@ private:
         //
         enum class StructMatch
         {
-            Exact,
             Compatible,
             Partial
         };
@@ -1085,49 +1081,49 @@ private:
         assert(varDsc->GetLayout() != nullptr);
 
         StructMatch match = StructMatch::Partial;
-        if (val.Offset() == 0)
+        if ((val.Offset() == 0) && ClassLayout::AreCompatible(indirLayout, varDsc->GetLayout()))
         {
-            if (indirLayout->GetClassHandle() == varDsc->GetStructHnd())
-            {
-                match = StructMatch::Exact;
-            }
-            else if (ClassLayout::AreCompatible(indirLayout, varDsc->GetLayout()))
-            {
-                match = StructMatch::Compatible;
-            }
+            match = StructMatch::Compatible;
         }
 
         // Current matrix of matches/users/types:
         //
-        // |------------|------|---------|---------|
-        // | STRUCT     | CALL | ASG     | RETURN  |
-        // |------------|------|---------|---------|
-        // | Exact      | None | LCL_VAR | LCL_VAR |
-        // | Compatible | None | LCL_VAR | LCL_VAR |
-        // | Partial    | None | OBJ     | LCL_FLD |
-        // |------------|------|---------|---------|
+        // |------------|---------|-------------|---------|
+        // | STRUCT     | CALL(*) | ASG         | RETURN  |
+        // |------------|---------|-------------|---------|
+        // | Compatible | LCL_VAR | LCL_VAR     | LCL_VAR |
+        // | Partial    | LCL_FLD | OBJ/LCL_FLD | LCL_FLD |
+        // |------------|---------|-------------|---------|
         //
-        // |------------|------|---------|---------|----------|
-        // | SIMD       | CALL | ASG     | RETURN  | HWI/SIMD |
-        // |------------|------|---------|---------|----------|
-        // | Exact      | None | None    | None    | None     |
-        // | Compatible | None | None    | None    | None     |
-        // | Partial    | None | None    | None    | None     |
-        // |------------|------|---------|---------|----------|
+        // * - On x86/Windows x64 only.
+        //
+        // |------------|------|------|--------|----------|
+        // | SIMD       | CALL | ASG  | RETURN | HWI/SIMD |
+        // |------------|------|------|--------|----------|
+        // | Compatible | None | None | None   | None     |
+        // | Partial    | None | None | None   | None     |
+        // |------------|------|------|--------|----------|
         //
         // TODO-ADDR: delete all the "None" entries and always
         // transform local nodes into LCL_VAR or LCL_FLD.
 
-        assert(indir->TypeIs(TYP_STRUCT) && user->OperIs(GT_ASG, GT_RETURN));
+        assert(indir->TypeIs(TYP_STRUCT) && user->OperIs(GT_ASG, GT_CALL, GT_RETURN));
 
         *pStructLayout = indirLayout;
 
-        if ((match == StructMatch::Exact) || (match == StructMatch::Compatible))
+        if (user->IsCall())
+        {
+#if !defined(WINDOWS_AMD64_ABI) && !defined(TARGET_X86)
+            return IndirTransform::None;
+#endif // !defined(WINDOWS_AMD64_ABI) && !defined(TARGET_X86)
+        }
+
+        if (match == StructMatch::Compatible)
         {
             return IndirTransform::LclVar;
         }
 
-        if (user->OperIs(GT_ASG))
+        if (user->OperIs(GT_ASG) && (indir == user->AsOp()->gtGetOp1()))
         {
             return IndirTransform::ObjAddrLclFld;
         }

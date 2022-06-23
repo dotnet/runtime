@@ -72,7 +72,7 @@ namespace Microsoft.Interop
                 // the status remains the same regardless of whether or not runtime marshalling is enabled
                 if (_elementInfo.MarshallingAttributeInfo is NoMarshallingInfo
                     || _elementInfo.MarshallingAttributeInfo is UnmanagedBlittableMarshallingInfo { IsStrictlyBlittable: true }
-                    || _elementInfo.MarshallingAttributeInfo is NativeMarshallingAttributeInfo { IsStrictlyBlittable: true })
+                    || _elementInfo.MarshallingAttributeInfo is NativeMarshallingAttributeInfo_V1 { IsStrictlyBlittable: true })
                 {
                     return false;
                 }

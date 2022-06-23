@@ -38,10 +38,9 @@ namespace System.Xml
                 totalRead += read;
                 if (read < array.Length || reader.NodeType == XmlNodeType.EndElement)
                     break;
-                if (arrays == null)
-                    arrays = new TArray[32][];
+                arrays ??= new TArray[32][];
                 arrays[arrayCount++] = array;
-                count = count * 2;
+                count *= 2;
             }
             if (totalRead != array.Length || arrayCount > 0)
             {

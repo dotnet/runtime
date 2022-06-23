@@ -512,8 +512,7 @@ GetDebugInfoFromPDB(MethodDesc* methodDescPtr,
     if (modName.IsEmpty())
         return E_FAIL;
 
-    StackScratchBuffer scratch;
-    const char* szModName = modName.GetUTF8(scratch);
+    const char* szModName = modName.GetUTF8();
 
     MethodDebugInfo methodDebugInfo(numMap, locals.countVars);
 
@@ -956,8 +955,7 @@ void TypeInfoBase::CalculateName()
 
     TypeString::AppendType(sName, typeHandle, formatFlags);
 
-    StackScratchBuffer buffer;
-    const UTF8 *utf8 = sName.GetUTF8(buffer);
+    const UTF8 *utf8 = sName.GetUTF8();
     if (typeHandle.IsValueType())
     {
         m_type_name = new char[strlen(utf8) + 1];
@@ -1298,11 +1296,9 @@ void FunctionMember::DumpLinkageName(char* ptr, int& offset)
     md->GetMethodInfoNoSig(namespaceOrClassName, methodName);
     SString utf8namespaceOrClassName;
     SString utf8methodName;
-    namespaceOrClassName.ConvertToUTF8(utf8namespaceOrClassName);
-    methodName.ConvertToUTF8(utf8methodName);
 
-    const char *nspace = utf8namespaceOrClassName.GetUTF8NoConvert();
-    const char *mname = utf8methodName.GetUTF8NoConvert();
+    const char *nspace = utf8namespaceOrClassName.GetUTF8();
+    const char *mname = utf8methodName.GetUTF8();
 
     if (!nspace || !mname)
     {
@@ -2538,8 +2534,7 @@ void NotifyGdb::OnMethodPrepared(MethodDesc* methodDescPtr)
     /* Get module name */
     const Module* mod = methodDescPtr->GetMethodTable()->GetModule();
     SString modName = mod->GetFile()->GetPath();
-    StackScratchBuffer scratch;
-    const char* szModName = modName.GetUTF8(scratch);
+    const char* szModName = modName.GetUTF8();
     const char* szModuleFile = SplitFilename(szModName);
 
     int length = MultiByteToWideChar(CP_UTF8, 0, szModuleFile, -1, NULL, 0);
