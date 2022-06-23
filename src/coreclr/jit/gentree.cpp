@@ -4596,6 +4596,14 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costEx = 1;
                     costSz = 2;
                 }
+                else if (emitter::emitIns_valid_imm_for_fmov(tree->AsDblCon()->gtDconVal))
+                {
+                    // Cost for 'fmov' is cheaper than 'ldr'.
+                    // This still enables CSE'ing more often than not
+                    // for double constants, especially in loops.
+                    costEx = 2;
+                    costSz = 2;
+                }
                 else
                 {
                     // We load the constant from memory and so will take the same cost as GT_IND
