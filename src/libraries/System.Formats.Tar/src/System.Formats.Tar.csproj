@@ -63,7 +63,6 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetGroupName.cs" Link="Common\Interop\Unix\System.Native\Interop.GetGroupName.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Link.cs" Link="Common\Interop\Unix\System.Native\Interop.Link.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MkFifo.cs" Link="Common\Interop\Unix\System.Native\Interop.MkFifo.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Permissions.cs" Link="Common\Interop\Unix\Interop.Permissions.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs" Link="Common\Interop\Unix\Interop.Stat.cs" />
     <Compile Include="$(CommonPath)System\IO\Archiving.Utils.Unix.cs" Link="Common\System\IO\Archiving.Utils.Unix.cs" />
   </ItemGroup>
