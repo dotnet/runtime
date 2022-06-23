@@ -39,13 +39,16 @@ namespace System.Security.Cryptography
             int S2 = _Nb > 6 ? 4 : 3;
 
             // Precompute the modulus operations: these are performance killers when called frequently
-            int[] encryptindex1 = new int[_Nb];
-            int[] encryptindex2 = new int[_Nb];
-            int[] encryptindex3 = new int[_Nb];
+            _encryptindex = new int[_Nb * 3];
+            _decryptindex = new int[_Nb * 3];
 
-            int[] decryptindex1 = new int[_Nb];
-            int[] decryptindex2 = new int[_Nb];
-            int[] decryptindex3 = new int[_Nb];
+            Span<int> encryptindex1 = _encryptindex.AsSpan(0, _Nb);
+            Span<int> encryptindex2 = _encryptindex.AsSpan(_Nb, _Nb);
+            Span<int> encryptindex3 = _encryptindex.AsSpan(_Nb * 2, _Nb);
+
+            Span<int> decryptindex1 = _decryptindex.AsSpan(0, _Nb);
+            Span<int> decryptindex2 = _decryptindex.AsSpan(_Nb, _Nb);
+            Span<int> decryptindex3 = _decryptindex.AsSpan(_Nb * 2, _Nb);
 
             for (int j = 0; j < _Nb; j++)
             {
@@ -56,16 +59,6 @@ namespace System.Security.Cryptography
                 decryptindex2[j] = (j - S1 + _Nb) % _Nb;
                 decryptindex3[j] = (j - S2 + _Nb) % _Nb;
             }
-
-            _encryptindex = new int[_Nb * 3];
-            Array.Copy(encryptindex1, 0, _encryptindex, 0, _Nb);
-            Array.Copy(encryptindex2, 0, _encryptindex, _Nb, _Nb);
-            Array.Copy(encryptindex3, 0, _encryptindex, _Nb * 2, _Nb);
-
-            _decryptindex = new int[_Nb * 3];
-            Array.Copy(decryptindex1, 0, _decryptindex, 0, _Nb);
-            Array.Copy(decryptindex2, 0, _decryptindex, _Nb, _Nb);
-            Array.Copy(decryptindex3, 0, _decryptindex, _Nb * 2, _Nb);
 
             // we only support CBC mode
             if (iv.Length / 4 != _Nb)
@@ -84,8 +77,7 @@ namespace System.Security.Cryptography
 
             GenerateKeyExpansion(key);
 
-            _lastBlockBuffer = new int[_Nb];
-            Buffer.BlockCopy(_IV, 0, _lastBlockBuffer, 0, BlockSizeBytes);
+            _lastBlockBuffer = _IV.AsSpan().ToArray();
         }
 
         public void Dispose()
@@ -93,27 +85,27 @@ namespace System.Security.Cryptography
             // We need to always zeroize the following fields because they contain sensitive data
             if (_IV != null)
             {
-                Array.Clear(_IV, 0, _IV.Length);
+                Array.Clear(_IV);
                 _IV = null!;
             }
             if (_lastBlockBuffer != null)
             {
-                Array.Clear(_lastBlockBuffer, 0, _lastBlockBuffer.Length);
+                Array.Clear(_lastBlockBuffer);
                 _lastBlockBuffer = null!;
             }
             if (_encryptKeyExpansion != null)
             {
-                Array.Clear(_encryptKeyExpansion, 0, _encryptKeyExpansion.Length);
+                Array.Clear(_encryptKeyExpansion);
                 _encryptKeyExpansion = null!;
             }
             if (_decryptKeyExpansion != null)
             {
-                Array.Clear(_decryptKeyExpansion, 0, _decryptKeyExpansion.Length);
+                Array.Clear(_decryptKeyExpansion);
                 _decryptKeyExpansion = null!;
             }
             if (_depadBuffer != null)
             {
-                Array.Clear(_depadBuffer, 0, _depadBuffer.Length);
+                Array.Clear(_depadBuffer);
                 _depadBuffer = null;
             }
         }
@@ -153,11 +145,12 @@ namespace System.Security.Cryptography
             // block, we have to buffer an entire block's worth of bytes in case what I just transformed turns out to be
             // the last block Then in TransformFinalBlock we strip off the padding.
 
-            if (inputBuffer == null) throw new ArgumentNullException(nameof(inputBuffer));
-            if (outputBuffer == null) throw new ArgumentNullException(nameof(outputBuffer));
-            if (inputOffset < 0) throw new ArgumentOutOfRangeException(nameof(inputOffset), SR.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
-            if (inputCount <= 0 || (inputCount % InputBlockSize != 0) || (inputCount > inputBuffer.Length)) throw new ArgumentException(SR.GetResourceString("Argument_InvalidValue"));
-            if ((inputBuffer.Length - inputCount) < inputOffset) throw new ArgumentException(SR.GetResourceString("Argument_InvalidOffLen"));
+            ThrowHelper.ValidateTransformBlock(inputBuffer, inputOffset, inputCount);
+            ArgumentNullException.ThrowIfNull(outputBuffer);
+            if (inputCount <= 0)
+                throw new ArgumentOutOfRangeException(nameof(inputCount));
+            if (inputCount % InputBlockSize != 0)
+                throw new ArgumentOutOfRangeException(nameof(inputCount), SR.Cryptography_MustTransformWholeBlock);
 
             return TransformBlock(inputBuffer.AsSpan(inputOffset, inputCount), outputBuffer, outputOffset);
         }
@@ -216,10 +209,7 @@ namespace System.Security.Cryptography
 
         public byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
         {
-            if (inputBuffer == null) throw new ArgumentNullException(nameof(inputBuffer));
-            if (inputOffset < 0) throw new ArgumentOutOfRangeException(nameof(inputOffset), SR.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
-            if (inputCount < 0 || (inputCount > inputBuffer.Length)) throw new ArgumentException(SR.GetResourceString("Argument_InvalidValue"));
-            if ((inputBuffer.Length - inputCount) < inputOffset) throw new ArgumentException(SR.GetResourceString("Argument_InvalidOffLen"));
+            ThrowHelper.ValidateTransformBlock(inputBuffer, inputOffset, inputCount);
 
             return TransformFinalBlock(inputBuffer.AsSpan(inputOffset, inputCount));
         }
@@ -277,7 +267,7 @@ namespace System.Security.Cryptography
         private void Reset()
         {
             _depadBuffer = null;
-            Buffer.BlockCopy(_IV, 0, _lastBlockBuffer, 0, BlockSizeBytes);
+            _IV.AsSpan().CopyTo(_lastBlockBuffer);
         }
 
         //
@@ -699,10 +689,11 @@ namespace System.Security.Cryptography
 
         private static int SubWord(int a)
         {
-            return s_Sbox[a & 0xFF] |
-                   s_Sbox[a >> 8 & 0xFF] << 8 |
-                   s_Sbox[a >> 16 & 0xFF] << 16 |
-                   s_Sbox[a >> 24 & 0xFF] << 24;
+            ReadOnlySpan<byte> sbox = Sbox;
+            return sbox[a & 0xFF] |
+                   sbox[a >> 8 & 0xFF] << 8 |
+                   sbox[a >> 16 & 0xFF] << 16 |
+                   sbox[a >> 24 & 0xFF] << 24;
         }
 
         private static int MulX(int x)
@@ -711,7 +702,7 @@ namespace System.Security.Cryptography
             return ((x & unchecked((int)0x7f7f7f7f)) << 1) ^ ((u - (u >> 7 & 0x01FFFFFF)) & 0x1b1b1b1b);
         }
 
-        private static readonly byte[] s_Sbox = new byte[] {
+        private static ReadOnlySpan<byte> Sbox => new byte[] {
              99, 124, 119, 123, 242, 107, 111, 197,  48,   1, 103,  43, 254, 215, 171, 118,
             202, 130, 201, 125, 250,  89,  71, 240, 173, 212, 162, 175, 156, 164, 114, 192,
             183, 253, 147,  38,  54,  63, 247, 204,  52, 165, 229, 241, 113, 216,  49,  21,
