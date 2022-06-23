@@ -3,11 +3,10 @@
 
 using System;
 using System.IO;
+using System.Text;
 
 namespace System.Xml
 {
-    using System.Text;
-
     internal static class XmlComplianceUtil
     {
         // Replaces \r\n, \n, \r and \t with single space (0x20) and then removes spaces

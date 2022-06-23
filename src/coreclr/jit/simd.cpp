@@ -1207,7 +1207,7 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
 }
 
 // Pops and returns GenTree node from importer's type stack.
-// Normalizes TYP_STRUCT value in case of GT_CALL, GT_RET_EXPR and arg nodes.
+// Normalizes TYP_STRUCT value in case of GT_CALL and GT_RET_EXPR.
 //
 // Arguments:
 //    type         -  the type of value that the caller expects to be popped off the stack.
@@ -1219,7 +1219,7 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
 // Notes:
 //    If the popped value is a struct, and the expected type is a simd type, it will be set
 //    to that type, otherwise it will assert if the type being popped is not the expected type.
-
+//
 GenTree* Compiler::impSIMDPopStack(var_types type, bool expectAddr, CORINFO_CLASS_HANDLE structHandle)
 {
     StackEntry se   = impPopStack();
@@ -1232,54 +1232,25 @@ GenTree* Compiler::impSIMDPopStack(var_types type, bool expectAddr, CORINFO_CLAS
     {
         assert(tree->TypeIs(TYP_BYREF, TYP_I_IMPL));
 
-        if (tree->OperGet() == GT_ADDR)
-        {
-            tree = tree->gtGetOp1();
-        }
-        else
-        {
-            tree = gtNewOperNode(GT_IND, type, tree);
-        }
+        tree = gtNewOperNode(GT_IND, type, tree);
     }
 
-    bool isParam = false;
-
-    // If we are popping a struct type it must have a matching handle if one is specified.
-    // - If we have an existing 'OBJ' and 'structHandle' is specified, we will change its
-    //   handle if it doesn't match.
-    //   This can happen when we have a retyping of a vector that doesn't translate to any
-    //   actual IR.
-    // - (If it's not an OBJ and it's used in a parameter context where it is required,
-    //   impNormStructVal will add one).
-    //
-    if (tree->OperGet() == GT_OBJ)
+    if (tree->OperIsIndir() && tree->AsIndir()->Addr()->OperIs(GT_ADDR))
     {
-        if ((structHandle != NO_CLASS_HANDLE) && (tree->AsObj()->GetLayout()->GetClassHandle() != structHandle))
+        GenTree* location = tree->AsIndir()->Addr()->gtGetOp1();
+        if (location->OperIs(GT_LCL_VAR) && location->TypeIs(type))
         {
-            // In this case we need to retain the GT_OBJ to retype the value.
-            tree->AsObj()->SetLayout(typGetObjLayout(structHandle));
-        }
-        else
-        {
-            GenTree* addr = tree->AsOp()->gtOp1;
-            if ((addr->OperGet() == GT_ADDR) && isSIMDTypeLocal(addr->AsOp()->gtOp1))
-            {
-                tree = addr->AsOp()->gtOp1;
-            }
+            assert(type != TYP_STRUCT);
+            tree = location;
         }
     }
 
-    if (tree->OperGet() == GT_LCL_VAR)
-    {
-        isParam = lvaGetDesc(tree->AsLclVarCommon())->lvIsParam;
-    }
-
-    // normalize TYP_STRUCT value
-    if (varTypeIsStruct(tree) && ((tree->OperGet() == GT_RET_EXPR) || (tree->OperGet() == GT_CALL) || isParam))
+    // Handle calls that may return the struct via a return buffer.
+    if (varTypeIsStruct(tree) && tree->OperIs(GT_CALL, GT_RET_EXPR))
     {
         assert(ti.IsType(TI_STRUCT));
 
-        if (structHandle == nullptr)
+        if (structHandle == NO_CLASS_HANDLE)
         {
             structHandle = ti.GetClassHandleForValueClass();
         }

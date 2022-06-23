@@ -2115,11 +2115,15 @@ namespace System
         public static double Abs(double value) { throw null; }
         public static double Acos(double x) { throw null; }
         public static double Acosh(double x) { throw null; }
+        public static double AcosPi(double x) { throw null; }
         public static double Asin(double x) { throw null; }
         public static double Asinh(double x) { throw null; }
+        public static double AsinPi(double x) { throw null; }
         public static double Atan(double x) { throw null; }
         public static double Atan2(double y, double x) { throw null; }
+        public static double Atan2Pi(double y, double x) { throw null; }
         public static double Atanh(double x) { throw null; }
+        public static double AtanPi(double x) { throw null; }
         public static double BitDecrement(double x) { throw null; }
         public static double BitIncrement(double x) { throw null; }
         public static double Cbrt(double x) { throw null; }
@@ -2127,9 +2131,10 @@ namespace System
         public static double Clamp(double value, double min, double max) { throw null; }
         public int CompareTo(double value) { throw null; }
         public int CompareTo(object? value) { throw null; }
-        public static double CopySign(double x, double y) { throw null; }
+        public static double CopySign(double value, double sign) { throw null; }
         public static double Cos(double x) { throw null; }
         public static double Cosh(double x) { throw null; }
+        public static double CosPi(double x) { throw null; }
         public bool Equals(double obj) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public static double Exp(double x) { throw null; }
@@ -2142,6 +2147,7 @@ namespace System
         public static double FusedMultiplyAdd(double left, double right, double addend) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
+        public static double Hypot(double x, double y) { throw null; }
         public static double Ieee754Remainder(double left, double right) { throw null; }
         public static int ILogB(double x) { throw null; }
         public static bool IsEvenInteger(double value) { throw null; }
@@ -2188,6 +2194,7 @@ namespace System
         public static double Pow(double x, double y) { throw null; }
         public static double ReciprocalEstimate(double x) { throw null; }
         public static double ReciprocalSqrtEstimate(double x) { throw null; }
+        public static double Root(double x, int n) { throw null; }
         public static double Round(double x) { throw null; }
         public static double Round(double x, int digits) { throw null; }
         public static double Round(double x, int digits, System.MidpointRounding mode) { throw null; }
@@ -2197,6 +2204,7 @@ namespace System
         public static double Sin(double x) { throw null; }
         public static (double Sin, double Cos) SinCos(double x) { throw null; }
         public static double Sinh(double x) { throw null; }
+        public static double SinPi(double x) { throw null; }
         public static double Sqrt(double x) { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider? provider) { throw null; }
         byte System.IConvertible.ToByte(System.IFormatProvider? provider) { throw null; }
@@ -2246,6 +2254,7 @@ namespace System
         static double System.Numerics.IUnaryPlusOperators<double, double>.operator +(double value) { throw null; }
         public static double Tan(double x) { throw null; }
         public static double Tanh(double x) { throw null; }
+        public static double TanPi(double x) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
@@ -2736,11 +2745,15 @@ namespace System
         public static System.Half Abs(System.Half value) { throw null; }
         public static System.Half Acos(System.Half x) { throw null; }
         public static System.Half Acosh(System.Half x) { throw null; }
+        public static System.Half AcosPi(System.Half x) { throw null; }
         public static System.Half Asin(System.Half x) { throw null; }
         public static System.Half Asinh(System.Half x) { throw null; }
+        public static System.Half AsinPi(System.Half x) { throw null; }
         public static System.Half Atan(System.Half x) { throw null; }
         public static System.Half Atan2(System.Half y, System.Half x) { throw null; }
+        public static System.Half Atan2Pi(System.Half y, System.Half x) { throw null; }
         public static System.Half Atanh(System.Half x) { throw null; }
+        public static System.Half AtanPi(System.Half x) { throw null; }
         public static System.Half BitDecrement(System.Half x) { throw null; }
         public static System.Half BitIncrement(System.Half x) { throw null; }
         public static System.Half Cbrt(System.Half x) { throw null; }
@@ -2748,9 +2761,10 @@ namespace System
         public static System.Half Clamp(System.Half value, System.Half min, System.Half max) { throw null; }
         public int CompareTo(System.Half other) { throw null; }
         public int CompareTo(object? obj) { throw null; }
-        public static System.Half CopySign(System.Half x, System.Half y) { throw null; }
+        public static System.Half CopySign(System.Half value, System.Half sign) { throw null; }
         public static System.Half Cos(System.Half x) { throw null; }
         public static System.Half Cosh(System.Half x) { throw null; }
+        public static System.Half CosPi(System.Half x) { throw null; }
         public bool Equals(System.Half other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public static System.Half Exp(System.Half x) { throw null; }
@@ -2762,6 +2776,7 @@ namespace System
         public static System.Half Floor(System.Half x) { throw null; }
         public static System.Half FusedMultiplyAdd(System.Half left, System.Half right, System.Half addend) { throw null; }
         public override int GetHashCode() { throw null; }
+        public static System.Half Hypot(System.Half x, System.Half y) { throw null; }
         public static System.Half Ieee754Remainder(System.Half left, System.Half right) { throw null; }
         public static int ILogB(System.Half x) { throw null; }
         public static bool IsEvenInteger(System.Half value) { throw null; }
@@ -2877,6 +2892,7 @@ namespace System
         public static System.Half Pow(System.Half x, System.Half y) { throw null; }
         public static System.Half ReciprocalEstimate(System.Half x) { throw null; }
         public static System.Half ReciprocalSqrtEstimate(System.Half x) { throw null; }
+        public static System.Half Root(System.Half x, int n) { throw null; }
         public static System.Half Round(System.Half x) { throw null; }
         public static System.Half Round(System.Half x, int digits) { throw null; }
         public static System.Half Round(System.Half x, int digits, System.MidpointRounding mode) { throw null; }
@@ -2886,6 +2902,7 @@ namespace System
         public static System.Half Sin(System.Half x) { throw null; }
         public static (System.Half Sin, System.Half Cos) SinCos(System.Half x) { throw null; }
         public static System.Half Sinh(System.Half x) { throw null; }
+        public static System.Half SinPi(System.Half x) { throw null; }
         public static System.Half Sqrt(System.Half x) { throw null; }
         static System.Half System.Numerics.IBitwiseOperators<System.Half, System.Half, System.Half>.operator &(System.Half left, System.Half right) { throw null; }
         static System.Half System.Numerics.IBitwiseOperators<System.Half, System.Half, System.Half>.operator |(System.Half left, System.Half right) { throw null; }
@@ -2911,6 +2928,7 @@ namespace System
         static bool System.Numerics.INumberBase<System.Half>.TryConvertToTruncating<TOther>(System.Half value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
         public static System.Half Tan(System.Half x) { throw null; }
         public static System.Half Tanh(System.Half x) { throw null; }
+        public static System.Half TanPi(System.Half x) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
@@ -4706,11 +4724,15 @@ namespace System
         public static float Abs(float value) { throw null; }
         public static float Acos(float x) { throw null; }
         public static float Acosh(float x) { throw null; }
+        public static float AcosPi(float x) { throw null; }
         public static float Asin(float x) { throw null; }
         public static float Asinh(float x) { throw null; }
+        public static float AsinPi(float x) { throw null; }
         public static float Atan(float x) { throw null; }
         public static float Atan2(float y, float x) { throw null; }
+        public static float Atan2Pi(float y, float x) { throw null; }
         public static float Atanh(float x) { throw null; }
+        public static float AtanPi(float x) { throw null; }
         public static float BitDecrement(float x) { throw null; }
         public static float BitIncrement(float x) { throw null; }
         public static float Cbrt(float x) { throw null; }
@@ -4718,9 +4740,10 @@ namespace System
         public static float Clamp(float value, float min, float max) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public int CompareTo(float value) { throw null; }
-        public static float CopySign(float x, float y) { throw null; }
+        public static float CopySign(float value, float sign) { throw null; }
         public static float Cos(float x) { throw null; }
         public static float Cosh(float x) { throw null; }
+        public static float CosPi(float x) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(float obj) { throw null; }
         public static float Exp(float x) { throw null; }
@@ -4733,6 +4756,7 @@ namespace System
         public static float FusedMultiplyAdd(float left, float right, float addend) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
+        public static float Hypot(float x, float y) { throw null; }
         public static float Ieee754Remainder(float left, float right) { throw null; }
         public static int ILogB(float x) { throw null; }
         public static bool IsEvenInteger(float value) { throw null; }
@@ -4779,6 +4803,7 @@ namespace System
         public static float Pow(float x, float y) { throw null; }
         public static float ReciprocalEstimate(float x) { throw null; }
         public static float ReciprocalSqrtEstimate(float x) { throw null; }
+        public static float Root(float x, int n) { throw null; }
         public static float Round(float x) { throw null; }
         public static float Round(float x, int digits) { throw null; }
         public static float Round(float x, int digits, System.MidpointRounding mode) { throw null; }
@@ -4788,6 +4813,7 @@ namespace System
         public static float Sin(float x) { throw null; }
         public static (float Sin, float Cos) SinCos(float x) { throw null; }
         public static float Sinh(float x) { throw null; }
+        public static float SinPi(float x) { throw null; }
         public static float Sqrt(float x) { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider? provider) { throw null; }
         byte System.IConvertible.ToByte(System.IFormatProvider? provider) { throw null; }
@@ -4837,6 +4863,7 @@ namespace System
         static float System.Numerics.IUnaryPlusOperators<float, float>.operator +(float value) { throw null; }
         public static float Tan(float x) { throw null; }
         public static float Tanh(float x) { throw null; }
+        public static float TanPi(float x) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
@@ -9265,6 +9292,8 @@ namespace System.IO
     public static partial class Directory
     {
         public static System.IO.DirectoryInfo CreateDirectory(string path) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        public static System.IO.DirectoryInfo CreateDirectory(string path, System.IO.UnixFileMode unixCreateMode) { throw null; }
         public static System.IO.FileSystemInfo CreateSymbolicLink(string path, string pathToTarget) { throw null; }
         public static void Delete(string path) { }
         public static void Delete(string path, bool recursive) { }
@@ -9408,6 +9437,10 @@ namespace System.IO
         public static System.DateTime GetLastAccessTimeUtc(string path) { throw null; }
         public static System.DateTime GetLastWriteTime(string path) { throw null; }
         public static System.DateTime GetLastWriteTimeUtc(string path) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        public static System.IO.UnixFileMode GetUnixFileMode(Microsoft.Win32.SafeHandles.SafeFileHandle fileHandle) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        public static System.IO.UnixFileMode GetUnixFileMode(string path) { throw null; }
         public static void Move(string sourceFileName, string destFileName) { }
         public static void Move(string sourceFileName, string destFileName, bool overwrite) { }
         public static System.IO.FileStream Open(string path, System.IO.FileMode mode) { throw null; }
@@ -9442,6 +9475,10 @@ namespace System.IO
         public static void SetLastAccessTimeUtc(string path, System.DateTime lastAccessTimeUtc) { }
         public static void SetLastWriteTime(string path, System.DateTime lastWriteTime) { }
         public static void SetLastWriteTimeUtc(string path, System.DateTime lastWriteTimeUtc) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        public static void SetUnixFileMode(Microsoft.Win32.SafeHandles.SafeFileHandle fileHandle, System.IO.UnixFileMode mode) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        public static void SetUnixFileMode(string path, System.IO.UnixFileMode mode) { }
         public static void WriteAllBytes(string path, byte[] bytes) { }
         public static System.Threading.Tasks.Task WriteAllBytesAsync(string path, byte[] bytes, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static void WriteAllLines(string path, System.Collections.Generic.IEnumerable<string> contents) { }
@@ -9648,6 +9685,7 @@ namespace System.IO
         public System.IO.FileOptions Options { get { throw null; } set { } }
         public long PreallocationSize { get { throw null; } set { } }
         public System.IO.FileShare Share { get { throw null; } set { } }
+        public System.IO.UnixFileMode? UnixCreateMode { get { throw null; } [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")] set { } }
     }
     public abstract partial class FileSystemInfo : System.MarshalByRefObject, System.Runtime.Serialization.ISerializable
     {
@@ -9667,6 +9705,7 @@ namespace System.IO
         public System.DateTime LastWriteTimeUtc { get { throw null; } set { } }
         public string? LinkTarget { get { throw null; } }
         public abstract string Name { get; }
+        public System.IO.UnixFileMode UnixFileMode { get { throw null; } [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")] set { } }
         public void CreateAsSymbolicLink(string pathToTarget) { }
         public abstract void Delete();
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
@@ -10124,6 +10163,23 @@ namespace System.IO
         public virtual System.Threading.Tasks.Task WriteLineAsync(string? value) { throw null; }
         public virtual System.Threading.Tasks.Task WriteLineAsync(System.Text.StringBuilder? value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
+    [System.FlagsAttribute]
+    public enum UnixFileMode
+    {
+        None = 0,
+        OtherExecute = 1,
+        OtherWrite = 2,
+        OtherRead = 4,
+        GroupExecute = 8,
+        GroupWrite = 16,
+        GroupRead = 32,
+        UserExecute = 64,
+        UserWrite = 128,
+        UserRead = 256,
+        StickyBit = 512,
+        SetGroup = 1024,
+        SetUser = 2048,
+    }
     public partial class UnmanagedMemoryStream : System.IO.Stream
     {
         protected UnmanagedMemoryStream() { }
@@ -10516,6 +10572,8 @@ namespace System.Numerics
     public partial interface IRootFunctions<TSelf> where TSelf : System.Numerics.IRootFunctions<TSelf>, System.Numerics.INumberBase<TSelf>
     {
         static abstract TSelf Cbrt(TSelf x);
+        static abstract TSelf Hypot(TSelf x, TSelf y);
+        static abstract TSelf Root(TSelf x, int n);
         static abstract TSelf Sqrt(TSelf x);
     }
     public partial interface IShiftOperators<TSelf, TResult> where TSelf : System.Numerics.IShiftOperators<TSelf, TResult>
@@ -10536,13 +10594,20 @@ namespace System.Numerics
     public partial interface ITrigonometricFunctions<TSelf> where TSelf : System.Numerics.ITrigonometricFunctions<TSelf>, System.Numerics.INumberBase<TSelf>
     {
         static abstract TSelf Acos(TSelf x);
+        static abstract TSelf AcosPi(TSelf x);
         static abstract TSelf Asin(TSelf x);
+        static abstract TSelf AsinPi(TSelf x);
         static abstract TSelf Atan(TSelf x);
         static abstract TSelf Atan2(TSelf y, TSelf x);
+        static abstract TSelf Atan2Pi(TSelf y, TSelf x);
+        static abstract TSelf AtanPi(TSelf x);
         static abstract TSelf Cos(TSelf x);
+        static abstract TSelf CosPi(TSelf x);
         static abstract TSelf Sin(TSelf x);
         static abstract (TSelf Sin, TSelf Cos) SinCos(TSelf x);
+        static abstract TSelf SinPi(TSelf x);
         static abstract TSelf Tan(TSelf x);
+        static abstract TSelf TanPi(TSelf x);
     }
     public partial interface IUnaryNegationOperators<TSelf, TResult> where TSelf : System.Numerics.IUnaryNegationOperators<TSelf, TResult>
     {

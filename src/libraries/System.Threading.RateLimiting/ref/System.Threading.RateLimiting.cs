@@ -64,6 +64,7 @@ namespace System.Threading.RateLimiting
     }
     public static partial class PartitionedRateLimiter
     {
+        public static System.Threading.RateLimiting.PartitionedRateLimiter<TResource> CreateChained<TResource>(params System.Threading.RateLimiting.PartitionedRateLimiter<TResource>[] limiters) { throw null; }
         public static System.Threading.RateLimiting.PartitionedRateLimiter<TResource> Create<TResource, TPartitionKey>(System.Func<TResource, System.Threading.RateLimiting.RateLimitPartition<TPartitionKey>> partitioner, System.Collections.Generic.IEqualityComparer<TPartitionKey>? equalityComparer = null) where TPartitionKey : notnull { throw null; }
     }
     public abstract partial class PartitionedRateLimiter<TResource> : System.IAsyncDisposable, System.IDisposable
@@ -125,6 +126,7 @@ namespace System.Threading.RateLimiting
         private int _dummyPrimitive;
         public RateLimitPartition(TKey partitionKey, System.Func<TKey, System.Threading.RateLimiting.RateLimiter> factory) { throw null; }
         public readonly TKey PartitionKey { get { throw null; } }
+        public readonly Func<TKey, RateLimiter> Factory { get { throw null; } }
     }
     public abstract partial class ReplenishingRateLimiter : System.Threading.RateLimiting.RateLimiter
     {

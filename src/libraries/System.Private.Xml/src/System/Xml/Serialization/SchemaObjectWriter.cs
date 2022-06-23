@@ -1,18 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Text;
+using System.IO;
+using System.Xml;
+using System.Xml.Schema;
+using System.Xml.Serialization;
+using System.Collections;
+using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml.Serialization
 {
-    using System;
-    using System.Text;
-    using System.IO;
-    using System.Xml;
-    using System.Xml.Schema;
-    using System.Xml.Serialization;
-    using System.Collections;
-    using System.Collections.Specialized;
-    using System.Diagnostics.CodeAnalysis;
-
     internal sealed class XmlAttributeComparer : IComparer
     {
         public int Compare(object? o1, object? o2)
@@ -804,14 +804,14 @@ namespace System.Xml.Serialization
             WriteAttribute(@"id", @"", ((string?)o.@Id));
             WriteAttribute(@"name", @"", ((string?)o.@Name));
             WriteAttribute(@"final", @"", Write11_XmlSchemaDerivationMethod(o.FinalResolved));
-            if (((bool)o.@IsAbstract) != false)
+            if ((bool)o.@IsAbstract)
             {
-                WriteAttribute(@"abstract", @"", XmlConvert.ToString((bool)((bool)o.@IsAbstract)));
+                WriteAttribute(@"abstract", @"", XmlConvert.ToString((bool)(bool)o.@IsAbstract));
             }
             WriteAttribute(@"block", @"", Write11_XmlSchemaDerivationMethod(o.BlockResolved));
-            if (((bool)o.@IsMixed) != false)
+            if ((bool)o.@IsMixed)
             {
-                WriteAttribute(@"mixed", @"", XmlConvert.ToString((bool)((bool)o.@IsMixed)));
+                WriteAttribute(@"mixed", @"", XmlConvert.ToString((bool)(bool)o.@IsMixed));
             }
             WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes, o);
             Write5_XmlSchemaAnnotation((XmlSchemaAnnotation?)o.@Annotation);
@@ -972,9 +972,9 @@ namespace System.Xml.Serialization
             WriteAttribute(@"id", @"", o.Id);
             WriteAttribute("minOccurs", "", XmlConvert.ToString(o.MinOccurs));
             WriteAttribute("maxOccurs", "", o.MaxOccurs == decimal.MaxValue ? "unbounded" : XmlConvert.ToString(o.MaxOccurs));
-            if (((bool)o.@IsAbstract) != false)
+            if ((bool)o.@IsAbstract)
             {
-                WriteAttribute(@"abstract", @"", XmlConvert.ToString((bool)((bool)o.@IsAbstract)));
+                WriteAttribute(@"abstract", @"", XmlConvert.ToString((bool)(bool)o.@IsAbstract));
             }
             WriteAttribute(@"block", @"", Write11_XmlSchemaDerivationMethod(o.BlockResolved));
             WriteAttribute(@"default", @"", o.DefaultValue);

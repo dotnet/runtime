@@ -1,17 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
+using System;
+using System.Runtime.InteropServices;
+
 // This file defines many COM dual interfaces which are legacy and,
 // cannot be changed.  Tolerate possible obsoletion.
-//
 #pragma warning disable CS0618 // Type or member is obsolete
 
 namespace System.DirectoryServices.AccountManagement
 {
-    using System.Runtime.InteropServices;
-    using System;
-
     internal static class Constants
     {
         internal static byte[] GUID_FOREIGNSECURITYPRINCIPALS_CONTAINER_BYTE = new byte[] { 0x22, 0xb7, 0x0c, 0x67, 0xd5, 0x6e, 0x4e, 0xfb, 0x91, 0xe9, 0x30, 0x0f, 0xca, 0x3d, 0xc1, 0xaa };

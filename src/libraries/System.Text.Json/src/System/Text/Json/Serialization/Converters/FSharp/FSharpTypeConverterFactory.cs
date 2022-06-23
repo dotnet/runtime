@@ -37,12 +37,12 @@ namespace System.Text.Json.Serialization.Converters
                 case FSharpKind.Option:
                     elementType = typeToConvert.GetGenericArguments()[0];
                     converterFactoryType = typeof(FSharpOptionConverter<,>).MakeGenericType(typeToConvert, elementType);
-                    constructorArguments = new object[] { options.GetConverterInternal(elementType) };
+                    constructorArguments = new object[] { options.GetConverterFromTypeInfo(elementType) };
                     break;
                 case FSharpKind.ValueOption:
                     elementType = typeToConvert.GetGenericArguments()[0];
                     converterFactoryType = typeof(FSharpValueOptionConverter<,>).MakeGenericType(typeToConvert, elementType);
-                    constructorArguments = new object[] { options.GetConverterInternal(elementType) };
+                    constructorArguments = new object[] { options.GetConverterFromTypeInfo(elementType) };
                     break;
                 case FSharpKind.List:
                     elementType = typeToConvert.GetGenericArguments()[0];

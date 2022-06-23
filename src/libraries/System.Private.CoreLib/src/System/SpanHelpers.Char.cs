@@ -2096,12 +2096,7 @@ namespace System
 
             // Store any remaining values one-by-one
             buf = ref Unsafe.As<byte, char>(ref bufByte);
-            for (nuint i = 0; i < (length / 2); i++)
-            {
-                ref char first = ref Unsafe.Add(ref buf, i);
-                ref char last = ref Unsafe.Add(ref buf, length - 1 - i);
-                (last, first) = (first, last);
-            }
+            ReverseInner(ref buf, length);
         }
     }
 }

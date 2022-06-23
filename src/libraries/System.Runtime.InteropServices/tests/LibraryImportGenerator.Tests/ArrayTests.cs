@@ -74,7 +74,7 @@ namespace LibraryImportGenerator.IntegrationTests
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "and_all_members")]
             [return:MarshalAs(UnmanagedType.U1)]
-            public static partial bool AndAllMembers(BoolStruct[] pArray, int length);
+            public static partial bool AndAllMembers(BoolStruct_V1[] pArray, int length);
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "transpose_matrix")]
             [return: MarshalUsing(CountElementName = "numColumns")]
@@ -400,19 +400,19 @@ namespace LibraryImportGenerator.IntegrationTests
         {
             var boolValues = new[]
             {
-                new BoolStruct
+                new BoolStruct_V1
                 {
                     b1 = true,
                     b2 = true,
                     b3 = true,
                 },
-                new BoolStruct
+                new BoolStruct_V1
                 {
                     b1 = true,
                     b2 = true,
                     b3 = true,
                 },
-                new BoolStruct
+                new BoolStruct_V1
                 {
                     b1 = true,
                     b2 = true,

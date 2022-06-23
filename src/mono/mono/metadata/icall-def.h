@@ -331,6 +331,7 @@ HANDLES(FILEDI_2, "internal_from_handle_type", ves_icall_System_Reflection_Field
 ICALL_TYPE(MDUP, "System.Reflection.Metadata.MetadataUpdater", MDUP_1)
 NOHANDLES(ICALL(MDUP_1, "ApplyUpdateEnabled", ves_icall_AssemblyExtensions_ApplyUpdateEnabled))
 NOHANDLES(ICALL(MDUP_2, "ApplyUpdate_internal", ves_icall_AssemblyExtensions_ApplyUpdate))
+HANDLES(MDUP_3, "GetApplyUpdateCapabilities", ves_icall_AssemblyExtensions_GetApplyUpdateCapabilities, MonoString, 0, ())
 
 ICALL_TYPE(MBASE, "System.Reflection.MethodBase", MBASE_1)
 HANDLES(MBASE_1, "GetCurrentMethod", ves_icall_GetCurrentMethod, MonoReflectionMethod, 0, ())

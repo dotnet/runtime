@@ -275,7 +275,7 @@ namespace System.Collections.Specialized
         protected object? BaseGet(string? name)
         {
             NameObjectEntry? e = FindEntry(name);
-            return (e != null) ? e.Value : null;
+            return e?.Value;
         }
 
         /// <devdoc>

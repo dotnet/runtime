@@ -221,6 +221,9 @@ namespace ILCompiler
             if (dictionaryNode != null)
             {
                 _genericDictionariesGenerated.Add(dictionaryNode);
+
+                if (dictionaryNode.OwningEntity is MethodDesc method && AllMethodsCanBeReflectable)
+                    _reflectableMethods.Add(method);
             }
 
             if (obj is StructMarshallingDataNode structMarshallingDataNode)
@@ -463,6 +466,12 @@ namespace ILCompiler
 
             GetDependenciesDueToTemplateTypeLoader(ref dependencies, factory, method);
             GetDependenciesDueToMethodCodePresenceInternal(ref dependencies, factory, method, methodIL);
+        }
+
+        public virtual void GetConditionalDependenciesDueToMethodGenericDictionary(ref CombinedDependencyList dependencies, NodeFactory factory, MethodDesc method)
+        {
+            // MetadataManagers can override this to provide additional dependencies caused by the presence of
+            // method generic dictionary.
         }
 
         public virtual void GetConditionalDependenciesDueToMethodCodePresence(ref CombinedDependencyList dependencies, NodeFactory factory, MethodDesc method)

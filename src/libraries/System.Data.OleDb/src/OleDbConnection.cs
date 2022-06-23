@@ -9,11 +9,10 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
+using SysTx = System.Transactions;
 
 namespace System.Data.OleDb
 {
-    using SysTx = Transactions;
-
     // wraps the OLEDB IDBInitialize interface which represents a connection
     // Notes about connection pooling
     // 1. Only happens if we use the IDataInitialize or IDBPromptInitialize interfaces
@@ -617,7 +616,7 @@ namespace System.Data.OleDb
             }
             else if ((int)hresult < 0)
             {
-                e = ODB.NoErrorInformation((null != connection) ? connection.Provider : null, hresult, null); // OleDbException
+                e = ODB.NoErrorInformation(connection?.Provider, hresult, null); // OleDbException
 
                 ResetState(connection);
             }

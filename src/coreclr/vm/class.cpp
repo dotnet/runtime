@@ -2236,7 +2236,7 @@ void MethodTable::DebugRecursivelyDumpInstanceFields(LPCUTF8 pszClassName, BOOL 
             // Display them
             if(debug) {
                 ssBuff.Printf("%s:\n", pszClassName);
-                OutputDebugStringUtf8(ssBuff.GetUTF8NoConvert());
+                OutputDebugStringUtf8(ssBuff.GetUTF8());
             }
             else {
                  LOG((LF_CLASSLOADER, LL_ALWAYS, "%s:\n", pszClassName));
@@ -2250,7 +2250,7 @@ void MethodTable::DebugRecursivelyDumpInstanceFields(LPCUTF8 pszClassName, BOOL 
 #endif
                 if(debug) {
                     ssBuff.Printf("offset %3d %s\n", pFD->GetOffset_NoLogging(), pFD->GetName());
-                    OutputDebugStringUtf8(ssBuff.GetUTF8NoConvert());
+                    OutputDebugStringUtf8(ssBuff.GetUTF8());
                 }
                 else {
                     LOG((LF_CLASSLOADER, LL_ALWAYS, "offset %3d %s\n", pFD->GetOffset_NoLogging(), pFD->GetName()));
@@ -2299,7 +2299,7 @@ void MethodTable::DebugDumpFieldLayout(LPCUTF8 pszClassName, BOOL debug)
         if (debug)
         {
             ssBuff.Printf("Field layout for '%s':\n\n", pszClassName);
-            OutputDebugStringUtf8(ssBuff.GetUTF8NoConvert());
+            OutputDebugStringUtf8(ssBuff.GetUTF8());
         }
         else
         {
@@ -2326,7 +2326,7 @@ void MethodTable::DebugDumpFieldLayout(LPCUTF8 pszClassName, BOOL debug)
                 FieldDesc *pFD = GetClass()->GetFieldDescList() + ((GetNumInstanceFields()-cParentInstanceFields) + i);
                 if(debug) {
                     ssBuff.Printf("offset %3d %s\n", pFD->GetOffset_NoLogging(), pFD->GetName());
-                    OutputDebugStringUtf8(ssBuff.GetUTF8NoConvert());
+                    OutputDebugStringUtf8(ssBuff.GetUTF8());
                 }
                 else
                 {
@@ -2404,7 +2404,7 @@ MethodTable::DebugDumpGCDesc(
         if (fDebug)
         {
             ssBuff.Printf("GC description for '%s':\n\n", pszClassName);
-            OutputDebugStringUtf8(ssBuff.GetUTF8NoConvert());
+            OutputDebugStringUtf8(ssBuff.GetUTF8());
         }
         else
         {
@@ -2438,7 +2438,7 @@ MethodTable::DebugDumpGCDesc(
                         pSeries->GetSeriesOffset() - OBJECT_SIZE,
                         pSeries->GetSeriesSize(),
                         pSeries->GetSeriesSize() + GetBaseSize() );
-                    OutputDebugStringUtf8(ssBuff.GetUTF8NoConvert());
+                    OutputDebugStringUtf8(ssBuff.GetUTF8());
                 }
                 else
                 {
