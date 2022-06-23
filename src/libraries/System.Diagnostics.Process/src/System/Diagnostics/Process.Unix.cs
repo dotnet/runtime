@@ -763,10 +763,12 @@ namespace System.Diagnostics
                 return false;
             }
 
-            Interop.Sys.Permissions permissions = ((Interop.Sys.Permissions)fileinfo.Mode) & Interop.Sys.Permissions.S_IXUGO;
+            const UnixFileMode AllExecute = UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
+
+            UnixFileMode permissions = ((UnixFileMode)fileinfo.Mode) & AllExecute;
 
             // Avoid checking user/group when permission.
-            if (permissions == Interop.Sys.Permissions.S_IXUGO)
+            if (permissions == AllExecute)
             {
                 return true;
             }
@@ -785,11 +787,11 @@ namespace System.Diagnostics
             if (euid == fileinfo.Uid)
             {
                 // We own the file.
-                return (permissions & Interop.Sys.Permissions.S_IXUSR) != 0;
+                return (permissions & UnixFileMode.UserExecute) != 0;
             }
 
-            bool groupCanExecute = (permissions & Interop.Sys.Permissions.S_IXGRP) != 0;
-            bool otherCanExecute = (permissions & Interop.Sys.Permissions.S_IXOTH) != 0;
+            bool groupCanExecute = (permissions & UnixFileMode.GroupExecute) != 0;
+            bool otherCanExecute = (permissions & UnixFileMode.OtherExecute) != 0;
 
             // Avoid group check when group and other have same permissions.
             if (groupCanExecute == otherCanExecute)
