@@ -8355,7 +8355,6 @@ inline bool GenTree::IsVectorCreate() const
                 return false;
         }
     }
-    return OperIs(GT_SIMD);
 #else
     return false;
 #endif // FEATURE_SIMD
