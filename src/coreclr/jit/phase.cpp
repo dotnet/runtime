@@ -191,6 +191,8 @@ void Phase::PostPhase(PhaseStatus status)
         PHASE_MARK_LOCAL_VARS,
         PHASE_OPTIMIZE_ADD_COPIES,
         PHASE_OPTIMIZE_BOOLS,
+        PHASE_FIND_OPER_ORDER,
+        PHASE_SET_BLOCK_ORDER,
         PHASE_BUILD_SSA,
         PHASE_EARLY_PROP,
         PHASE_VALUE_NUMBER,

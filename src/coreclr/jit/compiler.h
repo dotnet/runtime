@@ -5263,12 +5263,12 @@ public:
 
     bool fgUpdateFlowGraph(bool doTailDup = false);
 
-    void fgFindOperOrder();
+    PhaseStatus fgFindOperOrder();
 
     // method that returns if you should split here
     typedef bool(fgSplitPredicate)(GenTree* tree, GenTree* parent, fgWalkData* data);
 
-    void fgSetBlockOrder();
+    PhaseStatus fgSetBlockOrder();
 
     void fgRemoveReturnBlock(BasicBlock* block);
 
