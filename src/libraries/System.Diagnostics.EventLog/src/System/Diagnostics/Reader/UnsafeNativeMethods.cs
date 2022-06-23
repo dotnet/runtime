@@ -690,7 +690,7 @@ namespace Microsoft.Win32
                             out int propCount);
 
 #if NET7_0_OR_GREATER
-        [NativeMarshalling(typeof(Native))]
+        [NativeMarshalling(typeof(Marshaller))]
 #endif
         [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Unicode)]
         internal struct EvtStringVariant
@@ -703,37 +703,44 @@ namespace Microsoft.Win32
             public uint Type;
 
 #if NET7_0_OR_GREATER
-            [CustomTypeMarshaller(typeof(EvtStringVariant), Features = CustomTypeMarshallerFeatures.UnmanagedResources)]
-            [StructLayout(LayoutKind.Explicit)]
-            public struct Native
+            [ManagedToUnmanagedMarshallers(typeof(EvtStringVariant), InMarshaller = typeof(Marshaller), RefMarshaller = typeof(Marshaller), OutMarshaller = typeof(Marshaller))]
+            public static class Marshaller
             {
-                [FieldOffset(0)]
-                private IntPtr StringVal;
-                [FieldOffset(8)]
-                private uint Count;
-                [FieldOffset(12)]
-                private uint Type;
+                public static Native ConvertToUnmanaged(EvtStringVariant managed) => new(managed);
+                public static EvtStringVariant ConvertToManaged(Native native) => native.ToManaged();
+                public static void Free(Native native) => native.FreeNative();
 
-                public Native(EvtStringVariant managed)
+                [StructLayout(LayoutKind.Explicit)]
+                public struct Native
                 {
-                    StringVal = Marshal.StringToCoTaskMemUni(managed.StringVal);
-                    Count = managed.Count;
-                    Type = managed.Type;
-                }
+                    [FieldOffset(0)]
+                    private IntPtr StringVal;
+                    [FieldOffset(8)]
+                    private uint Count;
+                    [FieldOffset(12)]
+                    private uint Type;
 
-                public EvtStringVariant ToManaged()
-                {
-                    return new EvtStringVariant
+                    public Native(EvtStringVariant managed)
                     {
-                        StringVal = Marshal.PtrToStringUni(StringVal),
-                        Count = Count,
-                        Type = Type
-                    };
-                }
+                        StringVal = Marshal.StringToCoTaskMemUni(managed.StringVal);
+                        Count = managed.Count;
+                        Type = managed.Type;
+                    }
 
-                public void FreeNative()
-                {
-                    Marshal.FreeCoTaskMem(StringVal);
+                    public EvtStringVariant ToManaged()
+                    {
+                        return new EvtStringVariant
+                        {
+                            StringVal = Marshal.PtrToStringUni(StringVal),
+                            Count = Count,
+                            Type = Type
+                        };
+                    }
+
+                    public void FreeNative()
+                    {
+                        Marshal.FreeCoTaskMem(StringVal);
+                    }
                 }
             }
 #endif

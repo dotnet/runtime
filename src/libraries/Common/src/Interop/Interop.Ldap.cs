@@ -31,7 +31,7 @@ namespace System.DirectoryServices.Protocols
     }
 
 #if NET7_0_OR_GREATER
-    [NativeMarshalling(typeof(Native))]
+    [NativeMarshalling(typeof(Marshaller))]
 #endif
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     internal struct SEC_WINNT_AUTH_IDENTITY_EX
@@ -49,8 +49,36 @@ namespace System.DirectoryServices.Protocols
         public int packageListLength;
 
 #if NET7_0_OR_GREATER
-        [CustomTypeMarshaller(typeof(SEC_WINNT_AUTH_IDENTITY_EX), Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.UnmanagedResources)]
+        [ManagedToUnmanagedMarshallers(typeof(SEC_WINNT_AUTH_IDENTITY_EX), InMarshaller = typeof(Marshaller))]
+        internal static class Marshaller
+        {
+            public static Native ConvertToUnmanaged(SEC_WINNT_AUTH_IDENTITY_EX managed)
+            {
+                Native n = default;
+                n.version = managed.version;
+                n.length = managed.length;
+                n.user = Marshal.StringToCoTaskMemUni(managed.user);
+                n.userLength = managed.userLength;
+                n.domain = Marshal.StringToCoTaskMemUni(managed.domain);
+                n.domainLength = managed.domainLength;
+                n.password = Marshal.StringToCoTaskMemUni(managed.password);
+                n.passwordLength = managed.passwordLength;
+                n.flags = managed.flags;
+                n.packageList = Marshal.StringToCoTaskMemUni(managed.packageList);
+                n.packageListLength = managed.packageListLength;
+                return n;
+            }
+
+            public static void Free(Native native)
+            {
+                Marshal.FreeCoTaskMem(native.user);
+                Marshal.FreeCoTaskMem(native.domain);
+                Marshal.FreeCoTaskMem(native.password);
+                Marshal.FreeCoTaskMem(native.packageList);
+            }
+        }
 #endif
+
         [StructLayout(LayoutKind.Sequential)]
         internal struct Native
         {
@@ -65,29 +93,6 @@ namespace System.DirectoryServices.Protocols
             public int flags;
             public IntPtr packageList;
             public int packageListLength;
-
-            public Native(SEC_WINNT_AUTH_IDENTITY_EX managed)
-            {
-                version = managed.version;
-                length = managed.length;
-                user = Marshal.StringToCoTaskMemUni(managed.user);
-                userLength = managed.userLength;
-                domain = Marshal.StringToCoTaskMemUni(managed.domain);
-                domainLength = managed.domainLength;
-                password = Marshal.StringToCoTaskMemUni(managed.password);
-                passwordLength = managed.passwordLength;
-                flags = managed.flags;
-                packageList = Marshal.StringToCoTaskMemUni(managed.packageList);
-                packageListLength = managed.packageListLength;
-            }
-
-            public void FreeNative()
-            {
-                Marshal.FreeCoTaskMem(user);
-                Marshal.FreeCoTaskMem(domain);
-                Marshal.FreeCoTaskMem(password);
-                Marshal.FreeCoTaskMem(packageList);
-            }
         }
     }
 
