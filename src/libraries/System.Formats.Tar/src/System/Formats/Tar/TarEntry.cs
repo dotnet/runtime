@@ -347,6 +347,48 @@ namespace System.Formats.Tar
             }
         }
 
+        // Asynchronously extracts the current entry to a location relative to the specified directory.
+        internal Task ExtractRelativeToDirectoryAsync(string destinationDirectoryPath, bool overwrite, CancellationToken cancellationToken)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(destinationDirectoryPath));
+            Debug.Assert(Path.IsPathFullyQualified(destinationDirectoryPath));
+
+            destinationDirectoryPath = Path.TrimEndingDirectorySeparator(destinationDirectoryPath);
+
+            string? fileDestinationPath = GetSanitizedFullPath(destinationDirectoryPath, Name);
+            if (fileDestinationPath == null)
+            {
+                return Task.FromException(new IOException(string.Format(SR.TarExtractingResultsFileOutside, Name, destinationDirectoryPath)));
+            }
+
+            string? linkTargetPath = null;
+            if (EntryType is TarEntryType.SymbolicLink or TarEntryType.HardLink)
+            {
+                if (string.IsNullOrEmpty(LinkName))
+                {
+                    return Task.FromException(new FormatException(SR.TarEntryHardLinkOrSymlinkLinkNameEmpty));
+                }
+
+                linkTargetPath = GetSanitizedFullPath(destinationDirectoryPath, LinkName);
+                if (linkTargetPath == null)
+                {
+                    return Task.FromException(new IOException(string.Format(SR.TarExtractingResultsLinkOutside, LinkName, destinationDirectoryPath)));
+                }
+            }
+
+            if (EntryType == TarEntryType.Directory)
+            {
+                Directory.CreateDirectory(fileDestinationPath);
+                return Task.CompletedTask;
+            }
+            else
+            {
+                // If it is a file, create containing directory.
+                Directory.CreateDirectory(Path.GetDirectoryName(fileDestinationPath)!);
+                return ExtractToFileInternalAsync(fileDestinationPath, linkTargetPath, overwrite, cancellationToken);
+            }
+        }
+
         // If the path can be extracted in the specified destination directory, returns the full path with sanitized file name. Otherwise, returns null.
         private static string? GetSanitizedFullPath(string destinationDirectoryFullPath, string path)
         {
@@ -374,7 +416,7 @@ namespace System.Formats.Tar
         }
 
         // Asynchronously extracts the current entry into the filesystem, regardless of the entry type.
-        private Task ExtractToFileInternalAsync(string filePath, string? linkTargetPath, bool overwrite, CancellationToken cancellationToken)
+        private async Task ExtractToFileInternalAsync(string filePath, string? linkTargetPath, bool overwrite, CancellationToken cancellationToken)
         {
             ArgumentException.ThrowIfNullOrEmpty(filePath);
 
@@ -382,10 +424,12 @@ namespace System.Formats.Tar
 
             if (EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile or TarEntryType.ContiguousFile)
             {
-                return ExtractAsRegularFileAsync(filePath, cancellationToken);
+                await ExtractAsRegularFileAsync(filePath, cancellationToken).ConfigureAwait(false);
             }
-            CreateNonRegularFile(filePath, linkTargetPath);
-            return Task.CompletedTask;
+            else
+            {
+                CreateNonRegularFile(filePath, linkTargetPath);
+            }
         }
 
         private void CreateNonRegularFile(string filePath, string? linkTargetPath)
@@ -529,13 +573,13 @@ namespace System.Formats.Tar
         {
             Debug.Assert(!Path.Exists(destinationFileName));
 
-            FileStreamOptions fileStreamOptions = new FileStreamOptions()
+            FileStreamOptions fileStreamOptions = new()
             {
                 Access = FileAccess.Write,
                 Mode = FileMode.CreateNew,
                 Share = FileShare.None,
-                Options = FileOptions.Asynchronous,
                 PreallocationSize = Length,
+                Options = FileOptions.Asynchronous
             };
             // Rely on FileStream's ctor for further checking destinationFileName parameter
             using (FileStream fs = new FileStream(destinationFileName, fileStreamOptions))
