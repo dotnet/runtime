@@ -2267,12 +2267,7 @@ namespace Mono.Linker.Steps
 			foreach (var iface in type.Interfaces) {
 				// Only mark interface implementations of interface types that have been marked.
 				// This enables stripping of interfaces that are never used
-				var resolvedInterfaceType = Context.Resolve (iface.InterfaceType);
-				if (resolvedInterfaceType == null) {
-					continue;
-				}
-
-				if (ShouldMarkInterfaceImplementation (type, iface, resolvedInterfaceType))
+				if (ShouldMarkInterfaceImplementation (type, iface))
 					MarkInterfaceImplementation (iface, new MessageOrigin (type));
 			}
 		}
@@ -3523,21 +3518,25 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		protected virtual bool ShouldMarkInterfaceImplementation (TypeDefinition type, InterfaceImplementation iface, TypeDefinition resolvedInterfaceType)
+		protected virtual bool ShouldMarkInterfaceImplementation (TypeDefinition type, InterfaceImplementation iface)
 		{
 			if (Annotations.IsMarked (iface))
 				return false;
 
-			if (Annotations.IsMarked (resolvedInterfaceType))
+			if (!Context.IsOptimizationEnabled (CodeOptimizations.UnusedInterfaces, type))
 				return true;
 
-			if (!Context.IsOptimizationEnabled (CodeOptimizations.UnusedInterfaces, type))
+			if (Context.Resolve (iface.InterfaceType) is not TypeDefinition resolvedInterfaceType)
+				return false;
+
+			if (Annotations.IsMarked (resolvedInterfaceType))
 				return true;
 
 			// It's hard to know if a com or windows runtime interface will be needed from managed code alone,
 			// so as a precaution we will mark these interfaces once the type is instantiated
 			if (resolvedInterfaceType.IsImport || resolvedInterfaceType.IsWindowsRuntime)
 				return true;
+
 
 			return IsFullyPreserved (type);
 		}

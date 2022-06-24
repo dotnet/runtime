@@ -3,6 +3,10 @@
 
 namespace Mono.Linker.Tests.Cases.Libraries.Dependencies
 {
+	public interface ICopyLibraryInterfaceNoMethodImpl
+	{
+		void CopyLibraryInterfaceNoMethodImpl ();
+	}
 	public interface ICopyLibraryInterface
 	{
 		void CopyLibraryInterfaceMethod ();
