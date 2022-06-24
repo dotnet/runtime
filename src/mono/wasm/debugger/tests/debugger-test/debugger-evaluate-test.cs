@@ -421,18 +421,24 @@ namespace DebuggerTests
         {
             TestEvaluate f = new TestEvaluate();
             f.run(100, 200, "9000", "test", 45);
-            DebuggerTestsV2.EvaluateStaticFieldsInStaticClass.Run();
-            DebuggerTests.EvaluateStaticFieldsInStaticClass.Run();
-            DebuggerTests.EvaluateStaticFieldsInStaticClass.RunAsync();
-            DebuggerTests.EvaluateStaticFieldsInInstanceClass.RunStatic();
-            DebuggerTests.EvaluateStaticFieldsInInstanceClass.RunStaticAsync();
-            var instanceWithStaticFields = new EvaluateStaticFieldsInInstanceClass();
+            DebuggerTestsV2.EvaluateStaticClass.Run();
+            DebuggerTests.EvaluateStaticClass.Run();
+            DebuggerTests.EvaluateStaticClass.RunAsync();
+            DebuggerTests.EvaluateNonStaticClassWithStaticFields.RunStatic();
+            DebuggerTests.EvaluateNonStaticClassWithStaticFields.RunStaticAsync();
+            var instanceWithStaticFields = new EvaluateNonStaticClassWithStaticFields();
             instanceWithStaticFields.Run();
             instanceWithStaticFields.RunAsync();
         }
+
+        public static void EvaluateAsyncMethods()
+        {
+            var staticClass = new EvaluateNonStaticClassWithStaticFields();
+            staticClass.run();
+        }
     }
 
-    public static class EvaluateStaticFieldsInStaticClass
+    public static class EvaluateStaticClass
     {
         public static int StaticField1 = 10;
         public static string StaticProperty1 => "StaticProperty1";
@@ -462,7 +468,7 @@ namespace DebuggerTests
         }
     }
 
-    public class EvaluateStaticFieldsInInstanceClass
+    public class EvaluateNonStaticClassWithStaticFields
     {
         public static int StaticField1 = 70;
         public static string StaticProperty1 => "StaticProperty7";
@@ -486,6 +492,16 @@ namespace DebuggerTests
         public static async void RunStaticAsync()
         {
             await Task.FromResult(0);
+        }
+
+        private int HelperMethod()
+        {
+            return 5;
+        }
+
+        public async void run()
+        {
+            var makeAwaitable = await Task.Run(() => HelperMethod());
         }
     }
 
@@ -1448,7 +1464,7 @@ namespace DebuggerTests
 
 namespace DebuggerTestsV2
 {
-    public static class EvaluateStaticFieldsInStaticClass
+    public static class EvaluateStaticClass
     {
         public static int StaticField1 = 20;
         public static string StaticProperty1 => "StaticProperty2";

@@ -36,6 +36,12 @@ namespace DebuggerTests
             }
         }
 
+        public static IEnumerable<object[]> EvaluateStaticClassFromStaticMethodTestData(string type_name)
+        {
+            yield return new object[] { type_name, "EvaluateAsyncMethods", "EvaluateAsyncMethods", true };
+            yield return new object[] { type_name, "EvaluateMethods", "EvaluateMethods", false };
+        }
+
         [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberData(nameof(InstanceMethodForTypeMembersTestData), parameters: "DebuggerTests.EvaluateTestsStructWithProperties")]
         [MemberData(nameof(InstanceMethodForTypeMembersTestData), parameters: "DebuggerTests.EvaluateTestsClassWithProperties")]
@@ -694,13 +700,13 @@ namespace DebuggerTests
            });
 
         [Theory]
-        [InlineData("DebuggerTestsV2.EvaluateStaticFieldsInStaticClass", "Run", "DebuggerTestsV2", "EvaluateStaticFieldsInStaticClass", 1, 2)]
-        [InlineData("DebuggerTests.EvaluateStaticFieldsInStaticClass", "Run", "DebuggerTests", "EvaluateStaticFieldsInStaticClass", 1, 1)]
-        [InlineData("DebuggerTests.EvaluateStaticFieldsInStaticClass", "RunAsync", "DebuggerTests", "EvaluateStaticFieldsInStaticClass", 1, 1, true)]
-        [InlineData("DebuggerTests.EvaluateStaticFieldsInInstanceClass", "RunStatic", "DebuggerTests", "EvaluateStaticFieldsInInstanceClass", 1, 7)]
-        [InlineData("DebuggerTests.EvaluateStaticFieldsInInstanceClass", "RunStaticAsync", "DebuggerTests", "EvaluateStaticFieldsInInstanceClass", 1, 7, true)]
-        [InlineData("DebuggerTests.EvaluateStaticFieldsInInstanceClass", "Run", "DebuggerTests", "EvaluateStaticFieldsInInstanceClass", 1, 7)]
-        [InlineData("DebuggerTests.EvaluateStaticFieldsInInstanceClass", "RunAsync", "DebuggerTests", "EvaluateStaticFieldsInInstanceClass", 1, 7, true)]
+        [InlineData("DebuggerTestsV2.EvaluateStaticClass", "Run", "DebuggerTestsV2", "EvaluateStaticClass", 1, 2)]
+        [InlineData("DebuggerTests.EvaluateStaticClass", "Run", "DebuggerTests", "EvaluateStaticClass", 1, 1)]
+        [InlineData("DebuggerTests.EvaluateStaticClass", "RunAsync", "DebuggerTests", "EvaluateStaticClass", 1, 1, true)]
+        [InlineData("DebuggerTests.EvaluateNonStaticClassWithStaticFields", "RunStatic", "DebuggerTests", "EvaluateNonStaticClassWithStaticFields", 1, 7)]
+        [InlineData("DebuggerTests.EvaluateNonStaticClassWithStaticFields", "RunStaticAsync", "DebuggerTests", "EvaluateNonStaticClassWithStaticFields", 1, 7, true)]
+        [InlineData("DebuggerTests.EvaluateNonStaticClassWithStaticFields", "Run", "DebuggerTests", "EvaluateNonStaticClassWithStaticFields", 1, 7)]
+        [InlineData("DebuggerTests.EvaluateNonStaticClassWithStaticFields", "RunAsync", "DebuggerTests", "EvaluateNonStaticClassWithStaticFields", 1, 7, true)]
         public async Task EvaluateStaticFields(string bpLocation, string bpMethod, string namespaceName, string className, int bpLine, int expectedInt, bool isAsync = false) => 
             await CheckInspectLocalsAtBreakpointSite(
                 bpLocation, bpMethod, bpLine, isAsync ? "MoveNext" : bpMethod,
@@ -721,6 +727,65 @@ namespace DebuggerTests
                     );
                 });
 
+        [Fact]
+        public async Task EvaluateStaticClass() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "run",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+               var frame = pause_location["callFrames"][0];
+
+               await EvaluateOnCallFrameAndCheck(id,
+                   ("DebuggerTests.EvaluateStaticClass.StaticField1", TNumber(10)));
+               await EvaluateOnCallFrameAndCheck(id,
+                   ("DebuggerTests.EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")));
+               await EvaluateOnCallFrameAndCheck(id,
+                   ("DebuggerTests.EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented 1")));
+           });
+
+        [Theory]
+        [MemberData(nameof(EvaluateStaticClassFromStaticMethodTestData), parameters: "DebuggerTests.EvaluateMethodTestsClass")]
+        // [MemberData(nameof(EvaluateStaticClassFromStaticMethodTestData), parameters: "EvaluateMethodTestsClass")]
+        public async Task EvaluateStaticClassFromStaticMethod(string type, string method, string bp_function_name, bool is_async)
+        => await CheckInspectLocalsAtBreakpointSite(
+            type, method, 1, bp_function_name,
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] {type}:{method}'); }})",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+               var frame = pause_location["callFrames"][0];
+
+               await EvaluateOnCallFrameAndCheck(id,
+                   ("EvaluateStaticClass.StaticField1", TNumber(10)),
+                   ("EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")),
+                   ("EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented 1")),
+                   ("DebuggerTests.EvaluateStaticClass.StaticField1", TNumber(10)),
+                   ("DebuggerTests.EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")),
+                   ("DebuggerTests.EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented 1")));
+           });
+
+        [Fact]
+        public async Task EvaluateNonStaticClassWithStaticFields() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateMethodTestsClass", "EvaluateAsyncMethods", 3, "EvaluateAsyncMethods",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateAsyncMethods'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+               var frame = pause_location["callFrames"][0];
+
+               await EvaluateOnCallFrameAndCheck(id,
+                   ("DebuggerTests.EvaluateNonStaticClassWithStaticFields.StaticField1", TNumber(70)),
+                   ("DebuggerTests.EvaluateNonStaticClassWithStaticFields.StaticProperty1", TString("StaticProperty7")),
+                   ("DebuggerTests.EvaluateNonStaticClassWithStaticFields.StaticPropertyWithError", TString("System.Exception: not implemented 7")),
+                   ("EvaluateNonStaticClassWithStaticFields.StaticField1", TNumber(70)),
+                   ("EvaluateNonStaticClassWithStaticFields.StaticProperty1", TString("StaticProperty7")),
+                   ("EvaluateNonStaticClassWithStaticFields.StaticPropertyWithError", TString("System.Exception: not implemented 7")));
+           });
+
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateStaticClassesNested() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateMethodTestsClass", "EvaluateMethods", 3, "EvaluateMethods",
@@ -732,12 +797,12 @@ namespace DebuggerTests
                var frame = pause_location["callFrames"][0];
 
                await EvaluateOnCallFrameAndCheck(id,
-                   ("DebuggerTests.EvaluateStaticFieldsInStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticField1", TNumber(3)),
-                   ("DebuggerTests.EvaluateStaticFieldsInStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticProperty1", TString("StaticProperty3")),
-                   ("DebuggerTests.EvaluateStaticFieldsInStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticPropertyWithError", TString("System.Exception: not implemented 3")),
-                   ("EvaluateStaticFieldsInStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticField1", TNumber(3)),
-                   ("EvaluateStaticFieldsInStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticProperty1", TString("StaticProperty3")),
-                   ("EvaluateStaticFieldsInStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticPropertyWithError", TString("System.Exception: not implemented 3")));
+                   ("DebuggerTests.EvaluateStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticField1", TNumber(3)),
+                   ("DebuggerTests.EvaluateStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticProperty1", TString("StaticProperty3")),
+                   ("DebuggerTests.EvaluateStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticPropertyWithError", TString("System.Exception: not implemented 3")),
+                   ("EvaluateStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticField1", TNumber(3)),
+                   ("EvaluateStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticProperty1", TString("StaticProperty3")),
+                   ("EvaluateStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticPropertyWithError", TString("System.Exception: not implemented 3")));
            });
 
         [Fact]
@@ -782,10 +847,10 @@ namespace DebuggerTests
            });
 
         [ConditionalTheory(nameof(RunningOnChrome))]
-        [InlineData("DebuggerTests", "EvaluateStaticFieldsInInstanceClass", 7, true)]
-        [InlineData("DebuggerTestsV2", "EvaluateStaticFieldsInStaticClass", 2)]
+        [InlineData("DebuggerTests", "EvaluateNonStaticClassWithStaticFields", 7, true)]
+        [InlineData("DebuggerTestsV2", "EvaluateStaticClass", 2)]
         public async Task EvaluateStaticFieldsFromDifferentNamespaceInDifferentFrames(string namespaceName, string className, int expectedInt, bool isFromDifferentNamespace = false) => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTestsV2.EvaluateStaticFieldsInStaticClass", "Run", 1, "Run",
+            "DebuggerTestsV2.EvaluateStaticClass", "Run", 1, "Run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
             wait_for_event_fn: async (pause_location) =>
             {
@@ -828,6 +893,28 @@ namespace DebuggerTests
             });
 
         [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task EvaluateStaticClassesFromDifferentNamespaceInDifferentFrames() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTestsV2.EvaluateStaticClass", "Run", 1, "Run",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id_top = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                var frame = pause_location["callFrames"][0];
+
+                await EvaluateOnCallFrameAndCheck(id_top,
+                    ("EvaluateStaticClass.StaticField1", TNumber(20)),
+                    ("EvaluateStaticClass.StaticProperty1", TString("StaticProperty2")),
+                    ("EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented 2")));
+
+                var id_second = pause_location["callFrames"][1]["callFrameId"].Value<string>();
+
+                await EvaluateOnCallFrameAndCheck(id_second,
+                    ("EvaluateStaticClass.StaticField1", TNumber(10)),
+                    ("EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")),
+                    ("EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented 1")));
+            });
+
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateStaticClassInvalidField() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
@@ -837,8 +924,8 @@ namespace DebuggerTests
 
                var frame = pause_location["callFrames"][0];
 
-               var (_, res) = await EvaluateOnCallFrame(id, "DebuggerTests.EvaluateStaticFieldsInStaticClass.StaticProperty2", expect_ok: false);
-               AssertEqual("Failed to resolve member access for DebuggerTests.EvaluateStaticFieldsInStaticClass.StaticProperty2", res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
+               var (_, res) = await EvaluateOnCallFrame(id, "DebuggerTests.EvaluateStaticClass.StaticProperty2", expect_ok: false);
+               AssertEqual("Failed to resolve member access for DebuggerTests.EvaluateStaticClass.StaticProperty2", res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
 
                (_, res) = await EvaluateOnCallFrame(id, "DebuggerTests.InvalidEvaluateStaticClass.StaticProperty2", expect_ok: false);
                AssertEqual("Failed to resolve member access for DebuggerTests.InvalidEvaluateStaticClass.StaticProperty2", res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
