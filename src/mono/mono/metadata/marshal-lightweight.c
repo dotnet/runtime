@@ -662,7 +662,8 @@ gc_safe_transition_builder_init (GCSafeTransitionBuilder *builder, MonoMethodBui
 	builder->coop_cominterop_fnptr = -1;
 #endif
 #if defined (TARGET_WASM) && defined(DISABLE_THREADS)
-	return FALSE;
+	/* if we're in the AOT compiler, obey the --wasm-gc-safepoints option even if the AOT compiler doesn't have threads enabled */
+	return mono_opt_wasm_gc_safepoints;
 #else
 	return TRUE;
 #endif
