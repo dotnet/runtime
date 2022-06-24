@@ -22,6 +22,7 @@
     <Compile Include="TarFile\TarFile.CreateFromDirectory.Stream.Tests.cs" />
     <Compile Include="TarFile\TarFile.ExtractToDirectory.File.Tests.cs" />
     <Compile Include="TarFile\TarFile.ExtractToDirectory.Stream.Tests.cs" />
+    <Compile Include="TarReader\TarReader.GetNextEntryAsync.Tests.cs" />
     <Compile Include="TarReader\TarReader.File.GlobalExtendedAttributes.Tests.cs" />
     <Compile Include="TarReader\TarReader.File.Tests.Base.cs" />
     <Compile Include="TarReader\TarReader.TarEntry.ExtractToFileAsync.Tests.cs" />
