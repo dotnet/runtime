@@ -27,14 +27,14 @@ namespace Microsoft.Interop
         ManagedTypeInfo NativeType,
         MarshallerShape Shape,
         bool IsStrictlyBlittable,
-        ManagedTypeInfo? BufferElementType,
-        int? BufferSize);
+        ManagedTypeInfo? BufferElementType);
 
     public readonly record struct CustomTypeMarshallers(CustomTypeMarshallerData? In, CustomTypeMarshallerData? Ref, CustomTypeMarshallerData? Out);
 
     public static class ShapeMemberNames
     {
         public const string GetPinnableReference = nameof(GetPinnableReference);
+        public const string BufferSize = nameof(BufferSize);
 
         public abstract class Value
         {
@@ -328,13 +328,18 @@ namespace Microsoft.Interop
             if (nativeType is null)
                 return null;
 
+            ManagedTypeInfo bufferElementType = null;
+            if (methodsByShape.TryGetValue(MarshallerShape.CallerAllocatedBuffer, out IMethodSymbol methodWithBuffer))
+            {
+                bufferElementType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(((INamedTypeSymbol)methodWithBuffer.Parameters[1].Type).TypeArguments[0]);
+            }
+
             return new CustomTypeMarshallerData(
                 ManagedTypeInfo.CreateTypeInfoForTypeSymbol(marshallerType),
                 ManagedTypeInfo.CreateTypeInfoForTypeSymbol(nativeType),
                 shape,
                 nativeType.IsStrictlyBlittable(),
-                BufferElementType: null,
-                BufferSize: null);
+                bufferElementType);
         }
 
         private static IMethodSymbol? GetStatelessFree(ITypeSymbol type)

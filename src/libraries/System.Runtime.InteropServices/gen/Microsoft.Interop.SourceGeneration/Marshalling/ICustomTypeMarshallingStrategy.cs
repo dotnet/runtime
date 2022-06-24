@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -161,6 +162,91 @@ namespace Microsoft.Interop
         public IEnumerable<StatementSyntax> GeneratePinStatements(TypePositionInfo info, StubCodeContext context)
         {
             return Array.Empty<StatementSyntax>();
+        }
+    }
+
+    /// <summary>
+    /// Marshaller that enables support for a stackalloc constructor variant on a native type.
+    /// </summary>
+    internal sealed class CallerAllocatedBufferMarshalling : ICustomTypeMarshallingStrategy
+    {
+        private readonly ICustomTypeMarshallingStrategy _innerMarshaller;
+        private readonly TypeSyntax _marshallerType;
+        private readonly TypeSyntax _bufferElementType;
+
+        public CallerAllocatedBufferMarshalling(ICustomTypeMarshallingStrategy innerMarshaller, TypeSyntax marshallerType, TypeSyntax bufferElementType)
+        {
+            _innerMarshaller = innerMarshaller;
+            _marshallerType = marshallerType;
+            _bufferElementType = bufferElementType;
+        }
+
+        public TypeSyntax AsNativeType(TypePositionInfo info) => _innerMarshaller.AsNativeType(info);
+        public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateCleanupStatements(info, context);
+        public IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateGuaranteedUnmarshalStatements(info, context);
+
+        public IEnumerable<StatementSyntax> GenerateMarshalStatements(TypePositionInfo info, StubCodeContext context, IEnumerable<ArgumentSyntax> nativeTypeConstructorArguments)
+        {
+            if (CanUseCallerAllocatedBuffer(info, context))
+            {
+                string bufferIdentifier = context.GetAdditionalIdentifier(info, "buffer");
+
+                // Span<bufferElementType> <bufferIdentifier> = stackalloc <bufferElementType>[<marshallerType>.BufferSize];
+                yield return LocalDeclarationStatement(
+                    VariableDeclaration(
+                        GenericName(
+                            Identifier(TypeNames.System_Span),
+                            TypeArgumentList(
+                                SingletonSeparatedList(_bufferElementType))),
+                        SingletonSeparatedList(
+                            VariableDeclarator(bufferIdentifier)
+                                .WithInitializer(EqualsValueClause(
+                                    StackAllocArrayCreationExpression(
+                                        ArrayType(
+                                            _bufferElementType,
+                                            SingletonList(ArrayRankSpecifier(SingletonSeparatedList<ExpressionSyntax>(
+                                                MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                                    _marshallerType,
+                                                    IdentifierName(ShapeMemberNames.BufferSize))
+                                            ))))))))));
+
+                (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
+
+                // <nativeIdentifier> = <marshallerType>.ConvertToUnmanaged(<managedIdentifier>, <nativeIdentifier>__buffer);
+                yield return ExpressionStatement(
+                    AssignmentExpression(
+                        SyntaxKind.SimpleAssignmentExpression,
+                        IdentifierName(nativeIdentifier),
+                        InvocationExpression(
+                            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                _marshallerType,
+                                IdentifierName(ShapeMemberNames.Value.Stateless.ConvertToUnmanaged)),
+                            ArgumentList(SeparatedList(new ArgumentSyntax[]
+                            {
+                                Argument(IdentifierName(managedIdentifier)),
+                                Argument(IdentifierName(bufferIdentifier))
+                            })))));
+            }
+            else
+            {
+                foreach (StatementSyntax statement in _innerMarshaller.GenerateMarshalStatements(info, context, nativeTypeConstructorArguments))
+                {
+                    yield return statement;
+                }
+            }
+        }
+
+        public IEnumerable<StatementSyntax> GeneratePinnedMarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GeneratePinnedMarshalStatements(info, context);
+        public IEnumerable<StatementSyntax> GeneratePinStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GeneratePinStatements(info, context);
+        public IEnumerable<StatementSyntax> GenerateSetupStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateSetupStatements(info, context);
+        public IEnumerable<StatementSyntax> GenerateUnmarshalCaptureStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateUnmarshalCaptureStatements(info, context);
+        public IEnumerable<StatementSyntax> GenerateUnmarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateUnmarshalStatements(info, context);
+        public IEnumerable<ArgumentSyntax> GetNativeTypeConstructorArguments(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GetNativeTypeConstructorArguments(info, context);
+        public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.UsesNativeIdentifier(info, context);
+
+        private static bool CanUseCallerAllocatedBuffer(TypePositionInfo info, StubCodeContext context)
+        {
+            return context.SingleFrameSpansNativeContext && (!info.IsByRef || info.RefKind == RefKind.In);
         }
     }
 }

@@ -236,6 +236,8 @@ namespace Microsoft.Interop
             }
 
             ICustomTypeMarshallingStrategy marshallingStrategy = new StatelessValueMarshalling(marshallerData.MarshallerType.Syntax, marshallerData.NativeType.Syntax, marshallerData.Shape);
+            if (marshallerData.Shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
+                marshallingStrategy = new CallerAllocatedBufferMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax, marshallerData.BufferElementType.Syntax);
 
             IMarshallingGenerator marshallingGenerator = new CustomNativeTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: false);
 
