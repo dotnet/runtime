@@ -16,7 +16,7 @@ namespace System.Transactions.Oletx
     {
         // Note that this PInvoke does not pass any string params but specifying a charset makes FxCop happy
         [DllImport("System.Transactions.Native.Dll", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
-        internal static extern Int32 GetNotificationFactory(
+        internal static extern int GetNotificationFactory(
             SafeHandle notificationEventHandle,
             [MarshalAs(UnmanagedType.Interface)] out IDtcProxyShimFactory ppProxyShimFactory
             );
@@ -39,38 +39,37 @@ namespace System.Transactions.Oletx
         internal static int XACT_E_LAST = -2147168215; // 0x8004D029
         internal static int XACT_E_NOTSUPPORTED = -2147168241; // 0x8004D00F
         internal static int XACT_E_NETWORK_TX_DISABLED = -2147168220; // 0x8004D024
-
     }
 
     internal enum ShimNotificationType : int
     {
-        None                                 = 0,
-        Phase0RequestNotify           = 1,
-        VoteRequestNotify             = 2,
-        PrepareRequestNotify          = 3,
-        CommitRequestNotify           = 4,
-        AbortRequestNotify            = 5,
-        CommittedNotify               = 6,
-        AbortedNotify                 = 7,
-        InDoubtNotify                 = 8,
-        EnlistmentTmDownNotify        = 9,
-        ResourceManagerTmDownNotify   = 10
+        None = 0,
+        Phase0RequestNotify = 1,
+        VoteRequestNotify = 2,
+        PrepareRequestNotify = 3,
+        CommitRequestNotify = 4,
+        AbortRequestNotify = 5,
+        CommittedNotify = 6,
+        AbortedNotify = 7,
+        InDoubtNotify = 8,
+        EnlistmentTmDownNotify = 9,
+        ResourceManagerTmDownNotify = 10
     }
 
     internal enum OletxPrepareVoteType : int
     {
-        ReadOnly                    = 0,
-        SinglePhase                 = 1,
-        Prepared                    = 2,
-        Failed                      = 3,
-        InDoubt                     = 4
+        ReadOnly = 0,
+        SinglePhase = 1,
+        Prepared = 2,
+        Failed = 3,
+        InDoubt = 4
     }
 
     internal enum OletxTransactionOutcome : int
     {
-        NotKnownYet                 = 0,
-        Committed                   = 1,
-        Aborted                     = 2
+        NotKnownYet = 0,
+        Committed = 1,
+        Aborted = 2
     }
 
     internal enum OletxTransactionIsolationLevel : int
@@ -86,7 +85,7 @@ namespace System.Transactions.Oletx
         ISOLATIONLEVEL_ISOLATED = 0x100000
     }
 
-    [FlagsAttribute()]
+    [Flags]
     internal enum OletxTransactionIsoFlags : int
     {
         ISOFLAG_NONE = 0,
@@ -103,7 +102,7 @@ namespace System.Transactions.Oletx
         ISOFLAG_READONLY = 32
     }
 
-    [FlagsAttribute()]
+    [Flags]
     internal enum OletxXacttc : int
     {
         XACTTC_NONE = 0,
@@ -158,9 +157,7 @@ namespace System.Transactions.Oletx
         // So we added this constructor to get rid of the warning.  But since the structure is only ever filled in by
         // unmanaged code through a proxy call, FXCop complains that this internal method is never called.
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        internal OletxXactTransInfo( Guid guid,
-                                    OletxTransactionIsolationLevel isoLevel
-                                    )
+        internal OletxXactTransInfo(Guid guid, OletxTransactionIsolationLevel isoLevel)
         {
             this.uow = guid;
             this.isoLevel = isoLevel;
@@ -226,10 +223,10 @@ namespace System.Transactions.Oletx
             );
 
         void Export(
-            [MarshalAs(UnmanagedType.U4)] UInt32 whereaboutsSize,
+            [MarshalAs(UnmanagedType.U4)] uint whereaboutsSize,
             [MarshalAs(UnmanagedType.LPArray)] byte[] whereabouts,
-            [MarshalAs(UnmanagedType.I4)] out Int32 cookieIndex,
-            [MarshalAs(UnmanagedType.U4)] out UInt32 cookieSize,
+            [MarshalAs(UnmanagedType.I4)] out int cookieIndex,
+            [MarshalAs(UnmanagedType.U4)] out uint cookieSize,
             out CoTaskMemHandle cookieBuffer
             );
 
@@ -239,7 +236,7 @@ namespace System.Transactions.Oletx
             );
 
         void GetPropagationToken(
-            [MarshalAs(UnmanagedType.U4)] out UInt32 propagationTokeSize,
+            [MarshalAs(UnmanagedType.U4)] out uint propagationTokeSize,
             out CoTaskMemHandle propgationToken
             );
 
@@ -266,7 +263,7 @@ namespace System.Transactions.Oletx
             );
 
         void Reenlist(
-            [MarshalAs(UnmanagedType.U4)] UInt32 prepareInfoSize,
+            [MarshalAs(UnmanagedType.U4)] uint prepareInfoSize,
             [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] prepareInfo,
             out OletxTransactionOutcome outcome
             );
@@ -285,7 +282,7 @@ namespace System.Transactions.Oletx
             System.Guid resourceManagerIdentifier,
             IntPtr managedIdentifier,
             [MarshalAs(UnmanagedType.Bool)] out bool nodeNameMatches,
-            [MarshalAs(UnmanagedType.U4)] out UInt32 whereaboutsSize,
+            [MarshalAs(UnmanagedType.U4)] out uint whereaboutsSize,
             out CoTaskMemHandle whereaboutsBuffer,
             [MarshalAs(UnmanagedType.Interface)] out IResourceManagerShim resourceManagerShim
             );
@@ -296,14 +293,14 @@ namespace System.Transactions.Oletx
             [MarshalAs(UnmanagedType.Bool)] out bool isSinglePhase,
             [MarshalAs(UnmanagedType.Bool)] out bool abortingHint,
             [MarshalAs(UnmanagedType.Bool)] out bool releaseRequired,
-            [MarshalAs(UnmanagedType.U4)] out UInt32 prepareInfoSize,
+            [MarshalAs(UnmanagedType.U4)] out uint prepareInfoSize,
             out CoTaskMemHandle prepareInfo
             );
 
         void ReleaseNotificationLock();
 
         void BeginTransaction(
-            [MarshalAs(UnmanagedType.U4)] UInt32 timeout,
+            [MarshalAs(UnmanagedType.U4)] uint timeout,
             OletxTransactionIsolationLevel isolationLevel,
             IntPtr managedIdentifier,
             out System.Guid transactionIdentifier,
@@ -317,7 +314,7 @@ namespace System.Transactions.Oletx
             );
 
         void Import(
-            [MarshalAs(UnmanagedType.U4)] UInt32 cookieSize,
+            [MarshalAs(UnmanagedType.U4)] uint cookieSize,
             [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] byte[] cookie,
             IntPtr managedIdentifier,
             out System.Guid transactionIdentifier,
@@ -326,7 +323,7 @@ namespace System.Transactions.Oletx
             );
 
         void ReceiveTransaction(
-            [MarshalAs(UnmanagedType.U4)] UInt32 propgationTokenSize,
+            [MarshalAs(UnmanagedType.U4)] uint  propgationTokenSize,
             [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] byte[] propgationToken,
             IntPtr managedIdentifier,
             out System.Guid transactionIdentifier,

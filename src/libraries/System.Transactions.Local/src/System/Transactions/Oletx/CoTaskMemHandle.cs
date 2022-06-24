@@ -20,12 +20,8 @@ namespace System.Transactions.Oletx
         }
 
         public override bool IsInvalid
-        {
-            get
-            {
-                return IsClosed || this.handle == IntPtr.Zero;
-            }
-        }
+            => IsClosed || handle == IntPtr.Zero;
+
 /*
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         [DllImport("ole32.dll", EntryPoint="CoTaskMemAlloc"),
@@ -39,9 +35,8 @@ namespace System.Transactions.Oletx
 
         override protected bool ReleaseHandle()
         {
-            CoTaskMemFree(this.handle);
+            CoTaskMemFree(handle);
             return true;
         }
-
     }
 }
