@@ -173,7 +173,12 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { CodeSnippets.CustomStructMarshalling.ParametersAndModifiers };
             yield return new[] { CodeSnippets.CustomStructMarshalling.MarshalUsingParametersAndModifiers };
             yield return new[] { CodeSnippets.CustomStructMarshalling.NativeToManagedOnlyOutParameter };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.NativeToManagedGuaranteedOnlyOutParameter };
             yield return new[] { CodeSnippets.CustomStructMarshalling.NativeToManagedOnlyReturnValue };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.NativeToManagedGuaranteedOnlyReturnValue };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.StackallocByValueInParameter };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.StackallocParametersAndModifiersNoRef };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.OptionalStackallocParametersAndModifiers };
             yield return new[] { CodeSnippets.CustomStructMarshalling_V1.ParametersAndModifiers };
             yield return new[] { CodeSnippets.CustomStructMarshalling_V1.StackallocParametersAndModifiersNoRef };
             yield return new[] { CodeSnippets.CustomStructMarshalling_V1.StackallocTwoStageParametersAndModifiersNoRef };
