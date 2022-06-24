@@ -35,8 +35,8 @@ pr:
     - PATENTS.TXT
     - THIRD-PARTY-NOTICES.TXT
 
-variables:
-  - template: /eng/pipelines/common/variables.yml
+# variables:
+#   - template: /eng/pipelines/common/variables.yml
 
 jobs:
 
