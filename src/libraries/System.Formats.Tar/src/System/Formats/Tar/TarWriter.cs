@@ -328,44 +328,43 @@ namespace System.Formats.Tar
         // Portion of the WriteEntryAsync(TarEntry, CancellationToken) method containing awaits.
         private async Task WriteEntryAsyncInternal(TarEntry entry, CancellationToken cancellationToken)
         {
-            IMemoryOwner<byte> rented = MemoryPool<byte>.Shared.Rent(minBufferSize: TarHelpers.RecordSize);
-            Memory<byte> buffer = rented.Memory.Slice(TarHelpers.RecordSize); // minBufferSize means the array could've been larger
+            byte[] rented = ArrayPool<byte>.Shared.Rent(minimumLength: TarHelpers.RecordSize);
+            Memory<byte> buffer = rented.AsMemory(0, TarHelpers.RecordSize); // minimumLength means the array could've been larger
             buffer.Span.Clear(); // Rented arrays aren't clean
-            try
-            {
-                switch (entry.Format)
-                {
-                    case TarEntryFormat.V7:
-                        await entry._header.WriteAsV7Async(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
-                        break;
-                    case TarEntryFormat.Ustar:
-                        await entry._header.WriteAsUstarAsync(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
-                        break;
-                    case TarEntryFormat.Pax:
-                        if (entry._header._typeFlag is TarEntryType.GlobalExtendedAttributes)
-                        {
-                            await entry._header.WriteAsPaxGlobalExtendedAttributesAsync(_archiveStream, buffer, _nextGlobalExtendedAttributesEntryNumber, cancellationToken).ConfigureAwait(false);
-                            _nextGlobalExtendedAttributesEntryNumber++;
-                        }
-                        else
-                        {
-                            await entry._header.WriteAsPaxAsync(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
-                        }
-                        break;
-                    case TarEntryFormat.Gnu:
-                        await entry._header.WriteAsGnuAsync(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
-                        break;
-                    case TarEntryFormat.Unknown:
-                    default:
-                        throw new FormatException(string.Format(SR.TarInvalidFormat, Format));
-                }
-            }
-            finally
-            {
-                rented.Dispose();
-            }
 
+            switch (entry.Format)
+            {
+                case TarEntryFormat.V7:
+                    await entry._header.WriteAsV7Async(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+                    break;
+
+                case TarEntryFormat.Ustar:
+                    await entry._header.WriteAsUstarAsync(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+                    break;
+
+                case TarEntryFormat.Pax:
+                    if (entry._header._typeFlag is TarEntryType.GlobalExtendedAttributes)
+                    {
+                        await entry._header.WriteAsPaxGlobalExtendedAttributesAsync(_archiveStream, buffer, _nextGlobalExtendedAttributesEntryNumber, cancellationToken).ConfigureAwait(false);
+                        _nextGlobalExtendedAttributesEntryNumber++;
+                    }
+                    else
+                    {
+                        await entry._header.WriteAsPaxAsync(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+                    }
+                    break;
+
+                case TarEntryFormat.Gnu:
+                    await entry._header.WriteAsGnuAsync(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+                    break;
+
+                case TarEntryFormat.Unknown:
+                default:
+                    throw new FormatException(string.Format(SR.TarInvalidFormat, Format));
+            }
             _wroteEntries = true;
+
+            ArrayPool<byte>.Shared.Return(rented);
         }
 
         // The spec indicates that the end of the archive is indicated
