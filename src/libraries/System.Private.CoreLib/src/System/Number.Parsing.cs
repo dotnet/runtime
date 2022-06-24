@@ -2667,19 +2667,10 @@ namespace System
             return true;
         }
 
-        private static bool TrailingZeros(ReadOnlySpan<char> value, int index)
-        {
+        [MethodImpl(MethodImplOptions.NoInlining)] // rare slow path that shouldn't impact perf of the main use case
+        private static bool TrailingZeros(ReadOnlySpan<char> value, int index) =>
             // For compatibility, we need to allow trailing zeros at the end of a number string
-            for (int i = index; (uint)i < (uint)value.Length; i++)
-            {
-                if (value[i] != '\0')
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
+            value.Slice(index).IndexOfAnyExcept('\0') < 0;
 
         private static bool IsSpaceReplacingChar(char c) => c == '\u00a0' || c == '\u202f';
 
