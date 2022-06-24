@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
+             Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateToolhelp32Snapshot.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.CreateToolhelp32Snapshot.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MAX_PATH.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.MAX_PATH.cs" />
+  </ItemGroup>
+
+</Project>
