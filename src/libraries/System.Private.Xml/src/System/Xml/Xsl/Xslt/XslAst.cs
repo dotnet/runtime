@@ -7,12 +7,11 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Xml.Xsl.Qil;
+using ContextInfo = System.Xml.Xsl.Xslt.XsltInput.ContextInfo;
+using XPathQilFactory = System.Xml.Xsl.XPath.XPathQilFactory;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using ContextInfo = XsltInput.ContextInfo;
-    using XPathQilFactory = System.Xml.Xsl.XPath.XPathQilFactory;
-
     // Set of classes that represent XSLT AST
 
     // XSLT AST is a tree of nodes that represent content of xsl template.

@@ -50,7 +50,7 @@ namespace System.Xml.XPath
         public XNodeNavigator(XNode node, XmlNameTable? nameTable)
         {
             _source = node;
-            _nameTable = nameTable != null ? nameTable : CreateNameTable();
+            _nameTable = nameTable ?? CreateNameTable();
         }
 
         public XNodeNavigator(XNodeNavigator other)

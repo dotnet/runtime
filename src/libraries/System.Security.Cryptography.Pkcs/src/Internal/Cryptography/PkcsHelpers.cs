@@ -149,10 +149,7 @@ namespace Internal.Cryptography
             writer.PopSetOf();
             normalizedValue = writer.Encode();
 
-            if (encodedValueProcessor != null)
-            {
-                encodedValueProcessor(normalizedValue);
-            }
+            encodedValueProcessor?.Invoke(normalizedValue);
 
             try
             {

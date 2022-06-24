@@ -32,7 +32,7 @@ Implementation:
     - *after* any of the wasm build targets, use `AfterTargets="WasmBuildApp"` on that target
 - Avoid depending on this target, because it is available only when the workload is installed. Use `$(WasmNativeWorkload)` to check if it is installed.
 
-- `WasmEnableES6` will cause native re-link and produce `dotnet.js` as ES6 module. When `Module.disableDotnet6Compatibility` is set it would not pollute global namespace. Currently debugger doesn't work in that pure mode.
+- `WasmEnableES6==false` will cause native re-link and produce `dotnet.js` as CJS module. When `Module.disableDotnet6Compatibility` is set it would not pollute global namespace.
 
 ## `Publish`
 

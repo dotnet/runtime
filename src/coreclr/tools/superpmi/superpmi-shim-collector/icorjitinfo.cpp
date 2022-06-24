@@ -115,6 +115,13 @@ CorInfoInline interceptor_ICJI::canInline(CORINFO_METHOD_HANDLE callerHnd,    /*
     return temp;
 }
 
+void interceptor_ICJI::beginInlining(CORINFO_METHOD_HANDLE inlinerHnd,
+                                     CORINFO_METHOD_HANDLE inlineeHnd)
+{
+    mc->cr->AddCall("beginInlining");
+    original_ICorJitInfo->beginInlining(inlinerHnd, inlineeHnd);
+}
+
 // Reports whether or not a method can be inlined, and why.  canInline is responsible for reporting all
 // inlining results when it returns INLINE_FAIL and INLINE_NEVER.  All other results are reported by the
 // JIT.

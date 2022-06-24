@@ -163,20 +163,38 @@ var ChannelWorker = {
 };
 
 async function call_digest(type, data) {
-    var digest_type = "";
-    switch(type) {
-        case 0: digest_type = "SHA-1"; break;
-        case 1: digest_type = "SHA-256"; break;
-        case 2: digest_type = "SHA-384"; break;
-        case 3: digest_type = "SHA-512"; break;
-        default:
-            throw "CRYPTO: Unknown digest: " + type;
-    }
+    const digest_type = get_hash_name(type);
 
     // The 'crypto' API is not available in non-browser
     // environments (for example, v8 server).
-    var digest = await crypto.subtle.digest(digest_type, data);
+    const digest = await crypto.subtle.digest(digest_type, data);
     return Array.from(new Uint8Array(digest));
+}
+
+async function sign(type, key, data) {
+    const hash_name = get_hash_name(type);
+
+    if (key.length === 0) {
+        // crypto.subtle.importKey will raise an error for an empty key.
+        // To prevent an error, reset it to a key with just a `0x00` byte. This is equivalent
+        // since HMAC keys get zero-extended up to the block size of the algorithm.
+        key = new Uint8Array([0]);
+    }
+
+    const cryptoKey = await crypto.subtle.importKey("raw", key, {name: "HMAC", hash: hash_name}, false /* extractable */, ["sign"]);
+    const signResult = await crypto.subtle.sign("HMAC", cryptoKey, data);
+    return Array.from(new Uint8Array(signResult));
+}
+
+function get_hash_name(type) {
+    switch(type) {
+        case 0: return "SHA-1";
+        case 1: return "SHA-256";
+        case 2: return "SHA-384";
+        case 3: return "SHA-512";
+        default:
+            throw "CRYPTO: Unknown digest: " + type;
+    }
 }
 
 // Operation to perform.
@@ -184,8 +202,12 @@ async function async_call(msg) {
     const req = JSON.parse(msg);
 
     if (req.func === "digest") {
-        var digestArr = await call_digest(req.type, new Uint8Array(req.data));
+        const digestArr = await call_digest(req.type, new Uint8Array(req.data));
         return JSON.stringify(digestArr);
+    } 
+    else if (req.func === "sign") {
+        const signResult = await sign(req.type, new Uint8Array(req.key), new Uint8Array(req.data));
+        return JSON.stringify(signResult);
     } else {
         throw "CRYPTO: Unknown request: " + req.func;
     }

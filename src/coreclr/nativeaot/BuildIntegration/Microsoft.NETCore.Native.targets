@@ -16,6 +16,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
   <!-- Set defaults for unspecified properties -->
   <PropertyGroup>
+    <NativeLib Condition="'$(OutputType)' == 'Library' and '$(NativeLib)' == ''">Shared</NativeLib>
     <NativeIntermediateOutputPath Condition="'$(NativeIntermediateOutputPath)' == ''">$(IntermediateOutputPath)native\</NativeIntermediateOutputPath>
     <NativeOutputPath Condition="'$(NativeOutputPath)' == ''">$(OutputPath)native\</NativeOutputPath>
     <NativeCompilationDuringPublish Condition="'$(NativeCompilationDuringPublish)' == ''">true</NativeCompilationDuringPublish>
@@ -46,7 +47,6 @@ The .NET Foundation licenses this file to you under the MIT license.
 
   <!-- Set up default feature switches -->
   <PropertyGroup>
-    <EnableUnsafeBinaryFormatterSerialization Condition="'$(EnableUnsafeBinaryFormatterSerialization)' == ''">false</EnableUnsafeBinaryFormatterSerialization>
     <UseSystemResourceKeys Condition="$(IlcDisableReflection) == 'true'">true</UseSystemResourceKeys>
     <EventSourceSupport Condition="$(IlcDisableReflection) == 'true'">false</EventSourceSupport>
   </PropertyGroup>
@@ -109,8 +109,7 @@ The .NET Foundation licenses this file to you under the MIT license.
   </ItemGroup>
 
   <ItemGroup>
-    <_ExcludedPrivateSdkAssemblies Include="$(IlcSdkPath)System.Private.Reflection.Core.dll" Condition="$(IlcDisableReflection) == 'true'" />
-    <PrivateSdkAssemblies Include="$(IlcSdkPath)*.dll" Exclude="@(_ExcludedPrivateSdkAssemblies)"/>
+    <PrivateSdkAssemblies Include="$(IlcSdkPath)*.dll" />
 
     <!-- Exclude unmanaged dlls -->
     <FrameworkAssemblies Include="$(IlcFrameworkPath)*.dll" Exclude="$(IlcFrameworkPath)*.Native.dll;$(IlcFrameworkPath)msquic.dll" />
@@ -150,8 +149,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <!-- If running from a package these values need to be set again with the resolved IlcXYZPath -->
     <ItemGroup>
-      <_ExcludedPrivateSdkAssemblies Include="$(IlcSdkPath)System.Private.Reflection.Core.dll" Condition="$(IlcDisableReflection) == 'true'" />
-      <PrivateSdkAssemblies Include="$(IlcSdkPath)*.dll" Exclude="@(_ExcludedPrivateSdkAssemblies)"/>
+      <PrivateSdkAssemblies Include="$(IlcSdkPath)*.dll" />
 
       <!-- Exclude unmanaged dlls -->
       <FrameworkAssemblies Include="$(IlcFrameworkPath)*.dll" Exclude="$(IlcFrameworkPath)*.Native.dll;$(IlcFrameworkPath)msquic.dll" />
@@ -235,14 +233,14 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="$(Optimize) == 'true' and $(IlcOptimizationPreference) == 'Size'" Include="--Os" />
       <IlcArg Condition="$(Optimize) == 'true' and $(IlcOptimizationPreference) == 'Speed'" Include="--Ot" />
       <IlcArg Condition="$(IlcInstructionSet) != ''" Include="--instructionset:$(IlcInstructionSet)" />
-      <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--disablereflection" />
+      <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--reflectiondata:none" />
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--feature:System.Collections.Generic.DefaultComparers=false" />
       <IlcArg Condition="$(IlcSingleThreaded) == 'true'" Include="--parallelism:1" />
       <IlcArg Condition="$(IlcSystemModule) != ''" Include="--systemmodule:$(IlcSystemModule)" />
       <IlcArg Condition="$(IlcDumpIL) == 'true'" Include="--ildump:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).il" />
       <IlcArg Condition="$(NoWarn) != ''" Include='--nowarn:"$([MSBuild]::Escape($(NoWarn)))"' />
       <IlcArg Condition="$(TrimmerSingleWarn) == 'true'" Include="--singlewarn" />
-      <IlcArg Condition="$(IlcTrimMetadata) == 'true'" Include="--reflectedonly" />
+      <IlcArg Condition="$(IlcTrimMetadata) == 'false'" Include="--reflectiondata:all" />
       <IlcArg Condition="'$(ControlFlowGuard)' == 'Guard' and '$(TargetOS)' == 'windows'" Include="--guard:cf" />
       <IlcArg Include="@(_IlcRootedAssemblies->'--root:%(Identity)')" />
       <IlcArg Include="@(_IlcConditionallyRootedAssemblies->'--conditionalroot:%(Identity)')" />
@@ -277,8 +275,8 @@ The .NET Foundation licenses this file to you under the MIT license.
     <Touch Condition="$([MSBuild]::VersionLessThan('$(NETCoreSdkVersion)', '7.0.0'))" Files="$(_LinkSemaphore)" AlwaysCreate="true" />
   </Target>
 
-  <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Windows.props" Condition="'$(TargetOS)' == 'windows'" />
-  <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Unix.props" Condition="'$(TargetOS)' != 'windows'" />
+  <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Windows.targets" Condition="'$(TargetOS)' == 'windows'" />
+  <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Unix.targets" Condition="'$(TargetOS)' != 'windows'" />
 
   <Target Name="MultiFileCopyNative"
       Inputs="@(NativeObjects)"

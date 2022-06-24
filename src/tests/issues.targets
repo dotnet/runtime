@@ -2201,6 +2201,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_70259/Runtime_70259/*">
             <Issue>https://github.com/dotnet/runtime/issues/70279</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_68568/Runtime_68568/*">
+            <Issue>Tests coreclr's handling of switches on natively sized integers</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Known failures for mono runtime on Windows -->
@@ -3111,6 +3114,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/generics/Pointers/**">
             <Issue>Doesn't compile with LLVM AOT.</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/invalid_operations/**">
+            <Issue>Doesn't compile with LLVM AOT.</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmfullaot' or '$(RuntimeVariant)' == 'llvmaot') and '$(TargetArchitecture)' == 'arm64'">
@@ -3287,6 +3293,9 @@
             <Issue>https://github.com/dotnet/runtime/issues/54122</Issue>
         </ExcludeList>
 
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/invalid_operations/**">
+            <Issue>Function mismatch</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/threading/DeadThreads/DeadThreads/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
         </ExcludeList>
@@ -3706,6 +3715,9 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnly_MonoAot/UnmanagedCallersOnly_MonoAotTest/**">
             <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/OSR/pinnedlocal/**">
+            <Issue>https://github.com/dotnet/runtime/issues/70820</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/CheckProjects/CheckProjects/**">
             <Issue>needs triage</Issue>

@@ -1478,7 +1478,7 @@ namespace System.Xml
                 switch (_stack[_top].defaultNsState)
                 {
                     case NamespaceState.DeclaredButNotWrittenOut:
-                        Debug.Assert(declared == true, "Unexpected situation!!");
+                        Debug.Assert(declared, "Unexpected situation!!");
                         // the first namespace that the user gave us is what we
                         // like to keep.
                         break;

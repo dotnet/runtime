@@ -13,20 +13,21 @@ namespace System.Formats.Tar.Tests
         public void Write_V7RegularFileEntry_As_RegularFileEntry()
         {
             using MemoryStream archive = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archive, archiveFormat: TarEntryFormat.Gnu, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archive, format: TarEntryFormat.Gnu, leaveOpen: true))
             {
                 V7TarEntry entry = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
 
-                // Should be written as RegularFile
+                // Should be written in the format of the entry
                 writer.WriteEntry(entry);
             }
 
             archive.Seek(0, SeekOrigin.Begin);
             using (TarReader reader = new TarReader(archive))
             {
-                GnuTarEntry entry = reader.GetNextEntry() as GnuTarEntry;
+                TarEntry entry = reader.GetNextEntry();
                 Assert.NotNull(entry);
-                Assert.Equal(TarEntryType.RegularFile, entry.EntryType);
+                Assert.Equal(TarEntryFormat.V7, entry.Format);
+                Assert.True(entry is V7TarEntry);
 
                 Assert.Null(reader.GetNextEntry());
             }

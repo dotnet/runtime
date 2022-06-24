@@ -139,8 +139,7 @@ namespace System.Data.Odbc
         {
             get
             {
-                string? sourceColumn = _sourceColumn;
-                return ((null != sourceColumn) ? sourceColumn : string.Empty);
+                return _sourceColumn ?? string.Empty;
             }
             set
             {

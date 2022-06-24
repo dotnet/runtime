@@ -224,7 +224,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
 
             // now add the domainName
-            recordName = recordName + domainName;
+            recordName += domainName;
 
             // set the BYPASS CACHE option is specified
             if (((long)dcFlags & (long)LocatorOptions.ForceRediscovery) != 0)

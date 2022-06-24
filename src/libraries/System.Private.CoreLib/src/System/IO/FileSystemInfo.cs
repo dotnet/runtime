@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using System.Runtime.Serialization;
+using System.Runtime.Versioning;
 
 namespace System.IO
 {
@@ -128,6 +129,27 @@ namespace System.IO
                 _linkTargetIsValid = true;
                 return _linkTarget;
             }
+        }
+
+        /// <summary>Gets or sets the Unix file mode for the current file or directory.</summary>
+        /// <value><see cref="T:System.IO.UnixFileMode" /> of the current <see cref="T:System.IO.FileSystemInfo" />.</value>
+        /// <exception cref="T:System.ArgumentException">The caller attempts to set an invalid file mode.</exception>
+        /// <exception cref="T:System.UnauthorizedAccessException">The caller does not have the required permission.</exception>
+        /// <exception cref="T:System.IO.PathTooLongException">The specified path exceeds the system-defined maximum length.</exception>
+        /// <exception cref="T:System.IO.DirectoryNotFoundException">The specified path is invalid. Only thrown when setting the property value.</exception>
+        /// <exception cref="T:System.IO.FileNotFoundException">The specified file doesn't exist. Only thrown when setting the property value.</exception>
+        /// <exception cref="T:System.IO.IOException"><see cref="M:System.IO.FileSystemInfo.Refresh" /> cannot initialize the data.</exception>
+        ///
+        /// <remarks>
+        /// The value may be cached when either the value itself or other <see cref="T:System.IO.FileSystemInfo" /> properties are accessed. To get the latest value, call the <see cref="M:System.IO.FileSystemInfo.Refresh" /> method.
+        ///
+        /// If the path doesn't exist as of the last cached state, the return value is `(UnixFileMode)(-1)`. <see cref="System.IO.FileNotFoundException"/> or <see cref="System.IO.DirectoryNotFoundException"/> can only be thrown when setting the value.
+        /// </remarks>
+        public UnixFileMode UnixFileMode
+        {
+            get => UnixFileModeCore;
+            [UnsupportedOSPlatform("windows")]
+            set => UnixFileModeCore = value;
         }
 
         /// <summary>

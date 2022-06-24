@@ -162,7 +162,6 @@ namespace System.Xml.Serialization
                     serializerName = Compiler.GetTempAssemblyName(name, defaultNamespace);
                     // use strong name
                     name.Name = serializerName;
-                    name.CodeBase = null;
                     name.CultureInfo = CultureInfo.InvariantCulture;
 
                     try
