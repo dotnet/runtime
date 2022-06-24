@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import MonoWasmThreads from "consts:monoWasmThreads";
-import { AllAssetEntryTypes, mono_assert, AssetEntry, CharPtrNull, DotnetModule, GlobalizationMode, MonoConfig, MonoConfigError, wasm_type_symbol, MonoObject, is_nullish } from "./types";
+import { AllAssetEntryTypes, mono_assert, AssetEntry, CharPtrNull, DotnetModule, GlobalizationMode, MonoConfig, MonoConfigError, wasm_type_symbol, MonoObject } from "./types";
 import { ENVIRONMENT_IS_ESM, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_PTHREAD, ENVIRONMENT_IS_SHELL, INTERNAL, locateFile, Module, MONO, requirePromise, runtimeHelpers } from "./imports";
 import cwraps from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
@@ -10,7 +10,7 @@ import GuardedPromise from "./guarded-promise";
 import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from "./icu";
 import { toBase64StringImpl } from "./base64";
 import { mono_wasm_init_aot_profiler, mono_wasm_init_coverage_profiler } from "./profiler";
-import { mono_wasm_init_diagnostics } from "./diagnostics";
+import { mono_wasm_init_diagnostics, } from "./diagnostics";
 import { mono_wasm_load_bytes_into_heap } from "./buffers";
 import { bind_runtime_method, get_method, _create_primitive_converters } from "./method-binding";
 import { find_corlib_class } from "./class-loader";
@@ -23,7 +23,6 @@ import { mono_wasm_new_root } from "./roots";
 import { init_crypto } from "./crypto-worker";
 import { init_polyfills } from "./polyfills";
 import * as pthreads_worker from "./pthreads/worker";
-import { configure_diagnostics } from "./diagnostics";
 
 export let runtime_is_initialized_resolve: () => void;
 export let runtime_is_initialized_reject: (reason?: any) => void;
@@ -179,22 +178,15 @@ async function mono_wasm_pre_init(): Promise<void> {
         Module.print("MONO_WASM: configSrc nor config was specified");
     }
 
-    if (Module.config !== undefined && !Module.config.isError) {
-        const diagnostic_options = Module.config.diagnostic_options;
-        if (!is_nullish(diagnostic_options)) {
-            Module.config.diagnostic_options = await configure_diagnostics(diagnostic_options);
-        }
-    }
-
     Module.removeRunDependency("mono_wasm_pre_init");
 }
 
-function mono_wasm_after_runtime_initialized(): void {
+async function mono_wasm_after_runtime_initialized(): Promise<void> {
     if (!Module.config || Module.config.isError) {
         return;
     }
     finalize_assets(Module.config);
-    finalize_startup(Module.config);
+    await finalize_startup(Module.config);
     if (!ctx || !ctx.loaded_files || ctx.loaded_files.length == 0) {
         Module.print("MONO_WASM: no files were loaded into runtime");
     }
@@ -309,7 +301,7 @@ function _handle_fetched_asset(asset: AssetEntry, url?: string) {
     }
 }
 
-function _apply_configuration_from_args(config: MonoConfig) {
+async function _apply_configuration_from_args(config: MonoConfig): Promise<void> {
     const envars = (config.environment_variables || {});
     if (typeof (envars) !== "object")
         throw new Error("Expected config.environment_variables to be unset or a dictionary-style object");
@@ -331,11 +323,12 @@ function _apply_configuration_from_args(config: MonoConfig) {
     if (config.coverage_profiler_options)
         mono_wasm_init_coverage_profiler(config.coverage_profiler_options);
 
-    if (config.diagnostic_options)
-        mono_wasm_init_diagnostics(config.diagnostic_options);
+    if (config.diagnostic_options) {
+        await mono_wasm_init_diagnostics(config.diagnostic_options);
+    }
 }
 
-function finalize_startup(config: MonoConfig | MonoConfigError | undefined): void {
+async function finalize_startup(config: MonoConfig | MonoConfigError | undefined): Promise<void> {
     const globalThisAny = globalThis as any;
 
     try {
@@ -367,7 +360,7 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
 
         try {
             console.debug("MONO_WASM: Initializing mono runtime");
-            _apply_configuration_from_args(config);
+            await _apply_configuration_from_args(config);
             console.debug("MONO_WASM: applied config from args");
             mono_wasm_globalization_init(config.globalization_mode!, config.diagnostic_tracing!);
             console.debug("MONO_WASM: globalization init");

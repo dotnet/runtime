@@ -4,7 +4,7 @@
 import { Module } from "./imports";
 import cwraps from "./cwraps";
 import type { DiagnosticOptions, EventPipeSession, EventPipeStreamingSession, EventPipeSessionOptions, EventPipeSessionIPCOptions, EventPipeSessionDiagnosticServerID, EventPipeSessionAutoStopOptions } from "./types";
-import { mono_assert } from "./types";
+import { mono_assert, is_nullish } from "./types";
 import type { VoidPtr } from "./types/emscripten";
 import { getController } from "./diagnostic_server/browser/controller";
 import * as memory from "./memory";
@@ -351,28 +351,25 @@ export const diagnostics: Diagnostics = {
 ////  * If the diagnostic server gets more commands it will send us a message through the serverController and we will start additional sessions
 
 
-export async function configure_diagnostics(options: DiagnosticOptions): Promise<DiagnosticOptions> {
-    if (!options.server)
-        return options;
-    mono_assert(options.server !== undefined && (options.server === true || options.server === "wait"), "options.server must be a boolean or 'wait'");
-    // serverController.startServer
-    // if diagnostic_options.await is true, wait for the server to get a connection
-    const q = await getController().configureServer(options);
-    const wait = options.server == "wait";
-    if (q.serverStarted) {
-        if (wait && q.serverReady) {
-            // wait for the server to get a connection
-            const serverReadyResponse = await q.serverReady;
-            if (serverReadyResponse?.sessions) {
-                startup_session_configs.push(...serverReadyResponse.sessions);
+export async function mono_wasm_init_diagnostics(options: DiagnosticOptions): Promise<void> {
+    if (!is_nullish(options.server)) {
+        mono_assert(options.server !== undefined && (options.server === true || options.server === "wait"), "options.server must be a boolean or 'wait'");
+        // serverController.startServer
+        // if diagnostic_options.await is true, wait for the server to get a connection
+        console.debug("in configure_diagnostics", options);
+        const q = await getController().configureServer(options);
+        const wait = options.server == "wait";
+        if (q.serverStarted) {
+            if (wait && q.serverReady) {
+                // wait for the server to get a connection
+                const serverReadyResponse = await q.serverReady;
+                if (serverReadyResponse?.sessions) {
+                    startup_session_configs.push(...serverReadyResponse.sessions);
+                }
             }
         }
     }
-    return options;
-}
-
-export function mono_wasm_init_diagnostics(config?: DiagnosticOptions): void {
-    const sessions = config?.sessions ?? [];
+    const sessions = options?.sessions ?? [];
     startup_session_configs.push(...sessions);
 }
 
