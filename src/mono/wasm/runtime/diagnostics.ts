@@ -4,9 +4,9 @@
 import { Module } from "./imports";
 import cwraps from "./cwraps";
 import type { DiagnosticOptions, EventPipeSession, EventPipeStreamingSession, EventPipeSessionOptions, EventPipeSessionIPCOptions, EventPipeSessionDiagnosticServerID, EventPipeSessionAutoStopOptions } from "./types";
-import { mono_assert, is_nullish } from "./types";
+import { is_nullish } from "./types";
 import type { VoidPtr } from "./types/emscripten";
-import { getController } from "./diagnostic_server/browser/controller";
+import { getController, startDiagnosticServer } from "./diagnostic_server/browser/controller";
 import * as memory from "./memory";
 
 const sizeOfInt32 = 4;
@@ -59,7 +59,7 @@ class EventPipeIPCSession extends EventPipeSessionBase implements EventPipeStrea
         throw new Error("implement me");
     }
     postIPCStreamingSessionStarted() {
-        getController().postIPCStreamingSessionStarted(this._diagnosticServerID, this._sessionID);
+        // getController().postIPCStreamingSessionStarted(this._diagnosticServerID, this._sessionID);
     }
 }
 
@@ -245,7 +245,7 @@ export class SessionOptionsBuilder {
 // a conter for the number of sessions created
 let totalSessions = 0;
 
-function createSessionWithPtrCB(sessionIdOutPtr: VoidPtr, options: EventPipeSessionOptions & Partial<EventPipeIPCSession> | undefined, tracePath: string): false | number {
+function createSessionWithPtrCB(sessionIdOutPtr: VoidPtr, options: EventPipeSessionOptions, tracePath: string): false | number {
     const defaultRundownRequested = true;
     const defaultProviders = ""; // empty string means use the default providers
     const defaultBufferSizeInMB = 1;
@@ -272,7 +272,7 @@ export interface Diagnostics {
 }
 
 
-let startup_session_configs: (EventPipeSessionOptions & EventPipeSessionAutoStopOptions & Partial<EventPipeSessionIPCOptions>)[] = [];
+let startup_session_configs: ((EventPipeSessionOptions & EventPipeSessionAutoStopOptions) | EventPipeSessionIPCOptions)[] = [];
 let startup_sessions: (EventPipeSession | null)[] | null = null;
 
 export function mono_wasm_event_pipe_early_startup_callback(): void {
@@ -287,32 +287,38 @@ export function mono_wasm_event_pipe_early_startup_callback(): void {
 }
 
 
-function createAndStartEventPipeSession(options: (EventPipeSessionOptions & EventPipeSessionAutoStopOptions & Partial<EventPipeSessionIPCOptions>)): EventPipeSession | null {
+function createAndStartEventPipeSession(options: ((EventPipeSessionOptions & EventPipeSessionAutoStopOptions) | EventPipeSessionIPCOptions)): EventPipeSession | null {
     const session = createEventPipeSession(options);
     if (session === null) {
         return null;
     }
-
     if (session instanceof EventPipeIPCSession) {
         session.postIPCStreamingSessionStarted();
     }
     session.start();
+
     return session;
 }
 
-function createEventPipeSession(options?: EventPipeSessionOptions & Partial<EventPipeSessionIPCOptions>): EventPipeSession | null {
+function createEventPipeSession(options?: EventPipeSessionOptions | EventPipeSessionIPCOptions): EventPipeSession | null {
     // The session trace is saved to a file in the VFS. The file name doesn't matter,
     // but we'd like it to be distinct from other traces.
     const tracePath = `/trace-${totalSessions++}.nettrace`;
 
-    const success = memory.withStackAlloc(sizeOfInt32, createSessionWithPtrCB, options, tracePath);
+    let success: number | false;
+
+    if ((<EventPipeSessionIPCOptions>options)?.diagnostic_server_id !== undefined) {
+        success = false;
+    } else {
+        success = memory.withStackAlloc(sizeOfInt32, createSessionWithPtrCB, <EventPipeSessionOptions>options, tracePath);
+    }
 
     if (success === false)
         return null;
     const sessionID = success;
 
-    if (options?.diagnostic_server_id !== undefined) {
-        return new EventPipeIPCSession(options.diagnostic_server_id, sessionID);
+    if ((<EventPipeSessionIPCOptions>options)?.diagnostic_server_id !== undefined) {
+        return new EventPipeIPCSession((<EventPipeSessionIPCOptions>options).diagnostic_server_id, sessionID);
     } else {
         const session = new EventPipeFileSession(sessionID, tracePath);
         return session;
@@ -353,24 +359,25 @@ export const diagnostics: Diagnostics = {
 
 export async function mono_wasm_init_diagnostics(options: DiagnosticOptions): Promise<void> {
     if (!is_nullish(options.server)) {
-        mono_assert(options.server !== undefined && (options.server === true || options.server === "wait"), "options.server must be a boolean or 'wait'");
-        // serverController.startServer
-        // if diagnostic_options.await is true, wait for the server to get a connection
-        console.debug("in configure_diagnostics", options);
-        const q = await getController().configureServer(options);
-        const wait = options.server == "wait";
-        if (q.serverStarted) {
-            if (wait && q.serverReady) {
-                // wait for the server to get a connection
-                const serverReadyResponse = await q.serverReady;
-                if (serverReadyResponse?.sessions) {
-                    startup_session_configs.push(...serverReadyResponse.sessions);
-                }
+        const url = options.server.connect_url;
+        const suspend = options.server.suspend;
+        const controller = startDiagnosticServer(url);
+        if (controller) {
+            if (suspend) {
+                const response = await controller.wait_for_resume();
+                const session_configs = response.sessions.map(session => { return { diagnostic_server_id: session }; });
+                /// FIXME: decide if main thread or the diagnostic server will start the streaming sessions
+                startup_session_configs.push(...session_configs);
             }
         }
     }
     const sessions = options?.sessions ?? [];
     startup_session_configs.push(...sessions);
+}
+
+export function mono_wasm_diagnostic_server_attach(): void {
+    const controller = getController();
+    controller.post_diagnostic_server_attach_to_runtime();
 }
 
 export default diagnostics;

@@ -128,9 +128,11 @@ const linked_functions = [
     "dotnet_browser_encrypt_decrypt",
     "dotnet_browser_derive_bits",
 
-    /// mono-threads-wasm.c
     #if USE_PTHREADS
+    /// mono-threads-wasm.c
     "mono_wasm_pthread_on_pthread_attached",
+    // diagnostics_server.c
+    "mono_wasm_diagnostic_server_on_server_thread_created",
     #endif
 ];
 

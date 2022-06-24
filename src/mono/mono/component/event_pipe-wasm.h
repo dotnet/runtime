@@ -6,6 +6,7 @@
 #define _MONO_COMPONENT_EVENT_PIPE_WASM_H
 
 #include <stdint.h>
+#include <pthread.h>
 #include <eventpipe/ep-ipc-pal-types-forward.h>
 #include <eventpipe/ep-types-forward.h>
 #include <glib.h>
@@ -44,6 +45,9 @@ mono_wasm_event_pipe_session_start_streaming (MonoWasmEventPipeSessionID session
 
 EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_event_pipe_session_disable (MonoWasmEventPipeSessionID session_id);
+
+EMSCRIPTEN_KEEPALIVE gboolean
+mono_wasm_diagnostic_server_create_thread (const char *websocket_url, pthread_t *out_thread_id);
 
 void
 mono_wasm_event_pipe_set_early_startup_callback (mono_wasm_event_pipe_early_startup_cb callback);

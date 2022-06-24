@@ -17,7 +17,7 @@ class DiagnosticServer {
     }
 
     start(): void {
-        console.log("starting diagnostic server");
+        console.log(`starting diagnostic server with url: ${this.websocketUrl}`);
 
         if (pthread_self) {
             pthread_self.addEventListenerFromBrowser(this.onMessage.bind(this));
@@ -49,8 +49,8 @@ class DiagnosticServer {
 
 
 /// Called by the runtime  to initialize the diagnostic server workers
-export function mono_wasm_diagnostic_server_start(websocketUrl: string): void {
-    console.debug("mono_wasm_diagnostic_server_start");
+export function mono_wasm_diagnostic_server_on_server_thread_created(websocketUrl: string): void {
+    console.debug("mono_wasm_diagnostic_server_on_server_thread_created");
     const server = new DiagnosticServer(websocketUrl);
     server.start();
 }

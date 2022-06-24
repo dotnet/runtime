@@ -181,11 +181,17 @@ export type CoverageProfilerOptions = {
     send_to?: string // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::DumpCoverageProfileData' (DumpCoverageProfileData stores the data into INTERNAL.coverage_profile_data.)
 }
 
+/// Options to configure the diagnostic server
+export type DiagnosticServerOptions = {
+    suspend: boolean, // if true, the server will suspend the app when it starts until a diagnostic tool tells the runtime to resume.
+    connect_url: string, // websocket URL to connect to.
+}
+
 /// Options to configure EventPipe sessions that will be created and started at runtime startup
 export type DiagnosticOptions = {
     sessions?: (EventPipeSessionOptions & EventPipeSessionAutoStopOptions)[],
     /// If true, the diagnostic server will be started.  If "wait", the runtime will wait at startup until a diagnsotic session connects to the server
-    server?: boolean | "wait",
+    server?: DiagnosticServerOptions,
 }
 
 /// For EventPipe sessions that will be created and started at runtime startup

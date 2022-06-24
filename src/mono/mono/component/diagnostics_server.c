@@ -7,14 +7,15 @@
 #include <mono/utils/mono-publib.h>
 #include <mono/utils/mono-compiler.h>
 #include <eventpipe/ds-server.h>
-#ifdef HOST_BROWSER
+#ifdef HOST_WASM
+#include <mono/component/event_pipe-wasm.h>
 #include <emscripten/emscripten.h>
 #endif
 
 static bool
 diagnostics_server_available (void);
 
-#ifndef HOST_BROWSER
+#ifndef HOST_WASM
 static MonoComponentDiagnosticsServer fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &diagnostics_server_available },
 	&ds_server_init,
@@ -62,7 +63,7 @@ mono_component_diagnostics_server_init (void)
 	return &fn_table;
 }
 
-#ifdef HOST_BROWSER
+#ifdef HOST_WASM
 
 static bool
 ds_server_wasm_init (void)
@@ -98,5 +99,40 @@ ds_server_wasm_disable (void)
 			console.log ("ds_server_wasm_disable");
 		});
 }
+
+/* Allocated by mono_wasm_diagnostic_server_create_thread,
+ * then ownership passed to server_thread.
+ */
+static char*
+ds_websocket_url;
+
+extern void mono_wasm_diagnostic_server_on_server_thread_created (char *websocket_url);
+
+static void*
+server_thread (void* unused_arg G_GNUC_UNUSED)
+{
+	char* ws_url = g_strdup (ds_websocket_url);
+	g_free (ds_websocket_url);
+	ds_websocket_url = NULL;
+	mono_wasm_diagnostic_server_on_server_thread_created (ws_url);
+	// "exit" from server_thread, but keep the pthread alive and responding to events
+	emscripten_exit_with_live_runtime ();
+}
+
+gboolean
+mono_wasm_diagnostic_server_create_thread (const char *websocket_url, pthread_t *out_thread_id)
+{
+	pthread_t thread;
+
+	g_assert (!ds_websocket_url);
+	ds_websocket_url = g_strdup (websocket_url);
+	if (!pthread_create (&thread, NULL, server_thread, NULL)) {
+		*out_thread_id = thread;
+		return TRUE;
+	}
+	memset(out_thread_id, 0, sizeof(pthread_t));
+	return FALSE;
+}
+	
 
 #endif;
