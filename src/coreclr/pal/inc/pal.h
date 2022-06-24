@@ -3447,23 +3447,23 @@ BitScanReverse64(
 
 FORCEINLINE void PAL_ArmInterlockedOperationBarrier()
 {
-#ifdef HOST_ARM64
-    // On arm64, most of the __sync* functions generate a code sequence like:
-    //   loop:
-    //     ldaxr (load acquire exclusive)
-    //     ...
-    //     stlxr (store release exclusive)
-    //     cbnz loop
-    //
-    // It is possible for a load following the code sequence above to be reordered to occur prior to the store above due to the
-    // release barrier, this is substantiated by https://github.com/dotnet/coreclr/pull/17508. Interlocked operations in the PAL
-    // require the load to occur after the store. This memory barrier should be used following a call to a __sync* function to
-    // prevent that reordering. Code generated for arm32 includes a 'dmb' after 'cbnz', so no issue there at the moment.
-    __sync_synchronize();
-#endif // HOST_ARM64
-#ifdef HOST_LOONGARCH64
-    __sync_synchronize();
-#endif
+// #ifdef HOST_ARM64
+//     // On arm64, most of the __sync* functions generate a code sequence like:
+//     //   loop:
+//     //     ldaxr (load acquire exclusive)
+//     //     ...
+//     //     stlxr (store release exclusive)
+//     //     cbnz loop
+//     //
+//     // It is possible for a load following the code sequence above to be reordered to occur prior to the store above due to the
+//     // release barrier, this is substantiated by https://github.com/dotnet/coreclr/pull/17508. Interlocked operations in the PAL
+//     // require the load to occur after the store. This memory barrier should be used following a call to a __sync* function to
+//     // prevent that reordering. Code generated for arm32 includes a 'dmb' after 'cbnz', so no issue there at the moment.
+//     __sync_synchronize();
+// #endif // HOST_ARM64
+// #ifdef HOST_LOONGARCH64
+//     __sync_synchronize();
+// #endif
 }
 
 /*++
