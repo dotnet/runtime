@@ -41,7 +41,7 @@ namespace System.Formats.Tar
         }
 
         // Unix specific implementation of the method that specifies the file permissions of the extracted file.
-        private void SetModeOnFile(SafeFileHandle handle, string destinationFileName)
+        private void SetModeOnFile(SafeFileHandle handle)
         {
             // Only extract USR, GRP, and OTH file permissions, and ignore
             // S_ISUID, S_ISGID, and S_ISVTX bits.
