@@ -387,7 +387,7 @@ find_first_unset (gsize mask, gint nth_bit)
 int
 mono_bitset_find_start   (const MonoBitSet *set)
 {
-	for (gsize i = 0; i < set->size / BITS_PER_CHUNK; ++i) {
+	for (guint i = 0; i < set->size / BITS_PER_CHUNK; ++i) {
 		if (set->data [i])
 			return my_g_bit_nth_lsf_nomask (set->data [i]) + i * BITS_PER_CHUNK;
 	}
@@ -422,7 +422,7 @@ mono_bitset_find_first (const MonoBitSet *set, gint pos) {
 		if (result != -1)
 			return result + j * BITS_PER_CHUNK;
 	}
-	for (gsize i = ++j; i < set->size / BITS_PER_CHUNK; ++i) {
+	for (guint i = ++j; i < set->size / BITS_PER_CHUNK; ++i) {
 		if (set->data [i])
 			return my_g_bit_nth_lsf (set->data [i], -1) + i * BITS_PER_CHUNK;
 	}
@@ -488,7 +488,7 @@ mono_bitset_find_first_unset (const MonoBitSet *set, gint pos) {
 		if (result != -1)
 			return result + j * BITS_PER_CHUNK;
 	}
-	for (gsize i = ++j; i < set->size / BITS_PER_CHUNK; ++i) {
+	for (guint i = ++j; i < set->size / BITS_PER_CHUNK; ++i) {
 		if (set->data [i] != -1) {
 			return find_first_unset (set->data [i], -1) + i * BITS_PER_CHUNK;
 		}
@@ -633,9 +633,9 @@ mono_bitset_equal (const MonoBitSet *src, const MonoBitSet *src1) {
 void
 mono_bitset_foreach (MonoBitSet *set, MonoBitSetFunc func, gpointer data)
 {
-	for (gsize i = 0; i < set->size / BITS_PER_CHUNK; ++i) {
+	for (guint i = 0; i < set->size / BITS_PER_CHUNK; ++i) {
 		if (set->data [i]) {
-			for (gsize j = 0; j < BITS_PER_CHUNK; ++j)
+			for (guint j = 0; j < BITS_PER_CHUNK; ++j)
 				if (set->data [i] & ((gsize)1 << j))
 					func (j + i * BITS_PER_CHUNK, data);
 		}
