@@ -2288,7 +2288,7 @@ emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	int pos_leave, coop_gc_var = 0;
 	MonoExceptionClause *clause;
 	MonoType *object_type = mono_get_object_type ();
-#if defined (TARGET_WASM)
+#if defined (TARGET_WASM) && defined(DISABLE_THREADS)
 	const gboolean do_blocking_transition = FALSE;
 #else
 	const gboolean do_blocking_transition = TRUE;
