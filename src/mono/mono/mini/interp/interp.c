@@ -146,7 +146,7 @@ frame_data_allocator_add_frag (FrameDataAllocator *stack, int size)
 	FrameDataFragment *new_frag;
 
 	// FIXME:
-	int frag_size = 4096;
+	guint frag_size = 4096;
 	if (size + sizeof (FrameDataFragment) > frag_size)
 		frag_size = size + sizeof (FrameDataFragment);
 	new_frag = frame_data_frag_new (frag_size);
@@ -2585,7 +2585,7 @@ init_jit_call_info (InterpMethod *rmethod, MonoError *error)
 	if (sig->param_count) {
 		cinfo->arginfo = g_new0 (guint8, sig->param_count);
 
-		for (int i = 0; i < rmethod->param_count; ++i) {
+		for (guint i = 0; i < rmethod->param_count; ++i) {
 			MonoType *t = rmethod->param_types [i];
 			int mt = mint_type (t);
 			if (m_type_is_byref (sig->params [i])) {
@@ -2634,7 +2634,7 @@ do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame
 	/* return address */
 	if (cinfo->ret_mt != -1)
 		args [pindex ++] = ret_sp;
-	for (int i = 0; i < rmethod->param_count; ++i) {
+	for (guint i = 0; i < rmethod->param_count; ++i) {
 		stackval *sval = STACK_ADD_BYTES (sp, get_arg_offset_fast (rmethod, NULL, stack_index + i));
 		if (cinfo->arginfo [i] == JIT_ARG_BYVAL)
 			args [pindex ++] = sval->data.p;
@@ -6045,7 +6045,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MonoArray *ao = LOCAL_VAR (ip [2], MonoArray*);
 			NULL_CHECK (ao);
 			gint32 index = LOCAL_VAR (ip [3], gint32);
-			if (index >= ao->max_length)
+			if (GINT32_TO_UINT32(index) >= ao->max_length)
 				THROW_EX (interp_get_exception_index_out_of_range (frame, ip), ip);
 			guint16 size = ip [4];
 			LOCAL_VAR (ip [1], gpointer) = mono_array_addr_with_size_fast (ao, size, index);
@@ -6093,7 +6093,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 #define LDELEM(datatype,elemtype) do { \
 	MonoArray *o = LOCAL_VAR (ip [2], MonoArray*); \
 	NULL_CHECK (o); \
-	gint32 aindex = LOCAL_VAR (ip [3], gint32); \
+	guint32 aindex = LOCAL_VAR (ip [3], guint32); \
 	if (aindex >= mono_array_length_internal (o)) \
 		THROW_EX (interp_get_exception_index_out_of_range (frame, ip), ip); \
 	LOCAL_VAR (ip [1], datatype) = mono_array_get_fast (o, elemtype, aindex); \
@@ -6134,7 +6134,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 
 #define STELEM(datatype, elemtype) do { \
 	MonoArray *o; \
-	gint32 aindex; \
+	guint32 aindex; \
 	STELEM_PROLOG(o, aindex); \
 	mono_array_set_fast (o, elemtype, aindex, LOCAL_VAR (ip [3], datatype)); \
 	ip += 4; \
@@ -6150,7 +6150,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STELEM_R8) STELEM(double, double); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STELEM_REF) {
 			MonoArray *o;
-			gint32 aindex;
+			guint32 aindex;
 			STELEM_PROLOG(o, aindex);
 			MonoObject *ref = LOCAL_VAR (ip [3], MonoObject*);
 
@@ -6168,7 +6168,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STELEM_VT) {
 			MonoArray *o = LOCAL_VAR (ip [1], MonoArray*);
 			NULL_CHECK (o);
-			gint32 aindex = LOCAL_VAR (ip [2], gint32);
+			guint32 aindex = LOCAL_VAR (ip [2], guint32);
 			if (aindex >= mono_array_length_internal (o))
 				THROW_EX (interp_get_exception_index_out_of_range (frame, ip), ip);
 
@@ -8055,7 +8055,7 @@ interp_jit_info_foreach (InterpJitInfoFunc func, gpointer user_data)
 	}
 
 	if (copy_jit_info_data.jit_info_array) {
-		for (size_t i = 0; i < copy_jit_info_data.next; ++i)
+		for (int i = 0; i < copy_jit_info_data.next; ++i)
 			func (copy_jit_info_data.jit_info_array [i], user_data);
 		g_free (copy_jit_info_data.jit_info_array);
 	}

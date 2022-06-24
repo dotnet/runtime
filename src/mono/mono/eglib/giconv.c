@@ -282,7 +282,7 @@ decode_utf8 (char *inbuf, size_t inleft, gunichar *outchar)
 {
 	unsigned char *inptr = (unsigned char *) inbuf;
 	gunichar u;
-	int n, i;
+	guint n;
 
 	u = *inptr;
 
@@ -327,7 +327,7 @@ decode_utf8 (char *inbuf, size_t inleft, gunichar *outchar)
 	case 2: u = (u << 6) | (*++inptr ^ 0x80);
 	}
 #else
-	for (i = 1; i < n; i++)
+	for (guint i = 1; i < n; i++)
 		u = (u << 6) | (*++inptr ^ 0x80);
 #endif
 
@@ -340,7 +340,8 @@ static int
 encode_utf8 (gunichar c, char *outbuf, size_t outleft)
 {
 	unsigned char *outptr = (unsigned char *) outbuf;
-	int base, n, i;
+	int base;
+	guint n;
 
 	if (c < 0x80) {
 		outptr[0] = GUNICHAR_TO_UINT8 (c);
@@ -377,7 +378,7 @@ encode_utf8 (gunichar c, char *outbuf, size_t outleft)
 	case 1: outptr[0] = c | base;
 	}
 #else
-	for (i = n - 1; i > 0; i--) {
+	for (guint i = n - 1; i > 0; i--) {
 		outptr[i] = (c & 0x3f) | 0x80;
 		c >>= 6;
 	}

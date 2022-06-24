@@ -671,12 +671,11 @@ static void
 compute_bb_regions (MonoCompile *cfg)
 {
 	MonoMethodHeader *header = cfg->header;
-	int i;
 
 	for (MonoBasicBlock *bb = cfg->bb_entry; bb; bb = bb->next_bb)
 		bb->region = -1;
 
-	for (i = 0; i < header->num_clauses; ++i) {
+	for (guint i = 0; i < header->num_clauses; ++i) {
 		MonoExceptionClause *clause = &header->clauses [i];
 
 		if (clause->flags == MONO_EXCEPTION_CLAUSE_FILTER)
@@ -707,14 +706,13 @@ ip_in_finally_clause (MonoCompile *cfg, int offset)
 {
 	MonoMethodHeader *header = cfg->header;
 	MonoExceptionClause *clause;
-	int i;
 
-	for (i = 0; i < header->num_clauses; ++i) {
+	for (guint i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
 		if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY && clause->flags != MONO_EXCEPTION_CLAUSE_FAULT)
 			continue;
 
-		if (MONO_OFFSET_IN_HANDLER (clause, offset))
+		if (MONO_OFFSET_IN_HANDLER (clause, GINT_TO_UINT32(offset)))
 			return TRUE;
 	}
 	return FALSE;
@@ -726,13 +724,12 @@ mono_find_leave_clauses (MonoCompile *cfg, guchar *ip, guchar *target)
 {
 	MonoMethodHeader *header = cfg->header;
 	MonoExceptionClause *clause;
-	int i;
 	GList *res = NULL;
 
-	for (i = 0; i < header->num_clauses; ++i) {
+	for (guint i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
-		if (MONO_OFFSET_IN_CLAUSE (clause, (ip - header->code)) &&
-		    (!MONO_OFFSET_IN_CLAUSE (clause, (target - header->code)))) {
+		if (MONO_OFFSET_IN_CLAUSE (clause, GPTRDIFF_TO_UINT32(ip - header->code)) &&
+		    (!MONO_OFFSET_IN_CLAUSE (clause, GPTRDIFF_TO_UINT32(target - header->code)))) {
 			MonoLeaveClause *leave = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoLeaveClause));
 			leave->index = i;
 			leave->clause = clause;
@@ -4040,7 +4037,7 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 		limit = inline_limit;
 	}
 
-	if (header.code_size >= limit && !(method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING))
+	if (header.code_size >= GINT_TO_UINT32(limit) && !(method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING))
 		return FALSE;
 
 	/*
@@ -4487,9 +4484,8 @@ static void
 mono_save_args (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **sp)
 {
 	MonoInst *store, *temp;
-	int i;
 
-	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
+	for (guint i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		MonoType *argtype = (sig->hasthis && (i == 0)) ? type_from_stack_type (*sp) : sig->params [i - sig->hasthis];
 
 		/*
@@ -6298,7 +6294,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			seq_point_set_locs = mono_bitset_mem_new (mono_mempool_alloc0 (cfg->mempool, mono_bitset_alloc_size (header->code_size, 0)), header->code_size, 0);
 			sym_seq_points = TRUE;
 			for (int i = 0; i < n_il_offsets; ++i) {
-				if (sps [i].il_offset < header->code_size)
+				if (GINT_TO_UINT32(sps [i].il_offset) < header->code_size)
 					mono_bitset_set_fast (seq_point_locs, sps [i].il_offset);
 			}
 			g_free (sps);
@@ -6551,7 +6547,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		if (header->num_clauses) {
 			/* deopt is only disabled for gsharedvt */
 			g_assert (cfg->gsharedvt);
-			for (int i = 0; i < header->num_clauses; ++i) {
+			for (guint i = 0; i < header->num_clauses; ++i) {
 				MonoExceptionClause *clause = &header->clauses [i];
 				/* Finally clauses are checked after the remove_finally pass */
 
@@ -9110,7 +9106,7 @@ calli_end:
 						cfg->flags |= MONO_CFG_HAS_ALLOCA;
 						MONO_ADD_INS (init_localsbb, array_new_localalloc_ins);
 					}
-					array_new_localalloc_ins->inst_imm = MAX (array_new_localalloc_ins->inst_imm, param_count * sizeof (target_mgreg_t));
+					array_new_localalloc_ins->inst_imm = MAX (GINT64_TO_UINT64(array_new_localalloc_ins->inst_imm), param_count * sizeof (target_mgreg_t));
 					int dreg = array_new_localalloc_ins->dreg;
 					if (2 * rank == param_count) {
 						/* [lbound, length, lbound, length, ...]
@@ -10665,7 +10661,7 @@ field_access_end:
 				 * The ordering of the exception clauses guarantees that we find the
 				 * innermost clause.
 				 */
-				if (MONO_OFFSET_IN_HANDLER (clause, ip - header->code) && (clause->flags == MONO_EXCEPTION_CLAUSE_NONE) && (ip - header->code + ((il_op == MONO_CEE_LEAVE) ? 5 : 2)) <= (clause->handler_offset + clause->handler_len) && method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE) {
+				if (MONO_OFFSET_IN_HANDLER (clause, GPTRDIFF_TO_UINT32(ip - header->code)) && (clause->flags == MONO_EXCEPTION_CLAUSE_NONE) && GPTRDIFF_TO_UINT32(ip - header->code + ((il_op == MONO_CEE_LEAVE) ? 5 : 2)) <= (clause->handler_offset + clause->handler_len) && method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE) {
 					MonoInst *exc_ins;
 					MonoBasicBlock *dont_throw;
 
@@ -11050,7 +11046,7 @@ mono_ldptr:
 			ins->sreg2 = sp [1]->dreg;
 			MONO_ADD_INS (cfg->cbb, ins);
 
-			cfg->param_area = MAX (cfg->param_area, cfg->backend->dyn_call_param_area);
+			cfg->param_area = MAX (cfg->param_area, GINT_TO_UINT(cfg->backend->dyn_call_param_area));
 			/* OP_DYN_CALL might need to allocate a dynamically sized param area */
 			cfg->flags |= MONO_CFG_HAS_ALLOCA;
 
@@ -11565,7 +11561,6 @@ mono_ldptr:
 		}
 		case MONO_CEE_ENDFILTER: {
 			MonoExceptionClause *clause, *nearest;
-			int cc;
 
 			--sp;
 			if ((sp != stack_start) || (sp [0]->type != STACK_I4))
@@ -11576,10 +11571,10 @@ mono_ldptr:
 			start_new_bblock = 1;
 
 			nearest = NULL;
-			for (cc = 0; cc < header->num_clauses; ++cc) {
+			for (guint cc = 0; cc < header->num_clauses; ++cc) {
 				clause = &header->clauses [cc];
 				if ((clause->flags & MONO_EXCEPTION_CLAUSE_FILTER) &&
-					((next_ip - header->code) > clause->data.filter_offset && (next_ip - header->code) <= clause->handler_offset) &&
+					(GPTRDIFF_TO_UINT32(next_ip - header->code) > clause->data.filter_offset && GPTRDIFF_TO_UINT32(next_ip - header->code) <= clause->handler_offset) &&
 				    (!nearest || (clause->data.filter_offset < nearest->data.filter_offset)))
 					nearest = clause;
 			}
@@ -11643,7 +11638,7 @@ mono_ldptr:
 
 			for (unsigned int i = 0; i < header->num_clauses; ++i) {
 				MonoExceptionClause *clause = &header->clauses [i];
-				if (MONO_OFFSET_IN_HANDLER (clause, ip - header->code) && !(clause->flags & MONO_EXCEPTION_CLAUSE_FINALLY)) {
+				if (MONO_OFFSET_IN_HANDLER (clause, GPTRDIFF_TO_UINT32(ip - header->code)) && !(clause->flags & MONO_EXCEPTION_CLAUSE_FINALLY)) {
 					handler_offset = clause->handler_offset;
 					break;
 				}
@@ -12399,7 +12394,6 @@ mono_handle_global_vregs (MonoCompile *cfg)
 {
 	gint32 *vreg_to_bb;
 	MonoBasicBlock *bb;
-	int i, pos;
 
 	vreg_to_bb = (gint32 *)mono_mempool_alloc0 (cfg->mempool, sizeof (gint32*) * cfg->next_vreg + 1);
 
@@ -12520,7 +12514,7 @@ mono_handle_global_vregs (MonoCompile *cfg)
 	}
 
 	/* If a variable is used in only one bblock, convert it into a local vreg */
-	for (i = 0; i < cfg->num_varinfo; i++) {
+	for (guint i = 0; i < cfg->num_varinfo; i++) {
 		MonoInst *var = cfg->varinfo [i];
 		MonoMethodVar *vmv = MONO_VARINFO (cfg, i);
 
@@ -12602,8 +12596,8 @@ mono_handle_global_vregs (MonoCompile *cfg)
 	 * Compress the varinfo and vars tables so the liveness computation is faster and
 	 * takes up less space.
 	 */
-	pos = 0;
-	for (i = 0; i < cfg->num_varinfo; ++i) {
+	guint pos = 0;
+	for (guint i = 0; i < cfg->num_varinfo; ++i) {
 		MonoInst *var = cfg->varinfo [i];
 		if (pos < i && cfg->locals_start == i)
 			cfg->locals_start = pos;
@@ -12642,11 +12636,9 @@ mono_handle_global_vregs (MonoCompile *cfg)
 void
 mono_allocate_gsharedvt_vars (MonoCompile *cfg)
 {
-	int i;
-
 	cfg->gsharedvt_vreg_to_idx = (int *)mono_mempool_alloc0 (cfg->mempool, sizeof (int) * cfg->next_vreg);
 
-	for (i = 0; i < cfg->num_varinfo; ++i) {
+	for (guint i = 0; i < cfg->num_varinfo; ++i) {
 		MonoInst *ins = cfg->varinfo [i];
 		int idx;
 

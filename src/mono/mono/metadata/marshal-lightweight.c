@@ -765,7 +765,7 @@ emit_native_wrapper_validate_signature (MonoMethodBuilder *mb, MonoMethodSignatu
 			}
 			else if (sig->params[i]->type == MONO_TYPE_VALUETYPE) {
 				MonoMarshalType *marshal_type = mono_marshal_load_type_info (mono_class_from_mono_type_internal (sig->params [i]));
-				for (int field_idx = 0; field_idx < marshal_type->num_fields; ++field_idx) {
+				for (guint32 field_idx = 0; field_idx < marshal_type->num_fields; ++field_idx) {
 					if (marshal_type->fields [field_idx].mspec && marshal_type->fields [field_idx].mspec->native == MONO_NATIVE_CUSTOM) {
 						mono_mb_emit_exception_full (mb, "System", "TypeLoadException", g_strdup ("Value type includes custom marshaled fields"));
 						return FALSE;
@@ -2424,7 +2424,7 @@ emit_managed_wrapper_validate_signature (MonoMethodSignature* sig, MonoMarshalSp
 			} else if (sig->params[i]->type == MONO_TYPE_VALUETYPE) {
 				MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
 				MonoMarshalType *marshal_type = mono_marshal_load_type_info (klass);
-				for (int field_idx = 0; field_idx < marshal_type->num_fields; ++field_idx) {
+				for (guint32 field_idx = 0; field_idx < marshal_type->num_fields; ++field_idx) {
 					if (marshal_type->fields [field_idx].mspec && marshal_type->fields [field_idx].mspec->native == MONO_NATIVE_CUSTOM) {
 						mono_error_set_type_load_class (error, klass, "Value type includes custom marshaled fields");
 						return FALSE;

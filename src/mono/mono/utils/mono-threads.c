@@ -309,7 +309,6 @@ dump_threads (void)
 gboolean
 mono_threads_wait_pending_operations (void)
 {
-	int i;
 	size_t c = pending_suspends;
 
 	/* Wait threads to park */
@@ -317,7 +316,7 @@ mono_threads_wait_pending_operations (void)
 	if (pending_suspends) {
 		MonoStopwatch suspension_time;
 		mono_stopwatch_start (&suspension_time);
-		for (i = 0; i < pending_suspends; ++i) {
+		for (gsize i = 0; i < pending_suspends; ++i) {
 			THREADS_SUSPEND_DEBUG ("[INITIATOR-WAIT-WAITING]\n");
 			mono_atomic_inc_i32 (&waits_done);
 			if (mono_os_sem_timedwait (&suspend_semaphore, sleepAbortDuration, MONO_SEM_FLAGS_NONE) == MONO_SEM_TIMEDWAIT_RET_SUCCESS)
@@ -2106,20 +2105,19 @@ mono_thread_info_wait_multiple_handle (MonoThreadHandle **thread_handles, gsize 
 {
 	MonoOSEventWaitRet res;
 	MonoOSEvent *thread_events [MONO_OS_EVENT_WAIT_MAXIMUM_OBJECTS];
-	gint i;
 
 	g_assert (nhandles <= MONO_OS_EVENT_WAIT_MAXIMUM_OBJECTS);
 	if (background_change_event)
 		g_assert (nhandles <= MONO_OS_EVENT_WAIT_MAXIMUM_OBJECTS - 1);
 
-	for (i = 0; i < nhandles; ++i)
+	for (gsize i = 0; i < nhandles; ++i)
 		thread_events [i] = &thread_handles [i]->event;
 
 	if (background_change_event)
 		thread_events [nhandles ++] = background_change_event;
 
 	res = mono_os_event_wait_multiple (thread_events, nhandles, waitall, timeout, alertable);
-	if (res >= MONO_OS_EVENT_WAIT_RET_SUCCESS_0 && res <= MONO_OS_EVENT_WAIT_RET_SUCCESS_0 + nhandles - 1)
+	if (res >= MONO_OS_EVENT_WAIT_RET_SUCCESS_0 && GINT_TO_UINT(res) <= MONO_OS_EVENT_WAIT_RET_SUCCESS_0 + nhandles - 1)
 		return (MonoThreadInfoWaitRet)(MONO_THREAD_INFO_WAIT_RET_SUCCESS_0 + (res - MONO_OS_EVENT_WAIT_RET_SUCCESS_0));
 	else if (res == MONO_OS_EVENT_WAIT_RET_ALERTED)
 		return MONO_THREAD_INFO_WAIT_RET_ALERTED;

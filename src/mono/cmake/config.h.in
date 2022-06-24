@@ -4,7 +4,6 @@
 #ifdef _MSC_VER
 
 // FIXME This is all questionable but the logs are flooded and nothing else is fixing them.
-#pragma warning(disable:4018) // W3: signed/unsigned mismatch
 #pragma warning(disable:4090) // W1: const problem
 #pragma warning(disable:4100) // W4: unreferenced formal parameter
 #pragma warning(disable:4152) // W4: nonstandard extension, function/data pointer conversion in expression
