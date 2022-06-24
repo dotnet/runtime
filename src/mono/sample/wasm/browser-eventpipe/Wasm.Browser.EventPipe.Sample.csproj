@@ -22,6 +22,7 @@
 }' />
     <WasmExtraConfig Condition="true" Include="diagnostic_options" Value='
 {
+  "server": true,
   "sessions": [ { "collectRundownEvents": "true", "providers": "WasmHello::5:EventCounterIntervalSec=1" } ]
 }' />
   </ItemGroup>
