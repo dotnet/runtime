@@ -782,9 +782,10 @@ public:
     }
 #endif
 
-    CEEJitInfo(MethodDesc* fd,  COR_ILMETHOD_DECODER* header,
+    CEEJitInfo(MethodDesc* fd, PrepareCodeConfig* config, COR_ILMETHOD_DECODER* header,
                EEJitManager* jm, bool allowInlining = true)
         : CEEInfo(fd, allowInlining),
+          m_config(config),
           m_jitManager(jm),
           m_CodeHeader(NULL),
           m_CodeHeaderRW(NULL),
@@ -875,6 +876,8 @@ public:
                  ICorDebugInfo::NativeVarInfo *vars) override final;
     void CompressDebugInfo();
 
+    void reportInternalData(const uint8_t* data, size_t dataSize) override final;
+
     void* getHelperFtn(CorInfoHelpFunc    ftnNum,                         /* IN  */
                        void **            ppIndirection) override final;  /* OUT */
     static PCODE getHelperFtnStatic(CorInfoHelpFunc ftnNum);
@@ -929,6 +932,7 @@ protected :
 #endif
 
 
+    PrepareCodeConfig*      m_config;       // config for the JIT compilation
     EEJitManager*           m_jitManager;   // responsible for allocating memory
     CodeHeader*             m_CodeHeader;   // descriptor for JITTED code - read/execute address
     CodeHeader*             m_CodeHeaderRW; // descriptor for JITTED code - code write scratch buffer address

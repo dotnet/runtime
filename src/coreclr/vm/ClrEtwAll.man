@@ -89,6 +89,8 @@
                              message="$(string.RuntimePublisher.JitInstrumentationDataKeywordMessage)" symbol="CLR_JITINSTRUMENTEDDATA_KEYWORD" />
                     <keyword name="ProfilerKeyword" mask="0x20000000000"
                              message="$(string.RuntimePublisher.ProfilerKeywordMessage)" symbol="CLR_PROFILER_KEYWORD" />
+                    <keyword name="JitCompilationInternalDataKeyword" mask="0x40000000000"
+                             message="$(string.RuntimePublisher.JitCompilationInternalDataKeywordMessage)" symbol="CLR_JITCOMPILATIONINTERNALDATA_KEYWORD" />
                 </keywords>
                 <!--Tasks-->
                 <tasks>
@@ -239,6 +241,7 @@
                             <opcode name="JitTailCallSucceeded" message="$(string.RuntimePublisher.JitTailCallSucceededOpcodeMessage)" symbol="CLR_JITTAILCALLSUCCEEDED_OPCODE" value="85"> </opcode>
                             <opcode name="JitTailCallFailed" message="$(string.RuntimePublisher.JitTailCallFailedOpcodeMessage)" symbol="CLR_JITTAILCALLFAILED_OPCODE" value="86"> </opcode>
                             <opcode name="MethodILToNativeMap" message="$(string.RuntimePublisher.MethodILToNativeMapOpcodeMessage)" symbol="CLR_METHODILTONATIVEMAP_OPCODE" value="87"> </opcode>
+                            <opcode name="JitCompilationInternalData" message="$(string.RuntimePublisher.JitCompilationInternalDataOpcodeMessage)" symbol="CLR_JITCOMPILATIONINTERNALDATA_OPCODE" value="88"> </opcode>
                         </opcodes>
                     </task>
 
@@ -3048,6 +3051,24 @@
                             </ExecutionCheckpoint>
                         </UserData>
                     </template>
+                    
+                    <template tid="JitCompilationInternalData">
+                      <data name="ClrInstanceID" inType="win:UInt16"/>
+                      <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
+                      <data name="ReJITID" inType="win:UInt64" outType="win:HexInt64" />
+                      <data name="ChunkIndex" inType="win:UInt32" />
+                      <data name="DataSize" inType="win:UInt32" />
+                      <data name="Data" inType="win:Binary" length="DataSize" />
+                      <UserData>
+                        <Settings xmlns="myNs">
+                          <ClrInstanceID> %1 </ClrInstanceID>
+                          <MethodID> %2 </MethodID>
+                          <ReJITID> %3 </ReJITID>
+                          <ChunkIndex> %4 </ChunkIndex>
+                          <DataSize> %5 </DataSize>
+                        </Settings>
+                      </UserData>
+                    </template>
 
                     <template tid="ProfilerMessage">
                       <data name="ClrInstanceID" inType="win:UInt16"/>
@@ -3832,6 +3853,12 @@
                            symbol="MethodJitInliningFailed"
                            message="$(string.RuntimePublisher.MethodJitInliningFailedEventMessage)"/>
 
+                    <event value="193" version="0" level="win:Informational"  template="JitCompilationInternalData"
+                           keywords="JitCompilationInternalDataKeyword" opcode="JitCompilationInternalData"
+                           task="CLRMethod"
+                           symbol="JitCompilationInternalData"
+                           message="$(string.RuntimePublisher.JitCompilationInternalDataEventMessage)"/>
+
                     <!-- CLR Loader events -->
                     <!-- The following 2 events are now defunct -->
                     <event value="149" version="0" level="win:Informational"  template="ModuleLoadUnload"
@@ -4137,6 +4164,7 @@
                     <event value="300" version="0" level="win:Informational"  template="ExecutionCheckpoint"
                            keywords ="PerfTrackKeyword" opcode="ExecutionCheckpoint" task="ExecutionCheckpoint" symbol="ExecutionCheckpoint"
                            message="$(string.RuntimePublisher.ExecutionCheckpointEventMessage)"/>
+
                 </events>
             </provider>
 
@@ -8388,6 +8416,7 @@
                 <string id="RuntimePublisher.KnownPathProbedEventMessage" value="ClrInstanceID=%1;%nFilePath=%2;%nSource=%3;%nResult=%4" />
                 <string id="RuntimePublisher.JitInstrumentationDataEventMessage" value="%MethodId=%4" />
                 <string id="RuntimePublisher.ProfilerEventMessage" value="%Message=%2" />
+                <string id="RuntimePublisher.JitCompilationInternalDataEventMessage" value="%MethodId=%4" />
                 <string id="RuntimePublisher.ResolutionAttemptedEventMessage" value="ClrInstanceID=%1;%nAssemblyName=%2;%nStage=%3;%nAssemblyLoadContext=%4;%nResult=%5;%nResultAssemblyName=%6;%nResultAssemblyPath=%7;%nErrorMessage=%8" />
                 <string id="RuntimePublisher.StackEventMessage" value="ClrInstanceID=%1;%nReserved1=%2;%nReserved2=%3;%nFrameCount=%4;%nStack=%5" />
                 <string id="RuntimePublisher.AppDomainMemAllocatedEventMessage" value="AppDomainID=%1;%nAllocated=%2;%nClrInstanceID=%3" />
@@ -8931,6 +8960,7 @@
                 <string id="RuntimePublisher.TypeDiagnosticKeywordMessage" value="TypeDiagnostic" />
                 <string id="RuntimePublisher.JitInstrumentationDataKeywordMessage" value="JitInstrumentationData" />
                 <string id="RuntimePublisher.ProfilerKeywordMessage" value="Profiler" />
+                <string id="RuntimePublisher.JitCompilationInternalDataKeywordMessage" value="JitCompilationInternalData" />
                 <string id="RuntimePublisher.GenAwareBeginEventMessage" value="NONE" />
                 <string id="RuntimePublisher.GenAwareEndEventMessage" value="NONE" />
                 <string id="RundownPublisher.GCKeywordMessage" value="GC" />
@@ -9076,6 +9106,8 @@
                 <string id="RuntimePublisher.InstrumentationDataOpcodeMessage" value="InstrumentationData" />
 
                 <string id="RuntimePublisher.ExecutionCheckpointOpcodeMessage" value="ExecutionCheckpoint" />
+                
+                <string id="RuntimePublisher.JitCompilationInternalDataOpcodeMessage" value="JitCompilationInternalData" />
 
                 <string id="RuntimePublisher.ProfilerOpcodeMessage" value="ProfilerMessage" />
 

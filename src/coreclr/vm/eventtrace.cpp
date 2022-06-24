@@ -5490,6 +5490,53 @@ VOID ETW::MethodLog::LogMethodInstrumentationData(MethodDesc* method, uint32_t c
     }
 }
 
+VOID ETW::MethodLog::LogJitCompilationInternalData(PrepareCodeConfig* pConfig, uint32_t cbData, const BYTE* data)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_TRIGGERS;
+    } CONTRACTL_END;
+    const uint32_t chunkSize = 40000;
+    const uint32_t maxDataSize = chunkSize * 0x1000;
+    const uint32_t FinalChunkFlag = 0x80000000;
+
+    if (!ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, JitCompilationInternalData))
+    {
+        return;
+    }
+
+    EX_TRY
+    {
+        MethodDesc* method = pConfig->GetMethodDesc();
+        NativeCodeVersionId nativeCodeID = 0;
+#ifdef FEATURE_CODE_VERSIONING
+        nativeCodeID = pConfig->GetCodeVersion().GetVersionId();
+#endif
+
+        uint32_t chunkIndex = 0;
+        for (; cbData > 0; chunkIndex++)
+        {
+            bool finalChunk = cbData <= chunkSize;
+            uint32_t chunkSizeToEmit = finalChunk ? cbData : chunkSize;
+
+            FireEtwJitCompilationInternalData(
+                GetClrInstanceId(),
+                (ULONGLONG)(TADDR) method,
+                nativeCodeID,
+                chunkIndex | (finalChunk ? FinalChunkFlag : 0),
+                chunkSizeToEmit,
+                data);
+
+            data += chunkSizeToEmit;
+            cbData -= chunkSizeToEmit;
+        }
+    }
+    EX_CATCH
+    {
+    }
+    EX_END_CATCH(SwallowAllExceptions);
+}
+
 /*******************************************************/
 /* This is called by the runtime when a method is jitted completely */
 /*******************************************************/

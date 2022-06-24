@@ -1018,6 +1018,11 @@ void MyICJI::setVars(CORINFO_METHOD_HANDLE         ftn,   // [IN] method of inte
     freeArray(vars); // See note in recSetVars... we own destroying this array
 }
 
+void MyICJI::reportInternalData(const uint8_t* data, size_t dataSize)
+{
+    jitInstance->mc->cr->AddCall("reportInternalData");
+}
+
 /*-------------------------- Misc ---------------------------------------*/
 
 // Used to allocate memory that needs to handed to the EE.

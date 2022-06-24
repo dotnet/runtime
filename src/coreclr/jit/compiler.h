@@ -7763,10 +7763,7 @@ public:
     // Record the instr offset mapping to the generated code
 
     jitstd::list<IPmappingDsc> genIPmappings;
-
-#ifdef DEBUG
     jitstd::list<PreciseIPMapping> genPreciseIPmappings;
-#endif
 
     // Managed RetVal - A side hash table meant to record the mapping from a
     // GT_CALL node to its debug info.  This info is used to emit sequence points

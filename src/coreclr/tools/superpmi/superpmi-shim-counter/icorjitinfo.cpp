@@ -793,6 +793,14 @@ void interceptor_ICJI::setVars(
     original_ICorJitInfo->setVars(ftn, cVars, vars);
 }
 
+void interceptor_ICJI::reportInternalData(
+          const uint8_t* data,
+          size_t dataSize)
+{
+    mcs->AddCall("reportInternalData");
+    original_ICorJitInfo->reportInternalData(data, dataSize);
+}
+
 void* interceptor_ICJI::allocateArray(
           size_t cBytes)
 {

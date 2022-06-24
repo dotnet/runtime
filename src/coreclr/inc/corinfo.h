@@ -2734,6 +2734,12 @@ public:
                                                             //      jit allocated with allocateArray, EE frees
             ) = 0;
 
+    // Report internal JIT data back to the EE (for eventing and data analysis purposes).
+    virtual void reportInternalData(
+            const uint8_t                  *data,           // [IN] pointer to data to report
+            size_t                          dataSize        // [IN] length of data to report
+            ) = 0;
+
     /*-------------------------- Misc ---------------------------------------*/
 
     // Used to allocate memory that needs to handed to the EE.

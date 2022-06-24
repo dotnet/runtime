@@ -330,19 +330,19 @@ InlineContext::InlineContext(InlineStrategy* strategy)
     , m_Child(nullptr)
     , m_Sibling(nullptr)
     , m_Code(nullptr)
+    , m_Callee(nullptr)
     , m_ILSize(0)
     , m_ImportedILSize(0)
     , m_Observation(InlineObservation::CALLEE_UNUSED_INITIAL)
     , m_CodeSizeEstimate(0)
+    , m_Ordinal(0)
     , m_Success(true)
     , m_Devirtualized(false)
     , m_Guarded(false)
     , m_Unboxed(false)
 #if defined(DEBUG) || defined(INLINE_DATA)
     , m_Policy(nullptr)
-    , m_Callee(nullptr)
     , m_TreeID(0)
-    , m_Ordinal(0)
     , m_ActualCallOffset(BAD_IL_OFFSET)
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 #ifdef DEBUG
@@ -1304,13 +1304,16 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
     // the exact offset of the call instruction which will be more precise. We
     // may consider storing the statement itself as well.
     context->m_Location      = stmt->GetDebugInfo().GetLocation();
+
+    assert(call->gtCallType == CT_USER_FUNC);
+    context->m_Callee        = call->gtCallMethHnd;
+
     context->m_Devirtualized = call->IsDevirtualized();
     context->m_Guarded       = call->IsGuarded();
     context->m_Unboxed       = call->IsUnboxed();
 
 #if defined(DEBUG) || defined(INLINE_DATA)
     context->m_TreeID           = call->gtTreeID;
-    context->m_Callee           = call->gtCallType == CT_INDIRECT ? nullptr : call->gtCallMethHnd;
     context->m_ActualCallOffset = call->gtRawILOffset;
 #endif
 
@@ -1327,8 +1330,9 @@ void InlineContext::SetSucceeded(const InlineInfo* info)
 #if defined(DEBUG) || defined(INLINE_DATA)
     m_Policy           = info->inlineResult->GetPolicy();
     m_CodeSizeEstimate = m_Policy->CodeSizeEstimate();
-    m_Ordinal          = m_InlineStrategy->m_InlineCount + 1;
 #endif
+
+    m_Ordinal          = m_InlineStrategy->m_InlineCount + 1;
 
     m_InlineStrategy->NoteOutcome(this);
 }

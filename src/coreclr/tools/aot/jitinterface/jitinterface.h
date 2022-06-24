@@ -109,6 +109,7 @@ struct JitInterfaceCallbacks
     void (* setBoundaries)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, uint32_t cMap, ICorDebugInfo::OffsetMapping* pMap);
     void (* getVars)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, uint32_t* cVars, ICorDebugInfo::ILVarInfo** vars, bool* extendOthers);
     void (* setVars)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, uint32_t cVars, ICorDebugInfo::NativeVarInfo* vars);
+    void (* reportInternalData)(void * thisHandle, CorInfoExceptionClass** ppException, const uint8_t* data, size_t dataSize);
     void* (* allocateArray)(void * thisHandle, CorInfoExceptionClass** ppException, size_t cBytes);
     void (* freeArray)(void * thisHandle, CorInfoExceptionClass** ppException, void* array);
     CORINFO_ARG_LIST_HANDLE (* getArgNext)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_ARG_LIST_HANDLE args);
@@ -1151,6 +1152,15 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     _callbacks->setVars(_thisHandle, &pException, ftn, cVars, vars);
+    if (pException != nullptr) throw pException;
+}
+
+    virtual void reportInternalData(
+          const uint8_t* data,
+          size_t dataSize)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    _callbacks->reportInternalData(_thisHandle, &pException, data, dataSize);
     if (pException != nullptr) throw pException;
 }
 

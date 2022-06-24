@@ -967,6 +967,15 @@ void WrapICorJitInfo::setVars(
     API_LEAVE(setVars);
 }
 
+void WrapICorJitInfo::reportInternalData(
+          const uint8_t* data,
+          size_t dataSize)
+{
+    API_ENTER(reportInternalData);
+    wrapHnd->reportInternalData(data, dataSize);
+    API_LEAVE(reportInternalData);
+}
+
 void* WrapICorJitInfo::allocateArray(
           size_t cBytes)
 {

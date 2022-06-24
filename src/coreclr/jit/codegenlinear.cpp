@@ -424,10 +424,11 @@ void CodeGen::genCodeForBBlist()
                 }
             }
         }
-
-        bool addPreciseMappings =
-            (JitConfig.JitDumpPreciseDebugInfoFile() != nullptr) || (JitConfig.JitDisasmWithDebugInfo() != 0);
 #endif // DEBUG
+
+        bool addPreciseMappings = JitConfig.JitReportFullDebugInfo() != 0;
+
+        INDEBUG(addPreciseMappings |= JitConfig.JitDisasmWithDebugInfo() != 0);
 
         DebugInfo currentDI;
         for (GenTree* node : LIR::AsRange(block))
@@ -445,12 +446,12 @@ void CodeGen::genCodeForBBlist()
                     firstMapping = false;
                 }
 
-#ifdef DEBUG
                 if (addPreciseMappings && ilOffset->gtStmtDI.IsValid())
                 {
                     genAddPreciseIPMappingHere(ilOffset->gtStmtDI);
                 }
 
+#ifdef DEBUG
                 assert(ilOffset->gtStmtLastILoffs <= compiler->info.compILCodeSize ||
                        ilOffset->gtStmtLastILoffs == BAD_IL_OFFSET);
 

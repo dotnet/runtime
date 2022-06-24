@@ -1167,6 +1167,11 @@ void interceptor_ICJI::setVars(CORINFO_METHOD_HANDLE         ftn,   // [IN] meth
     original_ICorJitInfo->setVars(ftn, cVars, vars);
 }
 
+void interceptor_ICJI::reportInternalData(const uint8_t* data, size_t dataSize)
+{
+    mc->cr->AddCall("reportInternalData");
+}
+
 /*-------------------------- Misc ---------------------------------------*/
 // Used to allocate memory that needs to handed to the EE.
 // For eg, use this to allocated memory for reporting debug info,

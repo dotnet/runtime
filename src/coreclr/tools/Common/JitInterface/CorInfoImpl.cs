@@ -3013,6 +3013,10 @@ namespace Internal.JitInterface
             extendOthers = true;
         }
 
+        private void reportInternalData(byte* data, UIntPtr dataSize)
+        {
+        }
+
         private void* allocateArray(UIntPtr cBytes)
         {
             return (void*)Marshal.AllocHGlobal((IntPtr)(void*)cBytes);

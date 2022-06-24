@@ -2091,7 +2091,7 @@ void CodeGen::genEmitUnwindDebugGCandEH()
 
     genIPmappingGen();
 
-    INDEBUG(genDumpPreciseDebugInfo());
+    genReportFullDebugInfo();
 
     /* Finalize the Local Var info in terms of generated code */
 
@@ -7435,12 +7435,7 @@ void CodeGen::genIPmappingGen()
         return;
     }
 
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In genIPmappingGen()\n");
-    }
-#endif
+    JITDUMP("*************** In genIPmappingGen()\n");
 
     if (compiler->genIPmappings.size() <= 0)
     {
@@ -7579,11 +7574,11 @@ void CodeGen::genIPmappingGen()
 }
 
 #ifdef DEBUG
-void CodeGen::genDumpPreciseDebugInfoInlineTree(FILE* file, InlineContext* context, bool* first)
+void CodeGen::genReportFullDebugInfoInlineTreeToFile(FILE* file, InlineContext* context, bool* first)
 {
     if (context->GetSibling() != nullptr)
     {
-        genDumpPreciseDebugInfoInlineTree(file, context->GetSibling(), first);
+        genReportFullDebugInfoInlineTreeToFile(file, context->GetSibling(), first);
     }
 
     if (context->IsSuccess())
@@ -7596,7 +7591,10 @@ void CodeGen::genDumpPreciseDebugInfoInlineTree(FILE* file, InlineContext* conte
         *first = false;
 
         fprintf(file, "{\"Ordinal\":%u,", context->GetOrdinal());
-        fprintf(file, "\"MethodID\":%lld,", (INT64)context->GetCallee());
+        fprintf(file, "\"MethodID\":%lld,", (int64_t)context->GetCallee());
+        fprintf(file, "\"ILOffset\":%u,", context->GetLocation().GetOffset());
+        fprintf(file, "\"LocationFlags\":%u,", (uint32_t)context->GetLocation().EncodeSourceTypes());
+        fprintf(file, "\"ExactILOffset\":%u,", context->GetActualCallOffset());
         const char* className;
         const char* methodName = compiler->eeGetMethodName(context->GetCallee(), &className);
         fprintf(file, "\"MethodName\":\"%s\",", methodName);
@@ -7604,23 +7602,27 @@ void CodeGen::genDumpPreciseDebugInfoInlineTree(FILE* file, InlineContext* conte
         if (context->GetChild() != nullptr)
         {
             bool childFirst = true;
-            genDumpPreciseDebugInfoInlineTree(file, context->GetChild(), &childFirst);
+            genReportFullDebugInfoInlineTreeToFile(file, context->GetChild(), &childFirst);
         }
         fprintf(file, "]}");
     }
 }
 
-void CodeGen::genDumpPreciseDebugInfo()
+void CodeGen::genReportFullDebugInfoToFile()
 {
-    if (JitConfig.JitDumpPreciseDebugInfoFile() == nullptr)
+    if (JitConfig.JitReportFullDebugInfoFile() == nullptr)
+    {
         return;
+    }
 
     static CritSecObject s_critSect;
     CritSecHolder        holder(s_critSect);
 
-    FILE* file = _wfopen(JitConfig.JitDumpPreciseDebugInfoFile(), W("a"));
-    if (file == nullptr)
+    FILE* file = _wfopen(JitConfig.JitReportFullDebugInfoFile(), W("a"));
+    if (file != nullptr)
+    {
         return;
+    }
 
     // MethodID in ETW events are the method handles.
     fprintf(file, "{\"MethodID\":%lld,", (INT64)compiler->info.compMethodHnd);
@@ -7628,7 +7630,7 @@ void CodeGen::genDumpPreciseDebugInfo()
     fprintf(file, "\"InlineTree\":");
 
     bool first = true;
-    genDumpPreciseDebugInfoInlineTree(file, compiler->compInlineContext, &first);
+    genReportFullDebugInfoInlineTreeToFile(file, compiler->compInlineContext, &first);
     fprintf(file, ",\"Mappings\":[");
     first = true;
     for (PreciseIPMapping& mapping : compiler->genPreciseIPmappings)
@@ -7641,13 +7643,102 @@ void CodeGen::genDumpPreciseDebugInfo()
         first = false;
 
         fprintf(file, "{\"NativeOffset\":%u,\"InlineContext\":%u,\"ILOffset\":%u}",
-                mapping.nativeLoc.CodeOffset(GetEmitter()), mapping.debugInfo.GetInlineContext()->GetOrdinal(),
-                mapping.debugInfo.GetLocation().GetOffset());
+            mapping.nativeLoc.CodeOffset(GetEmitter()), mapping.debugInfo.GetInlineContext()->GetOrdinal(),
+            mapping.debugInfo.GetLocation().GetOffset());
     }
 
     fprintf(file, "]}\n");
 
     fclose(file);
+}
+
+#endif
+
+template<typename TWriteData>
+void CodeGen::genReportFullDebugInfoInlineTree(InlineContext* context, TWriteData write)
+{
+    auto doWrite = [write](auto val) { write(&val, sizeof(val)); };
+
+    doWrite((uint32_t)context->GetOrdinal());
+    doWrite((void*)context->GetCallee());
+    doWrite((uint32_t)context->GetLocation().GetOffset());
+    doWrite((uint8_t)context->GetLocation().EncodeSourceTypes());
+
+    uint32_t numChildren = 0;
+    for (InlineContext* child = context->GetChild(); child != nullptr; child = child->GetSibling())
+    {
+        if (child->IsSuccess())
+        {
+            numChildren++;
+        }
+    }
+
+    doWrite(numChildren);
+
+    for (InlineContext* child = context->GetChild(); child != nullptr; child = child->GetSibling())
+    {
+        if (child->IsSuccess())
+        {
+            genReportFullDebugInfoInlineTree(child, write);
+        }
+    }
+}
+
+template<typename TWriteData>
+void CodeGen::genReportFullDebugInfoMappings(TWriteData write)
+{
+    auto doWrite = [write](auto val) { write(&val, sizeof(val)); };
+
+    for (const PreciseIPMapping& mapping : compiler->genPreciseIPmappings)
+    {
+        doWrite((uint32_t)mapping.nativeLoc.CodeOffset(GetEmitter()));
+        doWrite((uint32_t)mapping.debugInfo.GetInlineContext()->GetOrdinal());
+        doWrite((uint32_t)mapping.debugInfo.GetLocation().GetOffset());
+        doWrite((uint8_t)mapping.debugInfo.GetLocation().EncodeSourceTypes());
+    }
+}
+
+void CodeGen::genReportFullDebugInfo()
+{
+    if (JitConfig.JitReportFullDebugInfo() == 0)
+    {
+        return;
+    }
+
+    INDEBUG(genReportFullDebugInfoToFile());
+
+    size_t binarySize = 4; // fourcc
+    auto recordSize = [&binarySize](const void* data, size_t numBytes) { binarySize += numBytes; };
+    genReportFullDebugInfoInlineTree(compiler->compInlineContext, recordSize);
+    genReportFullDebugInfoMappings(recordSize);
+
+    uint8_t inlineBytes[512];
+    uint8_t* bytes = binarySize <= sizeof(inlineBytes) ? inlineBytes : new (compiler, CMK_DebugInfo) uint8_t[binarySize];
+
+    uint8_t* cursor = bytes;
+#ifdef DEBUG
+    auto recordData =
+        [&cursor, bytes, binarySize](const void* data, size_t numBytes)
+        {
+            assert(cursor + numBytes <= bytes + binarySize);
+            memcpy(cursor, data, numBytes);
+            cursor += numBytes;
+        };
+#else
+    auto recordData =
+        [&cursor](const void* data, size_t numBytes)
+        {
+            memcpy(cursor, data, numBytes);
+            cursor += numBytes;
+        });
+#endif
+    recordData("DBG0", 4);
+    genReportFullDebugInfoInlineTree(compiler->compInlineContext, recordData);
+    genReportFullDebugInfoMappings(recordData);
+
+    assert(cursor == (bytes + binarySize));
+
+    compiler->info.compCompHnd->reportInternalData(bytes, binarySize);
 }
 
 void CodeGen::genAddPreciseIPMappingHere(const DebugInfo& di)
@@ -7657,7 +7748,6 @@ void CodeGen::genAddPreciseIPMappingHere(const DebugInfo& di)
     mapping.debugInfo = di;
     compiler->genPreciseIPmappings.push_back(mapping);
 }
-#endif
 
 /*============================================================================
  *

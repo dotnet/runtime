@@ -8087,6 +8087,11 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
     }
 #endif // defined FEATURE_REJIT && !defined(DACCESS_COMPILE)
 
+    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SendMethodDetailsForInlinees))
+    {
+        ETW::MethodLog::SendMethodDetailsEvent(GetMethod(inlineeHnd));
+    }
+
     EE_TO_JIT_TRANSITION();
 }
 
@@ -11001,6 +11006,19 @@ void CEEJitInfo::setVars(CORINFO_METHOD_HANDLE ftn, uint32_t cVars, ICorDebugInf
     EE_TO_JIT_TRANSITION();
 }
 
+void CEEJitInfo::reportInternalData(const uint8_t* data, size_t dataSize)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    JIT_TO_EE_TRANSITION();
+
+    _ASSERTE(dataSize <= UINT32_MAX);
+
+    ETW::MethodLog::LogJitCompilationInternalData(m_config, static_cast<uint32_t>(dataSize), data);
+
+    EE_TO_JIT_TRANSITION();
+}
+
 void CEEJitInfo::setPatchpointInfo(PatchpointInfo* patchpointInfo)
 {
     CONTRACTL {
@@ -12818,7 +12836,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
     while (true)
     {
-        CEEJitInfo jitInfo(ftn, ILHeader, jitMgr, !flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING));
+        CEEJitInfo jitInfo(ftn, config, ILHeader, jitMgr, !flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING));
 
 #if (defined(TARGET_AMD64) || defined(TARGET_ARM64))
 #ifdef TARGET_AMD64
@@ -14350,6 +14368,12 @@ void CEEInfo::setBoundaries(CORINFO_METHOD_HANDLE ftn, ULONG32 cMap,
 }
 
 void CEEInfo::setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars, ICorDebugInfo::NativeVarInfo *vars)
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE();      // only called on derived class.
+}
+
+void CEEInfo::reportInternalData(const uint8_t* data, size_t dataSize)
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.
