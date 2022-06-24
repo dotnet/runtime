@@ -38,11 +38,11 @@ namespace System
 
             if (pMethodTable->IsValueType)
             {
-                result = RuntimeHelpers.Box(pMethodTable, ref value._value.Value);
+                result = RuntimeHelpers.Box(pMethodTable, ref value._value);
             }
             else
             {
-                result = Unsafe.As<byte, object>(ref value._value.Value);
+                result = Unsafe.As<byte, object>(ref value._value);
             }
 
             return result;
