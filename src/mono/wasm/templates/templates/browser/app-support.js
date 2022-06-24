@@ -57,7 +57,7 @@ function set_exit_code(exit_code, reason) {
             console.error(JSON.stringify(reason));
     }
 
-    if (forward_console) {
+    if (runArgs && runArgs.forwardConsole) {
         const stop_when_ws_buffer_empty = () => {
             if (consoleWebSocket.bufferedAmount == 0) {
                 // tell xharness WasmTestMessagesProcessor we are done.

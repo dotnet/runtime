@@ -87,7 +87,7 @@ function set_exit_code(exit_code, reason) {
         tests_done_elem.innerHTML = exit_code.toString();
         document.body.appendChild(tests_done_elem);
 
-        if (forward_console) {
+        if (runArgs && runArgs.forwardConsole) {
             const stop_when_ws_buffer_empty = () => {
                 if (consoleWebSocket.bufferedAmount == 0) {
                     // tell xharness WasmTestMessagesProcessor we are done.
