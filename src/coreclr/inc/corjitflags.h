@@ -97,7 +97,7 @@ public:
         CORJIT_FLAG_UNUSED16                = 43,
 #endif // !defined(TARGET_ARM)
 
-        CORJIT_FLAG_PROMOTED                = 44, // Method was promoted at least once and is likely hot
+        CORJIT_FLAG_UNUSED17                = 44,
         CORJIT_FLAG_UNUSED18                = 45,
         CORJIT_FLAG_UNUSED19                = 46,
         CORJIT_FLAG_UNUSED20                = 47,

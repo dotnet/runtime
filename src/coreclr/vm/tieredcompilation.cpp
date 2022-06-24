@@ -1043,10 +1043,6 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
         {
             if (g_pConfig->TieredCompilation_QuickJit())
             {
-                if ((nativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0Instrumented))
-                {
-                    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PROMOTED);
-                }
                 _ASSERTE(nativeCodeVersion.IsUnoptimizedTier());
                 flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
                 return flags;
@@ -1058,7 +1054,6 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
         {
             newOptimizationTier = NativeCodeVersion::OptimizationTier1;
             flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
-            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PROMOTED);
         }
 
         methodDesc->GetLoaderAllocator()->GetCallCountingManager()->DisableCallCounting(nativeCodeVersion);
@@ -1075,7 +1070,6 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
             if (g_pConfig->TieredCompilation_QuickJit())
             {
                 flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
-                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PROMOTED);
             }
             FALLTHROUGH;
 

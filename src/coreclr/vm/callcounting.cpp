@@ -657,6 +657,10 @@ bool CallCountingManager::SetCodeEntryPoint(
                     // Consider using a different threshold here
                     CallCount callCountThreshold = g_pConfig->TieredCompilation_CallCountThreshold();
                     _ASSERTE(callCountThreshold != 0);
+
+                    CallCountingStub *stub = (CallCountingStub*)callCountingInfo->GetCallCountingStub();
+                    // Patch existing CallCountingStub to look at new target
+                    stub->SetTargetForMethod(activeCodeVersion.GetNativeCode());
                     *callCountingInfo->GetRemainingCallCountCell() = callCountThreshold;
                     break;
                 }

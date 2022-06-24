@@ -150,6 +150,7 @@ public:
 
     PTR_CallCount GetRemainingCallCountCell() const;
     PCODE GetTargetForMethod() const;
+    void SetTargetForMethod(PCODE code);
 
 protected:
 
@@ -420,6 +421,12 @@ inline PCODE CallCountingStub::GetTargetForMethod() const
 {
     WRAPPER_NO_CONTRACT;
     return GetData()->TargetForMethod;
+}
+
+inline void CallCountingStub::SetTargetForMethod(PCODE code)
+{
+    WRAPPER_NO_CONTRACT;
+    InterlockedExchangeT<PCODE>(&GetData()->TargetForMethod, code);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
