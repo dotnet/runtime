@@ -26,10 +26,20 @@ class DiagnosticServer {
                 "cmd": "started",
                 "thread_id": pthread_self.pthread_id
             });
+            this.installTimeoutHandler();
         }
     }
 
-    onMessage(event: MessageEvent<unknown>): void {
+    private installTimeoutHandler(): void {
+        setTimeout(this.timeoutHandler.bind(this), 500);
+    }
+
+    private timeoutHandler(this: DiagnosticServer): void {
+        console.debug("ping from diagnostic server");
+        this.installTimeoutHandler();
+    }
+
+    onMessage(this: DiagnosticServer, event: MessageEvent<unknown>): void {
         const d = event.data;
         if (d && isDiagnosticMessage(d)) {
             controlCommandReceived(d);
