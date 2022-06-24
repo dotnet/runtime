@@ -508,10 +508,6 @@ register_thread (MonoThreadInfo *info)
 
 	mono_os_sem_init (&info->resume_semaphore, 0);
 
-#ifdef HOST_BROWSER
-	mono_threads_wasm_on_thread_attached ();
-#endif
-
 	/*set TLS early so SMR works */
 	mono_native_tls_set_value (thread_info_key, info);
 
@@ -556,6 +552,10 @@ register_thread (MonoThreadInfo *info)
 	result = mono_thread_info_insert (info);
 	g_assert (result);
 	mono_thread_info_suspend_unlock ();
+
+#ifdef HOST_BROWSER
+	mono_threads_wasm_on_thread_attached ();
+#endif
 
 	return TRUE;
 }
