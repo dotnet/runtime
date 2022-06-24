@@ -1409,10 +1409,13 @@ namespace DebuggerTests
             Assert.Equal(res.Value["justMyCodeEnabled"], enabled);
         }
 
-        internal async Task CheckEvaluateFail(string id, string expr, string message)
+        internal async Task CheckEvaluateFail(string id, params (string expression, string message)[] args)
         {
-            (_, Result _res) = await EvaluateOnCallFrame(id, expr, expect_ok: false);
-            AssertEqual(message, _res.Error["result"]?["description"]?.Value<string>(), $"Expression '{expr}' - wrong error message");
+            foreach (var arg in args)
+            {
+                (_, Result _res) = await EvaluateOnCallFrame(id, arg.expression, expect_ok: false).ConfigureAwait(false);;
+                AssertEqual(arg.message, _res.Error["result"]?["description"]?.Value<string>(), $"Expression '{arg.expression}' - wrong error message");
+            }
         }
     }
 

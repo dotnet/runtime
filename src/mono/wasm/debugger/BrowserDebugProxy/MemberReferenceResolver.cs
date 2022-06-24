@@ -89,12 +89,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             string[] parts;
             if (includeFullName)
             {
-                string fullName = methodInfo.IsAsync == 0 ? methodInfo.TypeInfo?.FullName : StripAsyncPartOfFullName(methodInfo.TypeInfo?.FullName);
+                string fullName = methodInfo.IsAsync == 0 ? methodInfo.TypeInfo.FullName : StripAsyncPartOfFullName(methodInfo.TypeInfo.FullName);
                 string[] fullNameParts = fullName.Split(".", StringSplitOptions.TrimEntries);
                 int overlappingPartIdx = Enumerable.Range(0, fullNameParts.Length).LastOrDefault(i => fullNameParts[i] == expressionParts[0]);
                 if (overlappingPartIdx == 0)
                 {
-                    // default val was returned for overlappingPartIdx
+                    // either whole expression overlap or nothing matched and default value was returned
                     overlappingPartIdx = fullNameParts.Length;
                 }
                 parts = new string[fullNameParts[..overlappingPartIdx].Length + expressionParts.Count];
@@ -134,20 +134,20 @@ namespace Microsoft.WebAssembly.Diagnostics
                     classNameToFind += ".";
                 classNameToFind += part;
 
-                if (!string.IsNullOrEmpty(methodInfo?.TypeInfo?.Namespace))
+                if (!string.IsNullOrEmpty(methodInfo.TypeInfo.Namespace))
                 {
-                    typeId = await FindStaticTypeId(methodInfo?.TypeInfo?.Namespace + "." + classNameToFind);
+                    typeId = await FindStaticTypeId(methodInfo.TypeInfo.Namespace + "." + classNameToFind);
                     if (typeId != -1)
                         continue;
                 }
                 typeId = await FindStaticTypeId(classNameToFind);
             }
 
-            string StripAsyncPartOfFullName(string fullName)
-            {
-                // async function full name has a form: namespaceName.<currentFrame'sMethodName>d__integer
-                return fullName.Split(".<")[0];
-            }
+            // async function full name has a form: namespaceName.<currentFrame'sMethodName>d__integer
+            static string StripAsyncPartOfFullName(string fullName)
+                => fullName.IndexOf(".<") is int index && index < 0
+                    ? fullName
+                    : fullName.Substring(0, index);
 
             return (null, null);
 

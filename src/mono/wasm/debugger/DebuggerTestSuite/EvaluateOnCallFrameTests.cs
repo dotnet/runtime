@@ -708,17 +708,17 @@ namespace DebuggerTests
                 wait_for_event_fn: async (pause_location) =>
                 {
                     var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                    await EvaluateOnCallFrameAndCheck(id, ($"{namespaceName}.{className}.StaticField1", TNumber(expectedInt * 10)));
-                    await EvaluateOnCallFrameAndCheck(id, ($"{namespaceName}.{className}.StaticProperty1", TString($"StaticProperty{expectedInt}")));
-                    await EvaluateOnCallFrameAndCheck(id, ($"{namespaceName}.{className}.StaticPropertyWithError", TString($"System.Exception: not implemented {expectedInt}")));
-
-                    await EvaluateOnCallFrameAndCheck(id, ($"{className}.StaticField1", TNumber(expectedInt * 10)));
-                    await EvaluateOnCallFrameAndCheck(id, ($"{className}.StaticProperty1",TString($"StaticProperty{expectedInt}")));
-                    await EvaluateOnCallFrameAndCheck(id, ($"{className}.StaticPropertyWithError", TString($"System.Exception: not implemented {expectedInt}")));
-
-                    await EvaluateOnCallFrameAndCheck(id, ("StaticField1", TNumber(expectedInt * 10)));
-                    await EvaluateOnCallFrameAndCheck(id, ("StaticProperty1", TString($"StaticProperty{expectedInt}")));
-                    await EvaluateOnCallFrameAndCheck(id, ("StaticPropertyWithError", TString($"System.Exception: not implemented {expectedInt}")));
+                    await EvaluateOnCallFrameAndCheck(id, 
+                        ($"{namespaceName}.{className}.StaticField1", TNumber(expectedInt * 10)),
+                        ($"{namespaceName}.{className}.StaticProperty1", TString($"StaticProperty{expectedInt}")),
+                        ($"{namespaceName}.{className}.StaticPropertyWithError", TString($"System.Exception: not implemented {expectedInt}")),
+                        ($"{className}.StaticField1", TNumber(expectedInt * 10)),
+                        ($"{className}.StaticProperty1",TString($"StaticProperty{expectedInt}")),
+                        ($"{className}.StaticPropertyWithError", TString($"System.Exception: not implemented {expectedInt}")),
+                        ("StaticField1", TNumber(expectedInt * 10)),
+                        ("StaticProperty1", TString($"StaticProperty{expectedInt}")),
+                        ("StaticPropertyWithError", TString($"System.Exception: not implemented {expectedInt}"))
+                    );
                 });
 
         [ConditionalFact(nameof(RunningOnChrome))]
@@ -773,10 +773,11 @@ namespace DebuggerTests
                    ("NestedWithSameNames.B.StaticPropertyWithError", TString("System.Exception: not implemented V4"))
                 );
 
-                await CheckEvaluateFail(id, "B.NestedWithSameNames.B.StaticField1", GetNonExistingVarMessage("B.NestedWithSameNames.B.StaticField1"));
-                await CheckEvaluateFail(id, "B.NestedWithSameNames.B.StaticProperty1", GetNonExistingVarMessage("B.NestedWithSameNames.B.StaticProperty1"));
-                await CheckEvaluateFail(id, "B.NestedWithSameNames.B.StaticPropertyWithError", GetNonExistingVarMessage("B.NestedWithSameNames.B.StaticPropertyWithError"));
-
+                await CheckEvaluateFail(id,
+                    ("B.NestedWithSameNames.B.StaticField1", GetNonExistingVarMessage("B.NestedWithSameNames.B.StaticField1")),
+                    ("B.NestedWithSameNames.B.StaticProperty1", GetNonExistingVarMessage("B.NestedWithSameNames.B.StaticProperty1")),
+                    ("B.NestedWithSameNames.B.StaticPropertyWithError", GetNonExistingVarMessage("B.NestedWithSameNames.B.StaticPropertyWithError"))
+                );
                 string GetNonExistingVarMessage(string name) => $"Failed to resolve member access for {name}";
            });
 
@@ -818,11 +819,11 @@ namespace DebuggerTests
                     ($"{className}.StaticPropertyWithError", TString($"System.Exception: not implemented {expectedIntInPrevFrame}"))
                 );
 
-
-                await CheckEvaluateFail(id_second, "StaticField1", GetNonExistingVarMessage("StaticField1"));
-                await CheckEvaluateFail(id_second, "StaticProperty1", GetNonExistingVarMessage("StaticProperty1"));
-                await CheckEvaluateFail(id_second, "StaticPropertyWithError", GetNonExistingVarMessage("StaticPropertyWithError"));
-
+                await CheckEvaluateFail(id_second,
+                    ("StaticField1", GetNonExistingVarMessage("StaticField1")),
+                    ("StaticProperty1", GetNonExistingVarMessage("StaticProperty1")),
+                    ("StaticPropertyWithError", GetNonExistingVarMessage("StaticPropertyWithError"))
+                );
                 string GetNonExistingVarMessage(string name) => $"The name {name} does not exist in the current context";
             });
 
@@ -1189,23 +1190,24 @@ namespace DebuggerTests
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                await CheckEvaluateFail(id, "list.Count.x", "Cannot find member 'x' on a primitive type");
-                await CheckEvaluateFail(id, "listNull.Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail(id, "listNull!.Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail(id, "tcNull.MemberListNull.Count", GetNullReferenceErrorOn("\"MemberListNull\""));
-                await CheckEvaluateFail(id, "tc.MemberListNull.Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail(id, "tcNull?.MemberListNull.Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail(id, "listNull?.Count.NonExistingProperty", GetNullReferenceErrorOn("\"NonExistingProperty\""));
-                await CheckEvaluateFail(id, "tc?.MemberListNull! .Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail(id, "tc?. MemberListNull!.Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail(id, "tc?.MemberListNull.Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail(id, "tc! .MemberListNull!.Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail(id, "tc!.MemberListNull. Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail(id, "tcNull?.Sibling.MemberListNull?.Count", GetNullReferenceErrorOn("\"MemberListNull?\""));
-                await CheckEvaluateFail(id, "listNull?", "Expected expression.");
-                await CheckEvaluateFail(id, "listNull!.Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail(id, "x?.p", "Operation '?' not allowed on primitive type - 'x?'");
-
+                await CheckEvaluateFail(id,
+                    ("list.Count.x", "Cannot find member 'x' on a primitive type"),
+                    ("listNull.Count", GetNullReferenceErrorOn("\"Count\"")),
+                    ("listNull!.Count", GetNullReferenceErrorOn("\"Count\"")),
+                    ( "tcNull.MemberListNull.Count", GetNullReferenceErrorOn("\"MemberListNull\"")),
+                    ("tc.MemberListNull.Count", GetNullReferenceErrorOn("\"Count\"")),
+                    ("tcNull?.MemberListNull.Count", GetNullReferenceErrorOn("\"Count\"")),
+                    ("listNull?.Count.NonExistingProperty", GetNullReferenceErrorOn("\"NonExistingProperty\"")),
+                    ("tc?.MemberListNull! .Count", GetNullReferenceErrorOn("\"Count\"")),
+                    ("tc?. MemberListNull!.Count", GetNullReferenceErrorOn("\"Count\"")),
+                    ("tc?.MemberListNull.Count", GetNullReferenceErrorOn("\"Count\"")),
+                    ("tc! .MemberListNull!.Count", GetNullReferenceErrorOn("\"Count\"")),
+                    ("tc!.MemberListNull. Count", GetNullReferenceErrorOn("\"Count\"")),
+                    ("tcNull?.Sibling.MemberListNull?.Count", GetNullReferenceErrorOn("\"MemberListNull?\"")),
+                    ("listNull?", "Expected expression."),
+                    ("listNull!.Count", GetNullReferenceErrorOn("\"Count\"")),
+                    ("x?.p", "Operation '?' not allowed on primitive type - 'x?'")
+                );
                 string GetNullReferenceErrorOn(string name) => $"Expression threw NullReferenceException trying to access {name} on a null-valued object.";
             });
 
