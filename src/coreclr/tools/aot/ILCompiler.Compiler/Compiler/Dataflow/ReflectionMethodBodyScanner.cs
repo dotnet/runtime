@@ -115,26 +115,6 @@ namespace ILCompiler.Dataflow
         {
             var scanner = new ReflectionMethodBodyScanner(factory, annotations, logger, new MessageOrigin(methodBody.OwningMethod));
 
-            Debug.Assert(methodBody.GetMethodILDefinition() == methodBody);
-            if (methodBody.OwningMethod.HasInstantiation || methodBody.OwningMethod.OwningType.HasInstantiation)
-            {
-                // We instantiate the body over the generic parameters.
-                //
-                // This will transform references like "call Foo<!0>.Method(!0 arg)" into
-                // "call Foo<T>.Method(T arg)". We do this to avoid getting confused about what
-                // context the generic variables refer to - in the above example, we would see
-                // two !0's - one refers to the generic parameter of the type that owns the method with
-                // the call, but the other one (in the signature of "Method") actually refers to
-                // the generic parameter of Foo.
-                //
-                // If we don't do this translation, retrieving the signature of the called method
-                // would attempt to do bogus substitutions.
-                //
-                // By doing the following transformation, we ensure we don't see the generic variables
-                // that need to be bound to the context of the currently analyzed method.
-                methodBody = new InstantiatedMethodIL(methodBody.OwningMethod, methodBody);
-            }
-
             scanner.InterproceduralScan(methodBody);
 
             return scanner._reflectionMarker.Dependencies;

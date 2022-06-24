@@ -9,6 +9,7 @@ using System.IO;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
+using ILCompiler.Dataflow;
 using ILCompiler.Logging;
 using ILLink.Shared;
 

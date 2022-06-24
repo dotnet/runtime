@@ -290,6 +290,8 @@ namespace ILCompiler.Dataflow
         // reachable from it.
         public virtual void InterproceduralScan(MethodIL methodBody)
         {
+            Debug.Assert(methodBody.OwningMethod.IsTypicalMethodDefinition);
+
             var methodsInGroup = new ValueSet<MethodProxy>(methodBody.OwningMethod);
 
             // Optimization to prevent multiple scans of a method.
@@ -309,12 +311,12 @@ namespace ILCompiler.Dataflow
                 // For state machine methods, also scan the state machine members.
                 // Simplification: assume that all generated methods of the state machine type are
                 // invoked at the point where the state machine method is called.			
-                if (CompilerGeneratedState.TryGetStateMachineType(methodToScan, out TypeDefinition? stateMachineType))
+                if (CompilerGeneratedState.TryGetStateMachineType(methodToScan.OwningMethod, out MetadataType? stateMachineType))
                 {
-                    foreach (var method in stateMachineType.Methods)
+                    foreach (var method in stateMachineType.GetMethods())
                     {
                         Debug.Assert(!CompilerGeneratedNames.IsLambdaOrLocalFunction(method.Name));
-                        if (method.Body is MethodBody stateMachineBody)
+                        if (TryGetMethodBody(method, out var stateMachineBody))
                             Scan(stateMachineBody, ref methodsInGroup);
                     }
                 }
@@ -341,24 +343,58 @@ namespace ILCompiler.Dataflow
                 foreach (var candidate in methodsInGroup)
                 {
                     var candidateMethod = candidate.Method;
-                    MethodIL methodIL = _annotations.ILProvider.GetMethodIL(candidate.Method);
-                    if (!scannedMethods.Contains(candidateMethod) && methodIL != null)
+                    if (!scannedMethods.Contains(candidateMethod))
                     {
-                        method = methodIL;
-                        return true;
+                        if (TryGetMethodBody(candidateMethod, out method))
+                            return true;
                     }
                 }
                 method = null;
                 return false;
             }
+
+            bool TryGetMethodBody(MethodDesc method, [NotNullWhen(true)] out MethodIL? methodBody)
+            {
+                MethodIL methodIL = _annotations.ILProvider.GetMethodIL(method);
+                if (methodIL == null)
+                {
+                    methodBody = null;
+                    return false;
+                }
+
+                Debug.Assert(methodIL.GetMethodILDefinition() == methodIL);
+                if (methodIL.OwningMethod.HasInstantiation || methodIL.OwningMethod.OwningType.HasInstantiation)
+                {
+                    // We instantiate the body over the generic parameters.
+                    //
+                    // This will transform references like "call Foo<!0>.Method(!0 arg)" into
+                    // "call Foo<T>.Method(T arg)". We do this to avoid getting confused about what
+                    // context the generic variables refer to - in the above example, we would see
+                    // two !0's - one refers to the generic parameter of the type that owns the method with
+                    // the call, but the other one (in the signature of "Method") actually refers to
+                    // the generic parameter of Foo.
+                    //
+                    // If we don't do this translation, retrieving the signature of the called method
+                    // would attempt to do bogus substitutions.
+                    //
+                    // By doing the following transformation, we ensure we don't see the generic variables
+                    // that need to be bound to the context of the currently analyzed method.
+                    methodIL = new InstantiatedMethodIL(methodIL.OwningMethod, methodIL);
+                }
+
+                methodBody = methodIL;
+                return true;
+            }
         }
 
         void TrackNestedFunctionReference(MethodDesc method, ref ValueSet<MethodProxy> methodsInGroup)
         {
-            if (!CompilerGeneratedNames.IsLambdaOrLocalFunction(method.Name))
+            MethodDesc methodDefinition = method.GetTypicalMethodDefinition();
+
+            if (!CompilerGeneratedNames.IsLambdaOrLocalFunction(methodDefinition.Name))
                 return;
 
-            methodsInGroup = MethodLattice.Meet(methodsInGroup, new(method));
+            methodsInGroup = MethodLattice.Meet(methodsInGroup, new(methodDefinition));
         }
 
         protected virtual void Scan(MethodIL methodBody, ref ValueSet<MethodProxy> methodsInGroup)

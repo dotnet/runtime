@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <AssemblyName>ILCompiler.Compiler</AssemblyName>
@@ -318,6 +318,9 @@
     <Compile Include="Compiler\CompilerGeneratedInteropStubManager.cs" />
     <Compile Include="Compiler\Dataflow\ArrayValue.cs" />
     <Compile Include="Compiler\Dataflow\AttributeDataFlow.cs" />
+    <Compile Include="Compiler\Dataflow\CompilerGeneratedCallGraph.cs" />
+    <Compile Include="Compiler\Dataflow\CompilerGeneratedNames.cs" />
+    <Compile Include="Compiler\Dataflow\CompilerGeneratedState.cs" />
     <Compile Include="Compiler\Dataflow\DiagnosticContext.cs" />
     <Compile Include="Compiler\Dataflow\DiagnosticUtilities.cs" />
     <Compile Include="Compiler\Dataflow\DynamicallyAccessedMembersBinder.cs" />
@@ -561,7 +564,6 @@
     <Compile Include="Compiler\Logger.cs" />
     <Compile Include="Compiler\ILogWriter.cs" />
     <Compile Include="Compiler\TextLogWriter.cs" />
-    <Compile Include="Compiler\Logging\CompilerGeneratedState.cs" />
     <Compile Include="Compiler\Logging\DocumentationSignatureGenerator.PartVisitor.cs" />
     <Compile Include="Compiler\Logging\DocumentationSignatureParser.cs" />
     <Compile Include="Compiler\Logging\MessageContainer.cs" />

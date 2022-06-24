@@ -5,7 +5,6 @@ using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
-using ILCompiler.Logging;
 using ILLink.Shared;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -218,7 +217,7 @@ namespace ILCompiler.Dataflow
             if (method.IsInRequiresScope(requiresAttribute))
                 return true;
 
-            MethodDesc userMethod = ILCompiler.Logging.CompilerGeneratedState.GetUserDefinedMethodForCompilerGeneratedMember(method);
+            MethodDesc userMethod = CompilerGeneratedState.GetUserDefinedMethodForCompilerGeneratedMember(method);
             if (userMethod != null &&
                 userMethod.IsInRequiresScope(requiresAttribute))
                 return true;

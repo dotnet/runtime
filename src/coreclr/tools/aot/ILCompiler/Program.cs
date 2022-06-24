@@ -16,6 +16,7 @@ using Internal.CommandLine;
 
 using Debug = System.Diagnostics.Debug;
 using InstructionSet = Internal.JitInterface.InstructionSet;
+using ILCompiler.Dataflow;
 
 namespace ILCompiler
 {
@@ -742,7 +743,9 @@ namespace ILCompiler
             }
             ilProvider = new FeatureSwitchManager(ilProvider, featureSwitches);
 
+            CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState(ilProvider);
             var logger = new Logger(Console.Out, _isVerbose, ProcessWarningCodes(_suppressedWarnings), _singleWarn, _singleWarnEnabledAssemblies, _singleWarnDisabledAssemblies);
+            compilerGeneratedState.Logger = logger;
 
             var stackTracePolicy = _emitStackTraceData ?
                 (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy() : new NoStackTraceEmissionPolicy();
