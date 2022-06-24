@@ -321,7 +321,7 @@ namespace Microsoft.Interop
                 }
             }
 
-            // Bidirectional requires ToManaged without the caller-allocated buffer
+            // Bidirectional requires ToUnmanaged without the caller-allocated buffer
             if (direction.HasFlag(MarshallingDirection.Bidirectional) && !shape.HasFlag(MarshallerShape.ToUnmanaged))
                 return null;
 
