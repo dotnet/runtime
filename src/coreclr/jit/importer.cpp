@@ -9349,7 +9349,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         if ((mflags & CORINFO_FLG_STATIC) && (sig->numArgs == 0) && (sig->retType == CorInfoType::CORINFO_TYPE_LONG) &&
             (strcmp("JitHelpers_JitFlags", eeGetMethodName(methHnd, nullptr)) == 0))
         {
-            call = gtNewIconNode(opts.jitFlags->GetRawFlags(), TYP_LONG);
+            call = gtNewLconNode((__int64)opts.jitFlags->GetRawFlags());
             goto DONE_CALL;
         }
 #endif
