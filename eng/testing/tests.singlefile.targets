@@ -9,7 +9,7 @@
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
 
     <RunScriptCommand Condition="'$(TargetOS)' == 'windows'">$(AssemblyName).exe</RunScriptCommand>
-    <RunScriptCommand Condition="'$(TargetOS)' != 'windows'">chmod +rwx $(AssemblyName) &amp;&amp; timeout -s SIGSEGV 900 ./$(AssemblyName)</RunScriptCommand>
+    <RunScriptCommand Condition="'$(TargetOS)' != 'windows'">chmod +rwx $(AssemblyName) &amp;&amp; timeout -s SIGSEGV 1 ./$(AssemblyName)</RunScriptCommand>
   </PropertyGroup>
   
   <PropertyGroup Condition="'$(TestNativeAot)' != 'true'">
