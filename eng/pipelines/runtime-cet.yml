@@ -35,16 +35,16 @@ pr:
     - PATENTS.TXT
     - THIRD-PARTY-NOTICES.TXT
 
-# variables:
-#   - template: /eng/pipelines/common/variables.yml
+variables:
+  - template: /eng/pipelines/common/variables.yml
 
 jobs:
 
 #
 # Evaluate paths
 #
-- ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
-  - template: /eng/pipelines/common/evaluate-default-paths.yml
+# - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
+#   - template: /eng/pipelines/common/evaluate-default-paths.yml
 
 #
 # Build CoreCLR checked
@@ -59,11 +59,12 @@ jobs:
     jobParameters:
       testGroup: innerloop
       condition: >-
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-          eq(variables['isRollingBuild'], true))
-
+          eq(variables['isRollingBuild'], true)
+#         or(
+#           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+#           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+#           eq(variables['isRollingBuild'], true))
+          
 #
 # Build CoreCLR release
 # Always as they are needed by Installer and we always build and test the Installer.
@@ -100,7 +101,8 @@ jobs:
       - windows_x64
       jobParameters:
         condition: >-
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true)
+          true
+#           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true)
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -113,9 +115,10 @@ jobs:
       runTests: true
       useHelix: false
       condition: >-
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(variables['isRollingBuild'], true))
+        eq(variables['isRollingBuild'], true)
+#         or(
+#           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+#           eq(variables['isRollingBuild'], true))
 
 #
 # Installer Build and Test
@@ -145,10 +148,11 @@ jobs:
     jobParameters:
       testGroup: innerloop
       condition: >-
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-          eq(variables['isRollingBuild'], true))
+        variables['isRollingBuild'], true)
+#         or(
+#           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+#           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+#           eq(variables['isRollingBuild'], true))
 
 
 #
@@ -168,10 +172,11 @@ jobs:
       testGroup: innerloop
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
       condition: >-
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-          eq(variables['isRollingBuild'], true))
+        variables['isRollingBuild'], true)
+#         or(
+#           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+#           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+#           eq(variables['isRollingBuild'], true))
 
 #
 # Libraries Debug Test Execution against a release coreclr runtime
@@ -189,9 +194,10 @@ jobs:
       testScope: innerloop
       liveRuntimeBuildConfig: release
       condition: >-
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(variables['isRollingBuild'], true))
+        variables['isRollingBuild'], true)
+#         or(
+#           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+#           eq(variables['isRollingBuild'], true))
 
 #
 # Release Libraries Test Execution against a checked runtime
@@ -209,6 +215,7 @@ jobs:
       testScope: innerloop
       liveRuntimeBuildConfig: checked
       condition: >-
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-          eq(variables['isRollingBuild'], true))
+        variables['isRollingBuild'], true)
+#         or(
+#           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+#           eq(variables['isRollingBuild'], true))
