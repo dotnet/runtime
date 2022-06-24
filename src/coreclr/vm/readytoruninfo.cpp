@@ -704,8 +704,15 @@ PTR_ReadyToRunInfo ReadyToRunInfo::ComputeAlternateGenericLocationForR2RCode(Met
         resultModule = ComputeAlternateGenericLocationForR2RCodeFromInstantiation(pDefinitionModule, pMethod->GetClassInstantiation());
     }
 
-    // This may return NULL, if resultModule is not an R2R module. That is OK and intended.
-    return resultModule->GetReadyToRunInfo();
+    if (resultModule != NULL)
+    {
+        // This may return NULL, if resultModule is not an R2R module. That is OK and intended.
+        return resultModule->GetReadyToRunInfo();
+    }
+    else
+    {
+        return NULL;
+    }
 }
 
 ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocator, PEImageLayout * pLayout, READYTORUN_HEADER * pHeader, NativeImage *pNativeImage, AllocMemTracker *pamTracker)

@@ -206,7 +206,9 @@ namespace ILCompiler.IBC
                         bool hasMatchingDefinition = (onlyDefinedInAssembly == null) || assembliesByName[0].Equals(onlyDefinedInAssembly);
 
                         if (!hasMatchingDefinition)
+                        {
                             break;
+                        }
 
                         if (assemblyNamesInVersionBubble != null)
                         {
@@ -232,7 +234,9 @@ namespace ILCompiler.IBC
                                 mibcGroupUseable = false;
 
                             if (!mibcGroupUseable)
+                            {
                                 break;
+                            }
                         }
 
                         loadedMethodProfileData = loadedMethodProfileData.Concat(ReadMIbcGroup(tsc, (EcmaMethod)ilBody.GetObject(token)));

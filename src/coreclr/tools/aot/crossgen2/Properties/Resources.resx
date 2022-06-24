@@ -378,4 +378,10 @@
   <data name="AsyncModuleOptimization" xml:space="preserve">
     <value>Attempt to compile as much async infrastructure as possible for async methods. Defaults to enabled. To disable, specify false to this flag explicitly.</value>
   </data>
+  <data name="NonLocalGenericsModule" xml:space="preserve">
+    <value>Specify the module which is permitted to contain generics defined or instantiated in any other module. Specify "*" to indicate that any module may hold arbitrary generics.</value>
+  </data>
+  <data name="ErrorNonLocalGenericsModule" xml:space="preserve">
+    <value>"{0}" was specified to the --non-local-generics-module switch, but was not in the set of modules associated with the compile</value>
+  </data>
 </root>

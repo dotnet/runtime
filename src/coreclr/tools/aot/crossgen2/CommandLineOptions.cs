@@ -32,6 +32,7 @@ namespace ILCompiler
         public bool OptimizeSpace;
         public bool OptimizeTime;
         public bool AsyncMethodOptimization;
+        public string NonLocalGenericsModule;
         public bool InputBubble;
         public bool CompileBubbleGenerics;
         public bool Verbose;
@@ -87,6 +88,7 @@ namespace ILCompiler
             ReferenceFilePaths = Array.Empty<string>();
             MibcFilePaths = Array.Empty<string>();
             CodegenOptions = Array.Empty<string>();
+            NonLocalGenericsModule = "";
 
             PerfMapFormatVersion = DefaultPerfMapFormatVersion;
             Parallelism = Environment.ProcessorCount;
@@ -171,6 +173,7 @@ namespace ILCompiler
 
                 syntax.DefineOptionList("opt-cross-module", ref this.CrossModuleInlining, SR.CrossModuleInlining);
                 syntax.DefineOption("opt-async-methods", ref AsyncMethodOptimization, SR.AsyncModuleOptimization);
+                syntax.DefineOption("non-local-generics-module", ref NonLocalGenericsModule, SR.NonLocalGenericsModule);
 
                 syntax.DefineOption("method-layout", ref MethodLayout, SR.MethodLayoutOption);
                 syntax.DefineOption("file-layout", ref FileLayout, SR.FileLayoutOption);
