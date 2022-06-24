@@ -134,7 +134,7 @@ private:
     void ClearState(ThreadStateFlags flags);
     bool IsStateSet(ThreadStateFlags flags);
 
-    static UInt32_BOOL HijackCallback(PAL_LIMITED_CONTEXT* pThreadContext, void* pCallbackContext);
+    static UInt32_BOOL HijackCallback(PAL_LIMITED_CONTEXT* pThreadContext, void* pThreadToHijack);
     bool HijackReturnAddress(PAL_LIMITED_CONTEXT * pSuspendCtx, void * pvHijackTargets[]);
 
 #ifdef FEATURE_SUSPEND_REDIRECTION

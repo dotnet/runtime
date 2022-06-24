@@ -621,13 +621,16 @@ bool Thread::Hijack()
     // requires THREAD_SUSPEND_RESUME / THREAD_GET_CONTEXT / THREAD_SET_CONTEXT permissions
 
     Thread* pCurrentThread = ThreadStore::GetCurrentThread();
+
+    // PalHijack will call HijackCallback or make the target thread call it.
+    // It may aslo do nothing it thread is in inconvenient state.
     uint32_t result = PalHijack(m_hPalThread, this);
     return result == 0;
 }
 
-UInt32_BOOL Thread::HijackCallback(PAL_LIMITED_CONTEXT* pThreadContext, void* pCallbackContext)
+UInt32_BOOL Thread::HijackCallback(PAL_LIMITED_CONTEXT* pThreadContext, void* pThreadToHijack)
 {
-    Thread* pThread = (Thread*) pCallbackContext;
+    Thread* pThread = (Thread*) pThreadToHijack;
     if (pThread == NULL)
     {
         pThread = ThreadStore::GetCurrentThread();
@@ -658,6 +661,14 @@ UInt32_BOOL Thread::HijackCallback(PAL_LIMITED_CONTEXT* pThreadContext, void* pC
     ICodeManager* codeManager = runtime->GetCodeManagerForAddress(pvAddress);
     if (codeManager->IsSafePoint(pvAddress))
     {
+        // if we are not given a thread to hijack
+        // perform in-line wait on the current thread
+        if (pThreadToHijack == NULL)
+        {
+            //pThread->WaitForGC(pThreadContext);
+            //return true;
+        }
+
 #ifdef FEATURE_SUSPEND_REDIRECTION
         if (pThread->Redirect())
         {
