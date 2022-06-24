@@ -822,7 +822,7 @@ namespace System.Security.Principal
                 return new OutOfMemoryException();
 
             uint win32ErrorCode = Interop.Advapi32.LsaNtStatusToWinError((uint)status);
-            return new SecurityException(Marshal.GetPInvokeErrorMessage(unchecked((int)win32ErrorCode)));
+            return new SecurityException(Marshal.GetPInvokeErrorMessage((int)win32ErrorCode));
         }
 
         private static SafeAccessTokenHandle GetCurrentToken(TokenAccessLevels desiredAccess, bool threadOnly, out bool isImpersonating, out int hr)
