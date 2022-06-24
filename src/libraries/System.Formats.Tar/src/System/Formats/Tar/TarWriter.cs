@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -145,7 +144,7 @@ namespace System.Formats.Tar
                 entryName = Path.GetFileName(fileName);
             }
 
-            return WriteEntryAsyncInternal(fullPath, entryName, cancellationToken);
+            return ReadFileFromDiskAndWriteToArchiveStreamAsEntryAsync(fullPath, entryName, cancellationToken);
         }
 
         /// <summary>
@@ -299,8 +298,6 @@ namespace System.Formats.Tar
             {
                 try
                 {
-                    await WriteGlobalExtendedAttributesEntryIfNeededAsync(cancellationToken: default).ConfigureAwait(false);
-
                     if (_wroteEntries)
                     {
                         await WriteFinalRecordsAsync().ConfigureAwait(false);
@@ -328,20 +325,9 @@ namespace System.Formats.Tar
             }
         }
 
-        private async Task WriteEntryAsyncInternal(string fullPath, string entryName, CancellationToken cancellationToken)
-        {
-            if (Format is TarEntryFormat.Pax)
-            {
-                await WriteGlobalExtendedAttributesEntryIfNeededAsync(cancellationToken).ConfigureAwait(false);
-            }
-
-            await ReadFileFromDiskAndWriteToArchiveStreamAsEntryAsync(fullPath, entryName, cancellationToken).ConfigureAwait(false);
-        }
-
+        // Portion of the WriteEntryAsync(TarEntry, CancellationToken) method containing awaits.
         private async Task WriteEntryAsyncInternal(TarEntry entry, CancellationToken cancellationToken)
         {
-            await WriteGlobalExtendedAttributesEntryIfNeededAsync(cancellationToken).ConfigureAwait(false);
-
             IMemoryOwner<byte> rented = MemoryPool<byte>.Shared.Rent(minBufferSize: TarHelpers.RecordSize);
             Memory<byte> buffer = rented.Memory.Slice(TarHelpers.RecordSize); // minBufferSize means the array could've been larger
             buffer.Span.Clear(); // Rented arrays aren't clean
@@ -356,7 +342,15 @@ namespace System.Formats.Tar
                         await entry._header.WriteAsUstarAsync(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
                         break;
                     case TarEntryFormat.Pax:
-                        await entry._header.WriteAsPaxAsync(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+                        if (entry._header._typeFlag is TarEntryType.GlobalExtendedAttributes)
+                        {
+                            await entry._header.WriteAsPaxGlobalExtendedAttributesAsync(_archiveStream, buffer, _nextGlobalExtendedAttributesEntryNumber, cancellationToken).ConfigureAwait(false);
+                            _nextGlobalExtendedAttributesEntryNumber++;
+                        }
+                        else
+                        {
+                            await entry._header.WriteAsPaxAsync(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+                        }
                         break;
                     case TarEntryFormat.Gnu:
                         await entry._header.WriteAsGnuAsync(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);

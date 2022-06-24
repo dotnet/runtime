@@ -82,16 +82,6 @@ namespace System.Formats.Tar
             }
         }
 
-        // Writes the current header as a PAX Global Extended Attributes entry into the archive stream.
-        internal void WriteAsPaxGlobalExtendedAttributes(Stream archiveStream, Span<byte> buffer, int globalExtendedAttributesEntryNumber)
-        {
-            Debug.Assert(_typeFlag is TarEntryType.GlobalExtendedAttributes);
-
-            _name = GenerateGlobalExtendedAttributeName(globalExtendedAttributesEntryNumber);
-            _extendedAttributes ??= new Dictionary<string, string>();
-            WriteAsPaxExtendedAttributes(archiveStream, buffer, _extendedAttributes, isGea: true);
-        }
-
         // Asynchronously rites the current header as a Ustar entry into the archive stream.
         internal async Task WriteAsUstarAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
         {
@@ -110,6 +100,26 @@ namespace System.Formats.Tar
             {
                 await WriteDataAsync(archiveStream, _dataStream, actualLength, cancellationToken).ConfigureAwait(false);
             }
+        }
+
+        // Writes the current header as a PAX Global Extended Attributes entry into the archive stream.
+        internal void WriteAsPaxGlobalExtendedAttributes(Stream archiveStream, Span<byte> buffer, int globalExtendedAttributesEntryNumber)
+        {
+            Debug.Assert(_typeFlag is TarEntryType.GlobalExtendedAttributes);
+
+            _name = GenerateGlobalExtendedAttributeName(globalExtendedAttributesEntryNumber);
+            _extendedAttributes ??= new Dictionary<string, string>();
+            WriteAsPaxExtendedAttributes(archiveStream, buffer, _extendedAttributes, isGea: true);
+        }
+
+        // Writes the current header as a PAX Global Extended Attributes entry into the archive stream.
+        internal Task WriteAsPaxGlobalExtendedAttributesAsync(Stream archiveStream, Memory<byte> buffer, int globalExtendedAttributesEntryNumber, CancellationToken cancellationToken)
+        {
+            Debug.Assert(_typeFlag is TarEntryType.GlobalExtendedAttributes);
+
+            _name = GenerateGlobalExtendedAttributeName(globalExtendedAttributesEntryNumber);
+            _extendedAttributes ??= new Dictionary<string, string>();
+            return WriteAsPaxExtendedAttributesAsync(archiveStream, buffer, _extendedAttributes, isGea: true, cancellationToken);
         }
 
         // Writes the current header as a PAX entry into the archive stream.
