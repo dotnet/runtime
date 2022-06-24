@@ -2368,6 +2368,11 @@ public:
     void emitSetFrameRangeLcls(int offsLo, int offsHi);
     void emitSetFrameRangeArgs(int offsLo, int offsHi);
 
+    bool emitIsWithinFrameRangeGCRs(int offs)
+    {
+        return (offs >= emitGCrFrameOffsMin) && (offs <= emitGCrFrameOffsMax);
+    }
+
     static instruction emitJumpKindToIns(emitJumpKind jumpKind);
     static emitJumpKind emitInsToJumpKind(instruction ins);
     static emitJumpKind emitReverseJumpKind(emitJumpKind jumpKind);

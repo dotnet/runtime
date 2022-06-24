@@ -4226,29 +4226,32 @@ void GCInfo::gcMakeRegPtrTable(
                     continue;
                 }
 
-                const unsigned int fieldOffset = i * TARGET_POINTER_SIZE;
+                unsigned const fieldOffset = i * TARGET_POINTER_SIZE;
+                int const      offset      = varDsc->GetStackOffset() + fieldOffset;
 
                 if (varDsc->lvPromoted)
                 {
                     assert(compiler->lvaGetPromotionType(varDsc) == Compiler::PROMOTION_TYPE_DEPENDENT);
 
-                    // See if this untracked dependently promoted struct has
-                    // a tracked field at this offset.
+                    // For OSR, a dependently promoted tracked gc local can end up in the gc tracked
+                    // frame range, because OSR always can't fully honor frame layout constraints.
                     //
-                    unsigned const   fieldLclNum = compiler->lvaGetFieldLocal(varDsc, fieldOffset);
+                    // Detect this case and report the slot as tracked.
+                    //
+                    unsigned const fieldLclNum = compiler->lvaGetFieldLocal(varDsc, fieldOffset);
+                    assert(fieldLclNum != BAD_VAR_NUM);
                     LclVarDsc* const fieldVarDsc = compiler->lvaGetDesc(fieldLclNum);
-                    assert(varTypeIsGC(fieldVarDsc->TypeGet()));
 
-                    if (fieldVarDsc->lvTracked)
+                    if (compiler->lvaIsGCTracked(fieldVarDsc) &&
+                        compiler->GetEmitter()->emitIsWithinFrameRangeGCRs(offset))
                     {
-                        JITDUMP("Untracked GC struct V%02 has tracked gc ref at + 0x%x (P-DEP promoted V%02u); will "
-                                "report slot as tracked",
-                                varNum, fieldOffset, fieldLclNum);
+                        assert(compiler->opts.IsOSR());
+                        JITDUMP("Untracked GC struct slot V%02u+%u (P-DEP promoted V%02u) is at frame offset %d within "
+                                "tracked ref range.\nWill report slot as tracked\n",
+                                varNum, fieldOffset, fieldLclNum, offset);
                         continue;
                     }
                 }
-
-                int const offset = varDsc->GetStackOffset() + fieldOffset;
 
 #if DOUBLE_ALIGN
                 // For genDoubleAlign(), locals are addressed relative to ESP and
