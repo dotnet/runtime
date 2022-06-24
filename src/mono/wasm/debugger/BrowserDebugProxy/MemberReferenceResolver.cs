@@ -77,70 +77,69 @@ namespace Microsoft.WebAssembly.Diagnostics
             return null;
         }
 
-        public async Task<(JObject containerObject, ArraySegment<string> remaining)> ResolveStaticMembersInStaticTypes(ArraySegment<string> expressionParts, bool includeFullName, CancellationToken token)
+        public async Task<(JObject containerObject, ArraySegment<string> remaining)> ResolveStaticMembersInStaticTypes(ArraySegment<string> expressionParts, CancellationToken token)
         {
-            string classNameToFind = "";
             var store = await proxy.LoadStore(sessionId, token);
             var methodInfo = context.CallStack.FirstOrDefault(s => s.Id == scopeId)?.Method?.Info;
 
             if (methodInfo == null)
                 return (null, null);
 
-            string[] parts;
-            if (includeFullName)
-            {
-                string fullName = methodInfo.IsAsync == 0 ? methodInfo.TypeInfo.FullName : StripAsyncPartOfFullName(methodInfo.TypeInfo.FullName);
-                string[] fullNameParts = fullName.Split(".", StringSplitOptions.TrimEntries);
-                int overlappingPartIdx = Enumerable.Range(0, fullNameParts.Length).LastOrDefault(i => fullNameParts[i] == expressionParts[0]);
-                if (overlappingPartIdx == 0)
-                {
-                    // either whole expression overlap or nothing matched and default value was returned
-                    overlappingPartIdx = fullNameParts.Length;
-                }
-                parts = new string[fullNameParts[..overlappingPartIdx].Length + expressionParts.Count];
-                Array.Copy(fullNameParts[..overlappingPartIdx], parts, fullNameParts[..overlappingPartIdx].Length);
-                Array.Copy(expressionParts.Array, 0, parts, fullNameParts[..overlappingPartIdx].Length, expressionParts.Count);
-            }
-            else
-            {
-                parts = expressionParts.Array;
-            }
+            string[] parts = expressionParts.ToArray();
 
-            int typeId = -1;
-            for (int i = 0; i < parts.Length; i++)
+            string fullName = methodInfo.IsAsync == 0 ? methodInfo.TypeInfo.FullName : StripAsyncPartOfFullName(methodInfo.TypeInfo.FullName);
+            string[] fullNameParts = fullName.Split(".", StringSplitOptions.TrimEntries).ToArray();
+            for (int i = 0; i < fullNameParts.Length; i++)
             {
-                string part = parts[i];
+                string[] fullNamePrefix = fullNameParts[..^i];
+                var (memberObject, remaining) = await FindStaticMemberMatchingParts(parts, fullNamePrefix);
+                if (memberObject != null)
+                    return (memberObject, remaining);
+            }
+            return await FindStaticMemberMatchingParts(parts);
 
-                if (typeId != -1)
+            async Task<(JObject, ArraySegment<string>)> FindStaticMemberMatchingParts(string[] parts, string[] fullNameParts = null)
+            {
+                string classNameToFind = fullNameParts == null ? "" : string.Join(".", fullNameParts);
+                int typeId = -1;
+                for (int i = 0; i < parts.Length; i++)
                 {
-                    JObject memberObject = await FindStaticMemberInType(classNameToFind, part, typeId);
-                    if (memberObject != null)
+                    if (!string.IsNullOrEmpty(methodInfo.TypeInfo.Namespace))
                     {
-                        ArraySegment<string> remaining = null;
-                        if (i < parts.Length - 1)
-                            remaining = parts[i..];
+                        typeId = await FindStaticTypeId(methodInfo.TypeInfo.Namespace + "." + classNameToFind);
+                        if (typeId != -1)
+                            continue;
+                    }
+                    typeId = await FindStaticTypeId(classNameToFind);
 
-                        return (memberObject, remaining);
+                    string part = parts[i];
+                    Console.WriteLine($"classNameToFind = {classNameToFind}; typeId ={typeId}; part = {part}");
+
+                    if (typeId != -1)
+                    {
+                        JObject memberObject = await FindStaticMemberInType(classNameToFind, part, typeId);
+                        if (memberObject != null)
+                        {
+                            ArraySegment<string> remaining = null;
+                            if (i < parts.Length - 1)
+                                remaining = parts[i..];
+                            Console.WriteLine($"FOUND part = {part}; memberObject = {memberObject}, remaining.cnt = {remaining.Count}");
+
+                            return (memberObject, remaining);
+                        }
+
+                        // Didn't find a member named `part` in `typeId`.
+                        // Could be a nested type. Let's continue the search
+                        // with `part` added to the type name
+
+                        typeId = -1;
                     }
 
-                    // Didn't find a member named `part` in `typeId`.
-                    // Could be a nested type. Let's continue the search
-                    // with `part` added to the type name
-
-                    typeId = -1;
+                    if (classNameToFind.Length > 0)
+                        classNameToFind += ".";
+                    classNameToFind += part;
                 }
-
-                if (classNameToFind.Length > 0)
-                    classNameToFind += ".";
-                classNameToFind += part;
-
-                if (!string.IsNullOrEmpty(methodInfo.TypeInfo.Namespace))
-                {
-                    typeId = await FindStaticTypeId(methodInfo.TypeInfo.Namespace + "." + classNameToFind);
-                    if (typeId != -1)
-                        continue;
-                }
-                typeId = await FindStaticTypeId(classNameToFind);
+                return (null, null);
             }
 
             // async function full name has a form: namespaceName.<currentFrame'sMethodName>d__integer
@@ -149,7 +148,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                     ? fullName
                     : fullName.Substring(0, index);
 
-            return (null, null);
 
             async Task<JObject> FindStaticMemberInType(string classNameToFind, string name, int typeId)
             {
@@ -244,9 +242,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             if (retObject == null)
             {
-                (retObject, ArraySegment<string> remaining) = await ResolveStaticMembersInStaticTypes(parts, includeFullName: false, token);
-                if (retObject == null && remaining == null)
-                    (retObject, remaining) = await ResolveStaticMembersInStaticTypes(parts, includeFullName: true, token);
+                (retObject, ArraySegment<string> remaining) = await ResolveStaticMembersInStaticTypes(parts, token);
                 if (remaining != null && remaining.Count != 0)
                 {
                     if (retObject.IsNullValuedObject())
@@ -256,6 +252,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     else
                     {
+                        Console.WriteLine("ASINSTACNE MEMBER?");
                         retObject = await ResolveAsInstanceMember(remaining, retObject, throwOnNullReference);
                     }
                 }

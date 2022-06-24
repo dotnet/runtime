@@ -1485,10 +1485,15 @@ public static class NestedWithSameNames
 
     public static class B
     {
+        public static int StaticField1 = 60;
+        public static string StaticProperty1 => "StaticProperty6";
+        public static string StaticPropertyWithError => throw new Exception("not implemented V6");
+
         public static class NestedWithSameNames
         {
             public static class B
             {
+                public static int NestedWithSameNames = 90;
                 public static int StaticField1 = 40;
                 public static string StaticProperty1 => "StaticProperty4";
                 public static string StaticPropertyWithError => throw new Exception("not implemented V4");
@@ -1497,6 +1502,15 @@ public static class NestedWithSameNames
                 {
                     var a = 0;
                 }
+            }
+        }
+        public static class NestedWithDifferentName
+        {
+            public static class B
+            {
+                public static int StaticField1 = 70;
+                public static string StaticProperty1 => "StaticProperty7";
+                public static string StaticPropertyWithError => throw new Exception("not implemented V7");
             }
         }
     }

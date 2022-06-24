@@ -830,20 +830,27 @@ namespace DebuggerTests
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
                await EvaluateOnCallFrameAndCheck(id,
-                   ("B.StaticField1", TNumber(40)),
-                   ("NestedWithSameNames.B.StaticField1", TNumber(40)),
-                   ("B.StaticProperty1", TString("StaticProperty4")),
-                   ("NestedWithSameNames.B.StaticProperty1", TString("StaticProperty4")),
-                   ("B.StaticPropertyWithError", TString("System.Exception: not implemented V4")),
-                   ("NestedWithSameNames.B.StaticPropertyWithError", TString("System.Exception: not implemented V4"))
+                    ("NestedWithSameNames", TNumber(90)),
+                    ("B.NestedWithSameNames", TNumber(90)),
+                    ("B.StaticField1", TNumber(40)),
+                    ("B.StaticProperty1", TString("StaticProperty4")),
+                    ("B.StaticPropertyWithError", TString("System.Exception: not implemented V4"))
                 );
 
                 await CheckEvaluateFail(id,
-                    ("B.NestedWithSameNames.B.StaticField1", GetNonExistingVarMessage("B.NestedWithSameNames.B.StaticField1")),
-                    ("B.NestedWithSameNames.B.StaticProperty1", GetNonExistingVarMessage("B.NestedWithSameNames.B.StaticProperty1")),
-                    ("B.NestedWithSameNames.B.StaticPropertyWithError", GetNonExistingVarMessage("B.NestedWithSameNames.B.StaticPropertyWithError"))
+                    ("NestedWithSameNames.B.StaticField1", GetPrimitiveHasNoMembersMessage("B")),
+                    ("NestedWithSameNames.B.StaticProperty1", GetPrimitiveHasNoMembersMessage("B")),
+                    ("NestedWithSameNames.B.StaticPropertyWithError", GetPrimitiveHasNoMembersMessage("B")),
+                    ("NestedWithSameNames.B.NestedWithSameNames", GetPrimitiveHasNoMembersMessage("B")),
+                    ("B.NestedWithSameNames.B.StaticField1", GetPrimitiveHasNoMembersMessage("B")),
+                    ("B.NestedWithSameNames.B.StaticProperty1", GetPrimitiveHasNoMembersMessage("B")),
+                    ("B.NestedWithSameNames.B.StaticPropertyWithError", GetPrimitiveHasNoMembersMessage("B")),
+                    ("NestedWithSameNames.B.NestedWithSameNames.B.NestedWithSameNames", GetPrimitiveHasNoMembersMessage("B")),
+                    ("NestedWithSameNames.B.NestedWithDifferentName.B.StaticField1", GetPrimitiveHasNoMembersMessage("B")),
+                    ("NestedWithSameNames.B.NestedWithDifferentName.B.StaticProperty1", GetPrimitiveHasNoMembersMessage("B")),
+                    ("NestedWithSameNames.B.NestedWithDifferentName.B.StaticPropertyWithError", GetPrimitiveHasNoMembersMessage("B"))
                 );
-                string GetNonExistingVarMessage(string name) => $"Failed to resolve member access for {name}";
+                string GetPrimitiveHasNoMembersMessage(string name) => $"Cannot find member '{name}' on a primitive type";
            });
 
         [ConditionalTheory(nameof(RunningOnChrome))]
