@@ -711,6 +711,8 @@ public:
 
     static bool isNaN(double val);
 
+    static bool isNegativeZero(double val);
+
     static double maximum(double val1, double val2);
 
     static float maximum(float val1, float val2);

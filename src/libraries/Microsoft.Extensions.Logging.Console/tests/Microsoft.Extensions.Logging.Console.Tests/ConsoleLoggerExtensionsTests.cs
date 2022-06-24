@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -15,7 +16,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Xunit;
 
-namespace Microsoft.Extensions.Logging.Test
+namespace Microsoft.Extensions.Logging.Console.Test
 {
     public class ConsoleLoggerExtensionsTests
     {
@@ -354,6 +355,48 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Null(logger.Options.FormatterName);
             var formatter = Assert.IsType<SystemdConsoleFormatter>(logger.Formatter);
             Assert.Equal("HH:mm:ss ", formatter.FormatterOptions.TimestampFormat);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(-1)]
+        [InlineData(0)]
+        public void AddConsole_MaxQueueLengthSetToNegativeOrZero_Throws(int invalidMaxQueueLength)
+        {
+            var configs = new[] {
+                new KeyValuePair<string, string>("Console:MaxQueueLength", invalidMaxQueueLength.ToString()),
+            };
+            var configuration = new ConfigurationBuilder().AddInMemoryCollection(configs).Build();
+
+            IServiceProvider serviceProvider = new ServiceCollection()
+                .AddLogging(builder => builder
+                    .AddConfiguration(configuration)
+                    .AddConsole(o => { })
+                )
+                .BuildServiceProvider();
+
+            // the configuration binder throws TargetInvocationException when setting options property MaxQueueLength throws exception
+            Assert.Throws<TargetInvocationException>(() => serviceProvider.GetRequiredService<ILoggerProvider>());
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void AddConsole_MaxQueueLengthLargerThanZero_ConfiguredProperly()
+        {
+            var configs = new[] {
+                new KeyValuePair<string, string>("Console:MaxQueueLength", "12345"),
+            };
+            var configuration = new ConfigurationBuilder().AddInMemoryCollection(configs).Build();
+
+            var loggerProvider = new ServiceCollection()
+                .AddLogging(builder => builder
+                    .AddConfiguration(configuration)
+                    .AddConsole(o => { })
+                )
+                .BuildServiceProvider()
+                .GetRequiredService<ILoggerProvider>();
+
+            var consoleLoggerProvider = Assert.IsType<ConsoleLoggerProvider>(loggerProvider);
+            var logger = (ConsoleLogger)consoleLoggerProvider.CreateLogger("Category");
+            Assert.Equal(12345, logger.Options.MaxQueueLength);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]

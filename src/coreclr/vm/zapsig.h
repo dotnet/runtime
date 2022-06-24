@@ -42,7 +42,7 @@ public:
 
     struct Context
     {
-        ModuleBase *        pInfoModule;              // The tokens in this ZapSig are expressed relative to context.pInfoModule
+        Module *        pInfoModule;              // The tokens in this ZapSig are expressed relative to context.pInfoModule
 
         // This is a code:Module* when we are resolving Ngen fixups or doing an Ibc Profiling run.
         // And this is a MulticoreJitProfilePlayer or a MulticoreJitRecorder when we are doing multicorejit
@@ -53,7 +53,7 @@ public:
         Module * GetZapSigModule() const        { return (Module*) pModuleContext; }
 
         Context(
-                ModuleBase* _pInfoModule,
+                Module* _pInfoModule,
                 void* _pModuleContext, ExternalTokens _externalTokens)
             : pInfoModule(_pInfoModule),
               pModuleContext(_pModuleContext),
@@ -61,7 +61,7 @@ public:
         { LIMITED_METHOD_CONTRACT; _ASSERTE(externalTokens != IllegalValue); }
 
         Context(
-                ModuleBase* _pInfoModule,
+                Module* _pInfoModule,
                 Module* _pZapSigModule)
             : pInfoModule(_pInfoModule),
               pModuleContext((void*) _pZapSigModule),
@@ -72,7 +72,7 @@ public:
 public:
 
     ZapSig(
-           ModuleBase *            _pInfoModule,
+           Module *                _pInfoModule,
            void *                  _pModuleContext,
            ExternalTokens          _externalTokens,
            EncodeModuleCallback    _pfnEncodeModule,
@@ -88,7 +88,7 @@ public:
     // Compare a type handle with a signature whose tokens are resolved with respect to pModule
     // pZapSigContext is used to resolve ELEMENT_TYPE_MODULE_ZAPSIG encodings
     static BOOL CompareSignatureToTypeHandle(PCCOR_SIGNATURE  pSig,
-        ModuleBase*          pModule,
+        Module*          pModule,
         TypeHandle       handle,
         const ZapSig::Context *  pZapSigContext);
 
@@ -134,10 +134,10 @@ public:
     //--------------------------------------------------------------------
     // Static helper encode/decode helper methods
 
-    static ModuleBase *DecodeModuleFromIndex(Module *fromModule,
+    static Module *DecodeModuleFromIndex(Module *fromModule,
         DWORD index);
 
-    static ModuleBase *DecodeModuleFromIndexIfLoaded(Module *fromModule,
+    static Module *DecodeModuleFromIndexIfLoaded(Module *fromModule,
         DWORD index);
 
     // referencingModule is the module that references the type.
@@ -146,19 +146,19 @@ public:
     // level is the class load level (see classloadlevel.h) to which the type should be loaded
     static TypeHandle DecodeType(
         Module              *referencingModule,
-        ModuleBase          *fromModule,
+        Module              *fromModule,
         PCCOR_SIGNATURE     pBuffer,
         ClassLoadLevel      level = CLASS_LOADED,
         PCCOR_SIGNATURE     *ppAfterSig = NULL);
 
     static MethodDesc *DecodeMethod(
         Module              *referencingModule,
-        ModuleBase          *fromModule,
+        Module              *fromModule,
         PCCOR_SIGNATURE     pBuffer,
         TypeHandle          *ppTH = NULL);
 
     static MethodDesc *DecodeMethod(
-        ModuleBase          *pInfoModule,
+        Module              *pInfoModule,
         PCCOR_SIGNATURE     pBuffer,
         SigTypeContext      *pContext,
         ZapSig::Context     *pZapSigContext,
@@ -170,13 +170,13 @@ public:
 
     static FieldDesc *DecodeField(
         Module              *referencingModule,
-        ModuleBase          *fromModule,
+        Module              *fromModule,
         PCCOR_SIGNATURE     pBuffer,
         TypeHandle          *ppTH = NULL);
 
     static FieldDesc *DecodeField(
         Module              *pReferencingModule,
-        ModuleBase          *pInfoModule,
+        Module              *pInfoModule,
         PCCOR_SIGNATURE     pBuffer,
         SigTypeContext      *pContext,
         TypeHandle          *ppTH = NULL);

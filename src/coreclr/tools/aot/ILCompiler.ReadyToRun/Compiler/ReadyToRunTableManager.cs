@@ -53,7 +53,6 @@ namespace ILCompiler
         private Dictionary<EcmaModule, PerModuleMethodsGenerated> _methodsGenerated = new Dictionary<EcmaModule, PerModuleMethodsGenerated>();
         private List<IMethodNode> _completeSortedMethods = new List<IMethodNode>();
         private List<IMethodNode> _completeSortedGenericMethods = new List<IMethodNode>();
-        private NodeFactory _factory;
 
         private bool _sortedMethods = false;
 
@@ -62,10 +61,9 @@ namespace ILCompiler
             _typeSystemContext = context;
         }
 
-        public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph, NodeFactory factory)
+        public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {
             graph.NewMarkedNode += Graph_NewMarkedNode;
-            _factory = factory;
         }
 
         protected virtual void Graph_NewMarkedNode(DependencyNodeCore<NodeFactory> obj)
@@ -133,7 +131,6 @@ namespace ILCompiler
                     }
                     _completeSortedMethods.MergeSort(sortHelper);
                     _completeSortedGenericMethods.MergeSort(sortHelper);
-
                     _sortedMethods = true;
                 }
             }

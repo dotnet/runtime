@@ -916,7 +916,7 @@ CustomMarshalerHelper *EEMarshalingData::GetCustomMarshalerHelper(Assembly *pAss
 
         // Load the custom marshaler class.
         BOOL fNameIsAsmQualified = FALSE;
-        hndCustomMarshalerType = TypeName::GetTypeUsingCASearchRules(strCMMarshalerTypeName.GetUTF8NoConvert(), pAssembly, &fNameIsAsmQualified);
+        hndCustomMarshalerType = TypeName::GetTypeUsingCASearchRules(strCMMarshalerTypeName.GetUTF8(), pAssembly, &fNameIsAsmQualified);
 
         if (hndCustomMarshalerType.IsGenericTypeDefinition())
         {
@@ -2067,9 +2067,8 @@ MarshalInfo::MarshalInfo(Module* pModule,
                                 {
                                     // Load the type. Use an SString for the string since we need to NULL terminate the string
                                     // that comes from the metadata.
-                                    StackScratchBuffer utf8Name;
                                     SString safeArrayUserDefTypeName(SString::Utf8, ParamInfo.m_strSafeArrayUserDefTypeName, ParamInfo.m_cSafeArrayUserDefTypeNameBytes);
-                                    thElement = TypeName::GetTypeUsingCASearchRules(safeArrayUserDefTypeName.GetUTF8(utf8Name), pAssembly);
+                                    thElement = TypeName::GetTypeUsingCASearchRules(safeArrayUserDefTypeName.GetUTF8(), pAssembly);
                                 }
                             }
                             else

@@ -13,6 +13,11 @@ namespace System.Formats.Tar
         public System.DateTimeOffset AccessTime { get { throw null; } set { } }
         public System.DateTimeOffset ChangeTime { get { throw null; } set { } }
     }
+    public sealed partial class PaxGlobalExtendedAttributesTarEntry : System.Formats.Tar.PosixTarEntry
+    {
+        public PaxGlobalExtendedAttributesTarEntry(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> globalExtendedAttributes) { }
+        public System.Collections.Generic.IReadOnlyDictionary<string, string> GlobalExtendedAttributes { get { throw null; } }
+    }
     public sealed partial class PaxTarEntry : System.Formats.Tar.PosixTarEntry
     {
         public PaxTarEntry(System.Formats.Tar.TarEntry other) { }
@@ -38,7 +43,7 @@ namespace System.Formats.Tar
         public int Gid { get { throw null; } set { } }
         public long Length { get { throw null; } }
         public string LinkName { get { throw null; } set { } }
-        public System.Formats.Tar.TarFileMode Mode { get { throw null; } set { } }
+        public System.IO.UnixFileMode Mode { get { throw null; } set { } }
         public System.DateTimeOffset ModificationTime { get { throw null; } set { } }
         public string Name { get { throw null; } set { } }
         public int Uid { get { throw null; } set { } }
@@ -81,34 +86,16 @@ namespace System.Formats.Tar
         public static void ExtractToDirectory(System.IO.Stream source, string destinationDirectoryName, bool overwriteFiles) { }
         public static void ExtractToDirectory(string sourceFileName, string destinationDirectoryName, bool overwriteFiles) { }
     }
-    [System.FlagsAttribute]
-    public enum TarFileMode
-    {
-        None = 0,
-        OtherExecute = 1,
-        OtherWrite = 2,
-        OtherRead = 4,
-        GroupExecute = 8,
-        GroupWrite = 16,
-        GroupRead = 32,
-        UserExecute = 64,
-        UserWrite = 128,
-        UserRead = 256,
-        StickyBit = 512,
-        GroupSpecial = 1024,
-        UserSpecial = 2048,
-    }
     public sealed partial class TarReader : System.IDisposable
     {
         public TarReader(System.IO.Stream archiveStream, bool leaveOpen = false) { }
-        public System.Collections.Generic.IReadOnlyDictionary<string, string>? GlobalExtendedAttributes { get { throw null; } }
         public void Dispose() { }
         public System.Formats.Tar.TarEntry? GetNextEntry(bool copyData = false) { throw null; }
     }
     public sealed partial class TarWriter : System.IDisposable
     {
         public TarWriter(System.IO.Stream archiveStream) { }
-        public TarWriter(System.IO.Stream archiveStream, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>? globalExtendedAttributes = null, bool leaveOpen = false) { }
+        public TarWriter(System.IO.Stream archiveStream, bool leaveOpen = false) { }
         public TarWriter(System.IO.Stream archiveStream, System.Formats.Tar.TarEntryFormat format = System.Formats.Tar.TarEntryFormat.Pax, bool leaveOpen = false) { }
         public System.Formats.Tar.TarEntryFormat Format { get { throw null; } }
         public void Dispose() { }

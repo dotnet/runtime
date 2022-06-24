@@ -634,7 +634,7 @@ Dictionary::PopulateEntry(
 
         BYTE fixupKind = *pBlob++;
 
-        ModuleBase * pInfoModule = pModule;
+        Module * pInfoModule = pModule;
         if (fixupKind & ENCODE_MODULE_OVERRIDE)
         {
             DWORD moduleIndex = CorSigUncompressData(pBlob);
@@ -657,7 +657,7 @@ Dictionary::PopulateEntry(
         if (signatureKind & ENCODE_MODULE_OVERRIDE)
         {
             DWORD moduleIndex = CorSigUncompressData(pBlob);
-            ModuleBase * pSignatureModule = pModule->GetModuleFromIndex(moduleIndex);
+            Module * pSignatureModule = pModule->GetModuleFromIndex(moduleIndex);
             if (pInfoModule == pModule)
             {
                 pInfoModule = pSignatureModule;
@@ -696,7 +696,7 @@ Dictionary::PopulateEntry(
         pZapSigContext = (pContainingZapModule != NULL) ? &zapSigContext : NULL;
     }
 
-    ModuleBase * pLookupModule = (isReadyToRunModule) ? pZapSigContext->pInfoModule : CoreLibBinder::GetModule();
+    Module * pLookupModule = (isReadyToRunModule) ? pZapSigContext->pInfoModule : CoreLibBinder::GetModule();
 
     if (pMT != NULL)
     {
@@ -887,8 +887,7 @@ Dictionary::PopulateEntry(
                     }
                     else
                     {
-                        _ASSERTE(pZapSigContext->pInfoModule->IsFullModule());
-                        pMethod = MemberLoader::GetMethodDescFromMethodDef(static_cast<Module*>(pZapSigContext->pInfoModule), TokenFromRid(rid, mdtMethodDef), FALSE);
+                        pMethod = MemberLoader::GetMethodDescFromMethodDef(pZapSigContext->pInfoModule, TokenFromRid(rid, mdtMethodDef), FALSE);
                     }
                 }
 

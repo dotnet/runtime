@@ -16,7 +16,7 @@ const DotnetSupportLib = {
     $DOTNET__postset: `
 let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require, updateGlobalBufferAndViews};
 if (ENVIRONMENT_IS_NODE) {
-    __dotnet_replacements.requirePromise = import('module').then(mod => {
+    __dotnet_replacements.requirePromise = import(/* webpackIgnore: true */'module').then(mod => {
         const require = mod.createRequire(import.meta.url);
         const path = require('path');
         const url = require('url');
@@ -49,7 +49,7 @@ if (ENVIRONMENT_IS_NODE) {
     }
 }
 let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
-    { isESM:true, isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile, quit_, ExitStatus, requirePromise:__dotnet_replacements.requirePromise },
+    { isESM:true, isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isWorker:ENVIRONMENT_IS_WORKER, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile, quit_, ExitStatus, requirePromise:__dotnet_replacements.requirePromise },
     { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
     __dotnet_replacements);
 updateGlobalBufferAndViews = __dotnet_replacements.updateGlobalBufferAndViews;
@@ -107,8 +107,9 @@ const linked_functions = [
     "mono_wasm_get_icudt_name",
 
     // pal_crypto_webworker.c
+    "dotnet_browser_can_use_subtle_crypto_impl",
     "dotnet_browser_simple_digest_hash",
-    "dotnet_browser_can_use_simple_digest_hash",
+    "dotnet_browser_sign",
 ];
 
 // -- this javascript file is evaluated by emcc during compilation! --
