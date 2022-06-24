@@ -2290,7 +2290,8 @@ emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	MonoExceptionClause *clause;
 	MonoType *object_type = mono_get_object_type ();
 #if defined (TARGET_WASM) && defined(DISABLE_THREADS)
-	const gboolean do_blocking_transition = FALSE;
+	/* in the AOT compiler emit blocking transitions if --wasm-gc-safepoints was used */
+	const gboolean do_blocking_transition = mono_opt_wasm_gc_safepoints;
 #else
 	const gboolean do_blocking_transition = TRUE;
 #endif
