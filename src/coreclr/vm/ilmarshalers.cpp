@@ -4348,7 +4348,11 @@ FCIMPL3(void, MngdNativeArrayMarshaler::ConvertSpaceToNative, MngdNativeArrayMar
         if ( (!ClrSafeInt<SIZE_T>::multiply(cElements, cbElement, cbArray)) || cbArray > MAX_SIZE_FOR_INTEROP)
             COMPlusThrow(kArgumentException, IDS_EE_STRUCTARRAYTOOLARGE);
 
-        *pNativeHome = CoTaskMemAlloc(cbArray);
+        {
+            GCX_PREEMP();
+            *pNativeHome = CoTaskMemAlloc(cbArray);
+        }
+
         if (*pNativeHome == NULL)
             ThrowOutOfMemory();
 
@@ -4461,7 +4465,10 @@ FCIMPL4(void, MngdNativeArrayMarshaler::ClearNative, MngdNativeArrayMarshaler* p
     if (*pNativeHome != NULL)
     {
         DoClearNativeContents(pThis, pManagedHome, pNativeHome, cElements);
-        CoTaskMemFree(*pNativeHome);
+        {
+            GCX_PREEMP();
+            CoTaskMemFree(*pNativeHome);
+        }
     }
 
     HELPER_METHOD_FRAME_END();

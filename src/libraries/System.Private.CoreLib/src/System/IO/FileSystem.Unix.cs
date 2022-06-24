@@ -16,13 +16,25 @@ namespace System.IO
         // See: https://man7.org/linux/man-pages/man7/path_resolution.7.html
         private const int MaxFollowedLinks = 40;
 
+        // This gets filtered by umask.
+        internal const UnixFileMode DefaultUnixCreateDirectoryMode =
+            UnixFileMode.UserRead |
+            UnixFileMode.UserWrite |
+            UnixFileMode.UserExecute |
+            UnixFileMode.GroupRead |
+            UnixFileMode.GroupWrite |
+            UnixFileMode.GroupExecute |
+            UnixFileMode.OtherRead |
+            UnixFileMode.OtherWrite |
+            UnixFileMode.OtherExecute;
+
         public static void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
             long fileLength;
-            Interop.Sys.Permissions filePermissions;
+            UnixFileMode filePermissions;
             using SafeFileHandle src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out fileLength, out filePermissions);
             using SafeFileHandle dst = SafeFileHandle.Open(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew,
-                                            FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, openPermissions: filePermissions,
+                                            FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, filePermissions,
                                             (Interop.ErrorInfo error, Interop.Sys.OpenFlags flags, string path) => CreateOpenException(error, flags, path));
 
             Interop.CheckIo(Interop.Sys.CopyFile(src, dst, fileLength));
@@ -279,6 +291,9 @@ namespace System.IO
         }
 
         public static void CreateDirectory(string fullPath)
+            => CreateDirectory(fullPath, DefaultUnixCreateDirectoryMode);
+
+        public static void CreateDirectory(string fullPath, UnixFileMode unixCreateMode)
         {
             // The argument is a full path, which means it is an absolute path that
             // doesn't contain "//", "/./", and "/../".
@@ -293,7 +308,7 @@ namespace System.IO
             // macOS returns ENOTDIR when the path refers to a file and ends with '/'.
             // Trim the separator so we get EEXIST instead.
             ReadOnlySpan<char> path = PathInternal.TrimEndingDirectorySeparator(fullPath.AsSpan());
-            int result = Interop.Sys.MkDir(path, (int)Interop.Sys.Permissions.Mask);
+            int result = Interop.Sys.MkDir(fullPath, (int)unixCreateMode);
             if (result == 0)
             {
                 return; // Created directory.
@@ -306,7 +321,7 @@ namespace System.IO
             }
             else if (errorInfo.Error == Interop.Error.ENOENT) // Some parts of the path don't exist yet.
             {
-                CreateParentsAndDirectory(fullPath);
+                CreateParentsAndDirectory(fullPath, unixCreateMode);
             }
             else
             {
@@ -314,7 +329,7 @@ namespace System.IO
             }
         }
 
-        private static void CreateParentsAndDirectory(string fullPath)
+        private static void CreateParentsAndDirectory(string fullPath, UnixFileMode unixCreateMode)
         {
             // Try create parents bottom to top and track those that could not
             // be created due to missing parents. Then create them top to bottom.
@@ -337,7 +352,7 @@ namespace System.IO
                 }
 
                 ReadOnlySpan<char> mkdirPath = fullPath.AsSpan(0, i);
-                int result = Interop.Sys.MkDir(mkdirPath, (int)Interop.Sys.Permissions.Mask);
+                int result = Interop.Sys.MkDir(mkdirPath, (int)unixCreateMode);
                 if (result == 0)
                 {
                     break; // Created parent.
@@ -369,7 +384,7 @@ namespace System.IO
             for (i = stackDir.Length - 1; i >= 0; i--)
             {
                 ReadOnlySpan<char> mkdirPath = fullPath.AsSpan(0, stackDir[i]);
-                int result = Interop.Sys.MkDir(mkdirPath, (int)Interop.Sys.Permissions.Mask);
+                int result = Interop.Sys.MkDir(mkdirPath, (int)unixCreateMode);
                 if (result < 0)
                 {
                     Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
@@ -590,6 +605,25 @@ namespace System.IO
 
         public static void SetAttributes(string fullPath, FileAttributes attributes)
             => default(FileStatus).SetAttributes(fullPath, attributes, asDirectory: false);
+
+        public static UnixFileMode GetUnixFileMode(string fullPath)
+        {
+            UnixFileMode mode = default(FileStatus).GetUnixFileMode(fullPath);
+
+            if (mode == (UnixFileMode)(-1))
+                FileSystemInfo.ThrowNotFound(fullPath);
+
+            return mode;
+        }
+
+        public static UnixFileMode GetUnixFileMode(SafeFileHandle fileHandle)
+            => default(FileStatus).GetUnixFileMode(fileHandle);
+
+        public static void SetUnixFileMode(string fullPath, UnixFileMode mode)
+            => default(FileStatus).SetUnixFileMode(fullPath, mode);
+
+        public static void SetUnixFileMode(SafeFileHandle fileHandle, UnixFileMode mode)
+            => default(FileStatus).SetUnixFileMode(fileHandle, mode);
 
         public static DateTimeOffset GetCreationTime(string fullPath)
             => default(FileStatus).GetCreationTime(fullPath).UtcDateTime;

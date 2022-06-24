@@ -693,7 +693,6 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
                                                 PTR_PTR_VOID *  ppvRetAddrLocation, // out
                                                 GCRefKind *     pRetValueKind)      // out
 {
-#if defined(TARGET_AMD64)
     CoffNativeMethodInfo * pNativeMethodInfo = (CoffNativeMethodInfo *)pMethodInfo;
 
     size_t unwindDataBlobSize;
@@ -719,7 +718,11 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
         p += sizeof(int32_t);
 
     // Decode the GC info for the current method to determine its return type
-    GcInfoDecoder decoder(GCInfoToken(p), DECODE_RETURN_KIND);
+    GcInfoDecoderFlags flags = DECODE_RETURN_KIND;
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+    flags = (GcInfoDecoderFlags)(flags | DECODE_HAS_TAILCALLS);
+#endif // TARGET_ARM || TARGET_ARM64
+    GcInfoDecoder decoder(GCInfoToken(p), flags);
 
     GCRefKind gcRefKind = GetGcRefKind(decoder.GetReturnKind());
 
@@ -728,6 +731,11 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     SIZE_T  EstablisherFrame;
     PVOID   HandlerData;
     CONTEXT context;
+#ifdef _DEBUG
+    memset(&context, 0xDD, sizeof(context));
+#endif
+
+#if defined(TARGET_AMD64)
     context.Rsp = pRegisterSet->GetSP();
     context.Rbp = pRegisterSet->GetFP();
     context.Rip = pRegisterSet->GetIP();
@@ -742,6 +750,55 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
                     NULL);
 
     *ppvRetAddrLocation = (PTR_PTR_VOID)(context.Rsp - sizeof (PVOID));
+    *pRetValueKind = gcRefKind;
+    return true;
+#elif defined(TARGET_ARM64)
+
+    if (decoder.HasTailCalls())
+    {
+        // Do not hijack functions that have tail calls, since there are two problems:
+        // 1. When a function that tail calls another one is hijacked, the LR may be
+        //    stored at a different location in the stack frame of the tail call target.
+        //    So just by performing tail call, the hijacked location becomes invalid and
+        //    unhijacking would corrupt stack by writing to that location.
+        // 2. There is a small window after the caller pops LR from the stack in its
+        //    epilog and before the tail called function pushes LR in its prolog when
+        //    the hijacked return address would not be not on the stack and so we would
+        //    not be able to unhijack.
+        return false;
+    }
+
+    context.Sp = pRegisterSet->GetSP();
+    context.Fp = pRegisterSet->GetFP();
+    context.Pc = pRegisterSet->GetIP();
+    context.Lr = *pRegisterSet->pLR;
+
+    KNONVOLATILE_CONTEXT_POINTERS contextPointers;
+#ifdef _DEBUG
+    memset(&contextPointers, 0xDD, sizeof(contextPointers));
+#endif
+    contextPointers.Lr = pRegisterSet->pLR;
+
+    RtlVirtualUnwind(NULL,
+        dac_cast<TADDR>(m_moduleBase),
+        pRegisterSet->IP,
+        (PRUNTIME_FUNCTION)pNativeMethodInfo->runtimeFunction,
+        &context,
+        &HandlerData,
+        &EstablisherFrame,
+        &contextPointers);
+
+    if (contextPointers.Lr == pRegisterSet->pLR)
+    {
+        // This is the case when we are either:
+        //
+        // 1) In a leaf method that does not push LR on stack, OR
+        // 2) In the prolog/epilog of a non-leaf method that has not yet pushed LR on stack
+        //    or has LR already popped off.
+        return false;
+    }
+
+    *ppvRetAddrLocation = (PTR_PTR_VOID)contextPointers.Lr;
     *pRetValueKind = gcRefKind;
     return true;
 #else

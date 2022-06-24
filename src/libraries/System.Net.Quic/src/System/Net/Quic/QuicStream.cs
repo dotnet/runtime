@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.IO;
 using System.Net.Quic.Implementations;
+using System.Net.Quic.Implementations.MsQuic;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,9 +13,9 @@ namespace System.Net.Quic
 {
     public sealed class QuicStream : Stream
     {
-        private readonly QuicStreamProvider _provider;
+        private readonly MsQuicStream _provider;
 
-        internal QuicStream(QuicStreamProvider provider)
+        internal QuicStream(MsQuicStream provider)
         {
             _provider = provider;
         }

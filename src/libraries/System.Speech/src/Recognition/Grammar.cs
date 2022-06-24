@@ -474,11 +474,7 @@ namespace System.Speech.Recognition
         {
             Debug.Assert(eventArgs.Result.Grammar == this);
 
-            EventHandler<SpeechRecognizedEventArgs> recognitionHandler = SpeechRecognized;
-            if (recognitionHandler != null)
-            {
-                recognitionHandler(this, eventArgs);
-            }
+            SpeechRecognized?.Invoke(this, eventArgs);
         }
 
         // Helper method used to indicate if this grammar has a dictation Uri or not.

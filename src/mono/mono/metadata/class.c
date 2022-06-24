@@ -3233,7 +3233,6 @@ search_modules (MonoImage *image, const char *name_space, const char *name, gboo
 	MonoTableInfo *file_table = &image->tables [MONO_TABLE_FILE];
 	MonoImage *file_image;
 	MonoClass *klass;
-	int i;
 
 	error_init (error);
 
@@ -3243,8 +3242,8 @@ search_modules (MonoImage *image, const char *name_space, const char *name, gboo
 	 * Note: image->modules contains the contents of the MODULEREF table, while
 	 * the real module list is in the FILE table.
 	 */
-	int rows = table_info_get_rows (file_table);
-	for (i = 0; i < rows; i++) {
+	guint32 rows = table_info_get_rows (file_table);
+	for (guint32 i = 0; i < rows; i++) {
 		guint32 cols [MONO_FILE_SIZE];
 		mono_metadata_decode_row (file_table, i, cols, MONO_FILE_SIZE);
 		if (cols [MONO_FILE_FLAGS] == FILE_CONTAINS_NO_METADATA)
@@ -4986,6 +4985,10 @@ mono_class_num_fields (MonoClass *klass)
 int
 mono_class_num_methods (MonoClass *klass)
 {
+	MonoImage *image = m_class_get_image (klass);
+	if (G_UNLIKELY (image->has_updates)) {
+		return mono_class_get_method_count (klass) + mono_metadata_update_get_num_methods_added (klass);
+	}
 	return mono_class_get_method_count (klass);
 }
 

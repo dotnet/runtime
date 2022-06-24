@@ -681,6 +681,87 @@ partial class Test
         public static class CustomStructMarshalling
         {
             public static string NonBlittableUserDefinedType(bool defineNativeMarshalling = true) => $@"
+{(defineNativeMarshalling ? "[NativeMarshalling(typeof(Marshaller))]" : string.Empty)}
+public struct S
+{{
+#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
+    public bool b;
+#pragma warning restore CS0649
+}}
+";
+            private static string NonStatic = @"
+[ManagedToUnmanagedMarshallers(typeof(S))]
+public class Marshaller
+{
+    public struct Native { }
+
+    public static Native ConvertToUnmanaged(S s) => default;
+}
+";
+            private static string StatelessIn = @"
+[ManagedToUnmanagedMarshallers(typeof(S))]
+public static class Marshaller
+{
+    public struct Native { }
+
+    public static Native ConvertToUnmanaged(S s) => default;
+}
+";
+            private static string StatelessOut = @"
+[ManagedToUnmanagedMarshallers(typeof(S))]
+public static class Marshaller
+{
+    public struct Native { }
+
+    public static S ConvertToManaged(Native n) => default;
+}
+";
+            public static string StatelessRef = @"
+[ManagedToUnmanagedMarshallers(typeof(S))]
+public static class Marshaller
+{
+    public struct Native { }
+
+    public static Native ConvertToUnmanaged(S s) => default;
+    public static S ConvertToManaged(Native n) => default;
+}
+";
+            public static string ManagedToNativeOnlyOutParameter => BasicParameterWithByRefModifier("out", "S")
+                + NonBlittableUserDefinedType()
+                + StatelessIn;
+
+            public static string NativeToManagedOnlyOutParameter => BasicParameterWithByRefModifier("out", "S")
+                + NonBlittableUserDefinedType()
+                + StatelessOut;
+
+            public static string ManagedToNativeOnlyReturnValue => BasicReturnType("S")
+                + NonBlittableUserDefinedType()
+                + StatelessIn;
+
+            public static string NativeToManagedOnlyReturnValue => BasicReturnType("S")
+                + NonBlittableUserDefinedType()
+                + StatelessOut;
+
+            public static string NativeToManagedOnlyInParameter => BasicParameterWithByRefModifier("in", "S")
+                + NonBlittableUserDefinedType()
+                + StatelessOut;
+
+            public static string ParametersAndModifiers = BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
+                + NonBlittableUserDefinedType(defineNativeMarshalling: true)
+                + StatelessRef;
+
+            public static string MarshalUsingParametersAndModifiers = MarshalUsingParametersAndModifiers("S", "Marshaller")
+                + NonBlittableUserDefinedType(defineNativeMarshalling: false)
+                + StatelessRef;
+
+            public static string NonStaticMarshallerEntryPoint => BasicParameterByValue("S")
+                + NonBlittableUserDefinedType()
+                + NonStatic;
+        }
+
+        public static class CustomStructMarshalling_V1
+        {
+            public static string NonBlittableUserDefinedType(bool defineNativeMarshalling = true) => $@"
 {(defineNativeMarshalling ? "[NativeMarshalling(typeof(Native))]" : string.Empty)}
 struct S
 {{

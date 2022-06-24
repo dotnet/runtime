@@ -169,7 +169,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal ActiveDirectorySubnet(DirectoryContext context, string subnetName, string? siteName, bool existing)
         {
-            Debug.Assert(existing == true);
+            Debug.Assert(existing);
 
             this.context = context;
             _name = subnetName;

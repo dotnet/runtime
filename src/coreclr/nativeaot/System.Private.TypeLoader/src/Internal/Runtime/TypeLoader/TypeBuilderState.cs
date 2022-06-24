@@ -973,10 +973,8 @@ namespace Internal.Runtime.TypeLoader
                 {
                     return checked((ushort)((DefType)TypeBeingBuilt).InstanceFieldAlignment.AsInt);
                 }
-                else if (TypeBeingBuilt is ArrayType)
+                else if (TypeBeingBuilt is ArrayType arrayType)
                 {
-                    ArrayType arrayType = (ArrayType)TypeBeingBuilt;
-
                     if (arrayType.ElementType is DefType)
                     {
                         return checked((ushort)((DefType)arrayType.ElementType).InstanceFieldAlignment.AsInt);

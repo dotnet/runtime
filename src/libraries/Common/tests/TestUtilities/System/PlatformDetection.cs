@@ -37,6 +37,7 @@ namespace System
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
         public static bool IsAndroid => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID"));
+        public static bool IsNotAndroid => !IsAndroid;
         public static bool IsiOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS"));
         public static bool IstvOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
         public static bool IsMacCatalyst => RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACCATALYST"));
@@ -238,6 +239,7 @@ namespace System
 
         public static bool SupportsAlpn => s_supportsAlpn.Value;
         public static bool SupportsClientAlpn => SupportsAlpn || IsOSX || IsMacCatalyst || IsiOS || IstvOS;
+        public static bool SupportsHardLinkCreation => !IsAndroid;
 
         private static readonly Lazy<bool> s_supportsTls10 = new Lazy<bool>(GetTls10Support);
         private static readonly Lazy<bool> s_supportsTls11 = new Lazy<bool>(GetTls11Support);
