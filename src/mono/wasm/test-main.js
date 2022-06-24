@@ -217,8 +217,8 @@ function processQueryArguments(incomingArguments) {
 
     runArgs.applicationArguments = incomingArguments;
     // cheap way to let the testing infrastructure know we're running in a browser context (or not)
-    runArgs.environment_variables["IsBrowserDomSupported"] = is_browser.toString().toLowerCase();
-    runArgs.environment_variables["IsNodeJS"] = is_node.toString().toLowerCase();
+    runArgs.environmentVariables["IsBrowserDomSupported"] = is_browser.toString().toLowerCase();
+    runArgs.environmentVariables["IsNodeJS"] = is_node.toString().toLowerCase();
 
     return runArgs;
 }
@@ -359,7 +359,7 @@ Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntim
     applyArguments();
 
     if (is_node) {
-        const modulesToLoad = runArgs.environment_variables["NPM_MODULES"];
+        const modulesToLoad = runArgs.environmentVariables["NPM_MODULES"];
         if (modulesToLoad) {
             modulesToLoad.split(',').forEach(module => {
                 const { 0: moduleName, 1: globalAlias } = module.split(':');
@@ -387,7 +387,7 @@ Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntim
     }
 
     // Must be after loading npm modules.
-    runArgs.environment_variables["IsWebSocketSupported"] = ("WebSocket" in globalThis).toString().toLowerCase();
+    runArgs.environmentVariables["IsWebSocketSupported"] = ("WebSocket" in globalThis).toString().toLowerCase();
 
     return createDotnetRuntime(({ MONO, INTERNAL, BINDING, Module }) => ({
         disableDotnet6Compatibility: true,
