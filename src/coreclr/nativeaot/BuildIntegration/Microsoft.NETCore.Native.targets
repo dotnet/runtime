@@ -16,6 +16,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
   <!-- Set defaults for unspecified properties -->
   <PropertyGroup>
+    <NativeLib Condition="'$(OutputType)' == 'Library' and '$(NativeLib)' == ''">Shared</NativeLib>
     <NativeIntermediateOutputPath Condition="'$(NativeIntermediateOutputPath)' == ''">$(IntermediateOutputPath)native\</NativeIntermediateOutputPath>
     <NativeOutputPath Condition="'$(NativeOutputPath)' == ''">$(OutputPath)native\</NativeOutputPath>
     <NativeCompilationDuringPublish Condition="'$(NativeCompilationDuringPublish)' == ''">true</NativeCompilationDuringPublish>
@@ -274,8 +275,8 @@ The .NET Foundation licenses this file to you under the MIT license.
     <Touch Condition="$([MSBuild]::VersionLessThan('$(NETCoreSdkVersion)', '7.0.0'))" Files="$(_LinkSemaphore)" AlwaysCreate="true" />
   </Target>
 
-  <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Windows.props" Condition="'$(TargetOS)' == 'windows'" />
-  <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Unix.props" Condition="'$(TargetOS)' != 'windows'" />
+  <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Windows.targets" Condition="'$(TargetOS)' == 'windows'" />
+  <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Unix.targets" Condition="'$(TargetOS)' != 'windows'" />
 
   <Target Name="MultiFileCopyNative"
       Inputs="@(NativeObjects)"

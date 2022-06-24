@@ -48,12 +48,20 @@ namespace System.Drawing
         internal unsafe struct GetThumbnailImageAbortMarshaller
         {
             private delegate Interop.BOOL GetThumbnailImageAbortNative(IntPtr callbackdata);
-            private GetThumbnailImageAbortNative _managed;
+            private GetThumbnailImageAbortNative? _managed;
             private delegate* unmanaged<IntPtr, Interop.BOOL> _nativeFunction;
             public GetThumbnailImageAbortMarshaller(GetThumbnailImageAbort managed)
             {
-                _managed = data => managed() ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
-                _nativeFunction = (delegate* unmanaged<IntPtr, Interop.BOOL>)Marshal.GetFunctionPointerForDelegate(_managed);
+                if (managed is null)
+                {
+                    _managed = null;
+                    _nativeFunction = null;
+                }
+                else
+                {
+                    _managed = data => managed() ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+                    _nativeFunction = (delegate* unmanaged<IntPtr, Interop.BOOL>)Marshal.GetFunctionPointerForDelegate(_managed);
+                }
             }
 
             public delegate* unmanaged<IntPtr, Interop.BOOL> ToNativeValue()

@@ -297,24 +297,10 @@ namespace System.ServiceProcess
             }
         }
 
-        internal static bool ValidServiceName(string serviceName)
-        {
-            if (serviceName == null)
-                return false;
-
-            // not too long and check for empty name as well.
-            if (serviceName.Length > ServiceBase.MaxNameLength || serviceName.Length == 0)
-                return false;
-
-            // no slashes or backslash allowed
-            foreach (char c in serviceName)
-            {
-                if (c == '\\' || c == '/')
-                    return false;
-            }
-
-            return true;
-        }
+        internal static bool ValidServiceName(string serviceName) =>
+            !string.IsNullOrEmpty(serviceName) &&
+            serviceName.Length <= ServiceBase.MaxNameLength && // not too long
+            serviceName.AsSpan().IndexOfAny('\\', '/') < 0; // no slashes or backslash allowed
 
         /// <summary>
         ///    <para>Disposes of the resources (other than memory ) used by

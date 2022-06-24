@@ -356,6 +356,33 @@ jobs:
         crossrootfsDir: '/crossrootfs/s390x'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
+# Linux PPC64le
+
+- ${{ if containsValue(parameters.platforms, 'Linux_ppc64le') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: Linux
+      archType: ppc64le
+      targetRid: linux-ppc64le
+      platform: Linux_ppc64le
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container:
+        image: ubuntu-18.04-cross-ppc64le-20220531132048-b9de666
+        registry: mcr
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        crossBuild: true
+        crossrootfsDir: '/crossrootfs/ppc64le'
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
 # WebAssembly
 
 - ${{ if containsValue(parameters.platforms, 'Browser_wasm') }}:

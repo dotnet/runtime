@@ -226,7 +226,7 @@ namespace System.Text.Json
             Current.PolymorphicSerializationState = PolymorphicSerializationState.PolymorphicReEntryStarted;
             SetConstructorArgumentState();
 
-            return derivedJsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase;
+            return derivedJsonTypeInfo.Converter;
         }
 
 
@@ -241,7 +241,7 @@ namespace System.Text.Json
             // Swap out the two values as we resume the polymorphic converter
             (Current.JsonTypeInfo, Current.PolymorphicJsonTypeInfo) = (Current.PolymorphicJsonTypeInfo, Current.JsonTypeInfo);
             Current.PolymorphicSerializationState = PolymorphicSerializationState.PolymorphicReEntryStarted;
-            return Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase;
+            return Current.JsonTypeInfo.Converter;
         }
 
         /// <summary>
@@ -382,20 +382,20 @@ namespace System.Text.Json
 
             for (int i = 0; i < _count - 1; i++)
             {
-                if (_stack[i].JsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase.ConstructorIsParameterized)
+                if (_stack[i].JsonTypeInfo.Converter.ConstructorIsParameterized)
                 {
                     return _stack[i].JsonTypeInfo;
                 }
             }
 
-            Debug.Assert(Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase.ConstructorIsParameterized);
+            Debug.Assert(Current.JsonTypeInfo.Converter.ConstructorIsParameterized);
             return Current.JsonTypeInfo;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void SetConstructorArgumentState()
         {
-            if (Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase.ConstructorIsParameterized)
+            if (Current.JsonTypeInfo.Converter.ConstructorIsParameterized)
             {
                 // A zero index indicates a new stack frame.
                 if (Current.CtorArgumentStateIndex == 0)

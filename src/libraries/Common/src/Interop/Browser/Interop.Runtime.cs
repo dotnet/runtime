@@ -98,7 +98,7 @@ internal static partial class Interop
             {
                 var span = new ReadOnlySpan<byte>(p, len);
                 // Send it to JS
-                var module = (JSObject)Runtime.GetGlobalObject("Module");
+                var module = (JSObject)Runtime.GetGlobalObject("INTERNAL");
                 module.SetObjectProperty("aot_profile_data", Uint8Array.From(span));
             }
         }
