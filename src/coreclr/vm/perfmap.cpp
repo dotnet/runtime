@@ -343,6 +343,7 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
             stubType = "?";
         }
 
+        SString name;
         // Build the map file line.
         name.Printf("stub<%d> %s<%s>", ++(s_Current->m_StubsMapped), stubType, stubOwner);
         SString line;
