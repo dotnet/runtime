@@ -91,7 +91,7 @@ namespace System.IO.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
-        [Theory]
+        [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         [MemberData(nameof(TestUnixFileModes))]
         public void SetThenGet_SymbolicLink(UnixFileMode mode)
         {
@@ -134,7 +134,7 @@ namespace System.IO.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [Fact]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void FileDoesntExist_SymbolicLink()
         {
             string path = GetTestFilePath();
