@@ -383,12 +383,12 @@ bool _DbgBreakCheck(
     else
     {
         // Note: we cannot convert to unicode or concatenate in this situation.
-        OutputDebugStringA(szLowMemoryAssertMessage);
-        OutputDebugStringA("\n");
-        OutputDebugStringA(szFile);
-        OutputDebugStringA("\n");
+        OutputDebugStringUtf8(szLowMemoryAssertMessage);
+        OutputDebugStringUtf8("\n");
+        OutputDebugStringUtf8(szFile);
+        OutputDebugStringUtf8("\n");
         OutputDebugStringUtf8(szExpr);
-        OutputDebugStringA("\n");
+        OutputDebugStringUtf8("\n");
         printf(szLowMemoryAssertMessage);
         printf("\n");
         printf(szFile);
