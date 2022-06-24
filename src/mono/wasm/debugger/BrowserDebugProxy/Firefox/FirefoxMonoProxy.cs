@@ -1002,5 +1002,9 @@ internal sealed class FirefoxMonoProxy : MonoProxy
         }
         return true;
     }
-
+    
+    internal override Task<DebugStore> LoadStore(SessionId sessionId, bool tryUseDebuggerProtocol, CancellationToken token)
+    {
+        return base.LoadStore(sessionId, false, token);
+    }
 }
