@@ -43,10 +43,6 @@
     <HighAOTResourceRequiringProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.Abstractions\tests\Microsoft.Extensions.Logging.Generators.Tests\Microsoft.Extensions.Logging.Generators.Roslyn4.0.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <HighAotMemoryUsageAssembly Include="Microsoft.CodeAnalysis.CSharp.dll" /> 
-  </ItemGroup>
-
   <!-- Samples which are too complex for CI -->
   <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\console-node-ts\Wasm.Console.Node.TS.Sample.csproj" />
