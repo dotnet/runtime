@@ -1818,7 +1818,7 @@ void SString::VPrintf(const CHAR *format, va_list args)
         if (result >=0)
         {
             // Succeeded in writing. Now resize -
-            Resize(result, GetRepresentation(), PRESERVE);
+            Resize(result, REPRESENTATION_UTF8, PRESERVE);
             SString sss(Utf8, format);
             INDEBUG(CheckForFormatStringGlobalizationIssues(sss, *this));
             RETURN;
@@ -1837,7 +1837,7 @@ void SString::VPrintf(const CHAR *format, va_list args)
     {
         // Double the previous guess - eventually we will get enough space
         guess *= 2;
-        Resize(guess, GetRepresentation());
+        Resize(guess, REPRESENTATION_UTF8);
 
         // Clear errno to avoid false alarms
         errno = 0;
@@ -1849,7 +1849,7 @@ void SString::VPrintf(const CHAR *format, va_list args)
         if (result >= 0)
         {
             // Succeed in writing. Shrink the buffer to fit exactly.
-            Resize(result, GetRepresentation(), PRESERVE);
+            Resize(result, REPRESENTATION_UTF8, PRESERVE);
             SString sss(Utf8, format);
             INDEBUG(CheckForFormatStringGlobalizationIssues(sss, *this));
             RETURN;
