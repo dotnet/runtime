@@ -1429,7 +1429,8 @@ public:
 
     NativeManifestModule(LoaderAllocator* pLoaderAllocator, IMDInternalImport *pManifestMetadata, Module* pModule, AllocMemTracker *pamTracker)
     {
-        // TODO  setting m_pILModule here probably doesn't work for Composite images...
+        // NOTE: Composite images will not set m_pILModule to anything other than NULL. This implies that cross module
+        // type loading outside of System.Private.CoreLib is not supported
         m_pILModule = pModule;
         m_loaderAllocator = pLoaderAllocator;
         m_pMDImport = pManifestMetadata;
@@ -1507,7 +1508,7 @@ public:
         LPCSTR numberCur = colonAddress + 1;
 
         // Some number must be specified
-        if (numberCur == '\0')
+        if (*numberCur == '\0')
             return false;
 
         while (*numberCur != '\0')
@@ -1613,6 +1614,10 @@ public:
         }
         else if (DecomposeModuleRef(moduleName, &assemblyNameInModuleRef, &assemblyNameLen, &index))
         {
+            // This disable cross module inlining beyond System.Private.CoreLib for composite images
+            if (m_pILModule == NULL)
+                return NULL;
+
             auto moduleBase = m_pILModule->GetModuleFromIndexIfLoaded(index);
             _ASSERTE(moduleBase == NULL || moduleBase->IsFullModule());
             module = static_cast<Module*>(moduleBase);
@@ -1675,6 +1680,10 @@ public:
         }
         else if (DecomposeModuleRef(moduleName, &assemblyNameInModuleRef, &assemblyNameLen, &index))
         {
+            // This disable cross module inlining beyond System.Private.CoreLib for composite images
+            if (m_pILModule == NULL)
+                COMPlusThrowHR(COR_E_FILENOTFOUND);
+
             auto moduleBase = m_pILModule->GetModuleFromIndex(index);
             _ASSERTE(moduleBase == NULL || moduleBase->IsFullModule());
             module = static_cast<Module*>(moduleBase);

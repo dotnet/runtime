@@ -134,6 +134,7 @@ struct READYTORUN_CORE_HEADER
 | READYTORUN_FLAG_EMBEDDED_MSIL              | 0x00000010 | Input MSIL is embedded in the R2R image.
 | READYTORUN_FLAG_COMPONENT                  | 0x00000020 | This is a component assembly of a composite R2R image
 | READYTORUN_FLAG_MULTIMODULE_VERSION_BUBBLE | 0x00000040 | This R2R module has multiple modules within its version bubble (For versions before version 6.2, all modules are assumed to possibly have this characteristic)
+| READYTORUN_FLAG_UNRELATED_R2R_CODE         | 0x00000080 | This R2R module has code in it that would not be naturally encoded into this module
 
 ## READYTORUN_SECTION
 
@@ -502,6 +503,14 @@ runtime function table, the fixups blob and a blob encoding the method signature
 composite R2R images. It represents all generics needed by all assemblies within the composite
 executable. As mentioned elsewhere in this document, CoreCLR runtime requires changes to
 properly look up methods stored in this section in the composite R2R case.
+
+**Note:** Generic methods and non-generic methods on generic types are encoded into this table
+and the runtime is expected to lookup into this table in potentially multiple modules. First the
+runtime is expected to lookup into this table for the module which defines the method, then it is
+expected to use the "alternate" generics location which is defined as the module which is NOT the
+defining module which is the defining module of one of the generic arguments to the method. This
+alternate lookup is not currently a deeply nested algorithm. If that lookup fails, then lookup
+will proceed to every module which specified `READYTORUN_FLAG_UNRELATED_R2R_CODE` as a flag.
 
 ## ReadyToRunSectionType.InliningInfo (v2.1+)
 

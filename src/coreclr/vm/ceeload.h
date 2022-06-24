@@ -554,7 +554,11 @@ public:
             IMDInternalImport * pMDImportOverride = NULL,
             BOOL                fDoNotUtilizeExtraChecks = FALSE,
             AssemblyBinder      *pBinderForLoadedAssembly = NULL
-            );
+            )
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return NULL;
+    };
 
 
 #ifndef DACCESS_COMPILE

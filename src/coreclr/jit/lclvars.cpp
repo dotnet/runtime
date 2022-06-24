@@ -1778,8 +1778,8 @@ bool Compiler::StructPromotionHelper::TryPromoteStructVar(unsigned lclNum)
 //
 void Compiler::StructPromotionHelper::CheckRetypedAsScalar(CORINFO_FIELD_HANDLE fieldHnd, var_types requestedType)
 {
-    if (retypedFieldsMap.Lookup(fieldHnd))
-        assert(retypedFieldsMap[fieldHnd] == requestedType);
+    assert(retypedFieldsMap.Lookup(fieldHnd));
+    assert(retypedFieldsMap[fieldHnd] == requestedType);
 }
 #endif // DEBUG
 

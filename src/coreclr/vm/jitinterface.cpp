@@ -14064,9 +14064,9 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
 #ifdef _DEBUG
                     {
-                        StackScratchBuffer buf;
-                        _ASSERTE_MSG(false, fatalErrorString.GetUTF8(buf));
-                    }
+                        StackSString buf;
+                        buf.SetAndConvertToUTF8(fatalErrorString.GetUnicode());
+                        _ASSERTE_MSG(false, buf.GetUTF8());                    }
 #endif
                     _ASSERTE(!IsDebuggerPresent() && "Stop on assert here instead of fatal error for ease of live debugging");
 
