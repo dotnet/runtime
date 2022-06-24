@@ -273,7 +273,7 @@ namespace System.Formats.Tar
             _mode = TarHelpers.GetTenBaseNumberFromOctalAsciiChars(buffer.Slice(FieldLocations.Mode, FieldLengths.Mode));
             _uid = TarHelpers.GetTenBaseNumberFromOctalAsciiChars(buffer.Slice(FieldLocations.Uid, FieldLengths.Uid));
             _gid = TarHelpers.GetTenBaseNumberFromOctalAsciiChars(buffer.Slice(FieldLocations.Gid, FieldLengths.Gid));
-            int mTime = TarHelpers.GetTenBaseNumberFromOctalAsciiChars(buffer.Slice(FieldLocations.MTime, FieldLengths.MTime));
+            long mTime = TarHelpers.GetTenBaseLongFromOctalAsciiChars(buffer.Slice(FieldLocations.MTime, FieldLengths.MTime));
             _mTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(mTime);
             _typeFlag = (TarEntryType)buffer[FieldLocations.TypeFlag];
             _linkName = TarHelpers.GetTrimmedUtf8String(buffer.Slice(FieldLocations.LinkName, FieldLengths.LinkName));
@@ -383,10 +383,10 @@ namespace System.Formats.Tar
         private void ReadGnuAttributes(Span<byte> buffer)
         {
             // Convert byte arrays
-            int aTime = TarHelpers.GetTenBaseNumberFromOctalAsciiChars(buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
+            long aTime = TarHelpers.GetTenBaseLongFromOctalAsciiChars(buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
             _aTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(aTime);
 
-            int cTime = TarHelpers.GetTenBaseNumberFromOctalAsciiChars(buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
+            long cTime = TarHelpers.GetTenBaseLongFromOctalAsciiChars(buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
             _cTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(cTime);
 
             // TODO: Read the bytes of the currently unsupported GNU fields, in case user wants to write this entry into another GNU archive, they need to be preserved. https://github.com/dotnet/runtime/issues/68230

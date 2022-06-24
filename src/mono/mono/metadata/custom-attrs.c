@@ -169,10 +169,9 @@ find_field_index (MonoClass *klass, MonoClassField *field) {
 static guint32
 find_property_index (MonoClass *klass, MonoProperty *property)
 {
-	int i;
 	MonoClassPropertyInfo *info = mono_class_get_property_info (klass);
 
-	for (i = 0; i < info->count; ++i) {
+	for (guint32 i = 0; i < info->count; ++i) {
 		if (property == &info->properties [i])
 			return info->first + 1 + i;
 	}
@@ -185,10 +184,9 @@ find_property_index (MonoClass *klass, MonoProperty *property)
 static guint32
 find_event_index (MonoClass *klass, MonoEvent *event)
 {
-	int i;
 	MonoClassEventInfo *info = mono_class_get_event_info (klass);
 
-	for (i = 0; i < info->count; ++i) {
+	for (guint32 i = 0; i < info->count; ++i) {
 		if (event == &info->events [i])
 			return info->first + 1 + i;
 	}
@@ -1631,7 +1629,6 @@ ves_icall_System_Reflection_RuntimeCustomAttributeData_ResolveArgumentsInternal 
 	MonoReflectionAssembly *assembly = MONO_HANDLE_RAW (assembly_h);
 	MonoMethodSignature *sig;
 	MonoObjectHandle obj_h, namedarg_h, minfo_h;
-	int i;
 
 	if (len == 0)
 		return;
@@ -1658,7 +1655,7 @@ ves_icall_System_Reflection_RuntimeCustomAttributeData_ResolveArgumentsInternal 
 		goto leave;
 
 	sig = mono_method_signature_internal (method);
-	for (i = 0; i < sig->param_count; ++i) {
+	for (guint16 i = 0; i < sig->param_count; ++i) {
 		MonoObject *obj;
 		MonoObject *typedarg;
 		MonoType *t;
@@ -1674,7 +1671,7 @@ ves_icall_System_Reflection_RuntimeCustomAttributeData_ResolveArgumentsInternal 
 		mono_array_setref_internal (typed_args, i, typedarg);
 	}
 
-	for (i = 0; i < mono_array_length_internal (named_args); ++i) {
+	for (guint32 i = 0; i < mono_array_length_internal (named_args); ++i) {
 		MonoObject *obj;
 		MonoObject *namedarg, *minfo;
 
@@ -2761,7 +2758,7 @@ metadata_foreach_custom_attr_from_index (MonoImage *image, guint32 idx, MonoAsse
 		return;
 	i --;
 	gboolean stop_iterating = FALSE;
-	int rows = table_info_get_rows (ca);
+	guint32 rows = table_info_get_rows (ca);
 	while (!stop_iterating && i < rows) {
 		if (mono_metadata_decode_row_col (ca, i, MONO_CUSTOM_ATTR_PARENT) != idx)
 			break;
@@ -2878,8 +2875,8 @@ init_weak_fields_inner (MonoImage *image, GHashTable *indexes)
 
 		tdef = &image->tables [MONO_TABLE_CUSTOMATTRIBUTE];
 		guint32 parent, field_idx, col, mtoken, idx;
-		int rows = table_info_get_rows (tdef);
-		for (int i = 0; i < rows; ++i) {
+		guint32 rows = table_info_get_rows (tdef);
+		for (guint32 i = 0; i < rows; ++i) {
 			parent = mono_metadata_decode_row_col (tdef, i, MONO_CUSTOM_ATTR_PARENT);
 			if ((parent & MONO_CUSTOM_ATTR_MASK) != MONO_CUSTOM_ATTR_FIELDDEF)
 				continue;
@@ -2903,8 +2900,8 @@ init_weak_fields_inner (MonoImage *image, GHashTable *indexes)
 		/* Check whenever the assembly references the WeakAttribute type */
 		gboolean found = FALSE;
 		tdef = &image->tables [MONO_TABLE_TYPEREF];
-		int rows = table_info_get_rows (tdef);
-		for (int i = 0; i < rows; ++i) {
+		guint32 rows = table_info_get_rows (tdef);
+		for (guint32 i = 0; i < rows; ++i) {
 			guint32 string_offset = mono_metadata_decode_row_col (tdef, i, MONO_TYPEREF_NAME);
 			const char *name = mono_metadata_string_heap (image, string_offset);
 			if (!strcmp (name, "WeakAttribute")) {

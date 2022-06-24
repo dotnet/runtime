@@ -65,7 +65,6 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69474", TestPlatforms.Linux)]
         [Theory]
         [InlineData(TarEntryFormat.V7)]
         [InlineData(TarEntryFormat.Ustar)]

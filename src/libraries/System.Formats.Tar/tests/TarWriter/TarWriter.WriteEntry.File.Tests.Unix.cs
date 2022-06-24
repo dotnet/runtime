@@ -169,7 +169,7 @@ namespace System.Formats.Tar.Tests
 
             if (entry.EntryType is not TarEntryType.Directory)
             {
-                TarFileMode expectedMode = (TarFileMode)(status.Mode & 4095); // First 12 bits
+                UnixFileMode expectedMode = (UnixFileMode)(status.Mode & 4095); // First 12 bits
                
                 Assert.Equal(expectedMode, entry.Mode);
                 Assert.True(entry.ModificationTime > DateTimeOffset.UnixEpoch);

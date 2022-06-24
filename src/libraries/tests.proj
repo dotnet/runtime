@@ -28,6 +28,7 @@
   <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
     <!-- https://github.com/dotnet/runtime/issues/65356 - OOM while linking -->
     <HighAOTResourceRequiringProject Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Roslyn3.11.Tests.csproj" />
+    <HighAOTResourceRequiringProject Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\FunctionalTests\System.Text.RegularExpressions.Tests.csproj" />
 
     <!-- https://github.com/dotnet/runtime/issues/65411 - possible OOM when compiling
          System.Text.Json.SourceGeneration.Roslyn4.0.Tests.dll.bc -> .o -->
@@ -46,6 +47,7 @@
   <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\console-node-ts\Wasm.Console.Node.TS.Sample.csproj" />
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-webpack\Wasm.Browser.WebPack.Sample.csproj" />
+    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\node-webpack\Wasm.Node.WebPack.Sample.csproj" />
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-nextjs\Wasm.Browser.NextJs.Sample.csproj" />
 
     <!-- These tests are completely disabled on wasm -->
@@ -66,9 +68,6 @@
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true' and '$(RunAOTCompilation)' == 'true'">
     <!-- https://github.com/dotnet/runtime/issues/66118 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\UnitTests\System.Text.RegularExpressions.Unit.Tests.csproj" />
-
-    <!-- https://github.com/dotnet/runtime/issues/61756 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\FunctionalTests\System.Text.RegularExpressions.Tests.csproj" />
   </ItemGroup>
 
   <!-- Projects that don't support code coverage measurement. -->
@@ -511,6 +510,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.FileVersionInfo\tests\System.Diagnostics.FileVersionInfo.Tests\System.Diagnostics.FileVersionInfo.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.PerformanceCounter\tests\System.Diagnostics.PerformanceCounter.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq\tests\System.Linq.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Memory.Data\tests\System.Memory.Data.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\EnterpriseTests\System.Net.Http.Enterprise.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Http.Json\tests\FunctionalTests\System.Net.Http.Json.Functional.Tests.csproj" />

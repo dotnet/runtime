@@ -12,6 +12,11 @@
         <target state="translated">“MarshalAsAttribute” 中的 “SizeParamIndex” 值超出范围。</target>
         <note />
       </trans-unit>
+      <trans-unit id="BidirectionalMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
+        <target state="new">The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="CannotHaveMultipleMarshallingAttributesDescription">
         <source>The 'BlittableTypeAttribute' and 'NativeMarshallingAttribute' attributes are mutually exclusive.</source>
         <target state="translated">“BlittableTypeAttribute” 和 “NativeMarshallingAttribute” 属性是相互排斥的。</target>
@@ -92,6 +97,16 @@
         <target state="translated">此参数上提供的 “[In]” 和 “[Out]” 属性在此参数上不受支持。</target>
         <note />
       </trans-unit>
+      <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</source>
+        <target state="new">The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeStatic">
+        <source>The marshaller type '{0}' for managed type '{1}' must be static.</source>
+        <target state="new">The marshaller type '{0}' for managed type '{1}' must be static.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MarshallingBoolAsUndefinedNotSupported">
         <source>Marshalling bool without explicit marshalling information is not supported. Specify either 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
         <target state="translated">不支持在没有显式封送信息的情况下封送布尔值。请指定 “MarshalUsingAttribute” 或 “MarshalAsAttribute”。</target>
@@ -140,6 +155,11 @@
       <trans-unit id="TypeNotSupportedTitle">
         <source>Specified type is not supported by source-generated P/Invokes</source>
         <target state="translated">源生成的 P/Invoke 不支持指定的类型</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
+        <target state="new">The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</target>
         <note />
       </trans-unit>
       <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorMessage">
