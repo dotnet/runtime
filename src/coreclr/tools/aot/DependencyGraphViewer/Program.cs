@@ -17,6 +17,9 @@ using System.IO;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using System.Security.Cryptography;
 using System.Xml.Linq;
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("DependecyGraphViewer.Tests")]
 
 namespace DependencyLogViewer
 {
@@ -47,10 +50,10 @@ namespace DependencyLogViewer
         }
 
         public int NextConditionalNodeIndex = Int32.MaxValue;
-
         public int PID;
         public int ID;
         public string Name;
+        public bool isValid = true;
         public Dictionary<int, Node> Nodes = new Dictionary<int, Node>();
     }
 
@@ -64,7 +67,6 @@ namespace DependencyLogViewer
         public void AddGraph(Graph g)
         {
             Graphs.Add(g);
-
             if (DependencyGraphsUI != null)
             {
                 DependencyGraphsUI.ForceRefresh();
@@ -78,7 +80,6 @@ namespace DependencyLogViewer
                 if ((g.PID == pid) && (g.ID == id))
                     return g;
             }
-
             return null;
         }
 
@@ -95,6 +96,18 @@ namespace DependencyLogViewer
             g.Nodes.Add(index, n);
         }
 
+        bool IsValidNode (Graph g, int nodeID)
+        {
+            if (!g.Nodes.ContainsKey(nodeID))
+            {
+                if (DependencyGraphsUI != null)
+                    MessageBox.Show($"The .dgml is invalid. Node with ID {nodeID} is specified by a link but does not appear in node list.");
+                g.isValid = false;
+                return false;
+            }
+            return true;
+        }
+
         public void AddEdgeToGraph(int pid, int id, int source, int target, string reason, Graph g = null)
         {
             if (g == null)
@@ -104,11 +117,14 @@ namespace DependencyLogViewer
             if (g == null)
                 return;
 
-            Node dependent = g.Nodes[source];
-            Node dependee = g.Nodes[target];
+            if (IsValidNode(g, source) && IsValidNode(g, target))
+            {
+                Node dependent = g.Nodes[source];
+                Node dependee = g.Nodes[target];
 
-            dependent.Dependencies.Add(new KeyValuePair<Node, string>(dependee, reason));
-            dependee.Dependents.Add(new KeyValuePair<Node, string>(dependent, reason));
+                dependent.Dependencies.Add(new KeyValuePair<Node, string>(dependee, reason));
+                dependee.Dependents.Add(new KeyValuePair<Node, string>(dependent, reason));
+            }
         }
 
         public void AddConditionalEdgeToGraph(int pid, int id, int reason1, int reason2, int target, string reason, Graph g = null)
@@ -165,20 +181,41 @@ namespace DependencyLogViewer
         public delegate void OnCompleted(int currFileID);
         public event OnCompleted Complete;
         public Graph g = null;
+        private Stream _stream;
+        private string _name;
 
-        public DGMLGraphProcessing(int file)
+        internal DGMLGraphProcessing(int file)
         {
             FileID = file;
             Graph g = new Graph();
         }
+
+        public static bool StartProcess(int fileID, string argPath)
+        {
+            var dgml = new DGMLGraphProcessing(fileID);
+            dgml._name = argPath;
+            GraphCollection collection = GraphCollection.Singleton;
+            dgml.Complete += (fileID) =>
+            {
+                if (!dgml.g.isValid)
+                    return;
+                lock (collection)
+                {
+                    collection.AddGraph(dgml.g);
+                }
+                Debug.Assert(fileID == dgml.FileID);
+            };
+            return dgml.FindXML(argPath);
+        }
+
         public int FileID
         {
             get; init;
         }
 
-        public bool FindXML(string argPath)
+        private bool FindXML(string argPath)
         {
-            var fileStream = Stream.Null;
+            FileStream fileStream = null;
             if (argPath != null)
             {
                 try
@@ -203,35 +240,44 @@ namespace DependencyLogViewer
                     if (openFileDialog.ShowDialog() == DialogResult.OK)
                     {
                         //Get the path of specified file
-                        fileStream = openFileDialog.OpenFile();
+                        fileStream = (FileStream)openFileDialog.OpenFile();
                     }
                 }
             }
-            return FindXML(fileStream);
+            return FindXML(fileStream, fileStream.Name);
         }
-        public bool FindXML(Stream stream)
-        {
 
+        internal bool FindXML(Stream stream, string name)
+        {
             if (stream != Stream.Null)
             {
-                Thread th = new Thread(ParseXML);
-                th.Start(stream);
+                _stream = stream;
+                _name = name;
+                Thread th = new Thread(ProcessingMain);
+                th.Start(this);
                 return true;
             }
             return false;
         }
 
-        private void ParseXML(object fileStream)
+        public static void ProcessingMain(object obj)
         {
-            Debug.Assert(fileStream is FileStream);
-            FileStream fileContents = (FileStream)fileStream;
+            var writer = (DGMLGraphProcessing)obj;
+            writer.ParseXML(writer._stream, writer._name);
+        }
+
+
+        internal void ParseXML(Stream fileStream, string name)
+        {
+            Debug.Assert(fileStream is Stream);
+            //FileStream fileContents = (FileStream)fileStream;
             GraphCollection collection = GraphCollection.Singleton;
             XmlReaderSettings settings = new XmlReaderSettings();
             settings.IgnoreWhitespace = true;
 
             g = new Graph();
 
-            using (XmlReader reader = XmlReader.Create(fileContents, settings))
+            using (XmlReader reader = XmlReader.Create(fileStream, settings))
             {
                 while (reader.Read())
                 {
@@ -256,13 +302,16 @@ namespace DependencyLogViewer
                         case "DirectedGraph":
                             g.ID = FileID;
                             g.PID = FileID;
-                            g.Name = fileContents.Name;
+                            g.Name = _name;
                             break;
                     }
                 }
             }
-            fileContents.Close();
-            Complete(FileID);
+            fileStream.Close();
+            if (Complete != null)
+            {
+                Complete(FileID);
+            }
         }
     }
 

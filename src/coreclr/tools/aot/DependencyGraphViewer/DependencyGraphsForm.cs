@@ -59,7 +59,6 @@ namespace DependencyLogViewer
             {
                 ETWGraphProcessing.Singleton.Stop();
             }
-
             Application.Exit();
         }
 
@@ -101,17 +100,7 @@ Once the interesting node(s) have been identified in the dependency graph window
         {
             GraphCollection collection = GraphCollection.Singleton;
 
-            DGMLGraphProcessing dgml = new DGMLGraphProcessing(_fileCount);
-            dgml.Complete += (fileID) =>
-            {
-                lock (collection)
-                {
-                    collection.AddGraph(dgml.g);
-                }
-                Debug.Assert(fileID == dgml.FileID);
-            };
-
-            if (dgml.FindXML(argPath))
+            if (DGMLGraphProcessing.StartProcess(_fileCount, argPath))
             {
                 _fileCount -= 1;
             }

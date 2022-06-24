@@ -12,5 +12,6 @@
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent">
       <Version>$(TraceEventVersion)</Version>
     </PackageReference>
+    <Compile Remove="Tests/*.cs" />
   </ItemGroup>
 </Project>
