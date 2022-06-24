@@ -11014,7 +11014,8 @@ void CEEJitInfo::reportInternalData(const uint8_t* data, size_t dataSize)
 
     _ASSERTE(dataSize <= UINT32_MAX);
 
-    ETW::MethodLog::LogJitCompilationInternalData(m_config, static_cast<uint32_t>(dataSize), data);
+    PrepareCodeConfig *config = GetThread()->GetCurrentPrepareCodeConfig();
+    ETW::MethodLog::LogJitCompilationInternalData(config, static_cast<uint32_t>(dataSize), data);
 
     EE_TO_JIT_TRANSITION();
 }
@@ -12836,7 +12837,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
     while (true)
     {
-        CEEJitInfo jitInfo(ftn, config, ILHeader, jitMgr, !flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING));
+        CEEJitInfo jitInfo(ftn, ILHeader, jitMgr, !flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING));
 
 #if (defined(TARGET_AMD64) || defined(TARGET_ARM64))
 #ifdef TARGET_AMD64
