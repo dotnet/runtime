@@ -69,13 +69,13 @@ public class Program
         }
 
         [Fact]
-        public async Task NoDiagnosticForTopLevelStatements()
+        public async Task TopLevelStatements()
         {
             string test = @"using System.Text.RegularExpressions;
 
-Regex r = new Regex("""");";
+Regex r = [|new Regex("""")|];";
 
-            await VerifyCS.VerifyAnalyzerAsync(test);
+            await VerifyCS.VerifyCodeFixAsync(test, test);
         }
 
         public static IEnumerable<object[]> StaticInvocationWithTimeoutTestData()
@@ -737,13 +737,13 @@ partial class Program
         }
 
         [Fact]
-        public async Task NoDiagnosticForTopLevelStatements_MultipleSourceFiles()
+        public async Task TopLevelStatements_MultipleSourceFiles()
         {
             await new VerifyCS.Test(references: null, usePreviewLanguageVersion: true, numberOfIterations: 1)
             {
                 TestState =
                 {
-                    Sources = { "public class C { }", @"var r = new System.Text.RegularExpressions.Regex("""");" },
+                    Sources = { "public class C { }", @"var r = [|new System.Text.RegularExpressions.Regex("""")|];" },
                 },
             }.RunAsync();
         }
