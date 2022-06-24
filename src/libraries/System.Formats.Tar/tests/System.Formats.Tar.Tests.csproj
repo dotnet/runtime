@@ -24,7 +24,8 @@
     <Compile Include="TarFile\TarFile.ExtractToDirectory.Stream.Tests.cs" />
     <Compile Include="TarReader\TarReader.File.GlobalExtendedAttributes.Tests.cs" />
     <Compile Include="TarReader\TarReader.File.Tests.Base.cs" />
-    <Compile Include="TarReader\TarReader.ExtractToFile.Tests.cs" />
+    <Compile Include="TarReader\TarReader.TarEntry.ExtractToFileAsync.Tests.cs" />
+    <Compile Include="TarReader\TarReader.TarEntry.ExtractToFile.Tests.cs" />
     <Compile Include="TarReader\TarReader.File.Tests.cs" />
     <Compile Include="TarReader\TarReader.GetNextEntry.Tests.cs" />
     <Compile Include="TarTestsBase.cs" />
@@ -60,7 +61,8 @@
   <!-- Unix specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows'">
     <Compile Include="TarFile\TarFile.ExtractToDirectory.File.Tests.Unix.cs" />
-    <Compile Include="TarReader\TarReader.ExtractToFile.Tests.Unix.cs" />
+    <Compile Include="TarReader\TarReader.TarEntry.ExtractToFileAsync.Tests.Unix.cs" />
+    <Compile Include="TarReader\TarReader.TarEntry.ExtractToFile.Tests.Unix.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntry.File.Tests.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs" Link="Common\Interop\Unix\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs" Link="Common\Interop\Unix\Interop.IOErrors.cs" />
@@ -72,9 +74,6 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Link.cs" Link="Common\Interop\Unix\System.Native\Interop.Link.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MkFifo.cs" Link="Common\Interop\Unix\System.Native\Interop.MkFifo.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs" Link="Common\Interop\Unix\System.Native\Interop.Stat.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="TarWriter\TarWriter.WriteEntry.File.Tests.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Formats.Tar.TestData" Version="$(SystemFormatsTarTestDataVersion)" />
