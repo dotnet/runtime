@@ -130,6 +130,45 @@ enum gtCallTypes : BYTE
     CT_COUNT // fake entry (must be last)
 };
 
+enum class ExceptionSetFlags : uint32_t
+{
+    None                     = 0x0,
+    OverflowException        = 0x1,
+    DivideByZeroException    = 0x2,
+    ArithmeticException      = 0x4,
+    NullReferenceException   = 0x8,
+    IndexOutOfRangeException = 0x10,
+    StackOverflowException   = 0x20,
+
+    All = OverflowException | DivideByZeroException | ArithmeticException | NullReferenceException |
+          IndexOutOfRangeException | StackOverflowException,
+};
+
+inline constexpr ExceptionSetFlags operator~(ExceptionSetFlags a)
+{
+    return (ExceptionSetFlags)(~(uint32_t)a);
+}
+
+inline constexpr ExceptionSetFlags operator|(ExceptionSetFlags a, ExceptionSetFlags b)
+{
+    return (ExceptionSetFlags)((uint32_t)a | (uint32_t)b);
+}
+
+inline constexpr ExceptionSetFlags operator&(ExceptionSetFlags a, ExceptionSetFlags b)
+{
+    return (ExceptionSetFlags)((uint32_t)a & (uint32_t)b);
+}
+
+inline ExceptionSetFlags& operator|=(ExceptionSetFlags& a, ExceptionSetFlags b)
+{
+    return a = (ExceptionSetFlags)((uint32_t)a | (uint32_t)b);
+}
+
+inline ExceptionSetFlags& operator&=(ExceptionSetFlags& a, ExceptionSetFlags b)
+{
+    return a = (ExceptionSetFlags)((uint32_t)a & (uint32_t)b);
+}
+
 #ifdef DEBUG
 /*****************************************************************************
 *
@@ -1731,7 +1770,9 @@ public:
 #endif // DEBUG
 
     inline bool IsIntegralConst(ssize_t constVal) const;
+    inline bool IsFloatNaN() const;
     inline bool IsFloatPositiveZero() const;
+    inline bool IsFloatNegativeZero() const;
     inline bool IsVectorZero() const;
     inline bool IsVectorCreate() const;
     inline bool IsVectorAllBitsSet() const;
@@ -1816,6 +1857,7 @@ public:
     bool OperRequiresCallFlag(Compiler* comp);
 
     bool OperMayThrow(Compiler* comp);
+    ExceptionSetFlags OperExceptions(Compiler* comp);
 
     unsigned GetScaleIndexMul();
     unsigned GetScaleIndexShf();
@@ -2095,6 +2137,11 @@ public:
 
         gtFlags &= ~GTF_ALL_EFFECT;
         gtFlags |= sourceFlags;
+    }
+
+    void AddAllEffectsFlags(GenTree* source)
+    {
+        AddAllEffectsFlags(source->gtFlags & GTF_ALL_EFFECT);
     }
 
     void AddAllEffectsFlags(GenTree* firstSource, GenTree* secondSource)
@@ -4584,6 +4631,7 @@ class CallArgs
     void RemovedWellKnownArg(WellKnownArg arg);
     regNumber GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, WellKnownArg arg);
     void SplitArg(CallArg* arg, unsigned numRegs, unsigned numSlots);
+    void SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs);
 
 public:
     CallArgs();
@@ -4628,7 +4676,6 @@ public:
     void AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call);
 
     void ArgsComplete(Compiler* comp, GenTreeCall* call);
-    void SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs);
     void EvalArgsToTemps(Compiler* comp, GenTreeCall* call);
     void SetNeedsTemp(CallArg* arg);
     bool IsNonStandard(Compiler* comp, GenTreeCall* call, CallArg* arg);
@@ -8277,6 +8324,42 @@ inline bool GenTree::IsIntegralConst(ssize_t constVal) const
     if ((gtOper == GT_CNS_LNG) && (AsIntConCommon()->LngValue() == constVal))
     {
         return true;
+    }
+
+    return false;
+}
+
+//-------------------------------------------------------------------
+// IsFloatNaN: returns true if this is exactly a const float value of NaN
+//
+// Returns:
+//     True if this represents a const floating-point value of NaN.
+//     Will return false otherwise.
+//
+inline bool GenTree::IsFloatNaN() const
+{
+    if (IsCnsFltOrDbl())
+    {
+        double constValue = AsDblCon()->gtDconVal;
+        return FloatingPointUtils::isNaN(constValue);
+    }
+
+    return false;
+}
+
+//-------------------------------------------------------------------
+// IsFloatNegativeZero: returns true if this is exactly a const float value of negative zero (-0.0)
+//
+// Returns:
+//     True if this represents a const floating-point value of exactly negative zero (-0.0).
+//     Will return false if the value is negative zero (+0.0).
+//
+inline bool GenTree::IsFloatNegativeZero() const
+{
+    if (IsCnsFltOrDbl())
+    {
+        double constValue = AsDblCon()->gtDconVal;
+        return FloatingPointUtils::isNegativeZero(constValue);
     }
 
     return false;

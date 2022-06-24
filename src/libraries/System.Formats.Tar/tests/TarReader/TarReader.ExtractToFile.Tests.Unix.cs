@@ -1,16 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Reflection;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
 {
     public partial class TarReader_ExtractToFile_Tests : TarTestsBase
     {
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.tvOS)] // https://github.com/dotnet/runtime/issues/68360
         [Fact]
         public void ExtractToFile_SpecialFile_Unelevated_Throws()
         {

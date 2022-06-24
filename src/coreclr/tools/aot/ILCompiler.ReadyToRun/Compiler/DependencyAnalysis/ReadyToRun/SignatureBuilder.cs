@@ -330,7 +330,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        private void EmitModuleOverride(IEcmaModule module, SignatureContext context)
+        private void EmitModuleOverride(EcmaModule module, SignatureContext context)
         {
             if (module != context.LocalContext)
             {
@@ -348,7 +348,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private void EmitInstantiatedTypeSignature(InstantiatedType type, SignatureContext context)
         {
-            IEcmaModule targetModule = context.GetTargetModule(type);
+            EcmaModule targetModule = context.GetTargetModule(type);
             EmitModuleOverride(targetModule, context);
             EmitElementType(CorElementType.ELEMENT_TYPE_GENERICINST);
             EmitTypeSignature(type.GetTypeDefinition(), context.InnerContext(targetModule));
@@ -470,7 +470,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     throw new NotImplementedException();
             }
 
-            if ((method.Token.Module != context.LocalContext) && (!enforceOwningType || (enforceDefEncoding && methodToken.TokenType == CorTokenType.mdtMemberRef)))
+            if ((method.Token.Module != context.LocalContext) && !enforceOwningType)
             {
                 // If enforeOwningType is set, this is an entry for the InstanceEntryPoint or InstrumentationDataTable nodes
                 // which are not used in quite the same way, and for which the MethodDef is always matched to the module
@@ -497,15 +497,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 Instantiation instantiation = method.Method.Instantiation;
                 EmitUInt((uint)instantiation.Length);
-                SignatureContext methodInstantiationsContext;
-                if ((flags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UpdateContext) != 0)
-                    methodInstantiationsContext = context;
-                else
-                    methodInstantiationsContext = context.OuterContext;
-
+                SignatureContext outerContext = context.OuterContext;
                 for (int typeParamIndex = 0; typeParamIndex < instantiation.Length; typeParamIndex++)
                 {
-                    EmitTypeSignature(instantiation[typeParamIndex], methodInstantiationsContext);
+                    EmitTypeSignature(instantiation[typeParamIndex], outerContext);
                 }
             }
         }
@@ -578,7 +573,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return _builder.ToObjectData();
         }
 
-        public SignatureContext EmitFixup(NodeFactory factory, ReadyToRunFixupKind fixupKind, IEcmaModule targetModule, SignatureContext outerContext)
+        public SignatureContext EmitFixup(NodeFactory factory, ReadyToRunFixupKind fixupKind, EcmaModule targetModule, SignatureContext outerContext)
         {
             if (targetModule == outerContext.LocalContext)
             {

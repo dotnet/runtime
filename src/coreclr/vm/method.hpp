@@ -3705,34 +3705,6 @@ public:
 };
 #endif
 
-#ifdef FEATURE_READYTORUN
-struct ReadyToRunStandaloneMethodMetadata
-{
-    ReadyToRunStandaloneMethodMetadata() :
-        pByteData(nullptr),
-        cByteData(0),
-        pTypes(nullptr),
-        cTypes(0)
-    {}
-
-    ~ReadyToRunStandaloneMethodMetadata()
-    {
-        if (pByteData != nullptr)
-            delete[] pByteData;
-        if (pTypes != nullptr)
-            delete[] pTypes;
-    }
-
-    const uint8_t * pByteData;
-    size_t cByteData;
-    const TypeHandle * pTypes;
-    size_t cTypes;
-};
-
-ReadyToRunStandaloneMethodMetadata* GetReadyToRunStandaloneMethodMetadata(MethodDesc *pMD);
-void InitReadyToRunStandaloneMethodMetadata();
-#endif // FEATURE_READYTORUN
-
 #include "method.inl"
 
 #endif // !_METHOD_H

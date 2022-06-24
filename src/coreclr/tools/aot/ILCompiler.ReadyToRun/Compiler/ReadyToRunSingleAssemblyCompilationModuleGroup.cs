@@ -40,7 +40,7 @@ namespace ILCompiler
                 return false;
             }
 
-            return (ContainsType(method.OwningType) && VersionsWithMethodBody(method)) || CompileVersionBubbleGenericsIntoCurrentModule(method) || this.CrossModuleCompileable(method);
+            return (ContainsType(method.OwningType) && VersionsWithMethodBody(method)) || CompileVersionBubbleGenericsIntoCurrentModule(method);
         }
 
         public sealed override void ApplyProfilerGuidedCompilationRestriction(ProfileDataManager profileGuidedCompileRestriction)
@@ -56,7 +56,7 @@ namespace ILCompiler
         {
             Debug.Assert(_profileGuidedCompileRestrictionSet);
 
-            ReadyToRunFlags flags = base.GetReadyToRunFlags();
+            ReadyToRunFlags flags = 0;
             if (_profileGuidedCompileRestriction != null)
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_Partial;
 

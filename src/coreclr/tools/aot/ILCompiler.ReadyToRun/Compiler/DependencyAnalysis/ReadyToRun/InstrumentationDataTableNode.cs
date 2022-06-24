@@ -222,7 +222,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 pgoEmitter.Clear();
                 PgoProcessor.EncodePgoData(CorInfoImpl.ConvertTypeHandleHistogramsToCompactTypeHistogramFormat(_profileDataManager[method].SchemaData, factory.CompilationModuleGroup), pgoEmitter, false);
 
-                byte[] signature = InstanceEntryPointTableNode.BuildSignatureForMethodDefinedInModule(method, factory);
+                // In composite R2R format, always enforce owning type to let us share generic instantiations among modules
+                EcmaMethod typicalMethod = (EcmaMethod)method.GetTypicalMethodDefinition();
+                ModuleToken moduleToken = new ModuleToken(typicalMethod.Module, typicalMethod.Handle);
+
+                ArraySignatureBuilder signatureBuilder = new ArraySignatureBuilder();
+                signatureBuilder.EmitMethodSignature(
+                    new MethodWithToken(method, moduleToken, constrainedType: null, unboxing: false, context: null),
+                    enforceDefEncoding: true,
+                    enforceOwningType: _factory.CompilationModuleGroup.EnforceOwningType(moduleToken.Module),
+                    factory.SignatureContext,
+                    isInstantiatingStub: false);
+                byte[] signature = signatureBuilder.ToArray();
                 BlobVertex signatureBlob = new BlobVertex(signature);
 
                 byte[] encodedInstrumentationData = pgoEmitter.ToByteArray();

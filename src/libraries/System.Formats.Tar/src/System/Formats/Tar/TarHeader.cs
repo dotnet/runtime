@@ -38,6 +38,11 @@ namespace System.Formats.Tar
         private const string PaxEaDevMajor = "devmajor";
         private const string PaxEaDevMinor = "devminor";
 
+        // Global Extended Attribute entries have a special format in the Name field:
+        // "{tmpFolder}/GlobalHead.{processId}.{GEAEntryNumber}"
+        // Excludes ".{GEAEntryNumber}" because the number gets added on write.
+        internal const string GlobalHeadFormatPrefix = "{0}/GlobalHead.{1}";
+
         internal Stream? _dataStream;
 
         // Position in the stream where the data ends in this header.

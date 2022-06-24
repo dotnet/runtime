@@ -62,7 +62,7 @@ class MemberLoader
 public:
     static void DECLSPEC_NORETURN ThrowMissingMethodException(MethodTable* pMT,
                                             LPCSTR szMember,
-                                            ModuleBase *pModule,
+                                            Module *pModule,
                                             PCCOR_SIGNATURE pSig,
                                             DWORD cSig,
                                             const SigTypeContext *pTypeContext);
@@ -100,7 +100,7 @@ public:
                                                mdToken FieldDef,
                                                BOOL strictMetadataChecks);
 
-    static void GetDescFromMemberRef(ModuleBase * pModule,
+    static void GetDescFromMemberRef(Module * pModule,
                                      mdToken MemberRef,
                                      MethodDesc ** ppMD,
                                      FieldDesc ** ppFD,
@@ -118,11 +118,11 @@ public:
                                      PCCOR_SIGNATURE * ppTypeSig = NULL,    // Optionally, return generic signatures fetched from metadata during loading.
                                      ULONG * pcbTypeSig = NULL);
 
-    static MethodDesc * GetMethodDescFromMemberRefAndType(ModuleBase * pModule,
+    static MethodDesc * GetMethodDescFromMemberRefAndType(Module * pModule,
                                                           mdToken MemberRef,
                                                           MethodTable * pMT);
 
-    static FieldDesc * GetFieldDescFromMemberRefAndType(ModuleBase * pModule,
+    static FieldDesc * GetFieldDescFromMemberRefAndType(Module * pModule,
                                                         mdToken MemberRef,
                                                         MethodTable * pMT);
 
@@ -221,7 +221,7 @@ public:
        LPCUTF8 pszName,
        PCCOR_SIGNATURE pSignature,
        DWORD cSignature,
-       ModuleBase* pModule,
+       Module* pModule,
        FM_Flags flags = FM_Default,
        const Substitution *pDefSubst = NULL);
 
@@ -255,7 +255,7 @@ public:
        LPCUTF8 pszName,
        PCCOR_SIGNATURE pSignature,
        DWORD cSignature,
-       ModuleBase* pModule,
+       Module* pModule,
        BOOL bCaseSensitive = TRUE);
 
     static MethodDesc *FindConstructor(MethodTable * pMT, LPHARDCODEDMETASIG pwzSignature);

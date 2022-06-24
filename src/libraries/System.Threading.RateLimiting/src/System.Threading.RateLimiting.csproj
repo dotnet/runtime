@@ -14,8 +14,10 @@ System.Threading.RateLimiting.RateLimitLease</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="System\Threading\RateLimiting\ChainedPartitionedRateLimiter.cs" />
     <Compile Include="System\Threading\RateLimiting\ConcurrencyLimiter.cs" />
     <Compile Include="System\Threading\RateLimiting\ConcurrencyLimiterOptions.cs" />
+    <Compile Include="System\Threading\RateLimiting\DefaultPartitionedRateLimiter.cs" />
     <Compile Include="System\Threading\RateLimiting\FixedWindowRateLimiter.cs" />
     <Compile Include="System\Threading\RateLimiting\FixedWindowRateLimiterOptions.cs" />
     <Compile Include="System\Threading\RateLimiting\MetadataName.cs" />

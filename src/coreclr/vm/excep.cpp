@@ -7087,9 +7087,12 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
     // NOTE: this is effectively ifdef (TARGET_AMD64 || TARGET_ARM), and does not actually trigger
     // a GC.  This will redirect the exception context to a stub which will
     // push a frame and cause GC.
-    if (IsGcMarker(pContext, pExceptionRecord))
+    if (Thread::UseRedirectForGcStress())
     {
-        return VEH_CONTINUE_EXECUTION;;
+        if (IsGcMarker(pContext, pExceptionRecord))
+        {
+            return VEH_CONTINUE_EXECUTION;;
+        }
     }
 #endif // USE_REDIRECT_FOR_GCSTRESS
 
