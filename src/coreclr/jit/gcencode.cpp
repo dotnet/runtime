@@ -4226,7 +4226,30 @@ void GCInfo::gcMakeRegPtrTable(
                     continue;
                 }
 
-                int offset = varDsc->GetStackOffset() + i * TARGET_POINTER_SIZE;
+                const unsigned int fieldOffset = i * TARGET_POINTER_SIZE;
+
+                if (varDsc->lvPromoted)
+                {
+                    assert(compiler->lvaGetPromotionType(varDsc) == Compiler::PROMOTION_TYPE_DEPENDENT);
+
+                    // See if this untracked dependently promoted struct has
+                    // a tracked field at this offset.
+                    //
+                    unsigned const   fieldLclNum = compiler->lvaGetFieldLocal(varDsc, fieldOffset);
+                    LclVarDsc* const fieldVarDsc = compiler->lvaGetDesc(fieldLclNum);
+                    assert(varTypeIsGC(fieldVarDsc->TypeGet()));
+
+                    if (fieldVarDsc->lvTracked)
+                    {
+                        JITDUMP("Untracked GC struct V%02 has tracked gc ref at + 0x%x (P-DEP promoted V%02u); will "
+                                "report slot as tracked",
+                                varNum, fieldOffset, fieldLclNum);
+                        continue;
+                    }
+                }
+
+                int const offset = varDsc->GetStackOffset() + fieldOffset;
+
 #if DOUBLE_ALIGN
                 // For genDoubleAlign(), locals are addressed relative to ESP and
                 // arguments are addressed relative to EBP.
