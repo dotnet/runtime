@@ -226,7 +226,7 @@ if [[ "$(uname -s)" == "Linux" && $test_exitcode -ne 0 ]]; then
     echo contents of /home/helixbot/dotnetbuild/dumps/
     ls -la /home/helixbot/dotnetbuild/dumps/
     for f in /home/helixbot/dotnetbuild/dumps/core.*; do
-      [[ $f =~ core.[0-9]+ ]] copy_core_file_to_temp_location "$f"
+      copy_core_file_to_temp_location "$f"
     done
   fi
 fi
