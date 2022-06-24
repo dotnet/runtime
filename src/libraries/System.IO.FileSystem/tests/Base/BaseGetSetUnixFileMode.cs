@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -28,7 +29,28 @@ namespace System.IO.Tests
         // returns EPERM when trying to setgid on directories, and for files
         // chmod filters out the bit.
         // We skip the tests with setgid.
-        private bool CanSetGroup => !PlatformDetection.IsBsdLike;
+        private static bool CanSetGroup => !PlatformDetection.IsBsdLike;
+
+        private static bool CanSetUser => !PlatformDetection.IstvOS;
+
+        public static IEnumerable<object[]> AllowedUnixFileModes
+        {
+            get
+            {
+                foreach (object[] modes in TestUnixFileModes)
+                {
+                    UnixFileMode mode = (UnixFileMode)modes[0];
+
+                    if (!CanSetGroup && (mode & UnixFileMode.SetGroup) != 0)
+                        continue;
+
+                    if (!CanSetUser && (mode & UnixFileMode.SetUser) != 0)
+                        continue;
+
+                    yield return modes;
+                }
+            }
+        }
 
         private string CreateTestItem(string path = null, [CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0)
         {
@@ -70,13 +92,9 @@ namespace System.IO.Tests
 
         [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
         [Theory]
-        [MemberData(nameof(TestUnixFileModes))]
+        [MemberData(nameof(AllowedUnixFileModes))]
         public void SetThenGet(UnixFileMode mode)
         {
-            if (!CanSetGroup && (mode & UnixFileMode.SetGroup) != 0)
-            {
-                return; // Skip
-            }
             if (GetModeNeedsReadableFile)
             {
                 // Ensure the file remains readable.
@@ -92,13 +110,9 @@ namespace System.IO.Tests
 
         [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
         [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
-        [MemberData(nameof(TestUnixFileModes))]
+        [MemberData(nameof(AllowedUnixFileModes))]
         public void SetThenGet_SymbolicLink(UnixFileMode mode)
         {
-            if (!CanSetGroup && (mode & UnixFileMode.SetGroup) != 0)
-            {
-                return; // Skip
-            }
             if (GetModeNeedsReadableFile)
             {
                 // Ensure the file remains readable.
