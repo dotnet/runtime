@@ -137,7 +137,7 @@ internal class IOServices
             }
         }
 
-        Assert.Equal(path.Length, characterCount);
+        Assert.Equal(characterCount, path.Length);
 
         return path.ToString();
     }
