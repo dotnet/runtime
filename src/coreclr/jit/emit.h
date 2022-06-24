@@ -2370,7 +2370,7 @@ public:
 
     bool emitIsWithinFrameRangeGCRs(int offs)
     {
-        return (offs >= emitGCrFrameOffsMin) && (offs <= emitGCrFrameOffsMax);
+        return (offs >= emitGCrFrameOffsMin) && (offs < emitGCrFrameOffsMax);
     }
 
     static instruction emitJumpKindToIns(emitJumpKind jumpKind);
