@@ -105,6 +105,11 @@ namespace Microsoft.Win32.SafeHandles
                     throw ex;
                 }
 
+                if (error.Error == Interop.Error.EISDIR)
+                {
+                    error = Interop.Error.EACCES.Info();
+                }
+
                 Interop.CheckIo(error.Error, path);
             }
 
@@ -305,7 +310,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 if ((status.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR)
                 {
-                    throw Interop.GetExceptionForIoErrno(Interop.Error.EACCES.Info(), path, isDirectory: true);
+                    throw Interop.GetExceptionForIoErrno(Interop.Error.EACCES.Info(), path);
                 }
 
                 if ((status.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFREG)
@@ -336,7 +341,7 @@ namespace Microsoft.Win32.SafeHandles
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 if (errorInfo.Error == Interop.Error.EWOULDBLOCK)
                 {
-                    throw Interop.GetExceptionForIoErrno(errorInfo, path, isDirectory: false);
+                    throw Interop.GetExceptionForIoErrno(errorInfo, path);
                 }
             }
 
@@ -403,7 +408,7 @@ namespace Microsoft.Win32.SafeHandles
                         // We know the file descriptor is valid and we know the size argument to FTruncate is correct,
                         // so if EBADF or EINVAL is returned, it means we're dealing with a special file that can't be
                         // truncated.  Ignore the error in such cases; in all others, throw.
-                        throw Interop.GetExceptionForIoErrno(errorInfo, path, isDirectory: false);
+                        throw Interop.GetExceptionForIoErrno(errorInfo, path);
                     }
                 }
             }

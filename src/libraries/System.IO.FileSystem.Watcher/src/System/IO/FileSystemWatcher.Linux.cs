@@ -786,8 +786,7 @@ namespace System.IO
                         {
                             fixed (byte* buf = &_buffer[0])
                             {
-                                _bufferAvailable = Interop.CheckIo(Interop.Sys.Read(_inotifyHandle, buf, this._buffer.Length),
-                                    isDirectory: true);
+                                _bufferAvailable = Interop.CheckIo(Interop.Sys.Read(_inotifyHandle, buf, this._buffer.Length));
                                 Debug.Assert(_bufferAvailable <= this._buffer.Length);
                             }
                         }

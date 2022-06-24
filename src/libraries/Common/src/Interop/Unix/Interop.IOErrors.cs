@@ -8,19 +8,19 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    private static void ThrowExceptionForIoErrno(ErrorInfo errorInfo, string? path, bool isDirectory)
+    private static void ThrowExceptionForIoErrno(ErrorInfo errorInfo, string? path, bool isDirError)
     {
         Debug.Assert(errorInfo.Error != Error.SUCCESS);
         Debug.Assert(errorInfo.Error != Error.EINTR, "EINTR errors should be handled by the native shim and never bubble up to managed code");
 
-        throw Interop.GetExceptionForIoErrno(errorInfo, path, isDirectory);
+        throw Interop.GetExceptionForIoErrno(errorInfo, path, isDirError);
     }
 
-    internal static void CheckIo(Error error, string? path = null, bool isDirectory = false)
+    internal static void CheckIo(Error error, string? path = null, bool isDirError = false)
     {
         if (error != Interop.Error.SUCCESS)
         {
-            ThrowExceptionForIoErrno(error.Info(), path, isDirectory);
+            ThrowExceptionForIoErrno(error.Info(), path, isDirError);
         }
     }
 
@@ -31,15 +31,15 @@ internal static partial class Interop
     /// </summary>
     /// <param name="result">The result of the system call.</param>
     /// <param name="path">The path with which this error is associated.  This may be null.</param>
-    /// <param name="isDirectory">true if the <paramref name="path"/> is known to be a directory; otherwise, false.</param>
+    /// <param name="isDirError">true if error is caused by a directory issue.</param>
     /// <returns>
     /// On success, returns the non-negative result long that was validated.
     /// </returns>
-    internal static long CheckIo(long result, string? path = null, bool isDirectory = false)
+    internal static long CheckIo(long result, string? path = null, bool isDirError = false)
     {
         if (result < 0)
         {
-            ThrowExceptionForIoErrno(Sys.GetLastErrorInfo(), path, isDirectory);
+            ThrowExceptionForIoErrno(Sys.GetLastErrorInfo(), path, isDirError);
         }
 
         return result;
@@ -53,9 +53,9 @@ internal static partial class Interop
     /// <returns>
     /// On success, returns the non-negative result int that was validated.
     /// </returns>
-    internal static int CheckIo(int result, string? path = null, bool isDirectory = false)
+    internal static int CheckIo(int result, string? path = null, bool isDirError = false)
     {
-        CheckIo((long)result, path, isDirectory);
+        CheckIo((long)result, path, isDirError);
 
         return result;
     }
@@ -68,9 +68,9 @@ internal static partial class Interop
     /// <returns>
     /// On success, returns the non-negative result IntPtr that was validated.
     /// </returns>
-    internal static IntPtr CheckIo(IntPtr result, string? path = null, bool isDirectory = false)
+    internal static IntPtr CheckIo(IntPtr result, string? path = null, bool isDirError = false)
     {
-        CheckIo((long)result, path, isDirectory);
+        CheckIo((long)result, path, isDirError);
 
         return result;
     }
@@ -83,12 +83,12 @@ internal static partial class Interop
     /// <returns>
     /// On success, returns the valid SafeFileHandle that was validated.
     /// </returns>
-    internal static TSafeHandle CheckIo<TSafeHandle>(TSafeHandle handle, string? path = null, bool isDirectory = false)
+    internal static TSafeHandle CheckIo<TSafeHandle>(TSafeHandle handle, string? path = null, bool isDirError = false)
         where TSafeHandle : SafeHandle
     {
         if (handle.IsInvalid)
         {
-            ThrowExceptionForIoErrno(Sys.GetLastErrorInfo(), path, isDirectory);
+            ThrowExceptionForIoErrno(Sys.GetLastErrorInfo(), path, isDirError);
         }
 
         return handle;
@@ -99,9 +99,9 @@ internal static partial class Interop
     /// </summary>
     /// <param name="errorInfo">The error info</param>
     /// <param name="path">The path with which this error is associated.  This may be null.</param>
-    /// <param name="isDirectory">true if the <paramref name="path"/> is known to be a directory; otherwise, false.</param>
+    /// <param name="isDirError">true if error is caused by a directory issue.</param>
     /// <returns></returns>
-    internal static Exception GetExceptionForIoErrno(ErrorInfo errorInfo, string? path = null, bool isDirectory = false)
+    internal static Exception GetExceptionForIoErrno(ErrorInfo errorInfo, string? path = null, bool isDirError = false)
     {
         // Translate the errno into a known set of exception types.  For cases where multiple errnos map
         // to the same exception type, include an inner exception with the details.
@@ -110,8 +110,8 @@ internal static partial class Interop
             case Error.ENOENT:
                 // For Windows compatibility, throw DirectoryNotFoundException instead of FileNotFoundException
                 // when the parent folder does not exist.
-                if (!isDirectory && (path is null ||
-                                     DirectoryExists(Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(path)))))
+                if ((!isDirError && (path is null ||
+                                     DirectoryExists(Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(path))))))
                 {
                     return !string.IsNullOrEmpty(path) ?
                         new FileNotFoundException(SR.Format(SR.IO_FileNotFound_FileName, path), path) :

@@ -434,15 +434,6 @@ namespace System.IO
                 throw new ArgumentException(SR.Arg_InvalidUnixFileMode, nameof(UnixFileMode));
             }
 
-            // Use ThrowNotFound to throw the appropriate exception when the file doesn't exist.
-            if (handle is null && path is not null)
-            {
-                EnsureCachesInitialized(path);
-
-                if (!EntryExists || IsBrokenLink)
-                    FileSystemInfo.ThrowNotFound(path);
-            }
-
             // Linux does not support link permissions.
             // To have consistent cross-platform behavior we operate on the link target.
             int rv = handle is not null ? Interop.Sys.FChMod(handle, (int)mode)
@@ -552,7 +543,7 @@ namespace System.IO
         private void ThrowNotFound(string? path)
         {
             Interop.Error error = _state == InitializedNotExistsNotADir ? Interop.Error.ENOTDIR : Interop.Error.ENOENT;
-            throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(error), path, isDirectory: false);
+            throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(error), path);
         }
     }
 }

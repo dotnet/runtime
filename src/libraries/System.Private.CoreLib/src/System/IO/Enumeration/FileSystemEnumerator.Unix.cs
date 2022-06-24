@@ -76,7 +76,7 @@ namespace System.IO.Enumeration
                 {
                     return IntPtr.Zero;
                 }
-                throw Interop.GetExceptionForIoErrno(info, path, isDirectory: true);
+                throw Interop.GetExceptionForIoErrno(info, path, isDirError: true);
             }
             return handle;
         }
@@ -199,7 +199,7 @@ namespace System.IO.Enumeration
                     }
                     else
                     {
-                        throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(result), _currentPath, isDirectory: true);
+                        throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(result), _currentPath, isDirError: true);
                     }
             }
         }
