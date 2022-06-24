@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using Xunit;
 
@@ -165,45 +166,62 @@ namespace System.Threading.Tasks.Dataflow.Tests
         public async Task TestProducerConsumerAsyncEnumerable()
         {
             foreach (TaskScheduler scheduler in new[] { TaskScheduler.Default, new ConcurrentExclusiveSchedulerPair().ConcurrentScheduler })
-                foreach (int maxMessagesPerTask in new[] { DataflowBlockOptions.Unbounded, 1, 2 })
-                    foreach (int boundedCapacity in new[] { DataflowBlockOptions.Unbounded, 1, 2 })
-                        foreach (int dop in new[] { 1, 2 })
-                            foreach (int elementsPerItem in new[] { 1, 3, 5 })
-                            {
-                                const int Messages = 50;
-                                var options = new ExecutionDataflowBlockOptions
-                                {
-                                    BoundedCapacity = boundedCapacity,
-                                    MaxDegreeOfParallelism = dop,
-                                    MaxMessagesPerTask = maxMessagesPerTask,
-                                    TaskScheduler = scheduler
-                                };
-                                TransformManyBlock<int, int> tb = new TransformManyBlock<int, int>(i => AsyncEnumerable.Repeat(i, elementsPerItem), options);
+            foreach (int maxMessagesPerTask in new[] { DataflowBlockOptions.Unbounded, 1, 2 })
+            foreach (int boundedCapacity in new[] { DataflowBlockOptions.Unbounded, 1, 2 })
+            foreach (int dop in new[] { 1, 2, 8 })
+            foreach (int elementsPerItem in new[] { 1, 5, 100 })
+            foreach (bool ensureOrdered in DataflowTestHelpers.BooleanValues)
+            {
+                const int Messages = 100;
+                var options = new ExecutionDataflowBlockOptions
+                {
+                    BoundedCapacity = boundedCapacity,
+                    MaxDegreeOfParallelism = dop,
+                    MaxMessagesPerTask = maxMessagesPerTask,
+                    TaskScheduler = scheduler,
+                    EnsureOrdered = ensureOrdered,
+                };
+                TransformManyBlock<int, int> tb = new TransformManyBlock<int, int>(i => AsyncEnumerable.Repeat(i, elementsPerItem), options);
 
-                                await Task.WhenAll(
-                                    Task.Run(async delegate
-                                    { // consumer
-                                        int i = 0;
-                                        int processed = 0;
-                                        while (await tb.OutputAvailableAsync())
-                                        {
-                                            Assert.Equal(expected: i, actual: await tb.ReceiveAsync());
-                                            processed++;
-                                            if (processed % elementsPerItem == 0)
-                                            {
-                                                i++;
-                                            }
-                                        }
-                                    }),
-                                    Task.Run(async delegate
-                                    { // producer
-                                        for (int i = 0; i < Messages; i++)
-                                        {
-                                            await tb.SendAsync(i);
-                                        }
-                                        tb.Complete();
-                                    }));
+                await Task.WhenAll(
+                    Task.Run(async delegate // consumer
+                    {
+                        if (ensureOrdered)
+                        {
+                            int i = 0;
+                            int processed = 0;
+                            while (await tb.OutputAvailableAsync())
+                            {
+                                Assert.Equal(expected: i, actual: await tb.ReceiveAsync());
+                                processed++;
+                                if (processed % elementsPerItem == 0)
+                                {
+                                    i++;
+                                }
                             }
+                        }
+                        else
+                        {
+                            var results = new List<int>();
+                            await foreach (int result in tb.ReceiveAllAsync())
+                            {
+                                results.Add(result);
+                            }
+
+                            IEnumerable<IGrouping<int, int>> messages = results.GroupBy(i => i);
+                            Assert.Equal(Messages, messages.Count());
+                            Assert.All(messages, m => Assert.Equal(elementsPerItem, m.Count()));
+                        }
+                    }),
+                    Task.Run(async delegate // producer
+                    {
+                        for (int i = 0; i < Messages; i++)
+                        {
+                            await tb.SendAsync(i);
+                        }
+                        tb.Complete();
+                    }));
+            }
         }
 
         [Fact]
@@ -658,6 +676,33 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 wait.Wait();
                 return DataflowTestHelpers.ToAsyncEnumerable(42);
             }
+        }
+
+        [Fact]
+        public async Task TestScheduling_MoveNextAsync_RunsOnTargetScheduler()
+        {
+            TaskScheduler scheduler = new ConcurrentExclusiveSchedulerPair().ConcurrentScheduler;
+            Assert.NotEqual(scheduler, TaskScheduler.Current);
+
+            async IAsyncEnumerable<int> Body(int value)
+            {
+                Assert.Equal(scheduler, TaskScheduler.Current);
+                await Task.Yield();
+                Assert.Equal(scheduler, TaskScheduler.Current);
+                yield return value;
+                Assert.Equal(scheduler, TaskScheduler.Current);
+            }
+
+            TransformManyBlock<int, int> t = new TransformManyBlock<int, int>(Body, new ExecutionDataflowBlockOptions { TaskScheduler = scheduler });
+
+            t.PostRange(0, 2);
+            t.Complete();
+            for (int i = 0; i < 2; i++)
+            {
+                Assert.Equal(expected: i, actual: await t.ReceiveAsync());
+            }
+
+            await t.Completion;
         }
     }
 }

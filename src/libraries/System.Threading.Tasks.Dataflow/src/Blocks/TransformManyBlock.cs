@@ -54,7 +54,8 @@ namespace System.Threading.Tasks.Dataflow
         /// <exception cref="System.ArgumentNullException">The <paramref name="transform"/> is null (Nothing in Visual Basic).</exception>
         public TransformManyBlock(Func<TInput, IEnumerable<TOutput>> transform) :
             this(transform, ExecutionDataflowBlockOptions.Default)
-        { }
+        {
+        }
 
         /// <summary>Initializes the <see cref="TransformManyBlock{TInput,TOutput}"/> with the specified function and <see cref="ExecutionDataflowBlockOptions"/>.</summary>
         /// <param name="transform">
@@ -66,9 +67,8 @@ namespace System.Threading.Tasks.Dataflow
         /// <exception cref="System.ArgumentNullException">The <paramref name="dataflowBlockOptions"/> is null (Nothing in Visual Basic).</exception>
         public TransformManyBlock(Func<TInput, IEnumerable<TOutput>> transform, ExecutionDataflowBlockOptions dataflowBlockOptions)
         {
-            // Validate arguments.
             if (transform == null) throw new ArgumentNullException(nameof(transform));
-            Initialize(messageWithId => ProcessMessage(transform, messageWithId), dataflowBlockOptions, ref _source!, ref _target!, ref _reorderingBuffer, TargetCoreOptions.None);
+            Initialize(messageWithId => ProcessMessage(transform, messageWithId), dataflowBlockOptions, ref _source, ref _target, ref _reorderingBuffer, TargetCoreOptions.None);
         }
 
         /// <summary>Initializes the <see cref="TransformManyBlock{TInput,TOutput}"/> with the specified function.</summary>
@@ -91,20 +91,18 @@ namespace System.Threading.Tasks.Dataflow
         /// <exception cref="System.ArgumentNullException">The <paramref name="dataflowBlockOptions"/> is null (Nothing in Visual Basic).</exception>
         public TransformManyBlock(Func<TInput, Task<IEnumerable<TOutput>>> transform, ExecutionDataflowBlockOptions dataflowBlockOptions)
         {
-            // Validate arguments.
             if (transform == null) throw new ArgumentNullException(nameof(transform));
-            Initialize(messageWithId => ProcessMessageWithTask(transform, messageWithId), dataflowBlockOptions, ref _source!, ref _target!, ref _reorderingBuffer, TargetCoreOptions.UsesAsyncCompletion);
+            Initialize(messageWithId => ProcessMessageWithTask(transform, messageWithId), dataflowBlockOptions, ref _source, ref _target, ref _reorderingBuffer, TargetCoreOptions.UsesAsyncCompletion);
         }
 
         private void Initialize(
             Action<KeyValuePair<TInput, long>> processMessageAction,
             ExecutionDataflowBlockOptions dataflowBlockOptions,
-            ref SourceCore<TOutput> source,
-            ref TargetCore<TInput> target,
+            [NotNull] ref SourceCore<TOutput>? source,
+            [NotNull] ref TargetCore<TInput>? target,
             ref ReorderingBuffer<IEnumerable<TOutput>>? reorderingBuffer,
             TargetCoreOptions targetCoreOptions)
         {
-            // Validate arguments.
             if (dataflowBlockOptions == null) throw new ArgumentNullException(nameof(dataflowBlockOptions));
 
             // Ensure we have options that can't be changed by the caller
@@ -113,7 +111,9 @@ namespace System.Threading.Tasks.Dataflow
             // Initialize onItemsRemoved delegate if necessary
             Action<ISourceBlock<TOutput>, int>? onItemsRemoved = null;
             if (dataflowBlockOptions.BoundedCapacity > 0)
+            {
                 onItemsRemoved = (owningSource, count) => ((TransformManyBlock<TInput, TOutput>)owningSource)._target.ChangeBoundingCount(-count);
+            }
 
             // Initialize source component
             source = new SourceCore<TOutput>(this, dataflowBlockOptions,
@@ -169,8 +169,6 @@ namespace System.Threading.Tasks.Dataflow
         /// <param name="messageWithId">The message to be processed.</param>
         private void ProcessMessage(Func<TInput, IEnumerable<TOutput>> transformFunction, KeyValuePair<TInput, long> messageWithId)
         {
-            Debug.Assert(transformFunction != null, "Function to invoke is required.");
-
             bool userDelegateSucceeded = false;
             try
             {
@@ -179,10 +177,9 @@ namespace System.Threading.Tasks.Dataflow
                 userDelegateSucceeded = true;
                 StoreOutputItems(messageWithId, outputItems);
             }
-            catch (Exception exc)
+            catch (Exception exc) when (Common.IsCooperativeCancellation(exc))
             {
                 // If this exception represents cancellation, swallow it rather than shutting down the block.
-                if (!Common.IsCooperativeCancellation(exc)) throw;
             }
             finally
             {
@@ -197,8 +194,6 @@ namespace System.Threading.Tasks.Dataflow
         /// <param name="messageWithId">The message to be processed.</param>
         private void ProcessMessageWithTask(Func<TInput, Task<IEnumerable<TOutput>>> function, KeyValuePair<TInput, long> messageWithId)
         {
-            Debug.Assert(function != null, "Function to invoke is required.");
-
             // Run the transform function to get the resulting task
             Task<IEnumerable<TOutput>>? task = null;
             Exception? caughtException = null;

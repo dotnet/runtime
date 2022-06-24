@@ -11,40 +11,56 @@ namespace System.Threading.Tasks.Dataflow
     {
         /// <summary>Initializes the <see cref="TransformManyBlock{TInput,TOutput}"/> with the specified function.</summary>
         /// <param name="transform">
-        /// The function to invoke with each data element received.  All of the data from the returned <see cref="System.Collections.Generic.IAsyncEnumerable{TOutput}"/>
+        /// The function to invoke with each data element received.  All of the data from the returned <see cref="IAsyncEnumerable{TOutput}"/>
         /// will be made available as output from this <see cref="TransformManyBlock{TInput,TOutput}"/>.
         /// </param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="transform"/> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentNullException">The <paramref name="transform"/> is <see langword="null" />.</exception>
         public TransformManyBlock(Func<TInput, IAsyncEnumerable<TOutput>> transform) :
             this(transform, ExecutionDataflowBlockOptions.Default)
-        { }
+        {
+        }
 
         /// <summary>Initializes the <see cref="TransformManyBlock{TInput,TOutput}"/> with the specified function and <see cref="ExecutionDataflowBlockOptions"/>.</summary>
         /// <param name="transform">
-        /// The function to invoke with each data element received.  All of the data from the returned <see cref="System.Collections.Generic.IAsyncEnumerable{TOutput}"/>
+        /// The function to invoke with each data element received.  All of the data from the returned <see cref="IAsyncEnumerable{TOutput}"/>
         /// will be made available as output from this <see cref="TransformManyBlock{TInput,TOutput}"/>.
         /// </param>
         /// <param name="dataflowBlockOptions">The options with which to configure this <see cref="TransformManyBlock{TInput,TOutput}"/>.</param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="transform"/> or <paramref name="dataflowBlockOptions"/> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentNullException">The <paramref name="transform"/> or <paramref name="dataflowBlockOptions"/> is <see langword="null" />.</exception>
         public TransformManyBlock(Func<TInput, IAsyncEnumerable<TOutput>> transform, ExecutionDataflowBlockOptions dataflowBlockOptions)
         {
-            // Validate arguments.
-            if (transform == null) throw new ArgumentNullException(nameof(transform));
-            Initialize(messageWithId => ProcessMessage(transform, messageWithId), dataflowBlockOptions, ref _source!, ref _target!, ref _reorderingBuffer, TargetCoreOptions.UsesAsyncCompletion);
+            if (transform is null)
+            {
+                throw new ArgumentNullException(nameof(transform));
+            }
+
+            Initialize(messageWithId =>
+            {
+                Task t = ProcessMessageAsync(transform, messageWithId);
+#if DEBUG
+                // Task returned from ProcessMessageAsync is explicitly ignored.
+                // That function handles all exceptions.
+                t.ContinueWith(t => Debug.Assert(t.IsCompletedSuccessfully), CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+#endif
+            }, dataflowBlockOptions, ref _source, ref _target, ref _reorderingBuffer, TargetCoreOptions.UsesAsyncCompletion);
         }
+
+        // Note:
+        // Enumerating the IAsyncEnumerable is done with ConfigureAwait(true), using the default behavior of
+        // paying attention to the current context/scheduler. This makes it so that the enumerable code runs on the target scheduler.
+        // For this to work correctly, there can't be any ConfigureAwait(false) in the same method prior to
+        // these await foreach loops, nor in the call chain prior to the method invocation.
 
         /// <summary>Processes the message with a user-provided transform function that returns an async enumerable.</summary>
         /// <param name="transformFunction">The transform function to use to process the message.</param>
         /// <param name="messageWithId">The message to be processed.</param>
-        private void ProcessMessage(Func<TInput, IAsyncEnumerable<TOutput>> transformFunction, KeyValuePair<TInput, long> messageWithId)
+        private async Task ProcessMessageAsync(Func<TInput, IAsyncEnumerable<TOutput>> transformFunction, KeyValuePair<TInput, long> messageWithId)
         {
-            Debug.Assert(transformFunction != null, "Function to invoke is required.");
-
             try
             {
                 // Run the user transform and store the results.
                 IAsyncEnumerable<TOutput> outputItems = transformFunction(messageWithId.Key);
-                StoreOutputItemsAsync(messageWithId, outputItems).GetAwaiter().GetResult();
+                await StoreOutputItemsAsync(messageWithId, outputItems).ConfigureAwait(false);
             }
             catch (Exception exc)
             {
@@ -77,12 +93,12 @@ namespace System.Threading.Tasks.Dataflow
         {
             // If there's a reordering buffer, pass the data along to it.
             // The reordering buffer will handle all details, including bounding.
-            if (_reorderingBuffer != null)
+            if (_reorderingBuffer is not null)
             {
                 await StoreOutputItemsReorderedAsync(messageWithId.Value, outputItems).ConfigureAwait(false);
             }
             // Otherwise, output the data directly.
-            else if (outputItems != null)
+            else if (outputItems is not null)
             {
                 await StoreOutputItemsNonReorderedWithIterationAsync(outputItems).ConfigureAwait(false);
             }
@@ -103,7 +119,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <param name="item">The async enumerable.</param>
         private async Task StoreOutputItemsReorderedAsync(long id, IAsyncEnumerable<TOutput>? item)
         {
-            Debug.Assert(_reorderingBuffer != null, "Expected a reordering buffer");
+            Debug.Assert(_reorderingBuffer is not null, "Expected a reordering buffer");
             Debug.Assert(id != Common.INVALID_REORDERING_ID, "This ID should never have been handed out.");
 
             // Grab info about the transform
@@ -111,19 +127,15 @@ namespace System.Threading.Tasks.Dataflow
             bool isBounded = target.IsBounded;
 
             // Handle invalid items (null enumerables) by delegating to the base
-            if (item == null)
+            if (item is null)
             {
                 _reorderingBuffer.AddItem(id, null, false);
-                if (isBounded) target.ChangeBoundingCount(count: -1);
+                if (isBounded)
+                {
+                    target.ChangeBoundingCount(count: -1);
+                }
                 return;
             }
-
-            // Determine whether this id is the next item, and if it is and if we have a trusted list,
-            // try to output it immediately on the fast path.  If it can be output, we're done.
-            // Otherwise, make forward progress based on whether we're next in line.
-            bool? isNextNullable = _reorderingBuffer.AddItemIfNextAndTrusted(id, null, false);
-            if (!isNextNullable.HasValue) return; // data was successfully output
-            bool isNextItem = isNextNullable.Value;
 
             // By this point, either we're not the next item, in which case we need to make a copy of the
             // data and store it, or we are the next item and can store it immediately but we need to enumerate
@@ -132,7 +144,7 @@ namespace System.Threading.Tasks.Dataflow
             try
             {
                 // If this is the next item, we can output it now.
-                if (isNextItem)
+                if (_reorderingBuffer.IsNext(id))
                 {
                     await StoreOutputItemsNonReorderedWithIterationAsync(item).ConfigureAwait(false);
                     // here itemCopy remains null, so that base.AddItem will finish our interactions with the reordering buffer
@@ -145,7 +157,7 @@ namespace System.Threading.Tasks.Dataflow
                     try
                     {
                         itemCopy = new List<TOutput>();
-                        await foreach (TOutput element in item.ConfigureAwait(false))
+                        await foreach (TOutput element in item.ConfigureAwait(true))
                         {
                             itemCopy.Add(element);
                         }
@@ -158,7 +170,10 @@ namespace System.Threading.Tasks.Dataflow
                         // If we're here because ToList threw an exception, then itemCount will be 0,
                         // and we still need to update the bounding count with this in order to counteract
                         // the increased bounding count for the corresponding input.
-                        if (isBounded) UpdateBoundingCountWithOutputCount(count: itemCount);
+                        if (isBounded)
+                        {
+                            UpdateBoundingCountWithOutputCount(count: itemCount);
+                        }
                     }
                 }
                 // else if the item isn't valid, the finally block will see itemCopy as null and output invalid
@@ -169,7 +184,7 @@ namespace System.Threading.Tasks.Dataflow
                 // all of the data, itemCopy will be null, and we just pass down the invalid item.
                 // If we haven't, pass down the real thing.  We do this even in the case of an exception,
                 // in which case this will be a dummy element.
-                _reorderingBuffer.AddItem(id, itemCopy, itemIsValid: itemCopy != null);
+                _reorderingBuffer.AddItem(id, itemCopy, itemIsValid: itemCopy is not null);
             }
         }
 
@@ -187,7 +202,7 @@ namespace System.Threading.Tasks.Dataflow
             // it guarantees that we're invoked serially, and we don't need to lock.
             bool isSerial =
                 _target.DataflowBlockOptions.MaxDegreeOfParallelism == 1 ||
-                _reorderingBuffer != null;
+                _reorderingBuffer is not null;
 
             // If we're bounding, we need to increment the bounded count
             // for each individual item as we enumerate it.
@@ -200,10 +215,13 @@ namespace System.Threading.Tasks.Dataflow
                 bool outputFirstItem = false;
                 try
                 {
-                    await foreach (TOutput item in outputItems.ConfigureAwait(false))
+                    await foreach (TOutput item in outputItems.ConfigureAwait(true))
                     {
-                        if (outputFirstItem) _target.ChangeBoundingCount(count: 1);
-                        else outputFirstItem = true;
+                        if (outputFirstItem)
+                        {
+                            _target.ChangeBoundingCount(count: 1);
+                        }
+                        outputFirstItem = true;
 
                         if (isSerial)
                         {
@@ -220,7 +238,10 @@ namespace System.Threading.Tasks.Dataflow
                 }
                 finally
                 {
-                    if (!outputFirstItem) _target.ChangeBoundingCount(count: -1);
+                    if (!outputFirstItem)
+                    {
+                        _target.ChangeBoundingCount(count: -1);
+                    }
                 }
             }
             // If we're not bounding, just output each individual item.
@@ -228,12 +249,14 @@ namespace System.Threading.Tasks.Dataflow
             {
                 if (isSerial)
                 {
-                    await foreach (TOutput item in outputItems.ConfigureAwait(false))
+                    await foreach (TOutput item in outputItems.ConfigureAwait(true))
+                    {
                         _source.AddMessage(item);
+                    }
                 }
                 else
                 {
-                    await foreach (TOutput item in outputItems.ConfigureAwait(false))
+                    await foreach (TOutput item in outputItems.ConfigureAwait(true))
                     {
                         lock (ParallelSourceLock) // don't hold lock while enumerating
                         {

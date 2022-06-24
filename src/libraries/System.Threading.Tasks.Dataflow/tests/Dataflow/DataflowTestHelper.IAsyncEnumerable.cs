@@ -12,11 +12,11 @@ namespace System.Threading.Tasks.Dataflow.Tests
 
     internal static partial class AsyncEnumerable
     {
-#pragma warning disable 1998
         internal static async IAsyncEnumerable<int> Repeat(int item, int count)
         {
             for (int i = 0; i < count; i++)
             {
+                await Task.Yield();
                 yield return item;
             }
         }
@@ -26,6 +26,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             var end = start + count;
             for (int i = start; i < end; i++)
             {
+                await Task.Yield();
                 yield return i;
             }
         }
@@ -34,9 +35,9 @@ namespace System.Threading.Tasks.Dataflow.Tests
         {
             foreach (T item in enumerable)
             {
+                await Task.Yield();
                 yield return item;
             }
         }
-#pragma warning restore 1998
     }
 }
