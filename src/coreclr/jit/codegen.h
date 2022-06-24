@@ -678,9 +678,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
     void genReportFullDebugInfo();
 
-    template<typename TWriteData>
+    template <typename TWriteData>
     void genReportFullDebugInfoInlineTree(InlineContext* context, TWriteData write);
-    template<typename TWriteData>
+    template <typename TWriteData>
     void genReportFullDebugInfoMappings(TWriteData write);
 
 #ifdef DEBUG

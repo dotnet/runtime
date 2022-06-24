@@ -7762,7 +7762,7 @@ public:
 
     // Record the instr offset mapping to the generated code
 
-    jitstd::list<IPmappingDsc> genIPmappings;
+    jitstd::list<IPmappingDsc>     genIPmappings;
     jitstd::list<PreciseIPMapping> genPreciseIPmappings;
 
     // Managed RetVal - A side hash table meant to record the mapping from a

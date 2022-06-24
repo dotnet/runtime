@@ -1303,10 +1303,10 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
     // ldarg instruction. For SPGO purposes we should consider always storing
     // the exact offset of the call instruction which will be more precise. We
     // may consider storing the statement itself as well.
-    context->m_Location      = stmt->GetDebugInfo().GetLocation();
+    context->m_Location = stmt->GetDebugInfo().GetLocation();
 
     assert(call->gtCallType == CT_USER_FUNC);
-    context->m_Callee        = call->gtCallMethHnd;
+    context->m_Callee = call->gtCallMethHnd;
 
     context->m_Devirtualized = call->IsDevirtualized();
     context->m_Guarded       = call->IsGuarded();
@@ -1332,7 +1332,7 @@ void InlineContext::SetSucceeded(const InlineInfo* info)
     m_CodeSizeEstimate = m_Policy->CodeSizeEstimate();
 #endif
 
-    m_Ordinal          = m_InlineStrategy->m_InlineCount + 1;
+    m_Ordinal = m_InlineStrategy->m_InlineCount + 1;
 
     m_InlineStrategy->NoteOutcome(this);
 }

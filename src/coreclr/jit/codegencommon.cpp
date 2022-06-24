@@ -7643,8 +7643,8 @@ void CodeGen::genReportFullDebugInfoToFile()
         first = false;
 
         fprintf(file, "{\"NativeOffset\":%u,\"InlineContext\":%u,\"ILOffset\":%u}",
-            mapping.nativeLoc.CodeOffset(GetEmitter()), mapping.debugInfo.GetInlineContext()->GetOrdinal(),
-            mapping.debugInfo.GetLocation().GetOffset());
+                mapping.nativeLoc.CodeOffset(GetEmitter()), mapping.debugInfo.GetInlineContext()->GetOrdinal(),
+                mapping.debugInfo.GetLocation().GetOffset());
     }
 
     fprintf(file, "]}\n");
@@ -7654,7 +7654,7 @@ void CodeGen::genReportFullDebugInfoToFile()
 
 #endif
 
-template<typename TWriteData>
+template <typename TWriteData>
 void CodeGen::genReportFullDebugInfoInlineTree(InlineContext* context, TWriteData write)
 {
     auto doWrite = [write](auto val) { write(&val, sizeof(val)); };
@@ -7684,7 +7684,7 @@ void CodeGen::genReportFullDebugInfoInlineTree(InlineContext* context, TWriteDat
     }
 }
 
-template<typename TWriteData>
+template <typename TWriteData>
 void CodeGen::genReportFullDebugInfoMappings(TWriteData write)
 {
     auto doWrite = [write](auto val) { write(&val, sizeof(val)); };
@@ -7708,28 +7708,27 @@ void CodeGen::genReportFullDebugInfo()
     INDEBUG(genReportFullDebugInfoToFile());
 
     size_t binarySize = 4; // fourcc
-    auto recordSize = [&binarySize](const void* data, size_t numBytes) { binarySize += numBytes; };
+    auto recordSize   = [&binarySize](const void* data, size_t numBytes) { binarySize += numBytes; };
     genReportFullDebugInfoInlineTree(compiler->compInlineContext, recordSize);
     genReportFullDebugInfoMappings(recordSize);
 
-    uint8_t inlineBytes[512];
-    uint8_t* bytes = binarySize <= sizeof(inlineBytes) ? inlineBytes : new (compiler, CMK_DebugInfo) uint8_t[binarySize];
+    uint8_t  inlineBytes[512];
+    uint8_t* bytes =
+        binarySize <= sizeof(inlineBytes) ? inlineBytes : new (compiler, CMK_DebugInfo) uint8_t[binarySize];
 
     uint8_t* cursor = bytes;
 #ifdef DEBUG
-    auto recordData =
-        [&cursor, bytes, binarySize](const void* data, size_t numBytes)
-        {
-            assert(cursor + numBytes <= bytes + binarySize);
-            memcpy(cursor, data, numBytes);
-            cursor += numBytes;
-        };
+    auto recordData = [&cursor, bytes, binarySize](const void* data, size_t numBytes) {
+        assert(cursor + numBytes <= bytes + binarySize);
+        memcpy(cursor, data, numBytes);
+        cursor += numBytes;
+    };
 #else
     auto recordData =
         [&cursor](const void* data, size_t numBytes)
         {
-            memcpy(cursor, data, numBytes);
-            cursor += numBytes;
+        memcpy(cursor, data, numBytes);
+        cursor += numBytes;
         });
 #endif
     recordData("DBG0", 4);

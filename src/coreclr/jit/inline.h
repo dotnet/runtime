@@ -760,7 +760,6 @@ public:
         return m_Ordinal;
     }
 
-
     // Get the parent context for this context.
     InlineContext* GetParent() const
     {
@@ -864,13 +863,13 @@ private:
     InlineContext*        m_Child;             // first child
     InlineContext*        m_Sibling;           // next child of the parent
     const BYTE*           m_Code;              // address of IL buffer for the method
-    CORINFO_METHOD_HANDLE m_Callee;           // handle to the method
+    CORINFO_METHOD_HANDLE m_Callee;            // handle to the method
     unsigned              m_ILSize;            // size of IL buffer for the method
     unsigned              m_ImportedILSize;    // estimated size of imported IL
     ILLocation            m_Location;          // inlining statement location within parent
     InlineObservation     m_Observation;       // what lead to this inline success or failure
     int                   m_CodeSizeEstimate;  // in bytes * 10
-    unsigned              m_Ordinal;          // Ordinal number of this inline
+    unsigned              m_Ordinal;           // Ordinal number of this inline
     bool                  m_Success : 1;       // true if this was a successful inline
     bool                  m_Devirtualized : 1; // true if this was a devirtualized call
     bool                  m_Guarded : 1;       // true if this was a guarded call
@@ -878,9 +877,9 @@ private:
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 
-    InlinePolicy*         m_Policy;           // policy that evaluated this inline
-    unsigned              m_TreeID;           // ID of the GenTreeCall in the parent
-    IL_OFFSET             m_ActualCallOffset; // IL offset of actual call instruction leading to the inline
+    InlinePolicy* m_Policy;           // policy that evaluated this inline
+    unsigned      m_TreeID;           // ID of the GenTreeCall in the parent
+    IL_OFFSET     m_ActualCallOffset; // IL offset of actual call instruction leading to the inline
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
