@@ -3354,25 +3354,19 @@ void Compiler::fgCreateFunclets()
 #endif // DEBUG
 }
 
-/*-------------------------------------------------------------------------
- *
- * Walk the EH funclet blocks of a function to determine if the funclet
- * section is cold. If any of the funclets are hot, then it may not be
- * beneficial to split at fgFirstFuncletBB, moving all funclets to the
- * cold section.
- */
-
+//------------------------------------------------------------------------
+// fgFuncletsAreCold: Determine if EH funclets can be moved to cold section.
+//
+// Notes:
+//   Walk the EH funclet blocks of a function to determine if the funclet
+//   section is cold. If any of the funclets are hot, then it may not be
+//   beneficial to split at fgFirstFuncletBB and move all funclets to
+//   the cold section.
+//
 bool Compiler::fgFuncletsAreCold()
 {
     for (BasicBlock* block = fgFirstFuncletBB; block != nullptr; block = block->bbNext)
     {
-#if HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
-        if (bbIsHandlerBeg(block))
-        {
-            return false;
-        }
-#endif // HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
-
         if (!block->isRunRarely())
         {
             return false;
