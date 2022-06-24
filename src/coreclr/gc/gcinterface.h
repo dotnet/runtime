@@ -544,7 +544,7 @@ enum class GCConfigurationType
     Boolean 
 };
 
-using ConfigurationValueFunc = void (*)(void* nameOfConfiguration, GCConfigurationType type, int64_t data);
+using ConfigurationValueFunc = void (*)(void* context, void* name, GCConfigurationType type, int64_t data);
 
 // IGCHeap is the interface that the VM will use when interacting with the GC.
 class IGCHeap {
@@ -945,7 +945,7 @@ public:
     virtual int64_t GetTotalPauseDuration() = 0;
 
     // Gets all the names and values of the GC configurations.
-    virtual void EnumerateConfigurationValues(ConfigurationValueFunc configurationValueFunc) = 0;
+    virtual void EnumerateConfigurationValues(void* context, ConfigurationValueFunc configurationValueFunc) = 0;
 };
 
 #ifdef WRITE_BARRIER_CHECK

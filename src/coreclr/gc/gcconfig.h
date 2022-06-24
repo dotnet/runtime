@@ -162,7 +162,7 @@ GC_CONFIGURATION_KEYS
 
 public:
 
-  static void EnumerateConfigurationValues(ConfigurationValueFunc configurationValueFunc);
+  static void EnumerateConfigurationValues(void* context, ConfigurationValueFunc configurationValueFunc);
 
 // Flags that may inhabit the number returned for the HeapVerifyLevel config option.
 // Keep this in sync with vm\eeconfig.h if this ever changes.

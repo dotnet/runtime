@@ -13,7 +13,7 @@
 
 #define INT_CONFIG(name, unused_private_key, unused_public_key, default, unused_enumerated, unused_doc)  \
   int64_t GCConfig::Get##name() { return s_##name; }                                  \
-  void GCConfig::Set##name(long long value) { s_Updated##name = value; }                \
+  void GCConfig::Set##name(long long value) { s_Updated##name = value; }              \
   int64_t GCConfig::s_##name = default;                                               \
   int64_t GCConfig::s_Updated##name = default;
 
@@ -34,11 +34,11 @@ GC_CONFIGURATION_KEYS
 #undef INT_CONFIG
 #undef STRING_CONFIG
 
-void GCConfig::EnumerateConfigurationValues(ConfigurationValueFunc configurationValueFunc)
+void GCConfig::EnumerateConfigurationValues(void* context, ConfigurationValueFunc configurationValueFunc)
 {
 #define INT_CONFIG_false(name, default)
 #define INT_CONFIG_true(name, default)  \
-    configurationValueFunc((void*)(#name), GCConfigurationType::Int64, static_cast<int64_t>(s_Updated##name));
+    configurationValueFunc(context, (void*)(#name), GCConfigurationType::Int64, static_cast<int64_t>(s_Updated##name));
     
 #define STRING_CONFIG_false(name, private_key, public_key)
 #define STRING_CONFIG_true(name, private_key, public_key)                            \
@@ -46,12 +46,12 @@ void GCConfig::EnumerateConfigurationValues(ConfigurationValueFunc configuration
         const char* resultStr = nullptr;                                             \
         GCToEEInterface::GetStringConfigValue(private_key, public_key, &resultStr);  \
         GCConfigStringHolder holder(resultStr);                                      \
-        configurationValueFunc((void*)(#name), GCConfigurationType::StringUtf8, reinterpret_cast<int64_t>(resultStr));               \
+        configurationValueFunc(context, (void*)(#name), GCConfigurationType::StringUtf8, reinterpret_cast<int64_t>(resultStr));               \
     }
 
 #define BOOL_CONFIG_false(name, default)
 #define BOOL_CONFIG_true(name, default)  \
-    configurationValueFunc((void*)(#name), GCConfigurationType::Boolean, static_cast<int64_t>(s_Updated##name));
+    configurationValueFunc(context, (void*)(#name), GCConfigurationType::Boolean, static_cast<int64_t>(s_Updated##name));
 
 #define INT_CONFIG(name, unused_private_key, unused_public_key, default, enumerated, unused_doc)   \
     INT_CONFIG_##enumerated(name, default)

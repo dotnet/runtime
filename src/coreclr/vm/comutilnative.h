@@ -121,7 +121,7 @@ typedef GCMemoryInfoData * GCMEMORYINFODATA;
 typedef GCMemoryInfoData * GCMEMORYINFODATAREF;
 #endif // USE_CHECKED_OBJECTREFS
 
-using EnumerateConfigurationValuesCallback = void (*)(void* name, GCConfigurationType type, int64_t data);
+using EnumerateConfigurationValuesCallback = void (*)(void* context, void* name, GCConfigurationType type, int64_t data);
 
 class GCInterface {
 private:
@@ -196,7 +196,7 @@ extern "C" void QCALLTYPE GCInterface_AddMemoryPressure(UINT64 bytesAllocated);
 
 extern "C" void QCALLTYPE GCInterface_RemoveMemoryPressure(UINT64 bytesAllocated);
 
-extern "C" void QCALLTYPE GCInterface_EnumerateConfigurationValues(EnumerateConfigurationValuesCallback callback);
+extern "C" void QCALLTYPE GCInterface_EnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback);
 
 class COMInterlocked
 {

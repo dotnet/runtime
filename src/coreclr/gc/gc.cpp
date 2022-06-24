@@ -43955,6 +43955,7 @@ HRESULT GCHeap::Initialize()
     }
 
 #endif //HOST_64BIT
+    GCConfig::SetGCLargePages(gc_heap::use_large_pages_p);
     GCConfig::SetGCHeapHardLimit(static_cast<int64_t>(gc_heap::heap_hard_limit));
     GCConfig::SetGCHeapHardLimitSOH(static_cast<int64_t>(gc_heap::heap_hard_limit_oh[soh]));
     GCConfig::SetGCHeapHardLimitLOH(static_cast<int64_t>(gc_heap::heap_hard_limit_oh[loh]));
@@ -46424,9 +46425,9 @@ int64_t GCHeap::GetTotalPauseDuration()
     return (int64_t)(gc_heap::total_suspended_time * 10);
 }
 
-void GCHeap::EnumerateConfigurationValues(ConfigurationValueFunc configurationValueFunc)
+void GCHeap::EnumerateConfigurationValues(void* context, ConfigurationValueFunc configurationValueFunc)
 {
-    GCConfig::EnumerateConfigurationValues(configurationValueFunc);
+    GCConfig::EnumerateConfigurationValues(context, configurationValueFunc);
 }
 
 uint32_t GCHeap::GetMemoryLoad()

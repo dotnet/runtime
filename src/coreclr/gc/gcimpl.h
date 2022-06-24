@@ -183,7 +183,7 @@ public:
 
     int64_t GetTotalPauseDuration();
 
-    void EnumerateConfigurationValues(ConfigurationValueFunc configurationValueFunc);
+    void EnumerateConfigurationValues(void* context, ConfigurationValueFunc configurationValueFunc);
 
     uint32_t GetMemoryLoad();
 

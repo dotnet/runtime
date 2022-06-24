@@ -2607,13 +2607,6 @@ namespace System
         public static TimeSpan GetTotalPauseDuration() { return TimeSpan.Zero; }
 
         public static System.Collections.Generic.IReadOnlyDictionary<string, object> GetConfigurationVariables() { throw null; }
-
-        public enum GCConfigurationType
-        {
-            Int64,
-            StringUtf8,
-            Boolean 
-        }
     }
 
     /// <summary>Specifies the behavior for a forced garbage collection.</summary>

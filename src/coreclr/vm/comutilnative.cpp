@@ -1318,20 +1318,20 @@ extern "C" void QCALLTYPE GCInterface_EnumerateConfigurationValues(void* configu
     END_QCALL;
 }
 
-void GCInterface::EnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback)
+void GCInterface::EnumerateConfigurationValues(void* context, EnumerateConfigurationValuesCallback callback)
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        PRECONDITION(configurationContext != nullptr);
+        PRECONDITION(context != nullptr);
         PRECONDITION(callback != nullptr);
     }
     CONTRACTL_END;
 
     IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
-    pHeap->EnumerateConfigurationValues(callback);
+    pHeap->EnumerateConfigurationValues(context, callback);
 }
 
 #ifdef HOST_64BIT

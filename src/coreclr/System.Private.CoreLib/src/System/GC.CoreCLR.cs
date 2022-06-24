@@ -733,6 +733,10 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern long _GetTotalPauseDuration();
 
+        /// <summary>
+        /// Gets the total amount of time paused in GC since the beginning of the process.
+        /// </summary>
+        /// <returns> The total amount of time paused in GC since the beginning of the process.</returns>
         public static TimeSpan GetTotalPauseDuration()
         {
             return new TimeSpan(_GetTotalPauseDuration());
@@ -746,6 +750,9 @@ namespace System
         [UnmanagedCallersOnly]
         private static unsafe void Callback(void* configurationContext, void* name, GCConfigurationType type, long data)
         {
+            Debug.Assert(configurationContext != null);
+            Debug.Assert(name != null);
+
             ref GCConfigurationContext context = ref Unsafe.As<byte, GCConfigurationContext>(ref *(byte*)configurationContext);
             Debug.Assert(context.Configurations != null);
             Dictionary<string, object> configurationDictionary = context.Configurations!;
@@ -780,19 +787,12 @@ namespace System
                 Configurations = new Dictionary<string, object>()
             };
 
-            try
-            {
-                _EnumerateConfigurationValues(Unsafe.AsPointer(ref context), &Callback);
-                return context.Configurations!;
-            }
-
-            finally
-            {
-            }
+            _EnumerateConfigurationValues(Unsafe.AsPointer(ref context), &Callback);
+            return context.Configurations!;
         }
 
         // Corresponding Enum for the managed side of things in gcinterface.h that indicates the type of the configuration.
-        public enum GCConfigurationType
+        internal enum GCConfigurationType
         {
             Int64,
             StringUtf8,
