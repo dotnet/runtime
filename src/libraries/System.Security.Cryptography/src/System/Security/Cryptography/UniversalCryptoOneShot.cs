@@ -250,24 +250,22 @@ namespace System.Security.Cryptography
                 bytesWritten = cipher.TransformFinal(input, output);
                 return true;
             }
-            else
-            {
-                // Copy the input to the output, and apply padding if required. This will not throw since the
-                // output length has already been checked, and PadBlock will not copy from input to output
-                // until it has checked that it will be able to apply padding correctly.
-                int padWritten = SymmetricPadding.PadBlock(input, output, cipher.PaddingSizeInBytes, paddingMode);
 
-                // Do an in-place encrypt. All of our implementations support this, either natively
-                // or making a temporary buffer themselves if in-place is not supported by the native
-                // implementation.
-                Span<byte> paddedOutput = output.Slice(0, padWritten);
-                bytesWritten = cipher.TransformFinal(paddedOutput, paddedOutput);
+            // Copy the input to the output, and apply padding if required. This will not throw since the
+            // output length has already been checked, and PadBlock will not copy from input to output
+            // until it has checked that it will be able to apply padding correctly.
+            int padWritten = SymmetricPadding.PadBlock(input, output, cipher.PaddingSizeInBytes, paddingMode);
 
-                // After padding, we should have an even number of blocks, and the same applies
-                // to the transform.
-                Debug.Assert(padWritten == bytesWritten);
-                return true;
-            }
+            // Do an in-place encrypt. All of our implementations support this, either natively
+            // or making a temporary buffer themselves if in-place is not supported by the native
+            // implementation.
+            Span<byte> paddedOutput = output.Slice(0, padWritten);
+            bytesWritten = cipher.TransformFinal(paddedOutput, paddedOutput);
+
+            // After padding, we should have an even number of blocks, and the same applies
+            // to the transform.
+            Debug.Assert(padWritten == bytesWritten);
+            return true;
         }
     }
 }

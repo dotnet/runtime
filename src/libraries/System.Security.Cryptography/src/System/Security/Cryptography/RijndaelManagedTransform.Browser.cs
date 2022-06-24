@@ -20,9 +20,6 @@ namespace System.Security.Cryptography
         private readonly int _Nr;
         private readonly int _Nk;
 
-        private readonly int[] _encryptindex;
-        private readonly int[] _decryptindex;
-
         private int[] _IV;
         private int[] _lastBlockBuffer;
         private byte[]? _depadBuffer;
@@ -31,46 +28,18 @@ namespace System.Security.Cryptography
                                         ReadOnlySpan<byte> iv,
                                         bool encrypting)
         {
+            Debug.Assert(BitConverter.IsLittleEndian, "The logic of casting Span<int> to Span<byte> below assumes little endian");
+
             _encrypting = encrypting;
             _Nr = GetNumberOfRounds(key);
             _Nk = key.Length / 4;
 
-            // Precompute the modulus operations: these are performance killers when called frequently
-            _encryptindex = new int[BlockSizeInts * 3];
-            _decryptindex = new int[BlockSizeInts * 3];
-
-            Span<int> encryptindex1 = _encryptindex.AsSpan(0, BlockSizeInts);
-            Span<int> encryptindex2 = _encryptindex.AsSpan(BlockSizeInts, BlockSizeInts);
-            Span<int> encryptindex3 = _encryptindex.AsSpan(BlockSizeInts * 2, BlockSizeInts);
-
-            Span<int> decryptindex1 = _decryptindex.AsSpan(0, BlockSizeInts);
-            Span<int> decryptindex2 = _decryptindex.AsSpan(BlockSizeInts, BlockSizeInts);
-            Span<int> decryptindex3 = _decryptindex.AsSpan(BlockSizeInts * 2, BlockSizeInts);
-
-            for (int j = 0; j < BlockSizeInts; j++)
-            {
-                encryptindex1[j] = (j + 1) % BlockSizeInts;
-                encryptindex2[j] = (j + 2) % BlockSizeInts;
-                encryptindex3[j] = (j + 3) % BlockSizeInts;
-                decryptindex1[j] = (j - 1 + BlockSizeInts) % BlockSizeInts;
-                decryptindex2[j] = (j - 2 + BlockSizeInts) % BlockSizeInts;
-                decryptindex3[j] = (j - 3 + BlockSizeInts) % BlockSizeInts;
-            }
-
-            // we only support CBC mode
-            if (iv.Length / 4 != BlockSizeInts)
+            // we only support the standard AES block size
+            if (iv.Length != BlockSizeBytes)
                 throw new CryptographicException(SR.Cryptography_InvalidIVSize);
 
             _IV = new int[BlockSizeInts];
-            int index = 0;
-            for (int i = 0; i < BlockSizeInts; ++i)
-            {
-                int i0 = iv[index++];
-                int i1 = iv[index++];
-                int i2 = iv[index++];
-                int i3 = iv[index++];
-                _IV[i] = i3 << 24 | i2 << 16 | i1 << 8 | i0;
-            }
+            iv.CopyTo(MemoryMarshal.AsBytes(_IV.AsSpan()));
 
             GenerateKeyExpansion(key);
 
@@ -294,8 +263,6 @@ namespace System.Security.Cryptography
                                        int outputOffset,
                                        bool fLast)
         {
-            Debug.Assert(BitConverter.IsLittleEndian, "The logic of casting Span<int> to Span<byte> below assumes little endian");
-
             int inputCount = inputBuffer.Length;
             byte padSize = 0;
             int lonelyBytes = inputCount % InputBlockSize;
@@ -464,6 +431,7 @@ namespace System.Security.Cryptography
             }
 
             ReadOnlySpan<int> T = s_T;
+            ReadOnlySpan<int> encryptindex = s_encryptindex;
             int encryptindexIndex;
             int encryptKeyExpansionIndex = BlockSizeInts;
             for (int r = 1; r < _Nr; ++r)
@@ -472,18 +440,15 @@ namespace System.Security.Cryptography
                 for (int i = 0; i < BlockSizeInts; ++i)
                 {
                     temp[i] = T[0 + (work[i] & 0xFF)] ^
-                              T[256 + ((work[_encryptindex[encryptindexIndex]] >> 8) & 0xFF)] ^
-                              T[512 + ((work[_encryptindex[encryptindexIndex + BlockSizeInts]] >> 16) & 0xFF)] ^
-                              T[768 + ((work[_encryptindex[encryptindexIndex + (BlockSizeInts * 2)]] >> 24) & 0xFF)] ^
+                              T[256 + ((work[encryptindex[encryptindexIndex]] >> 8) & 0xFF)] ^
+                              T[512 + ((work[encryptindex[encryptindexIndex + BlockSizeInts]] >> 16) & 0xFF)] ^
+                              T[768 + ((work[encryptindex[encryptindexIndex + (BlockSizeInts * 2)]] >> 24) & 0xFF)] ^
                               _encryptKeyExpansion[encryptKeyExpansionIndex];
                     encryptindexIndex++;
                     encryptKeyExpansionIndex++;
                 }
 
-                for (int i = 0; i < BlockSizeInts; ++i)
-                {
-                    work[i] = temp[i];
-                }
+                temp.CopyTo(work);
             }
 
             ReadOnlySpan<int> TF = s_TF;
@@ -491,9 +456,9 @@ namespace System.Security.Cryptography
             for (int i = 0; i < BlockSizeInts; ++i)
             {
                 temp[i] = TF[0 + (work[i] & 0xFF)] ^
-                          TF[256 + ((work[_encryptindex[encryptindexIndex]] >> 8) & 0xFF)] ^
-                          TF[512 + ((work[_encryptindex[encryptindexIndex + BlockSizeInts]] >> 16) & 0xFF)] ^
-                          TF[768 + ((work[_encryptindex[encryptindexIndex + (BlockSizeInts * 2)]] >> 24) & 0xFF)] ^
+                          TF[256 + ((work[encryptindex[encryptindexIndex]] >> 8) & 0xFF)] ^
+                          TF[512 + ((work[encryptindex[encryptindexIndex + BlockSizeInts]] >> 16) & 0xFF)] ^
+                          TF[768 + ((work[encryptindex[encryptindexIndex + (BlockSizeInts * 2)]] >> 24) & 0xFF)] ^
                           _encryptKeyExpansion[encryptKeyExpansionIndex];
                 encryptindexIndex++;
                 encryptKeyExpansionIndex++;
@@ -514,6 +479,7 @@ namespace System.Security.Cryptography
             }
 
             ReadOnlySpan<int> iT = s_iT;
+            ReadOnlySpan<int> decryptindex = s_decryptindex;
             int decryptindexIndex;
             int decryptKeyExpansionIndex;
             for (int r = 1; r < _Nr; ++r)
@@ -524,18 +490,16 @@ namespace System.Security.Cryptography
                 for (int i = 0; i < BlockSizeInts; ++i)
                 {
                     temp[i] = iT[0 + ((work[i]) & 0xFF)] ^
-                              iT[256 + ((work[_decryptindex[decryptindexIndex]] >> 8) & 0xFF)] ^
-                              iT[512 + ((work[_decryptindex[decryptindexIndex + BlockSizeInts]] >> 16) & 0xFF)] ^
-                              iT[768 + ((work[_decryptindex[decryptindexIndex + (BlockSizeInts * 2)]] >> 24) & 0xFF)] ^
+                              iT[256 + ((work[decryptindex[decryptindexIndex]] >> 8) & 0xFF)] ^
+                              iT[512 + ((work[decryptindex[decryptindexIndex + BlockSizeInts]] >> 16) & 0xFF)] ^
+                              iT[768 + ((work[decryptindex[decryptindexIndex + (BlockSizeInts * 2)]] >> 24) & 0xFF)] ^
                               _decryptKeyExpansion[decryptKeyExpansionIndex];
                     keyIndex++;
                     decryptindexIndex++;
                     decryptKeyExpansionIndex++;
                 }
-                for (int i = 0; i < BlockSizeInts; ++i)
-                {
-                    work[i] = temp[i];
-                }
+
+                temp.CopyTo(work);
             }
 
             ReadOnlySpan<int> iTF = s_iTF;
@@ -545,9 +509,9 @@ namespace System.Security.Cryptography
             for (int i = 0; i < BlockSizeInts; ++i)
             {
                 temp[i] = iTF[0 + ((work[i]) & 0xFF)] ^
-                          iTF[256 + ((work[_decryptindex[decryptindexIndex]] >> 8) & 0xFF)] ^
-                          iTF[512 + ((work[_decryptindex[decryptindexIndex + BlockSizeInts]] >> 16) & 0xFF)] ^
-                          iTF[768 + ((work[_decryptindex[decryptindexIndex + (BlockSizeInts * 2)]] >> 24) & 0xFF)] ^
+                          iTF[256 + ((work[decryptindex[decryptindexIndex]] >> 8) & 0xFF)] ^
+                          iTF[512 + ((work[decryptindex[decryptindexIndex + BlockSizeInts]] >> 16) & 0xFF)] ^
+                          iTF[768 + ((work[decryptindex[decryptindexIndex + (BlockSizeInts * 2)]] >> 24) & 0xFF)] ^
                           _decryptKeyExpansion[decryptKeyExpansionIndex];
                 decryptindexIndex++;
                 decryptKeyExpansionIndex++;
@@ -686,6 +650,19 @@ namespace System.Security.Cryptography
             112,  62, 181, 102,  72,   3, 246,  14,  97,  53,  87, 185, 134, 193,  29, 158,
             225, 248, 152,  17, 105, 217, 142, 148, 155,  30, 135, 233, 206,  85,  40, 223,
             140, 161, 137,  13, 191, 230,  66, 104,  65, 153,  45,  15, 176,  84, 187,  22 };
+
+        // Precompute the modulus operations: these are performance killers when called frequently
+        private static readonly int[] s_encryptindex = new int[BlockSizeInts * 3] {
+            1, 2, 3, 0,
+            2, 3, 0, 1,
+            3, 0, 1, 2,
+        };
+
+        private static readonly int[] s_decryptindex = new int[BlockSizeInts * 3] {
+            3, 0, 1, 2,
+            2, 3, 0, 1,
+            1, 2, 3, 0,
+        };
 
         private static readonly int[] s_Rcon = new int[] {
             0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36,
