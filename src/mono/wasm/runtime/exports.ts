@@ -72,7 +72,8 @@ import { diagnostics } from "./diagnostics";
 import {
     dotnet_browser_can_use_subtle_crypto_impl,
     dotnet_browser_simple_digest_hash,
-    dotnet_browser_sign
+    dotnet_browser_sign,
+    dotnet_browser_encrypt_decrypt
 } from "./crypto-worker";
 
 const MONO = {
@@ -374,7 +375,8 @@ export const __linker_exports: any = {
     // pal_crypto_webworker.c
     dotnet_browser_can_use_subtle_crypto_impl,
     dotnet_browser_simple_digest_hash,
-    dotnet_browser_sign
+    dotnet_browser_sign,
+    dotnet_browser_encrypt_decrypt
 };
 
 const INTERNAL: any = {
