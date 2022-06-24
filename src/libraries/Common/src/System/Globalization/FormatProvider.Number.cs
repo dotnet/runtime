@@ -584,6 +584,7 @@ namespace System.Globalization
                 return false;
             }
 
+            [MethodImpl(MethodImplOptions.NoInlining)] // rare slow path that shouldn't impact perf of the main use case
             private static bool TrailingZeros(ReadOnlySpan<char> s, int index) =>
                 // For compatibility, we need to allow trailing zeros at the end of a number string
                 s.Slice(index).IndexOfAnyExcept('\0') < 0;

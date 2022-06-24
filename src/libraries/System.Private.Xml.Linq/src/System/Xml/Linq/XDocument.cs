@@ -894,9 +894,6 @@ namespace System.Xml.Linq
             return null;
         }
 
-        internal static bool IsWhitespace(string s) =>
-            s.AsSpan().IndexOfAnyExcept(" \t\r\n") < 0;
-
         internal override void ValidateNode(XNode node, XNode? previous)
         {
             switch (node.NodeType)
@@ -939,7 +936,10 @@ namespace System.Xml.Linq
 
         internal override void ValidateString(string s)
         {
-            if (!IsWhitespace(s)) throw new ArgumentException(SR.Argument_AddNonWhitespace);
+            if (s.AsSpan().IndexOfAnyExcept(" \t\r\n") >= 0)
+            {
+                throw new ArgumentException(SR.Argument_AddNonWhitespace);
+            }
         }
     }
 }
