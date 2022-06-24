@@ -74,18 +74,19 @@ namespace System.Formats.Tar
         // Asynchronously attempts read all the fields of the next header.
         // Throws if end of stream is reached or if any data type conversion fails.
         // Returns true if all the attributes were read successfully, false otherwise.
-        internal ValueTask<bool> TryGetNextHeaderAsync(Stream archiveStream, bool copyData, CancellationToken cancellationToken)
+        internal async ValueTask<bool> TryGetNextHeaderAsync(Stream archiveStream, bool copyData, CancellationToken cancellationToken)
         {
             try
             {
                 // The four supported formats have a header that fits in the default record size
                 byte[] rented = ArrayPool<byte>.Shared.Rent(minimumLength: TarHelpers.RecordSize);
                 Memory<byte> buffer = rented.AsMemory(0, TarHelpers.RecordSize); // minimumLength means the array could've been larger
+                buffer.Span.Clear(); // Rented arrays aren't clean
 
-                ValueTask<bool> result = TryGetNextHeaderAsyncInternal(archiveStream, buffer, copyData, cancellationToken);
+                await TryGetNextHeaderAsyncInternal(archiveStream, buffer, copyData, cancellationToken).ConfigureAwait(false);
 
                 ArrayPool<byte>.Shared.Return(rented);
-                return result;
+                return true;
             }
             finally
             {
