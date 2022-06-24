@@ -1458,8 +1458,6 @@ namespace System.Net.Http
                 WriteBytes(":protocol"u8, ref headerBuffer);
                 Encoding? protocolEncoding = _pool.Settings._requestHeaderEncodingSelector?.Invoke(":protocol", request);
                 WriteLiteralHeaderValue(request.Headers.Protocol, protocolEncoding, ref headerBuffer);
-
-                request.Headers.Protocol = null;
             }
 
             if (request.HasHeaders)

@@ -44,32 +44,36 @@ namespace System.Net.WebSockets
 
         public async Task ConnectAsync(Uri uri, HttpMessageInvoker? invoker, CancellationToken cancellationToken, ClientWebSocketOptions options)
         {
-            invoker ??= new HttpMessageInvoker(SetupHandler(options));
+            bool disposeHandler = false;
+            invoker ??= new HttpMessageInvoker(SetupHandler(options, out disposeHandler));
             HttpResponseMessage? response = null;
 
-            // TODO setup to false
-            bool disposeHandler = true;
+            bool tryDowngrade = false;
             try
             {
-                if (options.HttpVersion.Major >= 3 && options.HttpVersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
-                {
-                    throw new Exception();
-                }
-
-                var request = new HttpRequestMessage(HttpMethod.Get, uri);
-                if (options.HttpVersion.Major >= 2 || (options.HttpVersionPolicy == HttpVersionPolicy.RequestVersionOrHigher))
-                {
-                    request.Version = new Version(2, 0);
-                }
-                else
-                {
-                    request.Version = new Version(1, 1);
-                }
 
                 while (true)
                 {
                     try
                     {
+                        HttpRequestMessage request;
+                        if (!tryDowngrade && options.HttpVersion == HttpVersion.Version20
+                            || (options.HttpVersion == HttpVersion.Version11 && options.HttpVersionPolicy == HttpVersionPolicy.RequestVersionOrHigher))
+                        {
+                            request = new HttpRequestMessage(HttpMethod.Connect, uri);
+                            request.Version = new Version(2, 0);
+                            tryDowngrade = true;
+                        }
+                        else if (tryDowngrade || options.HttpVersion == HttpVersion.Version11)
+                        {
+                            request = new HttpRequestMessage(HttpMethod.Get, uri);
+                            request.Version = new Version(1, 1);
+                            tryDowngrade = false;
+                        }
+                        else
+                        {
+                            throw new WebSocketException(WebSocketError.UnsupportedProtocol);
+                        }
                         if (options._requestHeaders?.Count > 0) // use field to avoid lazily initializing the collection
                         {
                             foreach (string key in options.RequestHeaders)
@@ -107,13 +111,11 @@ namespace System.Net.WebSockets
                     }
                     catch (HttpRequestException ex)
                     {
-                        if (ex.Data.Contains("SETTINGS_ENABLE_CONNECT_PROTOCOL") && request.Version.Major == 2
-                            && (options.HttpVersion.Major == 2 && options.HttpVersionPolicy == HttpVersionPolicy.RequestVersionOrLower
-                            || options.HttpVersion.Major == 1 && options.HttpVersionPolicy == HttpVersionPolicy.RequestVersionOrHigher))
+                        if (!ex.Data.Contains("SETTINGS_ENABLE_CONNECT_PROTOCOL") || !tryDowngrade
+                            || (options.HttpVersion != HttpVersion.Version11 && options.HttpVersionPolicy != HttpVersionPolicy.RequestVersionOrLower))
                         {
-                            request.Version = new Version(1, 1);
+                            throw ex;
                         }
-                        else { throw ex; }
                     }
 
                 }
@@ -205,7 +207,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        private static SocketsHttpHandler SetupHandler(ClientWebSocketOptions options)
+        private static SocketsHttpHandler SetupHandler(ClientWebSocketOptions options, out bool disposeHandler)
         {
             SocketsHttpHandler? handler;
             // Create the handler for this request and populate it with all of the options.
@@ -218,6 +220,7 @@ namespace System.Net.WebSockets
                 options.RemoteCertificateValidationCallback == null &&
                 options._clientCertificates?.Count == 0)
             {
+                disposeHandler = false;
                 handler = s_defaultHandler;
                 if (handler == null)
                 {
@@ -236,6 +239,7 @@ namespace System.Net.WebSockets
             }
             else
             {
+                disposeHandler = true;
                 handler = new SocketsHttpHandler();
                 handler.PooledConnectionLifetime = TimeSpan.Zero;
                 handler.CookieContainer = options.Cookies;
@@ -424,7 +428,7 @@ namespace System.Net.WebSockets
             {
                 if (response.StatusCode != HttpStatusCode.OK)
                 {
-                    throw new WebSocketException(WebSocketError.NotAWebSocket, SR.Format(SR.net_WebSockets_Connect101Expected, (int)response.StatusCode));
+                    throw new WebSocketException(WebSocketError.NotAWebSocket, SR.Format(SR.net_WebSockets_Connect200Expected, (int)response.StatusCode));
                 }
             }
 

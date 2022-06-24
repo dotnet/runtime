@@ -159,12 +159,7 @@ namespace System.Net.Http.Headers
             set { SetOrRemoveParsedValue(KnownHeaders.MaxForwards.Descriptor, value); }
         }
 
-        public string? Protocol
-        {
-            get { return (string?)GetSingleParsedValue(new HeaderDescriptor(":protocol")); }
-            set { SetOrRemoveParsedValue(new HeaderDescriptor(":protocol"), value); }
-        }
-
+        public string? Protocol { get; set; }
 
         public AuthenticationHeaderValue? ProxyAuthorization
         {

@@ -107,6 +107,10 @@ namespace System.Net.Http
                 if (_request.Content == null)
                 {
                     _requestCompletionState = StreamCompletionState.Completed;
+                    if (_request.IsWebSocketH2Request())
+                    {
+                        _requestBodyCancellationSource = new CancellationTokenSource();
+                    }
                 }
                 else
                 {
