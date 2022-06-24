@@ -5917,7 +5917,7 @@ public:
 
 protected:
     // Do hoisting for all loops.
-    void optHoistLoopCode();
+    PhaseStatus optHoistLoopCode();
 
     // To represent sets of VN's that have already been hoisted in outer loops.
     typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, bool> VNSet;
@@ -5958,17 +5958,10 @@ protected:
 
     // Do hoisting of all loops nested within loop "lnum" (an index into the optLoopTable), followed
     // by the loop "lnum" itself.
-    //
-    // "m_pHoistedInCurLoop" helps a lot in eliminating duplicate expressions getting hoisted
-    // and reducing the count of total expressions hoisted out of loop. When calculating the
-    // profitability, we compare this with number of registers and hence, lower the number of expressions
-    // getting hoisted, better chances that they will get enregistered and CSE considering them.
-    //
-    void optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt);
+    bool optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt);
 
     // Do hoisting for a particular loop ("lnum" is an index into the optLoopTable.)
-    // Returns the new preheaders created.
-    void optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, BasicBlockList* existingPreHeaders);
+    bool optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, BasicBlockList* existingPreHeaders);
 
     // Hoist all expressions in "blocks" that are invariant in loop "loopNum" (an index into the optLoopTable)
     // outside of that loop.

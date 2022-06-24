@@ -167,23 +167,38 @@ void Phase::PostPhase(PhaseStatus status)
     // clang-format off
 
     static Phases s_allowlist[] = {
+        // pre import
         PHASE_INCPROFILE,
         PHASE_IBCPREP,
         PHASE_IMPORTATION,
         PHASE_PATCHPOINTS,
         PHASE_IBCINSTR,
         PHASE_INDXCALL,
+        // post import
+        // morph init
         PHASE_MORPH_INLINE,
         PHASE_ALLOCATE_OBJECTS,
+        // add internal
         PHASE_EMPTY_TRY,
         PHASE_EMPTY_FINALLY,
         PHASE_MERGE_FINALLY_CHAINS,
         PHASE_CLONE_FINALLY,
+        // finally flags
+        // compute preds
         PHASE_MERGE_THROWS,
+        // early fg update
+        // promote structs
+        // mark addr exposed locals
         PHASE_FWD_SUB,
+        // morph implicit byref
         PHASE_MORPH_GLOBAL,
+        // gs cookie
+        // compute ege weights
+        // create funclets
         PHASE_INVERT_LOOPS,
         PHASE_OPTIMIZE_FLOW,
+        // reachability
+        // block weights
         PHASE_FIND_LOOPS,
         PHASE_CLONE_LOOPS,
         PHASE_UNROLL_LOOPS,
@@ -194,15 +209,35 @@ void Phase::PostPhase(PhaseStatus status)
         PHASE_FIND_OPER_ORDER,
         PHASE_SET_BLOCK_ORDER,
         PHASE_BUILD_SSA,
+        // (ssa subphases)
         PHASE_EARLY_PROP,
         PHASE_VALUE_NUMBER,
+        PHASE_HOIST_LOOP_CODE,
+        // copy prop
+        // PHASE_OPTIMIZE_BRANCHES,
+        // cse
+        // assertion prop
+        // range check
+        // update flow
+        // edge weights 2
         PHASE_INSERT_GC_POLLS,
         PHASE_OPTIMIZE_LAYOUT,
+        // first cold block
         PHASE_RATIONALIZE,
         PHASE_LOWERING,
-        PHASE_STACK_LEVEL_SETTER};
+        // lsra
+        PHASE_STACK_LEVEL_SETTER
+        // align loops
+        // codegen
+    };
 
     // clang-format on
+
+    // Also note when this phase has not opted into the active post phase checks.
+    //
+    const bool  doPostPhaseChecks = comp->activePhaseChecks == PhaseChecks::CHECK_ALL;
+    const char* checkMessage =
+        madeChanges && doPostPhaseChecks ? " [phase has not yet enabled common post phase checks]" : "";
 
     if (madeChanges)
     {
@@ -210,7 +245,8 @@ void Phase::PostPhase(PhaseStatus status)
         {
             if (m_phase == s_allowlist[i])
             {
-                doPostPhase = true;
+                doPostPhase  = true;
+                checkMessage = "";
                 break;
             }
         }
@@ -220,12 +256,12 @@ void Phase::PostPhase(PhaseStatus status)
     {
         if (comp->compIsForInlining())
         {
-            printf("\n*************** Inline @[%06u] Finishing PHASE %s%s\n",
-                   Compiler::dspTreeID(comp->impInlineInfo->iciCall), m_name, statusMessage);
+            printf("\n*************** Inline @[%06u] Finishing PHASE %s%s%s%s\n",
+                   Compiler::dspTreeID(comp->impInlineInfo->iciCall), m_name, statusMessage, checkMessage);
         }
         else
         {
-            printf("\n*************** Finishing PHASE %s%s\n", m_name, statusMessage);
+            printf("\n*************** Finishing PHASE %s%s%s\n", m_name, statusMessage, checkMessage);
         }
 
         if (doPostPhase)
@@ -235,16 +271,13 @@ void Phase::PostPhase(PhaseStatus status)
         }
     }
 
-    if (doPostPhase)
+    if (doPostPhase && doPostPhaseChecks)
     {
-        if (comp->activePhaseChecks == PhaseChecks::CHECK_ALL)
-        {
-            comp->fgDebugCheckBBlist();
-            comp->fgDebugCheckLinks();
-            comp->fgDebugCheckNodesUniqueness();
-            comp->fgVerifyHandlerTab();
-            comp->fgDebugCheckLoopTable();
-        }
+        comp->fgDebugCheckBBlist();
+        comp->fgDebugCheckLinks();
+        comp->fgDebugCheckNodesUniqueness();
+        comp->fgVerifyHandlerTab();
+        comp->fgDebugCheckLoopTable();
     }
 
     // Optionally check profile data, if we have any.
