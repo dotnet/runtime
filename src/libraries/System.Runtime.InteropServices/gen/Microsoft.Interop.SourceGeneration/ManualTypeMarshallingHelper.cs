@@ -255,7 +255,7 @@ namespace Microsoft.Interop
                 AddMethod(MarshallerShape.ToUnmanaged, method);
 
             INamedTypeSymbol spanOfT = compilation.GetTypeByMetadataName(TypeNames.System_Span_Metadata)!;
-            method = GetConvertToUnmanagedWithCallerAllocatedBufferMethod(marshallerType, managedType, spanOfT, out _);
+            method = GetConvertToUnmanagedWithCallerAllocatedBufferMethod(marshallerType, managedType, spanOfT);
             if (method is not null)
                 AddMethod(MarshallerShape.CallerAllocatedBuffer, method);
 
@@ -368,10 +368,8 @@ namespace Microsoft.Interop
         private static IMethodSymbol? GetConvertToUnmanagedWithCallerAllocatedBufferMethod(
             ITypeSymbol type,
             ITypeSymbol managedType,
-            ITypeSymbol spanOfT,
-            out ITypeSymbol? spanElementType)
+            ITypeSymbol spanOfT)
         {
-            spanElementType = null;
             IEnumerable<IMethodSymbol> methods = type.GetMembers(ShapeMemberNames.Value.Stateless.ConvertToUnmanaged)
                 .OfType<IMethodSymbol>()
                 .Where(m => m is { IsStatic: true, Parameters.Length: 2, ReturnsVoid: false }
@@ -379,7 +377,7 @@ namespace Microsoft.Interop
 
             foreach (IMethodSymbol method in methods)
             {
-                if (IsSpanOfUnmanagedType(method.Parameters[1].Type, spanOfT, out spanElementType))
+                if (IsSpanOfUnmanagedType(method.Parameters[1].Type, spanOfT))
                 {
                     return method;
                 }
@@ -387,15 +385,13 @@ namespace Microsoft.Interop
 
             return null;
 
-            static bool IsSpanOfUnmanagedType(ITypeSymbol typeToCheck, ITypeSymbol spanOfT, out ITypeSymbol? typeArgument)
+            static bool IsSpanOfUnmanagedType(ITypeSymbol typeToCheck, ITypeSymbol spanOfT)
             {
-                typeArgument = null;
                 if (typeToCheck is INamedTypeSymbol namedType
                     && SymbolEqualityComparer.Default.Equals(spanOfT, namedType.ConstructedFrom)
                     && namedType.TypeArguments.Length == 1
                     && namedType.TypeArguments[0].IsUnmanagedType)
                 {
-                    typeArgument = namedType.TypeArguments[0];
                     return true;
                 }
 
