@@ -32,7 +32,7 @@ namespace System.Formats.Tar
             long actualLength = GetTotalDataBytesToWrite();
             TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.V7);
 
-            int checksum = WriteName(buffer, out _);
+            int checksum = WriteNameSpan(buffer, out _);
             checksum += WriteCommonFields(buffer, actualLength, actualEntryType);
             WriteChecksum(checksum, buffer);
 
@@ -50,7 +50,7 @@ namespace System.Formats.Tar
             long actualLength = GetTotalDataBytesToWrite();
             TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.V7);
 
-            int checksum = WriteName(buffer.Span, out _);
+            int checksum = WriteNameMemory(buffer, out _);
             checksum += WriteCommonFields(buffer.Span, actualLength, actualEntryType);
             WriteChecksum(checksum, buffer.Span);
 
@@ -68,7 +68,7 @@ namespace System.Formats.Tar
             long actualLength = GetTotalDataBytesToWrite();
             TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.Ustar);
 
-            int checksum = WritePosixName(buffer);
+            int checksum = WritePosixNameSpan(buffer);
             checksum += WriteCommonFields(buffer, actualLength, actualEntryType);
             checksum += WritePosixMagicAndVersion(buffer);
             checksum += WritePosixAndGnuSharedFields(buffer);
@@ -88,7 +88,7 @@ namespace System.Formats.Tar
             long actualLength = GetTotalDataBytesToWrite();
             TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.Ustar);
 
-            int checksum = WritePosixName(buffer.Span);
+            int checksum = WritePosixNameMemory(buffer);
             checksum += WriteCommonFields(buffer.Span, actualLength, actualEntryType);
             checksum += WritePosixMagicAndVersion(buffer.Span);
             checksum += WritePosixAndGnuSharedFields(buffer.Span);
@@ -261,7 +261,7 @@ namespace System.Formats.Tar
             long actualLength = GetTotalDataBytesToWrite();
             TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.Gnu);
 
-            int checksum = WriteName(buffer, out _);
+            int checksum = WriteNameSpan(buffer, out _);
             checksum += WriteCommonFields(buffer, actualLength, actualEntryType);
             checksum += WriteGnuMagicAndVersion(buffer);
             checksum += WritePosixAndGnuSharedFields(buffer);
@@ -287,7 +287,7 @@ namespace System.Formats.Tar
             long actualLength = GetTotalDataBytesToWrite();
             TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.Gnu);
 
-            int checksum = WriteName(buffer.Span, out _);
+            int checksum = WriteNameMemory(buffer, out _);
             checksum += WriteCommonFields(buffer.Span, actualLength, actualEntryType);
             checksum += WriteGnuMagicAndVersion(buffer.Span);
             checksum += WritePosixAndGnuSharedFields(buffer.Span);
@@ -347,7 +347,7 @@ namespace System.Formats.Tar
             long actualLength = GetTotalDataBytesToWrite();
             TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.Pax);
 
-            int checksum = WritePosixName(buffer);
+            int checksum = WritePosixNameSpan(buffer);
             checksum += WriteCommonFields(buffer, actualLength, actualEntryType);
             checksum += WritePosixMagicAndVersion(buffer);
             checksum += WritePosixAndGnuSharedFields(buffer);
@@ -368,7 +368,7 @@ namespace System.Formats.Tar
             long actualLength = GetTotalDataBytesToWrite();
             TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.Pax);
 
-            int checksum = WritePosixName(buffer.Span);
+            int checksum = WritePosixNameMemory(buffer);
             checksum += WriteCommonFields(buffer.Span, actualLength, actualEntryType);
             checksum += WritePosixMagicAndVersion(buffer.Span);
             checksum += WritePosixAndGnuSharedFields(buffer.Span);
@@ -383,22 +383,43 @@ namespace System.Formats.Tar
         }
 
         // All formats save in the name byte array only the ASCII bytes that fit. The full string is returned in the out byte array.
-        private int WriteName(Span<byte> buffer, out byte[] fullNameBytes)
+        private int WriteNameSpan(Span<byte> buffer, out byte[] fullNameBytes)
         {
             fullNameBytes = Encoding.ASCII.GetBytes(_name);
             int nameBytesLength = Math.Min(fullNameBytes.Length, FieldLengths.Name);
-            int checksum = WriteLeftAlignedBytesAndGetChecksum(fullNameBytes.AsSpan(0, nameBytesLength), buffer.Slice(FieldLocations.Name, FieldLengths.Name));
+            int checksum = WriteLeftAlignedBytesAndGetChecksumSpan(fullNameBytes.AsSpan(0, nameBytesLength), buffer.Slice(FieldLocations.Name, FieldLengths.Name));
+            return checksum;
+        }
+
+        // All formats save in the name byte array only the ASCII bytes that fit. The full string is returned in the out byte array.
+        private int WriteNameMemory(Memory<byte> buffer, out byte[] fullNameBytes)
+        {
+            fullNameBytes = Encoding.ASCII.GetBytes(_name);
+            int nameBytesLength = Math.Min(fullNameBytes.Length, FieldLengths.Name);
+            int checksum = WriteLeftAlignedBytesAndGetChecksumMemory(fullNameBytes.AsMemory(0, nameBytesLength), buffer.Slice(FieldLocations.Name, FieldLengths.Name));
             return checksum;
         }
 
         // Ustar and PAX save in the name byte array only the ASCII bytes that fit, and the rest of that string is saved in the prefix field.
-        private int WritePosixName(Span<byte> buffer)
+        private int WritePosixNameSpan(Span<byte> buffer)
         {
-            int checksum = WriteName(buffer, out byte[] fullNameBytes);
+            int checksum = WriteNameSpan(buffer, out byte[] fullNameBytes);
             if (fullNameBytes.Length > FieldLengths.Name)
             {
                 int prefixBytesLength = Math.Min(fullNameBytes.Length - FieldLengths.Name, FieldLengths.Name);
-                checksum += WriteLeftAlignedBytesAndGetChecksum(fullNameBytes.AsSpan(FieldLengths.Name, prefixBytesLength), buffer.Slice(FieldLocations.Prefix, FieldLengths.Prefix));
+                checksum += WriteLeftAlignedBytesAndGetChecksumSpan(fullNameBytes.AsSpan(FieldLengths.Name, prefixBytesLength), buffer.Slice(FieldLocations.Prefix, FieldLengths.Prefix));
+            }
+            return checksum;
+        }
+
+        // Ustar and PAX save in the name byte array only the ASCII bytes that fit, and the rest of that string is saved in the prefix field.
+        private int WritePosixNameMemory(Memory<byte> buffer)
+        {
+            int checksum = WriteNameMemory(buffer, out byte[] fullNameBytes);
+            if (fullNameBytes.Length > FieldLengths.Name)
+            {
+                int prefixBytesLength = Math.Min(fullNameBytes.Length - FieldLengths.Name, FieldLengths.Name);
+                checksum += WriteLeftAlignedBytesAndGetChecksumMemory(fullNameBytes.AsMemory(FieldLengths.Name, prefixBytesLength), buffer.Slice(FieldLocations.Prefix, FieldLengths.Prefix));
             }
             return checksum;
         }
@@ -482,16 +503,16 @@ namespace System.Formats.Tar
         // Writes the magic and version fields of a ustar or pax entry into the specified spans.
         private static int WritePosixMagicAndVersion(Span<byte> buffer)
         {
-            int checksum = WriteLeftAlignedBytesAndGetChecksum(PaxMagicBytes, buffer.Slice(FieldLocations.Magic, FieldLengths.Magic));
-            checksum += WriteLeftAlignedBytesAndGetChecksum(PaxVersionBytes, buffer.Slice(FieldLocations.Version, FieldLengths.Version));
+            int checksum = WriteLeftAlignedBytesAndGetChecksumSpan(PaxMagicBytes, buffer.Slice(FieldLocations.Magic, FieldLengths.Magic));
+            checksum += WriteLeftAlignedBytesAndGetChecksumSpan(PaxVersionBytes, buffer.Slice(FieldLocations.Version, FieldLengths.Version));
             return checksum;
         }
 
         // Writes the magic and vresion fields of a gnu entry into the specified spans.
         private static int WriteGnuMagicAndVersion(Span<byte> buffer)
         {
-            int checksum = WriteLeftAlignedBytesAndGetChecksum(GnuMagicBytes, buffer.Slice(FieldLocations.Magic, FieldLengths.Magic));
-            checksum += WriteLeftAlignedBytesAndGetChecksum(GnuVersionBytes, buffer.Slice(FieldLocations.Version, FieldLengths.Version));
+            int checksum = WriteLeftAlignedBytesAndGetChecksumSpan(GnuMagicBytes, buffer.Slice(FieldLocations.Magic, FieldLengths.Magic));
+            checksum += WriteLeftAlignedBytesAndGetChecksumSpan(GnuVersionBytes, buffer.Slice(FieldLocations.Version, FieldLengths.Version));
             return checksum;
         }
 
@@ -531,7 +552,7 @@ namespace System.Formats.Tar
 
             if (_gnuUnusedBytes != null)
             {
-                checksum += WriteLeftAlignedBytesAndGetChecksum(_gnuUnusedBytes, buffer.Slice(FieldLocations.GnuUnused, FieldLengths.AllGnuUnused));
+                checksum += WriteLeftAlignedBytesAndGetChecksumSpan(_gnuUnusedBytes, buffer.Slice(FieldLocations.GnuUnused, FieldLengths.AllGnuUnused));
             }
 
             return checksum;
@@ -704,7 +725,7 @@ namespace System.Formats.Tar
         }
 
         // Writes the specified bytes into the specified destination, aligned to the left. Returns the sum of the value of all the bytes that were written.
-        private static int WriteLeftAlignedBytesAndGetChecksum(ReadOnlySpan<byte> bytesToWrite, Span<byte> destination)
+        private static int WriteLeftAlignedBytesAndGetChecksumSpan(ReadOnlySpan<byte> bytesToWrite, Span<byte> destination)
         {
             Debug.Assert(destination.Length > 1);
 
@@ -714,6 +735,22 @@ namespace System.Formats.Tar
             {
                 destination[i] = bytesToWrite[j];
                 checksum += destination[i];
+            }
+
+            return checksum;
+        }
+
+        // Writes the specified bytes into the specified destination, aligned to the left. Returns the sum of the value of all the bytes that were written.
+        private static int WriteLeftAlignedBytesAndGetChecksumMemory(ReadOnlyMemory<byte> bytesToWrite, Memory<byte> destination)
+        {
+            Debug.Assert(destination.Length > 1);
+
+            int checksum = 0;
+
+            for (int i = 0, j = 0; i < destination.Length && j < bytesToWrite.Length; i++, j++)
+            {
+                destination.Span[i] = bytesToWrite.Span[j];
+                checksum += destination.Span[i];
             }
 
             return checksum;
@@ -768,7 +805,7 @@ namespace System.Formats.Tar
         private static int WriteAsAsciiString(string str, Span<byte> buffer, int location, int length)
         {
             byte[] bytes = Encoding.ASCII.GetBytes(str);
-            return WriteLeftAlignedBytesAndGetChecksum(bytes.AsSpan(), buffer.Slice(location, length));
+            return WriteLeftAlignedBytesAndGetChecksumSpan(bytes.AsSpan(), buffer.Slice(location, length));
         }
 
         // Gets the special name for the 'name' field in an extended attribute entry.
