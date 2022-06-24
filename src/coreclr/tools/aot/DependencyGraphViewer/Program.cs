@@ -38,8 +38,8 @@ namespace DependencyLogViewer
 
         public readonly int Index;
         public readonly string Name;
-        public readonly List<KeyValuePair<Node, string>> Dependencies = new List<KeyValuePair<Node, string>>();
-        public readonly List<KeyValuePair<Node, string>> Dependents = new List<KeyValuePair<Node, string>>();
+        public readonly Dictionary<Node, string> Targets = new Dictionary<Node, string>();
+        public readonly Dictionary<Node, string> Sources = new Dictionary<Node, string>();
     }
 
     public class Graph
@@ -119,11 +119,11 @@ namespace DependencyLogViewer
 
             if (IsValidNode(g, source) && IsValidNode(g, target))
             {
-                Node dependent = g.Nodes[source];
-                Node dependee = g.Nodes[target];
+                Node A = g.Nodes[source];
+                Node B = g.Nodes[target];
 
-                dependent.Dependencies.Add(new KeyValuePair<Node, string>(dependee, reason));
-                dependee.Dependents.Add(new KeyValuePair<Node, string>(dependent, reason));
+                if (!A.Targets.ContainsKey(B)) A.Targets.Add(B, reason);
+                if (!B.Sources.ContainsKey(A)) B.Sources.Add(A, reason);
             }
         }
 
@@ -144,14 +144,14 @@ namespace DependencyLogViewer
             Node conditionalNode = new Node(conditionalNodeIndex, String.Format("Conditional({0} - {1})", reason1Node.ToString(), reason2Node.ToString()));
             g.Nodes.Add(conditionalNodeIndex, conditionalNode);
 
-            conditionalNode.Dependencies.Add(new KeyValuePair<Node, string>(dependee, reason));
-            dependee.Dependents.Add(new KeyValuePair<Node, string>(conditionalNode, reason));
+            conditionalNode.Targets.Add(dependee, reason);
+            dependee.Sources.Add(conditionalNode, reason);
 
-            reason1Node.Dependencies.Add(new KeyValuePair<Node, string>(conditionalNode, "Reason1Conditional - " + reason));
-            conditionalNode.Dependents.Add(new KeyValuePair<Node, string>(reason1Node, "Reason1Conditional - " + reason));
+            reason1Node.Targets.Add(conditionalNode, "Reason1Conditional - " + reason);
+            conditionalNode.Sources.Add(reason1Node, "Reason1Conditional - " + reason);
 
-            reason2Node.Dependencies.Add(new KeyValuePair<Node, string>(conditionalNode, "Reason2Conditional - " + reason));
-            conditionalNode.Dependents.Add(new KeyValuePair<Node, string>(reason2Node, "Reason2Conditional - " + reason));
+            reason2Node.Targets.Add(conditionalNode, "Reason2Conditional - " + reason);
+            conditionalNode.Sources.Add(reason2Node, "Reason2Conditional - " + reason);
         }
     }
 

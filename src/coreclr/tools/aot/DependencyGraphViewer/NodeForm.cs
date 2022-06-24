@@ -30,8 +30,8 @@ namespace DependencyLogViewer
 
             lock (GraphCollection.Singleton)
             {
-                this.dependentsListBox.DataSource = _node.Dependents.ToArray();
-                this.dependeesListBox.DataSource = _node.Dependencies.ToArray();
+                this.dependentsListBox.DataSource = _node.Sources.ToArray();
+                this.dependeesListBox.DataSource = _node.Targets.ToArray();
             }
         }
 
