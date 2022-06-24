@@ -562,6 +562,10 @@ if(CLR_CMAKE_HOST_UNIX_X86)
   add_compile_options(-msse2)
 endif()
 
+if(CLR_CMAKE_HOST_ARCH_ARM64)
+   add_compile_options(-march=armv8-a+lse)
+endif(CLR_CMAKE_HOST_ARCH_ARM64)
+
 if(CLR_CMAKE_HOST_UNIX)
   add_compile_options(${CLR_ADDITIONAL_COMPILER_OPTIONS})
 endif(CLR_CMAKE_HOST_UNIX)
