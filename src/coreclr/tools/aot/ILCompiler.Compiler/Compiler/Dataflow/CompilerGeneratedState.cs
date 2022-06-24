@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using ILCompiler.Logging;
 using ILLink.Shared;
@@ -21,13 +22,14 @@ namespace ILCompiler.Dataflow
     public class CompilerGeneratedState
     {
         readonly ILProvider _ilProvider;
+        // The MetadataType keys must be type definitions (uninstantiated)
         readonly Dictionary<MetadataType, MethodDesc> _compilerGeneratedTypeToUserCodeMethod;
         readonly Dictionary<MetadataType, TypeArgumentInfo> _generatedTypeToTypeArgumentInfo;
         readonly record struct TypeArgumentInfo(
             /// <summary>The method which calls the ctor for the given type</summary>
             MethodDesc CreatingMethod,
             /// <summary>Attributes for the type, pulled from the creators type arguments</summary>
-            IReadOnlyList<ICustomAttributeProvider>? OriginalAttributes);
+            IReadOnlyList<GenericParameterDesc?>? OriginalAttributes);
 
         readonly Dictionary<MethodDesc, MethodDesc> _compilerGeneratedMethodToUserCodeMethod;
 
@@ -81,24 +83,21 @@ namespace ILCompiler.Dataflow
         {
             stateMachineType = null;
             // Discover state machine methods.
-            if (!method.HasCustomAttributes)
+            if (method is not EcmaMethod ecmaMethod)
                 return false;
 
-            foreach (var attribute in method.CustomAttributes)
-            {
-                if (attribute.AttributeType.Namespace != "System.Runtime.CompilerServices")
-                    continue;
+            CustomAttributeValue<TypeDesc>? decodedAttribute = null;
+            decodedAttribute = ecmaMethod.GetDecodedCustomAttribute("System.Runtime.CompilerServices", "AsyncIteratorStateMachineAttribute");
+            if (decodedAttribute == null)
+                decodedAttribute = ecmaMethod.GetDecodedCustomAttribute("System.Runtime.CompilerServices", "AsyncStateMachineAttribute");
+            if (decodedAttribute == null)
+                decodedAttribute = ecmaMethod.GetDecodedCustomAttribute("System.Runtime.CompilerServices", "IteratorStateMachineAttribute");
 
-                switch (attribute.AttributeType.Name)
-                {
-                    case "AsyncIteratorStateMachineAttribute":
-                    case "AsyncStateMachineAttribute":
-                    case "IteratorStateMachineAttribute":
-                        stateMachineType = GetFirstConstructorArgumentAsType(attribute);
-                        return stateMachineType != null;
-                }
-            }
-            return false;
+            if (decodedAttribute == null)
+                return false;
+
+            stateMachineType = GetFirstConstructorArgumentAsType(decodedAttribute.Value) as MetadataType;
+            return stateMachineType != null;
         }
 
         /// <summary>
@@ -131,6 +130,8 @@ namespace ILCompiler.Dataflow
 
             void ProcessMethod(MethodDesc method)
             {
+                Debug.Assert(method == method.GetTypicalMethodDefinition());
+
                 bool isStateMachineMember = CompilerGeneratedNames.IsStateMachineType(((MetadataType)method.OwningType).Name);
                 if (!CompilerGeneratedNames.IsLambdaOrLocalFunction(method.Name))
                 {
@@ -176,12 +177,16 @@ namespace ILCompiler.Dataflow
                         if (lambdaOrLocalFunction == null)
                             continue;
 
+                        lambdaOrLocalFunction = lambdaOrLocalFunction.GetTypicalMethodDefinition();
+
                         if (lambdaOrLocalFunction.IsConstructor &&
                             lambdaOrLocalFunction.OwningType is MetadataType generatedType &&
                             // Don't consider calls in the same type, like inside a static constructor
                             method.OwningType != generatedType &&
                             CompilerGeneratedNames.IsLambdaDisplayClass(generatedType.Name))
                         {
+                            generatedType = (MetadataType)generatedType.GetTypeDefinition();
+
                             // fill in null for now, attribute providers will be filled in later
                             if (!_generatedTypeToTypeArgumentInfo.TryAdd(generatedType, new TypeArgumentInfo(method, null)))
                             {
@@ -213,6 +218,8 @@ namespace ILCompiler.Dataflow
                     Debug.Assert(stateMachineType.ContainingType == type ||
                         (CompilerGeneratedNames.IsGeneratedMemberName(stateMachineType.ContainingType.Name) &&
                          stateMachineType.ContainingType.ContainingType == type));
+                    Debug.Assert(stateMachineType == stateMachineType.GetTypeDefinition());
+
                     callGraph.TrackCall(method, stateMachineType);
 
                     if (!_compilerGeneratedTypeToUserCodeMethod.TryAdd(stateMachineType, method))
@@ -295,6 +302,8 @@ namespace ILCompiler.Dataflow
             // providers
             foreach (var generatedType in _generatedTypeToTypeArgumentInfo.Keys)
             {
+                Debug.Assert(generatedType == generatedType.GetTypeDefinition());
+
                 if (HasGenericParameters(generatedType))
                     MapGeneratedTypeTypeParameters(generatedType);
             }
@@ -318,6 +327,7 @@ namespace ILCompiler.Dataflow
             void MapGeneratedTypeTypeParameters(MetadataType generatedType)
             {
                 Debug.Assert(CompilerGeneratedNames.IsGeneratedType(generatedType.Name));
+                Debug.Assert(generatedType == generatedType.GetTypeDefinition());
 
                 if (!_generatedTypeToTypeArgumentInfo.TryGetValue(generatedType, out var typeInfo))
                 {
@@ -336,7 +346,7 @@ namespace ILCompiler.Dataflow
                 var body = _ilProvider.GetMethodIL(method);
                 if (body is not null)
                 {
-                    var typeArgs = new ICustomAttributeProvider[generatedType.GenericParameters.Count];
+                    var typeArgs = new GenericParameterDesc?[generatedType.Instantiation.Length];
                     var typeRef = ScanForInit(generatedType, body);
                     if (typeRef is null)
                     {
@@ -351,7 +361,7 @@ namespace ILCompiler.Dataflow
                     {
                         var typeArg = instantiatedType.Instantiation[i];
                         // Start with the existing parameters, in case we can't find the mapped one
-                        ICustomAttributeProvider userAttrs = generatedType.GenericParameters[i];
+                        GenericParameterDesc? userAttrs = generatedType.Instantiation[i] as GenericParameterDesc;
                         // The type parameters of the state machine types are alpha renames of the
                         // the method parameters, so the type ref should always be a GenericParameter. However,
                         // in the case of nesting, there may be multiple renames, so if the parameter is a method
@@ -372,6 +382,7 @@ namespace ILCompiler.Dataflow
                                 }
                                 else
                                 {
+                                    owningType = (MetadataType)owningType.GetTypeDefinition();
                                     MapGeneratedTypeTypeParameters(owningType);
                                     if (_generatedTypeToTypeArgumentInfo.TryGetValue(owningType, out var owningInfo) &&
                                         owningInfo.OriginalAttributes is { } owningAttrs)
@@ -414,12 +425,12 @@ namespace ILCompiler.Dataflow
             }
         }
 
-        static TypeDesc? GetFirstConstructorArgumentAsType(CustomAttribute attribute)
+        static TypeDesc? GetFirstConstructorArgumentAsType(CustomAttributeValue<TypeDesc> attribute)
         {
-            if (!attribute.HasConstructorArguments)
+            if (attribute.FixedArguments.Length == 0)
                 return null;
 
-            return attribute.ConstructorArguments[0].Value as TypeDefinition;
+            return attribute.FixedArguments[0].Value as TypeDesc;
         }
 
         public bool TryGetCompilerGeneratedCalleesForUserMethod(MethodDesc method, [NotNullWhen(true)] out List<TypeSystemEntity>? callees)
@@ -444,12 +455,9 @@ namespace ILCompiler.Dataflow
         /// Gets the attributes on the "original" method of a generated type, i.e. the
         /// attributes on the corresponding type parameters from the owning method.
         /// </summary>
-        public IReadOnlyList<ICustomAttributeProvider>? GetGeneratedTypeAttributes(MetadataType type)
+        public IReadOnlyList<GenericParameterDesc?>? GetGeneratedTypeAttributes(MetadataType type)
         {
-            MetadataType? generatedType = type.GetTypeDefinition() as MetadataType;
-            if (generatedType is null)
-                return null;
-
+            MetadataType generatedType = (MetadataType)type.GetTypeDefinition();
             Debug.Assert(CompilerGeneratedNames.IsGeneratedType(generatedType.Name));
 
             var typeToCache = PopulateCacheForType(generatedType);

@@ -30,14 +30,16 @@ namespace ILLink.Shared.TrimAnalysis
     {
         private readonly TypeAnnotationsHashtable _hashtable;
         private readonly Logger _logger;
+        private readonly CompilerGeneratedState _compilerGeneratedState;
 
         public ILProvider ILProvider { get; }
 
-        public FlowAnnotations(Logger logger, ILProvider ilProvider)
+        public FlowAnnotations(Logger logger, ILProvider ilProvider, CompilerGeneratedState compilerGeneratedState)
         {
             _hashtable = new TypeAnnotationsHashtable(logger, ilProvider);
             _logger = logger;
             ILProvider = ilProvider;
+            _compilerGeneratedState = compilerGeneratedState;
         }
 
         public bool RequiresDataflowAnalysis(MethodDesc method)
@@ -258,8 +260,9 @@ namespace ILLink.Shared.TrimAnalysis
         {
             private readonly ILProvider _ilProvider;
             private readonly Logger _logger;
+            private readonly CompilerGeneratedState _compilerGeneratedState;
 
-            public TypeAnnotationsHashtable(Logger logger, ILProvider ilProvider) => (_logger, _ilProvider) = (logger, ilProvider);
+            public TypeAnnotationsHashtable(Logger logger, ILProvider ilProvider, CompilerGeneratedState compilerGeneratedState) => (_logger, _ilProvider, _compilerGeneratedState) = (logger, ilProvider, compilerGeneratedState);
 
             private static DynamicallyAccessedMemberTypes GetMemberTypesForDynamicallyAccessedMembersAttribute(MetadataReader reader, CustomAttributeHandleCollection customAttributeHandles)
             {
@@ -572,12 +575,11 @@ namespace ILLink.Shared.TrimAnalysis
                 if (ecmaType.Instantiation.Length > 0)
                 {
                     var attrs = GetGeneratedTypeAttributes(ecmaType);
-                    for (int i = 0; i < ecmaType.Instantiation.Length; i++)
+                    for (int genericParameterIndex = 0; genericParameterIndex < ecmaType.Instantiation.Length; genericParameterIndex++)
                     {
-                        EcmaGenericParameter genericParameter = (EcmaGenericParameter)ecmaType.Instantiation[i];
+                        EcmaGenericParameter genericParameter = (EcmaGenericParameter)ecmaType.Instantiation[genericParameterIndex];
+                        genericParameter = (attrs?[genericParameterIndex] as EcmaGenericParameter) ?? genericParameter;
                         GenericParameter genericParameterDef = reader.GetGenericParameter(genericParameter.Handle);
-                        var provider = attrs?[genericParameterIndex] ?? genericParameterDef;
-
                         var annotation = GetMemberTypesForDynamicallyAccessedMembersAttribute(reader, genericParameterDef.GetCustomAttributes());
                         if (annotation != DynamicallyAccessedMemberTypes.None)
                         {
@@ -591,13 +593,13 @@ namespace ILLink.Shared.TrimAnalysis
                 return new TypeAnnotations(ecmaType, typeAnnotation, annotatedMethods.ToArray(), annotatedFields.ToArray(), typeGenericParameterAnnotations);
             }
 
-            private IReadOnlyList<ICustomAttributeProvider>? GetGeneratedTypeAttributes(EcmaType typeDef)
+            private IReadOnlyList<GenericParameterDesc?>? GetGeneratedTypeAttributes(EcmaType typeDef)
             {
                 if (!CompilerGeneratedNames.IsGeneratedType(typeDef.Name))
                 {
                     return null;
                 }
-                var attrs = _context.CompilerGeneratedState.GetGeneratedTypeAttributes(typeDef);
+                var attrs = _compilerGeneratedState.GetGeneratedTypeAttributes(typeDef);
                 Debug.Assert(attrs is null || attrs.Count == typeDef.Instantiation.Length);
                 return attrs;
             }
