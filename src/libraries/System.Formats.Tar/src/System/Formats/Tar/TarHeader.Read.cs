@@ -63,65 +63,71 @@ namespace System.Formats.Tar
 
                 ProcessDataBlock(archiveStream, copyData);
 
+                ArrayPool<byte>.Shared.Return(rented);
                 return true;
             }
             finally
             {
-                ArrayPool<byte>.Shared.Return(rented);
             }
         }
 
         // Asynchronously attempts read all the fields of the next header.
         // Throws if end of stream is reached or if any data type conversion fails.
         // Returns true if all the attributes were read successfully, false otherwise.
-        internal async ValueTask<bool> TryGetNextHeaderAsync(Stream archiveStream, bool copyData, CancellationToken cancellationToken)
+        internal ValueTask<bool> TryGetNextHeaderAsync(Stream archiveStream, bool copyData, CancellationToken cancellationToken)
         {
-            // The four supported formats have a header that fits in the default record size
-            IMemoryOwner<byte> rented = MemoryPool<byte>.Shared.Rent(minBufferSize: TarHelpers.RecordSize);
-
-            Memory<byte> buffer = rented.Memory.Slice(0, TarHelpers.RecordSize); // minBufferSize means the array could've been larger
-
-            await archiveStream.ReadExactlyAsync(buffer, cancellationToken).ConfigureAwait(false);
-
             try
             {
-                // Confirms if v7 or pax, or tentatively selects ustar
-                if (!TryReadCommonAttributes(buffer.Span))
-                {
-                    return false;
-                }
+                // The four supported formats have a header that fits in the default record size
+                byte[] rented = ArrayPool<byte>.Shared.Rent(minimumLength: TarHelpers.RecordSize);
+                Memory<byte> buffer = rented.AsMemory(0, TarHelpers.RecordSize); // minimumLength means the array could've been larger
 
-                // Confirms if gnu, or tentatively selects ustar
-                ReadMagicAttribute(buffer.Span);
+                ValueTask<bool> result = TryGetNextHeaderAsyncInternal(archiveStream, buffer, copyData, cancellationToken);
 
-                if (_format != TarEntryFormat.V7)
-                {
-                    // Confirms if gnu
-                    ReadVersionAttribute(buffer.Span);
-
-                    // Fields that ustar, pax and gnu share identically
-                    ReadPosixAndGnuSharedAttributes(buffer.Span);
-
-                    Debug.Assert(_format is TarEntryFormat.Ustar or TarEntryFormat.Pax or TarEntryFormat.Gnu);
-                    if (_format == TarEntryFormat.Ustar)
-                    {
-                        ReadUstarAttributes(buffer.Span);
-                    }
-                    else if (_format == TarEntryFormat.Gnu)
-                    {
-                        ReadGnuAttributes(buffer.Span);
-                    }
-                    // In PAX, there is nothing to read in this section (empty space)
-                }
-
-                await ProcessDataBlockAsync(archiveStream, copyData, cancellationToken).ConfigureAwait(false);
-
-                return true;
+                ArrayPool<byte>.Shared.Return(rented);
+                return result;
             }
             finally
             {
-                rented.Dispose();
             }
+        }
+
+        private async ValueTask<bool> TryGetNextHeaderAsyncInternal(Stream archiveStream, Memory<byte> buffer, bool copyData, CancellationToken cancellationToken)
+        {
+            await archiveStream.ReadExactlyAsync(buffer, cancellationToken).ConfigureAwait(false);
+
+            // Confirms if v7 or pax, or tentatively selects ustar
+            if (!TryReadCommonAttributes(buffer.Span))
+            {
+                return false;
+            }
+
+            // Confirms if gnu, or tentatively selects ustar
+            ReadMagicAttribute(buffer.Span);
+
+            if (_format != TarEntryFormat.V7)
+            {
+                // Confirms if gnu
+                ReadVersionAttribute(buffer.Span);
+
+                // Fields that ustar, pax and gnu share identically
+                ReadPosixAndGnuSharedAttributes(buffer.Span);
+
+                Debug.Assert(_format is TarEntryFormat.Ustar or TarEntryFormat.Pax or TarEntryFormat.Gnu);
+                if (_format == TarEntryFormat.Ustar)
+                {
+                    ReadUstarAttributes(buffer.Span);
+                }
+                else if (_format == TarEntryFormat.Gnu)
+                {
+                    ReadGnuAttributes(buffer.Span);
+                }
+                // In PAX, there is nothing to read in this section (empty space)
+            }
+
+            await ProcessDataBlockAsync(archiveStream, copyData, cancellationToken).ConfigureAwait(false);
+
+            return true;
         }
 
         // Reads the elements from the passed dictionary, which comes from the previous extended attributes entry,
