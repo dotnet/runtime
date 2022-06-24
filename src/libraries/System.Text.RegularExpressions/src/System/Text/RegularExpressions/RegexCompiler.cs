@@ -43,6 +43,11 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_charIsWhiteSpaceMethod = typeof(char).GetMethod("IsWhiteSpace", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsControlMethod = typeof(char).GetMethod("IsControl", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsLetterMethod = typeof(char).GetMethod("IsLetter", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsAsciiLetterMethod = typeof(char).GetMethod("IsAsciiLetter", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsAsciiLetterOrDigitMethod = typeof(char).GetMethod("IsAsciiLetterOrDigit", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsAsciiHexDigitMethod = typeof(char).GetMethod("IsAsciiHexDigit", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsAsciiHexDigitLowerMethod = typeof(char).GetMethod("IsAsciiHexDigitLower", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsAsciiHexDigitUpperMethod = typeof(char).GetMethod("IsAsciiHexDigitUpper", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsLetterOrDigitMethod = typeof(char).GetMethod("IsLetterOrDigit", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsLowerMethod = typeof(char).GetMethod("IsLower", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsUpperMethod = typeof(char).GetMethod("IsUpper", new Type[] { typeof(char) })!;
@@ -71,6 +76,9 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_stringGetCharsMethod = typeof(string).GetMethod("get_Chars", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_arrayResize = typeof(Array).GetMethod("Resize")!.MakeGenericMethod(typeof(int));
         private static readonly MethodInfo s_mathMinIntInt = typeof(Math).GetMethod("Min", new Type[] { typeof(int), typeof(int) })!;
+        // Note:
+        // IsAsciiLetterLower, IsAsciiLetterUpper, IsAsciiDigit, and IsBetween aren't used here, as the IL generated for those
+        // single-range checks is as cheap as the method call, and there's no readability issue as with the source generator.
 
         /// <summary>The ILGenerator currently in use.</summary>
         protected ILGenerator? _ilg;
@@ -3641,32 +3649,24 @@ namespace System.Text.RegularExpressions
                 int minIterations = node.M;
                 int maxIterations = node.N;
                 Label originalDoneLabel = doneLabel;
-                bool isAtomic = analysis.IsAtomicByAncestor(node);
 
-                // If this is actually an atomic lazy loop, we need to output just the minimum number of iterations,
-                // as nothing will backtrack into the lazy loop to get it progress further.
-                if (isAtomic)
+                // If this is actually a repeater, reuse the loop implementation, as a loop and a lazy loop
+                // both need to greedily consume up to their min iteration count and are identical in
+                // behavior when min == max.
+                if (minIterations == maxIterations)
                 {
-                    switch (minIterations)
-                    {
-                        case 0:
-                            // Atomic lazy with a min count of 0: nop.
-                            return;
-
-                        case 1:
-                            // Atomic lazy with a min count of 1: just output the child, no looping required.
-                            EmitNode(child);
-                            return;
-                    }
-                }
-
-                // If this is actually a repeater and the child doesn't have any backtracking in it that might
-                // cause us to need to unwind already taken iterations, just output it as a repeater loop.
-                if (minIterations == maxIterations && !analysis.MayBacktrack(child))
-                {
-                    EmitNonBacktrackingRepeater(node);
+                    EmitLoop(node);
                     return;
                 }
+
+                // We should only be here if the lazy loop isn't atomic due to an ancestor, as the optimizer should
+                // in such a case have lowered the loop's upper bound to its lower bound, at which point it would
+                // have been handled by the above delegation to EmitLoop.  However, if the optimizer missed doing so,
+                // this loop could still be considered atomic by ancestor by its parent nodes, in which case we want
+                // to make sure the code emitted here conforms (e.g. doesn't leave any state erroneously on the stack).
+                // So, we assert it's not atomic, but still handle that case.
+                bool isAtomic = analysis.IsAtomicByAncestor(node);
+                Debug.Assert(!isAtomic, "An atomic lazy should have had its upper bound lowered to its lower bound.");
 
                 // We might loop any number of times.  In order to ensure this loop and subsequent code sees sliceStaticPos
                 // the same regardless, we always need it to contain the same value, and the easiest such value is 0.
@@ -3713,186 +3713,189 @@ namespace System.Text.RegularExpressions
                 // we can uncapture back to that position), and both the starting position from the iteration we're leaving
                 // and whether we've seen an empty iteration (if iterations may be empty).  Since there can be multiple
                 // iterations, this state needs to be stored on to the backtracking stack.
-                // base.runstack[stackpos++] = pos;
-                // base.runstack[stackpos++] = startingPos;
-                // base.runstack[stackpos++] = sawEmpty;
-                // base.runstack[stackpos++] = base.Crawlpos();
-                int entriesPerIteration = 1/*pos*/ + (iterationMayBeEmpty ? 2/*startingPos+sawEmpty*/ : 0) + (expressionHasCaptures ? 1/*Crawlpos*/ : 0);
-                EmitStackResizeIfNeeded(entriesPerIteration);
-                EmitStackPush(() => Ldloc(pos));
-                if (iterationMayBeEmpty)
-                {
-                    EmitStackPush(() => Ldloc(startingPos!));
-                    EmitStackPush(() => Ldloc(sawEmpty!));
-                }
-                if (expressionHasCaptures)
-                {
-                    EmitStackPush(() => { Ldthis(); Call(s_crawlposMethod); });
-                }
-
-                if (iterationMayBeEmpty)
-                {
-                    // We need to store the current pos so we can compare it against pos after the iteration, in order to
-                    // determine whether the iteration was empty.
-                    // startingPos = pos;
-                    Ldloc(pos);
-                    Stloc(startingPos!);
-                }
-
-                // Proactively increase the number of iterations.  We do this prior to the match rather than once
-                // we know it's successful, because we need to decrement it as part of a failed match when
-                // backtracking; it's thus simpler to just always decrement it as part of a failed match, even
-                // when initially greedily matching the loop, which then requires we increment it before trying.
-                // iterationCount++;
-                Ldloc(iterationCount);
-                Ldc(1);
-                Add();
-                Stloc(iterationCount);
-
-                // Last but not least, we need to set the doneLabel that a failed match of the body will jump to.
-                // Such an iteration match failure may or may not fail the whole operation, depending on whether
-                // we've already matched the minimum required iterations, so we need to jump to a location that
-                // will make that determination.
-                Label iterationFailedLabel = DefineLabel();
-                doneLabel = iterationFailedLabel;
-
-                // Finally, emit the child.
-                Debug.Assert(sliceStaticPos == 0);
-                EmitNode(child);
-                TransferSliceStaticPosToPos(); // ensure sliceStaticPos remains 0
-                if (doneLabel == iterationFailedLabel)
-                {
-                    doneLabel = originalDoneLabel;
-                }
-
-                // Loop condition.  Continue iterating if we've not yet reached the minimum.  We just successfully
-                // matched an iteration, so the only reason we'd need to forcefully loop around again is if the
-                // minimum were at least 2.
-                if (minIterations >= 2)
-                {
-                    // if (iterationCount < minIterations) goto body;
-                    Ldloc(iterationCount);
-                    Ldc(minIterations);
-                    BltFar(body);
-                }
-
-                if (iterationMayBeEmpty)
-                {
-                    // If the last iteration was empty, we need to prevent further iteration from this point
-                    // unless we backtrack out of this iteration.
-                    // if (pos == startingPos) sawEmpty = 1; // true
-                    Label skipSawEmptySet = DefineLabel();
-                    Ldloc(pos);
-                    Ldloc(startingPos!);
-                    Bne(skipSawEmptySet);
-                    Ldc(1);
-                    Stloc(sawEmpty!);
-                    MarkLabel(skipSawEmptySet);
-                }
-
-                // We matched the next iteration.  Jump to the subsequent code.
-                // goto endLoop;
-                BrFar(endLoop);
-
-                // Now handle what happens when an iteration fails (and since a lazy loop only executes an iteration
-                // when it's required to satisfy the loop by definition of being lazy, the loop is failing).  We need
-                // to reset state to what it was before just that iteration started.  That includes resetting pos and
-                // clearing out any captures from that iteration.
-                MarkLabel(iterationFailedLabel);
-
-                // Fail this loop iteration, including popping state off the backtracking stack that was pushed
-                // on as part of the failing iteration.
-
-                // iterationCount--;
-                Ldloc(iterationCount);
-                Ldc(1);
-                Sub();
-                Stloc(iterationCount);
-
-                if (expressionHasCaptures)
-                {
-                    // capturepos = base.runstack[--stackpos];
-                    // while (base.Crawlpos() > capturepos) base.Uncapture();
-                    using RentedLocalBuilder poppedCrawlPos = RentInt32Local();
-                    EmitStackPop();
-                    Stloc(poppedCrawlPos);
-                    EmitUncaptureUntil(poppedCrawlPos);
-                }
-
-                // sawEmpty = base.runstack[--stackpos];
-                // startingPos = base.runstack[--stackpos];
-                // pos = base.runstack[--stackpos];
-                // slice = inputSpan.Slice(pos);
-                if (iterationMayBeEmpty)
-                {
-                    EmitStackPop();
-                    Stloc(sawEmpty!);
-                    EmitStackPop();
-                    Stloc(startingPos!);
-                }
-                EmitStackPop();
-                Stloc(pos);
-                SliceInputSpan();
-
-                // If the loop's child doesn't backtrack, then this loop has failed.
-                // If the loop's child does backtrack, we need to backtrack back into the previous iteration if there was one.
-                if (doneLabel == originalDoneLabel)
-                {
-                    // Since the only reason we'd end up revisiting previous iterations of the lazy loop is if the child had backtracking constructs
-                    // we'd backtrack into, and the child doesn't, the whole loop is failed and done. If we successfully processed any iterations,
-                    // we thus need to pop all of the state we pushed onto the stack for those iterations, as we're exiting out to the parent who
-                    // will expect the stack to be cleared of any child state.
-
-                    // stackpos -= iterationCount * entriesPerIteration;
-                    Debug.Assert(entriesPerIteration >= 1);
-                    Ldloc(stackpos);
-                    Ldloc(iterationCount);
-                    if (entriesPerIteration > 1)
-                    {
-                        Ldc(entriesPerIteration);
-                        Mul();
-                    }
-                    Sub();
-                    Stloc(stackpos);
-                }
-                else
-                {
-                    // The child has backtracking constructs.  If we have no successful iterations previously processed, just bail.
-                    // If we do have successful iterations previously processed, however, we need to backtrack back into the last one.
-
-                    // if (iterationCount != 0) goto doneLabel;
-                    Ldloc(iterationCount);
-                    Ldc(0);
-                    BneFar(doneLabel);
-                }
-
-                // goto originalDoneLabel;
-                BrFar(originalDoneLabel);
-
-                MarkLabel(endLoop);
-
-                // If the lazy loop is not atomic, then subsequent code may backtrack back into this lazy loop, either
-                // causing it to add additional iterations, or backtracking into existing iterations and potentially
-                // unwinding them.  We need to do a timeout check, and then determine whether to branch back to add more
-                // iterations (if we haven't hit the loop's maximum iteration count and haven't seen an empty iteration)
-                // or unwind by branching back to the last backtracking location.  Either way, we need a dedicated
-                // backtracking section that a subsequent construct will see as its backtracking target.
                 if (!isAtomic)
                 {
+                    // base.runstack[stackpos++] = pos;
+                    // base.runstack[stackpos++] = startingPos;
+                    // base.runstack[stackpos++] = sawEmpty;
+                    // base.runstack[stackpos++] = base.Crawlpos();
+                    int entriesPerIteration = 1/*pos*/ + (iterationMayBeEmpty ? 2/*startingPos+sawEmpty*/ : 0) + (expressionHasCaptures ? 1/*Crawlpos*/ : 0);
+                    EmitStackResizeIfNeeded(entriesPerIteration);
+                    EmitStackPush(() => Ldloc(pos));
+                    if (iterationMayBeEmpty)
+                    {
+                        EmitStackPush(() => Ldloc(startingPos!));
+                        EmitStackPush(() => Ldloc(sawEmpty!));
+                    }
+                    if (expressionHasCaptures)
+                    {
+                        EmitStackPush(() => { Ldthis(); Call(s_crawlposMethod); });
+                    }
+
+                    if (iterationMayBeEmpty)
+                    {
+                        // We need to store the current pos so we can compare it against pos after the iteration, in order to
+                        // determine whether the iteration was empty.
+                        // startingPos = pos;
+                        Ldloc(pos);
+                        Stloc(startingPos!);
+                    }
+
+                    // Proactively increase the number of iterations.  We do this prior to the match rather than once
+                    // we know it's successful, because we need to decrement it as part of a failed match when
+                    // backtracking; it's thus simpler to just always decrement it as part of a failed match, even
+                    // when initially greedily matching the loop, which then requires we increment it before trying.
+                    // iterationCount++;
+                    Ldloc(iterationCount);
+                    Ldc(1);
+                    Add();
+                    Stloc(iterationCount);
+
+                    // Last but not least, we need to set the doneLabel that a failed match of the body will jump to.
+                    // Such an iteration match failure may or may not fail the whole operation, depending on whether
+                    // we've already matched the minimum required iterations, so we need to jump to a location that
+                    // will make that determination.
+                    Label iterationFailedLabel = DefineLabel();
+                    doneLabel = iterationFailedLabel;
+
+                    // Finally, emit the child.
+                    Debug.Assert(sliceStaticPos == 0);
+                    EmitNode(child);
+                    TransferSliceStaticPosToPos(); // ensure sliceStaticPos remains 0
+                    if (doneLabel == iterationFailedLabel)
+                    {
+                        doneLabel = originalDoneLabel;
+                    }
+
+                    // Loop condition.  Continue iterating if we've not yet reached the minimum.  We just successfully
+                    // matched an iteration, so the only reason we'd need to forcefully loop around again is if the
+                    // minimum were at least 2.
+                    if (minIterations >= 2)
+                    {
+                        // if (iterationCount < minIterations) goto body;
+                        Ldloc(iterationCount);
+                        Ldc(minIterations);
+                        BltFar(body);
+                    }
+
+                    if (iterationMayBeEmpty)
+                    {
+                        // If the last iteration was empty, we need to prevent further iteration from this point
+                        // unless we backtrack out of this iteration.
+                        // if (pos == startingPos) sawEmpty = 1; // true
+                        Label skipSawEmptySet = DefineLabel();
+                        Ldloc(pos);
+                        Ldloc(startingPos!);
+                        Bne(skipSawEmptySet);
+                        Ldc(1);
+                        Stloc(sawEmpty!);
+                        MarkLabel(skipSawEmptySet);
+                    }
+
+                    // We matched the next iteration.  Jump to the subsequent code.
+                    // goto endLoop;
+                    BrFar(endLoop);
+
+                    // Now handle what happens when an iteration fails (and since a lazy loop only executes an iteration
+                    // when it's required to satisfy the loop by definition of being lazy, the loop is failing).  We need
+                    // to reset state to what it was before just that iteration started.  That includes resetting pos and
+                    // clearing out any captures from that iteration.
+                    MarkLabel(iterationFailedLabel);
+
+                    // Fail this loop iteration, including popping state off the backtracking stack that was pushed
+                    // on as part of the failing iteration.
+
+                    // iterationCount--;
+                    Ldloc(iterationCount);
+                    Ldc(1);
+                    Sub();
+                    Stloc(iterationCount);
+
+                    // poppedCrawlPos = base.runstack[--stackpos];
+                    // while (base.Crawlpos() > poppedCrawlPos) base.Uncapture();
+                    // sawEmpty = base.runstack[--stackpos];
+                    // startingPos = base.runstack[--stackpos];
+                    // pos = base.runstack[--stackpos];
+                    // slice = inputSpan.Slice(pos);
+                    EmitUncaptureUntilPopped();
+                    if (iterationMayBeEmpty)
+                    {
+                        EmitStackPop();
+                        Stloc(sawEmpty!);
+                        EmitStackPop();
+                        Stloc(startingPos!);
+                    }
+                    EmitStackPop();
+                    Stloc(pos);
+                    SliceInputSpan();
+
+                    // If the loop's child doesn't backtrack, then this loop has failed.
+                    // If the loop's child does backtrack, we need to backtrack back into the previous iteration if there was one.
+                    if (doneLabel == originalDoneLabel)
+                    {
+                        // Since the only reason we'd end up revisiting previous iterations of the lazy loop is if the child had backtracking constructs
+                        // we'd backtrack into, and the child doesn't, the whole loop is failed and done. If we successfully processed any iterations,
+                        // we thus need to pop all of the state we pushed onto the stack for those iterations, as we're exiting out to the parent who
+                        // will expect the stack to be cleared of any child state.
+
+                        // stackpos -= iterationCount * entriesPerIteration;
+                        Debug.Assert(entriesPerIteration >= 1);
+                        Ldloc(stackpos);
+                        Ldloc(iterationCount);
+                        if (entriesPerIteration > 1)
+                        {
+                            Ldc(entriesPerIteration);
+                            Mul();
+                        }
+                        Sub();
+                        Stloc(stackpos);
+                    }
+                    else
+                    {
+                        // The child has backtracking constructs.  If we have no successful iterations previously processed, just bail.
+                        // If we do have successful iterations previously processed, however, we need to backtrack back into the last one.
+
+                        // if (iterationCount != 0) goto doneLabel;
+                        Ldloc(iterationCount);
+                        Ldc(0);
+                        BneFar(doneLabel);
+                    }
+
+                    // goto originalDoneLabel;
+                    BrFar(originalDoneLabel);
+
+                    MarkLabel(endLoop);
+
+                    // If the lazy loop is not atomic, then subsequent code may backtrack back into this lazy loop, either
+                    // causing it to add additional iterations, or backtracking into existing iterations and potentially
+                    // unwinding them.  We need to do a timeout check, and then determine whether to branch back to add more
+                    // iterations (if we haven't hit the loop's maximum iteration count and haven't seen an empty iteration)
+                    // or unwind by branching back to the last backtracking location.  Either way, we need a dedicated
+                    // backtracking section that a subsequent construct will see as its backtracking target.
                     // We need to ensure that some state (e.g. iteration count) is persisted if we're backtracked to.
                     // If we're not inside of a loop, the local's used for this construct are sufficient, as nothing
                     // else will overwrite them between now and when backtracking occurs.  If, however, we are inside
                     // of another loop, then any number of iterations might have such state that needs to be stored,
                     // and thus it needs to be pushed on to the backtracking stack.
-                    if (analysis.IsInLoop(node))
+                    // base.runstack[stackpos++] = pos;
+                    // base.runstack[stackpos++] = iterationCount;
+                    // base.runstack[stackpos++] = startingPos;
+                    // base.runstack[stackpos++] = sawEmpty;
+                    bool isInLoop = analysis.IsInLoop(node);
+                    EmitStackResizeIfNeeded(1 + (isInLoop ? 1 + (iterationMayBeEmpty ? 2 : 0) : 0) + (expressionHasCaptures ? 1 : 0));
+                    EmitStackPush(() => Ldloc(pos));
+                    if (isInLoop)
                     {
-                        EmitStackResizeIfNeeded(1 + (iterationMayBeEmpty ? 2 : 0));
                         EmitStackPush(() => Ldloc(iterationCount));
                         if (iterationMayBeEmpty)
                         {
                             EmitStackPush(() => Ldloc(startingPos!));
                             EmitStackPush(() => Ldloc(sawEmpty!));
                         }
+                    }
+                    if (expressionHasCaptures)
+                    {
+                        EmitStackPush(() => { Ldthis(); Call(s_crawlposMethod); });
                     }
 
                     Label skipBacktrack = DefineLabel();
@@ -3906,11 +3909,16 @@ namespace System.Text.RegularExpressions
                     // We're backtracking.  Check the timeout.
                     EmitTimeoutCheckIfNeeded();
 
-                    if (analysis.IsInLoop(node))
+                    // int poppedCrawlPos = base.runstack[--stackpos];
+                    // while (base.Crawlpos() > poppedCrawlPos) base.Uncapture();
+                    EmitUncaptureUntilPopped();
+
+                    if (isInLoop)
                     {
                         // sawEmpty = base.runstack[--stackpos];
                         // startingPos = base.runstack[--stackpos];
                         // iterationCount = base.runstack[--stackpos];
+                        // pos = base.runstack[--stackpos];
                         if (iterationMayBeEmpty)
                         {
                             EmitStackPop();
@@ -3921,6 +3929,9 @@ namespace System.Text.RegularExpressions
                         EmitStackPop();
                         Stloc(iterationCount);
                     }
+                    EmitStackPop();
+                    Stloc(pos);
+                    SliceInputSpan();
 
                     // Determine where to branch, either back to the lazy loop body to add an additional iteration,
                     // or to the last backtracking label.
@@ -4533,14 +4544,28 @@ namespace System.Text.RegularExpressions
 
                 int minIterations = node.M;
                 int maxIterations = node.N;
-                bool isAtomic = analysis.IsAtomicByAncestor(node);
 
-                // If this is actually a repeater and the child doesn't have any backtracking in it that might
-                // cause us to need to unwind already taken iterations, just output it as a repeater loop.
-                if (minIterations == maxIterations && !analysis.MayBacktrack(child))
+                // Special-case some repeaters.
+                if (minIterations == maxIterations)
                 {
-                    EmitNonBacktrackingRepeater(node);
-                    return;
+                    switch (minIterations)
+                    {
+                        case 0:
+                            // No iteration. Nop.
+                            return;
+
+                        case 1:
+                            // One iteration.  Just emit the child without any loop ceremony.
+                            EmitNode(child);
+                            return;
+
+                        case > 1 when !analysis.MayBacktrack(child):
+                            // The child doesn't backtrack.  Emit it as a non-backtracking repeater.
+                            // (If the child backtracks, we need to fall through to the more general logic
+                            // that supports unwinding iterations.)
+                            EmitNonBacktrackingRepeater(node);
+                            return;
+                    }
                 }
 
                 // We might loop any number of times.  In order to ensure this loop and subsequent code sees sliceStaticPos
@@ -4548,8 +4573,16 @@ namespace System.Text.RegularExpressions
                 // So, we transfer sliceStaticPos to pos, and ensure that any path out of here has sliceStaticPos as 0.
                 TransferSliceStaticPosToPos();
 
-                Label originalDoneLabel = doneLabel;
+                bool isAtomic = analysis.IsAtomicByAncestor(node);
+                LocalBuilder? startingStackpos = null;
+                if (isAtomic)
+                {
+                    startingStackpos = DeclareInt32();
+                    Ldloc(stackpos);
+                    Stloc(startingStackpos);
+                }
 
+                Label originalDoneLabel = doneLabel;
                 Label body = DefineLabel();
                 Label endLoop = DefineLabel();
                 LocalBuilder iterationCount = DeclareInt32();
@@ -4579,7 +4612,9 @@ namespace System.Text.RegularExpressions
                 // it to pos. Note that unlike some other constructs that only need to push state on to the stack if
                 // they're inside of a loop (because if they're not inside of a loop, nothing would overwrite the locals),
                 // here we still need the stack, because each iteration of _this_ loop may have its own state, e.g. we
-                // need to know where each iteration began so when backtracking we can jump back to that location.
+                // need to know where each iteration began so when backtracking we can jump back to that location.  This is
+                // true even if the loop is atomic, as we might need to backtrack within the loop in order to match the
+                // minimum iteration count.
                 EmitStackResizeIfNeeded(1 + (expressionHasCaptures ? 1 : 0) + (startingPos is not null ? 1 : 0));
                 if (expressionHasCaptures)
                 {
@@ -4715,24 +4750,20 @@ namespace System.Text.RegularExpressions
                 BltFar(originalDoneLabel);
 
                 // pos = base.runstack[--stackpos];
+                // slice = inputSpan.Slice(pos);
                 // startingPos = base.runstack[--stackpos];
+                // int poppedCrawlPos = base.runstack[--stackpos];
+                // while (base.Crawlpos() > poppedCrawlPos) base.Uncapture();
                 EmitStackPop();
                 Stloc(pos);
+                SliceInputSpan();
                 if (startingPos is not null)
                 {
                     EmitStackPop();
                     Stloc(startingPos);
                 }
-                if (expressionHasCaptures)
-                {
-                    // int poppedCrawlPos = base.runstack[--stackpos];
-                    // while (base.Crawlpos() > poppedCrawlPos) base.Uncapture();
-                    using RentedLocalBuilder poppedCrawlPos = RentInt32Local();
-                    EmitStackPop();
-                    Stloc(poppedCrawlPos);
-                    EmitUncaptureUntil(poppedCrawlPos);
-                }
-                SliceInputSpan();
+                EmitUncaptureUntilPopped();
+
 
                 // If there's a required minimum iteration count, validate now that we've processed enough iterations.
                 if (minIterations > 0)
@@ -4773,6 +4804,15 @@ namespace System.Text.RegularExpressions
                 {
                     doneLabel = originalDoneLabel;
                     MarkLabel(endLoop);
+
+                    // The loop is atomic, which means any backtracking will go around this loop.  That also means we can't leave
+                    // stack polluted with state from successful iterations, so we need to remove all such state; such state will
+                    // only have been pushed if minIterations > 0.
+                    if (startingStackpos is not null)
+                    {
+                        Ldloc(startingStackpos);
+                        Stloc(stackpos);
+                    }
                 }
                 else
                 {
@@ -4845,6 +4885,23 @@ namespace System.Text.RegularExpressions
                         doneLabel = backtrack;
                         MarkLabel(backtrackingEnd);
                     }
+                }
+            }
+
+            // <summary>
+            // If the expression contains captures, pops a crawl position from the stack and uncaptures
+            // until that position is reached.
+            // </summary>
+            void EmitUncaptureUntilPopped()
+            {
+                if (expressionHasCaptures)
+                {
+                    // poppedCrawlPos = base.runstack[--stackpos];
+                    // while (base.Crawlpos() > poppedCrawlPos) base.Uncapture();
+                    using RentedLocalBuilder poppedCrawlPos = RentInt32Local();
+                    EmitStackPop();
+                    Stloc(poppedCrawlPos);
+                    EmitUncaptureUntil(poppedCrawlPos);
                 }
             }
 
@@ -5034,7 +5091,7 @@ namespace System.Text.RegularExpressions
             Ret();
         }
 
-        /// <summary>Emits a a check for whether the character is in the specified character class.</summary>
+        /// <summary>Emits a check for whether the character is in the specified character class.</summary>
         /// <remarks>The character to be checked has already been loaded onto the stack.</remarks>
         private void EmitMatchCharacterClass(string charClass)
         {
@@ -5139,6 +5196,41 @@ namespace System.Text.RegularExpressions
                     Call(s_charIsSymbolMethod);
                     NegateIf(charClass == RegexCharClass.NotSymbolClass);
                     return;
+
+                case RegexCharClass.AsciiLetterClass:
+                case RegexCharClass.NotAsciiLetterClass:
+                    // char.IsAsciiLetter(ch)
+                    Call(s_charIsAsciiLetterMethod);
+                    NegateIf(charClass == RegexCharClass.NotAsciiLetterClass);
+                    return;
+
+                case RegexCharClass.AsciiLetterOrDigitClass:
+                case RegexCharClass.NotAsciiLetterOrDigitClass:
+                    // char.IsAsciiLetterOrDigit(ch)
+                    Call(s_charIsAsciiLetterOrDigitMethod);
+                    NegateIf(charClass == RegexCharClass.NotAsciiLetterOrDigitClass);
+                    return;
+
+                case RegexCharClass.HexDigitClass:
+                case RegexCharClass.NotHexDigitClass:
+                    // char.IsAsciiHexDigit(ch)
+                    Call(s_charIsAsciiHexDigitMethod);
+                    NegateIf(charClass == RegexCharClass.NotHexDigitClass);
+                    return;
+
+                case RegexCharClass.HexDigitLowerClass:
+                case RegexCharClass.NotHexDigitLowerClass:
+                    // char.IsAsciiHexDigitLower(ch)
+                    Call(s_charIsAsciiHexDigitLowerMethod);
+                    NegateIf(charClass == RegexCharClass.NotHexDigitLowerClass);
+                    return;
+
+                case RegexCharClass.HexDigitUpperClass:
+                case RegexCharClass.NotHexDigitUpperClass:
+                    // char.IsAsciiHexDigitUpper(ch)
+                    Call(s_charIsAsciiHexDigitUpperMethod);
+                    NegateIf(charClass == RegexCharClass.NotHexDigitUpperClass);
+                    return;
             }
 
             // Next, handle simple sets of one range, e.g. [A-Z], [0-9], etc.  This includes some built-in classes, like ECMADigitClass.
@@ -5226,7 +5318,7 @@ namespace System.Text.RegularExpressions
                 return;
             }
 
-            // Next, handle simple sets of two ASCII letter ranges that are cased versions of each other, e.g. [A-Za-z].
+            // Next, handle simple sets of two ASCII letter ranges that are cased versions of each other, e.g. [B-Db-d].
             // This can be implemented as if it were a single range, with an additional bitwise operation.
             if (RegexCharClass.TryGetDoubleRange(charClass, out (char LowInclusive, char HighInclusive) rangeLower, out (char LowInclusive, char HighInclusive) rangeUpper) &&
                 RegexCharClass.IsAsciiLetter(rangeUpper.LowInclusive) &&
@@ -5254,7 +5346,7 @@ namespace System.Text.RegularExpressions
 
             // Next, handle sets where the high - low + 1 range is <= 64.  In that case, we can emit
             // a branchless lookup in a ulong that does not rely on loading any objects (e.g. the string-based
-            // lookup we use later).  This nicely handles common sets like [0-9A-Fa-f], [0-9a-f], [A-Za-z], etc.
+            // lookup we use later).  This nicely handles sets made up of a subset of ASCII letters, for example.
             // We skip this on 32-bit, as otherwise using 64-bit numbers in this manner is a deoptimization
             // when compared to the subsequent fallbacks.
             if (IntPtr.Size == 8 && analysis.OnlyRanges && (analysis.UpperBoundExclusiveIfOnlyRanges - analysis.LowerBoundInclusiveIfOnlyRanges) <= 64)

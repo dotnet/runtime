@@ -274,7 +274,7 @@ namespace System.Runtime.InteropServices
             {
                 // Release GC handle created when MOW was built.
                 _wrapper->Destroy();
-                Marshal.FreeCoTaskMem((IntPtr)_wrapper);
+                NativeMemory.Free(_wrapper);
             }
         }
 
@@ -367,8 +367,8 @@ namespace System.Runtime.InteropServices
             int totalDefinedCount = runtimeDefinedCount + userDefinedCount;
 
             // Allocate memory for the ManagedObjectWrapper.
-            IntPtr wrapperMem = Marshal.AllocCoTaskMem(
-                sizeof(ManagedObjectWrapper) + totalDefinedCount * sizeof(InternalComInterfaceDispatch));
+            IntPtr wrapperMem = (IntPtr)NativeMemory.Alloc(
+                (nuint)sizeof(ManagedObjectWrapper) + (nuint)totalDefinedCount * (nuint)sizeof(InternalComInterfaceDispatch));
 
             // Compute the dispatch section offset and ensure it is aligned.
             ManagedObjectWrapper* mow = (ManagedObjectWrapper*)wrapperMem;

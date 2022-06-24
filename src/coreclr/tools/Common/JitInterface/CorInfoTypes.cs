@@ -478,7 +478,11 @@ namespace Internal.JitInterface
     }
     public enum CorInfoInline
     {
-        INLINE_PASS = 0,    // Inlining OK
+        INLINE_PASS = 0,   // Inlining OK
+        INLINE_PREJIT_SUCCESS = 1,   // Inline check for prejit checking usage succeeded
+        INLINE_CHECK_CAN_INLINE_SUCCESS = 2,   // JIT detected it is permitted to try to actually inline
+        INLINE_CHECK_CAN_INLINE_VMFAIL = 3,   // VM specified that inline must fail via the CanInline api
+
 
         // failures are negative
         INLINE_FAIL = -1,   // Inlining not OK for this case only
@@ -518,7 +522,7 @@ namespace Internal.JitInterface
         //     but need to insert a callout to the VM to ask during runtime
         //     whether to raise a verification or not (if the method is unverifiable).
         CORINFO_VERIFICATION_DONT_JIT = 3,    // Cannot skip verification during jit time,
-        //     but do not jit the method if is is unverifiable.
+        //     but do not jit the method if it is unverifiable.
     }
 
     public enum CorInfoInitClassResult

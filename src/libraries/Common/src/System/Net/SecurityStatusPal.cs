@@ -70,6 +70,7 @@ namespace System.Net
         BadBinding,
         DowngradeDetected,
         ApplicationProtocolMismatch,
-        NoRenegotiation
+        NoRenegotiation,
+        KeySetDoesNotExist
     }
 }

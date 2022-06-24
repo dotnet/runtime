@@ -101,7 +101,7 @@ namespace Wasm.Build.Tests
                                             + " It might fail if it was incorrectly compiled to a bitcode file, instead of wasm.");
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Theory]
         [InlineData("Debug")]
         [InlineData("Release")]
         public void BlazorWasm_CanRunMonoAOTCross_WithNoTrimming(string config)
@@ -121,7 +121,7 @@ namespace Wasm.Build.Tests
                                         atTheEnd: target);
 
             string publishLogPath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}.binlog");
-            CommandResult res = new DotNetCommand(s_buildEnv)
+            CommandResult res = new DotNetCommand(s_buildEnv, _testOutput)
                                         .WithWorkingDirectory(_projectDir!)
                                         .ExecuteWithCapturedOutput("publish",
                                                                    $"-bl:{publishLogPath}",

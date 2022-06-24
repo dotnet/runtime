@@ -1008,7 +1008,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool StartsNumber(char c) => char.IsInRange(c, '0', '9') || c == '-' || c == '+';
+        private static bool StartsNumber(char c) => char.IsAsciiDigit(c) || c == '-' || c == '+';
 
         public static object ToObject(Type enumType, object value)
         {

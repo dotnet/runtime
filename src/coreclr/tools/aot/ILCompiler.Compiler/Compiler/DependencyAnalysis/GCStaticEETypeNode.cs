@@ -67,7 +67,7 @@ namespace ILCompiler.DependencyAnalysis
             dataBuilder.RequireInitialPointerAlignment();
             dataBuilder.AddSymbol(this);
 
-            // +1 for SyncBlock (in CoreRT static size already includes MethodTable)
+            // +1 for SyncBlock (static size already includes MethodTable)
             Debug.Assert(factory.Target.Abi == TargetAbi.NativeAot || factory.Target.Abi == TargetAbi.CppCodegen);
             int totalSize = (_gcMap.Size + 1) * _target.PointerSize;
 

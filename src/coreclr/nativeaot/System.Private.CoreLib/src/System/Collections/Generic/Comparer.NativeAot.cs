@@ -38,7 +38,7 @@ namespace System.Collections.Generic
             [Intrinsic]
             get
             {
-                // Lazy initialization produces smaller code for CoreRT than initialization in constructor
+                // Lazy initialization produces smaller code for AOT compilation than initialization in constructor
                 return s_default ?? Create();
             }
         }

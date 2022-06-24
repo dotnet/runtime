@@ -1,29 +1,14 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
+using Microsoft.Quic;
 
 namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
-    internal sealed class SafeMsQuicConnectionHandle : SafeHandle
+    internal sealed class SafeMsQuicConnectionHandle : MsQuicSafeHandle
     {
-        public override bool IsInvalid => handle == IntPtr.Zero;
-
-        public SafeMsQuicConnectionHandle()
-            : base(IntPtr.Zero, ownsHandle: true)
+        public unsafe SafeMsQuicConnectionHandle(QUIC_HANDLE* handle)
+            : base(handle, ptr => MsQuicApi.Api.ApiTable->ConnectionClose((QUIC_HANDLE*)ptr), SafeHandleType.Connection)
         { }
-
-        public SafeMsQuicConnectionHandle(IntPtr connectionHandle)
-            : this()
-        {
-            SetHandle(connectionHandle);
-        }
-
-        protected override bool ReleaseHandle()
-        {
-            MsQuicApi.Api.ConnectionCloseDelegate(handle);
-            SetHandle(IntPtr.Zero);
-            return true;
-        }
     }
 }

@@ -11,8 +11,6 @@
 #include "stdafx.h"
 #include "nativepipeline.h"
 
-#include <Tlhelp32.h>
-
 #include "holder.h"
 
 

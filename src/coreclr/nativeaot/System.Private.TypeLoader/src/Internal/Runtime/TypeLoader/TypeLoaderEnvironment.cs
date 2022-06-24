@@ -25,6 +25,11 @@ namespace Internal.Runtime.TypeLoader
 {
     internal class Callbacks : TypeLoaderCallbacks
     {
+        public override TypeManagerHandle GetModuleForMetadataReader(MetadataReader reader)
+        {
+            return TypeLoaderEnvironment.Instance.ModuleList.GetModuleForMetadataReader(reader);
+        }
+
         public override bool TryGetConstructedGenericTypeForComponents(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles, out RuntimeTypeHandle runtimeTypeHandle)
         {
             return TypeLoaderEnvironment.Instance.TryGetConstructedGenericTypeForComponents(genericTypeDefinitionHandle, genericTypeArgumentHandles, out runtimeTypeHandle);
@@ -45,6 +50,11 @@ namespace Internal.Runtime.TypeLoader
             return TypeLoaderEnvironment.Instance.TryGetRuntimeMethodHandleComponents(runtimeMethodHandle, out declaringTypeHandle, out nameAndSignature, out genericMethodArgs);
         }
 
+        public override RuntimeMethodHandle GetRuntimeMethodHandleForComponents(RuntimeTypeHandle declaringTypeHandle, string methodName, RuntimeSignature methodSignature, RuntimeTypeHandle[] genericMethodArgs)
+        {
+            return TypeLoaderEnvironment.Instance.GetRuntimeMethodHandleForComponents(declaringTypeHandle, methodName, methodSignature, genericMethodArgs);
+        }
+
         public override bool CompareMethodSignatures(RuntimeSignature signature1, RuntimeSignature signature2)
         {
             return TypeLoaderEnvironment.Instance.CompareMethodSignatures(signature1, signature2);
@@ -55,10 +65,12 @@ namespace Internal.Runtime.TypeLoader
             return TypeLoaderEnvironment.Instance.TryGetDefaultConstructorForType(runtimeTypeHandle);
         }
 
+#if FEATURE_UNIVERSAL_GENERICS
         public override IntPtr GetDelegateThunk(Delegate delegateObject, int thunkKind)
         {
             return CallConverterThunk.GetDelegateThunk(delegateObject, thunkKind);
         }
+#endif
 
         public override bool TryGetGenericVirtualTargetForTypeAndSlot(RuntimeTypeHandle targetHandle, ref RuntimeTypeHandle declaringType, RuntimeTypeHandle[] genericArguments, ref string methodName, ref RuntimeSignature methodSignature, bool lookForDefaultImplementation, out IntPtr methodPointer, out IntPtr dictionaryPointer, out bool slotUpdated)
         {
@@ -68,6 +80,11 @@ namespace Internal.Runtime.TypeLoader
         public override bool GetRuntimeFieldHandleComponents(RuntimeFieldHandle runtimeFieldHandle, out RuntimeTypeHandle declaringTypeHandle, out string fieldName)
         {
             return TypeLoaderEnvironment.Instance.TryGetRuntimeFieldHandleComponents(runtimeFieldHandle, out declaringTypeHandle, out fieldName);
+        }
+
+        public override RuntimeFieldHandle GetRuntimeFieldHandleForComponents(RuntimeTypeHandle declaringTypeHandle, string fieldName)
+        {
+            return TypeLoaderEnvironment.Instance.GetRuntimeFieldHandleForComponents(declaringTypeHandle, fieldName);
         }
 
         public override IntPtr ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(IntPtr unboxingFunctionPointer, RuntimeTypeHandle declaringType)
@@ -720,9 +737,9 @@ namespace Internal.Runtime.TypeLoader
             return true;
         }
 
+#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
         public bool TryResolveSingleMetadataFixup(ModuleInfo module, int metadataToken, MetadataFixupKind fixupKind, out IntPtr fixupResolution)
         {
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
             using (LockHolder.Hold(_typeLoaderLock))
             {
                 try
@@ -733,17 +750,12 @@ namespace Internal.Runtime.TypeLoader
                 {
                     Environment.FailFast("Failed to resolve metadata token " +
                         ((uint)metadataToken).LowLevelToString() + ": " + ex.Message);
-#else
-                    Environment.FailFast("Failed to resolve metadata token " +
-                        ((uint)metadataToken).LowLevelToString());
-#endif
                     fixupResolution = IntPtr.Zero;
                     return false;
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
                 }
             }
-#endif
         }
+#endif
 
         public bool TryDispatchMethodOnTarget(NativeFormatModuleInfo module, int metadataToken, RuntimeTypeHandle targetInstanceType, out IntPtr methodAddress)
         {
@@ -824,10 +836,11 @@ namespace Internal.Runtime.TypeLoader
                 // This check looks for unboxing and instantiating stubs generated via the compiler backend
                 if (TypeLoaderEnvironment.TryGetTargetOfUnboxingAndInstantiatingStub(exactTarget, out fatFunctionPointerTarget))
                 {
-                    // If this is an unboxing and instantiating stub, use seperate table, find target, and create fat function pointer
+                    // If this is an unboxing and instantiating stub, use separate table, find target, and create fat function pointer
                     exactTarget = FunctionPointerOps.GetGenericMethodFunctionPointer(fatFunctionPointerTarget,
                                                                                         declaringType.ToIntPtr());
                 }
+#if FEATURE_UNIVERSAL_GENERICS
                 else
                 {
                     IntPtr newExactTarget;
@@ -845,6 +858,7 @@ namespace Internal.Runtime.TypeLoader
                         // from GetCodeTarget
                     }
                 }
+#endif
             }
 
             return exactTarget;

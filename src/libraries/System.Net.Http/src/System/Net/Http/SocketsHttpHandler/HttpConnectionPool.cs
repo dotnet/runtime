@@ -134,7 +134,7 @@ namespace System.Net.Http
 
             if (IsHttp3Supported())
             {
-                _http3Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version30 && (_poolManager.Settings._quicImplementationProvider ?? QuicImplementationProviders.Default).IsSupported;
+                _http3Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version30 && QuicConnection.IsSupported;
             }
 
             switch (kind)
@@ -226,8 +226,8 @@ namespace System.Net.Http
                 // Note that if _host is null, this is a (non-tunneled) proxy connection, and we can't cache the hostname.
                 hostHeader =
                     (_originAuthority.Port != (sslHostName == null ? DefaultHttpPort : DefaultHttpsPort)) ?
-                    $"{_originAuthority.IdnHost}:{_originAuthority.Port}" :
-                    _originAuthority.IdnHost;
+                    $"{_originAuthority.HostValue}:{_originAuthority.Port}" :
+                    _originAuthority.HostValue;
 
                 // Note the IDN hostname should always be ASCII, since it's already been IDNA encoded.
                 _hostHeaderValueBytes = Encoding.ASCII.GetBytes(hostHeader);
@@ -828,7 +828,7 @@ namespace System.Net.Http
         private async ValueTask<Http3Connection> GetHttp3ConnectionAsync(HttpRequestMessage request, HttpAuthority authority, CancellationToken cancellationToken)
         {
             Debug.Assert(_kind == HttpConnectionKind.Https);
-            Debug.Assert(_http3Enabled == true);
+            Debug.Assert(_http3Enabled);
 
             Http3Connection? http3Connection = Volatile.Read(ref _http3Connection);
 
@@ -885,7 +885,7 @@ namespace System.Net.Http
                 QuicConnection quicConnection;
                 try
                 {
-                    quicConnection = await ConnectHelper.ConnectQuicAsync(request, Settings._quicImplementationProvider ?? QuicImplementationProviders.Default, new DnsEndPoint(authority.IdnHost, authority.Port), _sslOptionsHttp3!, cancellationToken).ConfigureAwait(false);
+                    quicConnection = await ConnectHelper.ConnectQuicAsync(request, new DnsEndPoint(authority.IdnHost, authority.Port), _sslOptionsHttp3!, cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception e)
                 {
@@ -1414,7 +1414,7 @@ namespace System.Net.Http
                 {
                     if (NetEventSource.Log.IsEnabled())
                     {
-                        Trace($"Connected with custom SslStream: alpn='${sslStream.NegotiatedApplicationProtocol.ToString()}'");
+                        Trace($"Connected with custom SslStream: alpn='${sslStream.NegotiatedApplicationProtocol}'");
                     }
                 }
                 transportContext = sslStream.TransportContext;

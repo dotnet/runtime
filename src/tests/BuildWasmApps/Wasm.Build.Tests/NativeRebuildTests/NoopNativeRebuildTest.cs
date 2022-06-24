@@ -35,7 +35,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Theory]
         [InlineData("Debug")]
         [InlineData("Release")]
         public void BlazorNoopRebuild(string config)
@@ -62,7 +62,7 @@ namespace Wasm.Build.NativeRebuild.Tests
         }
 
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Theory]
         [InlineData("Debug")]
         [InlineData("Release")]
         public void BlazorOnlyLinkRebuild(string config)

@@ -2071,7 +2071,7 @@ unsigned PendingArgsStack::pasEnumGCoffsCount()
 }
 
 //-----------------------------------------------------------------------------
-//  Initalize enumeration by passing in iter=pasENUM_START.
+//  Initialize enumeration by passing in iter=pasENUM_START.
 //  Continue by passing in the return value as the new value of iter
 //  End of enumeration when pasENUM_END is returned
 //  If return value != pasENUM_END, *offs is set to the offset for GCinfo
@@ -4124,7 +4124,7 @@ void GCInfo::gcMakeRegPtrTable(
             // Do we have an argument or local variable?
             if (!varDsc->lvIsParam)
             {
-                // If is is pinned, it must be an untracked local.
+                // If it is pinned, it must be an untracked local.
                 assert(!varDsc->lvPinned || !varDsc->lvTracked);
 
                 if (varDsc->lvTracked || !varDsc->lvOnFrame)
@@ -4791,7 +4791,7 @@ void GCInfo::gcInfoRecordGCStackArgLive(GcInfoEncoder* gcInfoEncoder, MakeRegPtr
     assert(genStackPtr->rpdArg);
     assert(genStackPtr->rpdArgTypeGet() == rpdARG_PUSH);
 
-    // We only need to report these when we're doing fuly-interruptible
+    // We only need to report these when we're doing fully-interruptible
     assert(compiler->codeGen->GetInterruptible());
 
     GCENCODER_WITH_LOGGING(gcInfoEncoderWithLog, gcInfoEncoder);
@@ -4828,7 +4828,7 @@ void GCInfo::gcInfoRecordGCStackArgsDead(GcInfoEncoder* gcInfoEncoder,
     // Re-walk that list and mark all outgoing arguments that we're marked as live
     // earlier, as going dead after the call.
 
-    // We only need to report these when we're doing fuly-interruptible
+    // We only need to report these when we're doing fully-interruptible
     assert(compiler->codeGen->GetInterruptible());
 
     GCENCODER_WITH_LOGGING(gcInfoEncoderWithLog, gcInfoEncoder);

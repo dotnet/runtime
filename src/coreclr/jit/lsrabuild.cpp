@@ -3123,6 +3123,10 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
     {
         return BuildAddrUses(node, candidates);
     }
+    if (node->OperIs(GT_BSWAP, GT_BSWAP16))
+    {
+        return BuildOperandUses(node->gtGetOp1(), candidates);
+    }
 #ifdef FEATURE_HW_INTRINSICS
     if (node->OperIsHWIntrinsic())
     {
@@ -3477,7 +3481,7 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
 
 // First, define internal registers.
 #ifdef FEATURE_SIMD
-    if (varTypeIsSIMD(storeLoc) && !op1->IsCnsIntOrI() && (storeLoc->TypeGet() == TYP_SIMD12))
+    if (varTypeIsSIMD(storeLoc) && !op1->IsVectorZero() && (storeLoc->TypeGet() == TYP_SIMD12))
     {
         // Need an additional register to extract upper 4 bytes of Vector3,
         // it has to be float for x86.
@@ -3537,20 +3541,7 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
 #endif // !TARGET_64BIT
     else if (op1->isContained())
     {
-#ifdef TARGET_XARCH
-        if (varTypeIsSIMD(storeLoc))
-        {
-            // This is the zero-init case, and we need a register to hold the zero.
-            // (On Arm64 we can just store REG_ZR.)
-            assert(op1->IsSIMDZero());
-            singleUseRef = BuildUse(op1->gtGetOp1());
-            srcCount     = 1;
-        }
-        else
-#endif
-        {
-            srcCount = 0;
-        }
+        srcCount = 0;
     }
     else
     {

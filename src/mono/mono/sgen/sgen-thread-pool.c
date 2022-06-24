@@ -80,7 +80,7 @@ continue_idle_job (SgenThreadPoolContext *context, void *thread_data)
 {
 	if (!context->continue_idle_job_func)
 		return FALSE;
-	return context->continue_idle_job_func (thread_data, context - pool_contexts);
+	return context->continue_idle_job_func (thread_data, GPTRDIFF_TO_INT (context - pool_contexts));
 }
 
 static gboolean

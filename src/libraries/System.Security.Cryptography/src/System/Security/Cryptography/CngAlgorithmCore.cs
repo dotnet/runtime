@@ -66,7 +66,11 @@ namespace System.Security.Cryptography
                     ExportPolicy = CngExportPolicies.AllowPlaintextExport,
                 };
 
-                CngProperty keySizeProperty = new CngProperty(KeyPropertyName.Length, BitConverter.GetBytes(keySize), CngPropertyOptions.None);
+                Span<byte> keySizeBuffer = stackalloc byte[sizeof(int)];
+                bool success = BitConverter.TryWriteBytes(keySizeBuffer, keySize);
+                Debug.Assert(success);
+
+                CngProperty keySizeProperty = new CngProperty(KeyPropertyName.Length, keySizeBuffer, CngPropertyOptions.None);
                 creationParameters.Parameters.Add(keySizeProperty);
 
                 _lazyKey = CngKey.Create(algorithm, null, creationParameters);

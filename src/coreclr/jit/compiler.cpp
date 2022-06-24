@@ -457,7 +457,7 @@ bool Compiler::isNativePrimitiveStructType(CORINFO_CLASS_HANDLE clsHnd)
 
 //-----------------------------------------------------------------------------
 // getPrimitiveTypeForStruct:
-//     Get the "primitive" type that is is used for a struct
+//     Get the "primitive" type that is used for a struct
 //     of size 'structSize'.
 //     We examine 'clsHnd' to check the GC layout of the struct and
 //     return TYP_REF for structs that simply wrap an object.
@@ -3186,19 +3186,31 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     opts.compReloc = jitFlags->IsSet(JitFlags::JIT_FLAG_RELOC);
 
+    bool enableFakeSplitting = false;
+
 #ifdef DEBUG
+    enableFakeSplitting = JitConfig.JitFakeProcedureSplitting();
+
 #if defined(TARGET_XARCH)
     // Whether encoding of absolute addr as PC-rel offset is enabled
     opts.compEnablePCRelAddr = (JitConfig.EnablePCRelAddr() != 0);
 #endif
 #endif // DEBUG
 
-    opts.compProcedureSplitting = jitFlags->IsSet(JitFlags::JIT_FLAG_PROCSPLIT);
+    opts.compProcedureSplitting = jitFlags->IsSet(JitFlags::JIT_FLAG_PROCSPLIT) || enableFakeSplitting;
 
-#ifdef TARGET_ARM64
-    // TODO-ARM64-NYI: enable hot/cold splitting
+#ifdef FEATURE_CFI_SUPPORT
+    // Hot/cold splitting is not being tested on NativeAOT.
+    if (generateCFIUnwindCodes())
+    {
+        opts.compProcedureSplitting = false;
+    }
+#endif // FEATURE_CFI_SUPPORT
+
+#ifdef TARGET_LOONGARCH64
+    // Hot/cold splitting is not being tested on LoongArch64.
     opts.compProcedureSplitting = false;
-#endif // TARGET_ARM64
+#endif // TARGET_LOONGARCH64
 
 #ifdef DEBUG
     opts.compProcedureSplittingEH = opts.compProcedureSplitting;
@@ -3207,7 +3219,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     if (opts.compProcedureSplitting)
     {
         // Note that opts.compdbgCode is true under ngen for checked assemblies!
-        opts.compProcedureSplitting = !opts.compDbgCode;
+        opts.compProcedureSplitting = !opts.compDbgCode || enableFakeSplitting;
 
 #ifdef DEBUG
         // JitForceProcedureSplitting is used to force procedure splitting on checked assemblies.
@@ -3236,6 +3248,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     }
 
 #ifdef DEBUG
+
     // Now, set compMaxUncheckedOffsetForNullObject for STRESS_NULL_OBJECT_CHECK
     if (compStressCompile(STRESS_NULL_OBJECT_CHECK, 30))
     {
@@ -4791,9 +4804,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_INVERT_LOOPS, &Compiler::optInvertLoops);
 
-        // Optimize block order
+        // Run some flow graph optimizations (but don't reorder)
         //
-        DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::optOptimizeLayout);
+        DoPhase(this, PHASE_OPTIMIZE_FLOW, &Compiler::optOptimizeFlow);
 
         // Compute reachability sets and dominators.
         //
@@ -4977,14 +4990,18 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     fgDebugCheckLinks(compStressCompile(STRESS_REMORPH_TREES, 50));
 #endif
 
-    // Remove dead blocks
-    DoPhase(this, PHASE_REMOVE_DEAD_BLOCKS, &Compiler::fgRemoveDeadBlocks);
-
     // Dominator and reachability sets are no longer valid.
     fgDomsComputed = false;
 
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
+
+    // Optimize block order
+    //
+    if (opts.OptimizationEnabled())
+    {
+        DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::optOptimizeLayout);
+    }
 
     // Determine start of cold region if we are hot/cold splitting
     //
@@ -5142,7 +5159,6 @@ void Compiler::placeLoopAlignInstructions()
         return;
     }
 
-    int loopsToProcess = loopAlignCandidates;
     JITDUMP("Inside placeLoopAlignInstructions for %d loops.\n", loopAlignCandidates);
 
     // Add align only if there were any loops that needed alignment
@@ -5154,8 +5170,10 @@ void Compiler::placeLoopAlignInstructions()
     {
         // Adding align instruction in prolog is not supported
         // hence just remove that loop from our list.
-        loopsToProcess--;
+        fgFirstBB->unmarkLoopAlign(this DEBUG_ARG("prolog block"));
     }
+
+    int loopsToProcess = loopAlignCandidates;
 
     for (BasicBlock* const block : Blocks())
     {
@@ -5187,24 +5205,43 @@ void Compiler::placeLoopAlignInstructions()
 
         if ((block->bbNext != nullptr) && (block->bbNext->isLoopAlign()))
         {
+            // Loop alignment is disabled for cold blocks
+            assert((block->bbFlags & BBF_COLD) == 0);
+            BasicBlock* const loopTop = block->bbNext;
+
             // If jmp was not found, then block before the loop start is where align instruction will be added.
+            //
             if (bbHavingAlign == nullptr)
             {
-                bbHavingAlign = block;
-                JITDUMP("Marking " FMT_BB " before the loop with BBF_HAS_ALIGN for loop at " FMT_BB "\n", block->bbNum,
-                        block->bbNext->bbNum);
+                // In some odd cases we may see blocks within the loop before we see the
+                // top block of the loop. Just bail on aligning such loops.
+                //
+                if ((block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) && (block->bbNatLoopNum == loopTop->bbNatLoopNum))
+                {
+                    loopTop->unmarkLoopAlign(this DEBUG_ARG("loop block appears before top of loop"));
+                }
+                else
+                {
+                    bbHavingAlign = block;
+                    JITDUMP("Marking " FMT_BB " before the loop with BBF_HAS_ALIGN for loop at " FMT_BB "\n",
+                            block->bbNum, loopTop->bbNum);
+                }
             }
             else
             {
                 JITDUMP("Marking " FMT_BB " that ends with unconditional jump with BBF_HAS_ALIGN for loop at " FMT_BB
                         "\n",
-                        bbHavingAlign->bbNum, block->bbNext->bbNum);
+                        bbHavingAlign->bbNum, loopTop->bbNum);
             }
 
-            bbHavingAlign->bbFlags |= BBF_HAS_ALIGN;
+            if (bbHavingAlign != nullptr)
+            {
+                bbHavingAlign->bbFlags |= BBF_HAS_ALIGN;
+            }
+
             minBlockSoFar         = BB_MAX_WEIGHT;
             bbHavingAlign         = nullptr;
-            currentAlignedLoopNum = block->bbNext->bbNatLoopNum;
+            currentAlignedLoopNum = loopTop->bbNatLoopNum;
 
             if (--loopsToProcess == 0)
             {
@@ -5979,7 +6016,7 @@ void Compiler::compCompileFinish()
     if ((info.compILCodeSize <= 32) &&     // Is it a reasonably small method?
         (info.compNativeCodeSize < 512) && // Some trivial methods generate huge native code. eg. pushing a single huge
                                            // struct
-        (impInlinedCodeSize <= 128) &&     // Is the the inlining reasonably bounded?
+        (impInlinedCodeSize <= 128) &&     // Is the inlining reasonably bounded?
                                            // Small methods cannot meaningfully have a big number of locals
                                            // or arguments. We always track arguments at the start of
                                            // the prolog which requires memory
@@ -6371,10 +6408,10 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     compHndBBtabCount      = 0;
     compHndBBtabAllocCount = 0;
 
-    info.compNativeCodeSize    = 0;
-    info.compTotalHotCodeSize  = 0;
-    info.compTotalColdCodeSize = 0;
-    info.compClassProbeCount   = 0;
+    info.compNativeCodeSize            = 0;
+    info.compTotalHotCodeSize          = 0;
+    info.compTotalColdCodeSize         = 0;
+    info.compHandleHistogramProbeCount = 0;
 
     compHasBackwardJump          = false;
     compHasBackwardJumpInHandler = false;
@@ -6550,7 +6587,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         {
             // This looks like a viable inline candidate.  Since
             // we're not actually inlining, don't report anything.
-            prejitResult.SetReported();
+            prejitResult.SetSuccessResult(INLINE_PREJIT_SUCCESS);
         }
     }
     else
@@ -9360,13 +9397,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 }
                 break;
 
-            case GT_INDEX:
-
-                if (tree->gtFlags & GTF_INX_STRING_LAYOUT)
-                {
-                    chars += printf("[INX_STRING_LAYOUT]");
-                }
-                FALLTHROUGH;
             case GT_INDEX_ADDR:
                 if (tree->gtFlags & GTF_INX_RNGCHK)
                 {

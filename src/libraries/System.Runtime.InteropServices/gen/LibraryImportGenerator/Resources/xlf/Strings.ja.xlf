@@ -24,7 +24,7 @@
       </trans-unit>
       <trans-unit id="CallerAllocConstructorMustHaveBufferSizeTitle">
         <source>'BufferSize' should be set on 'CustomTypeMarshallerAttribute'</source>
-        <target state="new">'BufferSize' should be set on 'CustomTypeMarshallerAttribute'</target>
+        <target state="translated">'CustomTypeMarshallerAttribute' に 'BufferSize' を設定する必要があります</target>
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackDescription">
@@ -89,7 +89,7 @@
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageValue">
         <source>The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular `DllImport` instead.</source>
-        <target state="new">The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular `DllImport` instead.</target>
+        <target state="translated">'{0}' 向けに指定された値 '{1}' は、ソース生成済みの P/Invoke ではサポートされていません。指定された値が必要な場合は、代わりに通常の 'DllImport' を使用します。</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedTitle">
@@ -139,7 +139,7 @@
       </trans-unit>
       <trans-unit id="CustomMarshallerTypeMustHaveRequiredShapeTitle">
         <source>Marshaller type does not have the required shape</source>
-        <target state="new">Marshaller type does not have the required shape</target>
+        <target state="translated">マーシャラー型に必要な図形がありません</target>
         <note />
       </trans-unit>
       <trans-unit id="CustomMarshallerTypeMustSupportDirectionDescription">
@@ -219,7 +219,7 @@
       </trans-unit>
       <trans-unit id="InTwoStageMarshallingRequiresToNativeValueMessage">
         <source>A marshaller type '{0}' that supports marshalling in the 'In' direction with the 'TwoStageMarshalling' feature must provide a 'ToNativeValue' instance method that returns the native value</source>
-        <target state="new">A marshaller type '{0}' that supports marshalling in the 'In' direction with the 'TwoStageMarshalling' feature must provide a 'ToNativeValue' instance method that returns the native value</target>
+        <target state="translated">マーシャラー型 '{0}' が 'TwoStageMarshalling' 機能を使用して 'In' 方向のマーシャリングをサポートする場合、ネイティブ値を返す 'ToNativeValue' インスタンス メソッドを指定する必要があります</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodContainingTypeMissingModifiersMessage">
@@ -239,7 +239,7 @@
       </trans-unit>
       <trans-unit id="InvalidCustomTypeMarshallerAttributeUsageTitle">
         <source>Invalid `CustomTypeMarshallerAttribute` usage</source>
-        <target state="new">Invalid `CustomTypeMarshallerAttribute` usage</target>
+        <target state="translated">無効な `CustomTypeMarshallerAttribute` の使用</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLibraryImportAttributeUsageTitle">
@@ -249,12 +249,12 @@
       </trans-unit>
       <trans-unit id="InvalidNativeTypeTitle">
         <source>Specified native type is invalid</source>
-        <target state="new">Specified native type is invalid</target>
+        <target state="translated">指定されたネイティブ型は無効です</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidSignaturesInMarshallerShapeTitle">
         <source>Marshaller type has incompatible method signatures</source>
-        <target state="new">Marshaller type has incompatible method signatures</target>
+        <target state="translated">マーシャラー型に互換性のないメソッド シグネチャがあります</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationDescription">
@@ -379,7 +379,7 @@
       </trans-unit>
       <trans-unit id="MissingAllocatingMarshallingFallbackTitle">
         <source>Marshaller type does not support allocating constructor</source>
-        <target state="new">Marshaller type does not support allocating constructor</target>
+        <target state="translated">マーシャラー型ではコンストラクターの割り当てがサポートされていません</target>
         <note />
       </trans-unit>
       <trans-unit id="NativeGenericTypeMustBeClosedOrMatchArityDescription">
@@ -444,7 +444,7 @@
       </trans-unit>
       <trans-unit id="ProvidedMethodsNotSpecifiedInFeaturesTitle">
         <source>Marshaller type defines a well-known method without specifying support for the corresponding feature</source>
-        <target state="new">Marshaller type defines a well-known method without specifying support for the corresponding feature</target>
+        <target state="translated">マーシャラー型は、対応する機能のサポートを指定せずに既知のメソッドを定義します</target>
         <note />
       </trans-unit>
       <trans-unit id="RefNativeValueUnsupportedDescription">
@@ -526,12 +526,12 @@
       </trans-unit>
       <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorDescription">
         <source>A 'Value'-kind native type that supports the 'CallerAllocatedBuffer' feature must provide a two-parameter constructor taking the managed type and a 'Span' of an 'unmanaged' type as parameters</source>
-        <target state="new">A 'Value'-kind native type that supports the 'CallerAllocatedBuffer' feature must provide a two-parameter constructor taking the managed type and a 'Span' of an 'unmanaged' type as parameters</target>
+        <target state="translated">'CallerAllocatedBuffer' 機能をサポートする 'Value' のネイティブ型では、マネージド型と 'アンマネージド' 型の 'Span' をパラメーターとして受け取る 2 つのパラメーター コンストラクターを指定する必要があります</target>
         <note />
       </trans-unit>
       <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorMessage">
-        <source>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a one-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</source>
-        <target state="new">The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a one-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</target>
+        <source>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a two-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</source>
+        <target state="translated">型 '{0}' は、'{1}' の 'CallerAllocatedBuffer' 機能を使用した 'In' マーシャリングをサポートすることを指定していますが、'{1}' と 'アンマネージド' 型の 'Span' をパラメーターとして受け取る、2 つのパラメーター コンストラクターを指定しません</target>
         <note />
       </trans-unit>
       <trans-unit id="ValueInRequiresOneParameterConstructorDescription">

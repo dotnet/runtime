@@ -369,8 +369,6 @@ PTR_Module MethodTable::GetModule()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    g_IBCLogger.LogMethodTableAccess(this);
-
     // Fast path for non-generic non-array case
     if ((m_dwFlags & (enum_flag_HasComponentSize | enum_flag_GenericsMask)) == 0)
         return GetLoaderModule();
@@ -413,8 +411,6 @@ PTR_DispatchMap MethodTable::GetDispatchMap()
         if (!pMT->HasDispatchMapSlot())
             return NULL;
     }
-
-    g_IBCLogger.LogDispatchMapAccess(pMT);
 
     TADDR pSlot = pMT->GetMultipurposeSlotPtr(enum_flag_HasDispatchMapSlot, c_DispatchMapSlotOffsets);
     return *dac_cast<DPTR(PTR_DispatchMap)>(pSlot);
@@ -556,7 +552,7 @@ void MethodTable::SetIsRestored()
 
     PRECONDITION(!IsFullyLoaded());
 
-    FastInterlockAnd(&GetWriteableDataForWrite()->m_dwFlags, ~MethodTableWriteableData::enum_flag_Unrestored);
+    InterlockedAnd((LONG*)&GetWriteableDataForWrite()->m_dwFlags, ~MethodTableWriteableData::enum_flag_Unrestored);
 
 #ifndef DACCESS_COMPILE
     if (ETW_PROVIDER_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER))
@@ -1233,8 +1229,6 @@ Module* MethodTable::GetModuleForStatics()
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    g_IBCLogger.LogMethodTableAccess(this);
-
     if (HasGenericsStaticsInfo())
     {
         DWORD dwDynamicClassDomainID;
@@ -1525,7 +1519,7 @@ BOOL MethodTable::CanCastByVarianceToInterfaceOrDelegate(MethodTable *pTargetMT,
             TypeHandle thTargetArg = targetInst[i];
 
             // If argument types are not equivalent, test them for compatibility
-            // in accordance with the the variance annotation
+            // in accordance with the variance annotation
             if (!thArg.IsEquivalentTo(thTargetArg))
             {
                 switch (pClass->GetVarianceOfTypeParameter(i))
@@ -1587,8 +1581,6 @@ BOOL MethodTable::CanCastToClass(MethodTable *pTargetMT, TypeHandlePairList *pVi
             if (pMT->IsEquivalentTo(pTargetMT))
                 return TRUE;
 
-            g_IBCLogger.LogMethodTableAccess(pMT);
-
             if (pMT->CanCastByVarianceToInterfaceOrDelegate(pTargetMT, pVisited))
                 return TRUE;
 
@@ -1602,8 +1594,6 @@ BOOL MethodTable::CanCastToClass(MethodTable *pTargetMT, TypeHandlePairList *pVi
         do {
             if (pMT->IsEquivalentTo(pTargetMT))
                 return TRUE;
-
-            g_IBCLogger.LogMethodTableAccess(pMT);
 
             pMT = pMT->GetParentMethodTable();
         } while (pMT);
@@ -1782,21 +1772,21 @@ MethodTable::DebugDumpVtable(LPCUTF8 szClassName, BOOL fDebug)
 
     CQuickBytes qb;
     const size_t cchBuff = MAX_CLASSNAME_LENGTH + 30;
-    LPWSTR buff = fDebug ? (LPWSTR) qb.AllocNoThrow(cchBuff * sizeof(WCHAR)) : NULL;
+    LPSTR buff = fDebug ? (LPSTR) qb.AllocNoThrow(cchBuff * sizeof(CHAR)) : NULL;
 
     if ((buff == NULL) && fDebug)
     {
-        WszOutputDebugString(W("OOM when dumping VTable - falling back to logging"));
+        OutputDebugStringUtf8("OOM when dumping VTable - falling back to logging");
         fDebug = FALSE;
     }
 
     if (fDebug)
     {
-        swprintf_s(buff, cchBuff, W("Vtable (with interface dupes) for '%S':\n"), szClassName);
+        sprintf_s(buff, cchBuff, "Vtable (with interface dupes) for '%s':\n", szClassName);
 #ifdef _DEBUG
-        swprintf_s(&buff[wcslen(buff)], cchBuff - wcslen(buff) , W("  Total duplicate slots = %d\n"), g_dupMethods);
+        sprintf_s(&buff[strlen(buff)], cchBuff - strlen(buff) , "  Total duplicate slots = %d\n", g_dupMethods);
 #endif
-        WszOutputDebugString(buff);
+        OutputDebugStringUtf8(buff);
     }
     else
     {
@@ -1819,8 +1809,8 @@ MethodTable::DebugDumpVtable(LPCUTF8 szClassName, BOOL fDebug)
             {
                 DefineFullyQualifiedNameForClass();
                 LPCUTF8 name = GetFullyQualifiedNameForClass(pMD->GetMethodTable());
-                swprintf_s(buff, cchBuff,
-                           W("  slot %2d: %S::%S%S  0x%p (slot = %2d)\n"),
+                sprintf_s(buff, cchBuff,
+                           "  slot %2d: %s::%s%s  0x%p (slot = %2d)\n",
                            it.GetSlotNumber(),
                            name,
                            pszName,
@@ -1828,7 +1818,7 @@ MethodTable::DebugDumpVtable(LPCUTF8 szClassName, BOOL fDebug)
                            (VOID *)pMD->GetMethodEntryPoint(),
                            pMD->GetSlot()
                           );
-                WszOutputDebugString(buff);
+                OutputDebugStringUtf8(buff);
             }
             else
             {
@@ -1847,7 +1837,7 @@ MethodTable::DebugDumpVtable(LPCUTF8 szClassName, BOOL fDebug)
             {
                 if (fDebug)
                 {
-                    WszOutputDebugString(W("  <-- vtable ends here\n"));
+                    OutputDebugStringUtf8("  <-- vtable ends here\n");
                 }
                 else
                 {
@@ -1861,7 +1851,7 @@ MethodTable::DebugDumpVtable(LPCUTF8 szClassName, BOOL fDebug)
 
     if (fDebug)
     {
-        WszOutputDebugString(W("\n"));
+        OutputDebugStringUtf8("\n");
     }
     else
     {
@@ -3762,8 +3752,6 @@ void MethodTable::DoRunClassInitThrowing()
 
     STRESS_LOG2(LF_CLASSLOADER, LL_INFO100000, "DoRunClassInit: returning SUCCESS for init %pT in appdomain %p\n", this, pDomain);
     // No need to set pThrowable in case of error it will already have been set.
-
-    g_IBCLogger.LogMethodTableAccess(this);
 Exit:
     ;
 }
@@ -3964,7 +3952,7 @@ void CallFinalizerOnThreadObject(Object *obj)
                 refThis->ClearInternal();
             }
 
-            FastInterlockOr ((ULONG *)&thread->m_State, Thread::TS_Finalized);
+            thread->SetThreadState(Thread::TS_Finalized);
             Thread::SetCleanupNeededForFinalizedThread();
         }
     }
@@ -4111,7 +4099,7 @@ OBJECTREF MethodTable::GetManagedClassObject()
         // Only the winner can set m_ExposedClassObject from NULL.
         LOADERHANDLE exposedClassObjectHandle = pLoaderAllocator->AllocateHandle(refClass);
 
-        if (FastInterlockCompareExchangePointer(&GetWriteableDataForWrite()->m_hExposedClassObject, exposedClassObjectHandle, static_cast<LOADERHANDLE>(NULL)))
+        if (InterlockedCompareExchangeT(&GetWriteableDataForWrite()->m_hExposedClassObject, exposedClassObjectHandle, static_cast<LOADERHANDLE>(NULL)))
         {
             pLoaderAllocator->FreeHandle(exposedClassObjectHandle);
         }
@@ -4167,8 +4155,6 @@ void MethodTable::CheckRestore()
         ClassLoader::EnsureLoaded(this);
         _ASSERTE(IsFullyLoaded());
     }
-
-    g_IBCLogger.LogMethodTableAccess(this);
 }
 
 #ifndef DACCESS_COMPILE
@@ -4533,8 +4519,6 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
 
         while (pField < pFieldEnd)
         {
-            g_IBCLogger.LogFieldDescsAccess(pField);
-
             if (pField->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
             {
                 TypeHandle th = pField->GetFieldTypeHandleThrowing((ClassLoadLevel) (level - 1));
@@ -4762,7 +4746,6 @@ void MethodTable::SetOHDelegate (OBJECTHANDLE _ohDelegate)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(GetClass());
-    g_IBCLogger.LogEEClassCOWTableAccess(this);
     GetClass_NoLogging()->SetOHDelegate(_ohDelegate);
 }
 
@@ -4869,9 +4852,6 @@ CorElementType MethodTable::GetInternalCorElementType()
 
     // This should not touch the EEClass, at least not in the
     // common cases of ELEMENT_TYPE_CLASS and ELEMENT_TYPE_VALUETYPE.
-
-    g_IBCLogger.LogMethodTableAccess(this);
-
     CorElementType ret;
 
     switch (GetFlag(enum_flag_Category_ElementTypeMask))
@@ -4924,9 +4904,6 @@ CorElementType MethodTable::GetVerifierCorElementType()
 
     // This should not touch the EEClass, at least not in the
     // common cases of ELEMENT_TYPE_CLASS and ELEMENT_TYPE_VALUETYPE.
-
-    g_IBCLogger.LogMethodTableAccess(this);
-
     CorElementType ret;
 
     switch (GetFlag(enum_flag_Category_ElementTypeMask))
@@ -4969,9 +4946,6 @@ CorElementType MethodTable::GetSignatureCorElementType()
 
     // This should not touch the EEClass, at least not in the
     // common cases of ELEMENT_TYPE_CLASS and ELEMENT_TYPE_VALUETYPE.
-
-    g_IBCLogger.LogMethodTableAccess(this);
-
     CorElementType ret;
 
     switch (GetFlag(enum_flag_Category_ElementTypeMask))
@@ -5243,7 +5217,6 @@ BOOL MethodTable::FindDispatchEntry(UINT32 typeID,
     UINT32 iCurInheritanceChainDelta = 0;
     while (pCurMT != NULL)
     {
-        g_IBCLogger.LogMethodTableAccess(pCurMT);
         if (pCurMT->FindDispatchEntryForCurrentType(
                 typeID, slotNumber, pEntry))
         {
@@ -5502,7 +5475,8 @@ namespace
         MethodDesc *interfaceMD,
         MethodTable *interfaceMT,
         BOOL allowVariance,
-        MethodDesc **candidateMD)
+        MethodDesc **candidateMD,
+        ClassLoadLevel level)
     {
         *candidateMD = NULL;
 
@@ -5537,58 +5511,66 @@ namespace
                     MethodDesc *pMD = methodIt.GetMethodDesc();
                     int targetSlot = interfaceMD->GetSlot();
 
-                    // If this is not a MethodImpl, it can't be implementing the method we're looking for
-                    if (!pMD->IsMethodImpl())
-                        continue;
-
-                    // We have a MethodImpl - iterate over all the declarations it's implementing,
-                    // looking for the interface method we need.
-                    MethodImpl::Iterator it(pMD);
-                    for (; it.IsValid() && candidateMaybe == NULL; it.Next())
+                    if (pMD->IsMethodImpl())
                     {
-                        MethodDesc *pDeclMD = it.GetMethodDesc();
-
-                        // Is this the right slot?
-                        if (pDeclMD->GetSlot() != targetSlot)
-                            continue;
-
-                        // Is this the right interface?
-                        if (!pDeclMD->HasSameMethodDefAs(interfaceMD))
-                            continue;
-
-                        if (interfaceMD->HasClassInstantiation())
+                        // We have a MethodImpl with slots - iterate over all the declarations it's implementing,
+                        // looking for the interface method we need.
+                        MethodImpl::Iterator it(pMD);
+                        for (; it.IsValid() && candidateMaybe == NULL; it.Next())
                         {
-                            // pInterfaceMD will be in the canonical form, so we need to check the specific
-                            // instantiation against pInterfaceMT.
-                            //
-                            // The parent of pDeclMD is unreliable for this purpose because it may or
-                            // may not be canonicalized. Let's go from the metadata.
-
-                            SigTypeContext typeContext = SigTypeContext(pMT);
-
-                            mdTypeRef tkParent;
-                            IfFailThrow(pMD->GetModule()->GetMDImport()->GetParentToken(it.GetToken(), &tkParent));
-
-                            MethodTable *pDeclMT = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(
-                                pMD->GetModule(),
-                                tkParent,
-                                &typeContext).AsMethodTable();
-
-                            // We do CanCastToInterface to also cover variance.
-                            // We already know this is a method on the same type definition as the (generic)
-                            // interface but we need to make sure the instantiations match.
-                            if ((allowVariance && pDeclMT->CanCastToInterface(interfaceMT))
-                                || pDeclMT == interfaceMT)
+                            MethodDesc *pDeclMD = it.GetMethodDesc();
+    
+                            // Is this the right slot?
+                            if (pDeclMD->GetSlot() != targetSlot)
+                                continue;
+    
+                            // Is this the right interface?
+                            if (!pDeclMD->HasSameMethodDefAs(interfaceMD))
+                                continue;
+    
+                            if (interfaceMD->HasClassInstantiation())
                             {
-                                // We have a match
+                                // pInterfaceMD will be in the canonical form, so we need to check the specific
+                                // instantiation against pInterfaceMT.
+                                //
+                                // The parent of pDeclMD is unreliable for this purpose because it may or
+                                // may not be canonicalized. Let's go from the metadata.
+    
+                                SigTypeContext typeContext = SigTypeContext(pMT);
+    
+                                mdTypeRef tkParent;
+                                IfFailThrow(pMD->GetModule()->GetMDImport()->GetParentToken(it.GetToken(), &tkParent));
+    
+                                MethodTable *pDeclMT = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(
+                                    pMD->GetModule(),
+                                    tkParent,
+                                    &typeContext).AsMethodTable();
+    
+                                // We do CanCastToInterface to also cover variance.
+                                // We already know this is a method on the same type definition as the (generic)
+                                // interface but we need to make sure the instantiations match.
+                                if ((allowVariance && pDeclMT->CanCastToInterface(interfaceMT))
+                                    || pDeclMT == interfaceMT)
+                                {
+                                    // We have a match
+                                    candidateMaybe = pMD;
+                                }
+                            }
+                            else
+                            {
+                                // No generics involved. If the method definitions match, it's a match.
                                 candidateMaybe = pMD;
                             }
                         }
-                        else
-                        {
-                            // No generics involved. If the method definitions match, it's a match.
-                            candidateMaybe = pMD;
-                        }
+                    }
+                    else if (pMD->IsStatic() && pMD->HasMethodImplSlot())
+                    {
+                        // Static virtual methods don't record MethodImpl slots so they need special handling
+                        candidateMaybe = pMT->TryResolveVirtualStaticMethodOnThisType(
+                            interfaceMT,
+                            interfaceMD,
+                            /* verifyImplemented */ FALSE,
+                            /* level */ level);
                     }
                 }
             }
@@ -5608,9 +5590,11 @@ namespace
                 FALSE,                  // forceBoxedEntryPoint
                 candidateMaybe->HasMethodInstantiation() ?
                 candidateMaybe->AsInstantiatedMethodDesc()->IMD_GetMethodInstantiation() :
-                Instantiation(),    // for method themselves that are generic
+                Instantiation(),        // for method themselves that are generic
                 FALSE,                  // allowInstParam
-                TRUE                    // forceRemoteableMethod
+                TRUE,                   // forceRemoteableMethod
+                TRUE,                   // allowCreate
+                level                   // level
             );
         }
 
@@ -5627,7 +5611,8 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
     MethodTable *pInterfaceMT,
     MethodDesc **ppDefaultMethod,
     BOOL allowVariance,
-    BOOL throwOnConflict
+    BOOL throwOnConflict,
+    ClassLoadLevel level
 )
 {
     CONTRACT(BOOL) {
@@ -5647,7 +5632,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
 
     // Check the current method table itself
     MethodDesc *candidateMaybe = NULL;
-    if (IsInterface() && TryGetCandidateImplementation(this, pInterfaceMD, pInterfaceMT, allowVariance, &candidateMaybe))
+    if (IsInterface() && TryGetCandidateImplementation(this, pInterfaceMD, pInterfaceMT, allowVariance, &candidateMaybe, level))
     {
         _ASSERTE(candidateMaybe != NULL);
 
@@ -5687,7 +5672,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
                 MethodTable *pCurMT = it.GetInterface(pMT);
 
                 MethodDesc *pCurMD = NULL;
-                if (TryGetCandidateImplementation(pCurMT, pInterfaceMD, pInterfaceMT, allowVariance, &pCurMD))
+                if (TryGetCandidateImplementation(pCurMT, pInterfaceMD, pInterfaceMT, allowVariance, &pCurMD, level))
                 {
                     //
                     // Found a match. But is it a more specific match (we want most specific interfaces)
@@ -5777,8 +5762,8 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
             pBestCandidateMD = candidates[i].pMD;
 
             // If this is a second pass lookup, we know this is a variant match. As such
-            // we pick the first result as the winner and don't look for a conflict.
-            if (allowVariance)
+            // we pick the first result as the winner and don't look for a conflict for instance methods.
+            if (allowVariance && !pInterfaceMD->IsStatic())
                 break;
         }
         else if (pBestCandidateMT != candidates[i].pMT)
@@ -5786,7 +5771,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
             if (throwOnConflict)
                 ThrowExceptionForConflictingOverride(this, pInterfaceMT, pInterfaceMD);
 
-            *ppDefaultMethod = NULL;
+            *ppDefaultMethod = pBestCandidateMD;
             RETURN(FALSE);
         }
     }
@@ -6229,7 +6214,6 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
             // Remember that we didn't find the GUID, so we can skip looking during
             // future checks. (Note that this is a very important optimization in the
             // prejit case.)
-            g_IBCLogger.LogEEClassCOWTableAccess(this);
             GetClass_NoLogging()->SetHasNoGuid();
         }
     }
@@ -6446,7 +6430,6 @@ unsigned MethodTable::GetTypeDefRid()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    g_IBCLogger.LogMethodTableAccess(this);
     return GetTypeDefRid_NoLogging();
 }
 
@@ -6476,7 +6459,7 @@ void MethodTable::SetCl(mdTypeDef token)
     }
     else
     {
-        _ASSERTE(FitsIn<U2>(rid));
+        _ASSERTE(FitsIn<WORD>(rid));
         m_wToken = (WORD)rid;
     }
 
@@ -6877,7 +6860,6 @@ void MethodTable::MethodDataObject::FillEntryDataForAncestor(MethodTable * pMT)
     for (; it.IsValid(); it.Next())
     {
         MethodDesc * pMD = it.GetMethodDesc();
-        g_IBCLogger.LogMethodDescAccess(pMD);
 
         unsigned slot = pMD->GetSlot();
         if (slot == MethodTable::NO_SLOT)
@@ -7797,7 +7779,6 @@ BOOL MethodTable::ContainsGenericMethodVariables()
     Instantiation inst = GetInstantiation();
     for (DWORD i = 0; i < inst.GetNumArgs(); i++)
     {
-        CONSISTENCY_CHECK(!inst[i].IsEncodedFixup());
         if (inst[i].ContainsGenericVariables(TRUE))
             return TRUE;
     }
@@ -7823,13 +7804,9 @@ Module *MethodTable::GetDefiningModuleForOpenType()
         Instantiation inst = GetInstantiation();
         for (DWORD i = 0; i < inst.GetNumArgs(); i++)
         {
-            // Encoded fixups are never open types
-            if (!inst[i].IsEncodedFixup())
-            {
-                Module *pModule = inst[i].GetDefiningModuleForOpenType();
-                if (pModule != NULL)
-                    RETURN pModule;
-            }
+            Module *pModule = inst[i].GetDefiningModuleForOpenType();
+            if (pModule != NULL)
+                RETURN pModule;
         }
     }
 
@@ -7853,8 +7830,6 @@ PCODE MethodTable::GetRestoredSlot(DWORD slotNumber)
     MethodTable * pMT = this;
     while (true)
     {
-        g_IBCLogger.LogMethodTableAccess(pMT);
-
         pMT = pMT->GetCanonicalMethodTable();
 
         _ASSERTE(pMT != NULL);
@@ -7889,8 +7864,6 @@ MethodTable * MethodTable::GetRestoredSlotMT(DWORD slotNumber)
     MethodTable * pMT = this;
     while (true)
     {
-        g_IBCLogger.LogMethodTableAccess(pMT);
-
         pMT = pMT->GetCanonicalMethodTable();
 
         _ASSERTE(pMT != NULL);
@@ -8017,8 +7990,19 @@ MethodDesc *MethodTable::GetDefaultConstructor(BOOL forceBoxedEntryPoint /* = FA
 //==========================================================================================
 // Finds the (non-unboxing) MethodDesc that implements the interface virtual static method pInterfaceMD.
 MethodDesc *
-MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL allowNullResult, BOOL verifyImplemented, BOOL allowVariantMatches)
+MethodTable::ResolveVirtualStaticMethod(
+    MethodTable* pInterfaceType,
+    MethodDesc* pInterfaceMD,
+    BOOL allowNullResult,
+    BOOL verifyImplemented,
+    BOOL allowVariantMatches,
+    BOOL* uniqueResolution,
+    ClassLoadLevel level)
 {
+    if (uniqueResolution != nullptr)
+    {
+        *uniqueResolution = TRUE;
+    }
     if (!pInterfaceMD->IsSharedByGenericMethodInstantiations() && !pInterfaceType->IsSharedByGenericInstantiations())
     {
         // Check that there is no implementation of the interface on this type which is the canonical interface for a shared generic. If so, that indicates that
@@ -8046,7 +8030,7 @@ MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc*
             // Search for match on a per-level in the type hierarchy
             for (MethodTable* pMT = this; pMT != nullptr; pMT = pMT->GetParentMethodTable())
             {
-                MethodDesc* pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pInterfaceType, pInterfaceMD, verifyImplemented);
+                MethodDesc* pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pInterfaceType, pInterfaceMD, verifyImplemented, level);
                 if (pMD != nullptr)
                 {
                     return pMD;
@@ -8090,7 +8074,7 @@ MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc*
                         {
                             // Variant or equivalent matching interface found
                             // Attempt to resolve on variance matched interface
-                            pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pItfInMap, pInterfaceMD, verifyImplemented);
+                            pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pItfInMap, pInterfaceMD, verifyImplemented, level);
                             if (pMD != nullptr)
                             {
                                 return pMD;
@@ -8098,10 +8082,27 @@ MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc*
                         }
                     }
                 }
+
+                BOOL haveUniqueDefaultImplementation = pMT->FindDefaultInterfaceImplementation(
+                    pInterfaceMD,
+                    pInterfaceType,
+                    &pMD,
+                    /* allowVariance */ allowVariantMatches,
+                    /* throwOnConflict */ uniqueResolution == nullptr,
+                    level);
+                if (haveUniqueDefaultImplementation || (pMD != nullptr && (verifyImplemented || uniqueResolution != nullptr)))
+                {
+                    // We tolerate conflicts upon verification of implemented SVMs so that they only blow up when actually called at execution time.
+                    if (uniqueResolution != nullptr)
+                    {
+                        *uniqueResolution = haveUniqueDefaultImplementation;
+                    }
+                    return pMD;
+                }
             }
         }
 
-        // Default implementation logic, which only kicks in for default implementations when lookin up on an exact interface target
+        // Default implementation logic, which only kicks in for default implementations when looking up on an exact interface target
         if (!pInterfaceMD->IsAbstract() && !(this == g_pCanonMethodTableClass) && !IsSharedByGenericInstantiations())
         {
             return pInterfaceMD->FindOrCreateAssociatedMethodDesc(pInterfaceMD, pInterfaceType, FALSE, pInterfaceMD->GetMethodInstantiation(), FALSE);
@@ -8118,7 +8119,7 @@ MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc*
 // Try to locate the appropriate MethodImpl matching a given interface static virtual method.
 // Returns nullptr on failure.
 MethodDesc*
-MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL verifyImplemented)
+MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL verifyImplemented, ClassLoadLevel level)
 {
     HRESULT hr = S_OK;
     IMDInternalImport* pMDInternalImport = GetMDImport();
@@ -8245,7 +8246,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
                 /* allowInstParam */ FALSE,
                 /* forceRemotableMethod */ FALSE,
                 /* allowCreate */ TRUE,
-                /* level */ CLASS_LOADED);
+                /* level */ level);
         }
         if (pMethodImpl != nullptr)
         {
@@ -8278,9 +8279,21 @@ MethodTable::VerifyThatAllVirtualStaticMethodsAreImplemented()
             for (MethodIterator it(pInterfaceMT); it.IsValid(); it.Next())
             {
                 MethodDesc *pMD = it.GetMethodDesc();
+                // This flag is not really used, passing its address to ResolveVirtualStaticMethod just suppresses
+                // the ambiguous resolution exception throw as we should delay the exception until we actually hit
+                // the ambiguity at execution time.
+                BOOL uniqueResolution;
                 if (pMD->IsVirtual() &&
                     pMD->IsStatic() &&
-                    (pMD->IsAbstract() && !ResolveVirtualStaticMethod(pInterfaceMT, pMD, /* allowNullResult */ TRUE, /* verifyImplemented */ TRUE, /* allowVariantMatches */ FALSE)))
+                    (pMD->IsAbstract() &&
+                    !ResolveVirtualStaticMethod(
+                        pInterfaceMT,
+                        pMD,
+                        /* allowNullResult */ TRUE,
+                        /* verifyImplemented */ TRUE,
+                        /* allowVariantMatches */ FALSE,
+                        /* uniqueResolution */ &uniqueResolution,
+                        /* level */ CLASS_LOAD_EXACTPARENTS)))
                 {
                     IMDInternalImport* pInternalImport = GetModule()->GetMDImport();
                     GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, GetCl(), pMD->GetName(), IDS_CLASSLOAD_STATICVIRTUAL_NOTIMPL);
@@ -8313,10 +8326,18 @@ MethodTable::TryResolveConstraintMethodApprox(
     {
         _ASSERTE(!thInterfaceType.IsTypeDesc());
         _ASSERTE(thInterfaceType.IsInterface());
-        MethodDesc *result = ResolveVirtualStaticMethod(thInterfaceType.GetMethodTable(), pInterfaceMD, pfForceUseRuntimeLookup != NULL);
-        if (result == NULL)
+        BOOL uniqueResolution;
+        MethodDesc *result = ResolveVirtualStaticMethod(
+            thInterfaceType.GetMethodTable(),
+            pInterfaceMD,
+            /* allowNullResult */pfForceUseRuntimeLookup != NULL,
+            /* verifyImplemented */ FALSE,
+            /* allowVariantMatches */ TRUE,
+            &uniqueResolution);
+        if (result == NULL || !uniqueResolution)
         {
             *pfForceUseRuntimeLookup = TRUE;
+            result = NULL;
         }
         return result;
     }

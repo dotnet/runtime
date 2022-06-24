@@ -122,14 +122,14 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        public static IntPtr AllocateMemory(int cbBytes)
+        public static unsafe IntPtr AllocateMemory(int cbBytes)
         {
-            return Marshal.AllocHGlobal(new IntPtr(cbBytes));
+            return (IntPtr)NativeMemory.Alloc((nuint)cbBytes);
         }
 
-        public static void FreeMemory(IntPtr memoryPtrToFree)
+        public static unsafe void FreeMemory(IntPtr memoryPtrToFree)
         {
-            Marshal.FreeHGlobal(memoryPtrToFree);
+            NativeMemory.Free((void*)memoryPtrToFree);
         }
     }
 
@@ -941,7 +941,7 @@ namespace Internal.Runtime.TypeLoader
                         }
                         else
                         {
-                            seriesSize = seriesSize - size;
+                            seriesSize -= size;
                             *ptr-- = (void*)seriesOffset;
                             *ptr-- = (void*)seriesSize;
                         }

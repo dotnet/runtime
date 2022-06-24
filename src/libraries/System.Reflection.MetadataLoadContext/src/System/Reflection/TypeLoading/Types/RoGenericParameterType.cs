@@ -51,7 +51,7 @@ namespace System.Reflection.TypeLoading
         private volatile int _lazyPosition = -1;
 
         public sealed override Type[] GetGenericParameterConstraints() => GetGenericParameterConstraintsNoCopy().CloneArray<Type>();
-        private RoType[] GetGenericParameterConstraintsNoCopy() => _lazyConstraints ?? (_lazyConstraints = ComputeGenericParameterConstraints());
+        private RoType[] GetGenericParameterConstraintsNoCopy() => _lazyConstraints ??= ComputeGenericParameterConstraints();
         protected abstract RoType[] ComputeGenericParameterConstraints();
         private volatile RoType[]? _lazyConstraints;
 

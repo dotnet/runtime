@@ -85,7 +85,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         /// <param name="input">The span to search for a match.</param>
         /// <returns><see langword="true"/> if the regular expression finds a match; otherwise, <see langword="false"/>.</returns>
-        /// <exception cref="RegexMatchTimeoutException">A time-out ocurred.</exception>
+        /// <exception cref="RegexMatchTimeoutException">A time-out occurred.</exception>
         public bool IsMatch(ReadOnlySpan<char> input) =>
             RunSingleMatch(RegexRunnerMode.ExistenceRequired, -1, input, RightToLeft ? input.Length : 0).Success;
 

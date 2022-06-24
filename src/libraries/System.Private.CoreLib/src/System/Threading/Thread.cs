@@ -153,20 +153,24 @@ namespace System.Threading
             Initialize();
         }
 
-#if !TARGET_BROWSER
+#if !TARGET_BROWSER || FEATURE_WASM_THREADS
         internal static bool IsThreadStartSupported => true;
-#else
-#if FEATURE_WASM_THREADS
-        internal static bool IsThreadStartSupported => true;
+        internal static bool IsInternalThreadStartSupported => true;
+#elif FEATURE_WASM_PERFTRACING
+        internal static bool IsThreadStartSupported => false;
+        internal static bool IsInternalThreadStartSupported => true;
 #else
         internal static bool IsThreadStartSupported => false;
-#endif
+        internal static bool IsInternalThreadStartSupported => false;
 #endif
 
-        internal static void ThrowIfNoThreadStart()
+        internal static void ThrowIfNoThreadStart(bool internalThread = false)
         {
-            if (!IsThreadStartSupported)
-                throw new PlatformNotSupportedException();
+            if (IsThreadStartSupported)
+                return;
+            if (IsInternalThreadStartSupported && internalThread)
+                return;
+            throw new PlatformNotSupportedException();
         }
 
         /// <summary>Causes the operating system to change the state of the current instance to <see cref="ThreadState.Running"/>, and optionally supplies an object containing data to be used by the method the thread executes.</summary>
@@ -187,9 +191,9 @@ namespace System.Threading
         /// </remarks>
         public void UnsafeStart(object? parameter) => Start(parameter, captureContext: false);
 
-        private void Start(object? parameter, bool captureContext)
+        private void Start(object? parameter, bool captureContext, bool internalThread = false)
         {
-            ThrowIfNoThreadStart();
+            ThrowIfNoThreadStart(internalThread);
 
             StartHelper? startHelper = _startHelper;
 
@@ -224,9 +228,11 @@ namespace System.Threading
         /// </remarks>
         public void UnsafeStart() => Start(captureContext: false);
 
-        private void Start(bool captureContext)
+        internal void InternalUnsafeStart() => Start(captureContext: false, internalThread: true);
+
+        private void Start(bool captureContext, bool internalThread = false)
         {
-            ThrowIfNoThreadStart();
+            ThrowIfNoThreadStart(internalThread);
             StartHelper? startHelper = _startHelper;
 
             // In the case of a null startHelper (second call to start on same thread)

@@ -848,6 +848,7 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         [MemberData(nameof(UseSocketsHttpHandler_WithIdFormat_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SendAsync_HeadersAreInjectedOnRedirects(bool useSocketsHttpHandler, ActivityIdFormat idFormat)
         {
             Activity parent = new Activity("parent");
@@ -932,6 +933,7 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         [MemberData(nameof(SocketsHttpHandlerPropagators_WithIdFormat_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SendAsync_CustomSocketsHttpHandlerPropagator_PropagatorIsUsed(DistributedContextPropagator propagator, ActivityIdFormat idFormat)
         {
             Activity parent = new Activity("parent");

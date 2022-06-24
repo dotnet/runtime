@@ -152,10 +152,8 @@ namespace System.Security.Cryptography
                     // don't match the public key fields.
                     //
                     // Public import should go off without a hitch.
-                    ImportPrivateKey(
-                        parameters,
-                        out SafeSecKeyRefHandle privateKey,
-                        out SafeSecKeyRefHandle publicKey);
+                    SafeSecKeyRefHandle privateKey = ImportKey(parameters);
+                    SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.CopyPublicKey(privateKey);
                     SetKey(SecKeyPair.PublicPrivatePair(publicKey, privateKey));
                 }
                 else
@@ -244,18 +242,9 @@ namespace System.Security.Cryptography
 
                 if (data.Length == 0)
                 {
-                    RsaPaddingProcessor? processor;
-
-                    switch (padding.Mode)
+                    if (padding.Mode != RSAEncryptionPaddingMode.Pkcs1 && padding.Mode != RSAEncryptionPaddingMode.Oaep)
                     {
-                        case RSAEncryptionPaddingMode.Pkcs1:
-                            processor = null;
-                            break;
-                        case RSAEncryptionPaddingMode.Oaep:
-                            processor = RsaPaddingProcessor.OpenProcessor(padding.OaepHashAlgorithm);
-                            break;
-                        default:
-                            throw new CryptographicException(SR.Cryptography_InvalidPaddingMode);
+                        throw new CryptographicException(SR.Cryptography_InvalidPaddingMode);
                     }
 
                     byte[] rented = CryptoPool.Rent(rsaSize);
@@ -263,9 +252,9 @@ namespace System.Security.Cryptography
 
                     try
                     {
-                        if (processor != null)
+                        if (padding.Mode == RSAEncryptionPaddingMode.Oaep)
                         {
-                            processor.PadOaep(data, tmp);
+                            RsaPaddingProcessor.PadOaep(padding.OaepHashAlgorithm, data, tmp);
                         }
                         else
                         {
@@ -416,16 +405,12 @@ namespace System.Security.Cryptography
 
                 ThrowIfDisposed();
 
-                RsaPaddingProcessor? processor = null;
-
-                if (padding.Mode == RSASignaturePaddingMode.Pss)
+                bool pssPadding = padding.Mode switch
                 {
-                    processor = RsaPaddingProcessor.OpenProcessor(hashAlgorithm);
-                }
-                else if (padding != RSASignaturePadding.Pkcs1)
-                {
-                    throw new CryptographicException(SR.Cryptography_InvalidPaddingMode);
-                }
+                    RSASignaturePaddingMode.Pss => true,
+                    RSASignaturePaddingMode.Pkcs1 => false,
+                    _ => throw new CryptographicException(SR.Cryptography_InvalidPaddingMode)
+                };
 
                 SecKeyPair keys = GetKeys();
 
@@ -437,7 +422,7 @@ namespace System.Security.Cryptography
                 int keySize = KeySize;
                 int rsaSize = RsaPaddingProcessor.BytesRequiredForBitCount(keySize);
 
-                if (processor == null)
+                if (!pssPadding)
                 {
                     Interop.AppleCrypto.PAL_HashAlgorithm palAlgId =
                         PalAlgorithmFromAlgorithmName(hashAlgorithm, out int expectedSize);
@@ -479,7 +464,7 @@ namespace System.Security.Cryptography
 
                 byte[] rented = CryptoPool.Rent(rsaSize);
                 Span<byte> buf = new Span<byte>(rented, 0, rsaSize);
-                processor.EncodePss(hash, buf, keySize);
+                RsaPaddingProcessor.EncodePss(hashAlgorithm, hash, buf, keySize);
 
                 try
                 {
@@ -524,7 +509,6 @@ namespace System.Security.Cryptography
                 }
                 else if (padding.Mode == RSASignaturePaddingMode.Pss)
                 {
-                    RsaPaddingProcessor processor = RsaPaddingProcessor.OpenProcessor(hashAlgorithm);
                     SafeSecKeyRefHandle publicKey = GetKeys().PublicKey;
 
                     int keySize = KeySize;
@@ -535,7 +519,7 @@ namespace System.Security.Cryptography
                         return false;
                     }
 
-                    if (hash.Length != processor.HashLength)
+                    if (hash.Length != RsaPaddingProcessor.HashLength(hashAlgorithm))
                     {
                         return false;
                     }
@@ -556,7 +540,7 @@ namespace System.Security.Cryptography
                         }
 
                         Debug.Assert(bytesWritten == rsaSize);
-                        return processor.VerifyPss(hash, unwrapped, keySize);
+                        return RsaPaddingProcessor.VerifyPss(hashAlgorithm, hash, unwrapped, keySize);
                     }
                     finally
                     {

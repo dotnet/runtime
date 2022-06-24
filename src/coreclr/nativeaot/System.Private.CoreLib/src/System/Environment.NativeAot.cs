@@ -46,7 +46,7 @@ namespace System
         internal static void FailFast(string message, Exception exception, string errorSource)
         {
             // TODO: errorSource originates from CoreCLR (See: https://github.com/dotnet/coreclr/pull/15895)
-            // For now, we ignore errorSource on CoreRT but we should distinguish the way FailFast prints exception message using errorSource
+            // For now, we ignore errorSource but we should distinguish the way FailFast prints exception message using errorSource
             bool result = DeveloperExperience.Default.OnContractFailure(exception.StackTrace, ContractFailureKind.Assert, message, null, null, null);
             if (!result)
             {
@@ -65,10 +65,17 @@ namespace System
 
         public static int TickCount => (int)TickCount64;
 
+        private static string[]? s_commandLineArgs;
+
         public static string[] GetCommandLineArgs()
         {
             Debug.Assert(s_commandLineArgs != null, "VM did not properly setup application.");
             return (string[])s_commandLineArgs.Clone();
+        }
+
+        internal static void SetCommandLineArgs(string[] cmdLineArgs)
+        {
+            s_commandLineArgs = cmdLineArgs;
         }
     }
 }

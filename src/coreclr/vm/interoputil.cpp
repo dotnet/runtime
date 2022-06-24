@@ -179,6 +179,7 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
     return hr;
 }
 
+#if FEATURE_COMINTEROP
 //-------------------------------------------------------------------
  // Used to populate ExceptionData with COM data
 //-------------------------------------------------------------------
@@ -212,6 +213,7 @@ void FillExceptionData(
         }
     }
 }
+#endif // FEATURE_COMINTEROP
 
 //---------------------------------------------------------------------------
 // If pImport has the DefaultDllImportSearchPathsAttribute,
@@ -1016,7 +1018,7 @@ namespace
         if (FAILED(cap.ValidateProlog()))
             return COR_E_BADIMAGEFORMAT;
 
-        U1 u1;
+        UINT8 u1;
         if (FAILED(cap.GetU1(&u1)))
             return COR_E_BADIMAGEFORMAT;
 
@@ -1699,8 +1701,8 @@ void SafeReleaseStream(IStream *pStream)
         HRESULT hr = CoReleaseMarshalData(pStream);
 
 #ifdef _DEBUG
-        WCHAR      logStr[200];
-        swprintf_s(logStr, ARRAY_SIZE(logStr), W("Object gone: CoReleaseMarshalData returned %x, file %S, line %d\n"), hr, __FILE__, __LINE__);
+        UTF8 logStr[512];
+        sprintf_s(logStr, ARRAY_SIZE(logStr), "Object gone: CoReleaseMarshalData returned %x, file %s, line %d\n", hr, __FILE__, __LINE__);
         LogInterop(logStr);
         if (hr != S_OK)
         {
@@ -1710,7 +1712,7 @@ void SafeReleaseStream(IStream *pStream)
             ULARGE_INTEGER li2;
             pStream->Seek(li, STREAM_SEEK_SET, &li2);
             hr = CoReleaseMarshalData(pStream);
-            swprintf_s(logStr, ARRAY_SIZE(logStr), W("Object gone: CoReleaseMarshalData returned %x, file %S, line %d\n"), hr, __FILE__, __LINE__);
+            sprintf_s(logStr, ARRAY_SIZE(logStr), "Object gone: CoReleaseMarshalData returned %x, file %s, line %d\n", hr, __FILE__, __LINE__);
             LogInterop(logStr);
         }
 #endif
@@ -3775,12 +3777,6 @@ VOID LogInterop(_In_z_ LPCSTR szMsg)
 {
     LIMITED_METHOD_CONTRACT;
     LOG( (LF_INTEROP, LL_INFO10, "%s\n",szMsg) );
-}
-
-VOID LogInterop(_In_z_ LPCWSTR wszMsg)
-{
-    LIMITED_METHOD_CONTRACT;
-    LOG( (LF_INTEROP, LL_INFO10, "%S\n", wszMsg) );
 }
 
 //-------------------------------------------------------------------

@@ -66,12 +66,12 @@ namespace ILCompiler.Compiler.Tests
             var context = (CompilerTypeSystemContext)method.Context;
             CompilationModuleGroup compilationGroup = new SingleFileCompilationModuleGroup();
 
-            CoreRTILProvider ilProvider = new CoreRTILProvider();
+            NativeAotILProvider ilProvider = new NativeAotILProvider();
 
             UsageBasedMetadataManager metadataManager = new UsageBasedMetadataManager(compilationGroup, context,
                 new FullyBlockedMetadataBlockingPolicy(), new FullyBlockedManifestResourceBlockingPolicy(),
                 null, new NoStackTraceEmissionPolicy(), new NoDynamicInvokeThunkGenerationPolicy(),
-                new Dataflow.FlowAnnotations(Logger.Null, ilProvider), UsageBasedMetadataGenerationOptions.None,
+                new ILLink.Shared.TrimAnalysis.FlowAnnotations(Logger.Null, ilProvider), UsageBasedMetadataGenerationOptions.None,
                 Logger.Null, Array.Empty<KeyValuePair<string, bool>>(), Array.Empty<string>(), Array.Empty<string>());
 
             CompilationBuilder builder = new RyuJitCompilationBuilder(context, compilationGroup)

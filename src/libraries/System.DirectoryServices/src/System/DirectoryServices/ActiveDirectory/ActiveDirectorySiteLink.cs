@@ -376,7 +376,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
 
                     //NTDSSITELINK_OPT_TWOWAY_SYNC ( 1 << 1 )  force sync in opposite direction at end of sync
-                    if (value == true)
+                    if (value)
                     {
                         options |= 0x2;
                     }

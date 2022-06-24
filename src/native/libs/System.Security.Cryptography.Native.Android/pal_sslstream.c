@@ -76,7 +76,7 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus Flush(JNIEnv* env, SSLStream* sslSt
 
     uint8_t* dataPtr = (uint8_t*)xmalloc((size_t)bufferLimit);
     (*env)->GetByteArrayRegion(env, data, 0, bufferLimit, (jbyte*)dataPtr);
-    sslStream->streamWriter(dataPtr, bufferLimit);
+    sslStream->streamWriter(sslStream->managedContextHandle, dataPtr, bufferLimit);
     free(dataPtr);
 
     IGNORE_RETURN((*env)->CallObjectMethod(env, sslStream->netOutBuffer, g_ByteBufferCompact));
@@ -177,7 +177,8 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoUnwrap(JNIEnv* env, SSLStream* ss
         jbyteArray tmp = make_java_byte_array(env, netInBufferLimit);
         uint8_t* tmpNative = (uint8_t*)xmalloc((size_t)netInBufferLimit);
         int count = netInBufferLimit;
-        PAL_SSLStreamStatus status = sslStream->streamReader(tmpNative, &count);
+        // todo assert streamReader != 0 ?
+        PAL_SSLStreamStatus status = sslStream->streamReader(sslStream->managedContextHandle, tmpNative, &count);
         if (status != SSLStreamStatus_OK)
         {
             (*env)->DeleteLocalRef(env, tmp);
@@ -424,7 +425,7 @@ cleanup:
 }
 
 int32_t AndroidCryptoNative_SSLStreamInitialize(
-    SSLStream* sslStream, bool isServer, STREAM_READER streamReader, STREAM_WRITER streamWriter, int32_t appBufferSize)
+    SSLStream* sslStream, bool isServer, ManagedContextHandle managedContextHandle, STREAM_READER streamReader, STREAM_WRITER streamWriter, int32_t appBufferSize)
 {
     abort_if_invalid_pointer_argument (sslStream);
     abort_unless(sslStream->sslContext != NULL, "sslContext is NULL in SSL stream");
@@ -465,6 +466,7 @@ int32_t AndroidCryptoNative_SSLStreamInitialize(
     sslStream->netInBuffer =
         ToGRef(env, (*env)->CallStaticObjectMethod(env, g_ByteBuffer, g_ByteBufferAllocate, packetBufferSize));
 
+    sslStream->managedContextHandle = managedContextHandle;
     sslStream->streamReader = streamReader;
     sslStream->streamWriter = streamWriter;
 

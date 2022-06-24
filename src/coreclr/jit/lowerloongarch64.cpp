@@ -417,6 +417,30 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
 }
 
 //------------------------------------------------------------------------
+// LowerPutArgStk: Lower a GT_PUTARG_STK.
+//
+// Arguments:
+//    putArgStk - The node to lower
+//
+void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
+{
+    GenTree* src = putArgStk->Data();
+
+    if (src->TypeIs(TYP_STRUCT))
+    {
+        // STRUCT args (FIELD_LIST / OBJ) will always be contained.
+        MakeSrcContained(putArgStk, src);
+
+        // Additionally, codegen supports containment of local addresses under OBJs.
+        if (src->OperIs(GT_OBJ) && src->AsObj()->Addr()->OperIs(GT_LCL_VAR_ADDR))
+        {
+            // TODO-LOONGARCH64-CQ: support containment of LCL_FLD_ADDR too.
+            MakeSrcContained(src, src->AsObj()->Addr());
+        }
+    }
+}
+
+//------------------------------------------------------------------------
 // LowerCast: Lower GT_CAST(srcType, DstType) nodes.
 //
 // Arguments:
@@ -733,17 +757,13 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
     const LclVarDsc* varDsc = comp->lvaGetDesc(storeLoc);
 
 #ifdef FEATURE_SIMD
-    if (varTypeIsSIMD(storeLoc))
+    if (storeLoc->TypeIs(TYP_SIMD8, TYP_SIMD12))
     {
         // If this is a store to memory, we can initialize a zero vector in memory from REG_ZR.
-        if ((op1->IsIntegralConst(0) || op1->IsSIMDZero()) && varDsc->lvDoNotEnregister)
+        if ((op1->IsIntegralConst(0) || op1->IsVectorZero()) && varDsc->lvDoNotEnregister)
         {
             // For an InitBlk we want op1 to be contained
             MakeSrcContained(storeLoc, op1);
-            if (op1->IsSIMDZero())
-            {
-                MakeSrcContained(op1, op1->gtGetOp1());
-            }
         }
         return;
     }

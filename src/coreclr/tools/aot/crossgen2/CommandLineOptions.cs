@@ -48,7 +48,6 @@ namespace ILCompiler
         public string JitPath;
         public string SystemModule;
         public bool WaitForDebugger;
-        public bool Tuning;
         public bool Partial;
         public bool Resilient;
         public bool Map;
@@ -133,7 +132,6 @@ namespace ILCompiler
                 syntax.DefineOption("compile-no-methods", ref CompileNoMethods, SR.CompileNoMethodsOption);
                 syntax.DefineOption("out-near-input", ref OutNearInput, SR.OutNearInputOption);
                 syntax.DefineOption("single-file-compilation", ref SingleFileCompilation, SR.SingleFileCompilationOption);
-                syntax.DefineOption("tuning", ref Tuning, SR.TuningImageOption);
                 syntax.DefineOption("partial", ref Partial, SR.PartialImageOption);
                 syntax.DefineOption("compilebubblegenerics", ref CompileBubbleGenerics, SR.BubbleGenericsOption);
                 syntax.DefineOption("embed-pgo-data", ref EmbedPgoData, SR.EmbedPgoDataOption);

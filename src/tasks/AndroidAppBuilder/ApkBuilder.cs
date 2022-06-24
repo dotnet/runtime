@@ -292,9 +292,9 @@ public class ApkBuilder
                 nativeLibraries += $"    {componentLibToLink}{Environment.NewLine}";
             }
 
-            // There's a circular dependecy between static mono runtime lib and static component libraries.
+            // There's a circular dependency between static mono runtime lib and static component libraries.
             // Adding mono runtime lib before and after component libs will resolve issues with undefined symbols
-            // due to circular dependecy.
+            // due to circular dependency.
             nativeLibraries += $"    {monoRuntimeLib}{Environment.NewLine}";
         }
 

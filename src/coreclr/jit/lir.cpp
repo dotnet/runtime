@@ -1183,7 +1183,7 @@ LIR::ReadOnlyRange LIR::Range::GetMarkedRange(unsigned  markCount,
                 return GenTree::VisitResult::Continue;
             });
 
-            // Unmark the the node and update `firstNode`
+            // Unmark the node and update `firstNode`
             firstNode->gtLIRFlags &= ~LIR::Flags::Mark;
             markCount--;
         }

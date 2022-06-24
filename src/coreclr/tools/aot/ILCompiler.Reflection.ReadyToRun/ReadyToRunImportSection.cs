@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection.PortableExecutable;
-using Internal.CorConstants;
+using Internal.ReadyToRunConstants;
 
 namespace ILCompiler.Reflection.ReadyToRun
 {
@@ -50,12 +50,12 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// One or more of ImportSectionFlags
         /// </summary>
-        public CorCompileImportFlags Flags { get; set; }
+        public ReadyToRunImportSectionFlags Flags { get; set; }
 
         /// <summary>
         /// One of ImportSectionType
         /// </summary>
-        public CorCompileImportType Type { get; set; }
+        public ReadyToRunImportSectionType Type { get; set; }
 
         /// <summary>
         ///
@@ -80,8 +80,8 @@ namespace ILCompiler.Reflection.ReadyToRun
             ReadyToRunReader reader,
             int rva,
             int size,
-            CorCompileImportFlags flags,
-            byte type,
+            ReadyToRunImportSectionFlags flags,
+            ReadyToRunImportSectionType type,
             byte entrySize,
             int signatureRVA,
             List<ImportSectionEntry> entries,
@@ -94,7 +94,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             SectionRVA = rva;
             SectionSize = size;
             Flags = flags;
-            Type = (CorCompileImportType)type;
+            Type = type;
             EntrySize = entrySize;
 
             SignatureRVA = signatureRVA;

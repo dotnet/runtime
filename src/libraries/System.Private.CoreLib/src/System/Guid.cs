@@ -23,7 +23,6 @@ namespace System
           IComparable,
           IComparable<Guid>,
           IEquatable<Guid>,
-          IComparisonOperators<Guid, Guid>,
           ISpanParsable<Guid>
     {
         public static readonly Guid Empty;

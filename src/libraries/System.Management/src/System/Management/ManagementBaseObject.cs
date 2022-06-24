@@ -190,7 +190,7 @@ namespace System.Management
 
         //
         // The wbemObject is changed from a field to a property. This is to avoid major code churn and simplify the solution to
-        // the problem where the Initialize call actually binds to the object. This occured even in cases like Get() whereby we
+        // the problem where the Initialize call actually binds to the object. This occurred even in cases like Get() whereby we
         // ended up getting the object twice. Any direct usage of this property will cause a call to Initialize ( true ) to be made
         // (if not already done) indicating that we wish to bind to the underlying WMI object.
         //

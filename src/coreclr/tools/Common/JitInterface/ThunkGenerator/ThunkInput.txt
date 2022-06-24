@@ -30,7 +30,7 @@
 ; Also, note that an empty line is ignored, and a line that begins with a ; is ignored.
 ;
 ; If the boilerplate around the individual functions needs adjustment, edit the thunk generator source code, and
-;    rebuild with rebuildthunkgen.cmd in the the ThunkGenerator subdir, then rebuildthunks.cmd
+;    rebuild with rebuildthunkgen.cmd in the ThunkGenerator subdir, then rebuildthunks.cmd
 ; If this file is editted, rebuild with gen.cmd -- DO NOT RUN from within a razzle window.
 ;
 NORMALTYPES
@@ -159,6 +159,7 @@ FUNCTIONS
     void getMethodSig(        CORINFO_METHOD_HANDLE      ftn,        CORINFO_SIG_INFO          *sig,        CORINFO_CLASS_HANDLE      memberParent         );
     bool getMethodInfo(        CORINFO_METHOD_HANDLE   ftn,        CORINFO_METHOD_INFO*    info        );
     CorInfoInline canInline(        CORINFO_METHOD_HANDLE       callerHnd,        CORINFO_METHOD_HANDLE       calleeHnd);
+    void beginInlining(CORINFO_METHOD_HANDLE inlinerHnd,        CORINFO_METHOD_HANDLE inlineeHnd);
     void reportInliningDecision(CORINFO_METHOD_HANDLE inlinerHnd,        CORINFO_METHOD_HANDLE inlineeHnd,        CorInfoInline inlineResult,        const char * reason);
     bool canTailCall(        CORINFO_METHOD_HANDLE   callerHnd,        CORINFO_METHOD_HANDLE   declaredCalleeHnd,        CORINFO_METHOD_HANDLE   exactCalleeHnd,        bool fIsTailPrefix        );
     void reportTailCallDecision(CORINFO_METHOD_HANDLE callerHnd,        CORINFO_METHOD_HANDLE calleeHnd,        bool fIsTailPrefix,        CorInfoTailCall tailCallResult,        const char * reason);
@@ -325,4 +326,3 @@ FUNCTIONS
     uint16_t getRelocTypeHint(void* target)
     uint32_t getExpectedTargetArchitecture()
     uint32_t getJitFlags(CORJIT_FLAGS* flags, uint32_t  sizeInBytes)
-    bool doesFieldBelongToClass(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE cls)

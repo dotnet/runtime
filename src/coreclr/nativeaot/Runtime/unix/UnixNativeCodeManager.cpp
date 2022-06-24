@@ -127,10 +127,17 @@ PTR_VOID UnixNativeCodeManager::GetFramePointer(MethodInfo *   pMethodInfo,
     return NULL;
 }
 
+bool UnixNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
+{
+    // @TODO: IsSafePoint
+    return false;
+}
+
 void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
                                        PTR_VOID        safePointAddress,
                                        REGDISPLAY *    pRegisterSet,
-                                       GCEnumContext * hCallback)
+                                       GCEnumContext * hCallback,
+                                       bool            isActiveStackFrame)
 {
     UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
 
@@ -149,7 +156,7 @@ void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
     GcInfoDecoder decoder(
         GCInfoToken(p),
         GcInfoDecoderFlags(DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
-        codeOffset - 1 // TODO: Is this adjustment correct?
+        codeOffset - 1 // TODO: isActiveStackFrame
     );
 
     ICodeManagerFlags flags = (ICodeManagerFlags)0;
@@ -234,7 +241,7 @@ uintptr_t UnixNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Method
 
 bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
                                              REGDISPLAY *    pRegisterSet,                 // in/out
-                                             PTR_VOID *      ppPreviousTransitionFrame)    // out
+                                             PInvokeTransitionFrame**      ppPreviousTransitionFrame)    // out
 {
     UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
 
@@ -267,7 +274,8 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
         {
             basePointer = dac_cast<TADDR>(pRegisterSet->GetFP());
         }
-        *ppPreviousTransitionFrame = *(void**)(basePointer + slot);
+
+        *ppPreviousTransitionFrame = *(PInvokeTransitionFrame**)(basePointer + slot);
         return true;
     }
 
@@ -286,13 +294,8 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
                                                        PTR_PTR_VOID *  ppvRetAddrLocation, // out
                                                        GCRefKind *     pRetValueKind)      // out
 {
-    // @TODO: CORERT: GetReturnAddressHijackInfo
+    // @TODO: GetReturnAddressHijackInfo
     return false;
-}
-
-void UnixNativeCodeManager::UnsynchronizedHijackMethodLoops(MethodInfo * pMethodInfo)
-{
-    // @TODO: CORERT: UnsynchronizedHijackMethodLoops
 }
 
 PTR_VOID UnixNativeCodeManager::RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, PTR_VOID controlPC)
@@ -390,7 +393,7 @@ bool UnixNativeCodeManager::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pE
 
         // Read target type
         {
-            // @TODO: CORERT: Compress EHInfo using type table index scheme
+            // @TODO: Compress EHInfo using type table index scheme
             // https://github.com/dotnet/corert/issues/972
             int32_t typeRelAddr = *((PTR_Int32&)pEnumState->pEHInfo);
             pEHClauseOut->m_pTargetType = dac_cast<PTR_VOID>(pEnumState->pEHInfo + typeRelAddr);
@@ -449,8 +452,7 @@ PTR_VOID UnixNativeCodeManager::GetAssociatedData(PTR_VOID ControlPC)
     return dac_cast<PTR_VOID>(p + *dac_cast<PTR_Int32>(p));
 }
 
-extern "C" bool RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange);
-extern "C" void UnregisterCodeManager(ICodeManager * pCodeManager);
+extern "C" void RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange);
 extern "C" bool RegisterUnboxingStubs(PTR_VOID pvStartRange, uint32_t cbRange);
 
 extern "C"
@@ -466,12 +468,10 @@ bool RhRegisterOSModule(void * pModule,
     if (pUnixNativeCodeManager == nullptr)
         return false;
 
-    if (!RegisterCodeManager(pUnixNativeCodeManager, pvManagedCodeStartRange, cbManagedCodeRange))
-        return false;
+    RegisterCodeManager(pUnixNativeCodeManager, pvManagedCodeStartRange, cbManagedCodeRange);
 
     if (!RegisterUnboxingStubs(pvUnboxingStubsStartRange, cbUnboxingStubsRange))
     {
-        UnregisterCodeManager(pUnixNativeCodeManager);
         return false;
     }
 

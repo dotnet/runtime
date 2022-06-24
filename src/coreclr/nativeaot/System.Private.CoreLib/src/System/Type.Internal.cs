@@ -3,6 +3,8 @@
 
 using System.Reflection;
 
+using Internal.Runtime.Augments;
+
 namespace System
 {
     //
@@ -11,14 +13,24 @@ namespace System
     // Before adding new entries to this, ask yourself: is it ever referenced by System.Private.CoreLib?
     // If not, don't put it here. Put it on RuntimeTypeInfo instead.
     //
-    // Some of these "internal" methods are declared "public" because both Reflection.Core and System.Private.CoreLib need to reference them.
-    //
     public abstract partial class Type
     {
+        internal bool TryGetEEType(out EETypePtr eeType)
+        {
+            RuntimeTypeHandle typeHandle = RuntimeAugments.Callbacks.GetTypeHandleIfAvailable(this);
+            if (typeHandle.IsNull)
+            {
+                eeType = default(EETypePtr);
+                return false;
+            }
+            eeType = typeHandle.ToEETypePtr();
+            return true;
+        }
+
         /// <summary>
         /// Return Type.Name if sufficient metadata is available to do so - otherwise return null.
         /// </summary>
-        public string InternalNameIfAvailable
+        public string? InternalNameIfAvailable
         {
             get
             {
@@ -30,7 +42,7 @@ namespace System
         /// <summary>
         /// Return Type.Name if sufficient metadata is available to do so - otherwise return null and set "rootCauseForFailure" to an object to pass to MissingMetadataException.
         /// </summary>
-        public virtual string InternalGetNameIfAvailable(ref Type? rootCauseForFailure) => Name;
+        internal virtual string? InternalGetNameIfAvailable(ref Type? rootCauseForFailure) => Name;
 
         /// <summary>
         /// Return Type.Name if sufficient metadata is available to do so - otherwise return a default (non-null) string.
@@ -39,8 +51,7 @@ namespace System
         {
             get
             {
-                string name = InternalNameIfAvailable;
-                return name != null ? name : DefaultTypeNameWhenMissingMetadata;
+                return InternalNameIfAvailable ?? DefaultTypeNameWhenMissingMetadata;
             }
         }
 
@@ -73,7 +84,7 @@ namespace System
         //
         // The Project N version takes a raw metadata handle rather than a completed type so that it remains robust in the face of missing metadata.
         //
-        public string FormatTypeNameForReflection()
+        internal string FormatTypeNameForReflection()
         {
             try
             {
@@ -87,8 +98,7 @@ namespace System
                     rootElementType = rootElementType.GetElementType()!;
                 if (rootElementType.IsNested)
                 {
-                    string name = InternalNameIfAvailable;
-                    return name == null ? DefaultTypeNameWhenMissingMetadata : name;
+                    return InternalNameIfAvailable ?? DefaultTypeNameWhenMissingMetadata;
                 }
 
                 // Legacy: why removing "System"? Is it just because C# has keywords for these types?
@@ -109,6 +119,6 @@ namespace System
             }
         }
 
-        public const string DefaultTypeNameWhenMissingMetadata = "UnknownType";
+        internal const string DefaultTypeNameWhenMissingMetadata = "UnknownType";
     }
 }

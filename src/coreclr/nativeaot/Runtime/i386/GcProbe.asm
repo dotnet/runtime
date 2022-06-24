@@ -237,7 +237,7 @@ ifdef FEATURE_GC_STRESS
 ;;  All other registers trashed
 ;;
 StressGC macro
-        mov         [ebx + OFFSETOF__Thread__m_pHackPInvokeTunnel], esp
+        mov         [ebx + OFFSETOF__Thread__m_pDeferredTransitionFrame], esp
         call        REDHAWKGCINTERFACE__STRESSGC
 endm
 
@@ -346,7 +346,7 @@ FASTCALL_FUNC RhpHijackForGcStress, 0
         push        esp        ;; address of PAL_LIMITED_CONTEXT
         call        THREAD__HIJACKFORGCSTRESS
 
-        ;; Note: we only restore the scratch registers here. No GC has occured, so restoring
+        ;; Note: we only restore the scratch registers here. No GC has occurred, so restoring
         ;; the callee saved ones is unnecessary.
         add         esp, 14h
         pop         eax

@@ -72,6 +72,35 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
+#
+# CoreCLR NativeAOT release build and additional libraries tests that are known to be passing
+# Only when CoreCLR or library is changed
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    platforms:
+    - windows_x64
+    - windows_arm64
+    jobParameters:
+      testGroup: innerloop
+      isSingleFile: true
+      nameSuffix: NativeAOT_Libs_Passing
+      buildArgs: -s clr.alljits+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:ArchiveTests=true
+      timeoutInMinutes: 180
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(variables['isRollingBuild'], true))
+
 # Run net48 tests on win-x64
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -197,7 +226,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
-      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true $(_runSmokeTestsOnlyArg) /p:BuildTestsOnHelix=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true
+      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true $(_runSmokeTestsOnlyArg) /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true
       timeoutInMinutes: 180
       condition: >-
         or(
@@ -361,7 +390,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
-      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg)
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:EnableAdditionalTimezoneChecks=true
       timeoutInMinutes: 180
       condition: >-
         or(
@@ -488,13 +517,11 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
           eq(variables['isRollingBuild'], true))
-      # NOTE: Per PR test execution is not recommended for runtime tests 
-      ${{ if eq(variables['isRollingBuild'], true) }}:
-        # extra steps, run tests
-        extraStepsTemplate: /eng/pipelines/common/templates/runtimes/android-runtime-and-send-to-helix.yml
-        extraStepsParameters:
-          creator: dotnet-bot
-          testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/common/templates/runtimes/android-runtime-and-send-to-helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
 
 #
 # Mono CoreCLR runtime Test executions using live libraries in jit mode

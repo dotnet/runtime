@@ -484,7 +484,7 @@ struct HeapList
 
     TADDR GetModuleBase()
     {
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         return (TADDR)CLRPersonalityRoutine;
  #else
         return (TADDR)mapBase;
@@ -1317,15 +1317,9 @@ private:
 
     // infrastructure to manage readers so we can lock them out and delete domain data
     // make ReaderCount volatile because we have order dependency in READER_INCREMENT
-#ifndef DACCESS_COMPILE
-    static Volatile<RangeSection *> m_CodeRangeList;
-    static Volatile<LONG>   m_dwReaderCount;
-    static Volatile<LONG>   m_dwWriterLock;
-#else
-    SPTR_DECL(RangeSection,  m_CodeRangeList);
-    SVAL_DECL(LONG, m_dwReaderCount);
-    SVAL_DECL(LONG, m_dwWriterLock);
-#endif
+    VOLATILE_SPTR_DECL(RangeSection,  m_CodeRangeList);
+    VOLATILE_SVAL_DECL(LONG, m_dwReaderCount);
+    VOLATILE_SVAL_DECL(LONG, m_dwWriterLock);
 
 #ifndef DACCESS_COMPILE
     class WriterLockHolder

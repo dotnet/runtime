@@ -278,7 +278,7 @@ def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
                 emittedWriteToBuffer = True
         elif paramName in template.arrays:
             size = "sizeof(%s) * (int)%s" % (
-                lttngDataTypeMapping[parameter.winType],
+                getLttngDataTypeMapping(runtimeFlavor)[parameter.winType],
                 parameter.prop)
             if template.name in specialCaseSizes and paramName in specialCaseSizes[template.name]:
                 size = "(int)(%s)" % specialCaseSizes[template.name][paramName]
@@ -1041,7 +1041,7 @@ def generateEventPipeImplFiles(
                 )
 
                 eventpipeImpl.write(
-                    "EventPipeProvider *EventPipeProvider" + providerPrettyName + 
+                    "EventPipeProvider *EventPipeProvider" + providerPrettyName +
                     (" = nullptr;\n" if target_cpp else " = NULL;\n")
                 )
                 templateNodes = providerNode.getElementsByTagName('template')

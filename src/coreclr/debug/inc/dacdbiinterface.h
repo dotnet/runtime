@@ -1065,7 +1065,7 @@ public:
 
     virtual
     VMPTR_OBJECTHANDLE GetThreadObject(VMPTR_Thread vmThread) = 0;
-    
+
     //
     // Get the allocation info corresponding to the specified thread.
     //
@@ -2660,7 +2660,7 @@ public:
         HRESULT GetNativeCodeVersionNode(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeStartAddress, OUT VMPTR_NativeCodeVersionNode* pVmNativeCodeVersionNode) = 0;
 
     // Retrieves the ILCodeVersionNode for a given NativeCodeVersionNode.
-    // This may return a NULL node if the native code belongs to the default IL version for this this method.
+    // This may return a NULL node if the native code belongs to the default IL version for this method.
     //
     //
     // Arguments:

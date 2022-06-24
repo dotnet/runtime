@@ -24,7 +24,7 @@ namespace System.Reflection
         public virtual Guid ModuleVersionId => throw NotImplemented.ByDesign;
         public virtual string ScopeName => throw NotImplemented.ByDesign;
         public ModuleHandle ModuleHandle => GetModuleHandleImpl();
-        protected virtual ModuleHandle GetModuleHandleImpl() => ModuleHandle.EmptyHandle; // Not an api but declared protected because of Reflection.Core/Corelib divide (when built by CoreRt)
+        protected virtual ModuleHandle GetModuleHandleImpl() => ModuleHandle.EmptyHandle; // Not an api but declared protected because of Reflection.Core/Corelib divide (when built by NativeAOT)
         public virtual void GetPEKind(out PortableExecutableKinds peKind, out ImageFileMachine machine) { throw NotImplemented.ByDesign; }
         public virtual bool IsResource() { throw NotImplemented.ByDesign; }
 
@@ -149,12 +149,11 @@ namespace System.Reflection
             // so it can become a simple test
             if (right is null)
             {
-                // return true/false not the test result https://github.com/dotnet/runtime/issues/4207
-                return (left is null) ? true : false;
+                return left is null;
             }
 
             // Try fast reference equality and opposite null check prior to calling the slower virtual Equals
-            if ((object?)left == (object)right)
+            if (ReferenceEquals(left, right))
             {
                 return true;
             }
@@ -182,7 +181,7 @@ namespace System.Reflection
                 throw new InvalidFilterCriteriaException(SR.InvalidFilterCriteriaException_CritString);
             }
             // Check to see if this is a prefix or exact match requirement
-            if (str.Length > 0 && str[^1] == '*')
+            if (str.EndsWith('*'))
             {
                 ReadOnlySpan<char> slice = str.AsSpan(0, str.Length - 1);
                 return cls.Name.AsSpan().StartsWith(slice, comparison);

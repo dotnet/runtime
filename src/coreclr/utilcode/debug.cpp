@@ -29,6 +29,22 @@ void CreateCrashDumpIfEnabled(bool stackoverflow = false);
 // Global state counter to implement SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE.
 Volatile<LONG> g_DbgSuppressAllocationAsserts = 0;
 
+static void GetExecutableFileNameUtf8(SString& value)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    SString tmp;
+    WCHAR * pCharBuf = tmp.OpenUnicodeBuffer(_MAX_PATH);
+    DWORD numChars = GetModuleFileNameW(0 /* Get current executable */, pCharBuf, _MAX_PATH);
+    tmp.CloseBuffer(numChars);
+
+    tmp.ConvertToUTF8(value);
+}
 
 #ifdef _DEBUG
 
@@ -294,8 +310,7 @@ HRESULT _OutOfMemory(LPCSTR szFile, int iLine)
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_DEBUG_ONLY;
 
-    DbgWriteEx(W("WARNING:  Out of memory condition being issued from: %hs, line %d\n"),
-            szFile, iLine);
+    printf("WARNING: Out of memory condition being issued from: %s, line %d\n", szFile, iLine);
     return (E_OUTOFMEMORY);
 }
 
@@ -330,11 +345,9 @@ bool _DbgBreakCheck(
 
     CONTRACT_VIOLATION(FaultNotFatal | GCViolation | TakesLockViolation);
 
-    SString debugOutput;
-    SString dialogOutput;
+    char formatBuffer[4096];
+
     SString modulePath;
-    SString dialogTitle;
-    SString dialogIgnoreMessage;
     BOOL formattedMessages = FALSE;
 
     // If we are low on memory we cannot even format a message. If this happens we want to
@@ -343,29 +356,15 @@ bool _DbgBreakCheck(
     {
         EX_TRY
         {
-            ClrGetModuleFileName(0, modulePath);
-            debugOutput.Printf(
-                W("\nAssert failure(PID %d [0x%08x], Thread: %d [0x%04x]): %hs\n")
-                W("    File: %hs Line: %d\n")
-                W("    Image: "),
+            GetExecutableFileNameUtf8(modulePath);
+
+            sprintf_s(formatBuffer, sizeof(formatBuffer),
+                "\nAssert failure(PID %d [0x%08x], Thread: %d [0x%04x]): %s\n"
+                "    File: %s Line: %d\n"
+                "    Image: %s\n\n",
                 GetCurrentProcessId(), GetCurrentProcessId(),
                 GetCurrentThreadId(), GetCurrentThreadId(),
-                szExpr, szFile, iLine);
-            debugOutput.Append(modulePath);
-            debugOutput.Append(W("\n\n"));
-
-            // Change format for message box.  The extra spaces in the title
-            // are there to get around format truncation.
-            dialogOutput.Printf(
-                W("%hs\n\n%hs, Line: %d\n\nAbort - Kill program\nRetry - Debug\nIgnore - Keep running\n")
-                W("\n\nImage:\n"), szExpr, szFile, iLine);
-            dialogOutput.Append(modulePath);
-            dialogOutput.Append(W("\n"));
-            dialogTitle.Printf(W("Assert Failure (PID %d, Thread %d/0x%04x)"),
-                GetCurrentProcessId(), GetCurrentThreadId(), GetCurrentThreadId());
-
-            dialogIgnoreMessage.Printf(W("Ignore the assert for the rest of this run?\nYes - Assert will never fire again.\nNo - Assert will continue to fire.\n\n%hs\nLine: %d\n"),
-                szFile, iLine);
+                szExpr, szFile, iLine, modulePath.GetUTF8());
 
             formattedMessages = TRUE;
         }
@@ -378,8 +377,8 @@ bool _DbgBreakCheck(
     // Emit assert in debug output and console for easy access.
     if (formattedMessages)
     {
-        WszOutputDebugString(debugOutput);
-        fwprintf(stderr, W("%s"), (const WCHAR*)debugOutput);
+        OutputDebugStringUtf8(formatBuffer);
+        fprintf(stderr, formatBuffer);
     }
     else
     {
@@ -675,22 +674,18 @@ void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, cons
     SString buffer;
     SString modulePath;
 
-    // Give assert in output for easy access.
-    ClrGetModuleFileName(0, modulePath);
-#ifndef TARGET_UNIX
-    buffer.Printf(W("CLR: Assert failure(PID %d [0x%08x], Thread: %d [0x%x]): %hs\n")
-                W("    File: %hs, Line: %d Image:\n"),
+    GetExecutableFileNameUtf8(modulePath);
+
+    buffer.Printf("CLR: Assert failure(PID %d [0x%08x], Thread: %d [0x%x]): %s\n"
+                "    File: %s, Line: %d Image:\n%s\n",
                 GetCurrentProcessId(), GetCurrentProcessId(),
                 GetCurrentThreadId(), GetCurrentThreadId(),
-                szExpr, szFile, iLine);
-    buffer.Append(modulePath);
-    buffer.Append(W("\n"));
-    WszOutputDebugString(buffer);
+                szExpr, szFile, iLine, modulePath.GetUTF8());
+    OutputDebugStringUtf8(buffer.GetUTF8());
+
     // Write out the error to the console
-    _putws(buffer);
-#else // TARGET_UNIX
-    // UNIXTODO: Do this for Unix.
-#endif // TARGET_UNIX
+    printf(buffer.GetUTF8());
+
     // Log to the stress log. Note that we can't include the szExpr b/c that
     // may not be a string literal (particularly for formatt-able asserts).
     STRESS_LOG2(LF_ASSERT, LL_ALWAYS, "ASSERT:%s, line:%d\n", szFile, iLine);

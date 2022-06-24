@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#pragma once
+
 //
 // This header contains binder-generated data structures that the runtime consumes.
 //
@@ -338,7 +340,7 @@ struct InterfaceDispatchCell
 // a single instruction within our stubs.
 enum PInvokeTransitionFrameFlags
 {
-    // NOTE: Keep in sync with ndp\FxCore\CoreRT\src\Native\Runtime\arm\AsmMacros.h
+    // NOTE: Keep in sync with src\coreclr\nativeaot\Runtime\arm\AsmMacros.h
 
     // NOTE: The order in which registers get pushed in the PInvokeTransitionFrame's m_PreservedRegs list has
     //       to match the order of these flags (that's also the order in which they are read in StackFrameIterator.cpp
@@ -374,7 +376,7 @@ enum PInvokeTransitionFrameFlags
 #elif defined(TARGET_ARM64)
 enum PInvokeTransitionFrameFlags : uint64_t
 {
-    // NOTE: Keep in sync with ndp\FxCore\CoreRT\src\Native\Runtime\arm64\AsmMacros.h
+    // NOTE: Keep in sync with src\coreclr\nativeaot\Runtime\arm64\AsmMacros.h
 
     // NOTE: The order in which registers get pushed in the PInvokeTransitionFrame's m_PreservedRegs list has
     //       to match the order of these flags (that's also the order in which they are read in StackFrameIterator.cpp
@@ -433,33 +435,11 @@ enum PInvokeTransitionFrameFlags : uint64_t
     PTFF_THREAD_ABORT   = 0x0000001000000000,   // indicates that ThreadAbortException should be thrown when returning from the transition
 };
 
-// TODO: Consider moving the PInvokeTransitionFrameFlags definition to a separate file to simplify header dependencies
-#ifdef ICODEMANAGER_INCLUDED
-// Verify that we can use bitwise shifts to convert from GCRefKind to PInvokeTransitionFrameFlags and back
-C_ASSERT(PTFF_X0_IS_GCREF == ((uint64_t)GCRK_Object << 32));
-C_ASSERT(PTFF_X0_IS_BYREF == ((uint64_t)GCRK_Byref << 32));
-C_ASSERT(PTFF_X1_IS_GCREF == ((uint64_t)GCRK_Scalar_Obj << 32));
-C_ASSERT(PTFF_X1_IS_BYREF == ((uint64_t)GCRK_Scalar_Byref << 32));
 
-inline uint64_t ReturnKindToTransitionFrameFlags(GCRefKind returnKind)
-{
-    if (returnKind == GCRK_Scalar)
-        return 0;
-
-    return PTFF_SAVE_X0 | PTFF_SAVE_X1 | ((uint64_t)returnKind << 32);
-}
-
-inline GCRefKind TransitionFrameFlagsToReturnKind(uint64_t transFrameFlags)
-{
-    GCRefKind returnKind = (GCRefKind)((transFrameFlags & (PTFF_X0_IS_GCREF | PTFF_X0_IS_BYREF | PTFF_X1_IS_GCREF | PTFF_X1_IS_BYREF)) >> 32);
-    ASSERT((returnKind == GCRK_Scalar) || ((transFrameFlags & PTFF_SAVE_X0) && (transFrameFlags & PTFF_SAVE_X1)));
-    return returnKind;
-}
-#endif // ICODEMANAGER_INCLUDED
 #else // TARGET_ARM
 enum PInvokeTransitionFrameFlags
 {
-    // NOTE: Keep in sync with ndp\FxCore\CoreRT\src\Native\Runtime\[amd64|i386]\AsmMacros.inc
+    // NOTE: Keep in sync with src\coreclr\nativeaot\Runtime\[amd64|i386]\AsmMacros.inc
 
     // NOTE: The order in which registers get pushed in the PInvokeTransitionFrame's m_PreservedRegs list has
     //       to match the order of these flags (that's also the order in which they are read in StackFrameIterator.cpp
@@ -645,3 +625,4 @@ struct ColdToHotMapping
     SubSectionDesc  subSection[/*subSectionCount*/1];
     //  UINT32   hotRVAofColdMethod[/*coldMethodCount*/];
 };
+

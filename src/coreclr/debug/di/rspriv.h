@@ -4090,7 +4090,7 @@ private:
     // DAC
     //
 
-    // Try to initalize DAC, may fail
+    // Try to initialize DAC, may fail
     BOOL TryInitializeDac();
 
     // Expect DAC initialize to succeed.
@@ -4828,7 +4828,7 @@ public:
                                              CordbClass * tycon,
                                              CordbType ** pRes);
 
-    // Prepare data to send back to left-side during Init() and FuncEval.  Fail if the the exact
+    // Prepare data to send back to left-side during Init() and FuncEval.  Fail if the exact
     // type data is requested but was not fetched correctly during Init()
     HRESULT TypeToBasicTypeData(DebuggerIPCE_BasicTypeData *data);
     void TypeToExpandedTypeData(DebuggerIPCE_ExpandedTypeData *data);
@@ -10069,7 +10069,7 @@ public:
     VMPTR_OBJECTHANDLE  m_vmThreadOldExceptionHandle; // object handle for thread's managed exception object.
 
 #ifdef _DEBUG
-    // Func-eval should perturb the the thread's current appdomain. So we remember it at start
+    // Func-eval should perturb the thread's current appdomain. So we remember it at start
     // and then ensure that the func-eval complete restores it.
     CordbAppDomain *           m_DbgAppDomainStarted;
 #endif

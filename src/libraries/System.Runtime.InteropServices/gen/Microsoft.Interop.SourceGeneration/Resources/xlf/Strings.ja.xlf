@@ -12,6 +12,11 @@
         <target state="translated">'MarshalAsAttribute' の 'SizeParamIndex' 値は範囲外です。</target>
         <note />
       </trans-unit>
+      <trans-unit id="BidirectionalMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
+        <target state="new">The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="CannotHaveMultipleMarshallingAttributesDescription">
         <source>The 'BlittableTypeAttribute' and 'NativeMarshallingAttribute' attributes are mutually exclusive.</source>
         <target state="translated">'BlittableTypeAttribute' 属性と 'NativeMarshallingAttribute' 属性は互いに排他的です。</target>
@@ -92,6 +97,16 @@
         <target state="translated">このパラメーターに指定された '[In]' 属性と '[Out]' 属性は、このパラメーターではサポートされていません。</target>
         <note />
       </trans-unit>
+      <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</source>
+        <target state="new">The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeStatic">
+        <source>The marshaller type '{0}' for managed type '{1}' must be static.</source>
+        <target state="new">The marshaller type '{0}' for managed type '{1}' must be static.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MarshallingBoolAsUndefinedNotSupported">
         <source>Marshalling bool without explicit marshalling information is not supported. Specify either 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
         <target state="translated">明示的なマーシャリング情報を含まないブール値のマーシャリングはサポートされていません。'MarshalUsingAttribute' または 'MarshalAsAttribute' のいずれかを指定してください。</target>
@@ -99,17 +114,17 @@
       </trans-unit>
       <trans-unit id="MarshallingCharAsSpecifiedStringMarshallingNotSupported">
         <source>Marshalling char with 'StringMarshalling.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</source>
-        <target state="new">Marshalling char with 'StringMarshalling.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</target>
+        <target state="translated">'StringMarshalling.{0}' を使用した文字のマーシャリングはサポートされていません。代わりに、手動で char 型を必要なバイト表現に変換し、ソース生成済みの P/Invoke に渡します。</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallingCharAsStringMarshallingCustomNotSupported">
         <source>Marshalling char with 'StringMarshalling.Custom' is not supported. To use a custom type marshaller, specify 'MarshalUsingAttribute'.</source>
-        <target state="new">Marshalling char with 'StringMarshalling.Custom' is not supported. To use a custom type marshaller, specify 'MarshalUsingAttribute'.</target>
+        <target state="translated">'StringMarshalling.Custom' を使用した文字のマーシャリングはサポートされていません。カスタム型のマーシャラーを使用するには、'MarshalUsingAttribute' を指定します。</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallingStringOrCharAsUndefinedNotSupported">
         <source>Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
-        <target state="new">Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</target>
+        <target state="translated">明示的なマーシャリング情報を含まない文字列または文字のマーシャリングはサポートされていません。'LibraryImportAttribute.StringMarstailing'、'LibraryImportAttribute.StringMarshallingCustomType'、'MarshalUsingAttribute' または 'MarshalAsAttribute' を指定します。</target>
         <note />
       </trans-unit>
       <trans-unit id="NativeGenericTypeMustBeClosedOrMatchArityMessage">
@@ -128,8 +143,8 @@
         <note />
       </trans-unit>
       <trans-unit id="RuntimeMarshallingMustBeDisabled">
-        <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.InteropServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
-        <target state="translated">このプロジェクトでは、アセンブリに 'System.Runtime.InteropServices.DisableRuntimeMarshallingAttribute' を適用してランタイム マーシャリングを無効にし、この型のマーシャリングを有効にする必要があります。</target>
+        <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
+        <target state="translated">このプロジェクトでは、アセンブリに 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' を適用してランタイム マーシャリングを無効にし、この型のマーシャリングを有効にする必要があります。</target>
         <note />
       </trans-unit>
       <trans-unit id="SafeHandleByRefMustBeConcrete">
@@ -142,9 +157,14 @@
         <target state="translated">指定された型は、ソースで生成された P/Invoke ではサポートされていません</target>
         <note />
       </trans-unit>
+      <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
+        <target state="new">The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorMessage">
         <source>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a one-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</source>
-        <target state="new">The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a one-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</target>
+        <target state="translated">型 '{0}' は、'{1}' の 'CallerAllocatedBuffer' 機能を使用した 'In' マーシャリングをサポートすることを指定していますが、'{1}' と 'アンマネージド' 型の 'Span' をパラメーターとして受け取る、1 つのパラメーター コンストラクターを指定しません</target>
         <note />
       </trans-unit>
     </body>

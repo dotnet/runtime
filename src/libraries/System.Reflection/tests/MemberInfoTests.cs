@@ -166,6 +166,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/830", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void GetCustomAttributesData()
         {
             MemberInfo[] m = typeof(MemberInfoTests).GetMember("SampleClass");
@@ -363,7 +364,7 @@ namespace System.Reflection.Tests
         [Fact]
         public static void HasSameMetadataDefinitionAs_Twins()
         {
-            // This situation is particularly treacherous for CoreRT as the .NET Native toolchain can and does assign
+            // This situation is particularly treacherous for NativeAOT as the toolchain can and does assign
             // the same native metadata tokens to identically structured members in unrelated types.
             Type twin1 = typeof(Twin1);
             Type twin2 = typeof(Twin2);

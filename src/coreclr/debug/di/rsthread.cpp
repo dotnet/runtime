@@ -3526,14 +3526,14 @@ HRESULT CordbUnmanagedThread::GetThreadContext(DT_CONTEXT* pContext)
     // 3) The original context present when the hijack was started
     //
     // Both #1 and #3 are stored in the GetHijackCtx() space so of course you can't
-    // have them both. You have have #1 if IsContextSet() is true, otherwise it holds #3
+    // have them both. You have #1 if IsContextSet() is true, otherwise it holds #3.
     //
     // GenericHijack, FirstChanceHijackForSync, and RaiseExceptionHijack use #1 if available
     // and fallback to #3 if not. In other words they use GetHijackCtx() regardless of which thing it holds
     // M2UHandoff uses #1 if available and then falls back to #2.
     //
     // The reasoning here is that the first three hijacks are intended to be transparent. Since
-    // the debugger shouldn't know they are occuring then it shouldn't see changes potentially
+    // the debugger shouldn't know they are occurring then it shouldn't see changes potentially
     // made on the LS. The M2UHandoff is not transparent, it has to update the context in order
     // to get clear of a bp.
     //
@@ -8096,7 +8096,7 @@ HRESULT CordbJITILFrame::FabricateNativeInfo(DWORD dwIndex,
             IfFailThrow(pArgType->GetUnboxedObjectSize(&cbType));
 
 #if defined(TARGET_X86) // STACK_GROWS_DOWN_ON_ARGS_WALK
-            // The the rpCur pointer starts off in the right spot for the
+            // The rpCur pointer starts off in the right spot for the
             // first argument, but thereafter we have to decrement it
             // before getting the variable's location from it.  So increment
             // it here to be consistent later.

@@ -56,7 +56,7 @@ namespace System.ComponentModel.Composition.Registration
                     }
                 }
 
-                // An error occured the expression must be a Property Member Expression
+                // An error occurred the expression must be a Property Member Expression
                 throw new ArgumentException(SR.Format(SR.Argument_ExpressionMustBePropertyMember, nameof(propertyFilter)), nameof(propertyFilter));
             }
 

@@ -20,5 +20,6 @@
     <_SampleAssembly> Wasm.Browser.Bench.Sample.dll</_SampleAssembly>
   </PropertyGroup>
 
-  <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowser" />
+  <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowserAndSimpleServer" />
+
 </Project>

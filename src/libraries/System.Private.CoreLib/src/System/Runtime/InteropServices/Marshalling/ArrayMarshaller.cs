@@ -66,7 +66,8 @@ namespace System.Runtime.InteropServices.Marshalling
             _managedArray = array;
 
             // Always allocate at least one byte when the array is zero-length.
-            int spaceToAllocate = Math.Max(array.Length * _sizeOfNativeElement, 1);
+            int bufferSize = checked(array.Length * _sizeOfNativeElement);
+            int spaceToAllocate = Math.Max(bufferSize, 1);
             if (spaceToAllocate <= buffer.Length)
             {
                 _span = buffer[0..spaceToAllocate];
@@ -107,7 +108,12 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </remarks>
         public ReadOnlySpan<byte> GetNativeValuesSource(int length)
         {
-            return _allocatedMemory == IntPtr.Zero ? default : _span = new Span<byte>((void*)_allocatedMemory, length * _sizeOfNativeElement);
+            if (_allocatedMemory == IntPtr.Zero)
+                return default;
+
+            int allocatedSize = checked(length * _sizeOfNativeElement);
+            _span = new Span<byte>((void*)_allocatedMemory, allocatedSize);
+            return _span;
         }
 
         /// <summary>

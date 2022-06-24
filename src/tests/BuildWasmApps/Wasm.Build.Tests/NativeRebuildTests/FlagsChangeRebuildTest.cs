@@ -25,7 +25,7 @@ namespace Wasm.Build.NativeRebuild.Tests
                         new object[] { /*cflags*/ "/p:EmccExtraCFlags=-g", /*ldflags*/ "" },
                         new object[] { /*cflags*/ "",                      /*ldflags*/ "/p:EmccExtraLDFlags=-g" },
                         new object[] { /*cflags*/ "/p:EmccExtraCFlags=-g", /*ldflags*/ "/p:EmccExtraLDFlags=-g" }
-            ).WithRunHosts(RunHost.V8).UnwrapItemsAsArrays().Dump();
+            ).WithRunHosts(RunHost.V8).UnwrapItemsAsArrays();
 
         [Theory]
         [MemberData(nameof(FlagsChangesForNativeRelinkingData), parameters: /*aot*/ false)]
@@ -71,7 +71,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             => ConfigWithAOTData(aot, config: "Release").Multiply(
                         new object[] { /*cflags*/ "/p:EmccCompileOptimizationFlag=-O1", /*ldflags*/ "" },
                         new object[] { /*cflags*/ "",                                   /*ldflags*/ "/p:EmccLinkOptimizationFlag=-O0" }
-            ).WithRunHosts(RunHost.V8).UnwrapItemsAsArrays().Dump();
+            ).WithRunHosts(RunHost.V8).UnwrapItemsAsArrays();
 
         [Theory]
         [MemberData(nameof(FlagsOnlyChangeData), parameters: /*aot*/ false)]

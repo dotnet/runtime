@@ -137,6 +137,7 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
 
 #ifdef TARGET_ARM64
     genSaveFpLrWithAllCalleeSavedRegisters = false;
+    genForceFuncletFrameType5              = false;
 #endif // TARGET_ARM64
 }
 
@@ -1841,6 +1842,10 @@ void CodeGen::genGenerateMachineCode()
         {
             printf("; optimized code\n");
         }
+        else if (compiler->opts.compDbgEnC)
+        {
+            printf("; EnC code\n");
+        }
         else if (compiler->opts.compDbgCode)
         {
             printf("; debuggable code\n");
@@ -1940,11 +1945,12 @@ void CodeGen::genGenerateMachineCode()
 #endif // DEBUG
 
     /* We can now generate the function prolog and epilog */
-
     genGeneratePrologsAndEpilogs();
 
-    /* Bind jump distances */
+    // check to see if any jumps can be removed
+    GetEmitter()->emitRemoveJumpToNextInst();
 
+    /* Bind jump distances */
     GetEmitter()->emitJumpDistBind();
 
 #if FEATURE_LOOP_ALIGN
@@ -3006,7 +3012,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         // When we have a promoted struct we have two possible LclVars that can represent the incoming argument
         // in the regArgTab[], either the original TYP_STRUCT argument or the introduced lvStructField.
         // We will use the lvStructField if we have a TYPE_INDEPENDENT promoted struct field otherwise
-        // use the the original TYP_STRUCT argument.
+        // use the original TYP_STRUCT argument.
         //
         if (varDsc->lvPromoted || varDsc->lvIsStructField)
         {
@@ -5308,15 +5314,17 @@ void CodeGen::genFinalizeFrame()
     {
         // We always save FP.
         noway_assert(isFramePointerUsed());
-#ifdef TARGET_AMD64
-        // On x64 we always save exactly RBP, RSI and RDI for EnC.
-        regMaskTP okRegs = (RBM_CALLEE_TRASH | RBM_FPBASE | RBM_RSI | RBM_RDI);
-        regSet.rsSetRegsModified(RBM_RSI | RBM_RDI);
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+        regMaskTP okRegs = (RBM_CALLEE_TRASH | RBM_FPBASE | RBM_ENC_CALLEE_SAVED);
+        if (RBM_ENC_CALLEE_SAVED != 0)
+        {
+            regSet.rsSetRegsModified(RBM_ENC_CALLEE_SAVED);
+        }
         noway_assert((regSet.rsGetModifiedRegsMask() & ~okRegs) == 0);
-#else  // !TARGET_AMD64
+#else  // !TARGET_AMD64 && !TARGET_ARM64
         // On x86 we save all callee saved regs so the saved reg area size is consistent
         regSet.rsSetRegsModified(RBM_INT_CALLEE_SAVED & ~RBM_FPBASE);
-#endif // !TARGET_AMD64
+#endif // !TARGET_AMD64 && !TARGET_ARM64
     }
 
     /* If we have any pinvoke calls, we might potentially trash everything */
@@ -6574,35 +6582,6 @@ bool Compiler::IsHfa(CORINFO_CLASS_HANDLE hClass)
     return varTypeIsValidHfaType(GetHfaType(hClass));
 }
 
-bool Compiler::IsHfa(GenTree* tree)
-{
-    if (GlobalJitOptions::compFeatureHfa)
-    {
-        return IsHfa(gtGetStructHandleIfPresent(tree));
-    }
-    else
-    {
-        return false;
-    }
-}
-
-var_types Compiler::GetHfaType(GenTree* tree)
-{
-    if (GlobalJitOptions::compFeatureHfa)
-    {
-        return GetHfaType(gtGetStructHandleIfPresent(tree));
-    }
-    else
-    {
-        return TYP_UNDEF;
-    }
-}
-
-unsigned Compiler::GetHfaCount(GenTree* tree)
-{
-    return GetHfaCount(gtGetStructHandle(tree));
-}
-
 var_types Compiler::GetHfaType(CORINFO_CLASS_HANDLE hClass)
 {
     if (GlobalJitOptions::compFeatureHfa)
@@ -6658,7 +6637,7 @@ unsigned Compiler::GetHfaCount(CORINFO_CLASS_HANDLE hClass)
 //
 // Note:
 //    On x64 Windows the caller always creates slots (homing space) in its frame for the
-//    first 4 arguments of a callee (register passed args). So, the the variable number
+//    first 4 arguments of a callee (register passed args). So, the variable number
 //    (lclNum) for the first argument with a stack slot is always 0.
 //    For System V systems or armarch, there is no such calling convention requirement, and the code
 //    needs to find the first stack passed argument from the caller. This is done by iterating over
@@ -8245,6 +8224,10 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
         }
         else
         {
+#ifdef TARGET_LOONGARCH64
+            // should consider the pading field within a struct.
+            offset = (offset % genTypeSize(srcType)) ? AlignUp(offset, genTypeSize(srcType)) : offset;
+#endif
             // Several fields could be passed in one register, copy using the register type.
             // It could rewrite memory outside of the fields but local on the stack are rounded to POINTER_SIZE so
             // it is safe to store a long register into a byte field as it is known that we have enough padding after.
@@ -8569,7 +8552,7 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveRange::dumpVariableLiveRa
 //                      LiveRangeDumper
 //------------------------------------------------------------------------
 //------------------------------------------------------------------------
-// resetDumper: If the the "liveRange" has its last "VariableLiveRange" closed, it makes
+// resetDumper: If the "liveRange" has its last "VariableLiveRange" closed, it makes
 //  the "LiveRangeDumper" points to end of "liveRange" (nullptr). In other case,
 //  it makes the "LiveRangeDumper" points to the last "VariableLiveRange" of
 //  "liveRange", which is opened.

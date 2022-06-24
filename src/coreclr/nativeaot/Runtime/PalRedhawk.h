@@ -405,6 +405,7 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     void SetArg1Reg(uintptr_t val) { X1 = val; }
     uintptr_t GetIp() { return Pc; }
     uintptr_t GetLr() { return Lr; }
+    uintptr_t GetSp() { return Sp; }
 } CONTEXT, *PCONTEXT;
 
 #elif defined(HOST_WASM)
@@ -589,6 +590,11 @@ REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalInit();
 
 // Given the OS handle of a loaded module, compute the upper and lower virtual address bounds (inclusive).
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalGetModuleBounds(HANDLE hOsHandle, _Out_ uint8_t ** ppLowerBound, _Out_ uint8_t ** ppUpperBound);
+
+REDHAWK_PALIMPORT CONTEXT* PalAllocateCompleteOSContext(_Out_ uint8_t** contextBuffer);
+REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalGetCompleteThreadContext(HANDLE hThread, _Out_ CONTEXT * pCtx);
+REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalSetThreadContext(HANDLE hThread, _Out_ CONTEXT * pCtx);
+REDHAWK_PALIMPORT void REDHAWK_PALAPI PalRestoreContext(CONTEXT * pCtx);
 
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalGetThreadContext(HANDLE hThread, _Out_ PAL_LIMITED_CONTEXT * pCtx);
 

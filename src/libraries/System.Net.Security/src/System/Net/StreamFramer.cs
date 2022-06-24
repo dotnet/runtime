@@ -31,24 +31,17 @@ namespace System.Net
 
             byte[] buffer = _readHeaderBuffer;
 
-            int bytesRead;
-            int offset = 0;
-            while (offset < buffer.Length)
+            int bytesRead = await TAdapter.ReadAtLeastAsync(
+                stream, buffer, buffer.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+            if (bytesRead < buffer.Length)
             {
-                bytesRead = await TAdapter.ReadAsync(stream, buffer.AsMemory(offset), cancellationToken).ConfigureAwait(false);
                 if (bytesRead == 0)
                 {
-                    if (offset == 0)
-                    {
-                        // m_Eof, return null
-                        _eof = true;
-                        return null;
-                    }
-
-                    throw new IOException(SR.Format(SR.net_io_readfailure, SR.net_io_connectionclosed));
+                    // m_Eof, return null
+                    _eof = true;
+                    return null;
                 }
-
-                offset += bytesRead;
+                throw new IOException(SR.Format(SR.net_io_readfailure, SR.net_io_connectionclosed));
             }
 
             _curReadHeader.CopyFrom(buffer, 0);
@@ -61,16 +54,14 @@ namespace System.Net
 
             buffer = new byte[_curReadHeader.PayloadSize];
 
-            offset = 0;
-            while (offset < buffer.Length)
+            if (buffer.Length > 0)
             {
-                bytesRead = await TAdapter.ReadAsync(stream, buffer.AsMemory(offset), cancellationToken).ConfigureAwait(false);
-                if (bytesRead == 0)
+                bytesRead = await TAdapter.ReadAtLeastAsync(
+                    stream, buffer, buffer.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+                if (bytesRead < buffer.Length)
                 {
                     throw new IOException(SR.Format(SR.net_io_readfailure, SR.net_io_connectionclosed));
                 }
-
-                offset += bytesRead;
             }
             return buffer;
         }

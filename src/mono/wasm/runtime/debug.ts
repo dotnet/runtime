@@ -5,7 +5,6 @@ import { INTERNAL, Module, MONO, runtimeHelpers } from "./imports";
 import { toBase64StringImpl } from "./base64";
 import cwraps from "./cwraps";
 import { VoidPtr, CharPtr } from "./types/emscripten";
-
 const commands_received : any = new Map<number, CommandResponse>();
 const wasm_func_map = new Map<number, string>();
 commands_received.remove = function (key: number) : CommandResponse { const value = this.get(key); this.delete(key); return value;};
@@ -13,6 +12,8 @@ let _call_function_res_cache: any = {};
 let _next_call_function_res_id = 0;
 let _debugger_buffer_len = -1;
 let _debugger_buffer: VoidPtr;
+let _assembly_name_str: string; //keep this variable, it's used by BrowserDebugProxy
+let _entrypoint_method_token: number; //keep this variable, it's used by BrowserDebugProxy
 
 const regexes:any[] = [];
 
@@ -142,8 +143,35 @@ export function mono_wasm_raise_debug_event(event: WasmEvent, args = {}): void {
 
 // Used by the debugger to enumerate loaded dlls and pdbs
 export function mono_wasm_get_loaded_files(): string[] {
-    cwraps.mono_wasm_set_is_debugger_attached(true);
     return MONO.loaded_files;
+}
+
+export function mono_wasm_wait_for_debugger(): Promise<void> {
+    return new Promise<void>((resolve) => {
+        const interval = setInterval(() => {
+            if (runtimeHelpers.wait_for_debugger != 1) {
+                return;
+            }
+            clearInterval(interval);
+            resolve();
+        }, 100);
+    });
+}
+
+export function mono_wasm_debugger_attached(): void {
+    if (runtimeHelpers.wait_for_debugger == -1)
+        runtimeHelpers.wait_for_debugger = 1;
+    cwraps.mono_wasm_set_is_debugger_attached(true);
+}
+
+export function mono_wasm_set_entrypoint_breakpoint(assembly_name: CharPtr, entrypoint_method_token: number): void {
+    //keep these assignments, these values are used by BrowserDebugProxy
+    _assembly_name_str = Module.UTF8ToString(assembly_name).concat(".dll");
+    _entrypoint_method_token = entrypoint_method_token;
+    //keep this console.assert, otherwise optimization will remove the assigments
+    console.assert(true, `Adding an entrypoint breakpoint ${_assembly_name_str} at method token  ${_entrypoint_method_token}`);
+    // eslint-disable-next-line no-debugger
+    debugger;
 }
 
 function _create_proxy_from_object_id(objectId: string, details: any) {

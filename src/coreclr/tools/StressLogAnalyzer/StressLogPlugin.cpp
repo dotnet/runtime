@@ -591,7 +591,7 @@ void Usage()
     printf("\n");
     printf(" -l:<level1>,<level2>,... : print messages at dprint level1,level2,...\n");
     printf("\n");
-    printf(" -g:<gc_index>: only print messages occuring during GC#gc_index\n");
+    printf(" -g:<gc_index>: only print messages occurring during GC#gc_index\n");
     printf(" -g:<gc_index1>-<gc_index_2>: as above, for a range of GC indices\n");
     printf("\n");
     printf(" -f: print the raw format strings along with the message\n");
@@ -1226,7 +1226,22 @@ int ProcessStressLog(void* baseAddress, int argc, char* argv[])
     s_outputFileName = nullptr;
     s_fPrintFormatStrings = false;
     s_showAllMessages = false;
+    s_maxHeapNumberSeen = -1;
+    s_interestingStringCount = IS_INTERESTING;
+    s_levelFilterCount = 0;
+    s_gcFilterStart = 0;
+    s_gcFilterEnd = 0;
+    s_valueFilterCount = 0;
+    s_threadFilterCount = 0;
+    s_hadGcThreadFilters = false;
+    s_printHexTidForGcThreads = false;
+    s_facilityIgnore = 0;
+    s_printEarliestMessages = false;
+    s_printEarliestMessageFromThreadCount = 0;
+    memset(s_gcThreadFilter, 0, sizeof(s_gcThreadFilter));
     memset(&mapImageToStringId, 0, sizeof(mapImageToStringId));
+    memset(s_interestingStringFilter, 0, sizeof(s_interestingStringFilter));
+    memset(s_printEarliestMessageFromGcThread, 0, sizeof(s_printEarliestMessageFromGcThread));
 
     if (!ParseOptions(argc, argv))
         return 1;

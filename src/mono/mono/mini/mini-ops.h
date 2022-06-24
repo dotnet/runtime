@@ -93,7 +93,7 @@ MINI_OP(OP_RETHROW,	"rethrow", NONE, IREG, NONE)
 /*
  * Vararg calls are implemented as follows:
  * - the caller emits a hidden argument just before the varargs argument. this
- *   'signature cookie' argument contains the signature describing the the call.
+ *   'signature cookie' argument contains the signature describing the call.
  * - all implicit arguments are passed in memory right after the signature cookie, i.e.
  *   the stack will look like this:
  *   <argn>
@@ -1382,7 +1382,7 @@ MINI_OP(OP_AMD64_LOADI8_MEMINDEX,        "amd64_loadi8_memindex", IREG, IREG, IR
 MINI_OP(OP_AMD64_SAVE_SP_TO_LMF,         "amd64_save_sp_to_lmf", NONE, NONE, NONE)
 #endif
 
-#if  defined(TARGET_POWERPC)
+#if  defined(TARGET_POWERPC) || defined(TARGET_POWERPC64)
 MINI_OP(OP_PPC_SUBFIC,             "ppc_subfic", IREG, IREG, NONE)
 MINI_OP(OP_PPC_SUBFZE,             "ppc_subfze", IREG, IREG, NONE)
 MINI_OP(OP_PPC_CHECK_FINITE,       "ppc_check_finite", NONE, IREG, NONE)

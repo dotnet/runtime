@@ -84,8 +84,7 @@ namespace System.Threading
                     }
                 }
 
-                //CORERT: NativeOverlapped* pNativeOverlapped = (NativeOverlapped*)Interop.MemAlloc((UIntPtr)(sizeof(NativeOverlapped) + sizeof(GCHandle)));
-                NativeOverlapped* pNativeOverlapped = (NativeOverlapped*)Marshal.AllocHGlobal((IntPtr)(sizeof(NativeOverlapped) + sizeof(GCHandle)));
+                NativeOverlapped* pNativeOverlapped = (NativeOverlapped*)NativeMemory.Alloc((nuint)(sizeof(NativeOverlapped) + sizeof(GCHandle)));
 
                 *(GCHandle*)(pNativeOverlapped + 1) = default;
                 _pNativeOverlapped = pNativeOverlapped;
@@ -100,8 +99,10 @@ namespace System.Threading
 
                 success = true;
 #if FEATURE_PERFTRACING
+#if !(TARGET_BROWSER && !FEATURE_WASM_THREADS)
                 if (NativeRuntimeEventSource.Log.IsEnabled())
                     NativeRuntimeEventSource.Log.ThreadPoolIOPack(pNativeOverlapped);
+#endif
 #endif
                 return _pNativeOverlapped;
             }
@@ -138,8 +139,7 @@ namespace System.Threading
                 if (handle.IsAllocated)
                     handle.Free();
 
-                Marshal.FreeHGlobal((IntPtr)_pNativeOverlapped);
-                //CORERT: Interop.MemFree((IntPtr)_pNativeOverlapped);
+                NativeMemory.Free(_pNativeOverlapped);
                 _pNativeOverlapped = null;
             }
         }

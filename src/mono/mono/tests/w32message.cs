@@ -1,7 +1,7 @@
 //
 // This test merely creates a Win32Exception that triggers the
 // code in mono/io-layer/message.c that validates that the
-// error table is propertly sorted
+// error table is properly sorted
 using System;
 using System.ComponentModel;
 
@@ -19,7 +19,7 @@ class X {
 		}
 		return true;
 	}
-	
+
 	static int Main ()
 	{
 		//
@@ -39,5 +39,5 @@ class X {
 
 		return 0;
 	}
-	
+
 }

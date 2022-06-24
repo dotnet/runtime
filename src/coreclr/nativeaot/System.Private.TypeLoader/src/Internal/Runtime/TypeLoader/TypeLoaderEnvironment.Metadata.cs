@@ -417,7 +417,7 @@ namespace Internal.Runtime.TypeLoader
 
                     // what we have now is the base address of the non-gc statics of the type
                     // what we need is the cctor context, which is just before that
-                    ptr = ptr - sizeof(System.Runtime.CompilerServices.StaticClassConstructionContext);
+                    ptr -= sizeof(System.Runtime.CompilerServices.StaticClassConstructionContext);
 
                     return (IntPtr)ptr;
                 }
@@ -792,7 +792,7 @@ namespace Internal.Runtime.TypeLoader
             //      If there's a call to Foo<string>.Method1 and a call to Foo<object>.Method2, given that both
             //      of these instantiations share the same canonical form, Foo<__Canon> will have both method
             //      entries, and therefore Foo<string> and Foo<object> will have both entries too.
-            // For this reason, the entries that we write to the map in CoreRT will be based on the canonical form
+            // For this reason, the entries that we write to the map will be based on the canonical form
             // of the method's containing type instead of the open type definition.
             //
 

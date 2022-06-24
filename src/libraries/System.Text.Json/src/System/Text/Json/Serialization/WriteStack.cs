@@ -112,7 +112,7 @@ namespace System.Text.Json
         /// <summary>
         /// Indicates that the next converter is polymorphic and must serialize a type discriminator.
         /// </summary>
-        public string? PolymorphicTypeDiscriminator;
+        public object? PolymorphicTypeDiscriminator;
 
         /// <summary>
         /// Whether the current frame needs to write out any metadata.
@@ -158,7 +158,7 @@ namespace System.Text.Json
             SupportContinuation = supportContinuation;
             SupportAsync = supportAsync;
 
-            return jsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase;
+            return jsonTypeInfo.Converter;
         }
 
         /// <summary>

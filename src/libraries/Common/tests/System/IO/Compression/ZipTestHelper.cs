@@ -65,6 +65,17 @@ namespace System.IO.Compression.Tests
             }
         }
 
+        public static async Task<int> ReadAllBytesAsync(Stream stream, byte[] buffer, int offset, int count)
+        {
+            int bytesRead;
+            int totalRead = 0;
+            while ((bytesRead = await stream.ReadAsync(buffer, offset + totalRead, count - totalRead)) != 0)
+            {
+                totalRead += bytesRead;
+            }
+            return totalRead;
+        }
+
         public static int ReadAllBytes(Stream stream, byte[] buffer, int offset, int count)
         {
             int bytesRead;
@@ -100,6 +111,11 @@ namespace System.IO.Compression.Tests
             StreamsEqual(ast, bst, -1);
         }
 
+        public static async Task StreamsEqualAsync(Stream ast, Stream bst)
+        {
+            await StreamsEqualAsync(ast, bst, -1);
+        }
+
         public static void StreamsEqual(Stream ast, Stream bst, int blocksToRead)
         {
             if (ast.CanSeek)
@@ -122,8 +138,8 @@ namespace System.IO.Compression.Tests
                 if (blocksToRead != -1 && blocksRead >= blocksToRead)
                     break;
 
-                ac = ReadAllBytes(ast, ad, 0, 4096);
-                bc = ReadAllBytes(bst, bd, 0, 4096);
+                ac = ReadAllBytes(ast, ad, 0, bufSize);
+                bc = ReadAllBytes(bst, bd, 0, bufSize);
 
                 if (ac != bc)
                 {
@@ -133,7 +149,43 @@ namespace System.IO.Compression.Tests
                 Assert.True(ArraysEqual<byte>(ad, bd, ac), "Stream contents not equal: " + ast.ToString() + ", " + bst.ToString());
 
                 blocksRead++;
-            } while (ac == 4096);
+            } while (ac == bufSize);
+        }
+
+        public static async Task StreamsEqualAsync(Stream ast, Stream bst, int blocksToRead)
+        {
+            if (ast.CanSeek)
+                ast.Seek(0, SeekOrigin.Begin);
+            if (bst.CanSeek)
+                bst.Seek(0, SeekOrigin.Begin);
+
+            const int bufSize = 4096;
+            byte[] ad = new byte[bufSize];
+            byte[] bd = new byte[bufSize];
+
+            int ac = 0;
+            int bc = 0;
+
+            int blocksRead = 0;
+
+            //assume read doesn't do weird things
+            do
+            {
+                if (blocksToRead != -1 && blocksRead >= blocksToRead)
+                    break;
+
+                ac = await ReadAllBytesAsync(ast, ad, 0, bufSize);
+                bc = await ReadAllBytesAsync(bst, bd, 0, bufSize);
+
+                if (ac != bc)
+                {
+                    bd = NormalizeLineEndings(bd);
+                }
+
+                Assert.True(ArraysEqual<byte>(ad, bd, ac), "Stream contents not equal: " + ast.ToString() + ", " + bst.ToString());
+
+                blocksRead++;
+            } while (ac == bufSize);
         }
 
         public static async Task IsZipSameAsDirAsync(string archiveFile, string directory, ZipArchiveMode mode)

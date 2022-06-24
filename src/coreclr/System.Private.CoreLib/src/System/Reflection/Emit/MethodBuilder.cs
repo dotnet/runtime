@@ -309,7 +309,7 @@ namespace System.Reflection.Emit
         {
             if (m_ilGenerator != null)
             {
-                return m_ilGenerator.GetMaxStackSize() + ExceptionHandlerCount;
+                return m_ilGenerator.GetMaxStackSize();
             }
             else
             {
@@ -322,8 +322,6 @@ namespace System.Reflection.Emit
         {
             return m_exceptions;
         }
-
-        internal int ExceptionHandlerCount => m_exceptions != null ? m_exceptions.Length : 0;
 
         internal static int CalculateNumberOfExceptions(__ExceptionInfo[]? excp)
         {
@@ -552,7 +550,7 @@ namespace System.Reflection.Emit
             // will overflow the stack when there are many methods on the same type (10000 in my experiment).
             // The change also introduced race conditions. Before the code change GetToken is called from
             // the MethodBuilder .ctor which is protected by lock(ModuleBuilder.SyncRoot). Now it
-            // could be called more than once on the the same method introducing duplicate (invalid) tokens.
+            // could be called more than once on the same method introducing duplicate (invalid) tokens.
             // I don't fully understand this change. So I will keep the logic and only fix the recursion and
             // the race condition.
 

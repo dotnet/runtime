@@ -12,6 +12,11 @@
         <target state="translated">“MarshalAsAttribute” 中的 “SizeParamIndex” 值超出范围。</target>
         <note />
       </trans-unit>
+      <trans-unit id="BidirectionalMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
+        <target state="new">The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="CannotHaveMultipleMarshallingAttributesDescription">
         <source>The 'BlittableTypeAttribute' and 'NativeMarshallingAttribute' attributes are mutually exclusive.</source>
         <target state="translated">“BlittableTypeAttribute” 和 “NativeMarshallingAttribute” 属性是相互排斥的。</target>
@@ -92,6 +97,16 @@
         <target state="translated">此参数上提供的 “[In]” 和 “[Out]” 属性在此参数上不受支持。</target>
         <note />
       </trans-unit>
+      <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</source>
+        <target state="new">The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeStatic">
+        <source>The marshaller type '{0}' for managed type '{1}' must be static.</source>
+        <target state="new">The marshaller type '{0}' for managed type '{1}' must be static.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MarshallingBoolAsUndefinedNotSupported">
         <source>Marshalling bool without explicit marshalling information is not supported. Specify either 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
         <target state="translated">不支持在没有显式封送信息的情况下封送布尔值。请指定 “MarshalUsingAttribute” 或 “MarshalAsAttribute”。</target>
@@ -99,17 +114,17 @@
       </trans-unit>
       <trans-unit id="MarshallingCharAsSpecifiedStringMarshallingNotSupported">
         <source>Marshalling char with 'StringMarshalling.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</source>
-        <target state="new">Marshalling char with 'StringMarshalling.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</target>
+        <target state="translated">不支持使用 \"StringMarshalling.{0}\" 封送字符。请改用手动方式将字符类型转换为所需的字节表示形式，并传递到源生成的 P/Invoke。</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallingCharAsStringMarshallingCustomNotSupported">
         <source>Marshalling char with 'StringMarshalling.Custom' is not supported. To use a custom type marshaller, specify 'MarshalUsingAttribute'.</source>
-        <target state="new">Marshalling char with 'StringMarshalling.Custom' is not supported. To use a custom type marshaller, specify 'MarshalUsingAttribute'.</target>
+        <target state="translated">不支持使用 \"StringMarscharing.Custom\" 封送 char。若要使用自定义类型封送程序，请指定 \"MarshalUsingAttribute\"。</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallingStringOrCharAsUndefinedNotSupported">
         <source>Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
-        <target state="new">Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</target>
+        <target state="translated">不支持封送没有显式封送信息的字符串或字符。请指定 \"LibraryImportAttribute.StringMarshalling\"、 \"LibraryImportAttribute.StringMarshallingCustomType\"、\"MarshalUsingAttribute\" 或 \"MarshalAsAttribute\"。</target>
         <note />
       </trans-unit>
       <trans-unit id="NativeGenericTypeMustBeClosedOrMatchArityMessage">
@@ -128,8 +143,8 @@
         <note />
       </trans-unit>
       <trans-unit id="RuntimeMarshallingMustBeDisabled">
-        <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.InteropServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
-        <target state="translated">必须通过将 “System.Runtime.InteropServices.DisableRuntimeMarshallingAttribute” 应用到程序集来在此项目中禁用运行时封送，以启用此类型的封送处理。</target>
+        <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
+        <target state="translated">必须通过将 \"System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute\" 应用到程序集来在此项目中禁用运行时封送，以启用此类型的封送处理。</target>
         <note />
       </trans-unit>
       <trans-unit id="SafeHandleByRefMustBeConcrete">
@@ -142,9 +157,14 @@
         <target state="translated">源生成的 P/Invoke 不支持指定的类型</target>
         <note />
       </trans-unit>
+      <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
+        <target state="new">The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorMessage">
         <source>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a one-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</source>
-        <target state="new">The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a one-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</target>
+        <target state="translated">类型 \"{0}\" 指定它支持使用 \"CallerAllocatedBuffer\" 功能对 \"{1}\" 进行 \"In\" 封送，但不提供以 \"{1}\" 和“非管理”类型的 \"Span\" 作为参数的单参数构造函数</target>
         <note />
       </trans-unit>
     </body>

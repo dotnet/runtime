@@ -64,7 +64,7 @@ namespace System.Runtime.InteropServices
             _fullyInitialized = true;
         }
 
-#if !NATIVEAOT // CoreRT doesn't correctly support CriticalFinalizerObject
+#if !NATIVEAOT // NativeAOT doesn't correctly support CriticalFinalizerObject
         ~SafeHandle()
         {
             if (_fullyInitialized)

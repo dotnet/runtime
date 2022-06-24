@@ -513,9 +513,8 @@ namespace System.Data
 
             for (XmlNode? n = parentElement.FirstChild; n != null; n = n.NextSibling)
             {
-                if (n is XmlElement)
+                if (n is XmlElement e)
                 {
-                    XmlElement e = (XmlElement)n;
                     object? schema = _nodeToSchemaMap!.GetSchemaForNode(e, FIgnoreNamespace(e));
 
                     if (schema != null && schema is DataTable)
@@ -1071,7 +1070,7 @@ namespace System.Data
                     // Check all columns
                     c = collection[i];                      // Get column for this index
 
-                    c[row._tempRecord] = null != foundColumns[i] ? foundColumns[i] : DBNull.Value;
+                    c[row._tempRecord] = foundColumns[i] ?? DBNull.Value;
                     // Set column to loaded value of to
                     // DBNull if value is missing.
                 }

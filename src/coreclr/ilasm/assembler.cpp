@@ -992,7 +992,7 @@ BOOL Assembler::EmitField(FieldDescriptor* pFD)
             }
         }
         //--------------------------------------------------------------------------------
-        // Set the the RVA to a dummy value.  later it will be fixed
+        // Set the RVA to a dummy value.  later it will be fixed
         // up to be something correct, but if we don't emit something
         // the size of the meta-data will not be correct
         if (pFD->m_rvaLabel)
