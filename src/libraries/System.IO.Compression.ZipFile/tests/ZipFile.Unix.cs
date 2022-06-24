@@ -100,7 +100,7 @@ namespace System.IO.Compression.Tests
                 string filename = Path.Combine(folderPath, $"{permissions}.txt");
                 File.WriteAllText(filename, "contents");
 
-                Assert.Equal(0, Interop.Sys.ChMod(filename, Convert.ToInt32(permissions, 8)));
+                File.SetUnixFileMode(filename, (UnixFileMode)Convert.ToInt32(permissions, 8));
 
                 // In some environments, the file mode may be modified by the OS.
                 // See the Rationale section of https://linux.die.net/man/3/chmod.

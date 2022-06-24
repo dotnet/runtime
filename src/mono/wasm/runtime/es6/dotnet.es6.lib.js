@@ -25,7 +25,7 @@ const DotnetSupportLib = {
 let __dotnet_replacement_PThread_loadWasmModuleToWorker = ${usePThreads} ? PThread.loadWasmModuleToWorker : null;
 let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require, updateGlobalBufferAndViews, loadWasmModuleToWorker: __dotnet_replacement_PThread_loadWasmModuleToWorker};
 if (ENVIRONMENT_IS_NODE) {
-    __dotnet_replacements.requirePromise = import('module').then(mod => {
+    __dotnet_replacements.requirePromise = import(/* webpackIgnore: true */'module').then(mod => {
         const require = mod.createRequire(import.meta.url);
         const path = require('path');
         const url = require('url');
@@ -58,7 +58,7 @@ if (ENVIRONMENT_IS_NODE) {
     }
 }
 let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
-    { isESM:true, isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, isPThread:${isPThread}, locateFile, quit_, ExitStatus, requirePromise:__dotnet_replacements.requirePromise },
+    { isESM:true, isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isWorker:ENVIRONMENT_IS_WORKER, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, isPThread:${isPThread}, locateFile, quit_, ExitStatus, requirePromise:__dotnet_replacements.requirePromise },
     { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
     __dotnet_replacements);
 updateGlobalBufferAndViews = __dotnet_replacements.updateGlobalBufferAndViews;

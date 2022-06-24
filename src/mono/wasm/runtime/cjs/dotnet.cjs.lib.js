@@ -21,7 +21,7 @@ const DotnetSupportLib = {
 let __dotnet_replacement_PThread_loadWasmModuleToWorker = ${usePThreads} ? PThread.loadWasmModuleToWorker : null;
 let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require, updateGlobalBufferAndViews, loadWasmModuleToWorker: __dotnet_replacement_PThread_loadWasmModuleToWorker};
 let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
-    { isESM:false, isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, isPThread:${isPThread}, locateFile, quit_, ExitStatus, requirePromise:Promise.resolve(require)},
+    { isESM:false, isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isWorker:ENVIRONMENT_IS_WORKER, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, isPThread:${isPThread}, locateFile, quit_, ExitStatus, requirePromise:Promise.resolve(require)},
     { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
     __dotnet_replacements);
 updateGlobalBufferAndViews = __dotnet_replacements.updateGlobalBufferAndViews;

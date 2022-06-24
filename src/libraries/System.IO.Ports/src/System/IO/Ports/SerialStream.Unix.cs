@@ -950,8 +950,7 @@ namespace System.IO.Ports
                         Signals changed = current ^ lastSignals;
                         if (changed != Signals.None)
                         {
-                            SerialPinChange pinChanged = SignalsToPinChanges(changed);
-                            RaisePinChanged(pinChanged);
+                            NotifyPinChanges(changed);
                         }
                     }
 
@@ -962,23 +961,27 @@ namespace System.IO.Ports
             }
         }
 
-        private static SerialPinChange SignalsToPinChanges(Signals signals)
+        private void NotifyPinChanges(Signals signals)
         {
-            SerialPinChange pinChanges = default;
-
             if (signals.HasFlag(Signals.SignalCts))
-                pinChanges |= SerialPinChange.CtsChanged;
+            {
+                RaisePinChanged(SerialPinChange.CtsChanged);
+            }
 
             if (signals.HasFlag(Signals.SignalDsr))
-                pinChanges |= SerialPinChange.DsrChanged;
+            {
+                RaisePinChanged(SerialPinChange.DsrChanged);
+            }
 
             if (signals.HasFlag(Signals.SignalDcd))
-                pinChanges |= SerialPinChange.CDChanged;
+            {
+                RaisePinChanged(SerialPinChange.CDChanged);
+            }
 
             if (signals.HasFlag(Signals.SignalRng))
-                pinChanges |= SerialPinChange.Ring;
-
-            return pinChanges;
+            {
+                RaisePinChanged(SerialPinChange.Ring);
+            }
         }
 
         private static CancellationTokenSource GetCancellationTokenSourceFromTimeout(int timeoutMs)

@@ -735,6 +735,12 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 
     unsigned argCount = CountArgs();
 
+    // Previous argument with GTF_EXCEPT
+    GenTree* prevExceptionTree = nullptr;
+    // Exceptions previous tree with GTF_EXCEPT may throw (computed lazily, may
+    // be empty)
+    ExceptionSetFlags prevExceptionFlags = ExceptionSetFlags::None;
+
     for (CallArg& arg : Args())
     {
         GenTree* argx = arg.GetEarlyNode();
@@ -828,6 +834,8 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
         }
 
         bool treatLikeCall = ((argx->gtFlags & GTF_CALL) != 0);
+
+        ExceptionSetFlags exceptionFlags = ExceptionSetFlags::None;
 #if FEATURE_FIXED_OUT_ARGS
         // Like calls, if this argument has a tree that will do an inline throw,
         // a call to a jit helper, then we need to treat it like a call (but only
@@ -836,32 +844,35 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
         // conservative, but I want to avoid as much special-case debug-only code
         // as possible, so leveraging the GTF_CALL flag is the easiest.
         //
-        if (!treatLikeCall && (argx->gtFlags & GTF_EXCEPT) && (argCount > 1) && comp->opts.compDbgCode &&
-            (comp->fgWalkTreePre(&argx, Compiler::fgChkThrowCB) == Compiler::WALK_ABORT))
+        if (!treatLikeCall && (argx->gtFlags & GTF_EXCEPT) && (argCount > 1) && comp->opts.compDbgCode)
         {
-            for (CallArg& otherArg : Args())
+            exceptionFlags = comp->gtCollectExceptions(argx);
+            if ((exceptionFlags & (ExceptionSetFlags::IndexOutOfRangeException |
+                                   ExceptionSetFlags::OverflowException)) != ExceptionSetFlags::None)
             {
-                if (&otherArg == &arg)
+                for (CallArg& otherArg : Args())
                 {
-                    continue;
-                }
+                    if (&otherArg == &arg)
+                    {
+                        continue;
+                    }
 
-                if (otherArg.AbiInfo.GetRegNum() == REG_STK)
-                {
-                    treatLikeCall = true;
-                    break;
+                    if (otherArg.AbiInfo.GetRegNum() == REG_STK)
+                    {
+                        treatLikeCall = true;
+                        break;
+                    }
                 }
             }
         }
 #endif // FEATURE_FIXED_OUT_ARGS
 
-        /* If it contains a call (GTF_CALL) then itself and everything before the call
-           with a GLOB_EFFECT must eval to temp (this is because everything with SIDE_EFFECT
-           has to be kept in the right order since we will move the call to the first position)
+        // If it contains a call (GTF_CALL) then itself and everything before the call
+        // with a GLOB_EFFECT must eval to temp (this is because everything with SIDE_EFFECT
+        // has to be kept in the right order since we will move the call to the first position)
 
-           For calls we don't have to be quite as conservative as we are with an assignment
-           since the call won't be modifying any non-address taken LclVars.
-         */
+        // For calls we don't have to be quite as conservative as we are with an assignment
+        // since the call won't be modifying any non-address taken LclVars.
 
         if (treatLikeCall)
         {
@@ -917,6 +928,64 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 #endif
             }
         }
+        else if ((argx->gtFlags & GTF_EXCEPT) != 0)
+        {
+            // If a previous arg may throw a different exception than this arg
+            // then we evaluate all previous arguments with GTF_EXCEPT to temps
+            // to avoid reordering them in our sort later.
+            if (prevExceptionTree != nullptr)
+            {
+                if (prevExceptionFlags == ExceptionSetFlags::None)
+                {
+                    prevExceptionFlags = comp->gtCollectExceptions(prevExceptionTree);
+                }
+
+                if (exceptionFlags == ExceptionSetFlags::None)
+                {
+                    exceptionFlags = comp->gtCollectExceptions(argx);
+                }
+
+                bool exactlyOne       = isPow2(static_cast<unsigned>(exceptionFlags));
+                bool throwsSameAsPrev = exactlyOne && (exceptionFlags == prevExceptionFlags);
+                if (!throwsSameAsPrev)
+                {
+                    JITDUMP("Exception set for arg [%06u] interferes with previous tree [%06u]; must evaluate previous "
+                            "trees with exceptions to temps\n",
+                            Compiler::dspTreeID(argx), Compiler::dspTreeID(prevExceptionTree));
+
+                    for (CallArg& prevArg : Args())
+                    {
+                        if (&prevArg == &arg)
+                        {
+                            break;
+                        }
+
+#if !FEATURE_FIXED_OUT_ARGS
+                        if (prevArg.AbiInfo.GetRegNum() == REG_STK)
+                        {
+                            // All stack args are already evaluated and placed in order
+                            // in this case.
+                            break;
+                        }
+#endif
+                        // Invariant here is that all nodes that were not
+                        // already evaluated into temps and that throw can only
+                        // be throwing the same single exception as the
+                        // previous tree, so all of them interfere in the same
+                        // way with the current arg and must be evaluated
+                        // early.
+                        if ((prevArg.GetEarlyNode() != nullptr) &&
+                            ((prevArg.GetEarlyNode()->gtFlags & GTF_EXCEPT) != 0))
+                        {
+                            SetNeedsTemp(&prevArg);
+                        }
+                    }
+                }
+            }
+
+            prevExceptionTree  = argx;
+            prevExceptionFlags = exceptionFlags;
+        }
 
 #if FEATURE_MULTIREG_ARGS
         // For RyuJIT backend we will expand a Multireg arg into a GT_FIELD_LIST
@@ -929,76 +998,78 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
         bool isMultiRegArg = (arg.AbiInfo.NumRegs > 1);
 #endif
 
-        if (varTypeIsStruct(argx->TypeGet()) && !arg.m_needTmp)
+        if (varTypeIsStruct(argx) && !arg.m_needTmp)
         {
-            if (isMultiRegArg && ((argx->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0))
+            if (isMultiRegArg)
             {
-                // Spill multireg struct arguments that have Assignments or Calls embedded in them
-                SetNeedsTemp(&arg);
-            }
-            else
-            {
-                // We call gtPrepareCost to measure the cost of evaluating this tree
-                comp->gtPrepareCost(argx);
+                if ((argx->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0)
+                {
+                    // Spill multireg struct arguments that have Assignments or Calls embedded in them.
+                    SetNeedsTemp(&arg);
+                }
+                else if (!argx->OperIsLocalRead() && !argx->OperIsIndir())
+                {
+                    // TODO-CQ: handle HWI/SIMD/COMMA nodes in multi-reg morphing.
+                    SetNeedsTemp(&arg);
+                }
+                else
+                {
+                    // Finally, we call gtPrepareCost to measure the cost of evaluating this tree.
+                    comp->gtPrepareCost(argx);
 
-                if (isMultiRegArg && (argx->GetCostEx() > (6 * IND_COST_EX)))
-                {
-                    // Spill multireg struct arguments that are expensive to evaluate twice
-                    SetNeedsTemp(&arg);
-                }
-#if defined(FEATURE_SIMD) && defined(TARGET_ARM64)
-                else if (isMultiRegArg && varTypeIsSIMD(argx) && (argx->OperIsSimdOrHWintrinsic() || argx->IsCnsVec()))
-                {
-                    // Multi-reg morphing does not handle these SIMD nodes.
-                    SetNeedsTemp(&arg);
-                }
-#endif
-#ifndef TARGET_ARM
-                // TODO-Arm: This optimization is not implemented for ARM32
-                // so we skip this for ARM32 until it is ported to use RyuJIT backend
-                //
-                else if (argx->OperGet() == GT_OBJ)
-                {
-                    GenTreeObj* argObj     = argx->AsObj();
-                    unsigned    structSize = argObj->GetLayout()->GetSize();
-                    switch (structSize)
+                    if (argx->GetCostEx() > (6 * IND_COST_EX))
                     {
-                        case 3:
-                        case 5:
-                        case 6:
-                        case 7:
-                            // If we have a stack based LclVar we can perform a wider read of 4 or 8 bytes
-                            //
-                            if (argObj->AsObj()->gtOp1->IsLocalAddrExpr() == nullptr) // Is the source not a LclVar?
-                            {
-                                // If we don't have a LclVar we need to read exactly 3,5,6 or 7 bytes
-                                // For now we use a GT_CPBLK to copy the exact size into a GT_LCL_VAR temp.
-                                //
-                                SetNeedsTemp(&arg);
-                            }
-                            break;
-                        case 11:
-                        case 13:
-                        case 14:
-                        case 15:
-                            // Spill any GT_OBJ multireg structs that are difficult to extract
-                            //
-                            // When we have a GT_OBJ of a struct with the above sizes we would need
-                            // to use 3 or 4 load instructions to load the exact size of this struct.
-                            // Instead we spill the GT_OBJ into a new GT_LCL_VAR temp and this sequence
-                            // will use a GT_CPBLK to copy the exact size into the GT_LCL_VAR temp.
-                            // Then we can just load all 16 bytes of the GT_LCL_VAR temp when passing
-                            // the argument.
-                            //
-                            SetNeedsTemp(&arg);
-                            break;
-
-                        default:
-                            break;
+                        // Spill multireg struct arguments that are expensive to evaluate twice.
+                        SetNeedsTemp(&arg);
                     }
                 }
-#endif // !TARGET_ARM
             }
+
+#ifndef TARGET_ARM
+            // TODO-Arm: This optimization is not implemented for ARM32
+            // so we skip this for ARM32 until it is ported to use RyuJIT backend
+            //
+            if (argx->OperGet() == GT_OBJ)
+            {
+                GenTreeObj* argObj     = argx->AsObj();
+                unsigned    structSize = argObj->GetLayout()->GetSize();
+                switch (structSize)
+                {
+                    case 3:
+                    case 5:
+                    case 6:
+                    case 7:
+                        // If we have a stack based LclVar we can perform a wider read of 4 or 8 bytes
+                        //
+                        if (argObj->AsObj()->gtOp1->IsLocalAddrExpr() == nullptr) // Is the source not a LclVar?
+                        {
+                            // If we don't have a LclVar we need to read exactly 3,5,6 or 7 bytes
+                            // For now we use a GT_CPBLK to copy the exact size into a GT_LCL_VAR temp.
+                            //
+                            SetNeedsTemp(&arg);
+                        }
+                        break;
+                    case 11:
+                    case 13:
+                    case 14:
+                    case 15:
+                        // Spill any GT_OBJ multireg structs that are difficult to extract
+                        //
+                        // When we have a GT_OBJ of a struct with the above sizes we would need
+                        // to use 3 or 4 load instructions to load the exact size of this struct.
+                        // Instead we spill the GT_OBJ into a new GT_LCL_VAR temp and this sequence
+                        // will use a GT_CPBLK to copy the exact size into the GT_LCL_VAR temp.
+                        // Then we can just load all 16 bytes of the GT_LCL_VAR temp when passing
+                        // the argument.
+                        //
+                        SetNeedsTemp(&arg);
+                        break;
+
+                    default:
+                        break;
+                }
+            }
+#endif // !TARGET_ARM
         }
 #endif // FEATURE_MULTIREG_ARGS
     }
@@ -1121,12 +1192,7 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
 {
     assert(m_argsComplete);
 
-#ifdef DEBUG
-    if (comp->verbose)
-    {
-        printf("\nSorting the arguments:\n");
-    }
-#endif
+    JITDUMP("\nSorting the arguments:\n");
 
     // Shuffle the arguments around before we build the late args list. The
     // idea is to move all "simple" arguments like constants and local vars to
@@ -1300,7 +1366,8 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
                 GenTree* argx = arg->GetEarlyNode();
                 assert(argx != nullptr);
 
-                if ((argx->gtOper == GT_LCL_VAR) || (argx->gtOper == GT_LCL_FLD))
+                // As a CQ heuristic, sort TYP_STRUCT args using the cost estimation below.
+                if (!argx->TypeIs(TYP_STRUCT) && argx->OperIs(GT_LCL_VAR, GT_LCL_FLD))
                 {
                     noway_assert(curInx <= endTab);
 
@@ -1346,9 +1413,8 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
                 assert(argx != nullptr);
 
                 // We should have already handled these kinds of args
-                assert(argx->gtOper != GT_LCL_VAR);
-                assert(argx->gtOper != GT_LCL_FLD);
-                assert(argx->gtOper != GT_CNS_INT);
+                assert((!argx->OperIs(GT_LCL_VAR, GT_LCL_FLD) || argx->TypeIs(TYP_STRUCT)) &&
+                       !argx->OperIs(GT_CNS_INT));
 
                 // This arg should either have no persistent side effects or be the last one in our table
                 // assert(((argx->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0) || (curInx == (argCount-1)));
@@ -1780,7 +1846,7 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
 #ifdef DEBUG
     if (comp->verbose)
     {
-        printf("\nShuffled argument table:    ");
+        printf("\nRegister placement order:    ");
         for (CallArg& arg : LateArgs())
         {
             if (arg.AbiInfo.GetRegNum() != REG_STK)
@@ -3197,6 +3263,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                 // - This is irrelevant for X86, since structs are always passed by value on the stack.
 
                 GenTree* lclVar       = fgIsIndirOfAddrOfLocal(argObj);
+                bool     argIsLocal   = (lclVar != nullptr) || argObj->OperIsLocalRead();
                 bool     canTransform = false;
 
                 if (structBaseType != TYP_STRUCT)
@@ -3214,7 +3281,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     // or UNIX_AMD64_ABI cases where they will be passed in registers.
                     else
                     {
-                        canTransform = (lclVar != nullptr);
+                        canTransform = argIsLocal;
                         passingSize  = genTypeSize(structBaseType);
                     }
 #endif //  TARGET_ARM64 || UNIX_AMD64_ABI || TARGET_LOONGARCH64
@@ -3244,7 +3311,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                                 makeOutArgCopy = true;
                             }
                         }
-                        else if (lclVar == nullptr)
+                        else if (!argIsLocal)
                         {
                             // This should only be the case of a value directly producing a known struct type.
                             assert(argObj->TypeGet() != TYP_STRUCT);
@@ -3689,7 +3756,7 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
 GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
 {
     GenTree* argNode = arg->GetNode();
-    assert(varTypeIsStruct(argNode->TypeGet()));
+    assert(varTypeIsStruct(argNode));
 
 #if !defined(TARGET_ARMARCH) && !defined(UNIX_AMD64_ABI) && !defined(TARGET_LOONGARCH64)
     NYI("fgMorphMultiregStructArg requires implementation for this target");
@@ -3722,9 +3789,10 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
             {
                 argNode = fgMorphLclArgToFieldlist(lcl);
             }
+#ifndef TARGET_XARCH
             else if (argNode->TypeGet() == TYP_STRUCT)
             {
-                // If this is a non-register struct, it must be referenced from memory.
+                // ARM/ARM64/LoongArch64 backends do not support local nodes as sources of some stack args.
                 if (!actualArg->OperIs(GT_OBJ))
                 {
                     // Create an Obj of the temp to use it as a call argument.
@@ -3732,8 +3800,9 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
                     argNode = gtNewObjNode(lvaGetStruct(lcl->GetLclNum()), argNode);
                 }
                 // Its fields will need to be accessed by address.
-                lvaSetVarDoNotEnregister(lcl->GetLclNum() DEBUG_ARG(DoNotEnregisterReason::IsStructArg));
+                lvaSetVarDoNotEnregister(lcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::IsStructArg));
             }
+#endif // !TARGET_XARCH
         }
 
         return argNode;
@@ -13856,40 +13925,34 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
             }
 #endif
 
-            case NI_Vector128_Create:
-#if defined(TARGET_XARCH)
-            case NI_Vector256_Create:
-#elif defined(TARGET_ARMARCH)
-            case NI_Vector64_Create:
-#endif
-            {
-                bool hwAllArgsAreConst = true;
-                for (GenTree** use : multiOp->UseEdges())
-                {
-                    if (!(*use)->OperIsConst())
-                    {
-                        hwAllArgsAreConst = false;
-                        break;
-                    }
-                }
-
-                // Avoid unexpected CSE for constant arguments for Vector_.Create
-                // but only if all arguments are constants.
-                if (hwAllArgsAreConst)
-                {
-                    for (GenTree** use : multiOp->UseEdges())
-                    {
-                        (*use)->SetDoNotCSE();
-                    }
-                }
-            }
-            break;
-
             default:
                 break;
         }
     }
 #endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+
+    if (opts.OptimizationEnabled() && multiOp->IsVectorCreate())
+    {
+        bool allArgsAreConst = true;
+        for (GenTree* arg : multiOp->Operands())
+        {
+            if (!arg->OperIsConst())
+            {
+                allArgsAreConst = false;
+                break;
+            }
+        }
+
+        // Avoid unexpected CSE for constant arguments for Vector_.Create
+        // but only if all arguments are constants.
+        if (allArgsAreConst)
+        {
+            for (GenTree* arg : multiOp->Operands())
+            {
+                arg->SetDoNotCSE();
+            }
+        }
+    }
 
 #ifdef FEATURE_HW_INTRINSICS
     if (multiOp->OperIsHWIntrinsic() && !optValnumCSE_phase)

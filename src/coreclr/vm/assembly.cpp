@@ -993,8 +993,7 @@ Module *Assembly::FindModuleByName(LPCSTR pszModuleName)
     SString moduleName(SString::Utf8, pszModuleName);
     moduleName.LowerCase();
 
-    StackScratchBuffer buffer;
-    pszModuleName = moduleName.GetUTF8(buffer);
+    pszModuleName = moduleName.GetUTF8();
 
     mdFile kFile = GetManifestFileToken(pszModuleName);
     if (kFile == mdTokenNil)

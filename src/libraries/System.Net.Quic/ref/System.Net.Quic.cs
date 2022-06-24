@@ -34,7 +34,7 @@ namespace System.Net.Quic
     }
     public partial class QuicConnectionAbortedException : System.Net.Quic.QuicException
     {
-        public QuicConnectionAbortedException(string message, long errorCode) : base (default(string)) { }
+        public QuicConnectionAbortedException(string message, long errorCode) : base(default(string)) { }
         public long ErrorCode { get { throw null; } }
     }
     public partial class QuicException : System.Exception
@@ -61,7 +61,7 @@ namespace System.Net.Quic
     }
     public partial class QuicOperationAbortedException : System.Net.Quic.QuicException
     {
-        public QuicOperationAbortedException(string message) : base (default(string)) { }
+        public QuicOperationAbortedException(string message) : base(default(string)) { }
     }
     public partial class QuicOptions
     {
@@ -109,13 +109,11 @@ namespace System.Net.Quic
         public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, bool endStream, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<System.ReadOnlyMemory<byte>> buffers, bool endStream, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<System.ReadOnlyMemory<byte>> buffers, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override void WriteByte(byte value) { }
     }
     public partial class QuicStreamAbortedException : System.Net.Quic.QuicException
     {
-        public QuicStreamAbortedException(string message, long errorCode) : base (default(string)) { }
+        public QuicStreamAbortedException(string message, long errorCode) : base(default(string)) { }
         public long ErrorCode { get { throw null; } }
     }
 }

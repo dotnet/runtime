@@ -1,41 +1,38 @@
-function wasm_exit(exit_code) {
+import { createDotnetRuntime } from "./dotnet.js";
+
+function wasm_exit(exit_code, reason) {
     /* Set result in a tests_done element, to be read by xharness in runonly CI test */
     const tests_done_elem = document.createElement("label");
     tests_done_elem.id = "tests_done";
     tests_done_elem.innerHTML = exit_code.toString();
+    if (exit_code) tests_done_elem.style.background = "red";
     document.body.appendChild(tests_done_elem);
 
+    if (reason) console.error(reason);
     console.log(`WASM EXIT ${exit_code}`);
 }
 
-function Uint8ToString(u8a){
+function Uint8ToString(u8a) {
     var CHUNK_SZ = 0x8000;
     var c = [];
-    for (var i=0; i < u8a.length; i+=CHUNK_SZ) {
-        c.push(String.fromCharCode.apply(null, u8a.subarray(i, i+CHUNK_SZ)));
+    for (var i = 0; i < u8a.length; i += CHUNK_SZ) {
+        c.push(String.fromCharCode.apply(null, u8a.subarray(i, i + CHUNK_SZ)));
     }
     return c.join("");
 }
 
-async function loadRuntime() {
-    globalThis.exports = {};
-    await import("./dotnet.js");
-    return globalThis.exports.createDotnetRuntime;
-}
-
 async function main() {
-    const createDotnetRuntime = await loadRuntime();
-        const { MONO, BINDING, Module, RuntimeBuildInfo } = await createDotnetRuntime(() => {
-            console.log('user code in createDotnetRuntime')
-            return {
-                disableDotnet6Compatibility: true,
-                configSrc: "./mono-config.json",
-                preInit: () => { console.log('user code Module.preInit') },
-                preRun: () => { console.log('user code Module.preRun') },
-                onRuntimeInitialized: () => { console.log('user code Module.onRuntimeInitialized') },
-                postRun: () => { console.log('user code Module.postRun') },
-            }
-        });
+    const { MONO, BINDING, Module, RuntimeBuildInfo } = await createDotnetRuntime(() => {
+        console.log('user code in createDotnetRuntime')
+        return {
+            disableDotnet6Compatibility: true,
+            configSrc: "./mono-config.json",
+            preInit: () => { console.log('user code Module.preInit') },
+            preRun: () => { console.log('user code Module.preRun') },
+            onRuntimeInitialized: () => { console.log('user code Module.onRuntimeInitialized') },
+            postRun: () => { console.log('user code Module.postRun') },
+        }
+    });
     globalThis.__Module = Module;
     globalThis.MONO = MONO;
     console.log('after createDotnetRuntime')
@@ -58,8 +55,8 @@ async function main() {
         var bits = btoa((Uint8ToString(b)));
 
         window.open("data:application/octet-stream;base64," + bits);
-        
-        wasm_exit(2);
+
+        wasm_exit(2, err);
     }
 }
 
