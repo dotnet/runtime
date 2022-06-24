@@ -30,16 +30,16 @@ namespace ILLink.Shared.TrimAnalysis
     {
         private readonly TypeAnnotationsHashtable _hashtable;
         private readonly Logger _logger;
-        private readonly CompilerGeneratedState _compilerGeneratedState;
 
         public ILProvider ILProvider { get; }
+        public CompilerGeneratedState CompilerGeneratedState { get; }
 
         public FlowAnnotations(Logger logger, ILProvider ilProvider, CompilerGeneratedState compilerGeneratedState)
         {
-            _hashtable = new TypeAnnotationsHashtable(logger, ilProvider);
+            _hashtable = new TypeAnnotationsHashtable(logger, ilProvider, compilerGeneratedState);
             _logger = logger;
             ILProvider = ilProvider;
-            _compilerGeneratedState = compilerGeneratedState;
+            CompilerGeneratedState = compilerGeneratedState;
         }
 
         public bool RequiresDataflowAnalysis(MethodDesc method)

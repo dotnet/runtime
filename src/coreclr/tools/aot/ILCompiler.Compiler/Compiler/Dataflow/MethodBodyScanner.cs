@@ -325,7 +325,7 @@ namespace ILCompiler.Dataflow
 #if DEBUG
             // Validate that the compiler-generated callees tracked by the compiler-generated state
             // are the same set of methods that we discovered and scanned above.
-            if (_context.CompilerGeneratedState.TryGetCompilerGeneratedCalleesForUserMethod(methodBody.Method, out List<IMemberDefinition>? compilerGeneratedCallees))
+            if (_annotations.CompilerGeneratedState.TryGetCompilerGeneratedCalleesForUserMethod(methodBody.OwningMethod, out List<TypeSystemEntity>? compilerGeneratedCallees))
             {
                 var calleeMethods = compilerGeneratedCallees.OfType<MethodDesc>();
                 Debug.Assert(methodsInGroup.Count() == 1 + calleeMethods.Count());

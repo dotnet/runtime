@@ -15,12 +15,17 @@ using ILLink.Shared;
 
 using ILSequencePoint = Internal.IL.ILSequencePoint;
 using MethodIL = Internal.IL.MethodIL;
+using System.Diagnostics.Metrics;
+using System.Diagnostics;
+using System.Reflection;
+using Internal.IL;
 
 namespace ILCompiler
 {
     public class Logger
     {
         private readonly ILogWriter _logWriter;
+        private readonly CompilerGeneratedState _compilerGeneratedState;
 
         private readonly HashSet<int> _suppressedWarnings;
 
@@ -30,13 +35,21 @@ namespace ILCompiler
         private readonly HashSet<string> _trimWarnedAssemblies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _aotWarnedAssemblies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        public static Logger Null = new Logger(new TextLogWriter(TextWriter.Null), false);
+        public static Logger Null = new Logger(new TextLogWriter(TextWriter.Null), null, false);
 
         public bool IsVerbose { get; }
 
-        public Logger(ILogWriter writer, bool isVerbose, IEnumerable<int> suppressedWarnings, bool singleWarn, IEnumerable<string> singleWarnEnabledModules, IEnumerable<string> singleWarnDisabledModules)
+        public Logger(
+            ILogWriter writer,
+            CompilerGeneratedState compilerGeneratedState,
+            bool isVerbose,
+            IEnumerable<int> suppressedWarnings,
+            bool singleWarn,
+            IEnumerable<string> singleWarnEnabledModules,
+            IEnumerable<string> singleWarnDisabledModules)
         {
             _logWriter = writer;
+            _compilerGeneratedState = compilerGeneratedState;
             IsVerbose = isVerbose;
             _suppressedWarnings = new HashSet<int>(suppressedWarnings);
             _isSingleWarn = singleWarn;
@@ -44,18 +57,18 @@ namespace ILCompiler
             _singleWarnDisabledAssemblies = new HashSet<string>(singleWarnDisabledModules, StringComparer.OrdinalIgnoreCase);
         }
 
-        public Logger(TextWriter writer, bool isVerbose, IEnumerable<int> suppressedWarnings, bool singleWarn, IEnumerable<string> singleWarnEnabledModules, IEnumerable<string> singleWarnDisabledModules)
-            : this(new TextLogWriter(writer), isVerbose, suppressedWarnings, singleWarn, singleWarnEnabledModules, singleWarnDisabledModules)
+        public Logger(TextWriter writer, CompilerGeneratedState compilerGeneratedState, bool isVerbose, IEnumerable<int> suppressedWarnings, bool singleWarn, IEnumerable<string> singleWarnEnabledModules, IEnumerable<string> singleWarnDisabledModules)
+            : this(new TextLogWriter(writer), compilerGeneratedState, isVerbose, suppressedWarnings, singleWarn, singleWarnEnabledModules, singleWarnDisabledModules)
         {
         }
 
-        public Logger(ILogWriter writer, bool isVerbose)
-            : this(writer, isVerbose, Array.Empty<int>(), singleWarn: false, Array.Empty<string>(), Array.Empty<string>())
+        public Logger(ILogWriter writer, CompilerGeneratedState compilerGeneratedState, bool isVerbose)
+            : this(writer, compilerGeneratedState, isVerbose, Array.Empty<int>(), singleWarn: false, Array.Empty<string>(), Array.Empty<string>())
         {
         }
 
-        public Logger(TextWriter writer, bool isVerbose)
-            : this(new TextLogWriter(writer), isVerbose)
+        public Logger(TextWriter writer, CompilerGeneratedState compilerGeneratedState, bool isVerbose)
+            : this(new TextLogWriter(writer), compilerGeneratedState, isVerbose)
         {
         }
 
@@ -140,20 +153,57 @@ namespace ILCompiler
             if (_suppressedWarnings.Contains(code))
                 return true;
 
-            IEnumerable<CustomAttributeValue<TypeDesc>> suppressions = null;
-
             // TODO: Suppressions with different scopes
 
-            if (origin.MemberDefinition is TypeDesc type)
+            TypeSystemEntity member = origin.MemberDefinition;
+            if (IsSuppressed(code, member))
+                return true;
+
+            MethodDesc owningMethod;
+            while (_compilerGeneratedState?.TryGetOwningMethodForCompilerGeneratedMember(member, out owningMethod) == true)
+            {
+                Debug.Assert(owningMethod != member);
+                if (IsSuppressed(code, owningMethod))
+                    return true;
+                member = owningMethod;
+            }
+
+            return false;
+        }
+
+        bool IsSuppressed(int id, TypeSystemEntity warningOrigin)
+        {
+            TypeSystemEntity warningOriginMember = warningOrigin;
+            while (warningOriginMember != null)
+            {
+                if (IsSuppressedOnElement(id, warningOriginMember))
+                    return true;
+
+                warningOriginMember = warningOriginMember.GetOwningType();
+            }
+
+            // TODO: Assembly-level suppressions
+
+            return false;
+        }
+
+        bool IsSuppressedOnElement(int id, TypeSystemEntity provider)
+        {
+            if (provider == null)
+                return false;
+
+            // TODO: Assembly-level suppressions
+
+            IEnumerable<CustomAttributeValue<TypeDesc>> suppressions = null;
+
+            if (provider is TypeDesc type)
             {
                 var ecmaType = type.GetTypeDefinition() as EcmaType;
                 suppressions = ecmaType?.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "UnconditionalSuppressMessageAttribute");
             }
 
-            if (origin.MemberDefinition is MethodDesc method)
+            if (provider is MethodDesc method)
             {
-                method = CompilerGeneratedState.GetUserDefinedMethodForCompilerGeneratedMember(method) ?? method;
-
                 var ecmaMethod = method.GetTypicalMethodDefinition() as EcmaMethod;
                 suppressions = ecmaMethod?.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "UnconditionalSuppressMessageAttribute");
             }
@@ -172,7 +222,7 @@ namespace ILCompiler
                         continue;
                     }
 
-                    if (code == suppressedCode)
+                    if (id == suppressedCode)
                     {
                         return true;
                     }
@@ -234,6 +284,28 @@ namespace ILCompiler
                 return result;
             }
             return assemblyName;
+        }
+
+        internal bool ShouldSuppressAnalysisWarningsForRequires(TypeSystemEntity originMember, string requiresAttribute)
+        {
+            // Check if the current scope method has Requires on it
+            // since that attribute automatically suppresses all trim analysis warnings.
+            // Check both the immediate origin method as well as suppression context method
+            // since that will be different for compiler generated code.
+            if (originMember is MethodDesc method &&
+                method.IsInRequiresScope(requiresAttribute))
+                return true;
+
+            MethodDesc owningMethod;
+            while (_compilerGeneratedState.TryGetOwningMethodForCompilerGeneratedMember(originMember, out owningMethod))
+            {
+                Debug.Assert(owningMethod != originMember);
+                if (owningMethod.IsInRequiresScope(requiresAttribute))
+                    return true;
+                originMember = owningMethod;
+            }
+
+            return false;
         }
     }
 }

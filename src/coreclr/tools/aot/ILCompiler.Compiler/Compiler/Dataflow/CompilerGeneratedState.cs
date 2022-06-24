@@ -73,7 +73,7 @@ namespace ILCompiler.Dataflow
             if (member is MethodDesc method && CompilerGeneratedNames.IsLambdaOrLocalFunction(method.Name))
                 return true;
 
-            if (GetOwningType(member) is not MetadataType declaringType)
+            if (member.GetOwningType() is not MetadataType declaringType)
                 return false;
 
             return CompilerGeneratedNames.IsStateMachineType(declaringType.Name);
@@ -487,7 +487,7 @@ namespace ILCompiler.Dataflow
                     return true;
             }
 
-            MetadataType? sourceType = ((sourceMember as TypeDesc) ?? GetOwningType(sourceMember))?.GetTypeDefinition() as MetadataType;
+            MetadataType? sourceType = ((sourceMember as TypeDesc) ?? sourceMember.GetOwningType())?.GetTypeDefinition() as MetadataType;
             if (sourceType is null)
                 return false;
 
@@ -514,19 +514,6 @@ namespace ILCompiler.Dataflow
                 return true;
 
             return false;
-        }
-
-        private static TypeDesc? GetOwningType(TypeSystemEntity entity)
-        {
-            return entity switch
-            {
-                MethodDesc method => method.OwningType,
-                FieldDesc field => field.OwningType,
-                MetadataType type => type.ContainingType,
-                PropertyPseudoDesc property => property.OwningType,
-                EventPseudoDesc @event => @event.OwningType,
-                _ => null
-            };
         }
     }
 }

@@ -78,14 +78,37 @@ namespace ILCompiler.Dataflow
             }
 
             // Parameter metadata index 0 is for return parameter
-            var parameterMetadata = method.GetParameterMetadata()[index + 1];
-            if (!method.Signature[index].IsByRef)
-                return ReferenceKind.None;
-            if (parameterMetadata.In)
-                return ReferenceKind.In;
-            if (parameterMetadata.Out)
-                return ReferenceKind.Out;
-            return ReferenceKind.Ref;
+            foreach (var parameterMetadata in method.GetParameterMetadata())
+            {
+                if (parameterMetadata.Index != index + 1)
+                    continue;
+
+                if (!method.Signature[index].IsByRef)
+                    return ReferenceKind.None;
+                if (parameterMetadata.In)
+                    return ReferenceKind.In;
+                if (parameterMetadata.Out)
+                    return ReferenceKind.Out;
+                return ReferenceKind.Ref;
+            }
+
+            return ReferenceKind.None;
+        }
+
+        public static bool IsByRefOrPointer(this TypeDesc type)
+            => type.IsByRef || type.IsPointer;
+
+        public static TypeDesc GetOwningType(this TypeSystemEntity entity)
+        {
+            return entity switch
+            {
+                MethodDesc method => method.OwningType,
+                FieldDesc field => field.OwningType,
+                MetadataType type => type.ContainingType,
+                PropertyPseudoDesc property => property.OwningType,
+                EventPseudoDesc @event => @event.OwningType,
+                _ => null
+            };
         }
     }
 }

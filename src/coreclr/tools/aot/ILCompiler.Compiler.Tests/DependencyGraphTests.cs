@@ -3,7 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-
+using ILCompiler.Dataflow;
 using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -67,11 +67,12 @@ namespace ILCompiler.Compiler.Tests
             CompilationModuleGroup compilationGroup = new SingleFileCompilationModuleGroup();
 
             NativeAotILProvider ilProvider = new NativeAotILProvider();
+            CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState(ilProvider);
 
             UsageBasedMetadataManager metadataManager = new UsageBasedMetadataManager(compilationGroup, context,
                 new FullyBlockedMetadataBlockingPolicy(), new FullyBlockedManifestResourceBlockingPolicy(),
                 null, new NoStackTraceEmissionPolicy(), new NoDynamicInvokeThunkGenerationPolicy(),
-                new ILLink.Shared.TrimAnalysis.FlowAnnotations(Logger.Null, ilProvider), UsageBasedMetadataGenerationOptions.None,
+                new ILLink.Shared.TrimAnalysis.FlowAnnotations(Logger.Null, ilProvider, compilerGeneratedState), UsageBasedMetadataGenerationOptions.None,
                 Logger.Null, Array.Empty<KeyValuePair<string, bool>>(), Array.Empty<string>(), Array.Empty<string>());
 
             CompilationBuilder builder = new RyuJitCompilationBuilder(context, compilationGroup)

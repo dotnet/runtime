@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using ILCompiler;
+using ILCompiler.Dataflow;
 using ILLink.Shared.TrimAnalysis;
 using Internal.IL;
 using Internal.TypeSystem;
@@ -56,7 +57,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			ilProvider = new FeatureSwitchManager (ilProvider, options.FeatureSwitches);
 
-			Logger logger = new Logger (logWriter, isVerbose: true);
+			CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState (ilProvider);
+
+			Logger logger = new Logger (logWriter, compilerGeneratedState, isVerbose: true);
 
 			UsageBasedMetadataManager metadataManager = new UsageBasedMetadataManager (
 				compilationGroup,
@@ -66,7 +69,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				logFile: null,
 				new NoStackTraceEmissionPolicy (),
 				new NoDynamicInvokeThunkGenerationPolicy (),
-				new FlowAnnotations (logger, ilProvider),
+				new FlowAnnotations (logger, ilProvider, compilerGeneratedState),
 				UsageBasedMetadataGenerationOptions.ReflectionILScanning,
 				logger,
 				Array.Empty<KeyValuePair<string, bool>> (),

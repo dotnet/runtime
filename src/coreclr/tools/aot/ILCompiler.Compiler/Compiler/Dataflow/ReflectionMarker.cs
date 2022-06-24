@@ -74,7 +74,7 @@ namespace ILCompiler.Dataflow
 
             // NativeAOT doesn't have a fully capable type name resolver yet
             // Once this is implemented don't forget to wire up marking of type forwards which are used in generic parameters
-            if (!ILCompiler.DependencyAnalysis.ReflectionMethodBodyScanner.ResolveType(typeName, callingModule, diagnosticContext.Origin.MemberDefinition.Context, out TypeDesc foundType, out ModuleDesc referenceModule))
+            if (!ILCompiler.DependencyAnalysis.ReflectionMethodBodyScanner.ResolveType(typeName, callingModule, diagnosticContext.Origin.MemberDefinition!.Context, out TypeDesc foundType, out ModuleDesc referenceModule))
             {
                 type = default;
                 return false;
@@ -220,7 +220,7 @@ namespace ILCompiler.Dataflow
             }
             else
             {
-                if (!DiagnosticUtilities.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute))
+                if (!_logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute))
                 {
                     if (entity is FieldDesc)
                     {

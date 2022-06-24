@@ -744,7 +744,7 @@ namespace ILCompiler
             ilProvider = new FeatureSwitchManager(ilProvider, featureSwitches);
 
             CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState(ilProvider);
-            var logger = new Logger(Console.Out, _isVerbose, ProcessWarningCodes(_suppressedWarnings), _singleWarn, _singleWarnEnabledAssemblies, _singleWarnDisabledAssemblies);
+            var logger = new Logger(Console.Out, compilerGeneratedState, _isVerbose, ProcessWarningCodes(_suppressedWarnings), _singleWarn, _singleWarnEnabledAssemblies, _singleWarnDisabledAssemblies);
             compilerGeneratedState.Logger = logger;
 
             var stackTracePolicy = _emitStackTraceData ?
@@ -779,7 +779,7 @@ namespace ILCompiler
 
             DynamicInvokeThunkGenerationPolicy invokeThunkGenerationPolicy = new DefaultDynamicInvokeThunkGenerationPolicy();
 
-            var flowAnnotations = new ILLink.Shared.TrimAnalysis.FlowAnnotations(logger, ilProvider);
+            var flowAnnotations = new ILLink.Shared.TrimAnalysis.FlowAnnotations(logger, ilProvider, compilerGeneratedState);
 
             MetadataManager metadataManager = new UsageBasedMetadataManager(
                     compilationGroup,

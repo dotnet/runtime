@@ -42,7 +42,7 @@ namespace ILCompiler.Dataflow
 
             var diagnosticContext = new DiagnosticContext(
                 _origin,
-                DiagnosticUtilities.ShouldSuppressAnalysisWarningsForRequires(_origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute),
+                _logger.ShouldSuppressAnalysisWarningsForRequires(_origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute),
                 _logger);
             return RequireDynamicallyAccessedMembers(diagnosticContext, genericArgumentValue, genericParameterValue, new GenericParameterOrigin(genericParameter));
         }
