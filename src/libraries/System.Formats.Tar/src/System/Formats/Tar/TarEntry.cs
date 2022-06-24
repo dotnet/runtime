@@ -19,8 +19,8 @@ namespace System.Formats.Tar
         // Used to access the data section of this entry in an unseekable file
         private TarReader? _readerOfOrigin;
 
-        // Constructor called when reading a TarEntry from a TarReader.
-        internal TarEntry(TarHeader header, TarReader readerOfOrigin, TarEntryFormat format)
+    // Constructor called when reading a TarEntry from a TarReader.
+    internal TarEntry(TarHeader header, TarReader readerOfOrigin, TarEntryFormat format)
         {
             // This constructor is called after reading a header from the archive,
             // and we should've already detected the format of the header.
@@ -220,6 +220,7 @@ namespace System.Formats.Tar
         /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
         public void ExtractToFile(string destinationFileName, bool overwrite)
         {
+            ArgumentException.ThrowIfNullOrEmpty(destinationFileName);
             if (EntryType is TarEntryType.SymbolicLink or TarEntryType.HardLink or TarEntryType.GlobalExtendedAttributes)
             {
                 throw new InvalidOperationException(string.Format(SR.TarEntryTypeNotSupportedForExtracting, EntryType));
@@ -248,9 +249,10 @@ namespace System.Formats.Tar
         /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
         public Task ExtractToFileAsync(string destinationFileName, bool overwrite, CancellationToken cancellationToken = default)
         {
+            ArgumentException.ThrowIfNullOrEmpty(destinationFileName);
             if (EntryType is TarEntryType.SymbolicLink or TarEntryType.HardLink)
             {
-                throw new InvalidOperationException(string.Format(SR.TarEntryTypeNotSupportedForExtracting, EntryType));
+                return Task.FromException(new InvalidOperationException(string.Format(SR.TarEntryTypeNotSupportedForExtracting, EntryType)));
             }
             return ExtractToFileInternalAsync(destinationFileName, linkTargetPath: null, overwrite, cancellationToken);
         }
@@ -400,8 +402,6 @@ namespace System.Formats.Tar
         // Extracts the current entry into the filesystem, regardless of the entry type.
         private void ExtractToFileInternal(string filePath, string? linkTargetPath, bool overwrite)
         {
-            ArgumentException.ThrowIfNullOrEmpty(filePath);
-
             VerifyPathsForEntryType(filePath, linkTargetPath, overwrite);
 
             if (EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile or TarEntryType.ContiguousFile)
@@ -415,19 +415,24 @@ namespace System.Formats.Tar
         }
 
         // Asynchronously extracts the current entry into the filesystem, regardless of the entry type.
-        private async Task ExtractToFileInternalAsync(string filePath, string? linkTargetPath, bool overwrite, CancellationToken cancellationToken)
+        private Task ExtractToFileInternalAsync(string filePath, string? linkTargetPath, bool overwrite, CancellationToken cancellationToken)
         {
-            ArgumentException.ThrowIfNullOrEmpty(filePath);
-
-            VerifyPathsForEntryType(filePath, linkTargetPath, overwrite);
+            try
+            {
+                VerifyPathsForEntryType(filePath, linkTargetPath, overwrite);
+            }
+            catch (Exception e)
+            {
+                return Task.FromException(e);
+            }
 
             if (EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile or TarEntryType.ContiguousFile)
             {
-                await ExtractAsRegularFileAsync(filePath, cancellationToken).ConfigureAwait(false);
+                return ExtractAsRegularFileAsync(filePath, cancellationToken);
             }
             else
             {
-                CreateNonRegularFile(filePath, linkTargetPath);
+                return CreateNonRegularFileAsync(filePath, linkTargetPath);
             }
         }
 
@@ -478,6 +483,19 @@ namespace System.Formats.Tar
                 case TarEntryType.TapeVolume:
                 default:
                     throw new InvalidOperationException(string.Format(SR.TarEntryTypeNotSupportedForExtracting, EntryType));
+            }
+        }
+
+        private Task CreateNonRegularFileAsync(string filePath, string? linkTargetPath)
+        {
+            try
+            {
+                CreateNonRegularFile(filePath, linkTargetPath);
+                return Task.CompletedTask;
+            }
+            catch (Exception e)
+            {
+                return Task.FromException(e);
             }
         }
 
@@ -560,7 +578,7 @@ namespace System.Formats.Tar
                     // Important: The DataStream will be written from its current position
                     DataStream.CopyTo(fs);
                 }
-                SetModeOnFile(fs.SafeFileHandle, destinationFileName);
+                SetModeOnFile(fs.SafeFileHandle);
             }
 
             ArchivingUtils.AttemptSetLastWriteTime(destinationFileName, ModificationTime);
@@ -588,7 +606,14 @@ namespace System.Formats.Tar
                     // Important: The DataStream will be written from its current position
                     await DataStream.CopyToAsync(fs, cancellationToken).ConfigureAwait(false);
                 }
-                SetModeOnFile(fs.SafeFileHandle, destinationFileName);
+                try
+                {
+                    SetModeOnFile(fs.SafeFileHandle);
+                }
+                catch (Exception e)
+                {
+                    await Task.FromException(e).ConfigureAwait(false);
+                }
             }
 
             ArchivingUtils.AttemptSetLastWriteTime(destinationFileName, ModificationTime);
