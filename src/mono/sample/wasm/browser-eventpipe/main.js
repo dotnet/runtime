@@ -1,12 +1,4 @@
-function wasm_exit(exit_code) {
-    /* Set result in a tests_done element, to be read by xharness in runonly CI test */
-    const tests_done_elem = document.createElement("label");
-    tests_done_elem.id = "tests_done";
-    tests_done_elem.innerHTML = exit_code.toString();
-    document.body.appendChild(tests_done_elem);
-
-    console.log(`WASM EXIT ${exit_code}`);
-}
+import { createDotnetRuntime } from "./dotnet.js";
 
 function downloadData(dataURL, filename) {
     // make an `<a download="filename" href="data:..."/>` link and click on it to trigger a download with the given name
@@ -27,13 +19,6 @@ function makeTimestamp() {
     const s = t.toISOString();
     return s.replace(/[:.]/g, '-');
 }
-
-async function loadRuntime() {
-    globalThis.exports = {};
-    await import("./dotnet.js");
-    return globalThis.exports.createDotnetRuntime;
-}
-
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -92,9 +77,7 @@ function getOnClickHandler(startWork, stopWork, getIterationsDone) {
     }
 }
 
-
 async function main() {
-    const createDotnetRuntime = await loadRuntime();
     const { MONO, BINDING, Module, RuntimeBuildInfo } = await createDotnetRuntime(() => {
         return {
             disableDotnet6Compatibility: true,

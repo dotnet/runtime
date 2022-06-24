@@ -21,11 +21,13 @@ namespace System
     {
         internal const int Size = 16;
 
-        // Unix System V ABI actually requires this to be little endian
-        // order and not `upper, lower` on big endian systems.
-
+#if BIGENDIAN
+        private readonly ulong _upper;
+        private readonly ulong _lower;
+#else
         private readonly ulong _lower;
         private readonly ulong _upper;
+#endif
 
         /// <summary>Initializes a new instance of the <see cref="Int128" /> struct.</summary>
         /// <param name="upper">The upper 64-bits of the 128-bit value.</param>
