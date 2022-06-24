@@ -464,7 +464,7 @@ namespace System.Formats.Tar
                 TarEntryType.LongLink or
                 TarEntryType.LongPath)
             {
-                await ValueTask.FromException(new FormatException(string.Format(SR.TarUnexpectedMetadataEntry, actualHeader._typeFlag, TarEntryType.ExtendedAttributes))).ConfigureAwait(false);
+                throw new FormatException(string.Format(SR.TarUnexpectedMetadataEntry, actualHeader._typeFlag, TarEntryType.ExtendedAttributes));
             }
 
             // Can't have two extended attribute metadata entries in a row
