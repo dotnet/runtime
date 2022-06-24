@@ -29,7 +29,7 @@ namespace System.Transactions.Oletx
     [Serializable]
     internal class OletxCommittableTransaction : OletxTransaction
     {
-        bool commitCalled = false;
+        private bool _commitCalled;
 
         /// <summary>
         /// Constructor for the Transaction object.  Specifies the TransactionManager instance that is
@@ -38,49 +38,33 @@ namespace System.Transactions.Oletx
         /// <param name="transactionManager">
         /// Specifies the TransactionManager instance that is creating the transaction.
         /// </param>
-        internal OletxCommittableTransaction( RealOletxTransaction realOletxTransaction )
-            : base( realOletxTransaction )
+        internal OletxCommittableTransaction(RealOletxTransaction realOletxTransaction)
+            : base(realOletxTransaction)
         {
-            realOletxTransaction.committableTransaction = this;
+            realOletxTransaction.CommittableTransaction = this;
         }
 
-        internal bool CommitCalled
-        {
-            get { return this.commitCalled; }
-        }
+        internal bool CommitCalled => _commitCalled;
 
-
-        internal void BeginCommit(
-            InternalTransaction internalTransaction
-            )
+        internal void BeginCommit(InternalTransaction internalTransaction)
         {
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
-                    "CommittableTransaction.BeginCommit"
-                    );
-                TransactionCommitCalledTraceRecord.Trace( SR.TraceSourceOletx,
-                    this.TransactionTraceId
-                    );
+                MethodEnteredTraceRecord.Trace(SR.TraceSourceOletx, "CommittableTransaction.BeginCommit");
+                TransactionCommitCalledTraceRecord.Trace(SR.TraceSourceOletx, TransactionTraceId);
             }
 
-            Debug.Assert( ( 0 == this.disposed ), "OletxTransction object is disposed" );
-            this.realOletxTransaction.InternalTransaction = internalTransaction;
+            Debug.Assert(0 == Disposed, "OletxTransction object is disposed");
+            RealOletxTransaction.InternalTransaction = internalTransaction;
 
-            this.commitCalled = true;
+            _commitCalled = true;
 
-            this.realOletxTransaction.Commit();
+            RealOletxTransaction.Commit();
 
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
-                    "CommittableTransaction.BeginCommit"
-                    );
+                MethodExitedTraceRecord.Trace(SR.TraceSourceOletx, "CommittableTransaction.BeginCommit");
             }
-
-            return;
         }
-
     }
-
 }

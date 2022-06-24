@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 // using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -18,77 +19,72 @@ namespace System.Transactions.Oletx
 {
     internal class OletxTransactionManager
     {
-        private System.Transactions.IsolationLevel isolationLevelProperty;
+        private IsolationLevel _isolationLevelProperty;
 
-        private TimeSpan timeoutProperty;
+        private TimeSpan _timeoutProperty;
 
-        private TransactionOptions configuredTransactionOptions = new TransactionOptions();
+        private TransactionOptions _configuredTransactionOptions = new TransactionOptions();
 
         // Object for synchronizing access to the entire class( avoiding lock( typeof( ... )) )
-        private static object classSyncObject;
+        private static object _classSyncObject;
 
         // These have to be static because we can only add an RM with the proxy once, even if we
         // have multiple OletxTransactionManager instances.
-        internal static Hashtable resourceManagerHashTable;
-        public static System.Threading.ReaderWriterLock resourceManagerHashTableLock;
+        internal static Hashtable _resourceManagerHashTable;
+        public static ReaderWriterLock ResourceManagerHashTableLock;
 
-        internal static volatile bool processingTmDown = false;
+        internal static volatile bool ProcessingTmDown;
 
-        internal ReaderWriterLock dtcTransactionManagerLock;
-        DtcTransactionManager dtcTransactionManager;
-        internal OletxInternalResourceManager internalResourceManager;
+        internal ReaderWriterLock DtcTransactionManagerLock;
+        private DtcTransactionManager _dtcTransactionManager;
+        internal OletxInternalResourceManager InternalResourceManager;
 
-        internal static IDtcProxyShimFactory proxyShimFactory = null;
+        internal static IDtcProxyShimFactory ProxyShimFactory;
 
         // Double-checked locking pattern requires volatile for read/write synchronization
-        internal static volatile EventWaitHandle shimWaitHandle = null;
+        internal static volatile EventWaitHandle _shimWaitHandle;
         internal static EventWaitHandle ShimWaitHandle
         {
             get
             {
-                if ( null == shimWaitHandle )
+                if (_shimWaitHandle == null)
                 {
-                    lock ( ClassSyncObject )
+                    lock (ClassSyncObject)
                     {
-                        if ( null == shimWaitHandle )
-                        {
-                            shimWaitHandle = new EventWaitHandle( false, EventResetMode.AutoReset );
-                        }
+                        _shimWaitHandle ??= new EventWaitHandle(false, EventResetMode.AutoReset);
                     }
                 }
 
-                return shimWaitHandle;
+                return _shimWaitHandle;
             }
         }
 
-        string nodeNameField;
+        private string _nodeNameField;
 //        byte[] propToken;
 
         // Method that is used within SQLCLR as the WaitOrTimerCallback for the call to
         // ThreadPool.RegisterWaitForSingleObject.
         // This is here for the DangerousGetHandle call.  We need to do it.
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods")]
-        internal static void ShimNotificationCallback( object state, bool timeout )
+        [SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods")]
+        internal static void ShimNotificationCallback(object state, bool timeout)
         {
             // First we need to get the notification from the shim factory.
             IntPtr enlistmentHandleIntPtr = IntPtr.Zero;
             ShimNotificationType shimNotificationType = ShimNotificationType.None;
-            bool isSinglePhase = false;
-            bool abortingHint = false;
+            bool isSinglePhase;
+            bool abortingHint;
 
-            UInt32 prepareInfoSize = 0;
+            uint prepareInfoSize;
             CoTaskMemHandle prepareInfoBuffer = null;
 
             bool holdingNotificationLock = false;
             bool cleanExit = false;
 
-            IDtcProxyShimFactory localProxyShimFactory = null;
+            IDtcProxyShimFactory localProxyShimFactory;
 
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
-                    "OletxTransactionManager.ShimNotificationCallback"
-                    );
+                MethodEnteredTraceRecord.Trace(SR.TraceSourceOletx, "OletxTransactionManager.ShimNotificationCallback");
             }
 
             // This lock doesn't really protect any of our data.  It is here so that if an exception occurs
@@ -101,7 +97,7 @@ namespace System.Transactions.Oletx
                     // Take a local copy of the proxyShimFactory because if we get an RM TMDown notification,
                     // we will still hold the critical section in that factory, but processing of the TMDown will
                     // cause replacement of the OletxTransactionManager.proxyShimFactory.
-                    localProxyShimFactory = OletxTransactionManager.proxyShimFactory;
+                    localProxyShimFactory = ProxyShimFactory;
                     try
                     {
                         Thread.BeginThreadAffinity();
@@ -115,21 +111,20 @@ namespace System.Transactions.Oletx
                                 out abortingHint,
                                 out holdingNotificationLock,
                                 out prepareInfoSize,
-                                out prepareInfoBuffer
-                                );
+                                out prepareInfoBuffer);
                         }
                         finally
                         {
-                            if ( holdingNotificationLock )
+                            if (holdingNotificationLock)
                             {
-                                if ( (HandleTable.FindHandle(enlistmentHandleIntPtr)) is OletxInternalResourceManager )
+                                if (HandleTable.FindHandle(enlistmentHandleIntPtr) is OletxInternalResourceManager)
                                 {
                                     // In this case we know that the TM has gone down and we need to exchange
                                     // the native lock for a managed lock.
-                                    processingTmDown = true;
+                                    ProcessingTmDown = true;
 #pragma warning disable 0618
                                     //@TODO: This overload of Monitor.Enter is obsolete.  Please change this to use Monitor.Enter(ref bool), and remove the pragmas   -- ericeil
-                                    System.Threading.Monitor.Enter(OletxTransactionManager.proxyShimFactory);
+                                    Monitor.Enter(ProxyShimFactory);
 #pragma warning restore 0618
                                 }
                                 else
@@ -145,47 +140,43 @@ namespace System.Transactions.Oletx
                         // has been exchanged for a managed lock.  In that case we need to attempt
                         // to take a lock to hold up processing more events until the TM down
                         // processing is complete.
-                        if ( processingTmDown )
+                        if ( ProcessingTmDown )
                         {
-                            lock (OletxTransactionManager.proxyShimFactory)
+                            lock (ProxyShimFactory)
                             {
                                 // We don't do any work under this lock just make sure that we
                                 // can take it.
                             }
                         }
 
-                        if ( ShimNotificationType.None != shimNotificationType )
+                        if (shimNotificationType != ShimNotificationType.None)
                         {
-                            Object target = HandleTable.FindHandle(enlistmentHandleIntPtr);
+                            object target = HandleTable.FindHandle(enlistmentHandleIntPtr);
 
                             // Next, based on the notification type, cast the Handle accordingly and make
                             // the appropriate call on the enlistment.
-                            switch ( shimNotificationType )
+                            switch (shimNotificationType)
                             {
                                 case ShimNotificationType.Phase0RequestNotify:
                                 {
                                     try
                                     {
-                                        OletxPhase0VolatileEnlistmentContainer ph0VolEnlistContainer = target as OletxPhase0VolatileEnlistmentContainer;
-                                        if ( null != ph0VolEnlistContainer )
+                                        if (target is OletxPhase0VolatileEnlistmentContainer ph0VolEnlistContainer)
                                         {
-                                            DiagnosticTrace.SetActivityId(
-                                                ph0VolEnlistContainer.TransactionIdentifier);
+                                            DiagnosticTrace.SetActivityId(ph0VolEnlistContainer.TransactionIdentifier);
                                             //CSDMain 91509 - We now synchronize this call with the AddDependentClone call in RealOleTxTransaction
-                                            ph0VolEnlistContainer.Phase0Request( abortingHint );
+                                            ph0VolEnlistContainer.Phase0Request(abortingHint);
                                         }
                                         else
                                         {
-                                            OletxEnlistment enlistment = target as OletxEnlistment;
-                                            if ( null != enlistment )
+                                            if (target is OletxEnlistment enlistment)
                                             {
-                                                DiagnosticTrace.SetActivityId(
-                                                    enlistment.TransactionIdentifier);
-                                                enlistment.Phase0Request( abortingHint );
+                                                DiagnosticTrace.SetActivityId(enlistment.TransactionIdentifier);
+                                                enlistment.Phase0Request(abortingHint);
                                             }
                                             else
                                             {
-                                                Environment.FailFast( SR.InternalError);
+                                                Environment.FailFast(SR.InternalError);
                                             }
                                         }
                                     }
@@ -199,16 +190,14 @@ namespace System.Transactions.Oletx
 
                                 case ShimNotificationType.VoteRequestNotify:
                                 {
-                                    OletxPhase1VolatileEnlistmentContainer ph1VolEnlistContainer = target as OletxPhase1VolatileEnlistmentContainer;
-                                    if ( null != ph1VolEnlistContainer )
+                                    if (target is OletxPhase1VolatileEnlistmentContainer ph1VolEnlistContainer)
                                     {
-                                        DiagnosticTrace.SetActivityId(
-                                            ph1VolEnlistContainer.TransactionIdentifier);
+                                        DiagnosticTrace.SetActivityId(ph1VolEnlistContainer.TransactionIdentifier);
                                         ph1VolEnlistContainer.VoteRequest();
                                     }
                                     else
                                     {
-                                        Environment.FailFast( SR.InternalError);
+                                        Environment.FailFast(SR.InternalError);
                                     }
 
                                     break;
@@ -218,25 +207,21 @@ namespace System.Transactions.Oletx
                                 {
                                     try
                                     {
-                                        OutcomeEnlistment outcomeEnlistment = target as OutcomeEnlistment;
-                                        if ( null != outcomeEnlistment )
+                                        if (target is OutcomeEnlistment outcomeEnlistment)
                                         {
-                                            DiagnosticTrace.SetActivityId(
-                                                outcomeEnlistment.TransactionIdentifier);
+                                            DiagnosticTrace.SetActivityId(outcomeEnlistment.TransactionIdentifier);
                                             outcomeEnlistment.Committed();
                                         }
                                         else
                                         {
-                                            OletxPhase1VolatileEnlistmentContainer ph1VolEnlistContainer = target as OletxPhase1VolatileEnlistmentContainer;
-                                            if ( null != ph1VolEnlistContainer )
+                                            if (target is OletxPhase1VolatileEnlistmentContainer ph1VolEnlistContainer)
                                             {
-                                                DiagnosticTrace.SetActivityId(
-                                                    ph1VolEnlistContainer.TransactionIdentifier);
+                                                DiagnosticTrace.SetActivityId(ph1VolEnlistContainer.TransactionIdentifier);
                                                 ph1VolEnlistContainer.Committed();
                                             }
                                             else
                                             {
-                                                Environment.FailFast( SR.InternalError);
+                                                Environment.FailFast(SR.InternalError);
                                             }
                                         }
                                     }
@@ -251,20 +236,16 @@ namespace System.Transactions.Oletx
                                 {
                                     try
                                     {
-                                        OutcomeEnlistment outcomeEnlistment = target as OutcomeEnlistment;
-                                        if ( null != outcomeEnlistment )
+                                        if (target is OutcomeEnlistment outcomeEnlistment)
                                         {
-                                            DiagnosticTrace.SetActivityId(
-                                                outcomeEnlistment.TransactionIdentifier);
+                                            DiagnosticTrace.SetActivityId(outcomeEnlistment.TransactionIdentifier);
                                             outcomeEnlistment.Aborted();
                                         }
                                         else
                                         {
-                                            OletxPhase1VolatileEnlistmentContainer ph1VolEnlistContainer = target as OletxPhase1VolatileEnlistmentContainer;
-                                            if ( null != ph1VolEnlistContainer )
+                                            if (target is OletxPhase1VolatileEnlistmentContainer ph1VolEnlistContainer)
                                             {
-                                                DiagnosticTrace.SetActivityId(
-                                                    ph1VolEnlistContainer.TransactionIdentifier);
+                                                DiagnosticTrace.SetActivityId(ph1VolEnlistContainer.TransactionIdentifier);
                                                 ph1VolEnlistContainer.Aborted();
                                             }
                                             // else
@@ -292,25 +273,21 @@ namespace System.Transactions.Oletx
                                 {
                                     try
                                     {
-                                        OutcomeEnlistment outcomeEnlistment = target as OutcomeEnlistment;
-                                        if ( null != outcomeEnlistment )
+                                        if (target is OutcomeEnlistment outcomeEnlistment)
                                         {
-                                            DiagnosticTrace.SetActivityId(
-                                                outcomeEnlistment.TransactionIdentifier);
+                                            DiagnosticTrace.SetActivityId(outcomeEnlistment.TransactionIdentifier);
                                             outcomeEnlistment.InDoubt();
                                         }
                                         else
                                         {
-                                            OletxPhase1VolatileEnlistmentContainer ph1VolEnlistContainer = target as OletxPhase1VolatileEnlistmentContainer;
-                                            if ( null != ph1VolEnlistContainer )
+                                            if (target is OletxPhase1VolatileEnlistmentContainer ph1VolEnlistContainer)
                                             {
-                                                DiagnosticTrace.SetActivityId(
-                                                    ph1VolEnlistContainer.TransactionIdentifier);
+                                                DiagnosticTrace.SetActivityId(ph1VolEnlistContainer.TransactionIdentifier);
                                                 ph1VolEnlistContainer.InDoubt();
                                             }
                                             else
                                             {
-                                                Environment.FailFast( SR.InternalError);
+                                                Environment.FailFast(SR.InternalError);
                                             }
                                         }
                                     }
@@ -325,24 +302,19 @@ namespace System.Transactions.Oletx
                                 case ShimNotificationType.PrepareRequestNotify:
                                 {
                                     byte[] prepareInfo = new byte[prepareInfoSize];
-                                    Marshal.Copy( prepareInfoBuffer.DangerousGetHandle(), prepareInfo, 0, Convert.ToInt32(prepareInfoSize) );
+                                    Marshal.Copy(prepareInfoBuffer.DangerousGetHandle(), prepareInfo, 0, Convert.ToInt32(prepareInfoSize));
                                     bool enlistmentDone = true;
 
                                     try
                                     {
-                                        OletxEnlistment enlistment = target as OletxEnlistment;
-                                        if ( null != enlistment )
+                                        if (target is OletxEnlistment enlistment)
                                         {
-                                            DiagnosticTrace.SetActivityId(
-                                                enlistment.TransactionIdentifier);
-                                            enlistmentDone = enlistment.PrepareRequest(
-                                                                isSinglePhase,
-                                                                prepareInfo
-                                                                );
+                                            DiagnosticTrace.SetActivityId(enlistment.TransactionIdentifier);
+                                            enlistmentDone = enlistment.PrepareRequest(isSinglePhase, prepareInfo);
                                         }
                                         else
                                         {
-                                            Environment.FailFast( SR.InternalError);
+                                            Environment.FailFast(SR.InternalError);
                                         }
                                     }
                                     finally
@@ -360,16 +332,14 @@ namespace System.Transactions.Oletx
                                 {
                                     try
                                     {
-                                        OletxEnlistment enlistment = target as OletxEnlistment;
-                                        if ( null != enlistment )
+                                        if (target is OletxEnlistment enlistment)
                                         {
-                                            DiagnosticTrace.SetActivityId(
-                                                enlistment.TransactionIdentifier);
+                                            DiagnosticTrace.SetActivityId(enlistment.TransactionIdentifier);
                                             enlistment.CommitRequest();
                                         }
                                         else
                                         {
-                                            Environment.FailFast( SR.InternalError);
+                                            Environment.FailFast(SR.InternalError);
                                         }
                                     }
                                     finally
@@ -385,16 +355,14 @@ namespace System.Transactions.Oletx
                                 {
                                     try
                                     {
-                                        OletxEnlistment enlistment = target as OletxEnlistment;
-                                        if ( null != enlistment )
+                                        if (target is OletxEnlistment enlistment)
                                         {
-                                            DiagnosticTrace.SetActivityId(
-                                                enlistment.TransactionIdentifier);
+                                            DiagnosticTrace.SetActivityId(enlistment.TransactionIdentifier);
                                             enlistment.AbortRequest();
                                         }
                                         else
                                         {
-                                            Environment.FailFast( SR.InternalError);
+                                            Environment.FailFast(SR.InternalError);
                                         }
                                     }
                                     finally
@@ -410,16 +378,14 @@ namespace System.Transactions.Oletx
                                 {
                                     try
                                     {
-                                        OletxEnlistment enlistment = target as OletxEnlistment;
-                                        if ( null != enlistment )
+                                        if (target is OletxEnlistment enlistment)
                                         {
-                                            DiagnosticTrace.SetActivityId(
-                                                enlistment.TransactionIdentifier);
+                                            DiagnosticTrace.SetActivityId(enlistment.TransactionIdentifier);
                                             enlistment.TMDown();
                                         }
                                         else
                                         {
-                                            Environment.FailFast( SR.InternalError);
+                                            Environment.FailFast(SR.InternalError);
                                         }
                                     }
                                     finally
@@ -437,14 +403,13 @@ namespace System.Transactions.Oletx
                                     OletxResourceManager resourceManager = target as OletxResourceManager;
                                     try
                                     {
-                                        if ( null != resourceManager )
+                                        if (resourceManager != null)
                                         {
                                             resourceManager.TMDown();
                                         }
                                         else
                                         {
-                                            OletxInternalResourceManager internalResourceManager = target as OletxInternalResourceManager;
-                                            if ( null != internalResourceManager )
+                                            if (target is OletxInternalResourceManager internalResourceManager)
                                             {
                                                 internalResourceManager.TMDown();
                                             }
@@ -474,20 +439,20 @@ namespace System.Transactions.Oletx
                     }
                     finally
                     {
-                        if ( null != prepareInfoBuffer )
+                        if (prepareInfoBuffer != null)
                         {
                             prepareInfoBuffer.Close();
                         }
 
-                        if ( holdingNotificationLock )
+                        if (holdingNotificationLock)
                         {
                             holdingNotificationLock = false;
-                            processingTmDown = false;
-                            System.Threading.Monitor.Exit(OletxTransactionManager.proxyShimFactory);
+                            ProcessingTmDown = false;
+                            Monitor.Exit(ProxyShimFactory);
                         }
                     }
                 }
-                while ( ShimNotificationType.None != shimNotificationType );
+                while (ShimNotificationType.None != shimNotificationType);
 
                 cleanExit = true;
             }
@@ -496,11 +461,11 @@ namespace System.Transactions.Oletx
                 if ( holdingNotificationLock )
                 {
                     holdingNotificationLock = false;
-                    processingTmDown = false;
-                    System.Threading.Monitor.Exit(OletxTransactionManager.proxyShimFactory);
+                    ProcessingTmDown = false;
+                    Monitor.Exit(ProxyShimFactory);
                 }
 
-                if ( !cleanExit && enlistmentHandleIntPtr != IntPtr.Zero )
+                if (!cleanExit && enlistmentHandleIntPtr != IntPtr.Zero)
                 {
                     HandleTable.FreeHandle(enlistmentHandleIntPtr);
                 }
@@ -508,144 +473,128 @@ namespace System.Transactions.Oletx
                 Thread.EndCriticalRegion();
             }
 
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
-                    "OletxTransactionManager.ShimNotificationCallback"
-                    );
+                MethodExitedTraceRecord.Trace(SR.TraceSourceOletx, "OletxTransactionManager.ShimNotificationCallback");
             }
-
         }
 
-
-        internal OletxTransactionManager(
-            string nodeName
-            )
+        internal OletxTransactionManager(string nodeName)
         {
-            lock ( ClassSyncObject )
+            lock (ClassSyncObject)
             {
                 // If we have not already initialized the shim factory and started the notification
                 // thread, do so now.
-                if (null == OletxTransactionManager.proxyShimFactory )
+                if (ProxyShimFactory == null)
                 {
-                    Int32 error = NativeMethods.GetNotificationFactory(
-                        OletxTransactionManager.ShimWaitHandle.SafeWaitHandle,
-                        out OletxTransactionManager.proxyShimFactory
-                        );
+                    int error = NativeMethods.GetNotificationFactory(ShimWaitHandle.SafeWaitHandle, out ProxyShimFactory);
 
-                    if ( 0 != error )
+                    if (error != 0)
                     {
-                        throw TransactionException.Create( SR.UnableToGetNotificationShimFactory, null );
+                        throw TransactionException.Create(SR.UnableToGetNotificationShimFactory, null);
                     }
 
-                        ThreadPool.UnsafeRegisterWaitForSingleObject(
-                            OletxTransactionManager.ShimWaitHandle,
-                            new WaitOrTimerCallback( OletxTransactionManager.ShimNotificationCallback ),
-                            null,
-                            -1,
-                            false
-                            );
+                    ThreadPool.UnsafeRegisterWaitForSingleObject(
+                        ShimWaitHandle,
+                        ShimNotificationCallback,
+                        null,
+                        -1,
+                        false);
                 }
             }
 
-            this.dtcTransactionManagerLock = new ReaderWriterLock();
+            DtcTransactionManagerLock = new ReaderWriterLock();
 
-            this.nodeNameField = nodeName;
+            _nodeNameField = nodeName;
 
             // The DTC proxy doesn't like an empty string for node name on 64-bit platforms when
             // running as WOW64.  It treats any non-null node name as a "remote" node and turns off
             // the WOW64 bit, causing problems when reading the registry.  So if we got on empty
             // string for the node name, just treat it as null.
-            if (( null != this.nodeNameField ) && ( 0 == this.nodeNameField.Length ))
+            if (_nodeNameField is { Length: 0 })
             {
-                this.nodeNameField = null;
+                _nodeNameField = null;
             }
 
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                DistributedTransactionManagerCreatedTraceRecord.Trace( SR.TraceSourceOletx,
-                    this.GetType(),
-                    this.nodeNameField
-                    );
+                DistributedTransactionManagerCreatedTraceRecord.Trace(SR.TraceSourceOletx, GetType(), _nodeNameField);
             }
 
             // Initialize the properties from config.
-            configuredTransactionOptions.IsolationLevel = isolationLevelProperty = TransactionManager.DefaultIsolationLevel;
-            configuredTransactionOptions.Timeout = timeoutProperty = TransactionManager.DefaultTimeout;
+            _configuredTransactionOptions.IsolationLevel = _isolationLevelProperty = TransactionManager.DefaultIsolationLevel;
+            _configuredTransactionOptions.Timeout = _timeoutProperty = TransactionManager.DefaultTimeout;
 
-            this.internalResourceManager = new OletxInternalResourceManager( this );
+            InternalResourceManager = new OletxInternalResourceManager( this );
 
-            dtcTransactionManagerLock.AcquireWriterLock( -1 );
+            DtcTransactionManagerLock.AcquireWriterLock(-1);
             try
             {
-                this.dtcTransactionManager = new DtcTransactionManager( this.nodeNameField, this );
+                _dtcTransactionManager = new DtcTransactionManager(_nodeNameField, this);
             }
             finally
             {
-                dtcTransactionManagerLock.ReleaseWriterLock();
+                DtcTransactionManagerLock.ReleaseWriterLock();
             }
 
-            if (resourceManagerHashTable == null)
+            if (_resourceManagerHashTable == null)
             {
-                resourceManagerHashTable = new Hashtable(2);
-                resourceManagerHashTableLock = new System.Threading.ReaderWriterLock();
+                _resourceManagerHashTable = new Hashtable(2);
+                ResourceManagerHashTableLock = new ReaderWriterLock();
             }
 
         }
 
 
-        internal OletxCommittableTransaction CreateTransaction(
-            TransactionOptions properties
-            )
+        internal OletxCommittableTransaction CreateTransaction(TransactionOptions properties)
         {
-            OletxCommittableTransaction tx = null;
-            RealOletxTransaction realTransaction = null;
+            OletxCommittableTransaction tx;
+            RealOletxTransaction realTransaction;
             ITransactionShim transactionShim = null;
             Guid txIdentifier = Guid.Empty;
-            OutcomeEnlistment outcomeEnlistment = null;
+            OutcomeEnlistment outcomeEnlistment;
 
-            TransactionManager.ValidateIsolationLevel( properties.IsolationLevel );
+            TransactionManager.ValidateIsolationLevel(properties.IsolationLevel);
 
             // Never create a transaction with an IsolationLevel of Unspecified.
-            if ( IsolationLevel.Unspecified == properties.IsolationLevel )
+            if (IsolationLevel.Unspecified == properties.IsolationLevel)
             {
-                properties.IsolationLevel = configuredTransactionOptions.IsolationLevel;
+                properties.IsolationLevel = _configuredTransactionOptions.IsolationLevel;
             }
 
-            properties.Timeout = TransactionManager.ValidateTimeout( properties.Timeout );
+            properties.Timeout = TransactionManager.ValidateTimeout(properties.Timeout);
 
-            this.dtcTransactionManagerLock.AcquireReaderLock( -1 );
+            DtcTransactionManagerLock.AcquireReaderLock(-1);
             try
             {
                 // TODO: Make Sys.Tx isolation level values the same as DTC isolation level values and use the sys.tx value here.
-                OletxTransactionIsolationLevel oletxIsoLevel = OletxTransactionManager.ConvertIsolationLevel( properties.IsolationLevel );
-                UInt32 oletxTimeout = DtcTransactionManager.AdjustTimeout( properties.Timeout );
+                OletxTransactionIsolationLevel oletxIsoLevel = ConvertIsolationLevel(properties.IsolationLevel);
+                uint oletxTimeout = DtcTransactionManager.AdjustTimeout(properties.Timeout);
 
                 outcomeEnlistment = new OutcomeEnlistment();
                 IntPtr outcomeEnlistmentHandle = IntPtr.Zero;
                 RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 {
-                    outcomeEnlistmentHandle = HandleTable.AllocHandle( outcomeEnlistment );
+                    outcomeEnlistmentHandle = HandleTable.AllocHandle(outcomeEnlistment);
 
-                    dtcTransactionManager.ProxyShimFactory.BeginTransaction(
+                    _dtcTransactionManager.ProxyShimFactory.BeginTransaction(
                         oletxTimeout,
                         oletxIsoLevel,
                         outcomeEnlistmentHandle,
                         out txIdentifier,
-                        out transactionShim
-                        );
+                        out transactionShim);
                 }
-                catch ( COMException ex )
+                catch (COMException ex)
                 {
-                    OletxTransactionManager.ProxyException( ex );
+                    ProxyException(ex);
                     throw;
                 }
                 finally
                 {
-                    if ( transactionShim == null && outcomeEnlistmentHandle != IntPtr.Zero )
+                    if (transactionShim == null && outcomeEnlistmentHandle != IntPtr.Zero)
                     {
-                        HandleTable.FreeHandle( outcomeEnlistmentHandle );
+                        HandleTable.FreeHandle(outcomeEnlistmentHandle);
                     }
                 }
 
@@ -655,147 +604,121 @@ namespace System.Transactions.Oletx
                     outcomeEnlistment,
                     txIdentifier,
                     oletxIsoLevel,
-                    true
-                    );
-                tx = new OletxCommittableTransaction( realTransaction );
-                if ( DiagnosticTrace.Information )
+                    true);
+                tx = new OletxCommittableTransaction(realTransaction);
+                if (DiagnosticTrace.Information)
                 {
-                    TransactionCreatedTraceRecord.Trace( SR.TraceSourceOletx,
-                        tx.TransactionTraceId
-                        );
+                    TransactionCreatedTraceRecord.Trace(SR.TraceSourceOletx, tx.TransactionTraceId);
                 }
             }
             finally
             {
-                this.dtcTransactionManagerLock.ReleaseReaderLock();
+                DtcTransactionManagerLock.ReleaseReaderLock();
             }
 
             return tx;
-
         }
-
 
         internal OletxEnlistment ReenlistTransaction(
             Guid resourceManagerIdentifier,
             byte[] recoveryInformation,
-            IEnlistmentNotificationInternal enlistmentNotification
-            )
+            IEnlistmentNotificationInternal enlistmentNotification)
         {
-            if ( null == recoveryInformation )
+            if (recoveryInformation == null)
             {
-                throw new ArgumentNullException( "recoveryInformation" );
+                throw new ArgumentNullException("recoveryInformation");
             }
 
-            if ( null == enlistmentNotification )
+            if (enlistmentNotification == null)
             {
-                throw new ArgumentNullException( "enlistmentNotification" );
+                throw new ArgumentNullException("enlistmentNotification");
             }
 
             // Now go find the resource manager in the collection.
-            OletxResourceManager oletxResourceManager = RegisterResourceManager( resourceManagerIdentifier );
-            if ( null == oletxResourceManager )
+            OletxResourceManager oletxResourceManager = RegisterResourceManager(resourceManagerIdentifier);
+            if (oletxResourceManager == null)
             {
-                throw new ArgumentException( SR.InvalidArgument, "resourceManagerIdentifier" );
+                throw new ArgumentException(SR.InvalidArgument, "resourceManagerIdentifier");
             }
 
-            if ( oletxResourceManager.RecoveryCompleteCalledByApplication )
+            if (oletxResourceManager.RecoveryCompleteCalledByApplication)
             {
-                throw new InvalidOperationException( SR.ReenlistAfterRecoveryComplete);
+                throw new InvalidOperationException(SR.ReenlistAfterRecoveryComplete);
             }
 
             // Now ask the resource manager to reenlist.
             OletxEnlistment returnValue = oletxResourceManager.Reenlist(
                 recoveryInformation.Length,
                 recoveryInformation,
-                enlistmentNotification
-                );
-
+                enlistmentNotification);
 
             return returnValue;
         }
 
-        internal void ResourceManagerRecoveryComplete(
-            Guid resourceManagerIdentifier
-            )
+        internal void ResourceManagerRecoveryComplete(Guid resourceManagerIdentifier)
         {
-            OletxResourceManager oletxRm = RegisterResourceManager(
-                resourceManagerIdentifier
-                );
+            OletxResourceManager oletxRm = RegisterResourceManager(resourceManagerIdentifier);
 
-            if ( oletxRm.RecoveryCompleteCalledByApplication )
+            if (oletxRm.RecoveryCompleteCalledByApplication)
             {
-                throw new InvalidOperationException( SR.DuplicateRecoveryComplete);
+                throw new InvalidOperationException(SR.DuplicateRecoveryComplete);
             }
 
             oletxRm.RecoveryComplete();
-
         }
 
-        internal OletxResourceManager RegisterResourceManager(
-            Guid resourceManagerIdentifier
-            )
+        internal OletxResourceManager RegisterResourceManager(Guid resourceManagerIdentifier)
         {
-            OletxResourceManager oletxResourceManager = null;
+            OletxResourceManager oletxResourceManager;
 
-            resourceManagerHashTableLock.AcquireWriterLock(-1);
+            ResourceManagerHashTableLock.AcquireWriterLock(-1);
 
             try
             {
                 // If this resource manager has already been registered, don't register it again.
-                oletxResourceManager = resourceManagerHashTable[resourceManagerIdentifier] as OletxResourceManager;
-                if ( null != oletxResourceManager )
+                oletxResourceManager = _resourceManagerHashTable[resourceManagerIdentifier] as OletxResourceManager;
+                if (oletxResourceManager != null)
                 {
                     return oletxResourceManager;
                 }
 
-                oletxResourceManager = new OletxResourceManager(
-                    this,
-                    resourceManagerIdentifier
-                    );
+                oletxResourceManager = new OletxResourceManager(this, resourceManagerIdentifier);
 
-                resourceManagerHashTable.Add(
-                    resourceManagerIdentifier,
-                    oletxResourceManager
-                    );
+                _resourceManagerHashTable.Add(resourceManagerIdentifier, oletxResourceManager);
             }
             finally
             {
-                resourceManagerHashTableLock.ReleaseWriterLock();
+                ResourceManagerHashTableLock.ReleaseWriterLock();
             }
-
 
             return oletxResourceManager;
         }
 
         internal string CreationNodeName
-        {
-            get { return nodeNameField; }
-        }
+            => _nodeNameField;
 
-        internal OletxResourceManager FindOrRegisterResourceManager(
-            Guid resourceManagerIdentifier
-            )
+        internal OletxResourceManager FindOrRegisterResourceManager(Guid resourceManagerIdentifier)
         {
-            if ( resourceManagerIdentifier == Guid.Empty )
+            if (resourceManagerIdentifier == Guid.Empty)
             {
-                throw new ArgumentException( SR.BadResourceManagerId, "resourceManagerIdentifier" );
+                throw new ArgumentException(SR.BadResourceManagerId, "resourceManagerIdentifier");
             }
 
-            OletxResourceManager oletxResourceManager = null;
+            OletxResourceManager oletxResourceManager;
 
-            resourceManagerHashTableLock.AcquireReaderLock(-1);
+            ResourceManagerHashTableLock.AcquireReaderLock(-1);
             try
             {
-                oletxResourceManager = resourceManagerHashTable[resourceManagerIdentifier] as OletxResourceManager;
+                oletxResourceManager = _resourceManagerHashTable[resourceManagerIdentifier] as OletxResourceManager;
             }
             finally
             {
-                resourceManagerHashTableLock.ReleaseReaderLock();
+                ResourceManagerHashTableLock.ReleaseReaderLock();
             }
 
-            if ( null == oletxResourceManager )
+            if (oletxResourceManager == null)
             {
-                return RegisterResourceManager( resourceManagerIdentifier);
+                return RegisterResourceManager(resourceManagerIdentifier);
             }
 
             return oletxResourceManager;
@@ -805,175 +728,122 @@ namespace System.Transactions.Oletx
         {
             get
             {
-                if ( ( this.dtcTransactionManagerLock.IsReaderLockHeld ) ||
-                    ( this.dtcTransactionManagerLock.IsWriterLockHeld ) )
+                if (DtcTransactionManagerLock.IsReaderLockHeld ||DtcTransactionManagerLock.IsWriterLockHeld)
                 {
-                    if ( null == this.dtcTransactionManager )
+                    if (_dtcTransactionManager == null)
                     {
-                        throw TransactionException.Create(
-                            SR.DtcTransactionManagerUnavailable,
-                            null );
+                        throw TransactionException.Create(SR.DtcTransactionManagerUnavailable, null);
                     }
-                    return this.dtcTransactionManager;
+
+                    return _dtcTransactionManager;
                 }
-                else
-                {
-                    // Internal programming error.  A reader or writer lock should be held when this property is invoked.
-                    throw TransactionException.Create ( SR.InternalError, null );
-                }
+
+                // Internal programming error.  A reader or writer lock should be held when this property is invoked.
+                throw TransactionException.Create(SR.InternalError, null);
             }
         }
 
         internal string NodeName
-        {
-            get { return this.nodeNameField; }
-        }
+            => _nodeNameField;
 
-        internal static void ProxyException(
-            COMException comException
-            )
+        internal static void ProxyException(COMException comException)
         {
-            if ( ( NativeMethods.XACT_E_CONNECTION_DOWN == comException.ErrorCode ) ||
-                ( NativeMethods.XACT_E_TMNOTAVAILABLE == comException.ErrorCode )
-                )
+            if (comException.ErrorCode == NativeMethods.XACT_E_CONNECTION_DOWN ||
+                comException.ErrorCode == NativeMethods.XACT_E_TMNOTAVAILABLE)
             {
                 throw TransactionManagerCommunicationException.Create(
                     SR.TransactionManagerCommunicationException,
-                    comException
-                    );
+                    comException);
             }
-            if (( NativeMethods.XACT_E_NETWORK_TX_DISABLED == comException.ErrorCode ))
+            if (comException.ErrorCode == NativeMethods.XACT_E_NETWORK_TX_DISABLED)
             {
                 throw TransactionManagerCommunicationException.Create(
                     SR.NetworkTransactionsDisabled,
-                    comException
-                    );
+                    comException);
             }
             // Else if the error is a transaction oriented error, throw a TransactionException
-            else if ( ( NativeMethods.XACT_E_FIRST <= comException.ErrorCode ) &&
-                      ( NativeMethods.XACT_E_LAST >= comException.ErrorCode ) )
+            if (comException.ErrorCode >= NativeMethods.XACT_E_FIRST &&
+                comException.ErrorCode <= NativeMethods.XACT_E_LAST)
             {
                 // Special casing XACT_E_NOTRANSACTION
-                if ( NativeMethods.XACT_E_NOTRANSACTION == comException.ErrorCode )
-                {
-                    throw TransactionException.Create(
-                        SR.TransactionAlreadyOver,
-                        comException
-                        );
-                }
-
                 throw TransactionException.Create(
-                    comException.Message,
-                    comException
-                    );
+                    NativeMethods.XACT_E_NOTRANSACTION == comException.ErrorCode
+                        ? SR.TransactionAlreadyOver
+                        : comException.Message,
+                    comException);
             }
         }
 
         internal void ReinitializeProxy()
         {
             // This is created by the static constructor.
-            dtcTransactionManagerLock.AcquireWriterLock( -1 );
+            DtcTransactionManagerLock.AcquireWriterLock(-1);
+
             try
             {
-                if ( null != dtcTransactionManager )
+                if (_dtcTransactionManager != null)
                 {
-                    dtcTransactionManager.ReleaseProxy();
+                    _dtcTransactionManager.ReleaseProxy();
                 }
             }
             finally
             {
-                dtcTransactionManagerLock.ReleaseWriterLock();
+                DtcTransactionManagerLock.ReleaseWriterLock();
             }
         }
 
-        internal static OletxTransactionIsolationLevel ConvertIsolationLevel( IsolationLevel isolationLevel )
-        {
-            OletxTransactionIsolationLevel retVal;
-            switch (isolationLevel)
+        internal static OletxTransactionIsolationLevel ConvertIsolationLevel(IsolationLevel isolationLevel)
+            => isolationLevel switch
             {
-                case IsolationLevel.Serializable:
-                    retVal = OletxTransactionIsolationLevel.ISOLATIONLEVEL_SERIALIZABLE;
-                    break;
-                case IsolationLevel.RepeatableRead:
-                    retVal = OletxTransactionIsolationLevel.ISOLATIONLEVEL_REPEATABLEREAD;
-                    break;
-                case IsolationLevel.ReadCommitted:
-                    retVal = OletxTransactionIsolationLevel.ISOLATIONLEVEL_READCOMMITTED;
-                    break;
-                case IsolationLevel.ReadUncommitted:
-                    retVal = OletxTransactionIsolationLevel.ISOLATIONLEVEL_READUNCOMMITTED;
-                    break;
-                case IsolationLevel.Chaos:
-                    retVal = OletxTransactionIsolationLevel.ISOLATIONLEVEL_CHAOS;
-                    break;
-                case IsolationLevel.Unspecified:
-                    retVal = OletxTransactionIsolationLevel.ISOLATIONLEVEL_UNSPECIFIED;
-                    break;
-                default:
-                    retVal = OletxTransactionIsolationLevel.ISOLATIONLEVEL_SERIALIZABLE;
-                    break;
-            }
-            return retVal;
-        }
+                IsolationLevel.Serializable => OletxTransactionIsolationLevel.ISOLATIONLEVEL_SERIALIZABLE,
+                IsolationLevel.RepeatableRead => OletxTransactionIsolationLevel.ISOLATIONLEVEL_REPEATABLEREAD,
+                IsolationLevel.ReadCommitted => OletxTransactionIsolationLevel.ISOLATIONLEVEL_READCOMMITTED,
+                IsolationLevel.ReadUncommitted => OletxTransactionIsolationLevel.ISOLATIONLEVEL_READUNCOMMITTED,
+                IsolationLevel.Chaos => OletxTransactionIsolationLevel.ISOLATIONLEVEL_CHAOS,
+                IsolationLevel.Unspecified => OletxTransactionIsolationLevel.ISOLATIONLEVEL_UNSPECIFIED,
+                _ => OletxTransactionIsolationLevel.ISOLATIONLEVEL_SERIALIZABLE
+            };
 
-        internal static IsolationLevel ConvertIsolationLevelFromProxyValue( OletxTransactionIsolationLevel proxyIsolationLevel )
-        {
-            IsolationLevel retVal;
-            switch (proxyIsolationLevel)
+        internal static IsolationLevel ConvertIsolationLevelFromProxyValue(OletxTransactionIsolationLevel proxyIsolationLevel)
+            => proxyIsolationLevel switch
             {
-                case OletxTransactionIsolationLevel.ISOLATIONLEVEL_SERIALIZABLE:
-                    retVal = IsolationLevel.Serializable;
-                    break;
-                case OletxTransactionIsolationLevel.ISOLATIONLEVEL_REPEATABLEREAD:
-                    retVal = IsolationLevel.RepeatableRead;
-                    break;
-                case OletxTransactionIsolationLevel.ISOLATIONLEVEL_READCOMMITTED:
-                    retVal = IsolationLevel.ReadCommitted;
-                    break;
-                case OletxTransactionIsolationLevel.ISOLATIONLEVEL_READUNCOMMITTED:
-                    retVal = IsolationLevel.ReadUncommitted;
-                    break;
-                case OletxTransactionIsolationLevel.ISOLATIONLEVEL_UNSPECIFIED:
-                    retVal = IsolationLevel.Unspecified;
-                    break;
-                case OletxTransactionIsolationLevel.ISOLATIONLEVEL_CHAOS:
-                    retVal = IsolationLevel.Chaos;
-                    break;
-                default:
-                    retVal = IsolationLevel.Serializable;
-                    break;
-            }
-            return retVal;
-        }
+                OletxTransactionIsolationLevel.ISOLATIONLEVEL_SERIALIZABLE => IsolationLevel.Serializable,
+                OletxTransactionIsolationLevel.ISOLATIONLEVEL_REPEATABLEREAD => IsolationLevel.RepeatableRead,
+                OletxTransactionIsolationLevel.ISOLATIONLEVEL_READCOMMITTED => IsolationLevel.ReadCommitted,
+                OletxTransactionIsolationLevel.ISOLATIONLEVEL_READUNCOMMITTED => IsolationLevel.ReadUncommitted,
+                OletxTransactionIsolationLevel.ISOLATIONLEVEL_UNSPECIFIED => IsolationLevel.Unspecified,
+                OletxTransactionIsolationLevel.ISOLATIONLEVEL_CHAOS => IsolationLevel.Chaos,
+                _ => IsolationLevel.Serializable
+            };
 
         // Helper object for static synchronization
         internal static object ClassSyncObject
         {
             get
             {
-                if ( classSyncObject == null )
+                if (_classSyncObject == null)
                 {
-                    object o = new object();
-                    Interlocked.CompareExchange( ref classSyncObject, o, null );
+                    object o = new();
+                    Interlocked.CompareExchange(ref _classSyncObject, o, null);
                 }
-                return classSyncObject;
+
+                return _classSyncObject;
             }
         }
-
     }
 
     internal class OletxInternalResourceManager
     {
-        OletxTransactionManager oletxTm;
-        Guid myGuid;
-        internal IResourceManagerShim resourceManagerShim = null;
+        private OletxTransactionManager _oletxTm;
 
+        internal Guid Identifier { get; }
 
-        internal OletxInternalResourceManager( OletxTransactionManager oletxTm )
+        internal IResourceManagerShim ResourceManagerShim;
+
+        internal OletxInternalResourceManager(OletxTransactionManager oletxTm)
         {
-            this.oletxTm = oletxTm;
-            this.myGuid = Guid.NewGuid();
-
+            _oletxTm = oletxTm;
+            Identifier = Guid.NewGuid();
         }
 
         public void TMDown()
@@ -981,42 +851,40 @@ namespace System.Transactions.Oletx
             // Let's set ourselves up for reinitialization with the proxy by releasing our
             // reference to the resource manager shim, which will release its reference
             // to the proxy when it destructs.
-            this.resourceManagerShim = null;
+            ResourceManagerShim = null;
 
             // We need to look through all the transactions and tell them about
             // the TMDown so they can tell their Phase0VolatileEnlistmentContainers.
-            Transaction tx = null;
-            RealOletxTransaction realTx = null;
-            IDictionaryEnumerator tableEnum = null;
+            Transaction tx;
+            RealOletxTransaction realTx;
+            IDictionaryEnumerator tableEnum;
 
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
-                    "OletxInternalResourceManager.TMDown"
-                    );
+                MethodEnteredTraceRecord.Trace(SR.TraceSourceOletx, "OletxInternalResourceManager.TMDown");
             }
 
             // make a local copy of the hash table to avoid possible deadlocks when we lock both the global hash table
             // and the transaction object.
-            Hashtable txHashTable = null;
-            lock ( TransactionManager.PromotedTransactionTable.SyncRoot )
+            Hashtable txHashTable;
+            lock (TransactionManager.PromotedTransactionTable.SyncRoot)
             {
-                txHashTable = (Hashtable) TransactionManager.PromotedTransactionTable.Clone();
+                txHashTable = (Hashtable)TransactionManager.PromotedTransactionTable.Clone();
             }
 
             // No need to lock my hashtable, nobody is going to change it.
             tableEnum = txHashTable.GetEnumerator();
-            while ( tableEnum.MoveNext() )
+            while (tableEnum.MoveNext())
             {
                 WeakReference txWeakRef = (WeakReference) tableEnum.Value;
-                if ( null != txWeakRef )
+                if (txWeakRef != null)
                 {
                     tx = (Transaction)txWeakRef.Target;
-                    if ( null != tx )
+                    if (tx != null)
                     {
                         realTx = tx._internalTransaction.PromotedTransaction.realOletxTransaction;
                         // Only deal with transactions owned by my OletxTm.
-                        if ( realTx.OletxTransactionManagerInstance == this.oletxTm )
+                        if (realTx.OletxTransactionManagerInstance == _oletxTm)
                         {
                             realTx.TMDown();
                         }
@@ -1028,67 +896,54 @@ namespace System.Transactions.Oletx
             // deal with Durable EDPR=true (phase0) enlistments.  Each RM will also get a TMDown, but it will
             // come AFTER the "buggy" Phase0Request with abortHint=true - COMPlus bug 36760/36758.
             Hashtable rmHashTable = null;
-            if ( null != OletxTransactionManager.resourceManagerHashTable )
+            if (OletxTransactionManager._resourceManagerHashTable != null)
             {
-                OletxTransactionManager.resourceManagerHashTableLock.AcquireReaderLock( Timeout.Infinite );
+                OletxTransactionManager.ResourceManagerHashTableLock.AcquireReaderLock(Timeout.Infinite);
                 try
                 {
-                    rmHashTable = (Hashtable) OletxTransactionManager.resourceManagerHashTable.Clone();
+                    rmHashTable = (Hashtable)OletxTransactionManager._resourceManagerHashTable.Clone();
                 }
                 finally
                 {
-                    OletxTransactionManager.resourceManagerHashTableLock.ReleaseReaderLock();
+                    OletxTransactionManager.ResourceManagerHashTableLock.ReleaseReaderLock();
                 }
             }
 
-            if ( null != rmHashTable )
+            if (rmHashTable != null)
             {
                 // No need to lock my hashtable, nobody is going to change it.
                 tableEnum = rmHashTable.GetEnumerator();
-                while ( tableEnum.MoveNext() )
+                while (tableEnum.MoveNext())
                 {
-                    OletxResourceManager oletxRM = (OletxResourceManager) tableEnum.Value;
-                    if ( null != oletxRM )
+                    OletxResourceManager oletxRM = (OletxResourceManager)tableEnum.Value;
+                    if (oletxRM != null)
                     {
                         // When the RM spins through its enlistments, it will need to make sure that
                         // the enlistment is for this particular TM.
-                        oletxRM.TMDownFromInternalRM( this.oletxTm );
+                        oletxRM.TMDownFromInternalRM(_oletxTm);
                     }
                 }
             }
 
             // Now let's reinitialize the shim.
-            this.oletxTm.dtcTransactionManagerLock.AcquireWriterLock( -1 );
+            _oletxTm.DtcTransactionManagerLock.AcquireWriterLock(-1);
             try
             {
-                this.oletxTm.ReinitializeProxy();
+                _oletxTm.ReinitializeProxy();
             }
             finally
             {
-                this.oletxTm.dtcTransactionManagerLock.ReleaseWriterLock();
+                _oletxTm.DtcTransactionManagerLock.ReleaseWriterLock();
             }
 
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
-                    "OletxInternalResourceManager.TMDown"
-                    );
+                MethodExitedTraceRecord.Trace(SR.TraceSourceOletx, "OletxInternalResourceManager.TMDown");
             }
 
-        }
-
-        internal Guid Identifier
-        {
-            get { return this.myGuid; }
         }
 
         internal void CallReenlistComplete()
-        {
-            this.resourceManagerShim.ReenlistComplete();
-        }
-
+            => ResourceManagerShim.ReenlistComplete();
     }
-
-
-
 }

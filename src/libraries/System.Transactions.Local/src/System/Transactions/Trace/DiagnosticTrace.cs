@@ -271,12 +271,12 @@ namespace System.Transactions.Diagnostics
             {
                 if (DiagnosticTrace.TraceSource == null)
                 {
-                    LogEvent(TraceEventType.Error, String.Format(CultureInfo.CurrentCulture, SR.FailedToCreateTraceSource, e), true);
+                    LogEvent(TraceEventType.Error, string.Format(CultureInfo.CurrentCulture, SR.FailedToCreateTraceSource, e), true);
                 }
                 else
                 {
                     DiagnosticTrace.TraceSource = null;
-                    LogEvent(TraceEventType.Error, String.Format(CultureInfo.CurrentCulture, SR.FailedToInitializeTraceSource, e), true);
+                    LogEvent(TraceEventType.Error, string.Format(CultureInfo.CurrentCulture, SR.FailedToInitializeTraceSource, e), true);
                 }
             }
         }
@@ -499,7 +499,7 @@ namespace System.Transactions.Diagnostics
         {
             if (addProcessInfo)
             {
-                message = String.Format(CultureInfo.CurrentCulture, "{0}: {1}\n{2}: {3}\n{4}", DiagnosticStrings.ProcessName, DiagnosticTrace.ProcessName, DiagnosticStrings.ProcessId, DiagnosticTrace.ProcessId, message);
+                message = string.Format(CultureInfo.CurrentCulture, "{0}: {1}\n{2}: {3}\n{4}", DiagnosticStrings.ProcessName, DiagnosticTrace.ProcessName, DiagnosticStrings.ProcessId, DiagnosticTrace.ProcessId, message);
             }
 
             LogEvent(type, message);
@@ -564,7 +564,7 @@ namespace System.Transactions.Diagnostics
         {
             if (e != null)
             {
-                traceString = String.Format(CultureInfo.CurrentCulture, SR.FailedToTraceEvent, e, traceString != null ? traceString : "");
+                traceString = string.Format(CultureInfo.CurrentCulture, SR.FailedToTraceEvent, e, traceString != null ? traceString : "");
             }
             lock (DiagnosticTrace.localSyncObject)
             {

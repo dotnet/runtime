@@ -33,7 +33,7 @@ namespace System.Transactions.Oletx
          ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         private static extern void CoTaskMemFree(IntPtr ptr);
 
-        override protected bool ReleaseHandle()
+        protected override bool ReleaseHandle()
         {
             CoTaskMemFree(handle);
             return true;

@@ -49,8 +49,7 @@
     <Compile Include="System\Transactions\Oletx\OletxDependentTransaction.cs" />
     <Compile Include="System\Transactions\Oletx\OletxEnlistment.cs" />
     <Compile Include="System\Transactions\Oletx\OletxResourceManager.cs" />
-    <Compile Include="System\Transactions\Oletx\OletxEnlistment.cs" />
-    <Compile Include="System\Transactions\Oletx\OleTxTransaction.cs" />
+    <Compile Include="System\Transactions\Oletx\OletxTransaction.cs" />
     <Compile Include="System\Transactions\Oletx\OletxTransactionManager.cs" />
     <Compile Include="System\Transactions\Oletx\OletxVolatileEnlistment.cs" />
     <Compile Include="System\Transactions\Trace\Activity.cs" />

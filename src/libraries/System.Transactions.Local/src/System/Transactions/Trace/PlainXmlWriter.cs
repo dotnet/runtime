@@ -186,18 +186,18 @@ namespace System.Transactions.Diagnostics
             }
         }
 
-        public override void WriteChars(Char[] buffer, int index, int count)
+        public override void WriteChars(char[] buffer, int index, int count)
         {
             throw new NotSupportedException();
         }
 
-        public override void WriteRaw(String data)
+        public override void WriteRaw(string data)
         {
             //assumed preformatted with a newline at the end
             throw new NotSupportedException();
         }
 
-        public override void WriteRaw(Char[] buffer, int index, int count)
+        public override void WriteRaw(char[] buffer, int index, int count)
         {
             throw new NotSupportedException();
         }

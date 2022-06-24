@@ -14,107 +14,102 @@ namespace System.Transactions.Oletx
 {
     internal class DtcTransactionManager
     {
-        string nodeName;
-        OletxTransactionManager oletxTm;
-        IDtcProxyShimFactory proxyShimFactory;
-        UInt32 whereaboutsSize;
-        byte[] whereabouts;
-        bool initialized;
+        private string _nodeName;
+        private OletxTransactionManager _oletxTm;
+        private IDtcProxyShimFactory _proxyShimFactory;
+        private uint _whereaboutsSize;
+        private byte[] _whereabouts;
+        private bool _initialized;
 
-        internal DtcTransactionManager( string nodeName, OletxTransactionManager oletxTm )
+        internal DtcTransactionManager(string nodeName, OletxTransactionManager oletxTm)
         {
-            this.nodeName = nodeName;
-            this.oletxTm = oletxTm;
-            this.initialized = false;
-            this.proxyShimFactory = OletxTransactionManager.proxyShimFactory;
+            _nodeName = nodeName;
+            _oletxTm = oletxTm;
+            _initialized = false;
+            _proxyShimFactory = OletxTransactionManager.ProxyShimFactory;
         }
 
         // This is here for the DangerousGetHandle call.  We need to do it.
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods")]
         void Initialize()
         {
-            if ( this.initialized )
+            if (_initialized)
             {
                 return;
             }
 
-            OletxInternalResourceManager internalRM = this.oletxTm.internalResourceManager;
+            OletxInternalResourceManager internalRM = _oletxTm.InternalResourceManager;
             IntPtr handle = IntPtr.Zero;
             IResourceManagerShim resourceManagerShim = null;
-            bool nodeNameMatches = false;
+            bool nodeNameMatches;
 
             CoTaskMemHandle whereaboutsBuffer = null;
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
-                handle = HandleTable.AllocHandle( internalRM );
+                handle = HandleTable.AllocHandle(internalRM);
 
-                this.proxyShimFactory.ConnectToProxy(
-                    this.nodeName,
+                _proxyShimFactory.ConnectToProxy(
+                    _nodeName,
                     internalRM.Identifier,
                     handle,
                     out nodeNameMatches,
-                    out this.whereaboutsSize,
+                    out _whereaboutsSize,
                     out whereaboutsBuffer,
-                    out resourceManagerShim
-                    );
+                    out resourceManagerShim);
 
                 // If the node name does not match, throw.
-                if ( ! nodeNameMatches )
+                if (!nodeNameMatches)
                 {
-                    throw new NotSupportedException( SR.ProxyCannotSupportMultipleNodeNames);
+                    throw new NotSupportedException(SR.ProxyCannotSupportMultipleNodeNames);
                 }
 
                 // Make a managed copy of the whereabouts.
-                if ( ( null != whereaboutsBuffer ) && ( 0 != this.whereaboutsSize ) )
+                if (whereaboutsBuffer != null && _whereaboutsSize != 0)
                 {
-                    this.whereabouts = new byte[this.whereaboutsSize];
-                    Marshal.Copy( whereaboutsBuffer.DangerousGetHandle(), this.whereabouts, 0, Convert.ToInt32(this.whereaboutsSize) );
+                    _whereabouts = new byte[_whereaboutsSize];
+                    Marshal.Copy(whereaboutsBuffer.DangerousGetHandle(), _whereabouts, 0, Convert.ToInt32(_whereaboutsSize));
                 }
 
                 // Give the IResourceManagerShim to the internalRM and tell it to call ReenlistComplete.
-                internalRM.resourceManagerShim = resourceManagerShim;
+                internalRM.ResourceManagerShim = resourceManagerShim;
                 internalRM.CallReenlistComplete();
 
-
-                this.initialized = true;
+                _initialized = true;
             }
-            catch ( COMException ex )
+            catch (COMException ex)
             {
-                if ( NativeMethods.XACT_E_NOTSUPPORTED == ex.ErrorCode )
+                if (ex.ErrorCode == NativeMethods.XACT_E_NOTSUPPORTED)
                 {
                     throw new NotSupportedException( SR.CannotSupportNodeNameSpecification);
                 }
 
-                OletxTransactionManager.ProxyException( ex );
+                OletxTransactionManager.ProxyException(ex);
 
                 // Unfortunately MSDTCPRX may return unknown error codes when attempting to connect to MSDTC
                 // that error should be propagated back as a TransactionManagerCommunicationException.
-                throw TransactionManagerCommunicationException.Create(
-                    SR.TransactionManagerCommunicationException,
-                    ex
-                    );
+                throw TransactionManagerCommunicationException.Create(SR.TransactionManagerCommunicationException, ex);
             }
             finally
             {
-                if ( null != whereaboutsBuffer )
+                if (whereaboutsBuffer != null)
                 {
                     whereaboutsBuffer.Close();
                 }
 
                 // If we weren't successful at initializing ourself, clear things out
                 // for next time around.
-                if ( !this.initialized )
+                if (!_initialized)
                 {
-                    if ( handle != IntPtr.Zero && null == resourceManagerShim )
+                    if (handle != IntPtr.Zero && resourceManagerShim == null)
                     {
-                        HandleTable.FreeHandle( handle );
+                        HandleTable.FreeHandle(handle);
                     }
 
-                    if ( null != this.whereabouts )
+                    if (null != _whereabouts)
                     {
-                        this.whereabouts = null;
-                        this.whereaboutsSize = 0;
+                        _whereabouts = null;
+                        _whereaboutsSize = 0;
                     }
                 }
             }
@@ -124,24 +119,25 @@ namespace System.Transactions.Oletx
         {
             get
             {
-                if ( !this.initialized )
+                if (!_initialized)
                 {
-                    lock ( this )
+                    lock (this)
                     {
                         Initialize();
                     }
                 }
-                return this.proxyShimFactory;
+
+                return _proxyShimFactory;
             }
         }
 
         internal void ReleaseProxy()
         {
-            lock ( this )
+            lock (this)
             {
-                this.whereabouts = null;
-                this.whereaboutsSize = 0;
-                this.initialized = false;
+                _whereabouts = null;
+                _whereaboutsSize = 0;
+                _initialized = false;
             }
         }
 
@@ -149,39 +145,37 @@ namespace System.Transactions.Oletx
         {
             get
             {
-                if ( !this.initialized )
+                if (!_initialized)
                 {
                     lock ( this )
                     {
                         Initialize();
                     }
                 }
-                return whereabouts;
+
+                return _whereabouts;
             }
         }
 
-        internal static UInt32 AdjustTimeout(
-            TimeSpan timeout
-            )
+        internal static uint AdjustTimeout(TimeSpan timeout)
         {
-            UInt32 returnTimeout = 0;
+            uint returnTimeout = 0;
 
             try
             {
-                returnTimeout = ( Convert.ToUInt32( timeout.TotalMilliseconds, CultureInfo.CurrentCulture ) );
+                returnTimeout = Convert.ToUInt32(timeout.TotalMilliseconds, CultureInfo.CurrentCulture);
             }
                 // timeout.TotalMilliseconds might be negative, so let's catch overflow exceptions, just in case.
-            catch ( OverflowException caughtEx )
+            catch (OverflowException caughtEx)
             {
-                if ( DiagnosticTrace.Verbose )
+                if (DiagnosticTrace.Verbose)
                 {
-                    ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
-                        caughtEx );
+                    ExceptionConsumedTraceRecord.Trace(SR.TraceSourceOletx, caughtEx);
                 }
-                returnTimeout = UInt32.MaxValue;
+
+                returnTimeout = uint.MaxValue;
             }
             return returnTimeout;
         }
-
     }
 }

@@ -20,12 +20,12 @@ namespace System.Transactions.Oletx
 {
     internal sealed class OletxResourceManager
     {
-        internal Guid resourceManagerIdentifier;
+        internal Guid ResourceManagerIdentifier;
 
         internal IResourceManagerShim resourceManagerShim;
-        internal Hashtable enlistmentHashtable;
-        internal static Hashtable volatileEnlistmentHashtable = new Hashtable();
-        internal OletxTransactionManager oletxTransactionManager;
+        internal Hashtable EnlistmentHashtable;
+        internal static Hashtable VolatileEnlistmentHashtable = new Hashtable();
+        internal OletxTransactionManager OletxTransactionManager;
 
         // reenlistList is a simple ArrayList of OletxEnlistment objects that are either in the
         // Preparing or Prepared state when we receive a TMDown notification or have had
@@ -34,7 +34,7 @@ namespace System.Transactions.Oletx
         // list should get a lock on the list.
         // Special Note: If you are going to lock both the OletxResourceManager object AND the
         // reenlistList, lock the reenlistList FIRST.
-        internal ArrayList reenlistList;
+        internal ArrayList ReenlistList;
 
         // reenlistPendingList is also a simple ArrayList of OletxEnlistment objects.  But for these
         // we have received the outcome from the proxy and have called into the RM to deliver the
@@ -43,40 +43,37 @@ namespace System.Transactions.Oletx
         // the ReenlistThread to call RecoveryComplete and not be rescheduled.  Access to this list
         // should be protected by locking the reenlistList.  The lists are always accessed together,
         // so there is no reason to grab two locks.
-        internal ArrayList reenlistPendingList;
+        internal ArrayList ReenlistPendingList;
 
         // This is where we keep the reenlistThread and thread timer values.  If there is a reenlist thread running,
         // reenlistThread will be non-null.  If reenlistThreadTimer is non-null, we have a timer scheduled which will
         // fire off a reenlist thread when it expires.  Only one or the other should be non-null at a time.  However, they
         // could both be null, which means that there is no reenlist thread running and there is no timer scheduled to
         // create one.  Access to these members should be done only after obtaining a lock on the OletxResourceManager object.
-        internal Timer reenlistThreadTimer;
+        internal Timer ReenlistThreadTimer;
         internal Thread reenlistThread;
 
         // This boolean is set to true if the resource manager application has called RecoveryComplete.
         // A lock on the OletxResourceManager instance will be obtained when retrieving or modifying
         // this value.  Before calling ReenlistComplete on the DTC proxy, this value must be true.
-        private bool recoveryCompleteCalledByApplication;
+        internal bool RecoveryCompleteCalledByApplication { get; set; }
 
-        internal OletxResourceManager(
-            OletxTransactionManager transactionManager,
-            Guid resourceManagerIdentifier
-            )
+        internal OletxResourceManager(OletxTransactionManager transactionManager, Guid resourceManagerIdentifier)
         {
-            Debug.Assert( null != transactionManager, "Argument is null" );
+            Debug.Assert(transactionManager != null, "Argument is null");
 
             // This will get set later, after the resource manager is created with the proxy.
-            this.resourceManagerShim = null;
-            this.oletxTransactionManager = transactionManager;
-            this.resourceManagerIdentifier = resourceManagerIdentifier;
+            resourceManagerShim = null;
+            OletxTransactionManager = transactionManager;
+            ResourceManagerIdentifier = resourceManagerIdentifier;
 
-            this.enlistmentHashtable = new Hashtable();
-            this.reenlistList = new ArrayList();
-            this.reenlistPendingList = new ArrayList();
+            EnlistmentHashtable = new Hashtable();
+            ReenlistList = new ArrayList();
+            ReenlistPendingList = new ArrayList();
 
-            reenlistThreadTimer = null;
+            ReenlistThreadTimer = null;
             reenlistThread = null;
-            recoveryCompleteCalledByApplication = false;
+            RecoveryCompleteCalledByApplication = false;
         }
 
         internal IResourceManagerShim ResourceManagerShim
@@ -85,16 +82,16 @@ namespace System.Transactions.Oletx
             {
                 IResourceManagerShim localResourceManagerShim = null;
 
-                if ( null == this.resourceManagerShim )
+                if (resourceManagerShim == null)
                 {
-                    lock ( this )
+                    lock (this)
                     {
-                        if ( null == this.resourceManagerShim )
+                        if (resourceManagerShim == null)
                         {
-                            this.oletxTransactionManager.dtcTransactionManagerLock.AcquireReaderLock( -1 );
+                            OletxTransactionManager.DtcTransactionManagerLock.AcquireReaderLock( -1 );
                             try
                             {
-                                Guid rmGuid = this.resourceManagerIdentifier;
+                                Guid rmGuid = ResourceManagerIdentifier;
                                 IntPtr handle = IntPtr.Zero;
 
                                 RuntimeHelpers.PrepareConstrainedRegions();
@@ -102,32 +99,30 @@ namespace System.Transactions.Oletx
                                 {
                                     handle = HandleTable.AllocHandle( this );
 
-                                    this.oletxTransactionManager.DtcTransactionManager.ProxyShimFactory.CreateResourceManager(
+                                    OletxTransactionManager.DtcTransactionManager.ProxyShimFactory.CreateResourceManager(
                                         rmGuid,
                                         handle,
-                                        out localResourceManagerShim );
+                                        out localResourceManagerShim);
                                 }
                                 finally
                                 {
-                                    if ( null == localResourceManagerShim && handle != IntPtr.Zero )
+                                    if (localResourceManagerShim == null && handle != IntPtr.Zero)
                                     {
-                                        HandleTable.FreeHandle( handle );
+                                        HandleTable.FreeHandle(handle);
                                     }
                                 }
 
                             }
-                            catch ( COMException ex )
+                            catch (COMException ex)
                             {
-                                if ( ( NativeMethods.XACT_E_CONNECTION_DOWN == ex.ErrorCode ) ||
-                                    ( NativeMethods.XACT_E_TMNOTAVAILABLE == ex.ErrorCode )
-                                    )
+                                if (ex.ErrorCode == NativeMethods.XACT_E_CONNECTION_DOWN ||
+                                    ex.ErrorCode == NativeMethods.XACT_E_TMNOTAVAILABLE)
                                 {
                                     // Just to make sure...
                                     localResourceManagerShim = null;
-                                    if ( DiagnosticTrace.Verbose )
+                                    if (DiagnosticTrace.Verbose)
                                     {
-                                        ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
-                                            ex );
+                                        ExceptionConsumedTraceRecord.Trace(SR.TraceSourceOletx, ex);
                                     }
                                 }
                                 else
@@ -135,23 +130,19 @@ namespace System.Transactions.Oletx
                                     throw;
                                 }
                             }
-                            catch ( TransactionException ex )
+                            catch (TransactionException ex)
                             {
-
-                                COMException comEx = ex.InnerException as COMException;
-                                if ( null != comEx )
+                                if (ex.InnerException is COMException comEx)
                                 {
                                     // Tolerate TM down.
-                                    if ( ( NativeMethods.XACT_E_CONNECTION_DOWN == comEx.ErrorCode ) ||
-                                        ( NativeMethods.XACT_E_TMNOTAVAILABLE == comEx.ErrorCode )
-                                        )
+                                    if (comEx.ErrorCode == NativeMethods.XACT_E_CONNECTION_DOWN ||
+                                        comEx.ErrorCode == NativeMethods.XACT_E_TMNOTAVAILABLE)
                                     {
                                         // Just to make sure...
                                         localResourceManagerShim = null;
-                                        if ( DiagnosticTrace.Verbose )
+                                        if (DiagnosticTrace.Verbose)
                                         {
-                                            ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
-                                                ex );
+                                            ExceptionConsumedTraceRecord.Trace(SR.TraceSourceOletx, ex);
                                         }
                                     }
                                     else
@@ -166,33 +157,33 @@ namespace System.Transactions.Oletx
                             }
                             finally
                             {
-                                this.oletxTransactionManager.dtcTransactionManagerLock.ReleaseReaderLock();
+                                OletxTransactionManager.DtcTransactionManagerLock.ReleaseReaderLock();
                             }
                             Thread.MemoryBarrier();
-                            this.resourceManagerShim = localResourceManagerShim;
+                            resourceManagerShim = localResourceManagerShim;
                         }
                     }
                 }
-                return this.resourceManagerShim;
+                return resourceManagerShim;
             }
 
             set
             {
-                Debug.Assert( null == value, "set_ResourceManagerShim, value not null" );
-                this.resourceManagerShim = value;
+                Debug.Assert(value == null, "set_ResourceManagerShim, value not null");
+                resourceManagerShim = value;
             }
         }
 
         internal bool CallProxyReenlistComplete()
         {
             bool success = false;
-            if ( RecoveryCompleteCalledByApplication )
+            if (RecoveryCompleteCalledByApplication)
             {
-                IResourceManagerShim localResourceManagerShim = null;
+                IResourceManagerShim localResourceManagerShim;
                 try
                 {
-                    localResourceManagerShim = this.ResourceManagerShim;
-                    if ( null != localResourceManagerShim )
+                    localResourceManagerShim = ResourceManagerShim;
+                    if (localResourceManagerShim != null)
                     {
                         localResourceManagerShim.ReenlistComplete();
                         success = true;
@@ -200,26 +191,24 @@ namespace System.Transactions.Oletx
                     // If we don't have an iResourceManagerOletx, just tell the caller that
                     // we weren't successful and it will schedule a retry.
                 }
-                catch ( COMException ex )
+                catch (COMException ex)
                 {
                     // If we get a TMDown error, eat it and indicate that we were unsuccessful.
-                    if ( ( NativeMethods.XACT_E_CONNECTION_DOWN == ex.ErrorCode ) ||
-                        ( NativeMethods.XACT_E_TMNOTAVAILABLE == ex.ErrorCode )
-                        )
+                    if (ex.ErrorCode == NativeMethods.XACT_E_CONNECTION_DOWN ||
+                        ex.ErrorCode == NativeMethods.XACT_E_TMNOTAVAILABLE)
                     {
                         success = false;
-                        if ( DiagnosticTrace.Verbose )
+                        if (DiagnosticTrace.Verbose)
                         {
-                            ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
-                                ex );
+                            ExceptionConsumedTraceRecord.Trace(SR.TraceSourceOletx, ex);
                         }
                     }
 
                     // We might get an XACT_E_RECOVERYALREADYDONE if there are multiple OletxTransactionManager
                     // objects for the same backend TM.  We can safely ignore this error.
-                    else if ( NativeMethods.XACT_E_RECOVERYALREADYDONE != ex.ErrorCode )
+                    else if (ex.ErrorCode != NativeMethods.XACT_E_RECOVERYALREADYDONE)
                     {
-                        OletxTransactionManager.ProxyException( ex );
+                        OletxTransactionManager.ProxyException(ex);
                         throw;
                     }
                     // Getting XACT_E_RECOVERYALREADYDONE is considered success.
@@ -241,19 +230,6 @@ namespace System.Transactions.Oletx
             return success;
         }
 
-        internal bool RecoveryCompleteCalledByApplication
-        {
-            get
-            {
-                return this.recoveryCompleteCalledByApplication;
-            }
-
-            set
-            {
-                this.recoveryCompleteCalledByApplication = value;
-            }
-        }
-
         // This is called by the internal RM when it gets a TM Down notification.  This routine will
         // tell the enlistments about the TMDown from the internal RM.  The enlistments will then
         // decide what to do, based on their state.  This is mainly to work around COMPlus bug 36760/36758,
@@ -261,19 +237,19 @@ namespace System.Transactions.Oletx
         // to try to avoid telling the application to prepare when we know the transaction will abort.
         // We can't do this out of the normal TMDown notification to the RM because it is too late.  The
         // Phase0Request gets sent before the TMDown notification.
-        internal void TMDownFromInternalRM( OletxTransactionManager oletxTM )
+        internal void TMDownFromInternalRM(OletxTransactionManager oletxTM)
         {
-            Hashtable localEnlistmentHashtable = null;
-            IDictionaryEnumerator enlistEnum = null;
-            OletxEnlistment enlistment = null;
+            Hashtable localEnlistmentHashtable;
+            IDictionaryEnumerator enlistEnum;
+            OletxEnlistment enlistment;
 
             // If the internal RM got a TMDown, we will shortly, so null out our ResourceManagerShim now.
-            this.ResourceManagerShim = null;
+            ResourceManagerShim = null;
 
             // Make our own copy of the hashtable of enlistments.
-            lock ( enlistmentHashtable.SyncRoot )
+            lock (EnlistmentHashtable.SyncRoot)
             {
-                localEnlistmentHashtable = (Hashtable) this.enlistmentHashtable.Clone();
+                localEnlistmentHashtable = (Hashtable)EnlistmentHashtable.Clone();
             }
 
             // Tell all of our enlistments that the TM went down.  The proxy only
@@ -281,25 +257,20 @@ namespace System.Transactions.Oletx
             // enlistments to know so they can avoid sending Prepare when they get a
             // Phase0Request - COMPlus bug 36760/36758.
             enlistEnum = localEnlistmentHashtable.GetEnumerator();
-            while ( enlistEnum.MoveNext() )
+            while (enlistEnum.MoveNext())
             {
                 enlistment = enlistEnum.Value as OletxEnlistment;
-                if ( null != enlistment )
-                {
-                    enlistment.TMDownFromInternalRM( oletxTM );
-                }
+                enlistment?.TMDownFromInternalRM( oletxTM );
             }
-
         }
 
         #region IResourceManagerSink
+
         public void TMDown()
         {
             // The ResourceManagerShim was already set to null by TMDownFromInternalRM, so we don't need to do it again here.
             // Just start the ReenlistThread.
             StartReenlistThread();
-
-            return;
         }
 
         #endregion
@@ -308,117 +279,107 @@ namespace System.Transactions.Oletx
             OletxTransaction oletxTransaction,
             bool canDoSinglePhase,
             IEnlistmentNotificationInternal enlistmentNotification,
-            EnlistmentOptions enlistmentOptions
-            )
+            EnlistmentOptions enlistmentOptions)
         {
-            IResourceManagerShim localResourceManagerShim = null;
+            IResourceManagerShim localResourceManagerShim;
 
-            Debug.Assert( null != oletxTransaction, "Argument is null" );
-            Debug.Assert( null != enlistmentNotification, "Argument is null" );
+            Debug.Assert(oletxTransaction != null, "Argument is null" );
+            Debug.Assert(enlistmentNotification != null, "Argument is null" );
 
-            IEnlistmentShim enlistmentShim = null;
-            IPhase0EnlistmentShim phase0Shim = null;
+            IEnlistmentShim enlistmentShim;
+            IPhase0EnlistmentShim phase0Shim;
             Guid txUow = Guid.Empty;
             IntPtr handlePhase0 = IntPtr.Zero;
             bool phase0EnlistSucceeded = false;
             bool undecidedEnlistmentsIncremented = false;
 
             // Create our enlistment object.
-            OletxEnlistment enlistment = new OletxEnlistment(
+            OletxEnlistment enlistment = new(
                 canDoSinglePhase,
                 enlistmentNotification,
                 oletxTransaction.RealTransaction.TxGuid,
                 enlistmentOptions,
                 this,
-                oletxTransaction
-                );
+                oletxTransaction                );
 
             bool enlistmentSucceeded = false;
 
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
-                if ( (enlistmentOptions & EnlistmentOptions.EnlistDuringPrepareRequired) != 0 )
+                if ((enlistmentOptions & EnlistmentOptions.EnlistDuringPrepareRequired) != 0)
                 {
                     RuntimeHelpers.PrepareConstrainedRegions();
-                    try { }
-                    finally
-                    {
-                        oletxTransaction.RealTransaction.IncrementUndecidedEnlistments();
-                        undecidedEnlistmentsIncremented = true;
-                    }
+                    oletxTransaction.RealTransaction.IncrementUndecidedEnlistments();
+                    undecidedEnlistmentsIncremented = true;
                 }
 
-                // This entire sequense needs to be executed before we can go on.
-                lock ( enlistment )
+                // This entire sequence needs to be executed before we can go on.
+                lock (enlistment)
                 {
                     RuntimeHelpers.PrepareConstrainedRegions();
                     try
                     {
                         // Do the enlistment on the proxy.
-                        localResourceManagerShim = this.ResourceManagerShim;
-                        if ( null == localResourceManagerShim )
+                        localResourceManagerShim = ResourceManagerShim;
+                        if (localResourceManagerShim == null)
                         {
                             // The TM must be down.  Throw the appropriate exception.
-                            throw TransactionManagerCommunicationException.Create( SR.TraceSourceOletx,  null );
+                            throw TransactionManagerCommunicationException.Create(SR.TraceSourceOletx, null);
                         }
 
-                        if ( (enlistmentOptions & EnlistmentOptions.EnlistDuringPrepareRequired) != 0 )
+                        if ((enlistmentOptions & EnlistmentOptions.EnlistDuringPrepareRequired) != 0)
                         {
                             // We need to create an EnlistmentNotifyShim if native threads are not allowed to enter managed code.
                             handlePhase0 = HandleTable.AllocHandle( enlistment );
 
                             RuntimeHelpers.PrepareConstrainedRegions();
-                            try { }
-                            finally
-                            {
-                                oletxTransaction.RealTransaction.TransactionShim.Phase0Enlist(
-                                    handlePhase0,
-                                    out phase0Shim );
-                                phase0EnlistSucceeded = true;
-                            }
+                            oletxTransaction.RealTransaction.TransactionShim.Phase0Enlist(
+                                handlePhase0,
+                                out phase0Shim );
+                            phase0EnlistSucceeded = true;
                             enlistment.Phase0EnlistmentShim = phase0Shim;
                         }
 
-                        enlistment.phase1Handle = HandleTable.AllocHandle( enlistment );
+                        enlistment._phase1Handle = HandleTable.AllocHandle(enlistment);
                         localResourceManagerShim.Enlist(
                             oletxTransaction.RealTransaction.TransactionShim,
-                            enlistment.phase1Handle,
-                            out enlistmentShim );
+                            enlistment._phase1Handle,
+                            out enlistmentShim);
 
                         enlistment.EnlistmentShim = enlistmentShim;
                     }
                     catch (COMException comException)
                     {
                         // There is no string mapping for XACT_E_TOOMANY_ENLISTMENTS, so we need to do it here.
-                        if ( NativeMethods.XACT_E_TOOMANY_ENLISTMENTS == comException.ErrorCode )
+                        if (comException.ErrorCode == NativeMethods.XACT_E_TOOMANY_ENLISTMENTS)
                         {
                             throw TransactionException.Create(
                                 SR.OletxTooManyEnlistments,
                                 comException,
-                                 enlistment == null ? Guid.Empty : enlistment.DistributedTxId );
+                                enlistment == null ? Guid.Empty : enlistment.DistributedTxId);
                         }
 
-                        OletxTransactionManager.ProxyException( comException );
+                        OletxTransactionManager.ProxyException(comException);
 
                         throw;
                     }
                     finally
                     {
-                        if ( enlistment.EnlistmentShim == null )
+                        if (enlistment.EnlistmentShim == null)
                         {
                             // If the enlistment shim was never assigned then something blew up.
                             // Perform some cleanup.
-                            if ( handlePhase0 != IntPtr.Zero && !phase0EnlistSucceeded )
+                            if (handlePhase0 != IntPtr.Zero && !phase0EnlistSucceeded)
                             {
                                 // Only clean up the phase0 handle if the phase 0 enlistment did not succeed.
                                 // This is because the notification processing code expects it to exist.
-                                HandleTable.FreeHandle( handlePhase0 );
+                                HandleTable.FreeHandle(handlePhase0);
                             }
 
-                            if ( enlistment.phase1Handle != IntPtr.Zero )
+                            if (enlistment._phase1Handle != IntPtr.Zero)
                             {
-                                HandleTable.FreeHandle( enlistment.phase1Handle );
+                                HandleTable.FreeHandle(enlistment._phase1Handle);
                             }
 
                             // Note this code used to call unenlist however this allows race conditions where
@@ -432,9 +393,9 @@ namespace System.Transactions.Oletx
             }
             finally
             {
-                if ( !enlistmentSucceeded &&
-                    ((enlistmentOptions & EnlistmentOptions.EnlistDuringPrepareRequired) != 0) &&
-                    undecidedEnlistmentsIncremented )
+                if (!enlistmentSucceeded &&
+                    (enlistmentOptions & EnlistmentOptions.EnlistDuringPrepareRequired) != 0 &&
+                    undecidedEnlistmentsIncremented)
                 {
                     oletxTransaction.RealTransaction.DecrementUndecidedEnlistments();
                 }
@@ -446,8 +407,7 @@ namespace System.Transactions.Oletx
         internal OletxEnlistment Reenlist(
             int prepareInfoLength,
             byte[] prepareInfo,
-            IEnlistmentNotificationInternal enlistmentNotification
-            )
+            IEnlistmentNotificationInternal enlistmentNotification)
         {
             throw new NotImplementedException();
 
@@ -456,23 +416,23 @@ namespace System.Transactions.Oletx
             OletxTransactionStatus xactStatus = OletxTransactionStatus.OLETX_TRANSACTION_STATUS_NONE;
 
             // Put the recovery information into a stream.
-            MemoryStream stream = new MemoryStream( prepareInfo );
+            MemoryStream stream = new(prepareInfo);
 
             // First extract the OletxRecoveryInformation from the stream.
             IFormatter formatter = new BinaryFormatter();
             OletxRecoveryInformation oletxRecoveryInformation;
             try
             {
-                oletxRecoveryInformation = formatter.Deserialize( stream ) as OletxRecoveryInformation;
+                oletxRecoveryInformation = formatter.Deserialize(stream) as OletxRecoveryInformation;
             }
             catch (SerializationException se)
             {
-                throw new ArgumentException( SR.InvalidArgument, "prepareInfo", se );
+                throw new ArgumentException(SR.InvalidArgument, "prepareInfo", se);
             }
 
-            if ( null == oletxRecoveryInformation )
+            if (null == oletxRecoveryInformation)
             {
-                throw new ArgumentException( SR.InvalidArgument, "prepareInfo" );
+                throw new ArgumentException(SR.InvalidArgument, "prepareInfo");
             }
 
             // Verify that the resource manager guid in the recovery info matches that of the calling resource manager.
@@ -481,38 +441,37 @@ namespace System.Transactions.Oletx
             {
                 rmGuidArray[i] = oletxRecoveryInformation.proxyRecoveryInformation[i + 16];
             }
-            Guid rmGuid = new Guid( rmGuidArray );
-            if ( rmGuid != this.resourceManagerIdentifier )
+            Guid rmGuid = new(rmGuidArray);
+            if (rmGuid != this.resourceManagerIdentifier)
             {
-                throw TransactionException.Create(TraceSourceType.TraceSourceDistributed, SR.ResourceManagerIdDoesNotMatchRecoveryInformation, null );
+                throw TransactionException.Create(TraceSourceType.TraceSourceDistributed, SR.ResourceManagerIdDoesNotMatchRecoveryInformation, null);
             }
 
             // Ask the proxy resource manager to reenlist.
             IResourceManagerShim localResourceManagerShim = null;
             try
             {
-                localResourceManagerShim = this.ResourceManagerShim;
-                if ( null == localResourceManagerShim )
+                localResourceManagerShim = ResourceManagerShim;
+                if (localResourceManagerShim == null)
                 {
                     // The TM must be down.  Throw the exception that will get caught below and will cause
                     // the enlistment to start the ReenlistThread.  The TMDown thread will be trying to reestablish
                     // connection with the TM and will start the reenlist thread when it does.
-                    throw new COMException( SR.DtcTransactionManagerUnavailable, NativeMethods.XACT_E_CONNECTION_DOWN );
+                    throw new COMException(SR.DtcTransactionManagerUnavailable, NativeMethods.XACT_E_CONNECTION_DOWN);
                 }
 
                 // Only wait for 5 milliseconds.  If the TM doesn't have the outcome now, we will
                 // put the enlistment on the reenlistList for later processing.
                 localResourceManagerShim.Reenlist(
-                    Convert.ToUInt32( oletxRecoveryInformation.proxyRecoveryInformation.Length, CultureInfo.InvariantCulture ),
+                    Convert.ToUInt32(oletxRecoveryInformation.proxyRecoveryInformation.Length, CultureInfo.InvariantCulture),
                     oletxRecoveryInformation.proxyRecoveryInformation,
-                    out outcome
-                    );
+                    out outcome);
 
-                if ( OletxTransactionOutcome.Committed == outcome )
+                if (OletxTransactionOutcome.Committed == outcome)
                 {
                     xactStatus = OletxTransactionStatus.OLETX_TRANSACTION_STATUS_COMMITTED;
                 }
-                else if ( OletxTransactionOutcome.Aborted == outcome )
+                else if (OletxTransactionOutcome.Aborted == outcome)
                 {
                     xactStatus = OletxTransactionStatus.OLETX_TRANSACTION_STATUS_ABORTED;
                 }
@@ -522,19 +481,17 @@ namespace System.Transactions.Oletx
                     StartReenlistThread();
                 }
             }
-            catch ( COMException ex )
+            catch (COMException ex)
             {
-                if ( NativeMethods.XACT_E_CONNECTION_DOWN == ex.ErrorCode )
+                if (NativeMethods.XACT_E_CONNECTION_DOWN == ex.ErrorCode)
                 {
                     xactStatus = OletxTransactionStatus.OLETX_TRANSACTION_STATUS_PREPARED;
-                    this.ResourceManagerShim = null;
+                    ResourceManagerShim = null;
                     StartReenlistThread();
-                    if ( DiagnosticTrace.Verbose )
+                    if (DiagnosticTrace.Verbose)
                     {
-                        ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
-                            ex );
+                        ExceptionConsumedTraceRecord.Trace(SR.TraceSourceOletx, ex);
                     }
-
                 }
                 else
                 {
@@ -547,12 +504,11 @@ namespace System.Transactions.Oletx
             }
 
             // Now create our enlistment to tell the client the outcome.
-            OletxEnlistment enlistment = new OletxEnlistment(
+            OletxEnlistment enlistment = new(
                 enlistmentNotification,
                 xactStatus,
                 oletxRecoveryInformation.proxyRecoveryInformation,
-                this
-                );
+                this);
 
             return enlistment;
 #endif
@@ -570,24 +526,24 @@ namespace System.Transactions.Oletx
                 // Remove the OletxEnlistment objects from the reenlist list because the RM says it doesn't
                 // have any unresolved transactions, so we don't need to keep asking and the reenlist thread can exit.
                 // Leave the reenlistPendingList alone.  If we have notifications outstanding, we still can't remove those.
-                lock ( this.reenlistList )
+                lock (ReenlistList)
                 {
                     // If the ReenlistThread is not running and there are no reenlistPendingList entries, we need to call ReenlistComplete ourself.
-                    lock ( this )
+                    lock (this)
                     {
-                        if ( ( 0 == this.reenlistList.Count ) && ( 0 == this.reenlistPendingList.Count ) )
+                        if (ReenlistList.Count == 0 && ReenlistPendingList.Count == 0)
                         {
-                            if ( null != this.reenlistThreadTimer )
+                            if (ReenlistThreadTimer != null)
                             {
                                 // If we have a pending reenlistThreadTimer, cancel it.  We do the cancel
                                 // in the finally block to satisfy FXCop.
-                                localTimer = this.reenlistThreadTimer;
-                                this.reenlistThreadTimer = null;
+                                localTimer = ReenlistThreadTimer;
+                                ReenlistThreadTimer = null;
                             }
 
-                            // Try to tell the proxy RenlistmentComplete.
+                            // Try to tell the proxy ReenlistmentComplete.
                             bool success = CallProxyReenlistComplete();
-                            if ( !success )
+                            if (!success)
                             {
                                 // We are now responsible for calling RecoveryComplete. Fire up the ReenlistThread
                                 // to do it for us.
@@ -603,15 +559,11 @@ namespace System.Transactions.Oletx
             }
             finally
             {
-                if ( null != localTimer )
+                if (localTimer != null)
                 {
                     localTimer.Dispose();
                 }
             }
-
-
-            return;
-
         }
 
         internal void StartReenlistThread()
@@ -619,17 +571,13 @@ namespace System.Transactions.Oletx
             // We are not going to check the reenlistList.Count.  Just always start the thread.  We do this because
             // if we get a COMException from calling ReenlistComplete, we start the reenlistThreadTimer to retry it for us
             // in the background.
-            lock ( this )
+            lock (this)
             {
                 // We don't need a MemoryBarrier here because all access to the reenlistThreadTimer member is done while
                 // holding a lock on the OletxResourceManager object.
-                if ( ( null == this.reenlistThreadTimer ) && ( null == this.reenlistThread ) )
+                if (ReenlistThreadTimer == null && reenlistThread == null)
                 {
-                    this.reenlistThreadTimer = new Timer( this.ReenlistThread,
-                        this,
-                        10,
-                        Timeout.Infinite
-                        );
+                    ReenlistThreadTimer = new Timer(ReenlistThread, this, 10, Timeout.Infinite);
                 }
             }
         }
@@ -638,33 +586,29 @@ namespace System.Transactions.Oletx
         // it, removes it from the list.  An enlistment calls this routine when it is "finishing" because
         // the RM has called EnlistmentDone or it was InDoubt.  But it only calls it if the enlistment does NOT
         // have a WrappedTransactionEnlistmentAsync value, indicating that it is a recovery enlistment.
-        internal void RemoveFromReenlistPending( OletxEnlistment enlistment )
+        internal void RemoveFromReenlistPending(OletxEnlistment enlistment)
         {
             // We lock the reenlistList because we have decided to lock that list when accessing either
             // the reenlistList or the reenlistPendingList.
-            lock ( reenlistList )
+            lock (ReenlistList)
             {
                 // This will do a linear search of the list, but that is what we need to do because
                 // the enlistments may change indicies while notifications are outstanding.  Also,
                 // this does not throw if the enlistment isn't on the list.
-                reenlistPendingList.Remove( enlistment );
+                ReenlistPendingList.Remove(enlistment);
 
                 lock ( this )
                 {
                     // If we have a ReenlistThread timer and both the reenlistList and the reenlistPendingList
                     // are empty, kick the ReenlistThread now.
-                    if ( ( null != this.reenlistThreadTimer ) &&
-                        ( 0 == this.reenlistList.Count ) &&
-                        ( 0 == this.reenlistPendingList.Count )
-                        )
+                    if (ReenlistThreadTimer != null && ReenlistList.Count == 0 && ReenlistPendingList.Count == 0)
                     {
-                        if ( !this.reenlistThreadTimer.Change( 0, Timeout.Infinite ))
+                        if (!ReenlistThreadTimer.Change( 0, Timeout.Infinite))
                         {
                             throw TransactionException.CreateInvalidOperationException(
                                 TraceSourceType.TraceSourceDistributed,
                                 SR.UnexpectedTimerFailure,
-                                null
-                                );
+                                null);
                         }
                     }
                 }
@@ -673,125 +617,117 @@ namespace System.Transactions.Oletx
 
         internal void ReenlistThread( object state )
         {
-            int localLoopCount = 0;
-            bool done = false;
-            OletxEnlistment localEnlistment = null;
-            IResourceManagerShim localResourceManagerShim = null;
-            bool success = false;
+            int localLoopCount;
+            bool done;
+            OletxEnlistment localEnlistment;
+            IResourceManagerShim localResourceManagerShim;
+            bool success;
             Timer localTimer = null;
             bool disposeLocalTimer = false;
 
-            OletxResourceManager resourceManager = (OletxResourceManager) state;
+            OletxResourceManager resourceManager = (OletxResourceManager)state;
 
             try
             {
-                if ( DiagnosticTrace.Information )
+                if (DiagnosticTrace.Information)
                 {
-                    MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
-                        "OletxResourceManager.ReenlistThread"
-                        );
+                    MethodEnteredTraceRecord.Trace(SR.TraceSourceOletx, "OletxResourceManager.ReenlistThread");
                 }
 
-                lock ( resourceManager )
+                lock (resourceManager)
                 {
                     localResourceManagerShim = resourceManager.ResourceManagerShim;
-                    localTimer = resourceManager.reenlistThreadTimer;
-                    resourceManager.reenlistThreadTimer = null;
+                    localTimer = resourceManager.ReenlistThreadTimer;
+                    resourceManager.ReenlistThreadTimer = null;
                     resourceManager.reenlistThread = Thread.CurrentThread;
                 }
 
                 // We only want to do work if we have a resourceManagerShim.
-                if ( null != localResourceManagerShim )
+                if (localResourceManagerShim != null)
                 {
-                    lock ( resourceManager.reenlistList )
+                    lock (resourceManager.ReenlistList)
                     {
                         // Get the current count on the list.
-                        localLoopCount = resourceManager.reenlistList.Count;
+                        localLoopCount = resourceManager.ReenlistList.Count;
                     }
 
                     done = false;
-                    while ( !done && ( localLoopCount > 0 ) && ( null != localResourceManagerShim ) )
+                    while (!done && localLoopCount > 0 && localResourceManagerShim != null)
                     {
-                        lock ( resourceManager.reenlistList )
+                        lock (resourceManager.ReenlistList)
                         {
                             localEnlistment = null;
                             localLoopCount--;
-                            if ( 0 == resourceManager.reenlistList.Count )
+                            if (resourceManager.ReenlistList.Count == 0)
                             {
                                 done = true;
                             }
                             else
                             {
-                                localEnlistment = resourceManager.reenlistList[0] as OletxEnlistment;
-                                if ( null == localEnlistment )
+                                localEnlistment = resourceManager.ReenlistList[0] as OletxEnlistment;
+                                if (localEnlistment == null)
                                 {
                                     //TODO need resource string for this exception.
-                                    if ( DiagnosticTrace.Critical )
+                                    if (DiagnosticTrace.Critical)
                                     {
-                                        InternalErrorTraceRecord.Trace( SR.TraceSourceOletx,
-                                            ""
-                                            );
+                                        InternalErrorTraceRecord.Trace(SR.TraceSourceOletx, "");
                                     }
 
-                                    throw TransactionException.Create( SR.InternalError, null );
+                                    throw TransactionException.Create(SR.InternalError, null);
                                 }
 
-                                resourceManager.reenlistList.RemoveAt( 0 );
-                                Object syncRoot = localEnlistment;
-                                lock ( syncRoot )
+                                resourceManager.ReenlistList.RemoveAt(0);
+                                object syncRoot = localEnlistment;
+                                lock (syncRoot)
                                 {
-                                    if ( OletxEnlistment.OletxEnlistmentState.Done == localEnlistment.State )
+                                    if (OletxEnlistment.OletxEnlistmentState.Done == localEnlistment.State)
                                     {
                                         // We may be racing with a RecoveryComplete here.  Just forget about this
                                         // enlistment.
                                         localEnlistment = null;
                                     }
 
-                                    else if ( OletxEnlistment.OletxEnlistmentState.Prepared != localEnlistment.State )
+                                    else if (OletxEnlistment.OletxEnlistmentState.Prepared != localEnlistment.State)
                                     {
                                         // The app hasn't yet responded to Prepare, so we don't know
                                         // if it is indoubt or not yet.  So just re-add it to the end
                                         // of the list.
-                                        resourceManager.reenlistList.Add(
-                                            localEnlistment
-                                            );
+                                        resourceManager.ReenlistList.Add(localEnlistment);
                                         localEnlistment = null;
                                     }
                                 }
                             }
                         }
 
-                        if ( null != localEnlistment )
+                        if (localEnlistment != null)
                         {
                             OletxTransactionOutcome localOutcome = OletxTransactionOutcome.NotKnownYet;
                             try
                             {
-                                Debug.Assert( null != localResourceManagerShim, "ReenlistThread - localResourceManagerShim is null" );
+                                Debug.Assert(localResourceManagerShim != null, "ReenlistThread - localResourceManagerShim is null" );
 
                                 // Make sure we have a prepare info.
-                                if ( null == localEnlistment.ProxyPrepareInfoByteArray )
+                                if (localEnlistment.ProxyPrepareInfoByteArray == null)
                                 {
-                                    Debug.Assert( false, string.Format( null, "this.prepareInfoByteArray == null in RecoveryInformation()" ));
-                                    if ( DiagnosticTrace.Critical )
+                                    Debug.Assert(false, string.Format( null, "this.prepareInfoByteArray == null in RecoveryInformation()"));
+                                    if (DiagnosticTrace.Critical)
                                     {
-                                        InternalErrorTraceRecord.Trace( SR.TraceSourceOletx,
-                                            ""
-                                            );
+                                        InternalErrorTraceRecord.Trace( SR.TraceSourceOletx, "");
                                     }
 
-                                    throw TransactionException.Create( SR.InternalError, null );
+                                    throw TransactionException.Create(SR.InternalError, null);
                                 }
                                 localResourceManagerShim.Reenlist(
-                                    (UInt32) localEnlistment.ProxyPrepareInfoByteArray.Length,
+                                    (uint)localEnlistment.ProxyPrepareInfoByteArray.Length,
                                     localEnlistment.ProxyPrepareInfoByteArray,
-                                    out localOutcome );
+                                    out localOutcome);
 
-                                if ( OletxTransactionOutcome.NotKnownYet == localOutcome )
+                                if (localOutcome == OletxTransactionOutcome.NotKnownYet)
                                 {
-                                    Object syncRoot = localEnlistment;
-                                    lock ( syncRoot )
+                                    object syncRoot = localEnlistment;
+                                    lock (syncRoot)
                                     {
-                                        if ( OletxEnlistment.OletxEnlistmentState.Done == localEnlistment.State )
+                                        if (OletxEnlistment.OletxEnlistmentState.Done == localEnlistment.State)
                                         {
                                             // We may be racing with a RecoveryComplete here.  Just forget about this
                                             // enlistment.
@@ -800,28 +736,24 @@ namespace System.Transactions.Oletx
                                         else
                                         {
                                             // Put the enlistment back on the end of the list for retry later.
-                                            lock ( resourceManager.reenlistList )
+                                            lock (resourceManager.ReenlistList)
                                             {
-                                                resourceManager.reenlistList.Add(
-                                                    localEnlistment
-                                                    );
+                                                resourceManager.ReenlistList.Add(localEnlistment);
                                                 localEnlistment = null;
                                             }
                                         }
                                     }
                                 }
-
                             }
-                            catch ( COMException ex ) // or whatever exception gets thrown if we get a bad hr.
+                            catch (COMException ex) // or whatever exception gets thrown if we get a bad hr.
                             {
-                                if ( NativeMethods.XACT_E_CONNECTION_DOWN == ex.ErrorCode )
+                                if (ex.ErrorCode == NativeMethods.XACT_E_CONNECTION_DOWN)
                                 {
-                                    if ( DiagnosticTrace.Verbose )
+                                    if (DiagnosticTrace.Verbose)
                                     {
-                                        ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
-                                            ex );
+                                        ExceptionConsumedTraceRecord.Trace(SR.TraceSourceOletx, ex);
                                     }
-                                    if ( NativeMethods.XACT_E_CONNECTION_DOWN == ex.ErrorCode )
+                                    if (ex.ErrorCode == NativeMethods.XACT_E_CONNECTION_DOWN)
                                     {
                                         // Release the resource manager so we can create a new one.
                                         resourceManager.ResourceManagerShim = null;
@@ -839,12 +771,12 @@ namespace System.Transactions.Oletx
                             }
 
                             // If we get here and we still have localEnlistment, then we got the outcome.
-                            if ( null != localEnlistment )
+                            if (localEnlistment != null)
                             {
-                                Object syncRoot = localEnlistment;
-                                lock ( syncRoot )
+                                object syncRoot = localEnlistment;
+                                lock (syncRoot)
                                 {
-                                    if ( OletxEnlistment.OletxEnlistmentState.Done == localEnlistment.State )
+                                    if (OletxEnlistment.OletxEnlistmentState.Done == localEnlistment.State)
                                     {
                                         // We may be racing with a RecoveryComplete here.  Just forget about this
                                         // enlistment.
@@ -858,47 +790,45 @@ namespace System.Transactions.Oletx
                                         // be taken off the reenlistPendingList when the enlistment has
                                         // EnlistmentDone called on it.  The enlistment will call
                                         // RemoveFromReenlistPending.
-                                        lock ( resourceManager.reenlistList )
+                                        lock (resourceManager.ReenlistList)
                                         {
-                                            resourceManager.reenlistPendingList.Add( localEnlistment );
+                                            resourceManager.ReenlistPendingList.Add(localEnlistment);
                                         }
 
-                                        if ( OletxTransactionOutcome.Committed == localOutcome )
+                                        if (OletxTransactionOutcome.Committed == localOutcome)
                                         {
                                             localEnlistment.State = OletxEnlistment.OletxEnlistmentState.Committing;
-                                            if ( DiagnosticTrace.Verbose )
+                                            if (DiagnosticTrace.Verbose)
                                             {
-                                                EnlistmentNotificationCallTraceRecord.Trace( SR.TraceSourceOletx,
+                                                EnlistmentNotificationCallTraceRecord.Trace(
+                                                     SR.TraceSourceOletx,
                                                     localEnlistment.EnlistmentTraceId,
-                                                    NotificationCall.Commit
-                                                    );
+                                                    NotificationCall.Commit);
                                             }
 
-                                            localEnlistment.EnlistmentNotification.Commit( localEnlistment );
+                                            localEnlistment.EnlistmentNotification.Commit(localEnlistment);
                                         }
-                                        else if ( OletxTransactionOutcome.Aborted == localOutcome )
+                                        else if (OletxTransactionOutcome.Aborted == localOutcome)
                                         {
                                             localEnlistment.State = OletxEnlistment.OletxEnlistmentState.Aborting;
-                                            if ( DiagnosticTrace.Verbose )
+                                            if (DiagnosticTrace.Verbose)
                                             {
-                                                EnlistmentNotificationCallTraceRecord.Trace( SR.TraceSourceOletx,
+                                                EnlistmentNotificationCallTraceRecord.Trace(
+                                                    SR.TraceSourceOletx,
                                                     localEnlistment.EnlistmentTraceId,
-                                                    NotificationCall.Rollback
-                                                    );
+                                                    NotificationCall.Rollback);
                                             }
 
-                                            localEnlistment.EnlistmentNotification.Rollback( localEnlistment );
+                                            localEnlistment.EnlistmentNotification.Rollback(localEnlistment);
                                         }
                                         else
                                         {
-                                            if ( DiagnosticTrace.Critical )
+                                            if (DiagnosticTrace.Critical)
                                             {
-                                                InternalErrorTraceRecord.Trace( SR.TraceSourceOletx,
-                                                    ""
-                                                    );
+                                                InternalErrorTraceRecord.Trace(SR.TraceSourceOletx, "");
                                             }
 
-                                            throw TransactionException.Create( SR.InternalError, null );
+                                            throw TransactionException.Create(SR.InternalError, null);
                                         }
                                     }
                                 }
@@ -910,13 +840,13 @@ namespace System.Transactions.Oletx
                 localResourceManagerShim = null;
 
                 // Check to see if there is more work to do.
-                lock ( resourceManager.reenlistList )
+                lock (resourceManager.ReenlistList)
                 {
-                    lock ( resourceManager )
+                    lock (resourceManager)
                     {
                         // Get the current count on the list.
-                        localLoopCount = resourceManager.reenlistList.Count;
-                        if ( ( 0 >= localLoopCount ) && ( 0 >= resourceManager.reenlistPendingList.Count ) )
+                        localLoopCount = resourceManager.ReenlistList.Count;
+                        if (localLoopCount <= 0 && resourceManager.ReenlistPendingList.Count <= 0)
                         {
                             // No more entries on the list.  Try calling ReenlistComplete on the proxy, if
                             // appropriate.
@@ -924,7 +854,7 @@ namespace System.Transactions.Oletx
                             // we are responsible for calling ReenlistComplete on the
                             // proxy.
                             success = resourceManager.CallProxyReenlistComplete();
-                            if ( success )
+                            if (success)
                             {
                                 // Okay, the reenlist thread is done and we don't need to schedule another one.
                                 disposeLocalTimer = true;
@@ -933,14 +863,13 @@ namespace System.Transactions.Oletx
                             {
                                 // We couldn't talk to the proxy to do ReenlistComplete, so schedule
                                 // the thread again for 10 seconds from now.
-                                resourceManager.reenlistThreadTimer = localTimer;
-                                if ( !localTimer.Change( 10000, Timeout.Infinite ))
+                                resourceManager.ReenlistThreadTimer = localTimer;
+                                if (!localTimer.Change(10000, Timeout.Infinite))
                                 {
                                     throw TransactionException.CreateInvalidOperationException(
                                         TraceSourceType.TraceSourceLtm,
                                         SR.UnexpectedTimerFailure,
-                                        null
-                                        );
+                                        null);
                                 }
                             }
                         }
@@ -948,34 +877,28 @@ namespace System.Transactions.Oletx
                         {
                             // There are still entries on the list, so they must not be
                             // resovled, yet.  Schedule the thread again in 10 seconds.
-                            resourceManager.reenlistThreadTimer = localTimer;
-                            if ( !localTimer.Change( 10000, Timeout.Infinite ))
+                            resourceManager.ReenlistThreadTimer = localTimer;
+                            if (!localTimer.Change(10000, Timeout.Infinite))
                             {
                                 throw TransactionException.CreateInvalidOperationException(
                                     TraceSourceType.TraceSourceLtm,
                                     SR.UnexpectedTimerFailure,
-                                    null
-                                    );
+                                    null);
                             }
-
                         }
 
                         resourceManager.reenlistThread = null;
                     }
-                    if ( DiagnosticTrace.Information )
+                    if (DiagnosticTrace.Information)
                     {
-                        MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
-                            "OletxResourceManager.ReenlistThread"
-                            );
+                        MethodExitedTraceRecord.Trace(SR.TraceSourceOletx, "OletxResourceManager.ReenlistThread");
                     }
-                    return;
                 }
-
             }  // end of outer-most try
             finally
             {
                 localResourceManagerShim = null;
-                if ( ( disposeLocalTimer ) && ( null != localTimer ) )
+                if (disposeLocalTimer && localTimer != null)
                 {
                     localTimer.Dispose();
                 }
@@ -987,16 +910,10 @@ namespace System.Transactions.Oletx
     // that is made from the application and pass it through to the proxy.
     abstract class OletxBaseEnlistment
     {
-        protected Guid enlistmentGuid;
-        protected OletxResourceManager oletxResourceManager;
+        protected Guid EnlistmentGuid;
+        protected OletxResourceManager OletxResourceManager;
         protected OletxTransaction oletxTransaction;
-        internal OletxTransaction OletxTransaction
-        {
-            get
-            {
-                return this.oletxTransaction;
-            }
-        }
+        internal OletxTransaction OletxTransaction => oletxTransaction;
 
         internal Guid DistributedTxId
         {
@@ -1004,96 +921,90 @@ namespace System.Transactions.Oletx
             {
                 Guid returnValue = Guid.Empty;
 
-                if (this.OletxTransaction != null)
+                if (OletxTransaction != null)
                 {
-                    returnValue = this.OletxTransaction.DistributedTxId;
+                    returnValue = OletxTransaction.DistributedTxId;
                 }
                 return returnValue;
             }
         }
 
-        protected string transactionGuidString;
-        protected int enlistmentId;
+        protected string TransactionGuidString;
+        protected int EnlistmentId;
         // this needs to be internal so it can be set from the recovery information during Reenlist.
-        internal EnlistmentTraceIdentifier traceIdentifier;
+        internal EnlistmentTraceIdentifier TraceIdentifier;
 
         // Owning public Enlistment object
-        protected InternalEnlistment internalEnlistment;
+        protected InternalEnlistment InternalEnlistment;
 
-        public OletxBaseEnlistment(
-            OletxResourceManager oletxResourceManager,
-            OletxTransaction oletxTransaction
-            )
+        public OletxBaseEnlistment(OletxResourceManager oletxResourceManager, OletxTransaction oletxTransaction)
         {
             Guid resourceManagerId = Guid.Empty;
 
-            enlistmentGuid = Guid.NewGuid();
-            this.oletxResourceManager = oletxResourceManager;
+            EnlistmentGuid = Guid.NewGuid();
+            OletxResourceManager = oletxResourceManager;
             this.oletxTransaction = oletxTransaction;
-            if ( null != oletxTransaction )
+            if (oletxTransaction != null)
             {
-                this.enlistmentId = oletxTransaction.realOletxTransaction.enlistmentCount++;
-                this.transactionGuidString = oletxTransaction.realOletxTransaction.TxGuid.ToString();
+                EnlistmentId = oletxTransaction.RealOletxTransaction._enlistmentCount++;
+                TransactionGuidString = oletxTransaction.RealOletxTransaction.TxGuid.ToString();
             }
             else
             {
-                this.transactionGuidString = Guid.Empty.ToString();
+                TransactionGuidString = Guid.Empty.ToString();
             }
-            this.traceIdentifier = EnlistmentTraceIdentifier.Empty;
+            TraceIdentifier = EnlistmentTraceIdentifier.Empty;
         }
 
         protected EnlistmentTraceIdentifier InternalTraceIdentifier
         {
             get
             {
-                if ( EnlistmentTraceIdentifier.Empty == this.traceIdentifier )
+                if (EnlistmentTraceIdentifier.Empty == TraceIdentifier )
                 {
-                    lock ( this )
+                    lock (this)
                     {
-                        if ( EnlistmentTraceIdentifier.Empty == this.traceIdentifier )
+                        if (EnlistmentTraceIdentifier.Empty == TraceIdentifier )
                         {
                             Guid rmId = Guid.Empty;
-                            if ( null != oletxResourceManager )
+                            if (OletxResourceManager != null)
                             {
-                                rmId = this.oletxResourceManager.resourceManagerIdentifier;
+                                rmId = OletxResourceManager.ResourceManagerIdentifier;
                             }
                             EnlistmentTraceIdentifier temp;
-                            if ( null != this.oletxTransaction )
+                            if (null != oletxTransaction)
                             {
-                                temp = new EnlistmentTraceIdentifier( rmId, oletxTransaction.TransactionTraceId, this.enlistmentId );
+                                temp = new EnlistmentTraceIdentifier(rmId, oletxTransaction.TransactionTraceId, EnlistmentId);
                             }
                             else
                             {
-                                TransactionTraceIdentifier txTraceId = new TransactionTraceIdentifier( this.transactionGuidString, 0 );
-                                temp = new EnlistmentTraceIdentifier( rmId, txTraceId, this.enlistmentId );
+                                TransactionTraceIdentifier txTraceId = new(TransactionGuidString, 0);
+                                temp = new EnlistmentTraceIdentifier( rmId, txTraceId, EnlistmentId);
                             }
                             Thread.MemoryBarrier();
-                            this.traceIdentifier = temp;
+                            TraceIdentifier = temp;
                         }
                     }
                 }
 
-                return this.traceIdentifier;
+                return TraceIdentifier;
             }
         }
 
         protected void AddToEnlistmentTable()
         {
-            lock ( oletxResourceManager.enlistmentHashtable.SyncRoot )
+            lock (OletxResourceManager.EnlistmentHashtable.SyncRoot)
             {
-                oletxResourceManager.enlistmentHashtable.Add( enlistmentGuid, this );
+                OletxResourceManager.EnlistmentHashtable.Add(EnlistmentGuid, this);
             }
         }
 
         protected void RemoveFromEnlistmentTable()
         {
-            lock ( oletxResourceManager.enlistmentHashtable.SyncRoot )
+            lock (OletxResourceManager.EnlistmentHashtable.SyncRoot)
             {
-                oletxResourceManager.enlistmentHashtable.Remove( enlistmentGuid );
+                OletxResourceManager.EnlistmentHashtable.Remove(EnlistmentGuid);
             }
         }
-
     }
-
-
 }  // end of namespace

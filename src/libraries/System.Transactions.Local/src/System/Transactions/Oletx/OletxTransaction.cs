@@ -31,55 +31,45 @@ namespace System.Transactions.Oletx
     [Serializable]
     internal class OletxTransaction : ISerializable, IObjectReference
     {
-
         // We have a strong reference on realOletxTransaction which does the real work
-        internal RealOletxTransaction realOletxTransaction = null;
+        internal RealOletxTransaction RealOletxTransaction;
 
         // String that is used as a name for the propagationToken
         // while serializing and deserializing this object
-        protected const string propagationTokenString = "OletxTransactionPropagationToken";
+        protected const string PropagationTokenString = "OletxTransactionPropagationToken";
 
         // When an OletxTransaction is being created via deserialization, this member is
         // filled with the propagation token from the serialization info.  Later, when
         // GetRealObject is called, this array is used to decide whether or not a new
         // transation needs to be created and if so, to create the transaction.
-        private byte[] propagationTokenForDeserialize = null;
+        private byte[] _propagationTokenForDeserialize;
 
-        protected int disposed = 0;
+        protected int Disposed;
 
         // In GetRealObject, we ask LTM if it has a promoted transaction with the same ID.  If it does,
         // we need to remember that transaction because GetRealObject is called twice during
         // deserialization.  In this case, GetRealObject returns the LTM transaction, not this OletxTransaction.
         // The OletxTransaction will get GC'd because there will be no references to it.
-        internal Transaction savedLtmPromotedTransaction = null;
+        internal Transaction SavedLtmPromotedTransaction;
 
-        private TransactionTraceIdentifier traceIdentifier = TransactionTraceIdentifier.Empty;
+        private TransactionTraceIdentifier _traceIdentifier = TransactionTraceIdentifier.Empty;
 
         // Property
         internal RealOletxTransaction RealTransaction
-        {
-            get
-            {
-                return this.realOletxTransaction;
-            }
-        }
+            => RealOletxTransaction;
 
         internal Guid Identifier
         {
             get
             {
-                if ( DiagnosticTrace.Verbose )
+                if (DiagnosticTrace.Verbose)
                 {
-                    MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
-                        "OletxTransaction.get_Identifier"
-                        );
+                    MethodEnteredTraceRecord.Trace(SR.TraceSourceOletx, "OletxTransaction.get_Identifier");
                 }
-                Guid returnValue = this.realOletxTransaction.Identifier;
-                if ( DiagnosticTrace.Verbose )
+                Guid returnValue = RealOletxTransaction.Identifier;
+                if (DiagnosticTrace.Verbose)
                 {
-                    MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
-                        "OletxTransaction.get_Identifier"
-                        );
+                    MethodExitedTraceRecord.Trace(SR.TraceSourceOletx, "OletxTransaction.get_Identifier");
                 }
                 return returnValue;
             }
@@ -91,49 +81,41 @@ namespace System.Transactions.Oletx
             {
                 Guid returnValue = Guid.Empty;
 
-                if (this.realOletxTransaction != null && this.realOletxTransaction.InternalTransaction != null)
+                if (RealOletxTransaction != null && RealOletxTransaction.InternalTransaction != null)
                 {
-                    returnValue = this.realOletxTransaction.InternalTransaction.DistributedTxId;
+                    returnValue = RealOletxTransaction.InternalTransaction.DistributedTxId;
                 }
+
                 return returnValue;
             }
         }
 
-        internal System.Transactions.TransactionStatus Status
+        internal TransactionStatus Status
         {
             get
             {
-                if ( DiagnosticTrace.Verbose )
+                if (DiagnosticTrace.Verbose)
                 {
-                    MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
-                        "OletxTransaction.get_Status"
-                        );
+                    MethodEnteredTraceRecord.Trace(SR.TraceSourceOletx, "OletxTransaction.get_Status");
                 }
-                TransactionStatus returnValue = this.realOletxTransaction.Status;
-                if ( DiagnosticTrace.Verbose )
+                TransactionStatus returnValue = RealOletxTransaction.Status;
+                if (DiagnosticTrace.Verbose)
                 {
-                    MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
-                        "OletxTransaction.get_Status"
-                        );
+                    MethodExitedTraceRecord.Trace(SR.TraceSourceOletx, "OletxTransaction.get_Status");
                 }
                 return returnValue;
             }
         }
 
         internal Exception InnerException
-        {
-            get
-            {
-                return this.realOletxTransaction.innerException;
-            }
-        }
+            => RealOletxTransaction.InnerException;
 
         internal OletxTransaction(RealOletxTransaction realOletxTransaction)
         {
-            this.realOletxTransaction = realOletxTransaction;
+            RealOletxTransaction = realOletxTransaction;
 
             // Tell the realOletxTransaction that we are here.
-            this.realOletxTransaction.OletxTransactionCreated();
+            RealOletxTransaction.OletxTransactionCreated();
         }
 
         protected OletxTransaction(SerializationInfo serializationInfo, StreamingContext context)
@@ -145,66 +127,57 @@ namespace System.Transactions.Oletx
 
             // Simply store the propagation token from the serialization info.  GetRealObject will
             // decide whether or not we will use it.
-            propagationTokenForDeserialize = (byte[])serializationInfo.GetValue(propagationTokenString, typeof(byte[]));
+            _propagationTokenForDeserialize = (byte[])serializationInfo.GetValue(PropagationTokenString, typeof(byte[]));
 
-            if ( propagationTokenForDeserialize.Length < 24 )
+            if (_propagationTokenForDeserialize.Length < 24)
             {
-                throw new ArgumentException( SR.InvalidArgument, "serializationInfo" );
+                throw new ArgumentException(SR.InvalidArgument, "serializationInfo");
             }
-
         }
 
-        public object GetRealObject(
-            StreamingContext context
-            )
+        public object GetRealObject(StreamingContext context)
         {
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
-                    "IObjectReference.GetRealObject"
-                    );
+                MethodEnteredTraceRecord.Trace(SR.TraceSourceOletx, "IObjectReference.GetRealObject");
             }
 
-            if ( null == propagationTokenForDeserialize )
+            if (_propagationTokenForDeserialize == null)
             {
-                if ( DiagnosticTrace.Critical )
+                if (DiagnosticTrace.Critical)
                 {
-                    InternalErrorTraceRecord.Trace( SR.TraceSourceOletx,
-                        SR.UnableToDeserializeTransaction);
+                    InternalErrorTraceRecord.Trace(SR.TraceSourceOletx, SR.UnableToDeserializeTransaction);
                 }
 
-                throw TransactionException.Create( SR.UnableToDeserializeTransactionInternalError, null );
+                throw TransactionException.Create(SR.UnableToDeserializeTransactionInternalError, null);
             }
 
             // This may be a second call.  If so, just return.
-            if ( null != this.savedLtmPromotedTransaction )
+            if (SavedLtmPromotedTransaction != null)
             {
-                if ( DiagnosticTrace.Verbose )
+                if (DiagnosticTrace.Verbose)
                 {
-                    MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
-                        "IObjectReference.GetRealObject"
-                        );
+                    MethodExitedTraceRecord.Trace(SR.TraceSourceOletx, "IObjectReference.GetRealObject");
                 }
-                return this.savedLtmPromotedTransaction;
+
+                return SavedLtmPromotedTransaction;
             }
 
-            Transaction returnValue = TransactionInterop.GetTransactionFromTransmitterPropagationToken( propagationTokenForDeserialize );
-            Debug.Assert( null != returnValue, "OletxTransaction.GetRealObject - GetTxFromPropToken returned null" );
+            Transaction returnValue = TransactionInterop.GetTransactionFromTransmitterPropagationToken(_propagationTokenForDeserialize);
+            Debug.Assert(returnValue != null, "OletxTransaction.GetRealObject - GetTxFromPropToken returned null");
 
-            this.savedLtmPromotedTransaction = returnValue;
+            SavedLtmPromotedTransaction = returnValue;
 
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                TransactionDeserializedTraceRecord.Trace( SR.TraceSourceOletx,
-                    returnValue._internalTransaction.PromotedTransaction.TransactionTraceId
-                    );
+                TransactionDeserializedTraceRecord.Trace(
+                    SR.TraceSourceOletx,
+                    returnValue._internalTransaction.PromotedTransaction.TransactionTraceId);
             }
 
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
-                    "IObjectReference.GetRealObject"
-                    );
+                MethodExitedTraceRecord.Trace(SR.TraceSourceOletx, "IObjectReference.GetRealObject");
             }
 
             return returnValue;
@@ -216,24 +189,20 @@ namespace System.Transactions.Oletx
         /// </summary>
         internal void Dispose()
         {
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
-                    "IDisposable.Dispose"
-                    );
+                MethodEnteredTraceRecord.Trace(SR.TraceSourceOletx, "IDisposable.Dispose");
             }
 
-            int localDisposed = Interlocked.CompareExchange( ref this.disposed, 1, 0 );
-            if ( 0 == localDisposed )
+            int localDisposed = Interlocked.CompareExchange(ref Disposed, 1, 0);
+            if (localDisposed == 0)
             {
-                this.realOletxTransaction.OletxTransactionDisposed();
+                RealOletxTransaction.OletxTransactionDisposed();
             }
-            GC.SuppressFinalize (this);
-            if ( DiagnosticTrace.Verbose )
+            GC.SuppressFinalize(this);
+            if (DiagnosticTrace.Verbose)
             {
-                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
-                    "IDisposable.Dispose"
-                    );
+                MethodExitedTraceRecord.Trace(SR.TraceSourceOletx, "IDisposable.Dispose");
             }
         }
 
@@ -255,99 +224,90 @@ namespace System.Transactions.Oletx
         /// </remarks>
         internal void Rollback()
         {
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
-                    "OletxTransaction.Rollback"
-                    );
+                MethodEnteredTraceRecord.Trace(SR.TraceSourceOletx, "OletxTransaction.Rollback");
             }
 
-            if ( DiagnosticTrace.Warning )
+            if (DiagnosticTrace.Warning)
             {
-                TransactionRollbackCalledTraceRecord.Trace( SR.TraceSourceOletx,
-                    this.TransactionTraceId
-                    );
+                TransactionRollbackCalledTraceRecord.Trace(SR.TraceSourceOletx, TransactionTraceId);
             }
 
-            Debug.Assert( ( 0 == this.disposed ), "OletxTransction object is disposed" );
+            Debug.Assert(Disposed == 0, "OletxTransction object is disposed");
 
-            this.realOletxTransaction.Rollback();
+            RealOletxTransaction.Rollback();
 
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
-                    "OletxTransaction.Rollback"
-                    );
+                MethodExitedTraceRecord.Trace(SR.TraceSourceOletx, "OletxTransaction.Rollback");
             }
         }
 
         internal IPromotedEnlistment EnlistVolatile(
             ISinglePhaseNotificationInternal singlePhaseNotification,
-            EnlistmentOptions enlistmentOptions
-            )
+            EnlistmentOptions enlistmentOptions)
         {
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
-                    "OletxTransaction.EnlistVolatile( ISinglePhaseNotificationInternal )"
-                    );
+                MethodEnteredTraceRecord.Trace(
+                    SR.TraceSourceOletx,
+                    "OletxTransaction.EnlistVolatile( ISinglePhaseNotificationInternal )");
             }
 
-            Debug.Assert( null != singlePhaseNotification, "Argument is null" );
-            Debug.Assert( ( 0 == this.disposed ), "OletxTransction object is disposed" );
+            Debug.Assert(singlePhaseNotification != null, "Argument is null");
+            Debug.Assert(Disposed == 0, "OletxTransction object is disposed");
 
-            if ( this.realOletxTransaction == null || this.realOletxTransaction.TooLateForEnlistments )
+            if (RealOletxTransaction == null || RealOletxTransaction.TooLateForEnlistments)
             {
-                throw TransactionException.Create(SR.TooLate, null, this.DistributedTxId);
+                throw TransactionException.Create(SR.TooLate, null, DistributedTxId);
             }
 
-            IPromotedEnlistment enlistment = realOletxTransaction.EnlistVolatile(
+            IPromotedEnlistment enlistment = RealOletxTransaction.EnlistVolatile(
                 singlePhaseNotification,
                 enlistmentOptions,
-                this
-                );
+                this);
 
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
-                    "OletxTransaction.EnlistVolatile( ISinglePhaseNotificationInternal )"
-                    );
+                MethodExitedTraceRecord.Trace(
+                    SR.TraceSourceOletx,
+                    "OletxTransaction.EnlistVolatile( ISinglePhaseNotificationInternal )");
             }
+
             return enlistment;
         }
 
         internal IPromotedEnlistment EnlistVolatile(
             IEnlistmentNotificationInternal enlistmentNotification,
-            EnlistmentOptions enlistmentOptions
-            )
+            EnlistmentOptions enlistmentOptions)
         {
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
-                    "OletxTransaction.EnlistVolatile( IEnlistmentNotificationInternal )"
-                    );
+                MethodEnteredTraceRecord.Trace(SR.TraceSourceOletx,
+                    "OletxTransaction.EnlistVolatile( IEnlistmentNotificationInternal )");
             }
 
-            Debug.Assert( null != enlistmentNotification, "Argument is null" );
-            Debug.Assert( ( 0 == this.disposed ), "OletxTransction object is disposed" );
+            Debug.Assert(enlistmentNotification != null, "Argument is null");
+            Debug.Assert(Disposed == 0, "OletxTransction object is disposed");
 
-            if ( this.realOletxTransaction == null || this.realOletxTransaction.TooLateForEnlistments )
+            if (RealOletxTransaction == null || RealOletxTransaction.TooLateForEnlistments )
             {
-                throw TransactionException.Create(SR.TooLate, null, this.DistributedTxId);
+                throw TransactionException.Create(SR.TooLate, null, DistributedTxId);
             }
 
-            IPromotedEnlistment enlistment = realOletxTransaction.EnlistVolatile(
+            IPromotedEnlistment enlistment = RealOletxTransaction.EnlistVolatile(
                 enlistmentNotification,
                 enlistmentOptions,
-                this
-                );
+                this);
 
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
-                    "OletxTransaction.EnlistVolatile( IEnlistmentNotificationInternal )"
-                    );
+                MethodExitedTraceRecord.Trace(
+                    SR.TraceSourceOletx,
+                    "OletxTransaction.EnlistVolatile( IEnlistmentNotificationInternal )");
             }
+
             return enlistment;
         }
 
@@ -355,25 +315,24 @@ namespace System.Transactions.Oletx
             Guid resourceManagerIdentifier,
             ISinglePhaseNotificationInternal singlePhaseNotification,
             bool canDoSinglePhase,
-            EnlistmentOptions enlistmentOptions
-            )
+            EnlistmentOptions enlistmentOptions)
         {
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
-                    "OletxTransaction.EnlistDurable( ISinglePhaseNotificationInternal )"
-                    );
+                MethodEnteredTraceRecord.Trace(
+                    SR.TraceSourceOletx,
+                    "OletxTransaction.EnlistDurable( ISinglePhaseNotificationInternal )");
             }
 
-            Debug.Assert( ( 0 == this.disposed ), "OletxTransction object is disposed" );
+            Debug.Assert(Disposed == 0, "OletxTransction object is disposed");
 
-            if ( this.realOletxTransaction == null || this.realOletxTransaction.TooLateForEnlistments )
+            if (RealOletxTransaction == null || RealOletxTransaction.TooLateForEnlistments)
             {
-                throw TransactionException.Create(SR.TooLate, null, this.DistributedTxId);
+                throw TransactionException.Create(SR.TooLate, null, DistributedTxId);
             }
 
             // get the Oletx TM from the real class
-            OletxTransactionManager oletxTM = realOletxTransaction.OletxTransactionManagerInstance;
+            OletxTransactionManager oletxTM = RealOletxTransaction.OletxTransactionManagerInstance;
 
             // get the resource manager from the Oletx TM
             OletxResourceManager rm = oletxTM.FindOrRegisterResourceManager(resourceManagerIdentifier);
@@ -383,54 +342,50 @@ namespace System.Transactions.Oletx
                 this,
                 canDoSinglePhase,
                 singlePhaseNotification,
-                enlistmentOptions
-                );
+                enlistmentOptions);
 
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
-                    "OletxTransaction.EnlistDurable( ISinglePhaseNotificationInternal )"
-                    );
+                MethodExitedTraceRecord.Trace(
+                    SR.TraceSourceOletx,
+                    "OletxTransaction.EnlistDurable( ISinglePhaseNotificationInternal )");
             }
+
             return enlistment;
         }
 
 
-        internal OletxDependentTransaction DependentClone(
-            bool delayCommit
-            )
+        internal OletxDependentTransaction DependentClone(bool delayCommit)
         {
-            OletxDependentTransaction dependentClone = null;
+            OletxDependentTransaction dependentClone;
 
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
-                    "OletxTransaction.DependentClone"
-                    );
+                MethodEnteredTraceRecord.Trace(SR.TraceSourceOletx, "OletxTransaction.DependentClone");
             }
 
-            Debug.Assert( ( 0 == this.disposed ), "OletxTransction object is disposed" );
+            Debug.Assert(Disposed == 0, "OletxTransction object is disposed");
 
             if (TransactionStatus.Aborted == Status)
             {
-                throw TransactionAbortedException.Create(SR.TransactionAborted, realOletxTransaction.innerException, this.DistributedTxId);
+                throw TransactionAbortedException.Create(
+                    SR.TransactionAborted, RealOletxTransaction.InnerException, DistributedTxId);
             }
             if (TransactionStatus.InDoubt == Status)
             {
-                throw TransactionInDoubtException.Create(SR.TransactionIndoubt, realOletxTransaction.innerException, this.DistributedTxId);
+                throw TransactionInDoubtException.Create(
+                    SR.TransactionIndoubt, RealOletxTransaction.InnerException, DistributedTxId);
             }
             if (TransactionStatus.Active != Status)
             {
-                throw TransactionException.Create(SR.TransactionAlreadyOver, null, this.DistributedTxId);
+                throw TransactionException.Create(SR.TransactionAlreadyOver, null, DistributedTxId);
             }
 
-            dependentClone = new OletxDependentTransaction( realOletxTransaction, delayCommit );
+            dependentClone = new OletxDependentTransaction(RealOletxTransaction, delayCommit);
 
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
-                    "OletxTransaction.DependentClone"
-                    );
+                MethodExitedTraceRecord.Trace(SR.TraceSourceOletx, "OletxTransaction.DependentClone");
             }
 
             return dependentClone;
@@ -441,39 +396,38 @@ namespace System.Transactions.Oletx
         {
             get
             {
-                if ( TransactionTraceIdentifier.Empty == this.traceIdentifier )
+                if (_traceIdentifier == TransactionTraceIdentifier.Empty)
                 {
-                    lock ( this.realOletxTransaction )
+                    lock (RealOletxTransaction)
                     {
-                        if ( TransactionTraceIdentifier.Empty == this.traceIdentifier )
+                        if (_traceIdentifier == TransactionTraceIdentifier.Empty)
                         {
                             try
                             {
-                                TransactionTraceIdentifier temp = new TransactionTraceIdentifier( this.realOletxTransaction.Identifier.ToString(), 0 );
+                                TransactionTraceIdentifier temp = new(RealOletxTransaction.Identifier.ToString(), 0);
                                 Thread.MemoryBarrier();
-                                this.traceIdentifier = temp;
+                                _traceIdentifier = temp;
                             }
-                            catch ( TransactionException ex )
+                            catch (TransactionException ex)
                             {
                                 // realOletxTransaction.Identifier throws a TransactionException if it can't determine the guid of the
                                 // transaction because the transaction was already committed or aborted before the RealOletxTransaction was
                                 // created.  If that happens, we don't want to throw just because we are trying to trace.  So just use
                                 // the TransactionTraceIdentifier.Empty.
-                                if ( DiagnosticTrace.Verbose )
+                                if (DiagnosticTrace.Verbose)
                                 {
-                                    ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
-                                        ex );
+                                    ExceptionConsumedTraceRecord.Trace(SR.TraceSourceOletx, ex);
                                 }
                             }
 
                         }
                     }
                 }
-                return this.traceIdentifier;
+                return _traceIdentifier;
             }
         }
 
-        [SecurityPermissionAttribute(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.SerializationFormatter)]
+        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.SerializationFormatter)]
         public void GetObjectData(SerializationInfo serializationInfo, StreamingContext context)
         {
             if (serializationInfo == null)
@@ -481,65 +435,54 @@ namespace System.Transactions.Oletx
                 throw new ArgumentNullException( "serializationInfo");
             }
 
-            byte[] propagationToken = null;
+            byte[] propagationToken;
 
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
-                    "OletxTransaction.GetObjectData"
-                    );
+                MethodEnteredTraceRecord.Trace(SR.TraceSourceOletx, "OletxTransaction.GetObjectData");
             }
 
-            Debug.Assert( ( 0 == this.disposed ), "OletxTransction object is disposed" );
+            Debug.Assert(Disposed == 0, "OletxTransction object is disposed");
 
-            propagationToken = TransactionInterop.GetTransmitterPropagationToken( this );
+            propagationToken = TransactionInterop.GetTransmitterPropagationToken(this);
 
-            serializationInfo.SetType( typeof( OletxTransaction ) );
-            serializationInfo.AddValue(propagationTokenString, propagationToken);
+            serializationInfo.SetType(typeof(OletxTransaction));
+            serializationInfo.AddValue(PropagationTokenString, propagationToken);
 
-            if ( DiagnosticTrace.Information )
+            if (DiagnosticTrace.Information)
             {
-                TransactionSerializedTraceRecord.Trace( SR.TraceSourceOletx,
-                    this.TransactionTraceId
-                    );
+                TransactionSerializedTraceRecord.Trace(SR.TraceSourceOletx, TransactionTraceId);
             }
 
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
-                    "OletxTransaction.GetObjectData"
-                    );
+                MethodExitedTraceRecord.Trace(SR.TraceSourceOletx, "OletxTransaction.GetObjectData");
             }
         }
 
-        virtual public System.Transactions.IsolationLevel IsolationLevel
-        {
-            get { return ( this.realOletxTransaction.TransactionIsolationLevel ); }
-        }
-
+        public virtual IsolationLevel IsolationLevel
+            => RealOletxTransaction.TransactionIsolationLevel;
     }
-
-
 
     // Internal class used by OletxTransaction class which is public
     internal class RealOletxTransaction
     {
         // Transaction manager
-        private OletxTransactionManager oletxTransactionManager;
+        internal OletxTransactionManager OletxTransactionManagerInstance { get; }
 
-        private ITransactionShim transactionShim;
+        private ITransactionShim _transactionShim;
 
         // guid related to transaction
-        private System.Guid txGuid;
+        internal Guid TxGuid { get; private set; }
 
         // Isolation level of the transaction
-        private IsolationLevel isolationLevel;
+        internal IsolationLevel TransactionIsolationLevel { get; private set; }
 
         // Record the exception that caused the transaction to abort.
-        internal Exception innerException;
+        internal Exception InnerException;
 
         // Store status
-        private TransactionStatus status;
+        internal TransactionStatus Status { get; private set; }
 
         // This is the count of undisposed OletxTransaction objects that reference
         // this RealOletxTransaction.  This is incremented when an OletxTransaction is created
@@ -547,17 +490,17 @@ namespace System.Transactions.Oletx
         // called.  When it is decremented to zero, the transactionShim
         // field is "released", thus releasing the unmanged proxy interface
         // pointer.
-        private int undisposedOletxTransactionCount;
+        private int _undisposedOletxTransactionCount;
 
         // The list of containers for phase0 volatile enlistment multiplexing so we only enlist with the proxy once per wave.
         // The last one on the list is the "current" one.
-        internal ArrayList phase0EnlistVolatilementContainerList;
+        internal ArrayList Phase0EnlistVolatilementContainerList;
 
         // The container for phase1 volatile enlistment multiplexing so we only enlist with the proxy once.
-        internal OletxPhase1VolatileEnlistmentContainer phase1EnlistVolatilementContainer;
+        internal OletxPhase1VolatileEnlistmentContainer Phase1EnlistVolatilementContainer;
 
         // Used to get outcomes of transactions with a voter.
-        private OutcomeEnlistment outcomeEnlistment = null;
+        private OutcomeEnlistment _outcomeEnlistment;
 
         // This is a count of volatile and Phase0 durable enlistments on this transaction that have not yet voted.
         // This is incremented when an enlistment is made and decremented when the
@@ -565,62 +508,41 @@ namespace System.Transactions.Oletx
         // then the doomed field is set to true and the Rollback is allowed.  If the count
         // is zero in Rollback, the rollback is rejected with a "too late" exception.
         // All checking and modification of this field needs to be done under a lock( this ).
-        private int undecidedEnlistmentCount = 0;
+        private int _undecidedEnlistmentCount;
 
         // If true, indicates that the transaction should NOT commit.  This is set to
         // true if Rollback is called when there are outstanding enlistments.  This is
         // checked when enlistments vote Prepared.  If true, then the enlistment's vote
         // is turned into a ForceRollback.  All checking and modification of this field
         // needs to be done under a lock (this).
-        private bool doomed = false;
+        internal bool Doomed { get; private set; }
 
         // This property is used to allocate enlistment identifiers for enlistment trace identifiers.
         // It is only incremented when a new enlistment is created for this instance of RealOletxTransaction.
         // Enlistments on all clones of this Real transaction use this value.
-        internal int enlistmentCount = 0;
+        internal int _enlistmentCount;
 
-        private DateTime creationTime;
-        private DateTime lastStateChangeTime;
-        private TransactionTraceIdentifier traceIdentifier = TransactionTraceIdentifier.Empty;
+        private DateTime _creationTime;
+        private DateTime _lastStateChangeTime;
+        private TransactionTraceIdentifier _traceIdentifier = TransactionTraceIdentifier.Empty;
 
         // This field is set directly from the OletxCommittableTransaction constructor.  It will be null
         // for non-root RealOletxTransactions.
-        internal OletxCommittableTransaction committableTransaction;
+        internal OletxCommittableTransaction CommittableTransaction;
 
         // This is an internal OletxTransaction.  It is created as part of the RealOletxTransaction constructor.
         // It is used by the DependentCloneEnlistments when creating their volatile enlistments.
-        internal OletxTransaction internalClone;
+        internal OletxTransaction InternalClone;
 
         // This is set initialized to false.  It is set to true when the OletxPhase1VolatileContainer gets a VoteRequest or
         // when any OletxEnlistment attached to this transaction gets a PrepareRequest.  At that point, it is too late for any
         // more enlistments.
-        private bool tooLateForEnlistments;
+        internal bool TooLateForEnlistments { get; set; }
 
         // This is the InternalTransaction that instigated creation of this RealOletxTransaction.  When we get the outcome
         // of the transaction, we use this to notify the InternalTransaction of the outcome.  We do this to avoid the LTM
         // always creating a volatile enlistment just to get the outcome.
-        private InternalTransaction internalTransaction;
-        internal InternalTransaction InternalTransaction
-        {
-            get
-            {
-                return this.internalTransaction;
-            }
-
-            set
-            {
-                this.internalTransaction = value;
-            }
-
-        }
-
-        internal OletxTransactionManager OletxTransactionManagerInstance
-        {
-            get
-            {
-                return oletxTransactionManager;
-            }
-        }
+        internal InternalTransaction InternalTransaction { get; set; }
 
         internal Guid Identifier
         {
@@ -629,11 +551,12 @@ namespace System.Transactions.Oletx
                 // The txGuid will be empty if the oletx transaction was already committed or aborted when we
                 // tried to create the RealOletxTransaction.  We still allow creation of the RealOletxTransaction
                 // for COM+ interop purposes, but we can't get the guid or the status of the transaction.
-                if ( txGuid.Equals( Guid.Empty ) )
+                if (TxGuid.Equals( Guid.Empty))
                 {
-                    throw TransactionException.Create(SR.GetResourceString ( SR.CannotGetTransactionIdentifier ), null );
+                    throw TransactionException.Create(SR.GetResourceString(SR.CannotGetTransactionIdentifier), null);
                 }
-                return this.txGuid;
+
+                return TxGuid;
             }
         }
 
@@ -643,39 +566,14 @@ namespace System.Transactions.Oletx
             {
                 Guid returnValue = Guid.Empty;
 
-                if (this.InternalTransaction != null)
+                if (InternalTransaction != null)
                 {
-                    returnValue = this.InternalTransaction.DistributedTxId;
+                    returnValue = InternalTransaction.DistributedTxId;
                 }
+
                 return returnValue;
             }
         }
-
-        internal IsolationLevel TransactionIsolationLevel
-        {
-            get
-            {
-                return this.isolationLevel;
-            }
-        }
-
-
-        internal TransactionStatus Status
-        {
-            get
-            {
-                return this.status;
-            }
-        }
-
-        internal System.Guid TxGuid
-        {
-            get
-            {
-                return this.txGuid;
-            }
-        }
-
 
         internal void IncrementUndecidedEnlistments()
         {
@@ -685,9 +583,8 @@ namespace System.Transactions.Oletx
             // will attempt to get a lock on the container when it
             // already holds a lock on the transaction.  This can result
             // in a deadlock.
-            Interlocked.Increment(ref this.undecidedEnlistmentCount);
+            Interlocked.Increment(ref _undecidedEnlistmentCount);
         }
-
 
         internal void DecrementUndecidedEnlistments()
         {
@@ -697,36 +594,20 @@ namespace System.Transactions.Oletx
             // will attempt to get a lock on the container when it
             // already holds a lock on the transaction.  This can result
             // in a deadlock.
-            Interlocked.Decrement(ref this.undecidedEnlistmentCount);
+            Interlocked.Decrement(ref _undecidedEnlistmentCount);
         }
-
 
         internal int UndecidedEnlistments
-        {
-            get
-            {
-                return this.undecidedEnlistmentCount;
-            }
-        }
-
-
-        internal bool Doomed
-        {
-            get
-            {
-                return this.doomed;
-            }
-        }
-
+            => _undecidedEnlistmentCount;
 
         internal ITransactionShim TransactionShim
         {
             get
             {
-                ITransactionShim shim = this.transactionShim;
-                if ( null == shim )
+                ITransactionShim shim = _transactionShim;
+                if (shim == null)
                 {
-                    throw TransactionInDoubtException.Create( SR.TransactionIndoubt, null, this.DistributedTxId );
+                    throw TransactionInDoubtException.Create(SR.TransactionIndoubt, null, DistributedTxId);
                 }
 
                 return shim;
@@ -747,38 +628,38 @@ namespace System.Transactions.Oletx
             try
             {
                 // initialize the member fields
-                this.oletxTransactionManager = transactionManager;
-                this.transactionShim = transactionShim;
-                this.outcomeEnlistment = outcomeEnlistment;
-                this.txGuid = identifier;
-                this.isolationLevel = OletxTransactionManager.ConvertIsolationLevelFromProxyValue( oletxIsoLevel );
-                this.status = TransactionStatus.Active;
-                this.undisposedOletxTransactionCount = 0;
-                this.phase0EnlistVolatilementContainerList = null;
-                this.phase1EnlistVolatilementContainer = null;
-                this.tooLateForEnlistments = false;
-                this.internalTransaction = null;
+                OletxTransactionManagerInstance = transactionManager;
+                _transactionShim = transactionShim;
+                _outcomeEnlistment = outcomeEnlistment;
+                TxGuid = identifier;
+                TransactionIsolationLevel = OletxTransactionManager.ConvertIsolationLevelFromProxyValue(oletxIsoLevel);
+                Status = TransactionStatus.Active;
+                _undisposedOletxTransactionCount = 0;
+                Phase0EnlistVolatilementContainerList = null;
+                Phase1EnlistVolatilementContainer = null;
+                TooLateForEnlistments = false;
+                InternalTransaction = null;
 
-                this.creationTime = DateTime.UtcNow;
-                this.lastStateChangeTime = this.creationTime;
+                _creationTime = DateTime.UtcNow;
+                _lastStateChangeTime = _creationTime;
 
                 // Connect this object with the OutcomeEnlistment.
-                this.internalClone = new OletxTransaction( this );
+                InternalClone = new OletxTransaction( this );
 
                 // We have have been created without an outcome enlistment if it was too late to create
                 // a clone from the ITransactionNative that we were created from.
-                if ( null != this.outcomeEnlistment )
+                if (_outcomeEnlistment != null)
                 {
-                    this.outcomeEnlistment.SetRealTransaction( this );
+                    _outcomeEnlistment.SetRealTransaction(this);
                 }
                 else
                 {
-                    this.status = TransactionStatus.InDoubt;
+                    Status = TransactionStatus.InDoubt;
                 }
 
-                if ( DiagnosticTrace.HaveListeners )
+                if (DiagnosticTrace.HaveListeners)
                 {
-                    DiagnosticTrace.TraceTransfer(this.txGuid);
+                    DiagnosticTrace.TraceTransfer(TxGuid);
                 }
 
                 successful = true;
@@ -787,26 +668,12 @@ namespace System.Transactions.Oletx
             {
                 if (!successful)
                 {
-                    if (this.outcomeEnlistment != null)
+                    if (_outcomeEnlistment != null)
                     {
-                        this.outcomeEnlistment.UnregisterOutcomeCallback();
-                        this.outcomeEnlistment = null;
+                        _outcomeEnlistment.UnregisterOutcomeCallback();
+                        _outcomeEnlistment = null;
                     }
                 }
-            }
-
-        }
-
-        internal bool TooLateForEnlistments
-        {
-            get
-            {
-                return this.tooLateForEnlistments;
-            }
-
-            set
-            {
-                this.tooLateForEnlistments = value;
             }
         }
 
@@ -832,26 +699,26 @@ namespace System.Transactions.Oletx
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
-                lock ( this )
+                lock (this)
                 {
-                    if ( delayCommit )
+                    if (delayCommit)
                     {
-                        if ( null == this.phase0EnlistVolatilementContainerList )
+                        if (Phase0EnlistVolatilementContainerList == null)
                         {
                             // Not using a MemoryBarrier because all access to this member variable is under a lock of the
                             // object.
-                            this.phase0EnlistVolatilementContainerList = new ArrayList(1);
+                            Phase0EnlistVolatilementContainerList = new ArrayList(1);
                         }
                         // We may have failed the proxy enlistment for the first container, but we would have
                         // allocated the list.  That is why we have this check here.
-                        if ( 0 == this.phase0EnlistVolatilementContainerList.Count )
+                        if (Phase0EnlistVolatilementContainerList.Count == 0)
                         {
-                            localPhase0VolatileContainer = new OletxPhase0VolatileEnlistmentContainer( this );
+                            localPhase0VolatileContainer = new OletxPhase0VolatileEnlistmentContainer(this);
                             needPhase0Enlistment = true;
                         }
                         else
                         {
-                            localPhase0VolatileContainer = this.phase0EnlistVolatilementContainerList[this.phase0EnlistVolatilementContainerList.Count - 1] as OletxPhase0VolatileEnlistmentContainer;
+                            localPhase0VolatileContainer = Phase0EnlistVolatilementContainerList[^1] as OletxPhase0VolatileEnlistmentContainer;
 
                             if (localPhase0VolatileContainer != null)
                             {
@@ -859,7 +726,7 @@ namespace System.Transactions.Oletx
                                 TakeContainerLock(localPhase0VolatileContainer, ref phase0ContainerLockAcquired);
                             }
 
-                            if ( ! localPhase0VolatileContainer.NewEnlistmentsAllowed )
+                            if (!localPhase0VolatileContainer.NewEnlistmentsAllowed)
                             {
                                 //It is OK to release the lock at this time because we are creating a new container that has not yet
                                 //been enlisted with DTC. So there is no race to worry about
@@ -874,28 +741,28 @@ namespace System.Transactions.Oletx
                             }
                         }
 
-                        if ( needPhase0Enlistment )
+                        if (needPhase0Enlistment)
                         {
                             // We need to create a VoterNotifyShim if native threads are not allowed to enter managed code.
-                            phase0Handle = HandleTable.AllocHandle( localPhase0VolatileContainer );
+                            phase0Handle = HandleTable.AllocHandle(localPhase0VolatileContainer);
                         }
                     }
 
                     else // ! delayCommit
                     {
-                        if ( null == this.phase1EnlistVolatilementContainer )
+                        if (Phase1EnlistVolatilementContainer == null)
                         {
-                            localPhase1VolatileContainer = new OletxPhase1VolatileEnlistmentContainer( this );
+                            localPhase1VolatileContainer = new OletxPhase1VolatileEnlistmentContainer(this);
                             needVoterEnlistment = true;
 
                             // We need to create a VoterNotifyShim.
-                            localPhase1VolatileContainer.voterHandle =
-                                HandleTable.AllocHandle( localPhase1VolatileContainer );
+                            localPhase1VolatileContainer.VoterHandle =
+                                HandleTable.AllocHandle(localPhase1VolatileContainer);
                         }
                         else
                         {
                             needVoterEnlistment = false;
-                            localPhase1VolatileContainer = this.phase1EnlistVolatilementContainer;
+                            localPhase1VolatileContainer = Phase1EnlistVolatilementContainer;
                         }
                     }
 
@@ -909,42 +776,38 @@ namespace System.Transactions.Oletx
                         }
 
                         // If enlistDuringPrepareRequired is true, we need to ask the proxy to create a Phase0 enlistment.
-                        if ( needPhase0Enlistment )
+                        if (needPhase0Enlistment)
                         {
                             // We need to use shims if native threads are not allowed to enter managed code.
-                            this.transactionShim.Phase0Enlist(
-                                phase0Handle,
-                                out phase0Shim );
+                            _transactionShim.Phase0Enlist(phase0Handle, out phase0Shim);
                             localPhase0VolatileContainer.Phase0EnlistmentShim = phase0Shim;
                         }
 
-                        if ( needVoterEnlistment )
+                        if (needVoterEnlistment)
                         {
                             // We need to use shims if native threads are not allowed to enter managed code.
-                            OletxTransactionManagerInstance.dtcTransactionManagerLock.AcquireReaderLock( -1 );
+                            OletxTransactionManagerInstance.DtcTransactionManagerLock.AcquireReaderLock(-1);
                             try
                             {
-                                this.transactionShim.CreateVoter(
-                                    localPhase1VolatileContainer.voterHandle,
-                                    out voterShim );
+                                _transactionShim.CreateVoter(localPhase1VolatileContainer.VoterHandle, out voterShim);
 
                                 enlistmentSucceeded = true;
                             }
                             finally
                             {
-                                OletxTransactionManagerInstance.dtcTransactionManagerLock.ReleaseReaderLock();
+                                OletxTransactionManagerInstance.DtcTransactionManagerLock.ReleaseReaderLock();
                             }
 
                             localPhase1VolatileContainer.VoterBallotShim = voterShim;
                         }
 
-                        if ( delayCommit )
+                        if (delayCommit)
                         {
                             // if we needed a Phase0 enlistment, we need to add the container to the
                             // list.
-                            if ( needPhase0Enlistment )
+                            if (needPhase0Enlistment)
                             {
-                                this.phase0EnlistVolatilementContainerList.Add( localPhase0VolatileContainer );
+                                Phase0EnlistVolatilementContainerList.Add(localPhase0VolatileContainer);
                             }
                             localPhase0VolatileContainer.AddDependentClone();
                             returnValue = localPhase0VolatileContainer;
@@ -953,11 +816,11 @@ namespace System.Transactions.Oletx
                         {
                             // If we needed a voter enlistment, we need to save the container as THE
                             // phase1 container for this transaction.
-                            if ( needVoterEnlistment )
+                            if (needVoterEnlistment)
                             {
-                                Debug.Assert( ( null == this.phase1EnlistVolatilementContainer ),
+                                Debug.Assert(Phase1EnlistVolatilementContainer == null,
                                     "RealOletxTransaction.AddDependentClone - phase1VolContainer not null when expected" );
-                                this.phase1EnlistVolatilementContainer = localPhase1VolatileContainer;
+                                Phase1EnlistVolatilementContainer = localPhase1VolatileContainer;
                             }
                             localPhase1VolatileContainer.AddDependentClone();
                             returnValue = localPhase1VolatileContainer;
@@ -966,7 +829,7 @@ namespace System.Transactions.Oletx
                     }
                     catch (COMException comException)
                     {
-                        OletxTransactionManager.ProxyException( comException );
+                        OletxTransactionManager.ProxyException(comException);
                         throw;
                     }
                 }
@@ -980,17 +843,17 @@ namespace System.Transactions.Oletx
                     ReleaseContainerLock(localPhase0VolatileContainer, ref phase0ContainerLockAcquired);
                 }
 
-                if ( phase0Handle != IntPtr.Zero && localPhase0VolatileContainer.Phase0EnlistmentShim == null )
+                if (phase0Handle != IntPtr.Zero && localPhase0VolatileContainer.Phase0EnlistmentShim == null)
                 {
-                    HandleTable.FreeHandle( phase0Handle );
+                    HandleTable.FreeHandle(phase0Handle);
                 }
 
-                if ( !enlistmentSucceeded &&
-                    null != localPhase1VolatileContainer &&
-                    localPhase1VolatileContainer.voterHandle != IntPtr.Zero &&
-                    needVoterEnlistment )
+                if (!enlistmentSucceeded &&
+                    localPhase1VolatileContainer != null &&
+                    localPhase1VolatileContainer.VoterHandle != IntPtr.Zero &&
+                    needVoterEnlistment)
                 {
-                    HandleTable.FreeHandle( localPhase1VolatileContainer.voterHandle );
+                    HandleTable.FreeHandle(localPhase1VolatileContainer.VoterHandle);
                 }
             }
             return returnValue;
@@ -1021,8 +884,7 @@ namespace System.Transactions.Oletx
         internal IPromotedEnlistment CommonEnlistVolatile(
             IEnlistmentNotificationInternal enlistmentNotification,
             EnlistmentOptions enlistmentOptions,
-            OletxTransaction oletxTransaction
-            )
+            OletxTransaction oletxTransaction)
         {
             OletxVolatileEnlistment enlistment = null;
             bool needVoterEnlistment = false;
@@ -1042,35 +904,34 @@ namespace System.Transactions.Oletx
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
-                lock ( this )
+                lock (this)
                 {
                     enlistment = new OletxVolatileEnlistment(
                         enlistmentNotification,
                         enlistmentOptions,
-                        oletxTransaction
-                        );
+                        oletxTransaction);
 
-                    if ( (enlistmentOptions & EnlistmentOptions.EnlistDuringPrepareRequired) != 0 )
+                    if ((enlistmentOptions & EnlistmentOptions.EnlistDuringPrepareRequired) != 0)
                     {
-                        if ( null == this.phase0EnlistVolatilementContainerList )
+                        if (Phase0EnlistVolatilementContainerList == null)
                         {
                             // Not using a MemoryBarrier because all access to this member variable is done when holding
                             // a lock on the object.
-                            this.phase0EnlistVolatilementContainerList = new ArrayList(1);
+                            Phase0EnlistVolatilementContainerList = new ArrayList(1);
                         }
                         // We may have failed the proxy enlistment for the first container, but we would have
                         // allocated the list.  That is why we have this check here.
-                        if ( 0 == this.phase0EnlistVolatilementContainerList.Count )
+                        if (Phase0EnlistVolatilementContainerList.Count == 0)
                         {
-                            localPhase0VolatileContainer = new OletxPhase0VolatileEnlistmentContainer( this );
+                            localPhase0VolatileContainer = new OletxPhase0VolatileEnlistmentContainer(this);
                             needPhase0Enlistment = true;
                         }
                         else
                         {
-                            localPhase0VolatileContainer = this.phase0EnlistVolatilementContainerList[this.phase0EnlistVolatilementContainerList.Count - 1] as OletxPhase0VolatileEnlistmentContainer;
-                            if ( ! localPhase0VolatileContainer.NewEnlistmentsAllowed )
+                            localPhase0VolatileContainer = Phase0EnlistVolatilementContainerList[^1] as OletxPhase0VolatileEnlistmentContainer;
+                            if (!localPhase0VolatileContainer.NewEnlistmentsAllowed)
                             {
-                                localPhase0VolatileContainer = new OletxPhase0VolatileEnlistmentContainer( this );
+                                localPhase0VolatileContainer = new OletxPhase0VolatileEnlistmentContainer(this);
                                 needPhase0Enlistment = true;
                             }
                             else
@@ -1079,27 +940,27 @@ namespace System.Transactions.Oletx
                             }
                         }
 
-                        if ( needPhase0Enlistment )
+                        if (needPhase0Enlistment)
                         {
                             // We need to create a VoterNotifyShim if native threads are not allowed to enter managed code.
-                            phase0Handle = HandleTable.AllocHandle( localPhase0VolatileContainer );
+                            phase0Handle = HandleTable.AllocHandle(localPhase0VolatileContainer);
                         }
                     }
                     else  // not EDPR = TRUE - may need a voter...
                     {
-                        if ( null == this.phase1EnlistVolatilementContainer )
+                        if (Phase1EnlistVolatilementContainer == null)
                         {
                             needVoterEnlistment = true;
-                            localPhase1VolatileContainer = new OletxPhase1VolatileEnlistmentContainer( this );
+                            localPhase1VolatileContainer = new OletxPhase1VolatileEnlistmentContainer(this);
 
                             // We need to create a VoterNotifyShim.
-                            localPhase1VolatileContainer.voterHandle =
-                                HandleTable.AllocHandle( localPhase1VolatileContainer );
+                            localPhase1VolatileContainer.VoterHandle =
+                                HandleTable.AllocHandle(localPhase1VolatileContainer);
                         }
                         else
                         {
                             needVoterEnlistment = false;
-                            localPhase1VolatileContainer = this.phase1EnlistVolatilementContainer;
+                            localPhase1VolatileContainer = Phase1EnlistVolatilementContainer;
                         }
                     }
 
@@ -1107,135 +968,113 @@ namespace System.Transactions.Oletx
                     try
                     {
                         // If enlistDuringPrepareRequired is true, we need to ask the proxy to create a Phase0 enlistment.
-                        if ( needPhase0Enlistment )
+                        if (needPhase0Enlistment)
                         {
-                            lock ( localPhase0VolatileContainer )
+                            lock (localPhase0VolatileContainer)
                             {
-                                transactionShim.Phase0Enlist(
-                                    phase0Handle,
-                                    out phase0Shim );
+                                _transactionShim.Phase0Enlist(phase0Handle, out phase0Shim);
 
                                 localPhase0VolatileContainer.Phase0EnlistmentShim = phase0Shim;
                             }
-
                         }
 
-                        if ( needVoterEnlistment )
+                        if (needVoterEnlistment)
                         {
-                            this.transactionShim.CreateVoter(
-                                localPhase1VolatileContainer.voterHandle,
-                                out voterShim );
+                            _transactionShim.CreateVoter(localPhase1VolatileContainer.VoterHandle, out voterShim);
 
                             enlistmentSucceeded = true;
                             localPhase1VolatileContainer.VoterBallotShim = voterShim;
                         }
 
-                        if ( (enlistmentOptions & EnlistmentOptions.EnlistDuringPrepareRequired) != 0 )
+                        if ((enlistmentOptions & EnlistmentOptions.EnlistDuringPrepareRequired) != 0)
                         {
-                            localPhase0VolatileContainer.AddEnlistment(
-                                enlistment
-                                );
-                            if ( needPhase0Enlistment )
+                            localPhase0VolatileContainer.AddEnlistment(enlistment);
+                            if (needPhase0Enlistment)
                             {
-                                this.phase0EnlistVolatilementContainerList.Add( localPhase0VolatileContainer );
+                                Phase0EnlistVolatilementContainerList.Add( localPhase0VolatileContainer);
                             }
                         }
                         else
                         {
-                            localPhase1VolatileContainer.AddEnlistment(
-                                enlistment
-                                );
+                            localPhase1VolatileContainer.AddEnlistment(enlistment);
 
-                            if ( needVoterEnlistment )
+                            if (needVoterEnlistment)
                             {
-                                Debug.Assert( ( null == this.phase1EnlistVolatilementContainer ),
-                                    "RealOletxTransaction.CommonEnlistVolatile - phase1VolContainer not null when expected." );
-                                this.phase1EnlistVolatilementContainer = localPhase1VolatileContainer;
+                                Debug.Assert(Phase1EnlistVolatilementContainer == null,
+                                    "RealOletxTransaction.CommonEnlistVolatile - phase1VolContainer not null when expected.");
+                                Phase1EnlistVolatilementContainer = localPhase1VolatileContainer;
                             }
                         }
                     }
                     catch (COMException comException)
                     {
-                        OletxTransactionManager.ProxyException( comException );
+                        OletxTransactionManager.ProxyException(comException);
                         throw;
                     }
                 }
             }
             finally
             {
-                if ( phase0Handle != IntPtr.Zero && localPhase0VolatileContainer.Phase0EnlistmentShim == null )
+                if (phase0Handle != IntPtr.Zero && localPhase0VolatileContainer.Phase0EnlistmentShim == null)
                 {
-                    HandleTable.FreeHandle( phase0Handle );
+                    HandleTable.FreeHandle(phase0Handle);
                 }
 
-                if ( !enlistmentSucceeded &&
-                    null != localPhase1VolatileContainer &&
-                    localPhase1VolatileContainer.voterHandle != IntPtr.Zero &&
-                    needVoterEnlistment )
+                if (!enlistmentSucceeded &&
+                    localPhase1VolatileContainer != null&&
+                    localPhase1VolatileContainer.VoterHandle != IntPtr.Zero &&
+                    needVoterEnlistment)
                 {
-                    HandleTable.FreeHandle( localPhase1VolatileContainer.voterHandle );
+                    HandleTable.FreeHandle(localPhase1VolatileContainer.VoterHandle);
                 }
             }
 
             return enlistment;
         }
 
-
         internal IPromotedEnlistment EnlistVolatile(
             ISinglePhaseNotificationInternal enlistmentNotification,
             EnlistmentOptions enlistmentOptions,
-            OletxTransaction oletxTransaction
-            )
-        {
-            IPromotedEnlistment enlistment = CommonEnlistVolatile(
+            OletxTransaction oletxTransaction)
+            => CommonEnlistVolatile(
                 enlistmentNotification,
                 enlistmentOptions,
-                oletxTransaction
-                );
-            return enlistment;
-        }
+                oletxTransaction);
 
         internal IPromotedEnlistment EnlistVolatile(
             IEnlistmentNotificationInternal enlistmentNotification,
             EnlistmentOptions enlistmentOptions,
-            OletxTransaction oletxTransaction
-            )
-        {
-            IPromotedEnlistment enlistment = CommonEnlistVolatile(
+            OletxTransaction oletxTransaction)
+            => CommonEnlistVolatile(
                 enlistmentNotification,
                 enlistmentOptions,
-                oletxTransaction
-                );
-            return enlistment;
-        }
+                oletxTransaction);
 
         internal void Commit()
         {
             try
             {
-                this.transactionShim.Commit();
+                _transactionShim.Commit();
             }
             catch (COMException comException)
             {
-                if ( ( NativeMethods.XACT_E_ABORTED == comException.ErrorCode ) ||
-                     ( NativeMethods.XACT_E_INDOUBT == comException.ErrorCode )
-                   )
+                if (comException.ErrorCode == NativeMethods.XACT_E_ABORTED ||
+                    comException.ErrorCode == NativeMethods.XACT_E_INDOUBT)
                 {
-                    Interlocked.CompareExchange<Exception>( ref this.innerException, comException, null );
+                    Interlocked.CompareExchange(ref InnerException, comException, null);
 
-                    if ( DiagnosticTrace.Verbose )
+                    if (DiagnosticTrace.Verbose)
                     {
-                        ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
-                            comException );
+                        ExceptionConsumedTraceRecord.Trace(SR.TraceSourceOletx, comException);
                     }
                 }
-                else if ( NativeMethods.XACT_E_ALREADYINPROGRESS == comException.ErrorCode )
+                else if (comException.ErrorCode == NativeMethods.XACT_E_ALREADYINPROGRESS)
                 {
-                    throw TransactionException.Create(SR.TransactionAlreadyOver, comException );
+                    throw TransactionException.Create(SR.TransactionAlreadyOver, comException);
                 }
                 else
                 {
-                    OletxTransactionManager.ProxyException( comException );
+                    OletxTransactionManager.ProxyException(comException);
                     throw;
                 }
             }
@@ -1243,24 +1082,20 @@ namespace System.Transactions.Oletx
 
         internal void Rollback()
         {
-            System.Guid tempGuid = Guid.Empty;
+            Guid tempGuid = Guid.Empty;
 
             lock (this)
             {
                 // if status is not active and not aborted, then throw an exception
-                if (TransactionStatus.Aborted != status &&
-                    TransactionStatus.Active != status)
+                if (TransactionStatus.Aborted != Status &&
+                    TransactionStatus.Active != Status)
                 {
-                    throw TransactionException.Create(
-                        SR.TransactionAlreadyOver,
-                        null,
-                        this.DistributedTxId
-                        );
+                    throw TransactionException.Create(SR.TransactionAlreadyOver, null, DistributedTxId);
                 }
 
                 // If the transaciton is already aborted, we can get out now.  Calling Rollback on an already aborted transaction
                 // is legal.
-                if ( TransactionStatus.Aborted == status )
+                if (TransactionStatus.Aborted == Status)
                 {
                     return;
                 }
@@ -1269,38 +1104,34 @@ namespace System.Transactions.Oletx
                 // We can safely make this check because we ALWAYS have a Phase1 Volatile enlistment to
                 // get the outcome.  If we didn't have that enlistment, we would not be able to do this
                 // because not all instances of RealOletxTransaction would have enlistments.
-                if ( 0 < this.undecidedEnlistmentCount )
+                if (_undecidedEnlistmentCount > 0)
                 {
-                    this.doomed = true;
+                    Doomed = true;
                 }
-                else if ( this.tooLateForEnlistments )
+                else if (TooLateForEnlistments )
                 {
                     // It's too late for rollback to be called here.
-                    throw TransactionException.Create(
-                        SR.TransactionAlreadyOver,
-                        null,
-                        this.DistributedTxId
-                        );
+                    throw TransactionException.Create(SR.TransactionAlreadyOver, null, DistributedTxId);
                 }
 
                 // Tell the volatile enlistment containers to vote no now if they have outstanding
                 // notifications.
-                if ( null != this.phase0EnlistVolatilementContainerList )
+                if (Phase0EnlistVolatilementContainerList != null)
                 {
-                    foreach ( OletxPhase0VolatileEnlistmentContainer phase0VolatileContainer in this.phase0EnlistVolatilementContainerList )
+                    foreach (OletxPhase0VolatileEnlistmentContainer phase0VolatileContainer in Phase0EnlistVolatilementContainerList)
                     {
                         phase0VolatileContainer.RollbackFromTransaction();
                     }
                 }
-                if ( null != this.phase1EnlistVolatilementContainer )
+                if (Phase1EnlistVolatilementContainer != null)
                 {
-                    this.phase1EnlistVolatilementContainer.RollbackFromTransaction();
+                    Phase1EnlistVolatilementContainer.RollbackFromTransaction();
                 }
             }
 
             try
             {
-                this.transactionShim.Abort();
+                _transactionShim.Abort();
             }
             catch (COMException comException)
             {
@@ -1308,29 +1139,24 @@ namespace System.Transactions.Oletx
                 // the root transaction and we have already called Commit - ignore the exception.  The
                 // Rollback is allowed and one of the enlistments that hasn't voted yet will make sure it is
                 // aborted.
-                if ( NativeMethods.XACT_E_ALREADYINPROGRESS == comException.ErrorCode )
+                if (comException.ErrorCode == NativeMethods.XACT_E_ALREADYINPROGRESS)
                 {
-                    if ( this.doomed )
+                    if (Doomed)
                     {
-                        if ( DiagnosticTrace.Verbose )
+                        if (DiagnosticTrace.Verbose)
                         {
-                            ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
-                                comException );
+                            ExceptionConsumedTraceRecord.Trace(SR.TraceSourceOletx, comException);
                         }
                     }
                     else
                     {
-                        throw TransactionException.Create(
-                            SR.TransactionAlreadyOver,
-                            comException,
-                            this.DistributedTxId
-                            );
+                        throw TransactionException.Create(SR.TransactionAlreadyOver, comException, DistributedTxId);
                     }
                 }
                 else
                 {
                     // Otherwise, throw the exception out to the app.
-                    OletxTransactionManager.ProxyException( comException );
+                    OletxTransactionManager.ProxyException(comException);
 
                     throw;
                 }
@@ -1338,59 +1164,51 @@ namespace System.Transactions.Oletx
         }
 
         internal void OletxTransactionCreated()
-        {
-            Interlocked.Increment( ref this.undisposedOletxTransactionCount );
-        }
+            => Interlocked.Increment(ref _undisposedOletxTransactionCount);
 
         internal void OletxTransactionDisposed()
         {
-            int localCount = Interlocked.Decrement( ref this.undisposedOletxTransactionCount );
-            Debug.Assert( 0 <= localCount, "RealOletxTransction.undisposedOletxTransationCount < 0" );
+            int localCount = Interlocked.Decrement(ref _undisposedOletxTransactionCount);
+            Debug.Assert(localCount >= 0, "RealOletxTransction.undisposedOletxTransationCount < 0");
         }
 
         internal void FireOutcome(TransactionStatus statusArg)
         {
-            lock ( this )
+            lock (this)
             {
                 if (statusArg == TransactionStatus.Committed)
                 {
-                    if ( DiagnosticTrace.Verbose )
+                    if (DiagnosticTrace.Verbose)
                     {
-                        TransactionCommittedTraceRecord.Trace( SR.TraceSourceOletx,
-                            this.TransactionTraceId
-                            );
+                        TransactionCommittedTraceRecord.Trace(SR.TraceSourceOletx, TransactionTraceId);
                     }
 
-                    status = TransactionStatus.Committed;
+                    Status = TransactionStatus.Committed;
                 }
                 else if (statusArg == TransactionStatus.Aborted)
                 {
-                    if ( DiagnosticTrace.Warning )
+                    if (DiagnosticTrace.Warning)
                     {
-                        TransactionAbortedTraceRecord.Trace( SR.TraceSourceOletx,
-                            this.TransactionTraceId
-                            );
+                        TransactionAbortedTraceRecord.Trace(SR.TraceSourceOletx, TransactionTraceId);
                     }
 
-                    status = TransactionStatus.Aborted;
+                    Status = TransactionStatus.Aborted;
                 }
                 else
                 {
-                    if ( DiagnosticTrace.Warning )
+                    if (DiagnosticTrace.Warning)
                     {
-                        TransactionInDoubtTraceRecord.Trace( SR.TraceSourceOletx,
-                            this.TransactionTraceId
-                            );
+                        TransactionInDoubtTraceRecord.Trace(SR.TraceSourceOletx, TransactionTraceId);
                     }
 
-                    status = TransactionStatus.InDoubt;
+                    Status = TransactionStatus.InDoubt;
                 }
             }
 
             // Let the InternalTransaciton know about the outcome.
-            if ( null != this.InternalTransaction )
+            if (InternalTransaction != null)
             {
-                InternalTransaction.DistributedTransactionOutcome( this.InternalTransaction, status );
+                InternalTransaction.DistributedTransactionOutcome(InternalTransaction, Status);
             }
 
         }
@@ -1399,17 +1217,17 @@ namespace System.Transactions.Oletx
         {
             get
             {
-                if ( TransactionTraceIdentifier.Empty == this.traceIdentifier )
+                if (TransactionTraceIdentifier.Empty == _traceIdentifier)
                 {
-                    lock ( this )
+                    lock (this)
                     {
-                        if ( TransactionTraceIdentifier.Empty == this.traceIdentifier )
+                        if (_traceIdentifier == TransactionTraceIdentifier.Empty)
                         {
-                            if ( Guid.Empty != this.txGuid )
+                            if (TxGuid != Guid.Empty)
                             {
-                                TransactionTraceIdentifier temp = new TransactionTraceIdentifier( this.txGuid.ToString(), 0 );
+                                TransactionTraceIdentifier temp = new(TxGuid.ToString(), 0);
                                 Thread.MemoryBarrier();
-                                this.traceIdentifier = temp;
+                                _traceIdentifier = temp;
                             }
                             else
                             {
@@ -1418,56 +1236,46 @@ namespace System.Transactions.Oletx
                                 // created.  If that happens, we don't want to throw just because we are trying to trace.  So just use the
                                 // TransactionTraceIdentifier.Empty.
                             }
-
                         }
                     }
                 }
-                return this.traceIdentifier;
+                return _traceIdentifier;
             }
         }
 
         internal void TMDown()
         {
-            lock ( this )
+            lock (this)
             {
                 // Tell the volatile enlistment containers that the TM went down.
-                if ( null != this.phase0EnlistVolatilementContainerList )
+                if (Phase0EnlistVolatilementContainerList != null)
                 {
-                    foreach ( OletxPhase0VolatileEnlistmentContainer phase0VolatileContainer in this.phase0EnlistVolatilementContainerList )
+                    foreach (OletxPhase0VolatileEnlistmentContainer phase0VolatileContainer in Phase0EnlistVolatilementContainerList)
                     {
                         phase0VolatileContainer.TMDown();
                     }
                 }
-
             }
             // Tell the outcome enlistment the TM went down.  We are doing this outside the lock
             // because this may end up making calls out to user code through enlistments.
-            outcomeEnlistment.TMDown();
+            _outcomeEnlistment.TMDown();
         }
     }
 
     internal sealed class OutcomeEnlistment
     {
-        private WeakReference weakRealTransaction;
+        private WeakReference _weakRealTransaction;
 
-        private System.Guid txGuid;
+        internal Guid TransactionIdentifier { get; private set; }
 
-        private bool haveIssuedOutcome;
+        private bool _haveIssuedOutcome;
 
-        private TransactionStatus savedStatus;
-
-        internal Guid TransactionIdentifier
-        {
-            get
-            {
-                return txGuid;
-            }
-        }
+        private TransactionStatus _savedStatus;
 
         internal OutcomeEnlistment()
         {
-            this.haveIssuedOutcome = false;
-            this.savedStatus = TransactionStatus.InDoubt;
+            _haveIssuedOutcome = false;
+            _savedStatus = TransactionStatus.InDoubt;
         }
 
         internal void SetRealTransaction( RealOletxTransaction realTx )
@@ -1475,72 +1283,71 @@ namespace System.Transactions.Oletx
             bool localHaveIssuedOutcome = false;
             TransactionStatus localStatus = TransactionStatus.InDoubt;
 
-            lock ( this )
+            lock (this)
             {
-                localHaveIssuedOutcome = this.haveIssuedOutcome;
-                localStatus = this.savedStatus;
+                localHaveIssuedOutcome = _haveIssuedOutcome;
+                localStatus = _savedStatus;
 
                 // We want to do this while holding the lock.
-                if ( ! localHaveIssuedOutcome )
+                if (!localHaveIssuedOutcome)
                 {
                     // We don't use MemoryBarrier here because all access to these member variables is done while holding
                     // a lock on the object.
 
                     // We are going to use a weak reference so the transaction object can get garbage
                     // collected before we receive the outcome.
-                    this.weakRealTransaction = new WeakReference(realTx);
+                    _weakRealTransaction = new WeakReference(realTx);
 
                     // Save the transaction guid so that the transaction can be removed from the
                     // TransactionTable
-                    this.txGuid = realTx.TxGuid;
+                    TransactionIdentifier = realTx.TxGuid;
                 }
             }
 
             // We want to do this outside the lock because we are potentially calling out to user code.
-            if ( localHaveIssuedOutcome )
+            if (localHaveIssuedOutcome)
             {
-                realTx.FireOutcome( localStatus );
+                realTx.FireOutcome(localStatus);
 
                 // We may be getting this notification while there are still volatile prepare notifications outstanding.  Tell the
                 // container to drive the aborted notification in that case.
-                if ( ( ( TransactionStatus.Aborted == localStatus ) || ( TransactionStatus.InDoubt == localStatus ) ) &&
-                   ( null != realTx.phase1EnlistVolatilementContainer ) )
+                if ( localStatus is TransactionStatus.Aborted or TransactionStatus.InDoubt &&
+                   realTx.Phase1EnlistVolatilementContainer != null)
                 {
-                    realTx.phase1EnlistVolatilementContainer.OutcomeFromTransaction( localStatus );
+                    realTx.Phase1EnlistVolatilementContainer.OutcomeFromTransaction(localStatus);
                 }
             }
         }
 
         internal void UnregisterOutcomeCallback()
         {
-            this.weakRealTransaction = null;
+            _weakRealTransaction = null;
         }
 
         private void InvokeOutcomeFunction(TransactionStatus status)
         {
-            WeakReference localTxWeakRef = null;
+            WeakReference localTxWeakRef;
 
             // In the face of TMDown notifications, we may have already issued
             // the outcome of the transaction.
-            lock ( this )
+            lock (this)
             {
-                if ( this.haveIssuedOutcome )
+                if (_haveIssuedOutcome)
                 {
                     return;
                 }
-                this.haveIssuedOutcome = true;
-                this.savedStatus = status;
-                localTxWeakRef = this.weakRealTransaction;
+                _haveIssuedOutcome = true;
+                _savedStatus = status;
+                localTxWeakRef = _weakRealTransaction;
             }
 
             // It is possible for the weakRealTransaction member to be null if some exception was thrown
             // during the RealOletxTransaction constructor after the OutcomeEnlistment object was created.
             // In the finally block of the constructor, it calls UnregisterOutcomeCallback, which will
             // null out weakRealTransaction.  If this is the case, there is nothing to do.
-            if ( null != localTxWeakRef )
+            if (localTxWeakRef != null )
             {
-                RealOletxTransaction realOletxTransaction = localTxWeakRef.Target as RealOletxTransaction;
-                if (null != realOletxTransaction)
+                if (localTxWeakRef.Target is RealOletxTransaction realOletxTransaction)
                 {
                     realOletxTransaction.FireOutcome(status);
 
@@ -1549,9 +1356,9 @@ namespace System.Transactions.Oletx
                     // Tell the Phase0Volatile containers, if any, about the outcome of the transaction.
                     // I am not protecting the access to phase0EnlistVolatilementContainerList with a lock on "this"
                     // because it is too late for these to be allocated anyway.
-                    if ( null != realOletxTransaction.phase0EnlistVolatilementContainerList )
+                    if (realOletxTransaction.Phase0EnlistVolatilementContainerList != null)
                     {
-                        foreach ( OletxPhase0VolatileEnlistmentContainer phase0VolatileContainer in realOletxTransaction.phase0EnlistVolatilementContainerList )
+                        foreach (OletxPhase0VolatileEnlistmentContainer phase0VolatileContainer in realOletxTransaction.Phase0EnlistVolatilementContainerList)
                         {
                             phase0VolatileContainer.OutcomeFromTransaction( status );
                         }
@@ -1559,16 +1366,15 @@ namespace System.Transactions.Oletx
 
                     // We may be getting this notification while there are still volatile prepare notifications outstanding.  Tell the
                     // container to drive the aborted notification in that case.
-                    if ( ( ( TransactionStatus.Aborted == status ) || ( TransactionStatus.InDoubt == status ) ) &&
-                          ( null != realOletxTransaction.phase1EnlistVolatilementContainer ) )
+                    if ( status is TransactionStatus.Aborted or TransactionStatus.InDoubt &&
+                           realOletxTransaction.Phase1EnlistVolatilementContainer != null)
                     {
-                        realOletxTransaction.phase1EnlistVolatilementContainer.OutcomeFromTransaction( status );
+                        realOletxTransaction.Phase1EnlistVolatilementContainer.OutcomeFromTransaction(status);
                     }
                 }
 
                 localTxWeakRef.Target = null;
             }
-
         }
 
 
@@ -1579,8 +1385,7 @@ namespace System.Transactions.Oletx
         //
         internal bool TransactionIsInDoubt(RealOletxTransaction realTx)
         {
-            if ( null != realTx.committableTransaction &&
-                 !realTx.committableTransaction.CommitCalled )
+            if (realTx.CommittableTransaction is { CommitCalled: false } )
             {
                 // If this is a committable transaction and commit has not been called
                 // then we know the outcome.
@@ -1595,58 +1400,46 @@ namespace System.Transactions.Oletx
             // Assume that we don't know because that is the safest answer.
             bool transactionIsInDoubt = true;
             RealOletxTransaction realOletxTransaction = null;
-            lock ( this )
+            lock (this)
             {
-                if ( null != this.weakRealTransaction )
+                if (_weakRealTransaction != null)
                 {
-                    realOletxTransaction = this.weakRealTransaction.Target as RealOletxTransaction;
+                    realOletxTransaction = _weakRealTransaction.Target as RealOletxTransaction;
                 }
             }
 
-            if (null != realOletxTransaction)
+            if (realOletxTransaction != null)
             {
-                lock ( realOletxTransaction )
+                lock (realOletxTransaction)
                 {
                     transactionIsInDoubt = TransactionIsInDoubt(realOletxTransaction);
                 }
             }
 
-
             // If we have already voted, then we can't tell what the outcome
             // is.  We do this outside the lock because it may end up invoking user
             // code when it calls into the enlistments later on the stack.
-            if ( transactionIsInDoubt )
+            if (transactionIsInDoubt)
             {
-                this.InDoubt();
+                InDoubt();
             }
             // We have not yet voted, so just say it aborted.
             else
             {
-                this.Aborted();
+                Aborted();
             }
         }
-
 
         #region ITransactionOutcome Members
 
         public void Committed()
-        {
-            InvokeOutcomeFunction(TransactionStatus.Committed);
-            return;
-        }
+            => InvokeOutcomeFunction(TransactionStatus.Committed);
 
         public void Aborted()
-        {
-            InvokeOutcomeFunction(TransactionStatus.Aborted);
-
-            return;
-        }
+            => InvokeOutcomeFunction(TransactionStatus.Aborted);
 
         public void InDoubt()
-        {
-            InvokeOutcomeFunction(TransactionStatus.InDoubt);
-            return;
-        }
+            => InvokeOutcomeFunction(TransactionStatus.InDoubt);
 
         #endregion
     }

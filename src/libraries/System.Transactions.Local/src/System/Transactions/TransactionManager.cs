@@ -20,7 +20,7 @@ namespace System.Transactions
     {
         // Revovery Information Version
         private const int RecoveryInformationVersion1 = 1;
-        private const Int32 CurrentRecoveryVersion = RecoveryInformationVersion1;
+        private const int CurrentRecoveryVersion = RecoveryInformationVersion1;
 
         // Hashtable of promoted transactions, keyed by identifier guid.  This is used by
         // FindPromotedTransaction to support transaction equivalence when a transaction is

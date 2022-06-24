@@ -20,18 +20,13 @@ namespace System.Transactions.Oletx
     [Serializable]
     internal class OletxRecoveryInformation
     {
-        internal byte[] proxyRecoveryInformation;
+        internal byte[] ProxyRecoveryInformation;
 
-        internal OletxRecoveryInformation(
-            byte[] proxyRecoveryInformation
-            )
-        {
-            this.proxyRecoveryInformation = proxyRecoveryInformation;
-        }
+        internal OletxRecoveryInformation(byte[] proxyRecoveryInformation)
+            => ProxyRecoveryInformation = proxyRecoveryInformation;
     }
 
-    class OletxEnlistment : OletxBaseEnlistment,
-        IPromotedEnlistment
+    class OletxEnlistment : OletxBaseEnlistment, IPromotedEnlistment
     {
         internal enum OletxEnlistmentState
         {
@@ -48,40 +43,31 @@ namespace System.Transactions.Oletx
             Done
         }
 
-        IEnlistmentShim enlistmentShim;
-        IPhase0EnlistmentShim phase0Shim;
-        bool canDoSinglePhase;
-        IEnlistmentNotificationInternal iEnlistmentNotification;
+        private IPhase0EnlistmentShim _phase0Shim;
+        private bool _canDoSinglePhase;
+        private IEnlistmentNotificationInternal _iEnlistmentNotification;
         // The information that comes from/goes to the proxy.
-        byte[] proxyPrepareInfoByteArray = null;
+        private byte[] _proxyPrepareInfoByteArray;
 
-        OletxEnlistmentState state = OletxEnlistmentState.Active;
-
-        bool isSinglePhase = false;
-        Guid transactionGuid = Guid.Empty;
+        private bool _isSinglePhase;
+        private Guid _transactionGuid = Guid.Empty;
 
         // We need to keep track of the handle for the phase 1 notifications
         // so that if the enlistment terminates the conversation due for instance
         // to a force rollback the handle can be cleaned up.
-        internal IntPtr phase1Handle = IntPtr.Zero;
+        internal IntPtr _phase1Handle = IntPtr.Zero;
 
         // Set to true if we receive an AbortRequest while we still have
         // another notification, like prepare, outstanding.  It indicates that
         // we need to fabricate a rollback to the app after it responds to Prepare.
-        bool fabricateRollback = false;
+        private bool _fabricateRollback;
 
-        bool tmWentDown = false;
-        bool aborting = false;
+        private bool _tmWentDown;
+        private bool _aborting;
 
-        byte[] prepareInfoByteArray;
+        byte[] _prepareInfoByteArray;
 
-        internal Guid TransactionIdentifier
-        {
-            get
-            {
-                return transactionGuid;
-            }
-        }
+        internal Guid TransactionIdentifier => _transactionGuid;
 
         #region Constructor
 
@@ -91,68 +77,67 @@ namespace System.Transactions.Oletx
             Guid transactionGuid,
             EnlistmentOptions enlistmentOptions,
             OletxResourceManager oletxResourceManager,
-            OletxTransaction oletxTransaction
-            ) : base( oletxResourceManager, oletxTransaction )
+            OletxTransaction oletxTransaction)
+            : base(oletxResourceManager, oletxTransaction)
         {
             Guid myGuid = Guid.Empty;
 
             // This will get set later by the creator of this object after it
             // has enlisted with the proxy.
-            this.enlistmentShim = null;
-            this.phase0Shim = null;
+            EnlistmentShim = null;
+            _phase0Shim = null;
 
-            this.canDoSinglePhase = canDoSinglePhase;
-            this.iEnlistmentNotification = enlistmentNotification;
-            this.state = OletxEnlistmentState.Active;
-            this.transactionGuid = transactionGuid;
+            _canDoSinglePhase = canDoSinglePhase;
+            _iEnlistmentNotification = enlistmentNotification;
+            State = OletxEnlistmentState.Active;
+            _transactionGuid = transactionGuid;
 
-            this.proxyPrepareInfoByteArray = null;
+            _proxyPrepareInfoByteArray = null;
 
-            if ( DiagnosticTrace.Information )
+            if (DiagnosticTrace.Information)
             {
-                EnlistmentTraceRecord.Trace( SR.TraceSourceOletx,
-                    this.InternalTraceIdentifier,
+                EnlistmentTraceRecord.Trace(
+                    SR.TraceSourceOletx,
+                    InternalTraceIdentifier,
                     EnlistmentType.Durable,
-                    enlistmentOptions
-                    );
+                    enlistmentOptions);
             }
 
-            // Always do this last incase anything earlier fails.
+            // Always do this last in case anything earlier fails.
             AddToEnlistmentTable();
         }
-
 
         internal OletxEnlistment(
             IEnlistmentNotificationInternal enlistmentNotification,
             OletxTransactionStatus xactStatus,
             byte[] prepareInfoByteArray,
-            OletxResourceManager oletxResourceManager
-            ) : base( oletxResourceManager, null )
+            OletxResourceManager oletxResourceManager)
+            : base(oletxResourceManager, null)
         {
             Guid myGuid = Guid.Empty;
 
             // This will get set later by the creator of this object after it
             // has enlisted with the proxy.
-            this.enlistmentShim = null;
-            this.phase0Shim = null;
+            EnlistmentShim = null;
+            _phase0Shim = null;
 
-            this.canDoSinglePhase = false;
-            this.iEnlistmentNotification = enlistmentNotification;
-            this.state = OletxEnlistmentState.Active;
+            _canDoSinglePhase = false;
+            _iEnlistmentNotification = enlistmentNotification;
+            State = OletxEnlistmentState.Active;
 
             // Do this before we do any tracing because it will affect the trace identifiers that we generate.
-            Debug.Assert( ( null != prepareInfoByteArray ),
-                "OletxEnlistment.ctor - null oletxTransaction without a prepareInfoByteArray" );
+            Debug.Assert(prepareInfoByteArray != null,
+                "OletxEnlistment.ctor - null oletxTransaction without a prepareInfoByteArray");
 
             int prepareInfoLength = prepareInfoByteArray.Length;
-            this.proxyPrepareInfoByteArray = new byte[prepareInfoLength];
-            Array.Copy(prepareInfoByteArray, proxyPrepareInfoByteArray, prepareInfoLength);
+            _proxyPrepareInfoByteArray = new byte[prepareInfoLength];
+            Array.Copy(prepareInfoByteArray, _proxyPrepareInfoByteArray, prepareInfoLength);
 
             byte[] txGuidByteArray = new byte[16];
-            Array.Copy(proxyPrepareInfoByteArray, txGuidByteArray, 16);
+            Array.Copy(_proxyPrepareInfoByteArray, txGuidByteArray, 16);
 
-            this.transactionGuid = new Guid( txGuidByteArray );
-            this.transactionGuidString = this.transactionGuid.ToString();
+            _transactionGuid = new Guid(txGuidByteArray);
+            TransactionGuidString = _transactionGuid.ToString();
 
             // If this is being created as part of a Reenlist and we already know the
             // outcome, then tell the application.
@@ -160,51 +145,51 @@ namespace System.Transactions.Oletx
             {
                 case OletxTransactionStatus.OLETX_TRANSACTION_STATUS_ABORTED:
                 {
-                    this.state = OletxEnlistmentState.Aborting;
-                    if ( DiagnosticTrace.Verbose )
+                    State = OletxEnlistmentState.Aborting;
+                    if (DiagnosticTrace.Verbose)
                     {
-                        EnlistmentNotificationCallTraceRecord.Trace( SR.TraceSourceOletx,
-                            this.InternalTraceIdentifier,
-                            NotificationCall.Rollback
-                            );
+                        EnlistmentNotificationCallTraceRecord.Trace(
+                            SR.TraceSourceOletx,
+                            InternalTraceIdentifier,
+                            NotificationCall.Rollback);
                     }
 
-                    iEnlistmentNotification.Rollback( this );
+                    _iEnlistmentNotification.Rollback(this);
                     break;
                 }
 
                 case OletxTransactionStatus.OLETX_TRANSACTION_STATUS_COMMITTED:
                 {
-                    this.state = OletxEnlistmentState.Committing;
+                    State = OletxEnlistmentState.Committing;
                     // We are going to send the notification to the RM.  We need to put the
                     // enlistment on the reenlistPendingList.  We lock the reenlistList because
                     // we have decided that is the lock that protects both lists.  The entry will
                     // be taken off the reenlistPendingList when the enlistment has
                     // EnlistmentDone called on it.  The enlistment will call
                     // RemoveFromReenlistPending.
-                    lock ( oletxResourceManager.reenlistList )
+                    lock (oletxResourceManager.ReenlistList)
                     {
-                        oletxResourceManager.reenlistPendingList.Add( this );
+                        oletxResourceManager.ReenlistPendingList.Add( this );
                     }
 
-                    if ( DiagnosticTrace.Verbose )
+                    if (DiagnosticTrace.Verbose)
                     {
-                        EnlistmentNotificationCallTraceRecord.Trace( SR.TraceSourceOletx,
-                            this.InternalTraceIdentifier,
-                            NotificationCall.Commit
-                            );
+                        EnlistmentNotificationCallTraceRecord.Trace(
+                            SR.TraceSourceOletx,
+                            InternalTraceIdentifier,
+                            NotificationCall.Commit);
                     }
 
-                    iEnlistmentNotification.Commit( this );
+                    _iEnlistmentNotification.Commit(this);
                     break;
                 }
 
                 case OletxTransactionStatus.OLETX_TRANSACTION_STATUS_PREPARED:
                 {
-                    this.state = OletxEnlistmentState.Prepared;
-                    lock ( oletxResourceManager.reenlistList )
+                    State = OletxEnlistmentState.Prepared;
+                    lock (oletxResourceManager.ReenlistList)
                     {
-                        oletxResourceManager.reenlistList.Add( this );
+                        oletxResourceManager.ReenlistList.Add(this);
                         oletxResourceManager.StartReenlistThread();
                     }
                     break;
@@ -212,23 +197,24 @@ namespace System.Transactions.Oletx
 
                 default:
                 {
-                    if ( DiagnosticTrace.Critical )
+                    if (DiagnosticTrace.Critical)
                     {
-                        InternalErrorTraceRecord.Trace( SR.TraceSourceOletx,
-                            SR.OletxEnlistmentUnexpectedTransactionStatus);
+                        InternalErrorTraceRecord.Trace(
+                            SR.TraceSourceOletx, SR.OletxEnlistmentUnexpectedTransactionStatus);
                     }
 
-                    throw TransactionException.Create(SR.OletxEnlistmentUnexpectedTransactionStatus, null, this.DistributedTxId);
+                    throw TransactionException.Create(
+                        SR.OletxEnlistmentUnexpectedTransactionStatus, null, DistributedTxId);
                 }
             }
 
-            if ( DiagnosticTrace.Information )
+            if (DiagnosticTrace.Information)
             {
-                EnlistmentTraceRecord.Trace( SR.TraceSourceOletx,
-                    this.InternalTraceIdentifier,
+                EnlistmentTraceRecord.Trace(
+                    SR.TraceSourceOletx,
+                    InternalTraceIdentifier,
                     EnlistmentType.Durable,
-                    EnlistmentOptions.None
-                    );
+                    EnlistmentOptions.None);
             }
 
             // Always do this last in case anything prior to this fails.
@@ -236,148 +222,120 @@ namespace System.Transactions.Oletx
         }
         #endregion
 
+        internal IEnlistmentNotificationInternal EnlistmentNotification => _iEnlistmentNotification;
 
-        internal IEnlistmentNotificationInternal EnlistmentNotification
-        {
-            get
-            {
-                return iEnlistmentNotification;
-            }
-        }
-
-
-        internal IEnlistmentShim EnlistmentShim
-        {
-            get { return this.enlistmentShim; }
-            set { this.enlistmentShim = value; }
-        }
-
+        internal IEnlistmentShim EnlistmentShim { get; set; }
 
         internal IPhase0EnlistmentShim Phase0EnlistmentShim
         {
-            get { return this.phase0Shim; }
+            get => _phase0Shim;
             set
             {
-                lock ( this )
+                lock (this)
                 {
                     // If this.aborting is set to true, then we must have already received a
                     // Phase0Request.  This could happen if the transaction aborts after the
                     // enlistment is made, but before we are given the shim.
-                    if ( ( null != value ) && ( this.aborting || this.tmWentDown ) )
+                    if (value != null && (_aborting || _tmWentDown))
                     {
-                        value.Phase0Done( false );
+                        value.Phase0Done(false);
                     }
-                    this.phase0Shim = value;
+                    _phase0Shim = value;
                 }
             }
         }
 
+        internal OletxEnlistmentState State { get; set; } = OletxEnlistmentState.Active;
 
-        internal OletxEnlistmentState State
-        {
-            get { return state; }
-            set { state = value; }
-        }
-
-        internal byte[] ProxyPrepareInfoByteArray
-        {
-            get { return proxyPrepareInfoByteArray; }
-        }
-
+        internal byte[] ProxyPrepareInfoByteArray => _proxyPrepareInfoByteArray;
 
         internal void FinishEnlistment()
         {
-            lock ( this )
+            lock (this)
             {
                 // If we don't have a wrappedTransactionEnlistmentAsync, we may
                 // need to remove ourselves from the reenlistPendingList in the
                 // resource manager.
-                if ( null == this.enlistmentShim )
+                if (EnlistmentShim == null)
                 {
-                    oletxResourceManager.RemoveFromReenlistPending( this );
+                    OletxResourceManager.RemoveFromReenlistPending(this);
                 }
-                this.iEnlistmentNotification = null;
+                _iEnlistmentNotification = null;
 
                 RemoveFromEnlistmentTable();
             }
         }
 
-        internal void TMDownFromInternalRM( OletxTransactionManager oletxTm )
+        internal void TMDownFromInternalRM(OletxTransactionManager oletxTm)
         {
-            lock ( this )
+            lock (this)
             {
                 // If we don't have an oletxTransaction or the passed oletxTm matches that of my oletxTransaction, the TM went down.
-                if ( ( null == this.oletxTransaction ) || ( oletxTm == this.oletxTransaction.realOletxTransaction.OletxTransactionManagerInstance ) )
+                if (oletxTransaction == null || oletxTm == oletxTransaction.RealOletxTransaction.OletxTransactionManagerInstance)
                 {
-                    this.tmWentDown = true;
+                    _tmWentDown = true;
                 }
             }
-
-            return;
         }
-
 
         #region ITransactionResourceAsync methods
 
         // ITranactionResourceAsync.PrepareRequest
-        public bool PrepareRequest(
-            bool singlePhase,
-            byte[] prepareInfo
-            )
+        public bool PrepareRequest(bool singlePhase, byte[] prepareInfo)
         {
-            IEnlistmentShim localEnlistmentShim = null;
+            IEnlistmentShim localEnlistmentShim;
             OletxEnlistmentState localState = OletxEnlistmentState.Active;
-            IEnlistmentNotificationInternal localEnlistmentNotification = null;
-            OletxRecoveryInformation oletxRecoveryInformation = null;
+            IEnlistmentNotificationInternal localEnlistmentNotification;
+            OletxRecoveryInformation oletxRecoveryInformation;
             bool enlistmentDone;
 
-            lock ( this )
+            lock (this)
             {
-                if ( OletxEnlistmentState.Active == state )
+                if (OletxEnlistmentState.Active == State)
                 {
-                    localState = state = OletxEnlistmentState.Preparing;
+                    localState = State = OletxEnlistmentState.Preparing;
                 }
                 else
                 {
                     // We must have done the prepare work in Phase0, so just remember what state we are
                     // in now.
-                    localState = state;
+                    localState = State;
                 }
 
-                localEnlistmentNotification = iEnlistmentNotification;
+                localEnlistmentNotification = _iEnlistmentNotification;
 
-                localEnlistmentShim = this.EnlistmentShim;
+                localEnlistmentShim = EnlistmentShim;
 
-                this.oletxTransaction.realOletxTransaction.TooLateForEnlistments = true;
+                oletxTransaction.RealOletxTransaction.TooLateForEnlistments = true;
             }
 
             // If we went to Preparing state, send the app
             // a prepare request.
-            if ( OletxEnlistmentState.Preparing == localState )
+            if (OletxEnlistmentState.Preparing == localState)
             {
-                oletxRecoveryInformation = new OletxRecoveryInformation( prepareInfo );
-                this.isSinglePhase = singlePhase;
+                oletxRecoveryInformation = new OletxRecoveryInformation(prepareInfo);
+                _isSinglePhase = singlePhase;
 
                 // Store the prepare info we are given.
-                Debug.Assert(this.proxyPrepareInfoByteArray == null, "Unexpected value in this.proxyPrepareInfoByteArray");
+                Debug.Assert(_proxyPrepareInfoByteArray == null, "Unexpected value in this.proxyPrepareInfoByteArray");
                 long arrayLength = prepareInfo.Length;
-                this.proxyPrepareInfoByteArray = new Byte[arrayLength];
-                Array.Copy(prepareInfo, this.proxyPrepareInfoByteArray, arrayLength);
+                _proxyPrepareInfoByteArray = new byte[arrayLength];
+                Array.Copy(prepareInfo, _proxyPrepareInfoByteArray, arrayLength);
 
-                if ( this.isSinglePhase && this.canDoSinglePhase )
+                if (_isSinglePhase && _canDoSinglePhase)
                 {
-                    ISinglePhaseNotificationInternal singlePhaseNotification = (ISinglePhaseNotificationInternal) localEnlistmentNotification;
-                    state = OletxEnlistmentState.SinglePhaseCommitting;
+                    ISinglePhaseNotificationInternal singlePhaseNotification = (ISinglePhaseNotificationInternal)localEnlistmentNotification;
+                    State = OletxEnlistmentState.SinglePhaseCommitting;
                     // We don't call DecrementUndecidedEnlistments for Phase1 enlistments.
                     if ( DiagnosticTrace.Verbose )
                     {
-                        EnlistmentNotificationCallTraceRecord.Trace( SR.TraceSourceOletx,
-                            this.InternalTraceIdentifier,
-                            NotificationCall.SinglePhaseCommit
-                            );
+                        EnlistmentNotificationCallTraceRecord.Trace(
+                            SR.TraceSourceOletx,
+                            InternalTraceIdentifier,
+                            NotificationCall.SinglePhaseCommit);
                     }
 
-                    singlePhaseNotification.SinglePhaseCommit( this );
+                    singlePhaseNotification.SinglePhaseCommit(this);
                     enlistmentDone = true;
                 }
                 else
@@ -385,50 +343,47 @@ namespace System.Transactions.Oletx
                     // We need to turn the oletxRecoveryInformation into a byte array.
                     byte[] oletxRecoveryInformationByteArray = TransactionManager.ConvertToByteArray( oletxRecoveryInformation );
 
-                    state = OletxEnlistmentState.Preparing;
+                    State = OletxEnlistmentState.Preparing;
 
                     // TODO: Can this be more efficient.
-                    this.prepareInfoByteArray = TransactionManager.GetRecoveryInformation(
-                        oletxResourceManager.oletxTransactionManager.CreationNodeName,
-                        oletxRecoveryInformationByteArray
-                        );
+                    _prepareInfoByteArray = TransactionManager.GetRecoveryInformation(
+                        OletxResourceManager.OletxTransactionManager.CreationNodeName,
+                        oletxRecoveryInformationByteArray);
 
-                    if ( DiagnosticTrace.Verbose )
+                    if (DiagnosticTrace.Verbose)
                     {
-                        EnlistmentNotificationCallTraceRecord.Trace( SR.TraceSourceOletx,
-                            this.InternalTraceIdentifier,
-                            NotificationCall.Prepare
-                            );
+                        EnlistmentNotificationCallTraceRecord.Trace(
+                            SR.TraceSourceOletx,
+                            InternalTraceIdentifier,
+                            NotificationCall.Prepare);
                     }
 
-                    localEnlistmentNotification.Prepare(
-                        this
-                        );
+                    localEnlistmentNotification.Prepare(this);
                     enlistmentDone = false;
                 }
             }
-            else if ( OletxEnlistmentState.Prepared == localState )
+            else if (OletxEnlistmentState.Prepared == localState)
             {
                 // We must have done our prepare work during Phase0 so just vote Yes.
                 try
                 {
-                    localEnlistmentShim.PrepareRequestDone( OletxPrepareVoteType.Prepared );
+                    localEnlistmentShim.PrepareRequestDone(OletxPrepareVoteType.Prepared);
                     enlistmentDone = false;
                 }
-                catch ( COMException comException )
+                catch (COMException comException)
                 {
-                    OletxTransactionManager.ProxyException( comException );
+                    OletxTransactionManager.ProxyException(comException);
                     throw;
                 }
             }
-            else if ( OletxEnlistmentState.Done == localState )
+            else if (OletxEnlistmentState.Done == localState)
             {
                 try
                 {
                     // This was an early vote.  Respond ReadOnly
                     try
                     {
-                        localEnlistmentShim.PrepareRequestDone( OletxPrepareVoteType.ReadOnly );
+                        localEnlistmentShim.PrepareRequestDone(OletxPrepareVoteType.ReadOnly);
                         enlistmentDone = true;
                     }
                     finally
@@ -436,9 +391,9 @@ namespace System.Transactions.Oletx
                         FinishEnlistment();
                     }
                 }
-                catch ( COMException comException )
+                catch (COMException comException)
                 {
-                    OletxTransactionManager.ProxyException( comException );
+                    OletxTransactionManager.ProxyException(comException);
                     throw;
                 }
             }
@@ -447,19 +402,19 @@ namespace System.Transactions.Oletx
                 // Any other state means we should vote NO to the proxy.
                 try
                 {
-                    localEnlistmentShim.PrepareRequestDone( OletxPrepareVoteType.Failed );
+                    localEnlistmentShim.PrepareRequestDone(OletxPrepareVoteType.Failed);
                 }
-                catch ( COMException ex )
+                catch (COMException ex)
                 {
                     // No point in rethrowing this.  We are not on an app thread and we have already told
                     // the app that the transaction is aborting.  When the app calls EnlistmentDone, we will
                     // do the final release of the ITransactionEnlistmentAsync.
-                    if ( DiagnosticTrace.Verbose )
+                    if (DiagnosticTrace.Verbose)
                     {
-                        ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
-                            ex );
+                        ExceptionConsumedTraceRecord.Trace(SR.TraceSourceOletx, ex);
                     }
                 }
+
                 enlistmentDone = true;
             }
 
@@ -474,55 +429,53 @@ namespace System.Transactions.Oletx
             IEnlistmentShim localEnlistmentShim = null;
             bool finishEnlistment = false;
 
-            lock ( this )
+            lock (this)
             {
-                if ( OletxEnlistmentState.Prepared == state )
+                if (OletxEnlistmentState.Prepared == State)
                 {
-                    localState = state = OletxEnlistmentState.Committing;
-                    localEnlistmentNotification = iEnlistmentNotification;
+                    localState = State = OletxEnlistmentState.Committing;
+                    localEnlistmentNotification = _iEnlistmentNotification;
                 }
                 else
                 {
                     // We must have received an EnlistmentDone already.
-                    localState = state;
-                    localEnlistmentShim = this.EnlistmentShim;
+                    localState = State;
+                    localEnlistmentShim = EnlistmentShim;
                     finishEnlistment = true;
                 }
             }
 
-            if ( null != localEnlistmentNotification )
+            if (null != localEnlistmentNotification)
             {
-                if ( DiagnosticTrace.Verbose )
+                if (DiagnosticTrace.Verbose)
                 {
-                    EnlistmentNotificationCallTraceRecord.Trace( SR.TraceSourceOletx,
-                        this.InternalTraceIdentifier,
-                        NotificationCall.Commit
-                        );
+                    EnlistmentNotificationCallTraceRecord.Trace(
+                        SR.TraceSourceOletx,
+                        InternalTraceIdentifier,
+                        NotificationCall.Commit);
                 }
 
-                localEnlistmentNotification.Commit( this );
+                localEnlistmentNotification.Commit(this);
             }
-            else if ( null != localEnlistmentShim )
+            else if (localEnlistmentShim != null)
             {
                 // We need to respond to the proxy now.
                 try
                 {
                     localEnlistmentShim.CommitRequestDone();
                 }
-                catch ( COMException ex )
+                catch (COMException ex)
                 {
                     // If the TM went down during our call, there is nothing special we have to do because
                     // the App doesn't expect any more notifications.  We do want to mark the enlistment
                     // to finish, however.
-                    if ( ( NativeMethods.XACT_E_CONNECTION_DOWN == ex.ErrorCode ) ||
-                        ( NativeMethods.XACT_E_TMNOTAVAILABLE == ex.ErrorCode )
-                        )
+                    if (ex.ErrorCode == NativeMethods.XACT_E_CONNECTION_DOWN ||
+                        ex.ErrorCode == NativeMethods.XACT_E_TMNOTAVAILABLE)
                     {
                         finishEnlistment = true;
-                        if ( DiagnosticTrace.Verbose )
+                        if (DiagnosticTrace.Verbose)
                         {
-                            ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
-                                ex );
+                            ExceptionConsumedTraceRecord.Trace(SR.TraceSourceOletx, ex);
                         }
                     }
                     else
@@ -532,13 +485,12 @@ namespace System.Transactions.Oletx
                 }
                 finally
                 {
-                    if ( finishEnlistment )
+                    if (finishEnlistment)
                     {
                         FinishEnlistment();
                     }
                 }
             }
-            return;
         }
 
         public void AbortRequest()
@@ -550,64 +502,60 @@ namespace System.Transactions.Oletx
 
             lock ( this )
             {
-                if ( ( OletxEnlistmentState.Active == state ) ||
-                     ( OletxEnlistmentState.Prepared == state )
-                   )
+                if (State is OletxEnlistmentState.Active or OletxEnlistmentState.Prepared)
                 {
-                    localState = state = OletxEnlistmentState.Aborting;
-                    localEnlistmentNotification = iEnlistmentNotification;
+                    localState = State = OletxEnlistmentState.Aborting;
+                    localEnlistmentNotification = _iEnlistmentNotification;
                 }
                 else
                 {
                     // We must have received an EnlistmentDone already or we have
                     // a notification outstanding (Phase0 prepare).
-                    localState = state;
-                    if ( OletxEnlistmentState.Phase0Preparing == state )
+                    localState = State;
+                    if (OletxEnlistmentState.Phase0Preparing == State)
                     {
-                        this.fabricateRollback = true;
+                        _fabricateRollback = true;
                     }
                     else
                     {
                         finishEnlistment = true;
                     }
 
-                    localEnlistmentShim = this.EnlistmentShim;
+                    localEnlistmentShim = EnlistmentShim;
                 }
             }
 
-            if ( null != localEnlistmentNotification )
+            if (localEnlistmentNotification != null)
             {
-                if ( DiagnosticTrace.Verbose )
+                if (DiagnosticTrace.Verbose)
                 {
-                    EnlistmentNotificationCallTraceRecord.Trace( SR.TraceSourceOletx,
-                        this.InternalTraceIdentifier,
-                        NotificationCall.Rollback
-                        );
+                    EnlistmentNotificationCallTraceRecord.Trace(
+                        SR.TraceSourceOletx,
+                        InternalTraceIdentifier,
+                        NotificationCall.Rollback);
                 }
 
-                localEnlistmentNotification.Rollback( this );
+                localEnlistmentNotification.Rollback(this);
             }
-            else if ( null != localEnlistmentShim )
+            else if (localEnlistmentShim != null)
             {
                 // We need to respond to the proxy now.
                 try
                 {
                     localEnlistmentShim.AbortRequestDone();
                 }
-                catch ( COMException ex )
+                catch (COMException ex)
                 {
                     // If the TM went down during our call, there is nothing special we have to do because
                     // the App doesn't expect any more notifications.  We do want to mark the enlistment
                     // to finish, however.
-                    if ( ( NativeMethods.XACT_E_CONNECTION_DOWN == ex.ErrorCode ) ||
-                        ( NativeMethods.XACT_E_TMNOTAVAILABLE == ex.ErrorCode )
-                        )
+                    if (ex.ErrorCode == NativeMethods.XACT_E_CONNECTION_DOWN ||
+                        ex.ErrorCode == NativeMethods.XACT_E_TMNOTAVAILABLE)
                     {
                         finishEnlistment = true;
-                        if ( DiagnosticTrace.Verbose )
+                        if (DiagnosticTrace.Verbose)
                         {
-                            ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
-                                ex );
+                            ExceptionConsumedTraceRecord.Trace(SR.TraceSourceOletx, ex);
                         }
                     }
                     else
@@ -617,13 +565,12 @@ namespace System.Transactions.Oletx
                 }
                 finally
                 {
-                    if ( finishEnlistment )
+                    if (finishEnlistment)
                     {
                         FinishEnlistment();
                     }
                 }
             }
-            return;
         }
 
         public void TMDown()
@@ -632,13 +579,13 @@ namespace System.Transactions.Oletx
             // resource managers.
             // Put this enlistment on the Reenlist list.  The Reenlist thread will get
             // started when the RMSink gets the TMDown notification.
-            lock ( oletxResourceManager.reenlistList )
+            lock (OletxResourceManager.ReenlistList)
             {
-                lock ( this )
+                lock (this)
                 {
                     // Remember that we got the TMDown in case we get a Phase0Request after so we
                     // can avoid doing a Prepare to the app.
-                    this.tmWentDown = true;
+                    _tmWentDown = true;
 
                     // Only move Prepared and Committing enlistments to the ReenlistList.  All others
                     // do not require a Reenlist to figure out what to do.  We save off Committing
@@ -646,16 +593,12 @@ namespace System.Transactions.Oletx
                     // call RecoveryComplete on the proxy until that has happened.  The Reenlist thread
                     // will loop until the reenlist list is empty and it will leave a Committing
                     // enlistment on the list until it is done, but will NOT call Reenlist on the proxy.
-                    if ( ( OletxEnlistmentState.Prepared == state ) ||
-                         ( OletxEnlistmentState.Committing == state )
-                       )
+                    if (State is OletxEnlistmentState.Prepared or OletxEnlistmentState.Committing)
                     {
-                        oletxResourceManager.reenlistList.Add( this );
+                        OletxResourceManager.ReenlistList.Add(this);
                     }
                 }
             }
-
-            return;
         }
 
         #endregion
@@ -669,196 +612,183 @@ namespace System.Transactions.Oletx
         {
             IEnlistmentNotificationInternal localEnlistmentNotification = null;
             OletxEnlistmentState localState = OletxEnlistmentState.Active;
-            OletxCommittableTransaction committableTx = null;
+            OletxCommittableTransaction committableTx;
             bool commitNotYetCalled = false;
 
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
-                    "OletxEnlistment.Phase0Request"
-                    );
+                MethodEnteredTraceRecord.Trace(SR.TraceSourceOletx, "OletxEnlistment.Phase0Request");
             }
 
-            committableTx = this.oletxTransaction.realOletxTransaction.committableTransaction;
-            if ( null != committableTx )
+            committableTx = oletxTransaction.RealOletxTransaction.CommittableTransaction;
+            if (committableTx != null)
             {
                 // We are dealing with the committable transaction.  If Commit or BeginCommit has NOT been
                 // called, then we are dealing with a situation where the TM went down and we are getting
                 // a bogus Phase0Request with abortHint = false (COMPlus bug 36760/36758).  This is an attempt
                 // to not send the app a Prepare request when we know the transaction is going to abort.
-                if (!committableTx.CommitCalled )
+                if (!committableTx.CommitCalled)
                 {
                     commitNotYetCalled = true;
                 }
             }
 
-            lock ( this )
+            lock (this)
             {
-                this.aborting = abortingHint;
+                _aborting = abortingHint;
 
                 // The app may have already called EnlistmentDone.  If this occurs, don't bother sending
                 // the notification to the app and we don't need to tell the proxy.
-                if ( OletxEnlistmentState.Active == state )
+                if (OletxEnlistmentState.Active == State)
                 {
                     // If we got an abort hint or we are the committable transaction and Commit has not yet been called or the TM went down,
                     // we don't want to do any more work on the transaction.  The abort notifications will be sent by the phase 1
                     // enlistment
-                    if ( ( this.aborting ) || ( commitNotYetCalled ) || ( this.tmWentDown ) )
+                    if (_aborting ||  commitNotYetCalled || _tmWentDown)
                     {
                         // There is a possible race where we could get the Phase0Request before we are given the
                         // shim.  In that case, we will vote "no" when we are given the shim.
-                        if ( null != this.phase0Shim )
+                        if (_phase0Shim != null)
                         {
                             try
                             {
-                                this.phase0Shim.Phase0Done( false );
+                                _phase0Shim.Phase0Done(false);
                             }
                             // I am not going to check for XACT_E_PROTOCOL here because that check is a workaround for a bug
                             // that only shows up if abortingHint is false.
-                            catch ( COMException ex )
+                            catch (COMException ex)
                             {
-                                if ( DiagnosticTrace.Verbose )
+                                if (DiagnosticTrace.Verbose)
                                 {
-                                    ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
-                                        ex );
+                                    ExceptionConsumedTraceRecord.Trace(SR.TraceSourceOletx, ex);
                                 }
                             }
                         }
                     }
                     else
                     {
-                        localState = state = OletxEnlistmentState.Phase0Preparing;
-                        localEnlistmentNotification = iEnlistmentNotification;
+                        localState = State = OletxEnlistmentState.Phase0Preparing;
+                        localEnlistmentNotification = _iEnlistmentNotification;
                     }
                 }
             }
 
             // Tell the application to do the work.
-            if ( null != localEnlistmentNotification )
+            if (localEnlistmentNotification != null)
             {
-                if ( OletxEnlistmentState.Phase0Preparing == localState )
+                if (OletxEnlistmentState.Phase0Preparing == localState)
                 {
-                    byte[] txGuidArray = transactionGuid.ToByteArray();
-                    byte[] rmGuidArray = oletxResourceManager.resourceManagerIdentifier.ToByteArray();
+                    byte[] txGuidArray = _transactionGuid.ToByteArray();
+                    byte[] rmGuidArray = OletxResourceManager.ResourceManagerIdentifier.ToByteArray();
 
                     byte[] temp = new byte[txGuidArray.Length + rmGuidArray.Length];
                     Thread.MemoryBarrier();
-                    this.proxyPrepareInfoByteArray = temp;
-                    int index = 0;
-                    for ( index = 0; index < txGuidArray.Length; index++ )
+                    _proxyPrepareInfoByteArray = temp;
+                    for (int index = 0; index < txGuidArray.Length; index++)
                     {
-                        proxyPrepareInfoByteArray[index] =
+                        _proxyPrepareInfoByteArray[index] =
                             txGuidArray[index];
                     }
 
-                    for ( index = 0; index < rmGuidArray.Length; index++ )
+                    for (int index = 0; index < rmGuidArray.Length; index++)
                     {
-                        proxyPrepareInfoByteArray[txGuidArray.Length + index] =
+                        _proxyPrepareInfoByteArray[txGuidArray.Length + index] =
                             rmGuidArray[index];
                     }
 
-                    OletxRecoveryInformation oletxRecoveryInformation = new OletxRecoveryInformation(
-                                                                            proxyPrepareInfoByteArray
-                                                                            );
-                    byte[] oletxRecoveryInformationByteArray = TransactionManager.ConvertToByteArray( oletxRecoveryInformation );
+                    OletxRecoveryInformation oletxRecoveryInformation = new(_proxyPrepareInfoByteArray);
+                    byte[] oletxRecoveryInformationByteArray = TransactionManager.ConvertToByteArray(oletxRecoveryInformation);
 
                     // TODO: Seems like this could be more efficient.
-                    this.prepareInfoByteArray = TransactionManager.GetRecoveryInformation(
-                        oletxResourceManager.oletxTransactionManager.CreationNodeName,
-                        oletxRecoveryInformationByteArray
-                        );
+                    _prepareInfoByteArray = TransactionManager.GetRecoveryInformation(
+                        OletxResourceManager.OletxTransactionManager.CreationNodeName,
+                        oletxRecoveryInformationByteArray);
 
-                    if ( DiagnosticTrace.Verbose )
+                    if (DiagnosticTrace.Verbose)
                     {
-                        EnlistmentNotificationCallTraceRecord.Trace( SR.TraceSourceOletx,
-                            this.InternalTraceIdentifier,
-                            NotificationCall.Prepare
-                            );
+                        EnlistmentNotificationCallTraceRecord.Trace(
+                            SR.TraceSourceOletx,
+                            InternalTraceIdentifier,
+                            NotificationCall.Prepare);
                     }
 
-                    localEnlistmentNotification.Prepare( this );
+                    localEnlistmentNotification.Prepare(this);
                 }
                 else
                 {
                     // We must have had a race between EnlistmentDone and the proxy telling
                     // us Phase0Request.  Just return.
-                    if ( DiagnosticTrace.Verbose )
+                    if (DiagnosticTrace.Verbose)
                     {
-                        MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
-                            "OletxEnlistment.Phase0Request"
-                            );
+                        MethodExitedTraceRecord.Trace(SR.TraceSourceOletx, "OletxEnlistment.Phase0Request");
                     }
 
                     return;
                 }
 
             }
-            if ( DiagnosticTrace.Verbose )
-            {
-                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
-                    "OletxEnlistment.Phase0Request"
-                    );
-            }
 
+            if (DiagnosticTrace.Verbose)
+            {
+                MethodExitedTraceRecord.Trace(SR.TraceSourceOletx, "OletxEnlistment.Phase0Request");
+            }
         }
 
         #endregion
 
         public void EnlistmentDone()
         {
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
-                    "OletxEnlistment.EnlistmentDone"
-                    );
-                EnlistmentCallbackPositiveTraceRecord.Trace( SR.TraceSourceOletx,
-                    this.InternalTraceIdentifier,
-                    EnlistmentCallback.Done
-                    );
+                MethodEnteredTraceRecord.Trace(SR.TraceSourceOletx, "OletxEnlistment.EnlistmentDone");
+                EnlistmentCallbackPositiveTraceRecord.Trace(
+                    SR.TraceSourceOletx,
+                    InternalTraceIdentifier,
+                    EnlistmentCallback.Done);
             }
 
             IEnlistmentShim localEnlistmentShim = null;
             IPhase0EnlistmentShim localPhase0Shim = null;
             OletxEnlistmentState localState = OletxEnlistmentState.Active;
             bool finishEnlistment;
-            bool localFabricateRollback = false;
+            bool localFabricateRollback;
 
-            lock ( this )
+            lock (this)
             {
-                localState = state;
-                if ( OletxEnlistmentState.Active == state )
+                localState = State;
+                if (OletxEnlistmentState.Active == State)
                 {
                     // Early vote.  If we are doing Phase0, we need to unenlist.  Otherwise, just
                     // remember.
-                    localPhase0Shim = this.Phase0EnlistmentShim;
-                    if ( null != localPhase0Shim )
+                    localPhase0Shim = Phase0EnlistmentShim;
+                    if (localPhase0Shim != null)
                     {
                         // We are a Phase0 enlistment and we have a vote - decrement the undecided enlistment count.
                         // We only do this for Phase0 because we don't count Phase1 durable enlistments.
-                        oletxTransaction.realOletxTransaction.DecrementUndecidedEnlistments();
+                        oletxTransaction.RealOletxTransaction.DecrementUndecidedEnlistments();
                     }
                     finishEnlistment = false;
                 }
-                else if ( OletxEnlistmentState.Preparing == state )
+                else if (OletxEnlistmentState.Preparing == State)
                 {
                     // Read only vote.  Tell the proxy and go to the Done state.
-                    localEnlistmentShim = this.EnlistmentShim;
+                    localEnlistmentShim = EnlistmentShim;
                     // We don't decrement the undecided enlistment count for Preparing because we only count
                     // Phase0 enlistments and we are in Phase1 in Preparing state.
                     finishEnlistment = true;
                 }
-                else if ( OletxEnlistmentState.Phase0Preparing == state )
+                else if (OletxEnlistmentState.Phase0Preparing == State)
                 {
                     // Read only vote to Phase0.  Tell the proxy okay and go to the Done state.
-                    localPhase0Shim = this.Phase0EnlistmentShim;
+                    localPhase0Shim = Phase0EnlistmentShim;
                     // We are a Phase0 enlistment and we have a vote - decrement the undecided enlistment count.
                     // We only do this for Phase0 because we don't count Phase1 durable enlistments.
-                    oletxTransaction.realOletxTransaction.DecrementUndecidedEnlistments();
+                    oletxTransaction.RealOletxTransaction.DecrementUndecidedEnlistments();
 
                     // If we would have fabricated a rollback then we have already received an abort request
                     // from proxy and will not receive any more notifications.  Otherwise more notifications
                     // will be coming.
-                    if ( this.fabricateRollback )
+                    if (_fabricateRollback)
                     {
                         finishEnlistment = true;
                     }
@@ -867,128 +797,118 @@ namespace System.Transactions.Oletx
                         finishEnlistment = false;
                     }
                 }
-                else if ( ( OletxEnlistmentState.Committing == state ) ||
-                    ( OletxEnlistmentState.Aborting == state ) ||
-                    ( OletxEnlistmentState.SinglePhaseCommitting == state )
-                    )
+                else if (State is OletxEnlistmentState.Committing
+                         or OletxEnlistmentState.Aborting
+                         or OletxEnlistmentState.SinglePhaseCommitting)
                 {
-                    localEnlistmentShim = this.EnlistmentShim;
+                    localEnlistmentShim = EnlistmentShim;
                     finishEnlistment = true;
                     // We don't decrement the undecided enlistment count for SinglePhaseCommitting because we only
                     // do it for Phase0 enlistments.
                 }
                 else
                 {
-                    throw TransactionException.CreateEnlistmentStateException(null, this.DistributedTxId);
+                    throw TransactionException.CreateEnlistmentStateException(null, DistributedTxId);
                 }
 
                 // If this.fabricateRollback is true, it means that we are fabricating this
                 // AbortRequest, rather than having the proxy tell us.  So we don't need
                 // to respond to the proxy with AbortRequestDone.
-                localFabricateRollback = this.fabricateRollback;
+                localFabricateRollback = _fabricateRollback;
 
-                state = OletxEnlistmentState.Done;
+                State = OletxEnlistmentState.Done;
             }
 
             try
             {
-                if ( null != localEnlistmentShim )
+                if (localEnlistmentShim != null)
                 {
-                    if ( OletxEnlistmentState.Preparing == localState )
+                    if (OletxEnlistmentState.Preparing == localState)
                     {
                         try
                         {
-                            localEnlistmentShim.PrepareRequestDone( OletxPrepareVoteType.ReadOnly );
+                            localEnlistmentShim.PrepareRequestDone(OletxPrepareVoteType.ReadOnly);
                         }
                         finally
                         {
-                            HandleTable.FreeHandle( this.phase1Handle );
+                            HandleTable.FreeHandle(_phase1Handle);
                         }
                     }
-                    else if ( OletxEnlistmentState.Committing == localState )
+                    else if (OletxEnlistmentState.Committing == localState)
                     {
                         localEnlistmentShim.CommitRequestDone();
                     }
-                    else if ( OletxEnlistmentState.Aborting == localState )
+                    else if (OletxEnlistmentState.Aborting == localState)
                     {
                         // If localFabricatRollback is true, it means that we are fabricating this
                         // AbortRequest, rather than having the proxy tell us.  So we don't need
                         // to respond to the proxy with AbortRequestDone.
-                        if ( ! localFabricateRollback )
+                        if (!localFabricateRollback)
                         {
                             localEnlistmentShim.AbortRequestDone();
                         }
                     }
-                    else if ( OletxEnlistmentState.SinglePhaseCommitting == localState )
+                    else if (OletxEnlistmentState.SinglePhaseCommitting == localState)
                     {
-                        localEnlistmentShim.PrepareRequestDone( OletxPrepareVoteType.SinglePhase );
+                        localEnlistmentShim.PrepareRequestDone(OletxPrepareVoteType.SinglePhase);
                     }
                     else
                     {
-                        throw TransactionException.CreateEnlistmentStateException(null, this.DistributedTxId);
+                        throw TransactionException.CreateEnlistmentStateException(null, DistributedTxId);
                     }
                 }
-                else if ( null != localPhase0Shim )
+                else if (localPhase0Shim != null)
                 {
-                    if ( OletxEnlistmentState.Active == localState )
+                    if (localState == OletxEnlistmentState.Active)
                     {
                         localPhase0Shim.Unenlist();
                     }
-                    else if ( OletxEnlistmentState.Phase0Preparing == localState )
+                    else if (localState == OletxEnlistmentState.Phase0Preparing)
                     {
-                        localPhase0Shim.Phase0Done( true );
+                        localPhase0Shim.Phase0Done(true);
                     }
                     else
                     {
-                        throw TransactionException.CreateEnlistmentStateException(null, this.DistributedTxId);
+                        throw TransactionException.CreateEnlistmentStateException(null, DistributedTxId);
                     }
                 }
-
             }
-            catch ( COMException ex )
+            catch (COMException ex)
             {
                 // If we get an error talking to the proxy, there is nothing special we have to do because
                 // the App doesn't expect any more notifications.  We do want to mark the enlistment
                 // to finish, however.
                 finishEnlistment = true;
 
-                if ( DiagnosticTrace.Verbose )
+                if (DiagnosticTrace.Verbose)
                 {
-                    ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
-                        ex );
+                    ExceptionConsumedTraceRecord.Trace(SR.TraceSourceOletx, ex);
                 }
             }
             finally
             {
-                if ( finishEnlistment )
+                if (finishEnlistment)
                 {
                     FinishEnlistment();
                 }
             }
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
-                    "OletxEnlistment.EnlistmentDone"
-                    );
+                MethodExitedTraceRecord.Trace(SR.TraceSourceOletx, "OletxEnlistment.EnlistmentDone");
             }
         }
-
 
         public EnlistmentTraceIdentifier EnlistmentTraceId
         {
             get
             {
-                if ( DiagnosticTrace.Verbose )
+                if (DiagnosticTrace.Verbose)
                 {
-                    MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
-                        "OletxEnlistment.get_TraceIdentifier"
-                        );
-                    MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
-                        "OletxEnlistment.get_TraceIdentifier"
-                        );
+                    MethodEnteredTraceRecord.Trace(SR.TraceSourceOletx, "OletxEnlistment.get_TraceIdentifier");
+                    MethodExitedTraceRecord.Trace( SR.TraceSourceOletx, "OletxEnlistment.get_TraceIdentifier");
                 }
 
-                return this.InternalTraceIdentifier;
+                return InternalTraceIdentifier;
             }
         }
 
@@ -999,90 +919,82 @@ namespace System.Transactions.Oletx
             IPhase0EnlistmentShim localPhase0Shim = null;
             bool localFabricateRollback = false;
 
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
-                    "OletxPreparingEnlistment.Prepared"
-                    );
-                EnlistmentCallbackPositiveTraceRecord.Trace( SR.TraceSourceOletx,
-                    this.InternalTraceIdentifier,
-                    EnlistmentCallback.Prepared
-                    );
+                MethodEnteredTraceRecord.Trace(SR.TraceSourceOletx, "OletxPreparingEnlistment.Prepared");
+                EnlistmentCallbackPositiveTraceRecord.Trace(
+                    SR.TraceSourceOletx,
+                    InternalTraceIdentifier,
+                    EnlistmentCallback.Prepared);
             }
 
-            lock ( this )
+            lock (this)
             {
-                if ( OletxEnlistmentState.Preparing == state )
+                if (State == OletxEnlistmentState.Preparing)
                 {
-                    localEnlistmentShim = this.EnlistmentShim;
+                    localEnlistmentShim = EnlistmentShim;
                 }
-                else if ( OletxEnlistmentState.Phase0Preparing == state )
+                else if (OletxEnlistmentState.Phase0Preparing == State)
                 {
                     // If the transaction is doomed or we have fabricateRollback is true because the
                     // transaction aborted while the Phase0 Prepare request was outstanding,
                     // release the WrappedTransactionPhase0EnlistmentAsync and remember that
                     // we have a pending rollback.
-                    localPhase0Shim = this.Phase0EnlistmentShim;
-                    if ( ( oletxTransaction.realOletxTransaction.Doomed ) ||
-                         ( this.fabricateRollback )
-                       )
+                    localPhase0Shim = Phase0EnlistmentShim;
+                    if (oletxTransaction.RealOletxTransaction.Doomed || _fabricateRollback)
                     {
                         // Set fabricateRollback in case we got here because the transaction is doomed.
-                        this.fabricateRollback = true;
-                        localFabricateRollback = this.fabricateRollback;
+                        _fabricateRollback = true;
+                        localFabricateRollback = _fabricateRollback;
                     }
                 }
                 else
                 {
-                    throw TransactionException.CreateEnlistmentStateException(null, this.DistributedTxId);
+                    throw TransactionException.CreateEnlistmentStateException(null, DistributedTxId);
                 }
 
-                state = OletxEnlistmentState.Prepared;
-
+                State = OletxEnlistmentState.Prepared;
             }
 
             try
             {
-                if ( null != localEnlistmentShim )
+                if (localEnlistmentShim != null)
                 {
-                    localEnlistmentShim.PrepareRequestDone( OletxPrepareVoteType.Prepared );
+                    localEnlistmentShim.PrepareRequestDone(OletxPrepareVoteType.Prepared);
                 }
-                else if ( null != localPhase0Shim )
+                else if (localPhase0Shim != null)
                 {
                     // We have a vote - decrement the undecided enlistment count.  We do
                     // this after checking Doomed because ForceRollback will decrement also.
                     // We also do this only for Phase0 enlistments.
-                    oletxTransaction.realOletxTransaction.DecrementUndecidedEnlistments();
+                    oletxTransaction.RealOletxTransaction.DecrementUndecidedEnlistments();
 
-                    localPhase0Shim.Phase0Done( !localFabricateRollback );
+                    localPhase0Shim.Phase0Done(!localFabricateRollback);
                 }
-
                 else
+                {
                     // The TM must have gone down, thus causing our interface pointer to be
                     // invalidated.  So we need to drive abort of the enlistment as if we
                     // received an AbortRequest.
-                {
                     localFabricateRollback = true;
                 }
 
-                if ( localFabricateRollback )
+                if (localFabricateRollback)
                 {
                     AbortRequest();
                 }
             }
-            catch ( COMException ex )
+            catch (COMException ex)
             {
                 // If the TM went down during our call, the TMDown notification to the enlistment
                 // and RM will put this enlistment on the ReenlistList, if appropriate.  The outcome
                 // will be obtained by the ReenlistThread.
-                if ( ( NativeMethods.XACT_E_CONNECTION_DOWN == ex.ErrorCode ) ||
-                    ( NativeMethods.XACT_E_TMNOTAVAILABLE == ex.ErrorCode )
-                    )
+                if (ex.ErrorCode == NativeMethods.XACT_E_CONNECTION_DOWN ||
+                    ex.ErrorCode == NativeMethods.XACT_E_TMNOTAVAILABLE)
                 {
-                    if ( DiagnosticTrace.Verbose )
+                    if (DiagnosticTrace.Verbose)
                     {
-                        ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
-                            ex );
+                        ExceptionConsumedTraceRecord.Trace(SR.TraceSourceOletx, ex);
                     }
                 }
                 // In the case of Phase0, there is a bug in the proxy that causes an XACT_E_PROTOCOL
@@ -1092,13 +1004,12 @@ namespace System.Transactions.Oletx
                 // For Prepared, we want to make sure the proxy aborts the transaction.  We don't need
                 // to drive the abort to the application here because the Phase1 enlistment will do that.
                 // In other words, treat this as if the proxy said Phase0Request( abortingHint = true ).
-                else if ( NativeMethods.XACT_E_PROTOCOL == ex.ErrorCode )
+                else if (ex.ErrorCode == NativeMethods.XACT_E_PROTOCOL)
                 {
-                    this.Phase0EnlistmentShim = null;
-                    if ( DiagnosticTrace.Verbose )
+                    Phase0EnlistmentShim = null;
+                    if (DiagnosticTrace.Verbose)
                     {
-                        ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
-                            ex );
+                        ExceptionConsumedTraceRecord.Trace(SR.TraceSourceOletx, ex);
                     }
                 }
                 else
@@ -1106,103 +1017,92 @@ namespace System.Transactions.Oletx
                     throw;
                 }
             }
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
-                    "OletxPreparingEnlistment.Prepared"
-                    );
+                MethodExitedTraceRecord.Trace(SR.TraceSourceOletx, "OletxPreparingEnlistment.Prepared");
             }
         }
 
-
         public void ForceRollback()
-        {
-            ForceRollback( null );
-        }
+            => ForceRollback(null);
 
-        public void ForceRollback( Exception e )
+        public void ForceRollback(Exception e)
         {
             IEnlistmentShim localEnlistmentShim = null;
             IPhase0EnlistmentShim localPhase0Shim = null;
 
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
-                    "OletxPreparingEnlistment.ForceRollback"
-                    );
+                MethodEnteredTraceRecord.Trace(SR.TraceSourceOletx, "OletxPreparingEnlistment.ForceRollback");
             }
 
-            if ( DiagnosticTrace.Warning )
+            if (DiagnosticTrace.Warning)
             {
-                EnlistmentCallbackNegativeTraceRecord.Trace( SR.TraceSourceOletx,
-                    this.InternalTraceIdentifier,
-                    EnlistmentCallback.ForceRollback
-                    );
+                EnlistmentCallbackNegativeTraceRecord.Trace(
+                    SR.TraceSourceOletx,
+                    InternalTraceIdentifier,
+                    EnlistmentCallback.ForceRollback);
             }
 
-            lock ( this )
+            lock (this)
             {
-                if ( OletxEnlistmentState.Preparing == state )
+                if (OletxEnlistmentState.Preparing == State)
                 {
-                    localEnlistmentShim = this.EnlistmentShim;
+                    localEnlistmentShim = EnlistmentShim;
                 }
-                else if ( OletxEnlistmentState.Phase0Preparing == state )
+                else if (OletxEnlistmentState.Phase0Preparing == State)
                 {
-                    localPhase0Shim = this.Phase0EnlistmentShim;
-                    if ( null != localPhase0Shim )
+                    localPhase0Shim = Phase0EnlistmentShim;
+                    if (localPhase0Shim != null)
                     {
-
                         // We have a vote - decrement the undecided enlistment count.  We only do this
                         // if we are Phase0 enlistment.
-                        oletxTransaction.realOletxTransaction.DecrementUndecidedEnlistments();
+                        oletxTransaction.RealOletxTransaction.DecrementUndecidedEnlistments();
                     }
-
                 }
                 else
                 {
-                    throw TransactionException.CreateEnlistmentStateException(null, this.DistributedTxId);
+                    throw TransactionException.CreateEnlistmentStateException(null, DistributedTxId);
                 }
 
-                state = OletxEnlistmentState.Aborted;
+                State = OletxEnlistmentState.Aborted;
             }
 
-            Interlocked.CompareExchange<Exception>( ref this.oletxTransaction.realOletxTransaction.innerException, e, null );
+            Interlocked.CompareExchange(ref oletxTransaction.RealOletxTransaction.InnerException, e, null);
 
             try
             {
-                if ( null != localEnlistmentShim )
+                if (localEnlistmentShim != null)
                 {
                     try
                     {
-                        localEnlistmentShim.PrepareRequestDone( OletxPrepareVoteType.Failed );
+                        localEnlistmentShim.PrepareRequestDone(OletxPrepareVoteType.Failed);
                     }
                     finally
                     {
-                        HandleTable.FreeHandle( this.phase1Handle );
+                        HandleTable.FreeHandle(_phase1Handle);
                     }
                 }
 
-                if ( null != localPhase0Shim )
+                if (localPhase0Shim != null)
                 {
-                    localPhase0Shim.Phase0Done( false );
+                    localPhase0Shim.Phase0Done(false);
                 }
 //                else
                     // The TM must have gone down, thus causing our interface pointer to be
                     // invalidated.  The App doesn't expect any more notifications, so we can
                     // just finish the enlistment.
             }
-            catch ( COMException ex )
+            catch (COMException ex)
             {
                 // If the TM went down during our call, there is nothing special we have to do because
                 // the App doesn't expect any more notifications.
-                if ( ( NativeMethods.XACT_E_CONNECTION_DOWN == ex.ErrorCode ) ||
-                    ( NativeMethods.XACT_E_TMNOTAVAILABLE == ex.ErrorCode )
-                    )
+                if (ex.ErrorCode == NativeMethods.XACT_E_CONNECTION_DOWN ||
+                    ex.ErrorCode == NativeMethods.XACT_E_TMNOTAVAILABLE)
                 {
-                    if ( DiagnosticTrace.Verbose )
+                    if (DiagnosticTrace.Verbose)
                     {
-                        ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
-                            ex );
+                        ExceptionConsumedTraceRecord.Trace(SR.TraceSourceOletx, ex);
                     }
                 }
                 else
@@ -1214,59 +1114,53 @@ namespace System.Transactions.Oletx
             {
                 FinishEnlistment();
             }
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
-                    "OletxPreparingEnlistment.ForceRollback"
-                    );
+                MethodExitedTraceRecord.Trace(SR.TraceSourceOletx, "OletxPreparingEnlistment.ForceRollback");
             }
         }
 
         public void Committed()
         {
             IEnlistmentShim localEnlistmentShim = null;
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
-                    "OletxSinglePhaseEnlistment.Committed"
-                    );
-                EnlistmentCallbackPositiveTraceRecord.Trace( SR.TraceSourceOletx,
-                    this.InternalTraceIdentifier,
-                    EnlistmentCallback.Committed
-                    );
+                MethodEnteredTraceRecord.Trace(SR.TraceSourceOletx, "OletxSinglePhaseEnlistment.Committed");
+                EnlistmentCallbackPositiveTraceRecord.Trace(
+                    SR.TraceSourceOletx,
+                    InternalTraceIdentifier,
+                    EnlistmentCallback.Committed);
             }
 
-            lock ( this )
+            lock (this)
             {
-                if (!isSinglePhase || (OletxEnlistmentState.SinglePhaseCommitting != state))
+                if (!_isSinglePhase || OletxEnlistmentState.SinglePhaseCommitting != State)
                 {
-                    throw TransactionException.CreateEnlistmentStateException(null, this.DistributedTxId);
+                    throw TransactionException.CreateEnlistmentStateException(null, DistributedTxId);
                 }
-                state = OletxEnlistmentState.Committed;
-                localEnlistmentShim = this.EnlistmentShim;
+                State = OletxEnlistmentState.Committed;
+                localEnlistmentShim = EnlistmentShim;
             }
 
             try
             {
                 // This may be the result of a reenlist, which means we don't have a
                 // reference to the proxy.
-                if ( null != localEnlistmentShim )
+                if (localEnlistmentShim != null)
                 {
-                    localEnlistmentShim.PrepareRequestDone( OletxPrepareVoteType.SinglePhase );
+                    localEnlistmentShim.PrepareRequestDone(OletxPrepareVoteType.SinglePhase);
                 }
             }
-            catch ( COMException ex )
+            catch (COMException ex)
             {
                 // If the TM went down during our call, there is nothing special we have to do because
                 // the App doesn't expect any more notifications.
-                if ( ( NativeMethods.XACT_E_CONNECTION_DOWN == ex.ErrorCode ) ||
-                    ( NativeMethods.XACT_E_TMNOTAVAILABLE == ex.ErrorCode )
-                    )
+                if (ex.ErrorCode == NativeMethods.XACT_E_CONNECTION_DOWN ||
+                    ex.ErrorCode == NativeMethods.XACT_E_TMNOTAVAILABLE)
                 {
-                    if ( DiagnosticTrace.Verbose )
+                    if (DiagnosticTrace.Verbose)
                     {
-                        ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
-                            ex );
+                        ExceptionConsumedTraceRecord.Trace(SR.TraceSourceOletx, ex);
                     }
                 }
                 else
@@ -1278,71 +1172,61 @@ namespace System.Transactions.Oletx
             {
                 FinishEnlistment();
             }
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
-                    "OletxSinglePhaseEnlistment.Committed"
-                    );
+                MethodExitedTraceRecord.Trace(SR.TraceSourceOletx, "OletxSinglePhaseEnlistment.Committed");
             }
         }
 
-
         public void Aborted()
-        {
-            Aborted( null );
-        }
-
+            => Aborted(null);
 
         public void Aborted(Exception e)
         {
             IEnlistmentShim localEnlistmentShim = null;
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
-                    "OletxSinglePhaseEnlistment.Aborted"
-                    );
+                MethodEnteredTraceRecord.Trace(SR.TraceSourceOletx, "OletxSinglePhaseEnlistment.Aborted");
             }
 
-            if ( DiagnosticTrace.Warning )
+            if (DiagnosticTrace.Warning)
             {
-                EnlistmentCallbackNegativeTraceRecord.Trace( SR.TraceSourceOletx,
-                    this.InternalTraceIdentifier,
-                    EnlistmentCallback.Aborted
-                    );
+                EnlistmentCallbackNegativeTraceRecord.Trace(
+                    SR.TraceSourceOletx,
+                    InternalTraceIdentifier,
+                    EnlistmentCallback.Aborted);
             }
 
-            lock ( this )
+            lock (this)
             {
-                if (!isSinglePhase || (OletxEnlistmentState.SinglePhaseCommitting != state))
+                if (!_isSinglePhase || OletxEnlistmentState.SinglePhaseCommitting != State)
                 {
-                    throw TransactionException.CreateEnlistmentStateException(null, this.DistributedTxId);
+                    throw TransactionException.CreateEnlistmentStateException(null, DistributedTxId);
                 }
-                state = OletxEnlistmentState.Aborted;
+                State = OletxEnlistmentState.Aborted;
 
-                localEnlistmentShim = this.EnlistmentShim;
+                localEnlistmentShim = EnlistmentShim;
             }
 
-            Interlocked.CompareExchange<Exception>( ref this.oletxTransaction.realOletxTransaction.innerException, e, null );
+            Interlocked.CompareExchange(ref oletxTransaction.RealOletxTransaction.InnerException, e, null);
 
             try
             {
-                if ( null != localEnlistmentShim )
+                if (localEnlistmentShim != null)
                 {
-                    localEnlistmentShim.PrepareRequestDone( OletxPrepareVoteType.Failed );
+                    localEnlistmentShim.PrepareRequestDone(OletxPrepareVoteType.Failed);
                 }
             }
-            catch ( COMException ex )
+            catch (COMException ex)
             {
                 // If the TM went down during our call, there is nothing special we have to do because
                 // the App doesn't expect any more notifications.
-                if ( ( NativeMethods.XACT_E_CONNECTION_DOWN == ex.ErrorCode ) ||
-                    ( NativeMethods.XACT_E_TMNOTAVAILABLE == ex.ErrorCode )
-                    )
+                if (ex.ErrorCode == NativeMethods.XACT_E_CONNECTION_DOWN ||
+                    ex.ErrorCode == NativeMethods.XACT_E_TMNOTAVAILABLE)
                 {
-                    if ( DiagnosticTrace.Verbose )
+                    if (DiagnosticTrace.Verbose)
                     {
-                        ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
-                            ex );
+                        ExceptionConsumedTraceRecord.Trace(SR.TraceSourceOletx, ex);
                     }
                 }
                 else
@@ -1354,76 +1238,63 @@ namespace System.Transactions.Oletx
             {
                 FinishEnlistment();
             }
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
-                    "OletxSinglePhaseEnlistment.Aborted"
-                    );
+                MethodExitedTraceRecord.Trace(SR.TraceSourceOletx, "OletxSinglePhaseEnlistment.Aborted");
             }
         }
 
-
         public void InDoubt()
-        {
-            InDoubt( null );
-        }
-
+            => InDoubt(null);
 
         public void InDoubt(Exception e)
         {
             IEnlistmentShim localEnlistmentShim = null;
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
-                    "OletxSinglePhaseEnlistment.InDoubt"
-                    );
+                MethodEnteredTraceRecord.Trace(SR.TraceSourceOletx, "OletxSinglePhaseEnlistment.InDoubt");
             }
 
-            if ( DiagnosticTrace.Warning )
+            if (DiagnosticTrace.Warning)
             {
-                EnlistmentCallbackNegativeTraceRecord.Trace( SR.TraceSourceOletx,
-                    this.InternalTraceIdentifier,
-                    EnlistmentCallback.InDoubt
-                    );
+                EnlistmentCallbackNegativeTraceRecord.Trace(
+                    SR.TraceSourceOletx,
+                    InternalTraceIdentifier,
+                    EnlistmentCallback.InDoubt);
             }
 
-            lock ( this )
+            lock (this)
             {
-                if (!isSinglePhase || (OletxEnlistmentState.SinglePhaseCommitting != state))
+                if (!_isSinglePhase || OletxEnlistmentState.SinglePhaseCommitting != State)
                 {
-                    throw TransactionException.CreateEnlistmentStateException(null, this.DistributedTxId);
+                    throw TransactionException.CreateEnlistmentStateException(null, DistributedTxId);
                 }
-                state = OletxEnlistmentState.InDoubt;
-                localEnlistmentShim = this.EnlistmentShim;
+                State = OletxEnlistmentState.InDoubt;
+                localEnlistmentShim = EnlistmentShim;
             }
 
-            lock ( this.oletxTransaction.realOletxTransaction )
+            lock (oletxTransaction.RealOletxTransaction)
             {
-                if ( this.oletxTransaction.realOletxTransaction.innerException == null )
-                {
-                    this.oletxTransaction.realOletxTransaction.innerException = e;
-                }
+                oletxTransaction.RealOletxTransaction.InnerException ??= e;
             }
 
             try
             {
-                if ( null != localEnlistmentShim )
+                if (localEnlistmentShim != null)
                 {
-                    localEnlistmentShim.PrepareRequestDone( OletxPrepareVoteType.InDoubt );
+                    localEnlistmentShim.PrepareRequestDone(OletxPrepareVoteType.InDoubt);
                 }
             }
-            catch ( COMException ex )
+            catch (COMException ex)
             {
                 // If the TM went down during our call, there is nothing special we have to do because
                 // the App doesn't expect any more notifications.
-                if ( ( NativeMethods.XACT_E_CONNECTION_DOWN == ex.ErrorCode ) ||
-                    ( NativeMethods.XACT_E_TMNOTAVAILABLE == ex.ErrorCode )
-                    )
+                if (ex.ErrorCode == NativeMethods.XACT_E_CONNECTION_DOWN ||
+                    ex.ErrorCode == NativeMethods.XACT_E_TMNOTAVAILABLE)
                 {
-                    if ( DiagnosticTrace.Verbose )
+                    if (DiagnosticTrace.Verbose)
                     {
-                        ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
-                            ex );
+                        ExceptionConsumedTraceRecord.Trace(SR.TraceSourceOletx, ex);
                     }
                 }
                 else
@@ -1435,36 +1306,27 @@ namespace System.Transactions.Oletx
             {
                 FinishEnlistment();
             }
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
-                    "OletxSinglePhaseEnlistment.InDoubt"
-                    );
+                MethodExitedTraceRecord.Trace(SR.TraceSourceOletx, "OletxSinglePhaseEnlistment.InDoubt");
             }
         }
 
         public byte[] GetRecoveryInformation()
         {
-            if ( this.prepareInfoByteArray == null )
+            if (_prepareInfoByteArray == null)
             {
-                Debug.Assert( false, string.Format( null, "this.prepareInfoByteArray == null in RecoveryInformation()" ));
-                throw TransactionException.CreateEnlistmentStateException(null, this.DistributedTxId);
+                Debug.Fail(string.Format(null, "this.prepareInfoByteArray == null in RecoveryInformation()"));
+                throw TransactionException.CreateEnlistmentStateException(null, DistributedTxId);
             }
-            return this.prepareInfoByteArray;
+
+            return _prepareInfoByteArray;
         }
 
-
-        public InternalEnlistment InternalEnlistment
+        InternalEnlistment IPromotedEnlistment.InternalEnlistment
         {
-            get
-            {
-                return this.internalEnlistment;
-            }
-
-            set
-            {
-                this.internalEnlistment = value;
-            }
-        }
+            get => base.InternalEnlistment;
+            set => base.InternalEnlistment = value;
+         }
     }
 }

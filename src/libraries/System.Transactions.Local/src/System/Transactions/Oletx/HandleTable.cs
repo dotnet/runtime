@@ -14,7 +14,7 @@ namespace System.Transactions.Oletx
     static class HandleTable
     {
         private static Dictionary<int, object> handleTable = new Dictionary<int, object>(256);
-        private static object syncRoot = new object();
+        private static object syncRoot = new();
         private static int currentHandle;
 
         public static IntPtr AllocHandle(object target)
@@ -31,6 +31,7 @@ namespace System.Transactions.Oletx
         public static bool FreeHandle(IntPtr handle)
         {
             Debug.Assert(handle != IntPtr.Zero, "handle is invalid");
+
             lock (syncRoot)
             {
                 return handleTable.Remove(handle.ToInt32());
@@ -40,10 +41,10 @@ namespace System.Transactions.Oletx
         public static object FindHandle(IntPtr handle)
         {
             Debug.Assert(handle != IntPtr.Zero, "handle is invalid");
+
             lock (syncRoot)
             {
-                object target;
-                if (!handleTable.TryGetValue(handle.ToInt32(), out target))
+                if (!handleTable.TryGetValue(handle.ToInt32(), out var target))
                 {
                     return null;
                 }
@@ -54,10 +55,10 @@ namespace System.Transactions.Oletx
 
         private static int FindAvailableHandle()
         {
-            int handle = 0;
+            int handle;
             do
             {
-                handle = (++currentHandle != 0) ? currentHandle : ++currentHandle;
+                handle = ++currentHandle != 0 ? currentHandle : ++currentHandle;
             } while (handleTable.ContainsKey(handle));
 
             Debug.Assert(handle != 0, "invalid handle selected");

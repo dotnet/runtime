@@ -11,7 +11,7 @@ using System.Threading;
 
 namespace System.Transactions.Oletx
 {
-    [System.Security.SuppressUnmanagedCodeSecurity]
+    [Security.SuppressUnmanagedCodeSecurity]
     internal static class NativeMethods
     {
         // Note that this PInvoke does not pass any string params but specifying a charset makes FxCop happy
@@ -41,7 +41,7 @@ namespace System.Transactions.Oletx
         internal static int XACT_E_NETWORK_TX_DISABLED = -2147168220; // 0x8004D024
     }
 
-    internal enum ShimNotificationType : int
+    internal enum ShimNotificationType
     {
         None = 0,
         Phase0RequestNotify = 1,
@@ -56,7 +56,7 @@ namespace System.Transactions.Oletx
         ResourceManagerTmDownNotify = 10
     }
 
-    internal enum OletxPrepareVoteType : int
+    internal enum OletxPrepareVoteType
     {
         ReadOnly = 0,
         SinglePhase = 1,
@@ -65,14 +65,14 @@ namespace System.Transactions.Oletx
         InDoubt = 4
     }
 
-    internal enum OletxTransactionOutcome : int
+    internal enum OletxTransactionOutcome
     {
         NotKnownYet = 0,
         Committed = 1,
         Aborted = 2
     }
 
-    internal enum OletxTransactionIsolationLevel : int
+    internal enum OletxTransactionIsolationLevel
     {
         ISOLATIONLEVEL_UNSPECIFIED = -1,
         ISOLATIONLEVEL_CHAOS = 0x10,
@@ -86,7 +86,7 @@ namespace System.Transactions.Oletx
     }
 
     [Flags]
-    internal enum OletxTransactionIsoFlags : int
+    internal enum OletxTransactionIsoFlags
     {
         ISOFLAG_NONE = 0,
         ISOFLAG_RETAIN_COMMIT_DC = 1,
@@ -103,7 +103,7 @@ namespace System.Transactions.Oletx
     }
 
     [Flags]
-    internal enum OletxXacttc : int
+    internal enum OletxXacttc
     {
         XACTTC_NONE = 0,
         XACTTC_SYNC_PHASEONE = 1,
@@ -113,8 +113,7 @@ namespace System.Transactions.Oletx
         XACTTC_ASYNC = 4
     }
 
-
-    internal enum OletxTransactionStatus : int
+    internal enum OletxTransactionStatus
     {
         OLETX_TRANSACTION_STATUS_NONE = 0,
         OLETX_TRANSACTION_STATUS_OPENNORMAL = 0x1,
@@ -144,7 +143,7 @@ namespace System.Transactions.Oletx
     [ComVisible(false)]
     internal struct OletxXactTransInfo
     {
-        internal System.Guid uow;
+        internal Guid uow;
         internal OletxTransactionIsolationLevel isoLevel;
         internal OletxTransactionIsoFlags isoFlags;
         internal int grfTCSupported;
@@ -169,18 +168,16 @@ namespace System.Transactions.Oletx
         }
     }
 
-    [System.Security.SuppressUnmanagedCodeSecurity,
+    [Security.SuppressUnmanagedCodeSecurity,
     ComImport,
     Guid("A5FAB903-21CB-49eb-93AE-EF72CD45169E"),
     InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface IVoterBallotShim
     {
-        void Vote(
-            [MarshalAs(UnmanagedType.Bool)] bool voteYes
-            );
+        void Vote([MarshalAs(UnmanagedType.Bool)] bool voteYes);
     }
 
-    [System.Security.SuppressUnmanagedCodeSecurity,
+    [Security.SuppressUnmanagedCodeSecurity,
     ComImport,
     Guid("55FF6514-948A-4307-A692-73B84E2AF53E"),
     InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -188,27 +185,23 @@ namespace System.Transactions.Oletx
     {
         void Unenlist();
 
-        void Phase0Done(
-            [MarshalAs(UnmanagedType.Bool)] bool voteYes
-            );
+        void Phase0Done([MarshalAs(UnmanagedType.Bool)] bool voteYes);
     }
 
-    [System.Security.SuppressUnmanagedCodeSecurity,
+    [Security.SuppressUnmanagedCodeSecurity,
     ComImport,
     Guid("5EC35E09-B285-422c-83F5-1372384A42CC"),
     InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface IEnlistmentShim
     {
-        void PrepareRequestDone(
-            OletxPrepareVoteType voteType
-            );
+        void PrepareRequestDone(OletxPrepareVoteType voteType);
 
         void CommitRequestDone();
 
         void AbortRequestDone();
     }
 
-    [System.Security.SuppressUnmanagedCodeSecurity,
+    [Security.SuppressUnmanagedCodeSecurity,
     ComImport,
     Guid("279031AF-B00E-42e6-A617-79747E22DD22"),
     InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -218,39 +211,31 @@ namespace System.Transactions.Oletx
 
         void Abort();
 
-        void GetITransactionNative(
-            [MarshalAs(UnmanagedType.Interface)] out IDtcTransaction transactionNative
-            );
+        void GetITransactionNative([MarshalAs(UnmanagedType.Interface)] out IDtcTransaction transactionNative);
 
         void Export(
             [MarshalAs(UnmanagedType.U4)] uint whereaboutsSize,
             [MarshalAs(UnmanagedType.LPArray)] byte[] whereabouts,
             [MarshalAs(UnmanagedType.I4)] out int cookieIndex,
             [MarshalAs(UnmanagedType.U4)] out uint cookieSize,
-            out CoTaskMemHandle cookieBuffer
-            );
+            out CoTaskMemHandle cookieBuffer);
 
         void CreateVoter(
             IntPtr managedIdentifier,
-            [MarshalAs(UnmanagedType.Interface)] out IVoterBallotShim voterBallotShim
-            );
+            [MarshalAs(UnmanagedType.Interface)] out IVoterBallotShim voterBallotShim);
 
         void GetPropagationToken(
             [MarshalAs(UnmanagedType.U4)] out uint propagationTokeSize,
-            out CoTaskMemHandle propgationToken
-            );
+            out CoTaskMemHandle propagationToken);
 
         void Phase0Enlist(
             IntPtr managedIdentifier,
-            [MarshalAs(UnmanagedType.Interface)] out IPhase0EnlistmentShim phase0EnlistmentShim
-            );
+            [MarshalAs(UnmanagedType.Interface)] out IPhase0EnlistmentShim phase0EnlistmentShim);
 
-        void GetTransactionDoNotUse(
-            out IntPtr transaction
-            );
+        void GetTransactionDoNotUse(out IntPtr transaction);
     }
 
-    [System.Security.SuppressUnmanagedCodeSecurity,
+    [Security.SuppressUnmanagedCodeSecurity,
     ComImport,
     Guid("27C73B91-99F5-46d5-A247-732A1A16529E"),
     InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -259,19 +244,17 @@ namespace System.Transactions.Oletx
         void Enlist(
             [MarshalAs(UnmanagedType.Interface)] ITransactionShim transactionShim,
             IntPtr managedIdentifier,
-            [MarshalAs(UnmanagedType.Interface)] out IEnlistmentShim enlistmentShim
-            );
+            [MarshalAs(UnmanagedType.Interface)] out IEnlistmentShim enlistmentShim);
 
         void Reenlist(
             [MarshalAs(UnmanagedType.U4)] uint prepareInfoSize,
             [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] prepareInfo,
-            out OletxTransactionOutcome outcome
-            );
+            out OletxTransactionOutcome outcome);
 
         void ReenlistComplete();
     }
 
-    [System.Security.SuppressUnmanagedCodeSecurity,
+    [Security.SuppressUnmanagedCodeSecurity,
     ComImport,
     Guid("467C8BCB-BDDE-4885-B143-317107468275"),
     InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -279,13 +262,12 @@ namespace System.Transactions.Oletx
     {
         void ConnectToProxy(
             [MarshalAs(UnmanagedType.LPWStr)] string nodeName,
-            System.Guid resourceManagerIdentifier,
+            Guid resourceManagerIdentifier,
             IntPtr managedIdentifier,
             [MarshalAs(UnmanagedType.Bool)] out bool nodeNameMatches,
             [MarshalAs(UnmanagedType.U4)] out uint whereaboutsSize,
             out CoTaskMemHandle whereaboutsBuffer,
-            [MarshalAs(UnmanagedType.Interface)] out IResourceManagerShim resourceManagerShim
-            );
+            [MarshalAs(UnmanagedType.Interface)] out IResourceManagerShim resourceManagerShim);
 
         void GetNotification(
             out IntPtr managedIdentifier,
@@ -294,8 +276,7 @@ namespace System.Transactions.Oletx
             [MarshalAs(UnmanagedType.Bool)] out bool abortingHint,
             [MarshalAs(UnmanagedType.Bool)] out bool releaseRequired,
             [MarshalAs(UnmanagedType.U4)] out uint prepareInfoSize,
-            out CoTaskMemHandle prepareInfo
-            );
+            out CoTaskMemHandle prepareInfo);
 
         void ReleaseNotificationLock();
 
@@ -303,41 +284,36 @@ namespace System.Transactions.Oletx
             [MarshalAs(UnmanagedType.U4)] uint timeout,
             OletxTransactionIsolationLevel isolationLevel,
             IntPtr managedIdentifier,
-            out System.Guid transactionIdentifier,
-            [MarshalAs(UnmanagedType.Interface)] out ITransactionShim transactionShim
-            );
+            out Guid transactionIdentifier,
+            [MarshalAs(UnmanagedType.Interface)] out ITransactionShim transactionShim);
 
         void CreateResourceManager(
-            System.Guid resourceManagerIdentifier,
+            Guid resourceManagerIdentifier,
             IntPtr managedIdentifier,
-            [MarshalAs(UnmanagedType.Interface)] out IResourceManagerShim resourceManagerShim
-            );
+            [MarshalAs(UnmanagedType.Interface)] out IResourceManagerShim resourceManagerShim            );
 
         void Import(
             [MarshalAs(UnmanagedType.U4)] uint cookieSize,
             [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] byte[] cookie,
             IntPtr managedIdentifier,
-            out System.Guid transactionIdentifier,
+            out Guid transactionIdentifier,
             out OletxTransactionIsolationLevel isolationLevel,
-            [MarshalAs(UnmanagedType.Interface)] out ITransactionShim transactionShim
-            );
+            [MarshalAs(UnmanagedType.Interface)] out ITransactionShim transactionShim);
 
         void ReceiveTransaction(
-            [MarshalAs(UnmanagedType.U4)] uint  propgationTokenSize,
+            [MarshalAs(UnmanagedType.U4)] uint  propagationTokenSize,
             [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] byte[] propgationToken,
             IntPtr managedIdentifier,
-            out System.Guid transactionIdentifier,
+            out Guid transactionIdentifier,
             out OletxTransactionIsolationLevel isolationLevel,
-            [MarshalAs(UnmanagedType.Interface)] out ITransactionShim transactionShim
-            );
+            [MarshalAs(UnmanagedType.Interface)] out ITransactionShim transactionShim);
 
         void CreateTransactionShim(
             [MarshalAs(UnmanagedType.Interface)] IDtcTransaction transactionNative,
             IntPtr managedIdentifier,
-            out System.Guid transactionIdentifier,
+            out Guid transactionIdentifier,
             out OletxTransactionIsolationLevel isolationLevel,
-            [MarshalAs(UnmanagedType.Interface)] out ITransactionShim transactionShim
-            );
+            [MarshalAs(UnmanagedType.Interface)] out ITransactionShim transactionShim);
     }
 
     // We need to leave this here because if we are given an ITransactionNative and need to
@@ -345,22 +321,16 @@ namespace System.Transactions.Oletx
     // we want to be able to check to see if we already have one.
     // So we use the GetTransactionInfo method to get the GUID identifier and do various table
     // lookups.
-    [System.Security.SuppressUnmanagedCodeSecurity,
+    [Security.SuppressUnmanagedCodeSecurity,
     ComImport,
     Guid("0fb15084-af41-11ce-bd2b-204c4f4f5020"),
     InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface ITransactionNativeInternal
     {
-        void Commit(int retaining,
-            [MarshalAs(UnmanagedType.I4)] OletxXacttc commitType,
-            int reserved);
+        void Commit(int retaining, [MarshalAs(UnmanagedType.I4)] OletxXacttc commitType, int reserved);
 
-        void Abort(IntPtr reason,
-            int retaining,
-            int async);
+        void Abort(IntPtr reason, int retaining, int async);
 
         void GetTransactionInfo(out OletxXactTransInfo xactInfo);
     }
-
-
 }

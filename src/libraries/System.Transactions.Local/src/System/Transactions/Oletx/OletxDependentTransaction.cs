@@ -13,65 +13,57 @@ namespace System.Transactions.Oletx
     [Serializable]
     internal class OletxDependentTransaction : OletxTransaction
     {
-        private OletxVolatileEnlistmentContainer volatileEnlistmentContainer;
+        private OletxVolatileEnlistmentContainer _volatileEnlistmentContainer;
 
-        private int completed = 0;
+        private int _completed;
 
-        internal OletxDependentTransaction(
-            RealOletxTransaction realTransaction,
-            bool delayCommit
-            ) : base( realTransaction )
+        internal OletxDependentTransaction(RealOletxTransaction realTransaction, bool delayCommit)
+            : base(realTransaction)
         {
-            if ( null == realTransaction )
+            if (realTransaction == null)
             {
                 throw new ArgumentNullException( "realTransaction" );
             }
 
-            this.volatileEnlistmentContainer = realOletxTransaction.AddDependentClone( delayCommit );
+            _volatileEnlistmentContainer = RealOletxTransaction.AddDependentClone(delayCommit);
 
-            if ( DiagnosticTrace.Information )
+            if (DiagnosticTrace.Information)
             {
-                DependentCloneCreatedTraceRecord.Trace( SR.TraceSourceOletx,
-                    this.TransactionTraceId,
-                    delayCommit ? DependentCloneOption.BlockCommitUntilComplete : DependentCloneOption.RollbackIfNotComplete
-                    );
+                DependentCloneCreatedTraceRecord.Trace(
+                    SR.TraceSourceOletx,
+                    TransactionTraceId,
+                    delayCommit
+                        ? DependentCloneOption.BlockCommitUntilComplete
+                        : DependentCloneOption.RollbackIfNotComplete);
             }
         }
 
         public void Complete()
         {
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
-                    "DependentTransaction.Complete"
-                    );
+                MethodEnteredTraceRecord.Trace(SR.TraceSourceOletx, "DependentTransaction.Complete");
             }
 
-            Debug.Assert( ( 0 == this.disposed ), "OletxTransction object is disposed" );
+            Debug.Assert(Disposed == 0, "OletxTransction object is disposed");
 
-            int localCompleted = Interlocked.CompareExchange( ref this.completed, 1, 0 );
-            if ( 1 == localCompleted )
+            int localCompleted = Interlocked.CompareExchange(ref _completed, 1, 0);
+            if (localCompleted == 1)
             {
-                throw TransactionException.CreateTransactionCompletedException(this.DistributedTxId);
+                throw TransactionException.CreateTransactionCompletedException(DistributedTxId);
             }
 
-            if ( DiagnosticTrace.Information )
+            if (DiagnosticTrace.Information)
             {
-                DependentCloneCompleteTraceRecord.Trace( SR.TraceSourceOletx,
-                    this.TransactionTraceId
-                    );
+                DependentCloneCompleteTraceRecord.Trace(SR.TraceSourceOletx, TransactionTraceId);
             }
 
-            this.volatileEnlistmentContainer.DependentCloneCompleted();
+            _volatileEnlistmentContainer.DependentCloneCompleted();
 
-            if ( DiagnosticTrace.Verbose )
+            if (DiagnosticTrace.Verbose)
             {
-                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
-                    "DependentTransaction.Complete"
-                    );
+                MethodExitedTraceRecord.Trace(SR.TraceSourceOletx, "DependentTransaction.Complete");
             }
         }
-
     }
-
 }
