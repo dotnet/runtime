@@ -60,6 +60,7 @@ namespace System.Numerics
         public static bool IsNegative(System.Numerics.BigInteger value) { throw null; }
         public static bool IsOddInteger(System.Numerics.BigInteger value) { throw null; }
         public static bool IsPositive(System.Numerics.BigInteger value) { throw null; }
+        static BigInteger System.Numerics.IBinaryNumber<BigInteger>.AllBitsSet { get { throw null; } }
         public static bool IsPow2(System.Numerics.BigInteger value) { throw null; }
         public static System.Numerics.BigInteger LeadingZeroCount(System.Numerics.BigInteger value) { throw null; }
         public static double Log(System.Numerics.BigInteger value) { throw null; }

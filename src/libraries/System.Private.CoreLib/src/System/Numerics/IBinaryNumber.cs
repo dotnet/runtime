@@ -10,6 +10,9 @@ namespace System.Numerics
           INumber<TSelf>
         where TSelf : IBinaryNumber<TSelf>
     {
+        /// <summary>Gets an instance of the binary type in which all bits are set.</summary>
+        static virtual TSelf AllBitsSet => TSelf.One; // TODO: add the correct DIM when I am confident everything works
+
         /// <summary>Determines if a value is a power of two.</summary>
         /// <param name="value">The value to be checked.</param>
         /// <returns><c>true</c> if <paramref name="value" /> is a power of two; otherwise, <c>false</c>.</returns>
