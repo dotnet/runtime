@@ -595,10 +595,18 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_BackgroundWorkerTimeoutMs, W("TC_Background
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_CallCountThreshold, W("TC_CallCountThreshold"), TC_CallCountThreshold, "Number of times a method must be called in tier 0 after which it is promoted to the next tier.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_CallCountingDelayMs, W("TC_CallCountingDelayMs"), TC_CallCountingDelayMs, "A perpetual delay in milliseconds that is applied call counting in tier 0 and jitting at higher tiers, while there is startup-like activity.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_DelaySingleProcMultiplier, W("TC_DelaySingleProcMultiplier"), TC_DelaySingleProcMultiplier, "Multiplier for TC_CallCountingDelayMs that is applied on a single-processor machine or when the process is affinitized to a single processor.")
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TC_DelayPgoDivider, W("TC_DelayPgoDivider"), TC_DelayPgoDivider, "PGO-specific Divider for TC_CallCountingDelayMs, needed because we jit more methods")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_CallCounting, W("TC_CallCounting"), 1, "Enabled by default (only activates when TieredCompilation is also enabled). If disabled immediately backpatches prestub, and likely prevents any promotion to higher tiers")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_UseCallCountingStubs, W("TC_UseCallCountingStubs"), 1, "Uses call counting stubs for faster call counting.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_DeleteCallCountingStubsAfter, W("TC_DeleteCallCountingStubsAfter"), 0, "Deletes call counting stubs after this many have completed. Zero to disable deleting.")
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TC_DelayPgoDivider, W("TC_DelayPgoDivider"), TC_DelayPgoDivider, "PGO-specific Divider for TC_CallCountingDelayMs, needed because we jit more methods")
+
+// This is added for performance testing (performance impact from a profile collected in an optimized code vs unoptimized code)
+// Eventually, we want to be able to instrument only optimized code because in the current workflow:
+//
+//  R2R -> tier0 instrumentation -> tier1
+//
+// that tier0 will never inline even small calls and we'll trigger a lot of redundant first-time compilations
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TC_InstrumentOptimizedCode, W("TC_InstrumentOptimizedCode"), 0, "Instrumented tier should use optimized code")
 #undef TC_BackgroundWorkerTimeoutMs
 #undef TC_CallCountThreshold
 #undef TC_CallCountingDelayMs

@@ -1043,6 +1043,19 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
         {
             if (g_pConfig->TieredCompilation_QuickJit())
             {
+                if (nativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier::OptimizationTier0Instrumented)
+                {
+                    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
+                    if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TC_InstrumentOptimizedCode) != 0)
+                    {
+                        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
+                    }
+                    else
+                    {
+                        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
+                    }
+                    return flags;
+                }
                 _ASSERTE(nativeCodeVersion.IsUnoptimizedTier());
                 flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
                 return flags;
@@ -1070,6 +1083,15 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
             if (g_pConfig->TieredCompilation_QuickJit())
             {
                 flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
+                if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TC_InstrumentOptimizedCode) != 0)
+                {
+                    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
+                }
+                else
+                {
+                    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
+                }
+                break;
             }
             FALLTHROUGH;
 
