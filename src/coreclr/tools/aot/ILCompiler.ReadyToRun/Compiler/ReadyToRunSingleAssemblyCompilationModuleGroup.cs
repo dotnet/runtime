@@ -49,7 +49,8 @@ namespace ILCompiler
                 throw new InternalCompilerErrorException("Called ApplyProfileGuidedOptimizationData twice.");
 
             _profileGuidedCompileRestrictionSet = true;
-            _profileGuidedCompileRestriction = profileGuidedCompileRestriction;
+            if (partial)
+                _profileGuidedCompileRestriction = profileGuidedCompileRestriction;
 
             base.ApplyProfileGuidedOptimizationData(profileGuidedCompileRestriction, partial);
         }

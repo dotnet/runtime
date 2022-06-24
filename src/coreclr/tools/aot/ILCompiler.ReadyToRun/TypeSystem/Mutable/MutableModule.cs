@@ -28,8 +28,6 @@ namespace Internal.TypeSystem.Ecma
             protected override EntityHandle GetNonNestedResolutionScope(MetadataType metadataType)
             {
                 var module = metadataType.Module;
-                Debug.Assert(_mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences != null &&
-                    _mutableModule._compilationGroup.CrossModuleInlineableModule(_mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences));
 
                 EntityHandle result;
                 if (_moduleRefs.TryGetValue(module, out result))
@@ -38,27 +36,35 @@ namespace Internal.TypeSystem.Ecma
                 }
 
                 string moduleRefString;
-                if (module == _typeSystemContext.SystemModule)
+                if (!_mutableModule._moduleToModuleRefString.TryGetValue(module, out moduleRefString))
                 {
-                    moduleRefString = "System.Private.CoreLib";
-                }
-                else
-                {
-                    if (_mutableModule._compilationGroup.CrossModuleInlineableModule(module) || _mutableModule._compilationGroup.VersionsWithModule(module))
+                    Debug.Assert(_mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences != null &&
+                        _mutableModule._compilationGroup.CrossModuleInlineableModule(_mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences));
+
+                    if (module == _typeSystemContext.SystemModule)
                     {
-                        // References to modules that are explicitly permitted are done via ModuleIndex
-                        int index = _moduleToIndex(module);
-                        Debug.Assert(index != -1);
-                        moduleRefString = $"#:{index.ToStringInvariant()}";
+                        moduleRefString = "System.Private.CoreLib";
                     }
                     else
                     {
-                        // Further depedencies are handled by specifying a module which has a further assembly dependency on the correct module
-                        string asmReferenceName = GetNameOfAssemblyRefWhichResolvesToType(_mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences, metadataType);
-                        int index = _moduleToIndex(_mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences);
-                        Debug.Assert(index != -1);
-                        moduleRefString = $"#{asmReferenceName}:{index.ToStringInvariant()}";
+                        if (_mutableModule._compilationGroup.CrossModuleInlineableModule(module) || _mutableModule._compilationGroup.VersionsWithModule(module))
+                        {
+                            // References to modules that are explicitly permitted are done via ModuleIndex
+                            int index = _moduleToIndex(module);
+                            Debug.Assert(index != -1);
+                            moduleRefString = $"#:{index.ToStringInvariant()}";
+                        }
+                        else
+                        {
+                            // Further depedencies are handled by specifying a module which has a further assembly dependency on the correct module
+                            string asmReferenceName = GetNameOfAssemblyRefWhichResolvesToType(_mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences, metadataType);
+                            int index = _moduleToIndex(_mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences);
+                            Debug.Assert(index != -1);
+                            moduleRefString = $"#{asmReferenceName}:{index.ToStringInvariant()}";
+                        }
                     }
+
+                    _mutableModule._moduleToModuleRefString.Add(module, moduleRefString);
                 }
 
                 _moduleRefStrings.Add(moduleRefString);
@@ -300,6 +306,7 @@ namespace Internal.TypeSystem.Ecma
         public bool DisableNewTokens;
         public ModuleDesc ModuleThatIsCurrentlyTheSourceOfNewReferences;
         private ReadyToRunCompilationModuleGroupBase _compilationGroup;
+        private Dictionary<ModuleDesc, string> _moduleToModuleRefString = new Dictionary<ModuleDesc, string>();
 
         private int GetHandleForTypeSystemEntity(TypeSystemMetadataEmitter emitter, object type)
         {

@@ -18,6 +18,7 @@ using Internal.TypeSystem.Ecma;
 
 using ILCompiler.Reflection.ReadyToRun;
 using ILCompiler.DependencyAnalysis;
+using ILCompiler.IBC;
 
 namespace ILCompiler
 {
@@ -582,10 +583,9 @@ namespace ILCompiler
                 ICompilation compilation;
                 using (PerfEventSource.StartStopEvents.LoadingEvents())
                 {
-
                     List<EcmaModule> inputModules = new List<EcmaModule>();
                     List<EcmaModule> rootingModules = new List<EcmaModule>();
-                    List<EcmaModule> crossModulePgo = new List<EcmaModule>();
+                    HashSet<EcmaModule> crossModuleInlineableCode = new HashSet<EcmaModule>();
 
                     foreach (var inputFile in inFilePaths)
                     {
@@ -608,12 +608,30 @@ namespace ILCompiler
                         versionBubbleModulesHash.Add(module);
                     }
 
-                    if (_commandLineOptions.CrossModulePgo != null)
+                    if (_commandLineOptions.CrossModuleInlining != null)
                     {
-                        foreach (var crossModulePgoAssemblyName in _commandLineOptions.CrossModulePgo)
+                        foreach (var crossModulePgoAssemblyName in _commandLineOptions.CrossModuleInlining)
                         {
-                            crossModulePgo.Add(typeSystemContext.GetModuleForSimpleName(crossModulePgoAssemblyName));
+                            foreach (var module in _referenceableModules)
+                            {
+                                if (!versionBubbleModulesHash.Contains(module))
+                                {
+                                    if (crossModulePgoAssemblyName == "*" ||
+                                         (String.Compare(crossModulePgoAssemblyName, module.Assembly.GetName().Name, StringComparison.OrdinalIgnoreCase) == 0))
+                                    {
+                                        crossModuleInlineableCode.Add((EcmaModule)module);
+                                    }
+                                }
+                                if (crossModulePgoAssemblyName == "-")
+                                {
+                                    crossModuleInlineableCode.Clear();
+                                }
+                            }
                         }
+                    }
+                    else
+                    {
+                        crossModuleInlineableCode.Add((EcmaModule)typeSystemContext.SystemModule);
                     }
 
                     //
@@ -647,10 +665,10 @@ namespace ILCompiler
                     groupConfig.CompilationModuleSet = inputModules;
                     groupConfig.VersionBubbleModuleSet = versionBubbleModules;
                     groupConfig.CompileGenericDependenciesFromVersionBubbleModuleSet = _commandLineOptions.CompileBubbleGenerics;
-                    groupConfig.CrossModuleGenericCompilation = _commandLineOptions.CrossModuleGenericCompilation;
-                    groupConfig.CrossModuleInlining = _commandLineOptions.CrossModuleInlining;
-                    groupConfig.CrossModuleInlineable = crossModulePgo;
-                    groupConfig.CrossModulePgo = crossModulePgo.Count > 0;
+                    groupConfig.CrossModuleGenericCompilation = crossModuleInlineableCode.Count > 0;
+                    groupConfig.CrossModuleInlining = groupConfig.CrossModuleGenericCompilation; // Currently we set these flags to the same values
+                    groupConfig.CrossModuleInlineable = crossModuleInlineableCode;
+                    groupConfig.CompileAllPossibleCrossModuleCode = _commandLineOptions.CompileBubbleGenerics;
 
                     if (singleMethod != null)
                     {
@@ -679,18 +697,30 @@ namespace ILCompiler
                     }
 
                     // Examine profile guided information as appropriate
+                    MIbcProfileParser.MibcGroupParseRules parseRule;
+                    if (_commandLineOptions.CompileBubbleGenerics)
+                    {
+                        parseRule = MIbcProfileParser.MibcGroupParseRules.VersionBubbleWithCrossModule2;
+                    }
+                    else
+                    {
+                        parseRule = MIbcProfileParser.MibcGroupParseRules.VersionBubbleWithCrossModule1;
+                    }
+
                     ProfileDataManager profileDataManager =
                         new ProfileDataManager(logger,
                         _referenceableModules,
                         inputModules,
                         versionBubbleModules,
-                        _commandLineOptions.CompileBubbleGenerics || (crossModulePgo.Count > 0) ? inputModules[0] : null,
+                        crossModuleInlineableCode,
+                        _commandLineOptions.CompileBubbleGenerics ? inputModules[0] : null,
                         mibcFiles,
+                        parseRule,
                         jsonProfile,
                         typeSystemContext,
                         compilationGroup,
                         _commandLineOptions.EmbedPgoData,
-                        crossModulePgo.Count == 0 ? compilationGroup.VersionsWithMethodBody : compilationGroup.CrossModuleInlineable);
+                        crossModuleInlineableCode.Count == 0 ? compilationGroup.VersionsWithMethodBody : compilationGroup.CrossModuleInlineable);
 
                     compilationGroup.ApplyProfileGuidedOptimizationData(profileDataManager, _commandLineOptions.Partial);
 

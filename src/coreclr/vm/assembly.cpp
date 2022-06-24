@@ -1541,7 +1541,16 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
             // The root assembly is used in the GetEntryAssembly method that on CoreCLR is used
             // to get the TargetFrameworkMoniker for the app
             AppDomain * pDomain = pThread->GetDomain();
-            pDomain->SetRootAssembly(pMeth->GetAssembly());
+            Assembly* pRootAssembly = pMeth->GetAssembly();
+            pDomain->SetRootAssembly(pRootAssembly);
+#ifdef FEATURE_READYTORUN
+            {
+                if (pRootAssembly->GetModule()->IsReadyToRun())
+                {
+                    pRootAssembly->GetModule()->GetReadyToRunInfo()->RegisterUnrelatedR2RModule();
+                }
+            }
+#endif
 
             // Perform additional managed thread initialization.
             // This would is normally done in the runtime when a managed

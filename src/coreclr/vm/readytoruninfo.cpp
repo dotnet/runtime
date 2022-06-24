@@ -610,13 +610,112 @@ bool ReadyToRunInfo::IsNativeImageSharedBy(PTR_Module pModule1, PTR_Module pModu
     return pModule1->GetReadyToRunInfo()->m_pComposite == pModule2->GetReadyToRunInfo()->m_pComposite;
 }
 
+// -------------------------------
+// Infrastructure for handling R2R modules which have code in them which is not
+// tightly associated with the module itself.
+ReadyToRunInfo* s_pGlobalR2RModules = NULL;
+PTR_ReadyToRunInfo ReadyToRunInfo::GetUnrelatedR2RModules() { return s_pGlobalR2RModules; }
+void ReadyToRunInfo::RegisterUnrelatedR2RModule()
+{
+    STANDARD_VM_CONTRACT;
+
+    if (m_pNativeImage == NULL)
+    {
+        // Produce a singly linked list of R2R modules with code in unrelated modules.
+        // This code shouldn't be run until the module is given process lifetime tenure
+        if (m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_UNRELATED_R2R_CODE)
+        {
+            ReadyToRunInfo* oldGlobalValue;
+            oldGlobalValue = s_pGlobalR2RModules;
+            if (InterlockedCompareExchangeT(&m_pNextR2RForUnrelatedCode, oldGlobalValue, NULL) != NULL)
+            {
+                // Some other thread is registering or has registered this R2R image for unrelated generics
+                // ReadyToRun code loading. we can simply return, as this process cannot fail.
+                return;
+            }
+
+            while (InterlockedCompareExchangeT(&s_pGlobalR2RModules, this, oldGlobalValue) != oldGlobalValue)
+            {
+                oldGlobalValue = s_pGlobalR2RModules;
+                m_pNextR2RForUnrelatedCode = oldGlobalValue;
+            }
+        }
+    }
+    else
+    {
+        m_pCompositeInfo->RegisterUnrelatedR2RModule();
+    }
+}
+
+// Helper function for ComputeAlternateGenericLocationForR2RCode
+static Module* ComputeAlternateGenericLocationForR2RCodeFromInstantiation(Module* pDefinitionModule, Instantiation inst)
+{
+    STANDARD_VM_CONTRACT;
+    for (uint32_t i = 0; i < inst.GetNumArgs(); i++)
+    {
+        TypeHandle instArg = inst[i];
+
+        // System.__Canon does not contribute to logical loader module
+        if (instArg == TypeHandle(g_pCanonMethodTableClass))
+            continue;
+
+        CorElementType ety = instArg.GetSignatureCorElementType();
+        if (CorTypeInfo::IsPrimitiveType_NoThrow(ety))
+            continue;
+
+        // Any type that is in the same module as the definition module is also ignored
+        Module* instArgModule = instArg.GetLoaderModule();
+        if (instArgModule == pDefinitionModule)
+            continue;
+
+        // Return the R2R module of thist instantiating argument. This may be NULL if that assembly isn't R2R
+        return instArgModule;
+    }
+
+    return NULL;
+}
+
+PTR_ReadyToRunInfo ReadyToRunInfo::ComputeAlternateGenericLocationForR2RCode(MethodDesc *pMethod)
+{
+    STANDARD_VM_CONTRACT;
+    // Alternate algorithm for generic method placement
+    // This is designed to provide a second location to look for a generic instantiation that isn't the
+    // defining module of the method. This algorithm is designed to be:
+    // 1. Cheap to compute
+    // 2. Able to find many generic instantiations assuming a fairly low level of generic complexity
+    // 3. Particularly useful for cases where a second module instantiates a generic from a defining module
+    //    over types entirely defined in a second module.
+    // 4. Simple to implement in a compatible fashion in crossgen2, so that the runtime and compile can agree
+    //    on code that should be useable. See ReadyToRunCompilationGroupBase.CrossModuleCompileableUncached
+    //    for the managed implementation.
+
+    // Collectible assemblies are complex to handle, and currently do not participate in R2R.
+    if (pMethod->GetLoaderAllocator()->IsCollectible())
+        return NULL;
+
+    Module* pDefinitionModule = pMethod->GetModule();
+    Module* resultModule = NULL;
+    if (pMethod->HasMethodInstantiation())
+    {
+        resultModule = ComputeAlternateGenericLocationForR2RCodeFromInstantiation(pDefinitionModule, pMethod->GetMethodInstantiation());
+    }
+    if (resultModule == NULL && pMethod->HasClassInstantiation())
+    {
+        resultModule = ComputeAlternateGenericLocationForR2RCodeFromInstantiation(pDefinitionModule, pMethod->GetClassInstantiation());
+    }
+
+    // This may return NULL, if resultModule is not an R2R module. That is OK and intended.
+    return resultModule->GetReadyToRunInfo();
+}
+
 ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocator, PEImageLayout * pLayout, READYTORUN_HEADER * pHeader, NativeImage *pNativeImage, AllocMemTracker *pamTracker)
     : m_pModule(pModule),
     m_pHeader(pHeader),
     m_pNativeImage(pNativeImage),
     m_readyToRunCodeDisabled(FALSE),
     m_Crst(CrstReadyToRunEntryPointToMethodDescMap),
-    m_pPersistentInlineTrackingMap(NULL)
+    m_pPersistentInlineTrackingMap(NULL),
+    m_pNextR2RForUnrelatedCode(NULL)
 {
     STANDARD_VM_CONTRACT;
 
@@ -651,7 +750,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
             pNativeMDImport = NULL;
         }
 
-        m_pNativeManifestModule = CreateNativeManifestModule(pLoaderAllocator, pNativeMDImport, pamTracker);
+        m_pNativeManifestModule = CreateNativeManifestModule(pLoaderAllocator, pNativeMDImport, pModule, pamTracker);
     }
 
     IMAGE_DATA_DIRECTORY * pRuntimeFunctionsDir = m_pComposite->FindSection(ReadyToRunSectionType::RuntimeFunctions);
@@ -1321,8 +1420,10 @@ class NativeManifestModule : public ModuleBase
     LookupMap<PTR_Module>           m_ModuleReferencesMap;
 public:
 
-    NativeManifestModule(LoaderAllocator* pLoaderAllocator, IMDInternalImport *pManifestMetadata, AllocMemTracker *pamTracker)
+    NativeManifestModule(LoaderAllocator* pLoaderAllocator, IMDInternalImport *pManifestMetadata, Module* pModule, AllocMemTracker *pamTracker)
     {
+        // TODO  setting m_pILModule here probably doesn't work for Composite images...
+        m_pILModule = pModule;
         m_loaderAllocator = pLoaderAllocator;
         m_pMDImport = pManifestMetadata;
         m_LookupTableCrst.Init(CrstModuleLookupTable, CrstFlags(CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD));
@@ -1402,7 +1503,7 @@ public:
         if (numberCur == '\0')
             return false;
 
-        while (numberCur != '\0')
+        while (*numberCur != '\0')
         {
             if (index > 100000)
                 return false; // Check to make sure we stay in a reasonable range for a module index.
@@ -1583,10 +1684,6 @@ public:
                 auto domainAssemblyOfFinalModule = module->LoadAssembly(assemblyRef);
                 module = domainAssemblyOfFinalModule->GetModule();
             }
-            else
-            {
-                COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
-            }
         }
         else
         {
@@ -1611,10 +1708,10 @@ public:
     }
 };
 
-ModuleBase* CreateNativeManifestModule(LoaderAllocator* pLoaderAllocator, IMDInternalImport *pManifestMetadata, AllocMemTracker *pamTracker)
+ModuleBase* CreateNativeManifestModule(LoaderAllocator* pLoaderAllocator, IMDInternalImport *pManifestMetadata, Module* pModule, AllocMemTracker *pamTracker)
 {
     void *mem = pamTracker->Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(NativeManifestModule))));
-    return new (mem) NativeManifestModule(pLoaderAllocator, pManifestMetadata, pamTracker);
+    return new (mem) NativeManifestModule(pLoaderAllocator, pManifestMetadata, pModule, pamTracker);
 }
 
 #endif // DACCESS_COMPILE

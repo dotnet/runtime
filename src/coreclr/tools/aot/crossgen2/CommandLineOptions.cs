@@ -22,7 +22,7 @@ namespace ILCompiler
         public IReadOnlyList<string> UnrootedInputFilePaths;
         public IReadOnlyList<string> ReferenceFilePaths;
         public IReadOnlyList<string> MibcFilePaths;
-        public IReadOnlyList<string> CrossModulePgo;
+        public IReadOnlyList<string> CrossModuleInlining;
         public string InstructionSet;
         public string OutputFilePath;
 
@@ -31,8 +31,6 @@ namespace ILCompiler
         public bool OptimizeDisabled;
         public bool OptimizeSpace;
         public bool OptimizeTime;
-        public bool CrossModuleInlining;
-        public bool CrossModuleGenericCompilation;
         public bool AsyncMethodOptimization;
         public bool InputBubble;
         public bool CompileBubbleGenerics;
@@ -95,9 +93,7 @@ namespace ILCompiler
             SingleMethodGenericArg = null;
 
             // These behaviors default to enabled
-            CrossModuleInlining = false;
-            CrossModuleGenericCompilation = false;
-            AsyncMethodOptimization = false;
+            AsyncMethodOptimization = true;
 
             bool forceHelp = false;
             if (args.Length == 0)
@@ -173,10 +169,8 @@ namespace ILCompiler
                 syntax.DefineOption("perfmap-path", ref PerfMapPath, SR.PerfMapFilePathOption);
                 syntax.DefineOption("perfmap-format-version", ref PerfMapFormatVersion, SR.PerfMapFormatVersionOption);
 
-                syntax.DefineOption("opt-cross-module-inlining", ref CrossModuleInlining, SR.CrossModuleInlining);
-                syntax.DefineOption("opt-cross-module-generic-compilation", ref CrossModuleGenericCompilation, SR.CrossModuleGenericCompilation);
+                syntax.DefineOptionList("opt-cross-module", ref this.CrossModuleInlining, SR.CrossModuleInlining);
                 syntax.DefineOption("opt-async-methods", ref AsyncMethodOptimization, SR.AsyncModuleOptimization);
-                syntax.DefineOptionList("opt-cross-module-pgo-module", ref CrossModulePgo, "Generic methods which have some portion of their definition in this module, and found via pgo will be compiled into this module");
 
                 syntax.DefineOption("method-layout", ref MethodLayout, SR.MethodLayoutOption);
                 syntax.DefineOption("file-layout", ref FileLayout, SR.FileLayoutOption);

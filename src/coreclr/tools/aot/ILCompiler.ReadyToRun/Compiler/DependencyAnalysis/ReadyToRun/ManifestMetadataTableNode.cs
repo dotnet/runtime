@@ -174,7 +174,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             int oldModuleToIndexCount = _assemblyRefToModuleIdMap.Count;
 #endif
             int index = ModuleToIndexInternal(ecmaModule);
+#if DEBUG
             Debug.Assert(oldModuleToIndexCount == _assemblyRefToModuleIdMap.Count);
+#endif
             return index;
         }
 

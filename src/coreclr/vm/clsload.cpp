@@ -118,50 +118,31 @@ PTR_Module ClassLoader::ComputeLoaderModuleWorker(
 
     Module *pLoaderModule = NULL;
 
-    if (pDefinitionModule != NULL && pDefinitionModule->IsCollectible())
-        goto ComputeCollectibleLoaderModule;
+    if (pDefinitionModule)
+    {
+        if (pDefinitionModule->IsCollectible())
+            goto ComputeCollectibleLoaderModule;
+        pLoaderModule = pDefinitionModule;
+    }
 
     for (DWORD i = 0; i < classInst.GetNumArgs(); i++)
     {
         TypeHandle classArg = classInst[i];
-
-        // System.__Canon does not contribute to logical loader module
-        if (classArg == TypeHandle(g_pCanonMethodTableClass))
-            continue;
-
-        CorElementType ety = classArg.GetSignatureCorElementType();
-        if (CorTypeInfo::IsPrimitiveType_NoThrow(ety))
-            continue;
-
         Module* pModule = classArg.GetLoaderModule();
         if (pModule->IsCollectible())
             goto ComputeCollectibleLoaderModule;
-        if ((pLoaderModule == NULL) && (pModule != pDefinitionModule))
+        if (pLoaderModule == NULL)
             pLoaderModule = pModule;
     }
 
     for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
     {
         TypeHandle methodArg = methodInst[i];
-
-        // System.__Canon does not contribute to logical loader module
-        if (methodArg == TypeHandle(g_pCanonMethodTableClass))
-            continue;
-
-        CorElementType ety = methodArg.GetSignatureCorElementType();
-        if (CorTypeInfo::IsPrimitiveType_NoThrow(ety))
-            continue;
-
         Module *pModule = methodArg.GetLoaderModule();
         if (pModule->IsCollectible())
             goto ComputeCollectibleLoaderModule;
-        if ((pLoaderModule == NULL) && (pModule != pDefinitionModule))
+        if (pLoaderModule == NULL)
             pLoaderModule = pModule;
-    }
-
-    if (pLoaderModule == NULL)
-    {
-        pLoaderModule = pDefinitionModule;
     }
 
     if (pLoaderModule == NULL)

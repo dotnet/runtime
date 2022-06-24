@@ -571,8 +571,8 @@ namespace ILCompiler
                 if (Logger.IsVerbose)
                     Logger.Writer.WriteLine($"Processing {obj.Count} dependencies");
 
-                // Ensure all methods being compiled have assigned tokens. This matters for modules from outside of the version bubble
-                // as those tokens are dynamically assigned.
+                // Ensure all methods being compiled have assigned tokens. This matters for code from modules from outside of the version bubble
+                // as those tokens are dynamically assigned, and for instantiation which depend on tokens outside of the module
                 var ilProvider = (ReadyToRunILProvider)_methodILCache.ILProvider;
                 obj.MergeSortAllowDuplicates(new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance));
                 foreach (var dependency in obj)
@@ -586,6 +586,56 @@ namespace ILCompiler
                                 !_methodsWhichNeedMutableILBodies.Contains(ecmaMethod) &&
                                 CorInfoImpl.IsMethodCompilable(this, methodCodeNodeNeedingCode.Method))
                                 _methodsWhichNeedMutableILBodies.Add(ecmaMethod);
+                        }
+                        if (!_nodeFactory.CompilationModuleGroup.VersionsWithMethodBody(method))
+                        {
+                            // Validate that the typedef tokens for all of the instantiation parameters of the method
+                            // have tokens.
+                            foreach (var type in method.Instantiation)
+                                EnsureTypeDefTokensAreReady(type);
+                            foreach (var type in method.OwningType.Instantiation)
+                                EnsureTypeDefTokensAreReady(type);
+
+                            void EnsureTypeDefTokensAreReady(TypeDesc type)
+                            {
+                                // Type represented by simple element type
+                                if (type.IsPrimitive || type.IsVoid || type.IsObject || type.IsString || type.IsTypedReference)
+                                    return;
+
+                                if (type is EcmaType ecmaType)
+                                {
+                                    if (!_nodeFactory.Resolver.GetModuleTokenForType(ecmaType, allowDynamicallyCreatedReference: false, throwIfNotFound: false).IsNull)
+                                        return;
+                                    try
+                                    {
+                                        Debug.Assert(_nodeFactory.CompilationModuleGroup.CrossModuleInlineableModule(ecmaType.Module));
+                                        _nodeFactory.ManifestMetadataTable._mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences
+                                            = ecmaType.Module;
+                                        if (!_nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(ecmaType).HasValue)
+                                            throw new InternalCompilerErrorException($"Unable to create token to {ecmaType}");
+                                    }
+                                    finally
+                                    {
+                                        _nodeFactory.ManifestMetadataTable._mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences
+                                            = null;
+                                    }
+                                    return;
+                                }
+
+                                if (type.HasInstantiation)
+                                {
+                                    EnsureTypeDefTokensAreReady(type.GetTypeDefinition());
+
+                                    foreach (TypeDesc instParam in type.Instantiation)
+                                    {
+                                        EnsureTypeDefTokensAreReady(instParam);
+                                    }
+                                }
+                                else if (type.IsParameterizedType)
+                                {
+                                    EnsureTypeDefTokensAreReady(type.GetParameterType());
+                                }
+                            }
                         }
                     }
                 }

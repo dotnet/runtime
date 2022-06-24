@@ -297,7 +297,7 @@ namespace Internal.JitInterface
 
             // The OwningType/OwningTypeNotDerivedFromToken shoud be equivalent if the above conditions are equal.
             Debug.Assert(OwningTypeNotDerivedFromToken == other.OwningTypeNotDerivedFromToken);
-            Debug.Assert(OwningType == other.OwningType);
+            Debug.Assert(OwningTypeNotDerivedFromToken || (OwningType == other.OwningType));
 
             if (OwningTypeNotDerivedFromToken != other.OwningTypeNotDerivedFromToken)
             {
@@ -2769,8 +2769,7 @@ namespace Internal.JitInterface
 
                 var typicalMethod = inlinee.GetTypicalMethodDefinition();
                 if (!_compilation.CompilationModuleGroup.VersionsWithMethodBody(typicalMethod) &&
-                    typicalMethod is EcmaMethod ecmaMethod &&
-                    ecmaMethod.Module == typicalMethod.Context.SystemModule) // NonVersionable code in System.Collections.Immutable is causing problems and needs to be treated specially
+                    typicalMethod is EcmaMethod ecmaMethod)
                 {
                     Debug.Assert(_compilation.CompilationModuleGroup.CrossModuleInlineable(typicalMethod) ||
                                  _compilation.CompilationModuleGroup.IsNonVersionableWithILTokensThatDoNotNeedTranslation(typicalMethod));

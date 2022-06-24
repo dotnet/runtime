@@ -87,10 +87,17 @@ class ReadyToRunInfo
     PTR_PersistentInlineTrackingMapR2R m_pPersistentInlineTrackingMap;
     PTR_PersistentInlineTrackingMapR2R m_pCrossModulePersistentInlineTrackingMap;
 
+    PTR_ReadyToRunInfo              m_pNextR2RForUnrelatedCode;
+
 public:
     ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocator, PEImageLayout * pLayout, READYTORUN_HEADER * pHeader, NativeImage * pNativeImage, AllocMemTracker *pamTracker);
 
     static BOOL IsReadyToRunEnabled();
+
+    static PTR_ReadyToRunInfo ComputeAlternateGenericLocationForR2RCode(MethodDesc *pMethod);
+    static PTR_ReadyToRunInfo GetUnrelatedR2RModules();
+    PTR_ReadyToRunInfo GetNextUnrelatedR2RModule() { LIMITED_METHOD_CONTRACT; return m_pNextR2RForUnrelatedCode; }
+    void RegisterUnrelatedR2RModule();
 
     static PTR_ReadyToRunInfo Initialize(Module * pModule, AllocMemTracker *pamTracker);
 

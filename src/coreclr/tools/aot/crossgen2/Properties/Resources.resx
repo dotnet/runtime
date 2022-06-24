@@ -372,13 +372,10 @@
   <data name="ImageBase" xml:space="preserve">
     <value>Hexademical value to set target PE-file ImageBase field</value>
   </data>
-  <data name="CrossModuleGenericCompilation" xml:space="preserve">
-    <value>EXPERIMENTAL: When compiling, compile generic code defined in other modules in a version resilient manner. Defaults to disabled.</value>
-  </data>
   <data name="CrossModuleInlining" xml:space="preserve">
-    <value>EXPERIMENTAL: When compiling, inline code from other modules in a version resilient manner. Defaults to disabled.</value>
+    <value>Allow inclusion of code from the specified module into the module being compiled. In addition to specifying an assembly by name, the special value of "*" is recognized as indicating that code from all modules may be included, and the special value of "*" is recognized as indicating that code from no modules may be included. By default System.Private.CoreLib is included within the set of modules. Any module specified in this way MUST be loadable from the first moment the R2R module is loaded, as loads of these modules may be triggered unpredictably.</value>
   </data>
   <data name="AsyncModuleOptimization" xml:space="preserve">
-    <value>EXPERIMENTAL: Attempt to compile as much async infrastructure as possible for async methods. Defaults to disabled.</value>
+    <value>Attempt to compile as much async infrastructure as possible for async methods. Defaults to enabled. To disable, specify false to this flag explicitly.</value>
   </data>
 </root>

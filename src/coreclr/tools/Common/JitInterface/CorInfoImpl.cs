@@ -1815,7 +1815,15 @@ namespace Internal.JitInterface
 
 #if READYTORUN
             TypeDesc owningType = methodIL.OwningMethod.GetTypicalMethodDefinition().OwningType;
-            bool recordToken = (_compilation.CompilationModuleGroup.VersionsWithType(owningType) || (methodIL.GetMethodILScopeDefinition() is IMethodTokensAreUseableInCompilation)) && owningType is EcmaType;
+            bool recordToken;
+            if (!_compilation.CompilationModuleGroup.VersionsWithMethodBody(methodIL.OwningMethod.GetTypicalMethodDefinition()))
+            {
+                recordToken = (methodIL.GetMethodILScopeDefinition() is IMethodTokensAreUseableInCompilation) && owningType is EcmaType;
+            }
+            else
+            {
+                recordToken = (_compilation.CompilationModuleGroup.VersionsWithType(owningType) || _compilation.CompilationModuleGroup.CrossModuleInlineableType(owningType)) && owningType is EcmaType;
+            }
 #endif
 
             if (result is MethodDesc method)
