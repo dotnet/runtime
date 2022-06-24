@@ -563,7 +563,8 @@ if(CLR_CMAKE_HOST_UNIX_X86)
 endif()
 
 if(CLR_CMAKE_HOST_UNIX_ARM64)
-   add_compile_options(-march=armv8-a+lse)
+  #  add_compile_options(-march=armv8-a+lse)
+   add_compile_options(-moutline-atomics)
 endif(CLR_CMAKE_HOST_UNIX_ARM64)
 
 if(CLR_CMAKE_HOST_UNIX)
