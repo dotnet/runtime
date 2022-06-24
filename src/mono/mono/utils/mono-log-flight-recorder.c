@@ -202,7 +202,7 @@ mono_log_dump_recorder (void)
 		fprintf (stderr, "%" G_GSIZE_FORMAT "u messages\n", dump.num_messages);
 
 		for (gsize i=0; i < dump.num_messages; i++)
-			fprintf (stderr, "\t(%d): %s\n", i, dump.messages [i].message);
+			fprintf (stderr, "\t(%zu): %s\n", i, dump.messages [i].message);
 	}
 }
 
