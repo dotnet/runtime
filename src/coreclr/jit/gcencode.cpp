@@ -4242,10 +4242,9 @@ void GCInfo::gcMakeRegPtrTable(
                     assert(fieldLclNum != BAD_VAR_NUM);
                     LclVarDsc* const fieldVarDsc = compiler->lvaGetDesc(fieldLclNum);
 
-                    if (compiler->lvaIsGCTracked(fieldVarDsc) &&
+                    if (compiler->opts.IsOSR() && compiler->lvaIsGCTracked(fieldVarDsc) &&
                         compiler->GetEmitter()->emitIsWithinFrameRangeGCRs(offset))
                     {
-                        assert(compiler->opts.IsOSR());
                         JITDUMP("Untracked GC struct slot V%02u+%u (P-DEP promoted V%02u) is at frame offset %d within "
                                 "tracked ref range.\nWill report slot as tracked\n",
                                 varNum, fieldOffset, fieldLclNum, offset);
