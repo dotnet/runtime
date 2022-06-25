@@ -34,7 +34,7 @@ namespace System.Formats.Tar
 
             int checksum = WriteNameSpan(buffer, out _);
             checksum += WriteCommonFields(buffer, actualLength, actualEntryType);
-            WriteChecksum(checksum, buffer);
+            _checksum = WriteChecksum(checksum, buffer);
 
             archiveStream.Write(buffer);
 
@@ -44,15 +44,15 @@ namespace System.Formats.Tar
             }
         }
 
-        // Asynchronously writes the current header as a V7 entry into the archive stream.
-        internal async Task WriteAsV7Async(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
+        // Asynchronously writes the current header as a V7 entry into the archive stream and returns the value of the final checksum.
+        internal async Task<int> WriteAsV7Async(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
         {
             long actualLength = GetTotalDataBytesToWrite();
             TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.V7);
 
             int checksum = WriteNameMemory(buffer, out _);
             checksum += WriteCommonFields(buffer.Span, actualLength, actualEntryType);
-            WriteChecksum(checksum, buffer.Span);
+            int finalChecksum = WriteChecksum(checksum, buffer.Span);
 
             await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
 
@@ -60,6 +60,8 @@ namespace System.Formats.Tar
             {
                 await WriteDataAsync(archiveStream, _dataStream, actualLength, cancellationToken).ConfigureAwait(false);
             }
+
+            return finalChecksum;
         }
 
         // Writes the current header as a Ustar entry into the archive stream.
@@ -72,7 +74,7 @@ namespace System.Formats.Tar
             checksum += WriteCommonFields(buffer, actualLength, actualEntryType);
             checksum += WritePosixMagicAndVersion(buffer);
             checksum += WritePosixAndGnuSharedFields(buffer);
-            WriteChecksum(checksum, buffer);
+            _checksum = WriteChecksum(checksum, buffer);
 
             archiveStream.Write(buffer);
 
@@ -82,8 +84,8 @@ namespace System.Formats.Tar
             }
         }
 
-        // Asynchronously rites the current header as a Ustar entry into the archive stream.
-        internal async Task WriteAsUstarAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
+        // Asynchronously rites the current header as a Ustar entry into the archive stream and returns the value of the final checksum.
+        internal async Task<int> WriteAsUstarAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
         {
             long actualLength = GetTotalDataBytesToWrite();
             TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.Ustar);
@@ -92,7 +94,7 @@ namespace System.Formats.Tar
             checksum += WriteCommonFields(buffer.Span, actualLength, actualEntryType);
             checksum += WritePosixMagicAndVersion(buffer.Span);
             checksum += WritePosixAndGnuSharedFields(buffer.Span);
-            WriteChecksum(checksum, buffer.Span);
+            int finalChecksum = WriteChecksum(checksum, buffer.Span);
 
             await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
 
@@ -100,6 +102,8 @@ namespace System.Formats.Tar
             {
                 await WriteDataAsync(archiveStream, _dataStream, actualLength, cancellationToken).ConfigureAwait(false);
             }
+
+            return finalChecksum;
         }
 
         // Writes the current header as a PAX Global Extended Attributes entry into the archive stream.
@@ -112,8 +116,8 @@ namespace System.Formats.Tar
             WriteAsPaxExtendedAttributes(archiveStream, buffer, _extendedAttributes, isGea: true);
         }
 
-        // Writes the current header as a PAX Global Extended Attributes entry into the archive stream.
-        internal Task WriteAsPaxGlobalExtendedAttributesAsync(Stream archiveStream, Memory<byte> buffer, int globalExtendedAttributesEntryNumber, CancellationToken cancellationToken)
+        // Writes the current header as a PAX Global Extended Attributes entry into the archive stream and returns the value of the final checksum.
+        internal Task<int> WriteAsPaxGlobalExtendedAttributesAsync(Stream archiveStream, Memory<byte> buffer, int globalExtendedAttributesEntryNumber, CancellationToken cancellationToken)
         {
             Debug.Assert(_typeFlag is TarEntryType.GlobalExtendedAttributes);
 
@@ -143,7 +147,7 @@ namespace System.Formats.Tar
 
         // Asynchronously writes the current header as a PAX entry into the archive stream.
         // Makes sure to add the preceding exteded attributes entry before the actual entry.
-        internal async Task WriteAsPaxAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
+        internal async Task<int> WriteAsPaxAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
         {
             // First, we write the preceding extended attributes header
             TarHeader extendedAttributesHeader = default;
@@ -155,7 +159,7 @@ namespace System.Formats.Tar
 
             buffer.Span.Clear(); // Reset it to reuse it
             // Second, we write this header as a normal one
-            await WriteAsPaxInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+            return await WriteAsPaxInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
         }
 
         // Writes the current header as a Gnu entry into the archive stream.
@@ -184,7 +188,7 @@ namespace System.Formats.Tar
 
         // Writes the current header as a Gnu entry into the archive stream.
         // Makes sure to add the preceding LongLink and/or LongPath entries if necessary, before the actual entry.
-        internal async Task WriteAsGnuAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
+        internal async Task<int> WriteAsGnuAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
         {
             // First, we determine if we need a preceding LongLink, and write it if needed
             if (_linkName.Length > FieldLengths.LinkName)
@@ -203,7 +207,7 @@ namespace System.Formats.Tar
             }
 
             // Third, we write this header as a normal one
-            await WriteAsGnuInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+           return  await WriteAsGnuInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
         }
 
         // Creates and returns a GNU long metadata header, with the specified long text written into its data stream.
@@ -266,7 +270,7 @@ namespace System.Formats.Tar
             checksum += WriteGnuMagicAndVersion(buffer);
             checksum += WritePosixAndGnuSharedFields(buffer);
             checksum += WriteGnuFields(buffer);
-            WriteChecksum(checksum, buffer);
+            _checksum = WriteChecksum(checksum, buffer);
 
             archiveStream.Write(buffer);
 
@@ -277,7 +281,7 @@ namespace System.Formats.Tar
         }
 
         // Asynchronously writes the current header as a GNU entry into the archive stream.
-        internal async Task WriteAsGnuInternalAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
+        internal async Task<int> WriteAsGnuInternalAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
         {
             // Unused GNU fields: offset, longnames, unused, sparse struct, isextended and realsize
             // If this header came from another archive, it will have a value
@@ -292,7 +296,7 @@ namespace System.Formats.Tar
             checksum += WriteGnuMagicAndVersion(buffer.Span);
             checksum += WritePosixAndGnuSharedFields(buffer.Span);
             checksum += WriteGnuFields(buffer.Span);
-            WriteChecksum(checksum, buffer.Span);
+            int finalChecksum = WriteChecksum(checksum, buffer.Span);
 
             await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
 
@@ -300,6 +304,8 @@ namespace System.Formats.Tar
             {
                 await WriteDataAsync(archiveStream, _dataStream, actualLength, cancellationToken).ConfigureAwait(false);
             }
+
+            return finalChecksum;
         }
 
         // Writes the current header as a PAX Extended Attributes entry into the archive stream.
@@ -321,8 +327,8 @@ namespace System.Formats.Tar
             WriteAsPaxInternal(archiveStream, buffer);
         }
 
-        // Asynchronously writes the current header as a PAX Extended Attributes entry into the archive stream.
-        private async Task WriteAsPaxExtendedAttributesAsync(Stream archiveStream, Memory<byte> buffer, IEnumerable<KeyValuePair<string, string>> extendedAttributes, bool isGea, CancellationToken cancellationToken)
+        // Asynchronously writes the current header as a PAX Extended Attributes entry into the archive stream and returns the value of the final checksum.
+        private async Task<int> WriteAsPaxExtendedAttributesAsync(Stream archiveStream, Memory<byte> buffer, IEnumerable<KeyValuePair<string, string>> extendedAttributes, bool isGea, CancellationToken cancellationToken)
         {
             // The ustar fields (uid, gid, linkName, uname, gname, devmajor, devminor) do not get written.
             // The mode gets the default value.
@@ -337,7 +343,7 @@ namespace System.Formats.Tar
 
             _dataStream = await GenerateExtendedAttributesDataStreamAsync(extendedAttributes, cancellationToken).ConfigureAwait(false);
 
-            await WriteAsPaxInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+            return await WriteAsPaxInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
         }
 
         // Both the Extended Attributes and Global Extended Attributes entry headers are written in a similar way, just the data changes
@@ -363,7 +369,7 @@ namespace System.Formats.Tar
 
         // Both the Extended Attributes and Global Extended Attributes entry headers are written in a similar way, just the data changes
         // This method asynchronously writes an entry as both entries require, using the data from the current header instance.
-        private async Task WriteAsPaxInternalAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
+        private async Task<int> WriteAsPaxInternalAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
         {
             long actualLength = GetTotalDataBytesToWrite();
             TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.Pax);
@@ -372,7 +378,7 @@ namespace System.Formats.Tar
             checksum += WriteCommonFields(buffer.Span, actualLength, actualEntryType);
             checksum += WritePosixMagicAndVersion(buffer.Span);
             checksum += WritePosixAndGnuSharedFields(buffer.Span);
-            WriteChecksum(checksum, buffer.Span);
+            int finalChecksum = WriteChecksum(checksum, buffer.Span);
 
             await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
 
@@ -380,6 +386,8 @@ namespace System.Formats.Tar
             {
                 await WriteDataAsync(archiveStream, _dataStream, actualLength, cancellationToken).ConfigureAwait(false);
             }
+
+            return finalChecksum;
         }
 
         // All formats save in the name byte array only the ASCII bytes that fit. The full string is returned in the out byte array.
@@ -688,8 +696,8 @@ namespace System.Formats.Tar
 
         // The checksum accumulator first adds up the byte values of eight space chars, then the final number
         // is written on top of those spaces on the specified span as ascii.
-        // At the end, it's saved in the header field.
-        internal void WriteChecksum(int checksum, Span<byte> buffer)
+        // At the end, it's saved in the header field and the final value returned.
+        internal int WriteChecksum(int checksum, Span<byte> buffer)
         {
             // The checksum field is also counted towards the total sum
             // but as an array filled with spaces
@@ -721,7 +729,7 @@ namespace System.Formats.Tar
                 i--;
             }
 
-            _checksum = checksum;
+            return checksum;
         }
 
         // Writes the specified bytes into the specified destination, aligned to the left. Returns the sum of the value of all the bytes that were written.

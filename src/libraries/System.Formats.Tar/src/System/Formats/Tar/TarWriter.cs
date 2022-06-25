@@ -335,27 +335,27 @@ namespace System.Formats.Tar
             switch (entry.Format)
             {
                 case TarEntryFormat.V7:
-                    await entry._header.WriteAsV7Async(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+                    entry._header._checksum = await entry._header.WriteAsV7Async(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
                     break;
 
                 case TarEntryFormat.Ustar:
-                    await entry._header.WriteAsUstarAsync(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+                    entry._header._checksum = await entry._header.WriteAsUstarAsync(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
                     break;
 
                 case TarEntryFormat.Pax:
                     if (entry._header._typeFlag is TarEntryType.GlobalExtendedAttributes)
                     {
-                        await entry._header.WriteAsPaxGlobalExtendedAttributesAsync(_archiveStream, buffer, _nextGlobalExtendedAttributesEntryNumber, cancellationToken).ConfigureAwait(false);
+                        entry._header._checksum = await entry._header.WriteAsPaxGlobalExtendedAttributesAsync(_archiveStream, buffer, _nextGlobalExtendedAttributesEntryNumber, cancellationToken).ConfigureAwait(false);
                         _nextGlobalExtendedAttributesEntryNumber++;
                     }
                     else
                     {
-                        await entry._header.WriteAsPaxAsync(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+                        entry._header._checksum = await entry._header.WriteAsPaxAsync(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
                     }
                     break;
 
                 case TarEntryFormat.Gnu:
-                    await entry._header.WriteAsGnuAsync(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+                    entry._header._checksum = await entry._header.WriteAsGnuAsync(_archiveStream, buffer, cancellationToken).ConfigureAwait(false);
                     break;
 
                 case TarEntryFormat.Unknown:
