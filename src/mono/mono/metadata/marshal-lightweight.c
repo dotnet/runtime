@@ -2010,9 +2010,18 @@ emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature 
 
 	/*static methods with bound first arg can have null target and still be bound*/
 	if (!static_method_with_first_arg_bound) {
+		/* if bound */
+		mono_mb_emit_ldarg (mb, 0);
+		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoDelegate, bound));
+		/* bound: MonoBoolean */
+		mono_mb_emit_byte (mb, CEE_LDIND_I1);
+		int pos_bound = mono_mb_emit_branch (mb, CEE_BRTRUE);
+
 		/* if target != null */
 		mono_mb_emit_ldloc (mb, local_target);
 		pos0 = mono_mb_emit_branch (mb, CEE_BRFALSE);
+
+		mono_mb_patch_branch (mb, pos_bound);
 
 		/* then call this->method_ptr nonstatic */
 		if (callvirt) {
