@@ -316,6 +316,12 @@ export function is_nullish<T>(value: T | null | undefined): value is null | unde
     return (value === undefined) || (value === null);
 }
 
+/// returns true if the given value is not Thenable
+///
+/// Useful if some function returns a value or a promise of a value.
+export function notThenable<T>(x: T | PromiseLike<T>): x is T {
+    return typeof x !== "object" || typeof ((<PromiseLike<T>>x).then) !== "function";
+}
 
 /// An identifier for an EventPipe session. The id is unique during the lifetime of the runtime.
 /// Primarily intended for debugging purposes.

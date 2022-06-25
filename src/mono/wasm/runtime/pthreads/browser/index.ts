@@ -12,6 +12,37 @@ export interface Thread {
     readonly port: MessagePort;
 }
 
+interface ThreadCreateResolveReject {
+    resolve: (thread: Thread) => void,
+    reject: (error: Error) => void
+}
+
+const thread_promises: Map<pthread_ptr, ThreadCreateResolveReject[]> = new Map();
+
+/// wait until the thread with the given id has set up a message port to the runtime
+export function waitForThread(pthread_ptr: pthread_ptr): Promise<Thread> {
+    if (threads.has(pthread_ptr)) {
+        return Promise.resolve(threads.get(pthread_ptr)!);
+    }
+    const promise: Promise<Thread> = new Promise<Thread>((resolve, reject) => {
+        const arr = thread_promises.get(pthread_ptr);
+        if (arr === undefined) {
+            thread_promises.set(pthread_ptr, new Array({ resolve, reject }));
+        } else {
+            arr.push({ resolve, reject });
+        }
+    });
+    return promise;
+}
+
+function resolvePromises(pthread_ptr: pthread_ptr, thread: Thread): void {
+    const arr = thread_promises.get(pthread_ptr);
+    if (arr !== undefined) {
+        arr.forEach(({ resolve }) => resolve(thread));
+        thread_promises.delete(pthread_ptr);
+    }
+}
+
 function addThread(pthread_ptr: pthread_ptr, worker: Worker, port: MessagePort): Thread {
     const thread = { pthread_ptr, worker, port };
     threads.set(pthread_ptr, thread);
@@ -57,6 +88,7 @@ function monoWorkerMessageHandler(worker: Worker, ev: MessageEvent<MonoWorkerMes
         const thread = addThread(pthread_id, worker, port);
         port.addEventListener("message", (ev) => monoDedicatedChannelMessageFromWorkerToMain(ev, thread));
         port.start();
+        resolvePromises(pthread_id, thread);
     }
 }
 

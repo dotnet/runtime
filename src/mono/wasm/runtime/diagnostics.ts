@@ -359,11 +359,15 @@ export const diagnostics: Diagnostics = {
 
 export async function mono_wasm_init_diagnostics(options: DiagnosticOptions): Promise<void> {
     if (!is_nullish(options.server)) {
+        if (options.server.connect_url === undefined || typeof (options.server.connect_url) !== "string") {
+            throw new Error("server.connect_url must be a string");
+        }
         const url = options.server.connect_url;
-        const suspend = options.server.suspend;
-        const controller = startDiagnosticServer(url);
+        const suspend = options.server?.suspend ?? false;
+        const controller = await startDiagnosticServer(url);
         if (controller) {
             if (suspend) {
+                console.debug("waiting for the diagnostic server to resume us");
                 const response = await controller.wait_for_resume();
                 const session_configs = response.sessions.map(session => { return { diagnostic_server_id: session }; });
                 /// FIXME: decide if main thread or the diagnostic server will start the streaming sessions

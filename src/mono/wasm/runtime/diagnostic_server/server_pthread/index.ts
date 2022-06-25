@@ -4,20 +4,23 @@
 /// <reference lib="webworker" />
 
 import { pthread_self } from "../../pthreads/worker";
+import { Module } from "../../imports";
 import { controlCommandReceived } from "./event_pipe";
 import { isDiagnosticMessage } from "../shared/types";
+import { CharPtr } from "../../types/emscripten";
 
 
 class DiagnosticServer {
     readonly websocketUrl: string;
-    readonly ws: WebSocket;
+    readonly ws: WebSocket | null;
     constructor(websocketUrl: string) {
         this.websocketUrl = websocketUrl;
-        this.ws = new WebSocket(this.websocketUrl);
+        this.ws = null; // new WebSocket(this.websocketUrl);
     }
 
     start(): void {
         console.log(`starting diagnostic server with url: ${this.websocketUrl}`);
+        // XXX FIXME: we started before the runtime is ready, so we don't get a port because it gets created on attach.
 
         if (pthread_self) {
             pthread_self.addEventListenerFromBrowser(this.onMessage.bind(this));
@@ -49,8 +52,9 @@ class DiagnosticServer {
 
 
 /// Called by the runtime  to initialize the diagnostic server workers
-export function mono_wasm_diagnostic_server_on_server_thread_created(websocketUrl: string): void {
-    console.debug("mono_wasm_diagnostic_server_on_server_thread_created");
+export function mono_wasm_diagnostic_server_on_server_thread_created(websocketUrlPtr: CharPtr): void {
+    const websocketUrl = Module.UTF8ToString(websocketUrlPtr);
+    console.debug(`mono_wasm_diagnostic_server_on_server_thread_created, url ${websocketUrl}`);
     const server = new DiagnosticServer(websocketUrl);
     server.start();
 }

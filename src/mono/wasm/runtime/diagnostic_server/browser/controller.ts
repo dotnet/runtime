@@ -4,7 +4,7 @@
 import type { EventPipeSessionDiagnosticServerID } from "../../types";
 import cwraps from "../../cwraps";
 import { withStackAlloc, getI32 } from "../../memory";
-import { getThread, Thread } from "../../pthreads/browser";
+import { Thread, waitForThread } from "../../pthreads/browser";
 
 // interface ServerReadyResult {
 //     sessions?: (EventPipeSessionOptions & EventPipeSessionIPCOptions)[]; // provider configs
@@ -73,8 +73,9 @@ export function getController(): ServerController {
     throw new Error("unexpected no server controller");
 }
 
-export function startDiagnosticServer(websocket_url: string): ServerController | null {
+export async function startDiagnosticServer(websocket_url: string): Promise<ServerController | null> {
     const sizeOfPthreadT = 4;
+    console.debug(`starting the diagnostic server url: ${websocket_url}`);
     const result: number | undefined = withStackAlloc(sizeOfPthreadT, (pthreadIdPtr) => {
         if (!cwraps.mono_wasm_diagnostic_server_create_thread(websocket_url, pthreadIdPtr))
             return undefined;
@@ -85,7 +86,8 @@ export function startDiagnosticServer(websocket_url: string): ServerController |
         console.warn("diagnostic server failed to start");
         return null;
     }
-    const thread = getThread(result);
+    // have to wait until the message port is created
+    const thread = await waitForThread(result);
     if (thread === undefined) {
         throw new Error("unexpected diagnostic server thread not found");
     }
