@@ -45,6 +45,7 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-error-internals.h>
+#include <mono/utils/options.h>
 #include <string.h>
 #include <errno.h>
 #include "icall-decl.h"
