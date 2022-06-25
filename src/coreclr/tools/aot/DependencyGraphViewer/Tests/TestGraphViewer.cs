@@ -142,6 +142,7 @@ namespace DependecyGraphViewer.Tests
             var stream = GenerateStreamFromString(fileContents);
             DGMLGraphProcessing testParser = new DGMLGraphProcessing(-1);
             testParser.ParseXML(stream, "testFile");
+
             Assert.Equal(testParser.g.Nodes[0].Sources.Count, 1);
 
             HashSet<string> nodes = new HashSet<string>();
