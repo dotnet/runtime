@@ -3,14 +3,15 @@
 
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
 {
-    public partial class TarFile_ExtractToDirectory_File_Tests : TarTestsBase
+    public partial class TarFile_ExtractToDirectoryAsync_File_Tests : TarTestsBase
     {
         [Fact]
-        public void Extract_SpecialFiles_Windows_ThrowsInvalidOperation()
+        public async Task Extract_SpecialFiles_Windows_ThrowsInvalidOperation_Async()
         {
             string originalFileName = GetTarFilePath(CompressionMethod.Uncompressed, TestTarFormat.ustar, "specialfiles");
             using TempDirectory root = new TempDirectory();
@@ -23,7 +24,7 @@ namespace System.Formats.Tar.Tests
 
             Directory.CreateDirectory(destination);
 
-            Assert.Throws<InvalidOperationException>(() => TarFile.ExtractToDirectory(archive, destination, overwriteFiles: false));
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await TarFile.ExtractToDirectoryAsync(archive, destination, overwriteFiles: false));
 
             Assert.Equal(0, Directory.GetFileSystemEntries(destination).Count());
         }

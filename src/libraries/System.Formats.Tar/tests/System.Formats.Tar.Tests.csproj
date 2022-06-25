@@ -10,6 +10,7 @@
     <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs" Link="Common\System\IO\TempDirectory.cs" />
     <Compile Include="CompressedTar.Async.Tests.cs" />
     <Compile Include="CompressedTar.Tests.cs" />
+    <Compile Include="TarFile\TarFile.ExtractToDirectoryAsync.File.Tests.Windows.cs" />
     <Compile Include="TarFile\TarFile.ExtractToDirectoryAsync.Stream.Tests.cs" />
     <Compile Include="TarFile\TarFile.ExtractToDirectoryAsync.File.Tests.cs" />
     <Compile Include="TarFile\TarFile.CreateFromDirectoryAsync.Stream.Tests.cs" />
@@ -71,6 +72,7 @@
   <!-- Unix specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows'">
     <Compile Include="TarFile\TarFile.ExtractToDirectory.File.Tests.Unix.cs" />
+    <Compile Include="TarFile\TarFile.ExtractToDirectoryAsync.File.Tests.Unix.cs" />
     <Compile Include="TarReader\TarReader.TarEntry.ExtractToFileAsync.Tests.Unix.cs" />
     <Compile Include="TarReader\TarReader.TarEntry.ExtractToFile.Tests.Unix.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntry.File.Tests.Unix.cs" />

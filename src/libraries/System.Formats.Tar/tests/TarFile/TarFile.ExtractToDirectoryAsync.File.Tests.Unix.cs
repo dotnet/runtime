@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
@@ -7,10 +7,10 @@ using Xunit;
 
 namespace System.Formats.Tar.Tests
 {
-    public partial class TarFile_ExtractToDirectory_File_Tests : TarTestsBase
+    public partial class TarFile_ExtractToDirectoryAsync_File_Tests : TarTestsBase
     {
         [Fact]
-        public void Extract_SpecialFiles_Windows_ThrowsInvalidOperation()
+        public async Task Extract_SpecialFiles_Unix_Unelevated_ThrowsUnauthorizedAccess_Async()
         {
             string originalFileName = GetTarFilePath(CompressionMethod.Uncompressed, TestTarFormat.ustar, "specialfiles");
             using TempDirectory root = new TempDirectory();
@@ -23,7 +23,7 @@ namespace System.Formats.Tar.Tests
 
             Directory.CreateDirectory(destination);
 
-            Assert.Throws<InvalidOperationException>(() => TarFile.ExtractToDirectory(archive, destination, overwriteFiles: false));
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(async () => await TarFile.ExtractToDirectoryAsync(archive, destination, overwriteFiles: false));
 
             Assert.Equal(0, Directory.GetFileSystemEntries(destination).Count());
         }
