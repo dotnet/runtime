@@ -8,6 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs" Link="Common\System\IO\TempDirectory.cs" />
+    <Compile Include="CompressedTar.Async.Tests.cs" />
     <Compile Include="CompressedTar.Tests.cs" />
     <Compile Include="TarEntry\TarEntry.Conversion.Tests.Base.cs" />
     <Compile Include="TarEntry\GnuTarEntry.Conversion.Tests.cs" />
