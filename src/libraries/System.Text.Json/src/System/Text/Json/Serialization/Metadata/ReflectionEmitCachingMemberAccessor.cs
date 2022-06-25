@@ -23,7 +23,7 @@ namespace System.Text.Json.Serialization.Metadata
                     Justification = "Parent method annotation does not flow to lambda method, cf. https://github.com/dotnet/roslyn/issues/46646")]
                 static (_) => s_sourceAccessor.CreateAddMethodDelegate<TCollection>());
 
-        public override JsonTypeInfo.ConstructorDelegate? CreateConstructor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type classType)
+        public override Func<object>? CreateConstructor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type classType)
             => s_cache.GetOrAdd((nameof(CreateConstructor), classType, null),
                 [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2077:UnrecognizedReflectionPattern",
                     Justification = "Cannot apply DynamicallyAccessedMembersAttribute to tuple properties.")]

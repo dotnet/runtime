@@ -453,7 +453,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 newScript = script.ContinueWith(
                 string.Join("\n", replacer.variableDefinitions) + "\nreturn " + syntaxTree.ToString());
                 var state = await newScript.RunAsync(cancellationToken: token);
-                return JObject.FromObject(ConvertCLRToJSType(state.ReturnValue));
+                return JObject.FromObject(resolver.ConvertCSharpToJSType(state.ReturnValue, state.ReturnValue.GetType()));
             }
             catch (CompilationErrorException cee)
             {

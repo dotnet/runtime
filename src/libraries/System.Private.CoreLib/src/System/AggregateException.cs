@@ -341,7 +341,7 @@ namespace System
                     return base.Message;
                 }
 
-                StringBuilder sb = StringBuilderCache.Acquire();
+                var sb = new ValueStringBuilder(stackalloc char[256]);
                 sb.Append(base.Message);
                 sb.Append(' ');
                 for (int i = 0; i < _innerExceptions.Length; i++)
@@ -351,7 +351,7 @@ namespace System
                     sb.Append(") ");
                 }
                 sb.Length--;
-                return StringBuilderCache.GetStringAndRelease(sb);
+                return sb.ToString();
             }
         }
 

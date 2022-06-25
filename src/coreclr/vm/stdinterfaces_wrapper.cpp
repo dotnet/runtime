@@ -31,7 +31,7 @@
 #include "posterror.h"
 #include <corerror.h>
 #include <mscoree.h>
-#include "mtx.h"
+#include <mtx.h>
 #include "cgencpu.h"
 #include "interopconverter.h"
 #include "cominterfacemarshaler.h"
@@ -360,7 +360,7 @@ ULONG __stdcall Unknown_AddRef(IUnknown* pUnk)
     }
     CONTRACTL_END;
 
-    // Allow addrefs to go through, coz we are allowing
+    // Allow addrefs to go through, because we are allowing
     // all releases to go through, otherwise we would
     // have a mismatch of ref-counts
     return Unknown_AddRef_Internal(pUnk);
@@ -406,7 +406,7 @@ ULONG __stdcall Unknown_AddRefInner(IUnknown* pUnk)
     }
     CONTRACTL_END;
 
-    // Allow addrefs to go through, coz we are allowing
+    // Allow addrefs to go through, because we are allowing
     // all releases to go through, otherwise we would
     // have a mismatch of ref-counts
     return Unknown_AddRefInner_Internal(pUnk);
@@ -452,7 +452,7 @@ ULONG __stdcall Unknown_AddRefSpecial(IUnknown* pUnk)
     }
     CONTRACTL_END;
 
-    // Allow addrefs to go through, coz we are allowing
+    // Allow addrefs to go through, because we are allowing
     // all releases to go through, otherwise we would
     // have a mismatch of ref-counts
     return Unknown_AddRefSpecial_Internal(pUnk);

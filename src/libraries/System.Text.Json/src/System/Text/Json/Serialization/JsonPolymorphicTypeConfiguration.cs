@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization
@@ -10,9 +11,9 @@ namespace System.Text.Json.Serialization
     /// <summary>
     /// Defines polymorphic configuration for a specified base type.
     /// </summary>
-    public class JsonPolymorphicTypeConfiguration : IJsonPolymorphicTypeConfiguration, ICollection<(Type DerivedType, string? TypeDiscriminatorId)>
+    public class JsonPolymorphicTypeConfiguration : IJsonPolymorphicTypeConfiguration, ICollection<(Type DerivedType, object? TypeDiscriminator)>
     {
-        private readonly List<(Type DerivedType, string? TypeDiscriminatorId)> _derivedTypes = new();
+        private readonly List<(Type DerivedType, object? TypeDiscriminator)> _derivedTypes = new();
         private string? _customTypeDiscriminatorPropertyName;
         private JsonUnknownDerivedTypeHandling _unknownDerivedTypeHandling;
         private bool _ignoreUnrecognizedTypeDiscriminators;
@@ -73,7 +74,7 @@ namespace System.Text.Json.Serialization
         /// Gets or sets a custom type discriminator property name for the polymorhic type.
         /// Uses the default '$type' property name if left unset.
         /// </summary>
-        public string? CustomTypeDiscriminatorPropertyName
+        public string? TypeDiscriminatorPropertyName
         {
             get => _customTypeDiscriminatorPropertyName;
             set
@@ -87,10 +88,32 @@ namespace System.Text.Json.Serialization
         /// Opts in polymorphic serialization for the specified derived type.
         /// </summary>
         /// <param name="derivedType">The derived type for which to enable polymorphism.</param>
-        /// <param name="typeDiscriminatorId">The type discriminator id to use for the specified derived type.</param>
         /// <returns>The same <see cref="JsonPolymorphicTypeConfiguration"/> instance after it has been updated.</returns>
-        public JsonPolymorphicTypeConfiguration WithDerivedType(Type derivedType, string? typeDiscriminatorId = null)
+        public JsonPolymorphicTypeConfiguration WithDerivedType(Type derivedType)
+            => WithDerivedTypeCore(derivedType, null);
+
+        /// <summary>
+        /// Opts in polymorphic serialization for the specified derived type.
+        /// </summary>
+        /// <param name="derivedType">The derived type for which to enable polymorphism.</param>
+        /// <param name="typeDiscriminator">The type discriminator id to use for the specified derived type.</param>
+        /// <returns>The same <see cref="JsonPolymorphicTypeConfiguration"/> instance after it has been updated.</returns>
+        public JsonPolymorphicTypeConfiguration WithDerivedType(Type derivedType, string typeDiscriminator) =>
+            WithDerivedTypeCore(derivedType, typeDiscriminator);
+
+        /// <summary>
+        /// Opts in polymorphic serialization for the specified derived type.
+        /// </summary>
+        /// <param name="derivedType">The derived type for which to enable polymorphism.</param>
+        /// <param name="typeDiscriminator">The type discriminator id to use for the specified derived type.</param>
+        /// <returns>The same <see cref="JsonPolymorphicTypeConfiguration"/> instance after it has been updated.</returns>
+        public JsonPolymorphicTypeConfiguration WithDerivedType(Type derivedType, int typeDiscriminator) =>
+            WithDerivedTypeCore(derivedType, typeDiscriminator);
+
+        private JsonPolymorphicTypeConfiguration WithDerivedTypeCore(Type derivedType, object? typeDiscriminator)
         {
+            Debug.Assert(typeDiscriminator is null or string or int);
+
             VerifyMutable();
 
             if (derivedType is null)
@@ -106,25 +129,25 @@ namespace System.Text.Json.Serialization
             // Perform a linear traversal to determine any duplicate derived types or discriminator Id's
             // The assumption is that each type maintains a small number of subtypes so this is preferable
             // to maintaing hashtables to existing entries.
-            foreach ((Type DerivedType, string? TypeDiscriminatorId) entry in _derivedTypes)
+            foreach ((Type DerivedType, object? TypeDiscriminator) entry in _derivedTypes)
             {
                 if (entry.DerivedType == derivedType)
                 {
                     throw new ArgumentException(SR.Format(SR.Polymorphism_DerivedTypeIsAlreadySpecified, BaseType, derivedType), nameof(derivedType));
                 }
 
-                if (typeDiscriminatorId != null && entry.TypeDiscriminatorId == typeDiscriminatorId)
+                if (typeDiscriminator != null && typeDiscriminator.Equals(entry.TypeDiscriminator))
                 {
-                    throw new ArgumentException(SR.Format(SR.Polymorphism_TypeDicriminatorIdIsAlreadySpecified, BaseType, typeDiscriminatorId), nameof(typeDiscriminatorId));
+                    throw new ArgumentException(SR.Format(SR.Polymorphism_TypeDicriminatorIdIsAlreadySpecified, BaseType, typeDiscriminator), nameof(typeDiscriminator));
                 }
             }
 
             // Validation complete; update the configuration state.
-            _derivedTypes.Add((derivedType, typeDiscriminatorId));
+            _derivedTypes.Add((derivedType, typeDiscriminator));
             return this;
         }
 
-        IEnumerable<(Type DerivedType, string? TypeDiscriminatorId)> IJsonPolymorphicTypeConfiguration.GetSupportedDerivedTypes()
+        IEnumerable<(Type DerivedType, object? TypeDiscriminator)> IJsonPolymorphicTypeConfiguration.GetSupportedDerivedTypes()
         {
             foreach ((Type, string?) entry in _derivedTypes)
             {
@@ -142,24 +165,33 @@ namespace System.Text.Json.Serialization
             }
         }
 
-        bool ICollection<(Type DerivedType, string? TypeDiscriminatorId)>.Contains((Type DerivedType, string? TypeDiscriminatorId) item) => _derivedTypes.Contains(item);
-        void ICollection<(Type DerivedType, string? TypeDiscriminatorId)>.CopyTo((Type DerivedType, string? TypeDiscriminatorId)[] array, int arrayIndex) => _derivedTypes.CopyTo(array, arrayIndex);
-        bool ICollection<(Type DerivedType, string? TypeDiscriminatorId)>.Remove((Type DerivedType, string? TypeDiscriminatorId) item)
+        bool ICollection<(Type DerivedType, object? TypeDiscriminator)>.Contains((Type DerivedType, object? TypeDiscriminator) item) => _derivedTypes.Contains(item);
+        void ICollection<(Type DerivedType, object? TypeDiscriminator)>.CopyTo((Type DerivedType, object? TypeDiscriminator)[] array, int arrayIndex) => _derivedTypes.CopyTo(array, arrayIndex);
+        bool ICollection<(Type DerivedType, object? TypeDiscriminator)>.Remove((Type DerivedType, object? TypeDiscriminator) item)
         {
             VerifyMutable();
             return _derivedTypes.Remove(item);
         }
 
-        bool ICollection<(Type DerivedType, string? TypeDiscriminatorId)>.IsReadOnly => IsAssignedToOptionsInstance;
-        int ICollection<(Type DerivedType, string? TypeDiscriminatorId)>.Count => _derivedTypes.Count;
-        void ICollection<(Type DerivedType, string? TypeDiscriminatorId)>.Add((Type DerivedType, string? TypeDiscriminatorId) item) => WithDerivedType(item.DerivedType, item.TypeDiscriminatorId);
-        void ICollection<(Type DerivedType, string? TypeDiscriminatorId)>.Clear()
+        bool ICollection<(Type DerivedType, object? TypeDiscriminator)>.IsReadOnly => IsAssignedToOptionsInstance;
+        int ICollection<(Type DerivedType, object? TypeDiscriminator)>.Count => _derivedTypes.Count;
+        void ICollection<(Type DerivedType, object? TypeDiscriminator)>.Add((Type DerivedType, object? TypeDiscriminator) item)
+        {
+            if (item.TypeDiscriminator is not (null or string or int))
+            {
+                throw new ArgumentException(nameof(item));
+            }
+
+            WithDerivedTypeCore(item.DerivedType, item.TypeDiscriminator);
+        }
+
+        void ICollection<(Type DerivedType, object? TypeDiscriminator)>.Clear()
         {
             VerifyMutable();
             _derivedTypes.Clear();
         }
 
-        IEnumerator<(Type DerivedType, string? TypeDiscriminatorId)> IEnumerable<(Type DerivedType, string? TypeDiscriminatorId)>.GetEnumerator() => _derivedTypes.GetEnumerator();
+        IEnumerator<(Type DerivedType, object? TypeDiscriminator)> IEnumerable<(Type DerivedType, object? TypeDiscriminator)>.GetEnumerator() => _derivedTypes.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => _derivedTypes.GetEnumerator();
     }
 
@@ -180,11 +212,34 @@ namespace System.Text.Json.Serialization
         /// Associates specified derived type with supplied string identifier.
         /// </summary>
         /// <typeparam name="TDerivedType">The derived type with which to associate a type identifier.</typeparam>
-        /// <param name="typeDiscriminatorId">The type identifier to use for the specified derived type.</param>
         /// <returns>The same <see cref="JsonPolymorphicTypeConfiguration"/> instance after it has been updated.</returns>
-        public JsonPolymorphicTypeConfiguration<TBaseType> WithDerivedType<TDerivedType>(string? typeDiscriminatorId = null) where TDerivedType : TBaseType
+        public JsonPolymorphicTypeConfiguration<TBaseType> WithDerivedType<TDerivedType>() where TDerivedType : TBaseType
         {
-            WithDerivedType(typeof(TDerivedType), typeDiscriminatorId);
+            WithDerivedType(typeof(TDerivedType));
+            return this;
+        }
+
+        /// <summary>
+        /// Associates specified derived type with supplied string identifier.
+        /// </summary>
+        /// <typeparam name="TDerivedType">The derived type with which to associate a type identifier.</typeparam>
+        /// <param name="typeDiscriminator">The type identifier to use for the specified derived type.</param>
+        /// <returns>The same <see cref="JsonPolymorphicTypeConfiguration"/> instance after it has been updated.</returns>
+        public JsonPolymorphicTypeConfiguration<TBaseType> WithDerivedType<TDerivedType>(string typeDiscriminator) where TDerivedType : TBaseType
+        {
+            WithDerivedType(typeof(TDerivedType), typeDiscriminator);
+            return this;
+        }
+
+        /// <summary>
+        /// Associates specified derived type with supplied string identifier.
+        /// </summary>
+        /// <typeparam name="TDerivedType">The derived type with which to associate a type identifier.</typeparam>
+        /// <param name="typeDiscriminator">The type identifier to use for the specified derived type.</param>
+        /// <returns>The same <see cref="JsonPolymorphicTypeConfiguration"/> instance after it has been updated.</returns>
+        public JsonPolymorphicTypeConfiguration<TBaseType> WithDerivedType<TDerivedType>(int typeDiscriminator) where TDerivedType : TBaseType
+        {
+            WithDerivedType(typeof(TDerivedType), typeDiscriminator);
             return this;
         }
     }

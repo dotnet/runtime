@@ -38,7 +38,7 @@ namespace System.Text.Json
         {
             if (IsReadOnly)
             {
-                ThrowHelper.ThrowNotSupportedException_NodeCollectionIsReadOnly();
+                ThrowHelper.ThrowNotSupportedException_CollectionIsReadOnly();
             }
 
             if (propertyName == null)
@@ -53,7 +53,7 @@ namespace System.Text.Json
         {
             if (IsReadOnly)
             {
-                ThrowHelper.ThrowNotSupportedException_NodeCollectionIsReadOnly();
+                ThrowHelper.ThrowNotSupportedException_CollectionIsReadOnly();
             }
 
             Add(property.Key, property.Value);
@@ -63,7 +63,7 @@ namespace System.Text.Json
         {
             if (IsReadOnly)
             {
-                ThrowHelper.ThrowNotSupportedException_NodeCollectionIsReadOnly();
+                ThrowHelper.ThrowNotSupportedException_CollectionIsReadOnly();
             }
 
             // A check for a null propertyName is not required since this method is only called by internal code.
@@ -76,7 +76,7 @@ namespace System.Text.Json
         {
             if (IsReadOnly)
             {
-                ThrowHelper.ThrowNotSupportedException_NodeCollectionIsReadOnly();
+                ThrowHelper.ThrowNotSupportedException_CollectionIsReadOnly();
             }
 
             _propertyList.Clear();
@@ -105,7 +105,7 @@ namespace System.Text.Json
         {
             if (IsReadOnly)
             {
-                ThrowHelper.ThrowNotSupportedException_NodeCollectionIsReadOnly();
+                ThrowHelper.ThrowNotSupportedException_CollectionIsReadOnly();
             }
 
             if (propertyName == null)
@@ -133,14 +133,14 @@ namespace System.Text.Json
         {
             if (index < 0)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException_NodeArrayIndexNegative(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException_ArrayIndexNegative(nameof(index));
             }
 
             foreach (KeyValuePair<string, T?> item in _propertyList)
             {
                 if (index >= array.Length)
                 {
-                    ThrowHelper.ThrowArgumentException_NodeArrayTooSmall(nameof(array));
+                    ThrowHelper.ThrowArgumentException_ArrayTooSmall(nameof(array));
                 }
 
                 array[index++] = item;
@@ -211,7 +211,7 @@ namespace System.Text.Json
         {
             if (IsReadOnly)
             {
-                ThrowHelper.ThrowNotSupportedException_NodeCollectionIsReadOnly();
+                ThrowHelper.ThrowNotSupportedException_CollectionIsReadOnly();
             }
 
             if (propertyName == null)
@@ -278,15 +278,15 @@ namespace System.Text.Json
         {
             if (!TryAddValue(propertyName, value))
             {
-                ThrowHelper.ThrowArgumentException_DuplicateKey(propertyName);
+                ThrowHelper.ThrowArgumentException_DuplicateKey(nameof(propertyName), propertyName);
             }
         }
 
-        private bool TryAddValue(string propertyName, T? value)
+        internal bool TryAddValue(string propertyName, T? value)
         {
             if (IsReadOnly)
             {
-                ThrowHelper.ThrowNotSupportedException_NodeCollectionIsReadOnly();
+                ThrowHelper.ThrowNotSupportedException_CollectionIsReadOnly();
             }
 
             CreateDictionaryIfThresholdMet();
@@ -319,7 +319,7 @@ namespace System.Text.Json
             }
         }
 
-        private bool ContainsValue(T? value)
+        internal bool ContainsValue(T? value)
         {
             foreach (T? item in GetValueCollection())
             {
@@ -383,7 +383,7 @@ namespace System.Text.Json
         {
             if (IsReadOnly)
             {
-                ThrowHelper.ThrowNotSupportedException_NodeCollectionIsReadOnly();
+                ThrowHelper.ThrowNotSupportedException_CollectionIsReadOnly();
             }
 
             if (_propertyDictionary != null)

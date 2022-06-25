@@ -13,9 +13,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
-using Internal.CorConstants;
-using Internal.Runtime;
 using Internal.ReadyToRunConstants;
+using Internal.Runtime;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -1253,8 +1252,8 @@ namespace ILCompiler.Reflection.ReadyToRun
                 int sectionOffset = GetOffset(rva);
                 int startOffset = sectionOffset;
                 int size = NativeReader.ReadInt32(Image, ref offset);
-                CorCompileImportFlags flags = (CorCompileImportFlags)NativeReader.ReadUInt16(Image, ref offset);
-                byte type = NativeReader.ReadByte(Image, ref offset);
+                ReadyToRunImportSectionFlags flags = (ReadyToRunImportSectionFlags)NativeReader.ReadUInt16(Image, ref offset);
+                ReadyToRunImportSectionType type = (ReadyToRunImportSectionType)NativeReader.ReadByte(Image, ref offset);
                 byte entrySize = NativeReader.ReadByte(Image, ref offset);
                 if (entrySize == 0)
                 {

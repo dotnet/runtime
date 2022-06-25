@@ -594,8 +594,8 @@ INST3(LAST_AVXVNNI_INSTRUCTION, "LAST_AVXVNNI_INSTRUCTION", IUM_WR, BAD_CODE, BA
 // BMI1
 INST3(FIRST_BMI_INSTRUCTION, "FIRST_BMI_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_FLAGS_None)
 INST3(andn,             "andn",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF2),                             Resets_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Undefined_PF  | Resets_CF     | INS_Flags_IsDstDstSrcAVXInstruction)    // Logical AND NOT
-INST3(blsi,             "blsi",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF3),                             Resets_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_Flags_IsDstDstSrcAVXInstruction)    // Extract Lowest Set Isolated Bit
-INST3(blsmsk,           "blsmsk",           IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF3),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Get Mask Up to Lowest Set Bit
+INST3(blsi,				"blsi",				IUM_WR, BAD_CODE,	  BAD_CODE,		SSE38(0xF3),							 Resets_OF		| Writes_SF		| Writes_ZF		| Undefined_AF	| Undefined_PF	| Writes_CF		| INS_Flags_IsDstDstSrcAVXInstruction)    // Extract Lowest Set Isolated Bit
+INST3(blsmsk,			"blsmsk",			IUM_WR, BAD_CODE,	  BAD_CODE,		SSE38(0xF3),							 Resets_OF		| Writes_SF		| Writes_ZF		| Undefined_AF	| Undefined_PF	| Resets_CF		| INS_Flags_IsDstDstSrcAVXInstruction)    // Get Mask Up to Lowest Set Bit
 INST3(blsr,             "blsr",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF3),                             Resets_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_Flags_IsDstDstSrcAVXInstruction)    // Reset Lowest Set Bit
 INST3(bextr,            "bextr",            IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF7),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Bit Field Extract
 
@@ -605,6 +605,11 @@ INST3(pdep,             "pdep",             IUM_WR, BAD_CODE,     BAD_CODE,     
 INST3(pext,             "pext",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF5),                             INS_Flags_IsDstDstSrcAVXInstruction)                               // Parallel Bits Extract
 INST3(bzhi,             "bzhi",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF5),                             Resets_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_Flags_IsDstDstSrcAVXInstruction)    // Zero High Bits Starting with Specified Bit Position
 INST3(mulx,             "mulx",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF6),                             INS_Flags_IsDstDstSrcAVXInstruction)                               // Unsigned Multiply Without Affecting Flags
+#ifdef TARGET_AMD64
+INST3(shlx,             "shlx",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF7),                             INS_Flags_IsDstDstSrcAVXInstruction)   //  Shift Logical Left Without Affecting Flags
+INST3(sarx,             "sarx",             IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0xF3, 0x0F, 0x38, 0xF7),           INS_Flags_IsDstDstSrcAVXInstruction)   //  Shift Arithmetic Right Without Affecting Flags
+INST3(shrx,             "shrx",             IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0xF2, 0x0F, 0x38, 0xF7),           INS_Flags_IsDstDstSrcAVXInstruction)   //  Shift Logical Right Without Affecting Flags
+#endif
 
 INST3(LAST_BMI_INSTRUCTION, "LAST_BMI_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_FLAGS_None)
 

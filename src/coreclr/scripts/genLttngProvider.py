@@ -66,7 +66,7 @@ This file is generated using the logic from <root>/src/scripts/genLttngProvider.
 
 specialCaseSizes = { "BulkType" : { "Values" : "Values_ElementSize" }, "GCBulkRootCCW" : { "Values" : "Values_ElementSize" }, "GCBulkRCW" : { "Values" : "Values_ElementSize" }, "GCBulkRootStaticVar" : { "Values" : "Values_ElementSize" } }
 
-lttngDataTypeMapping ={
+coreCLRLttngDataTypeMapping ={
         #constructed types
         "win:null"          :" ",
         "win:Int64"         :"const __int64",
@@ -87,6 +87,34 @@ lttngDataTypeMapping ={
         "win:Pointer"       :"const size_t",
         "win:Binary"        :"const BYTE"
         }
+
+monoLttngDataTypeMapping ={
+        #constructed types
+        "win:null"          :" ",
+        "win:Int64"         :"const int64_t",
+        "win:ULong"         :"const uint32_t",
+        "win:count"         :"*",
+        "win:Struct"        :"const uint8_t *",
+        #actual spec
+        "win:GUID"          :"const int32_t",
+        "win:AnsiString"    :"const char*",
+        "win:UnicodeString" :"const ep_char8_t*",
+        "win:Double"        :"const double",
+        "win:Int32"         :"const int32_t",
+        "win:Boolean"       :"const bool",
+        "win:UInt64"        :"const uint64_t",
+        "win:UInt32"        :"const uint32_t",
+        "win:UInt16"        :"const uint16_t",
+        "win:UInt8"         :"const uint8_t",
+        "win:Pointer"       :"const void*",
+        "win:Binary"        :"const uint8_t"
+        }
+
+def getLttngDataTypeMapping(runtimeFlavor):
+    if runtimeFlavor.coreclr:
+        return coreCLRLttngDataTypeMapping
+    elif runtimeFlavor.mono:
+        return monoLttngDataTypeMapping
 
 ctfDataTypeMapping ={
         #constructed types
@@ -114,7 +142,7 @@ MAX_LTTNG_ARGS = 9
 def shouldPackTemplate(template):
     return template.num_params > MAX_LTTNG_ARGS or len(template.structs) > 0 or len(template.arrays) > 0
 
-def generateArgList(template):
+def generateArgList(template, runtimeFlavor):
     header = "TP_ARGS( \\\n"
     footer = ")\n"
 
@@ -131,9 +159,9 @@ def generateArgList(template):
         for params in fnSig.paramlist:
             fnparam     = fnSig.getParam(params)
             wintypeName = fnparam.winType
-            typewName   = lttngDataTypeMapping[wintypeName]
+            typewName   = getLttngDataTypeMapping(runtimeFlavor)[wintypeName]
             winCount    = fnparam.count
-            countw      = lttngDataTypeMapping[winCount]
+            countw      = getLttngDataTypeMapping(runtimeFlavor)[winCount]
 
             arg = "        " + typewName
             if countw != " ":
@@ -145,7 +173,7 @@ def generateArgList(template):
     return header + args + footer
 
 
-def generateFieldList(template):
+def generateFieldList(template, runtimeFlavor):
     header = "    " + " TP_FIELDS(\n"
     footer = "\n    )\n)\n"
 
@@ -160,8 +188,8 @@ def generateFieldList(template):
             fnparam     = fnSig.getParam(params)
             wintypeName = fnparam.winType
             winCount    = fnparam.count
-            countw      = lttngDataTypeMapping[winCount]
-            typewName   = lttngDataTypeMapping[wintypeName].replace("const ","")
+            countw      = getLttngDataTypeMapping(runtimeFlavor)[winCount]
+            typewName   = getLttngDataTypeMapping(runtimeFlavor)[wintypeName].replace("const ","")
 
             field_body  = None
             ctf_type    = None
@@ -193,7 +221,7 @@ def generateFieldList(template):
 
     return header + field_list + footer
 
-def generateLttngHeader(providerName, allTemplates, eventNodes):
+def generateLttngHeader(providerName, allTemplates, eventNodes, runtimeFlavor):
     lTTngHdr = []
     for templateName in allTemplates:
         template = allTemplates[templateName]
@@ -202,7 +230,7 @@ def generateLttngHeader(providerName, allTemplates, eventNodes):
         lTTngHdr.append("\n#define " + templateName + "_TRACEPOINT_ARGS \\\n")
 
 #TP_ARGS
-        tp_args = generateArgList(template)
+        tp_args = generateArgList(template, runtimeFlavor)
         lTTngHdr.append(tp_args)
 
 #TP_EVENT_CLASS
@@ -212,7 +240,7 @@ def generateLttngHeader(providerName, allTemplates, eventNodes):
         lTTngHdr.append("    " + templateName + "_TRACEPOINT_ARGS,\n")
 
 #TP_FIELDS
-        tp_fields = generateFieldList(template)
+        tp_fields = generateFieldList(template, runtimeFlavor)
         lTTngHdr.append(tp_fields)
 
 # Macro for defining event instance
@@ -270,7 +298,7 @@ TRACEPOINT_EVENT_INSTANCE(\\
     return ''.join(lTTngHdr)
 
 
-def generateMethodBody(template, providerName, eventName):
+def generateMethodBody(template, providerName, eventName, runtimeFlavor):
     #emit code to init variables convert unicode to ansi string
     result = []
 
@@ -331,9 +359,9 @@ def generateMethodBody(template, providerName, eventName):
                 continue
 
             elif ctf_type == "ctf_sequence" or wintypeName == "win:Pointer":
-                line += "(" + lttngDataTypeMapping[wintypeName]
-                if not lttngDataTypeMapping[winCount] == " ":
-                    line += lttngDataTypeMapping[winCount]
+                line += "(" + getLttngDataTypeMapping(runtimeFlavor)[wintypeName]
+                if not getLttngDataTypeMapping(runtimeFlavor)[winCount] == " ":
+                    line += getLttngDataTypeMapping(runtimeFlavor)[winCount]
 
                 line += ") "
                 linefnbody.append(line + paramname)
@@ -358,7 +386,7 @@ def generateMethodBody(template, providerName, eventName):
                 pack_list.append("    success &= WriteToBuffer((const BYTE *)%s, %s, buffer, offset, size, fixedBuffer);" % (paramName, size))
                 emittedWriteToBuffer = True
             elif paramName in template.arrays:
-                size = "sizeof(%s) * (int)%s" % (lttngDataTypeMapping[parameter.winType], parameter.prop)
+                size = "sizeof(%s) * (int)%s" % (getLttngDataTypeMapping(runtimeFlavor)[parameter.winType], parameter.prop)
                 if template.name in specialCaseSizes and paramName in specialCaseSizes[template.name]:
                     size = "(int)(%s)" % specialCaseSizes[template.name][paramName]
                 pack_list.append("    success &= WriteToBuffer((const BYTE *)%s, %s, buffer, offset, size, fixedBuffer);" % (paramName, size))
@@ -451,7 +479,7 @@ def generateLttngTpProvider(providerName, eventNodes, allTemplates, runtimeFlavo
         lTTngImpl.append("    if (!EventXplatEnabled%s())\n" % (eventName,))
         lTTngImpl.append("        return ERROR_SUCCESS;\n")
 
-        result = generateMethodBody(template, providerName, eventName)
+        result = generateMethodBody(template, providerName, eventName, runtimeFlavor)
         lTTngImpl.append(result)
 
         lTTngImpl.append("\n    return ERROR_SUCCESS;\n}\n\n")
@@ -529,7 +557,7 @@ def generateLttngFiles(etwmanifest, eventprovider_directory, runtimeFlavor, dryR
 
                 lttnghdr_file.write("\n#include <lttng/tracepoint.h>\n\n")
 
-                lttnghdr_file.write(generateLttngHeader(providerName,allTemplates,eventNodes) + "\n")
+                lttnghdr_file.write(generateLttngHeader(providerName,allTemplates,eventNodes,runtimeFlavor) + "\n")
 
             with open_for_update(lttngevntprov) as lttngimpl_file:
                 lttngimpl_file.write(stdprolog + "\n")

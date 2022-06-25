@@ -68,7 +68,7 @@ namespace System.Threading
             if (processorCount > 1 && (spinIndex < sleep0Threshold || (spinIndex - sleep0Threshold) % 2 != 0))
             {
                 // Cap the maximum spin count to a value such that many thousands of CPU cycles would not be wasted doing
-                // the equivalent of YieldProcessor(), as that that point SwitchToThread/Sleep(0) are more likely to be able to
+                // the equivalent of YieldProcessor(), as at that point SwitchToThread/Sleep(0) are more likely to be able to
                 // allow other useful work to run. Long YieldProcessor() loops can help to reduce contention, but Sleep(1) is
                 // usually better for that.
                 int n = Thread.OptimalMaxSpinWaitsPerSpinIteration;

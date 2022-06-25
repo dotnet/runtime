@@ -178,7 +178,7 @@ BOOL Module::SetTransientFlagInterlocked(DWORD dwFlag)
         DWORD dwTransientFlags = m_dwTransientFlags;
         if ((dwTransientFlags & dwFlag) != 0)
             return FALSE;
-        if ((DWORD)FastInterlockCompareExchange((LONG*)&m_dwTransientFlags, dwTransientFlags | dwFlag, dwTransientFlags) == dwTransientFlags)
+        if ((DWORD)InterlockedCompareExchange((LONG*)&m_dwTransientFlags, dwTransientFlags | dwFlag, dwTransientFlags) == dwTransientFlags)
             return TRUE;
     }
 }
@@ -434,7 +434,7 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 #ifdef FEATURE_COLLECTIBLE_TYPES
     if (GetAssembly()->IsCollectible())
     {
-        FastInterlockOr(&m_dwPersistedFlags, COLLECTIBLE_MODULE);
+        InterlockedOr((LONG*)&m_dwPersistedFlags, COLLECTIBLE_MODULE);
     }
 #endif // FEATURE_COLLECTIBLE_TYPES
 
@@ -962,7 +962,7 @@ MethodTable *Module::GetGlobalMethodTable()
                                                    ClassLoader::FailIfUninstDefOrRef).AsMethodTable();
         }
 
-        FastInterlockOr(&m_dwPersistedFlags, COMPUTED_GLOBAL_CLASS);
+        InterlockedOr((LONG*)&m_dwPersistedFlags, COMPUTED_GLOBAL_CLASS);
         RETURN pMT;
     }
     else
@@ -1580,11 +1580,11 @@ BOOL Module::HasDefaultDllImportSearchPathsAttribute()
     attributeIsFound = GetDefaultDllImportSearchPathsAttributeValue(this, TokenFromRid(1, mdtAssembly),&m_DefaultDllImportSearchPathsAttributeValue);
     if(attributeIsFound)
     {
-        FastInterlockOr(&m_dwPersistedFlags, DEFAULT_DLL_IMPORT_SEARCH_PATHS_IS_CACHED | DEFAULT_DLL_IMPORT_SEARCH_PATHS_STATUS);
+        InterlockedOr((LONG*)&m_dwPersistedFlags, DEFAULT_DLL_IMPORT_SEARCH_PATHS_IS_CACHED | DEFAULT_DLL_IMPORT_SEARCH_PATHS_STATUS);
     }
     else
     {
-        FastInterlockOr(&m_dwPersistedFlags, DEFAULT_DLL_IMPORT_SEARCH_PATHS_IS_CACHED);
+        InterlockedOr((LONG*)&m_dwPersistedFlags, DEFAULT_DLL_IMPORT_SEARCH_PATHS_IS_CACHED);
     }
 
     return (m_dwPersistedFlags & DEFAULT_DLL_IMPORT_SEARCH_PATHS_STATUS) != 0 ;
@@ -1644,7 +1644,7 @@ BOOL Module::IsRuntimeWrapExceptions()
                 fRuntimeWrapExceptions = TRUE;
         }
 ErrExit:
-        FastInterlockOr(&m_dwPersistedFlags, COMPUTED_WRAP_EXCEPTIONS |
+        InterlockedOr((LONG*)&m_dwPersistedFlags, COMPUTED_WRAP_EXCEPTIONS |
             (fRuntimeWrapExceptions ? WRAP_EXCEPTIONS : 0));
     }
 
@@ -1681,7 +1681,7 @@ BOOL Module::IsRuntimeMarshallingEnabled()
                         (const void**)&pVal, &cbVal);
     }
 
-    FastInterlockOr(&m_dwPersistedFlags, RUNTIME_MARSHALLING_ENABLED_IS_CACHED |
+    InterlockedOr((LONG*)&m_dwPersistedFlags, RUNTIME_MARSHALLING_ENABLED_IS_CACHED |
         (hr == S_OK ? 0 : RUNTIME_MARSHALLING_ENABLED));
 
     return hr != S_OK;
@@ -1712,7 +1712,7 @@ BOOL Module::IsPreV4Assembly()
             }
         }
 
-        FastInterlockOr(&m_dwPersistedFlags, COMPUTED_IS_PRE_V4_ASSEMBLY |
+        InterlockedOr((LONG*)&m_dwPersistedFlags, COMPUTED_IS_PRE_V4_ASSEMBLY |
             (fIsPreV4Assembly ? IS_PRE_V4_ASSEMBLY : 0));
     }
 
@@ -1731,7 +1731,7 @@ DWORD Module::AllocateDynamicEntry(MethodTable *pMT)
     }
     CONTRACTL_END;
 
-    DWORD newId = FastInterlockExchangeAdd((LONG*)&m_cDynamicEntries, 1);
+    DWORD newId = InterlockedExchangeAdd((LONG*)&m_cDynamicEntries, 1);
 
     if (newId >= VolatileLoad(&m_maxDynamicEntries))
     {
@@ -2123,7 +2123,7 @@ void Module::FreeClassTables()
     if (m_dwTransientFlags & CLASSES_FREED)
         return;
 
-    FastInterlockOr(&m_dwTransientFlags, CLASSES_FREED);
+    InterlockedOr((LONG*)&m_dwTransientFlags, CLASSES_FREED);
 
 #if _DEBUG
     DebugLogRidMapOccupancy();
@@ -2698,7 +2698,7 @@ ILStubCache* Module::GetILStubCache()
     {
         ILStubCache *pILStubCache = new ILStubCache(GetLoaderAllocator()->GetHighFrequencyHeap());
 
-        if (FastInterlockCompareExchangePointer(&m_pILStubCache, pILStubCache, NULL) != NULL)
+        if (InterlockedCompareExchangeT(&m_pILStubCache, pILStubCache, NULL) != NULL)
         {
             // some thread swooped in and set the field
             delete pILStubCache;
@@ -2798,7 +2798,7 @@ PEImageLayout * Module::GetReadyToRunImage()
     return NULL;
 }
 
-PTR_CORCOMPILE_IMPORT_SECTION Module::GetImportSections(COUNT_T *pCount)
+PTR_READYTORUN_IMPORT_SECTION Module::GetImportSections(COUNT_T *pCount)
 {
     CONTRACTL
     {
@@ -2810,7 +2810,7 @@ PTR_CORCOMPILE_IMPORT_SECTION Module::GetImportSections(COUNT_T *pCount)
     return GetReadyToRunInfo()->GetImportSections(pCount);
 }
 
-PTR_CORCOMPILE_IMPORT_SECTION Module::GetImportSectionFromIndex(COUNT_T index)
+PTR_READYTORUN_IMPORT_SECTION Module::GetImportSectionFromIndex(COUNT_T index)
 {
     CONTRACTL
     {
@@ -2822,7 +2822,7 @@ PTR_CORCOMPILE_IMPORT_SECTION Module::GetImportSectionFromIndex(COUNT_T index)
     return GetReadyToRunInfo()->GetImportSectionFromIndex(index);
 }
 
-PTR_CORCOMPILE_IMPORT_SECTION Module::GetImportSectionForRVA(RVA rva)
+PTR_READYTORUN_IMPORT_SECTION Module::GetImportSectionForRVA(RVA rva)
 {
     CONTRACTL
     {
@@ -3475,28 +3475,6 @@ TypeHandle Module::LookupTypeRef(mdTypeRef token)
 
     if (entry.IsNull())
         return TypeHandle();
-
-    // Cannot do this in a NOTHROW function.
-    // Note that this could be called while doing GC from the prestub of
-    // a method to resolve typerefs in a signature. We cannot THROW
-    // during GC.
-
-    // @PERF: Enable this so that we do not need to touch metadata
-    // to resolve typerefs
-
-#ifdef FIXUPS_ALL_TYPEREFS
-
-    if (CORCOMPILE_IS_POINTER_TAGGED((SIZE_T) entry.AsPtr()))
-    {
-#ifndef DACCESS_COMPILE
-        Module::RestoreTypeHandlePointer(&entry, TRUE);
-        m_TypeRefToMethodTableMap.SetElement(RidFromToken(token), dac_cast<PTR_TypeRef>(value.AsTAddr()));
-#else // DACCESS_COMPILE
-        DacNotImpl();
-#endif // DACCESS_COMPILE
-    }
-
-#endif // FIXUPS_ALL_TYPEREFS
 
     return entry;
 }
@@ -4420,7 +4398,7 @@ LoaderHeap *Module::GetThunkHeap()
             ThunkHeapStubManager::g_pManager->GetRangeList(),
             UnlockedLoaderHeap::HeapKind::Executable);
 
-        if (FastInterlockCompareExchangePointer(&m_pThunkHeap, pNewHeap, 0) != 0)
+        if (InterlockedCompareExchangeT(&m_pThunkHeap, pNewHeap, 0) != 0)
         {
             delete pNewHeap;
         }
@@ -4528,7 +4506,7 @@ void Module::RunEagerFixups()
     STANDARD_VM_CONTRACT;
 
     COUNT_T nSections;
-    PTR_CORCOMPILE_IMPORT_SECTION pSections = GetImportSections(&nSections);
+    PTR_READYTORUN_IMPORT_SECTION pSections = GetImportSections(&nSections);
 
     if (nSections == 0)
         return;
@@ -4582,69 +4560,32 @@ void Module::RunEagerFixups()
 void Module::RunEagerFixupsUnlocked()
 {
     COUNT_T nSections;
-    PTR_CORCOMPILE_IMPORT_SECTION pSections = GetImportSections(&nSections);
+    PTR_READYTORUN_IMPORT_SECTION pSections = GetImportSections(&nSections);
     PEImageLayout *pNativeImage = GetReadyToRunImage();
 
     for (COUNT_T iSection = 0; iSection < nSections; iSection++)
     {
-        PTR_CORCOMPILE_IMPORT_SECTION pSection = pSections + iSection;
+        PTR_READYTORUN_IMPORT_SECTION pSection = pSections + iSection;
 
-        if ((pSection->Flags & CORCOMPILE_IMPORT_FLAGS_EAGER) == 0)
+        if ((pSection->Flags & ReadyToRunImportSectionFlags::Eager) != ReadyToRunImportSectionFlags::Eager)
             continue;
 
         COUNT_T tableSize;
         TADDR tableBase = pNativeImage->GetDirectoryData(&pSection->Section, &tableSize);
 
-        if (pSection->Signatures != NULL)
-        {
-            PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(pNativeImage->GetRvaData(pSection->Signatures));
+        PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(pNativeImage->GetRvaData(pSection->Signatures));
 
-            for (SIZE_T * fixupCell = (SIZE_T *)tableBase; fixupCell < (SIZE_T *)(tableBase + tableSize); fixupCell++)
+        for (SIZE_T * fixupCell = (SIZE_T *)tableBase; fixupCell < (SIZE_T *)(tableBase + tableSize); fixupCell++)
+        {
+            SIZE_T fixupIndex = fixupCell - (SIZE_T *)tableBase;
+            if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell))
             {
-                SIZE_T fixupIndex = fixupCell - (SIZE_T *)tableBase;
-                if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell))
-                {
-                    if (IsReadyToRun())
-                    {
-                        GetReadyToRunInfo()->DisableAllR2RCode();
-                    }
-                    else
-                    {
-                        _ASSERTE(!"LoadDynamicInfoEntry failed");
-                        ThrowHR(COR_E_BADIMAGEFORMAT);
-                    }
-                }
-                else
-                {
-                    _ASSERTE(*fixupCell != NULL);
-                }
+                _ASSERTE(IsReadyToRun());
+                GetReadyToRunInfo()->DisableAllR2RCode();
             }
-        }
-        else
-        {
-            for (SIZE_T * fixupCell = (SIZE_T *)tableBase; fixupCell < (SIZE_T *)(tableBase + tableSize); fixupCell++)
+            else
             {
-                // Ensure that the compiler won't fetch the value twice
-                SIZE_T fixup = VolatileLoadWithoutBarrier(fixupCell);
-
-                // This method may execute multiple times in multi-domain scenarios. Check that the fixup has not been
-                // fixed up yet.
-                if (CORCOMPILE_IS_FIXUP_TAGGED(fixup, pSection))
-                {
-                    if (!LoadDynamicInfoEntry(this, (RVA)CORCOMPILE_UNTAG_TOKEN(fixup), fixupCell))
-                    {
-                        if (IsReadyToRun())
-                        {
-                            GetReadyToRunInfo()->DisableAllR2RCode();
-                        }
-                        else
-                        {
-                            _ASSERTE(!"LoadDynamicInfoEntry failed");
-                            ThrowHR(COR_E_BADIMAGEFORMAT);
-                        }
-                    }
-                    _ASSERTE(!CORCOMPILE_IS_FIXUP_TAGGED(*fixupCell, pSection));
-                }
+                _ASSERTE(*fixupCell != NULL);
             }
         }
     }
@@ -4663,7 +4604,7 @@ void Module::RunEagerFixupsUnlocked()
 
 //-----------------------------------------------------------------------------
 
-BOOL Module::FixupNativeEntry(CORCOMPILE_IMPORT_SECTION* pSection, SIZE_T fixupIndex, SIZE_T* fixupCell, BOOL mayUsePrecompiledNDirectMethods)
+BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupIndex, SIZE_T* fixupCell, BOOL mayUsePrecompiledNDirectMethods)
 {
     CONTRACTL
     {
@@ -4675,44 +4616,14 @@ BOOL Module::FixupNativeEntry(CORCOMPILE_IMPORT_SECTION* pSection, SIZE_T fixupI
     // Ensure that the compiler won't fetch the value twice
     SIZE_T fixup = VolatileLoadWithoutBarrier(fixupCell);
 
-    if (pSection->Signatures != NULL)
+    if (fixup == NULL)
     {
-        if (fixup == NULL)
-        {
-            PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(GetReadyToRunImage()->GetRvaData(pSection->Signatures));
+        PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(GetReadyToRunImage()->GetRvaData(pSection->Signatures));
 
-            if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell, mayUsePrecompiledNDirectMethods))
-                return FALSE;
+        if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell, mayUsePrecompiledNDirectMethods))
+            return FALSE;
 
-            _ASSERTE(*fixupCell != NULL);
-        }
-    }
-    else
-    {
-        if (CORCOMPILE_IS_FIXUP_TAGGED(fixup, pSection))
-        {
-            // Fixup has not been fixed up yet
-            if (!LoadDynamicInfoEntry(this, (RVA)CORCOMPILE_UNTAG_TOKEN(fixup), fixupCell, mayUsePrecompiledNDirectMethods))
-                return FALSE;
-
-            _ASSERTE(!CORCOMPILE_IS_FIXUP_TAGGED(*fixupCell, pSection));
-        }
-        else
-        {
-            //
-            // Handle tables are special. We may need to restore static handle or previous
-            // attempts to load handle could have been partial.
-            //
-            if (pSection->Type == CORCOMPILE_IMPORT_TYPE_TYPE_HANDLE)
-            {
-                TypeHandle::FromPtr((void*)fixup).CheckRestore();
-            }
-            else
-                if (pSection->Type == CORCOMPILE_IMPORT_TYPE_METHOD_HANDLE)
-                {
-                    ((MethodDesc*)(fixup))->CheckRestore();
-                }
-        }
+        _ASSERTE(*fixupCell != NULL);
     }
 
     return TRUE;
@@ -4821,7 +4732,7 @@ void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
 void Module::SetIsIJWFixedUp()
 {
     LIMITED_METHOD_CONTRACT;
-    FastInterlockOr(&m_dwTransientFlags, IS_IJW_FIXED_UP);
+    InterlockedOr((LONG*)&m_dwTransientFlags, IS_IJW_FIXED_UP);
 }
 #endif // !DACCESS_COMPILE
 
@@ -4829,7 +4740,7 @@ void Module::SetIsIJWFixedUp()
 void Module::SetBeingUnloaded()
 {
     LIMITED_METHOD_CONTRACT;
-    FastInterlockOr((ULONG*)&m_dwTransientFlags, IS_BEING_UNLOADED);
+    InterlockedOr((LONG*)&m_dwTransientFlags, IS_BEING_UNLOADED);
 }
 
 // ===========================================================================

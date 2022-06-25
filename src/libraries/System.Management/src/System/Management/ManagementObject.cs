@@ -114,8 +114,7 @@ namespace System.Management
 
         internal void FireIdentifierChanged()
         {
-            if (IdentifierChanged != null)
-                IdentifierChanged(this, null);
+            IdentifierChanged?.Invoke(this, null);
         }
 
         internal bool PutButNotGot
@@ -565,7 +564,7 @@ namespace System.Management
             }
             set
             {
-                ManagementPath newPath = (null != value) ? value : new ManagementPath();
+                ManagementPath newPath = value ?? new ManagementPath();
 
                 //If the new path contains a namespace path and the scope is currently defaulted,
                 //we want to set the scope to the new namespace path provided
@@ -778,8 +777,7 @@ namespace System.Management
                 throw new InvalidOperationException();
             else
             {
-                ObjectGetOptions gOptions =
-                    (null == options) ? new ObjectGetOptions() : options;
+                ObjectGetOptions gOptions = options ?? new ObjectGetOptions();
 
                 SecurityHandler securityHandler = null;
                 int status = (int)ManagementStatus.NoError;
@@ -1038,7 +1036,7 @@ namespace System.Management
             Initialize(false);
 
             IEnumWbemClassObject enumWbem = null;
-            EnumerationOptions o = (null != options) ? options : new EnumerationOptions();
+            EnumerationOptions o = options ?? new EnumerationOptions();
             RelatedObjectQuery q = new RelatedObjectQuery(
                 path.Path,
                 relatedClass,
@@ -1276,8 +1274,7 @@ namespace System.Management
             Initialize(false);
 
             IEnumWbemClassObject enumWbem = null;
-            EnumerationOptions o =
-                (null != options) ? options : new EnumerationOptions();
+            EnumerationOptions o = options ?? new EnumerationOptions();
             RelationshipQuery q = new RelationshipQuery(path.Path, relationshipClass,
                 relationshipQualifier, thisRole, classDefinitionsOnly);
 
@@ -1465,7 +1462,7 @@ namespace System.Management
         {
             ManagementPath newPath = null;
             Initialize(true);
-            PutOptions o = (null != options) ? options : new PutOptions();
+            PutOptions o = options ?? new PutOptions();
 
             IWbemServices wbemServices = scope.GetIWbemServices();
 
@@ -1761,7 +1758,7 @@ namespace System.Management
             destinationScope = new ManagementScope(path, scope);
             destinationScope.Initialize();
 
-            PutOptions o = (null != options) ? options : new PutOptions();
+            PutOptions o = options ?? new PutOptions();
             IWbemServices wbemServices = destinationScope.GetIWbemServices();
             ManagementPath newPath = null;
 
@@ -1966,7 +1963,7 @@ namespace System.Management
                 throw new InvalidOperationException();
 
             Initialize(false);
-            DeleteOptions o = (null != options) ? options : new DeleteOptions();
+            DeleteOptions o = options ?? new DeleteOptions();
             IWbemServices wbemServices = scope.GetIWbemServices();
 
             SecurityHandler securityHandler = null;
@@ -2303,7 +2300,7 @@ namespace System.Management
             else
             {
                 Initialize(false);
-                InvokeMethodOptions o = (null != options) ? options : new InvokeMethodOptions();
+                InvokeMethodOptions o = options ?? new InvokeMethodOptions();
                 SecurityHandler securityHandler = null;
                 int status = (int)ManagementStatus.NoError;
 
@@ -2311,7 +2308,7 @@ namespace System.Management
                 {
                     securityHandler = scope.GetSecurityHandler();
 
-                    IWbemClassObjectFreeThreaded inParams = (null == inParameters) ? null : inParameters.wbemObject;
+                    IWbemClassObjectFreeThreaded inParams = inParameters?.wbemObject;
                     IWbemClassObjectFreeThreaded outParams = null;
 
                     status = scope.GetSecuredIWbemServicesHandler(scope.GetIWbemServices()).ExecMethod_(
@@ -2576,7 +2573,7 @@ namespace System.Management
                 }
 
                 //Have we already got this object
-                if (!IsBound && (getObject == true))
+                if (!IsBound && getObject)
                     needToGetObject = true;
 
                 if (null == scope)
@@ -2616,7 +2613,7 @@ namespace System.Management
                         scope.Initialize();
 
                         // If we have just connected, make sure we get the object
-                        if (getObject == true)
+                        if (getObject)
                         {
                             needToGetObject = true;
                         }

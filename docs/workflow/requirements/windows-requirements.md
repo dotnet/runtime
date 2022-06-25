@@ -29,8 +29,8 @@ Visual Studio 2022 installation process:
   - **C++ CMake tools for Windows** (includes Ninja, but might not work on ARM64 machines),
   - **Python 3 64-bit** (3.7.4 or newer).
 - To build for Arm32 or Arm64, make sure that you have the right architecture-specific compilers installed. In the **Individual components** window, in the **Compilers, build tools, and runtimes** section:
-  - For Arm32, check the box for **MSVC v142 - VS 2022 C++ ARM build tools (Latest)** (v14.23 or newer),
-  - For Arm64, check the box for **MSVC v142 - VS 2022 C++ ARM64 build tools (Latest)** (v14.23 or newer).
+  - For Arm32, check the box for **MSVC v143 - VS 2022 C++ ARM build tools (Latest)** (v14.31 or newer),
+  - For Arm64, check the box for **MSVC v143 - VS 2022 C++ ARM64 build tools (Latest)** (v14.31 or newer).
 - To build the tests, you will need some additional components:
   - **Windows 10 SDK (10.0.19041)** or newer. This component is installed by default as a part of **Desktop Development with C++** workload.
   - **C++/CLI support for v142 build tools (Latest)** (v14.23 or newer).

@@ -376,14 +376,7 @@ namespace System.Net.WebSockets
         private static KeyValuePair<string, string> CreateSecKeyAndSecWebSocketAccept()
         {
             // GUID appended by the server as part of the security key response.  Defined in the RFC.
-            ReadOnlySpan<byte> wsServerGuidBytes = new byte[]
-            {
-                (byte)'2', (byte)'5', (byte)'8', (byte)'E', (byte)'A', (byte)'F', (byte)'A', (byte)'5', (byte)'-',
-                (byte)'E', (byte)'9', (byte)'1', (byte)'4', (byte)'-',
-                (byte)'4', (byte)'7', (byte)'D', (byte)'A', (byte)'-',
-                (byte)'9', (byte)'5', (byte)'C', (byte)'A', (byte)'-',
-                (byte)'C', (byte)'5', (byte)'A', (byte)'B', (byte)'0', (byte)'D', (byte)'C', (byte)'8', (byte)'5', (byte)'B', (byte)'1', (byte)'1'
-            };
+            ReadOnlySpan<byte> wsServerGuidBytes = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"u8;
 
             Span<byte> bytes = stackalloc byte[24 /* Base64 guid length */ + wsServerGuidBytes.Length];
 

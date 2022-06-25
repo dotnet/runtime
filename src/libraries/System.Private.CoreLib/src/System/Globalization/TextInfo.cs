@@ -724,7 +724,7 @@ namespace System.Globalization
                         else if (!IsWordSeparator(charType))
                         {
                             // This category is considered to be part of the word.
-                            // This is any category that is marked as false in wordSeprator array.
+                            // This is any category that is marked as false in wordSeparator array.
                             i += charLen;
                         }
                         else
@@ -852,7 +852,7 @@ namespace System.Globalization
 
         // Used in ToTitleCase():
         // When we find a starting letter, the following array decides if a category should be
-        // considered as word seprator or not.
+        // considered as word separator or not.
         private const int c_wordSeparatorMask =
             /* false */ (0 <<  0) | // UppercaseLetter = 0,
             /* false */ (0 <<  1) | // LowercaseLetter = 1,

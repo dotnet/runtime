@@ -5,10 +5,10 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using StringConcat = System.Xml.Xsl.Runtime.StringConcat;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using StringConcat = System.Xml.Xsl.Runtime.StringConcat;
     //         a) Forward only, one pass.
     //         b) You should call MoveToFirstChildren on nonempty element node. (or may be skip)
 

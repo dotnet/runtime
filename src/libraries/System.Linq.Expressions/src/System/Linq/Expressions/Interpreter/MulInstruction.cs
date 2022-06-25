@@ -165,14 +165,14 @@ namespace System.Linq.Expressions.Interpreter
             Debug.Assert(type.IsArithmetic());
             return type.GetNonNullableType().GetTypeCode() switch
             {
-                TypeCode.Int16 => s_Int16 ?? (s_Int16 = new MulInt16()),
-                TypeCode.Int32 => s_Int32 ?? (s_Int32 = new MulInt32()),
-                TypeCode.Int64 => s_Int64 ?? (s_Int64 = new MulInt64()),
-                TypeCode.UInt16 => s_UInt16 ?? (s_UInt16 = new MulUInt16()),
-                TypeCode.UInt32 => s_UInt32 ?? (s_UInt32 = new MulUInt32()),
-                TypeCode.UInt64 => s_UInt64 ?? (s_UInt64 = new MulUInt64()),
-                TypeCode.Single => s_Single ?? (s_Single = new MulSingle()),
-                TypeCode.Double => s_Double ?? (s_Double = new MulDouble()),
+                TypeCode.Int16 => s_Int16 ??= new MulInt16(),
+                TypeCode.Int32 => s_Int32 ??= new MulInt32(),
+                TypeCode.Int64 => s_Int64 ??= new MulInt64(),
+                TypeCode.UInt16 => s_UInt16 ??= new MulUInt16(),
+                TypeCode.UInt32 => s_UInt32 ??= new MulUInt32(),
+                TypeCode.UInt64 => s_UInt64 ??= new MulUInt64(),
+                TypeCode.Single => s_Single ??= new MulSingle(),
+                TypeCode.Double => s_Double ??= new MulDouble(),
 
                 _ => throw ContractUtils.Unreachable,
             };
@@ -302,12 +302,12 @@ namespace System.Linq.Expressions.Interpreter
             Debug.Assert(type.IsArithmetic());
             return type.GetNonNullableType().GetTypeCode() switch
             {
-                TypeCode.Int16 => s_Int16 ?? (s_Int16 = new MulOvfInt16()),
-                TypeCode.Int32 => s_Int32 ?? (s_Int32 = new MulOvfInt32()),
-                TypeCode.Int64 => s_Int64 ?? (s_Int64 = new MulOvfInt64()),
-                TypeCode.UInt16 => s_UInt16 ?? (s_UInt16 = new MulOvfUInt16()),
-                TypeCode.UInt32 => s_UInt32 ?? (s_UInt32 = new MulOvfUInt32()),
-                TypeCode.UInt64 => s_UInt64 ?? (s_UInt64 = new MulOvfUInt64()),
+                TypeCode.Int16 => s_Int16 ??= new MulOvfInt16(),
+                TypeCode.Int32 => s_Int32 ??= new MulOvfInt32(),
+                TypeCode.Int64 => s_Int64 ??= new MulOvfInt64(),
+                TypeCode.UInt16 => s_UInt16 ??= new MulOvfUInt16(),
+                TypeCode.UInt32 => s_UInt32 ??= new MulOvfUInt32(),
+                TypeCode.UInt64 => s_UInt64 ??= new MulOvfUInt64(),
                 _ => MulInstruction.Create(type),
             };
         }

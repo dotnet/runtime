@@ -1133,7 +1133,6 @@ namespace System.Numerics.Tests
 
         // A test for Vector2f comparison involving NaN values
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69424", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void Vector2EqualsNaNTest()
         {
             Vector2 a = new Vector2(float.NaN, 0);

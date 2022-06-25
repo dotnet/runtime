@@ -465,8 +465,8 @@ namespace System.DirectoryServices.AccountManagement
                                     "ADStoreCtx",
                                     "FindPrincipalByIdentRefHelper: type={0}, scheme={1}, value={2}, useSidHistory={3}",
                                     principalType.ToString(),
-                                    (urnScheme != null ? urnScheme : "NULL"),
-                                    (urnValue != null ? urnValue : "NULL"),
+                                    urnScheme ?? "NULL",
+                                    urnValue ?? "NULL",
                                     useSidHistory);
 
             //

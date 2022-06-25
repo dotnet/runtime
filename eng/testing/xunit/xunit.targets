@@ -8,10 +8,10 @@
 
   <!-- Run target (F5) support. -->
   <PropertyGroup>
-    <RunWorkingDirectory>$(OutDir)</RunWorkingDirectory>
+    <RunWorkingDirectory Condition="'$(RunWorkingDirectory)' == ''">$(OutDir)</RunWorkingDirectory>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(RunCommand)' == ''">
     <RunCommand>$(DotNetTool)</RunCommand>
     <RunArguments>test $(TargetPath) --settings $(OutDir).runsettings</RunArguments>
   </PropertyGroup>

@@ -39,6 +39,9 @@ namespace LibraryImportGenerator.IntegrationTests
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sum_string_lengths")]
             public static partial int SumStringLengths([MarshalUsing(typeof(ListMarshaller<string>)), MarshalUsing(typeof(Utf16StringMarshaller), ElementIndirectionDepth = 1)] List<string> strArray);
 
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sum_string_lengths")]
+            public static partial int SumStringLengths([MarshalUsing(typeof(Utf16StringMarshaller), ElementIndirectionDepth = 1)] WrappedList<string> strArray);
+
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "reverse_strings_replace")]
             public static partial void ReverseStrings_Ref([MarshalUsing(typeof(ListMarshaller<string>), CountElementName = "numElements"), MarshalUsing(typeof(Utf16StringMarshaller), ElementIndirectionDepth = 1)] ref List<string> strArray, out int numElements);
 
@@ -57,8 +60,8 @@ namespace LibraryImportGenerator.IntegrationTests
             public static partial List<byte> GetLongBytes(long l);
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "and_all_members")]
-            [return:MarshalAs(UnmanagedType.U1)]
-            public static partial bool AndAllMembers([MarshalUsing(typeof(ListMarshaller<BoolStruct>))] List<BoolStruct> pArray, int length);
+            [return: MarshalAs(UnmanagedType.U1)]
+            public static partial bool AndAllMembers([MarshalUsing(typeof(ListMarshaller<BoolStruct_V1>))] List<BoolStruct_V1> pArray, int length);
         }
     }
 
@@ -144,6 +147,13 @@ namespace LibraryImportGenerator.IntegrationTests
         }
 
         [Fact]
+        public void ByValueCollectionWithNonBlittableElements_WithDefaultMarshalling()
+        {
+            var strings = new WrappedList<string>(GetStringList());
+            Assert.Equal(strings.Wrapped.Sum(str => str?.Length ?? 0), NativeExportsNE.Collections.SumStringLengths(strings));
+        }
+
+        [Fact]
         public void ByRefCollectionWithNonBlittableElements()
         {
             var strings = GetStringList();
@@ -198,21 +208,21 @@ namespace LibraryImportGenerator.IntegrationTests
         [InlineData(false)]
         public void CollectionWithSimpleNonBlittableTypeMarshalling(bool result)
         {
-            var boolValues = new List<BoolStruct>
+            var boolValues = new List<BoolStruct_V1>
             {
-                new BoolStruct
+                new BoolStruct_V1
                 {
                     b1 = true,
                     b2 = true,
                     b3 = true,
                 },
-                new BoolStruct
+                new BoolStruct_V1
                 {
                     b1 = true,
                     b2 = true,
                     b3 = true,
                 },
-                new BoolStruct
+                new BoolStruct_V1
                 {
                     b1 = true,
                     b2 = true,

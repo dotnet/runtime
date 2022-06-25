@@ -10,7 +10,7 @@ namespace System.Formats.Tar
     public sealed partial class TarWriter : IDisposable
     {
         // Creating archives in Windows always sets the mode to 777
-        private const TarFileMode DefaultWindowsMode = TarFileMode.UserRead | TarFileMode.UserWrite | TarFileMode.UserExecute | TarFileMode.GroupRead | TarFileMode.GroupWrite | TarFileMode.GroupExecute | TarFileMode.OtherRead | TarFileMode.OtherWrite | TarFileMode.UserExecute;
+        private const UnixFileMode DefaultWindowsMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.UserExecute;
 
         // Windows specific implementation of the method that reads an entry from disk and writes it into the archive stream.
         partial void ReadFileFromDiskAndWriteToArchiveStreamAsEntry(string fullPath, string entryName)
@@ -28,7 +28,7 @@ namespace System.Formats.Tar
             }
             else if (attributes.HasFlag(FileAttributes.Normal) || attributes.HasFlag(FileAttributes.Archive))
             {
-                entryType = Format is TarFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile;
+                entryType = Format is TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile;
             }
             else
             {
@@ -37,18 +37,18 @@ namespace System.Formats.Tar
 
             TarEntry entry = Format switch
             {
-                TarFormat.V7 => new V7TarEntry(entryType, entryName),
-                TarFormat.Ustar => new UstarTarEntry(entryType, entryName),
-                TarFormat.Pax => new PaxTarEntry(entryType, entryName),
-                TarFormat.Gnu => new GnuTarEntry(entryType, entryName),
+                TarEntryFormat.V7 => new V7TarEntry(entryType, entryName),
+                TarEntryFormat.Ustar => new UstarTarEntry(entryType, entryName),
+                TarEntryFormat.Pax => new PaxTarEntry(entryType, entryName),
+                TarEntryFormat.Gnu => new GnuTarEntry(entryType, entryName),
                 _ => throw new FormatException(string.Format(SR.TarInvalidFormat, Format)),
             };
 
             FileSystemInfo info = attributes.HasFlag(FileAttributes.Directory) ? new DirectoryInfo(fullPath) : new FileInfo(fullPath);
 
-            entry._header._mTime = new DateTimeOffset(info.LastWriteTimeUtc);
-            entry._header._aTime = new DateTimeOffset(info.LastAccessTimeUtc);
-            entry._header._cTime = new DateTimeOffset(info.LastWriteTimeUtc); // There is no "change time" property
+            entry._header._mTime = info.LastWriteTimeUtc;
+            entry._header._aTime = info.LastAccessTimeUtc;
+            entry._header._cTime = info.LastWriteTimeUtc; // There is no "change time" property
 
             entry.Mode = DefaultWindowsMode;
 

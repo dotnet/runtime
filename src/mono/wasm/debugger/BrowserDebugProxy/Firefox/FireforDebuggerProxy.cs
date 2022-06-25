@@ -33,7 +33,7 @@ public class FirefoxDebuggerProxy : DebuggerProxyBase
         }
     }
 
-    public static async Task RunServerLoopAsync(int browserPort, int proxyPort, ILoggerFactory loggerFactory, ILogger logger, CancellationToken token, bool autoSetBreakpointOnEntryPoint = false)
+    public static async Task RunServerLoopAsync(int browserPort, int proxyPort, ILoggerFactory loggerFactory, ILogger logger, CancellationToken token, ProxyOptions? options = null)
     {
         StartListener(proxyPort, logger, browserPort);
         while (!token.IsCancellationRequested)
@@ -46,10 +46,7 @@ public class FirefoxDebuggerProxy : DebuggerProxyBase
                             {
                                 int id = Interlocked.Increment(ref s_nextId);
                                 logger.LogInformation($"IDE connected to the proxy, id: {id}");
-                                var monoProxy = new FirefoxMonoProxy(loggerFactory.CreateLogger($"{nameof(FirefoxMonoProxy)}-{id}"), id.ToString())
-                                {
-                                    AutoSetBreakpointOnEntryPoint = autoSetBreakpointOnEntryPoint
-                                };
+                                var monoProxy = new FirefoxMonoProxy(loggerFactory.CreateLogger($"{nameof(FirefoxMonoProxy)}-{id}"), id.ToString(), options);
                                 await monoProxy.RunForFirefox(ideClient: ideClient, browserPort, cts);
                             }
                             catch (Exception ex)

@@ -160,6 +160,38 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(expected ?? o, HelperMarshal._object1);
         }
 
+        [Fact]
+        public static void InvokeUnboxInt()
+        {
+            Runtime.InvokeJS(@"
+                var obj = App.call_test_method (""InvokeReturnInt"");
+                var res = App.call_test_method (""InvokeObj1"", [ obj ]);
+            ");
+
+            Assert.Equal(42, HelperMarshal._object1);
+        }
+
+        [Fact]
+        public static void InvokeUnboxDouble()
+        {
+            Runtime.InvokeJS(@"
+                var obj = App.call_test_method (""InvokeReturnDouble"");
+                var res = App.call_test_method (""InvokeObj1"", [ obj ]);
+            ");
+
+            Assert.Equal(double.Pi, HelperMarshal._object1);
+        }
+
+        [Fact]
+        public static void InvokeUnboxLongFail()
+        {
+            var ex = Assert.Throws<JSException>(() => Runtime.InvokeJS(@"
+                console.log(""the exception in InvokeReturnLong after this is intentional"");
+                App.call_test_method (""InvokeReturnLong"");
+            "));
+            Assert.Contains("int64 not available", ex.Message);
+        }
+
         [Theory]
         [InlineData(byte.MinValue, 0)]
         [InlineData(byte.MaxValue, 255)]
@@ -306,7 +338,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             Runtime.InvokeJS(@"
                 var obj = {myInt: 100, myDouble: 4.5, myString: ""Hic Sunt Dracones"", myBoolean: true};
-                App.call_test_method (""RetrieveObjectProperties"", [ obj ]);		
+                App.call_test_method (""RetrieveObjectProperties"", [ obj ]);
             ");
 
             Assert.Equal(100, HelperMarshal._jsProperties[0]);
@@ -320,8 +352,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             Runtime.InvokeJS(@"
                 var obj = {myInt: 200, myDouble: 0, myString: ""foo"", myBoolean: false};
-                App.call_test_method (""PopulateObjectProperties"", [ obj, false ]);		
-                App.call_test_method (""RetrieveObjectProperties"", [ obj ]);		
+                App.call_test_method (""PopulateObjectProperties"", [ obj, false ]);
+                App.call_test_method (""RetrieveObjectProperties"", [ obj ]);
             ");
 
             Assert.Equal(100, HelperMarshal._jsProperties[0]);
@@ -336,8 +368,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             // This test will not create the properties if they do not already exist
             Runtime.InvokeJS(@"
                 var obj = {myInt: 200};
-                App.call_test_method (""PopulateObjectProperties"", [ obj, false ]);		
-                App.call_test_method (""RetrieveObjectProperties"", [ obj ]);		
+                App.call_test_method (""PopulateObjectProperties"", [ obj, false ]);
+                App.call_test_method (""RetrieveObjectProperties"", [ obj ]);
             ");
 
             Assert.Equal(100, HelperMarshal._jsProperties[0]);
@@ -349,7 +381,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public static void SetObjectPropertiesIfNotExistsTrue()
         {
-            // This test will set the value of the property if it exists and will create and 
+            // This test will set the value of the property if it exists and will create and
             // set the value if it does not exists
             Runtime.InvokeJS(@"
                 var obj = {myInt: 200};
@@ -369,7 +401,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Runtime.InvokeJS(@"
                 var buffer = new ArrayBuffer(16);
                 var uint8View = new Uint8Array(buffer);
-                App.call_test_method (""MarshalByteBuffer"", [ uint8View ]);		
+                App.call_test_method (""MarshalByteBuffer"", [ uint8View ]);
             ");
 
             Assert.Equal(16, HelperMarshal._byteBuffer.Length);
@@ -421,16 +453,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public static void BoundStaticMethodMissingArgs()
         {
-            // TODO: We currently have code that relies on this behavior (missing args default to 0) but
-            //  it would be better if it threw an exception about the missing arguments. This test is here
-            //  to ensure we do not break things by accidentally changing this behavior -kg
-
             HelperMarshal._intValue = 1;
-            Runtime.InvokeJS(@$"
+            var ex = Assert.Throws<JSException>(() => Runtime.InvokeJS(@$"
                 var invoke_int = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
                 invoke_int ();
-            ");
-            Assert.Equal(0, HelperMarshal._intValue);
+            "));
+            Assert.Contains("Value is not an integer: undefined (undefined)", ex.Message);
+            Assert.Equal(1, HelperMarshal._intValue);
         }
 
         [Fact]
@@ -445,40 +474,41 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public static void BoundStaticMethodArgumentTypeCoercion()
+        public static void RangeCheckInt()
         {
-            // TODO: As above, the type coercion behavior on display in this test is not ideal, but
-            //  changing it risks breakage in existing code so for now it is verified by a test -kg
-
             HelperMarshal._intValue = 0;
-            Runtime.InvokeJS(@$"
+            // no numbers bigger than 32 bits
+            var ex = Assert.Throws<JSException>(() => Runtime.InvokeJS(@$"
                 var invoke_int = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
-                invoke_int (""200"");
-            ");
-            Assert.Equal(200, HelperMarshal._intValue);
-
-            Runtime.InvokeJS(@$"
-                var invoke_int = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
-                invoke_int (400.5);
-            ");
-            Assert.Equal(400, HelperMarshal._intValue);
+                invoke_int (Number.MAX_SAFE_INTEGER);
+            "));
+            Assert.Contains("Overflow: value 9007199254740991 is out of -2147483648 2147483647 range", ex.Message);
+            Assert.Equal(0, HelperMarshal._intValue);
         }
 
         [Fact]
-        public static void BoundStaticMethodUnpleasantArgumentTypeCoercion()
+        public static void IntegerCheckInt()
         {
-            HelperMarshal._intValue = 100;
-            Runtime.InvokeJS(@$"
+            HelperMarshal._intValue = 0;
+            // no floating point rounding
+            var ex = Assert.Throws<JSException>(() => Runtime.InvokeJS(@$"
                 var invoke_int = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
-                invoke_int (""hello"");
-            ");
+                invoke_int (3.14);
+            "));
+            Assert.Contains("Value is not an integer: 3.14 (number)", ex.Message);
             Assert.Equal(0, HelperMarshal._intValue);
+        }
 
-            // In this case at the very least, the leading "7" is not turned into the number 7
-            Runtime.InvokeJS(@$"
+        [Fact]
+        public static void TypeCheckInt()
+        {
+            HelperMarshal._intValue = 0;
+            // no string conversion
+            var ex = Assert.Throws<JSException>(() => Runtime.InvokeJS(@$"
                 var invoke_int = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
-                invoke_int (""7apples"");
-            ");
+                invoke_int (""200"");
+            "));
+            Assert.Contains("Value is not an integer: 200 (string)", ex.Message);
             Assert.Equal(0, HelperMarshal._intValue);
         }
 
@@ -514,19 +544,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             HelperMarshal._enumValue = TestEnum.Zero;
             Runtime.InvokeJS(@$"
                 var set_enum = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}SetEnumValue"", ""j"");
-                set_enum (0xFFFFFFFE);
-            ");
-            Assert.Equal(TestEnum.BigValue, HelperMarshal._enumValue);
-        }
-
-        [Fact]
-        public static void PassUintEnumByValueMasqueradingAsInt()
-        {
-            HelperMarshal._enumValue = TestEnum.Zero;
-            // HACK: We're explicitly telling the bindings layer to pass an int here, not an enum
-            // Because we know the enum is : uint, this is compatible, so it works.
-            Runtime.InvokeJS(@$"
-                var set_enum = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}SetEnumValue"", ""i"");
                 set_enum (0xFFFFFFFE);
             ");
             Assert.Equal(TestEnum.BigValue, HelperMarshal._enumValue);

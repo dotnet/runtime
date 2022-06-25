@@ -734,6 +734,61 @@ namespace System.Reflection.Emit
             return temp;
         }
 
+        internal void AddDynamicArgument(DynamicScope dynamicScope, Type clsArgument, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers)
+        {
+            IncrementArgCounts();
+
+            Debug.Assert(clsArgument != null);
+
+            if (optionalCustomModifiers != null)
+            {
+                for (int i = 0; i < optionalCustomModifiers.Length; i++)
+                {
+                    Type t = optionalCustomModifiers[i];
+
+                    if (t is not RuntimeType rtType)
+                        throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(optionalCustomModifiers));
+
+                    if (t.HasElementType)
+                        throw new ArgumentException(SR.Argument_ArraysInvalid, nameof(optionalCustomModifiers));
+
+                    if (t.ContainsGenericParameters)
+                        throw new ArgumentException(SR.Argument_GenericsInvalid, nameof(optionalCustomModifiers));
+
+                    AddElementType(CorElementType.ELEMENT_TYPE_CMOD_OPT);
+
+                    int token = dynamicScope.GetTokenFor(rtType.TypeHandle);
+                    Debug.Assert(!MetadataToken.IsNullToken(token));
+                    AddToken(token);
+                }
+            }
+
+            if (requiredCustomModifiers != null)
+            {
+                for (int i = 0; i < requiredCustomModifiers.Length; i++)
+                {
+                    Type t = requiredCustomModifiers[i];
+
+                    if (t is not RuntimeType rtType)
+                        throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(requiredCustomModifiers));
+
+                    if (t.HasElementType)
+                        throw new ArgumentException(SR.Argument_ArraysInvalid, nameof(requiredCustomModifiers));
+
+                    if (t.ContainsGenericParameters)
+                        throw new ArgumentException(SR.Argument_GenericsInvalid, nameof(requiredCustomModifiers));
+
+                    AddElementType(CorElementType.ELEMENT_TYPE_CMOD_REQD);
+
+                    int token = dynamicScope.GetTokenFor(rtType.TypeHandle);
+                    Debug.Assert(!MetadataToken.IsNullToken(token));
+                    AddToken(token);
+                }
+            }
+
+            AddOneArgTypeHelper(clsArgument);
+        }
+
         #endregion
 
         #region Public Methods

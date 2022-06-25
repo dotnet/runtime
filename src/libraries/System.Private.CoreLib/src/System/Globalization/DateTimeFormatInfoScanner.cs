@@ -228,7 +228,7 @@ namespace System.Globalization
                     m_dateWords.Add(str);
                 }
 
-                if (str[^1] == '.')
+                if (str.EndsWith('.'))
                 {
                     // Old version ignore the trailing dot in the date words. Support this as well.
                     string strWithoutDot = str[0..^1];

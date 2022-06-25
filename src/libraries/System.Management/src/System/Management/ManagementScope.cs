@@ -32,7 +32,7 @@ namespace System.Management
                     {
                         if (s_allowManagementObjectQI == 0)
                         {
-                            s_allowManagementObjectQI = GetSwitchValueFromRegistry() == true ? 1 : -1;
+                            s_allowManagementObjectQI = GetSwitchValueFromRegistry() ? 1 : -1;
                         }
                     }
                 }
@@ -494,8 +494,7 @@ namespace System.Management
         //Fires IdentifierChanged event
         private void FireIdentifierChanged()
         {
-            if (IdentifierChanged != null)
-                IdentifierChanged(this, null);
+            IdentifierChanged?.Invoke(this, null);
         }
 
         //Called when IdentifierChanged() event fires
@@ -618,7 +617,7 @@ namespace System.Management
         }
 
         internal ManagementScope(ManagementPath path, ManagementScope scope)
-            : this(path, (null != scope) ? scope.options : null) { }
+            : this(path, scope?.options) { }
 
         internal static ManagementScope _Clone(ManagementScope scope)
         {

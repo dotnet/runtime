@@ -1227,14 +1227,12 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             }
             else if (ch == '\0')
             {
-                for (int i = str.Index; i < str.Length; i++)
+                // Nulls are only valid if they are the only trailing character
+                if (str.Value.Slice(str.Index + 1).IndexOfAnyExcept('\0') >= 0)
                 {
-                    if (str.Value[i] != '\0')
-                    {
-                        // Nulls are only valid if they are the only trailing character
-                        return false;
-                    }
+                    return false;
                 }
+
                 // Move to the end of the string
                 str.Index = str.Length;
                 return true;
@@ -2955,9 +2953,6 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         //
         private static bool ParseISO8601(ref DateTimeRawInfo raw, ref __DTString str, DateTimeStyles styles, ref DateTimeResult result)
         {
-            if (raw.year < 0 || raw.GetNumber(0) < 0 || raw.GetNumber(1) < 0)
-            {
-            }
             str.Index--;
             int second = 0;
             double partSecond = 0;
@@ -5379,7 +5374,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     {
                         tokenType = tempType;
                         tokenValue = tempValue;
-                        // This is a token, so the Index has been advanced propertly in DTFI.Tokenizer().
+                        // This is a token, so the Index has been advanced properly in DTFI.Tokenizer().
                     }
                     else
                     {

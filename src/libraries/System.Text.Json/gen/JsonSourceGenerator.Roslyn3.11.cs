@@ -29,9 +29,9 @@ namespace System.Text.Json.SourceGeneration
         public void Initialize(GeneratorInitializationContext context)
         {
             // Unfortunately, there is no cancellation token that can be passed here
-            // (the one in GeneratorInitializationContext is not safe to capture). 
+            // (the one in GeneratorInitializationContext is not safe to capture).
             // In practice this should still be ok as the generator driver itself will
-            // cancel after every file it processes. 
+            // cancel after every file it processes.
             context.RegisterForSyntaxNotifications(static () => new SyntaxContextReceiver(CancellationToken.None));
         }
 

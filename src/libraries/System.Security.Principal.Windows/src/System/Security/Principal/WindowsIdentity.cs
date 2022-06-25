@@ -131,7 +131,7 @@ namespace System.Security.Principal
                 unsafe
                 {
                     if (!Interop.Advapi32.AllocateLocallyUniqueId(&sourceContext.SourceIdentifier))
-                        throw new SecurityException(new Win32Exception().Message);
+                        throw new SecurityException(Marshal.GetLastPInvokeErrorMessage());
 
                     sourceName.AsSpan().CopyTo(new Span<byte>(sourceContext.SourceName, TOKEN_SOURCE.TOKEN_SOURCE_LENGTH));
                 }
@@ -264,7 +264,7 @@ namespace System.Security.Principal
                     true,
                     Interop.DuplicateHandleOptions.DUPLICATE_SAME_ACCESS))
             {
-                throw new SecurityException(new Win32Exception().Message);
+                throw new SecurityException(Marshal.GetLastPInvokeErrorMessage());
             }
 
             return duplicateAccessToken;
@@ -465,7 +465,7 @@ namespace System.Security.Principal
                                                       (uint)TokenImpersonationLevel.Identification,
                                                       (uint)TokenType.TokenImpersonation,
                                                       ref token))
-                        throw new SecurityException(new Win32Exception().Message);
+                        throw new SecurityException(Marshal.GetLastPInvokeErrorMessage());
                 }
 
 
@@ -473,7 +473,7 @@ namespace System.Security.Principal
                 if (!Interop.Advapi32.CheckTokenMembership((til != TokenImpersonationLevel.None ? _safeTokenHandle : token),
                                                       sid.BinaryForm,
                                                       ref isMember))
-                    throw new SecurityException(new Win32Exception().Message);
+                    throw new SecurityException(Marshal.GetLastPInvokeErrorMessage());
 
 
             }
@@ -743,7 +743,7 @@ namespace System.Security.Principal
 
             SafeAccessTokenHandle previousToken = GetCurrentToken(TokenAccessLevels.MaximumAllowed, false, out bool isImpersonating, out int hr);
             if (previousToken == null || previousToken.IsInvalid)
-                throw new SecurityException(new Win32Exception(hr).Message);
+                throw new SecurityException(Marshal.GetPInvokeErrorMessage(hr));
 
             s_currentImpersonatedToken.Value = isImpersonating ? previousToken : null;
 
@@ -756,7 +756,7 @@ namespace System.Security.Principal
                 delegate
                 {
                     if (!Interop.Advapi32.RevertToSelf())
-                        Environment.FailFast(new Win32Exception().Message);
+                        Environment.FailFast(Marshal.GetLastPInvokeErrorMessage());
 
                     s_currentImpersonatedToken.Value = null;
 
@@ -776,12 +776,12 @@ namespace System.Security.Principal
                 return; // we handle explicit Value property changes elsewhere.
 
             if (!Interop.Advapi32.RevertToSelf())
-                Environment.FailFast(new Win32Exception().Message);
+                Environment.FailFast(Marshal.GetLastPInvokeErrorMessage());
 
             if (args.CurrentValue != null && !args.CurrentValue.IsInvalid)
             {
                 if (!Interop.Advapi32.ImpersonateLoggedOnUser(args.CurrentValue))
-                    Environment.FailFast(new Win32Exception().Message);
+                    Environment.FailFast(Marshal.GetLastPInvokeErrorMessage());
             }
         }
 
@@ -794,7 +794,7 @@ namespace System.Security.Principal
                 if (threadOnly && !isImpersonating)
                     return null;
                 // or there was an error
-                throw new SecurityException(new Win32Exception(hr).Message);
+                throw new SecurityException(Marshal.GetPInvokeErrorMessage(hr));
             }
             WindowsIdentity wi = new WindowsIdentity();
             wi._safeTokenHandle.Dispose();
@@ -822,7 +822,7 @@ namespace System.Security.Principal
                 return new OutOfMemoryException();
 
             uint win32ErrorCode = Interop.Advapi32.LsaNtStatusToWinError((uint)status);
-            return new SecurityException(new Win32Exception(unchecked((int)win32ErrorCode)).Message);
+            return new SecurityException(Marshal.GetPInvokeErrorMessage((int)win32ErrorCode));
         }
 
         private static SafeAccessTokenHandle GetCurrentToken(TokenAccessLevels desiredAccess, bool threadOnly, out bool isImpersonating, out int hr)
@@ -899,7 +899,7 @@ namespace System.Security.Principal
                                                              dwLength,
                                                              out _);
                     if (!result)
-                        throw new SecurityException(new Win32Exception().Message);
+                        throw new SecurityException(Marshal.GetLastPInvokeErrorMessage());
                     break;
                 case Interop.Errors.ERROR_INVALID_HANDLE:
                     throw new ArgumentException(SR.Argument_InvalidImpersonationToken);
@@ -913,7 +913,7 @@ namespace System.Security.Principal
                     // Throw the exception.
                     goto default;
                 default:
-                    throw new SecurityException(new Win32Exception(dwErrorCode).Message);
+                    throw new SecurityException(Marshal.GetPInvokeErrorMessage(dwErrorCode));
             }
             return safeLocalAllocHandle;
         }

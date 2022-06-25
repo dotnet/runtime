@@ -112,7 +112,7 @@ namespace System.Data.Odbc
                 //Random
                 //Means that the user can ask for the values int any order (ie: out of order).
                 //  In order to achieve this on a forward only stream, we need to actually
-                //  retreive all the value in between so they can go back to values they've skipped
+                //  retrieve all the value in between so they can go back to values they've skipped
                 for (int c = 0; c < i; c++)
                 {
                     if (values[c] == null)

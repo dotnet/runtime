@@ -330,10 +330,9 @@ namespace System
             #endregion
 
             #region Filter by name wrt prefixLookup and implicitly by case sensitivity
-            if (prefixLookup == true)
+            if (prefixLookup && !FilterApplyPrefixLookup(memberInfo, name, (bindingFlags & BindingFlags.IgnoreCase) != 0))
             {
-                if (!FilterApplyPrefixLookup(memberInfo, name, (bindingFlags & BindingFlags.IgnoreCase) != 0))
-                    return false;
+                return false;
             }
             #endregion
 
@@ -929,7 +928,7 @@ namespace System
                         if (ReferenceEquals(fieldInfo.DeclaringType, match.DeclaringType))
                             throw new AmbiguousMatchException();
 
-                        if ((match.DeclaringType!.IsInterface == true) && (fieldInfo.DeclaringType!.IsInterface == true))
+                        if (match.DeclaringType!.IsInterface && fieldInfo.DeclaringType!.IsInterface)
                             multipleStaticFieldMatches = true;
                     }
 
@@ -1635,21 +1634,12 @@ namespace System
 
             unsafe
             {
-                return ctor.Invoker.InvokeUnsafe(
+                return ctor.Invoker.InlinedInvoke(
                     obj: null,
                     args: default,
-                    argsForTemporaryMonoSupport: default,
                     wrapExceptions ? BindingFlags.Default : BindingFlags.DoNotWrapExceptions);
             }
         }
-
-        // Once Mono has managed conversion logic, this method can be removed and the Core
-        // implementation of this method moved to RuntimeMethod.Invoke().
-#if DEBUG
-#pragma warning disable CA1822
-        internal void VerifyValueType(object? value) { }
-#pragma warning restore CA1822
-#endif
 
         /// <summary>
         /// Verify <paramref name="value"/> and optionally convert the value for special cases.
@@ -1657,7 +1647,7 @@ namespace System
         /// <returns>Not yet implemented in Mono: True if the value should be considered a value type, False otherwise</returns>
         internal bool CheckValue(
             ref object? value,
-            ref bool copyBack,
+            ref ParameterCopyBackAction copyBack,
             Binder? binder,
             CultureInfo? culture,
             BindingFlags invokeAttr)
@@ -1665,7 +1655,7 @@ namespace System
             // Already fast-pathed by the caller.
             Debug.Assert(!ReferenceEquals(value?.GetType(), this));
 
-            copyBack = true;
+            copyBack = ParameterCopyBackAction.Copy;
 
             CheckValueStatus status = TryConvertToType(ref value);
             if (status == CheckValueStatus.Success)
@@ -1768,6 +1758,11 @@ namespace System
 
             return CheckValueStatus.ArgumentException;
         }
+
+        // Stub method to allow for shared code with CoreClr.
+#pragma warning disable CA1822
+        internal bool TryByRefFastPath(ref object arg, ref bool isValueType) => false;
+#pragma warning restore CA1822
 
         // Binder uses some incompatible conversion rules. For example
         // int value cannot be used with decimal parameter but in other
@@ -2029,7 +2024,7 @@ namespace System
 
             unsafe
             {
-                return ctor.Invoker.InvokeUnsafe(obj: null, args: default, argsForTemporaryMonoSupport: default, BindingFlags.Default)!;
+                return ctor.Invoker.InlinedInvoke(obj: null, args: default, BindingFlags.Default)!;
             }
         }
 
@@ -2338,6 +2333,8 @@ namespace System
         }
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeType>(other);
+
+        internal bool IsNullableOfT => Nullable.GetUnderlyingType(this) != null;
 
         public override bool IsSZArray
         {

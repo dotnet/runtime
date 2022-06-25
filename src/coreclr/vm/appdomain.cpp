@@ -84,7 +84,6 @@
 //#define STRICT_CLSINITLOCK_ENTRY_LEAK_DETECTION
 
 static const WCHAR DEFAULT_DOMAIN_FRIENDLY_NAME[] = W("DefaultDomain");
-static const WCHAR OTHER_DOMAIN_FRIENDLY_NAME_PREFIX[] = W("Domain");
 
 #define STATIC_OBJECT_TABLE_BUCKET_SIZE 1020
 
@@ -108,8 +107,6 @@ static BYTE         g_pSystemDomainMemory[sizeof(SystemDomain)];
 
 CrstStatic          SystemDomain::m_SystemDomainCrst;
 CrstStatic          SystemDomain::m_DelayedUnloadCrst;
-
-DWORD               SystemDomain::m_dwLowestFreeIndex        = 0;
 
 // Constructor for the PinnedHeapHandleBucket class.
 PinnedHeapHandleBucket::PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, DWORD Size, BaseDomain *pDomain)
@@ -906,7 +903,7 @@ OBJECTREF AppDomain::GetMissingObject()
         // Retrieve the value static field and store it.
         OBJECTHANDLE hndMissing = CreateHandle(pValueFD->GetStaticOBJECTREF());
 
-        if (FastInterlockCompareExchangePointer(&m_hndMissing, hndMissing, NULL) != NULL)
+        if (InterlockedCompareExchangeT(&m_hndMissing, hndMissing, NULL) != NULL)
         {
             // Exchanged failed. The m_hndMissing did not equal NULL and was returned.
             DestroyHandle(hndMissing);
@@ -1523,9 +1520,18 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
 
     MethodTable* pCaller = pMeth->GetMethodTable();
 
-    // All Reflection Invocation methods are defined in CoreLib
+    // All reflection invocation methods are defined in CoreLib.
     if (!pCaller->GetModule()->IsSystem())
         return false;
+
+    // Check for dynamically generated Invoke methods.
+    if (pMeth->IsLCGMethod())
+    {
+        // Even if a user-created DynamicMethod uses the same naming convention, it will likely not
+        // get here since since DynamicMethods by default are created in a special (non-system) module.
+        // If this is not sufficient for conflict prevention, we can create a new private module.
+        return (strncmp(pMeth->GetName(), "InvokeStub_", ARRAY_SIZE("InvokeStub_") - 1) == 0);
+    }
 
     /* List of types that should be skipped to identify true caller */
     static const BinderClassID reflectionInvocationTypes[] = {
@@ -1557,7 +1563,6 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         CLASS__MULTICAST_DELEGATE,
         CLASS__METHOD_INVOKER,
         CLASS__CONSTRUCTOR_INVOKER,
-        CLASS__DYNAMIC_METHOD_INVOKER
     };
 
     static bool fInited = false;
@@ -1592,58 +1597,6 @@ struct CallersDataWithStackMark
     MethodDesc* pFoundMethod;
     MethodDesc* pPrevMethod;
 };
-
-/*static*/
-MethodDesc* SystemDomain::GetCallersMethod(StackCrawlMark* stackMark)
-
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    GCX_COOP();
-
-    CallersDataWithStackMark cdata;
-    ZeroMemory(&cdata, sizeof(CallersDataWithStackMark));
-    cdata.stackMark = stackMark;
-
-    GetThread()->StackWalkFrames(CallersMethodCallbackWithStackMark, &cdata, FUNCTIONSONLY | LIGHTUNWIND);
-
-    if(cdata.pFoundMethod) {
-        return cdata.pFoundMethod;
-    } else
-        return NULL;
-}
-
-/*static*/
-MethodTable* SystemDomain::GetCallersType(StackCrawlMark* stackMark)
-
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    CallersDataWithStackMark cdata;
-    ZeroMemory(&cdata, sizeof(CallersDataWithStackMark));
-    cdata.stackMark = stackMark;
-
-    GetThread()->StackWalkFrames(CallersMethodCallbackWithStackMark, &cdata, FUNCTIONSONLY | LIGHTUNWIND);
-
-    if(cdata.pFoundMethod) {
-        return cdata.pFoundMethod->GetMethodTable();
-    } else
-        return NULL;
-}
 
 /*static*/
 Module* SystemDomain::GetCallersModule(StackCrawlMark* stackMark)
@@ -1744,8 +1697,6 @@ StackWalkAction SystemDomain::CallersMethodCallbackWithStackMark(CrawlFrame* pCf
     Frame* frame = pCf->GetFrame();
     _ASSERTE(pCf->IsFrameless() || frame);
 
-
-
     // Skipping reflection frames. We don't need to be quite as exhaustive here
     // as the security or reflection stack walking code since we know this logic
     // is only invoked for selected methods in CoreLib itself. So we're
@@ -1817,9 +1768,7 @@ StackWalkAction SystemDomain::CallersMethodCallback(CrawlFrame* pCf, VOID* data)
         pCaller->skip--;
         return SWA_CONTINUE;
     }
-
 }
-
 
 void AppDomain::Create()
 {
@@ -2441,7 +2390,7 @@ void FileLoadLock::SetError(Exception *ex)
 void FileLoadLock::AddRef()
 {
     LIMITED_METHOD_CONTRACT;
-    FastInterlockIncrement((LONG *) &m_dwRefCount);
+    InterlockedIncrement((LONG *) &m_dwRefCount);
 }
 
 UINT32 FileLoadLock::Release()
@@ -2454,7 +2403,7 @@ UINT32 FileLoadLock::Release()
     }
     CONTRACTL_END;
 
-    LONG count = FastInterlockDecrement((LONG *) &m_dwRefCount);
+    LONG count = InterlockedDecrement((LONG *) &m_dwRefCount);
     if (count == 0)
         delete this;
 
@@ -2478,10 +2427,6 @@ void FileLoadLock::HolderLeave(FileLoadLock *pThis)
 }
 
 
-
-
-
-
 //
 // Assembly loading:
 //
@@ -2499,7 +2444,7 @@ void FileLoadLock::HolderLeave(FileLoadLock *pThis)
 // this constraint is expected and can be dealt with.
 //
 // Note that there is one case where this still doesn't handle recursion, and that is the
-// security subsytem. The security system runs managed code, and thus must typically fully
+// security subsystem. The security system runs managed code, and thus must typically fully
 // initialize assemblies of permission sets it is trying to use. (And of course, these may be used
 // while those assemblies are initializing.)  This is dealt with in the historical manner - namely
 // the security system passes in a special flag which says that it will deal with null return values
@@ -4089,7 +4034,7 @@ RCWRefCache *AppDomain::GetRCWRefCache()
 
     if (!m_pRCWRefCache) {
         NewHolder<RCWRefCache> pRCWRefCache = new RCWRefCache(this);
-        if (FastInterlockCompareExchangePointer(&m_pRCWRefCache, (RCWRefCache *)pRCWRefCache, NULL) == NULL)
+        if (InterlockedCompareExchangeT(&m_pRCWRefCache, (RCWRefCache *)pRCWRefCache, NULL) == NULL)
         {
             pRCWRefCache.SuppressRelease();
         }

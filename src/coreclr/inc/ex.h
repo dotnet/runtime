@@ -444,7 +444,9 @@ class COMException : public HRException
 
     // Virtual overrides
     IErrorInfo *GetErrorInfo();
+#ifdef FEATURE_COMINTEROP
     void GetMessage(SString &result);
+#endif
 
  protected:
     virtual Exception *CloneHelper()

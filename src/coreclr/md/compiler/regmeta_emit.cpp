@@ -890,7 +890,7 @@ HRESULT RegMeta::RefToDefOptimization()
             }
 
             // In the case of global function, we have tkParent as m_tdModule.
-            // We will always do the optmization.
+            // We will always do the optimization.
             if (TypeFromToken(tkParent) == mdtTypeRef)
             {
                 // If we're preserving local typerefs, skip this token

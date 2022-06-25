@@ -936,44 +936,6 @@ Done: ;
 }
 FCIMPLEND
 
-FCIMPL2(Object*, ArrayNative::GetValue, ArrayBase* refThisUNSAFE, INT_PTR flattenedIndex)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-    } CONTRACTL_END;
-
-    BASEARRAYREF refThis(refThisUNSAFE);
-
-    TypeHandle arrayElementType = refThis->GetArrayElementTypeHandle();
-
-    // Legacy behavior
-    if (arrayElementType.IsTypeDesc())
-    {
-        CorElementType elemtype = arrayElementType.AsTypeDesc()->GetInternalCorElementType();
-        if (elemtype == ELEMENT_TYPE_PTR || elemtype == ELEMENT_TYPE_FNPTR)
-            FCThrowRes(kNotSupportedException, W("NotSupported_Type"));
-    }
-
-    _ASSERTE((SIZE_T)flattenedIndex < refThis->GetNumComponents());
-    void* pData = refThis->GetDataPtr() + flattenedIndex * refThis->GetComponentSize();
-    OBJECTREF Obj = NULL;
-
-    MethodTable* pElementTypeMT = arrayElementType.GetMethodTable();
-    if (pElementTypeMT->IsValueType())
-    {
-        HELPER_METHOD_FRAME_BEGIN_RET_0();
-        Obj = pElementTypeMT->Box(pData);
-        HELPER_METHOD_FRAME_END();
-    }
-    else
-    {
-        Obj = ObjectToOBJECTREF(*((Object**)pData));
-    }
-
-    return OBJECTREFToObject(Obj);
-}
-FCIMPLEND
-
 FCIMPL3(void, ArrayNative::SetValue, ArrayBase* refThisUNSAFE, Object* objUNSAFE, INT_PTR flattenedIndex)
 {
     FCALL_CONTRACT;
@@ -983,12 +945,10 @@ FCIMPL3(void, ArrayNative::SetValue, ArrayBase* refThisUNSAFE, Object* objUNSAFE
 
     TypeHandle arrayElementType = refThis->GetArrayElementTypeHandle();
 
-    // Legacy behavior
+    // Legacy behavior (this handles pointers and function pointers)
     if (arrayElementType.IsTypeDesc())
     {
-        CorElementType elemtype = arrayElementType.AsTypeDesc()->GetInternalCorElementType();
-        if (elemtype == ELEMENT_TYPE_PTR || elemtype == ELEMENT_TYPE_FNPTR)
-            FCThrowResVoid(kNotSupportedException, W("NotSupported_Type"));
+        FCThrowResVoid(kNotSupportedException, W("NotSupported_Type"));
     }
 
     _ASSERTE((SIZE_T)flattenedIndex < refThis->GetNumComponents());

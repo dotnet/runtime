@@ -1311,7 +1311,7 @@ namespace System.Linq
         }
 
         [DynamicDependency("DefaultIfEmpty`1", typeof(Enumerable))]
-        public static IQueryable<TSource> DefaultIfEmpty<TSource>(this IQueryable<TSource> source)
+        public static IQueryable<TSource?> DefaultIfEmpty<TSource>(this IQueryable<TSource> source)
         {
             ArgumentNullException.ThrowIfNull(source);
 

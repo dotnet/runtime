@@ -270,7 +270,7 @@ namespace BrowserDebugProxy
                 // isParent:
                 if (i != 0) typeId = getParentsReader.ReadInt32();
 
-                allMembers = await MemberObjectsExplorer.GetNonAutomaticPropertyValues(
+                allMembers = await MemberObjectsExplorer.ExpandPropertyValues(
                     sdbHelper,
                     typeId,
                     className,

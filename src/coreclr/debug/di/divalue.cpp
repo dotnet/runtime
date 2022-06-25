@@ -3529,7 +3529,7 @@ HRESULT CordbBoxValue::GetMonitorEventWaitList(ICorDebugThreadEnum **ppThreadEnu
     #define ARRAY_CACHE_SIZE (1000)
 #else
 // For release, guess 4 pages should be enough. Subtract some bytes to store
-// the header so that that doesn't push us onto another page. (We guess a reasonable
+// the header so that it doesn't push us onto another page. (We guess a reasonable
 // header size, but it's ok if it's larger).
     #define ARRAY_CACHE_SIZE (4 * 4096 - 24)
 #endif

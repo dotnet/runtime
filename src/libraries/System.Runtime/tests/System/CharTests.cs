@@ -1190,7 +1190,7 @@ namespace System.Tests
             if (PlatformDetection.IsNotInvariantGlobalization)
             {
                 // Android has issues w/ tr-TR, see https://github.com/dotnet/runtime/issues/37069
-                if (!PlatformDetection.IsAndroid)
+                if (!PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
                 {
                     yield return new object[] { '\u0131', 'I', "tr-TR" };
                     yield return new object[] { 'i', '\u0130', "tr-TR" };

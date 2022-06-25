@@ -735,10 +735,10 @@ namespace System.Xml
             return new XmlParserContext(
                 nt,
                 mgr,
-                (docType == null) ? null : docType.Name,
-                (docType == null) ? null : docType.PublicId,
-                (docType == null) ? null : docType.SystemId,
-                (docType == null) ? null : docType.InternalSubset,
+                docType?.Name,
+                docType?.PublicId,
+                docType?.SystemId,
+                docType?.InternalSubset,
                 baseURI,
                 lang,
                 spaceMode

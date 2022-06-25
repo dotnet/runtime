@@ -927,7 +927,7 @@ namespace System.Net
             if (!requestPath.StartsWith(cookiePath, StringComparison.Ordinal))
                 return false;
             return requestPath.Length == cookiePath.Length ||
-                   cookiePath.Length > 0 && cookiePath[^1] == '/' ||
+                   cookiePath.EndsWith('/') ||
                    requestPath[cookiePath.Length] == '/';
         }
 
