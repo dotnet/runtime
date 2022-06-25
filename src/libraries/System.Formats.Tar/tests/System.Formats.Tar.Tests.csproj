@@ -10,6 +10,7 @@
     <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs" Link="Common\System\IO\TempDirectory.cs" />
     <Compile Include="CompressedTar.Async.Tests.cs" />
     <Compile Include="CompressedTar.Tests.cs" />
+    <Compile Include="TarFile\TarFile.ExtractToDirectoryAsync.Stream.Tests.cs" />
     <Compile Include="TarFile\TarFile.ExtractToDirectoryAsync.File.Tests.cs" />
     <Compile Include="TarFile\TarFile.CreateFromDirectoryAsync.Stream.Tests.cs" />
     <Compile Include="TarFile\TarFile.CreateFromDirectoryAsync.File.Tests.cs" />
