@@ -6492,7 +6492,7 @@ PhaseStatus Compiler::optHoistLoopCode()
 #ifdef DEBUG
     // Test Data stuff..
     //
-    if (m_nodeTestData = nullptr)
+    if (m_nodeTestData == nullptr)
     {
         NodeToTestDataMap* testData = GetNodeTestData();
         for (NodeToTestDataMap::KeyIterator ki = testData->Begin(); !ki.Equal(testData->End()); ++ki)
