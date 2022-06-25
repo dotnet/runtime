@@ -1,12 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+#nullable enable
 
 namespace System.Runtime.InteropServices.Marshalling
 {
     /// <summary>
     /// Specify marshallers used in the managed to unmanaged direction (that is, P/Invoke)
     /// </summary>
-    public sealed class ManagedToUnmanagedMarshallersAttribute : CustomUnmanagedTypeMarshallersAttributeBase
+#if LIBRARYIMPORT_GENERATOR_TEST
+    public
+#else
+    internal
+#endif
+    sealed class ManagedToUnmanagedMarshallersAttribute : CustomUnmanagedTypeMarshallersAttributeBase
     {
         /// <summary>
         /// Create instance of <see cref="ManagedToUnmanagedMarshallersAttribute"/>.
