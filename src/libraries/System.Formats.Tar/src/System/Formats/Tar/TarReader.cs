@@ -370,9 +370,8 @@ namespace System.Formats.Tar
         {
             Debug.Assert(!_reachedEndMarkers);
 
-            TarHeader header = default;
-
-            if (!header.TryGetNextHeader(_archiveStream, copyData))
+            (bool result, TarHeader header) = await TarHeader.TryGetNextHeaderAsync(_archiveStream, copyData, TarEntryFormat.Unknown, cancellationToken).ConfigureAwait(false);
+            if (!result)
             {
                 return (false, default);
             }
@@ -448,11 +447,8 @@ namespace System.Formats.Tar
         // and returns the actual entry with the processed extended attributes saved in the _extendedAttributes dictionary.
         private async ValueTask<(bool, TarHeader)> TryProcessExtendedAttributesHeaderAsync(TarHeader extendedAttributesHeader, bool copyData, CancellationToken cancellationToken)
         {
-            TarHeader actualHeader = default;
-            actualHeader._format = TarEntryFormat.Pax;
-
             // Now get the actual entry
-            bool result = await actualHeader.TryGetNextHeaderAsync(_archiveStream, copyData, cancellationToken).ConfigureAwait(false);
+            (bool result, TarHeader actualHeader) = await TarHeader.TryGetNextHeaderAsync(_archiveStream, copyData, TarEntryFormat.Pax, cancellationToken).ConfigureAwait(false);
             if (!result)
             {
                 return (false, default);
@@ -563,11 +559,8 @@ namespace System.Formats.Tar
         // or the actual entry. Processes them all and returns the actual entry updating its path and/or linkpath fields as needed.
         private async ValueTask<(bool, TarHeader)> TryProcessGnuMetadataHeaderAsync(TarHeader header, bool copyData, CancellationToken cancellationToken)
         {
-            TarHeader secondHeader = default;
-            secondHeader._format = TarEntryFormat.Gnu;
-
             // Get the second entry, which is the actual entry
-            bool result1 = await secondHeader.TryGetNextHeaderAsync(_archiveStream, copyData, cancellationToken).ConfigureAwait(false);
+            (bool result1, TarHeader secondHeader) = await TarHeader.TryGetNextHeaderAsync(_archiveStream, copyData, TarEntryFormat.Gnu, cancellationToken).ConfigureAwait(false);
             if (!result1)
             {
                 return (false, default);
@@ -585,11 +578,8 @@ namespace System.Formats.Tar
             if ((header._typeFlag is TarEntryType.LongLink && secondHeader._typeFlag is TarEntryType.LongPath) ||
                 (header._typeFlag is TarEntryType.LongPath && secondHeader._typeFlag is TarEntryType.LongLink))
             {
-                TarHeader thirdHeader = default;
-                thirdHeader._format = TarEntryFormat.Gnu;
-
                 // Get the third entry, which is the actual entry
-                bool result2 = await thirdHeader.TryGetNextHeaderAsync(_archiveStream, copyData, cancellationToken).ConfigureAwait(false);
+                (bool result2, TarHeader thirdHeader) = await TarHeader.TryGetNextHeaderAsync(_archiveStream, copyData, TarEntryFormat.Gnu, cancellationToken).ConfigureAwait(false);
                 if (!result2)
                 {
                     return (false, default);
