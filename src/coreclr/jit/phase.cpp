@@ -191,6 +191,9 @@ void Phase::PostPhase(PhaseStatus status)
         // mark addr exposed locals
         PHASE_FWD_SUB,
         // morph implicit byref
+        //
+        // (enable all phase checks)
+        //
         PHASE_MORPH_GLOBAL,
         // gs cookie
         // compute ege weights
