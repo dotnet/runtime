@@ -168,7 +168,7 @@ namespace System.Net
             return GetSecurityContextToken(phContext, out phToken);
         }
 
-        public int CompleteAuthToken(ref SafeDeleteSslContext? refContext, in SecurityBuffer inputBuffer)
+        public int CompleteAuthToken(ref SafeDeleteSslContext? refContext, in InputSecurityBuffer inputBuffer)
         {
             return SafeDeleteContext.CompleteAuthToken(ref refContext, in inputBuffer);
         }

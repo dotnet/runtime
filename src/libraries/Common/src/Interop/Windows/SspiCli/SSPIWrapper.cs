@@ -163,7 +163,7 @@ namespace System.Net
             return errorCode;
         }
 
-        internal static int CompleteAuthToken(ISSPIInterface secModule, ref SafeDeleteSslContext? context, in SecurityBuffer inputBuffer)
+        internal static int CompleteAuthToken(ISSPIInterface secModule, ref SafeDeleteSslContext? context, in InputSecurityBuffer inputBuffer)
         {
             int errorCode = secModule.CompleteAuthToken(ref context, in inputBuffer);
 

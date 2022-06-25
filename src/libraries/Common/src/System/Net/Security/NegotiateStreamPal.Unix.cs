@@ -76,7 +76,7 @@ namespace System.Net.Security
             try
             {
                 Interop.NetSecurityNative.Status minorStatus;
-                Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.UnwrapBuffer(out minorStatus, context, buffer, offset, count, ref decryptedBuffer);
+                Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.UnwrapBuffer(out minorStatus, context, new ReadOnlySpan<byte>(buffer, offset, count), ref decryptedBuffer);
                 if (status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE)
                 {
                     throw new Interop.NetSecurityNative.GssApiException(status, minorStatus);
@@ -274,10 +274,12 @@ namespace System.Net.Security
           string? targetName,
           ContextFlagsPal inFlags,
           ReadOnlySpan<byte> incomingBlob,
-          ref byte[]? resultBuffer,
+          out byte[]? resultBuffer,
           ref ContextFlagsPal outFlags)
         {
             bool isNtlmOnly = credential.IsNtlmOnly;
+
+            resultBuffer = null;
 
             if (context == null)
             {
@@ -354,6 +356,7 @@ namespace System.Net.Security
             ReadOnlySpan<byte> incomingBlob,
             ChannelBinding? channelBinding,
             ref byte[]? resultBlob,
+            out int resultBlobLength,
             ref ContextFlagsPal contextFlags)
         {
             SafeFreeNegoCredentials negoCredentialsHandle = (SafeFreeNegoCredentials)credentialsHandle;
@@ -370,8 +373,9 @@ namespace System.Net.Security
                 spn,
                 requestedContextFlags,
                 incomingBlob,
-                ref resultBlob,
+                out resultBlob,
                 ref contextFlags);
+            resultBlobLength = resultBlob?.Length ?? 0;
 
             return status;
         }
@@ -383,6 +387,7 @@ namespace System.Net.Security
             ReadOnlySpan<byte> incomingBlob,
             ChannelBinding? channelBinding,
             ref byte[] resultBlob,
+            out int resultBlobLength,
             ref ContextFlagsPal contextFlags)
         {
             if (securityContext == null)
@@ -414,6 +419,7 @@ namespace System.Net.Security
 
                 contextFlags = ContextFlagsAdapterPal.GetContextFlagsPalFromInterop(
                     (Interop.NetSecurityNative.GssFlags)outputFlags, isServer: true);
+                resultBlobLength = resultBlob.Length;
 
                 SecurityStatusPalErrorCode errorCode;
                 if (done)
@@ -437,11 +443,13 @@ namespace System.Net.Security
             catch (Interop.NetSecurityNative.GssApiException gex)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, gex);
+                resultBlobLength = 0;
                 return new SecurityStatusPal(GetErrorCode(gex), gex);
             }
             catch (Exception ex)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, ex);
+                resultBlobLength = 0;
                 return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, ex);
             }
         }
@@ -534,7 +542,7 @@ namespace System.Net.Security
 
         internal static SecurityStatusPal CompleteAuthToken(
             ref SafeDeleteContext? securityContext,
-            byte[]? incomingBlob)
+            ReadOnlySpan<byte> incomingBlob)
         {
             return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }

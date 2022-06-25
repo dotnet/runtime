@@ -83,6 +83,7 @@ namespace System.Net.Security
             ReadOnlySpan<byte> incomingBlob,
             ChannelBinding? channelBinding,
             ref byte[]? resultBlob,
+            out int resultBlobLength,
             ref ContextFlagsPal contextFlags)
         {
 
@@ -113,18 +114,20 @@ namespace System.Net.Security
                 ref outSecurityBuffer,
                 ref outContextFlags);
             securityContext = sslContext;
+            Debug.Assert(outSecurityBuffer.offset == 0);
             resultBlob = outSecurityBuffer.token;
+            resultBlobLength = outSecurityBuffer.size;
             contextFlags = ContextFlagsAdapterPal.GetContextFlagsPalFromInterop(outContextFlags);
             return SecurityStatusAdapterPal.GetSecurityStatusPalFromInterop(winStatus);
         }
 
         internal static SecurityStatusPal CompleteAuthToken(
             ref SafeDeleteContext? securityContext,
-            byte[]? incomingBlob)
+            ReadOnlySpan<byte> incomingBlob)
         {
             // There is only one SafeDeleteContext type on Windows which is SafeDeleteSslContext so this cast is safe.
             SafeDeleteSslContext? sslContext = (SafeDeleteSslContext?)securityContext;
-            var inSecurityBuffer = new SecurityBuffer(incomingBlob, SecurityBufferType.SECBUFFER_TOKEN);
+            var inSecurityBuffer = new InputSecurityBuffer(incomingBlob, SecurityBufferType.SECBUFFER_TOKEN);
             Interop.SECURITY_STATUS winStatus = (Interop.SECURITY_STATUS)SSPIWrapper.CompleteAuthToken(
                 GlobalSSPI.SSPIAuth,
                 ref sslContext,
@@ -140,6 +143,7 @@ namespace System.Net.Security
             ReadOnlySpan<byte> incomingBlob,
             ChannelBinding? channelBinding,
             ref byte[]? resultBlob,
+            out int resultBlobLength,
             ref ContextFlagsPal contextFlags)
         {
             InputSecurityBuffers inputBuffers = default;
@@ -176,7 +180,9 @@ namespace System.Net.Security
                 winStatus = Interop.SECURITY_STATUS.InvalidToken;
             }
 
+            Debug.Assert(outSecurityBuffer.offset == 0);
             resultBlob = outSecurityBuffer.token;
+            resultBlobLength = outSecurityBuffer.size;
             securityContext = sslContext;
             contextFlags = ContextFlagsAdapterPal.GetContextFlagsPalFromInterop(outContextFlags);
             return SecurityStatusAdapterPal.GetSecurityStatusPalFromInterop(winStatus);
