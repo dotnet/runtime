@@ -144,8 +144,13 @@ namespace System.Text
             Debug.Assert(s_mappedCodePages.Length + 1 == indices.Length);
             Debug.Assert(indices[indices.Length - 1] == names.Length);
 
+            if ((uint)codePage > ushort.MaxValue)
+            {
+                return null;
+            }
+
             //This is a linear search, but we probably won't be doing it very often.
-            int i = Array.IndexOf(s_mappedCodePages, codePage);
+            int i = Array.IndexOf(s_mappedCodePages, (ushort)codePage);
             if (i < 0)
             {
                 // Didn't find it.
