@@ -287,15 +287,13 @@ namespace System
                         {
                             int n = RandomAccess.Read(sfh, buffer.AsSpan(index, count), index);
                             if (n == 0)
-                                ThrowHelper.ThrowEndOfFileException();
-
-                            int end = index + n;
-                            for (; index < end; index++)
                             {
-                                if (buffer[index] != rawData[index])
-                                {
-                                    return false;
-                                }
+                                ThrowHelper.ThrowEndOfFileException();
+                            }
+
+                            if (!buffer.AsSpan(index, n).SequenceEqual(rawData.AsSpan(index, n)))
+                            {
+                                return false;
                             }
 
                             count -= n;

@@ -145,50 +145,46 @@ namespace System.Text
             Debug.Assert(indices[indices.Length - 1] == names.Length);
 
             //This is a linear search, but we probably won't be doing it very often.
-            for (int i = 0; i < s_mappedCodePages.Length; i++)
+            int i = Array.IndexOf(s_mappedCodePages, codePage);
+            if (i < 0)
             {
-                if (s_mappedCodePages[i] == codePage)
-                {
-                    Debug.Assert(i < indices.Length - 1);
-
-                    s_cacheLock.EnterUpgradeableReadLock();
-                    try
-                    {
-                        if (cache.TryGetValue(codePage, out name))
-                        {
-                            return name;
-                        }
-                        else
-                        {
-                            name = names.Substring(indices[i], indices[i + 1] - indices[i]);
-
-                            s_cacheLock.EnterWriteLock();
-                            try
-                            {
-                                if (cache.TryGetValue(codePage, out string? cachedName))
-                                {
-                                    return cachedName;
-                                }
-
-                                cache.Add(codePage, name);
-                            }
-                            finally
-                            {
-                                s_cacheLock.ExitWriteLock();
-                            }
-                        }
-                    }
-                    finally
-                    {
-                        s_cacheLock.ExitUpgradeableReadLock();
-                    }
-
-                    return name;
-                }
+                // Didn't find it.
+                return null;
             }
 
-            // Nope, we didn't find it.
-            return null;
+            Debug.Assert(i < indices.Length - 1);
+
+            s_cacheLock.EnterUpgradeableReadLock();
+            try
+            {
+                if (cache.TryGetValue(codePage, out name))
+                {
+                    return name;
+                }
+
+                name = names.Substring(indices[i], indices[i + 1] - indices[i]);
+
+                s_cacheLock.EnterWriteLock();
+                try
+                {
+                    if (cache.TryGetValue(codePage, out string? cachedName))
+                    {
+                        return cachedName;
+                    }
+
+                    cache.Add(codePage, name);
+                }
+                finally
+                {
+                    s_cacheLock.ExitWriteLock();
+                }
+            }
+            finally
+            {
+                s_cacheLock.ExitUpgradeableReadLock();
+            }
+
+            return name;
         }
     }
 }

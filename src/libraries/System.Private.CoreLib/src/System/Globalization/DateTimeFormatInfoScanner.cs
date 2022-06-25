@@ -327,7 +327,7 @@ namespace System.Globalization
         internal static int ScanRepeatChar(string pattern, char ch, int index, out int count)
         {
             count = 1;
-            while (++index < pattern.Length && pattern[index] == ch)
+            while ((uint)++index < (uint)pattern.Length && pattern[index] == ch)
             {
                 count++;
             }
@@ -423,7 +423,7 @@ namespace System.Globalization
                         i = ScanRepeatChar(pattern, 'M', i, out chCount);
                         if (chCount >= 4)
                         {
-                            if (i < pattern.Length && pattern[i] == '\'')
+                            if ((uint)i < (uint)pattern.Length && pattern[i] == '\'')
                             {
                                 i = AddDateWords(pattern, i + 1, "MMMM");
                             }
@@ -597,31 +597,9 @@ namespace System.Globalization
         //      otherwise it returns false.
         //-----------------------------------------------------------------------------
 
-        private static bool EqualStringArrays(string[] array1, string[] array2)
-        {
-            // Shortcut if they're the same array
-            if (array1 == array2)
-            {
-                return true;
-            }
-
-            // This is effectively impossible
-            if (array1.Length != array2.Length)
-            {
-                return false;
-            }
-
-            // Check each string
-            for (int i = 0; i < array1.Length; i++)
-            {
-                if (array1[i] != array2[i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
+        private static bool EqualStringArrays(string[] array1, string[] array2) =>
+            array1 == array2 ||
+            array1.AsSpan().SequenceEqual(array2);
 
         //-----------------------------------------------------------------------------
         // ArrayElementsHaveSpace

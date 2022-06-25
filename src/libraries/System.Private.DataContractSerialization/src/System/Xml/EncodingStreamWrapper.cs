@@ -426,15 +426,8 @@ namespace System.Xml
             return true;
         }
 
-        private static bool Compare(byte[] key, byte[] buffer, int offset)
-        {
-            for (int i = 0; i < key.Length; i++)
-            {
-                if (key[i] != buffer[offset + i])
-                    return false;
-            }
-            return true;
-        }
+        private static bool Compare(byte[] key, byte[] buffer, int offset) =>
+            key.AsSpan().SequenceEqual(buffer.AsSpan(offset, key.Length));
 
         private static bool IsWhitespace(byte ch)
         {

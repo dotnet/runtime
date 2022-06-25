@@ -102,17 +102,8 @@ namespace System.Formats.Tar
         }
 
         // Returns true if all the bytes in the specified array are nulls, false otherwise.
-        internal static bool IsAllNullBytes(Span<byte> buffer)
-        {
-            for (int i = 0; i < buffer.Length; i++)
-            {
-                if (buffer[i] != 0)
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
+        internal static bool IsAllNullBytes(Span<byte> buffer) =>
+            buffer.IndexOfAnyExcept((byte)0) < 0;
 
         // Converts the specified number of seconds that have passed since the Unix Epoch to a DateTimeOffset.
         internal static DateTimeOffset GetDateTimeOffsetFromSecondsSinceEpoch(long secondsSinceUnixEpoch) =>
