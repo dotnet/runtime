@@ -443,11 +443,11 @@ namespace System.Formats.Tar.Tests
 
                 if (posix is PaxTarEntry pax)
                 {
-                    VerifyExtendedAttributes(pax);
+                    VerifyExtendedAttributeTimestamps(pax);
                 }
                 else if (posix is GnuTarEntry gnu)
                 {
-                    VerifyGnuFields(gnu);
+                    VerifyGnuTimestamps(gnu);
                 }
             }
         }
@@ -480,11 +480,11 @@ namespace System.Formats.Tar.Tests
 
             if (symbolicLink is PaxTarEntry pax)
             {
-                VerifyExtendedAttributes(pax);
+                VerifyExtendedAttributeTimestamps(pax);
             }
             else if (symbolicLink is GnuTarEntry gnu)
             {
-                VerifyGnuFields(gnu);
+                VerifyGnuTimestamps(gnu);
             }
         }
 
@@ -516,11 +516,11 @@ namespace System.Formats.Tar.Tests
 
             if (directory is PaxTarEntry pax)
             {
-                VerifyExtendedAttributes(pax);
+                VerifyExtendedAttributeTimestamps(pax);
             }
             else if (directory is GnuTarEntry gnu)
             {
-                VerifyGnuFields(gnu);
+                VerifyGnuTimestamps(gnu);
             }
         }
 
@@ -548,11 +548,11 @@ namespace System.Formats.Tar.Tests
 
             if (blockDevice is PaxTarEntry pax)
             {
-                VerifyExtendedAttributes(pax);
+                VerifyExtendedAttributeTimestamps(pax);
             }
             else if (blockDevice is GnuTarEntry gnu)
             {
-                VerifyGnuFields(gnu);
+                VerifyGnuTimestamps(gnu);
             }
         }
 
@@ -580,11 +580,11 @@ namespace System.Formats.Tar.Tests
 
             if (characterDevice is PaxTarEntry pax)
             {
-                VerifyExtendedAttributes(pax);
+                VerifyExtendedAttributeTimestamps(pax);
             }
             else if (characterDevice is GnuTarEntry gnu)
             {
-                VerifyGnuFields(gnu);
+                VerifyGnuTimestamps(gnu);
             }
         }
 
@@ -613,11 +613,11 @@ namespace System.Formats.Tar.Tests
 
             if (fifo is PaxTarEntry pax)
             {
-                VerifyExtendedAttributes(pax);
+                VerifyExtendedAttributeTimestamps(pax);
             }
             else if (fifo is GnuTarEntry gnu)
             {
-                VerifyGnuFields(gnu);
+                VerifyGnuTimestamps(gnu);
             }
         }
 
@@ -639,22 +639,6 @@ namespace System.Formats.Tar.Tests
             Assert.True(gea.GlobalExtendedAttributes.Any());
             Assert.Contains(AssetPaxGeaKey, gea.GlobalExtendedAttributes);
             Assert.Equal(AssetPaxGeaValue, gea.GlobalExtendedAttributes[AssetPaxGeaKey]);
-        }
-
-        private void VerifyExtendedAttributes(PaxTarEntry pax)
-        {
-            Assert.NotNull(pax.ExtendedAttributes);
-            AssertExtensions.GreaterThanOrEqualTo(pax.ExtendedAttributes.Count(), 3); // Expect to at least collect mtime, ctime and atime
-
-            VerifyExtendedAttributeTimestamp(pax, PaxEaMTime, MinimumTime);
-            VerifyExtendedAttributeTimestamp(pax, PaxEaATime, MinimumTime);
-            VerifyExtendedAttributeTimestamp(pax, PaxEaCTime, MinimumTime);
-        }
-
-        private void VerifyGnuFields(GnuTarEntry gnu)
-        {
-            AssertExtensions.GreaterThanOrEqualTo(gnu.AccessTime, DateTimeOffset.UnixEpoch);
-            AssertExtensions.GreaterThanOrEqualTo(gnu.ChangeTime, DateTimeOffset.UnixEpoch);
         }
     }
 }

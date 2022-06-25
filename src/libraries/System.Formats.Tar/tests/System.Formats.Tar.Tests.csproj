@@ -46,6 +46,9 @@
     <Compile Include="TarTestsBase.Posix.cs" />
     <Compile Include="TarTestsBase.Ustar.cs" />
     <Compile Include="TarTestsBase.V7.cs" />
+    <Compile Include="TarWriter\TarWriter.WriteEntryAsync.File.Tests.cs" />
+    <Compile Include="TarWriter\TarWriter.WriteEntry.Base.cs" />
+    <Compile Include="TarWriter\TarWriter.WriteEntryAsync.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntryAsync.Entry.Ustar.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntryAsync.Entry.V7.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntryAsync.Entry.Pax.Tests.cs" />
@@ -65,7 +68,7 @@
   <!-- Windows specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="TarFile\TarFile.ExtractToDirectory.File.Tests.Windows.cs" />
-    <Compile Include="TarWriter\TarWriter.WriteEntry.File.Tests.Windows.cs" />
+    <Compile Include="TarWriter\TarWriter.File.Base.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" Link="Common\Interop\Windows\Interop.BOOL.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs" Link="Common\Interop\Windows\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
@@ -81,7 +84,9 @@
     <Compile Include="TarFile\TarFile.ExtractToDirectoryAsync.File.Tests.Unix.cs" />
     <Compile Include="TarReader\TarReader.TarEntry.ExtractToFileAsync.Tests.Unix.cs" />
     <Compile Include="TarReader\TarReader.TarEntry.ExtractToFile.Tests.Unix.cs" />
+    <Compile Include="TarWriter\TarWriter.File.Base.Unix.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntry.File.Tests.Unix.cs" />
+    <Compile Include="TarWriter\TarWriter.WriteEntryAsync.File.Tests.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs" Link="Common\Interop\Unix\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs" Link="Common\Interop\Unix\Interop.IOErrors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Common\Interop\Unix\Interop.Libraries.cs" />

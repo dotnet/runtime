@@ -3,34 +3,37 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
 {
-    public partial class TarWriter_WriteEntry_File_Tests : TarWriter_File_Base
+    public partial class TarWriter_WriteEntryAsync_File_Tests : TarWriter_File_Base
     {
         [Fact]
-        public void ThrowIf_AddFile_AfterDispose()
+        public async Task ThrowIf_AddFile_AfterDispose_Async()
         {
             using MemoryStream archiveStream = new MemoryStream();
             TarWriter writer = new TarWriter(archiveStream);
-            writer.Dispose();
+            await writer.DisposeAsync();
 
-            Assert.Throws<ObjectDisposedException>(() => writer.WriteEntry("fileName", "entryName"));
+            await Assert.ThrowsAsync<ObjectDisposedException>(async () => await writer.WriteEntryAsync("fileName", "entryName"));
         }
 
         [Fact]
-        public void FileName_NullOrEmpty()
+        public async Task FileName_NullOrEmpty_Async()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            using TarWriter writer = new TarWriter(archiveStream);
-
-            Assert.Throws<ArgumentNullException>(() => writer.WriteEntry(null, "entryName"));
-            Assert.Throws<ArgumentException>(() => writer.WriteEntry(string.Empty, "entryName"));
+            TarWriter writer = new TarWriter(archiveStream);
+            await using (writer)
+            {
+                await Assert.ThrowsAsync<ArgumentNullException>(async () => await writer.WriteEntryAsync(null, "entryName"));
+                await Assert.ThrowsAsync<ArgumentException>(async () => await writer.WriteEntryAsync(string.Empty, "entryName"));
+            }
         }
 
         [Fact]
-        public void EntryName_NullOrEmpty()
+        public async Task EntryName_NullOrEmpty_Async()
         {
             using TempDirectory root = new TempDirectory();
 
@@ -44,24 +47,26 @@ namespace System.Formats.Tar.Tests
             File.Create(file2Path).Dispose();
 
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true))
+            TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true);
+            await using (writer)
             {
-                writer.WriteEntry(file1Path, null);
-                writer.WriteEntry(file2Path, string.Empty);
+                await writer.WriteEntryAsync(file1Path, null);
+                await writer.WriteEntryAsync(file2Path, string.Empty);
             }
 
             archiveStream.Seek(0, SeekOrigin.Begin);
-            using (TarReader reader = new TarReader(archiveStream))
+            TarReader reader = new TarReader(archiveStream);
+            await using (reader)
             {
-                TarEntry first = reader.GetNextEntry();
+                TarEntry first = await reader.GetNextEntryAsync();
                 Assert.NotNull(first);
                 Assert.Equal(file1Name, first.Name);
 
-                TarEntry second = reader.GetNextEntry();
+                TarEntry second = await reader.GetNextEntryAsync();
                 Assert.NotNull(second);
                 Assert.Equal(file2Name, second.Name);
 
-                Assert.Null(reader.GetNextEntry());
+                Assert.Null(await reader.GetNextEntryAsync());
             }
         }
 
@@ -70,7 +75,7 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
         [InlineData(TarEntryFormat.Gnu)]
-        public void Add_File(TarEntryFormat format)
+        public async Task Add_File_Async(TarEntryFormat format)
         {
             using TempDirectory root = new TempDirectory();
             string fileName = "file.txt";
@@ -83,15 +88,17 @@ namespace System.Formats.Tar.Tests
             }
 
             using MemoryStream archive = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archive, format, leaveOpen: true))
+            TarWriter writer = new TarWriter(archive, format, leaveOpen: true);
+            await using (writer)
             {
-                writer.WriteEntry(fileName: filePath, entryName: fileName);
+                await writer.WriteEntryAsync(fileName: filePath, entryName: fileName);
             }
 
             archive.Seek(0, SeekOrigin.Begin);
-            using (TarReader reader = new TarReader(archive))
+            TarReader reader = new TarReader(archive);
+            await using (reader)
             {
-                TarEntry entry = reader.GetNextEntry();
+                TarEntry entry = await reader.GetNextEntryAsync();
                 Assert.NotNull(entry);
                 Assert.Equal(format, entry.Format);
                 Assert.Equal(fileName, entry.Name);
@@ -108,7 +115,7 @@ namespace System.Formats.Tar.Tests
 
                 VerifyPlatformSpecificMetadata(filePath, entry);
 
-                Assert.Null(reader.GetNextEntry());
+                Assert.Null(await reader.GetNextEntryAsync());
             }
         }
 
@@ -121,7 +128,7 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Pax, true)]
         [InlineData(TarEntryFormat.Gnu, false)]
         [InlineData(TarEntryFormat.Gnu, true)]
-        public void Add_Directory(TarEntryFormat format, bool withContents)
+        public async Task Add_Directory_Async(TarEntryFormat format, bool withContents)
         {
             using TempDirectory root = new TempDirectory();
             string dirName = "dir";
@@ -136,15 +143,17 @@ namespace System.Formats.Tar.Tests
             }
 
             using MemoryStream archive = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archive, format, leaveOpen: true))
+            TarWriter writer = new TarWriter(archive, format, leaveOpen: true);
+            await using (writer)
             {
-                writer.WriteEntry(fileName: dirPath, entryName: dirName);
+                await writer.WriteEntryAsync(fileName: dirPath, entryName: dirName);
             }
 
             archive.Seek(0, SeekOrigin.Begin);
-            using (TarReader reader = new TarReader(archive))
+            TarReader reader = new TarReader(archive);
+            await using (reader)
             {
-                TarEntry entry = reader.GetNextEntry();
+                TarEntry entry = await reader.GetNextEntryAsync();
                 Assert.Equal(format, entry.Format);
 
                 Assert.NotNull(entry);
@@ -154,7 +163,7 @@ namespace System.Formats.Tar.Tests
 
                 VerifyPlatformSpecificMetadata(dirPath, entry);
 
-                Assert.Null(reader.GetNextEntry()); // If the dir had contents, they should've been excluded
+                Assert.Null(await reader.GetNextEntryAsync()); // If the dir had contents, they should've been excluded
             }
         }
 
@@ -167,7 +176,7 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Pax, true)]
         [InlineData(TarEntryFormat.Gnu, false)]
         [InlineData(TarEntryFormat.Gnu, true)]
-        public void Add_SymbolicLink(TarEntryFormat format, bool createTarget)
+        public async Task Add_SymbolicLink_Async(TarEntryFormat format, bool createTarget)
         {
             using TempDirectory root = new TempDirectory();
             string targetName = "file.txt";
@@ -184,15 +193,17 @@ namespace System.Formats.Tar.Tests
             linkInfo.CreateAsSymbolicLink(targetName);
 
             using MemoryStream archive = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archive, format, leaveOpen: true))
+            TarWriter writer = new TarWriter(archive, format, leaveOpen: true);
+            await using (writer)
             {
-                writer.WriteEntry(fileName: linkPath, entryName: linkName);
+                await writer.WriteEntryAsync(fileName: linkPath, entryName: linkName);
             }
 
             archive.Seek(0, SeekOrigin.Begin);
-            using (TarReader reader = new TarReader(archive))
+            TarReader reader = new TarReader(archive);
+            await using (reader)
             {
-                TarEntry entry = reader.GetNextEntry();
+                TarEntry entry = await reader.GetNextEntryAsync();
                 Assert.Equal(format, entry.Format);
 
                 Assert.NotNull(entry);
@@ -203,7 +214,7 @@ namespace System.Formats.Tar.Tests
 
                 VerifyPlatformSpecificMetadata(linkPath, entry);
 
-                Assert.Null(reader.GetNextEntry());
+                Assert.Null(await reader.GetNextEntryAsync());
             }
         }
     }
