@@ -24,6 +24,9 @@ namespace LibraryImportGenerator.IntegrationTests
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "get_long_bytes_as_double")]
             public static partial double GetLongBytesAsDouble([MarshalUsing(typeof(DoubleToLongMarshaller))] double d);
 
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "get_bytes_as_double_big_endian")]
+            public static partial double GetBytesAsDoubleBigEndian([MarshalUsing(typeof(DoubleToBytesBigEndianMarshaller))] double d);
+
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "negate_bools")]
             public static partial void NegateBools(
                 BoolStruct boolStruct,
@@ -35,6 +38,27 @@ namespace LibraryImportGenerator.IntegrationTests
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "double_int_ref")]
             public static partial IntWrapper DoubleIntRef(IntWrapper pInt);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "return_zero")]
+            [return: MarshalUsing(typeof(IntGuaranteedUnmarshal))]
+            public static partial int GuaranteedUnmarshal([MarshalUsing(typeof(ExceptionOnUnmarshal))] out int ret);
+
+            [ManagedToUnmanagedMarshallers(typeof(int))]
+            public static class ExceptionOnUnmarshal
+            {
+                public static int ConvertToManaged(int unmanaged) => throw new Exception();
+            }
+
+            [ManagedToUnmanagedMarshallers(typeof(int))]
+            public static unsafe class IntGuaranteedUnmarshal
+            {
+                public static bool ConvertToManagedGuaranteedCalled = false;
+                public static int ConvertToManagedGuaranteed(int unmanaged)
+                {
+                    ConvertToManagedGuaranteedCalled = true;
+                    return unmanaged;
+                }
+            }
         }
 
         [LibraryImport(NativeExportsNE_Binary, EntryPoint = "reverse_replace_ref_ushort")]
@@ -66,6 +90,22 @@ namespace LibraryImportGenerator.IntegrationTests
             double d = 1234.56789;
 
             Assert.Equal(d, NativeExportsNE.Stateless.GetLongBytesAsDouble(d));
+        }
+
+        [Fact]
+        public void CallerAllocatedBuffer()
+        {
+            double d = 1234.56789;
+
+            Assert.Equal(d, NativeExportsNE.Stateless.GetBytesAsDoubleBigEndian(d));
+        }
+
+        [Fact]
+        public void GuaranteedUnmarshal()
+        {
+            NativeExportsNE.Stateless.IntGuaranteedUnmarshal.ConvertToManagedGuaranteedCalled = false;
+            Assert.Throws<Exception>(() => NativeExportsNE.Stateless.GuaranteedUnmarshal(out _));
+            Assert.True(NativeExportsNE.Stateless.IntGuaranteedUnmarshal.ConvertToManagedGuaranteedCalled);
         }
 
         [Fact]

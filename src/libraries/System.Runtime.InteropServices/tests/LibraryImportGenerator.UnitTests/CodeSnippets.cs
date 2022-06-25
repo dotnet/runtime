@@ -707,6 +707,16 @@ public static class Marshaller
     public static Native ConvertToUnmanaged(S s) => default;
 }
 ";
+            private static string StatelessInBuffer = @"
+[ManagedToUnmanagedMarshallers(typeof(S))]
+public static class Marshaller
+{
+    public struct Native { }
+
+    public const int BufferSize = 0x100;
+    public static Native ConvertToUnmanaged(S s, System.Span<byte> buffer) => default;
+}
+";
             private static string StatelessOut = @"
 [ManagedToUnmanagedMarshallers(typeof(S))]
 public static class Marshaller
@@ -714,6 +724,15 @@ public static class Marshaller
     public struct Native { }
 
     public static S ConvertToManaged(Native n) => default;
+}
+";
+            private static string StatelessOutGuaranteed = @"
+[ManagedToUnmanagedMarshallers(typeof(S))]
+public static class Marshaller
+{
+    public struct Native { }
+
+    public static S ConvertToManagedGuaranteed(Native n) => default;
 }
 ";
             public static string StatelessRef = @"
@@ -726,6 +745,30 @@ public static class Marshaller
     public static S ConvertToManaged(Native n) => default;
 }
 ";
+            public static string StatelessRefBuffer = @"
+[ManagedToUnmanagedMarshallers(typeof(S))]
+public static class Marshaller
+{
+    public struct Native { }
+
+    public const int BufferSize = 0x100;
+    public static Native ConvertToUnmanaged(S s, System.Span<byte> buffer) => default;
+    public static S ConvertToManaged(Native n) => default;
+}
+";
+            public static string StatelessRefOptionalBuffer = @"
+[ManagedToUnmanagedMarshallers(typeof(S))]
+public static class Marshaller
+{
+    public struct Native { }
+
+    public const int BufferSize = 0x100;
+    public static Native ConvertToUnmanaged(S s) => default;
+    public static Native ConvertToUnmanaged(S s, System.Span<byte> buffer) => default;
+    public static S ConvertToManaged(Native n) => default;
+}
+";
+
             public static string ManagedToNativeOnlyOutParameter => BasicParameterWithByRefModifier("out", "S")
                 + NonBlittableUserDefinedType()
                 + StatelessIn;
@@ -734,11 +777,19 @@ public static class Marshaller
                 + NonBlittableUserDefinedType()
                 + StatelessOut;
 
+            public static string NativeToManagedGuaranteedOnlyOutParameter => BasicParameterWithByRefModifier("out", "S")
+                + NonBlittableUserDefinedType()
+                + StatelessOutGuaranteed;
+
             public static string ManagedToNativeOnlyReturnValue => BasicReturnType("S")
                 + NonBlittableUserDefinedType()
                 + StatelessIn;
 
             public static string NativeToManagedOnlyReturnValue => BasicReturnType("S")
+                + NonBlittableUserDefinedType()
+                + StatelessOut;
+
+            public static string NativeToManagedGuaranteedOnlyReturnValue => BasicReturnType("S")
                 + NonBlittableUserDefinedType()
                 + StatelessOut;
 
@@ -757,6 +808,22 @@ public static class Marshaller
             public static string NonStaticMarshallerEntryPoint => BasicParameterByValue("S")
                 + NonBlittableUserDefinedType()
                 + NonStatic;
+
+            public static string StackallocByValueInParameter => BasicParameterByValue("S")
+                + NonBlittableUserDefinedType()
+                + StatelessInBuffer;
+
+            public static string StackallocParametersAndModifiersNoRef = BasicParametersAndModifiersNoRef("S")
+                + NonBlittableUserDefinedType()
+                + StatelessRefBuffer;
+
+            public static string StackallocOnlyRefParameter = BasicParameterWithByRefModifier("ref", "S")
+                + NonBlittableUserDefinedType()
+                + StatelessRefBuffer;
+
+            public static string OptionalStackallocParametersAndModifiers = BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
+                + NonBlittableUserDefinedType()
+                + StatelessRefOptionalBuffer;
         }
 
         public static class CustomStructMarshalling_V1

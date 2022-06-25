@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -73,6 +74,18 @@ namespace SharedTypes
 
             public static void Free(StringContainerNative unmanaged)
                 => Ref.Free(unmanaged);
+        }
+    }
+
+    [ManagedToUnmanagedMarshallers(typeof(double))]
+    public static unsafe class DoubleToBytesBigEndianMarshaller
+    {
+        public const int BufferSize = 8;
+
+        public static byte* ConvertToUnmanaged(double managed, Span<byte> buffer)
+        {
+            BinaryPrimitives.WriteDoubleBigEndian(buffer, managed);
+            return (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(buffer));
         }
     }
 
