@@ -59,7 +59,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       condition: >-
-          eq(variables['isRollingBuild'], true)
+        eq(variables['isRollingBuild'], true)
 #         or(
 #           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
 #           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
@@ -103,22 +103,6 @@ jobs:
         condition: >-
           true
 #           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true)
-
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/libraries/build-job.yml
-    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-    platforms:
-    - windows_x64
-    jobParameters:
-      framework: allConfigurations
-      runTests: true
-      useHelix: false
-      condition: >-
-        eq(variables['isRollingBuild'], true)
-#         or(
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-#           eq(variables['isRollingBuild'], true))
 
 #
 # Installer Build and Test
@@ -176,27 +160,6 @@ jobs:
 #         or(
 #           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
 #           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-#           eq(variables['isRollingBuild'], true))
-
-#
-# Libraries Debug Test Execution against a release coreclr runtime
-# Only when the PR contains a libraries change
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-    platforms:
-    - windows_x64
-    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    jobParameters:
-      isOfficialBuild: false
-      testScope: innerloop
-      liveRuntimeBuildConfig: release
-      condition: >-
-        eq(variables['isRollingBuild'], true)
-#         or(
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
 #           eq(variables['isRollingBuild'], true))
 
 #
