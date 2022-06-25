@@ -106,7 +106,7 @@ alloc_complex_descriptor (gsize *bitmap, int numbits)
 gsize*
 sgen_get_complex_descriptor (SgenDescriptor desc)
 {
-	return (gsize*) sgen_array_list_get_slot (&complex_descriptors, desc >> LOW_TYPE_BITS);
+	return (gsize*) sgen_array_list_get_slot (&complex_descriptors, (guint32)(desc >> LOW_TYPE_BITS));
 }
 
 /*
@@ -325,7 +325,7 @@ sgen_make_user_root_descriptor (SgenUserRootMarkFunc marker)
 void*
 sgen_get_complex_descriptor_bitmap (SgenDescriptor desc)
 {
-	return (void*) sgen_array_list_get_slot (&complex_descriptors, desc >> ROOT_DESC_TYPE_SHIFT);
+	return (void*) sgen_array_list_get_slot (&complex_descriptors, (guint32)(desc >> ROOT_DESC_TYPE_SHIFT));
 }
 
 SgenUserRootMarkFunc

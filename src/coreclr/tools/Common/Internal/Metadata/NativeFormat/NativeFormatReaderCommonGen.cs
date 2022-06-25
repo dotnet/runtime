@@ -6,6 +6,7 @@
 using System;
 using System.Reflection;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 #pragma warning disable 108     // base type 'uint' is not CLS-compliant
 #pragma warning disable 3009    // base type 'uint' is not CLS-compliant
@@ -14,6 +15,10 @@ using System.Collections.Generic;
 namespace Internal.Metadata.NativeFormat
 {
     [Flags]
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+    [ReflectionBlocked]
+#endif
     public enum AssemblyFlags : uint
     {
         /// The assembly reference holds the full (unhashed) public key.
@@ -29,6 +34,10 @@ namespace Internal.Metadata.NativeFormat
         EnableJITcompileTracking = 0x8000,
     } // AssemblyFlags
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+    [ReflectionBlocked]
+#endif
     public enum AssemblyHashAlgorithm : uint
     {
         None = 0x0,
@@ -36,6 +45,10 @@ namespace Internal.Metadata.NativeFormat
         SHA1 = 0x8004,
     } // AssemblyHashAlgorithm
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+    [ReflectionBlocked]
+#endif
     public enum GenericParameterKind : byte
     {
         /// Represents a type parameter for a generic type.
@@ -45,6 +58,10 @@ namespace Internal.Metadata.NativeFormat
         GenericMethodParameter = 0x1,
     } // GenericParameterKind
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+    [ReflectionBlocked]
+#endif
     public enum NamedArgumentMemberKind : byte
     {
         /// Specifies the name of a property
@@ -54,6 +71,10 @@ namespace Internal.Metadata.NativeFormat
         Field = 0x1,
     } // NamedArgumentMemberKind
 
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+    [ReflectionBlocked]
+#endif
     public enum HandleType : byte
     {
         Null = 0x0,

@@ -697,7 +697,7 @@ namespace System.Xml.Schema
             if (schemaInfo != null)
             {
                 schemaInfo.SchemaAttribute = localAttribute;
-                schemaInfo.SchemaType = localAttribute == null ? null : localAttribute.AttributeSchemaType;
+                schemaInfo.SchemaType = localAttribute?.AttributeSchemaType;
                 schemaInfo.MemberType = localMemberType;
                 schemaInfo.IsDefault = false;
                 schemaInfo.Validity = localValidity;
@@ -1238,7 +1238,7 @@ namespace System.Xml.Schema
                 // for each level in the stack, endchildren and fill value from element
                 if (HasIdentityConstraints)
                 {
-                    XmlSchemaType xmlType = memberType == null ? contextElementDecl.SchemaType! : memberType;
+                    XmlSchemaType xmlType = memberType ?? contextElementDecl.SchemaType!;
                     EndElementIdentityConstraints(typedValue!, stringValue, xmlType.Datatype!);
                 }
 
@@ -1614,9 +1614,8 @@ namespace System.Xml.Schema
             {
                 if (_isRoot && _partialValidationType != null)
                 {
-                    if (_partialValidationType is XmlSchemaElement)
+                    if (_partialValidationType is XmlSchemaElement element)
                     {
-                        XmlSchemaElement element = (XmlSchemaElement)_partialValidationType;
                         if (elementName.Equals(element.QualifiedName))
                         {
                             elementDecl = element.ElementDecl;
@@ -1626,9 +1625,8 @@ namespace System.Xml.Schema
                             SendValidationEvent(SR.Sch_SchemaElementNameMismatch, elementName.ToString(), element.QualifiedName.ToString());
                         }
                     }
-                    else if (_partialValidationType is XmlSchemaType)
+                    else if (_partialValidationType is XmlSchemaType type)
                     { //Element name is wildcard
-                        XmlSchemaType type = (XmlSchemaType)_partialValidationType;
                         elementDecl = type.ElementDecl;
                     }
                     else
@@ -2037,7 +2035,7 @@ namespace System.Xml.Schema
 
         private object? FindId(string name)
         {
-            return _IDs == null ? null : _IDs[name];
+            return _IDs?[name];
         }
 
         private void CheckForwardRefs()

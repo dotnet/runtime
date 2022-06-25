@@ -46,7 +46,7 @@ namespace System.Runtime.InteropServices
         ///     <para>The behavior when <paramref name="ptr" /> is <see langword="null"/> and <paramref name="byteCount" /> is greater than <c>0</c> is undefined.</para>
         /// </remarks>
         [CLSCompliant(false)]
-        public static unsafe void ZeroMemory(void* ptr, nuint byteCount)
+        public static unsafe void Clear(void* ptr, nuint byteCount)
         {
             SpanHelpers.ClearWithoutReferences(ref *(byte*)ptr, byteCount);
         }

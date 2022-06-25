@@ -83,7 +83,7 @@ IGCHandleStore* GCHandleManager::GetGlobalHandleStore()
 
 IGCHandleStore* GCHandleManager::CreateHandleStore()
 {
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NATIVEAOT
     GCHandleStore* store = new (nothrow) GCHandleStore();
     if (store == nullptr)
     {
@@ -99,7 +99,7 @@ IGCHandleStore* GCHandleManager::CreateHandleStore()
 
     return store;
 #else
-    assert(!"CreateHandleStore is not implemented when FEATURE_REDHAWK is defined!");
+    assert(!"CreateHandleStore is not implemented when FEATURE_NATIVEAOT is defined!");
     return nullptr;
 #endif
 }

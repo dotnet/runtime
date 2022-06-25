@@ -1710,7 +1710,7 @@ mono_x86_patch_inline (guchar* code, gpointer target)
  */
 #define x86_jump_code(inst,target)	\
 	do {	\
-		int t; \
+		ptrdiff_t t; \
 		x86_codegen_pre(&(inst), 2); \
 		t = (unsigned char*)(target) - (inst) - 2;	\
 		if (x86_is_imm8(t)) {	\
@@ -1783,7 +1783,7 @@ mono_x86_patch_inline (guchar* code, gpointer target)
 #if defined(TARGET_X86)
 #define x86_branch(inst,cond,target,is_signed)	\
 	do {	\
-		int __offset; \
+		ptrdiff_t __offset; \
 		guint8* __branch_start; \
 		x86_codegen_pre(&(inst), 2); \
 		__offset = (target) - (inst) - 2; \
@@ -1803,7 +1803,7 @@ mono_x86_patch_inline (guchar* code, gpointer target)
 
 #define x86_branch(inst,cond,target,is_signed) \
 	do { \
-		int __offset = (target) - (inst) - 2; \
+		ptrdiff_t __offset = (target) - (inst) - 2; \
 		if (x86_is_imm8 ((__offset))) \
 			x86_branch8 ((inst), (cond), __offset, (is_signed)); \
 		else { \
@@ -1893,7 +1893,7 @@ mono_x86_patch_inline (guchar* code, gpointer target)
 
 #define x86_call_code(inst,target)	\
 	do {	\
-		int _x86_offset; \
+		ptrdiff_t _x86_offset; \
 		_x86_offset = (unsigned char*)(target) - (inst);	\
 		_x86_offset -= 5;	\
 		x86_call_imm_body ((inst), _x86_offset);	\

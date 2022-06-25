@@ -16,7 +16,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task CanRead()
         {
-            var sequence = new ReadOnlySequence<byte>(Encoding.ASCII.GetBytes("Hello World"));
+            var sequence = new ReadOnlySequence<byte>("Hello World"u8.ToArray());
             var reader = PipeReader.Create(sequence);
 
             ReadResult readResult = await reader.ReadAsync();
@@ -33,7 +33,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task TryReadReturnsTrueIfBufferedBytesAndNotExaminedEverything()
         {
-            var sequence = new ReadOnlySequence<byte>(Encoding.ASCII.GetBytes("Hello World"));
+            var sequence = new ReadOnlySequence<byte>("Hello World"u8.ToArray());
             var reader = PipeReader.Create(sequence);
 
             ReadResult readResult = await reader.ReadAsync();
@@ -53,7 +53,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task TryReadReturnsFalseIfBufferedBytesAndEverythingExamined()
         {
-            var sequence = new ReadOnlySequence<byte>(Encoding.ASCII.GetBytes("Hello World"));
+            var sequence = new ReadOnlySequence<byte>("Hello World"u8.ToArray());
             var reader = PipeReader.Create(sequence);
 
             ReadResult readResult = await reader.ReadAsync();
@@ -86,7 +86,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task DataCanBeReadMultipleTimes()
         {
-            var helloBytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] helloBytes = "Hello World"u8.ToArray();
             var sequence = new ReadOnlySequence<byte>(helloBytes);
             PipeReader reader = PipeReader.Create(sequence);
 

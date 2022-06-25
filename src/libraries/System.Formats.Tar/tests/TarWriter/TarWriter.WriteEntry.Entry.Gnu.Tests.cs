@@ -13,20 +13,21 @@ namespace System.Formats.Tar.Tests
         public void Write_V7RegularFileEntry_As_RegularFileEntry()
         {
             using MemoryStream archive = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archive, archiveFormat: TarFormat.Gnu, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archive, format: TarEntryFormat.Gnu, leaveOpen: true))
             {
                 V7TarEntry entry = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
 
-                // Should be written as RegularFile
+                // Should be written in the format of the entry
                 writer.WriteEntry(entry);
             }
 
             archive.Seek(0, SeekOrigin.Begin);
             using (TarReader reader = new TarReader(archive))
             {
-                GnuTarEntry entry = reader.GetNextEntry() as GnuTarEntry;
+                TarEntry entry = reader.GetNextEntry();
                 Assert.NotNull(entry);
-                Assert.Equal(TarEntryType.RegularFile, entry.EntryType);
+                Assert.Equal(TarEntryFormat.V7, entry.Format);
+                Assert.True(entry is V7TarEntry);
 
                 Assert.Null(reader.GetNextEntry());
             }
@@ -36,7 +37,7 @@ namespace System.Formats.Tar.Tests
         public void WriteRegularFile()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Gnu, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Gnu, leaveOpen: true))
             {
                 GnuTarEntry regularFile = new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName);
                 SetRegularFile(regularFile);
@@ -56,7 +57,7 @@ namespace System.Formats.Tar.Tests
         public void WriteHardLink()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Gnu, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Gnu, leaveOpen: true))
             {
                 GnuTarEntry hardLink = new GnuTarEntry(TarEntryType.HardLink, InitialEntryName);
                 SetHardLink(hardLink);
@@ -76,7 +77,7 @@ namespace System.Formats.Tar.Tests
         public void WriteSymbolicLink()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Gnu, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Gnu, leaveOpen: true))
             {
                 GnuTarEntry symbolicLink = new GnuTarEntry(TarEntryType.SymbolicLink, InitialEntryName);
                 SetSymbolicLink(symbolicLink);
@@ -96,7 +97,7 @@ namespace System.Formats.Tar.Tests
         public void WriteDirectory()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Gnu, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Gnu, leaveOpen: true))
             {
                 GnuTarEntry directory = new GnuTarEntry(TarEntryType.Directory, InitialEntryName);
                 SetDirectory(directory);
@@ -116,7 +117,7 @@ namespace System.Formats.Tar.Tests
         public void WriteCharacterDevice()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Gnu, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Gnu, leaveOpen: true))
             {
                 GnuTarEntry charDevice = new GnuTarEntry(TarEntryType.CharacterDevice, InitialEntryName);
                 SetCharacterDevice(charDevice);
@@ -136,7 +137,7 @@ namespace System.Formats.Tar.Tests
         public void WriteBlockDevice()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Gnu, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Gnu, leaveOpen: true))
             {
                 GnuTarEntry blockDevice = new GnuTarEntry(TarEntryType.BlockDevice, InitialEntryName);
                 SetBlockDevice(blockDevice);
@@ -156,7 +157,7 @@ namespace System.Formats.Tar.Tests
         public void WriteFifo()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Gnu, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Gnu, leaveOpen: true))
             {
                 GnuTarEntry fifo = new GnuTarEntry(TarEntryType.Fifo, InitialEntryName);
                 SetFifo(fifo);
@@ -183,7 +184,7 @@ namespace System.Formats.Tar.Tests
             string longName = new string('a', 101);
 
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Gnu, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Gnu, leaveOpen: true))
             {
                 GnuTarEntry entry = new GnuTarEntry(entryType, longName);
                 writer.WriteEntry(entry);
@@ -207,7 +208,7 @@ namespace System.Formats.Tar.Tests
             string longLinkName = new string('a', 101);
 
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Gnu, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Gnu, leaveOpen: true))
             {
                 GnuTarEntry entry = new GnuTarEntry(entryType, "file.txt");
                 entry.LinkName = longLinkName;
@@ -234,7 +235,7 @@ namespace System.Formats.Tar.Tests
             string longLinkName = new string('a', 101);
 
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Gnu, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Gnu, leaveOpen: true))
             {
                 GnuTarEntry entry = new GnuTarEntry(entryType, longName);
                 entry.LinkName = longLinkName;

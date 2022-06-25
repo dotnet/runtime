@@ -560,8 +560,8 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 
 	SGEN_ASSERT (9, count >= 2, "block with %d objects, it must hold at least 2", count);
 
-	info->obj_size = size;
-	info->obj_size_index = size_index;
+	info->obj_size = GINT_TO_UINT16 (size);
+	info->obj_size_index = GINT_TO_UINT16 (size_index);
 	info->pinned = pinned;
 	info->has_references = has_references;
 	info->has_pinned = pinned;
@@ -1715,7 +1715,7 @@ ensure_block_is_checked_for_sweeping (guint32 block_index, gboolean wait, gboole
 	for (i = 0; i < MS_NUM_MARK_WORDS; ++i)
 		nused += bitcount (block->mark_words [i]);
 
-	block->nused = nused;
+	block->nused = GINT_TO_INT16 (nused);
 	if (nused)
 		have_live = TRUE;
 	if (nused < count)

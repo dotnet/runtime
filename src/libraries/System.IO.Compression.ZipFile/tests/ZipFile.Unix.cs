@@ -61,7 +61,6 @@ namespace System.IO.Compression.Tests
         {
             // '7600' tests that S_ISUID, S_ISGID, and S_ISVTX bits don't get extracted to file permissions
             string[] testPermissions = new[] { "777", "755", "644", "754", "7600" };
-            byte[] contents = Encoding.UTF8.GetBytes("contents");
 
             string archivePath = GetTestFilePath();
             using (FileStream fileStream = new FileStream(archivePath, FileMode.CreateNew))
@@ -72,7 +71,7 @@ namespace System.IO.Compression.Tests
                     ZipArchiveEntry entry = archive.CreateEntry(permission + ".txt");
                     entry.ExternalAttributes = Convert.ToInt32(permission, 8) << 16;
                     using Stream stream = entry.Open();
-                    stream.Write(contents);
+                    stream.Write("contents"u8);
                     stream.Flush();
                 }
             }
@@ -101,7 +100,7 @@ namespace System.IO.Compression.Tests
                 string filename = Path.Combine(folderPath, $"{permissions}.txt");
                 File.WriteAllText(filename, "contents");
 
-                Assert.Equal(0, Interop.Sys.ChMod(filename, Convert.ToInt32(permissions, 8)));
+                File.SetUnixFileMode(filename, (UnixFileMode)Convert.ToInt32(permissions, 8));
 
                 // In some environments, the file mode may be modified by the OS.
                 // See the Rationale section of https://linux.die.net/man/3/chmod.

@@ -1152,7 +1152,7 @@ namespace System
                 // Potential overflow now processing the 39th digit.
                 overflow = answer > new Int128(0x0CCCCCCCCCCCCCCC, 0xCCCCCCCCCCCCCCCC); // Int128.MaxValue / 10
                 answer = answer * 10 + num - '0';
-                overflow |= (UInt128)answer > (UInt128)Int128.MaxValue + (((uint)sign) >> 31);
+                overflow |= (UInt128)answer > new UInt128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF) + (((uint)sign) >> 31);
                 if ((uint)index >= (uint)value.Length)
                     goto DoneAtEndButPotentialOverflow;
 
@@ -2548,7 +2548,7 @@ namespace System
                     }
                     else
                     {
-                        result = (Half)0;
+                        result = Half.Zero;
                         return false;
                     }
                 }
@@ -2565,7 +2565,7 @@ namespace System
                 }
                 else
                 {
-                    result = (Half)0;
+                    result = Half.Zero;
                     return false; // We really failed
                 }
             }
@@ -2667,19 +2667,10 @@ namespace System
             return true;
         }
 
-        private static bool TrailingZeros(ReadOnlySpan<char> value, int index)
-        {
+        [MethodImpl(MethodImplOptions.NoInlining)] // rare slow path that shouldn't impact perf of the main use case
+        private static bool TrailingZeros(ReadOnlySpan<char> value, int index) =>
             // For compatibility, we need to allow trailing zeros at the end of a number string
-            for (int i = index; (uint)i < (uint)value.Length; i++)
-            {
-                if (value[i] != '\0')
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
+            value.Slice(index).IndexOfAnyExcept('\0') < 0;
 
         private static bool IsSpaceReplacingChar(char c) => c == '\u00a0' || c == '\u202f';
 
@@ -2724,8 +2715,7 @@ namespace System
             return null;
         }
 
-        // Ternary op is a workaround for https://github.com/dotnet/runtime/issues/4207
-        private static bool IsWhite(int ch) => ch == 0x20 || (uint)(ch - 0x09) <= (0x0D - 0x09) ? true : false;
+        private static bool IsWhite(int ch) => ch == 0x20 || (uint)(ch - 0x09) <= (0x0D - 0x09);
 
         private static bool IsDigit(int ch) => ((uint)ch - '0') <= 9;
 

@@ -17,7 +17,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task CanRead()
         {
-            var stream = new MemoryStream(Encoding.ASCII.GetBytes("Hello World"));
+            var stream = new MemoryStream("Hello World"u8.ToArray());
             var reader = PipeReader.Create(stream);
 
             ReadResult readResult = await reader.ReadAsync();
@@ -34,7 +34,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task TryReadReturnsTrueIfBufferedBytesAndNotExaminedEverything()
         {
-            var stream = new MemoryStream(Encoding.ASCII.GetBytes("Hello World"));
+            var stream = new MemoryStream("Hello World"u8.ToArray());
             var reader = PipeReader.Create(stream);
 
             ReadResult readResult = await reader.ReadAsync();
@@ -54,7 +54,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task TryReadReturnsFalseIfBufferedBytesAndEverythingExamined()
         {
-            var stream = new MemoryStream(Encoding.ASCII.GetBytes("Hello World"));
+            var stream = new MemoryStream("Hello World"u8.ToArray());
             var reader = PipeReader.Create(stream);
 
             ReadResult readResult = await reader.ReadAsync();
@@ -168,7 +168,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task BufferingDataPastEndOfStreamCanBeReadAgain()
         {
-            var helloBytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] helloBytes = "Hello World"u8.ToArray();
             var stream = new ThrowAfterZeroByteReadStream(helloBytes);
             PipeReader reader = PipeReader.Create(stream);
 

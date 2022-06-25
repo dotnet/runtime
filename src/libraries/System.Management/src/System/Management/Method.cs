@@ -144,7 +144,7 @@ namespace System.Management
         /// </value>
         public string Name
         {
-            get { return methodName != null ? methodName : ""; }
+            get { return methodName ?? ""; }
         }
 
         /// <summary>

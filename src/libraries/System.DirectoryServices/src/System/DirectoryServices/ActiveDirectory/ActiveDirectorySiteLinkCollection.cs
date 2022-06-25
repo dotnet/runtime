@@ -53,7 +53,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (links == null)
                 throw new ArgumentNullException(nameof(links));
 
-            for (int i = 0; i < links.Length; i = i + 1)
+            for (int i = 0; i < links.Length; i++)
                 this.Add(links[i]);
         }
 

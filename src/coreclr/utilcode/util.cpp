@@ -23,6 +23,13 @@
 
 #ifndef DACCESS_COMPILE
 UINT32 g_nClrInstanceId = 0;
+
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+// Flag to check if atomics feature is available on
+// the machine
+bool g_arm64_atomics_present = false;
+#endif
+
 #endif //!DACCESS_COMPILE
 
 //*****************************************************************************
@@ -509,7 +516,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 //******************************************************************************
 // NumaNodeInfo
 //******************************************************************************
-#if !defined(FEATURE_REDHAWK)
+#if !defined(FEATURE_NATIVEAOT)
 
 /*static*/ LPVOID NumaNodeInfo::VirtualAllocExNuma(HANDLE hProc, LPVOID lpAddr, SIZE_T dwSize,
                          DWORD allocType, DWORD prot, DWORD node)
@@ -563,7 +570,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 /*static*/ uint16_t NumaNodeInfo::m_nNodes = 0;
 /*static*/ BOOL NumaNodeInfo::InitNumaNodeInfoAPI()
 {
-#if !defined(FEATURE_REDHAWK)
+#if !defined(FEATURE_NATIVEAOT)
     //check for numa support if multiple heaps are used
     ULONG highest = 0;
 
@@ -597,7 +604,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 //******************************************************************************
 // CPUGroupInfo
 //******************************************************************************
-#if !defined(FEATURE_REDHAWK)
+#if !defined(FEATURE_NATIVEAOT)
 /*static*/ //CPUGroupInfo::PNTQSIEx CPUGroupInfo::m_pNtQuerySystemInformationEx = NULL;
 
 /*static*/ BOOL CPUGroupInfo::GetLogicalProcessorInformationEx(LOGICAL_PROCESSOR_RELATIONSHIP relationship,
@@ -641,7 +648,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 /*static*/ CPU_Group_Info *CPUGroupInfo::m_CPUGroupInfoArray = NULL;
 /*static*/ LONG CPUGroupInfo::m_initialization = 0;
 
-#if !defined(FEATURE_REDHAWK) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
+#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
 // Calculate greatest common divisor
 DWORD GCD(DWORD u, DWORD v)
 {
@@ -671,7 +678,7 @@ DWORD LCM(DWORD u, DWORD v)
     }
     CONTRACTL_END;
 
-#if !defined(FEATURE_REDHAWK) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
+#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
     BYTE *bBuffer = NULL;
     SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *pSLPIEx = NULL;
     SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *pRecord = NULL;
@@ -752,7 +759,7 @@ DWORD LCM(DWORD u, DWORD v)
     }
     CONTRACTL_END;
 
-#if !defined(FEATURE_REDHAWK) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
+#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
     BOOL enableGCCPUGroups = Configuration::GetKnobBooleanValue(W("System.GC.CpuGroup"), CLRConfig::EXTERNAL_GCCpuGroup);
 
     if (!enableGCCPUGroups)
@@ -829,7 +836,7 @@ DWORD LCM(DWORD u, DWORD v)
 {
     LIMITED_METHOD_CONTRACT;
 
-#if !defined(FEATURE_REDHAWK) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
+#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
     WORD bTemp = 0;
     WORD bDiff = processor_number - bTemp;
 
@@ -860,7 +867,7 @@ DWORD LCM(DWORD u, DWORD v)
     }
     CONTRACTL_END;
 
-#if !defined(FEATURE_REDHAWK) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
+#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
     _ASSERTE(m_enableGCCPUGroups && m_threadUseAllCpuGroups);
 
     PROCESSOR_NUMBER proc_no;
@@ -898,7 +905,7 @@ DWORD LCM(DWORD u, DWORD v)
     return false;
 }
 
-#if !defined(FEATURE_REDHAWK)
+#if !defined(FEATURE_NATIVEAOT)
 //Lock ThreadStore before calling this function, so that updates of weights/counts are consistent
 /*static*/ void CPUGroupInfo::ChooseCPUGroupAffinity(GROUP_AFFINITY *gf)
 {
@@ -909,7 +916,7 @@ DWORD LCM(DWORD u, DWORD v)
     }
     CONTRACTL_END;
 
-#if (defined(TARGET_AMD64) || defined(TARGET_ARM64))
+#if (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
     WORD i, minGroup = 0;
     DWORD minWeight = 0;
 
@@ -951,7 +958,7 @@ found:
 /*static*/ void CPUGroupInfo::ClearCPUGroupAffinity(GROUP_AFFINITY *gf)
 {
     LIMITED_METHOD_CONTRACT;
-#if (defined(TARGET_AMD64) || defined(TARGET_ARM64))
+#if (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
     _ASSERTE(m_enableGCCPUGroups && m_threadUseAllCpuGroups && m_threadAssignCpuGroups);
 
     WORD group = gf->Group;
@@ -2591,161 +2598,6 @@ void PutArm64Rel12(UINT32 * pCode, INT32 imm12)
     *pCode = addInstr;          // write the assembled instruction
 
     _ASSERTE(GetArm64Rel12(pCode) == imm12);
-}
-
-//---------------------------------------------------------------------
-// Splits a command line into argc/argv lists, using the VC7 parsing rules.
-//
-// This functions interface mimics the CommandLineToArgvW api.
-//
-// If function fails, returns NULL.
-//
-// If function suceeds, call delete [] on return pointer when done.
-//
-//---------------------------------------------------------------------
-// NOTE: Implementation-wise, once every few years it would be a good idea to
-// compare this code with the C runtime library's parse_cmdline method,
-// which is in vctools\crt\crtw32\startup\stdargv.c.  (Note we don't
-// support wild cards, and we use Unicode characters exclusively.)
-// We are up to date as of ~6/2005.
-//---------------------------------------------------------------------
-LPWSTR *SegmentCommandLine(LPCWSTR lpCmdLine, DWORD *pNumArgs)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FAULT;
-
-
-    *pNumArgs = 0;
-
-    int nch = (int)wcslen(lpCmdLine);
-
-    // Calculate the worstcase storage requirement. (One pointer for
-    // each argument, plus storage for the arguments themselves.)
-    int cbAlloc = (nch+1)*sizeof(LPWSTR) + sizeof(WCHAR)*(nch + 1);
-    LPWSTR pAlloc = new (nothrow) WCHAR[cbAlloc / sizeof(WCHAR)];
-    if (!pAlloc)
-        return NULL;
-
-    LPWSTR *argv = (LPWSTR*) pAlloc;  // We store the argv pointers in the first halt
-    LPWSTR  pdst = (LPWSTR)( ((BYTE*)pAlloc) + sizeof(LPWSTR)*(nch+1) ); // A running pointer to second half to store arguments
-    LPCWSTR psrc = lpCmdLine;
-    WCHAR   c;
-    BOOL    inquote;
-    BOOL    copychar;
-    int     numslash;
-
-    // First, parse the program name (argv[0]). Argv[0] is parsed under
-    // special rules. Anything up to the first whitespace outside a quoted
-    // subtring is accepted. Backslashes are treated as normal characters.
-    argv[ (*pNumArgs)++ ] = pdst;
-    inquote = FALSE;
-    do {
-        if (*psrc == W('"') )
-        {
-            inquote = !inquote;
-            c = *psrc++;
-            continue;
-        }
-        *pdst++ = *psrc;
-
-        c = *psrc++;
-
-    } while ( (c != W('\0') && (inquote || (c != W(' ') && c != W('\t')))) );
-
-    if ( c == W('\0') ) {
-        psrc--;
-    } else {
-        *(pdst-1) = W('\0');
-    }
-
-    inquote = FALSE;
-
-
-
-    /* loop on each argument */
-    for(;;)
-    {
-        if ( *psrc )
-        {
-            while (*psrc == W(' ') || *psrc == W('\t'))
-            {
-                ++psrc;
-            }
-        }
-
-        if (*psrc == W('\0'))
-            break;              /* end of args */
-
-        /* scan an argument */
-        argv[ (*pNumArgs)++ ] = pdst;
-
-        /* loop through scanning one argument */
-        for (;;)
-        {
-            copychar = 1;
-            /* Rules: 2N backslashes + " ==> N backslashes and begin/end quote
-               2N+1 backslashes + " ==> N backslashes + literal "
-               N backslashes ==> N backslashes */
-            numslash = 0;
-            while (*psrc == W('\\'))
-            {
-                /* count number of backslashes for use below */
-                ++psrc;
-                ++numslash;
-            }
-            if (*psrc == W('"'))
-            {
-                /* if 2N backslashes before, start/end quote, otherwise
-                   copy literally */
-                if (numslash % 2 == 0)
-                {
-                    if (inquote && psrc[1] == W('"'))
-                    {
-                        psrc++;    /* Double quote inside quoted string */
-                    }
-                    else
-                    {
-                        /* skip first quote char and copy second */
-                        copychar = 0;       /* don't copy quote */
-                        inquote = !inquote;
-                    }
-                }
-                numslash /= 2;          /* divide numslash by two */
-            }
-
-            /* copy slashes */
-            while (numslash--)
-            {
-                *pdst++ = W('\\');
-            }
-
-            /* if at end of arg, break loop */
-            if (*psrc == W('\0') || (!inquote && (*psrc == W(' ') || *psrc == W('\t'))))
-                break;
-
-            /* copy character into argument */
-            if (copychar)
-            {
-                *pdst++ = *psrc;
-            }
-            ++psrc;
-        }
-
-        /* null-terminate the argument */
-
-        *pdst++ = W('\0');          /* terminate string */
-    }
-
-    /* We put one last argument in -- a null ptr */
-    argv[ (*pNumArgs) ] = NULL;
-
-    // If we hit this assert, we overwrote our destination buffer.
-    // Since we're supposed to allocate for the worst
-    // case, either the parsing rules have changed or our worse case
-    // formula is wrong.
-    _ASSERTE((BYTE*)pdst <= (BYTE*)pAlloc + cbAlloc);
-    return argv;
 }
 
 //======================================================================

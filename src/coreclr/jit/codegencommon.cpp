@@ -137,6 +137,7 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
 
 #ifdef TARGET_ARM64
     genSaveFpLrWithAllCalleeSavedRegisters = false;
+    genForceFuncletFrameType5              = false;
 #endif // TARGET_ARM64
 }
 
@@ -1944,11 +1945,12 @@ void CodeGen::genGenerateMachineCode()
 #endif // DEBUG
 
     /* We can now generate the function prolog and epilog */
-
     genGeneratePrologsAndEpilogs();
 
-    /* Bind jump distances */
+    // check to see if any jumps can be removed
+    GetEmitter()->emitRemoveJumpToNextInst();
 
+    /* Bind jump distances */
     GetEmitter()->emitJumpDistBind();
 
 #if FEATURE_LOOP_ALIGN
@@ -6580,35 +6582,6 @@ bool Compiler::IsHfa(CORINFO_CLASS_HANDLE hClass)
     return varTypeIsValidHfaType(GetHfaType(hClass));
 }
 
-bool Compiler::IsHfa(GenTree* tree)
-{
-    if (GlobalJitOptions::compFeatureHfa)
-    {
-        return IsHfa(gtGetStructHandleIfPresent(tree));
-    }
-    else
-    {
-        return false;
-    }
-}
-
-var_types Compiler::GetHfaType(GenTree* tree)
-{
-    if (GlobalJitOptions::compFeatureHfa)
-    {
-        return GetHfaType(gtGetStructHandleIfPresent(tree));
-    }
-    else
-    {
-        return TYP_UNDEF;
-    }
-}
-
-unsigned Compiler::GetHfaCount(GenTree* tree)
-{
-    return GetHfaCount(gtGetStructHandle(tree));
-}
-
 var_types Compiler::GetHfaType(CORINFO_CLASS_HANDLE hClass)
 {
     if (GlobalJitOptions::compFeatureHfa)
@@ -8251,6 +8224,10 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
         }
         else
         {
+#ifdef TARGET_LOONGARCH64
+            // should consider the pading field within a struct.
+            offset = (offset % genTypeSize(srcType)) ? AlignUp(offset, genTypeSize(srcType)) : offset;
+#endif
             // Several fields could be passed in one register, copy using the register type.
             // It could rewrite memory outside of the fields but local on the stack are rounded to POINTER_SIZE so
             // it is safe to store a long register into a byte field as it is known that we have enough padding after.

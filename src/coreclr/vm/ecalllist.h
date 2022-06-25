@@ -83,9 +83,7 @@ FCFuncEnd()
 
 FCFuncStart(gValueTypeFuncs)
     FCFuncElement("CanCompareBits", ValueTypeHelper::CanCompareBits)
-    FCFuncElement("FastEqualsCheck", ValueTypeHelper::FastEqualsCheck)
     FCFuncElement("GetHashCode", ValueTypeHelper::GetHashCode)
-    FCFuncElement("GetHashCodeOfPtr", ValueTypeHelper::GetHashCodeOfPtr)
 FCFuncEnd()
 
 FCFuncStart(gDiagnosticsDebugger)
@@ -105,7 +103,6 @@ FCFuncStart(gEnvironmentFuncs)
     FCFuncElement("get_TickCount64", SystemNative::GetTickCount64)
     FCFuncElement("set_ExitCode", SystemNative::SetExitCode)
     FCFuncElement("get_ExitCode", SystemNative::GetExitCode)
-    FCFuncElement("GetCommandLineArgsNative", SystemNative::GetCommandLineArgs)
 
     FCFuncElementSig("FailFast", &gsig_SM_Str_RetVoid, SystemNative::FailFast)
     FCFuncElementSig("FailFast", &gsig_SM_Str_Exception_RetVoid, SystemNative::FailFastWithException)
@@ -122,7 +119,6 @@ FCFuncStart(gExceptionFuncs)
 FCFuncEnd()
 
 FCFuncStart(gTypedReferenceFuncs)
-    FCFuncElement("InternalToObject", ReflectionInvocation::TypedReferenceToObject)
     FCFuncElement("InternalMakeTypedReference", ReflectionInvocation::MakeTypedReference)
 FCFuncEnd()
 
@@ -301,12 +297,10 @@ FCFuncStart(gDelegateFuncs)
     FCFuncElement("GetInvokeMethod", COMDelegate::GetInvokeMethod)
     FCFuncElement("InternalAlloc", COMDelegate::InternalAlloc)
     FCFuncElement("InternalAllocLike", COMDelegate::InternalAllocLike)
-    FCFuncElement("InternalEqualTypes", COMDelegate::InternalEqualTypes)
     FCFuncElement("InternalEqualMethodHandles", COMDelegate::InternalEqualMethodHandles)
     FCFuncElement("FindMethodHandle", COMDelegate::FindMethodHandle)
     FCFuncElement("AdjustTarget", COMDelegate::AdjustTarget)
     FCFuncElement("GetCallStub", COMDelegate::GetCallStub)
-    FCFuncElement("CompareUnmanagedFunctionPtrs", COMDelegate::CompareUnmanagedFunctionPtrs)
 
     // The FCall mechanism knows how to wire multiple different constructor calls into a
     // single entrypoint, without the following entry.  But we need this entry to satisfy
@@ -374,9 +368,7 @@ FCFuncEnd()
 
 FCFuncStart(gThreadFuncs)
     FCFuncElement("InternalGetCurrentThread", GetThread)
-#undef Sleep
     FCFuncElement("SleepInternal", ThreadNative::Sleep)
-#define Sleep(a) Dont_Use_Sleep(a)
     FCFuncElement("Initialize", ThreadNative::Initialize)
     FCFuncElement("SpinWaitInternal", ThreadNative::SpinWait)
     FCFuncElement("GetCurrentThreadNative", ThreadNative::GetCurrentThread)
@@ -460,7 +452,6 @@ FCFuncStart(gArrayFuncs)
     FCFuncElement("IsSimpleCopy", ArrayNative::IsSimpleCopy)
     FCFuncElement("CopySlow", ArrayNative::CopySlow)
     FCFuncElement("InternalCreate", ArrayNative::CreateInstance)
-    FCFuncElement("InternalGetValue", ArrayNative::GetValue)
     FCFuncElement("InternalSetValue", ArrayNative::SetValue)
 FCFuncEnd()
 
@@ -539,10 +530,6 @@ FCFuncStart(gInteropMarshalFuncs)
 #endif // FEATURE_COMINTEROP
 FCFuncEnd()
 
-FCFuncStart(gMissingMemberExceptionFuncs)
-    FCFuncElement("FormatSignature", MissingMemberException_FormatSignature)
-FCFuncEnd()
-
 FCFuncStart(gInterlockedFuncs)
     FCFuncElementSig("Exchange", &gsig_SM_RefInt_Int_RetInt, COMInterlocked::Exchange)
     FCFuncElementSig("Exchange", &gsig_SM_RefLong_Long_RetLong, COMInterlocked::Exchange64)
@@ -607,6 +594,11 @@ FCFuncStart(gRuntimeHelpers)
     FCFuncElement("GetTailCallInfo", TailCallHelp::GetTailCallInfo)
     FCFuncElement("RegisterForGCReporting", GCReporting::Register)
     FCFuncElement("UnregisterForGCReporting", GCReporting::Unregister)
+    FCFuncElement("Box", JIT_Box)
+FCFuncEnd()
+
+FCFuncStart(gMethodTableFuncs)
+    FCFuncElement("GetNumInstanceFieldBytes", MethodTableNative::GetNumInstanceFieldBytes)
 FCFuncEnd()
 
 FCFuncStart(gMngdFixedArrayMarshalerFuncs)
@@ -787,7 +779,7 @@ FCClassElement("Marshal", "System.Runtime.InteropServices", gInteropMarshalFuncs
 FCClassElement("Math", "System", gMathFuncs)
 FCClassElement("MathF", "System", gMathFFuncs)
 FCClassElement("MetadataImport", "System.Reflection", gMetaDataImport)
-FCClassElement("MissingMemberException", "System",  gMissingMemberExceptionFuncs)
+FCClassElement("MethodTable", "System.Runtime.CompilerServices", gMethodTableFuncs)
 FCClassElement("MngdFixedArrayMarshaler", "System.StubHelpers", gMngdFixedArrayMarshalerFuncs)
 FCClassElement("MngdNativeArrayMarshaler", "System.StubHelpers", gMngdNativeArrayMarshalerFuncs)
 FCClassElement("MngdRefCustomMarshaler", "System.StubHelpers", gMngdRefCustomMarshalerFuncs)

@@ -1470,38 +1470,6 @@ FCIMPL4(void, ReflectionInvocation::MakeTypedReference, TypedByRef * value, Obje
 }
 FCIMPLEND
 
-// This is an internal helper function to TypedReference class.
-// It extracts the object from the typed reference.
-FCIMPL1(Object*, ReflectionInvocation::TypedReferenceToObject, TypedByRef * value) {
-    FCALL_CONTRACT;
-
-    OBJECTREF       Obj = NULL;
-
-    TypeHandle th(value->type);
-
-    if (th.IsNull())
-        FCThrowRes(kArgumentNullException, W("ArgumentNull_TypedRefType"));
-
-    MethodTable* pMT = th.GetMethodTable();
-    PREFIX_ASSUME(NULL != pMT);
-
-    if (pMT->IsValueType())
-    {
-        // value->data is protected by the caller
-        HELPER_METHOD_FRAME_BEGIN_RET_1(Obj);
-
-        Obj = pMT->Box(value->data);
-
-        HELPER_METHOD_FRAME_END();
-    }
-    else {
-        Obj = ObjectToOBJECTREF(*((Object**)value->data));
-    }
-
-    return OBJECTREFToObject(Obj);
-}
-FCIMPLEND
-
 FCIMPL2_IV(Object*, ReflectionInvocation::CreateEnum, ReflectClassBaseObject *pTypeUNSAFE, INT64 value) {
     FCALL_CONTRACT;
 

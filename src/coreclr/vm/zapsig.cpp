@@ -72,7 +72,7 @@ BOOL ZapSig::GetSignatureForTypeDesc(TypeDesc * desc, SigBuilder * pSigBuilder)
                 {
                     TypeHandle th = retAndArgTypes[i];
                     // This should be a consequence of the type key being restored
-                    CONSISTENCY_CHECK(!th.IsNull() && !th.IsEncodedFixup());
+                    CONSISTENCY_CHECK(!th.IsNull());
                     if (!this->GetSignatureForTypeHandle(th, pSigBuilder))
                         return FALSE;
                 }
@@ -246,7 +246,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
         for (DWORD i = 0; i < inst.GetNumArgs(); i++)
         {
             TypeHandle t = inst[i];
-            CONSISTENCY_CHECK(!t.IsNull() && !t.IsEncodedFixup());
+            CONSISTENCY_CHECK(!t.IsNull());
             if (!this->GetSignatureForTypeHandle(t, pSigBuilder))
                 return FALSE;
         }
@@ -548,7 +548,6 @@ BOOL ZapSig::CompareTypeHandleFieldToTypeHandle(TypeHandle *pTypeHnd, TypeHandle
         FORBID_FAULT;
         PRECONDITION(CheckPointer(pTypeHnd));
         PRECONDITION(CheckPointer(typeHnd2));
-        PRECONDITION(!CORCOMPILE_IS_POINTER_TAGGED((SIZE_T) typeHnd2.AsPtr()));
     }
     CONTRACTL_END
 

@@ -1126,7 +1126,7 @@ namespace System.Text.RegularExpressions
                     }
 
                     // If this alternation is wrapped as atomic, we need to do the same for the new alternation.
-                    if (alternation.Parent is RegexNode { Kind: RegexNodeKind.Atomic } parent)
+                    if (alternation.Parent is RegexNode { Kind: RegexNodeKind.Atomic })
                     {
                         var atomic = new RegexNode(RegexNodeKind.Atomic, alternation.Options);
                         atomic.AddChild(newAlternate);
@@ -2303,7 +2303,7 @@ namespace System.Text.RegularExpressions
         {
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
-                // If we can't recur further, assume there's no minimum we can enforce.
+                // If we can't recur further, assume there's no maximum we can enforce.
                 return null;
             }
 

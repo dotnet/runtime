@@ -146,7 +146,6 @@ BOOL IsCOMPlusExceptionHandlerInstalled();
 #endif
 
 BOOL InstallUnhandledExceptionFilter();
-void UninstallUnhandledExceptionFilter();
 
 #if !defined(TARGET_UNIX)
 // Section naming is a strategy by itself. Ideally, we could have named the UEF section
@@ -581,8 +580,6 @@ VOID DECLSPEC_NORETURN ThrowFieldLayoutError(mdTypeDef cl,                // cl 
 
 UINT GetResourceIDForFileLoadExceptionHR(HRESULT hr);
 
-FCDECL1(Object*, MissingMemberException_FormatSignature, I1Array* pPersistedSigUNSAFE);
-
 #define EXCEPTION_NONCONTINUABLE 0x1    // Noncontinuable exception
 #define EXCEPTION_UNWINDING 0x2         // Unwind is in progress
 #define EXCEPTION_EXIT_UNWIND 0x4       // Exit unwind is in progress
@@ -743,8 +740,6 @@ void CPFH_AdjustContextForThreadSuspensionRace(T_CONTEXT *pContext, Thread *pThr
 
 DWORD GetGcMarkerExceptionCode(LPVOID ip);
 bool IsGcMarker(T_CONTEXT *pContext, EXCEPTION_RECORD *pExceptionRecord);
-
-void InitSavedExceptionInfo();
 
 bool ShouldHandleManagedFault(
                         EXCEPTION_RECORD*               pExceptionRecord,

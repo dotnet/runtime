@@ -461,7 +461,7 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(512, 0)]
         [InlineData(547, 0)]
         [InlineData(1 * 1024, 0)]
-        public void ZeroMemoryTest(int size, int offset)
+        public void ClearTest(int size, int offset)
         {
             byte* ptr = (byte*)NativeMemory.AlignedAlloc((nuint)(size + offset), 8);
 
@@ -470,7 +470,7 @@ namespace System.Runtime.InteropServices.Tests
 
             new Span<byte>(ptr, size + offset).Fill(0b10101010);
 
-            NativeMemory.ZeroMemory(ptr + offset, (nuint)size);
+            NativeMemory.Clear(ptr + offset, (nuint)size);
 
             Assert.Equal(-1, new Span<byte>(ptr + offset, size).IndexOfAnyExcept((byte)0));
 
@@ -506,7 +506,7 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(256, 5)]
         [InlineData(256, 67)]
         [InlineData(256, 143)]
-        public void ZeroMemoryWithExactRangeTest(int size, int offset)
+        public void ClearWithExactRangeTest(int size, int offset)
         {
             int headLength = offset;
             int bodyLength = size;
@@ -522,7 +522,7 @@ namespace System.Runtime.InteropServices.Tests
 
             new Span<byte>(ptr, 512).Fill(0b10101010);
 
-            NativeMemory.ZeroMemory(ptr + bodyOffset, (nuint)bodyLength);
+            NativeMemory.Clear(ptr + bodyOffset, (nuint)bodyLength);
 
             Assert.Equal(-1, new Span<byte>(ptr + headOffset, headLength).IndexOfAnyExcept((byte)0b10101010));
             Assert.Equal(-1, new Span<byte>(ptr + bodyOffset, bodyLength).IndexOfAnyExcept((byte)0));
@@ -535,7 +535,7 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(167)]
-        public void ZeroMemoryWithSizeEqualTo0ShouldNoOpTest(int offset)
+        public void ClearWithSizeEqualTo0ShouldNoOpTest(int offset)
         {
             byte* ptr = (byte*)NativeMemory.AlignedAlloc(512, 8);
 
@@ -544,7 +544,7 @@ namespace System.Runtime.InteropServices.Tests
 
             new Span<byte>(ptr, 512).Fill(0b10101010);
 
-            NativeMemory.ZeroMemory(ptr + offset, 0);
+            NativeMemory.Clear(ptr + offset, 0);
 
             Assert.Equal(-1, new Span<byte>(ptr, 512).IndexOfAnyExcept((byte)0b10101010));
 
@@ -552,9 +552,9 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        public void ZeroMemoryWithNullPointerAndZeroByteCountTest()
+        public void ClearWithNullPointerAndZeroByteCountTest()
         {
-            NativeMemory.ZeroMemory(null, 0);
+            NativeMemory.Clear(null, 0);
 
             // This test method just needs to check that no exceptions are thrown
         }

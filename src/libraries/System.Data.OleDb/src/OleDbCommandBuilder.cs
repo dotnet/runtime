@@ -364,7 +364,7 @@ namespace System.Data.OleDb
             // otherwise get them from the provider
             string quotePrefix = QuotePrefix;
             string quoteSuffix = QuoteSuffix;
-            if (ADP.IsEmpty(quotePrefix) == true)
+            if (ADP.IsEmpty(quotePrefix))
             {
                 if (connection == null)
                 {
@@ -414,7 +414,7 @@ namespace System.Data.OleDb
             // otherwise get them from the provider
             string quotePrefix = QuotePrefix;
             string quoteSuffix = QuoteSuffix;
-            if (ADP.IsEmpty(quotePrefix) == true)
+            if (ADP.IsEmpty(quotePrefix))
             {
                 if (connection == null)
                 {

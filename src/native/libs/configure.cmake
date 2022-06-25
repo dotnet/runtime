@@ -1042,18 +1042,6 @@ else ()
         HAVE_GSS_SPNEGO_MECHANISM)
 endif ()
 
-if (HAVE_GSSFW_HEADERS)
-    check_symbol_exists(
-        GSS_KRB5_CRED_NO_CI_FLAGS_X
-        "GSS/GSS.h"
-        HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X)
-else ()
-    check_symbol_exists(
-        GSS_KRB5_CRED_NO_CI_FLAGS_X
-        "gssapi/gssapi_krb5.h"
-        HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X)
-endif ()
-
 check_symbol_exists(getauxval sys/auxv.h HAVE_GETAUXVAL)
 check_include_files(crt_externs.h HAVE_CRT_EXTERNS_H)
 
@@ -1114,6 +1102,11 @@ check_symbol_exists(
 if (NOT HAVE_MAKEDEV_FILEH AND NOT HAVE_MAKEDEV_SYSMACROSH)
   message(FATAL_ERROR "Cannot find the makedev function on this platform.")
 endif()
+
+check_symbol_exists(
+    getgrgid_r
+    grp.h
+    HAVE_GETGRGID_R)
 
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/Common/pal_config.h.in

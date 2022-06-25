@@ -74,6 +74,7 @@ enum gc_reason
     reason_bgc_tuning_soh = 14,
     reason_bgc_tuning_loh = 15,
     reason_bgc_stepping = 16,
+    reason_induced_aggressive = 17,
     reason_max
 };
 
