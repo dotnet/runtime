@@ -64,25 +64,20 @@ namespace System.Net.Security
 
         private static int GssUnwrap(
             SafeGssContextHandle? context,
-            byte[] buffer,
-            int offset,
-            int count)
+            Span<byte> buffer)
         {
-            Debug.Assert((buffer != null) && (buffer.Length > 0), "Invalid input buffer passed to Decrypt");
-            Debug.Assert((offset >= 0) && (offset <= buffer.Length), "Invalid input offset passed to Decrypt");
-            Debug.Assert((count >= 0) && (count <= (buffer.Length - offset)), "Invalid input count passed to Decrypt");
-
             Interop.NetSecurityNative.GssBuffer decryptedBuffer = default(Interop.NetSecurityNative.GssBuffer);
             try
             {
                 Interop.NetSecurityNative.Status minorStatus;
-                Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.UnwrapBuffer(out minorStatus, context, new ReadOnlySpan<byte>(buffer, offset, count), ref decryptedBuffer);
+                Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.UnwrapBuffer(out minorStatus, context, buffer, ref decryptedBuffer);
                 if (status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE)
                 {
                     throw new Interop.NetSecurityNative.GssApiException(status, minorStatus);
                 }
 
-                return decryptedBuffer.Copy(buffer, offset);
+                decryptedBuffer.Span.CopyTo(buffer);
+                return decryptedBuffer.Span.Length;
             }
             finally
             {
@@ -576,28 +571,14 @@ namespace System.Net.Security
 
         internal static int Decrypt(
             SafeDeleteContext securityContext,
-            byte[]? buffer,
-            int offset,
-            int count,
+            Span<byte> buffer,
             bool isConfidential,
             bool isNtlm,
             out int newOffset,
             uint sequenceNumber)
         {
-            if (offset < 0 || offset > (buffer == null ? 0 : buffer.Length))
-            {
-                Debug.Fail("Argument 'offset' out of range");
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-
-            if (count < 0 || count > (buffer == null ? 0 : buffer.Length - offset))
-            {
-                Debug.Fail("Argument 'count' out of range.");
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-
-            newOffset = offset;
-            return GssUnwrap(((SafeDeleteNegoContext)securityContext).GssContext, buffer!, offset, count);
+            newOffset = 0;
+            return GssUnwrap(((SafeDeleteNegoContext)securityContext).GssContext, buffer);
         }
 
         internal static int VerifySignature(SafeDeleteContext securityContext, byte[] buffer, int offset, int count)
@@ -614,7 +595,7 @@ namespace System.Net.Security
                 throw new ArgumentOutOfRangeException(nameof(count));
             }
 
-            return GssUnwrap(((SafeDeleteNegoContext)securityContext).GssContext, buffer!, offset, count);
+            return GssUnwrap(((SafeDeleteNegoContext)securityContext).GssContext, buffer.AsSpan(offset, count));
         }
 
         internal static int MakeSignature(SafeDeleteContext securityContext, byte[] buffer, int offset, int count, [AllowNull] ref byte[] output)

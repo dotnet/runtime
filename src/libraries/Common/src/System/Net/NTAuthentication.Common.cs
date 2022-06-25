@@ -345,13 +345,11 @@ namespace System.Net
                 sequenceNumber);
         }
 
-        internal int Decrypt(byte[] payload, int offset, int count, out int newOffset, uint expectedSeqNumber)
+        internal int Decrypt(Span<byte> payload, out int newOffset, uint expectedSeqNumber)
         {
             return NegotiateStreamPal.Decrypt(
                 _securityContext!,
                 payload,
-                offset,
-                count,
                 (_contextFlags & ContextFlagsPal.Confidentiality) != 0,
                 IsNTLM,
                 out newOffset,

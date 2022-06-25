@@ -394,7 +394,7 @@ namespace System.Net.Security
 
                     // Decrypt into internal buffer, change "readBytes" to count now _Decrypted Bytes_
                     // Decrypted data start from zero offset, the size can be shrunk after decryption.
-                    _readBufferCount = readBytes = DecryptData(_readBuffer!, 0, readBytes, out _readBufferOffset);
+                    _readBufferCount = readBytes = DecryptData(_readBuffer.AsSpan(0, readBytes), out _readBufferOffset);
                     if (readBytes == 0 && buffer.Length != 0)
                     {
                         // Read again.
@@ -965,14 +965,14 @@ namespace System.Net.Security
             return _context.Encrypt(buffer, ref outBuffer, _writeSequenceNumber);
         }
 
-        private int DecryptData(byte[] buffer, int offset, int count, out int newOffset)
+        private int DecryptData(Span<byte> buffer, out int newOffset)
         {
             Debug.Assert(_context != null);
             ThrowIfFailed(authSuccessCheck: true);
 
             // SSPI seems to ignore this sequence number.
             ++_readSequenceNumber;
-            return _context.Decrypt(buffer, offset, count, out newOffset, _readSequenceNumber);
+            return _context.Decrypt(buffer, out newOffset, _readSequenceNumber);
         }
 
         private static void ThrowCredentialException(long error)

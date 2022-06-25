@@ -366,111 +366,125 @@ namespace System.Net.Security
             return resultSize + 4;
         }
 
-        internal static int Decrypt(
+        internal static unsafe int Decrypt(
             SafeDeleteContext securityContext,
-            byte[]? buffer,
-            int offset,
-            int count,
+            Span<byte> buffer,
             bool isConfidential,
             bool isNtlm,
             out int newOffset,
             uint sequenceNumber)
         {
-            if (offset < 0 || offset > (buffer == null ? 0 : buffer.Length))
-            {
-                Debug.Fail("Argument 'offset' out of range.");
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-
-            if (count < 0 || count > (buffer == null ? 0 : buffer.Length - offset))
-            {
-                Debug.Fail("Argument 'count' out of range.");
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-
             if (isNtlm)
             {
-                return DecryptNtlm(securityContext, buffer, offset, count, isConfidential, out newOffset, sequenceNumber);
+                return DecryptNtlm(securityContext, buffer, isConfidential, out newOffset, sequenceNumber);
             }
 
             //
             // Kerberos and up
             //
-            TwoSecurityBuffers buffers = default;
-            var securityBuffer = MemoryMarshal.CreateSpan(ref buffers._item0, 2);
-            securityBuffer[0] = new SecurityBuffer(buffer, offset, count, SecurityBufferType.SECBUFFER_STREAM);
-            securityBuffer[1] = new SecurityBuffer(0, SecurityBufferType.SECBUFFER_DATA);
-
-            int errorCode = isConfidential ?
-                SSPIWrapper.DecryptMessage(GlobalSSPI.SSPIAuth, securityContext, securityBuffer, sequenceNumber) :
-                SSPIWrapper.VerifySignature(GlobalSSPI.SSPIAuth, securityContext, securityBuffer, sequenceNumber);
-
-            if (errorCode != 0)
+            fixed (byte* bufferPtr = buffer)
             {
-                Exception e = new Win32Exception(errorCode);
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, e);
-                throw e;
-            }
+                Interop.SspiCli.SecBuffer* unmanagedBuffer = stackalloc Interop.SspiCli.SecBuffer[2];
+                Interop.SspiCli.SecBuffer* streamBuffer = &unmanagedBuffer[0];
+                Interop.SspiCli.SecBuffer* dataBuffer = &unmanagedBuffer[1];
+                streamBuffer->BufferType = SecurityBufferType.SECBUFFER_STREAM;
+                streamBuffer->pvBuffer = (IntPtr)bufferPtr;
+                streamBuffer->cbBuffer = buffer.Length;
+                dataBuffer->BufferType = SecurityBufferType.SECBUFFER_DATA;
+                dataBuffer->pvBuffer = IntPtr.Zero;
+                dataBuffer->cbBuffer = 0;
 
-            if (securityBuffer[1].type != SecurityBufferType.SECBUFFER_DATA)
-            {
-                throw new InternalException(securityBuffer[1].type);
-            }
+                Interop.SspiCli.SecBufferDesc sdcInOut = new Interop.SspiCli.SecBufferDesc(2)
+                {
+                    pBuffers = unmanagedBuffer
+                };
 
-            newOffset = securityBuffer[1].offset;
-            return securityBuffer[1].size;
+                int errorCode = isConfidential ?
+                    GlobalSSPI.SSPIAuth.DecryptMessage(securityContext, ref sdcInOut, sequenceNumber) :
+                    GlobalSSPI.SSPIAuth.VerifySignature(securityContext, ref sdcInOut, sequenceNumber);
+
+                if (errorCode != 0)
+                {
+                    Exception e = new Win32Exception(errorCode);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, e);
+                    throw new Win32Exception(errorCode);
+                }
+
+                if (dataBuffer->BufferType != SecurityBufferType.SECBUFFER_DATA)
+                {
+                    throw new InternalException(dataBuffer->BufferType);
+                }
+
+                Debug.Assert((nint)dataBuffer->pvBuffer >= (nint)bufferPtr);
+                Debug.Assert((nint)dataBuffer->pvBuffer + dataBuffer->cbBuffer <= (nint)bufferPtr + buffer.Length);
+                newOffset = (int)((byte*)dataBuffer->pvBuffer - bufferPtr);
+                return dataBuffer->cbBuffer;
+            }
         }
 
-        private static int DecryptNtlm(
+        private static unsafe int DecryptNtlm(
             SafeDeleteContext securityContext,
-            byte[]? buffer,
-            int offset,
-            int count,
+            Span<byte> buffer,
             bool isConfidential,
             out int newOffset,
             uint sequenceNumber)
         {
-            const int ntlmSignatureLength = 16;
+            const int NtlmSignatureLength = 16;
+
             // For the most part the arguments are verified in Decrypt().
-            if (count < ntlmSignatureLength)
+            if (buffer.Length < NtlmSignatureLength)
             {
                 Debug.Fail("Argument 'count' out of range.");
-                throw new ArgumentOutOfRangeException(nameof(count));
+                throw new Win32Exception((int)Interop.SECURITY_STATUS.InvalidToken);
             }
 
-            TwoSecurityBuffers buffers = default;
-            var securityBuffer = MemoryMarshal.CreateSpan(ref buffers._item0, 2);
-            securityBuffer[0] = new SecurityBuffer(buffer, offset, ntlmSignatureLength, SecurityBufferType.SECBUFFER_TOKEN);
-            securityBuffer[1] = new SecurityBuffer(buffer, offset + ntlmSignatureLength, count - ntlmSignatureLength, SecurityBufferType.SECBUFFER_DATA);
-
-            int errorCode;
-            SecurityBufferType realDataType = SecurityBufferType.SECBUFFER_DATA;
-
-            if (isConfidential)
+            fixed (byte* bufferPtr = buffer)
             {
-                errorCode = SSPIWrapper.DecryptMessage(GlobalSSPI.SSPIAuth, securityContext, securityBuffer, sequenceNumber);
-            }
-            else
-            {
-                realDataType |= SecurityBufferType.SECBUFFER_READONLY;
-                securityBuffer[1].type = realDataType;
-                errorCode = SSPIWrapper.VerifySignature(GlobalSSPI.SSPIAuth, securityContext, securityBuffer, sequenceNumber);
-            }
+                SecurityBufferType realDataType = SecurityBufferType.SECBUFFER_DATA;
+                Interop.SspiCli.SecBuffer* unmanagedBuffer = stackalloc Interop.SspiCli.SecBuffer[2];
+                Interop.SspiCli.SecBuffer* tokenBuffer = &unmanagedBuffer[0];
+                Interop.SspiCli.SecBuffer* dataBuffer = &unmanagedBuffer[1];
+                tokenBuffer->BufferType = SecurityBufferType.SECBUFFER_TOKEN;
+                tokenBuffer->pvBuffer = (IntPtr)bufferPtr;
+                tokenBuffer->cbBuffer = NtlmSignatureLength;
+                dataBuffer->BufferType = SecurityBufferType.SECBUFFER_DATA;
+                dataBuffer->pvBuffer = (IntPtr)(bufferPtr + NtlmSignatureLength);
+                dataBuffer->cbBuffer = buffer.Length - NtlmSignatureLength;
 
-            if (errorCode != 0)
-            {
-                Exception e = new Win32Exception(errorCode);
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, e);
-                throw new Win32Exception(errorCode);
-            }
+                Interop.SspiCli.SecBufferDesc sdcInOut = new Interop.SspiCli.SecBufferDesc(2)
+                {
+                    pBuffers = unmanagedBuffer
+                };
+                int errorCode;
 
-            if (securityBuffer[1].type != realDataType)
-            {
-                throw new InternalException(securityBuffer[1].type);
-            }
+                if (isConfidential)
+                {
+                    errorCode = GlobalSSPI.SSPIAuth.DecryptMessage(securityContext, ref sdcInOut, sequenceNumber);
+                }
+                else
+                {
+                    realDataType |= SecurityBufferType.SECBUFFER_READONLY;
+                    dataBuffer->BufferType = realDataType;
+                    errorCode = GlobalSSPI.SSPIAuth.VerifySignature(securityContext, ref sdcInOut, sequenceNumber);
+                }
 
-            newOffset = securityBuffer[1].offset;
-            return securityBuffer[1].size;
+                if (errorCode != 0)
+                {
+                    Exception e = new Win32Exception(errorCode);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, e);
+                    throw new Win32Exception(errorCode);
+                }
+
+                if (dataBuffer->BufferType != realDataType)
+                {
+                    throw new InternalException(dataBuffer->BufferType);
+                }
+
+                Debug.Assert((nint)dataBuffer->pvBuffer >= (nint)bufferPtr);
+                Debug.Assert((nint)dataBuffer->pvBuffer + dataBuffer->cbBuffer <= (nint)bufferPtr + buffer.Length);
+                newOffset = (int)((byte*)dataBuffer->pvBuffer - bufferPtr);
+                return dataBuffer->cbBuffer;
+            }
         }
     }
 }

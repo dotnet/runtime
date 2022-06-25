@@ -1008,7 +1008,7 @@ namespace System.Net
             throw new PlatformNotSupportedException();
         }
 
-        internal int Decrypt(byte[] payload, int offset, int count, out int newOffset, uint expectedSeqNumber)
+        internal int Decrypt(Span<byte> payload, out int newOffset, uint expectedSeqNumber)
         {
             throw new PlatformNotSupportedException();
         }
