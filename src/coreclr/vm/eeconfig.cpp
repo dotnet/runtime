@@ -741,11 +741,11 @@ HRESULT EEConfig::sync()
         }
 
         if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TieredPGO) != 0 &&
-            CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TC_InstrumentOptimizedCode) == 0)
+            CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TC_OptimizedInstrumentedTier) == 0)
         {
-            // When we're not using optimizations in the instrumentation tier we produce a lot of new 
-            // first-time compilation due to disabled inlining - such first-time compilations delay promotions
-            // by tieredCompilation_CallCountingDelayMs
+            // When we're not using optimizations in the instrumented tier we produce a lot of new first-time compilation 
+            // due to disabled inlining even for very small methods - such first-time compilations delay promotions by
+            // tieredCompilation_CallCountingDelayMs
             tieredCompilation_CallCountingDelayMs /= 3;
             tieredCompilation_CallCountingDelayMs = max(1, tieredCompilation_CallCountingDelayMs);
         }
