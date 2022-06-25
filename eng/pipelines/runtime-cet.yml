@@ -161,24 +161,3 @@ jobs:
 #           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
 #           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
 #           eq(variables['isRollingBuild'], true))
-
-#
-# Release Libraries Test Execution against a checked runtime
-# Only if CoreCLR or Libraries is changed
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-    buildConfig: Release
-    platforms:
-    - windows_x64
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    helixQueueGroup: cet
-    jobParameters:
-      testScope: innerloop
-      liveRuntimeBuildConfig: checked
-      condition: >-
-        eq(variables['isRollingBuild'], true)
-#         or(
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-#           eq(variables['isRollingBuild'], true))
