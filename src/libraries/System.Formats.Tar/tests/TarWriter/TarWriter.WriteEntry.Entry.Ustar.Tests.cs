@@ -10,30 +10,6 @@ namespace System.Formats.Tar.Tests
     public class TarWriter_WriteEntry_Ustar_Tests : TarTestsBase
     {
         [Fact]
-        public void Write_V7RegularFileEntry_As_RegularFileEntry()
-        {
-            using MemoryStream archive = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archive, format: TarEntryFormat.Ustar, leaveOpen: true))
-            {
-                V7TarEntry entry = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
-
-                // Should be written in the format of the entry
-                writer.WriteEntry(entry);
-            }
-
-            archive.Seek(0, SeekOrigin.Begin);
-            using (TarReader reader = new TarReader(archive))
-            {
-                TarEntry entry = reader.GetNextEntry();
-                Assert.NotNull(entry);
-                Assert.Equal(TarEntryFormat.V7, entry.Format);
-                Assert.True(entry is V7TarEntry);
-
-                Assert.Null(reader.GetNextEntry());
-            }
-        }
-
-        [Fact]
         public void WriteRegularFile()
         {
             using MemoryStream archiveStream = new MemoryStream();

@@ -88,6 +88,78 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void Write_RegularFileEntry_In_V7Writer(TarEntryFormat entryFormat)
+        {
+            using MemoryStream archive = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archive, format: TarEntryFormat.V7, leaveOpen: true))
+            {
+                TarEntry entry = entryFormat switch
+                {
+                    TarEntryFormat.Ustar => new UstarTarEntry(TarEntryType.RegularFile, InitialEntryName),
+                    TarEntryFormat.Pax => new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName),
+                    TarEntryFormat.Gnu => new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName),
+                    _ => throw new FormatException($"Unexpected format: {entryFormat}")
+                };
+
+                // Should be written in the format of the entry
+                writer.WriteEntry(entry);
+            }
+
+            archive.Seek(0, SeekOrigin.Begin);
+            using (TarReader reader = new TarReader(archive))
+            {
+                TarEntry entry = reader.GetNextEntry();
+                Assert.NotNull(entry);
+                Assert.Equal(entryFormat, entry.Format);
+
+                switch (entryFormat)
+                {
+                    case TarEntryFormat.Ustar:
+                        Assert.True(entry is UstarTarEntry);
+                        break;
+                    case TarEntryFormat.Pax:
+                        Assert.True(entry is PaxTarEntry);
+                        break;
+                    case TarEntryFormat.Gnu:
+                        Assert.True(entry is GnuTarEntry);
+                        break;
+                }
+
+                Assert.Null(reader.GetNextEntry());
+            }
+        }
+
+        [Theory]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void Write_V7RegularFileEntry_In_OtherFormatsWriter(TarEntryFormat writerFormat)
+        {
+            using MemoryStream archive = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archive, format: writerFormat, leaveOpen: true))
+            {
+                V7TarEntry entry = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
+
+                // Should be written in the format of the entry
+                writer.WriteEntry(entry);
+            }
+
+            archive.Seek(0, SeekOrigin.Begin);
+            using (TarReader reader = new TarReader(archive))
+            {
+                TarEntry entry = reader.GetNextEntry();
+                Assert.NotNull(entry);
+                Assert.Equal(TarEntryFormat.V7, entry.Format);
+                Assert.True(entry is V7TarEntry);
+
+                Assert.Null(reader.GetNextEntry());
+            }
+        }
+
+        [Theory]
         [InlineData(TarEntryFormat.V7)]
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]

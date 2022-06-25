@@ -12,31 +12,6 @@ namespace System.Formats.Tar.Tests
     public class TarWriter_WriteEntry_Pax_Tests : TarTestsBase
     {
         [Fact]
-        public void Write_V7RegularFile_To_PaxArchive()
-        {
-            using MemoryStream archive = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archive, format: TarEntryFormat.Pax, leaveOpen: true))
-            {
-                V7TarEntry entry = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
-
-                // Should be written in the format of the entry
-                writer.WriteEntry(entry);
-            }
-
-            archive.Seek(0, SeekOrigin.Begin);
-            using (TarReader reader = new TarReader(archive))
-            {
-                TarEntry entry = reader.GetNextEntry();
-                Assert.NotNull(entry);
-                Assert.Equal(TarEntryFormat.V7, entry.Format);
-                Assert.True(entry is V7TarEntry);
-                Assert.Equal(TarEntryType.V7RegularFile, entry.EntryType);
-
-                Assert.Null(reader.GetNextEntry());
-            }
-        }
-
-        [Fact]
         public void WriteRegularFile()
         {
             using MemoryStream archiveStream = new MemoryStream();

@@ -9,52 +9,6 @@ namespace System.Formats.Tar.Tests
     // Tests specific to V7 format.
     public class TarWriter_WriteEntry_V7_Tests : TarTestsBase
     {
-        [Theory]
-        [InlineData(TarEntryFormat.Ustar)]
-        [InlineData(TarEntryFormat.Pax)]
-        [InlineData(TarEntryFormat.Gnu)]
-        public void Write_RegularFileEntry_As_V7RegularFileEntry(TarEntryFormat entryFormat)
-        {
-            using MemoryStream archive = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archive, format: TarEntryFormat.V7, leaveOpen: true))
-            {
-                TarEntry entry = entryFormat switch
-                {
-                    TarEntryFormat.Ustar => new UstarTarEntry(TarEntryType.RegularFile, InitialEntryName),
-                    TarEntryFormat.Pax => new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName),
-                    TarEntryFormat.Gnu => new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName),
-                    _ => throw new FormatException($"Unexpected format: {entryFormat}")
-                };
-
-                // Should be written in the format of the entry
-                writer.WriteEntry(entry);
-            }
-
-            archive.Seek(0, SeekOrigin.Begin);
-            using (TarReader reader = new TarReader(archive))
-            {
-                TarEntry entry = reader.GetNextEntry();
-                Assert.NotNull(entry);
-                Assert.Equal(entryFormat, entry.Format);
-
-                switch (entryFormat)
-                {
-                    case TarEntryFormat.Ustar:
-                        Assert.True(entry is UstarTarEntry);
-                        break;
-                    case TarEntryFormat.Pax:
-                        Assert.True(entry is PaxTarEntry);
-                        break;
-                    case TarEntryFormat.Gnu:
-                        Assert.True(entry is GnuTarEntry);
-                        break;
-                }
-
-                Assert.Null(reader.GetNextEntry());
-            }
-        }
-
-
         [Fact]
         public void WriteRegularFile()
         {
