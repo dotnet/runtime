@@ -501,7 +501,7 @@ namespace System.Net.Security
                         throw new IOException(SR.net_io_encrypt, e);
                     }
 
-                    await TIOAdapter.WriteAsync(InnerStream, _writeBuffer, 0, encryptedBytes, cancellationToken).ConfigureAwait(false);
+                    await TIOAdapter.WriteAsync(InnerStream, new ReadOnlyMemory<byte>(_writeBuffer, 0, encryptedBytes), cancellationToken).ConfigureAwait(false);
                     buffer = buffer.Slice(chunkBytes);
                 }
             }
