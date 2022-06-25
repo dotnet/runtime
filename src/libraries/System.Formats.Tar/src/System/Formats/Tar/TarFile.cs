@@ -118,10 +118,7 @@ namespace System.Formats.Tar
                 return Task.FromException(new DirectoryNotFoundException(string.Format(SR.IO_PathNotFound_Path, sourceDirectoryName)));
             }
 
-            // Throws if the destination file exists
-            using FileStream fs = new(destinationFileName, FileMode.CreateNew, FileAccess.Write);
-
-            return CreateFromDirectoryInternalAsync(sourceDirectoryName, fs, includeBaseDirectory, leaveOpen: false, cancellationToken);
+            return CreateFromDirectoryInternalAsync(sourceDirectoryName, destinationFileName, includeBaseDirectory, cancellationToken);
         }
 
         /// <summary>
@@ -250,9 +247,7 @@ namespace System.Formats.Tar
                 return Task.FromException(new DirectoryNotFoundException(string.Format(SR.IO_PathNotFound_Path, destinationDirectoryName)));
             }
 
-            using FileStream archive = File.OpenRead(sourceFileName);
-
-            return ExtractToDirectoryInternalAsync(archive, destinationDirectoryName, overwriteFiles, leaveOpen: false, cancellationToken);
+            return ExtractToDirectoryInternalAsync(sourceFileName, destinationDirectoryName, overwriteFiles, cancellationToken);
         }
 
         // Creates an archive from the contents of a directory.
@@ -306,6 +301,26 @@ namespace System.Formats.Tar
                 {
                     ArrayPool<char>.Shared.Return(entryNameBuffer);
                 }
+            }
+        }
+
+        // Asynchronously creates a tar archive from the contents of the specified directory, and outputs them into the specified path.
+        private static async Task CreateFromDirectoryInternalAsync(string sourceDirectoryName, string destinationFileName, bool includeBaseDirectory, CancellationToken cancellationToken)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(sourceDirectoryName));
+            Debug.Assert(!string.IsNullOrEmpty(destinationFileName));
+
+            FileStreamOptions options = new()
+            {
+                Access = FileAccess.Write,
+                Mode = FileMode.CreateNew,
+                Options = FileOptions.Asynchronous,
+            };
+            // Throws if the destination file exists
+            FileStream archive = new(destinationFileName, options);
+            await using (archive.ConfigureAwait(false))
+            {
+                await CreateFromDirectoryInternalAsync(sourceDirectoryName, archive, includeBaseDirectory, leaveOpen: false, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -382,6 +397,25 @@ namespace System.Formats.Tar
                 {
                     entry.ExtractRelativeToDirectory(destinationDirectoryPath, overwriteFiles);
                 }
+            }
+        }
+
+        // Asynchronously extracts the contents of a tar file into the specified directory.
+        private static async Task ExtractToDirectoryInternalAsync(string sourceFileName, string destinationDirectoryName, bool overwriteFiles, CancellationToken cancellationToken)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(sourceFileName));
+            Debug.Assert(!string.IsNullOrEmpty(destinationDirectoryName));
+
+            FileStreamOptions options = new()
+            {
+                Access = FileAccess.Read,
+                Mode = FileMode.Open,
+                Options = FileOptions.Asynchronous,
+            };
+            FileStream archive = new(sourceFileName, options);
+            await using (archive.ConfigureAwait(false))
+            {
+                await ExtractToDirectoryInternalAsync(archive, destinationDirectoryName, overwriteFiles, leaveOpen: false, cancellationToken).ConfigureAwait(false);
             }
         }
 
