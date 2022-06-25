@@ -250,7 +250,7 @@ namespace System.Formats.Tar
         public Task ExtractToFileAsync(string destinationFileName, bool overwrite, CancellationToken cancellationToken = default)
         {
             ArgumentException.ThrowIfNullOrEmpty(destinationFileName);
-            if (EntryType is TarEntryType.SymbolicLink or TarEntryType.HardLink)
+            if (EntryType is TarEntryType.SymbolicLink or TarEntryType.HardLink or TarEntryType.GlobalExtendedAttributes)
             {
                 return Task.FromException(new InvalidOperationException(string.Format(SR.TarEntryTypeNotSupportedForExtracting, EntryType)));
             }

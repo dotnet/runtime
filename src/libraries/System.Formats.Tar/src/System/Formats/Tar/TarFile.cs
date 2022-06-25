@@ -378,7 +378,7 @@ namespace System.Formats.Tar
             TarEntry? entry;
             while ((entry = reader.GetNextEntry()) != null)
             {
-                if (entry is not PaxGlobalExtendedAttributesTarEntry)
+                if (entry.EntryType is not TarEntryType.GlobalExtendedAttributes)
                 {
                     entry.ExtractRelativeToDirectory(destinationDirectoryPath, overwriteFiles);
                 }
@@ -400,7 +400,10 @@ namespace System.Formats.Tar
                 TarEntry? entry;
                 while ((entry = await reader.GetNextEntryAsync(cancellationToken: cancellationToken).ConfigureAwait(false)) != null)
                 {
-                    await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryPath, overwriteFiles, cancellationToken).ConfigureAwait(false);
+                    if (entry.EntryType is not TarEntryType.GlobalExtendedAttributes)
+                    {
+                        await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryPath, overwriteFiles, cancellationToken).ConfigureAwait(false);
+                    }
                 }
             }
         }

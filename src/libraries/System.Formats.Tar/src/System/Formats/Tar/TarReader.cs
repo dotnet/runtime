@@ -169,7 +169,8 @@ namespace System.Formats.Tar
 
                 TarEntry entry = header._format switch
                 {
-                    TarEntryFormat.Pax => new PaxTarEntry(header, this),
+                    TarEntryFormat.Pax => header._typeFlag is TarEntryType.GlobalExtendedAttributes ?
+                                          new PaxGlobalExtendedAttributesTarEntry(header, this) : new PaxTarEntry(header, this),
                     TarEntryFormat.Gnu => new GnuTarEntry(header, this),
                     TarEntryFormat.Ustar => new UstarTarEntry(header, this),
                     TarEntryFormat.V7 or TarEntryFormat.Unknown or _ => new V7TarEntry(header, this),
