@@ -581,27 +581,34 @@ namespace System.Net.Security
             return GssUnwrap(((SafeDeleteNegoContext)securityContext).GssContext, buffer);
         }
 
-        internal static int VerifySignature(SafeDeleteContext securityContext, byte[] buffer, int offset, int count)
+        internal static int VerifySignature(SafeDeleteContext securityContext, ReadOnlySpan<byte> buffer)
         {
-            if (offset < 0 || offset > (buffer == null ? 0 : buffer.Length))
+            Interop.NetSecurityNative.GssBuffer decryptedBuffer = default(Interop.NetSecurityNative.GssBuffer);
+            try
             {
-                Debug.Fail("Argument 'offset' out of range");
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
+                Interop.NetSecurityNative.Status minorStatus;
+                Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.UnwrapBuffer(
+                    out minorStatus,
+                    ((SafeDeleteNegoContext)securityContext).GssContext,
+                    buffer,
+                    ref decryptedBuffer);
+                if (status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE)
+                {
+                    throw new Interop.NetSecurityNative.GssApiException(status, minorStatus);
+                }
 
-            if (count < 0 || count > (buffer == null ? 0 : buffer.Length - offset))
+                return decryptedBuffer.Span.Length;
+            }
+            finally
             {
-                Debug.Fail("Argument 'count' out of range.");
-                throw new ArgumentOutOfRangeException(nameof(count));
+                decryptedBuffer.Dispose();
             }
-
-            return GssUnwrap(((SafeDeleteNegoContext)securityContext).GssContext, buffer.AsSpan(offset, count));
         }
 
-        internal static int MakeSignature(SafeDeleteContext securityContext, byte[] buffer, int offset, int count, [AllowNull] ref byte[] output)
+        internal static int MakeSignature(SafeDeleteContext securityContext, ReadOnlySpan<byte> buffer, [AllowNull] ref byte[] output)
         {
             SafeDeleteNegoContext gssContext = (SafeDeleteNegoContext)securityContext;
-            output = GssWrap(gssContext.GssContext, false, new ReadOnlySpan<byte>(buffer, offset, count));
+            output = GssWrap(gssContext.GssContext, false, buffer);
             return output.Length;
         }
     }
