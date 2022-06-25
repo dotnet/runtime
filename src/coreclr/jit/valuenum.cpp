@@ -8311,19 +8311,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
         if (lclDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
         {
             unsigned lhsLclSize = lvaLclExactSize(lhsLclNum);
-            unsigned storeSize;
-            if (lhs->OperIs(GT_LCL_VAR))
-            {
-                storeSize = lhsLclSize;
-            }
-            else if (lhs->OperIs(GT_LCL_FLD))
-            {
-                storeSize = lhs->AsLclFld()->GetSize();
-            }
-            else
-            {
-                storeSize = lhs->AsIndir()->Size();
-            }
+            unsigned storeSize  = lhs->GetLayout(this)->GetSize();
 
             ValueNumPair rhsVNPair = ValueNumPair();
             if (tree->OperIsInitBlkOp())
