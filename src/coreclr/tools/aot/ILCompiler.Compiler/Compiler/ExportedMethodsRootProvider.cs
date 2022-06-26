@@ -30,7 +30,12 @@ namespace ILCompiler
                     {
                         EcmaMethod ecmaMethod = (EcmaMethod)method;
                         if (ecmaMethod.IsRuntimeExport || ecmaMethod.IsUnmanagedCallersOnly)
-                            yield return ecmaMethod;
+                        {
+                            if (ecmaMethod.IsRuntimeExport && ecmaMethod.GetRuntimeExportName() != null)
+                                yield return ecmaMethod;
+                            else if (ecmaMethod.IsUnmanagedCallersOnly && ecmaMethod.GetUnmanagedCallersOnlyExportName() != null)
+                                yield return ecmaMethod;
+                        }
                     }
                 }
             }
@@ -43,14 +48,12 @@ namespace ILCompiler
                 if (ecmaMethod.IsRuntimeExport)
                 {
                     string runtimeExportName = ecmaMethod.GetRuntimeExportName();
-                    if (runtimeExportName != null)
-                        rootProvider.AddCompilationRoot((MethodDesc)ecmaMethod, "Runtime export", runtimeExportName);
+                    rootProvider.AddCompilationRoot((MethodDesc)ecmaMethod, "Runtime export", runtimeExportName);
                 }
                 else if (ecmaMethod.IsUnmanagedCallersOnly)
                 {
                     string unmanagedCallersOnlyExportName = ecmaMethod.GetUnmanagedCallersOnlyExportName();
-                    if (unmanagedCallersOnlyExportName != null)
-                        rootProvider.AddCompilationRoot((MethodDesc)ecmaMethod, "Native callable", unmanagedCallersOnlyExportName);
+                    rootProvider.AddCompilationRoot((MethodDesc)ecmaMethod, "Native callable", unmanagedCallersOnlyExportName);
                 }
             }
         }
