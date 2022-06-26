@@ -5,6 +5,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <NoWarn>CA1507;CA1805;CA1822;CA1823;CA1852;SA1121;SA1129;SA1206;SA1207;SA1400;SA1404;SA1411;IDE0029;IDE0036;IDE0059;IL2026;IL2050</NoWarn>
     <NoWarn>$(NoWarn);CA1416</NoWarn> <!-- This call site is reachable on all platforms. Resolve by moving this code to Windows-only -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn> <!-- TODO -->
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Transactions\CommittableTransaction.cs" />

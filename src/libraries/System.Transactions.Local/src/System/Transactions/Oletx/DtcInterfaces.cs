@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Reflection;
 using System.Threading;
+using System.Diagnostics.CodeAnalysis;
 
 #nullable disable
 
@@ -260,6 +261,8 @@ namespace System.Transactions.Oletx
     InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface IDtcProxyShimFactory
     {
+        // See https://github.com/dotnet/runtime/issues/45633
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(CoTaskMemHandle))]
         void ConnectToProxy(
             [MarshalAs(UnmanagedType.LPWStr)] string nodeName,
             Guid resourceManagerIdentifier,

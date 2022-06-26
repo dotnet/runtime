@@ -5,7 +5,7 @@ using System.Collections;
 using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Threading;
-using System.Transactions.Distributed;
+using System.Transactions.Oletx;
 
 namespace System.Transactions
 {
@@ -1697,7 +1697,7 @@ namespace System.Transactions
                 EnlistmentState.EnlistmentStatePromoted.EnterState(en.InternalEnlistment);
 
                 en.InternalEnlistment.PromotedEnlistment =
-                    DistributedTransaction.EnlistVolatile(
+                    tx.PromotedTransaction.EnlistVolatile(
                         en.InternalEnlistment, enlistmentOptions);
                 return en;
             }
@@ -1726,7 +1726,7 @@ namespace System.Transactions
                 EnlistmentState.EnlistmentStatePromoted.EnterState(en.InternalEnlistment);
 
                 en.InternalEnlistment.PromotedEnlistment =
-                    DistributedTransaction.EnlistVolatile(
+                    tx.PromotedTransaction.EnlistVolatile(
                         en.InternalEnlistment, enlistmentOptions);
                 return en;
             }
@@ -1763,7 +1763,7 @@ namespace System.Transactions
                 EnlistmentState.EnlistmentStatePromoted.EnterState(en.InternalEnlistment);
 
                 en.InternalEnlistment.PromotedEnlistment =
-                    DistributedTransaction.EnlistDurable(
+                    tx.PromotedTransaction.EnlistDurable(
                         resourceManagerIdentifier,
                         (DurableInternalEnlistment)en.InternalEnlistment,
                         false,
@@ -1804,7 +1804,7 @@ namespace System.Transactions
                 EnlistmentState.EnlistmentStatePromoted.EnterState(en.InternalEnlistment);
 
                 en.InternalEnlistment.PromotedEnlistment =
-                    DistributedTransaction.EnlistDurable(
+                    tx.PromotedTransaction.EnlistDurable(
                         resourceManagerIdentifier,
                         (DurableInternalEnlistment)en.InternalEnlistment,
                         true,
@@ -1833,7 +1833,7 @@ namespace System.Transactions
             Monitor.Exit(tx);
             try
             {
-                DistributedTransaction.Rollback();
+                tx.PromotedTransaction.Rollback();
             }
             finally
             {
@@ -1918,16 +1918,17 @@ namespace System.Transactions
                 Debug.Assert(tx._phase0WaveDependentCloneCount >= 0);
                 if (tx._phase0WaveDependentCloneCount == 0)
                 {
+                    OletxDependentTransaction dtx = tx._phase0WaveDependentClone!;
                     tx._phase0WaveDependentClone = null;
 
                     Monitor.Exit(tx);
                     try
                     {
-                        DistributedDependentTransaction.Complete();
+                        dtx.Complete();
                     }
                     finally
                     {
-                        Monitor.Enter(tx);
+                        dtx.Dispose();
                     }
                 }
             }
@@ -1954,21 +1955,21 @@ namespace System.Transactions
                 {
                     // We need to complete our dependent clone on the promoted transaction and null it out
                     // so if we get a new one, a new one will be created on the promoted transaction.
+                    OletxDependentTransaction dtx = tx._abortingDependentClone!;
                     tx._abortingDependentClone = null;
 
                     Monitor.Exit(tx);
                     try
                     {
-                        DistributedDependentTransaction.Complete();
+                        dtx.Complete();
                     }
                     finally
                     {
-                        Monitor.Enter(tx);
+                        dtx.Dispose();
                     }
                 }
             }
         }
-
 
         internal override void CreateBlockingClone(InternalTransaction tx)
         {
@@ -1978,7 +1979,7 @@ namespace System.Transactions
             if (tx._phase0WaveDependentClone == null)
             {
                 Debug.Assert(tx.PromotedTransaction != null);
-                tx._phase0WaveDependentClone = DistributedTransaction.DependentClone(true);
+                tx._phase0WaveDependentClone = tx.PromotedTransaction.DependentClone(true);
             }
 
             tx._phase0WaveDependentCloneCount++;
@@ -2000,7 +2001,7 @@ namespace System.Transactions
                 if (null == tx._abortingDependentClone)
                 {
                     Debug.Assert(tx.PromotedTransaction != null);
-                    tx._abortingDependentClone = DistributedTransaction.DependentClone(false);
+                    tx._abortingDependentClone = tx.PromotedTransaction.DependentClone(false);
                 }
                 tx._abortingDependentCloneCount++;
             }
@@ -2077,7 +2078,7 @@ namespace System.Transactions
                     tx._innerException = new TimeoutException(SR.TraceTransactionTimeout);
                 }
                 Debug.Assert(tx.PromotedTransaction != null);
-                DistributedTransaction.Rollback();
+                tx.PromotedTransaction.Rollback();
 
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
@@ -2170,7 +2171,7 @@ namespace System.Transactions
             CommonEnterState(tx);
 
             // Create a transaction with the distributed transaction manager
-            DistributedCommittableTransaction? distributedTx = null;
+            OletxCommittableTransaction? distributedTx = null;
             try
             {
                 TimeSpan newTimeout;
@@ -2196,7 +2197,7 @@ namespace System.Transactions
 
                 // Create a new distributed transaction.
                 distributedTx =
-                    DistributedTransactionManager.CreateTransaction(options);
+                    TransactionManager.DistributedTransactionManager.CreateTransaction(options);
                 distributedTx.SavedLtmPromotedTransaction = tx._outcomeSource;
 
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
@@ -2267,7 +2268,7 @@ namespace System.Transactions
                 }
 
                 Debug.Assert(tx.PromotedTransaction != null);
-                volatiles.VolatileDemux._promotedEnlistment = DistributedTransaction.EnlistVolatile(volatiles.VolatileDemux,
+                volatiles.VolatileDemux._promotedEnlistment = tx.PromotedTransaction.EnlistVolatile(volatiles.VolatileDemux,
                     phase0 ? EnlistmentOptions.EnlistDuringPrepareRequired : EnlistmentOptions.None);
             }
 
@@ -2283,7 +2284,7 @@ namespace System.Transactions
                 // Directly enlist the durable enlistment with the resource manager.
                 InternalEnlistment enlistment = tx._durableEnlistment;
                 Debug.Assert(tx.PromotedTransaction != null);
-                IPromotedEnlistment promotedEnlistment = DistributedTransaction.EnlistDurable(
+                IPromotedEnlistment promotedEnlistment = tx.PromotedTransaction.EnlistDurable(
                     enlistment.ResourceManagerIdentifier,
                     (DurableInternalEnlistment)enlistment,
                     enlistment.SinglePhaseNotification != null,
@@ -2333,7 +2334,7 @@ namespace System.Transactions
             {
                 if (!enlistmentsPromoted)
                 {
-                    DistributedTransaction.Rollback();
+                    tx.PromotedTransaction.Rollback();
 
                     // Now abort this transaction.
                     tx.State.ChangeStateAbortedDuringPromotion(tx);
@@ -2362,7 +2363,7 @@ namespace System.Transactions
             {
                 if (!enlistmentsPromoted)
                 {
-                    DistributedTransaction.Rollback();
+                    tx.PromotedTransaction.Rollback();
 
                     // Now abort this transaction.
                     tx.State.ChangeStateAbortedDuringPromotion(tx);
@@ -2392,7 +2393,7 @@ namespace System.Transactions
             {
                 if (!enlistmentsPromoted)
                 {
-                    DistributedTransaction.Rollback();
+                    tx.PromotedTransaction.Rollback();
 
                     // Now abort this transaction.
                     tx.State.ChangeStateAbortedDuringPromotion(tx);
@@ -2483,7 +2484,8 @@ namespace System.Transactions
             CommonEnterState(tx);
 
             // Use the asynchronous commit provided by the promoted transaction
-            DistributedCommittableTransaction.BeginCommit(tx);
+            OletxCommittableTransaction ctx = (OletxCommittableTransaction)tx.PromotedTransaction!;
+            ctx.BeginCommit(tx);
         }
 
 
@@ -2801,7 +2803,7 @@ namespace System.Transactions
             {
                 Debug.Assert(tx.PromotedTransaction != null);
                 // Otherwise make sure that the transaction rolls back.
-                DistributedTransaction.Rollback();
+                tx.PromotedTransaction.Rollback();
             }
         }
 
@@ -3286,7 +3288,7 @@ namespace System.Transactions
             CommonEnterState(tx);
 
             // Create a transaction with the distributed transaction manager
-            DistributedTransaction? distributedTx = null;
+            Oletx.OletxTransaction? distributedTx = null;
             try
             {
                 // Ask the delegation interface to promote the transaction.
@@ -4287,7 +4289,7 @@ namespace System.Transactions
             CommonEnterState(tx);
 
             // We are never going to have an DistributedTransaction for this one.
-            DistributedTransaction? distributedTx;
+            OletxTransaction? distributedTx;
             try
             {
                 // Ask the delegation interface to promote the transaction.
@@ -4348,7 +4350,7 @@ namespace System.Transactions
             }
 
             Debug.Assert(tx.PromotedTransaction != null);
-            DistributedTransaction.Rollback();
+            tx.PromotedTransaction.Rollback();
             TransactionStatePromotedAborted.EnterState(tx);
         }
 
@@ -4436,7 +4438,7 @@ namespace System.Transactions
             }
         }
 
-        internal DistributedTransaction? PSPEPromote(InternalTransaction tx)
+        internal Oletx.OletxTransaction? PSPEPromote(InternalTransaction tx)
         {
             bool changeToReturnState = true;
 
@@ -4447,7 +4449,7 @@ namespace System.Transactions
                 "PSPEPromote called from state other than TransactionStateDelegated[NonMSDTC]");
             CommonEnterState(tx);
 
-            DistributedTransaction? distributedTx = null;
+            Oletx.OletxTransaction? distributedTx = null;
             try
             {
                 if (tx._attemptingPSPEPromote)
@@ -4514,7 +4516,7 @@ namespace System.Transactions
                 {
                     try
                     {
-                        distributedTx = TransactionInterop.GetDistributedTransactionFromTransmitterPropagationToken(
+                        distributedTx = TransactionInterop.GetOletxTransactionFromTransmitterPropagationToken(
                                             propagationToken!
                                             );
                     }

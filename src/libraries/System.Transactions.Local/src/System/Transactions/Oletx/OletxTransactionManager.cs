@@ -882,7 +882,7 @@ namespace System.Transactions.Oletx
                     tx = (Transaction)txWeakRef.Target;
                     if (tx != null)
                     {
-                        realTx = tx._internalTransaction.PromotedTransaction.realOletxTransaction;
+                        realTx = tx._internalTransaction.PromotedTransaction.RealOletxTransaction;
                         // Only deal with transactions owned by my OletxTm.
                         if (realTx.OletxTransactionManagerInstance == _oletxTm)
                         {

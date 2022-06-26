@@ -8,7 +8,7 @@ using System.IO;
 using System.Threading;
 using System.Transactions.Configuration;
 using System.Transactions.Diagnostics;
-using System.Transactions.Distributed;
+using System.Transactions.Oletx;
 
 namespace System.Transactions
 {
@@ -218,9 +218,9 @@ namespace System.Transactions
         }
 
 
-        private static DistributedTransactionManager CheckTransactionManager(string? nodeName)
+        private static OletxTransactionManager CheckTransactionManager(string? nodeName)
         {
-            DistributedTransactionManager tm = DistributedTransactionManager;
+            OletxTransactionManager tm = DistributedTransactionManager;
             if (!((tm.NodeName == null && (nodeName == null || nodeName.Length == 0)) ||
                   (tm.NodeName != null && tm.NodeName.Equals(nodeName))))
             {
@@ -508,7 +508,7 @@ namespace System.Transactions
             return null;
         }
 
-        internal static Transaction FindOrCreatePromotedTransaction(Guid transactionIdentifier, DistributedTransaction dtx)
+        internal static Transaction FindOrCreatePromotedTransaction(Guid transactionIdentifier, OletxTransaction dtx)
         {
             Transaction? tx = null;
             Hashtable promotedTransactionTable = PromotedTransactionTable;
@@ -557,9 +557,10 @@ namespace System.Transactions
             LazyInitializer.EnsureInitialized(ref s_transactionTable, ref s_classSyncObject, () => new TransactionTable());
 
         // Fault in a DistributedTransactionManager if one has not already been created.
-        internal static DistributedTransactionManager? distributedTransactionManager;
-        internal static DistributedTransactionManager DistributedTransactionManager =>
+        internal static OletxTransactionManager? distributedTransactionManager;
+        internal static OletxTransactionManager DistributedTransactionManager =>
             // If the distributed transaction manager is not configured, throw an exception
-            LazyInitializer.EnsureInitialized(ref distributedTransactionManager, ref s_classSyncObject, () => new DistributedTransactionManager());
+            LazyInitializer.EnsureInitialized(ref distributedTransactionManager, ref s_classSyncObject,
+                () => new OletxTransactionManager(DefaultSettingsSection.DistributedTransactionManagerName));
     }
 }

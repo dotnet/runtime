@@ -5,7 +5,8 @@ using System.Collections;
 using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
-using System.Transactions.Distributed;
+using System.Transactions.Oletx;
+using OletxTransaction = System.Transactions.Oletx.OletxTransaction;
 
 namespace System.Transactions
 {
@@ -93,7 +94,7 @@ namespace System.Transactions
         // These members are used for promoted waves of dependent blocking clones.  The Ltm
         // does not register individually for each blocking clone created in phase 0.  Instead
         // it multiplexes a single phase 0 blocking clone only created after phase 0 has started.
-        internal DistributedDependentTransaction? _phase0WaveDependentClone;
+        internal OletxDependentTransaction? _phase0WaveDependentClone;
         internal int _phase0WaveDependentCloneCount;
 
         // These members are used for keeping track of aborting dependent clones if we promote
@@ -105,7 +106,7 @@ namespace System.Transactions
         // on the distributed TM takes care of checking to make sure all the aborting dependent
         // clones have completed as part of its Prepare processing.  These are used in conjunction with
         // phase1volatiles.dependentclones.
-        internal DistributedDependentTransaction? _abortingDependentClone;
+        internal OletxDependentTransaction? _abortingDependentClone;
         internal int _abortingDependentCloneCount;
 
         // When the size of the volatile enlistment array grows increase it by this amount.
@@ -119,8 +120,8 @@ namespace System.Transactions
         internal TransactionCompletedEventHandler? _transactionCompletedDelegate;
 
         // If this transaction get's promoted keep a reference to the promoted transaction
-        private DistributedTransaction? _promotedTransaction;
-        internal DistributedTransaction? PromotedTransaction
+        private OletxTransaction? _promotedTransaction;
+        internal OletxTransaction? PromotedTransaction
         {
             get { return _promotedTransaction; }
             set
@@ -248,7 +249,7 @@ namespace System.Transactions
         }
 
         // Construct an internal transaction
-        internal InternalTransaction(Transaction outcomeSource, DistributedTransaction distributedTx)
+        internal InternalTransaction(Transaction outcomeSource, OletxTransaction distributedTx)
         {
             _promotedTransaction = distributedTx;
 

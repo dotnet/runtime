@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Threading;
-using System.Transactions.Distributed;
+using System.Transactions.Oletx;
 
 namespace System.Transactions
 {
@@ -276,7 +276,7 @@ namespace System.Transactions
             }
         }
 
-        internal Transaction(DistributedTransaction distributedTransaction)
+        internal Transaction(OletxTransaction distributedTransaction)
         {
             _isoLevel = distributedTransaction.IsolationLevel;
             _internalTransaction = new InternalTransaction(this, distributedTransaction);
@@ -1092,7 +1092,7 @@ namespace System.Transactions
             }
         }
 
-        internal DistributedTransaction? Promote()
+        internal OletxTransaction? Promote()
         {
             lock (_internalTransaction)
             {

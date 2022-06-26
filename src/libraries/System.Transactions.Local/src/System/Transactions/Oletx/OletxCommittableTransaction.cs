@@ -35,9 +35,6 @@ namespace System.Transactions.Oletx
         /// Constructor for the Transaction object.  Specifies the TransactionManager instance that is
         /// creating the transaction.
         /// </summary>
-        /// <param name="transactionManager">
-        /// Specifies the TransactionManager instance that is creating the transaction.
-        /// </param>
         internal OletxCommittableTransaction(RealOletxTransaction realOletxTransaction)
             : base(realOletxTransaction)
         {
