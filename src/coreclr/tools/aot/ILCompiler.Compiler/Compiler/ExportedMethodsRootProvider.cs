@@ -29,13 +29,10 @@ namespace ILCompiler
                     foreach (var method in type.GetMethods())
                     {
                         EcmaMethod ecmaMethod = (EcmaMethod)method;
-                        if (ecmaMethod.IsRuntimeExport || ecmaMethod.IsUnmanagedCallersOnly)
-                        {
-                            if (ecmaMethod.IsRuntimeExport && ecmaMethod.GetRuntimeExportName() != null)
-                                yield return ecmaMethod;
-                            else if (ecmaMethod.IsUnmanagedCallersOnly && ecmaMethod.GetUnmanagedCallersOnlyExportName() != null)
-                                yield return ecmaMethod;
-                        }
+                        if (ecmaMethod.IsRuntimeExport && ecmaMethod.GetRuntimeExportName() != null)
+                            yield return ecmaMethod;
+                        else if (ecmaMethod.IsUnmanagedCallersOnly && ecmaMethod.GetUnmanagedCallersOnlyExportName() != null)
+                            yield return ecmaMethod;
                     }
                 }
             }
