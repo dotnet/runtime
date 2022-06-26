@@ -31,7 +31,6 @@ namespace System.Xml
 
         // UTF-8 is fastpath, so that's how these are stored
         // Compare methods adapt to Unicode.
-        private static readonly byte[] s_encodingAttr = "encoding"u8.ToArray();
         private static readonly byte[] s_encodingUTF8 = "utf-8"u8.ToArray();
         private static readonly byte[] s_encodingUnicode = "utf-16"u8.ToArray();
         private static readonly byte[] s_encodingUnicodeLE = "utf-16le"u8.ToArray();
@@ -361,7 +360,7 @@ namespace System.Xml
             for (i = encEq - 1; IsWhitespace(buffer[i]); i--) ;
 
             // Check for encoding attribute
-            if (!Compare(s_encodingAttr, buffer, i - s_encodingAttr.Length + 1))
+            if (!buffer.AsSpan(0, i + 1).EndsWith("encoding"u8))
             {
                 if (e != SupportedEncoding.UTF8 && expectedEnc == SupportedEncoding.None)
                     throw new XmlException(SR.XmlDeclarationRequired);
@@ -421,16 +420,6 @@ namespace System.Xml
                     continue;
 
                 if (key[i] != char.ToLowerInvariant((char)buffer[offset + i]))
-                    return false;
-            }
-            return true;
-        }
-
-        private static bool Compare(byte[] key, byte[] buffer, int offset)
-        {
-            for (int i = 0; i < key.Length; i++)
-            {
-                if (key[i] != buffer[offset + i])
                     return false;
             }
             return true;
