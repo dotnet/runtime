@@ -3,6 +3,35 @@
 
 using Microsoft.Extensions.Logging;
 
+public class BaseClass
+{
+    protected ILogger _logger;
+
+    public BaseClass(ILogger logger) => _logger = logger;
+}
+
+public partial class DerivedClass : BaseClass
+{
+    public DerivedClass(ILogger logger) : base(logger) { }
+
+    [LoggerMessage(0, LogLevel.Debug, "Test.")]
+    public partial void Test();
+}
+
+public partial class PartialClassWithLoggerField
+{
+    private ILogger _logger;
+
+    public PartialClassWithLoggerField(ILogger logger) => _logger = logger;
+}
+
+public partial class PartialClassWithLoggerField
+{
+    [LoggerMessage(0, LogLevel.Debug, "Test.")]
+    public partial void Test();
+}
+
+
 // Used to test use outside of a namespace
 internal static partial class NoNamespace
 {

@@ -534,29 +534,28 @@ namespace Microsoft.Extensions.Logging.Generators
 
             private (string? loggerField, bool multipleLoggerFields) FindLoggerField(SemanticModel sm, TypeDeclarationSyntax classDec, ITypeSymbol loggerSymbol)
             {
+                List<IFieldSymbol> fields = new();
+
+                INamedTypeSymbol? classType = sm.GetDeclaredSymbol(classDec, _cancellationToken);
+                while (classType is { } ct && ct.SpecialType != SpecialType.System_Object)
+                {
+                    fields.AddRange(classType.GetMembers().OfType<IFieldSymbol>());
+                    classType = classType.BaseType;
+                }
+
                 string? loggerField = null;
 
-                foreach (MemberDeclarationSyntax m in classDec.Members)
+                foreach (IFieldSymbol v in fields)
                 {
-                    if (m is FieldDeclarationSyntax fds)
+                    if (IsBaseOrIdentity(v.Type, loggerSymbol))
                     {
-                        foreach (VariableDeclaratorSyntax v in fds.Declaration.Variables)
+                        if (loggerField == null)
                         {
-                            var fs = sm.GetDeclaredSymbol(v, _cancellationToken) as IFieldSymbol;
-                            if (fs != null)
-                            {
-                                if (IsBaseOrIdentity(fs.Type, loggerSymbol))
-                                {
-                                    if (loggerField == null)
-                                    {
-                                        loggerField = v.Identifier.Text;
-                                    }
-                                    else
-                                    {
-                                        return (null, true);
-                                    }
-                                }
-                            }
+                            loggerField = v.Name;
+                        }
+                        else
+                        {
+                            return (null, true);
                         }
                     }
                 }
