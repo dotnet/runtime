@@ -16,8 +16,7 @@ enum MEMORY_REGION_FLAGS : uint32_t
     // PF_R        = 0x04,      // Read
     MEMORY_REGION_FLAG_PERMISSIONS_MASK = 0x0f,
     MEMORY_REGION_FLAG_SHARED = 0x10,
-    MEMORY_REGION_FLAG_PRIVATE = 0x20,
-    MEMORY_REGION_FLAG_MEMORY_BACKED = 0x40
+    MEMORY_REGION_FLAG_PRIVATE = 0x20
 };
 
 struct MemoryRegion
@@ -95,7 +94,6 @@ public:
 
     uint32_t Permissions() const { return m_flags & MEMORY_REGION_FLAG_PERMISSIONS_MASK; }
     inline uint32_t Flags() const { return m_flags; }
-    bool IsBackedByMemory() const { return (m_flags & MEMORY_REGION_FLAG_MEMORY_BACKED) != 0; }
     inline uint64_t StartAddress() const { return m_startAddress; }
     inline uint64_t EndAddress() const { return m_endAddress; }
     inline uint64_t Size() const { return m_endAddress - m_startAddress; }
@@ -115,7 +113,7 @@ public:
 
     void Trace() const
     {
-        TRACE("%" PRIA PRIx64 " - %" PRIA PRIx64 " (%06" PRIx64 ") %" PRIA PRIx64 " %c%c%c%c%c%c %02x %s\n",
+        TRACE("%" PRIA PRIx64 " - %" PRIA PRIx64 " (%06" PRIx64 ") %" PRIA PRIx64 " %c%c%c%c%c %02x %s\n",
             m_startAddress,
             m_endAddress,
             Size() / PAGE_SIZE,
@@ -125,7 +123,6 @@ public:
             (m_flags & PF_X) ? 'x' : '-',
             (m_flags & MEMORY_REGION_FLAG_SHARED) ? 's' : '-',
             (m_flags & MEMORY_REGION_FLAG_PRIVATE) ? 'p' : '-',
-            (m_flags & MEMORY_REGION_FLAG_MEMORY_BACKED) ? 'b' : '-',
             m_flags,
             m_fileName.c_str());
     }

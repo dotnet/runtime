@@ -148,7 +148,6 @@ private:
     bool EnumerateManagedModules();
     bool UnwindAllThreads();
     void ReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, const std::string& pszName);
-    void InsertMemoryBackedRegion(const MemoryRegion& region);
     void InsertMemoryRegion(const MemoryRegion& region);
     uint32_t GetMemoryRegionFlags(uint64_t start);
     bool ValidRegion(const MemoryRegion& region);

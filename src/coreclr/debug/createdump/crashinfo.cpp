@@ -168,14 +168,14 @@ CrashInfo::GatherCrashInfo(MINIDUMP_TYPE minidumpType)
     {
         for (const MemoryRegion& region : m_moduleMappings)
         {
-            InsertMemoryBackedRegion(region);
+            InsertMemoryRegion(region);
         }
         for (const MemoryRegion& region : m_otherMappings)
         {
             // Don't add uncommitted pages to the full dump
             if ((region.Permissions() & (PF_R | PF_W | PF_X)) != 0)
             {
-                InsertMemoryBackedRegion(region);
+                InsertMemoryRegion(region);
             }
         }
     }
@@ -190,7 +190,7 @@ CrashInfo::GatherCrashInfo(MINIDUMP_TYPE minidumpType)
                 uint32_t permissions = region.Permissions();
                 if (permissions == (PF_R | PF_W) || permissions == (PF_R | PF_W | PF_X))
                 {
-                    InsertMemoryBackedRegion(region);
+                    InsertMemoryRegion(region);
                 }
             }
         }
@@ -443,7 +443,7 @@ CrashInfo::ReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, const
 
     // Make sure that the page containing the PE header for the managed asseblies is in the dump
     // especially on MacOS where they are added artificially.
-    MemoryRegion header(flags | MEMORY_REGION_FLAG_MEMORY_BACKED, start, start + PAGE_SIZE);
+    MemoryRegion header(flags, start, start + PAGE_SIZE);
     InsertMemoryRegion(header);
 
     // Add or change the module mapping for this PE image. The managed assembly images may already
@@ -634,16 +634,7 @@ CrashInfo::InsertMemoryRegion(uint64_t address, size_t size)
     uint64_t end = ((address + size) + (PAGE_SIZE - 1)) & PAGE_MASK;
     assert(end > 0);
 
-    InsertMemoryRegion(MemoryRegion(GetMemoryRegionFlags(start) | MEMORY_REGION_FLAG_MEMORY_BACKED, start, end));
-}
-
-//
-// Adds a memory backed flagged copy of the memory region. The file name is not preserved.
-//
-void
-CrashInfo::InsertMemoryBackedRegion(const MemoryRegion& region)
-{
-    InsertMemoryRegion(MemoryRegion(region, region.Flags() | MEMORY_REGION_FLAG_MEMORY_BACKED));
+    InsertMemoryRegion(MemoryRegion(GetMemoryRegionFlags(start), start, end));
 }
 
 //
@@ -664,9 +655,8 @@ CrashInfo::InsertMemoryRegion(const MemoryRegion& region)
     }
     else
     {
-        // If the memory region is wholly contained in region found and both have the
-        // same backed by memory state, we're done.
-        if (found->Contains(region) && (found->IsBackedByMemory() == region.IsBackedByMemory())) {
+        // If the memory region is wholly contained in region found
+        if (found->Contains(region)) {
             return;
         }
     }
@@ -690,9 +680,6 @@ CrashInfo::InsertMemoryRegion(const MemoryRegion& region)
                 m_memoryRegions.insert(memoryRegionPage);
             }
         }
-        else {
-            assert(found->IsBackedByMemory() || !region.IsBackedByMemory());
-        }
     }
 }
 
@@ -702,20 +689,16 @@ CrashInfo::InsertMemoryRegion(const MemoryRegion& region)
 bool
 CrashInfo::ValidRegion(const MemoryRegion& region)
 {
-    if (region.IsBackedByMemory())
+    uint64_t start = region.StartAddress();
+    uint64_t numberPages = region.Size() / PAGE_SIZE;
+    for (size_t p = 0; p < numberPages; p++, start += PAGE_SIZE)
     {
-        uint64_t start = region.StartAddress();
+        BYTE buffer[1];
+        size_t read;
 
-        uint64_t numberPages = region.Size() / PAGE_SIZE;
-        for (size_t p = 0; p < numberPages; p++, start += PAGE_SIZE)
+        if (!ReadProcessMemory((void*)start, buffer, 1, &read))
         {
-            BYTE buffer[1];
-            size_t read;
-
-            if (!ReadProcessMemory((void*)start, buffer, 1, &read))
-            {
-                return false;
-            }
+            return false;
         }
     }
     return true;
@@ -733,7 +716,7 @@ CrashInfo::CombineMemoryRegions()
 
     // MEMORY_REGION_FLAG_SHARED and MEMORY_REGION_FLAG_PRIVATE are internal flags that
     // don't affect the core dump so ignore them when comparing the flags.
-    uint32_t flags = m_memoryRegions.begin()->Flags() & (MEMORY_REGION_FLAG_MEMORY_BACKED | MEMORY_REGION_FLAG_PERMISSIONS_MASK);
+    uint32_t flags = m_memoryRegions.begin()->Flags() & MEMORY_REGION_FLAG_PERMISSIONS_MASK;
     uint64_t start = m_memoryRegions.begin()->StartAddress();
     uint64_t end = start;
 
@@ -741,7 +724,7 @@ CrashInfo::CombineMemoryRegions()
     {
         // To combine a region it needs to be contiguous, same permissions and memory backed flag.
         if ((end == region.StartAddress()) &&
-            (flags == (region.Flags() & (MEMORY_REGION_FLAG_MEMORY_BACKED | MEMORY_REGION_FLAG_PERMISSIONS_MASK))))
+            (flags == (region.Flags() & MEMORY_REGION_FLAG_PERMISSIONS_MASK)))
         {
             end = region.EndAddress();
         }
@@ -751,7 +734,7 @@ CrashInfo::CombineMemoryRegions()
             assert(memoryRegionsNew.find(memoryRegion) == memoryRegionsNew.end());
             memoryRegionsNew.insert(memoryRegion);
 
-            flags = region.Flags() & (MEMORY_REGION_FLAG_MEMORY_BACKED | MEMORY_REGION_FLAG_PERMISSIONS_MASK);
+            flags = region.Flags() & MEMORY_REGION_FLAG_PERMISSIONS_MASK;
             start = region.StartAddress();
             end = region.EndAddress();
         }

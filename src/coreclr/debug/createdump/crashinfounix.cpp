@@ -226,7 +226,7 @@ CrashInfo::EnumerateModuleMappings()
             }
             if (linuxGateAddress != nullptr && reinterpret_cast<void*>(start) == linuxGateAddress)
             {
-                InsertMemoryBackedRegion(memoryRegion);
+                InsertMemoryRegion(memoryRegion);
             }
             free(moduleName);
             free(permissions);
