@@ -79,6 +79,15 @@ jobs:
       testGroup: innerloop
 
 
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/build-job.yml
+    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    platforms:
+    - windows_x64
+    jobParameters:
+      testScope: innerloop
+
 #
 # Libraries release build that only runs when coreclr is changed in PRs
 # We need these for checked coreclr + release libraries tests runs.
