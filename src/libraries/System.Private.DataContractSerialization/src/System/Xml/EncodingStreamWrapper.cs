@@ -360,8 +360,7 @@ namespace System.Xml
             for (i = encEq - 1; IsWhitespace(buffer[i]); i--) ;
 
             // Check for encoding attribute
-            ReadOnlySpan<byte> encodingAttr = "encoding"u8;
-            if (!buffer.AsSpan(i - encodingAttr.Length + 1, encodingAttr.Length).SequenceEqual(encodingAttr))
+            if (!buffer.AsSpan(0, i + 1).EndsWith("encoding"u8))
             {
                 if (e != SupportedEncoding.UTF8 && expectedEnc == SupportedEncoding.None)
                     throw new XmlException(SR.XmlDeclarationRequired);
