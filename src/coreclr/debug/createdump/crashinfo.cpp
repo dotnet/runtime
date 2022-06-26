@@ -214,8 +214,6 @@ CrashInfo::GatherCrashInfo(MINIDUMP_TYPE minidumpType)
     {
         return false;
     }
-    // Join all adjacent memory regions
-    CombineMemoryRegions();
     return true;
 }
 

@@ -88,6 +88,7 @@ public:
     void CleanupAndResumeProcess();
     bool EnumerateAndSuspendThreads();
     bool GatherCrashInfo(MINIDUMP_TYPE minidumpType);
+    void CombineMemoryRegions();
     bool EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType);
     bool ReadMemory(void* address, void* buffer, size_t size);                          // read memory and add to dump
     bool ReadProcessMemory(void* address, void* buffer, size_t size, size_t* read);     // read raw memory
@@ -151,7 +152,6 @@ private:
     void InsertMemoryRegion(const MemoryRegion& region);
     uint32_t GetMemoryRegionFlags(uint64_t start);
     bool ValidRegion(const MemoryRegion& region);
-    void CombineMemoryRegions();
     void Trace(const char* format, ...);
     void TraceVerbose(const char* format, ...);
 };

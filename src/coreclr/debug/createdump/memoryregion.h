@@ -2,7 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #if !defined(PAGE_SIZE) && (defined(__arm__) || defined(__aarch64__) || defined(__loongarch64))
-#define PAGE_SIZE sysconf(_SC_PAGESIZE)
+extern long g_pageSize;
+#define PAGE_SIZE g_pageSize
 #endif
 
 #undef PAGE_MASK 

@@ -3,6 +3,10 @@
 
 #include "createdump.h"
 
+#if !defined(PAGE_SIZE) && (defined(__arm__) || defined(__aarch64__) || defined(__loongarch64))
+long g_pageSize = 0;
+#endif
+
 //
 // The Linux/MacOS create dump code
 //
@@ -13,6 +17,11 @@ CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP
     DumpWriter dumpWriter(*crashInfo);
     std::string dumpPath;
     bool result = false;
+
+    // Initialize PAGE_SIZE
+#if !defined(PAGE_SIZE) && (defined(__arm__) || defined(__aarch64__) || defined(__loongarch64))
+    g_pageSize = sysconf(_SC_PAGESIZE);
+#endif
 
     // Initialize the crash info 
     if (!crashInfo->Initialize())
@@ -52,6 +61,9 @@ CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP
     {
         goto exit;
     }
+    // Join all adjacent memory regions
+    crashInfo->CombineMemoryRegions();
+
     printf_status("Writing %s to file %s\n", dumpType, dumpPath.c_str());
 
     // Write the actual dump file
