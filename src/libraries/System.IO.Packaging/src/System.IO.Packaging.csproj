@@ -19,6 +19,8 @@
     <Compile Include="System\IO\Packaging\EncryptionOption.cs" />
     <Compile Include="System\IO\Packaging\FileFormatException.cs" />
     <Compile Include="System\IO\Packaging\IgnoreFlushAndCloseStream.cs" />
+    <Compile Include="System\IO\Packaging\InterleavedZipPartStream.cs" />
+    <Compile Include="System\IO\Packaging\InterleavedZipPartStream.PieceDirectory.cs" />
     <Compile Include="System\IO\Packaging\InternalRelationshipCollection.cs" />
     <Compile Include="System\IO\Packaging\OrderedDictionary.cs" />
     <Compile Include="System\IO\Packaging\Package.cs" />
@@ -34,6 +36,9 @@
     <Compile Include="System\IO\Packaging\PackagingUtilities.cs" />
     <Compile Include="System\IO\Packaging\PackUriHelper.cs" />
     <Compile Include="System\IO\Packaging\PartBasedPackageProperties.cs" />
+    <Compile Include="System\IO\Packaging\PieceInfo.cs" />
+    <Compile Include="System\IO\Packaging\PieceNameComparer.cs" />
+    <Compile Include="System\IO\Packaging\PieceNameHelper.cs" />
     <Compile Include="System\IO\Packaging\TargetMode.cs" />
     <Compile Include="System\IO\Packaging\XmlCompatibilityReader.cs" />
     <Compile Include="System\IO\Packaging\XmlWrappingReader.cs" />
