@@ -786,7 +786,8 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
         if (condTree->OperGet() == GT_CNS_INT)
         {
             JITDUMP(" ... found foldable jtrue at [%06u] in " FMT_BB "\n", dspTreeID(tree), block->bbNum);
-            noway_assert((block->bbNext->countOfInEdges() > 0) && (block->bbJumpDest->countOfInEdges() > 0));
+            noway_assert(!comp->fgCheapPredsValid ||
+                         ((block->bbNext->countOfInEdges() > 0) && (block->bbJumpDest->countOfInEdges() > 0)));
 
             // We have a constant operand, and should have the all clear to optimize.
             // Update side effects on the tree, assert there aren't any, and bash to nop.
