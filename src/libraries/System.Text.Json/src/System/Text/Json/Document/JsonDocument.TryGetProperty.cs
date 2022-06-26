@@ -176,7 +176,7 @@ namespace System.Text.Json
 
                         // If everything up to where the property name has a backslash matches, keep going.
                         if (propertyName.Length > idx &&
-                            currentPropertyName.Slice(0, idx).SequenceEqual(propertyName.Slice(0, idx)))
+                            currentPropertyName.StartsWith(propertyName.Slice(0, idx)))
                         {
                             int remaining = currentPropertyName.Length - idx;
                             int written = 0;
