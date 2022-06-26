@@ -786,7 +786,7 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
         if (condTree->OperGet() == GT_CNS_INT)
         {
             JITDUMP(" ... found foldable jtrue at [%06u] in " FMT_BB "\n", dspTreeID(tree), block->bbNum);
-            noway_assert(!comp->fgCheapPredsValid ||
+            noway_assert(!comp->fgComputePredsDone ||
                          ((block->bbNext->countOfInEdges() > 0) && (block->bbJumpDest->countOfInEdges() > 0)));
 
             // We have a constant operand, and should have the all clear to optimize.
@@ -809,7 +809,10 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
                 bNotTaken         = block->bbJumpDest;
             }
 
-            comp->fgRemoveRefPred(bNotTaken, block);
+            if (comp->fgComputePredsDone)
+            {
+                comp->fgRemoveRefPred(bNotTaken, block);
+            }
 
             // If that was the last ref, a subsequent flow-opt pass
             // will clean up the now-unreachable bNotTaken, and any
