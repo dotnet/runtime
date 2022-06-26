@@ -4646,6 +4646,14 @@ AGAIN:
         {
             // Reference to JIT data
             assert(jmp->idIsBound());
+
+            // Already the smallest size?
+            if (jmp->idjShort)
+            {
+                assert(jmp->idCodeSize() == ssz);
+                continue;
+            }
+
             UNATIVE_OFFSET srcOffs = jmpIG->igOffs + jmp->idjOffs;
 
             int doff = jmp->idAddr()->iiaGetJitDataOffset();
