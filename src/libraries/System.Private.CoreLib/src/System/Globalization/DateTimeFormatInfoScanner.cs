@@ -538,10 +538,10 @@ namespace System.Globalization
         // the format flag.
         //
         ////////////////////////////////////////////////////////////////////////////
-        internal static FORMATFLAGS GetFormatFlagGenitiveMonth(string[] monthNames, string[] genitveMonthNames, string[] abbrevMonthNames, string[] genetiveAbbrevMonthNames)
+        internal static FORMATFLAGS GetFormatFlagGenitiveMonth(string[] monthNames, string[] genitiveMonthNames, string[] abbrevMonthNames, string[] genitiveAbbrevMonthNames)
         {
             // If we have different names in regular and genitive month names, use genitive month flag.
-            return (!EqualStringArrays(monthNames, genitveMonthNames) || !EqualStringArrays(abbrevMonthNames, genetiveAbbrevMonthNames))
+            return (!monthNames.AsSpan().SequenceEqual(genitiveMonthNames) || !abbrevMonthNames.AsSpan().SequenceEqual(genitiveAbbrevMonthNames))
                 ? FORMATFLAGS.UseGenitiveMonth : 0;
         }
 
@@ -589,17 +589,6 @@ namespace System.Globalization
             return calID == (int)CalendarId.HEBREW ?
                 FORMATFLAGS.UseHebrewParsing | FORMATFLAGS.UseLeapYearMonth : 0;
         }
-
-        //-----------------------------------------------------------------------------
-        // EqualStringArrays
-        //      compares two string arrays and return true if all elements of the first
-        //      array equals to all elements of the second array.
-        //      otherwise it returns false.
-        //-----------------------------------------------------------------------------
-
-        private static bool EqualStringArrays(string[] array1, string[] array2) =>
-            array1 == array2 ||
-            array1.AsSpan().SequenceEqual(array2);
 
         //-----------------------------------------------------------------------------
         // ArrayElementsHaveSpace

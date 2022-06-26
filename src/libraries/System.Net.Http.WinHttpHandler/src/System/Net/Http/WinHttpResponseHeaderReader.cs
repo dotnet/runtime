@@ -93,7 +93,7 @@ namespace System.Net.Http
 
             int pos = _position;
 
-            int newline = _buffer.AsSpan(pos).IndexOf("\r\n".AsSpan());
+            int newline = _buffer.AsSpan(pos, _length - pos).IndexOf("\r\n".AsSpan());
             if (newline >= 0)
             {
                 startIndex = pos;
