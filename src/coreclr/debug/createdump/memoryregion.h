@@ -53,7 +53,8 @@ public:
     MemoryRegion(uint32_t flags, uint64_t start, uint64_t end) :
         m_flags(flags),
         m_startAddress(start),
-        m_endAddress(end)
+        m_endAddress(end),
+        m_offset(0)
     {
         assert((start & ~PAGE_MASK) == 0);
         assert((end & ~PAGE_MASK) == 0);
@@ -111,9 +112,10 @@ public:
         return (m_startAddress <= rhs.m_startAddress) && (m_endAddress >= rhs.m_endAddress);
     }
 
-    void Trace() const
+    void Trace(const char* prefix = "") const
     {
-        TRACE("%" PRIA PRIx64 " - %" PRIA PRIx64 " (%06" PRIx64 ") %" PRIA PRIx64 " %c%c%c%c%c %02x %s\n",
+        TRACE("%s%" PRIA PRIx64 " - %" PRIA PRIx64 " (%06" PRIx64 ") %" PRIA PRIx64 " %c%c%c%c%c %02x %s\n",
+            prefix,
             m_startAddress,
             m_endAddress,
             Size() / PAGE_SIZE,

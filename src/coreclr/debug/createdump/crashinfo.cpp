@@ -19,7 +19,10 @@ CrashInfo::CrashInfo(pid_t pid, bool gatherFrames, pid_t crashThread, uint32_t s
     m_crashThread(crashThread),
     m_signal(signal),
     m_moduleInfos(&ModuleInfoCompare),
-    m_mainModule(nullptr)
+    m_mainModule(nullptr),
+    ModuleMappingsCB(0),
+    DataTargetPagesAdded(0),
+    EnumMemoryPagesAdded(0)
 {
     g_crashInfo = this;
 #ifdef __APPLE__
@@ -115,7 +118,7 @@ CrashInfo::EnumMemoryRegion(
     /* [in] */ CLRDATA_ADDRESS address,
     /* [in] */ ULONG32 size)
 {
-    InsertMemoryRegion((ULONG_PTR)address, size);
+    EnumMemoryPagesAdded += InsertMemoryRegion((ULONG_PTR)address, size);
     return S_OK;
 }
 
@@ -155,9 +158,28 @@ CrashInfo::GatherCrashInfo(MINIDUMP_TYPE minidumpType)
         return false;
     }
 #endif
+    // Load and initialize DAC interfaces
+    if (!InitializeDAC())
+    {
+        return false;
+    }
+    // Enumerate all the managed modules. On MacOS only the native modules have been added
+    // to the module mapping list at this point and adds the managed modules. This needs to
+    // be done before the other mappings is initialized.
+    if (!EnumerateManagedModules())
+    {
+        return false;
+    }
+#ifdef __APPLE__
+    InitializeOtherMappings();
+#endif
+    if (!UnwindAllThreads())
+    {
+        return false;
+    }
     if (g_diagnosticsVerbose)
     {
-        TRACE_VERBOSE("Module addresses:\n");
+        TRACE("Module addresses:\n");
         for (const MemoryRegion& region : m_moduleAddresses)
         {
             region.Trace();
@@ -188,7 +210,11 @@ CrashInfo::GatherCrashInfo(MINIDUMP_TYPE minidumpType)
             for (const MemoryRegion& region : m_otherMappings)
             {
                 uint32_t permissions = region.Permissions();
+#ifdef __APPLE__
+                if (permissions == (PF_R | PF_W))
+#else
                 if (permissions == (PF_R | PF_W) || permissions == (PF_R | PF_W | PF_X))
+#endif
                 {
                     InsertMemoryRegion(region);
                 }
@@ -200,19 +226,6 @@ CrashInfo::GatherCrashInfo(MINIDUMP_TYPE minidumpType)
             // Add the thread's stack
             thread->GetThreadStack();
         }
-    }
-    // Load and initialize DAC interfaces
-    if (!InitializeDAC())
-    {
-        return false;
-    }
-    if (!EnumerateManagedModules())
-    {
-        return false;
-    }
-    if (!UnwindAllThreads())
-    {
-        return false;
     }
     return true;
 }
@@ -299,7 +312,7 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType)
 {
     if (m_pClrDataEnumRegions != nullptr && (minidumpType & MiniDumpWithFullMemory) == 0)
     {
-        TRACE("EnumerateMemoryRegionsWithDAC: Memory enumeration STARTED\n");
+        TRACE("EnumerateMemoryRegionsWithDAC: Memory enumeration STARTED (%d %d)\n", EnumMemoryPagesAdded, DataTargetPagesAdded);
 
         // Since on both Linux and MacOS all the RW regions will be added for heap
         // dumps by createdump, the only thing differentiating a MiniDumpNormal and
@@ -324,7 +337,7 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType)
             printf_error("EnumMemoryRegions FAILED %s (%08x)\n", GetHResultString(hr), hr);
             return false;
         }
-        TRACE("EnumerateMemoryRegionsWithDAC: Memory enumeration FINISHED\n");
+        TRACE("EnumerateMemoryRegionsWithDAC: Memory enumeration FINISHED (%d %d)\n", EnumMemoryPagesAdded, DataTargetPagesAdded);
     }
     return true;
 }
@@ -340,7 +353,7 @@ CrashInfo::EnumerateManagedModules()
 
     if (m_pClrDataProcess != nullptr)
     {
-        TRACE("EnumerateManagedModules: Module enumeration STARTED\n");
+        TRACE("EnumerateManagedModules: Module enumeration STARTED (%d)\n", DataTargetPagesAdded);
 
         if (FAILED(hr = m_pClrDataProcess->StartEnumModules(&enumModules))) {
             printf_error("StartEnumModules FAILED %s (%08x)\n", GetHResultString(hr), hr);
@@ -400,7 +413,7 @@ CrashInfo::EnumerateManagedModules()
         if (enumModules != 0) {
             m_pClrDataProcess->EndEnumModules(enumModules);
         }
-        TRACE("EnumerateManagedModules: Module enumeration FINISHED\n");
+        TRACE("EnumerateManagedModules: Module enumeration FINISHED (%d) ModuleMappings %06llx\n", DataTargetPagesAdded, ModuleMappingsCB / PAGE_SIZE);
     }
     return true;
 }
@@ -411,6 +424,7 @@ CrashInfo::EnumerateManagedModules()
 bool
 CrashInfo::UnwindAllThreads()
 {
+    TRACE("UnwindAllThreads: STARTED (%d)\n", DataTargetPagesAdded);
     ReleaseHolder<ISOSDacInterface> pSos = nullptr;
     if (m_pClrDataProcess != nullptr) {
         m_pClrDataProcess->QueryInterface(__uuidof(ISOSDacInterface), (void**)&pSos);
@@ -422,6 +436,7 @@ CrashInfo::UnwindAllThreads()
             return false;
         }
     }
+    TRACE("UnwindAllThreads: FINISHED (%d)\n", DataTargetPagesAdded);
     return true;
 }
 
@@ -455,10 +470,10 @@ CrashInfo::ReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, const
         // On MacOS the assemblies are always added.
         MemoryRegion newRegion(flags, start, end, 0, name);
         m_moduleMappings.insert(newRegion);
+        ModuleMappingsCB += newRegion.Size();
 
         if (g_diagnostics) {
-            TRACE("MODULE: ADD ");
-            newRegion.Trace();
+            newRegion.Trace("MODULE: ADD ");
         }
     }
     else if (found->FileName().compare(name) != 0)
@@ -468,13 +483,14 @@ CrashInfo::ReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, const
 
         // Remove and cleanup the old one
         m_moduleMappings.erase(found);
+        ModuleMappingsCB -= found->Size();
 
-        // Add the new memory region
+        // Add the new memory region.
         m_moduleMappings.insert(newRegion);
+        ModuleMappingsCB += newRegion.Size();
 
         if (g_diagnostics) {
-            TRACE("MODULE: REPLACE ");
-            newRegion.Trace();
+            newRegion.Trace("MODULE: REPLACE ");
         }
     }
 }
@@ -613,15 +629,14 @@ CrashInfo::ReadMemory(void* address, void* buffer, size_t size)
         return false;
     }
     assert(read == size);
-    InsertMemoryRegion(reinterpret_cast<uint64_t>(address), size);
+    InsertMemoryRegion(reinterpret_cast<uint64_t>(address), read);
     return true;
 }
 
 //
-// Add this memory chunk to the list of regions to be
-// written to the core dump.
+// Add this memory chunk to the list of regions to be written to the core dump. Returns the number of pages actually added.
 //
-void
+int
 CrashInfo::InsertMemoryRegion(uint64_t address, size_t size)
 {
     assert(size < UINT_MAX);
@@ -634,13 +649,13 @@ CrashInfo::InsertMemoryRegion(uint64_t address, size_t size)
     uint64_t end = ((address + size) + (PAGE_SIZE - 1)) & PAGE_MASK;
     assert(end > 0);
 
-    InsertMemoryRegion(MemoryRegion(GetMemoryRegionFlags(start), start, end));
+    return InsertMemoryRegion(MemoryRegion(GetMemoryRegionFlags(start), start, end));
 }
 
 //
-// Add a memory region to the list
+// Add a memory region to the list. Returns the number of pages actually added.
 //
-void
+int
 CrashInfo::InsertMemoryRegion(const MemoryRegion& region)
 {
     // First check if the full memory region can be added without conflicts and is fully valid.
@@ -648,16 +663,18 @@ CrashInfo::InsertMemoryRegion(const MemoryRegion& region)
     if (found == m_memoryRegions.end())
     {
         // If the region is valid, add the full memory region
-        if (ValidRegion(region)) {
+        if (ValidRegion(region))
+        {
             m_memoryRegions.insert(region);
-            return;
+            return region.Size() / PAGE_SIZE;
         }
     }
     else
     {
         // If the memory region is wholly contained in region found
-        if (found->Contains(region)) {
-            return;
+        if (found->Contains(region))
+        {
+            return 0;
         }
     }
     // Either part of the region was invalid, part of it hasn't been added or the backed
@@ -667,6 +684,7 @@ CrashInfo::InsertMemoryRegion(const MemoryRegion& region)
     // The region overlaps/conflicts with one already in the set so add one page at a
     // time to avoid the overlapping pages.
     uint64_t numberPages = region.Size() / PAGE_SIZE;
+    int pagesAdded = 0;
 
     for (size_t p = 0; p < numberPages; p++, start += PAGE_SIZE)
     {
@@ -676,11 +694,15 @@ CrashInfo::InsertMemoryRegion(const MemoryRegion& region)
         if (found == m_memoryRegions.end())
         {
             // All the single pages added here will be combined in CombineMemoryRegions()
-            if (ValidRegion(memoryRegionPage)) {
+            if (ValidRegion(memoryRegionPage))
+            {
                 m_memoryRegions.insert(memoryRegionPage);
+                pagesAdded++;
             }
         }
     }
+
+    return pagesAdded;
 }
 
 //
@@ -751,7 +773,7 @@ CrashInfo::CombineMemoryRegions()
 
     if (g_diagnosticsVerbose)
     {
-        TRACE("Memory Regions:\n");
+        TRACE("Final Memory Regions:\n");
         for (const MemoryRegion& region : m_memoryRegions)
         {
             region.Trace();

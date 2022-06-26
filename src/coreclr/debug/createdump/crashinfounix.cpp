@@ -219,6 +219,7 @@ CrashInfo::EnumerateModuleMappings()
             if (moduleName != nullptr && *moduleName == '/')
             {
                 m_moduleMappings.insert(memoryRegion);
+                ModuleMappingsCB += memoryRegion.Size();
             }
             else
             {
@@ -235,7 +236,7 @@ CrashInfo::EnumerateModuleMappings()
 
     if (g_diagnostics)
     {
-        TRACE("Module mappings:\n");
+        TRACE("Module mappings (%06llx):\n", ModuleMappingsCB / PAGE_SIZE);
         for (const MemoryRegion& region : m_moduleMappings)
         {
             region.Trace();

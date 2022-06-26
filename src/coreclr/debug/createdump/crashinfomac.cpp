@@ -106,6 +106,7 @@ CrashInfo::EnumerateMemoryRegions()
     vm_region_submap_info_data_64_t info;
     mach_vm_address_t address = 1;
     mach_vm_size_t size = 0;
+    uint64_t cbAllMemoryRegions = 0;
     uint32_t depth = 0;
 
     // First enumerate and add all the regions
@@ -119,15 +120,15 @@ CrashInfo::EnumerateMemoryRegions()
             TRACE("mach_vm_region_recurse for address %016llx %08llx FAILED %s (%x)\n", address, size, mach_error_string(result), result);
             break;
         }
-        TRACE_VERBOSE("%016llx - %016llx (%06llx) %08llx %s %d %d %d %c%c%c %02x\n",
+        TRACE_VERBOSE("%016llx - %016llx (%06llx, %06llx) %08llx %s %d %d %c%c%c %02x\n",
             address,
             address + size,
             size / PAGE_SIZE,
+            info.pages_resident,
             info.offset,
             info.is_submap ? "sub" : "   ",
-            info.user_wired_count,
-            info.share_mode,
             depth,
+            info.share_mode,
             (info.protection & VM_PROT_READ) ? 'r' : '-',
             (info.protection & VM_PROT_WRITE) ? 'w' : '-',
             (info.protection & VM_PROT_EXECUTE) ? 'x' : '-',
@@ -142,6 +143,7 @@ CrashInfo::EnumerateMemoryRegions()
             {
                 MemoryRegion memoryRegion(ConvertProtectionFlags(info.protection), address, address + size, info.offset);
                 m_allMemoryRegions.insert(memoryRegion);
+                cbAllMemoryRegions += memoryRegion.Size();
             }
             address += size;
         }
@@ -158,22 +160,31 @@ CrashInfo::EnumerateMemoryRegions()
             break;
         }
     }
+    TRACE("AllMemoryRegions %06llx native ModuleMappings %06llx\n", cbAllMemoryRegions / PAGE_SIZE, ModuleMappingsCB / PAGE_SIZE);
+    return true;
+}
 
-    // Filter out the module regions from the memory regions gathered
+void
+CrashInfo::InitializeOtherMappings()
+{
+    uint64_t cbOtherMappings = 0;
+
+    // Filter out the module regions from the memory regions gathered. The m_moduleMappings list needs
+    // to include all the native and managed module regions.
     for (const MemoryRegion& region : m_allMemoryRegions)
     {
         std::set<MemoryRegion>::iterator found = m_moduleMappings.find(region);
         if (found == m_moduleMappings.end())
         {
             m_otherMappings.insert(region);
+            cbOtherMappings += region.Size();
         }
         else
         {
             // Skip any region that is fully contained in a module region
             if (!found->Contains(region))
             {
-                TRACE("Region:   ");
-                region.Trace();
+                region.Trace("Region:   ");
 
                 // Now add all the gaps in "region" left by the module regions
                 uint64_t previousEndAddress = region.StartAddress();
@@ -185,9 +196,9 @@ CrashInfo::EnumerateMemoryRegions()
                         MemoryRegion gap(region.Flags(), previousEndAddress, found->StartAddress(), region.Offset());
                         if (gap.Size() > 0)
                         {
-                            TRACE("     Gap: ");
-                            gap.Trace();
+                            gap.Trace("     Gap: ");
                             m_otherMappings.insert(gap);
+                            cbOtherMappings += gap.Size();
                         }
                         previousEndAddress = found->EndAddress();
                     }
@@ -196,14 +207,14 @@ CrashInfo::EnumerateMemoryRegions()
                 MemoryRegion endgap(region.Flags(), previousEndAddress, region.EndAddress(), region.Offset());
                 if (endgap.Size() > 0)
                 {
-                    TRACE("   EndGap:");
-                    endgap.Trace();
+                    endgap.Trace("  EndGap: ");
                     m_otherMappings.insert(endgap);
+                    cbOtherMappings += endgap.Size();
                 }
             }
         }
     }
-    return true;
+    TRACE("OtherMappings: %06llx\n", cbOtherMappings / PAGE_SIZE);
 }
 
 bool
@@ -320,24 +331,45 @@ void CrashInfo::VisitSegment(MachOModule& module, const segment_command_64& segm
             _ASSERTE(end > 0);
 
             // Add module memory region if not already on the list
-            MemoryRegion moduleRegion(regionFlags, start, end, offset);
-            const auto& found = m_moduleMappings.find(moduleRegion);
-            if (found == m_moduleMappings.end())
+            MemoryRegion newModule(regionFlags, start, end, offset, module.Name());
+            std::set<MemoryRegion>::iterator existingModule = m_moduleMappings.find(newModule);
+            if (existingModule == m_moduleMappings.end())
             {
                 if (g_diagnosticsVerbose)
                 {
-                    TRACE_VERBOSE("VisitSegment: ");
-                    moduleRegion.Trace();
+                    newModule.Trace("VisitSegment: ");
                 }
                 // Add this module segment to the module mappings list
-                m_moduleMappings.insert(moduleRegion);
+                m_moduleMappings.insert(newModule);
+                ModuleMappingsCB += newModule.Size();
             }
             else
             {
-                TRACE("VisitSegment: WARNING: ");
-                moduleRegion.Trace();
-                TRACE("       is overlapping: ");
-                found->Trace();
+                // Skip the new module region if it is fully contained in an existing module region
+                if (!existingModule->Contains(newModule))
+                {
+                    if (g_diagnosticsVerbose)
+                    {
+                        newModule.Trace("VisitSegment: ");
+                        existingModule->Trace(" overlapping: ");
+                    }
+                    uint64_t numberPages = newModule.Size() / PAGE_SIZE;
+                    for (size_t p = 0; p < numberPages; p++, start += PAGE_SIZE, offset += PAGE_SIZE)
+                    {
+                        MemoryRegion gap(newModule.Flags(), start, start + PAGE_SIZE, offset, newModule.FileName());
+
+                        const auto& found = m_moduleMappings.find(gap);
+                        if (found != m_moduleMappings.end())
+                        {
+                            if (g_diagnosticsVerbose)
+                            {
+                                gap.Trace("VisitSegment: *");
+                            }
+                            m_moduleMappings.insert(gap);
+                            ModuleMappingsCB += gap.Size();
+                        }
+                    }
+                }
             }
         }
     }

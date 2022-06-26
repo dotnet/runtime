@@ -84,6 +84,11 @@ public:
     CrashInfo(pid_t pid, bool gatherFrames, pid_t crashThread, uint32_t signal);
     virtual ~CrashInfo();
 
+    // Memory usage stats
+    uint64_t ModuleMappingsCB;
+    int DataTargetPagesAdded;
+    int EnumMemoryPagesAdded;
+
     bool Initialize();
     void CleanupAndResumeProcess();
     bool EnumerateAndSuspendThreads();
@@ -97,7 +102,7 @@ public:
     ModuleInfo* GetModuleInfoFromBaseAddress(uint64_t baseAddress);
     void AddModuleAddressRange(uint64_t startAddress, uint64_t endAddress, uint64_t baseAddress);
     void AddModuleInfo(bool isManaged, uint64_t baseAddress, IXCLRDataModule* pClrDataModule, const std::string& moduleName);
-    void InsertMemoryRegion(uint64_t address, size_t size);
+    int InsertMemoryRegion(uint64_t address, size_t size);
     static const MemoryRegion* SearchMemoryRegions(const std::set<MemoryRegion>& regions, const MemoryRegion& search);
 
     inline pid_t Pid() const { return m_pid; }
@@ -133,6 +138,7 @@ public:
 private:
 #ifdef __APPLE__
     bool EnumerateMemoryRegions();
+    void InitializeOtherMappings();
     bool TryFindDyLinker(mach_vm_address_t address, mach_vm_size_t size, bool* found);
     void VisitModule(MachOModule& module);
     void VisitSegment(MachOModule& module, const segment_command_64& segment);
@@ -148,7 +154,7 @@ private:
     bool EnumerateManagedModules();
     bool UnwindAllThreads();
     void ReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, const std::string& pszName);
-    void InsertMemoryRegion(const MemoryRegion& region);
+    int InsertMemoryRegion(const MemoryRegion& region);
     uint32_t GetMemoryRegionFlags(uint64_t start);
     bool ValidRegion(const MemoryRegion& region);
     void Trace(const char* format, ...);
