@@ -4229,6 +4229,7 @@ void GCInfo::gcMakeRegPtrTable(
                 unsigned const fieldOffset = i * TARGET_POINTER_SIZE;
                 int const      offset      = varDsc->GetStackOffset() + fieldOffset;
 
+#ifdef DEBUG
                 if (varDsc->lvPromoted)
                 {
                     assert(compiler->lvaGetPromotionType(varDsc) == Compiler::PROMOTION_TYPE_DEPENDENT);
@@ -4248,6 +4249,7 @@ void GCInfo::gcMakeRegPtrTable(
                                 varNum, fieldOffset, fieldLclNum, offset);
                     }
                 }
+#endif
 
 #if DOUBLE_ALIGN
                 // For genDoubleAlign(), locals are addressed relative to ESP and
