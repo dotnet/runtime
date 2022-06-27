@@ -86,6 +86,19 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowArgumentException_CannotSerializeInvalidType(string paramName, Type type, Type? parentClassType, string? propertyName)
+        {
+            if (parentClassType == null)
+            {
+                Debug.Assert(propertyName == null);
+                throw new ArgumentException(SR.Format(SR.CannotSerializeInvalidType, type), paramName);
+            }
+
+            Debug.Assert(propertyName != null);
+            throw new ArgumentException(SR.Format(SR.CannotSerializeInvalidMember, type, propertyName, parentClassType), paramName);
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_CannotSerializeInvalidType(Type type, Type? parentClassType, MemberInfo? memberInfo)
         {
             if (parentClassType == null)
