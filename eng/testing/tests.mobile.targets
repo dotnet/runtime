@@ -153,6 +153,7 @@
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)include\mono-2.0"
         Assemblies="@(BundleAssemblies)"
         MainLibraryFileName="$(MainLibraryFileName)"
+        IncludeNetworkSecurityConfig="$(IncludeNetworkSecurityConfig)"
         EnvironmentVariables="@(_AndroidEnv)"
         ForceAOT="$(RunAOTCompilation)"
         ForceInterpreter="$(MonoForceInterpreter)"
