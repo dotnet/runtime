@@ -29,10 +29,16 @@ namespace System.Formats.Tar
         }
 
         // Constructor called when the user creates a TarEntry instance from scratch.
-        internal TarEntry(TarEntryType entryType, string entryName, TarEntryFormat format)
+        internal TarEntry(TarEntryType entryType, string entryName, TarEntryFormat format, bool isGea)
         {
             ArgumentException.ThrowIfNullOrEmpty(entryName);
-            TarHelpers.ThrowIfEntryTypeNotSupported(entryType, format);
+
+            Debug.Assert(!isGea || entryType is TarEntryType.GlobalExtendedAttributes);
+
+            if (!isGea)
+            {
+                TarHelpers.ThrowIfEntryTypeNotSupported(entryType, format);
+            }
 
             _header = default;
             _header._format = format;
@@ -48,6 +54,11 @@ namespace System.Formats.Tar
         // Constructor called when converting an entry to the selected format.
         internal TarEntry(TarEntry other, TarEntryFormat format)
         {
+            if (other is PaxGlobalExtendedAttributesTarEntry)
+            {
+                throw new InvalidOperationException(SR.TarCannotConvertPaxGlobalExtendedAttributesEntry);
+            }
+
             TarEntryType compatibleEntryType;
             if (other.Format is TarEntryFormat.V7 && other.EntryType is TarEntryType.V7RegularFile && format is TarEntryFormat.Ustar or TarEntryFormat.Pax or TarEntryFormat.Gnu)
             {
@@ -151,9 +162,9 @@ namespace System.Formats.Tar
         /// Represents the Unix file permissions of the file represented by this entry.
         /// </summary>
         /// <remarks>The value in this field has no effect on Windows platforms.</remarks>
-        public TarFileMode Mode
+        public UnixFileMode Mode
         {
-            get => (TarFileMode)_header._mode;
+            get => (UnixFileMode)_header._mode;
             set
             {
                 if ((int)value is < 0 or > 4095) // 4095 in decimal is 7777 in octal
@@ -208,7 +219,7 @@ namespace System.Formats.Tar
         /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
         public void ExtractToFile(string destinationFileName, bool overwrite)
         {
-            if (EntryType is TarEntryType.SymbolicLink or TarEntryType.HardLink)
+            if (EntryType is TarEntryType.SymbolicLink or TarEntryType.HardLink or TarEntryType.GlobalExtendedAttributes)
             {
                 throw new InvalidOperationException(string.Format(SR.TarEntryTypeNotSupportedForExtracting, EntryType));
             }

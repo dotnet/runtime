@@ -13,7 +13,7 @@ internal static partial class Interop
     {
 #pragma warning disable CA1823 // unused fields
 #if NET7_0_OR_GREATER
-        [NativeMarshalling(typeof(Native))]
+        [NativeMarshalling(typeof(Marshaller))]
 #endif
         internal struct WAVEOUTCAPS
         {
@@ -28,48 +28,54 @@ internal static partial class Interop
             private ushort wReserved1;
             private ushort dwSupport;
 #if NET7_0_OR_GREATER
-            [CustomTypeMarshaller(typeof(WAVEOUTCAPS))]
-            internal unsafe struct Native
+            [ManagedToUnmanagedMarshallers(typeof(WAVEOUTCAPS), InMarshaller = typeof(Marshaller), RefMarshaller = typeof(Marshaller), OutMarshaller = typeof(Marshaller))]
+            public static class Marshaller
             {
-                private ushort wMid;
-                private ushort wPid;
-                private uint vDriverVersion;
-                internal fixed char szPname[szPnameLength];
-                private uint dwFormats;
-                private ushort wChannels;
-                private ushort wReserved1;
-                private ushort dwSupport;
+                public static Native ConvertToUnmanaged(WAVEOUTCAPS managed) => new(managed);
+                public static WAVEOUTCAPS ConvertToManaged(Native native) => native.ToManaged();
 
-                public Native(WAVEOUTCAPS managed)
+                internal unsafe struct Native
                 {
-                    wMid = managed.wMid;
-                    wPid = managed.wPid;
-                    vDriverVersion = managed.vDriverVersion;
-                    fixed (char* pszPname = szPname)
-                    {
-                        managed.szPname.AsSpan().CopyTo(new Span<char>(pszPname, szPnameLength));
-                    }
-                    dwFormats = managed.dwFormats;
-                    wChannels = managed.wChannels;
-                    wReserved1 = managed.wReserved1;
-                    dwSupport = managed.dwSupport;
-                }
+                    private ushort wMid;
+                    private ushort wPid;
+                    private uint vDriverVersion;
+                    internal fixed char szPname[szPnameLength];
+                    private uint dwFormats;
+                    private ushort wChannels;
+                    private ushort wReserved1;
+                    private ushort dwSupport;
 
-                public WAVEOUTCAPS ToManaged()
-                {
-                    fixed (char* pszPname = szPname)
+                    public Native(WAVEOUTCAPS managed)
                     {
-                        return new WAVEOUTCAPS
+                        wMid = managed.wMid;
+                        wPid = managed.wPid;
+                        vDriverVersion = managed.vDriverVersion;
+                        fixed (char* pszPname = szPname)
                         {
-                            wMid = wMid,
-                            wPid = wPid,
-                            vDriverVersion = vDriverVersion,
-                            szPname = new Span<char>(pszPname, szPnameLength).ToString(),
-                            dwFormats = dwFormats,
-                            wChannels = wChannels,
-                            wReserved1 = wReserved1,
-                            dwSupport = dwSupport,
-                        };
+                            managed.szPname.AsSpan().CopyTo(new Span<char>(pszPname, szPnameLength));
+                        }
+                        dwFormats = managed.dwFormats;
+                        wChannels = managed.wChannels;
+                        wReserved1 = managed.wReserved1;
+                        dwSupport = managed.dwSupport;
+                    }
+
+                    public WAVEOUTCAPS ToManaged()
+                    {
+                        fixed (char* pszPname = szPname)
+                        {
+                            return new WAVEOUTCAPS
+                            {
+                                wMid = wMid,
+                                wPid = wPid,
+                                vDriverVersion = vDriverVersion,
+                                szPname = new Span<char>(pszPname, szPnameLength).ToString(),
+                                dwFormats = dwFormats,
+                                wChannels = wChannels,
+                                wReserved1 = wReserved1,
+                                dwSupport = dwSupport,
+                            };
+                        }
                     }
                 }
             }

@@ -882,22 +882,8 @@ namespace System.Xml.Schema
             new SchemaDatatypeMap("unsignedShort",      s_unsignedShort, 42),
         };
 
-        protected static int Compare(byte[] value1, byte[] value2)
-        {
-            int length = value1.Length;
-            if (length != value2.Length)
-            {
-                return -1;
-            }
-            for (int i = 0; i < length; i++)
-            {
-                if (value1[i] != value2[i])
-                {
-                    return -1;
-                }
-            }
-            return 0;
-        }
+        protected static int Compare(byte[] value1, byte[] value2) =>
+            value1.AsSpan().SequenceEqual(value2) ? 0 : -1;
 
 #if PRIYAL
         protected object GetValueToCheck(object value, IXmlNamespaceResolver nsmgr) {

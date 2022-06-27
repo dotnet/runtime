@@ -130,6 +130,45 @@ enum gtCallTypes : BYTE
     CT_COUNT // fake entry (must be last)
 };
 
+enum class ExceptionSetFlags : uint32_t
+{
+    None                     = 0x0,
+    OverflowException        = 0x1,
+    DivideByZeroException    = 0x2,
+    ArithmeticException      = 0x4,
+    NullReferenceException   = 0x8,
+    IndexOutOfRangeException = 0x10,
+    StackOverflowException   = 0x20,
+
+    All = OverflowException | DivideByZeroException | ArithmeticException | NullReferenceException |
+          IndexOutOfRangeException | StackOverflowException,
+};
+
+inline constexpr ExceptionSetFlags operator~(ExceptionSetFlags a)
+{
+    return (ExceptionSetFlags)(~(uint32_t)a);
+}
+
+inline constexpr ExceptionSetFlags operator|(ExceptionSetFlags a, ExceptionSetFlags b)
+{
+    return (ExceptionSetFlags)((uint32_t)a | (uint32_t)b);
+}
+
+inline constexpr ExceptionSetFlags operator&(ExceptionSetFlags a, ExceptionSetFlags b)
+{
+    return (ExceptionSetFlags)((uint32_t)a & (uint32_t)b);
+}
+
+inline ExceptionSetFlags& operator|=(ExceptionSetFlags& a, ExceptionSetFlags b)
+{
+    return a = (ExceptionSetFlags)((uint32_t)a | (uint32_t)b);
+}
+
+inline ExceptionSetFlags& operator&=(ExceptionSetFlags& a, ExceptionSetFlags b)
+{
+    return a = (ExceptionSetFlags)((uint32_t)a & (uint32_t)b);
+}
+
 #ifdef DEBUG
 /*****************************************************************************
 *
@@ -1731,8 +1770,11 @@ public:
 #endif // DEBUG
 
     inline bool IsIntegralConst(ssize_t constVal) const;
+    inline bool IsFloatNaN() const;
     inline bool IsFloatPositiveZero() const;
+    inline bool IsFloatNegativeZero() const;
     inline bool IsVectorZero() const;
+    inline bool IsVectorCreate() const;
     inline bool IsVectorAllBitsSet() const;
     inline bool IsVectorConst();
 
@@ -1815,6 +1857,7 @@ public:
     bool OperRequiresCallFlag(Compiler* comp);
 
     bool OperMayThrow(Compiler* comp);
+    ExceptionSetFlags OperExceptions(Compiler* comp);
 
     unsigned GetScaleIndexMul();
     unsigned GetScaleIndexShf();
@@ -2094,6 +2137,11 @@ public:
 
         gtFlags &= ~GTF_ALL_EFFECT;
         gtFlags |= sourceFlags;
+    }
+
+    void AddAllEffectsFlags(GenTree* source)
+    {
+        AddAllEffectsFlags(source->gtFlags & GTF_ALL_EFFECT);
     }
 
     void AddAllEffectsFlags(GenTree* firstSource, GenTree* secondSource)
@@ -4583,6 +4631,7 @@ class CallArgs
     void RemovedWellKnownArg(WellKnownArg arg);
     regNumber GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, WellKnownArg arg);
     void SplitArg(CallArg* arg, unsigned numRegs, unsigned numSlots);
+    void SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs);
 
 public:
     CallArgs();
@@ -4627,7 +4676,6 @@ public:
     void AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call);
 
     void ArgsComplete(Compiler* comp, GenTreeCall* call);
-    void SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs);
     void EvalArgsToTemps(Compiler* comp, GenTreeCall* call);
     void SetNeedsTemp(CallArg* arg);
     bool IsNonStandard(Compiler* comp, GenTreeCall* call, CallArg* arg);
@@ -8282,6 +8330,42 @@ inline bool GenTree::IsIntegralConst(ssize_t constVal) const
 }
 
 //-------------------------------------------------------------------
+// IsFloatNaN: returns true if this is exactly a const float value of NaN
+//
+// Returns:
+//     True if this represents a const floating-point value of NaN.
+//     Will return false otherwise.
+//
+inline bool GenTree::IsFloatNaN() const
+{
+    if (IsCnsFltOrDbl())
+    {
+        double constValue = AsDblCon()->gtDconVal;
+        return FloatingPointUtils::isNaN(constValue);
+    }
+
+    return false;
+}
+
+//-------------------------------------------------------------------
+// IsFloatNegativeZero: returns true if this is exactly a const float value of negative zero (-0.0)
+//
+// Returns:
+//     True if this represents a const floating-point value of exactly negative zero (-0.0).
+//     Will return false if the value is negative zero (+0.0).
+//
+inline bool GenTree::IsFloatNegativeZero() const
+{
+    if (IsCnsFltOrDbl())
+    {
+        double constValue = AsDblCon()->gtDconVal;
+        return FloatingPointUtils::isNegativeZero(constValue);
+    }
+
+    return false;
+}
+
+//-------------------------------------------------------------------
 // IsFloatPositiveZero: returns true if this is exactly a const float value of postive zero (+0.0)
 //
 // Returns:
@@ -8311,6 +8395,52 @@ inline bool GenTree::IsFloatPositiveZero() const
 inline bool GenTree::IsVectorZero() const
 {
     return IsCnsVec() && AsVecCon()->IsZero();
+}
+
+//-------------------------------------------------------------------
+// IsVectorCreate: returns true if this node is the creation of a vector.
+//                 Does not include "Unsafe" method calls.
+//
+// Returns:
+//     True if this node is the creation of a vector
+//
+inline bool GenTree::IsVectorCreate() const
+{
+#ifdef FEATURE_HW_INTRINSICS
+    if (OperIs(GT_HWINTRINSIC))
+    {
+        switch (AsHWIntrinsic()->GetHWIntrinsicId())
+        {
+            case NI_Vector128_Create:
+#if defined(TARGET_XARCH)
+            case NI_Vector256_Create:
+#elif defined(TARGET_ARMARCH)
+            case NI_Vector64_Create:
+#endif
+                return true;
+
+            default:
+                return false;
+        }
+    }
+#endif // FEATURE_HW_INTRINSICS
+
+#ifdef FEATURE_SIMD
+    if (OperIs(GT_SIMD))
+    {
+        switch (AsSIMD()->GetSIMDIntrinsicId())
+        {
+            case SIMDIntrinsicInit:
+            case SIMDIntrinsicInitN:
+                return true;
+
+            default:
+                return false;
+        }
+    }
+#endif // FEATURE_SIMD
+
+    return false;
 }
 
 //-------------------------------------------------------------------

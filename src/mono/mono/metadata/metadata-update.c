@@ -76,6 +76,12 @@ mono_image_load_enc_delta (int origin, MonoImage *base_image, gconstpointer dmet
 	}
 }
 
+const char*
+mono_enc_capabilities (void)
+{
+	return mono_component_hot_reload ()->get_capabilities();
+}
+
 static void
 mono_image_close_except_pools_all_list (GList *images)
 {
@@ -217,4 +223,10 @@ uint32_t
 mono_metadata_update_get_num_fields_added (MonoClass *klass)
 {
 	return mono_component_hot_reload()->get_num_fields_added (klass);
+}
+
+uint32_t
+mono_metadata_update_get_num_methods_added (MonoClass *klass)
+{
+	return mono_component_hot_reload()->get_num_methods_added (klass);
 }

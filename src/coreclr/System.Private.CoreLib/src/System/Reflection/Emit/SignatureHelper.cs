@@ -843,27 +843,13 @@ namespace System.Reflection.Emit
             AddElementType(CorElementType.ELEMENT_TYPE_SENTINEL);
         }
 
-        public override bool Equals(object? obj)
-        {
-            if (!(obj is SignatureHelper))
-            {
-                return false;
-            }
-
-            SignatureHelper temp = (SignatureHelper)obj;
-
-            if (!temp.m_module!.Equals(m_module) || temp.m_currSig != m_currSig || temp.m_sizeLoc != m_sizeLoc || temp.m_sigDone != m_sigDone)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < m_currSig; i++)
-            {
-                if (m_signature[i] != temp.m_signature[i])
-                    return false;
-            }
-            return true;
-        }
+        public override bool Equals(object? obj) =>
+            obj is SignatureHelper other &&
+            other.m_module!.Equals(m_module) &&
+            other.m_currSig == m_currSig &&
+            other.m_sizeLoc == m_sizeLoc &&
+            other.m_sigDone == m_sigDone &&
+            m_signature.AsSpan(0, m_currSig).SequenceEqual(other.m_signature.AsSpan(0, m_currSig));
 
         public override int GetHashCode()
         {

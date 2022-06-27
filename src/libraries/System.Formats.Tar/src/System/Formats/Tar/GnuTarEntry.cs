@@ -29,7 +29,7 @@ namespace System.Formats.Tar
         /// </list>
         /// </remarks>
         public GnuTarEntry(TarEntryType entryType, string entryName)
-            : base(entryType, entryName, TarEntryFormat.Gnu)
+            : base(entryType, entryName, TarEntryFormat.Gnu, isGea: false)
         {
             _header._aTime = _header._mTime; // mtime was set in base constructor
             _header._cTime = _header._mTime;

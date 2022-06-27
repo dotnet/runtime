@@ -73,16 +73,9 @@ internal static partial class Interop
 
                 fixed (byte* thisAddress = Address)
                 {
-                    for (int i = 0; i < addressByteCount; i++)
-                    {
-                        if (thisAddress[i] != other.Address[i])
-                        {
-                            return false;
-                        }
-                    }
+                    return new ReadOnlySpan<byte>(thisAddress, addressByteCount).SequenceEqual(
+                           new ReadOnlySpan<byte>(other.Address, addressByteCount));
                 }
-
-                return true;
             }
         }
     }

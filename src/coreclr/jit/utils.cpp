@@ -2295,6 +2295,22 @@ bool FloatingPointUtils::isNaN(double val)
 }
 
 //------------------------------------------------------------------------
+// isNegativeZero: Determines whether the specified value is negative zero (-0.0)
+//
+// Arguments:
+//    val - value to check for (-0.0)
+//
+// Return Value:
+//    True if val is (-0.0)
+//
+
+bool FloatingPointUtils::isNegativeZero(double val)
+{
+    UINT64 bits = *reinterpret_cast<UINT64*>(&val);
+    return bits == 0x8000000000000000ULL;
+}
+
+//------------------------------------------------------------------------
 // maximum: This matches the IEEE 754:2019 `maximum` function
 //    It propagates NaN inputs back to the caller and
 //    otherwise returns the larger of the inputs. It

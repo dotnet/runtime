@@ -1296,5 +1296,14 @@ namespace System.Runtime.InteropServices
         {
             return GetLastPInvokeError();
         }
+
+        /// <summary>
+        /// Gets the system error message for the last PInvoke error code.
+        /// </summary>
+        /// <returns>The error message associated with the last PInvoke error code.</returns>
+        public static string GetLastPInvokeErrorMessage()
+        {
+            return GetPInvokeErrorMessage(GetLastPInvokeError());
+        }
     }
 }
