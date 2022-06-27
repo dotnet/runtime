@@ -19,9 +19,6 @@
     <!-- Disable CS8981 because the generated code from the protobuf files contains classes with lowercase names -->
     <!-- Disable SYSLIB0039 because the tests intentionally use TLS 1.0 and 1.1 -->
     <NoWarn>CS8981;SYSLIB0039</NoWarn>
-    <!-- We pretend to be Blazor WASM so that we don't have to modify the code of grpc-dotnet -->
-    <!-- The pieces of code that Android needs to skips are the same as WASM -->
-    <DefineConstants>BLAZOR_WASM</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -57,7 +54,6 @@
     <PackageReference Include="Grpc.Core" Version="2.46.1" PrivateAssets="All" />
     <PackageReference Include="Grpc.Tools" Version="2.46.1" PrivateAssets="All" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="3.0.3" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta3.22114.1" />
     <PackageReference Include="System.Net.Http.WinHttpHandler" Version="6.0.1" />
   </ItemGroup>  

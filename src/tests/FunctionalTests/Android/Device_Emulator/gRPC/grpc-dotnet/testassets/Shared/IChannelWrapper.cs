@@ -41,22 +41,4 @@ namespace Grpc.Shared.TestAssets
             return Task.CompletedTask;
         }
     }
-
-#if !BLAZOR_WASM
-    public class CoreChannelWrapper : IChannelWrapper
-    {
-        private readonly Channel _channel;
-        public ChannelBase Channel => _channel;
-
-        public CoreChannelWrapper(Channel channel)
-        {
-            _channel = channel;
-        }
-
-        public Task ShutdownAsync()
-        {
-            return _channel.ShutdownAsync();
-        }
-    }
-#endif
 }

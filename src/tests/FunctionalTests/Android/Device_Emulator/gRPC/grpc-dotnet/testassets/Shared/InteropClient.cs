@@ -26,14 +26,6 @@ using Microsoft.Extensions.Logging;
 using Empty = Grpc.Testing.Empty;
 using System.Security.Authentication;
 
-#if !BLAZOR_WASM
-using Google.Apis.Auth.OAuth2;
-using Grpc.Auth;
-using Grpc.Core.Logging;
-using Grpc.Gateway.Testing;
-using Newtonsoft.Json.Linq;
-#endif
-
 namespace Grpc.Shared.TestAssets
 {
     public class ClientOptions
@@ -70,11 +62,8 @@ namespace Grpc.Shared.TestAssets
 
         public async Task Run()
         {
-#if !BLAZOR_WASM
-            var channel = IsHttpClient() ? await HttpClientCreateChannel() : await CoreCreateChannel();
-#else
-            var channel = await HttpClientCreateChannel();
-#endif
+            var channel = HttpClientCreateChannel();
+
             try
             {
                 var message = "Running " + options.TestCase;
@@ -94,9 +83,9 @@ namespace Grpc.Shared.TestAssets
             await channel.ShutdownAsync();
         }
 
-        private async Task<IChannelWrapper> HttpClientCreateChannel()
+        private IChannelWrapper HttpClientCreateChannel()
         {
-            var credentials = await CreateCredentialsAsync(useTestCaOverride: false);
+            var credentials = CreateCredentials(useTestCaOverride: false);
 
             string scheme;
             if (!options.UseTls)
@@ -176,78 +165,14 @@ namespace Grpc.Shared.TestAssets
 
         private HttpClientHandler CreateHttpClientHandler()
         {
-            var httpClientHandler = new HttpClientHandler();
-            httpClientHandler.ServerCertificateCustomValidationCallback = (a, b, c, d) => true;
-#if !BLAZOR_WASM
-            httpClientHandler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
-
-            if (options.UseTestCa)
+            return new HttpClientHandler
             {
-                var pem = File.ReadAllText("Certs/ca.pem");
-                var certData = GetBytesFromPem(pem, "CERTIFICATE");
-                var cert = new X509Certificate2(certData!);
-
-                httpClientHandler.ClientCertificates.Add(cert);
-            }
-#endif
-            return httpClientHandler;
+                ServerCertificateCustomValidationCallback = (request, cert, chain, sslPolicyErrors) => true
+            };
         }
 
-#if !BLAZOR_WASM
-        private async Task<IChannelWrapper> CoreCreateChannel()
-        {
-            var credentials = await CreateCredentialsAsync();
-
-            List<ChannelOption>? channelOptions = null;
-            if (!string.IsNullOrEmpty(options.ServerHostOverride))
-            {
-                channelOptions = new List<ChannelOption>
-                {
-                    new ChannelOption(ChannelOptions.SslTargetNameOverride, options.ServerHostOverride)
-                };
-            }
-            var channel = new Channel(options.ServerHost, options.ServerPort, credentials, channelOptions);
-            await channel.ConnectAsync();
-            return new CoreChannelWrapper(channel);
-        }
-#endif
-
-        private async Task<ChannelCredentials> CreateCredentialsAsync(bool? useTestCaOverride = null)
-        {
-            var credentials = ChannelCredentials.Insecure;
-            if (options.UseTls)
-            {
-#if !BLAZOR_WASM
-                if (useTestCaOverride ?? options.UseTestCa)
-                {
-                    credentials = TestCredentials.CreateSslCredentials();
-                }
-                else
-#endif
-                {
-                    credentials = new SslCredentials();
-                }
-            }
-
-#if !BLAZOR_WASM
-            if (options.TestCase == "jwt_token_creds")
-            {
-                var googleCredential = await GoogleCredential.GetApplicationDefaultAsync();
-                Assert.IsTrue(googleCredential.IsCreateScopedRequired);
-                credentials = ChannelCredentials.Create(credentials, googleCredential.ToCallCredentials());
-            }
-
-            if (options.TestCase == "compute_engine_creds")
-            {
-                var googleCredential = await GoogleCredential.GetApplicationDefaultAsync();
-                Assert.IsFalse(googleCredential.IsCreateScopedRequired);
-                credentials = ChannelCredentials.Create(credentials, googleCredential.ToCallCredentials());
-            }
-#else
-            await Task.Yield();
-#endif
-            return credentials;
-        }
+        private ChannelCredentials CreateCredentials(bool? useTestCaOverride = null)
+            => options.UseTls ? new SslCredentials() : ChannelCredentials.Insecure;
 
         private bool IsHttpClient() => string.Equals(options.ClientType, "httpclient", StringComparison.OrdinalIgnoreCase);
 
@@ -267,11 +192,6 @@ namespace Grpc.Shared.TestAssets
             ["ping_pong"] = RunPingPongAsync,
             ["empty_stream"] = RunEmptyStreamAsync,
             ["compute_engine_creds"] = RunComputeEngineCreds,
-#if !BLAZOR_WASM
-            ["jwt_token_creds"] = RunJwtTokenCreds,
-            ["oauth2_auth_token"] = RunOAuth2AuthTokenAsync,
-            ["per_rpc_creds"] = RunPerRpcCredsAsync,
-#endif
             ["cancel_after_begin"] = RunCancelAfterBeginAsync,
             ["cancel_after_first_response"] = RunCancelAfterFirstResponseAsync,
             ["timeout_on_sleeping_server"] = RunTimeoutOnSleepingServerAsync,
@@ -435,66 +355,6 @@ namespace Grpc.Shared.TestAssets
             Assert.AreEqual(defaultServiceAccount, response.Username);
         }
 
-#if !BLAZOR_WASM
-        public static async Task RunJwtTokenCreds(IChannelWrapper channel, ClientOptions options)
-        {
-            var client = CreateClient<TestService.TestServiceClient>(channel);
-
-            var request = new SimpleRequest
-            {
-                ResponseSize = 314159,
-                Payload = CreateZerosPayload(271828),
-                FillUsername = true,
-            };
-
-            // not setting credentials here because they were set on channel already
-            var response = await client.UnaryCallAsync(request);
-
-            Assert.AreEqual(314159, response.Payload.Body.Length);
-            Assert.AreEqual(GetEmailFromServiceAccountFile(), response.Username);
-        }
-
-        public static async Task RunOAuth2AuthTokenAsync(IChannelWrapper channel, ClientOptions options)
-        {
-            var client = CreateClient<TestService.TestServiceClient>(channel);
-            var oauthScope = options.OAuthScope!;
-
-            ITokenAccess credential = (await GoogleCredential.GetApplicationDefaultAsync()).CreateScoped(new[] { oauthScope });
-            var oauth2Token = await credential.GetAccessTokenForRequestAsync();
-
-            var credentials = GoogleGrpcCredentials.FromAccessToken(oauth2Token);
-            var request = new SimpleRequest
-            {
-                FillUsername = true,
-                FillOauthScope = true
-            };
-
-            var response = await client.UnaryCallAsync(request, new CallOptions(credentials: credentials));
-
-            Assert.IsFalse(string.IsNullOrEmpty(response.OauthScope));
-            Assert.IsTrue(oauthScope.Contains(response.OauthScope));
-            Assert.AreEqual(GetEmailFromServiceAccountFile(), response.Username);
-        }
-
-        public static async Task RunPerRpcCredsAsync(IChannelWrapper channel, ClientOptions options)
-        {
-            var client = CreateClient<TestService.TestServiceClient>(channel);
-            var oauthScope = options.OAuthScope!;
-
-            var googleCredential = await GoogleCredential.GetApplicationDefaultAsync();
-
-            var credentials = googleCredential.ToCallCredentials();
-            var request = new SimpleRequest
-            {
-                FillUsername = true,
-            };
-
-            var response = await client.UnaryCallAsync(request, new CallOptions(credentials: credentials));
-
-            Assert.AreEqual(GetEmailFromServiceAccountFile(), response.Username);
-        }
-#endif
-
         public static async Task RunCancelAfterBeginAsync(IChannelWrapper channel, ClientOptions options)
         {
             var client = CreateClient<TestService.TestServiceClient>(channel);
@@ -636,30 +496,6 @@ namespace Grpc.Shared.TestAssets
                 Assert.AreEqual(StatusCode.Unknown, e.Status.StatusCode);
                 Assert.AreEqual(echoStatus.Message, e.Status.Detail);
             }
-
-            // We want to test a unary call in gRPC-Web but skip the unsupported full duplex call.
-#if !BLAZOR_WASM
-            {
-                // step 2: test full duplex call
-                var request = new StreamingOutputCallRequest { ResponseStatus = echoStatus };
-
-                var call = client.FullDuplexCall();
-                await call.RequestStream.WriteAsync(request);
-                await call.RequestStream.CompleteAsync();
-
-                try
-                {
-                    // cannot use Assert.ThrowsAsync because it uses Task.Wait and would deadlock.
-                    await call.ResponseStream.ToListAsync();
-                    Assert.Fail();
-                }
-                catch (RpcException e)
-                {
-                    Assert.AreEqual(StatusCode.Unknown, e.Status.StatusCode);
-                    Assert.AreEqual(echoStatus.Message, e.Status.Detail);
-                }
-            }
-#endif
         }
 
         public static async Task RunSpecialStatusMessageAsync(IChannelWrapper channel, ClientOptions options)
@@ -856,19 +692,6 @@ namespace Grpc.Shared.TestAssets
             };
         }
 
-        // extracts the client_email field from service account file used for auth test cases
-#if !BLAZOR_WASM
-        private static string GetEmailFromServiceAccountFile()
-        {
-            string keyFile = Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS")!;
-            Assert.IsNotNull(keyFile);
-            var jobject = JObject.Parse(File.ReadAllText(keyFile));
-            string email = jobject.GetValue("client_email")!.Value<string>();
-            Assert.IsTrue(email.Length > 0);  // spec requires nonempty client email.
-            return email;
-        }
-#endif
-
         private static Metadata CreateTestMetadata()
         {
             return new Metadata
@@ -876,31 +699,6 @@ namespace Grpc.Shared.TestAssets
                 {"x-grpc-test-echo-initial", "test_initial_metadata_value"},
                 {"x-grpc-test-echo-trailing-bin", new byte[] {0xab, 0xab, 0xab}}
             };
-        }
-
-        // TODO(JamesNK): PEM loading logic from https://stackoverflow.com/a/10498045/11829
-        // .NET does not have a built-in API for loading pem files
-        // Consider providing ca file in a different format and removing method
-        private byte[]? GetBytesFromPem(string pemString, string section)
-        {
-            var header = $"-----BEGIN {section}-----";
-            var footer = $"-----END {section}-----";
-
-            var start = pemString.IndexOf(header, StringComparison.Ordinal);
-            if (start == -1)
-            {
-                return null;
-            }
-
-            start += header.Length;
-            var end = pemString.IndexOf(footer, start, StringComparison.Ordinal) - start;
-
-            if (end == -1)
-            {
-                return null;
-            }
-
-            return Convert.FromBase64String(pemString.Substring(start, end));
         }
     }
 }
