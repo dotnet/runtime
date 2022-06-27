@@ -580,6 +580,54 @@ namespace System.Text.Json.Serialization.Tests
             Assert.NotNull(typeInfo.Properties[0]);
         }
 
+        [Fact]
+        public static void CreateJsonTypeInfoWithNullArgumentsThrows()
+        {
+            Assert.Throws<ArgumentNullException>(() => JsonTypeInfo.CreateJsonTypeInfo(null, new JsonSerializerOptions()));
+            Assert.Throws<ArgumentNullException>(() => JsonTypeInfo.CreateJsonTypeInfo(typeof(string), null));
+            Assert.Throws<ArgumentNullException>(() => JsonTypeInfo.CreateJsonTypeInfo(null, null));
+            Assert.Throws<ArgumentNullException>(() => JsonTypeInfo.CreateJsonTypeInfo<string>(null));
+        }
+
+        [Theory]
+        [InlineData(typeof(void))]
+        [InlineData(typeof(Dictionary<,>))]
+        [InlineData(typeof(List<>))]
+        [InlineData(typeof(Nullable<>))]
+        [InlineData(typeof(int*))]
+        [InlineData(typeof(RefStruct))]
+        public static void CreateJsonTypeInfoWithInappropriateTypeThrows(Type type)
+        {
+            Assert.Throws<ArgumentException>(() => JsonTypeInfo.CreateJsonTypeInfo(type, new JsonSerializerOptions()));
+        }
+
+        ref struct RefStruct
+        {
+            public int Foo { get; set; }
+        }
+
+        [Fact]
+        public static void CreateJsonPropertyInfoWithNullArgumentsThrows()
+        {
+            JsonTypeInfo ti = JsonTypeInfo.CreateJsonTypeInfo<MyClass>(new JsonSerializerOptions());
+            Assert.Throws<ArgumentNullException>(() => ti.CreateJsonPropertyInfo(null, "test"));
+            Assert.Throws<ArgumentNullException>(() => ti.CreateJsonPropertyInfo(typeof(string), null));
+            Assert.Throws<ArgumentNullException>(() => ti.CreateJsonPropertyInfo(null, null));
+        }
+
+        [Theory]
+        [InlineData(typeof(void))]
+        [InlineData(typeof(Dictionary<,>))]
+        [InlineData(typeof(List<>))]
+        [InlineData(typeof(Nullable<>))]
+        [InlineData(typeof(int*))]
+        [InlineData(typeof(RefStruct))]
+        public static void CreateJsonPropertyInfoWithInappropriateTypeThrows(Type type)
+        {
+            JsonTypeInfo ti = JsonTypeInfo.CreateJsonTypeInfo<MyClass>(new JsonSerializerOptions());
+            Assert.Throws<ArgumentException>(() => ti.CreateJsonPropertyInfo(type, "test"));
+        }
+
         [Theory]
         [InlineData(typeof(object))]
         [InlineData(typeof(string))]

@@ -178,6 +178,14 @@ namespace System.Text.Json.Serialization.Tests
             Assert.True(secondModifierCalled);
         }
 
+        [Fact]
+        public static void AddingNullModifierThrows()
+        {
+            DefaultJsonTypeInfoResolver r = new();
+            Assert.Throws<ArgumentNullException>(() => r.Modifiers.Add(null));
+            Assert.Throws<ArgumentNullException>(() => r.Modifiers.Insert(0, null));
+        }
+
         private static void InvokeGeneric(Type type, string methodName, params object[] args)
         {
             typeof(DefaultJsonTypeInfoResolverTests)
