@@ -39,14 +39,19 @@ namespace System.Net.Http.Functional.Tests
                 text);
         }
 
-        private Task AssertProtocolErrorAsync(Task task, ProtocolErrors errorCode)
+        private async Task AssertProtocolErrorAsync(Task task, ProtocolErrors errorCode)
         {
-            return AssertProtocolErrorAsync<HttpRequestException>(task, errorCode);
+            HttpRequestException outerEx = await Assert.ThrowsAsync<HttpRequestException>(() => task);
+            HttpProtocolException protocolEx = outerEx.InnerException as HttpProtocolException;
+
+            Assert.NotNull(protocolEx);
+            Assert.Equal(errorCode, (ProtocolErrors)protocolEx.ErrorCode);
         }
 
-        private Task AssertProtocolErrorForIOExceptionAsync(Task task, ProtocolErrors errorCode)
+        private async Task AssertProtocolErrorForIOExceptionAsync(Task task, ProtocolErrors errorCode)
         {
-            return AssertProtocolErrorAsync<IOException>(task, errorCode);
+            HttpProtocolException protocolEx = await Assert.ThrowsAsync<HttpProtocolException>(() => task);
+            Assert.Equal(errorCode, (ProtocolErrors)protocolEx.ErrorCode);
         }
 
         private async Task<(bool, T)> IgnoreSpecificException<ExpectedException, T>(Task<T> task, string expectedExceptionContent = null) where ExpectedException : Exception
