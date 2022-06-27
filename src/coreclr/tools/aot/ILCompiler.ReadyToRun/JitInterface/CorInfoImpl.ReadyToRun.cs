@@ -2476,6 +2476,12 @@ namespace Internal.JitInterface
                 }
                 // ENCODE_NONE
             }
+            else if (TypeCannotUseBasePlusOffsetEncoding(pMT.BaseType as MetadataType))
+            {
+                // ENCODE_CHECK_FIELD_OFFSET
+                AddPrecodeFixup(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
+                // No-op other than generating the check field offset fixup
+            }
             else
             {
                 PreventRecursiveFieldInlinesOutsideVersionBubble(field, callerMethod);
@@ -2494,6 +2500,22 @@ namespace Internal.JitInterface
                 pResult->fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INSTANCE_WITH_BASE;
                 pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.FieldBaseOffset(field.OwningType));
             }
+        }
+
+        private bool TypeCannotUseBasePlusOffsetEncoding(MetadataType type)
+        {
+            if (type == null)
+                return true;
+
+            // Types which are encoded with sequential or explicit layout do not support an aligned base offset, and so we just encode with the exact offset
+            // of the field, and if that offset is incorrect, the method cannot be used.
+            if (type.IsSequentialLayout || type.IsExplicitLayout)
+                return true;
+            else if (type.BaseType is MetadataType metadataType)
+            {
+                return TypeCannotUseBasePlusOffsetEncoding(metadataType);
+            }
+            return false;
         }
 
         private void getGSCookie(IntPtr* pCookieVal, IntPtr** ppCookieVal)
@@ -2620,6 +2642,13 @@ namespace Internal.JitInterface
                 if (method.IsRawPInvoke())
                 {
                     return false;
+                }
+
+                // If this method is in another versioning unit, then the compilation cannot inline the pinvoke (as we aren't currently
+                // able to construct a token correctly to refer to the pinvoke method.
+                if (!_compilation.CompilationModuleGroup.VersionsWithMethodBody(method))
+                {
+                    return true;
                 }
 
                 MethodIL stubIL = null;
