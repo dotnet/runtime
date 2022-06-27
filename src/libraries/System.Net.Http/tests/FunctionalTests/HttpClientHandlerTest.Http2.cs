@@ -28,17 +28,6 @@ namespace System.Net.Http.Functional.Tests
         {
         }
 
-        private async Task AssertProtocolErrorAsync<T>(Task task, ProtocolErrors errorCode)
-            where T : Exception
-        {
-            Exception e = await Assert.ThrowsAsync<T>(() => task);
-            string text = e.ToString();
-            Assert.Contains(((int)errorCode).ToString("x"), text);
-            Assert.Contains(
-                Enum.IsDefined(typeof(ProtocolErrors), errorCode) ? errorCode.ToString() : "(unknown error)",
-                text);
-        }
-
         private async Task AssertProtocolErrorAsync(Task task, ProtocolErrors errorCode)
         {
             HttpRequestException outerEx = await Assert.ThrowsAsync<HttpRequestException>(() => task);
