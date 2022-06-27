@@ -13,7 +13,6 @@ namespace System.Text.Json
             public int Year;
             public int Month;
             public int Day;
-            public bool IsCalendarDateOnly;
             public int Hour;
             public int Minute;
             public int Second;
@@ -21,6 +20,7 @@ namespace System.Text.Json
             public int OffsetHours;
             public int OffsetMinutes;
             public bool OffsetNegative => OffsetToken == JsonConstants.Hyphen;
+            public bool IsCalendarDateOnly;
             public byte OffsetToken;
         }
 
