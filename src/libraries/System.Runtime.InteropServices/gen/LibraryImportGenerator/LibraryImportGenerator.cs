@@ -341,6 +341,8 @@ namespace Microsoft.Interop
                     generatorFactory = new UnsupportedMarshallingFactory();
                 }
 
+                generatorFactory = new NoMarshallingInfoErrorMarshallingFactory(generatorFactory);
+
                 // The presence of System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute is tied to TFM,
                 // so we use TFM in the generator factory key instead of the Compilation as the compilation changes on every keystroke.
                 IAssemblySymbol coreLibraryAssembly = env.Compilation.GetSpecialType(SpecialType.System_Object).ContainingAssembly;
