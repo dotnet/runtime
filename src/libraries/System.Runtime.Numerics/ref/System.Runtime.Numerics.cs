@@ -30,6 +30,7 @@ namespace System.Numerics
         public static System.Numerics.BigInteger One { get { throw null; } }
         public int Sign { get { throw null; } }
         static System.Numerics.BigInteger System.Numerics.IAdditiveIdentity<System.Numerics.BigInteger,System.Numerics.BigInteger>.AdditiveIdentity { get { throw null; } }
+        static System.Numerics.BigInteger System.Numerics.IBinaryNumber<System.Numerics.BigInteger>.AllBitsSet { get { throw null; } }
         static System.Numerics.BigInteger System.Numerics.IMultiplicativeIdentity<System.Numerics.BigInteger,System.Numerics.BigInteger>.MultiplicativeIdentity { get { throw null; } }
         static int System.Numerics.INumberBase<System.Numerics.BigInteger>.Radix { get { throw null; } }
         static System.Numerics.BigInteger System.Numerics.ISignedNumber<System.Numerics.BigInteger>.NegativeOne { get { throw null; } }
@@ -60,7 +61,6 @@ namespace System.Numerics
         public static bool IsNegative(System.Numerics.BigInteger value) { throw null; }
         public static bool IsOddInteger(System.Numerics.BigInteger value) { throw null; }
         public static bool IsPositive(System.Numerics.BigInteger value) { throw null; }
-        static BigInteger System.Numerics.IBinaryNumber<BigInteger>.AllBitsSet { get { throw null; } }
         public static bool IsPow2(System.Numerics.BigInteger value) { throw null; }
         public static System.Numerics.BigInteger LeadingZeroCount(System.Numerics.BigInteger value) { throw null; }
         public static double Log(System.Numerics.BigInteger value) { throw null; }

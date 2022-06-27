@@ -344,6 +344,18 @@ namespace System
         // IBinaryNumber
         //
 
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
+        static nuint IBinaryNumber<nuint>.AllBitsSet
+        {
+#if TARGET_64BIT
+            [NonVersionable]
+            get => unchecked((nuint)0xFFFFFFFFFFFFFFFF);
+#else
+            [NonVersionable]
+            get => (nuint)0xFFFFFFFF;
+#endif
+        }
+
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(nuint value) => BitOperations.IsPow2(value);
 
