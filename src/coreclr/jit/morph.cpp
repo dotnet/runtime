@@ -3179,8 +3179,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                 // - For ARM and ARM64 it must also be a non-HFA struct, or have a single field.
                 // - This is irrelevant for X86, since structs are always passed by value on the stack.
 
-                GenTree* lclVar       = fgIsIndirOfAddrOfLocal(argObj);
-                bool     argIsLocal   = (lclVar != nullptr) || argObj->OperIsLocalRead();
+                GenTree* lclVar       = argObj->OperIs(GT_LCL_VAR) ? argObj : fgIsIndirOfAddrOfLocal(argObj);
+                bool     argIsLocal   = (lclVar != nullptr) || argObj->OperIs(GT_LCL_FLD);
                 bool     canTransform = false;
 
                 if (structBaseType != TYP_STRUCT)
