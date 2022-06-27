@@ -1453,7 +1453,7 @@ namespace System.Tests
             AssertExtensions.Equal(+expectedResult, double.AsinPi(+value), allowedVariance);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroid), nameof(PlatformDetection.IsNotX86Process))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroid), nameof(PlatformDetection.IsNotX86Process))]   // disabled due to #71252
         [InlineData( double.NaN,               double.NaN,          0.0)]
         [InlineData( 0.0,                      0.0,                 0.0)]
         [InlineData( 1.5574077246549022,       0.31830988618379067, CrossPlatformMachineEpsilon)]
