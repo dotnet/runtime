@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// Note: This test file is the source of the Runtime_70643.il file. It requires
+// Note: This test file is the source of the Runtime_70607.il file. It requires
 // InlineIL.Fody to compile. It is not used as anything but a reference of that
 // IL file.
 
@@ -9,7 +9,7 @@ using InlineIL;
 using System;
 using System.Runtime.CompilerServices;
 
-public class Runtime_70643
+public class Runtime_70607
 {
     public static int Main()
     {
