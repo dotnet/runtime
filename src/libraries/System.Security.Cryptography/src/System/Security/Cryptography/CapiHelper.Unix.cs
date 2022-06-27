@@ -57,7 +57,7 @@ namespace System.Security.Cryptography
                 Oids.Sha384 => HashAlgorithmName.SHA384,
                 Oids.Sha512 => HashAlgorithmName.SHA512,
                 Oids.Md5 => HashAlgorithmName.MD5,
-                _ => throw new ArgumentException(SR.Argument_InvalidValue),
+                _ => throw new CryptographicException(SR.Cryptography_InvalidOID),
             };
         }
 
