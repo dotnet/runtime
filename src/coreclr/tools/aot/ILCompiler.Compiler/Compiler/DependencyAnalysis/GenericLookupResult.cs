@@ -1432,7 +1432,8 @@ namespace ILCompiler.DependencyAnalysis
             MethodDesc canonMethod = _constrainedMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
             // If we're producing a full vtable for the type, we don't need to report virtual method use.
-            if (!factory.VTable(canonMethod.OwningType).HasFixedSlots)
+            // We also don't report virtual method use for generic virtual methods - tracking those is orthogonal.
+            if (!factory.VTable(canonMethod.OwningType).HasFixedSlots && !canonMethod.HasInstantiation)
             {
                 // Report the method as virtually used so that types that could be used here at runtime
                 // have the appropriate implementations generated.

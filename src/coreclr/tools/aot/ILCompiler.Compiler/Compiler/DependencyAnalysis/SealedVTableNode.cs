@@ -248,14 +248,15 @@ namespace ILCompiler.DependencyAnalysis
 
             public IMethodNode GetTarget(NodeFactory factory, TypeDesc implementingClass)
             {
+                bool isStaticVirtualMethod = _method.Signature.IsStatic;
                 MethodDesc implMethod = _method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                if (_interfaceDefinition != null && !_method.Signature.IsStatic && implMethod.IsCanonicalMethod(CanonicalFormKind.Any))
+                if (_interfaceDefinition != null && !isStaticVirtualMethod && implMethod.IsCanonicalMethod(CanonicalFormKind.Any))
                 {
                     // Canonical instance default interface methods need to go through a thunk that acquires the generic context from `this`.
                     // Static methods have their generic context passed explicitly.
                     implMethod = factory.TypeSystemContext.GetDefaultInterfaceMethodImplementationThunk(implMethod, implementingClass.ConvertToCanonForm(CanonicalFormKind.Specific), _interfaceDefinition);
                 }
-                return factory.MethodEntrypoint(implMethod, _method.OwningType.IsValueType);
+                return factory.MethodEntrypoint(implMethod, unboxingStub: !isStaticVirtualMethod && _method.OwningType.IsValueType);
             }
 
             public bool Matches(MethodDesc method)

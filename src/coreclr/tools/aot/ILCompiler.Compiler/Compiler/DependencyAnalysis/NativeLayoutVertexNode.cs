@@ -2019,7 +2019,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (_constrainedMethod.Signature.IsStatic)
                 {
-                    Debug.Assert(_directCall);
                     if (_constrainedMethod.HasInstantiation)
                         return FixupSignatureKind.GenericStaticConstrainedMethod;
                     else
