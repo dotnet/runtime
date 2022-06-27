@@ -385,6 +385,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.True(typeInfo.Converter.CanConvert(typeof(T)));
 
             JsonPropertyInfo prop = typeInfo.CreateJsonPropertyInfo(typeof(string), "foo");
+            Assert.True(typeInfo.Properties.IsReadOnly);
             Assert.Throws<InvalidOperationException>(() => untyped.CreateObject = untyped.CreateObject);
             Assert.Throws<InvalidOperationException>(() => typeInfo.CreateObject = typeInfo.CreateObject);
             Assert.Throws<InvalidOperationException>(() => typeInfo.NumberHandling = typeInfo.NumberHandling);
@@ -396,6 +397,7 @@ namespace System.Text.Json.Serialization.Tests
 
             if (typeInfo.PolymorphismOptions is JsonPolymorphismOptions jpo)
             {
+                Assert.True(jpo.DerivedTypes.IsReadOnly);
                 Assert.Throws<InvalidOperationException>(() => jpo.IgnoreUnrecognizedTypeDiscriminators = true);
                 Assert.Throws<InvalidOperationException>(() => jpo.TypeDiscriminatorPropertyName = "__case");
                 Assert.Throws<InvalidOperationException>(() => jpo.UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor);
@@ -650,6 +652,7 @@ namespace System.Text.Json.Serialization.Tests
             yield return new object[] { "test" };
             yield return new object[] { 13 };
             yield return new object[] { new SomeClass { IntProp = 17 } };
+            yield return new object[] { new SomeRecursiveClass() };
             yield return new object[] { new SomePolymorphicClass() };
         }
 

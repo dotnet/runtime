@@ -57,11 +57,25 @@ namespace System.Text.Json.Tests.Serialization
         {
             var options = new JsonPolymorphismOptions();
 
-            var jti1 = JsonTypeInfo.CreateJsonTypeInfo(typeof(int), new());
+            JsonTypeInfo jti1 = JsonTypeInfo.CreateJsonTypeInfo(typeof(PolymorphicClass), new());
             jti1.PolymorphismOptions = options;
 
-            var jti2 = JsonTypeInfo.CreateJsonTypeInfo(typeof(int), new());
+            JsonTypeInfo jti2 = JsonTypeInfo.CreateJsonTypeInfo(typeof(PolymorphicClass), new());
             Assert.Throws<ArgumentException>(() => jti2.PolymorphismOptions = options);
+        }
+
+        [Fact]
+        public static void JsonPolymorphismOptions_CreateBlankJsonTypeInfo_ContainsNoPolymorphismMetadata()
+        {
+            JsonSerializerOptions options = JsonSerializerOptions.Default;
+
+            // Sanity check: type returns polymorphism options using the default resolver
+            JsonTypeInfo jti = options.TypeInfoResolver.GetTypeInfo(typeof(PolymorphicClass), options);
+            Assert.NotNull(jti.PolymorphismOptions);
+
+            // Blank instance should not contain polymorphism options
+            jti = JsonTypeInfo.CreateJsonTypeInfo(typeof(PolymorphicClass), options);
+            Assert.Null(jti.PolymorphismOptions);
         }
 
         [Theory]
