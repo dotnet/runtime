@@ -31,9 +31,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly CompilationModuleGroup _compilationModuleGroup;
 
-        private Func<IEcmaModule, int> _moduleIndexLookup;
-
-        private MutableModule _manifestMutableModule;
+        private Func<EcmaModule, int> _moduleIndexLookup;
 
         public CompilerTypeSystemContext CompilerContext { get; }
 
@@ -43,17 +41,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             CompilerContext = typeSystemContext;
         }
 
-        public void SetModuleIndexLookup(Func<IEcmaModule, int> moduleIndexLookup)
+        public void SetModuleIndexLookup(Func<EcmaModule, int> moduleIndexLookup)
         {
             _moduleIndexLookup = moduleIndexLookup;
         }
 
-        public void InitManifestMutableModule(MutableModule mutableModule)
-        {
-            _manifestMutableModule = mutableModule;
-        }
-
-        public ModuleToken GetModuleTokenForType(EcmaType type, bool allowDynamicallyCreatedReference, bool throwIfNotFound = true)
+        public ModuleToken GetModuleTokenForType(EcmaType type, bool throwIfNotFound = true)
         {
             if (_compilationModuleGroup.VersionsWithType(type))
             {
@@ -72,17 +65,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return token;
             }
 
-            // If that didn't work, it may be in the manifest module used for version resilient cross module inlining
-            if (allowDynamicallyCreatedReference)
-            {
-                var handle = _manifestMutableModule.TryGetExistingEntityHandle(type);
-
-                if (handle.HasValue)
-                {
-                    return new ModuleToken(_manifestMutableModule, handle.Value);
-                }
-            }
-
             // Reverse lookup failed
             if (throwIfNotFound)
             {
@@ -94,26 +76,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        public ModuleToken GetModuleTokenForMethod(MethodDesc method, bool allowDynamicallyCreatedReference, bool throwIfNotFound)
+        public ModuleToken GetModuleTokenForMethod(MethodDesc method, bool throwIfNotFound = true)
         {
             method = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-            if (method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
+            if (_compilationModuleGroup.VersionsWithMethodBody(method) &&
+                method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
             {
-                if (_compilationModuleGroup.VersionsWithMethodBody(method))
-                {
-                    return new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
-                }
-
-                // If that didn't work, it may be in the manifest module used for version resilient cross module inlining
-                if (allowDynamicallyCreatedReference)
-                {
-                    var handle = _manifestMutableModule.TryGetExistingEntityHandle(ecmaMethod);
-                    if (handle.HasValue)
-                    {
-                        return new ModuleToken(_manifestMutableModule, handle.Value);
-                    }
-                }
+                return new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
             }
 
             // Reverse lookup failed
@@ -268,7 +238,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        public int GetModuleIndex(IEcmaModule module)
+        public int GetModuleIndex(EcmaModule module)
         {
             return _moduleIndexLookup(module);
         }
@@ -288,9 +258,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             ModuleTokenResolver _resolver;
 
-            IEcmaModule _contextModule;
+            EcmaModule _contextModule;
 
-            public TokenResolverProvider(ModuleTokenResolver resolver, IEcmaModule contextModule)
+            public TokenResolverProvider(ModuleTokenResolver resolver, EcmaModule contextModule)
             {
                 _resolver = resolver;
                 _contextModule = contextModule;

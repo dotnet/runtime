@@ -34,7 +34,7 @@ namespace Wasm.Build.Tests
             BuildProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(
-                            DotnetWasmFromRuntimePack: false,
+                            DotnetWasmFromRuntimePack: true,
                             CreateProject: false,
                             HasV8Script: false,
                             MainJS: "main.js",
@@ -50,10 +50,11 @@ namespace Wasm.Build.Tests
             _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
             _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
 
+            bool expectRelinking = config == "Release";
             BuildProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(
-                            DotnetWasmFromRuntimePack: false,
+                            DotnetWasmFromRuntimePack: !expectRelinking,
                             CreateProject: false,
                             HasV8Script: false,
                             MainJS: "main.js",
@@ -80,7 +81,7 @@ namespace Wasm.Build.Tests
                         DotnetWasmFromRuntimePack: true,
                         CreateProject: false,
                         HasV8Script: false,
-                        MainJS: "main.cjs",
+                        MainJS: "main.mjs",
                         Publish: false,
                         TargetFramework: "net7.0"
                         ));
@@ -103,7 +104,7 @@ namespace Wasm.Build.Tests
                             DotnetWasmFromRuntimePack: !expectRelinking,
                             CreateProject: false,
                             HasV8Script: false,
-                            MainJS: "main.cjs",
+                            MainJS: "main.mjs",
                             Publish: true,
                             TargetFramework: "net7.0",
                             UseCache: false));
@@ -135,7 +136,7 @@ namespace Wasm.Build.Tests
                             DotnetWasmFromRuntimePack: true,
                             CreateProject: false,
                             HasV8Script: false,
-                            MainJS: "main.cjs",
+                            MainJS: "main.mjs",
                             Publish: false,
                             TargetFramework: "net7.0"
                             ));
@@ -179,7 +180,7 @@ namespace Wasm.Build.Tests
                             DotnetWasmFromRuntimePack: !expectRelinking,
                             CreateProject: false,
                             HasV8Script: false,
-                            MainJS: "main.cjs",
+                            MainJS: "main.mjs",
                             Publish: true,
                             TargetFramework: "net7.0",
                             UseCache: false));

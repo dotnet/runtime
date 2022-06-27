@@ -1095,23 +1095,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
             argSplit->SetRegNumByIdx(callArg->AbiInfo.GetRegNum(regIndex), regIndex);
         }
 
-        if (arg->OperGet() == GT_OBJ)
-        {
-            arg->SetContained();
-            if (arg->AsObj()->Addr()->OperGet() == GT_LCL_VAR_ADDR)
-            {
-                MakeSrcContained(arg, arg->AsObj()->Addr());
-            }
-
-            ClassLayout* layout = arg->AsObj()->GetLayout();
-
-            // Set type of registers
-            for (unsigned index = 0; index < callArg->AbiInfo.NumRegs; index++)
-            {
-                argSplit->m_regType[index] = layout->GetGCPtrType(index);
-            }
-        }
-        else
+        if (arg->OperIs(GT_FIELD_LIST))
         {
             unsigned regIndex = 0;
             for (GenTreeFieldList::Use& use : arg->AsFieldList()->Uses())
@@ -1132,6 +1116,16 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
 
             // Clear the register assignment on the fieldList node, as these are contained.
             arg->SetRegNum(REG_NA);
+        }
+        else
+        {
+            ClassLayout* layout = arg->GetLayout(comp);
+
+            // Set type of registers
+            for (unsigned index = 0; index < callArg->AbiInfo.NumRegs; index++)
+            {
+                argSplit->m_regType[index] = layout->GetGCPtrType(index);
+            }
         }
     }
     else
@@ -1382,9 +1376,9 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
 
     arg = *ppArg;
 
-    if (arg->OperIs(GT_PUTARG_STK))
+    if (arg->OperIsPutArgStk() || arg->OperIsPutArgSplit())
     {
-        LowerPutArgStk(arg->AsPutArgStk());
+        LowerPutArgStkOrSplit(arg->AsPutArgStk());
     }
 }
 
@@ -3417,20 +3411,24 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
     if ((lclStore->TypeGet() == TYP_STRUCT) && !srcIsMultiReg)
     {
         bool convertToStoreObj;
-        if (src->OperGet() == GT_CALL)
+        if (lclStore->OperIs(GT_STORE_LCL_FLD))
         {
-            GenTreeCall*       call   = src->AsCall();
-            const ClassLayout* layout = varDsc->GetLayout();
+            convertToStoreObj = true;
+        }
+        else if (src->OperGet() == GT_CALL)
+        {
+            GenTreeCall* call = src->AsCall();
 
 #ifdef DEBUG
-            const unsigned slotCount = layout->GetSlotCount();
+            const ClassLayout* layout    = lclStore->GetLayout(comp);
+            const unsigned     slotCount = layout->GetSlotCount();
 #if defined(TARGET_XARCH) && !defined(UNIX_AMD64_ABI)
             // Windows x64 doesn't have multireg returns,
             // x86 uses it only for long return type, not for structs.
             assert(slotCount == 1);
             assert(lclRegType != TYP_UNDEF);
 #else  // !TARGET_XARCH || UNIX_AMD64_ABI
-            if (!varDsc->lvIsHfa())
+            if (!comp->IsHfa(layout->GetClassHandle()))
             {
                 if (slotCount > 1)
                 {
@@ -3506,8 +3504,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
                     // This logic is skipped for struct indir in
                     // `Lowering::LowerIndir` because we don't know the size.
                     // Do it now.
-                    GenTreeIndir* indir = src->AsIndir();
-                    LowerIndir(indir);
+                    LowerIndir(src->AsIndir());
                 }
 #if defined(TARGET_XARCH)
                 if (varTypeIsSmall(lclRegType))
@@ -3533,13 +3530,12 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
 
         if (convertToStoreObj)
         {
+            ClassLayout*   layout = lclStore->GetLayout(comp);
             const unsigned lclNum = lclStore->GetLclNum();
-            GenTreeLclVar* addr   = comp->gtNewLclVarAddrNode(lclNum, TYP_BYREF);
+            GenTreeLclFld* addr   = comp->gtNewLclFldAddrNode(lclNum, lclStore->GetLclOffs(), TYP_BYREF);
             comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
 
-            addr->gtFlags |= GTF_VAR_DEF;
-            assert(!addr->IsPartialLclFld(comp));
-            addr->gtFlags |= GTF_DONT_CSE;
+            addr->gtFlags |= lclStore->gtFlags & (GTF_VAR_DEF | GTF_VAR_USEASG);
 
             // Create the assignment node.
             lclStore->ChangeOper(GT_STORE_OBJ);
@@ -3549,11 +3545,11 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
             objStore->gtBlkOpGcUnsafe = false;
 #endif
             objStore->gtBlkOpKind = GenTreeObj::BlkOpKindInvalid;
-            objStore->SetLayout(varDsc->GetLayout());
+            objStore->SetLayout(layout);
             objStore->SetAddr(addr);
             objStore->SetData(src);
             BlockRange().InsertBefore(objStore, addr);
-            LowerBlockStoreCommon(objStore);
+            LowerNode(objStore);
             return;
         }
     }
@@ -3823,13 +3819,11 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
                 assert(user->TypeIs(origType) || varTypeIsSIMD(user->TypeGet()));
                 break;
 
-#ifdef FEATURE_SIMD
             case GT_STORE_LCL_FLD:
-                // If the call type was ever updated (in importer) to TYP_SIMD*, it should match the user type.
-                // If not, the user type should match the struct's returnType.
-                assert((varTypeIsSIMD(user) && user->TypeIs(origType)) || (returnType == user->TypeGet()));
+                // The call's type should match the user's type or struct's returnType.
+                // We leave handling the former case to user's lowering.
+                assert(user->TypeIs(origType) || (returnType == user->TypeGet()));
                 break;
-#endif // FEATURE_SIMD
 
             case GT_STOREIND:
 #ifdef FEATURE_SIMD
@@ -7384,6 +7378,7 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
 
             if (arg->IsCnsFltOrDbl())
             {
+                noway_assert(constArgCount < ArrLen(constArgValues));
                 constArgValues[constArgCount] = static_cast<float>(arg->AsDblCon()->gtDconVal);
                 constArgCount++;
             }
@@ -7396,10 +7391,14 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
                 BlockRange().Remove(arg);
             }
 
-            assert(sizeof(constArgValues) == 16);
+            // For SIMD12, even though there might be 12 bytes of constants, we need to store 16 bytes of data
+            // since we've bashed the node the TYP_SIMD16 and do a 16-byte indirection.
+            assert(varTypeIsSIMD(simdNode));
+            const unsigned cnsSize = genTypeSize(simdNode);
+            assert(cnsSize <= sizeof(constArgValues));
 
-            unsigned cnsSize  = sizeof(constArgValues);
-            unsigned cnsAlign = (comp->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : 1;
+            const unsigned cnsAlign =
+                (comp->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : emitter::dataSection::MIN_DATA_ALIGN;
 
             CORINFO_FIELD_HANDLE hnd =
                 comp->GetEmitter()->emitBlkConst(constArgValues, cnsSize, cnsAlign, simdNode->GetSimdBaseType());

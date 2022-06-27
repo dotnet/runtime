@@ -186,11 +186,11 @@
   <data name="SetLengthRequiresSeekingAndWriting" xml:space="preserve">
     <value>SetLength requires a stream that supports seeking and writing.</value>
   </data>
+  <data name="TarCannotConvertPaxGlobalExtendedAttributesEntry" xml:space="preserve">
+    <value>Cannot convert a PaxGlobalExtendedAttributesEntry into another format.</value>
+  </data>
   <data name="TarDuplicateExtendedAttribute" xml:space="preserve">
     <value>The entry '{0}' has a duplicate extended attribute.</value>
-  </data>
-  <data name="TarEntriesInDifferentFormats" xml:space="preserve">
-    <value>An entry in '{0}' format was found in an archive where other entries of format '{1}' have been found.</value>
   </data>
   <data name="TarEntryBlockOrCharacterExpected" xml:space="preserve">
     <value>Cannot set the 'DeviceMajor' or 'DeviceMinor' fields on an entry that does not represent a block or character device.</value>
@@ -239,9 +239,6 @@
   </data>
   <data name="TarSymbolicLinkTargetNotExists" xml:space="preserve">
     <value>Cannot create the symbolic link '{0}' because the specified target '{1}' does not exist.</value>
-  </data>
-  <data name="TarTooManyGlobalExtendedAttributesEntries" xml:space="preserve">
-    <value>The archive has more than one global extended attributes entry.</value>
   </data>
   <data name="TarUnexpectedMetadataEntry" xml:space="preserve">
     <value>A metadata entry of type '{0}' was unexpectedly found after a metadata entry of type '{1}'.</value>

@@ -1063,11 +1063,8 @@ namespace System.Security.Cryptography.Xml
             // Calculate the hash
             byte[] hashValue = GetC14NDigest(macAlg);
             SignedXmlDebugLog.LogVerifySignedInfo(this, macAlg, hashValue, m_signature.SignatureValue);
-            for (int i = 0; i < m_signature.SignatureValue.Length; i++)
-            {
-                if (m_signature.SignatureValue[i] != hashValue[i]) return false;
-            }
-            return true;
+
+            return m_signature.SignatureValue.AsSpan().SequenceEqual(hashValue.AsSpan(0, m_signature.SignatureValue.Length));
         }
 
         private static XmlElement GetSingleReferenceTarget(XmlDocument document, string idAttributeName, string idValue)

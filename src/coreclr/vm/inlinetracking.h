@@ -340,34 +340,6 @@ private:
 typedef DPTR(PersistentInlineTrackingMapR2R2) PTR_PersistentInlineTrackingMapR2R2;
 #endif
 
-#ifndef DACCESS_COMPILE
-namespace NativeFormat
-{
-    class NativeParser;
-}
-
-class CrossModulePersistentInlineTrackingMapR2R : private PersistentInlineTrackingMapR2R
-{
-private:
-    PTR_Module m_module;
-
-    NativeFormat::NativeReader m_reader;
-    NativeFormat::NativeHashtable m_hashtable;
-
-public:
-
-    // runtime deserialization
-    static BOOL TryLoad(Module* pModule, LoaderAllocator* pLoaderAllocator, const BYTE* pBuffer, DWORD cbBuffer, AllocMemTracker* pamTracker, CrossModulePersistentInlineTrackingMapR2R** ppLoadedMap);
-    virtual COUNT_T GetInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL* incompleteData) override;
-
-private:
-    Module* GetModuleByIndex(DWORD index);
-    void GetILBodySection(MethodDesc*** pppMethods, COUNT_T* pcMethods);
-};
-
-typedef DPTR(CrossModulePersistentInlineTrackingMapR2R) PTR_CrossModulePersistentInlineTrackingMapR2R;
-#endif
-
 #endif //FEATURE_READYTORUN
 
 #if !defined(DACCESS_COMPILE)

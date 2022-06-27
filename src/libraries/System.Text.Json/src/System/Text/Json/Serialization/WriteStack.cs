@@ -158,7 +158,7 @@ namespace System.Text.Json
             SupportContinuation = supportContinuation;
             SupportAsync = supportAsync;
 
-            return jsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase;
+            return jsonTypeInfo.Converter;
         }
 
         /// <summary>

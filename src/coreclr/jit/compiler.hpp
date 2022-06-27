@@ -1124,23 +1124,15 @@ inline GenTreeField* Compiler::gtNewFieldRef(var_types type, CORINFO_FIELD_HANDL
 
         varDsc->lvFieldAccessed = 1;
 
-        // TODO-Cleanup: the UNIX_AMD64_ABI condition below is a zero-diff quirk.
-        // Remove it and use "lvaIsImplicitByRefLocal" instead of the "#if".
-        CLANG_FORMAT_COMMENT_ANCHOR;
-
-#if FEATURE_IMPLICIT_BYREFS || defined(UNIX_AMD64_ABI)
-        // These structs are passed by reference and can easily become global
-        // references if those references are exposed. We clear out
-        // address-exposure information for these parameters when they are
-        // converted into references in fgRetypeImplicitByRefArgs() so we do
-        // not have the necessary information in morph to know if these
-        // indirections are actually global references, so we have to be
-        // conservative here.
-        if (varDsc->lvIsParam)
+        if (lvaIsImplicitByRefLocal(lvaGetLclNum(varDsc)))
         {
+            // These structs are passed by reference and can easily become global references if those
+            // references are exposed. We clear out address-exposure information for these parameters
+            // when they are converted into references in fgRetypeImplicitByRefArgs() so we do not have
+            // the necessary information in morph to know if these indirections are actually global
+            // references, so we have to be conservative here.
             fieldNode->gtFlags |= GTF_GLOB_REF;
         }
-#endif // FEATURE_IMPLICIT_BYREFS || defined(UNIX_AMD64_ABI)
     }
     else
     {

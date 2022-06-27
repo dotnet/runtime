@@ -1995,9 +1995,8 @@ namespace System.Xml
                         Throw(_curPos, SR.Xml_IncompleteDtdContent);
                     }
                 }
-                if (_chars[_curPos + 1] == 'P' && _chars[_curPos + 2] == 'C' &&
-                     _chars[_curPos + 3] == 'D' && _chars[_curPos + 4] == 'A' &&
-                     _chars[_curPos + 5] == 'T' && _chars[_curPos + 6] == 'A')
+
+                if (_chars.AsSpan(_curPos + 1).StartsWith("PCDATA"))
                 {
                     _curPos += 7;
                     _scanningFunction = ScanningFunction.Element6;
@@ -3127,9 +3126,8 @@ namespace System.Xml
                     return false;
                 }
             }
-            if (_chars[_curPos + 1] != 'U' || _chars[_curPos + 2] != 'B' ||
-                 _chars[_curPos + 3] != 'L' || _chars[_curPos + 4] != 'I' ||
-                 _chars[_curPos + 5] != 'C')
+
+            if (!_chars.AsSpan(_curPos + 1).StartsWith("UBLIC"))
             {
                 return false;
             }
@@ -3147,9 +3145,8 @@ namespace System.Xml
                     return false;
                 }
             }
-            if (_chars[_curPos + 1] != 'Y' || _chars[_curPos + 2] != 'S' ||
-                 _chars[_curPos + 3] != 'T' || _chars[_curPos + 4] != 'E' ||
-                 _chars[_curPos + 5] != 'M')
+
+            if (!_chars.AsSpan(_curPos + 1).StartsWith("YSTEM"))
             {
                 return false;
             }

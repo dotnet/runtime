@@ -342,6 +342,47 @@ inline void SetSP(CONTEXT *context, TADDR rsp)
     context->Rsp = rsp;
 }
 
+#if defined(TARGET_WINDOWS) && !defined(DACCESS_COMPILE)
+inline DWORD64 GetSSP(const CONTEXT * context)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+
+        PRECONDITION(CheckPointer(context));
+    }
+    CONTRACTL_END;
+
+    XSAVE_CET_U_FORMAT* pCET = (XSAVE_CET_U_FORMAT*)LocateXStateFeature(const_cast<PCONTEXT>(context), XSTATE_CET_U, NULL);
+    if ((pCET != NULL) && (pCET->Ia32CetUMsr != 0))
+    {
+        return pCET->Ia32Pl3SspMsr;
+    }
+
+    return 0;
+}
+
+inline void SetSSP(CONTEXT *context, DWORD64 ssp)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+
+        PRECONDITION(CheckPointer(context));
+    }
+    CONTRACTL_END;
+
+    XSAVE_CET_U_FORMAT* pCET = (XSAVE_CET_U_FORMAT*)LocateXStateFeature(context, XSTATE_CET_U, NULL);
+    if (pCET != NULL)
+    {
+        pCET->Ia32Pl3SspMsr = ssp;
+        pCET->Ia32CetUMsr = 1;
+    }
+}
+#endif // TARGET_WINDOWS && !DACCESS_COMPILE
+
 #define SetFP(context, ebp)
 inline TADDR GetFP(const CONTEXT * context)
 {

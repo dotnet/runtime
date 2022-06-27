@@ -3199,10 +3199,18 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     opts.compProcedureSplitting = jitFlags->IsSet(JitFlags::JIT_FLAG_PROCSPLIT) || enableFakeSplitting;
 
-#ifdef TARGET_ARM64
-    // TODO-ARM64-NYI: enable hot/cold splitting
+#ifdef FEATURE_CFI_SUPPORT
+    // Hot/cold splitting is not being tested on NativeAOT.
+    if (generateCFIUnwindCodes())
+    {
+        opts.compProcedureSplitting = false;
+    }
+#endif // FEATURE_CFI_SUPPORT
+
+#ifdef TARGET_LOONGARCH64
+    // Hot/cold splitting is not being tested on LoongArch64.
     opts.compProcedureSplitting = false;
-#endif // TARGET_ARM64
+#endif // TARGET_LOONGARCH64
 
 #ifdef DEBUG
     opts.compProcedureSplittingEH = opts.compProcedureSplitting;
@@ -5199,25 +5207,41 @@ void Compiler::placeLoopAlignInstructions()
         {
             // Loop alignment is disabled for cold blocks
             assert((block->bbFlags & BBF_COLD) == 0);
+            BasicBlock* const loopTop = block->bbNext;
 
             // If jmp was not found, then block before the loop start is where align instruction will be added.
+            //
             if (bbHavingAlign == nullptr)
             {
-                bbHavingAlign = block;
-                JITDUMP("Marking " FMT_BB " before the loop with BBF_HAS_ALIGN for loop at " FMT_BB "\n", block->bbNum,
-                        block->bbNext->bbNum);
+                // In some odd cases we may see blocks within the loop before we see the
+                // top block of the loop. Just bail on aligning such loops.
+                //
+                if ((block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) && (block->bbNatLoopNum == loopTop->bbNatLoopNum))
+                {
+                    loopTop->unmarkLoopAlign(this DEBUG_ARG("loop block appears before top of loop"));
+                }
+                else
+                {
+                    bbHavingAlign = block;
+                    JITDUMP("Marking " FMT_BB " before the loop with BBF_HAS_ALIGN for loop at " FMT_BB "\n",
+                            block->bbNum, loopTop->bbNum);
+                }
             }
             else
             {
                 JITDUMP("Marking " FMT_BB " that ends with unconditional jump with BBF_HAS_ALIGN for loop at " FMT_BB
                         "\n",
-                        bbHavingAlign->bbNum, block->bbNext->bbNum);
+                        bbHavingAlign->bbNum, loopTop->bbNum);
             }
 
-            bbHavingAlign->bbFlags |= BBF_HAS_ALIGN;
+            if (bbHavingAlign != nullptr)
+            {
+                bbHavingAlign->bbFlags |= BBF_HAS_ALIGN;
+            }
+
             minBlockSoFar         = BB_MAX_WEIGHT;
             bbHavingAlign         = nullptr;
-            currentAlignedLoopNum = block->bbNext->bbNatLoopNum;
+            currentAlignedLoopNum = loopTop->bbNatLoopNum;
 
             if (--loopsToProcess == 0)
             {

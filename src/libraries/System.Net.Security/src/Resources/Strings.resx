@@ -389,4 +389,7 @@
   <data name="net_ssl_trust_handshake" xml:space="preserve">
     <value>Sending trust in handshake is not supported on this platform.</value>
   </data>
+  <data name="Cryptography_Der_Invalid_Encoding" xml:space="preserve">
+    <value>ASN1 corrupted data.</value>
+  </data>
 </root>

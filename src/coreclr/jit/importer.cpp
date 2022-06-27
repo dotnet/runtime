@@ -1451,6 +1451,8 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
             // Instead, we're going to sink the assignment below the COMMA.
             src->AsOp()->gtOp2 =
                 impAssignStructPtr(destAddr, src->AsOp()->gtOp2, structHnd, curLevel, pAfterStmt, usedDI, block);
+            src->AddAllEffectsFlags(src->AsOp()->gtOp2);
+
             return src;
         }
 
@@ -4459,13 +4461,164 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Math_Log:
             case NI_System_Math_Log2:
             case NI_System_Math_Log10:
-#ifdef TARGET_ARM64
+            {
+                retNode = impMathIntrinsic(method, sig, callType, ni, tailCall);
+                break;
+            }
+#if defined(TARGET_ARM64)
             // ARM64 has fmax/fmin which are IEEE754:2019 minimum/maximum compatible
             // TODO-XARCH-CQ: Enable this for XARCH when one of the arguments is a constant
             // so we can then emit maxss/minss and avoid NaN/-0.0 handling
             case NI_System_Math_Max:
             case NI_System_Math_Min:
 #endif
+
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+            case NI_System_Math_Max:
+            case NI_System_Math_Min:
+            {
+                assert(varTypeIsFloating(callType));
+                assert(sig->numArgs == 2);
+
+                GenTreeDblCon* cnsNode   = nullptr;
+                GenTree*       otherNode = nullptr;
+
+                GenTree* op2 = impStackTop().val;
+                GenTree* op1 = impStackTop(1).val;
+
+                if (op2->IsCnsFltOrDbl())
+                {
+                    cnsNode   = op2->AsDblCon();
+                    otherNode = op1;
+                }
+                else if (op1->IsCnsFltOrDbl())
+                {
+                    cnsNode   = op1->AsDblCon();
+                    otherNode = op2;
+                }
+
+                if (cnsNode == nullptr)
+                {
+                    // no constant node, nothing to do
+                    break;
+                }
+
+                if (otherNode->IsCnsFltOrDbl())
+                {
+                    // both are constant, we can fold this operation completely. Pop both peeked values
+
+                    if (ni == NI_System_Math_Max)
+                    {
+                        cnsNode->gtDconVal =
+                            FloatingPointUtils::maximum(cnsNode->gtDconVal, otherNode->AsDblCon()->gtDconVal);
+                    }
+                    else
+                    {
+                        assert(ni == NI_System_Math_Min);
+                        cnsNode->gtDconVal =
+                            FloatingPointUtils::minimum(cnsNode->gtDconVal, otherNode->AsDblCon()->gtDconVal);
+                    }
+
+                    retNode = cnsNode;
+
+                    impPopStack();
+                    impPopStack();
+                    DEBUG_DESTROY_NODE(otherNode);
+
+                    break;
+                }
+
+                // only one is constant, we can fold in specialized scenarios
+
+                if (cnsNode->IsFloatNaN())
+                {
+                    impSpillSideEffects(false, (unsigned)CHECK_SPILL_ALL DEBUGARG(
+                                                   "spill side effects before propagating NaN"));
+
+                    // maxsd, maxss, minsd, and minss all return op2 if either is NaN
+                    // we require NaN to be propagated so ensure the known NaN is op2
+
+                    impPopStack();
+                    impPopStack();
+                    DEBUG_DESTROY_NODE(otherNode);
+
+                    retNode = cnsNode;
+                    break;
+                }
+
+                if (ni == NI_System_Math_Max)
+                {
+                    // maxsd, maxss return op2 if both inputs are 0 of either sign
+                    // we require +0 to be greater than -0, so we can't handle if
+                    // the known constant is +0. This is because if the unknown value
+                    // is -0, we'd need the cns to be op2. But if the unknown value
+                    // is NaN, we'd need the cns to be op1 instead.
+
+                    if (cnsNode->IsFloatPositiveZero())
+                    {
+                        break;
+                    }
+
+                    // Given the checks, op1 can safely be the cns and op2 the other node
+
+                    ni = (callType == TYP_DOUBLE) ? NI_SSE2_Max : NI_SSE_Max;
+
+                    // one is constant and we know its something we can handle, so pop both peeked values
+
+                    op1 = cnsNode;
+                    op2 = otherNode;
+                }
+                else
+                {
+                    assert(ni == NI_System_Math_Min);
+
+                    // minsd, minss return op2 if both inputs are 0 of either sign
+                    // we require -0 to be lesser than +0, so we can't handle if
+                    // the known constant is -0. This is because if the unknown value
+                    // is +0, we'd need the cns to be op2. But if the unknown value
+                    // is NaN, we'd need the cns to be op1 instead.
+
+                    if (cnsNode->IsFloatNegativeZero())
+                    {
+                        break;
+                    }
+
+                    // Given the checks, op1 can safely be the cns and op2 the other node
+
+                    ni = (callType == TYP_DOUBLE) ? NI_SSE2_Min : NI_SSE_Min;
+
+                    // one is constant and we know its something we can handle, so pop both peeked values
+
+                    op1 = cnsNode;
+                    op2 = otherNode;
+                }
+
+                assert(op1->IsCnsFltOrDbl() && !op2->IsCnsFltOrDbl());
+
+                impPopStack();
+                impPopStack();
+
+                GenTreeVecCon* vecCon = gtNewVconNode(TYP_SIMD16, callJitType);
+
+                if (callJitType == CORINFO_TYPE_FLOAT)
+                {
+                    vecCon->gtSimd16Val.f32[0] = (float)op1->AsDblCon()->gtDconVal;
+                }
+                else
+                {
+                    vecCon->gtSimd16Val.f64[0] = op1->AsDblCon()->gtDconVal;
+                }
+
+                op1 = vecCon;
+                op2 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, NI_Vector128_CreateScalarUnsafe, callJitType, 16);
+
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, ni, callJitType, 16);
+                retNode = gtNewSimdHWIntrinsicNode(callType, retNode, NI_Vector128_ToScalar, callJitType, 16);
+
+                break;
+            }
+#endif
+
             case NI_System_Math_Pow:
             case NI_System_Math_Round:
             case NI_System_Math_Sin:
@@ -12129,39 +12282,29 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         // Check if this cast helper have some profile data
         if (impIsCastHelperMayHaveProfileData(helper))
         {
-            bool                    doRandomDevirt   = false;
             const int               maxLikelyClasses = 32;
-            int                     likelyClassCount = 0;
             LikelyClassMethodRecord likelyClasses[maxLikelyClasses];
-#ifdef DEBUG
-            // Optional stress mode to pick a random known class, rather than
-            // the most likely known class.
-            doRandomDevirt = JitConfig.JitRandomGuardedDevirtualization() != 0;
-
-            if (doRandomDevirt)
-            {
-                // Reuse the random inliner's random state.
-                CLRRandom* const random =
-                    impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
-                CORINFO_CLASS_HANDLE  clsGuess;
-                CORINFO_METHOD_HANDLE methGuess;
-                getRandomGDV(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, random, &clsGuess, &methGuess);
-                if (clsGuess != NO_CLASS_HANDLE)
-                {
-                    likelyClasses[0].likelihood = 100;
-                    likelyClasses[0].handle     = (intptr_t)clsGuess;
-                    likelyClassCount            = 1;
-                }
-            }
-            else
-#endif
-            {
-                likelyClassCount = getLikelyClasses(likelyClasses, maxLikelyClasses, fgPgoSchema, fgPgoSchemaCount,
-                                                    fgPgoData, ilOffset);
-            }
+            unsigned                likelyClassCount =
+                getLikelyClasses(likelyClasses, maxLikelyClasses, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
 
             if (likelyClassCount > 0)
             {
+#ifdef DEBUG
+                // Optional stress mode to pick a random known class, rather than
+                // the most likely known class.
+                if (JitConfig.JitRandomGuardedDevirtualization() != 0)
+                {
+                    // Reuse the random inliner's random state.
+                    CLRRandom* const random =
+                        impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
+
+                    unsigned index          = static_cast<unsigned>(random->Next(static_cast<int>(likelyClassCount)));
+                    likelyClasses[0].handle = likelyClasses[index].handle;
+                    likelyClasses[0].likelihood = 100;
+                    likelyClassCount            = 1;
+                }
+#endif
+
                 LikelyClassMethodRecord likelyClass = likelyClasses[0];
                 CORINFO_CLASS_HANDLE    likelyCls   = (CORINFO_CLASS_HANDLE)likelyClass.handle;
 
@@ -22400,16 +22543,18 @@ void Compiler::pickGDV(GenTreeCall*           call,
         //
         CLRRandom* const random =
             impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
-        // TODO-GDV: This can be simplified to just use likelyClasses and
-        // likelyMethods now that we have multiple candidates here.
-        getRandomGDV(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, random, classGuess, methodGuess);
-        if (*classGuess != NO_CLASS_HANDLE)
+        unsigned index = static_cast<unsigned>(random->Next(static_cast<int>(numberOfClasses + numberOfMethods)));
+        if (index < numberOfClasses)
         {
+            *classGuess = (CORINFO_CLASS_HANDLE)likelyClasses[index].handle;
+            *likelihood = 100;
             JITDUMP("Picked random class for GDV: %p (%s)\n", *classGuess, eeGetClassName(*classGuess));
             return;
         }
-        if (*methodGuess != NO_METHOD_HANDLE)
+        else
         {
+            *methodGuess = (CORINFO_METHOD_HANDLE)likelyMethods[index - numberOfClasses].handle;
+            *likelihood  = 100;
             JITDUMP("Picked random method for GDV: %p (%s)\n", *methodGuess, eeGetMethodFullName(*methodGuess));
             return;
         }

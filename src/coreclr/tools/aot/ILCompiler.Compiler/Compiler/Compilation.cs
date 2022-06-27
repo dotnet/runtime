@@ -659,5 +659,12 @@ namespace ILCompiler
         public readonly MethodDesc Method;
         public ConstrainedCallInfo(TypeDesc constrainedType, MethodDesc method)
             => (ConstrainedType, Method) = (constrainedType, method);
+        public int CompareTo(ConstrainedCallInfo other, TypeSystemComparer comparer)
+        {
+            int result = comparer.Compare(ConstrainedType, other.ConstrainedType);
+            if (result == 0)
+                result = comparer.Compare(Method, other.Method);
+            return result;
+        }
     }
 }

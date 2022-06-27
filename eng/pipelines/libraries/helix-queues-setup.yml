@@ -87,6 +87,10 @@ jobs:
     - ${{ if eq(parameters.platform, 'Linux_s390x') }}:
         - Ubuntu.2004.S390X.Experimental.Open
 
+    # Linux PPC64le
+    - ${{ if eq(parameters.platform, 'Linux_ppc64le') }}:
+        - Ubuntu.2004.PPC64le.Experimental.Open
+
     # OSX arm64
     - ${{ if eq(parameters.platform, 'OSX_arm64') }}:
       - OSX.1200.ARM64.Open

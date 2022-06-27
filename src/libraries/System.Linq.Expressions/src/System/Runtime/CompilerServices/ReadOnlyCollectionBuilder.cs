@@ -220,32 +220,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <param name="item">the object to locate in the <see cref="ReadOnlyCollectionBuilder{T}"/>.</param>
         /// <returns>true if item is found in the <see cref="ReadOnlyCollectionBuilder{T}"/>; otherwise, false.</returns>
-        public bool Contains(T item)
-        {
-            if ((object?)item == null)
-            {
-                for (int i = 0; i < _size; i++)
-                {
-                    if ((object?)_items[i] == null)
-                    {
-                        return true;
-                    }
-                }
-                return false;
-            }
-            else
-            {
-                EqualityComparer<T> c = EqualityComparer<T>.Default;
-                for (int i = 0; i < _size; i++)
-                {
-                    if (c.Equals(_items[i], item))
-                    {
-                        return true;
-                    }
-                }
-                return false;
-            }
-        }
+        public bool Contains(T item) => IndexOf(item) >= 0;
 
         /// <summary>
         /// Copies the elements of the <see cref="ReadOnlyCollectionBuilder{T}"/> to an <see cref="Array"/>,
@@ -253,10 +228,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <param name="array">The one-dimensional <see cref="Array"/> that is the destination of the elements copied from <see cref="ReadOnlyCollectionBuilder{T}"/>.</param>
         /// <param name="arrayIndex">The zero-based index in array at which copying begins.</param>
-        public void CopyTo(T[] array, int arrayIndex)
-        {
-            Array.Copy(_items, 0, array, arrayIndex, _size);
-        }
+        public void CopyTo(T[] array, int arrayIndex) => Array.Copy(_items, 0, array, arrayIndex, _size);
 
         bool ICollection<T>.IsReadOnly => false;
 
