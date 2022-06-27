@@ -4639,7 +4639,8 @@ bool Compiler::optIfConvertSelect(GenTree* original_condition, GenTree* asg_node
 
     // Duplicate the condition and invert it
     GenTree* cond = gtCloneExpr(original_condition);
-    cond->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
+    cond->gtFlags |= (GTF_DONT_CSE | GTF_DO_CONST_PROP);
+    cond->gtFlags ^= GTF_RELOP_JMP_USED;
     cond->gtFlags ^= GTF_RELOP_NAN_UN;
     switch (cond->gtOper)
     {

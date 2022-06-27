@@ -426,6 +426,8 @@ enum GenTreeFlags : unsigned int
     GTF_UNSIGNED    = 0x00008000, // With GT_CAST:   the source operand is an unsigned type
                                   // With operators: the specified node is an unsigned operator
     GTF_SPILL       = 0x00020000, // Needs to be spilled here
+    GTF_DO_CONST_PROP = 0x00040000, // Always constant propegate, regardless of GTF_DONT_CSE
+                                    // Ideally replace with GTF_DONT_CONST_PROP
 
 // The extra flag GTF_IS_IN_CSE is used to tell the consumer of the side effect flags
 // that we are calling in the context of performing a CSE, thus we
@@ -436,7 +438,7 @@ enum GenTreeFlags : unsigned int
 
     GTF_IS_IN_CSE   = GTF_BOOLEAN,
 
-    GTF_COMMON_MASK = 0x0003FFFF, // mask of all the flags above
+    GTF_COMMON_MASK = 0x0005FFFF, // mask of all the flags above
 
     GTF_REUSE_REG_VAL = 0x00800000, // This is set by the register allocator on nodes whose value already exists in the
                                     // register assigned to this node, so the code generator does not have to generate

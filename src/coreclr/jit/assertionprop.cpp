@@ -5834,7 +5834,8 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
 Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Statement* stmt, GenTree* tree)
 {
     // Don't perform const prop on expressions marked with GTF_DONT_CSE
-    if (!tree->CanCSE())
+
+    if (!tree->CanCSE() && !(tree->gtFlags & GTF_DO_CONST_PROP))
     {
         return WALK_CONTINUE;
     }
@@ -5870,6 +5871,13 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
         case GT_NEG:
         case GT_CAST:
         case GT_INTRINSIC:
+        case GT_SELECT:
+        case GT_CEQ:
+        case GT_CNE:
+        case GT_CLT:
+        case GT_CLE:
+        case GT_CGE:
+        case GT_CGT:
             break;
 
         case GT_JTRUE:
