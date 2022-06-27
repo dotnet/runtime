@@ -95,6 +95,7 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             SyntaxNode nodeToFix = root.FindNode(diagnostic.Location.SourceSpan, getInnermostNodeForTie: true);
+
             // Save the operation object from the nodeToFix before it gets replaced by the new method invocation.
             // We will later use this operation to get the parameters out and pass them into the RegexGenerator attribute.
             IOperation? operation = semanticModel.GetOperation(nodeToFix, cancellationToken);
@@ -111,38 +112,11 @@ namespace System.Text.RegularExpressions.Generator
                 methodName = $"{DefaultRegexMethodName}{memberCount++}";
             }
 
-            // Walk the type hirerarchy of the node to fix, and add the partial modifier to each ancestor (if it doesn't have it already)
-            // We also keep a count of how many partial keywords we added so that we can later find the nodeToFix again on the new root using the text offset.
-            int typesModified = 0;
-            root = root.ReplaceNodes(
-                nodeToFix.Ancestors().OfType<TypeDeclarationSyntax>(),
-                (_, typeDeclaration) =>
-                {
-                    if (!typeDeclaration.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword)))
-                    {
-                        typesModified++;
-                        return typeDeclaration.AddModifiers(SyntaxFactory.Token(SyntaxKind.PartialKeyword)).WithAdditionalAnnotations(Simplifier.Annotation);
-                    }
-
-                    return typeDeclaration;
-                });
-
-            // We find nodeToFix again by calculating the offset of how many partial keywords we had to add.
-            nodeToFix = root.FindNode(new TextSpan(nodeToFix.Span.Start + (typesModified * "partial".Length), nodeToFix.Span.Length), getInnermostNodeForTie: true);
-            if (nodeToFix is null)
-            {
-                return document;
-            }
-
-            // We need to find the typeDeclaration again, but now using the new root.
-            TypeDeclarationSyntax typeDeclaration = nodeToFix.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault();
-            Debug.Assert(typeDeclaration is not null);
-            TypeDeclarationSyntax newTypeDeclaration = typeDeclaration;
-
             // We generate a new invocation node to call our new partial method, and use it to replace the nodeToFix.
-            DocumentEditor editor = await DocumentEditor.CreateAsync(document, cancellationToken).ConfigureAwait(false);
-            SyntaxGenerator generator = editor.Generator;
+            SyntaxGenerator generator = SyntaxGenerator.GetGenerator(document);
             ImmutableDictionary<string, string?> properties = diagnostic.Properties;
+
+            var annotation = new SyntaxAnnotation();
 
             // Generate the modified type declaration depending on whether the callsite was a Regex constructor call
             // or a Regex static method invocation.
@@ -165,12 +139,12 @@ namespace System.Text.RegularExpressions.Generator
                 SyntaxNode createRegexMethod = generator.InvocationExpression(generator.IdentifierName(methodName));
                 SyntaxNode method = generator.InvocationExpression(generator.MemberAccessExpression(createRegexMethod, invocationOperation.TargetMethod.Name), arguments.Select(arg => arg.Syntax).ToArray());
 
-                newTypeDeclaration = newTypeDeclaration.ReplaceNode(nodeToFix, method);
+                root = root.ReplaceNode(nodeToFix, method.WithAdditionalAnnotations(annotation));
             }
             else // When using a Regex constructor
             {
                 SyntaxNode invokeMethod = generator.InvocationExpression(generator.IdentifierName(methodName));
-                newTypeDeclaration = newTypeDeclaration.ReplaceNode(nodeToFix, invokeMethod);
+                root = root.ReplaceNode(nodeToFix, invokeMethod.WithAdditionalAnnotations(annotation));
             }
 
             // Initialize the inputs for the RegexGenerator attribute.
@@ -210,11 +184,34 @@ namespace System.Text.RegularExpressions.Generator
             // Add the attribute to the generated method.
             newMethod = (MethodDeclarationSyntax)generator.AddAttributes(newMethod, attributes);
 
-            // Add the method to the type.
-            newTypeDeclaration = newTypeDeclaration.AddMembers(newMethod);
+            SyntaxNode invocationNode = root.GetAnnotatedNodes(annotation).Single();
+            var hasTypeDeclaration = false;
+            // Walk the type hirerarchy of the node to fix, and add the partial modifier to each ancestor (if it doesn't have it already)
+            root = root.ReplaceNodes(
+                invocationNode.Ancestors().OfType<TypeDeclarationSyntax>(),
+                (_, typeDeclaration) =>
+                {
+                    hasTypeDeclaration = true;
+                    if (!typeDeclaration.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword)))
+                    {
+                        return typeDeclaration.AddModifiers(SyntaxFactory.Token(SyntaxKind.PartialKeyword)).WithAdditionalAnnotations(Simplifier.Annotation);
+                    }
 
-            // Replace the old type declaration with the new modified one, and return the document.
-            return document.WithSyntaxRoot(root.ReplaceNode(typeDeclaration, newTypeDeclaration));
+                    return typeDeclaration;
+                });
+
+            // Add the method to the type.
+            if (hasTypeDeclaration)
+            {
+                TypeDeclarationSyntax typeDeclaration = root.GetAnnotatedNodes(annotation).Single().FirstAncestorOrSelf<TypeDeclarationSyntax>();
+                return document.WithSyntaxRoot(root.ReplaceNode(typeDeclaration, typeDeclaration.AddMembers(newMethod)));
+            }
+            else
+            {
+                // If we didn't have a type declaration, then it's likely we're in a top-level statements program.
+                var topLevelClassDeclaration = (ClassDeclarationSyntax)generator.ClassDeclaration("Program", modifiers: DeclarationModifiers.Partial, members: new[] { newMethod });
+                return document.WithSyntaxRoot(((CompilationUnitSyntax)root).AddMembers(topLevelClassDeclaration));
+            }
 
             // Helper method that searches the passed in property bag for the property with the passed in name, and if found, it converts the
             // value to an int.

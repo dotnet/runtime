@@ -74,8 +74,16 @@ public class Program
             string test = @"using System.Text.RegularExpressions;
 
 Regex r = [|new Regex("""")|];";
+            string fixedCode = @"using System.Text.RegularExpressions;
 
-            await VerifyCS.VerifyCodeFixAsync(test, test);
+Regex r = MyRegex();
+
+partial class Program
+{
+    [RegexGenerator("""")]
+    private static partial Regex MyRegex();
+}";
+            await VerifyCS.VerifyCodeFixAsync(test, fixedCode);
         }
 
         [Fact]
