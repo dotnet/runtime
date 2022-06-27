@@ -7654,15 +7654,19 @@ void CodeGen::genReportFullDebugInfoToFile()
 
 #endif
 
+template<typename TWriteData, typename TValue>
+static void WriteBits(TWriteData write, TValue val)
+{
+    write(&val, sizeof(val));
+}
+
 template <typename TWriteData>
 void CodeGen::genReportFullDebugInfoInlineTree(InlineContext* context, TWriteData write)
 {
-    auto doWrite = [write](auto val) { write(&val, sizeof(val)); };
-
-    doWrite((uint32_t)context->GetOrdinal());
-    doWrite((void*)context->GetCallee());
-    doWrite((uint32_t)context->GetLocation().GetOffset());
-    doWrite((uint8_t)context->GetLocation().EncodeSourceTypes());
+    WriteBits(write, (uint32_t)context->GetOrdinal());
+    WriteBits(write, (void*)context->GetCallee());
+    WriteBits(write, (uint32_t)context->GetLocation().GetOffset());
+    WriteBits(write, (uint8_t)context->GetLocation().EncodeSourceTypes());
 
     uint32_t numChildren = 0;
     for (InlineContext* child = context->GetChild(); child != nullptr; child = child->GetSibling())
@@ -7673,7 +7677,7 @@ void CodeGen::genReportFullDebugInfoInlineTree(InlineContext* context, TWriteDat
         }
     }
 
-    doWrite(numChildren);
+    WriteBits(write, numChildren);
 
     for (InlineContext* child = context->GetChild(); child != nullptr; child = child->GetSibling())
     {
@@ -7687,14 +7691,12 @@ void CodeGen::genReportFullDebugInfoInlineTree(InlineContext* context, TWriteDat
 template <typename TWriteData>
 void CodeGen::genReportFullDebugInfoMappings(TWriteData write)
 {
-    auto doWrite = [write](auto val) { write(&val, sizeof(val)); };
-
     for (const PreciseIPMapping& mapping : compiler->genPreciseIPmappings)
     {
-        doWrite((uint32_t)mapping.nativeLoc.CodeOffset(GetEmitter()));
-        doWrite((uint32_t)mapping.debugInfo.GetInlineContext()->GetOrdinal());
-        doWrite((uint32_t)mapping.debugInfo.GetLocation().GetOffset());
-        doWrite((uint8_t)mapping.debugInfo.GetLocation().EncodeSourceTypes());
+        WriteBits(write, (uint32_t)mapping.nativeLoc.CodeOffset(GetEmitter()));
+        WriteBits(write, (uint32_t)mapping.debugInfo.GetInlineContext()->GetOrdinal());
+        WriteBits(write, (uint32_t)mapping.debugInfo.GetLocation().GetOffset());
+        WriteBits(write, (uint8_t)mapping.debugInfo.GetLocation().EncodeSourceTypes());
     }
 }
 
@@ -7724,12 +7726,10 @@ void CodeGen::genReportFullDebugInfo()
         cursor += numBytes;
     };
 #else
-    auto recordData =
-        [&cursor](const void* data, size_t numBytes)
-        {
+    auto recordData = [&cursor](const void* data, size_t numBytes) {
         memcpy(cursor, data, numBytes);
         cursor += numBytes;
-        });
+    };
 #endif
     recordData("DBG0", 4);
     genReportFullDebugInfoInlineTree(compiler->compInlineContext, recordData);
