@@ -663,8 +663,12 @@ gc_safe_transition_builder_init (GCSafeTransitionBuilder *builder, MonoMethodBui
 	builder->coop_cominterop_fnptr = -1;
 #endif
 #if defined (TARGET_WASM)
-	/* if we're in the AOT compiler, obey the --wasm-gc-safepoints option even if the AOT compiler doesn't have threads enabled */
-	return mono_opt_wasm_gc_safepoints;
+	#ifndef DISABLE_THREADS
+		return TRUE;
+	#else
+		/* if we're in the AOT compiler, obey the --wasm-gc-safepoints option even if the AOT compiler doesn't have threads enabled */
+		return mono_opt_wasm_gc_safepoints;
+	#endif
 #else
 	return TRUE;
 #endif
@@ -2292,7 +2296,11 @@ emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	MonoType *object_type = mono_get_object_type ();
 #if defined (TARGET_WASM)
 	/* in the AOT compiler emit blocking transitions if --wasm-gc-safepoints was used */
-	const gboolean do_blocking_transition = mono_opt_wasm_gc_safepoints;
+	#ifndef DISABLE_THREADS
+		const gboolean do_blocking_transition = TRUE;
+	#else
+		const gboolean do_blocking_transition = mono_opt_wasm_gc_safepoints;
+	#endif
 #else
 	const gboolean do_blocking_transition = TRUE;
 #endif
