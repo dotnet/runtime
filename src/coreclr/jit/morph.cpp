@@ -3769,25 +3769,35 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
     if (arg->AbiInfo.GetRegNum() == REG_STK)
 #endif
     {
-        GenTreeLclVarCommon* lcl       = nullptr;
-        GenTree*             actualArg = argNode->gtEffectiveVal();
+        GenTreeLclVar* lcl       = nullptr;
+        GenTree*       actualArg = argNode->gtEffectiveVal();
 
+        // TODO-ADDR: always perform "OBJ(ADDR(LCL)) => LCL" transformation in local morph and delete this code.
         if (actualArg->OperGet() == GT_OBJ)
         {
             if (actualArg->gtGetOp1()->OperIs(GT_ADDR) && actualArg->gtGetOp1()->gtGetOp1()->OperIs(GT_LCL_VAR))
             {
-                lcl = actualArg->gtGetOp1()->gtGetOp1()->AsLclVarCommon();
+                lcl = actualArg->gtGetOp1()->gtGetOp1()->AsLclVar();
             }
         }
         else if (actualArg->OperGet() == GT_LCL_VAR)
         {
-            lcl = actualArg->AsLclVarCommon();
+            lcl = actualArg->AsLclVar();
         }
         if (lcl != nullptr)
         {
             if (lvaGetPromotionType(lcl->GetLclNum()) == PROMOTION_TYPE_INDEPENDENT)
             {
-                argNode = fgMorphLclArgToFieldlist(lcl);
+                if (argNode->OperIs(GT_LCL_VAR) ||
+                    ClassLayout::AreCompatible(argNode->AsObj()->GetLayout(), lvaGetDesc(lcl)->GetLayout()))
+                {
+                    argNode = fgMorphLclArgToFieldlist(lcl);
+                }
+                else
+                {
+                    // Set DNER to block independent promotion.
+                    lvaSetVarDoNotEnregister(lcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::IsStructArg));
+                }
             }
 #ifndef TARGET_XARCH
             else if (argNode->TypeGet() == TYP_STRUCT)
