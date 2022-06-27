@@ -1303,7 +1303,6 @@ ssize_t Compiler::optCastConstantSmall(ssize_t iconVal, var_types smallType)
 
         case TYP_USHORT:
             return uint16_t(iconVal);
-            break;
 
         case TYP_BOOL:
         case TYP_UBYTE:
