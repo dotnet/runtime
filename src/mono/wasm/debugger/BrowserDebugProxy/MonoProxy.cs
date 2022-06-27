@@ -1469,7 +1469,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        internal async Task<DebugStore> LoadStore(SessionId sessionId, bool tryUseDebuggerProtocol, CancellationToken token)
+        internal virtual async Task<DebugStore> LoadStore(SessionId sessionId, bool tryUseDebuggerProtocol, CancellationToken token)
         {
             ExecutionContext context = GetContext(sessionId);
 
