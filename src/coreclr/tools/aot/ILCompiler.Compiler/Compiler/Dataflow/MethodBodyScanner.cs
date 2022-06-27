@@ -957,8 +957,7 @@ namespace ILCompiler.Dataflow
             Stack<StackSlot> currentStack,
             ValueBasicBlockPair?[] locals)
         {
-            bool isByRef = operation == ILOpcode.ldloca || operation == ILOpcode.ldloca_s
-                || methodBody.GetLocals()[index].Type.IsByRefOrPointer();
+            bool isByRef = operation == ILOpcode.ldloca || operation == ILOpcode.ldloca_s;
 
             ValueBasicBlockPair? localValue = locals[index];
             StackSlot newSlot;

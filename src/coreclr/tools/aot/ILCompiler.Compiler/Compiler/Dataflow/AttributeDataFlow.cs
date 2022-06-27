@@ -96,13 +96,14 @@ namespace ILCompiler.Dataflow
 
         public void ProcessAttributeDataflow(FieldDesc field, object? value, ref DependencyList? result)
         {
-            MultiValue valueNode = GetValueForCustomAttributeArgument(value);
             var fieldValueCandidate = _annotations.GetFieldValue(field);
-            if (fieldValueCandidate is not ValueWithDynamicallyAccessedMembers fieldValue)
-                return;
-
-            var diagnosticContext = new DiagnosticContext(_origin, diagnosticsEnabled: true, _logger);
-            RequireDynamicallyAccessedMembers(diagnosticContext, valueNode, fieldValue, new FieldOrigin(field), ref result);
+            if (fieldValueCandidate is ValueWithDynamicallyAccessedMembers fieldValue
+                && fieldValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None)
+            {
+                MultiValue valueNode = GetValueForCustomAttributeArgument(value);
+                var diagnosticContext = new DiagnosticContext(_origin, diagnosticsEnabled: true, _logger);
+                RequireDynamicallyAccessedMembers(diagnosticContext, valueNode, fieldValue, new FieldOrigin(field), ref result);
+            }
         }
 
         MultiValue GetValueForCustomAttributeArgument(object? argument)
