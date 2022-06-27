@@ -103,25 +103,12 @@ namespace System.Text.RegularExpressions.Generator
                 return document;
             }
 
-            // Get the parent type declaration so that we can inspect its methods as well as check if we need to add the partial keyword.
-            TypeDeclarationSyntax? typeDeclaration = nodeToFix.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault();
-
-            if (typeDeclaration is null)
-            {
-                return document;
-            }
-
             // Calculate what name should be used for the generated static partial method
             string methodName = DefaultRegexMethodName;
-            ITypeSymbol? typeSymbol = semanticModel.GetDeclaredSymbol(typeDeclaration, cancellationToken) as ITypeSymbol;
-            if (typeSymbol is not null)
+            int memberCount = 1;
+            while (!semanticModel.LookupSymbols(nodeToFix.SpanStart, name: methodName).IsEmpty)
             {
-                IEnumerable<ISymbol> members = GetAllMembers(typeSymbol);
-                int memberCount = 1;
-                while (members.Any(m => m.Name == methodName))
-                {
-                    methodName = $"{DefaultRegexMethodName}{memberCount++}";
-                }
+                methodName = $"{DefaultRegexMethodName}{memberCount++}";
             }
 
             // Walk the type hirerarchy of the node to fix, and add the partial modifier to each ancestor (if it doesn't have it already)
@@ -148,7 +135,7 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // We need to find the typeDeclaration again, but now using the new root.
-            typeDeclaration = nodeToFix.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault();
+            TypeDeclarationSyntax typeDeclaration = nodeToFix.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault();
             Debug.Assert(typeDeclaration is not null);
             TypeDeclarationSyntax newTypeDeclaration = typeDeclaration;
 
@@ -228,19 +215,6 @@ namespace System.Text.RegularExpressions.Generator
 
             // Replace the old type declaration with the new modified one, and return the document.
             return document.WithSyntaxRoot(root.ReplaceNode(typeDeclaration, newTypeDeclaration));
-
-            static IEnumerable<ISymbol> GetAllMembers(ITypeSymbol? symbol)
-            {
-                while (symbol != null)
-                {
-                    foreach (ISymbol member in symbol.GetMembers())
-                    {
-                        yield return member;
-                    }
-
-                    symbol = symbol.BaseType;
-                }
-            }
 
             // Helper method that searches the passed in property bag for the property with the passed in name, and if found, it converts the
             // value to an int.
