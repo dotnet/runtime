@@ -17,23 +17,6 @@ trigger:
     - PATENTS.TXT
     - THIRD-PARTY-NOTICES.TXT
 
-pr:
-  branches:
-    include:
-    - main
-    - release/*.*
-  paths:
-    include:
-    - '*'
-    - docs/manpages/*
-    exclude:
-    - /**/*.md
-    - eng/Version.Details.xml
-    - .github/*
-    - docs/*
-    - LICENSE.TXT
-    - PATENTS.TXT
-    - THIRD-PARTY-NOTICES.TXT
 
 variables:
   - template: /eng/pipelines/common/variables.yml
