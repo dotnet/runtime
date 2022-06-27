@@ -9,6 +9,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+using static System.IO.Compression.ZipArchiveEntryConstants;
+
 namespace System.IO.Compression
 {
     // The disposable fields that this class owns get disposed when the ZipArchive it belongs to gets disposed
