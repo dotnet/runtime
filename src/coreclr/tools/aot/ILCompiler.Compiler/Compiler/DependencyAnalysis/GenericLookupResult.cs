@@ -1427,6 +1427,21 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!_constrainedMethod.HasInstantiation || !_directCall, "Direct call to constrained generic method isn't supported");
         }
 
+        public override IEnumerable<DependencyNodeCore<NodeFactory>> NonRelocDependenciesFromUsage(NodeFactory factory)
+        {
+            MethodDesc canonMethod = _constrainedMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+            // If we're producing a full vtable for the type, we don't need to report virtual method use.
+            if (!factory.VTable(canonMethod.OwningType).HasFixedSlots)
+            {
+                // Report the method as virtually used so that types that could be used here at runtime
+                // have the appropriate implementations generated.
+                // This covers instantiations created at runtime (MakeGeneric*). The statically present generic dictionaries
+                // are already covered by the dependency analysis within the compiler because we call GetTarget for those.
+                yield return factory.VirtualMethodUse(canonMethod);
+            }
+        }
+
         public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
         {
             MethodDesc instantiatedConstrainedMethod = _constrainedMethod.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
@@ -1486,8 +1501,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
         {
-            return factory.NativeLayout.NotSupportedDictionarySlot;
-            //return factory.NativeLayout.ConstrainedMethodUse(_constrainedMethod, _constraintType, _directCall);
+            return factory.NativeLayout.ConstrainedMethodUse(_constrainedMethod, _constraintType, _directCall);
         }
 
         public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)

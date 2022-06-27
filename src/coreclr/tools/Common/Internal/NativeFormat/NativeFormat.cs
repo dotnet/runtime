@@ -100,6 +100,8 @@ namespace Internal.NativeFormat
         NonGenericDirectConstrainedMethod = 0x18,
         PointerToOtherSlot          = 0x19,
         IntValue                    = 0x20,
+        NonGenericStaticConstrainedMethod = 0x21,
+        GenericStaticConstrainedMethod = 0x22,
 
         NotYetSupported             = 0xee,
     }
