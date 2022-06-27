@@ -13,6 +13,22 @@ using System.Windows.Forms;
 
 namespace DependencyLogViewer
 {
+    public class BoxDisplay
+    {
+        public Node node;
+        public List<string> reason;
+
+        public BoxDisplay(Node node, List<string> reason)
+        {
+            this.node = node;
+            this.reason = reason;
+        }
+
+        public override string ToString()
+        {
+            return $"Index: {node.Index}, Name: {node.Name}, Reason(s): {String.Join(", ", reason.ToArray())}";
+        }
+    }
     public partial class NodeForm : Form
     {
         Graph _graph;
@@ -30,8 +46,20 @@ namespace DependencyLogViewer
 
             lock (GraphCollection.Singleton)
             {
-                this.dependentsListBox.DataSource = _node.Sources.ToArray();
-                this.dependeesListBox.DataSource = _node.Targets.ToArray();
+                List<BoxDisplay> sourceNodes = new ();
+                foreach (var pair in _node.Sources)
+                {
+                    sourceNodes.Add(new BoxDisplay(pair.Key, pair.Value));
+                }
+
+                List<BoxDisplay> targetNodes = new ();
+                foreach (var pair in _node.Targets)
+                {
+                    targetNodes.Add(new BoxDisplay(pair.Key, pair.Value));
+                }
+
+                this.dependentsListBox.DataSource = sourceNodes;
+                this.dependeesListBox.DataSource = targetNodes;
             }
         }
 
@@ -40,9 +68,9 @@ namespace DependencyLogViewer
             if (listbox.SelectedItem == null)
                 return;
 
-            KeyValuePair<Node, string> pair = (KeyValuePair<Node, string>)listbox.SelectedItem;
+            BoxDisplay selected = (BoxDisplay)listbox.SelectedItem;
 
-            NodeForm nodeForm = new NodeForm(graph, pair.Key);
+            NodeForm nodeForm = new NodeForm(graph, selected.node);
             nodeForm.Show();
         }
 

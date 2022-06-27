@@ -13,7 +13,7 @@ using System.Windows.Forms;
 
 namespace DependecyGraphViewer.Tests
 {
-    public class TestGraph
+    public class TestFileParsing
     {
         GraphCollection collection = GraphCollection.Singleton;
 
@@ -102,14 +102,37 @@ namespace DependecyGraphViewer.Tests
             Assert.Equal(sumLinks, linkCount);
         }
 
-        [Theory]
-        [MemberData(nameof(GetDgml))]
-        public void IsValid(string fileContents, int nodeCount, bool isValid, int linkCount)
+        [Fact]
+        public void multiLink()
         {
+            string fileContents = """
+                <?xml version="1.0" encoding="utf-8"?>
+                <DirectedGraph Layout="ForceDirected" xmlns="http://schemas.microsoft.com/vs/2009/dgml">
+                  <Nodes>
+                    <Node Id="0" Label="Node 0" />
+                    <Node Id="1" Label="Node 1" />
+                  </Nodes>
+                  <Links>
+                    <Link Source="1" Target="0" Reason="first" />
+                    <Link Source="1" Target="0" Reason="second" />
+                    <Link Source="0" Target="1" Reason="third" />
+                  </Links>
+                  <Properties>
+                    <Property Id="Bounds" DataType="System.Windows.Rect" />
+                  </Properties>
+                </DirectedGraph>
+                """;
             var stream = GenerateStreamFromString(fileContents);
-            DGMLGraphProcessing testParser = new DGMLGraphProcessing(-1);
-            testParser.ParseXML(stream, "testFile");
-            Assert.Equal(testParser.g.isValid, isValid);
+            DGMLGraphProcessing testLink = new DGMLGraphProcessing(-1);
+            testLink.ParseXML(stream, "testFile");
+
+            Assert.Equal(testLink.g.Nodes[0].Sources.Count, 1);
+            Node node0 = testLink.g.Nodes[0];
+            Node node1 = testLink.g.Nodes[1];
+            Assert.Equal(node0.Sources[node1], new List<string> { "first", "second" });
+            Assert.Equal(node0.Targets[node1], new List<string> { "third" });
+            Assert.Equal(node1.Sources[node0], new List<string> { "third" });
+            Assert.Equal(node1.Targets[node0], new List<string> { "first", "second" });
         }
 
         [Fact]
@@ -144,58 +167,28 @@ namespace DependecyGraphViewer.Tests
             testParser.ParseXML(stream, "testFile");
 
             Assert.Equal(testParser.g.Nodes[0].Sources.Count, 1);
-
-            HashSet<string> nodes = new HashSet<string>();
-            foreach (Node key in testParser.g.Nodes[0].Sources.Keys)
-            {
-                nodes.Add(key.Name);
-            }
-            Assert.Contains(nodes, (s) => s.Equals("Node 1"));
-            nodes.Clear();
+            Assert.Contains(testParser.g.Nodes[0].Sources.Keys, (s) => s.Name.Equals("Node 1"));
 
             Assert.Equal(testParser.g.Nodes[0].Targets.Count, 0);
-            Assert.Equal(testParser.g.Nodes[1].Sources.Count, 2);
 
-            foreach (Node key in testParser.g.Nodes[1].Sources.Keys)
-            {
-                nodes.Add(key.Name);
-            }
-            Assert.Contains(nodes, (s) => s.Equals("Node 2"));
-            Assert.Contains(nodes, (s) => s.Equals("Node 3"));
-            nodes.Clear();
+            Assert.Equal(testParser.g.Nodes[1].Sources.Count, 2);
+            Assert.Contains(testParser.g.Nodes[1].Sources.Keys, (s) => s.Name.Equals("Node 2"));
+            Assert.Contains(testParser.g.Nodes[1].Sources.Keys, (s) => s.Name.Equals("Node 3"));
 
             Assert.Equal(testParser.g.Nodes[1].Targets.Count, 1);
-            foreach (Node key in testParser.g.Nodes[1].Targets.Keys)
-            {
-                nodes.Add(key.Name);
-            }
-            Assert.Contains(nodes, (s) => s.Equals("Node 0"));
-            nodes.Clear();
+            Assert.Contains(testParser.g.Nodes[1].Targets.Keys, (s) => s.Name.Equals("Node 0"));
 
             Assert.Equal(testParser.g.Nodes[2].Sources.Count, 1);
-            foreach (Node key in testParser.g.Nodes[2].Sources.Keys)
-            {
-                nodes.Add(key.Name);
-            }
-            Assert.Contains(nodes, (s) => s.Equals("Node 3"));
-            nodes.Clear();
+            Assert.Contains(testParser.g.Nodes[2].Sources.Keys, (s) => s.Name.Equals("Node 3"));
 
             Assert.Equal(testParser.g.Nodes[2].Targets.Count, 1);
-            foreach (Node key in testParser.g.Nodes[2].Targets.Keys)
-            {
-                nodes.Add(key.Name);
-            }
-            Assert.Contains(nodes, (s) => s.Equals("Node 1"));
-            nodes.Clear();
+            Assert.Contains(testParser.g.Nodes[2].Targets.Keys, (s) => s.Name.Equals("Node 1"));
 
             Assert.Equal(testParser.g.Nodes[3].Sources.Count, 0);
+
             Assert.Equal(testParser.g.Nodes[3].Targets.Count, 2);
-            foreach (Node key in testParser.g.Nodes[3].Targets.Keys)
-            {
-                nodes.Add(key.Name);
-            }
-            Assert.Contains(nodes, (s) => s.Equals("Node 1"));
-            Assert.Contains(nodes, (s) => s.Equals("Node 2"));
+            Assert.Contains(testParser.g.Nodes[3].Targets.Keys, (s) => s.Name.Equals("Node 1"));
+            Assert.Contains(testParser.g.Nodes[3].Targets.Keys, (s) => s.Name.Equals("Node 2"));
         }
 
         static Stream GenerateStreamFromString(string s)

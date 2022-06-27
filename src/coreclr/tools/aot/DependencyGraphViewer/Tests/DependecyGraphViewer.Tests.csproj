@@ -9,14 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />
-    <PackageReference Include="Microsoft.DotNet.XUnitExtensions">
-      <Version>$(MicrosoftDotNetXUnitExtensionsVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="coverlet.collector" Version="3.1.2">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
     <ProjectReference Include="..\DependencyGraphViewer.csproj" />
   </ItemGroup>
 

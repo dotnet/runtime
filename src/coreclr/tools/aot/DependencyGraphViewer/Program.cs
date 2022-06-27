@@ -25,6 +25,11 @@ namespace DependencyLogViewer
 {
     public class Node
     {
+        public readonly int Index;
+        public readonly string Name;
+        public readonly Dictionary<Node, List<string>> Targets = new Dictionary<Node, List<string>>();
+        public readonly Dictionary<Node, List<string>> Sources = new Dictionary<Node, List<string>>();
+
         public Node(int index, string name)
         {
             Index = index;
@@ -33,40 +38,106 @@ namespace DependencyLogViewer
 
         public override string ToString()
         {
-            return "Index:" + Index.ToString() + " Name:" + Name;
+            return $"Index: {Index}, Name: {Name}";
         }
-
-        public readonly int Index;
-        public readonly string Name;
-        public readonly Dictionary<Node, string> Targets = new Dictionary<Node, string>();
-        public readonly Dictionary<Node, string> Sources = new Dictionary<Node, string>();
     }
 
     public class Graph
     {
-        public override string ToString()
-        {
-            return "PID:" + PID.ToString() + " Id:" + ID.ToString() + " Name: " + Name;
-        }
-
         public int NextConditionalNodeIndex = Int32.MaxValue;
         public int PID;
         public int ID;
         public string Name;
-        public bool isValid = true;
         public Dictionary<int, Node> Nodes = new Dictionary<int, Node>();
+
+        public override string ToString()
+        {
+            return $"PID: {PID}, ID: {ID}, Name: {Name}";
+        }
+
+        public bool AddEdge(int source, int target, string reason)
+        {
+            if (IsValidNode(source) && IsValidNode(target))
+            {
+                Node A = this.Nodes[source];
+                Node B = this.Nodes[target];
+
+                AddReason(A.Targets, B, reason);
+                AddReason(B.Sources, A, reason);
+            }
+            else
+            {
+                return false;
+            }
+            return true;
+        }
+
+        public void AddConditionalEdge(int reason1, int reason2, int target, string reason)
+        {
+            Node reason1Node = Nodes[reason1];
+            Node reason2Node = Nodes[reason2];
+            Node dependee = Nodes[target];
+
+            int conditionalNodeIndex = NextConditionalNodeIndex--;
+            Node conditionalNode = new Node(conditionalNodeIndex, String.Format("Conditional({0} - {1})", reason1Node.ToString(), reason2Node.ToString()));
+            Nodes.Add(conditionalNodeIndex, conditionalNode);
+
+            AddReason(conditionalNode.Targets, dependee, reason);
+            AddReason(dependee.Sources, conditionalNode, reason);
+
+            AddReason(reason1Node.Targets, conditionalNode, "Reason1Conditional - " + reason);
+            AddReason(conditionalNode.Sources, reason1Node, "Reason1Conditional - " + reason);
+
+            AddReason(reason2Node.Targets, conditionalNode, "Reason2Conditional - " + reason);
+            AddReason(conditionalNode.Sources, reason2Node, "Reason2Conditional - " + reason);
+        }
+
+        public void AddNode(int index, string name)
+        {
+            Node n = new Node(index, name);
+            this.Nodes.Add(index, n);
+        }
+
+        public void AddReason(Dictionary<Node, List<string>> dict, Node node, string reason)
+        {
+            if (!dict.ContainsKey(node))
+            {
+                dict.Add(node, new List<string> { reason });
+            }
+            else
+            {
+                dict[node].Add(reason);
+            }
+        }
+
+        bool IsValidNode(int nodeID)
+        {
+            if (!Nodes.ContainsKey(nodeID))
+            {
+                return false;
+            }
+            return true;
+        }
     }
 
     public class GraphCollection
     {
         public static readonly GraphCollection Singleton = new GraphCollection();
         public static DependencyGraphs DependencyGraphsUI;
-
         public List<Graph> Graphs = new List<Graph>();
 
         public void AddGraph(Graph g)
         {
             Graphs.Add(g);
+            if (DependencyGraphsUI != null)
+            {
+                DependencyGraphsUI.ForceRefresh();
+            }
+        }
+
+        public void RemoveGraph(Graph g)
+        {
+            Graphs.Remove(g);
             if (DependencyGraphsUI != null)
             {
                 DependencyGraphsUI.ForceRefresh();
@@ -83,75 +154,28 @@ namespace DependencyLogViewer
             return null;
         }
 
-        public void AddNodeToGraph(int pid, int id, int index, string name, Graph g = null)
+        public void AddNodeToGraph(int pid, int id, int index, string name)
         {
-            if (g == null)
-            {
-                g = GetGraph(pid, id);
-            }
+            Graph g = GetGraph(pid, id);
             if (g == null)
                 return;
 
-            Node n = new Node(index, name);
-            g.Nodes.Add(index, n);
+            g.AddNode(index, name);
         }
 
-        bool IsValidNode (Graph g, int nodeID)
+        public bool AddEdgeToGraph(int pid, int id, int source, int target, string reason)
         {
-            if (!g.Nodes.ContainsKey(nodeID))
-            {
-                if (DependencyGraphsUI != null)
-                    MessageBox.Show($"The .dgml is invalid. Node with ID {nodeID} is specified by a link but does not appear in node list.");
-                g.isValid = false;
+            Graph g = GetGraph(pid, id);
+            if (g == null)
                 return false;
-            }
-            return true;
+            return (g.AddEdge(source, target, reason));
         }
-
-        public void AddEdgeToGraph(int pid, int id, int source, int target, string reason, Graph g = null)
+        public void AddConditionalEdgeToGraph(int pid, int id, int reason1, int reason2, int target, string reason)
         {
-            if (g == null)
-            {
-                g = GetGraph(pid, id);
-            }
+            Graph g = GetGraph(pid, id);
             if (g == null)
                 return;
-
-            if (IsValidNode(g, source) && IsValidNode(g, target))
-            {
-                Node A = g.Nodes[source];
-                Node B = g.Nodes[target];
-
-                if (!A.Targets.ContainsKey(B)) A.Targets.Add(B, reason);
-                if (!B.Sources.ContainsKey(A)) B.Sources.Add(A, reason);
-            }
-        }
-
-        public void AddConditionalEdgeToGraph(int pid, int id, int reason1, int reason2, int target, string reason, Graph g = null)
-        {
-            if (g == null)
-            {
-                g = GetGraph(pid, id);
-            }
-            if (g == null)
-                return;
-
-            Node reason1Node = g.Nodes[reason1];
-            Node reason2Node = g.Nodes[reason2];
-            Node dependee = g.Nodes[target];
-
-            int conditionalNodeIndex = g.NextConditionalNodeIndex--;
-            Node conditionalNode = new Node(conditionalNodeIndex, String.Format("Conditional({0} - {1})", reason1Node.ToString(), reason2Node.ToString()));
-            g.Nodes.Add(conditionalNodeIndex, conditionalNode);
-
-            conditionalNode.Targets.Add(dependee, reason);
-            dependee.Sources.Add(conditionalNode, reason);
-
-            reason1Node.Targets.Add(conditionalNode, "Reason1Conditional - " + reason);
-            conditionalNode.Sources.Add(reason1Node, "Reason1Conditional - " + reason);
-
-            reason2Node.Targets.Add(conditionalNode, "Reason2Conditional - " + reason);
-            conditionalNode.Sources.Add(reason2Node, "Reason2Conditional - " + reason);
+            g.AddConditionalEdge(reason1, reason2, target, reason);
         }
     }
 
@@ -197,8 +221,6 @@ namespace DependencyLogViewer
             GraphCollection collection = GraphCollection.Singleton;
             dgml.Complete += (fileID) =>
             {
-                if (!dgml.g.isValid)
-                    return;
                 lock (collection)
                 {
                     collection.AddGraph(dgml.g);
@@ -242,6 +264,10 @@ namespace DependencyLogViewer
                         //Get the path of specified file
                         fileStream = (FileStream)openFileDialog.OpenFile();
                     }
+                    else
+                    {
+                        return false;
+                    }
                 }
             }
             return FindXML(fileStream, fileStream.Name);
@@ -266,11 +292,9 @@ namespace DependencyLogViewer
             writer.ParseXML(writer._stream, writer._name);
         }
 
-
         internal void ParseXML(Stream fileStream, string name)
         {
             Debug.Assert(fileStream is Stream);
-            //FileStream fileContents = (FileStream)fileStream;
             GraphCollection collection = GraphCollection.Singleton;
             XmlReaderSettings settings = new XmlReaderSettings();
             settings.IgnoreWhitespace = true;
@@ -292,12 +316,16 @@ namespace DependencyLogViewer
                     {
                         case "Node":
                             int id = int.Parse(reader.GetAttribute("Id"));
-                            collection.AddNodeToGraph(FileID, FileID, id, reader.GetAttribute("Label"), g);
+                            g.AddNode(id, reader.GetAttribute("Label"));
                             break;
                         case "Link":
                             int source = int.Parse(reader.GetAttribute("Source"));
                             int target = int.Parse(reader.GetAttribute("Target"));
-                            collection.AddEdgeToGraph(FileID, FileID, source, target, reader.GetAttribute("Reason"), g);
+                            if (!g.AddEdge(source, target, reader.GetAttribute("Reason")))
+                            {
+                                MessageBox.Show("Unable to load graph, as there are links to node(s) that do not exist.");
+                                return;
+                            }
                             break;
                         case "DirectedGraph":
                             g.ID = FileID;
@@ -445,8 +473,6 @@ namespace DependencyLogViewer
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
-        ///
-
 #nullable enable
         [STAThread]
         static int Main(string[] args)
