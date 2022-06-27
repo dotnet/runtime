@@ -57,13 +57,10 @@ namespace DependencyLogViewer
 
         public bool AddEdge(int source, int target, string reason)
         {
-            if (IsValidNode(source) && IsValidNode(target))
+            if (Nodes.TryGetValue(source, out Node a) && Nodes.TryGetValue(target, out Node b))
             {
-                Node A = this.Nodes[source];
-                Node B = this.Nodes[target];
-
-                AddReason(A.Targets, B, reason);
-                AddReason(B.Sources, A, reason);
+                AddReason(a.Targets, b, reason);
+                AddReason(b.Sources, a, reason);
             }
             else
             {
@@ -100,23 +97,19 @@ namespace DependencyLogViewer
 
         public void AddReason(Dictionary<Node, List<string>> dict, Node node, string reason)
         {
-            if (!dict.ContainsKey(node))
+            if (dict.TryGetValue(node, out List<string> reasons))
             {
-                dict.Add(node, new List<string> { reason });
+                reasons.Add(reason);
             }
             else
             {
-                dict[node].Add(reason);
+                dict.Add(node, new List<string> { reason });
             }
         }
 
         bool IsValidNode(int nodeID)
         {
-            if (!Nodes.ContainsKey(nodeID))
-            {
-                return false;
-            }
-            return true;
+            return (Nodes.ContainsKey(nodeID));
         }
     }
 
@@ -170,6 +163,7 @@ namespace DependencyLogViewer
                 return false;
             return (g.AddEdge(source, target, reason));
         }
+
         public void AddConditionalEdgeToGraph(int pid, int id, int reason1, int reason2, int target, string reason)
         {
             Graph g = GetGraph(pid, id);
@@ -201,7 +195,7 @@ namespace DependencyLogViewer
     public class DGMLGraphProcessing
     {
         ConcurrentQueue<GraphEvent> events = new ConcurrentQueue<GraphEvent>();
-
+        GraphCollection collection = GraphCollection.Singleton;
         public delegate void OnCompleted(int currFileID);
         public event OnCompleted Complete;
         public Graph g = null;
@@ -288,14 +282,16 @@ namespace DependencyLogViewer
 
         public static void ProcessingMain(object obj)
         {
+            GraphCollection collection = GraphCollection.Singleton;
+
             var writer = (DGMLGraphProcessing)obj;
-            writer.ParseXML(writer._stream, writer._name);
+            if (!writer.ParseXML(writer._stream, writer._name))
+                DependencyGraphs.showError("Nonexistent nodes present in Links");
         }
 
-        internal void ParseXML(Stream fileStream, string name)
+        internal bool ParseXML(Stream fileStream, string name)
         {
             Debug.Assert(fileStream is Stream);
-            GraphCollection collection = GraphCollection.Singleton;
             XmlReaderSettings settings = new XmlReaderSettings();
             settings.IgnoreWhitespace = true;
 
@@ -323,8 +319,7 @@ namespace DependencyLogViewer
                             int target = int.Parse(reader.GetAttribute("Target"));
                             if (!g.AddEdge(source, target, reader.GetAttribute("Reason")))
                             {
-                                MessageBox.Show("Unable to load graph, as there are links to node(s) that do not exist.");
-                                return;
+                                return false;
                             }
                             break;
                         case "DirectedGraph":
@@ -340,6 +335,7 @@ namespace DependencyLogViewer
             {
                 Complete(FileID);
             }
+            return true;
         }
     }
 

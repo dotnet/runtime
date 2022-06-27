@@ -51,7 +51,6 @@ namespace DependencyLogViewer
                     this.listBox1.DataSource = singleton.Graphs.ToArray();
                 }
             };
-
             this.BeginInvoke(refreshAction);
         }
 
@@ -143,6 +142,10 @@ namespace DependencyLogViewer
                 ETWGraphProcessing.Singleton = new ETWGraphProcessing();
                 MessageBox.Show("ETW Events have been enabled");
             }
+        }
+       public static void showError(string msg)
+        {
+            MessageBox.Show($"Invalid file upload: {msg}");
         }
     }
 }

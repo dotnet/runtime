@@ -13,22 +13,6 @@ using System.Windows.Forms;
 
 namespace DependencyLogViewer
 {
-    public class BoxDisplay
-    {
-        public Node node;
-        public List<string> reason;
-
-        public BoxDisplay(Node node, List<string> reason)
-        {
-            this.node = node;
-            this.reason = reason;
-        }
-
-        public override string ToString()
-        {
-            return $"Index: {node.Index}, Name: {node.Name}, Reason(s): {String.Join(", ", reason.ToArray())}";
-        }
-    }
     public partial class NodeForm : Form
     {
         Graph _graph;
@@ -88,6 +72,22 @@ namespace DependencyLogViewer
         {
             string dMessage = "Dependent nodes depend on the current node. The current node depends on the dependees.";
             MessageBox.Show(dMessage);
+        }
+    }
+    public class BoxDisplay
+    {
+        public Node node;
+        public List<string> reason;
+
+        public BoxDisplay(Node node, List<string> reason)
+        {
+            this.node = node;
+            this.reason = reason;
+        }
+
+        public override string ToString()
+        {
+            return $"Index: {node.Index}, Name: {node.Name}, {reason.Count} Reason(s): {String.Join(", ", reason.ToArray())}";
         }
     }
 }
