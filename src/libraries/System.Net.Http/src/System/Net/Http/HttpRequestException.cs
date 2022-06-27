@@ -6,17 +6,6 @@ using System.IO;
 
 namespace System.Net.Http
 {
-    public partial class HttpProtocolException : System.IO.IOException
-    {
-        public HttpProtocolException(string? message, long errorCode, Exception? innerException)
-            : base(message, innerException)
-        {
-            ErrorCode = errorCode;
-        }
-
-        public long ErrorCode { get; }
-    }
-
     public class HttpRequestException : Exception
     {
         internal RequestRetryType AllowRetry { get; } = RequestRetryType.NoRetry;

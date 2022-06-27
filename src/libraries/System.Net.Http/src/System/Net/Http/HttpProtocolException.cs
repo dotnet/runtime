@@ -1,33 +1,38 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.Serialization;
+using System.IO;
 
 namespace System.Net.Http
 {
-    [Serializable]
-    internal abstract class Http2ProtocolException : Exception
+    public partial class HttpProtocolException : IOException
     {
-        public Http2ProtocolException(string message, Http2ProtocolErrorCode protocolError)
-            : base(message)
+        public HttpProtocolException(string? message, long errorCode, Exception? innerException)
+            : base(message, innerException)
         {
-            ProtocolError = protocolError;
+            ErrorCode = errorCode;
         }
 
-        protected Http2ProtocolException(SerializationInfo info, StreamingContext context) : base(info, context)
+        private HttpProtocolException(string message, long errorCode)
+            : this(message, errorCode, null)
         {
-            ProtocolError = (Http2ProtocolErrorCode)info.GetInt32(nameof(ProtocolError));
         }
 
-        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        public long ErrorCode { get; }
+
+        internal static HttpProtocolException CreateHttp2StreamException(Http2ProtocolErrorCode protocolError)
         {
-            info.AddValue(nameof(ProtocolError), (int)ProtocolError);
-            base.GetObjectData(info, context);
+            string message = SR.Format(SR.net_http_http2_stream_error, GetName(protocolError), ((int)protocolError).ToString("x"));
+            return new HttpProtocolException(message, (long)protocolError);
         }
 
-        internal Http2ProtocolErrorCode ProtocolError { get; }
+        internal static HttpProtocolException CreateHttp2ConnectionException(Http2ProtocolErrorCode protocolError)
+        {
+            string message = SR.Format(SR.net_http_http2_connection_error, GetName(protocolError), ((int)protocolError).ToString("x"));
+            return new HttpProtocolException(message, (long)protocolError);
+        }
 
-        protected static string GetName(Http2ProtocolErrorCode code) =>
+        private static string GetName(Http2ProtocolErrorCode code) =>
             // These strings are the names used in the HTTP2 spec and should not be localized.
             code switch
             {

@@ -42,6 +42,7 @@ namespace System.Net.Http.Functional.Tests
         private async Task AssertProtocolErrorAsync(Task task, ProtocolErrors errorCode)
         {
             HttpRequestException outerEx = await Assert.ThrowsAsync<HttpRequestException>(() => task);
+            _output.WriteLine(outerEx.InnerException.Message);
             HttpProtocolException protocolEx = outerEx.InnerException as HttpProtocolException;
 
             Assert.NotNull(protocolEx);
@@ -964,9 +965,9 @@ namespace System.Net.Http.Functional.Tests
                         sendTask
                     }.WhenAllOrAnyFailed(TestHelper.PassingTestTimeoutMilliseconds));
 
-                Assert.IsType<IOException>(exception.InnerException);
-                Assert.NotNull(exception.InnerException.InnerException);
-                Assert.Contains("PROTOCOL_ERROR", exception.InnerException.InnerException.Message);
+                Assert.NotNull(exception.InnerException);
+                var protocolException = Assert.IsType<HttpProtocolException>(exception.InnerException);
+                Assert.Equal((long)ProtocolErrors.PROTOCOL_ERROR, protocolException.ErrorCode);
             }
         }
 
@@ -3446,7 +3447,7 @@ namespace System.Net.Http.Functional.Tests
                     // An exception will be thrown by either GetAsync or ReadAsStringAsync once
                     // the inbound window size has been exceeded. Which one depends on how quickly
                     // ProcessIncomingFramesAsync() can read data off the socket.
-                    Exception requestException = await Assert.ThrowsAsync<HttpRequestException>(async () =>
+                    HttpRequestException requestException = await Assert.ThrowsAsync<HttpRequestException>(async () =>
                     {
                         using HttpClient client = CreateHttpClient();
                         using HttpResponseMessage response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
@@ -3457,15 +3458,9 @@ namespace System.Net.Http.Functional.Tests
                         await response.Content.ReadAsStringAsync();
                     });
 
-                    // A Http2ConnectionException will be present somewhere in the inner exceptions.
-                    // Its location depends on which method threw the exception.
-                    while (requestException?.GetType().FullName.Equals("System.Net.Http.Http2ConnectionException") == false)
-                    {
-                        requestException = requestException.InnerException;
-                    }
-
-                    Assert.NotNull(requestException);
-                    Assert.Contains("FLOW_CONTROL_ERROR", requestException.Message);
+                    HttpProtocolException protocolException = Assert.IsType<HttpProtocolException>(requestException.InnerException);
+                    Assert.Equal((long)ProtocolErrors.FLOW_CONTROL_ERROR, protocolException.ErrorCode);
+                    Assert.Contains("FLOW_CONTROL_ERROR", protocolException.Message);
                 },
                 async server =>
                 {
