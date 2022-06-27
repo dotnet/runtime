@@ -26,8 +26,16 @@
     <DefineConstants>BLAZOR_WASM</DefineConstants>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <IncludeNetworkSecurityConfig>true</IncludeNetworkSecurityConfig>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="Program.cs" />
+
+    <None Include="$(MSBuildProjectDirectory)\res\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <Import Project="$(GrpcDotnetBasePath)\build\dependencies.props"/>
@@ -37,39 +45,33 @@
     <!-- Required for QUIC & HTTP/3 in .NET 6 - https://github.com/dotnet/runtime/pull/55332 -->
     <RuntimeHostConfigurationOption Include="System.Net.SocketsHttpHandler.Http3Support" Value="true" />
 
-    <Compile Include="$(GrpcDotnetBasePath)\testassets\Shared\Assert.cs" Link="Assert.cs" />
-    <Compile Include="$(GrpcDotnetBasePath)\testassets\Shared\AsyncStreamExtensions.cs" Link="AsyncStreamExtensions.cs" />
-    <Compile Include="$(GrpcDotnetBasePath)\testassets\Shared\ExceptionAssert.cs" Link="ExceptionAssert.cs" />
-    <Compile Include="$(GrpcDotnetBasePath)\testassets\Shared\IChannelWrapper.cs" Link="IChannelWrapper.cs" />
-    <Compile Include="$(GrpcDotnetBasePath)\testassets\Shared\InteropClient.cs" Link="InteropClient.cs" />
-    <Compile Include="$(GrpcDotnetBasePath)\testassets\Shared\TestCredentials.cs" Link="TestCredentials.cs" />
-    <Compile Include="$(GrpcDotnetBasePath)\test\Shared\HttpEventSourceListener.cs" Link="HttpEventSourceListener.cs" />
+    <Compile Include="$(GrpcDotnetBasePath)\testassets\Shared\*.cs" />
+    <Compile Include="$(GrpcDotnetBasePath)\test\Shared\HttpEventSourceListener.cs" />
 
-    <Protobuf Include="$(GrpcDotnetBasePath)\testassets\Proto\grpc\testing\test.proto" GrpcServices="Client" Link="Protos\test.proto" ProtoRoot="$(GrpcDotnetBasePath)\testassets\Proto\grpc\testing\" />
-    <Protobuf Include="$(GrpcDotnetBasePath)\testassets\Proto\grpc\testing\empty.proto" GrpcServices="None" Link="Protos\empty.proto" ProtoRoot="$(GrpcDotnetBasePath)\testassets\Proto\grpc\testing\" />
-    <Protobuf Include="$(GrpcDotnetBasePath)\testassets\Proto\grpc\testing\messages.proto" GrpcServices="None" Link="Protos\messages.proto" ProtoRoot="$(GrpcDotnetBasePath)\testassets\Proto\grpc\testing\" />
+    <Protobuf Include="$(GrpcDotnetBasePath)\testassets\Proto\grpc\testing\*.proto" GrpcServices="Client" Link="Protos\test.proto" ProtoRoot="$(GrpcDotnetBasePath)\testassets\Proto\grpc\testing\" />
 
-    <None Include="$(GrpcDotnetBasePath)\testassets\Certs\InteropTests\*.*" LinkBase="Certs">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-
-    <PackageReference Include="Grpc.Auth" Version="$(GrpcPackageVersion)" />
-    <PackageReference Include="Grpc.Net.Client" Version="$(GrpcPackageVersion)" />
-    <PackageReference Include="Grpc.Net.Client.Web" Version="$(GrpcPackageVersion)" />
+    <PackageReference Include="Grpc.Auth" Version="2.46.1" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.46.0" />
+    <PackageReference Include="Grpc.Net.Client.Web" Version="2.46.0" />
 
     <PackageReference Include="Google.Protobuf" Version="$(GoogleProtobufPackageVersion)" />
-    <PackageReference Include="Grpc.Core" Version="$(GrpcPackageVersion)" PrivateAssets="All" />
-    <PackageReference Include="Grpc.Tools" Version="$(GrpcPackageVersion)" PrivateAssets="All" />
+    <PackageReference Include="Grpc.Core" Version="2.46.1" PrivateAssets="All" />
+    <PackageReference Include="Grpc.Tools" Version="2.46.1" PrivateAssets="All" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="$(MicrosoftExtensionsPackageVersion)" />
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
     <PackageReference Include="System.CommandLine" Version="$(SystemCommandLinePackageVersion)" />
     <PackageReference Include="System.Net.Http.WinHttpHandler" Version="$(SystemNetHttpWinHttpHandlerPackageVersion)" />
-  </ItemGroup>
+  </ItemGroup>  
 
-  <Target Name="_GitCloneGrpcDotnet" BeforeTargets="Restore">
+  <!-- <Target Name="_GitCloneGrpcDotnet" BeforeTargets="Restore">
     <RemoveDir Directories="$(GrpcDotnetBasePath)" />
-    <Exec Command="git clone --depth 1 https://github.com/grpc/grpc-dotnet.git $(GrpcDotnetBasePath)"
-          WorkingDirectory="$(MSBuildProjectDirectory )"
+    <RemoveDir Directories="$(MSBuildProjectDirectory)/res/raw" />
+    <Exec Command="git clone - -depth 1 https://github.com/grpc/grpc-dotnet.git $(GrpcDotnetBasePath)"
+          WorkingDirectory="$(MSBuildProjectDirectory)"
           IgnoreStandardErrorWarningFormat="true" />
-  </Target>
+    <Copy SourceFiles="$(GrpcDotnetBasePath)/testassets/Certs/InteropTests/server1.pem"
+          DestinationFiles="$(MSBuildProjectDirectory)/res/raw/server1.pem" />
+    <Copy SourceFiles="$(GrpcDotnetBasePath)/testassets/Certs/InteropTests/ca.pem"
+          DestinationFiles="$(MSBuildProjectDirectory)/res/raw/ca.pem" />
+  </Target> -->
 </Project>

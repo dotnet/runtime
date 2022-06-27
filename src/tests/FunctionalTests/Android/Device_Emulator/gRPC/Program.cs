@@ -19,8 +19,8 @@ var configurations = new[]
 {
     new ClientOptions
     {
-        ServerHost = "TODO",
-        ServerPort = 443,
+        ServerHost = "localhost",
+        ServerPort = 50052,
         UseTls = true,
     },
 };
