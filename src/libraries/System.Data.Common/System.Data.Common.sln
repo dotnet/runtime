@@ -49,7 +49,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime", "..\System
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.RegularExpressions.Generator", "..\System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj", "{EDDAE59E-8700-49DC-8E46-534037F7F476}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Transactions.Local", "..\System.Transactions.Local\ref\System.Transactions.Local.csproj", "{5AD0D9CB-C773-4BBC-87BD-9BDFF172936E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Transactions", "..\System.Transactions\ref\System.Transactions.csproj", "{5AD0D9CB-C773-4BBC-87BD-9BDFF172936E}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Xml.ReaderWriter", "..\System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj", "{521CFFC1-DB45-4FB2-87EF-6BF4F413A011}"
 EndProject

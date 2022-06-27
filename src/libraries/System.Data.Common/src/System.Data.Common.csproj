@@ -323,7 +323,7 @@
     <Reference Include="System.Runtime.Numerics" />
     <Reference Include="System.Runtime.Serialization.Formatters" />
     <Reference Include="System.Text.RegularExpressions" />
-    <Reference Include="System.Transactions.Local" />
+    <Reference Include="System.Transactions" />
     <Reference Include="System.Xml.ReaderWriter" />
     <Reference Include="System.Xml.XmlSerializer" />
   </ItemGroup>

@@ -164,7 +164,7 @@
       System.Threading.Thread;
       System.Threading.ThreadPool;
       System.Threading.Timer;
-      System.Transactions.Local;
+      System.Transactions;
       System.ValueTuple;
       System.Web.HttpUtility;
       System.Xml.ReaderWriter;

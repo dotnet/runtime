@@ -63,7 +63,7 @@ namespace System.Transactions
     [EventSource(
         Name = "System.Transactions.TransactionsEventSource",
         Guid = "8ac2d80a-1f1a-431b-ace4-bff8824aef0b",
-        LocalizationResources = "FxResources.System.Transactions.Local.SR")]
+        LocalizationResources = "FxResources.System.Transactions.SR")]
     internal sealed class TransactionsEtwProvider : EventSource
     {
         /// <summary>

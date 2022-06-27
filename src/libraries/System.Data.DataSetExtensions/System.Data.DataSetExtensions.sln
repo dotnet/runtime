@@ -35,7 +35,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.InteropServi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime", "..\System.Runtime\ref\System.Runtime.csproj", "{31C2AD43-1126-4E1E-A3B3-2749E733F27B}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Transactions.Local", "..\System.Transactions.Local\ref\System.Transactions.Local.csproj", "{E40F09B8-F3CB-480B-B542-D4A4023D62BE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Transactions", "..\System.Transactions\ref\System.Transactions.csproj", "{E40F09B8-F3CB-480B-B542-D4A4023D62BE}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Xml.ReaderWriter", "..\System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj", "{D7578ACF-5B82-4C10-BCCB-03859BE2908A}"
 EndProject

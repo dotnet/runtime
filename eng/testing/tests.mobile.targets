@@ -200,7 +200,7 @@
       <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Security.AccessControl'" />
       <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Security.Claims'" />
       <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Security.Permissions'" />
-      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Transactions.Local'" />
+      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Transactions'" />
 
       <!-- Even though we are trimming the test runner assembly, we want it to be treated
            as a root -->

@@ -74,7 +74,7 @@
   <ItemGroup Condition="'$(Coverage)' == 'true'">
     <ProjectExclusions Include="$(CommonTestPath)Common.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.XmlSerializer.Generator\tests\Microsoft.XmlSerializer.Generator.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Transactions.Local\tests\System.Transactions.Local.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Transactions\tests\System.Transactions.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetArchitecture)' == 'ARMv6'">

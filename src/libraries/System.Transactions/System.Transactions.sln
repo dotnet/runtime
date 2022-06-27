@@ -11,11 +11,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.InteropServi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime", "..\System.Runtime\ref\System.Runtime.csproj", "{7CC8FC26-F825-4B5D-9E38-6CE8382BEEAC}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Transactions.Local", "ref\System.Transactions.Local.csproj", "{0C886713-72D7-43C7-A1BB-72CD0F8430D2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Transactions", "ref\System.Transactions.csproj", "{0C886713-72D7-43C7-A1BB-72CD0F8430D2}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Transactions.Local", "src\System.Transactions.Local.csproj", "{6BFF19CB-C412-4D12-AA55-68D61F69C4F7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Transactions", "src\System.Transactions.csproj", "{6BFF19CB-C412-4D12-AA55-68D61F69C4F7}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Transactions.Local.Tests", "tests\System.Transactions.Local.Tests.csproj", "{C5519C4C-69AF-4437-8594-D2A019119988}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Transactions.Tests", "tests\System.Transactions.Tests.csproj", "{C5519C4C-69AF-4437-8594-D2A019119988}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{E66BBFB5-F07D-4986-89C0-F0E395DD5BA1}"
 EndProject
