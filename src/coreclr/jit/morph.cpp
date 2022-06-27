@@ -1750,23 +1750,6 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
 
                     arg.m_isTmp  = true;
                     arg.m_tmpNum = tmpVarNum;
-
-#ifdef TARGET_ARM
-                    // Previously we might have thought the local was promoted, and thus the 'COPYBLK'
-                    // might have left holes in the used registers (see
-                    // fgAddSkippedRegsInPromotedStructArg).
-                    // Too bad we're not that smart for these intermediate temps...
-                    if (isValidIntArgReg(arg.AbiInfo.GetRegNum()) && (arg.AbiInfo.NumRegs > 1))
-                    {
-                        regNumber argReg      = arg.AbiInfo.GetRegNum();
-                        regMaskTP allUsedRegs = genRegMask(arg.AbiInfo.GetRegNum());
-                        for (unsigned i = 1; i < arg.AbiInfo.NumRegs; i++)
-                        {
-                            argReg = genRegArgNext(argReg);
-                            allUsedRegs |= genRegMask(argReg);
-                        }
-                    }
-#endif // TARGET_ARM
                 }
 
 #ifdef DEBUG
@@ -4288,48 +4271,6 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
 
     arg->SetEarlyNode(argNode);
 }
-
-#ifdef TARGET_ARM
-// See declaration for specification comment.
-void Compiler::fgAddSkippedRegsInPromotedStructArg(LclVarDsc* varDsc,
-                                                   unsigned   firstArgRegNum,
-                                                   regMaskTP* pArgSkippedRegMask)
-{
-    assert(varDsc->lvPromoted);
-    // There's no way to do these calculations without breaking abstraction and assuming that
-    // integer register arguments are consecutive ints.  They are on ARM.
-
-    // To start, figure out what register contains the last byte of the first argument.
-    LclVarDsc* firstFldVarDsc = lvaGetDesc(varDsc->lvFieldLclStart);
-    unsigned   lastFldRegOfLastByte =
-        (firstFldVarDsc->lvFldOffset + firstFldVarDsc->lvExactSize - 1) / TARGET_POINTER_SIZE;
-    ;
-
-    // Now we're keeping track of the register that the last field ended in; see what registers
-    // subsequent fields start in, and whether any are skipped.
-    // (We assume here the invariant that the fields are sorted in offset order.)
-    for (unsigned fldVarOffset = 1; fldVarOffset < varDsc->lvFieldCnt; fldVarOffset++)
-    {
-        unsigned   fldVarNum    = varDsc->lvFieldLclStart + fldVarOffset;
-        LclVarDsc* fldVarDsc    = lvaGetDesc(fldVarNum);
-        unsigned   fldRegOffset = fldVarDsc->lvFldOffset / TARGET_POINTER_SIZE;
-        assert(fldRegOffset >= lastFldRegOfLastByte); // Assuming sorted fields.
-        // This loop should enumerate the offsets of any registers skipped.
-        // Find what reg contains the last byte:
-        // And start at the first register after that.  If that isn't the first reg of the current
-        for (unsigned skippedRegOffsets = lastFldRegOfLastByte + 1; skippedRegOffsets < fldRegOffset;
-             skippedRegOffsets++)
-        {
-            // If the register number would not be an arg reg, we're done.
-            if (firstArgRegNum + skippedRegOffsets >= MAX_REG_ARG)
-                return;
-            *pArgSkippedRegMask |= genRegMask(regNumber(firstArgRegNum + skippedRegOffsets));
-        }
-        lastFldRegOfLastByte = (fldVarDsc->lvFldOffset + fldVarDsc->lvExactSize - 1) / TARGET_POINTER_SIZE;
-    }
-}
-
-#endif // TARGET_ARM
 
 /*****************************************************************************
  *
