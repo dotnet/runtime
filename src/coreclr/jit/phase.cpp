@@ -259,7 +259,7 @@ void Phase::PostPhase(PhaseStatus status)
     {
         if (comp->compIsForInlining())
         {
-            printf("\n*************** Inline @[%06u] Finishing PHASE %s%s%s%s\n",
+            printf("\n*************** Inline @[%06u] Finishing PHASE %s%s%s\n",
                    Compiler::dspTreeID(comp->impInlineInfo->iciCall), m_name, statusMessage, checkMessage);
         }
         else
