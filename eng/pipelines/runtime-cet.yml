@@ -59,7 +59,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       condition: >-
-        eq(variables['isRollingBuild'], true)
+        true
 #         or(
 #           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
 #           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
@@ -117,7 +117,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       condition: >-
-        eq(variables['isRollingBuild'], true)
+        true
 #         or(
 #           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
 #           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
@@ -141,7 +141,7 @@ jobs:
       testGroup: innerloop
       liveLibrariesBuildConfig: release
       condition: >-
-        eq(variables['isRollingBuild'], true)
+        true
 #         or(
 #           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
 #           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
