@@ -13,6 +13,7 @@ namespace Microsoft.Interop
     public readonly record struct CustomTypeMarshallerData(
         ManagedTypeInfo MarshallerType,
         ManagedTypeInfo NativeType,
+        bool HasState,
         MarshallerShape Shape,
         bool IsStrictlyBlittable,
         ManagedTypeInfo? BufferElementType);
@@ -201,7 +202,16 @@ namespace Microsoft.Interop
 
         private static CustomTypeMarshallerData? GetMarshallerDataForType(ITypeSymbol marshallerType, MarshallingDirection direction, ITypeSymbol managedType, Compilation compilation)
         {
-            (MarshallerShape shape, Dictionary<MarshallerShape, IMethodSymbol> methodsByShape) = MarshallerShapeHelper.GetShapeForType(marshallerType, managedType, compilation);
+            if (marshallerType is { IsStatic: true, TypeKind: TypeKind.Class })
+            {
+                return GetStatelessMarshallerDataForType(marshallerType, direction, managedType, compilation);
+            }
+            return null;
+        }
+
+        private static CustomTypeMarshallerData? GetStatelessMarshallerDataForType(ITypeSymbol marshallerType, MarshallingDirection direction, ITypeSymbol managedType, Compilation compilation)
+        {
+            (MarshallerShape shape, Dictionary<MarshallerShape, IMethodSymbol> methodsByShape) = StatelessMarshallerShapeHelper.GetShapeForType(marshallerType, managedType, compilation);
 
             ITypeSymbol? nativeType = null;
             if (direction.HasFlag(MarshallingDirection.ManagedToUnmanaged))
@@ -252,6 +262,56 @@ namespace Microsoft.Interop
             return new CustomTypeMarshallerData(
                 ManagedTypeInfo.CreateTypeInfoForTypeSymbol(marshallerType),
                 ManagedTypeInfo.CreateTypeInfoForTypeSymbol(nativeType),
+                HasState: false,
+                shape,
+                nativeType.IsStrictlyBlittable(),
+                bufferElementType);
+        }
+
+        private static CustomTypeMarshallerData? GetStatefulMarshallerDataForType(ITypeSymbol marshallerType, MarshallingDirection direction, ITypeSymbol managedType, Compilation compilation)
+        {
+            (MarshallerShape shape, StatefulMarshallerShapeHelper.MarshallerMethods methods) = StatefulMarshallerShapeHelper.GetShapeForType(marshallerType, managedType, compilation);
+
+            ITypeSymbol? nativeType = null;
+            if (direction.HasFlag(MarshallingDirection.ManagedToUnmanaged))
+            {
+                if (!shape.HasFlag(MarshallerShape.CallerAllocatedBuffer) && !shape.HasFlag(MarshallerShape.ToUnmanaged))
+                    return null;
+
+                if (methods.ToUnmanaged is not null)
+                {
+                    nativeType = methods.ToUnmanaged.ReturnType;
+                }
+            }
+
+            if (direction.HasFlag(MarshallingDirection.UnmanagedToManaged))
+            {
+                if (!shape.HasFlag(MarshallerShape.GuaranteedUnmarshal) && !shape.HasFlag(MarshallerShape.ToManaged))
+                    return null;
+
+                if (methods.FromUnmanaged is not null)
+                {
+                    nativeType = methods.FromUnmanaged.Parameters[0].Type;
+                }
+            }
+
+            // Bidirectional requires ToUnmanaged without the caller-allocated buffer
+            if (direction.HasFlag(MarshallingDirection.Bidirectional) && !shape.HasFlag(MarshallerShape.ToUnmanaged))
+                return null;
+
+            if (nativeType is null)
+                return null;
+
+            ManagedTypeInfo bufferElementType = null;
+            if (methods.FromManagedWithBuffer is not null)
+            {
+                bufferElementType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(((INamedTypeSymbol)methods.FromManagedWithBuffer.Parameters[1].Type).TypeArguments[0]);
+            }
+
+            return new CustomTypeMarshallerData(
+                ManagedTypeInfo.CreateTypeInfoForTypeSymbol(marshallerType),
+                ManagedTypeInfo.CreateTypeInfoForTypeSymbol(nativeType),
+                HasState: true,
                 shape,
                 nativeType.IsStrictlyBlittable(),
                 bufferElementType);

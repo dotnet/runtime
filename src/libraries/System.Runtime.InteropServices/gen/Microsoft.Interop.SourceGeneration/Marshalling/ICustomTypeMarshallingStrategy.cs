@@ -168,13 +168,13 @@ namespace Microsoft.Interop
     /// <summary>
     /// Marshaller that enables support for a stackalloc constructor variant on a native type.
     /// </summary>
-    internal sealed class CallerAllocatedBufferMarshalling : ICustomTypeMarshallingStrategy
+    internal sealed class StatelessCallerAllocatedBufferMarshalling : ICustomTypeMarshallingStrategy
     {
         private readonly ICustomTypeMarshallingStrategy _innerMarshaller;
         private readonly TypeSyntax _marshallerType;
         private readonly TypeSyntax _bufferElementType;
 
-        public CallerAllocatedBufferMarshalling(ICustomTypeMarshallingStrategy innerMarshaller, TypeSyntax marshallerType, TypeSyntax bufferElementType)
+        public StatelessCallerAllocatedBufferMarshalling(ICustomTypeMarshallingStrategy innerMarshaller, TypeSyntax marshallerType, TypeSyntax bufferElementType)
         {
             _innerMarshaller = innerMarshaller;
             _marshallerType = marshallerType;
