@@ -700,9 +700,9 @@ typedef /* [public][public] */ struct __MIDL___MIDL_itf_corprof_0000_0000_0017
 typedef
 enum _COR_PRF_HANDLE_TYPE
     {
-        COR_PRF_HANDLE_TYPE_WEAK	= 0x1,
-        COR_PRF_HANDLE_TYPE_STRONG	= 0x2,
-        COR_PRF_HANDLE_TYPE_PINNED	= 0x3
+        COR_PRF_HANDLE_TYPE_WEAK   = 0x1,
+        COR_PRF_HANDLE_TYPE_STRONG = 0x2,
+        COR_PRF_HANDLE_TYPE_PINNED = 0x3
     } 	COR_PRF_HANDLE_TYPE;
 
 typedef void **ObjectHandleID;
@@ -20694,17 +20694,17 @@ EXTERN_C const IID IID_ICorProfilerInfo13;
             /* [in] */ LPCGUID pActivityId,
             /* [in] */ LPCGUID pRelatedActivityId);
 
-        HRESULT CreateHandle(
+        HRESULT ( STDMETHODCALLTYPE CreateHandle )(
             ICorProfilerInfo13 * This,
             /* [in] */ ObjectID object,
             /* [in] */ COR_PRF_HANDLE_TYPE type,
             /* [out] */ ObjectHandleID* pHandle);
 
-        HRESULT DestroyHandle(
+        HRESULT ( STDMETHODCALLTYPE DestroyHandle )(
             ICorProfilerInfo13 * This,
             /* [in] */ ObjectHandleID handle);
 
-        HRESULT GetObjectIDFromHandle(
+        HRESULT ( STDMETHODCALLTYPE GetObjectIDFromHandle )(
             ICorProfilerInfo13 * This,
             /* [in] */ ObjectHandleID handle,
             /* [out] */ ObjectID* pObject);

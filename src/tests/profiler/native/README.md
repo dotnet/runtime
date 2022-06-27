@@ -57,7 +57,7 @@ When you want to test new profiler APIs you will need a new test profiler implem
     else
     ...
 
-3) If required, update the version of ICorProfilerInfo needed for the test 
+3) If required, update the version of ICorProfilerInfo needed for the test
    in profiler.h
    protected:
       static void NotifyManagedCodeViaCallback(ICorProfilerInfo13 *pCorProfilerInfo);
