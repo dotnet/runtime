@@ -159,7 +159,8 @@ namespace ILCompiler.Dataflow
                     {
                         ILOpcode opcode = reader.ReadILOpcode();
                         MethodDesc? lambdaOrLocalFunction;
-                        switch (opcode) {
+                        switch (opcode)
+                        {
                             case ILOpcode.ldftn:
                             case ILOpcode.ldtoken:
                             case ILOpcode.call:

@@ -9,8 +9,8 @@ using Internal.TypeSystem;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	public partial record FieldReferenceValue (FieldDesc FieldDefinition) : ReferenceValue
-	{
-		public override SingleValue DeepCopy () => this;
-	}
+    public partial record FieldReferenceValue(FieldDesc FieldDefinition) : ReferenceValue
+    {
+        public override SingleValue DeepCopy() => this;
+    }
 }

@@ -4,11 +4,12 @@
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
+using ILLink.Shared.TypeSystemProxy;
+
 using MethodAttributes = System.Reflection.MethodAttributes;
 using FieldAttributes = System.Reflection.FieldAttributes;
 using TypeAttributes = System.Reflection.TypeAttributes;
 using Debug = System.Diagnostics.Debug;
-using ILLink.Shared.TypeSystemProxy;
 
 namespace ILCompiler.Dataflow
 {

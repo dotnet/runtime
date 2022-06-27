@@ -4,10 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using ILCompiler.Logging;
 using ILLink.Shared;
-using System.Reflection.Metadata;
 using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
 using ILLink.Shared.TypeSystemProxy;
@@ -15,7 +15,6 @@ using Internal.IL;
 using Internal.TypeSystem;
 
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
-using System.Diagnostics.CodeAnalysis;
 
 #nullable enable
 

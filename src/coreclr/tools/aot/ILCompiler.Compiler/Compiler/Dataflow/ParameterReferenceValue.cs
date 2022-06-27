@@ -9,12 +9,12 @@ using Internal.TypeSystem;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	public partial record ParameterReferenceValue (MethodDesc MethodDefinition, int ParameterIndex)
+    public partial record ParameterReferenceValue(MethodDesc MethodDefinition, int ParameterIndex)
         : ReferenceValue
-	{
-		public override SingleValue DeepCopy ()
-		{
-			return this;
-		}
-	}
+    {
+        public override SingleValue DeepCopy()
+        {
+            return this;
+        }
+    }
 }
