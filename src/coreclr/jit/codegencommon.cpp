@@ -7675,7 +7675,7 @@ void CodeGen::genReportRichDebugInfoToFile()
 //   write - the write functor
 //   val   - the value
 //
-template<typename TWriteData, typename TValue>
+template <typename TWriteData, typename TValue>
 static void WriteBits(TWriteData write, TValue val)
 {
     write(&val, sizeof(val));
@@ -7736,7 +7736,7 @@ void CodeGen::genReportRichDebugInfoMappings(TWriteData write)
         WriteBits(write, (uint8_t)mapping.debugInfo.GetLocation().EncodeSourceTypes());
     }
 }
- 
+
 //------------------------------------------------------------------------
 // genReportRichDebugInfo:
 //   If enabled, report rich debugging information to file and/or as JIT
