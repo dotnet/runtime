@@ -5,8 +5,6 @@ namespace System.IO.Compression
 {
     internal static partial class ZipArchiveEntryConstants
     {
-        internal const ZipVersionMadeByPlatform CurrentZipPlatform = ZipVersionMadeByPlatform.Unix;
-
         /// <summary>
         /// The default external file attributes are used to support zip archives on multiple platforms.
         /// </summary>

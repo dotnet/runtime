@@ -45,14 +45,14 @@
   <!-- Windows specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="System\IO\Compression\ZipArchiveEntry.Windows.cs" />
-    <Compile Include="System\IO\Compression\ZipArchiveEntryConstants.Windows.cs" />
+    <Compile Include="$(CommonPath)System\IO\Compression\ZipArchiveEntryConstants.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
   </ItemGroup>
   <!-- Unix specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Browser'">
     <Compile Include="System\IO\Compression\ZipArchiveEntry.Unix.cs" />
-    <Compile Include="System\IO\Compression\ZipArchiveEntryConstants.Unix.cs" />
+    <Compile Include="$(CommonPath)System\IO\Compression\ZipArchiveEntryConstants.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PathConf.cs"

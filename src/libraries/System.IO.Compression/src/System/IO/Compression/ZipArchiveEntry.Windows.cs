@@ -5,6 +5,8 @@ namespace System.IO.Compression
 {
     public partial class ZipArchiveEntry
     {
+        internal const ZipVersionMadeByPlatform CurrentZipPlatform = ZipVersionMadeByPlatform.Windows;
+
         /// <summary>
         /// To get the file name of a ZipArchiveEntry, we should be parsing the FullName based
         /// on the path specifications and requirements of the OS that ZipArchive was created on.
