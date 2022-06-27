@@ -698,7 +698,13 @@ public class Marshaller
     public static Native ConvertToUnmanaged(S s) => default;
 }
 ";
-            private static string StatelessIn = @"
+            public static string NonStaticMarshallerEntryPoint => BasicParameterByValue("S")
+                + NonBlittableUserDefinedType()
+                + NonStatic;
+
+            public static class Stateless
+            {
+                private static string In = @"
 [ManagedToUnmanagedMarshallers(typeof(S))]
 public static class Marshaller
 {
@@ -707,7 +713,7 @@ public static class Marshaller
     public static Native ConvertToUnmanaged(S s) => default;
 }
 ";
-            private static string StatelessInBuffer = @"
+                private static string InBuffer = @"
 [ManagedToUnmanagedMarshallers(typeof(S))]
 public static class Marshaller
 {
@@ -717,7 +723,7 @@ public static class Marshaller
     public static Native ConvertToUnmanaged(S s, System.Span<byte> buffer) => default;
 }
 ";
-            private static string StatelessOut = @"
+                private static string Out = @"
 [ManagedToUnmanagedMarshallers(typeof(S))]
 public static class Marshaller
 {
@@ -726,7 +732,7 @@ public static class Marshaller
     public static S ConvertToManaged(Native n) => default;
 }
 ";
-            private static string StatelessOutGuaranteed = @"
+                private static string OutGuaranteed = @"
 [ManagedToUnmanagedMarshallers(typeof(S))]
 public static class Marshaller
 {
@@ -735,7 +741,7 @@ public static class Marshaller
     public static S ConvertToManagedGuaranteed(Native n) => default;
 }
 ";
-            public static string StatelessRef = @"
+                public static string Ref = @"
 [ManagedToUnmanagedMarshallers(typeof(S))]
 public static class Marshaller
 {
@@ -745,7 +751,7 @@ public static class Marshaller
     public static S ConvertToManaged(Native n) => default;
 }
 ";
-            public static string StatelessRefBuffer = @"
+                public static string RefBuffer = @"
 [ManagedToUnmanagedMarshallers(typeof(S))]
 public static class Marshaller
 {
@@ -756,7 +762,7 @@ public static class Marshaller
     public static S ConvertToManaged(Native n) => default;
 }
 ";
-            public static string StatelessRefOptionalBuffer = @"
+                public static string RefOptionalBuffer = @"
 [ManagedToUnmanagedMarshallers(typeof(S))]
 public static class Marshaller
 {
@@ -769,61 +775,216 @@ public static class Marshaller
 }
 ";
 
-            public static string ManagedToNativeOnlyOutParameter => BasicParameterWithByRefModifier("out", "S")
-                + NonBlittableUserDefinedType()
-                + StatelessIn;
+                public static string ManagedToNativeOnlyOutParameter => BasicParameterWithByRefModifier("out", "S")
+                    + NonBlittableUserDefinedType()
+                    + In;
 
-            public static string NativeToManagedOnlyOutParameter => BasicParameterWithByRefModifier("out", "S")
-                + NonBlittableUserDefinedType()
-                + StatelessOut;
+                public static string NativeToManagedOnlyOutParameter => BasicParameterWithByRefModifier("out", "S")
+                    + NonBlittableUserDefinedType()
+                    + Out;
 
-            public static string NativeToManagedGuaranteedOnlyOutParameter => BasicParameterWithByRefModifier("out", "S")
-                + NonBlittableUserDefinedType()
-                + StatelessOutGuaranteed;
+                public static string NativeToManagedGuaranteedOnlyOutParameter => BasicParameterWithByRefModifier("out", "S")
+                    + NonBlittableUserDefinedType()
+                    + OutGuaranteed;
 
-            public static string ManagedToNativeOnlyReturnValue => BasicReturnType("S")
-                + NonBlittableUserDefinedType()
-                + StatelessIn;
+                public static string ManagedToNativeOnlyReturnValue => BasicReturnType("S")
+                    + NonBlittableUserDefinedType()
+                    + In;
 
-            public static string NativeToManagedOnlyReturnValue => BasicReturnType("S")
-                + NonBlittableUserDefinedType()
-                + StatelessOut;
+                public static string NativeToManagedOnlyReturnValue => BasicReturnType("S")
+                    + NonBlittableUserDefinedType()
+                    + Out;
 
-            public static string NativeToManagedGuaranteedOnlyReturnValue => BasicReturnType("S")
-                + NonBlittableUserDefinedType()
-                + StatelessOut;
+                public static string NativeToManagedGuaranteedOnlyReturnValue => BasicReturnType("S")
+                    + NonBlittableUserDefinedType()
+                    + Out;
 
-            public static string NativeToManagedOnlyInParameter => BasicParameterWithByRefModifier("in", "S")
-                + NonBlittableUserDefinedType()
-                + StatelessOut;
+                public static string NativeToManagedOnlyInParameter => BasicParameterWithByRefModifier("in", "S")
+                    + NonBlittableUserDefinedType()
+                    + Out;
 
-            public static string ParametersAndModifiers = BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
-                + NonBlittableUserDefinedType(defineNativeMarshalling: true)
-                + StatelessRef;
+                public static string ParametersAndModifiers = BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
+                    + NonBlittableUserDefinedType(defineNativeMarshalling: true)
+                    + Ref;
 
-            public static string MarshalUsingParametersAndModifiers = MarshalUsingParametersAndModifiers("S", "Marshaller")
-                + NonBlittableUserDefinedType(defineNativeMarshalling: false)
-                + StatelessRef;
+                public static string MarshalUsingParametersAndModifiers = MarshalUsingParametersAndModifiers("S", "Marshaller")
+                    + NonBlittableUserDefinedType(defineNativeMarshalling: false)
+                    + Ref;
 
-            public static string NonStaticMarshallerEntryPoint => BasicParameterByValue("S")
-                + NonBlittableUserDefinedType()
-                + NonStatic;
+                public static string StackallocByValueInParameter => BasicParameterByValue("S")
+                    + NonBlittableUserDefinedType()
+                    + InBuffer;
 
-            public static string StackallocByValueInParameter => BasicParameterByValue("S")
-                + NonBlittableUserDefinedType()
-                + StatelessInBuffer;
+                public static string StackallocParametersAndModifiersNoRef = BasicParametersAndModifiersNoRef("S")
+                    + NonBlittableUserDefinedType()
+                    + RefBuffer;
 
-            public static string StackallocParametersAndModifiersNoRef = BasicParametersAndModifiersNoRef("S")
-                + NonBlittableUserDefinedType()
-                + StatelessRefBuffer;
+                public static string StackallocOnlyRefParameter = BasicParameterWithByRefModifier("ref", "S")
+                    + NonBlittableUserDefinedType()
+                    + RefBuffer;
 
-            public static string StackallocOnlyRefParameter = BasicParameterWithByRefModifier("ref", "S")
-                + NonBlittableUserDefinedType()
-                + StatelessRefBuffer;
+                public static string OptionalStackallocParametersAndModifiers = BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
+                    + NonBlittableUserDefinedType()
+                    + RefOptionalBuffer;
+            }
 
-            public static string OptionalStackallocParametersAndModifiers = BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
-                + NonBlittableUserDefinedType()
-                + StatelessRefOptionalBuffer;
+            public static class Stateful
+            {
+                private static string In = @"
+[ManagedToUnmanagedMarshallers(typeof(S), InMarshaller = typeof(M))]
+public static class Marshaller
+{
+    public struct Native { }
+
+    public struct M
+    {
+        public void FromManaged(S s) {}
+        public Native ToUnmanaged() => default;
+    }
+}
+";
+
+                private static string InBuffer = @"
+[ManagedToUnmanagedMarshallers(typeof(S), InMarshaller = typeof(M))]
+public static class Marshaller
+{
+    public struct Native { }
+
+    public struct M
+    {
+        public const int BufferSize = 0x100;
+        public void FromManaged(S s, System.Span<byte> buffer) {}
+        public Native ToUnmanaged() => default;
+    }
+}
+";
+                private static string Out = @"
+[ManagedToUnmanagedMarshallers(typeof(S), OutMarshaller = typeof(M))]
+public static class Marshaller
+{
+    public struct Native { }
+
+    public struct M
+    {
+        public void FromUnmanaged(Native n) {}
+        public S ToManaged() => default;
+    }
+}
+";
+                private static string OutGuaranteed = @"
+[ManagedToUnmanagedMarshallers(typeof(S), OutMarshaller = typeof(M))]
+public static class Marshaller
+{
+    public struct Native { }
+
+    public struct M
+    {
+        public void FromUnmanaged(Native n) {}
+        public S ToManagedGuaranteed() => default;
+    }
+}
+";
+                public static string Ref = @"
+[ManagedToUnmanagedMarshallers(typeof(S), InMarshaller = typeof(M), RefMarshaller = typeof(M), OutMarshaller = typeof(M))]
+public static class Marshaller
+{
+    public struct Native { }
+
+    public struct M
+    {
+        public void FromManaged(S s) {}
+        public Native ToUnmanaged() => default;
+        public void FromUnmanaged(Native n) {}
+        public S ToManaged() => default;
+    }
+}
+";
+                public static string RefBuffer = @"
+[ManagedToUnmanagedMarshallers(typeof(S), InMarshaller = typeof(M), RefMarshaller = typeof(M), OutMarshaller = typeof(M))]
+public static class Marshaller
+{
+    public struct Native { }
+
+    public struct M
+    {
+        public const int BufferSize = 0x100;
+        public void FromManaged(S s, System.Span<byte> buffer) {}
+        public Native ToUnmanaged() => default;
+        public void FromUnmanaged(Native n) {}
+        public S ToManaged() => default;
+    }
+}
+";
+                public static string RefOptionalBuffer = @"
+[ManagedToUnmanagedMarshallers(typeof(S), InMarshaller = typeof(M), RefMarshaller = typeof(M), OutMarshaller = typeof(M))]
+public static class Marshaller
+{
+    public struct Native { }
+
+
+    public struct M
+    {
+        public const int BufferSize = 0x100;
+        public void FromManaged(S s) {}
+        public void FromManaged(S s, System.Span<byte> buffer) {}
+        public Native ToUnmanaged() => default;
+        public void FromUnmanaged(Native n) {}
+        public S ToManaged() => default;
+    }
+}
+";
+                public static string ManagedToNativeOnlyOutParameter => BasicParameterWithByRefModifier("out", "S")
+                    + NonBlittableUserDefinedType()
+                    + In;
+
+                public static string NativeToManagedOnlyOutParameter => BasicParameterWithByRefModifier("out", "S")
+                    + NonBlittableUserDefinedType()
+                    + Out;
+
+                public static string NativeToManagedGuaranteedOnlyOutParameter => BasicParameterWithByRefModifier("out", "S")
+                    + NonBlittableUserDefinedType()
+                    + OutGuaranteed;
+
+                public static string ManagedToNativeOnlyReturnValue => BasicReturnType("S")
+                    + NonBlittableUserDefinedType()
+                    + In;
+
+                public static string NativeToManagedOnlyReturnValue => BasicReturnType("S")
+                    + NonBlittableUserDefinedType()
+                    + Out;
+
+                public static string NativeToManagedGuaranteedOnlyReturnValue => BasicReturnType("S")
+                    + NonBlittableUserDefinedType()
+                    + Out;
+
+                public static string NativeToManagedOnlyInParameter => BasicParameterWithByRefModifier("in", "S")
+                    + NonBlittableUserDefinedType()
+                    + Out;
+
+                public static string ParametersAndModifiers = BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
+                    + NonBlittableUserDefinedType(defineNativeMarshalling: true)
+                    + Ref;
+
+                public static string MarshalUsingParametersAndModifiers = MarshalUsingParametersAndModifiers("S", "Marshaller")
+                    + NonBlittableUserDefinedType(defineNativeMarshalling: false)
+                    + Ref;
+
+                public static string StackallocByValueInParameter => BasicParameterByValue("S")
+                    + NonBlittableUserDefinedType()
+                    + InBuffer;
+
+                public static string StackallocParametersAndModifiersNoRef = BasicParametersAndModifiersNoRef("S")
+                    + NonBlittableUserDefinedType()
+                    + RefBuffer;
+
+                public static string StackallocOnlyRefParameter = BasicParameterWithByRefModifier("ref", "S")
+                    + NonBlittableUserDefinedType()
+                    + RefBuffer;
+
+                public static string OptionalStackallocParametersAndModifiers = BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
+                    + NonBlittableUserDefinedType()
+                    + RefOptionalBuffer;
+            }
         }
 
         public static class CustomStructMarshalling_V1

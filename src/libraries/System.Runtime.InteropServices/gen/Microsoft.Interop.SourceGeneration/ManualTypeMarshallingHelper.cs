@@ -206,6 +206,10 @@ namespace Microsoft.Interop
             {
                 return GetStatelessMarshallerDataForType(marshallerType, direction, managedType, compilation);
             }
+            if (marshallerType.IsValueType)
+            {
+                return GetStatefulMarshallerDataForType(marshallerType, direction, managedType, compilation);
+            }
             return null;
         }
 
@@ -284,7 +288,7 @@ namespace Microsoft.Interop
                 }
             }
 
-            if (direction.HasFlag(MarshallingDirection.UnmanagedToManaged))
+            if (nativeType is null && direction.HasFlag(MarshallingDirection.UnmanagedToManaged))
             {
                 if (!shape.HasFlag(MarshallerShape.GuaranteedUnmarshal) && !shape.HasFlag(MarshallerShape.ToManaged))
                     return null;

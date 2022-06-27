@@ -235,10 +235,11 @@ namespace Microsoft.Interop
                 };
             }
 
-            ICustomTypeMarshallingStrategy marshallingStrategy = null;
+            ICustomTypeMarshallingStrategy marshallingStrategy;
             if (marshallerData.HasState)
             {
-
+                marshallingStrategy = new StatefulValueMarshalling(marshallerData.MarshallerType.Syntax, marshallerData.NativeType.Syntax, marshallerData.Shape);
+                // TODO: Add CallerAllocatedBuffer support
             }
             else
             {

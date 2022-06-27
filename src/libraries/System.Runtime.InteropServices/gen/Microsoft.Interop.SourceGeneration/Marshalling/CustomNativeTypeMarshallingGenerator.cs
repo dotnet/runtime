@@ -69,6 +69,15 @@ namespace Microsoft.Interop
                         return _nativeTypeMarshaller.GeneratePinnedMarshalStatements(info, context);
                     }
                     break;
+                case StubCodeContext.Stage.NotifyForSuccessfulInvoke:
+                    if (!info.IsManagedReturnPosition && info.RefKind != RefKind.Out)
+                    {
+                        if (_nativeTypeMarshaller is ICustomTypeMarshallingStrategy strategyWithGuaranteedUnmarshal)
+                        {
+                            return strategyWithGuaranteedUnmarshal.GenerateNotifyForSuccessfulInvokeStatements(info, context);
+                        }
+                    }
+                    break;
                 case StubCodeContext.Stage.UnmarshalCapture:
                     if (info.IsManagedReturnPosition || (info.IsByRef && info.RefKind != RefKind.In))
                     {

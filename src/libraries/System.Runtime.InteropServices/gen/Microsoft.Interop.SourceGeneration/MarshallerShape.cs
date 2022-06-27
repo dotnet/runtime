@@ -16,11 +16,12 @@ namespace Microsoft.Interop
         None = 0x0,
         ToUnmanaged = 0x1,
         CallerAllocatedBuffer = 0x2,
-        PinnableReference = 0x4,
-        ToManaged = 0x8,
-        GuaranteedUnmarshal = 0x10,
-        Free = 0x20,
-        NotifyInvokeSucceeded = 0x40,
+        StatelessPinnableReference = 0x4,
+        StatefulPinnableReference = 0x8,
+        ToManaged = 0x10,
+        GuaranteedUnmarshal = 0x20,
+        Free = 0x40,
+        NotifyInvokeSucceeded = 0x80,
     }
 
     public static class ShapeMemberNames
@@ -113,9 +114,9 @@ namespace Microsoft.Interop
             if (method is not null)
                 AddMethod(MarshallerShape.GuaranteedUnmarshal, method);
 
-            method = GetStatelessGetPinnableReference(marshallerType);
+            method = GetStatelessGetPinnableReference(marshallerType, managedType);
             if (method is not null)
-                AddMethod(MarshallerShape.PinnableReference, method);
+                AddMethod(MarshallerShape.StatelessPinnableReference, method);
 
             method = GetStatelessFree(marshallerType);
             if (method is not null)
@@ -137,12 +138,13 @@ namespace Microsoft.Interop
                 .FirstOrDefault(m => m is { IsStatic: true, Parameters.Length: 1, ReturnsVoid: true });
         }
 
-        private static IMethodSymbol? GetStatelessGetPinnableReference(ITypeSymbol type)
+        private static IMethodSymbol? GetStatelessGetPinnableReference(ITypeSymbol type, ITypeSymbol managedType)
         {
             return type.GetMembers(ShapeMemberNames.GetPinnableReference)
                 .OfType<IMethodSymbol>()
                 .FirstOrDefault(m => m is { IsStatic: true, Parameters.Length: 1 } and
-                    ({ ReturnsByRef: true } or { ReturnsByRefReadonly: true }));
+                    ({ ReturnsByRef: true } or { ReturnsByRefReadonly: true })
+                    && SymbolEqualityComparer.Default.Equals(m.Parameters[0].Type, managedType));
         }
 
         private static IMethodSymbol? GetConvertToUnmanagedMethod(ITypeSymbol type, ITypeSymbol managedType)
@@ -262,9 +264,16 @@ namespace Microsoft.Interop
             ImmutableArray<IMethodSymbol> fromUnmanagedCandidates = ImmutableArray.CreateRange(GetFromUnmanagedMethodCandidates(marshallerType));
             if ((toManaged, toManagedGuaranteed) is not (null, null)
                 && fromUnmanagedCandidates.Length == 1
-                && SymbolEqualityComparer.Default.Equals(fromUnmanagedCandidates[0].Parameters[0].Type, unmanagedType))
+                && (unmanagedType is null || SymbolEqualityComparer.Default.Equals(fromUnmanagedCandidates[0].Parameters[0].Type, unmanagedType)))
             {
-                shape |= MarshallerShape.ToManaged;
+                if (toManagedGuaranteed is not null)
+                {
+                    shape |= MarshallerShape.GuaranteedUnmarshal;
+                }
+                if (toManaged is not null)
+                {
+                    shape |= MarshallerShape.ToManaged;
+                }
                 methods = methods with
                 {
                     FromUnmanaged = fromUnmanagedCandidates[0],
@@ -273,18 +282,27 @@ namespace Microsoft.Interop
                 };
             }
 
-            IMethodSymbol free = GetStatefulFreeMethod(managedType);
+            IMethodSymbol free = GetStatefulFreeMethod(marshallerType);
             if (free is not null)
             {
                 shape |= MarshallerShape.Free;
                 methods = methods with { Free = free };
             }
 
-            IMethodSymbol notifyInvokeSucceeded = GetNotifyInvokeSucceededMethod(managedType);
+            IMethodSymbol notifyInvokeSucceeded = GetNotifyInvokeSucceededMethod(marshallerType);
             if (notifyInvokeSucceeded is not null)
             {
                 shape |= MarshallerShape.NotifyInvokeSucceeded;
                 methods = methods with { NotifyInvokeSucceeded = notifyInvokeSucceeded };
+            }
+
+            if (GetStatelessGetPinnableReference(marshallerType, managedType) is not null)
+            {
+                shape |= MarshallerShape.StatelessPinnableReference;
+            }
+            if (GetStatefulGetPinnableReference(marshallerType) is not null)
+            {
+                shape |= MarshallerShape.StatefulPinnableReference;
             }
 
             return (shape, methods);
@@ -305,9 +323,9 @@ namespace Microsoft.Interop
             out ITypeSymbol? spanElementType)
         {
             spanElementType = null;
-            IEnumerable<IMethodSymbol> methods = type.GetMembers(ShapeMemberNames.Value.Stateless.ConvertToUnmanaged)
+            IEnumerable<IMethodSymbol> methods = type.GetMembers(ShapeMemberNames.Value.Stateful.FromManaged)
                 .OfType<IMethodSymbol>()
-                .Where(m => m is { IsStatic: true, Parameters.Length: 2, ReturnsVoid: true }
+                .Where(m => m is { IsStatic: false, Parameters.Length: 2, ReturnsVoid: true }
                     && SymbolEqualityComparer.Default.Equals(managedType, m.Parameters[0].Type));
 
             foreach (IMethodSymbol method in methods)
@@ -361,7 +379,7 @@ namespace Microsoft.Interop
 
         private static IEnumerable<IMethodSymbol> GetFromUnmanagedMethodCandidates(ITypeSymbol type)
         {
-            return type.GetMembers(ShapeMemberNames.Value.Stateful.ToUnmanaged)
+            return type.GetMembers(ShapeMemberNames.Value.Stateful.FromUnmanaged)
                 .OfType<IMethodSymbol>()
                 .Where(m => m is { IsStatic: false, Parameters.Length: 1, ReturnsVoid: true });
         }
@@ -378,6 +396,23 @@ namespace Microsoft.Interop
             return type.GetMembers(ShapeMemberNames.Value.Stateful.Free)
                 .OfType<IMethodSymbol>()
                 .FirstOrDefault(m => m is { IsStatic: false, Parameters.Length: 0, ReturnsVoid: true });
+        }
+
+        private static IMethodSymbol? GetStatelessGetPinnableReference(ITypeSymbol type, ITypeSymbol managedType)
+        {
+            return type.GetMembers(ShapeMemberNames.GetPinnableReference)
+                .OfType<IMethodSymbol>()
+                .FirstOrDefault(m => m is { IsStatic: true, Parameters.Length: 1 } and
+                    ({ ReturnsByRef: true } or { ReturnsByRefReadonly: true })
+                    && SymbolEqualityComparer.Default.Equals(m.Parameters[0].Type, managedType));
+        }
+
+        private static IMethodSymbol? GetStatefulGetPinnableReference(ITypeSymbol type)
+        {
+            return type.GetMembers(ShapeMemberNames.GetPinnableReference)
+                .OfType<IMethodSymbol>()
+                .FirstOrDefault(m => m is { IsStatic: false, Parameters.Length: 0 } and
+                    ({ ReturnsByRef: true } or { ReturnsByRefReadonly: true }));
         }
     }
 }
