@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -123,13 +123,13 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\JsonUnknownDerivedTypeHandling.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\DefaultJsonTypeInfoResolver.Converters.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\DefaultJsonTypeInfoResolver.cs" />
-    <Compile Include="System\Text\Json\Serialization\Metadata\JsonDerivedType.cs" />
-    <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfoResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\IJsonTypeInfoResolver.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\JsonDerivedType.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\JsonPolymorphismOptions.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfoResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfoKind.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\CustomJsonTypeInfoOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\PolymorphicSerializationState.cs" />
-    <Compile Include="System\Text\Json\Serialization\Metadata\JsonPolymorphismOptions.cs" />
     <Compile Include="System\Text\Json\Serialization\ReferenceEqualsWrapper.cs" />
     <Compile Include="System\Text\Json\Serialization\ConverterStrategy.cs" />
     <Compile Include="System\Text\Json\Serialization\ConfigurationList.cs" />
