@@ -75,7 +75,7 @@ import {
     dotnet_browser_simple_digest_hash,
     dotnet_browser_sign
 } from "./crypto-worker";
-import { mono_wasm_pthread_on_pthread_created } from "./pthreads/worker";
+import { mono_wasm_pthread_on_pthread_created, mono_wasm_pthread_on_pthread_attached, afterThreadInit } from "./pthreads/worker";
 import { afterLoadWasmModuleToWorker } from "./pthreads/browser";
 
 const MONO = {
@@ -187,6 +187,12 @@ export type BINDINGType = typeof BINDING;
 
 let exportedAPI: DotnetPublicAPI;
 
+// We need to replace some of the methods in the Emscripten PThreads support with our own
+type PThreadReplacements = {
+    loadWasmModuleToWorker: Function,
+    threadInit: Function
+}
+
 // this is executed early during load of emscripten runtime
 // it exports methods to global objects MONO, BINDING and Module in backward compatible way
 // At runtime this will be referred to as 'createDotnetRuntime'
@@ -194,7 +200,7 @@ let exportedAPI: DotnetPublicAPI;
 function initializeImportsAndExports(
     imports: { isESM: boolean, isGlobal: boolean, isNode: boolean, isWorker: boolean, isShell: boolean, isWeb: boolean, isPThread: boolean, locateFile: Function, quit_: Function, ExitStatus: ExitStatusError, requirePromise: Promise<Function> },
     exports: { mono: any, binding: any, internal: any, module: any },
-    replacements: { fetch: any, readAsync: any, require: any, requireOut: any, noExitRuntime: boolean, updateGlobalBufferAndViews: Function, loadWasmModuleToWorker: Function },
+    replacements: { fetch: any, readAsync: any, require: any, requireOut: any, noExitRuntime: boolean, updateGlobalBufferAndViews: Function, pthreadReplacements: PThreadReplacements | undefined | null },
 ): DotnetPublicAPI {
     const module = exports.module as DotnetModule;
     const globalThisAny = globalThis as any;
@@ -259,11 +265,16 @@ function initializeImportsAndExports(
 
     replacements.noExitRuntime = ENVIRONMENT_IS_WEB;
 
-    if (replacements.loadWasmModuleToWorker) {
-        const originalLoadWasmModuleToWorker = replacements.loadWasmModuleToWorker;
-        replacements.loadWasmModuleToWorker = (worker: Worker, onFinishedLoading: Function): void => {
+    if (replacements.pthreadReplacements) {
+        const originalLoadWasmModuleToWorker = replacements.pthreadReplacements.loadWasmModuleToWorker;
+        replacements.pthreadReplacements.loadWasmModuleToWorker = (worker: Worker, onFinishedLoading: Function): void => {
             originalLoadWasmModuleToWorker(worker, onFinishedLoading);
             afterLoadWasmModuleToWorker(worker);
+        };
+        const originalThreadInit = replacements.pthreadReplacements.threadInit;
+        replacements.pthreadReplacements.threadInit = (): void => {
+            originalThreadInit();
+            afterThreadInit();
         };
     }
 
@@ -342,6 +353,7 @@ export const __initializeImportsAndExports: any = initializeImportsAndExports; /
 const mono_wasm_threads_exports = !MonoWasmThreads ? undefined : {
     // mono-threads-wasm.c
     mono_wasm_pthread_on_pthread_created,
+    mono_wasm_pthread_on_pthread_attached,
 };
 
 // the methods would be visible to EMCC linker

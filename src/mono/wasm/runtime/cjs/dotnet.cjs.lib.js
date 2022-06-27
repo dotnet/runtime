@@ -18,8 +18,12 @@ const DotnetSupportLib = {
     // we replace implementation of readAsync and fetch
     // replacement of require is there for consistency with ES6 code
     $DOTNET__postset: `
-let __dotnet_replacement_PThread_loadWasmModuleToWorker = ${usePThreads} ? PThread.loadWasmModuleToWorker : null;
-let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require, updateGlobalBufferAndViews, loadWasmModuleToWorker: __dotnet_replacement_PThread_loadWasmModuleToWorker};
+let __dotnet_replacement_PThread = ${usePThreads} ? {} : undefined;
+if (${usePThreads}) {
+    __dotnet_replacement_PThread.loadWasmModuleToWorker = PThread.loadWasmModuleToWorker;
+    __dotnet_replacement_PThread.threadInit = PThread.threadInit;
+}
+let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require, updateGlobalBufferAndViews, pthreadReplacements: __dotnet_replacement_PThread};
 let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
     { isESM:false, isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isWorker:ENVIRONMENT_IS_WORKER, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, isPThread:${isPThread}, locateFile, quit_, ExitStatus, requirePromise:Promise.resolve(require)},
     { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
@@ -30,7 +34,8 @@ var fetch = __dotnet_replacements.fetch;
 require = __dotnet_replacements.requireOut;
 var noExitRuntime = __dotnet_replacements.noExitRuntime;
 if (${usePThreads}) {
-    PThread.loadWasmModuleToWorker = __dotnet_replacements.loadWasmModuleToWorker;
+    PThread.loadWasmModuleToWorker = __dotnet_replacements.pthreadReplacements.loadWasmModuleToWorker;
+    PThread.threadInit = __dotnet_replacements.pthreadReplacements.threadInit;
 }
 `,
 };
@@ -89,6 +94,7 @@ const linked_functions = [
     /// mono-threads-wasm.c
     #if USE_PTHREADS
     "mono_wasm_pthread_on_pthread_created",
+    "mono_wasm_pthread_on_pthread_attached",
     #endif
 ];
 

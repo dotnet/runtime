@@ -3,6 +3,7 @@
 
 /// <reference lib="webworker" />
 
+import { Module, ENVIRONMENT_IS_PTHREAD } from "../../imports";
 import { makeChannelCreatedMonoMessage, pthread_ptr } from "../shared";
 
 export type ThreadCreatedCallback = (pthread_ptr: pthread_ptr, main_port: MessagePort) => void;
@@ -30,5 +31,21 @@ export function mono_wasm_pthread_on_pthread_created(pthread_id: pthread_ptr): v
     self.postMessage(makeChannelCreatedMonoMessage(pthread_id, mainPort), [mainPort]);
     for (const fn of threadCreatedCallbacks) {
         fn(pthread_id, workerPort);
+    }
+}
+
+export function mono_wasm_pthread_on_pthread_attached(pthread_id: pthread_ptr): void {
+    console.debug("attaching pthread to runtime", pthread_id);
+}
+
+/// Called by emscripten when a pthread is setup to run on a worker.  Can be called multiple times
+/// for the same worker, since emscripten can reuse workers.
+export function afterThreadInit(): void {
+    console.debug("after thread init");
+    const pthread_ptr = (<any>Module)["_pthread_self"]();
+    console.debug("pthread ptr", pthread_ptr);
+    // don't do this callback for the main thread
+    if (ENVIRONMENT_IS_PTHREAD) {
+        mono_wasm_pthread_on_pthread_created(pthread_ptr);
     }
 }

@@ -22,8 +22,12 @@ const DotnetSupportLib = {
     // Emscripten's getBinaryPromise is not async for NodeJs, but we would like to have it async, so we replace it.
     // We also replace implementation of readAsync and fetch
     $DOTNET__postset: `
-let __dotnet_replacement_PThread_loadWasmModuleToWorker = ${usePThreads} ? PThread.loadWasmModuleToWorker : null;
-let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require, updateGlobalBufferAndViews, loadWasmModuleToWorker: __dotnet_replacement_PThread_loadWasmModuleToWorker};
+let __dotnet_replacement_PThread = ${usePThreads} ? {} : undefined;
+if (${usePThreads}) {
+    __dotnet_replacement_PThread.loadWasmModuleToWorker = PThread.loadWasmModuleToWorker;
+    __dotnet_replacement_PThread.threadInit = PThread.threadInit;
+}
+let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require, updateGlobalBufferAndViews, pthreadReplacements: __dotnet_replacement_PThread};
 if (ENVIRONMENT_IS_NODE) {
     __dotnet_replacements.requirePromise = import(/* webpackIgnore: true */'module').then(mod => {
         const require = mod.createRequire(import.meta.url);
@@ -67,7 +71,8 @@ var fetch = __dotnet_replacements.fetch;
 require = __dotnet_replacements.requireOut;
 var noExitRuntime = __dotnet_replacements.noExitRuntime;
 if (${usePThreads}) {
-    PThread.loadWasmModuleToWorker = __dotnet_replacements.loadWasmModuleToWorker;
+    PThread.loadWasmModuleToWorker = __dotnet_replacements.pthreadReplacements.loadWasmModuleToWorker;
+    PThread.threadInit = __dotnet_replacements.pthreadReplacements.threadInit;
 }
 `,
 };
@@ -126,6 +131,7 @@ const linked_functions = [
     /// mono-threads-wasm.c
     #if USE_PTHREADS
     "mono_wasm_pthread_on_pthread_created",
+    "mono_wasm_pthread_on_pthread_attached",
     #endif
 ];
 

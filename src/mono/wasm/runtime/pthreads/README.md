@@ -27,14 +27,15 @@ In the worker threads, `pthread/worker` provides `addThreadCreatedCallback ((pth
 
    This is how we set it up:
 
-   1. We replace emscripten's `PThread.loadWasmModuleToWorker` method with our own that calls `afterLoadWasmModuleToWorker`.
-   2. When Emscripten creates a worker that will run pthreads, we install an additional message handler.
-   3. Something in the runtime calls mono_thread_create_internal()
+   1. We replace emscripten's `PThread.loadWasmModuleToWorker` and `PThread.theadInit`(`threadInitTLS` in later emscripten versions) method with our own that calls `afterLoadWasmModuleToWorker`.
+   2. When Emscripten creates a worker that will run pthreads, we install an additional message handlers for `loadWasmModuleToWorker` and `threadInit`.
+   3. Something in the native code calls `pthread_create`
    4. A pthread is created and emscripten sends a command to a worker to create a pthread.
-   5. the runtime thread start routine calls mono_wasm_on_pthread_created in the new thread running on the worker.
+   5. The worker runs the `threadInit` callback and the runtime calls `mono_wasm_on_pthread_created` in the new thread running on the new worker
    6. the worker wakes posts a "channel_created" message to the main thread on the worker message event handler
    7. our custom message handler runs on the main thread and receives the MessagePort
    8. now the main thread and the worker have a dedicated communication channel
+   9. Optionally, the runtime can do something with the `mono_wasm_on_pthread_attached` callback which runs when a pthread first attaches to the Mono runtime. (for example if it was created by other native code from a nuget library)
 
   This could get better if the following things changed in Emscripten:
 

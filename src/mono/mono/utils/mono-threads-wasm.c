@@ -414,6 +414,9 @@ mono_threads_platform_stw_defer_initial_suspend (MonoThreadInfo *info)
 #ifndef DISABLE_THREADS
 extern void
 mono_wasm_pthread_on_pthread_created (gpointer pthread_id);
+
+extern void
+mono_wasm_pthread_on_pthread_attached (gpointer pthread_id);
 #endif
 
 void
@@ -428,7 +431,7 @@ mono_threads_wasm_on_thread_attached (void)
 	// Set up a MessageChannel between the new thread (which might be on a pooled reused WebWorker) and the main thread.
 	pthread_t id = pthread_self ();
 	MONO_ENTER_GC_SAFE;
-	mono_wasm_pthread_on_pthread_created (id);
+	mono_wasm_pthread_on_pthread_attached (id);
 	MONO_EXIT_GC_SAFE;
 #endif
 }
