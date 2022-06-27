@@ -537,7 +537,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 List<IFieldSymbol> fields = new();
 
                 INamedTypeSymbol? classType = sm.GetDeclaredSymbol(classDec, _cancellationToken);
-                while (classType is { } ct && ct.SpecialType != SpecialType.System_Object)
+                while (classType is { SpecialType: not SpecialType.System_Object })
                 {
                     fields.AddRange(classType.GetMembers().OfType<IFieldSymbol>());
                     classType = classType.BaseType;
