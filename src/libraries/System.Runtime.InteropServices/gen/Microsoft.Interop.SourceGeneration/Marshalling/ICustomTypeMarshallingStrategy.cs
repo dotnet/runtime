@@ -74,7 +74,7 @@ namespace Microsoft.Interop
                 InvocationExpression(
                     MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                         _marshallerTypeSyntax,
-                        IdentifierName(ShapeMemberNames.Value.Stateless.Free)),
+                        IdentifierName(ShapeMemberNames.Free)),
                     ArgumentList(SingletonSeparatedList(
                         Argument(IdentifierName(context.GetIdentifiers(info).native))))));
         }
