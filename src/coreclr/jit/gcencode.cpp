@@ -4233,22 +4233,19 @@ void GCInfo::gcMakeRegPtrTable(
                 {
                     assert(compiler->lvaGetPromotionType(varDsc) == Compiler::PROMOTION_TYPE_DEPENDENT);
 
-                    // For OSR, a dependently promoted tracked gc local can end up in the gc tracked
-                    // frame range, because OSR always can't fully honor frame layout constraints.
-                    //
-                    // Detect this case and report the slot as tracked.
+                    // A dependently promoted tracked gc local can end up in the gc tracked
+                    // frame range. If so it should be excluded from tracking via lvaIsGCTracked.
                     //
                     unsigned const fieldLclNum = compiler->lvaGetFieldLocal(varDsc, fieldOffset);
                     assert(fieldLclNum != BAD_VAR_NUM);
                     LclVarDsc* const fieldVarDsc = compiler->lvaGetDesc(fieldLclNum);
 
-                    if (compiler->opts.IsOSR() && compiler->lvaIsGCTracked(fieldVarDsc) &&
-                        compiler->GetEmitter()->emitIsWithinFrameRangeGCRs(offset))
+                    if (compiler->GetEmitter()->emitIsWithinFrameRangeGCRs(offset))
                     {
+                        assert(!compiler->lvaIsGCTracked(fieldVarDsc));
                         JITDUMP("Untracked GC struct slot V%02u+%u (P-DEP promoted V%02u) is at frame offset %d within "
-                                "tracked ref range.\nWill report slot as tracked\n",
+                                "tracked ref range; will report slot as untracked\n",
                                 varNum, fieldOffset, fieldLclNum, offset);
-                        continue;
                     }
                 }
 

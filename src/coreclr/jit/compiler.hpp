@@ -4005,7 +4005,7 @@ inline bool Compiler::lvaIsFieldOfDependentlyPromotedStruct(const LclVarDsc* var
 //    This is because struct variables are never tracked as a whole for GC purposes.
 //    It is up to the caller to ensure that the fields of struct variables are
 //    correctly tracked.
-//    On Amd64, we never GC-track fields of dependently promoted structs, even
+//    On Amd64/Arm64, we never GC-track fields of dependently promoted structs, even
 //    though they may be tracked for optimization purposes.
 //    It seems that on x86 and arm, we simply don't track these
 //    fields, though I have not verified that.  I attempted to make these GC-tracked,
@@ -4021,7 +4021,7 @@ inline bool Compiler::lvaIsGCTracked(const LclVarDsc* varDsc)
 #ifdef TARGET_AMD64
         return !isStackParam && !lvaIsFieldOfDependentlyPromotedStruct(varDsc);
 #else  // !TARGET_AMD64
-        return !isStackParam;
+        return !isStackParam && !lvaIsFieldOfDependentlyPromotedStruct(varDsc);
 #endif // !TARGET_AMD64
     }
     else
