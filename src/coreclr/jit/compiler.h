@@ -7235,6 +7235,7 @@ public:
                                       bool             helperCallArgs = false);
 
     AssertionIndex optFinalizeCreatingAssertion(AssertionDsc* assertion);
+    ssize_t optCastConstantSmall(ssize_t iconVal, var_types smallType);
 
     bool optTryExtractSubrangeAssertion(GenTree* source, IntegralRange* pRange);
 
