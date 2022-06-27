@@ -19,8 +19,6 @@
     <!-- Disable CS8981 because the generated code from the protobuf files contains classes with lowercase names -->
     <!-- Disable SYSLIB0039 because the tests intentionally use TLS 1.0 and 1.1 -->
     <NoWarn>CS8981;SYSLIB0039</NoWarn>
-    <!-- The destination for the code of the grpc/grpc-dotnet repo -->
-    <GrpcDotnetBasePath>$(MSBuildProjectDirectory)\grpc-dotnet</GrpcDotnetBasePath>
     <!-- We pretend to be Blazor WASM so that we don't have to modify the code of grpc-dotnet -->
     <!-- The pieces of code that Android needs to skips are the same as WASM -->
     <DefineConstants>BLAZOR_WASM</DefineConstants>
@@ -38,40 +36,29 @@
     </None>
   </ItemGroup>
 
-  <Import Project="$(GrpcDotnetBasePath)\build\dependencies.props"/>
-
   <!-- Based on grpc-dotnet's testassets/InteropTestsClient/InteropTestsClient.csproj -->
   <ItemGroup>
     <!-- Required for QUIC & HTTP/3 in .NET 6 - https://github.com/dotnet/runtime/pull/55332 -->
     <RuntimeHostConfigurationOption Include="System.Net.SocketsHttpHandler.Http3Support" Value="true" />
 
-    <Compile Include="$(GrpcDotnetBasePath)\testassets\Shared\*.cs" />
-    <Compile Include="$(GrpcDotnetBasePath)\test\Shared\HttpEventSourceListener.cs" />
+    <Compile Include="$(MSBuildProjectDirectory)\grpc-dotnet\testassets\Shared\*.cs" />
+    <Compile Include="$(MSBuildProjectDirectory)\grpc-dotnet\test\Shared\HttpEventSourceListener.cs" />
 
-    <Protobuf Include="$(GrpcDotnetBasePath)\testassets\Proto\grpc\testing\*.proto" GrpcServices="Client" Link="Protos\test.proto" ProtoRoot="$(GrpcDotnetBasePath)\testassets\Proto\grpc\testing\" />
+    <Protobuf
+      Include="$(MSBuildProjectDirectory)\grpc-dotnet\testassets\Proto\grpc\testing\*.proto"
+      ProtoRoot="$(MSBuildProjectDirectory)\grpc-dotnet\testassets\Proto\grpc\testing\"
+      GrpcServices="Client" />
 
     <PackageReference Include="Grpc.Auth" Version="2.46.1" />
     <PackageReference Include="Grpc.Net.Client" Version="2.46.0" />
     <PackageReference Include="Grpc.Net.Client.Web" Version="2.46.0" />
 
-    <PackageReference Include="Google.Protobuf" Version="$(GoogleProtobufPackageVersion)" />
+    <PackageReference Include="Google.Protobuf" Version="3.19.4" />
     <PackageReference Include="Grpc.Core" Version="2.46.1" PrivateAssets="All" />
     <PackageReference Include="Grpc.Tools" Version="2.46.1" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="$(MicrosoftExtensionsPackageVersion)" />
-    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
-    <PackageReference Include="System.CommandLine" Version="$(SystemCommandLinePackageVersion)" />
-    <PackageReference Include="System.Net.Http.WinHttpHandler" Version="$(SystemNetHttpWinHttpHandlerPackageVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="3.0.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta3.22114.1" />
+    <PackageReference Include="System.Net.Http.WinHttpHandler" Version="6.0.1" />
   </ItemGroup>  
-
-  <!-- <Target Name="_GitCloneGrpcDotnet" BeforeTargets="Restore">
-    <RemoveDir Directories="$(GrpcDotnetBasePath)" />
-    <RemoveDir Directories="$(MSBuildProjectDirectory)/res/raw" />
-    <Exec Command="git clone - -depth 1 https://github.com/grpc/grpc-dotnet.git $(GrpcDotnetBasePath)"
-          WorkingDirectory="$(MSBuildProjectDirectory)"
-          IgnoreStandardErrorWarningFormat="true" />
-    <Copy SourceFiles="$(GrpcDotnetBasePath)/testassets/Certs/InteropTests/server1.pem"
-          DestinationFiles="$(MSBuildProjectDirectory)/res/raw/server1.pem" />
-    <Copy SourceFiles="$(GrpcDotnetBasePath)/testassets/Certs/InteropTests/ca.pem"
-          DestinationFiles="$(MSBuildProjectDirectory)/res/raw/ca.pem" />
-  </Target> -->
 </Project>
