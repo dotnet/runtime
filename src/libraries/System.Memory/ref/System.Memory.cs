@@ -530,6 +530,17 @@ namespace System.Buffers.Text
         public static bool TryParse(System.ReadOnlySpan<byte> source, out ulong value, out int bytesConsumed, char standardFormat = '\0') { throw null; }
     }
 }
+namespace System.Runtime.CompilerServices
+{
+    // See src\libraries\System.Private.CoreLib\src\System\Runtime\CompilerServices\LifetimeAnnotationAttribute.cs
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
+    internal sealed class LifetimeAnnotationAttribute : System.Attribute
+    {
+        public LifetimeAnnotationAttribute(bool isRefScoped, bool isValueScoped) { throw null; }
+        public bool IsRefScoped { get { throw null; } }
+        public bool IsValueScoped { get { throw null; } }
+    }
+}
 namespace System.Runtime.InteropServices
 {
     public static partial class MemoryMarshal
@@ -542,16 +553,16 @@ namespace System.Runtime.InteropServices
         public static System.ReadOnlySpan<TTo> Cast<TFrom, TTo>(System.ReadOnlySpan<TFrom> span) where TFrom : struct where TTo : struct { throw null; }
         public static System.Span<TTo> Cast<TFrom, TTo>(System.Span<TFrom> span) where TFrom : struct where TTo : struct { throw null; }
         public static System.Memory<T> CreateFromPinnedArray<T>(T[]? array, int start, int length) { throw null; }
-        public static System.ReadOnlySpan<T> CreateReadOnlySpan<T>(ref T reference, int length) { throw null; }
+        public static System.ReadOnlySpan<T> CreateReadOnlySpan<T>([System.Runtime.CompilerServices.LifetimeAnnotation(true, false)] ref T reference, int length) { throw null; }
         [System.CLSCompliant(false)]
         public static unsafe ReadOnlySpan<byte> CreateReadOnlySpanFromNullTerminated(byte* value) { throw null; }
         [System.CLSCompliant(false)]
         public static unsafe ReadOnlySpan<char> CreateReadOnlySpanFromNullTerminated(char* value) { throw null; }
-        public static System.Span<T> CreateSpan<T>(ref T reference, int length) { throw null; }
+        public static System.Span<T> CreateSpan<T>([System.Runtime.CompilerServices.LifetimeAnnotation(true, false)] ref T reference, int length) { throw null; }
         public static ref T GetArrayDataReference<T>(T[] array) { throw null; }
         public static ref byte GetArrayDataReference(System.Array array) { throw null; }
-        public static ref T GetReference<T>(System.ReadOnlySpan<T> span) { throw null; }
-        public static ref T GetReference<T>(System.Span<T> span) { throw null; }
+        public static ref T GetReference<T>([System.Runtime.CompilerServices.LifetimeAnnotation(false, true)] System.ReadOnlySpan<T> span) { throw null; }
+        public static ref T GetReference<T>([System.Runtime.CompilerServices.LifetimeAnnotation(false, true)] System.Span<T> span) { throw null; }
         public static T Read<T>(System.ReadOnlySpan<byte> source) where T : struct { throw null; }
         public static System.Collections.Generic.IEnumerable<T> ToEnumerable<T>(System.ReadOnlyMemory<T> memory) { throw null; }
         public static bool TryGetArray<T>(System.ReadOnlyMemory<T> memory, out System.ArraySegment<T> segment) { throw null; }
