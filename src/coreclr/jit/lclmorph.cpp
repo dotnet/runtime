@@ -1042,56 +1042,12 @@ private:
             indirLayout = indir->AsBlk()->GetLayout();
         }
 
-        // How does the "indir" match the underlying location?
-        //
-        enum class StructMatch
-        {
-            Compatible,
-            Partial
-        };
-
-        // We're only processing TYP_STRUCT variables now.
-        assert(varDsc->GetLayout() != nullptr);
-
-        StructMatch match = StructMatch::Partial;
-        if ((val.Offset() == 0) && ClassLayout::AreCompatible(indirLayout, varDsc->GetLayout()))
-        {
-            match = StructMatch::Compatible;
-        }
-
-        // Current matrix of matches/users/types:
-        //
-        // |------------|---------|---------|---------|
-        // | STRUCT     | CALL(*) | ASG     | RETURN  |
-        // |------------|---------|---------|---------|
-        // | Compatible | LCL_VAR | LCL_VAR | LCL_VAR |
-        // | Partial    | LCL_FLD | LCL_FLD | LCL_FLD |
-        // |------------|---------|---------|---------|
-        //
-        // * - On XArch/Arm64/LA only.
-        //
-        // |------------|------|------|--------|----------|
-        // | SIMD       | CALL | ASG  | RETURN | HWI/SIMD |
-        // |------------|------|------|--------|----------|
-        // | Compatible | None | None | None   | None     |
-        // | Partial    | None | None | None   | None     |
-        // |------------|------|------|--------|----------|
-        //
-        // TODO-ADDR: delete all the "None" entries and always
-        // transform local nodes into LCL_VAR or LCL_FLD.
-
-        assert(indir->TypeIs(TYP_STRUCT) && user->OperIs(GT_ASG, GT_CALL, GT_RETURN));
-
         *pStructLayout = indirLayout;
 
-        if (user->IsCall())
-        {
-#ifdef TARGET_ARM
-            return IndirTransform::None;
-#endif // TARGET_ARM
-        }
+        // We're only processing TYP_STRUCT uses and variables now.
+        assert(indir->TypeIs(TYP_STRUCT) && (varDsc->GetLayout() != nullptr));
 
-        if (match == StructMatch::Compatible)
+        if ((val.Offset() == 0) && ClassLayout::AreCompatible(indirLayout, varDsc->GetLayout()))
         {
             return IndirTransform::LclVar;
         }
