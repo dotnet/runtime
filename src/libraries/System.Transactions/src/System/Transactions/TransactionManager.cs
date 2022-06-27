@@ -370,10 +370,11 @@ namespace System.Transactions
             byte[] resourceManagerRecoveryInformation
         )
         {
-            if ( DiagnosticTrace.Verbose )
-            {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceBase, "TransactionManager.GetRecoveryInformation");
-            }
+            // TODO
+            // if (DiagnosticTrace.Verbose)
+            // {
+            //     MethodEnteredTraceRecord.Trace(SR.TraceSourceBase, "TransactionManager.GetRecoveryInformation");
+            // }
 
             MemoryStream stream = new MemoryStream();
             byte[]? returnValue = null;
@@ -401,10 +402,11 @@ namespace System.Transactions
                 stream.Close();
             }
 
-            if ( DiagnosticTrace.Verbose )
-            {
-                MethodExitedTraceRecord.Trace(SR.TraceSourceBase, "TransactionManager.GetRecoveryInformation");
-            }
+            // TODO
+            // if (DiagnosticTrace.Verbose)
+            // {
+            //     MethodExitedTraceRecord.Trace(SR.TraceSourceBase, "TransactionManager.GetRecoveryInformation");
+            // }
 
             return returnValue;
         }

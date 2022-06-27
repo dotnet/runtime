@@ -9,18 +9,6 @@ using System.Transactions.Oletx;
 
 namespace System.Transactions
 {
-    [ComImport]
-    [Guid("0fb15084-af41-11ce-bd2b-204c4f4f5020")]
-    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    public interface IDtcTransaction
-    {
-        void Commit(int retaining, [MarshalAs(UnmanagedType.I4)] int commitType, int reserved);
-
-        void Abort(IntPtr reason, int retaining, int async);
-
-        void GetTransactionInfo(IntPtr transactionInformation);
-    }
-
     public static class TransactionInterop
     {
         internal static OletxTransaction ConvertToOletxTransaction(Transaction transaction)
@@ -75,7 +63,7 @@ namespace System.Transactions
             var whereaboutsCopy = new byte[whereabouts.Length];
             Buffer.BlockCopy(whereabouts, 0, whereaboutsCopy, 0, whereabouts.Length);
 
-                        int cookieIndex = 0;
+            int cookieIndex = 0;
             UInt32 cookieSize = 0;
             CoTaskMemHandle? cookieBuffer = null;
 

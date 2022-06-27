@@ -542,9 +542,7 @@ namespace System.Transactions.Oletx
                 _resourceManagerHashTable = new Hashtable(2);
                 ResourceManagerHashTableLock = new ReaderWriterLock();
             }
-
         }
-
 
         internal OletxCommittableTransaction CreateTransaction(TransactionOptions properties)
         {

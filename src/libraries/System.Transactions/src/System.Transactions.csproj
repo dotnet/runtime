@@ -2,20 +2,21 @@
   <PropertyGroup>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
     <NoWarn>CA1507;CA1805;CA1822;CA1823;CA1852;SA1121;SA1129;SA1206;SA1207;SA1400;SA1404;SA1411;IDE0029;IDE0036;IDE0059;IL2026;IL2050</NoWarn>
     <NoWarn>$(NoWarn);CA1416</NoWarn> <!-- This call site is reachable on all platforms. Resolve by moving this code to Windows-only -->
     <NoWarn>$(NoWarn);CS1591</NoWarn> <!-- TODO -->
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Transactions\CommittableTransaction.cs" />
     <Compile Include="System\Transactions\DependentTransaction.cs" />
-    <Compile Include="System\Transactions\DistributedTransaction.cs" />
     <Compile Include="System\Transactions\DurableEnlistmentState.cs" />
     <Compile Include="System\Transactions\EnterpriseServices.cs" />
     <Compile Include="System\Transactions\Enlistment.cs" />
     <Compile Include="System\Transactions\EnlistmentState.cs" />
     <Compile Include="System\Transactions\EnlistmentTraceIdentifier.cs" />
+    <Compile Include="System\Transactions\IDtcTransaction.cs" />
     <Compile Include="System\Transactions\IEnlistmentNotification.cs" />
     <Compile Include="System\Transactions\InternalTransaction.cs" />
     <Compile Include="System\Transactions\IPromotableSinglePhaseNotification.cs" />
@@ -28,7 +29,6 @@
     <Compile Include="System\Transactions\Transaction.cs" />
     <Compile Include="System\Transactions\TransactionException.cs" />
     <Compile Include="System\Transactions\TransactionInformation.cs" />
-    <Compile Include="System\Transactions\TransactionInterop.cs" />
     <Compile Include="System\Transactions\TransactionManager.cs" />
     <Compile Include="System\Transactions\TransactionOptions.cs" />
     <Compile Include="System\Transactions\TransactionScope.cs" />
@@ -42,6 +42,8 @@
     <Compile Include="System\Transactions\Configuration\ConfigurationStrings.cs" />
     <Compile Include="System\Transactions\Configuration\DefaultSettingsSection.cs" />
     <Compile Include="System\Transactions\Configuration\MachineSettingsSection.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="System\Transactions\Oletx\CoTaskMemHandle.cs" />
     <Compile Include="System\Transactions\Oletx\DtcInterfaces.cs" />
     <Compile Include="System\Transactions\Oletx\DTCTransactionManager.cs" />
@@ -62,6 +64,10 @@
     <Compile Include="System\Transactions\Trace\TraceRecord.cs" />
     <Compile Include="System\Transactions\Trace\TraceRecords.cs" />
     <Compile Include="System\Transactions\Trace\TraceXPathNavigator.cs" />
+    <Compile Include="System\Transactions\TransactionInterop.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows'">
+    <Compile Include="System\Transactions\NonWindowsUnsupported.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Collections\src\System.Collections.csproj" />
