@@ -67,6 +67,32 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
+        /// <summary>
+        /// Gets or sets a configuration object specifying polymorphism metadata.
+        /// </summary>
+        public JsonPolymorphismOptions? PolymorphismOptions
+        {
+            get => _polymorphismOptions;
+            set
+            {
+                VerifyMutable();
+
+                if (value != null)
+                {
+                    if (value.DeclaringTypeInfo != null && value.DeclaringTypeInfo != this)
+                    {
+                        ThrowHelper.ThrowArgumentException_JsonPolymorphismOptionsAssociatedWithDifferentJsonTypeInfo(nameof(value));
+                    }
+
+                    value.DeclaringTypeInfo = this;
+                }
+
+                _polymorphismOptions = value;
+            }
+        }
+
+        private JsonPolymorphismOptions? _polymorphismOptions;
+
         internal object? CreateObjectWithArgs { get; set; }
 
         // Add method delegate for non-generic Stack and Queue; and types that derive from them.
@@ -231,7 +257,7 @@ namespace System.Text.Json.Serialization.Metadata
             get => _numberHandling;
             set
             {
-                CheckMutable();
+                VerifyMutable();
                 _numberHandling = value;
             }
         }
@@ -244,7 +270,6 @@ namespace System.Text.Json.Serialization.Metadata
             Options = options;
             PropertyInfoForTypeInfo = CreatePropertyInfoForTypeInfo(Type, converter, Options, this);
             ElementType = converter.ElementType;
-            ConfigurePolymorphism(converter, options);
 
             switch (PropertyInfoForTypeInfo.ConverterStrategy)
             {
@@ -270,7 +295,7 @@ namespace System.Text.Json.Serialization.Metadata
             Kind = GetTypeInfoKind(type, PropertyInfoForTypeInfo.ConverterStrategy);
         }
 
-        private protected void CheckMutable()
+        internal void VerifyMutable()
         {
             if (_isConfigured)
             {
@@ -280,6 +305,8 @@ namespace System.Text.Json.Serialization.Metadata
 
         private protected volatile bool _isConfigured;
         private readonly object _configureLock = new object();
+
+        internal bool IsConfigured => _isConfigured;
 
         internal void EnsureConfigured()
         {
@@ -357,6 +384,11 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     InitializeConstructorParameters(GetParameterInfoValues(), sourceGenMode: Options.SerializerContext != null);
                 }
+            }
+
+            if (PolymorphismOptions != null)
+            {
+                PolymorphicTypeResolver = new PolymorphicTypeResolver(this);
             }
         }
 
@@ -634,33 +666,6 @@ namespace System.Text.Json.Serialization.Metadata
 
             return false;
 #endif
-        }
-
-        internal void ConfigurePolymorphism(JsonConverter converter, JsonSerializerOptions options)
-        {
-#pragma warning disable CA2252 // This API requires opting into preview features
-            Debug.Assert(Type != null);
-
-            IJsonPolymorphicTypeConfiguration? configuration = null;
-
-            // 1. Look up configuration from JsonSerializerOptions
-            foreach (JsonPolymorphicTypeConfiguration config in options.PolymorphicTypeConfigurations)
-            {
-                if (config.BaseType == Type)
-                {
-                    configuration = config;
-                }
-            }
-
-            // 2. Look up configuration from attributes
-            configuration ??= AttributePolymorphicTypeConfiguration.Create(Type);
-
-            // Construct the resolver from configuration.
-            if (configuration != null)
-            {
-                PolymorphicTypeResolver = new PolymorphicTypeResolver(converter, configuration, options);
-            }
-#pragma warning restore CA2252 // This API requires opting into preview features
         }
 
         internal bool IsValidDataExtensionProperty(JsonPropertyInfo jsonPropertyInfo)

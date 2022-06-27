@@ -34,6 +34,7 @@ namespace System.Text.Json.Serialization.Metadata
             : base(converter, options)
         {
             NumberHandling = GetNumberHandlingForType(Type);
+            PolymorphismOptions = JsonPolymorphismOptions.CreateFromAttributeDeclarations(Type);
 
             if (PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object)
             {

@@ -26,14 +26,6 @@ namespace System.Text.Json
         /// </remarks>
         public IList<JsonConverter> Converters => _converters;
 
-        /// <summary>
-        /// The list of custom polymorphic type configurations.
-        /// </summary>
-        /// <remarks>
-        /// Once serialization or deserialization occurs, the list cannot be modified.
-        /// </remarks>
-        public IList<JsonPolymorphicTypeConfiguration> PolymorphicTypeConfigurations => _polymorphicTypeConfigurations;
-
         // This may return factory converter
         internal JsonConverter? GetCustomConverterFromMember(Type? parentClassType, Type typeToConvert, MemberInfo? memberInfo)
         {
