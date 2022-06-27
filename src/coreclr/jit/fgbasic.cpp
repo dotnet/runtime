@@ -3252,7 +3252,13 @@ void Compiler::fgFindBasicBlocks()
         // and clear the rarely run flag
         hndBegBB->makeBlockHot();
 #else
-        hndBegBB->bbSetRunRarely();   // handler entry points are rarely executed
+        // Handler entry points are rarely executed,
+        // but don't assume finally clause is cold
+        // (we want to enable fgCloneFinally() optimization).
+        if (hndBegBB->bbJumpKind != BBJ_EHFINALLYRET)
+        {
+            hndBegBB->bbSetRunRarely();
+        }
 #endif
 
         if (hndEndOff < info.compILCodeSize)
