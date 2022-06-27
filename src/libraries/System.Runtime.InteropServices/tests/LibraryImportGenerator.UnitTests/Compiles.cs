@@ -180,6 +180,8 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { CodeSnippets.CustomStructMarshalling.Stateless.StackallocParametersAndModifiersNoRef };
             yield return new[] { CodeSnippets.CustomStructMarshalling.Stateless.OptionalStackallocParametersAndModifiers };
             yield return new[] { CodeSnippets.CustomStructMarshalling.Stateful.ParametersAndModifiers };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.Stateful.ParametersAndModifiersWithFree };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.Stateful.ParametersAndModifiersWithNotifyInvokeSucceeded };
             yield return new[] { CodeSnippets.CustomStructMarshalling.Stateful.MarshalUsingParametersAndModifiers };
             yield return new[] { CodeSnippets.CustomStructMarshalling.Stateful.NativeToManagedOnlyOutParameter };
             yield return new[] { CodeSnippets.CustomStructMarshalling.Stateful.NativeToManagedGuaranteedOnlyOutParameter };

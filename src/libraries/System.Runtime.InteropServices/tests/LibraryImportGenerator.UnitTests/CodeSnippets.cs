@@ -899,6 +899,38 @@ public static class Marshaller
     }
 }
 ";
+                public static string RefWithFree = @"
+[ManagedToUnmanagedMarshallers(typeof(S), InMarshaller = typeof(M), RefMarshaller = typeof(M), OutMarshaller = typeof(M))]
+public static class Marshaller
+{
+    public struct Native { }
+
+    public struct M
+    {
+        public void FromManaged(S s) {}
+        public Native ToUnmanaged() => default;
+        public void FromUnmanaged(Native n) {}
+        public S ToManaged() => default;
+        public void Free() {}
+    }
+}
+";
+                public static string RefWithNotifyInvokeSucceeded = @"
+[ManagedToUnmanagedMarshallers(typeof(S), InMarshaller = typeof(M), RefMarshaller = typeof(M), OutMarshaller = typeof(M))]
+public static class Marshaller
+{
+    public struct Native { }
+
+    public struct M
+    {
+        public void FromManaged(S s) {}
+        public Native ToUnmanaged() => default;
+        public void FromUnmanaged(Native n) {}
+        public S ToManaged() => default;
+        public void NotifyInvokeSucceeded() {}
+    }
+}
+";
                 public static string RefBuffer = @"
 [ManagedToUnmanagedMarshallers(typeof(S), InMarshaller = typeof(M), RefMarshaller = typeof(M), OutMarshaller = typeof(M))]
 public static class Marshaller
@@ -964,6 +996,14 @@ public static class Marshaller
                 public static string ParametersAndModifiers = BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
                     + NonBlittableUserDefinedType(defineNativeMarshalling: true)
                     + Ref;
+
+                public static string ParametersAndModifiersWithFree = BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
+                    + NonBlittableUserDefinedType(defineNativeMarshalling: true)
+                    + RefWithFree;
+
+                public static string ParametersAndModifiersWithNotifyInvokeSucceeded = BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
+                    + NonBlittableUserDefinedType(defineNativeMarshalling: true)
+                    + RefWithNotifyInvokeSucceeded;
 
                 public static string MarshalUsingParametersAndModifiers = MarshalUsingParametersAndModifiers("S", "Marshaller")
                     + NonBlittableUserDefinedType(defineNativeMarshalling: false)

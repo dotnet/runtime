@@ -393,7 +393,7 @@ namespace Microsoft.Interop
 
         private static IMethodSymbol? GetNotifyInvokeSucceededMethod(ITypeSymbol type)
         {
-            return type.GetMembers(ShapeMemberNames.Value.Stateful.Free)
+            return type.GetMembers(ShapeMemberNames.Value.Stateful.NotifyInvokeSucceeded)
                 .OfType<IMethodSymbol>()
                 .FirstOrDefault(m => m is { IsStatic: false, Parameters.Length: 0, ReturnsVoid: true });
         }
