@@ -82,7 +82,7 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/libraries/build-job.yml
-    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    buildConfig: release
     platforms:
     - windows_x64
     jobParameters:
@@ -139,7 +139,7 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
       testGroup: innerloop
-      liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+      liveLibrariesBuildConfig: release
       condition: >-
         eq(variables['isRollingBuild'], true)
 #         or(
