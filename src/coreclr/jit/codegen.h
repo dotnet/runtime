@@ -674,18 +674,18 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     void genIPmappingAdd(IPmappingDscKind kind, const DebugInfo& di, bool isLabel);
     void genIPmappingAddToFront(IPmappingDscKind kind, const DebugInfo& di, bool isLabel);
     void genIPmappingGen();
-    void genAddPreciseIPMappingHere(const DebugInfo& di);
+    void genAddRichIPMappingHere(const DebugInfo& di);
 
-    void genReportFullDebugInfo();
+    void genReportRichDebugInfo();
 
     template <typename TWriteData>
-    void genReportFullDebugInfoInlineTree(InlineContext* context, TWriteData write);
+    void genReportRichDebugInfoInlineTree(InlineContext* context, TWriteData write);
     template <typename TWriteData>
-    void genReportFullDebugInfoMappings(TWriteData write);
+    void genReportRichDebugInfoMappings(TWriteData write);
 
 #ifdef DEBUG
-    void genReportFullDebugInfoToFile();
-    void genReportFullDebugInfoInlineTreeToFile(FILE* file, InlineContext* context, bool* first);
+    void genReportRichDebugInfoToFile();
+    void genReportRichDebugInfoInlineTreeToFile(FILE* file, InlineContext* context, bool* first);
 #endif
 
     void genEnsureCodeEmitted(const DebugInfo& di);

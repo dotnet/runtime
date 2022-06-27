@@ -272,12 +272,12 @@ CONFIG_INTEGER(EnableIncompleteISAClass, W("EnableIncompleteISAClass"), 0) // En
 
 #endif // defined(DEBUG)
 
-CONFIG_INTEGER(JitReportFullDebugInfo, W("JitReportFullDebugInfo"), 0) // If 1 report full debug info as internal data
+CONFIG_INTEGER(JitReportRichDebugInfo, W("JitReportRichDebugInfo"), 0) // If 1 report rich debug info as internal data
                                                                        // of compilation
 
 #ifdef DEBUG
-CONFIG_STRING(JitReportFullDebugInfoFile,
-              W("JitReportFullDebugInfoFile")) // Write full debug info in JSON format to this file
+CONFIG_STRING(JitReportRichDebugInfoFile,
+              W("JitReportRichDebugInfoFile")) // Write rich debug info in JSON format to this file
 #endif
 
 #if FEATURE_LOOP_ALIGN

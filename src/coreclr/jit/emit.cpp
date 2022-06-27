@@ -6601,7 +6601,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
 #ifdef DEBUG
     *instrCount                                          = 0;
-    jitstd::list<PreciseIPMapping>::iterator nextMapping = emitComp->genPreciseIPmappings.begin();
+    jitstd::list<RichIPMapping>::iterator nextMapping = emitComp->genRichIPmappings.begin();
 #endif
     for (insGroup* ig = emitIGlist; ig != nullptr; ig = ig->igNext)
     {
@@ -6776,7 +6776,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                 (id->idCodeSize() > 0))
             {
                 UNATIVE_OFFSET curCodeOffs = emitCurCodeOffs(cp);
-                while (nextMapping != emitComp->genPreciseIPmappings.end())
+                while (nextMapping != emitComp->genRichIPmappings.end())
                 {
                     UNATIVE_OFFSET mappingOffs = nextMapping->nativeLoc.CodeOffset(this);
 

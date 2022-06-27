@@ -1771,7 +1771,7 @@ struct IPmappingDsc
     bool             ipmdIsLabel;   // Can this code be a branch label?
 };
 
-struct PreciseIPMapping
+struct RichIPMapping
 {
     emitLocation nativeLoc;
     DebugInfo    debugInfo;
@@ -7763,7 +7763,7 @@ public:
     // Record the instr offset mapping to the generated code
 
     jitstd::list<IPmappingDsc>     genIPmappings;
-    jitstd::list<PreciseIPMapping> genPreciseIPmappings;
+    jitstd::list<RichIPMapping> genRichIPmappings;
 
     // Managed RetVal - A side hash table meant to record the mapping from a
     // GT_CALL node to its debug info.  This info is used to emit sequence points

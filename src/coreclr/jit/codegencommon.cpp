@@ -2091,7 +2091,7 @@ void CodeGen::genEmitUnwindDebugGCandEH()
 
     genIPmappingGen();
 
-    genReportFullDebugInfo();
+    genReportRichDebugInfo();
 
     /* Finalize the Local Var info in terms of generated code */
 
@@ -7574,11 +7574,20 @@ void CodeGen::genIPmappingGen()
 }
 
 #ifdef DEBUG
-void CodeGen::genReportFullDebugInfoInlineTreeToFile(FILE* file, InlineContext* context, bool* first)
+//------------------------------------------------------------------------
+// genReportRichDebugInfoInlineTreeToFile:
+//   Recursively process a context in the inline tree and write information about it to a file.
+//
+// Parameters:
+//   file - the file
+//   context - the context
+//   first - whether this is the first of the siblings being written out
+//
+void CodeGen::genReportRichDebugInfoInlineTreeToFile(FILE* file, InlineContext* context, bool* first)
 {
     if (context->GetSibling() != nullptr)
     {
-        genReportFullDebugInfoInlineTreeToFile(file, context->GetSibling(), first);
+        genReportRichDebugInfoInlineTreeToFile(file, context->GetSibling(), first);
     }
 
     if (context->IsSuccess())
@@ -7602,15 +7611,19 @@ void CodeGen::genReportFullDebugInfoInlineTreeToFile(FILE* file, InlineContext* 
         if (context->GetChild() != nullptr)
         {
             bool childFirst = true;
-            genReportFullDebugInfoInlineTreeToFile(file, context->GetChild(), &childFirst);
+            genReportRichDebugInfoInlineTreeToFile(file, context->GetChild(), &childFirst);
         }
         fprintf(file, "]}");
     }
 }
 
-void CodeGen::genReportFullDebugInfoToFile()
+//------------------------------------------------------------------------
+// genReportRichDebugInfoToFile:
+//   Write rich debug info in JSON format to file specified by environment variable.
+//
+void CodeGen::genReportRichDebugInfoToFile()
 {
-    if (JitConfig.JitReportFullDebugInfoFile() == nullptr)
+    if (JitConfig.JitReportRichDebugInfoFile() == nullptr)
     {
         return;
     }
@@ -7618,8 +7631,8 @@ void CodeGen::genReportFullDebugInfoToFile()
     static CritSecObject s_critSect;
     CritSecHolder        holder(s_critSect);
 
-    FILE* file = _wfopen(JitConfig.JitReportFullDebugInfoFile(), W("a"));
-    if (file != nullptr)
+    FILE* file = _wfopen(JitConfig.JitReportRichDebugInfoFile(), W("a"));
+    if (file == nullptr)
     {
         return;
     }
@@ -7630,10 +7643,10 @@ void CodeGen::genReportFullDebugInfoToFile()
     fprintf(file, "\"InlineTree\":");
 
     bool first = true;
-    genReportFullDebugInfoInlineTreeToFile(file, compiler->compInlineContext, &first);
+    genReportRichDebugInfoInlineTreeToFile(file, compiler->compInlineContext, &first);
     fprintf(file, ",\"Mappings\":[");
     first = true;
-    for (PreciseIPMapping& mapping : compiler->genPreciseIPmappings)
+    for (RichIPMapping& mapping : compiler->genRichIPmappings)
     {
         if (!first)
         {
@@ -7654,14 +7667,31 @@ void CodeGen::genReportFullDebugInfoToFile()
 
 #endif
 
+//------------------------------------------------------------------------
+// WriteBits:
+//   Helper function to write any value to a "write" template functor.
+//
+// Parameters:
+//   write - the write functor
+//   val   - the value
+//
 template<typename TWriteData, typename TValue>
 static void WriteBits(TWriteData write, TValue val)
 {
     write(&val, sizeof(val));
 }
 
+//------------------------------------------------------------------------
+// genReportRichDebugInfoInlineTree:
+//   Recursively process a context in the inline tree and write information
+//   about it in a binary format into the specified functor.
+//
+// Parameters:
+//   context - the inline context
+//   write   - write functor
+//
 template <typename TWriteData>
-void CodeGen::genReportFullDebugInfoInlineTree(InlineContext* context, TWriteData write)
+void CodeGen::genReportRichDebugInfoInlineTree(InlineContext* context, TWriteData write)
 {
     WriteBits(write, (uint32_t)context->GetOrdinal());
     WriteBits(write, (void*)context->GetCallee());
@@ -7683,15 +7713,22 @@ void CodeGen::genReportFullDebugInfoInlineTree(InlineContext* context, TWriteDat
     {
         if (child->IsSuccess())
         {
-            genReportFullDebugInfoInlineTree(child, write);
+            genReportRichDebugInfoInlineTree(child, write);
         }
     }
 }
 
+//------------------------------------------------------------------------
+// genReportRichDebugInfoMappings:
+//   Write rich mappings in a binary format to the specified write functor.
+//
+// Parameters:
+//   write - write functor
+//
 template <typename TWriteData>
-void CodeGen::genReportFullDebugInfoMappings(TWriteData write)
+void CodeGen::genReportRichDebugInfoMappings(TWriteData write)
 {
-    for (const PreciseIPMapping& mapping : compiler->genPreciseIPmappings)
+    for (const RichIPMapping& mapping : compiler->genRichIPmappings)
     {
         WriteBits(write, (uint32_t)mapping.nativeLoc.CodeOffset(GetEmitter()));
         WriteBits(write, (uint32_t)mapping.debugInfo.GetInlineContext()->GetOrdinal());
@@ -7699,20 +7736,25 @@ void CodeGen::genReportFullDebugInfoMappings(TWriteData write)
         WriteBits(write, (uint8_t)mapping.debugInfo.GetLocation().EncodeSourceTypes());
     }
 }
-
-void CodeGen::genReportFullDebugInfo()
+ 
+//------------------------------------------------------------------------
+// genReportRichDebugInfo:
+//   If enabled, report rich debugging information to file and/or as JIT
+//   compilation data.
+//
+void CodeGen::genReportRichDebugInfo()
 {
-    if (JitConfig.JitReportFullDebugInfo() == 0)
+    if (JitConfig.JitReportRichDebugInfo() == 0)
     {
         return;
     }
 
-    INDEBUG(genReportFullDebugInfoToFile());
+    INDEBUG(genReportRichDebugInfoToFile());
 
     size_t binarySize = 4; // fourcc
     auto recordSize   = [&binarySize](const void* data, size_t numBytes) { binarySize += numBytes; };
-    genReportFullDebugInfoInlineTree(compiler->compInlineContext, recordSize);
-    genReportFullDebugInfoMappings(recordSize);
+    genReportRichDebugInfoInlineTree(compiler->compInlineContext, recordSize);
+    genReportRichDebugInfoMappings(recordSize);
 
     uint8_t  inlineBytes[512];
     uint8_t* bytes =
@@ -7732,20 +7774,28 @@ void CodeGen::genReportFullDebugInfo()
     };
 #endif
     recordData("DBG0", 4);
-    genReportFullDebugInfoInlineTree(compiler->compInlineContext, recordData);
-    genReportFullDebugInfoMappings(recordData);
+    genReportRichDebugInfoInlineTree(compiler->compInlineContext, recordData);
+    genReportRichDebugInfoMappings(recordData);
 
     assert(cursor == (bytes + binarySize));
 
     compiler->info.compCompHnd->reportInternalData(bytes, binarySize);
 }
 
-void CodeGen::genAddPreciseIPMappingHere(const DebugInfo& di)
+//------------------------------------------------------------------------
+// genAddRichIPMappingHere:
+//   Create a rich IP mapping at the current emit location using the specified
+//   debug information.
+//
+// Parameters:
+//   di - the debug information
+//
+void CodeGen::genAddRichIPMappingHere(const DebugInfo& di)
 {
-    PreciseIPMapping mapping;
+    RichIPMapping mapping;
     mapping.nativeLoc.CaptureLocation(GetEmitter());
     mapping.debugInfo = di;
-    compiler->genPreciseIPmappings.push_back(mapping);
+    compiler->genRichIPmappings.push_back(mapping);
 }
 
 /*============================================================================
