@@ -102,6 +102,13 @@ namespace System.Tests
         //
 
         [Fact]
+        public static void AllBitsSetTest()
+        {
+            Assert.Equal((ushort)0xFFFF, BitConverter.HalfToUInt16Bits(BinaryNumberHelper<Half>.AllBitsSet));
+            Assert.Equal((ushort)0, (ushort)(BitConverter.HalfToUInt16Bits(BinaryNumberHelper<Half>.AllBitsSet) + 1));
+        }
+
+        [Fact]
         public static void IsPow2Test()
         {
             Assert.False(BinaryNumberHelper<Half>.IsPow2(Half.NegativeInfinity));

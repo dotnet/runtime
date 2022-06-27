@@ -245,6 +245,14 @@ namespace System.Tests
         //
 
         [Fact]
+        public static void AllBitsSetTest()
+        {
+            Int128 compare = new Int128(0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF);
+            Assert.Equal(compare, BinaryNumberHelper<Int128>.AllBitsSet);
+            Assert.Equal((Int128)0, (Int128)(BinaryNumberHelper<Int128>.AllBitsSet + 1));
+        }
+
+        [Fact]
         public static void IsPow2Test()
         {
             Assert.False(BinaryNumberHelper<Int128>.IsPow2(Zero));

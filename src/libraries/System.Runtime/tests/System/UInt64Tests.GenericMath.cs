@@ -38,6 +38,14 @@ namespace System.Tests
         // IAdditiveIdentity
         //
 
+
+        [Fact]
+        public static void AllBitsSetTest()
+        {
+            Assert.Equal((ulong)0xFFFFFFFFFFFFFFFF, BinaryNumberHelper<ulong>.AllBitsSet);
+            Assert.Equal((ulong)0, (ulong)(BinaryNumberHelper<ulong>.AllBitsSet + 1));
+        }
+
         [Fact]
         public static void AdditiveIdentityTest()
         {

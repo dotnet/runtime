@@ -218,6 +218,22 @@ namespace System.Runtime.InteropServices.Tests
         //
 
         [Fact]
+        public static void AllBitsSetTest()
+        {
+            if (NFloat.Size == sizeof(float))
+            {
+                Assert.Equal(0xFFFFFFFF, BitConverter.SingleToUInt32Bits((float)BinaryNumberHelper<NFloat>.AllBitsSet));
+                Assert.Equal((uint)0, (uint)(BitConverter.SingleToUInt32Bits((float)BinaryNumberHelper<NFloat>.AllBitsSet) + 1));
+            }
+            else
+            {
+                Assert.Equal(0xFFFFFFFFFFFFFFFF, BitConverter.DoubleToUInt64Bits((double)BinaryNumberHelper<NFloat>.AllBitsSet));
+                Assert.Equal((ulong)0, (ulong)(BitConverter.DoubleToUInt64Bits((double)BinaryNumberHelper<NFloat>.AllBitsSet) + 1));
+            }
+
+        }
+
+        [Fact]
         public static void IsPow2Test()
         {
             Assert.False(BinaryNumberHelper<NFloat>.IsPow2(NFloat.NegativeInfinity));

@@ -90,6 +90,13 @@ namespace System.Tests
         //
 
         [Fact]
+        public static void AllBitsSetTest()
+        {
+            Assert.Equal((ulong)0xFFFFFFFFFFFFFFFF, BitConverter.DoubleToUInt64Bits(BinaryNumberHelper<double>.AllBitsSet));
+            Assert.Equal((ulong)0, (ulong)(BitConverter.DoubleToUInt64Bits(BinaryNumberHelper<double>.AllBitsSet) + 1));
+        }
+
+        [Fact]
         public static void IsPow2Test()
         {
             Assert.False(BinaryNumberHelper<double>.IsPow2(double.NegativeInfinity));
