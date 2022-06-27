@@ -971,7 +971,7 @@ mini_emit_bounds_check_offset (MonoCompile *cfg, int array_reg, int array_length
 			if (COMPILE_LLVM (cfg))
 				MONO_EMIT_DEFAULT_BOUNDS_CHECK ((cfg), (array_reg), GINT_TO_UINT(array_length_offset), (index_reg), TRUE, ex_name);
 			else
-				MONO_ARCH_EMIT_BOUNDS_CHECK ((cfg), (array_reg), (array_length_offset), (index_reg), ex_name);
+				MONO_ARCH_EMIT_BOUNDS_CHECK ((cfg), (array_reg), GINT_TO_UINT(array_length_offset), (index_reg), ex_name);
 		} else {
 			MonoInst *ins;
 			MONO_INST_NEW ((cfg), ins, OP_BOUNDS_CHECK);
