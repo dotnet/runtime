@@ -82,9 +82,7 @@ namespace System.Net.WebSockets
                             }
                         }
 
-                        // Create the security key and expected response, then build all of the request headers
-                        KeyValuePair<string, string> secKeyAndSecWebSocketAccept = CreateSecKeyAndSecWebSocketAccept();
-                        AddWebSocketHeaders(request, secKeyAndSecWebSocketAccept.Key, options);
+                        string? secValue = AddWebSocketHeaders(request, options);
 
                         // Issue the request.  The response must be status code 101.
                         CancellationTokenSource? linkedCancellation;
@@ -106,7 +104,7 @@ namespace System.Net.WebSockets
                             response = await invoker.SendAsync(request, externalAndAbortCancellation.Token).ConfigureAwait(false);
                             externalAndAbortCancellation.Token.ThrowIfCancellationRequested(); // poll in case sends/receives in request/response didn't observe cancellation
                         }
-                        ValidateResponse(response, secKeyAndSecWebSocketAccept.Value, options);
+                        ValidateResponse(response, secValue, options);
                         break;
                     }
                     catch (HttpRequestException ex)
@@ -343,19 +341,22 @@ namespace System.Net.WebSockets
 
         /// <summary>Adds the necessary headers for the web socket request.</summary>
         /// <param name="request">The request to which the headers should be added.</param>
-        /// <param name="secKey">The generated security key to send in the Sec-WebSocket-Key header.</param>
         /// <param name="options">The options controlling the request.</param>
-        private static void AddWebSocketHeaders(HttpRequestMessage request, string secKey, ClientWebSocketOptions options)
+        private static string? AddWebSocketHeaders(HttpRequestMessage request, ClientWebSocketOptions options)
         {
             request.Version = options.HttpVersion;
             // always exact because we handle downgrade here
             request.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
+            string? secValue = null;
 
             if (request.Version == HttpVersion.Version11)
             {
+                // Create the security key and expected response, then build all of the request headers
+                KeyValuePair<string, string> secKeyAndSecWebSocketAccept = CreateSecKeyAndSecWebSocketAccept();
+                secValue = secKeyAndSecWebSocketAccept.Value;
                 request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.Connection, HttpKnownHeaderNames.Upgrade);
                 request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.Upgrade, "websocket");
-                request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.SecWebSocketKey, secKey);
+                request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.SecWebSocketKey, secKeyAndSecWebSocketAccept.Key);
             }
             else if (request.Version == HttpVersion.Version20)
             {
@@ -408,16 +409,21 @@ namespace System.Net.WebSockets
                     return builder.ToString();
                 }
             }
+            return secValue;
         }
 
-        private static void ValidateResponse(HttpResponseMessage response, string secValue, ClientWebSocketOptions options)
+        private static void ValidateResponse(HttpResponseMessage response, string? secValue, ClientWebSocketOptions options)
         {
+            Debug.Assert(response.Version == HttpVersion.Version11 || response.Version == HttpVersion.Version20);
+
             if (response.Version == HttpVersion.Version11)
             {
                 if (response.StatusCode != HttpStatusCode.SwitchingProtocols)
                 {
                     throw new WebSocketException(WebSocketError.NotAWebSocket, SR.Format(SR.net_WebSockets_Connect101Expected, (int)response.StatusCode));
                 }
+
+                Debug.Assert(secValue != null);
 
                 // The Connection, Upgrade, and SecWebSocketAccept headers are required and with specific values.
                 ValidateHeader(response.Headers, HttpKnownHeaderNames.Connection, "Upgrade");
