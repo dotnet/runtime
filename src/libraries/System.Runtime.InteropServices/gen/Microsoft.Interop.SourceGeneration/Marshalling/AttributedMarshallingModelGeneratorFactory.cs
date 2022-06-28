@@ -239,7 +239,8 @@ namespace Microsoft.Interop
             if (marshallerData.HasState)
             {
                 marshallingStrategy = new StatefulValueMarshalling(marshallerData.MarshallerType.Syntax, marshallerData.NativeType.Syntax, marshallerData.Shape);
-                // TODO: Add CallerAllocatedBuffer support
+                if (marshallerData.Shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
+                    marshallingStrategy = new StatefulCallerAllocatedBufferMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax, marshallerData.BufferElementType.Syntax);
             }
             else
             {
