@@ -81,6 +81,11 @@ namespace System.Reflection.PortableExecutable
         DynamicBase = 0x0040,
 
         /// <summary>
+        /// Code Integrity checks are enforced.
+        /// </summary>
+        ForceIntegrity = 0x0080,
+
+        /// <summary>
         /// Image is NX compatible.
         /// </summary>
         NxCompatible = 0x0100,
