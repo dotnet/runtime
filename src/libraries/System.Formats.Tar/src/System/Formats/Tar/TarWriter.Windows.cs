@@ -127,16 +127,17 @@ namespace System.Formats.Tar
 
             if (entry.EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile)
             {
+                Debug.Assert(entry._header._dataStream == null);
+
                 FileStreamOptions options = new()
                 {
                     Mode = FileMode.Open,
                     Access = FileAccess.Read,
                     Share = FileShare.Read,
-                    Options = FileOptions.None
+                    Options = FileOptions.Asynchronous
                 };
 
-                Debug.Assert(entry._header._dataStream == null);
-                entry._header._dataStream = File.Open(fullPath, options);
+                entry._header._dataStream = new FileStream(fullPath, options);
             }
 
             await WriteEntryAsync(entry, cancellationToken).ConfigureAwait(false);
