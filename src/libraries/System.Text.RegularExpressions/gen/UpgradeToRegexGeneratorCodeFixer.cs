@@ -111,12 +111,13 @@ namespace System.Text.RegularExpressions.Generator
                 methodName = $"{DefaultRegexMethodName}{memberCount++}";
             }
 
-            // We generate a new invocation node to call our new partial method, and use it to replace the nodeToFix.
-            SyntaxGenerator generator = SyntaxGenerator.GetGenerator(document);
             ImmutableDictionary<string, string?> properties = diagnostic.Properties;
 
             var annotation = new SyntaxAnnotation();
+            DocumentEditor editor = await DocumentEditor.CreateAsync(document, cancellationToken).ConfigureAwait(false);
+            SyntaxGenerator generator = editor.Generator;
 
+            // We generate a new invocation node to call our new partial method, and use it to replace the nodeToFix.
             SyntaxNode replacement = generator.InvocationExpression(generator.IdentifierName(methodName));
 
             if (operation is IInvocationOperation invocationOperation) // When using a Regex static method
@@ -128,37 +129,33 @@ namespace System.Text.RegularExpressions.Generator
                 replacement = generator.InvocationExpression(generator.MemberAccessExpression(replacement, invocationOperation.TargetMethod.Name), arguments);
             }
 
-            root = root.ReplaceNode(nodeToFix, replacement.WithAdditionalAnnotations(annotation));
+            editor.ReplaceNode(nodeToFix, replacement);
 
-            SyntaxNode invocationNode = root.GetAnnotatedNodes(annotation).Single();
-            var hasTypeDeclaration = false;
             // Walk the type hirerarchy of the node to fix, and add the partial modifier to each ancestor (if it doesn't have it already)
-            root = root.ReplaceNodes(
-                invocationNode.Ancestors().OfType<TypeDeclarationSyntax>(),
-                (_, typeDeclaration) =>
+            TypeDeclarationSyntax? parentTypeDeclaration = null;
+            foreach (var typeDeclaration in nodeToFix.Ancestors().OfType<TypeDeclarationSyntax>())
+            {
+                parentTypeDeclaration ??= typeDeclaration;
+                if (!typeDeclaration.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword)))
                 {
-                    hasTypeDeclaration = true;
-                    if (!typeDeclaration.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword)))
-                    {
-                        return typeDeclaration.AddModifiers(SyntaxFactory.Token(SyntaxKind.PartialKeyword)).WithAdditionalAnnotations(Simplifier.Annotation);
-                    }
-
-                    return typeDeclaration;
-                });
+                    editor.ReplaceNode(typeDeclaration, (n, _) => ((TypeDeclarationSyntax)n).AddModifiers(SyntaxFactory.Token(SyntaxKind.PartialKeyword)).WithAdditionalAnnotations(Simplifier.Annotation));
+                }
+            }
 
             // Add the method to the type.
             MethodDeclarationSyntax newMethod = GenerateMethodDeclaration(methodName, generator, regexSymbol, regexGeneratorAttributeSymbol, properties);
-            if (hasTypeDeclaration)
+            if (parentTypeDeclaration is not null)
             {
-                TypeDeclarationSyntax typeDeclaration = root.GetAnnotatedNodes(annotation).Single().FirstAncestorOrSelf<TypeDeclarationSyntax>();
-                return document.WithSyntaxRoot(root.ReplaceNode(typeDeclaration, typeDeclaration.AddMembers(newMethod)));
+                editor.ReplaceNode(parentTypeDeclaration, (n, _) => ((TypeDeclarationSyntax)n).AddMembers(newMethod));
             }
             else
             {
                 // If we didn't have a type declaration, then it's likely we're in a top-level statements program.
                 var topLevelClassDeclaration = (ClassDeclarationSyntax)generator.ClassDeclaration("Program", modifiers: DeclarationModifiers.Partial, members: new[] { newMethod });
-                return document.WithSyntaxRoot(((CompilationUnitSyntax)root).AddMembers(topLevelClassDeclaration));
+                editor.ReplaceNode(editor.OriginalRoot, (n, _) => ((CompilationUnitSyntax)n).AddMembers(topLevelClassDeclaration));
             }
+
+            return editor.GetChangedDocument();
         }
 
         private static MethodDeclarationSyntax GenerateMethodDeclaration(string methodName, SyntaxGenerator generator, ITypeSymbol regexSymbol, ITypeSymbol regexGeneratorAttributeSymbol, ImmutableDictionary<string, string?> properties)
