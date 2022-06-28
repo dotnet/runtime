@@ -5,7 +5,6 @@ Please consult [documentation](https://docs.microsoft.com/dotnet/core/deploying/
 The rest of this document covers advanced topics only.
 
 
-
 ## Using daily builds
 
 For using daily builds, you need to make sure the `nuget.config` file for your project contains the following package sources under the `<packageSources>` element:
