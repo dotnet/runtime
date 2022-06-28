@@ -500,6 +500,34 @@ namespace ILLink.Tasks.Tests
 		}
 
 		[Theory]
+		[InlineData ("Xml")]
+		[InlineData ("xml")]
+		[InlineData ("dgml")]
+		[InlineData ("Txt")]
+		public void TestDependenciesFileFormat (string fileFormat)
+		{
+			var task = new MockTask () {
+				DumpDependencies = true,
+				DependenciesFileFormat = fileFormat
+			};
+			// translate string to enum
+			// check if enum matches output file format of recorder
+			using (var driver = task.CreateDriver ()) {
+				switch (fileFormat.ToLower ()) {
+				case "xml":
+					Assert.Equal (MockXmlDependencyRecorder.Singleton, driver.GetDependencyRecorders ()?.Single ());
+					break;
+				case "dgml":
+					Assert.Equal (MockDgmlDependencyRecorder.Singleton, driver.GetDependencyRecorders ()?.Single ());
+					break;
+				default:
+					Assert.Equal (1047, driver.Logger.Messages[0].Code);
+					break;
+				}
+			}
+		}
+
+		[Theory]
 		[InlineData (true)]
 		[InlineData (false)]
 		public void TestRemoveSymbols (bool removeSymbols)

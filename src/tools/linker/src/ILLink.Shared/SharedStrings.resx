@@ -38,7 +38,7 @@
 
     The mimetype is used for serialized objects, and tells the
     ResXResourceReader how to depersist the object. This is currently not
-    extensible. For a given mimetype the value must be set accordingly:
+    extensible. For a given mimetype the value must be set accordingly
 
     Note - application/x-microsoft.net.object.binary.base64 is the format
     that the ResXResourceWriter will generate, however the reader can
@@ -1184,5 +1184,11 @@
   </data>
   <data name="UnrecognizedInternalAttributeTitle" xml:space="preserve">
     <value>Unrecognized internal attribute '{0}'</value>
+  </data>
+  <data name="InvalidDependenciesFileFormatMessage" xml:space="preserve">
+    <value>The only allowed file types are Xml or Dgml.</value>
+  </data>
+  <data name="InvalidDependenciesFileFormatTitle" xml:space="preserve">
+    <value>Unrecognized dependencies file type.</value>
   </data>
 </root>

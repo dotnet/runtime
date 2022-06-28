@@ -33,5 +33,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				Marked = marked
 			});
 		}
+
+		public void FinishRecording ()
+		{
+
+		}
 	}
 }

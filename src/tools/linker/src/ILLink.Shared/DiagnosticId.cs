@@ -55,6 +55,7 @@ namespace ILLink.Shared
 		CouldNotResolveCustomAttributeTypeValue = 1044,
 		UnexpectedAttributeArgumentType = 1045,
 		InvalidMetadataOption = 1046,
+		InvalidDependenciesFileFormat = 1047,
 
 		// Linker diagnostic ids.
 		TypeHasNoFieldsToPreserve = 2001,

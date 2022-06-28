@@ -182,6 +182,7 @@ Copyright (c) .NET Foundation. All rights reserved.
             RootDescriptorFiles="@(TrimmerRootDescriptor)"
             OutputDirectory="$(IntermediateLinkDir)"
             DumpDependencies="$(_TrimmerDumpDependencies)"
+            DependenciesFileFormat="$(_TrimmerDependenciesFileFormat)"
             ExtraArgs="$(_ExtraTrimmerArgs)"
             ToolExe="$(_DotNetHostFileName)"
             ToolPath="$(_DotNetHostDirectory)"

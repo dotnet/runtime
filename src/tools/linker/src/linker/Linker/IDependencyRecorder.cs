@@ -54,5 +54,10 @@ namespace Mono.Linker
 		/// but can also be the linker steps or really any other object. "marked" may be false for a target that
 		/// is still marked for some other reason.</remarks>
 		void RecordDependency (object target, in DependencyInfo reason, bool marked);
+
+		/// <summary>
+		/// Indicates that the linker has completed recording.
+		/// </summary>
+		void FinishRecording ();
 	}
 }
