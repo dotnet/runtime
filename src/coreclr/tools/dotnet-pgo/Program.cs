@@ -276,7 +276,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
             PrintDetailedMessage($"Parsing {commandLineOptions.InputFileToDump}");
             var profileData = MIbcProfileParser.ParseMIbcFile(tsc, mibcPeReader, null, onlyDefinedInAssembly: null);
-            PrintMibcStats(profileData);
+            PrintMibcStats(ParseMibcConfig(tsc, mibcPeReader), profileData);
 
             using (FileStream outputFile = new FileStream(commandLineOptions.OutputFileName.FullName, FileMode.Create, FileAccess.Write))
             {
@@ -354,6 +354,67 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             return 0;
         }
 
+        static MibcConfig ParseMibcConfig(TypeRefTypeSystem.TypeRefTypeSystemContext tsc, params PEReader[] pEReaders)
+        {
+            MibcConfig mergedConfig = new();
+            // When we merge multiple mibc let's just unconditionally pick the first valid MibcConfig
+            foreach (PEReader peReader in pEReaders)
+            {
+                EcmaModule mibcModule = EcmaModule.Create(tsc, peReader, null);
+                EcmaMethod mibcConfigMth = (EcmaMethod)mibcModule.GetGlobalModuleType().GetMethod(nameof(MibcConfig), null);
+                if (mibcConfigMth != null)
+                {
+                    var ilBody = EcmaMethodIL.Create(mibcConfigMth);
+                    var ilReader = new ILReader(ilBody.GetILBytes());
+
+                    // Parse:
+                    //
+                    //   ldstr "key1"
+                    //   ldstr "value1"
+                    //   pop
+                    //   pop
+                    //   ldstr "key2"
+                    //   ldstr "value2"
+                    //   pop
+                    //   pop
+                    //   ...
+                    //   ret
+                    string fieldName = null;
+                    while (ilReader.HasNext)
+                    {
+                        ILOpcode opcode = ilReader.ReadILOpcode();
+                        switch (opcode)
+                        {
+                            case ILOpcode.ldstr:
+                                var ldStrValue = (string)ilBody.GetObject(ilReader.ReadILToken());
+                                if (fieldName != null)
+                                {
+                                    var field = mergedConfig.GetType().GetField(fieldName);
+                                    if (field != null)
+                                    {
+                                        field.SetValue(mergedConfig, ldStrValue);
+                                    }
+                                }
+                                else
+                                {
+                                    fieldName = ldStrValue;
+                                }
+                                break;
+
+                            case ILOpcode.ret:
+                            case ILOpcode.pop:
+                                fieldName = null;
+                                break;
+
+                            default:
+                                throw new InvalidOperationException($"Unexpected opcode: {opcode}");
+                        }
+                    }
+                    break;
+                }
+            }
+            return mergedConfig;
+        }
 
         static int InnerMergeMain(CommandLineOptions commandLineOptions)
         {
@@ -399,7 +460,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     ProfileData.MergeProfileData(ref partialNgen, mergedProfileData, MIbcProfileParser.ParseMIbcFile(tsc, peReader, assemblyNamesInBubble, onlyDefinedInAssembly: null));
                 }
 
-                int result = MibcEmitter.GenerateMibcFile(tsc, commandLineOptions.OutputFileName, mergedProfileData.Values, commandLineOptions.ValidateOutputFile, commandLineOptions.Uncompressed);
+                MibcConfig mergedConfig = ParseMibcConfig(tsc, mibcReaders);
+                int result = MibcEmitter.GenerateMibcFile(mergedConfig, tsc, commandLineOptions.OutputFileName, mergedProfileData.Values, commandLineOptions.ValidateOutputFile, commandLineOptions.Uncompressed);
                 if (result == 0 && commandLineOptions.InheritTimestamp)
                 {
                     commandLineOptions.OutputFileName.CreationTimeUtc = commandLineOptions.InputFilesToMerge.Max(fi => fi.CreationTimeUtc);
@@ -445,10 +507,10 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             ProfileData profile2 = MIbcProfileParser.ParseMIbcFile(tsc, mibc2, null, onlyDefinedInAssembly: null);
             PrintOutput($"Comparing {name1} to {name2}");
             PrintOutput($"Statistics for {name1}");
-            PrintMibcStats(profile1);
+            PrintMibcStats(ParseMibcConfig(tsc, mibc1), profile1);
             PrintOutput("");
             PrintOutput($"Statistics for {name2}");
-            PrintMibcStats(profile2);
+            PrintMibcStats(ParseMibcConfig(tsc, mibc2), profile2);
 
             PrintOutput("");
             PrintOutput("Comparison");
@@ -792,9 +854,10 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             Console.WriteLine();
         }
 
-        static void PrintMibcStats(ProfileData data)
+        static void PrintMibcStats(MibcConfig config, ProfileData data)
         {
-            List<MethodProfileData> methods = data.GetAllMethodProfileData().ToList();
+            PrintOutput(config.ToString());
+            List <MethodProfileData> methods = data.GetAllMethodProfileData().ToList();
             List<MethodProfileData> profiledMethods = methods.Where(spd => spd.SchemaData != null).ToList();
             PrintOutput($"# Methods: {methods.Count}");
             PrintOutput($"# Methods with any profile data: {profiledMethods.Count(spd => spd.SchemaData.Length > 0)}");
@@ -1659,13 +1722,24 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     GenerateJittraceFile(commandLineOptions.OutputFileName, methodsUsedInProcess, commandLineOptions.JitTraceOptions);
                 else if (commandLineOptions.FileType.Value == PgoFileType.mibc)
                 {
+                    var config = new MibcConfig();
+
+                    // Look for OS and Arch, e.g. "Windows" and "x64"
+                    TraceEvent processInfo = p.EventsInProcess.Filter(t => t.EventName == "ProcessInfo").FirstOrDefault();
+                    config.Os = processInfo?.PayloadByName("OSInformation")?.ToString();
+                    config.Arch = processInfo?.PayloadByName("ArchInformation")?.ToString();
+
+                    // Look for Sku, e.g. "CoreClr"
+                    TraceEvent runtimeStart = p.EventsInProcess.Filter(t => t.EventName == "Runtime/Start").FirstOrDefault();
+                    config.Runtime = runtimeStart?.PayloadByName("Sku")?.ToString();
+
                     ILCompiler.MethodProfileData[] methodProfileData = new ILCompiler.MethodProfileData[methodsUsedInProcess.Count];
                     for (int i = 0; i < methodProfileData.Length; i++)
                     {
                         ProcessedMethodData processedData = methodsUsedInProcess[i];
                         methodProfileData[i] = new ILCompiler.MethodProfileData(processedData.Method, ILCompiler.MethodProfilingDataFlags.ReadMethodCode, processedData.ExclusiveWeight, processedData.WeightedCallData, 0xFFFFFFFF, processedData.InstrumentationData);
                     }
-                    return MibcEmitter.GenerateMibcFile(tsc, commandLineOptions.OutputFileName, methodProfileData, commandLineOptions.ValidateOutputFile, commandLineOptions.Uncompressed);
+                    return MibcEmitter.GenerateMibcFile(config, tsc, commandLineOptions.OutputFileName, methodProfileData, commandLineOptions.ValidateOutputFile, commandLineOptions.Uncompressed);
                 }
             }
             return 0;
