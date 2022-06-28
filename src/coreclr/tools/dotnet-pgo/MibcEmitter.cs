@@ -248,7 +248,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             emitter.InjectSystemPrivateCanon();
             emitter.AllowUseOfAddGlobalMethod();
 
-            GenerateConfigData(config, emitter);
+            if (config != null)
+                GenerateConfigData(config, emitter);
 
             SortedDictionary<string, MIbcGroup> groups = new SortedDictionary<string, MIbcGroup>();
             StringBuilder mibcGroupNameBuilder = new StringBuilder();
