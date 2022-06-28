@@ -28,7 +28,7 @@ internal static partial class Interop
             private ushort wReserved1;
             private ushort dwSupport;
 #if NET7_0_OR_GREATER
-            [ManagedToUnmanagedMarshallers(typeof(WAVEOUTCAPS), InMarshaller = typeof(Marshaller), RefMarshaller = typeof(Marshaller), OutMarshaller = typeof(Marshaller))]
+            [CustomMarshaller(typeof(WAVEOUTCAPS), Scenario.Default, typeof(Marshaller))]
             public static class Marshaller
             {
                 public static Native ConvertToUnmanaged(WAVEOUTCAPS managed) => new(managed);
