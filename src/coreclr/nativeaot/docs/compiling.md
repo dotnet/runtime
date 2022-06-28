@@ -2,8 +2,6 @@
 
 Please consult [documentation](https://github.com/dotnet/docs/blob/main/docs/core/deploying/native-aot.md) for instructions how to compile amd publish application.
 
-If you are starting a new project, you may find the [HelloWorld sample](https://github.com/dotnet/samples/tree/main/core/nativeaot/HelloWorld/README.md) directions useful.
-
 
 
 ## Using daily builds
