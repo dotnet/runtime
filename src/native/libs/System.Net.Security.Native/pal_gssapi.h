@@ -173,6 +173,25 @@ PALEXPORT uint32_t NetSecurityNative_Unwrap(uint32_t* minorStatus,
                                             PAL_GssBuffer* outBuffer);
 
 /*
+Shims the gss_get_mic method.
+*/
+PALEXPORT uint32_t NetSecurityNative_GetMic(uint32_t* minorStatus,
+                                            GssCtxId* contextHandle,
+                                            uint8_t* inputBytes,
+                                            int32_t inputLength,
+                                            PAL_GssBuffer* outBuffer);
+
+/*
+Shims the gss_verify_mic method.
+*/
+PALEXPORT uint32_t NetSecurityNative_VerifyMic(uint32_t* minorStatus,
+                                               GssCtxId* contextHandle,
+                                               uint8_t* inputBytes,
+                                               int32_t inputLength,
+                                               uint8_t* tokenBytes,
+                                               int32_t tokenLength);
+
+/*
 Shims the gss_acquire_cred_with_password method with GSS_C_INITIATE.
 */
 PALEXPORT uint32_t NetSecurityNative_InitiateCredWithPassword(uint32_t* minorStatus,

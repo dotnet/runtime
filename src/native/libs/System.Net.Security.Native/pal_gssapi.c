@@ -77,6 +77,8 @@ static gss_OID_desc gss_mech_ntlm_OID_desc = {.length = STRING_LENGTH(gss_ntlm_o
     PER_FUNCTION_BLOCK(gss_release_oid_set) \
     PER_FUNCTION_BLOCK(gss_unwrap) \
     PER_FUNCTION_BLOCK(gss_wrap) \
+    PER_FUNCTION_BLOCK(gss_get_mic) \
+    PER_FUNCTION_BLOCK(gss_verify_mic) \
     PER_FUNCTION_BLOCK(GSS_C_NT_USER_NAME) \
     PER_FUNCTION_BLOCK(GSS_C_NT_HOSTBASED_SERVICE)
 
@@ -108,6 +110,8 @@ static void* volatile s_gssLib = NULL;
 #define gss_release_oid_set(...)            gss_release_oid_set_ptr(__VA_ARGS__)
 #define gss_unwrap(...)                     gss_unwrap_ptr(__VA_ARGS__)
 #define gss_wrap(...)                       gss_wrap_ptr(__VA_ARGS__)
+#define gss_get_mic(...)                    gss_get_mic_ptr(__VA_ARGS__)
+#define gss_verify_mic(...)                 gss_verify_mic_ptr(__VA_ARGS__)
 
 #define GSS_C_NT_USER_NAME                  (*GSS_C_NT_USER_NAME_ptr)
 #define GSS_C_NT_HOSTBASED_SERVICE          (*GSS_C_NT_HOSTBASED_SERVICE_ptr)
@@ -542,6 +546,50 @@ uint32_t NetSecurityNative_Unwrap(uint32_t* minorStatus,
     GssBuffer gssBuffer = {.length = 0, .value = NULL};
     uint32_t majorStatus = gss_unwrap(minorStatus, contextHandle, &inputMessageBuffer, &gssBuffer, NULL, NULL);
     NetSecurityNative_MoveBuffer(&gssBuffer, outBuffer);
+    return majorStatus;
+}
+
+uint32_t NetSecurityNative_GetMic(uint32_t* minorStatus,
+                                  GssCtxId* contextHandle,
+                                  uint8_t* inputBytes,
+                                  int32_t inputLength,
+                                  PAL_GssBuffer* outBuffer)
+{
+    assert(minorStatus != NULL);
+    assert(contextHandle != NULL);
+    assert(inputBytes != NULL);
+    assert(inputLength >= 0);
+    assert(outBuffer != NULL);
+
+    GssBuffer inputMessageBuffer = {.length = (size_t)inputLength, .value = inputBytes};
+    GssBuffer gssBuffer;
+    uint32_t majorStatus =
+        gss_get_mic(minorStatus, contextHandle, GSS_C_QOP_DEFAULT, &inputMessageBuffer, &gssBuffer);
+
+    NetSecurityNative_MoveBuffer(&gssBuffer, outBuffer);
+    return majorStatus;
+}
+
+uint32_t NetSecurityNative_VerifyMic(uint32_t* minorStatus,
+                                     GssCtxId* contextHandle,
+                                     uint8_t* inputBytes,
+                                     int32_t inputLength,
+                                     uint8_t* tokenBytes,
+                                     int32_t tokenLength)
+{
+    assert(minorStatus != NULL);
+    assert(contextHandle != NULL);
+    assert(inputBytes != NULL);
+    assert(inputLength >= 0);
+    assert(tokenBytes != NULL);
+    assert(tokenLength >= 0);
+
+    GssBuffer inputMessageBuffer = {.length = (size_t)inputLength, .value = inputBytes};
+    GssBuffer tokenBuffer = {.length = (size_t)tokenLength, .value = tokenBytes};
+    GssBuffer gssBuffer;
+    uint32_t majorStatus =
+        gss_verify_mic(minorStatus, contextHandle, &inputMessageBuffer, &tokenBuffer, NULL);
+
     return majorStatus;
 }
 

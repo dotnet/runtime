@@ -218,6 +218,23 @@ internal static partial class Interop
             int count,
             ref GssBuffer outBuffer);
 
+        [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_GetMic")]
+        private static unsafe partial Status GetMic(
+            out Status minorStatus,
+            SafeGssContextHandle? contextHandle,
+            byte* inputBytes,
+            int inputLength,
+            ref GssBuffer outBuffer);
+
+        [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_VerifyMic")]
+        private static unsafe partial Status VerifyMic(
+            out Status minorStatus,
+            SafeGssContextHandle? contextHandle,
+            byte* inputBytes,
+            int inputLength,
+            byte* tokenBytes,
+            int tokenLength);
+
         internal static unsafe Status WrapBuffer(
             out Status minorStatus,
             SafeGssContextHandle? contextHandle,
@@ -240,6 +257,31 @@ internal static partial class Interop
             fixed (byte* inputBytesPtr = inputBytes)
             {
                 return Unwrap(out minorStatus, contextHandle, inputBytesPtr, 0, inputBytes.Length, ref outBuffer);
+            }
+        }
+
+        internal static unsafe Status GetMic(
+            out Status minorStatus,
+            SafeGssContextHandle? contextHandle,
+            ReadOnlySpan<byte> inputBytes,
+            ref GssBuffer outBuffer)
+        {
+            fixed (byte* inputBytesPtr = inputBytes)
+            {
+                return GetMic(out minorStatus, contextHandle, inputBytesPtr, inputBytes.Length, ref outBuffer);
+            }
+        }
+
+        internal static unsafe Status VerifyMic(
+            out Status minorStatus,
+            SafeGssContextHandle? contextHandle,
+            ReadOnlySpan<byte> inputBytes,
+            ReadOnlySpan<byte> tokenBytes)
+        {
+            fixed (byte* inputBytesPtr = inputBytes)
+            fixed (byte* tokenBytesPtr = tokenBytes)
+            {
+                return VerifyMic(out minorStatus, contextHandle, inputBytesPtr, inputBytes.Length, tokenBytesPtr, tokenBytes.Length);
             }
         }
     }

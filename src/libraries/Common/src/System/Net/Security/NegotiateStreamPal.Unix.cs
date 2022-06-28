@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Buffers;
+using System.Buffers.Binary;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -63,7 +64,7 @@ namespace System.Net.Security
         }
 
         private static int GssUnwrap(
-            SafeGssContextHandle? context,
+            SafeGssContextHandle context,
             Span<byte> buffer)
         {
             Interop.NetSecurityNative.GssBuffer decryptedBuffer = default(Interop.NetSecurityNative.GssBuffer);
@@ -547,21 +548,51 @@ namespace System.Net.Security
             [NotNull] ref byte[]? output,
             uint sequenceNumber)
         {
-            SafeDeleteNegoContext gssContext = (SafeDeleteNegoContext) securityContext;
-            byte[] tempOutput = GssWrap(gssContext.GssContext, isConfidential, buffer);
+            SafeGssContextHandle gssContext = ((SafeDeleteNegoContext)securityContext).GssContext!;
+            int resultSize;
+
+            if (isNtlm && !isConfidential)
+            {
+                Interop.NetSecurityNative.GssBuffer micBuffer = default;
+                try
+                {
+                    Interop.NetSecurityNative.Status minorStatus;
+                    Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.GetMic(
+                        out minorStatus,
+                        gssContext,
+                        buffer,
+                        ref micBuffer);
+                    if (status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE)
+                    {
+                        throw new Interop.NetSecurityNative.GssApiException(status, minorStatus);
+                    }
+
+                    resultSize = micBuffer.Span.Length + buffer.Length;
+                    if (output == null || output.Length < resultSize + 4)
+                    {
+                        output = new byte[resultSize + 4];
+                    }
+
+                    micBuffer.Span.CopyTo(output.AsSpan(4));
+                    buffer.CopyTo(output.AsSpan(micBuffer.Span.Length + 4));
+                    BinaryPrimitives.WriteInt32LittleEndian(output, resultSize);
+
+                    return resultSize + 4;
+                }
+                finally
+                {
+                    micBuffer.Dispose();
+                }
+            }
+
+            byte[] tempOutput = GssWrap(gssContext, isConfidential, buffer);
 
             // Create space for prefixing with the length
             const int prefixLength = 4;
             output = new byte[tempOutput.Length + prefixLength];
             Array.Copy(tempOutput, 0, output, prefixLength, tempOutput.Length);
-            int resultSize = tempOutput.Length;
-            unchecked
-            {
-                output[0] = (byte)((resultSize) & 0xFF);
-                output[1] = (byte)(((resultSize) >> 8) & 0xFF);
-                output[2] = (byte)(((resultSize) >> 16) & 0xFF);
-                output[3] = (byte)(((resultSize) >> 24) & 0xFF);
-            }
+            resultSize = tempOutput.Length;
+            BinaryPrimitives.WriteInt32LittleEndian(output, resultSize);
 
             return resultSize + 4;
         }
@@ -574,8 +605,35 @@ namespace System.Net.Security
             out int newOffset,
             uint sequenceNumber)
         {
+            SafeGssContextHandle gssContext = ((SafeDeleteNegoContext)securityContext).GssContext!;
+
+            if (isNtlm && !isConfidential)
+            {
+                const int NtlmSignatureLength = 16;
+
+                if (buffer.Length < NtlmSignatureLength)
+                {
+                    Debug.Fail("Argument 'count' out of range.");
+                    throw new Interop.NetSecurityNative.GssApiException(Interop.NetSecurityNative.Status.GSS_S_DEFECTIVE_TOKEN, 0);
+                }
+
+                Interop.NetSecurityNative.Status minorStatus;
+                Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.VerifyMic(
+                    out minorStatus,
+                    gssContext,
+                    buffer.Slice(NtlmSignatureLength),
+                    buffer.Slice(0, NtlmSignatureLength));
+                if (status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE)
+                {
+                    throw new Interop.NetSecurityNative.GssApiException(status, minorStatus);
+                }
+
+                newOffset = NtlmSignatureLength;
+                return buffer.Length - NtlmSignatureLength;
+            }
+
             newOffset = 0;
-            return GssUnwrap(((SafeDeleteNegoContext)securityContext).GssContext, buffer);
+            return GssUnwrap(gssContext, buffer);
         }
 
         internal static int VerifySignature(SafeDeleteContext securityContext, ReadOnlySpan<byte> buffer)
