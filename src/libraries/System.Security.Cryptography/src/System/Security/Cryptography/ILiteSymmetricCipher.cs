@@ -13,8 +13,5 @@ namespace System.Security.Cryptography
 
         int BlockSizeInBytes { get; }
         int PaddingSizeInBytes { get; }
-
-        bool HandlesPadding => false;
-        void ValidatePaddingMode(PaddingMode paddingMode) { } // only useful when HandlesPadding == true
     }
 }

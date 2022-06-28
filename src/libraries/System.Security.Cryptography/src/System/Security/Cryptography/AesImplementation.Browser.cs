@@ -19,12 +19,11 @@ namespace System.Security.Cryptography
             bool encrypting)
         {
             ValidateCipherMode(cipherMode);
-            ValidatePaddingMode(paddingMode);
 
             Debug.Assert(blockSize == AesManagedTransform.BlockSizeBytes);
             Debug.Assert(paddingSize == blockSize);
 
-            return new AesManagedTransform(key, iv, encrypting);
+            return UniversalCryptoTransform.Create(paddingMode, new AesManagedTransform(key, iv, encrypting), encrypting);
         }
 
         private static ILiteSymmetricCipher CreateLiteCipher(
@@ -48,12 +47,6 @@ namespace System.Security.Cryptography
         {
             if (cipherMode != CipherMode.CBC)
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_CipherModeBrowser);
-        }
-
-        internal static void ValidatePaddingMode(PaddingMode paddingMode)
-        {
-            if (paddingMode != PaddingMode.PKCS7)
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_PaddingModeBrowser);
         }
     }
 }

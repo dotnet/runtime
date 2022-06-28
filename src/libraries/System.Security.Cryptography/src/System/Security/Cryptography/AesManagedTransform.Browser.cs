@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography
 {
-    internal sealed class AesManagedTransform : ICryptoTransform, ILiteSymmetricCipher
+    internal sealed class AesManagedTransform : BasicSymmetricCipher, ILiteSymmetricCipher
     {
         public const int BlockSizeBytes = 16; // 128 bits
         private const int BlockSizeInts = BlockSizeBytes / 4;
@@ -22,21 +22,25 @@ namespace System.Security.Cryptography
 
         private int[] _IV;
         private int[] _lastBlockBuffer;
-        private byte[]? _depadBuffer;
 
         public AesManagedTransform(ReadOnlySpan<byte> key,
-                                        ReadOnlySpan<byte> iv,
-                                        bool encrypting)
+                                   ReadOnlySpan<byte> iv,
+                                   bool encrypting)
+            // AesManagedTransform doesn't use the base IV property, so just pass 'null'.
+            : base(iv: null, BlockSizeBytes, BlockSizeBytes)
         {
             Debug.Assert(BitConverter.IsLittleEndian, "The logic of casting Span<int> to Span<byte> below assumes little endian");
 
-            _encrypting = encrypting;
-            _Nr = GetNumberOfRounds(key);
-            _Nk = key.Length / 4;
+            if (iv.IsEmpty)
+                throw new CryptographicException(SR.Cryptography_MissingIV);
 
             // we only support the standard AES block size
             if (iv.Length != BlockSizeBytes)
                 throw new CryptographicException(SR.Cryptography_InvalidIVSize);
+
+            _encrypting = encrypting;
+            _Nr = GetNumberOfRounds(key);
+            _Nk = key.Length / 4;
 
             _IV = new int[BlockSizeInts];
             iv.CopyTo(MemoryMarshal.AsBytes(_IV.AsSpan()));
@@ -46,199 +50,74 @@ namespace System.Security.Cryptography
             _lastBlockBuffer = _IV.AsSpan().ToArray();
         }
 
-        public void Dispose()
+        protected override void Dispose(bool disposing)
         {
-            // We need to always zeroize the following fields because they contain sensitive data
-            if (_IV != null)
+            if (disposing)
             {
-                Array.Clear(_IV);
-                _IV = null!;
+                // We need to always zeroize the following fields because they contain sensitive data
+                if (_IV != null)
+                {
+                    Array.Clear(_IV);
+                    _IV = null!;
+                }
+                if (_lastBlockBuffer != null)
+                {
+                    Array.Clear(_lastBlockBuffer);
+                    _lastBlockBuffer = null!;
+                }
+                if (_encryptKeyExpansion != null)
+                {
+                    Array.Clear(_encryptKeyExpansion);
+                    _encryptKeyExpansion = null!;
+                }
+                if (_decryptKeyExpansion != null)
+                {
+                    Array.Clear(_decryptKeyExpansion);
+                    _decryptKeyExpansion = null!;
+                }
             }
-            if (_lastBlockBuffer != null)
-            {
-                Array.Clear(_lastBlockBuffer);
-                _lastBlockBuffer = null!;
-            }
-            if (_encryptKeyExpansion != null)
-            {
-                Array.Clear(_encryptKeyExpansion);
-                _encryptKeyExpansion = null!;
-            }
-            if (_decryptKeyExpansion != null)
-            {
-                Array.Clear(_decryptKeyExpansion);
-                _decryptKeyExpansion = null!;
-            }
-            if (_depadBuffer != null)
-            {
-                Array.Clear(_depadBuffer);
-                _depadBuffer = null;
-            }
+
+            base.Dispose(disposing);
         }
 
-        //
-        // ICryptoTransform methods and properties.
-        //
-
-        public int InputBlockSize => BlockSizeBytes;
-
-        public int OutputBlockSize => BlockSizeBytes;
-
-        public bool CanTransformMultipleBlocks => true;
-
-        public bool CanReuseTransform => true;
-
-        public int BlockSizeInBytes => BlockSizeBytes;
-
-        public int PaddingSizeInBytes => BlockSizeBytes;
-
-        public bool HandlesPadding => true;
-
-        void ILiteSymmetricCipher.ValidatePaddingMode(PaddingMode paddingMode) => AesImplementation.ValidatePaddingMode(paddingMode);
-
-        public int Transform(ReadOnlySpan<byte> input, Span<byte> output)
+        public override int Transform(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            byte[] rented = CryptoPool.Rent(output.Length);
+            Debug.Assert(input.Length % BlockSizeBytes == 0);
+            Debug.Assert(output.Length >= input.Length);
 
-            int numBytesWritten = 0;
-            try
+            // the below algorithm doesn't allow overlap, so rent a buffer to transform into
+            if (input.Overlaps(output, out int offset) && offset != 0)
             {
-                numBytesWritten = TransformBlock(input, rented, 0);
-                rented.AsSpan(0, numBytesWritten).CopyTo(output);
-            }
-            finally
-            {
-                CryptoPool.Return(rented, clearSize: numBytesWritten);
-            }
+                byte[] rented = CryptoPool.Rent(input.Length);
+                int bytesWritten = 0;
 
-            return numBytesWritten;
-        }
-
-        public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
-        {
-            // Note: special handling required if decrypting & using padding because the padding adds to the end of the last
-            // block, we have to buffer an entire block's worth of bytes in case what I just transformed turns out to be
-            // the last block Then in TransformFinalBlock we strip off the padding.
-
-            ThrowHelper.ValidateTransformBlock(inputBuffer, inputOffset, inputCount);
-            ArgumentNullException.ThrowIfNull(outputBuffer);
-            if (inputCount <= 0)
-                throw new ArgumentOutOfRangeException(nameof(inputCount));
-            if (inputCount % InputBlockSize != 0)
-                throw new ArgumentOutOfRangeException(nameof(inputCount), SR.Cryptography_MustTransformWholeBlock);
-
-            return TransformBlock(inputBuffer.AsSpan(inputOffset, inputCount), outputBuffer, outputOffset);
-        }
-
-        private int TransformBlock(ReadOnlySpan<byte> inputBuffer, byte[] outputBuffer, int outputOffset)
-        {
-            if (_encrypting)
-            {
-                // if we're encrypting we can always push out the bytes because no padding mode
-                // removes bytes during encryption
-                return EncryptData(inputBuffer,
-                                   ref outputBuffer,
-                                   outputOffset,
-                                   false);
+                try
+                {
+                    bytesWritten = _encrypting ?
+                        EncryptData(input, rented) :
+                        DecryptData(input, rented);
+                    rented.AsSpan(0, bytesWritten).CopyTo(output);
+                    return bytesWritten;
+                }
+                finally
+                {
+                    CryptoPool.Return(rented, clearSize: bytesWritten);
+                }
             }
             else
             {
-                // Check to see if this is the *first* block we've seen
-                if (_depadBuffer == null)
-                {
-                    _depadBuffer = new byte[InputBlockSize];
-                    // copy the last InputBlockSize bytes to _depadBuffer everything else gets processed and returned
-                    int inputToProcess = inputBuffer.Length - InputBlockSize;
-                    inputBuffer.Slice(inputToProcess).CopyTo(_depadBuffer);
-                    return DecryptData(inputBuffer.Slice(0, inputToProcess),
-                                       ref outputBuffer,
-                                       outputOffset,
-                                       false);
-                }
-                else
-                {
-                    // we already have a depad buffer, so we need to decrypt that info first & copy it out
-                    DecryptData(_depadBuffer,
-                                ref outputBuffer,
-                                outputOffset,
-                                false);
-                    outputOffset += OutputBlockSize;
-                    int inputToProcess = inputBuffer.Length - InputBlockSize;
-                    inputBuffer.Slice(inputToProcess).CopyTo(_depadBuffer);
-                    int r = DecryptData(inputBuffer.Slice(0, inputToProcess),
-                                    ref outputBuffer,
-                                    outputOffset,
-                                    false);
-                    return (OutputBlockSize + r);
-                }
+                // with no overlap, we can just write directly to the output
+                return _encrypting ?
+                    EncryptData(input, output) :
+                    DecryptData(input, output);
             }
         }
 
-        public int TransformFinal(ReadOnlySpan<byte> input, Span<byte> output)
+        public override int TransformFinal(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            byte[] outputBuffer = TransformFinalBlock(input);
-            outputBuffer.CopyTo(output);
-            return outputBuffer.Length;
-        }
-
-        public byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
-        {
-            ThrowHelper.ValidateTransformBlock(inputBuffer, inputOffset, inputCount);
-
-            return TransformFinalBlock(inputBuffer.AsSpan(inputOffset, inputCount));
-        }
-
-        private byte[] TransformFinalBlock(ReadOnlySpan<byte> inputBuffer)
-        {
-            if (_encrypting)
-            {
-                // If we're encrypting we can alway return what we compute because there's no _depadBuffer
-                byte[]? transformedBytes = null;
-                EncryptData(inputBuffer,
-                            ref transformedBytes,
-                            0,
-                            true);
-                Reset();
-                return transformedBytes;
-            }
-            else
-            {
-                if (inputBuffer.Length % InputBlockSize != 0)
-                    throw new CryptographicException(SR.Cryptography_PartialBlock);
-
-                if (_depadBuffer == null)
-                {
-                    byte[]? transformedBytes = null;
-                    DecryptData(inputBuffer,
-                                ref transformedBytes,
-                                0,
-                                true);
-                    Reset();
-                    return transformedBytes;
-                }
-                else
-                {
-                    byte[]? transformedBytes = null;
-
-                    byte[] temp = CryptoPool.Rent(_depadBuffer.Length + inputBuffer.Length);
-                    try
-                    {
-                        Buffer.BlockCopy(_depadBuffer, 0, temp, 0, _depadBuffer.Length);
-                        inputBuffer.CopyTo(temp.AsSpan(_depadBuffer.Length));
-                        DecryptData(temp,
-                                    ref transformedBytes,
-                                    0,
-                                    true);
-                        Reset();
-                    }
-                    finally
-                    {
-                        CryptoPool.Return(temp);
-                    }
-
-                    return transformedBytes;
-                }
-            }
+            int bytesWritten = Transform(input, output);
+            Reset();
+            return bytesWritten;
         }
 
         //
@@ -249,65 +128,26 @@ namespace System.Security.Cryptography
 
         private void Reset()
         {
-            _depadBuffer = null;
             _IV.AsSpan().CopyTo(_lastBlockBuffer);
         }
 
         //
-        // Deals with the various cipher and padding modes and calls the AES encryption routine.
-        // This method writes the encrypted data into the output buffer. If the output buffer is null,
-        // it allocates it and populates it with the encrypted data.
+        // Encrypts the inputBuffer into the outputBuffer using the AES encryption routine.
+        // This method writes the encrypted data into the output buffer.
         //
-        private int EncryptData(ReadOnlySpan<byte> inputBuffer,
-                                       [NotNull] ref byte[]? outputBuffer,
-                                       int outputOffset,
-                                       bool fLast)
+        private int EncryptData(ReadOnlySpan<byte> inputBuffer, Span<byte> outputBuffer)
         {
             int inputCount = inputBuffer.Length;
-            byte padSize = 0;
-            int lonelyBytes = inputCount % InputBlockSize;
-
-            // Check the padding mode and make sure we have enough outputBuffer to handle any padding we have to do.
-            int workBaseIndex = 0, index = 0;
-            if (fLast)
-            {
-                padSize = (byte)(InputBlockSize - lonelyBytes);
-            }
-
-            if (outputBuffer == null)
-            {
-                outputBuffer = new byte[inputCount + padSize];
-                outputOffset = 0;
-            }
-            else
-            {
-                if ((outputBuffer.Length - outputOffset) < (inputCount + padSize))
-                    throw new ArgumentOutOfRangeException(nameof(outputOffset), SR.Argument_InvalidOffLen);
-            }
 
             Span<int> work = stackalloc int[BlockSizeInts];
             Span<int> temp = stackalloc int[BlockSizeInts];
 
-            int iNumBlocks = (inputCount + padSize) / InputBlockSize;
-            int transformCount = outputOffset;
+            int workBaseIndex = 0;
+            int iNumBlocks = inputCount / BlockSizeBytes;
+            int transformCount = 0;
             for (int blockNum = 0; blockNum < iNumBlocks; ++blockNum)
             {
-                if (blockNum != iNumBlocks - 1 || padSize == 0)
-                {
-                    inputBuffer.Slice(workBaseIndex, BlockSizeBytes).CopyTo(MemoryMarshal.AsBytes(work));
-                }
-                else
-                {
-                    index = workBaseIndex;
-                    for (int i = 0; i < BlockSizeInts; ++i)
-                    {
-                        int i0 = (index >= workBaseIndex + lonelyBytes) ? padSize : inputBuffer[index++];
-                        int i1 = (index >= workBaseIndex + lonelyBytes) ? padSize : inputBuffer[index++];
-                        int i2 = (index >= workBaseIndex + lonelyBytes) ? padSize : inputBuffer[index++];
-                        int i3 = (index >= workBaseIndex + lonelyBytes) ? padSize : inputBuffer[index++];
-                        work[i] = i3 << 24 | i2 << 16 | i1 << 8 | i0;
-                    }
-                }
+                inputBuffer.Slice(workBaseIndex, BlockSizeBytes).CopyTo(MemoryMarshal.AsBytes(work));
 
                 for (int i = 0; i < BlockSizeInts; ++i)
                 {
@@ -328,41 +168,25 @@ namespace System.Security.Cryptography
                 Debug.Assert(_lastBlockBuffer.Length == BlockSizeInts);
                 temp.CopyTo(_lastBlockBuffer);
 
-                workBaseIndex += InputBlockSize;
+                workBaseIndex += BlockSizeBytes;
             }
 
-            return (inputCount + padSize);
+            return inputCount;
         }
 
         //
-        // Deals with the various cipher and padding modes and calls the AES decryption routine.
-        // This method writes the decrypted data into the output buffer. If the output buffer is null,
-        // it allocates it and populates it with the decrypted data.
+        // Decrypts the inputBuffer into the outputBuffer using the AES encryption routine.
+        // This method writes the decrypted data into the output buffer.
         //
-
-        private int DecryptData(ReadOnlySpan<byte> inputBuffer,
-                                       [NotNull] ref byte[]? outputBuffer,
-                                       int outputOffset,
-                                       bool fLast)
+        private int DecryptData(ReadOnlySpan<byte> inputBuffer, Span<byte> outputBuffer)
         {
             int inputCount = inputBuffer.Length;
-
-            if (outputBuffer == null)
-            {
-                outputBuffer = new byte[inputCount];
-                outputOffset = 0;
-            }
-            else
-            {
-                if ((outputBuffer.Length - outputOffset) < inputCount)
-                    throw new ArgumentOutOfRangeException(nameof(outputOffset), SR.Argument_InvalidOffLen);
-            }
 
             Span<int> work = stackalloc int[BlockSizeInts];
             Span<int> temp = stackalloc int[BlockSizeInts];
 
-            int iNumBlocks = inputCount / InputBlockSize;
-            int workBaseIndex = 0, index = 0, transformCount = outputOffset;
+            int iNumBlocks = inputCount / BlockSizeBytes;
+            int workBaseIndex = 0, index = 0, transformCount = 0;
             for (int blockNum = 0; blockNum < iNumBlocks; ++blockNum)
             {
                 index = workBaseIndex;
@@ -397,27 +221,10 @@ namespace System.Security.Cryptography
                     outputBuffer[transformCount++] = (byte)(temp[i] >> 24 & 0xFF);
                 }
 
-                workBaseIndex += InputBlockSize;
+                workBaseIndex += BlockSizeBytes;
             }
 
-            if (fLast == false)
-                return inputCount;
-
-            // this is the last block, remove the padding.
-            byte[] outputBuffer1 = outputBuffer;
-            int padSize = 0;
-            if (inputCount == 0)
-                throw new CryptographicException(SR.Cryptography_InvalidPadding);
-            padSize = outputBuffer[inputCount - 1];
-            if (padSize > outputBuffer.Length || padSize > InputBlockSize || padSize <= 0)
-                throw new CryptographicException(SR.Cryptography_InvalidPadding);
-            for (index = 1; index <= padSize; index++)
-                if (outputBuffer[inputCount - index] != padSize)
-                    throw new CryptographicException(SR.Cryptography_InvalidPadding);
-            outputBuffer1 = new byte[outputBuffer.Length - padSize];
-            Buffer.BlockCopy(outputBuffer, 0, outputBuffer1, 0, outputBuffer.Length - padSize);
-            outputBuffer = outputBuffer1;
-            return outputBuffer1.Length;
+            return inputCount;
         }
 
         //
