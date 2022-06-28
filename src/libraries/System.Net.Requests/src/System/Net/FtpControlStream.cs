@@ -64,7 +64,7 @@ namespace System.Net
             }
             set
             {
-                _credentials ??= new WeakReference();
+                _credentials ??= new WeakReference(null);
                 _credentials.Target = value;
             }
         }
