@@ -1,18 +1,12 @@
 
-trigger: none
+# trigger: none
 
-pr: none
+# pr: none
 
 variables:
   - template: /eng/pipelines/common/variables.yml
 
 jobs:
-
-#
-# Evaluate paths
-#
-# - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
-#   - template: /eng/pipelines/common/evaluate-default-paths.yml
 
 #
 # Build CoreCLR checked
@@ -26,12 +20,6 @@ jobs:
     - windows_x64
     jobParameters:
       testGroup: innerloop
-      condition: >-
-        true
-#         or(
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-#           eq(variables['isRollingBuild'], true))
           
 #
 # Build CoreCLR release
@@ -59,12 +47,6 @@ jobs:
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
       testGroup: innerloop
-      condition: >-
-        true
-#         or(
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-#           eq(variables['isRollingBuild'], true))
 
 
 #
@@ -83,9 +65,3 @@ jobs:
     jobParameters:
       testGroup: innerloop
       liveLibrariesBuildConfig: release
-      condition: >-
-        true
-#         or(
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-#           eq(variables['isRollingBuild'], true))
