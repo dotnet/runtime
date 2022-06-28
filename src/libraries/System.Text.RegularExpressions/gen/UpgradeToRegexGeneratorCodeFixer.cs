@@ -130,6 +130,39 @@ namespace System.Text.RegularExpressions.Generator
 
             root = root.ReplaceNode(nodeToFix, replacement.WithAdditionalAnnotations(annotation));
 
+            SyntaxNode invocationNode = root.GetAnnotatedNodes(annotation).Single();
+            var hasTypeDeclaration = false;
+            // Walk the type hirerarchy of the node to fix, and add the partial modifier to each ancestor (if it doesn't have it already)
+            root = root.ReplaceNodes(
+                invocationNode.Ancestors().OfType<TypeDeclarationSyntax>(),
+                (_, typeDeclaration) =>
+                {
+                    hasTypeDeclaration = true;
+                    if (!typeDeclaration.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword)))
+                    {
+                        return typeDeclaration.AddModifiers(SyntaxFactory.Token(SyntaxKind.PartialKeyword)).WithAdditionalAnnotations(Simplifier.Annotation);
+                    }
+
+                    return typeDeclaration;
+                });
+
+            // Add the method to the type.
+            MethodDeclarationSyntax newMethod = GenerateMethodDeclaration(methodName, generator, regexSymbol, regexGeneratorAttributeSymbol, properties);
+            if (hasTypeDeclaration)
+            {
+                TypeDeclarationSyntax typeDeclaration = root.GetAnnotatedNodes(annotation).Single().FirstAncestorOrSelf<TypeDeclarationSyntax>();
+                return document.WithSyntaxRoot(root.ReplaceNode(typeDeclaration, typeDeclaration.AddMembers(newMethod)));
+            }
+            else
+            {
+                // If we didn't have a type declaration, then it's likely we're in a top-level statements program.
+                var topLevelClassDeclaration = (ClassDeclarationSyntax)generator.ClassDeclaration("Program", modifiers: DeclarationModifiers.Partial, members: new[] { newMethod });
+                return document.WithSyntaxRoot(((CompilationUnitSyntax)root).AddMembers(topLevelClassDeclaration));
+            }
+        }
+
+        private static MethodDeclarationSyntax GenerateMethodDeclaration(string methodName, SyntaxGenerator generator, ITypeSymbol regexSymbol, ITypeSymbol regexGeneratorAttributeSymbol, ImmutableDictionary<string, string?> properties)
+        {
             // Initialize the inputs for the RegexGenerator attribute.
             SyntaxNode? patternValue = GetNode(properties, UpgradeToRegexGeneratorAnalyzer.PatternKeyName, generator, useOptionsMemberExpression: false);
             SyntaxNode? regexOptionsValue = GetNode(properties, UpgradeToRegexGeneratorAnalyzer.RegexOptionsKeyName, generator, useOptionsMemberExpression: true);
@@ -153,36 +186,7 @@ namespace System.Text.RegularExpressions.Generator
             });
 
             // Add the attribute to the generated method.
-            newMethod = (MethodDeclarationSyntax)generator.AddAttributes(newMethod, attributes);
-
-            SyntaxNode invocationNode = root.GetAnnotatedNodes(annotation).Single();
-            var hasTypeDeclaration = false;
-            // Walk the type hirerarchy of the node to fix, and add the partial modifier to each ancestor (if it doesn't have it already)
-            root = root.ReplaceNodes(
-                invocationNode.Ancestors().OfType<TypeDeclarationSyntax>(),
-                (_, typeDeclaration) =>
-                {
-                    hasTypeDeclaration = true;
-                    if (!typeDeclaration.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword)))
-                    {
-                        return typeDeclaration.AddModifiers(SyntaxFactory.Token(SyntaxKind.PartialKeyword)).WithAdditionalAnnotations(Simplifier.Annotation);
-                    }
-
-                    return typeDeclaration;
-                });
-
-            // Add the method to the type.
-            if (hasTypeDeclaration)
-            {
-                TypeDeclarationSyntax typeDeclaration = root.GetAnnotatedNodes(annotation).Single().FirstAncestorOrSelf<TypeDeclarationSyntax>();
-                return document.WithSyntaxRoot(root.ReplaceNode(typeDeclaration, typeDeclaration.AddMembers(newMethod)));
-            }
-            else
-            {
-                // If we didn't have a type declaration, then it's likely we're in a top-level statements program.
-                var topLevelClassDeclaration = (ClassDeclarationSyntax)generator.ClassDeclaration("Program", modifiers: DeclarationModifiers.Partial, members: new[] { newMethod });
-                return document.WithSyntaxRoot(((CompilationUnitSyntax)root).AddMembers(topLevelClassDeclaration));
-            }
+            return (MethodDeclarationSyntax)generator.AddAttributes(newMethod, attributes);
 
             // Helper method that looks int the properties bag for the index of the passed in propertyname, and then returns that index from the args parameter.
             static SyntaxNode? GetNode(ImmutableDictionary<string, string?> properties, string propertyName, SyntaxGenerator generator, bool useOptionsMemberExpression)
@@ -205,7 +209,7 @@ namespace System.Text.RegularExpressions.Generator
 
             static SyntaxNode? Literal(string options, SyntaxGenerator generator)
             {
-                if (int.TryParse(options, NumberStyles.Integer, CultureInfo.InvariantCulture, out int optionsValue))
+                if (int.TryParse(options, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
                 {
                     // The options were formatted as an int, which means the runtime couldn't
                     // produce a textual representation.  So just output casting the value as an int.
