@@ -331,8 +331,7 @@ namespace System.IO
                             }
                             catch (Exception e)
                             {
-                                if (exception == null)
-                                    exception = e;
+                                exception ??= e;
                             }
                         }
                         else

@@ -666,10 +666,7 @@ namespace System.Xml
                             }
                             else
                             {
-                                if (prefix == null)
-                                {
-                                    prefix = GeneratePrefix(); // need a prefix if
-                                }
+                                prefix ??= GeneratePrefix(); // need a prefix if
                                 PushNamespace(prefix, ns, false);
                             }
                         }

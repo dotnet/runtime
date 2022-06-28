@@ -581,11 +581,7 @@ namespace System.Xml
         // Adds the specified node to the end of the list of children of this node.
         public virtual XmlNode? AppendChild(XmlNode newChild)
         {
-            XmlDocument? thisDoc = OwnerDocument;
-            if (thisDoc == null)
-            {
-                thisDoc = this as XmlDocument;
-            }
+            XmlDocument? thisDoc = OwnerDocument ?? this as XmlDocument;
             if (!IsContainer)
                 throw new InvalidOperationException(SR.Xdom_Node_Insert_Contain);
 

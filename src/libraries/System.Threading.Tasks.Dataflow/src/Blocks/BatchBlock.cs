@@ -1101,7 +1101,7 @@ namespace System.Threading.Tasks.Dataflow
                         catch (Exception e)
                         {
                             if (throwOnFirstException) throw;
-                            if (exceptions == null) exceptions = new List<Exception>(1);
+                            exceptions ??= new List<Exception>(1);
                             exceptions.Add(e);
                         }
                     }

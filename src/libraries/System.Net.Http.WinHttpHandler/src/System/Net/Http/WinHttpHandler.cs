@@ -261,12 +261,7 @@ namespace System.Net.Http
                     throw new InvalidOperationException(SR.Format(SR.net_http_invalid_enable_first, "ClientCertificateOptions", "Manual"));
                 }
 
-                if (_clientCertificates == null)
-                {
-                    _clientCertificates = new X509Certificate2Collection();
-                }
-
-                return _clientCertificates;
+                return _clientCertificates ??= new X509Certificate2Collection();
             }
         }
 
@@ -538,18 +533,7 @@ namespace System.Net.Http
             }
         }
 
-        public IDictionary<string, object> Properties
-        {
-            get
-            {
-                if (_properties == null)
-                {
-                    _properties = new Dictionary<string, object>();
-                }
-
-                return _properties;
-            }
-        }
+        public IDictionary<string, object> Properties => _properties ??= new Dictionary<string, object>();
         #endregion
 
         protected override void Dispose(bool disposing)

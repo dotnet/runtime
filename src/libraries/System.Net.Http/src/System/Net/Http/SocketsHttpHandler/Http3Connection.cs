@@ -127,10 +127,7 @@ namespace System.Net.Http
             {
                 // Close the QuicConnection in the background.
 
-                if (_connectionClosedTask == null)
-                {
-                    _connectionClosedTask = _connection.CloseAsync((long)Http3ErrorCode.NoError).AsTask();
-                }
+                _connectionClosedTask ??= _connection.CloseAsync((long)Http3ErrorCode.NoError).AsTask();
 
                 QuicConnection connection = _connection;
                 _connection = null;

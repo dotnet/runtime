@@ -61,15 +61,8 @@ namespace System.ComponentModel.Design
         {
             if (_savedLicenseKeys == null || _savedLicenseKeys[type.AssemblyQualifiedName!] == null)
             {
-                if (_savedLicenseKeys == null)
-                {
-                    _savedLicenseKeys = new Hashtable();
-                }
-
-                if (resourceAssembly == null)
-                {
-                    resourceAssembly = Assembly.GetEntryAssembly();
-                }
+                _savedLicenseKeys ??= new Hashtable();
+                resourceAssembly ??= Assembly.GetEntryAssembly();
 
                 if (resourceAssembly == null)
                 {

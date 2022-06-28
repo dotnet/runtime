@@ -281,8 +281,7 @@ namespace System.Reflection.TypeLoading
             Func<Assembly?, string, bool, Type?> typeResolver =
                 delegate (Assembly? assembly, string fullName, bool ignoreCase2)
                 {
-                    if (assembly == null)
-                        assembly = defaultAssembly;
+                    assembly ??= defaultAssembly;
 
                     Debug.Assert(assembly is RoAssembly);
                     RoAssembly roAssembly = (RoAssembly)assembly;

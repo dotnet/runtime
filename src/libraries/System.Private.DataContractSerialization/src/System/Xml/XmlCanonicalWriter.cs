@@ -58,21 +58,11 @@ namespace System.Xml
         {
             ArgumentNullException.ThrowIfNull(stream);
 
-            if (_writer == null)
-            {
-                _writer = new XmlUTF8NodeWriter(s_isEscapedAttributeChar, s_isEscapedElementChar);
-            }
+            _writer ??= new XmlUTF8NodeWriter(s_isEscapedAttributeChar, s_isEscapedElementChar);
             _writer.SetOutput(stream, false, null);
 
-            if (_elementStream == null)
-            {
-                _elementStream = new MemoryStream();
-            }
-
-            if (_elementWriter == null)
-            {
-                _elementWriter = new XmlUTF8NodeWriter(s_isEscapedAttributeChar, s_isEscapedElementChar);
-            }
+            _elementStream ??= new MemoryStream();
+            _elementWriter ??= new XmlUTF8NodeWriter(s_isEscapedAttributeChar, s_isEscapedElementChar);
             _elementWriter.SetOutput(_elementStream, false, null);
 
             if (_xmlnsAttributes == null)

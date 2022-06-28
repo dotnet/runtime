@@ -107,10 +107,8 @@ namespace System.Composition.Convention
             {
                 throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(name)), nameof(name));
             }
-            if (_metadataConstraintItems == null)
-            {
-                _metadataConstraintItems = new List<Tuple<string, object>>();
-            }
+
+            _metadataConstraintItems ??= new List<Tuple<string, object>>();
             _metadataConstraintItems.Add(Tuple.Create(name, value));
             return this;
         }
@@ -137,10 +135,7 @@ namespace System.Composition.Convention
                 throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(name)), nameof(name));
             }
 
-            if (_metadataConstraintItemFuncs == null)
-            {
-                _metadataConstraintItemFuncs = new List<Tuple<string, Func<Type, object>>>();
-            }
+            _metadataConstraintItemFuncs ??= new List<Tuple<string, Func<Type, object>>>();
             _metadataConstraintItemFuncs.Add(Tuple.Create(name, getConstraintValueFromPartType));
             return this;
         }
@@ -164,12 +159,9 @@ namespace System.Composition.Convention
             {
                 importAttribute = new ImportManyAttribute(contractName);
             }
-            if (attributes == null)
-            {
-                attributes = new List<Attribute>();
-            }
-            attributes.Add(importAttribute);
 
+            attributes ??= new List<Attribute>();
+            attributes.Add(importAttribute);
 
             //Add metadata attributes from direct specification
             if (_metadataConstraintItems != null)

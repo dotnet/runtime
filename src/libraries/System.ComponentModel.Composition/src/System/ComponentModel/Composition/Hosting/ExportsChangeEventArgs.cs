@@ -93,21 +93,12 @@ namespace System.ComponentModel.Composition.Hosting
         ///     A <see cref="IEnumerable{T}"/> of strings representing the contract names of
         ///     the exports that have changed in the <see cref="CompositionContainer"/>.
         /// </value>
-        public IEnumerable<string> ChangedContractNames
-        {
-            get
-            {
-                if (_changedContractNames == null)
-                {
-                    _changedContractNames = AddedExports
-                        .Concat(RemovedExports)
-                        .Select(export => export.ContractName)
-                        .Distinct()
-                        .ToArray();
-                }
-                return _changedContractNames;
-            }
-        }
+        public IEnumerable<string> ChangedContractNames =>
+            _changedContractNames ??= AddedExports
+                                      .Concat(RemovedExports)
+                                      .Select(export => export.ContractName)
+                                      .Distinct()
+                                      .ToArray();
 
         /// <summary>
         ///     Gets the atomicComposition, if any, that this change applies to.

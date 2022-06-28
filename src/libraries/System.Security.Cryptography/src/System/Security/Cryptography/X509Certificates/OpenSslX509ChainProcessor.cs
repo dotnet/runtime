@@ -262,10 +262,7 @@ namespace System.Security.Cryptography.X509Certificates
                         break;
                     }
 
-                    if (downloadedCerts == null)
-                    {
-                        downloadedCerts = new List<X509Certificate2>();
-                    }
+                    downloadedCerts ??= new List<X509Certificate2>();
 
                     AddToStackAndUpRef(downloaded.Handle, _untrustedLookup);
                     downloadedCerts.Add(downloaded);
@@ -917,10 +914,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (failsPolicyChecks)
             {
-                if (overallStatus == null)
-                {
-                    overallStatus = new List<X509ChainStatus>();
-                }
+                overallStatus ??= new List<X509ChainStatus>();
 
                 X509ChainStatus chainStatus = new X509ChainStatus
                 {
