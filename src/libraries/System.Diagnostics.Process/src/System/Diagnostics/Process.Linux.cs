@@ -24,20 +24,21 @@ namespace System.Diagnostics
         public static Process[] GetProcessesByName(string? processName, string machineName)
         {
             ProcessManager.ThrowIfRemoteMachine(machineName);
-            if (processName == null)
-            {
-                processName = string.Empty;
-            }
 
-            var processes = new List<Process>();
+            processName ??= "";
+
+            ArrayBuilder<Process> processes = default;
             foreach (int pid in ProcessManager.EnumerateProcessIds())
             {
-                if (Interop.procfs.TryReadStatFile(pid, out Interop.procfs.ParsedStat parsedStat) &&
-                    string.Equals(processName, Process.GetUntruncatedProcessName(ref parsedStat), StringComparison.OrdinalIgnoreCase) &&
-                    Interop.procfs.TryReadStatusFile(pid, out Interop.procfs.ParsedStatus parsedStatus))
+                if (Interop.procfs.TryReadStatFile(pid, out Interop.procfs.ParsedStat parsedStat))
                 {
-                    ProcessInfo processInfo = ProcessManager.CreateProcessInfo(ref parsedStat, ref parsedStatus, processName);
-                    processes.Add(new Process(machineName, false, processInfo.ProcessId, processInfo));
+                    string actualProcessName = GetUntruncatedProcessName(ref parsedStat);
+                    if ((processName == "" || string.Equals(processName, actualProcessName, StringComparison.OrdinalIgnoreCase)) &&
+                        Interop.procfs.TryReadStatusFile(pid, out Interop.procfs.ParsedStatus parsedStatus))
+                    {
+                        ProcessInfo processInfo = ProcessManager.CreateProcessInfo(ref parsedStat, ref parsedStatus, actualProcessName);
+                        processes.Add(new Process(machineName, isRemoteMachine: false, pid, processInfo));
+                    }
                 }
             }
 
@@ -45,6 +46,8 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public TimeSpan PrivilegedProcessorTime
         {
             get
@@ -127,6 +130,9 @@ namespace System.Diagnostics
         /// It is the sum of the <see cref='System.Diagnostics.Process.UserProcessorTime'/> and
         /// <see cref='System.Diagnostics.Process.PrivilegedProcessorTime'/>.
         /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan TotalProcessorTime
         {
             get
@@ -140,6 +146,9 @@ namespace System.Diagnostics
         /// Gets the amount of time the associated process has spent running code
         /// inside the application portion of the process (not the operating system core).
         /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan UserProcessorTime
         {
             get

@@ -290,14 +290,14 @@ namespace System.Globalization
                 return new int[] { 3 };
             }
 
-            if (win32Str[0] == '0')
+            if (win32Str.StartsWith('0'))
             {
                 return new int[] { 0 };
             }
 
             // Since its in n;n;n;n;n format, we can always get the length quickly
             int[] values;
-            if (win32Str[^1] == '0')
+            if (win32Str.EndsWith('0'))
             {
                 // Trailing 0 gets dropped. 1;0 -> 1
                 values = new int[win32Str.Length / 2];
@@ -315,7 +315,7 @@ namespace System.Globalization
             {
                 // Note that this # shouldn't ever be zero, 'cause 0 is only at end
                 // But we'll test because its registry that could be anything
-                if (win32Str[i] < '1' || win32Str[i] > '9')
+                if (!char.IsBetween(win32Str[i], '1', '9'))
                     return new int[] { 3 };
 
                 values[j] = (int)(win32Str[i] - '0');

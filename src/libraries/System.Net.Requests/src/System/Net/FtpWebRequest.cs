@@ -510,7 +510,7 @@ namespace System.Net
                 {
                     username = Uri.UnescapeDataString(userInfo.Substring(0, index));
                     index++; // skip ':'
-                    password = Uri.UnescapeDataString(userInfo.Substring(index, userInfo.Length - index));
+                    password = Uri.UnescapeDataString(userInfo.Substring(index));
                 }
                 networkCredential = new NetworkCredential(username, password);
             }

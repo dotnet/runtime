@@ -3,7 +3,7 @@
 
 import corebindings from "./corebindings";
 import { GCHandle, JSHandle, JSHandleDisposed, JSHandleNull, MonoObjectRef } from "./types";
-import { setU32 } from "./memory";
+import { setI32_unchecked } from "./memory";
 import { create_weak_ref } from "./weak-ref";
 
 export const _use_finalization_registry = typeof globalThis.FinalizationRegistry === "function";
@@ -27,7 +27,7 @@ export const cs_owned_js_handle_symbol = Symbol.for("wasm cs_owned_js_handle");
 
 export function get_js_owned_object_by_gc_handle_ref(gc_handle: GCHandle, result: MonoObjectRef): void {
     if (!gc_handle) {
-        setU32(result, 0);
+        setI32_unchecked(result, 0);
         return;
     }
     // this is always strong gc_handle
@@ -44,7 +44,7 @@ export function mono_wasm_get_jsobj_from_js_handle(js_handle: JSHandle): any {
 // its InFlight gc_handle would be freed when the instance arrives to managed side via Interop.Runtime.ReleaseInFlight
 export function get_cs_owned_object_by_js_handle_ref(js_handle: JSHandle, should_add_in_flight: boolean, result: MonoObjectRef): void {
     if (js_handle === JSHandleNull || js_handle === JSHandleDisposed) {
-        setU32(result, 0);
+        setI32_unchecked(result, 0);
         return;
     }
     corebindings._get_cs_owned_object_by_js_handle_ref(js_handle, should_add_in_flight ? 1 : 0, result);

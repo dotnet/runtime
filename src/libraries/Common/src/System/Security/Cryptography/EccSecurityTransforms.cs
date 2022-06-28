@@ -237,9 +237,9 @@ namespace System.Security.Cryptography
 
         private static int GetKeySize(SecKeyPair newKeys)
         {
-            long size = Interop.AppleCrypto.EccGetKeySizeInBits(newKeys.PublicKey);
+            int size = Interop.AppleCrypto.EccGetKeySizeInBits(newKeys.PublicKey);
             Debug.Assert(size == 256 || size == 384 || size == 521, $"Unknown keysize ({size})");
-            return (int)size;
+            return size;
         }
 
         private static SafeSecKeyRefHandle ImportKey(ECParameters parameters)

@@ -32,18 +32,18 @@
 
   <PropertyGroup>
 
-    <!-- If CoreRT is being consumed via its package, runtime-specific properties must be set before compilation can proceed -->
+    <!-- If the NativeAOT toolchain is being consumed via package, runtime-specific properties must be set before compilation can proceed -->
     <ImportRuntimeIlcPackageTargetDependsOn>RunResolvePackageDependencies</ImportRuntimeIlcPackageTargetDependsOn>
     <IlcSetupPropertiesDependsOn>ImportRuntimeIlcPackageTarget</IlcSetupPropertiesDependsOn>
     <IlcDynamicBuildPropertyDependencies>SetupProperties</IlcDynamicBuildPropertyDependencies>
-        
+
   </PropertyGroup>
 
   <!-- Locate the runtime package according to the current target runtime -->
   <Target Name="ImportRuntimeIlcPackageTarget" Condition="'$(BuildingFrameworkLibrary)' != 'true' AND $(IlcCalledViaPackage) == 'true'" DependsOnTargets="$(ImportRuntimeIlcPackageTargetDependsOn)" BeforeTargets="Publish">
     <!-- This targets file is imported by the SDK when the PublishAot property is set. SDK resolves runtime package paths differently-->
-    <Error Condition="'@(ResolvedILCompilerPack)' == '' AND '$(PublishAot)' == 'true'" Text="The PackageDefinitions ItemGroup is required for target ImportRuntimeIlcPackageTarget" />
-    <!-- CoreRT SDK and Framework Assemblies need to be defined to avoid CoreCLR implementations being set as compiler inputs -->
+    <Error Condition="'@(ResolvedILCompilerPack)' == '' AND '$(PublishAot)' == 'true'" Text="The ResolvedILCompilerPack ItemGroup is required for target ImportRuntimeIlcPackageTarget" />
+    <!-- NativeAOT runtime pack assemblies need to be defined to avoid the default CoreCLR implementations being set as compiler inputs -->
     <Error Condition="'@(PackageDefinitions)' == '' AND '$(PublishAot)' != 'true'" Text="The PackageDefinitions ItemGroup is required for target ImportRuntimeIlcPackageTarget" />
 
 

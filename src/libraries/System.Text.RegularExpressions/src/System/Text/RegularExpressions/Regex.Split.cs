@@ -112,7 +112,7 @@ namespace System.Text.RegularExpressions
                     return new[] { input };
                 }
 
-                state.results.Add(input.Substring(state.prevat, input.Length - state.prevat));
+                state.results.Add(input.Substring(state.prevat));
             }
             else
             {

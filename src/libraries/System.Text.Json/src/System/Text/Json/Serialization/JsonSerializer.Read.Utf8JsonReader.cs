@@ -55,6 +55,7 @@ namespace System.Text.Json
         ///   </para>
         /// </remarks>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static TValue? Deserialize<TValue>(ref Utf8JsonReader reader, JsonSerializerOptions? options = null)
         {
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
@@ -107,6 +108,7 @@ namespace System.Text.Json
         ///   </para>
         /// </remarks>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static object? Deserialize(ref Utf8JsonReader reader, Type returnType, JsonSerializerOptions? options = null)
         {
             if (returnType is null)
@@ -420,7 +422,7 @@ namespace System.Text.Json
 
                 var newReader = new Utf8JsonReader(rentedSpan, originalReaderOptions);
 
-                JsonConverter jsonConverter = state.Current.JsonPropertyInfo!.ConverterBase;
+                JsonConverter jsonConverter = state.Current.JsonPropertyInfo!.EffectiveConverter;
                 TValue? value = ReadCore<TValue>(jsonConverter, ref newReader, jsonTypeInfo.Options, ref state);
 
                 // The reader should have thrown if we have remaining bytes.

@@ -549,32 +549,33 @@ namespace System.Resources
             return ManifestBasedResourceGroveler.GetNeutralResourcesLanguage(a, out _);
         }
 
-        // IGNORES VERSION
         internal static bool IsDefaultType(string asmTypeName,
-                                           string typeName)
+                                           string defaultTypeName)
         {
             Debug.Assert(asmTypeName != null, "asmTypeName was unexpectedly null");
 
             // First, compare type names
-            int comma = asmTypeName.IndexOf(',');
-            if (((comma < 0) ? asmTypeName.Length : comma) != typeName.Length)
+            int firstComma = asmTypeName.IndexOf(',');
+            int typeNameLength = (firstComma != -1) ? firstComma : asmTypeName.Length;
+
+            // Type names are case sensitive
+            if (!asmTypeName.AsSpan(0, typeNameLength).Equals(defaultTypeName, StringComparison.Ordinal))
                 return false;
 
-            // case sensitive
-            if (string.Compare(asmTypeName, 0, typeName, 0, typeName.Length, StringComparison.Ordinal) != 0)
-                return false;
-            if (comma == -1)
+            // No assembly name specified means system assembly.
+            if (firstComma == -1)
                 return true;
 
-            // Now, compare assembly display names (IGNORES VERSION AND PROCESSORARCHITECTURE)
-            // also, for  mscorlib ignores everything, since that's what the binder is going to do
-            while (char.IsWhiteSpace(asmTypeName[++comma])) ;
+            // Now, compare assembly simple names, ignore the rest (version, public key token, etc.)
+            int secondComma = asmTypeName.IndexOf(',', firstComma + 1);
+            int simpleAsmNameLength = ((secondComma != -1) ? secondComma : asmTypeName.Length) - (firstComma + 1);
 
-            // case insensitive
-            AssemblyName an = new AssemblyName(asmTypeName.Substring(comma));
+            // We have kept mscorlib as the simple assembly name for the default resource format. The type name of the default resource
+            // format is de-facto a magic string that we check for and it is not actually used to load any types. There has not been
+            // a good reason to change the magic string to have the current assembly name.
 
-            // to match IsMscorlib() in VM
-            return string.Equals(an.Name, "mscorlib", StringComparison.OrdinalIgnoreCase);
+            // Assembly names are case insensitive
+            return asmTypeName.AsSpan(firstComma + 1, simpleAsmNameLength).Trim().Equals("mscorlib", StringComparison.OrdinalIgnoreCase);
         }
 
         // Looks up a resource value for a particular name.  Looks in the

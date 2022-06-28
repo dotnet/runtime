@@ -31,8 +31,8 @@ namespace System.Net.Http.Functional.Tests
         public HttpClientHandler_ServerCertificates_Test(ITestOutputHelper output) : base(output) { }
 
         // This enables customizing ServerCertificateCustomValidationCallback in WinHttpHandler variants:
-        protected bool AllowAllHttp2Certificates { get; set; } = true;
-        protected new HttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(UseVersion, allowAllHttp2Certificates: AllowAllHttp2Certificates);
+        protected bool AllowAllCertificates { get; set; } = true;
+        protected new HttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(UseVersion, allowAllCertificates: AllowAllCertificates);
         protected override HttpClient CreateHttpClient() => CreateHttpClient(CreateHttpClientHandler());
 
         [Fact]
@@ -226,7 +226,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers")]
         [ConditionalFact(nameof(ClientSupportsDHECipherSuites))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60190")]
         public async Task NoCallback_RevokedCertificate_NoRevocationChecking_Succeeds()
         {
             using (HttpClient client = CreateHttpClient())
@@ -283,6 +282,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(CertificateValidationServersAndExpectedPolicies))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task UseCallback_BadCertificate_ExpectedPolicyErrors(string url, SslPolicyErrors expectedErrors)
         {
             const int SEC_E_BUFFER_TOO_SMALL = unchecked((int)0x80090321);
@@ -306,6 +306,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task UseCallback_SelfSignedCertificate_ExpectedPolicyErrors()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -392,19 +393,19 @@ namespace System.Net.Http.Functional.Tests
             File.WriteAllText(sslCertFile, "");
             psi.Environment.Add("SSL_CERT_FILE", sslCertFile);
 
-            RemoteExecutor.Invoke(async (useVersionString, allowAllHttp2CertificatesString) =>
+            RemoteExecutor.Invoke(async (useVersionString, allowAllCertificatesString) =>
             {
                 const string Url = "https://www.microsoft.com";
 
                 HttpClientHandler handler = CreateHttpClientHandler(
                     Version.Parse(useVersionString),
-                    allowAllHttp2Certificates: bool.Parse(allowAllHttp2CertificatesString));
+                    allowAllCertificates: bool.Parse(allowAllCertificatesString));
 
                 using (HttpClient client = CreateHttpClient(handler, useVersionString))
                 {
                     await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(Url));
                 }
-            }, UseVersion.ToString(), AllowAllHttp2Certificates.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+            }, UseVersion.ToString(), AllowAllCertificates.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
     }
 }

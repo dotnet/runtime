@@ -262,7 +262,7 @@ namespace ILCompiler
                 Dictionary<string, bool> instructionSetSpecification = new Dictionary<string, bool>();
                 foreach (string instructionSetSpecifier in instructionSetParams)
                 {
-                    string instructionSet = instructionSetSpecifier.Substring(1, instructionSetSpecifier.Length - 1);
+                    string instructionSet = instructionSetSpecifier.Substring(1);
 
                     bool enabled = instructionSetSpecifier[0] == '+' ? true : false;
                     if (enabled)
@@ -347,7 +347,7 @@ namespace ILCompiler
 
             SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
 
-            var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, _armelAbi ? TargetAbi.CoreRTArmel : TargetAbi.CoreRT, instructionSetSupport.GetVectorTSimdVector());
+            var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, _armelAbi ? TargetAbi.NativeAotArmel : TargetAbi.NativeAot, instructionSetSupport.GetVectorTSimdVector());
 
             ConfigureImageBase(targetDetails);
 
@@ -402,7 +402,7 @@ namespace ILCompiler
                 //
                 // See: https://github.com/dotnet/corert/issues/2785
                 //
-                // When we undo this this hack, replace this foreach with
+                // When we undo this hack, replace the foreach with
                 //  typeSystemContext.InputFilePaths = inFilePaths;
                 //
 
@@ -472,7 +472,10 @@ namespace ILCompiler
                 {
                     try
                     {
-                        EcmaModule module = _typeSystemContext.GetModuleFromPath(referenceFile);
+                        EcmaModule module = _typeSystemContext.GetModuleFromPath(referenceFile, throwOnFailureToLoad: false);
+                        if (module == null)
+                            continue;
+
                         _referenceableModules.Add(module);
                         if (_commandLineOptions.InputBubble && _inputbubblereferenceFilePaths.Count == 0)
                         {
@@ -490,7 +493,11 @@ namespace ILCompiler
                     {
                         try
                         {
-                            EcmaModule module = _typeSystemContext.GetModuleFromPath(referenceFile);
+                            EcmaModule module = _typeSystemContext.GetModuleFromPath(referenceFile, throwOnFailureToLoad: false);
+
+                            if (module == null)
+                                continue;
+
                             versionBubbleModulesHash.Add(module);
                         }
                         catch { } // Ignore non-managed pe files
@@ -623,39 +630,30 @@ namespace ILCompiler
 
                     ReadyToRunCompilationModuleGroupBase compilationGroup;
                     List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider>();
+                    ReadyToRunCompilationModuleGroupConfig groupConfig = new ReadyToRunCompilationModuleGroupConfig();
+                    groupConfig.Context = typeSystemContext;
+                    groupConfig.IsCompositeBuildMode = _commandLineOptions.Composite;
+                    groupConfig.IsInputBubble = _commandLineOptions.InputBubble;
+                    groupConfig.CompilationModuleSet = inputModules;
+                    groupConfig.VersionBubbleModuleSet = versionBubbleModules;
+                    groupConfig.CompileGenericDependenciesFromVersionBubbleModuleSet = _commandLineOptions.CompileBubbleGenerics;
+
                     if (singleMethod != null)
                     {
                         // Compiling just a single method
                         compilationGroup = new SingleMethodCompilationModuleGroup(
-                            typeSystemContext,
-                            _commandLineOptions.Composite,
-                            _commandLineOptions.InputBubble,
-                            inputModules,
-                            versionBubbleModules,
-                            _commandLineOptions.CompileBubbleGenerics,
+                            groupConfig,
                             singleMethod);
                         compilationRoots.Add(new SingleMethodRootProvider(singleMethod));
                     }
                     else if (_commandLineOptions.CompileNoMethods)
                     {
-                        compilationGroup = new NoMethodsCompilationModuleGroup(
-                            typeSystemContext,
-                            _commandLineOptions.Composite,
-                            _commandLineOptions.InputBubble,
-                            inputModules,
-                            versionBubbleModules,
-                            _commandLineOptions.CompileBubbleGenerics);
+                        compilationGroup = new NoMethodsCompilationModuleGroup(groupConfig);
                     }
                     else
                     {
                         // Single assembly compilation.
-                        compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(
-                            typeSystemContext,
-                            _commandLineOptions.Composite,
-                            _commandLineOptions.InputBubble,
-                            inputModules,
-                            versionBubbleModules,
-                            _commandLineOptions.CompileBubbleGenerics);
+                        compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(groupConfig);
                     }
 
                     // Load any profiles generated by method call chain analyis
@@ -737,7 +735,6 @@ namespace ILCompiler
                         DependencyTrackingLevel.None : (_commandLineOptions.GenerateFullDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
 
                     builder
-                        .UseIbcTuning(_commandLineOptions.Tuning)
                         .UseMapFile(_commandLineOptions.Map)
                         .UseMapCsvFile(_commandLineOptions.MapCsv)
                         .UsePdbFile(_commandLineOptions.Pdb, _commandLineOptions.PdbPath)

@@ -158,7 +158,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Serializer uses more compacted representations when fewer bits are needed, which is reflected in the first
         /// two numbers of the return value. MTBDD terminals are represented by negated numbers as -id.
         /// </summary>
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Used only to generate src data files")]
         public long[] Serialize()
         {
             if (IsEmpty)
@@ -236,6 +236,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// So this BDD itself (if different from True or False) appears last.
         /// In the case of True or False returns the empty array.
         /// </summary>
+        [ExcludeFromCodeCoverage(Justification = "Used only to generate src data files")]
         private BDD[] TopologicalSort()
         {
             if (IsFull || IsEmpty)
@@ -295,6 +296,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Serialize this BDD into a byte array.
         /// This method is not valid for MTBDDs where some elements may be negative.
         /// </summary>
+        [ExcludeFromCodeCoverage(Justification = "Used only to generate src data files")]
         public byte[] SerializeToBytes()
         {
             if (IsEmpty)
@@ -340,10 +342,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         public static BDD Deserialize(ReadOnlySpan<byte> bytes)
         {
-            if (bytes.Length == 1)
-            {
-                return bytes[0] == 0 ? False : True;
-            }
+            Debug.Assert(bytes.Length > 1, "All inputs are expected to be larger than a single byte, which would map to False or True.");
 
             // here bytes represents an array of longs with k = the number of bytes used per long
             int bytesPerLong = bytes[0];

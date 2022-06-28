@@ -412,6 +412,25 @@ namespace System.Collections.Immutable
             #endregion
 
             /// <summary>
+            /// Searches for the first index within this set that the specified value is contained.
+            /// </summary>
+            /// <param name="item">The value to locate within the set.</param>
+            /// <returns>
+            /// The index of the specified <paramref name="item"/> in the sorted set,
+            /// if <paramref name="item"/> is found.  If <paramref name="item"/> is not
+            /// found and <paramref name="item"/> is less than one or more elements in this set,
+            /// a negative number which is the bitwise complement of the index of the first
+            /// element that is larger than value. If <paramref name="item"/> is not found
+            /// and <paramref name="item"/> is greater than any of the elements in the set,
+            /// a negative number which is the bitwise complement of (the index of the last
+            /// element plus 1).
+            /// </returns>
+            public int IndexOf(T item)
+            {
+                return this.Root.IndexOf(item, _comparer);
+            }
+
+            /// <summary>
             /// Returns an <see cref="IEnumerable{T}"/> that iterates over this
             /// collection in reverse order.
             /// </summary>

@@ -73,7 +73,7 @@ namespace System.ComponentModel
             {
                 if (value == null)
                 {
-                    return SR.none;
+                    return SR.GetResourceString(nameof(SR.none), "(none)");
                 }
                 else
                 {

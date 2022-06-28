@@ -158,6 +158,7 @@ namespace System.Runtime
             return RuntimeAugments.TypeLoaderCallbacks.UpdateFloatingDictionary(dictionaryPtr, dictionaryPtr);
         }
 
+#if FEATURE_UNIVERSAL_GENERICS
         public static unsafe IntPtr GetDelegateThunk(object delegateObj, int whichThunk)
         {
             Entry entry = LookupInCache(s_cache, (IntPtr)delegateObj.GetMethodTable(), new IntPtr(whichThunk));
@@ -170,6 +171,7 @@ namespace System.Runtime
             }
             return entry.Result;
         }
+#endif
 
         public static unsafe IntPtr GVMLookupForSlot(object obj, RuntimeMethodHandle slot)
         {

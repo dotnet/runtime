@@ -48,7 +48,6 @@ private:
     HRESULT AddSzArray();
     HRESULT AddArray(DWORD rank);
     HRESULT AddAssemblySpec(LPCWSTR szAssemblySpec);
-    HRESULT ToString(BSTR* pszStringRepresentation);
     HRESULT Clear();
 
 private:
@@ -104,6 +103,8 @@ public:
     void SetUseAngleBracketsForGenerics(BOOL value) { m_bUseAngleBracketsForGenerics = value; }
     void Append(LPCWSTR pStr) { WRAPPER_NO_CONTRACT; m_pStr->Append(pStr); }
     void Append(WCHAR c) { WRAPPER_NO_CONTRACT; m_pStr->Append(c); }
+    void Append(LPCUTF8 pStr) { WRAPPER_NO_CONTRACT; m_pStr->AppendUTF8(pStr); }
+    void Append(UTF8 c) { WRAPPER_NO_CONTRACT; m_pStr->AppendUTF8(c); }
     SString* GetString() { WRAPPER_NO_CONTRACT; return m_pStr; }
 
 private:

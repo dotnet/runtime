@@ -31,13 +31,12 @@ namespace System.Diagnostics
             // that this should match for all intents and purposes.  If this ever becomes a problem,
             // we can implement a full-fledged Win32 resource parser; that would also enable support
             // for native Win32 PE files on Unix, but that should also be an extremely rare case.
-            if (!TryLoadManagedAssemblyMetadata())
-            {
-                // We could try to parse Executable and Linkable Format (ELF) files, but at present
-                // for executables they don't store version information, which is typically just
-                // available in the filename itself.  For now, we won't do anything special, but
-                // we can add more cases here as we find need and opportunity.
-            }
+            _ = TryLoadManagedAssemblyMetadata();
+
+            // If TryLoadManagedAssemblyMetadata returns false, we could try to parse Executable and Linkable
+            // Format (ELF) files, but at present for executables they don't store version information, which
+            // is typically just available in the filename itself. For now, we won't do anything special, but
+            // we can add more cases here as we find need and opportunity.
         }
 
         /// <summary>Attempt to load our fields from the metadata of the file, if it's a managed assembly.</summary>
@@ -234,7 +233,7 @@ namespace System.Diagnostics
             for (int index = 0; index < s.Length; index++)
             {
                 char c = s[index];
-                if (c < '0' || c > '9')
+                if (!char.IsAsciiDigit(c))
                 {
                     endedEarly = true;
                     break;

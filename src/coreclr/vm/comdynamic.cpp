@@ -415,7 +415,7 @@ extern "C" void QCALLTYPE TypeBuilder_SetMethodIL(QCall::ModuleHandle pModule,
     CQuickArray<ULONG> ehTypeOffsets;
     if (numExceptions > 0)
     {
-        // Allocate space for the the offsets to the TypeTokens in the Exception headers
+        // Allocate space for the offsets to the TypeTokens in the Exception headers
         // in the IL stream.
         ehTypeOffsets.AllocThrows(numExceptions);
 

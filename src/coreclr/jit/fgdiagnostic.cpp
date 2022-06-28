@@ -8,6 +8,7 @@
 #endif
 
 #include "allocacheck.h" // for alloca
+#include "jitstd/algorithm.h"
 
 // Flowgraph Check and Dump Support
 
@@ -2181,13 +2182,20 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
 
 void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, bool dumpTrees)
 {
-    BasicBlock* block;
+    // Build vector of blocks in order.
+    //
+    if (fgBBOrder == nullptr)
+    {
+        CompAllocator allocator = getAllocator(CMK_DebugOnly);
+        fgBBOrder               = new (allocator) jitstd::vector<BasicBlock*>(allocator);
+    }
 
-    // If any block has IBC data, we add an "IBC weight" column just before the 'IL range' column. This column is as
-    // wide as necessary to accommodate all the various IBC weights. It's at least 4 characters wide, to accommodate
-    // the "IBC" title and leading space.
+    fgBBOrder->reserve(fgBBcount);
+    fgBBOrder->clear();
+
     int ibcColWidth = 0;
-    for (block = firstBlock; block != nullptr; block = block->bbNext)
+
+    for (BasicBlock* block = firstBlock; block != nullptr; block = block->bbNext)
     {
         if (block->hasProfileWeight())
         {
@@ -2195,11 +2203,46 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
             ibcColWidth      = max(ibcColWidth, thisIbcWidth);
         }
 
+        fgBBOrder->push_back(block);
+
         if (block == lastBlock)
         {
             break;
         }
     }
+
+    bool inDefaultOrder = true;
+
+    struct fgBBNumCmp
+    {
+        bool operator()(const BasicBlock* bb1, const BasicBlock* bb2)
+        {
+            return bb1->bbNum < bb2->bbNum;
+        }
+    };
+
+    struct fgBBIDCmp
+    {
+        bool operator()(const BasicBlock* bb1, const BasicBlock* bb2)
+        {
+            return bb1->bbID < bb2->bbID;
+        }
+    };
+
+    // Optionally sort
+    //
+    if (JitConfig.JitDumpFgBlockOrder() == 1)
+    {
+        jitstd::sort(fgBBOrder->begin(), fgBBOrder->end(), fgBBNumCmp());
+        inDefaultOrder = false;
+    }
+    else if (JitConfig.JitDumpFgBlockOrder() == 2)
+    {
+
+        jitstd::sort(fgBBOrder->begin(), fgBBOrder->end(), fgBBIDCmp());
+        inDefaultOrder = false;
+    }
+
     if (ibcColWidth > 0)
     {
         ibcColWidth = max(ibcColWidth, 3) + 1; // + 1 for the leading space
@@ -2234,7 +2277,7 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
 
     // clang-format on
 
-    for (block = firstBlock; block; block = block->bbNext)
+    for (BasicBlock* block : *fgBBOrder)
     {
         // First, do some checking on the bbPrev links
         if (block->bbPrev)
@@ -2249,7 +2292,7 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
             printf("bad prev link!\n");
         }
 
-        if (block == fgFirstColdBlock)
+        if (inDefaultOrder && (block == fgFirstColdBlock))
         {
             printf(
                 "~~~~~~%*s~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%*s~~~~~~~~~~~~~~~~~~~~~~~~~~%*s~~~~~~~~~~~~~~~~~~~~~~~~"
@@ -2258,7 +2301,7 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
         }
 
 #if defined(FEATURE_EH_FUNCLETS)
-        if (block == fgFirstFuncletBB)
+        if (inDefaultOrder && (block == fgFirstFuncletBB))
         {
             printf(
                 "++++++%*s+++++++++++++++++++++++++++++++++++++%*s++++++++++++++++++++++++++%*s++++++++++++++++++++++++"
@@ -2282,7 +2325,13 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
 
     if (dumpTrees)
     {
-        fgDumpTrees(firstBlock, lastBlock);
+        for (BasicBlock* block : *fgBBOrder)
+        {
+            fgDumpBlock(block);
+        }
+        printf("\n-----------------------------------------------------------------------------------------------------"
+               "----"
+               "----------\n");
     }
 }
 
@@ -2998,7 +3047,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
         case GT_IND:
             // Do we have a constant integer address as op1 that is also a handle?
-            if (op1->IsCnsIntOrI() && op1->IsIconHandle())
+            if (op1->IsIconHandle())
             {
                 if ((tree->gtFlags & GTF_IND_INVARIANT) != 0)
                 {
@@ -3085,8 +3134,8 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
         return GenTree::VisitResult::Continue;
     });
 
-    // ADDR nodes break the "parent flags >= operands flags" invariant for GTF_GLOB_REF.
-    if (tree->OperIs(GT_ADDR) && op1->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+    // Addresses of locals never need GTF_GLOB_REF
+    if (tree->OperIs(GT_ADDR) && tree->IsLocalAddrExpr())
     {
         expectedFlags &= ~GTF_GLOB_REF;
     }

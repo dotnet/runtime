@@ -198,14 +198,8 @@
 
 <HRESULT NumericValue="0x80131058">
 	<SymbolicName>COR_E_LOADING_REFERENCE_ASSEMBLY</SymbolicName>
-	<Message>"Reference assemblies should not be loaded for execution.  They can only be loaded in the Reflection-only loader context."</Message>
-	<Comment> Reference assemblies should not be loaded for execution.  They can only be loaded in the Reflection-only loader context. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131069">
-  <SymbolicName>COR_E_LOADING_WINMD_REFERENCE_ASSEMBLY</SymbolicName>
-  <Message>"Contract Windows Runtime assemblies cannot be loaded for execution.  Make sure your application only contains non-contract Windows Runtime assemblies."</Message>
-  <Comment> Contract Windows Runtime assemblies cannot be loaded for execution.  Make sure your application only contains non-contract Windows Runtime assemblies </Comment>
+	<Message>"Reference assemblies cannot not be loaded for execution."</Message>
+	<Comment> Reference assemblies cannot not be loaded for execution.  </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x8013106A">
@@ -872,7 +866,7 @@
 <HRESULT NumericValue="0x80131342">
 	<SymbolicName>CORDBG_E_ENC_HANGING_FIELD</SymbolicName>
 	<Message>"The field was added via Edit and Continue after the class was loaded."</Message>
-	<Comment> The field was added via EnC after the class was loaded, and so instead of the the field being contiguous with the other fields, it's 'hanging' off the instance or type.  This error is used to indicate that either the storage for this field is not yet available and so the field value cannot be read, or the debugger needs to use an EnC specific code path to get the value.</Comment>
+	<Comment> The field was added via EnC after the class was loaded, and so instead of the field being contiguous with the other fields, it's 'hanging' off the instance or type.  This error is used to indicate that either the storage for this field is not yet available and so the field value cannot be read, or the debugger needs to use an EnC specific code path to get the value.</Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131343">
@@ -1246,12 +1240,6 @@
 	<SymbolicName>CORSEC_E_CRYPTO_UNEX_OPER</SymbolicName>
 	<Message>"Unexpected Cryptographic operation."</Message>
 	<Comment> generic CryptographicUnexpectedOperationException </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131442">
-	<SymbolicName>CORSECATTR_E_BAD_ACTION</SymbolicName>
-	<Message>"Invalid security action code."</Message>
-	<Comment> Invalid security action code </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131500">

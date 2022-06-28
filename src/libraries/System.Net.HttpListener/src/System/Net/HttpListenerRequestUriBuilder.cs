@@ -333,9 +333,9 @@ namespace System.Net
             }
         }
 
-        private static string GetOctetsAsString(IEnumerable<byte> octets)
+        private static string GetOctetsAsString(List<byte> octets)
         {
-            StringBuilder octetString = new StringBuilder();
+            StringBuilder octetString = new StringBuilder(octets.Count * 3);
 
             bool first = true;
             foreach (byte octet in octets)

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Threading;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Diagnostics.Tracing
 {
@@ -73,6 +74,10 @@ namespace System.Diagnostics.Tracing
         {
             base.WriteEvent((int)EventId.ProcessorCount, processorCount);
         }
+
+        [UnconditionalSuppressMessage ("ReflectionAnalysis", "IL2119",
+            Justification = "DAM on EventSource references the compiler-generated lambda methods some of which call PInvokes " +
+                            "which are considered potentially dangerous. Event source will not use these lambdas.")]
 
         protected override void OnEventCommand(EventCommandEventArgs command)
         {

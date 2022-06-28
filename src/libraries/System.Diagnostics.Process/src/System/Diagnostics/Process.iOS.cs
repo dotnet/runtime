@@ -52,6 +52,7 @@ namespace System.Diagnostics
         /// </summary>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan TotalProcessorTime
         {
             get { throw new PlatformNotSupportedException(); }
@@ -63,6 +64,7 @@ namespace System.Diagnostics
         /// </summary>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan UserProcessorTime
         {
             get { throw new PlatformNotSupportedException(); }
@@ -71,7 +73,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Returns all immediate child processes.
         /// </summary>
-        private static IReadOnlyList<Process> GetChildProcesses(Process[]? processes = null)
+        private static List<Process> GetChildProcesses(Process[]? processes = null)
         {
             throw new PlatformNotSupportedException();
         }

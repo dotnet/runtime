@@ -1106,16 +1106,10 @@ namespace System.Runtime.Serialization.Json
             }
             ArgumentNullException.ThrowIfNull(ws);
 
-            for (int i = 0; i < ws.Length; ++i)
+            int pos = ws.AsSpan().IndexOfAnyExcept(" \t\r\n");
+            if (pos >= 0)
             {
-                char c = ws[i];
-                if (c != ' ' &&
-                    c != '\t' &&
-                    c != '\n' &&
-                    c != '\r')
-                {
-                    throw new ArgumentException(SR.Format(SR.JsonOnlyWhitespace, c.ToString(), "WriteWhitespace"), nameof(ws));
-                }
+                throw new ArgumentException(SR.Format(SR.JsonOnlyWhitespace, ws[pos].ToString(), "WriteWhitespace"), nameof(ws));
             }
 
             WriteString(ws);

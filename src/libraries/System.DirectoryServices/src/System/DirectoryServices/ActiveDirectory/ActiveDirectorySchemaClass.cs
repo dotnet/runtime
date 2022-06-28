@@ -1049,9 +1049,9 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (isBound)
                 {
                     // set the value on the directory entry
-                    SetProperty(PropertyManager.DefaultSecurityDescriptor, (value == null) ? null : value.GetSecurityDescriptorSddlForm(AccessControlSections.All));
+                    SetProperty(PropertyManager.DefaultSecurityDescriptor, value?.GetSecurityDescriptorSddlForm(AccessControlSections.All));
                 }
-                _defaultSDSddlForm = (value == null) ? null : value.GetSecurityDescriptorSddlForm(AccessControlSections.All);
+                _defaultSDSddlForm = value?.GetSecurityDescriptorSddlForm(AccessControlSections.All);
             }
         }
 

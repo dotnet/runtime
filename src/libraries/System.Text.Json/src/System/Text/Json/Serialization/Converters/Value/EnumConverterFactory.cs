@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json.Serialization.Converters
 {
+    [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
     internal sealed class EnumConverterFactory : JsonConverterFactory
     {
         public EnumConverterFactory()

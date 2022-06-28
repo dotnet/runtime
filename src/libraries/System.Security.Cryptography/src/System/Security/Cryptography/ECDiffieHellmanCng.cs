@@ -115,7 +115,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///     Use the secret agreement as the HMAC key rather than supplying a seperate one
+        ///     Use the secret agreement as the HMAC key rather than supplying a separate one
         /// </summary>
         public bool UseSecretAgreementAsHmacKey
         {

@@ -44,11 +44,10 @@ namespace System.DirectoryServices.AccountManagement
 
         protected void BuildPropertySet(Type p, StringCollection propertySet)
         {
-            if (TypeToLdapPropListMap[this.MappingTableIndex].ContainsKey(p))
+            if (TypeToLdapPropListMap[this.MappingTableIndex].TryGetValue(p, out StringCollection value))
             {
-                Debug.Assert(TypeToLdapPropListMap[this.MappingTableIndex].ContainsKey(p));
-                string[] props = new string[TypeToLdapPropListMap[this.MappingTableIndex][p].Count];
-                TypeToLdapPropListMap[this.MappingTableIndex][p].CopyTo(props, 0);
+                string[] props = new string[value.Count];
+                value.CopyTo(props, 0);
                 propertySet.AddRange(props);
             }
             else
@@ -207,11 +206,8 @@ namespace System.DirectoryServices.AccountManagement
                     Debug.Fail($"ADStoreCtx.GetObjectClassPortion: fell off end looking for {principalType}");
                     throw new InvalidOperationException(SR.Format(SR.StoreCtxUnsupportedPrincipalTypeForQuery, principalType));
                 }
-                StringBuilder SB = new StringBuilder();
-                SB.Append("(&(objectClass=");
-                SB.Append(objClass);
-                SB.Append(')');
-                ldapFilter = SB.ToString();
+
+                ldapFilter = $"(&(objectClass={objClass})";
             }
 
             return ldapFilter;
@@ -325,49 +321,18 @@ namespace System.DirectoryServices.AccountManagement
 
         protected static string StringConverter(FilterBase filter, string suggestedAdProperty)
         {
-            StringBuilder sb = new StringBuilder();
-
-            if (filter.Value != null)
-            {
-                sb.Append('(');
-                sb.Append(suggestedAdProperty);
-                sb.Append('=');
-                sb.Append(ADUtils.PAPIQueryToLdapQueryString((string)filter.Value));
-
-                sb.Append(')');
-            }
-            else
-            {
-                sb.Append("(!(");
-                sb.Append(suggestedAdProperty);
-                sb.Append("=*))");
-            }
-
-            return sb.ToString();
+            return filter.Value != null ?
+                $"({suggestedAdProperty}={ADUtils.PAPIQueryToLdapQueryString((string)filter.Value)})" :
+                $"(!({suggestedAdProperty}=*))";
         }
 
         protected static string AcctDisabledConverter(FilterBase filter, string suggestedAdProperty)
         {
             // Principal property is AccountEnabled  where TRUE = enabled FALSE = disabled.  In ADAM
             // this is stored as accountDisabled where TRUE = disabled and FALSE = enabled so here we need to revese the value.
-            StringBuilder sb = new StringBuilder();
-
-            if (filter.Value != null)
-            {
-                sb.Append('(');
-                sb.Append(suggestedAdProperty);
-                sb.Append('=');
-                sb.Append(!(bool)filter.Value ? "TRUE" : "FALSE");
-                sb.Append(')');
-            }
-            else
-            {
-                sb.Append("(!(");
-                sb.Append(suggestedAdProperty);
-                sb.Append("=*))");
-            }
-
-            return sb.ToString();
+            return filter.Value != null ?
+                $"({suggestedAdProperty}={(!(bool)filter.Value ? "TRUE" : "FALSE")})" :
+                $"(!({suggestedAdProperty}=*))";
         }
 
         // Use this function when searching for an attribute where the absence of the attribute = a default setting.
@@ -377,84 +342,25 @@ namespace System.DirectoryServices.AccountManagement
             Debug.Assert(NonPresentAttrDefaultStateMapping != null);
             Debug.Assert(NonPresentAttrDefaultStateMapping.ContainsKey(suggestedAdProperty));
 
-            StringBuilder sb = new StringBuilder();
-
-            if (filter.Value != null)
+            if (filter.Value == null)
             {
-                bool defaultState = NonPresentAttrDefaultStateMapping[suggestedAdProperty];
-
-                if (defaultState == (bool)filter.Value)
-                {
-                    sb.Append("(|(!(");
-                    sb.Append(suggestedAdProperty);
-                    sb.Append("=*)(");
-                    sb.Append(suggestedAdProperty);
-                    sb.Append('=');
-                    sb.Append((bool)filter.Value ? "TRUE" : "FALSE");
-                    sb.Append(")))");
-                }
-                else
-                {
-                    sb.Append('(');
-                    sb.Append(suggestedAdProperty);
-                    sb.Append('=');
-                    sb.Append((bool)filter.Value ? "TRUE" : "FALSE");
-                    sb.Append(')');
-                }
-            }
-            else
-            {
-                sb.Append("(!(");
-                sb.Append(suggestedAdProperty);
-                sb.Append("=*))");
+                return $"(!({suggestedAdProperty}=*))";
             }
 
-            return sb.ToString();
+            bool defaultState = NonPresentAttrDefaultStateMapping[suggestedAdProperty];
+            if (defaultState == (bool)filter.Value)
+            {
+                return $"(|(!({suggestedAdProperty}=*)({suggestedAdProperty}={((bool)filter.Value ? "TRUE" : "FALSE")})))";
+            }
+
+            return $"({suggestedAdProperty}={((bool)filter.Value ? "TRUE" : "FALSE")})";
         }
-        /*** If standard bool conversion is needed uncomment this function
-                protected static string BoolConverter(FilterBase filter, string suggestedAdProperty)
-                {
-                    StringBuilder sb = new StringBuilder();
 
-                    if (filter.Value != null)
-                    {
-                        sb.Append('(');
-                        sb.Append(suggestedAdProperty);
-                        sb.Append('=');
-                        sb.Append( (bool)filter.Value ? "TRUE" : "FALSE" );
-                        sb.Append(')');
-                    }
-                    else
-                    {
-                        sb.Append("(!(");
-                        sb.Append(suggestedAdProperty);
-                        sb.Append("=*))");
-                    }
-
-                    return sb.ToString();
-                }
-        *****/
         protected static string CommaStringConverter(FilterBase filter, string suggestedAdProperty)
         {
-            StringBuilder sb = new StringBuilder();
-
-            if (filter.Value != null)
-            {
-                sb.Append('(');
-                sb.Append(suggestedAdProperty);
-                sb.Append("=*");
-                sb.Append(ADUtils.PAPIQueryToLdapQueryString((string)filter.Value));
-                sb.Append('*');
-                sb.Append(')');
-            }
-            else
-            {
-                sb.Append("(!(");
-                sb.Append(suggestedAdProperty);
-                sb.Append("=*))");
-            }
-
-            return sb.ToString();
+            return filter.Value != null ?
+                $"({suggestedAdProperty}=*{ADUtils.PAPIQueryToLdapQueryString((string)filter.Value)}*)" :
+                $"(!({suggestedAdProperty}=*))";
         }
 
         protected static bool IdentityClaimToFilter(string identity, string identityFormat, ref string filter, bool throwOnFail)
@@ -658,19 +564,13 @@ namespace System.DirectoryServices.AccountManagement
 
             byte[] rawCertificate = certificate.RawData;
 
-            StringBuilder sb = new StringBuilder();
-
-            sb.Append("(userCertificate=");
-            sb.Append(ADUtils.EscapeBinaryValue(rawCertificate));
-            sb.Append(')');
-
-            return sb.ToString();
+            return $"(userCertificate={ADUtils.EscapeBinaryValue(rawCertificate)})";
         }
         protected static string UserAccountControlConverter(FilterBase filter, string suggestedAdProperty)
         {
             Debug.Assert(string.Equals(suggestedAdProperty, "userAccountControl", StringComparison.OrdinalIgnoreCase));
 
-            StringBuilder sb = new StringBuilder();
+            string result = "";
 
             // bitwise-AND
 
@@ -682,48 +582,39 @@ namespace System.DirectoryServices.AccountManagement
                     // UF_ACCOUNTDISABLE
                     // Note that the logic is inverted on this one.  We expose "Enabled",
                     // but AD stores it as "Disabled".
-                    if (value)
-                        sb.Append("(!(userAccountControl:1.2.840.113556.1.4.803:=2))");
-                    else
-                        sb.Append("(userAccountControl:1.2.840.113556.1.4.803:=2)");
+                    result = value ?
+                        "(!(userAccountControl:1.2.840.113556.1.4.803:=2))" :
+                        "(userAccountControl:1.2.840.113556.1.4.803:=2)";
                     break;
 
                 case SmartcardLogonRequiredFilter.PropertyNameStatic:
                     // UF_SMARTCARD_REQUIRED
-                    if (value)
-                        sb.Append("(userAccountControl:1.2.840.113556.1.4.803:=262144)");
-                    else
-                        sb.Append("(!(userAccountControl:1.2.840.113556.1.4.803:=262144))");
-
+                    result = value ?
+                        "(userAccountControl:1.2.840.113556.1.4.803:=262144)" :
+                        "(!(userAccountControl:1.2.840.113556.1.4.803:=262144))";
                     break;
 
                 case DelegationPermittedFilter.PropertyNameStatic:
                     // UF_NOT_DELEGATED
                     // Note that the logic is inverted on this one.  That's because we expose
                     // "delegation allowed", but AD represents it as the inverse, "delegation NOT allowed"
-                    if (value)
-                        sb.Append("(!(userAccountControl:1.2.840.113556.1.4.803:=1048576))");
-                    else
-                        sb.Append("(userAccountControl:1.2.840.113556.1.4.803:=1048576)");
-
+                    result = value ?
+                        "(!(userAccountControl:1.2.840.113556.1.4.803:=1048576))" :
+                        "(userAccountControl:1.2.840.113556.1.4.803:=1048576)";
                     break;
 
                 case PasswordNotRequiredFilter.PropertyNameStatic:
                     // UF_PASSWD_NOTREQD
-                    if (value)
-                        sb.Append("(userAccountControl:1.2.840.113556.1.4.803:=32)");
-                    else
-                        sb.Append("(!(userAccountControl:1.2.840.113556.1.4.803:=32))");
-
+                    result = value ?
+                        "(userAccountControl:1.2.840.113556.1.4.803:=32)" :
+                        "(!(userAccountControl:1.2.840.113556.1.4.803:=32))";
                     break;
 
                 case PasswordNeverExpiresFilter.PropertyNameStatic:
                     // UF_DONT_EXPIRE_PASSWD
-                    if (value)
-                        sb.Append("(userAccountControl:1.2.840.113556.1.4.803:=65536)");
-                    else
-                        sb.Append("(!(userAccountControl:1.2.840.113556.1.4.803:=65536))");
-
+                    result = value ?
+                        "(userAccountControl:1.2.840.113556.1.4.803:=65536)" :
+                        "(!(userAccountControl:1.2.840.113556.1.4.803:=65536))";
                     break;
 
                 case CannotChangePasswordFilter.PropertyNameStatic:
@@ -737,11 +628,9 @@ namespace System.DirectoryServices.AccountManagement
 
                 case AllowReversiblePasswordEncryptionFilter.PropertyNameStatic:
                     // UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED
-                    if (value)
-                        sb.Append("(userAccountControl:1.2.840.113556.1.4.803:=128)");
-                    else
-                        sb.Append("(!(userAccountControl:1.2.840.113556.1.4.803:=128))");
-
+                    result = value ?
+                        "(userAccountControl:1.2.840.113556.1.4.803:=128)" :
+                        "(!(userAccountControl:1.2.840.113556.1.4.803:=128))";
                     break;
 
                 default:
@@ -749,30 +638,14 @@ namespace System.DirectoryServices.AccountManagement
                     break;
             }
 
-            return sb.ToString();
+            return result;
         }
 
         protected static string BinaryConverter(FilterBase filter, string suggestedAdProperty)
         {
-            StringBuilder sb = new StringBuilder();
-
-            if (filter.Value != null)
-            {
-                sb.Append('(');
-                sb.Append(suggestedAdProperty);
-                sb.Append('=');
-                sb.Append(ADUtils.EscapeBinaryValue((byte[])filter.Value));
-            }
-            else
-            {
-                sb.Append("(!(");
-                sb.Append(suggestedAdProperty);
-                sb.Append("=*))");
-            }
-
-            sb.Append(')');
-
-            return sb.ToString();
+            return filter.Value != null ?
+                $"({suggestedAdProperty}={ADUtils.EscapeBinaryValue((byte[])filter.Value)})" :
+                $"(!({suggestedAdProperty}=*)))";
         }
 
         protected static string ExpirationDateConverter(FilterBase filter, string suggestedAdProperty)
@@ -781,21 +654,10 @@ namespace System.DirectoryServices.AccountManagement
             Debug.Assert(filter is ExpirationDateFilter);
 
             Nullable<DateTime> date = (Nullable<DateTime>)filter.Value;
-            StringBuilder sb = new StringBuilder();
 
-            if (!date.HasValue)
-            {
-                // Spoke with ColinBr.  Both values are used to represent "no expiration date set".
-                sb.Append("(|(accountExpires=9223372036854775807)(accountExpires=0))");
-            }
-            else
-            {
-                sb.Append("(accountExpires=");
-                sb.Append(ADUtils.DateTimeToADString(date.Value));
-                sb.Append(')');
-            }
-
-            return sb.ToString();
+            return !date.HasValue ?
+                "(|(accountExpires=9223372036854775807)(accountExpires=0))" : // Both values are used to represent "no expiration date set"
+                $"(accountExpires={ADUtils.DateTimeToADString(date.Value)})";
         }
 
         protected static string GuidConverter(FilterBase filter, string suggestedAdProperty)
@@ -804,29 +666,20 @@ namespace System.DirectoryServices.AccountManagement
             Debug.Assert(filter is GuidFilter);
 
             Nullable<Guid> guid = (Nullable<Guid>)filter.Value;
-            StringBuilder sb = new StringBuilder();
 
-            if (guid == null)
-            {
-                // Spoke with ColinBr.  Both values are used to represent "no expiration date set".
-                // sb.Append("(|(accountExpires=9223372036854775807)(accountExpires=0))");
-            }
-            else
-            {
-                sb.Append("(objectGuid=");
+            string result = "";
 
+            if (guid != null)
+            {
                 // Transform from hex string ("1AFF") to LDAP hex string ("\1A\FF")
                 string ldapHexGuid = ADUtils.HexStringToLdapHexString(guid.ToString());
-
                 if (ldapHexGuid == null)
                     throw new InvalidOperationException(SR.StoreCtxGuidIdentityClaimBadFormat);
 
-                sb.Append(ldapHexGuid);
-
-                sb.Append(')');
+                result = $"(objectGuid={ldapHexGuid})";
             }
 
-            return sb.ToString();
+            return result;
         }
 
         protected static string MatchingIntConverter(FilterBase filter, string suggestedAdProperty)
@@ -869,13 +722,11 @@ namespace System.DirectoryServices.AccountManagement
             Debug.Assert(qmt.Value is DateTime);
             Debug.Assert((suggestedAdProperty == "lastLogon") || (suggestedAdProperty == "lastLogonTimestamp"));
 
-            StringBuilder sb = new StringBuilder();
-            sb.Append("(|");
-            sb.Append(DateTimeFilterBuilder("lastLogon", (DateTime)qmt.Value, LdapConstants.defaultUtcTime, false, qmt.Match));
-            sb.Append(DateTimeFilterBuilder("lastLogonTimestamp", (DateTime)qmt.Value, LdapConstants.defaultUtcTime, true, qmt.Match));
-            sb.Append(')');
-
-            return (sb.ToString());
+            return
+                "(|" +
+                DateTimeFilterBuilder("lastLogon", (DateTime)qmt.Value, LdapConstants.defaultUtcTime, false, qmt.Match) +
+                DateTimeFilterBuilder("lastLogonTimestamp", (DateTime)qmt.Value, LdapConstants.defaultUtcTime, true, qmt.Match) +
+                ")";
         }
 
         protected static string GroupTypeConverter(FilterBase filter, string suggestedAdProperty)
@@ -1129,7 +980,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 foreach (KeyValuePair<string, ExtensionCacheValue> kvp in ec.properties)
                 {
-                    Type type = kvp.Value.Type == null ? kvp.Value.Value.GetType() : kvp.Value.Type;
+                    Type type = kvp.Value.Type ?? kvp.Value.Value.GetType();
 
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "ExtensionCacheConverter filter type " + type.ToString());
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "ExtensionCacheConverter match type " + kvp.Value.MatchType.ToString());

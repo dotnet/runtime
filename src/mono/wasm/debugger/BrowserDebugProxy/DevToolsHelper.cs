@@ -63,64 +63,67 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal sealed class DotnetObjectId
     {
+        private int? _intValue;
+
         public string Scheme { get; }
-        public int Value { get; }
+        public int Value
+        {
+            get
+            {
+                if (_intValue == null)
+                    throw new ArgumentException($"DotnetObjectId (scheme: {Scheme}, ValueAsJson: {ValueAsJson}) does not have an int value");
+                return _intValue.Value;
+            }
+        }
         public int SubValue { get; set; }
-        public bool IsValueType { get; set; }
+        public bool IsValueType => Scheme == "valuetype";
+
+        public JObject ValueAsJson { get; init; }
 
         public static bool TryParse(JToken jToken, out DotnetObjectId objectId) => TryParse(jToken?.Value<string>(), out objectId);
 
         public static bool TryParse(string id, out DotnetObjectId objectId)
         {
             objectId = null;
-            try
-            {
-                if (id == null)
-                    return false;
-
-                if (!id.StartsWith("dotnet:"))
-                    return false;
-
-                string[] parts = id.Split(":");
-
-                if (parts.Length < 3)
-                    return false;
-
-                objectId = new DotnetObjectId(parts[1], int.Parse(parts[2]));
-                switch (objectId.Scheme)
-                {
-                    case "methodId":
-                        if (parts.Length > 4)
-                        {
-                            objectId.SubValue = int.Parse(parts[3]);
-                            objectId.IsValueType = parts[4] == "ValueType";
-                            return true;
-                        }
-                        return false;
-                }
-                return true;
-            }
-            catch (Exception)
-            {
+            if (id == null)
                 return false;
-            }
+
+            if (!id.StartsWith("dotnet:"))
+                return false;
+
+            string[] parts = id.Split(":", 3);
+
+            if (parts.Length < 3)
+                return false;
+
+            objectId = new DotnetObjectId(parts[1], parts[2]);
+            return true;
         }
 
         public DotnetObjectId(string scheme, int value)
+                : this(scheme, value.ToString()) { }
+
+        public DotnetObjectId(string scheme, string value)
         {
             Scheme = scheme;
-            Value = value;
+            if (int.TryParse(value, out int ival))
+            {
+                _intValue = ival;
+            }
+            else
+            {
+                try
+                {
+                    ValueAsJson = JObject.Parse(value);
+                }
+                catch (JsonReaderException) { }
+            }
         }
 
         public override string ToString()
-        {
-            switch (Scheme)
-            {
-                case "methodId":
-                    return $"dotnet:{Scheme}:{Value}:{SubValue}";
-            }
-            return $"dotnet:{Scheme}:{Value}";
-        }
+            => _intValue != null
+                    ? $"dotnet:{Scheme}:{_intValue}"
+                    : $"dotnet:{Scheme}:{ValueAsJson}";
     }
 
     public struct Result
@@ -298,6 +301,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public static MonoCommands GetLoadedFiles(int runtimeId) => new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_get_loaded_files()");
 
+        public static MonoCommands SetDebuggerAttached(int runtimeId) => new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_debugger_attached()");
+
         public static MonoCommands SendDebuggerAgentCommand(int runtimeId, int id, int command_set, int command, string command_parameters)
         {
             return new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_send_dbg_command ({id}, {command_set}, {command},'{command_parameters}')");
@@ -396,11 +401,12 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal class ExecutionContext
     {
-        public ExecutionContext(MonoSDBHelper sdbAgent, int id, object auxData)
+        public ExecutionContext(MonoSDBHelper sdbAgent, int id, object auxData, PauseOnExceptionsKind pauseOnExceptions)
         {
             Id = id;
             AuxData = auxData;
             SdbAgent = sdbAgent;
+            PauseOnExceptions = pauseOnExceptions;
         }
 
         public string DebugId { get; set; }
@@ -432,6 +438,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private Dictionary<int, PerScopeCache> perScopeCaches { get; } = new Dictionary<int, PerScopeCache>();
 
         internal int TempBreakpointForSetNextIP { get; set; }
+        internal bool FirstBreakpoint { get; set; }
 
         public DebugStore Store
         {
@@ -467,6 +474,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public Dictionary<string, JObject> Locals { get; } = new Dictionary<string, JObject>();
         public Dictionary<string, JObject> MemberReferences { get; } = new Dictionary<string, JObject>();
         public Dictionary<string, JObject> ObjectFields { get; } = new Dictionary<string, JObject>();
+        public Dictionary<string, JObject> EvaluationResults { get; } = new();
         public PerScopeCache(JArray objectValues)
         {
             foreach (var objectValue in objectValues)

@@ -245,39 +245,6 @@ FCIMPL2(VOID, MarshalNative::DestroyStructure, LPVOID ptr, ReflectClassBaseObjec
 }
 FCIMPLEND
 
-FCIMPL1(FC_BOOL_RET, MarshalNative::IsPinnable, Object* obj)
-{
-    FCALL_CONTRACT;
-
-    VALIDATEOBJECT(obj);
-
-    if (obj == NULL)
-        FC_RETURN_BOOL(TRUE);
-
-    if (obj->GetMethodTable() == g_pStringClass)
-        FC_RETURN_BOOL(TRUE);
-
-    if (obj->GetMethodTable()->IsArray())
-    {
-        BASEARRAYREF asArray = (BASEARRAYREF)ObjectToOBJECTREF(obj);
-        if (CorTypeInfo::IsPrimitiveType(asArray->GetArrayElementType()))
-            FC_RETURN_BOOL(TRUE);
-
-        TypeHandle th = asArray->GetArrayElementTypeHandle();
-        if (!th.IsTypeDesc())
-        {
-            MethodTable *pMT = th.AsMethodTable();
-            if (pMT->IsValueType() && pMT->IsBlittable())
-                FC_RETURN_BOOL(TRUE);
-        }
-
-        FC_RETURN_BOOL(FALSE);
-    }
-
-    FC_RETURN_BOOL(obj->GetMethodTable()->IsBlittable());
-}
-FCIMPLEND
-
 /************************************************************************
  * PInvoke.SizeOf(Class)
  */
@@ -488,33 +455,9 @@ void ValidatePinnedObject(OBJECTREF obj)
     }
     CONTRACTL_END;
 
-    // NULL is fine.
-    if (obj == NULL)
-        return;
-
-    if (obj->GetMethodTable() == g_pStringClass)
-        return;
-
-    if (obj->GetMethodTable()->IsArray())
-    {
-        BASEARRAYREF asArray = (BASEARRAYREF) obj;
-        if (CorTypeInfo::IsPrimitiveType(asArray->GetArrayElementType()))
-            return;
-
-        TypeHandle th = asArray->GetArrayElementTypeHandle();
-        if (!th.IsTypeDesc())
-        {
-            MethodTable *pMT = th.AsMethodTable();
-            if (pMT->IsValueType() && pMT->IsBlittable())
-                return;
-        }
-    }
-    else if (obj->GetMethodTable()->IsBlittable())
-    {
-        return;
-    }
-
-    COMPlusThrow(kArgumentException, IDS_EE_NOTISOMORPHIC);
+    // Identical logic exists in managed code for Marshal.IsPinnable()
+    if (obj != NULL && obj->GetMethodTable()->ContainsPointers())
+        COMPlusThrow(kArgumentException, IDS_EE_NOTISOMORPHIC);
 }
 
 NOINLINE static OBJECTHANDLE FCDiagCreateHandle(OBJECTREF objRef, int type)

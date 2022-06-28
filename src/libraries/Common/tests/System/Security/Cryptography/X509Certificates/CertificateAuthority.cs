@@ -687,41 +687,20 @@ SingleResponse ::= SEQUENCE {
 
         private static X509Extension CreateAiaExtension(string certLocation, string ocspStem)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            string[] ocsp = null;
+            string[] caIssuers = null;
 
-            // AuthorityInfoAccessSyntax (SEQUENCE OF)
-            using (writer.PushSequence())
+            if (ocspStem is not null)
             {
-                if (!string.IsNullOrEmpty(ocspStem))
-                {
-                    // AccessDescription for id-ad-ocsp
-                    using (writer.PushSequence())
-                    {
-                        writer.WriteObjectIdentifier("1.3.6.1.5.5.7.48.1");
-
-                        writer.WriteCharacterString(
-                            UniversalTagNumber.IA5String,
-                            ocspStem,
-                            new Asn1Tag(TagClass.ContextSpecific, 6));
-                    }
-                }
-
-                if (!string.IsNullOrEmpty(certLocation))
-                {
-                    // AccessDescription for id-ad-caIssuers
-                    using (writer.PushSequence())
-                    {
-                        writer.WriteObjectIdentifier("1.3.6.1.5.5.7.48.2");
-
-                        writer.WriteCharacterString(
-                            UniversalTagNumber.IA5String,
-                            certLocation,
-                            new Asn1Tag(TagClass.ContextSpecific, 6));
-                    }
-                }
+                ocsp = new[] { ocspStem };
             }
 
-            return new X509Extension("1.3.6.1.5.5.7.1.1", writer.Encode(), false);
+            if (certLocation is not null)
+            {
+                caIssuers = new[] { certLocation };
+            }
+
+            return new X509AuthorityInformationAccessExtension(ocsp, caIssuers);
         }
 
         private static X509Extension CreateCdpExtension(string cdp)

@@ -287,7 +287,7 @@ struct FixupPrecode
 
         PCODE target = (PCODE)this + FixupCodeOffset;
 
-        _ASSERTE(IS_ALIGNED(&GetData()->Target, sizeof(SIZE_T))); 
+        _ASSERTE(IS_ALIGNED(&GetData()->Target, sizeof(SIZE_T)));
         InterlockedExchangeT<PCODE>(&GetData()->Target, target);
     }
 
@@ -299,9 +299,6 @@ struct FixupPrecode
             GC_NOTRIGGER;
         }
         CONTRACTL_END;
-
-        MethodDesc * pMD = (MethodDesc*)GetMethodDesc();
-        g_IBCLogger.LogMethodPrecodeWriteAccess(pMD);
 
         PCODE oldTarget = (PCODE)GetData()->Target;
         if (oldTarget != ((PCODE)this + FixupCodeOffset))
@@ -516,7 +513,7 @@ public:
     }
 
     PTR_PCODE GetTargetSlot();
-    
+
     MethodDesc *  GetMethodDesc(BOOL fSpeculative = FALSE);
     BOOL          IsCorrectMethodDesc(MethodDesc *  pMD);
 
@@ -554,12 +551,6 @@ public:
         }
 
         PTR_Precode pPrecode = PTR_Precode(pInstr);
-
-        if (!fSpeculative)
-        {
-            g_IBCLogger.LogMethodPrecodeAccess(pPrecode->GetMethodDesc());
-        }
-
         return pPrecode;
     }
 
@@ -585,10 +576,12 @@ public:
     static TADDR AllocateTemporaryEntryPoints(MethodDescChunk* pChunk,
         LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
 
-    static SIZE_T GetMaxTemporaryEntryPointsCount()
+    static DWORD GetMaxTemporaryEntryPointsCount()
     {
         SIZE_T maxPrecodeCodeSize = Max(FixupPrecode::CodeSize, StubPrecode::CodeSize);
-        return GetOsPageSize() / maxPrecodeCodeSize;
+        SIZE_T count = GetOsPageSize() / maxPrecodeCodeSize;
+        _ASSERTE(count < MAXDWORD);
+        return (DWORD)count;
     }
 
 #ifdef DACCESS_COMPILE

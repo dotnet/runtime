@@ -970,7 +970,7 @@ Arguments:
         returned.
 
     HandlerData - Supplies a pointer to a variable that receives a pointer
-        the the language handler data.
+        the language handler data.
 
     UnwindParams - Additional parameters shared with caller.
 

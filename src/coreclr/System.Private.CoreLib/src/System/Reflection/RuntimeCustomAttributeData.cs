@@ -1137,7 +1137,7 @@ namespace System.Reflection
             return result;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2065:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:MethodParameterDoesntMeetThisParameterRequirements",
             Justification = "Linker guarantees presence of all the constructor parameters, property setters and fields which are accessed by any " +
                             "attribute instantiation which is present in the code linker has analyzed." +
                             "As such the reflection usage in this method will never fail as those methods/fields will be present.")]
@@ -1273,7 +1273,7 @@ namespace System.Reflection
             Justification = "Module.ResolveMethod and Module.ResolveType are marked as RequiresUnreferencedCode because they rely on tokens" +
                             "which are not guaranteed to be stable across trimming. So if somebody hardcodes a token it could break." +
                             "The usage here is not like that as all these tokens come from existing metadata loaded from some IL" +
-                            "and so trimming has no effect (the tokens are read AFTER trimming occured).")]
+                            "and so trimming has no effect (the tokens are read AFTER trimming occurred).")]
         private static bool FilterCustomAttributeRecord(
             MetadataToken caCtorToken,
             in MetadataImport scope,
@@ -1427,7 +1427,7 @@ namespace System.Reflection
             Justification = "Module.ResolveType is marked as RequiresUnreferencedCode because it relies on tokens" +
                             "which are not guaranteed to be stable across trimming. So if somebody hardcodes a token it could break." +
                             "The usage here is not like that as all these tokens come from existing metadata loaded from some IL" +
-                            "and so trimming has no effect (the tokens are read AFTER trimming occured).")]
+                            "and so trimming has no effect (the tokens are read AFTER trimming occurred).")]
         internal static AttributeUsageAttribute GetAttributeUsage(RuntimeType decoratedAttribute)
         {
             RuntimeModule decoratedModule = decoratedAttribute.GetRuntimeModule();

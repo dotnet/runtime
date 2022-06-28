@@ -528,7 +528,7 @@ private:
         int     iLast;
         int     nResult;
 
-        for (;;)
+        while (true)
         {
             // if less than two elements you're done.
             if (iLeft >= iRight)
@@ -1806,7 +1806,7 @@ HRESULT CMiniMdRW::InitOnCustomDataSource(IMDCustomDataSource* pDataSource)
         m_Tables[i].Initialize(m_TableDefs[i].m_cbRec, tableRecordData, !fIsReadOnly);
 
         IfFailGo(pDataSource->GetTableSortable(i, &sortable));
-        m_bSortable[i] = sortable;
+        m_bSortable[i] = !!sortable ? 1 : 0;
     }
 
     // Set the limits so we will know when to grow the database.
@@ -1964,8 +1964,7 @@ CMiniMdRW::GetFullSaveSize(
     CorSaveSize               fSave,                // [IN] cssAccurate or cssQuick.
     UINT32                   *pcbSaveSize,          // [OUT] Put the size here.
     DWORD                    *pbSaveCompressed,     // [OUT] Will the saved data be fully compressed?
-    MetaDataReorderingOptions reorderingOptions,    // [IN] Metadata reordering options
-    CorProfileData           *pProfileData)         // [IN] Optional IBC profile data for working set optimization
+    MetaDataReorderingOptions reorderingOptions)    // [IN] Metadata reordering options
 {
     HRESULT     hr = S_OK;
     CMiniTableDef   sTempTable;         // Definition for a temporary table.
@@ -1977,7 +1976,6 @@ CMiniMdRW::GetFullSaveSize(
     int         i;                      // Loop control.
 
     _ASSERTE(m_bPreSaveDone);
-    _ASSERTE(pProfileData == NULL);
 
     // Determine if the stream is "fully compressed", ie no pointer tables.
     *pbSaveCompressed = true;
@@ -2021,14 +2019,9 @@ CMiniMdRW::GetFullSaveSize(
         Schema.m_heaps &= ~CMiniMdSchema::HEAP_GUID_4;
     }
 
-    cbTotal = 0;
-    // schema isn't saved for the hot metadata
-    if (pProfileData == NULL)
-    {
-        cbTotal = Schema.SaveTo(SchemaBuf);
-        if ( (cbAlign = Align4(cbTotal) - cbTotal) != 0)
-            cbTotal += cbAlign;
-    }
+    cbTotal = Schema.SaveTo(SchemaBuf);
+    if ( (cbAlign = Align4(cbTotal) - cbTotal) != 0)
+        cbTotal += cbAlign;
 
     // For each table...
     ULONG ixTbl;
@@ -2061,13 +2054,9 @@ CMiniMdRW::GetFullSaveSize(
     if (cbAlign < 2)
         cbAlign += 4;
     cbTotal += cbAlign;
+    m_cbSaveSize = cbTotal;
 
-    if (pProfileData == NULL)
-    {
-        m_cbSaveSize = cbTotal;
-    }
-
-    LOG((LOGMD, "CMiniMdRW::GetFullSaveSize: Total %ssize = %d\n", pProfileData ? "hot " : "", cbTotal));
+    LOG((LOGMD, "CMiniMdRW::GetFullSaveSize: Total size = %d\n", cbTotal));
 
     *pcbSaveSize = cbTotal;
 
@@ -2155,8 +2144,7 @@ CMiniMdRW::GetSaveSize(
     CorSaveSize               fSave,                // [IN] cssAccurate or cssQuick.
     UINT32                   *pcbSaveSize,          // [OUT] Put the size here.
     DWORD                    *pbSaveCompressed,     // [OUT] Will the saved data be fully compressed?
-    MetaDataReorderingOptions reorderingOptions,    // [IN] Optional metadata reordering options
-    CorProfileData           *pProfileData)         // [IN] Optional IBC profile data for working set optimization
+    MetaDataReorderingOptions reorderingOptions)    // [IN] Optional metadata reordering options
 {
     HRESULT hr;
 
@@ -2166,12 +2154,12 @@ CMiniMdRW::GetSaveSize(
     switch (m_OptionValue.m_UpdateMode & MDUpdateMask)
     {
     case MDUpdateFull:
-        hr = GetFullSaveSize(fSave, pcbSaveSize, pbSaveCompressed, reorderingOptions, pProfileData);
+        hr = GetFullSaveSize(fSave, pcbSaveSize, pbSaveCompressed, reorderingOptions);
         break;
     case MDUpdateIncremental:
     case MDUpdateExtension:
     case MDUpdateENC:
-        hr = GetFullSaveSize(fSave, pcbSaveSize, pbSaveCompressed, NoReordering, pProfileData);
+        hr = GetFullSaveSize(fSave, pcbSaveSize, pbSaveCompressed, NoReordering);
         // never save compressed if it is incremental compilation.
         *pbSaveCompressed = false;
         break;
@@ -2873,7 +2861,7 @@ CMiniMdRW::PreSaveFull()
 
     m_bPreSaveDone = true;
 
-    // send the Ref->Def optmization notification to host
+    // send the Ref->Def optimization notification to host
     if (m_pHandler != NULL)
     {
         TOKENMAP * ptkmap = GetMemberRefToMemberDefMap();
@@ -3069,8 +3057,7 @@ ErrExit:
 __checkReturn
 HRESULT
 CMiniMdRW::PreSave(
-    MetaDataReorderingOptions reorderingOptions,
-    CorProfileData           *pProfileData)
+    MetaDataReorderingOptions reorderingOptions)
 {
     HRESULT hr = S_OK;
 
@@ -3131,8 +3118,7 @@ __checkReturn
 HRESULT
 CMiniMdRW::SaveFullTablesToStream(
     IStream                  *pIStream,
-    MetaDataReorderingOptions reorderingOptions,
-    CorProfileData           *pProfileData)
+    MetaDataReorderingOptions reorderingOptions)
 {
     HRESULT     hr;
     CMiniTableDef   sTempTable;         // Definition for a temporary table.
@@ -3142,8 +3128,6 @@ CMiniMdRW::SaveFullTablesToStream(
     UINT32      cbTable;                // Bytes in a table.
     UINT32      cbTotal;                // Bytes written.
     static const unsigned char zeros[8] = {0}; // For padding and alignment.
-
-    _ASSERTE(pProfileData == NULL);
 
     // Write the header.
     CMiniMdSchema Schema = m_Schema;
@@ -3176,15 +3160,11 @@ CMiniMdRW::SaveFullTablesToStream(
         Schema.m_heaps &= ~CMiniMdSchema::HEAP_BLOB_4;
     }
 
-    cbTotal = 0;
-    if (pProfileData == NULL)
-    {
-        cbTotal = Schema.SaveTo(SchemaBuf);
-        IfFailGo(pIStream->Write(SchemaBuf, cbTotal, 0));
-        if ( (cbAlign = Align4(cbTotal) - cbTotal) != 0)
-            IfFailGo(pIStream->Write(&hr, cbAlign, 0));
-        cbTotal += cbAlign;
-    }
+    cbTotal = Schema.SaveTo(SchemaBuf);
+    IfFailGo(pIStream->Write(SchemaBuf, cbTotal, 0));
+    if ( (cbAlign = Align4(cbTotal) - cbTotal) != 0)
+        IfFailGo(pIStream->Write(&hr, cbAlign, 0));
+    cbTotal += cbAlign;
 
     ULONG headerOffset[TBL_COUNT];
     _ASSERTE(m_TblCount <= TBL_COUNT);
@@ -3270,7 +3250,7 @@ CMiniMdRW::SaveFullTablesToStream(
         cbAlign += 4;
     IfFailGo(pIStream->Write(zeros, cbAlign, 0));
     cbTotal += cbAlign;
-    _ASSERTE((m_cbSaveSize == 0) || (m_cbSaveSize == cbTotal) || (pProfileData != NULL));
+    _ASSERTE((m_cbSaveSize == 0) || (m_cbSaveSize == cbTotal));
 
 ErrExit:
     return hr;
@@ -3389,8 +3369,7 @@ __checkReturn
 HRESULT
 CMiniMdRW::SaveTablesToStream(
     IStream                  *pIStream,              // The stream.
-    MetaDataReorderingOptions reorderingOptions,
-    CorProfileData           *pProfileData)
+    MetaDataReorderingOptions reorderingOptions)
 {
     HRESULT hr;
 
@@ -3403,7 +3382,7 @@ CMiniMdRW::SaveTablesToStream(
     case MDUpdateIncremental:
     case MDUpdateExtension:
     case MDUpdateENC:
-        hr = SaveFullTablesToStream(pIStream, reorderingOptions, pProfileData);
+        hr = SaveFullTablesToStream(pIStream, reorderingOptions);
         break;
     case MDUpdateDelta:
         hr = SaveENCTablesToStream(pIStream);
@@ -5713,7 +5692,7 @@ CMiniMdRW::LookUpTableByCol(
             ridEnd = ridBegin + 1;
 
             // Search back to start of group.
-            for (;;)
+            while (true)
             {
                 if (ridBegin <= 1)
                 {
@@ -5733,7 +5712,7 @@ CMiniMdRW::LookUpTableByCol(
             // If desired, search forward to end of group.
             if (pRidEnd != NULL)
             {
-                for (;;)
+                while (true)
                 {
                     if (ridEnd > GetCountRecs(ixTbl))
                     {
@@ -7207,7 +7186,7 @@ VirtualSort::SortRange(
     HRESULT hr;
     int     iLast;
 
-    for (;;)
+    while (true)
     {
         // if less than two elements you're done.
         if (iLeft >= iRight)

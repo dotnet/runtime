@@ -20,7 +20,7 @@ namespace System.Diagnostics
             return Interop.Process.GetProcPath(processId);
         }
 
-        private static ProcessInfo CreateProcessInfo(int pid)
+        internal static ProcessInfo? CreateProcessInfo(int pid, string? processNameFilter = null)
         {
             // Negative PIDs aren't valid
             if (pid < 0)
@@ -28,20 +28,24 @@ namespace System.Diagnostics
                 throw new ArgumentOutOfRangeException(nameof(pid));
             }
 
-            ProcessInfo procInfo = new ProcessInfo()
-            {
-                ProcessId = pid
-            };
-
             // Try to get the task info. This can fail if the user permissions don't permit
             // this user context to query the specified process
             ProcessInfo iinfo = Interop.Process.GetProcessInfoById(pid);
+            if (!string.IsNullOrEmpty(processNameFilter) && !processNameFilter.Equals(iinfo.ProcessName))
+            {
+                return null;
+            }
 
-            procInfo.ProcessName = iinfo.ProcessName;
-            procInfo.BasePriority = iinfo.BasePriority;
-            procInfo.VirtualBytes = iinfo.VirtualBytes;
-            procInfo.WorkingSet = iinfo.WorkingSet;
-            procInfo.SessionId = iinfo.SessionId;
+            ProcessInfo procInfo = new ProcessInfo()
+            {
+                ProcessId = pid,
+                ProcessName = iinfo.ProcessName,
+                BasePriority = iinfo.BasePriority,
+                VirtualBytes = iinfo.VirtualBytes,
+                WorkingSet = iinfo.WorkingSet,
+                SessionId = iinfo.SessionId,
+            };
+
             foreach (ThreadInfo ti in iinfo._threadInfoList)
             {
                 procInfo._threadInfoList.Add(ti);

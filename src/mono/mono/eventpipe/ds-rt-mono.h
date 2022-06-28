@@ -172,7 +172,11 @@ ds_rt_config_value_get_default_port_suspend (void)
 static
 inline
 ds_ipc_result_t
-ds_rt_generate_core_dump (DiagnosticsDumpCommandId commandId, DiagnosticsGenerateCoreDumpCommandPayload *payload)
+ds_rt_generate_core_dump (
+	DiagnosticsDumpCommandId commandId,
+	DiagnosticsGenerateCoreDumpCommandPayload *payload,
+	ep_char8_t *errorMessageBuffer,
+	int32_t cbErrorMessageBuffer)
 {
 	// TODO: Implement.
 	return DS_IPC_E_NOTSUPPORTED;

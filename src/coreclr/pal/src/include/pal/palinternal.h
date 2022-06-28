@@ -89,7 +89,7 @@ There are 2 types of namespace collisions that must be handled.
    implementation (with some_function)
 
     [side note : for the Win32 PAL, this can be accomplished without touching
-    pal.h. In Windows, symbols in in dynamic libraries are resolved at
+    pal.h. In Windows, symbols in dynamic libraries are resolved at
     compile time. if an application that uses some_function is only linked to
     pal.dll, some_function will be resolved to the version in that DLL,
     even if other DLLs in the system provide other implementations. In addition,
@@ -178,18 +178,14 @@ function_name() to call the system's implementation
 #define strcat DUMMY_strcat
 #define strncat DUMMY_strncat
 #define strcpy DUMMY_strcpy
-#define strcspn DUMMY_strcspn
 #define strncmp DUMMY_strncmp
 #define strncpy DUMMY_strncpy
 #define strchr DUMMY_strchr
 #define strrchr DUMMY_strrchr
 #define strpbrk DUMMY_strpbrk
 #define strtod DUMMY_strtod
-#define strspn DUMMY_strspn
 #define tolower DUMMY_tolower
 #define toupper DUMMY_toupper
-#define islower DUMMY_islower
-#define isupper DUMMY_isupper
 #define isprint DUMMY_isprint
 #define isdigit DUMMY_isdigit
 #define iswalpha DUMMY_iswalpha
@@ -368,7 +364,6 @@ function_name() to call the system's implementation
 #undef strstr
 #undef strcmp
 #undef strcat
-#undef strcspn
 #undef strncat
 #undef strcpy
 #undef strncmp
@@ -379,13 +374,10 @@ function_name() to call the system's implementation
 #undef strtoul
 #undef strtoull
 #undef strtod
-#undef strspn
 #undef strtok
 #undef strdup
 #undef tolower
 #undef toupper
-#undef islower
-#undef isupper
 #undef isprint
 #undef isdigit
 #undef isspace
@@ -695,30 +687,30 @@ T* InterlockedCompareExchangePointerT(
 template <typename T>
 inline T* InterlockedExchangePointerT(
     T* volatile * target,
-    int           value) // When NULL is provided as argument.
+    std::nullptr_t           value) // When NULL is provided as argument.
 {
     //STATIC_ASSERT(value == 0);
-    return InterlockedExchangePointerT(target, reinterpret_cast<T*>(value));
+    return InterlockedExchangePointerT(target, (T*)(void*)value);
 }
 
 template <typename T>
 inline T* InterlockedCompareExchangePointerT(
     T* volatile * destination,
-    int           exchange,  // When NULL is provided as argument.
+    std::nullptr_t           exchange,  // When NULL is provided as argument.
     T*            comparand)
 {
     //STATIC_ASSERT(exchange == 0);
-    return InterlockedCompareExchangePointerT(destination, reinterpret_cast<T*>(exchange), comparand);
+    return InterlockedCompareExchangePointerT(destination, (T*)(void*)exchange, comparand);
 }
 
 template <typename T>
 inline T* InterlockedCompareExchangePointerT(
     T* volatile * destination,
     T*            exchange,
-    int           comparand) // When NULL is provided as argument.
+    std::nullptr_t           comparand) // When NULL is provided as argument.
 {
     //STATIC_ASSERT(comparand == 0);
-    return InterlockedCompareExchangePointerT(destination, exchange, reinterpret_cast<T*>(comparand));
+    return InterlockedCompareExchangePointerT(destination, exchange, (T*)(void*)comparand);
 }
 
 #undef InterlockedExchangePointer

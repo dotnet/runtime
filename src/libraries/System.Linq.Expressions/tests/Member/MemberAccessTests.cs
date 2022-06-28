@@ -398,6 +398,7 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/70012", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot), nameof(PlatformDetection.IsArm64Process))]
         public static void CheckMemberAccessClassInstanceIndexerAssignNullReferenceTest(bool useInterpreter)
         {
             Expression<Func<int>> e =

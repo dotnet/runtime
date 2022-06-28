@@ -131,7 +131,7 @@ mono_log_write_recorder (const char *log_domain, GLogLevelFlags level, mono_bool
 #endif
 		return;
 	} else if (level & G_LOG_LEVEL_ERROR) {
-		fprintf (stderr, "\nFatal Error Occured: %s\n\nHistory:\n", message);
+		fprintf (stderr, "\nFatal Error Occurred: %s\n\nHistory:\n", message);
 		mono_log_dump_recorder ();
 		abort();
 	} else if (!logger_thread->run_thread) {

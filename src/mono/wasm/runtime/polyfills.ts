@@ -1,7 +1,35 @@
-import { ENVIRONMENT_IS_NODE, Module, requirePromise } from "./imports";
+import { ENVIRONMENT_IS_ESM, ENVIRONMENT_IS_NODE, Module, requirePromise } from "./imports";
 
 let node_fs: any | undefined = undefined;
 let node_url: any | undefined = undefined;
+
+export async function init_polyfills(): Promise<void> {
+    // performance.now() is used by emscripten and doesn't work in JSC
+    if (typeof globalThis.performance === "undefined") {
+        if (ENVIRONMENT_IS_NODE && ENVIRONMENT_IS_ESM) {
+            const node_require = await requirePromise;
+            const { performance } = node_require("perf_hooks");
+            globalThis.performance = performance;
+        } else {
+            globalThis.performance = {
+                now: function () {
+                    return Date.now();
+                }
+            } as any;
+        }
+    }
+    if (typeof globalThis.URL === "undefined") {
+        globalThis.URL = class URL {
+            private url;
+            constructor(url: string) {
+                this.url = url;
+            }
+            toString() {
+                return this.url;
+            }
+        } as any;
+    }
+}
 
 export async function fetch_like(url: string): Promise<Response> {
     try {

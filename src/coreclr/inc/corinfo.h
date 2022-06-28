@@ -141,7 +141,7 @@ The first 4 options are mutually exclusive
         have managed thread local statics, which work through the HELPER. Support for this is considered
         legacy, and going forward, the EE should
 
-    * <NONE> This is a normal static field. Its address in in memory is determined by getFieldAddress. (see
+    * <NONE> This is a normal static field. Its address in memory is determined by getFieldAddress. (see
         also CORINFO_FLG_STATIC_IN_HEAP).
 
 
@@ -625,6 +625,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_THROW_NOT_IMPLEMENTED,             // throw NotImplementedException
     CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED,      // throw PlatformNotSupportedException
     CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED,          // throw TypeNotSupportedException
+    CORINFO_HELP_THROW_AMBIGUOUS_RESOLUTION_EXCEPTION, // throw AmbiguousResolutionException for failed static virtual method resolution
 
     CORINFO_HELP_JIT_PINVOKE_BEGIN, // Transition to preemptive mode before a P/Invoke, frame is the first argument
     CORINFO_HELP_JIT_PINVOKE_END,   // Transition to cooperative mode after a P/Invoke, frame is the first argument
@@ -639,9 +640,14 @@ enum CorInfoHelpFunc
     CORINFO_HELP_STACK_PROBE,               // Probes each page of the allocated stack frame
 
     CORINFO_HELP_PATCHPOINT,                // Notify runtime that code has reached a patchpoint
+    CORINFO_HELP_PARTIAL_COMPILATION_PATCHPOINT,  // Notify runtime that code has reached a part of the method that wasn't originally jitted.
+
     CORINFO_HELP_CLASSPROFILE32,            // Update 32-bit class profile for a call site
     CORINFO_HELP_CLASSPROFILE64,            // Update 64-bit class profile for a call site
-    CORINFO_HELP_PARTIAL_COMPILATION_PATCHPOINT,  // Notify runtime that code has reached a part of the method that wasn't originally jitted.
+    CORINFO_HELP_DELEGATEPROFILE32,         // Update 32-bit method profile for a delegate call site
+    CORINFO_HELP_DELEGATEPROFILE64,         // Update 64-bit method profile for a delegate call site
+    CORINFO_HELP_VTABLEPROFILE32,           // Update 32-bit method profile for a vtable call site
+    CORINFO_HELP_VTABLEPROFILE64,           // Update 64-bit method profile for a vtable call site
 
     CORINFO_HELP_VALIDATE_INDIRECT_CALL,    // CFG: Validate function pointer
     CORINFO_HELP_DISPATCH_INDIRECT_CALL,    // CFG: Validate and dispatch to pointer
@@ -892,7 +898,7 @@ enum CORINFO_EH_CLAUSE_FLAGS
     CORINFO_EH_CLAUSE_FINALLY   = 0x0002, // This clause is a finally clause
     CORINFO_EH_CLAUSE_FAULT     = 0x0004, // This clause is a fault clause
     CORINFO_EH_CLAUSE_DUPLICATE = 0x0008, // Duplicated clause. This clause was duplicated to a funclet which was pulled out of line
-    CORINFO_EH_CLAUSE_SAMETRY   = 0x0010, // This clause covers same try block as the previous one. (Used by CoreRT ABI.)
+    CORINFO_EH_CLAUSE_SAMETRY   = 0x0010, // This clause covers same try block as the previous one. (Used by NativeAOT ABI.)
 };
 
 // This enumeration is passed to InternalThrow
@@ -953,11 +959,14 @@ enum CorInfoClassId
 
 enum CorInfoInline
 {
-    INLINE_PASS                 = 0,    // Inlining OK
+    INLINE_PASS                     = 0,    // Inlining OK
+    INLINE_PREJIT_SUCCESS           = 1,    // Inline check for prejit checking usage succeeded
+    INLINE_CHECK_CAN_INLINE_SUCCESS = 2,    // JIT detected it is permitted to try to actually inline
+    INLINE_CHECK_CAN_INLINE_VMFAIL  = 3,    // VM specified that inline must fail via the CanInline api
 
     // failures are negative
-    INLINE_FAIL                 = -1,   // Inlining not OK for this case only
-    INLINE_NEVER                = -2,   // This method should never be inlined, regardless of context
+    INLINE_FAIL                     = -1,   // Inlining not OK for this case only
+    INLINE_NEVER                    = -2,   // This method should never be inlined, regardless of context
 };
 
 enum CorInfoInlineTypeCheck
@@ -1745,7 +1754,7 @@ enum CORINFO_RUNTIME_ABI
 {
     CORINFO_DESKTOP_ABI = 0x100,
     CORINFO_CORECLR_ABI = 0x200,
-    CORINFO_CORERT_ABI = 0x300,
+    CORINFO_NATIVEAOT_ABI = 0x300,
 };
 
 // For some highly optimized paths, the JIT must generate code that directly
@@ -1934,6 +1943,7 @@ struct CORINFO_VarArgInfo
 #define OFFSETOF__CORINFO_String__stringLen               SIZEOF__CORINFO_Object
 #define OFFSETOF__CORINFO_String__chars                   (OFFSETOF__CORINFO_String__stringLen + sizeof(uint32_t) /* stringLen */)
 
+#define OFFSETOF__CORINFO_NullableOfT__hasValue           0
 
 /* data to optimize delegate construction */
 struct DelegateCtorArgs
@@ -2031,6 +2041,11 @@ public:
             CORINFO_METHOD_HANDLE       callerHnd,                  /* IN  */
             CORINFO_METHOD_HANDLE       calleeHnd                   /* IN  */
             ) = 0;
+
+    // Report that an inlining related process has begun. This will always be paired with
+    // a call to reportInliningDecision unless the jit fails.
+    virtual void beginInlining (CORINFO_METHOD_HANDLE inlinerHnd,
+                                CORINFO_METHOD_HANDLE inlineeHnd) = 0;
 
     // Reports whether or not a method can be inlined, and why.  canInline is responsible for reporting all
     // inlining results when it returns INLINE_FAIL and INLINE_NEVER.  All other results are reported by the

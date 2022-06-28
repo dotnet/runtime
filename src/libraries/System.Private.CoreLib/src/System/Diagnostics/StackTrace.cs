@@ -198,7 +198,7 @@ namespace System.Diagnostics
             return sb.ToString();
         }
 
-#if !CORERT
+#if !NATIVEAOT
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "ToString is best effort when it comes to available information.")]
         internal void ToString(TraceFormat traceFormat, StringBuilder sb)
@@ -357,7 +357,7 @@ namespace System.Diagnostics
             if (traceFormat == TraceFormat.TrailingNewLine)
                 sb.AppendLine();
         }
-#endif // !CORERT
+#endif // !NATIVEAOT
 
         private static bool ShowInStackTrace(MethodBase mb)
         {

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <!-- xUnit2008 is about regexes and isn't appropriate in the test project for regexes -->
@@ -43,6 +43,8 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Compile Include="CustomDerivedRegexScenarioTest.cs" />
+    <Compile Include="CSharpCodeFixVerifier`2.cs"/>
+    <Compile Include="UpgradeToRegexGeneratorAnalyzerTests.cs" />
     <Compile Include="RegexRunnerTests.cs" />
     <Compile Include="Regex.Count.Tests.cs" />
     <Compile Include="RegexAssert.netcoreapp.cs" />
@@ -61,10 +63,16 @@
     <Compile Include="RegexExperiment.cs" />
     <Compile Include="RegexGeneratorHelper.netcoreapp.cs" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs" Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
+
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing.XUnit" Version="$(CompilerPlatformTestingVersion)" />
     <PackageReference Include="Microsoft.CodeAnalysis" Version="$(MicrosoftCodeAnalysisVersion)" />
     <ProjectReference Include="..\..\gen\System.Text.RegularExpressions.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Text.RegularExpressions.TestData" Version="$(SystemTextRegularExpressionsTestDataVersion)" />
+  </ItemGroup>
+  <ItemGroup>
+    <HighAotMemoryUsageAssembly Include="Microsoft.CodeAnalysis.CSharp.dll" /> 
   </ItemGroup>
 </Project>

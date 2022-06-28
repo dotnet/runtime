@@ -34,7 +34,7 @@ static id mono_dead_letter_key;
 
 /*
  * Our Mach bindings have a problem in that they might need to attach
- * the runtime after the the user tls keys have been destroyed.
+ * the runtime after the user tls keys have been destroyed.
  *
  * This happens when a bound object is retained by NSThread, which is
  * released very late in the TLS cleanup process.

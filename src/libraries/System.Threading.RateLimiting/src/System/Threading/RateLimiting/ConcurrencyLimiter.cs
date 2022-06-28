@@ -112,7 +112,11 @@ namespace System.Threading.RateLimiting
                             RequestRegistration oldestRequest = _queue.DequeueHead();
                             _queueCount -= oldestRequest.Count;
                             Debug.Assert(_queueCount >= 0);
-                            oldestRequest.Tcs.TrySetResult(FailedLease);
+                            if (!oldestRequest.Tcs.TrySetResult(FailedLease))
+                            {
+                                // Updating queue count is handled by the cancellation code
+                                _queueCount += oldestRequest.Count;
+                            }
                         }
                         while (_options.QueueLimit - _queueCount < permitCount);
                     }
@@ -249,7 +253,7 @@ namespace System.Threading.RateLimiting
                         ? _queue.DequeueHead()
                         : _queue.DequeueTail();
                     next.CancellationTokenRegistration.Dispose();
-                    next.Tcs.SetResult(FailedLease);
+                    next.Tcs.TrySetResult(FailedLease);
                 }
             }
         }

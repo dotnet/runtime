@@ -1,19 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mono_wasm_new_root, mono_wasm_new_root_buffer, WasmRoot, WasmRootBuffer, mono_wasm_new_external_root } from "./roots";
+import { mono_wasm_new_root, WasmRoot, mono_wasm_new_external_root } from "./roots";
 import {
     JSHandle, MonoArray, MonoMethod, MonoObject,
     MonoObjectNull, MonoString, coerceNull as coerceNull,
     VoidPtrNull, MonoStringNull, MonoObjectRef,
-    MonoStringRef
+    MonoStringRef, is_nullish
 } from "./types";
 import { BINDING, INTERNAL, Module, MONO, runtimeHelpers } from "./imports";
 import { mono_array_root_to_js_array, unbox_mono_obj_root } from "./cs-to-js";
 import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore used by unsafe export
-import { js_array_to_mono_array, _js_to_mono_obj_unsafe, js_to_mono_obj_root } from "./js-to-cs";
+import { js_array_to_mono_array, js_to_mono_obj_root } from "./js-to-cs";
 import {
     mono_bind_method,
     Converter, _compile_converter_for_marshal_string,
@@ -38,82 +38,6 @@ function _verify_args_for_method_call(args_marshal: string/*ArgsMarshalString*/,
     }
 
     return has_args_marshal && has_args;
-}
-
-export function _get_buffer_for_method_call(converter: Converter, token: BoundMethodToken | null): VoidPtr | undefined {
-    if (!converter)
-        return VoidPtrNull;
-
-    let result = VoidPtrNull;
-    if (token !== null) {
-        result = token.scratchBuffer || VoidPtrNull;
-        token.scratchBuffer = VoidPtrNull;
-    } else {
-        result = converter.scratchBuffer || VoidPtrNull;
-        converter.scratchBuffer = VoidPtrNull;
-    }
-    return result;
-}
-
-export function _get_args_root_buffer_for_method_call(converter: Converter, token: BoundMethodToken | null): WasmRootBuffer | undefined {
-    if (!converter)
-        return undefined;
-
-    if (!converter.needs_root_buffer)
-        return undefined;
-
-    let result = null;
-    if (token !== null) {
-        result = token.scratchRootBuffer;
-        token.scratchRootBuffer = null;
-    } else {
-        result = converter.scratchRootBuffer;
-        converter.scratchRootBuffer = null;
-    }
-
-    if (result === null) {
-        // TODO: Expand the converter's heap allocation and then use
-        //  mono_wasm_new_root_buffer_from_pointer instead. Not that important
-        //  at present because the scratch buffer will be reused unless we are
-        //  recursing through a re-entrant call
-        result = mono_wasm_new_root_buffer(converter.steps.length);
-        // FIXME
-        (<any>result).converter = converter;
-    }
-
-    return result;
-}
-
-function _release_args_root_buffer_from_method_call(
-    converter?: Converter, token?: BoundMethodToken | null, argsRootBuffer?: WasmRootBuffer
-) {
-    if (!argsRootBuffer || !converter)
-        return;
-
-    // Store the arguments root buffer for re-use in later calls
-    if (token && (token.scratchRootBuffer === null)) {
-        argsRootBuffer.clear();
-        token.scratchRootBuffer = argsRootBuffer;
-    } else if (!converter.scratchRootBuffer) {
-        argsRootBuffer.clear();
-        converter.scratchRootBuffer = argsRootBuffer;
-    } else {
-        argsRootBuffer.release();
-    }
-}
-
-function _release_buffer_from_method_call(
-    converter: Converter | undefined, token?: BoundMethodToken | null, buffer?: VoidPtr
-) {
-    if (!converter || !buffer)
-        return;
-
-    if (token && !token.scratchBuffer)
-        token.scratchBuffer = buffer;
-    else if (!converter.scratchBuffer)
-        converter.scratchBuffer = coerceNull(buffer);
-    else if (buffer)
-        Module._free(buffer);
 }
 
 function _convert_exception_for_method_call(result: WasmRoot<MonoString>, exception: WasmRoot<MonoObject>) {
@@ -144,7 +68,7 @@ to suppress marshaling of the return value, place '!' at the end of args_marshal
 */
 export function call_method_ref(method: MonoMethod, this_arg: WasmRoot<MonoObject> | MonoObjectRef | undefined, args_marshal: string/*ArgsMarshalString*/, args: ArrayLike<any>): any {
     // HACK: Sometimes callers pass null or undefined, coerce it to 0 since that's what wasm expects
-    let this_arg_ref : MonoObjectRef | undefined = undefined;
+    let this_arg_ref: MonoObjectRef | undefined = undefined;
     if (typeof (this_arg) === "number")
         this_arg_ref = this_arg;
     else if (typeof (this_arg) === "object")
@@ -162,7 +86,8 @@ export function call_method_ref(method: MonoMethod, this_arg: WasmRoot<MonoObjec
 
     const needs_converter = _verify_args_for_method_call(args_marshal, args);
 
-    let buffer = VoidPtrNull, converter = undefined, argsRootBuffer = undefined;
+    let buffer = VoidPtrNull, converter = undefined;
+    const sp = Module.stackSave();
     let is_result_marshaled = true;
 
     // TODO: Only do this if the signature needs marshaling
@@ -174,36 +99,33 @@ export function call_method_ref(method: MonoMethod, this_arg: WasmRoot<MonoObjec
 
         is_result_marshaled = _decide_if_result_is_marshaled(converter, args.length);
 
-        argsRootBuffer = _get_args_root_buffer_for_method_call(converter, null);
-
-        const scratchBuffer = _get_buffer_for_method_call(converter, null);
-
-        buffer = converter.compiled_variadic_function!(scratchBuffer, argsRootBuffer, method, args);
+        buffer = converter.compiled_variadic_function!(method, args);
     }
-    return _call_method_with_converted_args(method, <any>this_arg_ref, converter, null, buffer, is_result_marshaled, argsRootBuffer);
+
+    return _call_method_with_converted_args(method, <any>this_arg_ref, converter, null, buffer, is_result_marshaled, sp);
 }
 
 
 export function _handle_exception_for_call(
     converter: Converter | undefined, token: BoundMethodToken | null,
     buffer: VoidPtr, resultRoot: WasmRoot<MonoString>,
-    exceptionRoot: WasmRoot<MonoObject>, argsRootBuffer?: WasmRootBuffer
+    exceptionRoot: WasmRoot<MonoObject>, sp: VoidPtr
 ): void {
     const exc = _convert_exception_for_method_call(resultRoot, exceptionRoot);
     if (!exc)
         return;
 
-    _teardown_after_call(converter, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);
+    _teardown_after_call(converter, token, buffer, resultRoot, exceptionRoot, sp);
     throw exc;
 }
 
 function _handle_exception_and_produce_result_for_call(
     converter: Converter | undefined, token: BoundMethodToken | null,
     buffer: VoidPtr, resultRoot: WasmRoot<MonoString>,
-    exceptionRoot: WasmRoot<MonoObject>, argsRootBuffer: WasmRootBuffer | undefined,
+    exceptionRoot: WasmRoot<MonoObject>, sp: VoidPtr,
     is_result_marshaled: boolean
 ): any {
-    _handle_exception_for_call(converter, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);
+    _handle_exception_for_call(converter, token, buffer, resultRoot, exceptionRoot, sp);
 
     let result: any;
 
@@ -212,27 +134,26 @@ function _handle_exception_and_produce_result_for_call(
     else
         result = resultRoot.value;
 
-    _teardown_after_call(converter, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);
+    _teardown_after_call(converter, token, buffer, resultRoot, exceptionRoot, sp);
     return result;
 }
 
 export function _teardown_after_call(
     converter: Converter | undefined, token: BoundMethodToken | null,
     buffer: VoidPtr, resultRoot: WasmRoot<any>,
-    exceptionRoot: WasmRoot<any>, argsRootBuffer?: WasmRootBuffer
+    exceptionRoot: WasmRoot<any>, sp: VoidPtr
 ): void {
     _release_temp_frame();
-    _release_args_root_buffer_from_method_call(converter, token, argsRootBuffer);
-    _release_buffer_from_method_call(converter, token, buffer);
+    Module.stackRestore(sp);
 
-    if (resultRoot) {
+    if (typeof (resultRoot) === "object") {
         resultRoot.clear();
         if ((token !== null) && (token.scratchResultRoot === null))
             token.scratchResultRoot = resultRoot;
         else
             resultRoot.release();
     }
-    if (exceptionRoot) {
+    if (typeof (exceptionRoot) === "object") {
         exceptionRoot.clear();
         if ((token !== null) && (token.scratchExceptionRoot === null))
             token.scratchExceptionRoot = exceptionRoot;
@@ -244,11 +165,11 @@ export function _teardown_after_call(
 function _call_method_with_converted_args(
     method: MonoMethod, this_arg_ref: MonoObjectRef, converter: Converter | undefined,
     token: BoundMethodToken | null, buffer: VoidPtr,
-    is_result_marshaled: boolean, argsRootBuffer?: WasmRootBuffer
+    is_result_marshaled: boolean, sp: VoidPtr
 ): any {
     const resultRoot = mono_wasm_new_root<MonoString>(), exceptionRoot = mono_wasm_new_root<MonoObject>();
     cwraps.mono_wasm_invoke_method_ref(method, this_arg_ref, buffer, exceptionRoot.address, resultRoot.address);
-    return _handle_exception_and_produce_result_for_call(converter, token, buffer, resultRoot, exceptionRoot, argsRootBuffer, is_result_marshaled);
+    return _handle_exception_and_produce_result_for_call(converter, token, buffer, resultRoot, exceptionRoot, sp, is_result_marshaled);
 }
 
 export function call_static_method(fqn: string, args: any[], signature: string/*ArgsMarshalString*/): any {
@@ -280,11 +201,15 @@ export function mono_bind_assembly_entry_point(assembly: string, signature?: str
     if (!asm)
         throw new Error("Could not find assembly: " + assembly);
 
-    const method = cwraps.mono_wasm_assembly_get_entry_point(asm);
+    let auto_set_breakpoint = 0;
+    if (runtimeHelpers.wait_for_debugger == 1)
+        auto_set_breakpoint = 1;
+
+    const method = cwraps.mono_wasm_assembly_get_entry_point(asm, auto_set_breakpoint);
     if (!method)
         throw new Error("Could not find entry point for assembly: " + assembly);
 
-    if (!signature)
+    if (typeof (signature) !== "string")
         signature = mono_method_get_call_signature_ref(method, undefined);
 
     return async function (...args: any[]) {
@@ -301,17 +226,21 @@ export function mono_call_assembly_entry_point(assembly: string, args?: any[], s
     return mono_bind_assembly_entry_point(assembly, signature)(...args);
 }
 
-export function mono_wasm_invoke_js_with_args(js_handle: JSHandle, method_name: MonoString, args: MonoArray, is_exception: Int32Ptr): any {
-    const argsRoot = mono_wasm_new_root(args), nameRoot = mono_wasm_new_root(method_name);
+export function mono_wasm_invoke_js_with_args_ref(js_handle: JSHandle, method_name: MonoStringRef, args: MonoObjectRef, is_exception: Int32Ptr, result_address: MonoObjectRef): any {
+    const argsRoot = mono_wasm_new_external_root<MonoArray>(args),
+        nameRoot = mono_wasm_new_external_root<MonoString>(method_name),
+        resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
     try {
         const js_name = conv_string_root(nameRoot);
         if (!js_name || (typeof (js_name) !== "string")) {
-            return wrap_error(is_exception, "ERR12: Invalid method name object @" + nameRoot.value);
+            wrap_error_root(is_exception, "ERR12: Invalid method name object @" + nameRoot.value, resultRoot);
+            return;
         }
 
         const obj = get_js_obj(js_handle);
-        if (!obj) {
-            return wrap_error(is_exception, "ERR13: Invalid JS object handle '" + js_handle + "' while invoking '" + js_name + "'");
+        if (is_nullish(obj)) {
+            wrap_error_root(is_exception, "ERR13: Invalid JS object handle '" + js_handle + "' while invoking '" + js_name + "'", resultRoot);
+            return;
         }
 
         const js_args = mono_array_root_to_js_array(argsRoot);
@@ -322,15 +251,14 @@ export function mono_wasm_invoke_js_with_args(js_handle: JSHandle, method_name: 
                 throw new Error("Method: '" + js_name + "' not found for: '" + Object.prototype.toString.call(obj) + "'");
             const res = m.apply(obj, js_args);
 
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore caller is unsafe also
-            return _js_to_mono_obj_unsafe(true, res);
+            js_to_mono_obj_root(res, resultRoot, true);
         } catch (ex) {
-            return wrap_error(is_exception, ex);
+            wrap_error_root(is_exception, ex, resultRoot);
         }
     } finally {
         argsRoot.release();
         nameRoot.release();
+        resultRoot.release();
     }
 }
 
@@ -345,7 +273,7 @@ export function mono_wasm_get_object_property_ref(js_handle: JSHandle, property_
         }
 
         const obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
-        if (!obj) {
+        if (is_nullish(obj)) {
             wrap_error_root(is_exception, "ERR01: Invalid JS object handle '" + js_handle + "' while geting '" + js_name + "'", resultRoot);
             return;
         }
@@ -373,7 +301,7 @@ export function mono_wasm_set_object_property_ref(js_handle: JSHandle, property_
         }
 
         const js_obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
-        if (!js_obj) {
+        if (is_nullish(js_obj)) {
             wrap_error_root(is_exception, "ERR02: Invalid JS object handle '" + js_handle + "' while setting '" + property + "'", resultRoot);
             return;
         }
@@ -419,7 +347,7 @@ export function mono_wasm_get_by_index_ref(js_handle: JSHandle, property_index: 
     const resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
     try {
         const obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
-        if (!obj) {
+        if (is_nullish(obj)) {
             wrap_error_root(is_exception, "ERR03: Invalid JS object handle '" + js_handle + "' while getting [" + property_index + "]", resultRoot);
             return;
         }
@@ -438,7 +366,7 @@ export function mono_wasm_set_by_index_ref(js_handle: JSHandle, property_index: 
         resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
     try {
         const obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
-        if (!obj) {
+        if (is_nullish(obj)) {
             wrap_error_root(is_exception, "ERR04: Invalid JS object handle '" + js_handle + "' while setting [" + property_index + "]", resultRoot);
             return;
         }
@@ -464,6 +392,12 @@ export function mono_wasm_get_global_object_ref(global_name: MonoStringRef, is_e
 
         if (!js_name) {
             globalObj = globalThis;
+        }
+        else if (js_name == "Module") {
+            globalObj = Module;
+        }
+        else if (js_name == "INTERNAL") {
+            globalObj = INTERNAL;
         }
         else {
             globalObj = (<any>globalThis)[js_name];
@@ -608,34 +542,6 @@ export function mono_wasm_invoke_js(code: MonoString, is_exception: Int32Ptr): M
             return MonoStringNull;
 
         return js_string_to_mono_string(res.toString());
-    } catch (ex) {
-        return wrap_error(is_exception, ex);
-    }
-}
-
-// TODO is this unused code ?
-// Compiles a JavaScript function from the function data passed.
-// Note: code snippet is not a function definition. Instead it must create and return a function instance.
-// code like `return function() { App.call_test_method(); };`
-export function mono_wasm_compile_function(code: MonoString, is_exception: Int32Ptr): MonoObject {
-    if (code === MonoStringNull)
-        return MonoStringNull;
-
-    const js_code = conv_string(code);
-
-    try {
-        const closure = {
-            Module, MONO, BINDING, INTERNAL
-        };
-        const fn_body_template = `const {Module, MONO, BINDING, INTERNAL} = __closure; ${js_code} ;`;
-        const fn_defn = new Function("__closure", fn_body_template);
-        const res = fn_defn(closure);
-        if (!res || typeof res !== "function")
-            return wrap_error(is_exception, "Code must return an instance of a JavaScript function. Please use `return` statement to return a function.");
-        Module.setValue(is_exception, 0, "i32");
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore caller is unsafe also
-        return _js_to_mono_obj_unsafe(true, res);
     } catch (ex) {
         return wrap_error(is_exception, ex);
     }

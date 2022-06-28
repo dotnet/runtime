@@ -13,6 +13,7 @@ namespace System.Text.Json.Serialization.Converters
     /// <summary>
     /// Converter factory for all object-based types (non-enumerable and non-primitive).
     /// </summary>
+    [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
     internal sealed class ObjectConverterFactory : JsonConverterFactory
     {
         // Need to toggle this behavior when generating converters for F# struct records.

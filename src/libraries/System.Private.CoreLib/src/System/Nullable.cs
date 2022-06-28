@@ -101,7 +101,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(nullableType);
 
-#if CORERT
+#if NATIVEAOT
             // This is necessary to handle types without reflection metadata
             if (nullableType.TryGetEEType(out EETypePtr nullableEEType))
             {

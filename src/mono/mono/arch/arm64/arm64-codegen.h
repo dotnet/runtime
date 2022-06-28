@@ -449,6 +449,8 @@ arm_encode_imm7 (int imm, int size)
 #define arm_strfpx(p, dt, xn, simm) arm_format_strfp_imm ((p), ARMSIZE_X, 0x0, (dt), (xn), (simm), 8)
 /* Store single */
 #define arm_strfpw(p, st, xn, simm) arm_format_strfp_imm ((p), ARMSIZE_W, 0x0, (st), (xn), (simm), 4)
+/* Store 128 bit */
+#define arm_strfpq(p, qt, xn, simm) arm_format_strfp_imm ((p), 0x0, 0x2, (qt), (xn), (simm), 16)
 
 /* C6.3.166 LDR (immediate, SIMD&FP) */
 #define arm_format_ldrfp_imm(p, size, opc, rt, rn, pimm, scale) arm_emit ((p), ((size) << 30) | (0xf << 26) | (0x1 << 24) | ((opc) << 22) | (arm_encode_pimm12 ((pimm), (scale)) << 10) | ((rn) << 5) | ((rt) << 0))
@@ -457,6 +459,8 @@ arm_encode_imm7 (int imm, int size)
 #define arm_ldrfpx(p, dt, xn, simm) arm_format_ldrfp_imm ((p), ARMSIZE_X, 0x1, dt, xn, simm, 8)
 /* Load single */
 #define arm_ldrfpw(p, dt, xn, simm) arm_format_ldrfp_imm ((p), ARMSIZE_W, 0x1, dt, xn, simm, 4)
+/* Load 128 bit */
+#define arm_ldrfpq(p, qt, xn, simm) arm_format_ldrfp_imm ((p), 0, 0x3, qt, xn, simm, 16)
 
 /* Arithmetic (immediate) */
 static G_GNUC_UNUSED inline guint32

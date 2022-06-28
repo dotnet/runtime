@@ -919,7 +919,7 @@ g_str_from_file_region (int fd, guint64 offset, gsize size)
 	int status;
 
 	do {
-		loc = lseek (fd, offset, SEEK_SET);
+		loc = lseek (fd, GUINT64_TO_LONG (offset), SEEK_SET);
 	} while (loc == -1 && errno == EINTR);
 	if (loc == -1)
 		return NULL;

@@ -142,8 +142,8 @@ namespace System.Reflection
 
             // Our "Flags" contain both the classic flags and the ProcessorArchitecture + ContentType bits. The public AssemblyName has separate properties for
             // these. The setters for these properties quietly mask out any bits intended for the other one, so we needn't do that ourselves..
-            blank.Flags = this.Flags.ExtractAssemblyNameFlags();
-            blank.ContentType = this.Flags.ExtractAssemblyContentType();
+            blank.Flags = ExtractAssemblyNameFlags(this.Flags);
+            blank.ContentType = ExtractAssemblyContentType(this.Flags);
 #pragma warning disable SYSLIB0037 // AssemblyName.ProcessorArchitecture is obsolete
             blank.ProcessorArchitecture = ExtractProcessorArchitecture(this.Flags);
 #pragma warning restore SYSLIB0037
@@ -169,13 +169,17 @@ namespace System.Reflection
             get
             {
                 byte[]? pkt = (0 != (Flags & AssemblyNameFlags.PublicKey)) ? AssemblyNameHelpers.ComputePublicKeyToken(PublicKeyOrToken) : PublicKeyOrToken;
-                return AssemblyNameFormatter.ComputeDisplayName(Name, Version, CultureName, pkt, Flags.ExtractAssemblyNameFlags(), Flags.ExtractAssemblyContentType());
+                return AssemblyNameFormatter.ComputeDisplayName(Name, Version, CultureName, pkt, ExtractAssemblyNameFlags(Flags), ExtractAssemblyContentType(Flags));
             }
         }
 
-        internal static ProcessorArchitecture ExtractProcessorArchitecture(AssemblyNameFlags flags)
-        {
-            return (ProcessorArchitecture)((((int)flags) >> 4) & 0x7);
-        }
+        private static AssemblyNameFlags ExtractAssemblyNameFlags(AssemblyNameFlags combinedFlags)
+            => combinedFlags & unchecked((AssemblyNameFlags)0xFFFFF10F);
+
+        private static AssemblyContentType ExtractAssemblyContentType(AssemblyNameFlags flags)
+            => (AssemblyContentType)((((int)flags) >> 9) & 0x7);
+
+        private static ProcessorArchitecture ExtractProcessorArchitecture(AssemblyNameFlags flags)
+            => (ProcessorArchitecture)((((int)flags) >> 4) & 0x7);
     }
 }

@@ -346,20 +346,15 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case '(':
+                        PushOptions();
+                        if (ScanGroupOpen() is RegexNode grouper)
                         {
-                            RegexNode? grouper;
-
-                            PushOptions();
-
-                            if (null == (grouper = ScanGroupOpen()))
-                            {
-                                PopKeepOptions();
-                            }
-                            else
-                            {
-                                PushGroup();
-                                StartGroup(grouper);
-                            }
+                            PushGroup();
+                            StartGroup(grouper);
+                        }
+                        else
+                        {
+                            PopKeepOptions();
                         }
                         continue;
 
@@ -414,13 +409,14 @@ namespace System.Text.RegularExpressions
                         {
                             throw wasPrevQuantifier ?
                                 MakeException(RegexParseError.NestedQuantifiersNotParenthesized, SR.Format(SR.NestedQuantifiersNotParenthesized, ch)) :
-                                MakeException(RegexParseError.QuantifierAfterNothing, SR.QuantifierAfterNothing);
+                                MakeException(RegexParseError.QuantifierAfterNothing, SR.Format(SR.QuantifierAfterNothing, ch));
                         }
                         MoveLeft();
                         break;
 
                     default:
-                        throw new InvalidOperationException(SR.InternalError_ScanRegex);
+                        Debug.Fail($"Unexpected char {ch}");
+                        break;
                 }
 
                 ScanBlank();
@@ -436,18 +432,15 @@ namespace System.Text.RegularExpressions
                 // Handle quantifiers
                 while (Unit() != null)
                 {
-                    int min;
-                    int max;
+                    int min = 0, max = 0;
 
                     switch (ch)
                     {
                         case '*':
-                            min = 0;
                             max = int.MaxValue;
                             break;
 
                         case '?':
-                            min = 0;
                             max = 1;
                             break;
 
@@ -457,30 +450,29 @@ namespace System.Text.RegularExpressions
                             break;
 
                         case '{':
+                            startpos = Textpos();
+                            max = min = ScanDecimal();
+                            if (startpos < Textpos())
                             {
-                                startpos = Textpos();
-                                max = min = ScanDecimal();
-                                if (startpos < Textpos())
+                                if (CharsRight() > 0 && RightChar() == ',')
                                 {
-                                    if (CharsRight() > 0 && RightChar() == ',')
-                                    {
-                                        MoveRight();
-                                        max = CharsRight() == 0 || RightChar() == '}' ? int.MaxValue : ScanDecimal();
-                                    }
+                                    MoveRight();
+                                    max = CharsRight() == 0 || RightChar() == '}' ? int.MaxValue : ScanDecimal();
                                 }
+                            }
 
-                                if (startpos == Textpos() || CharsRight() == 0 || RightCharMoveRight() != '}')
-                                {
-                                    AddConcatenate();
-                                    Textto(startpos - 1);
-                                    goto ContinueOuterScan;
-                                }
+                            if (startpos == Textpos() || CharsRight() == 0 || RightCharMoveRight() != '}')
+                            {
+                                AddConcatenate();
+                                Textto(startpos - 1);
+                                goto ContinueOuterScan;
                             }
 
                             break;
 
                         default:
-                            throw new InvalidOperationException(SR.InternalError_ScanRegex);
+                            Debug.Fail($"Unexpected char {ch}");
+                            break;
                     }
 
                     ScanBlank();
@@ -978,7 +970,7 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case '(':
-                        // alternation construct (?(...) | )
+                        // conditional alternation construct (?(...) | )
 
                         int parenPos = Textpos();
                         if (CharsRight() > 0)
@@ -1230,10 +1222,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Scans \-style backreferences and character escapes</summary>
         private RegexNode? ScanBasicBackslash(bool scanOnly)
         {
-            if (CharsRight() == 0)
-            {
-                throw MakeException(RegexParseError.UnescapedEndingBackslash, SR.UnescapedEndingBackslash);
-            }
+            Debug.Assert(CharsRight() > 0, "The current reading position must not be at the end of the pattern");
 
             int backpos = Textpos();
             char close = '\0';

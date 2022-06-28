@@ -261,10 +261,26 @@ public:
 		return ep_get_session(id);
 	}
 
-	static inline HANDLE GetWaitHandle(EventPipeSessionID id)
+	static inline bool SignalSession(EventPipeSessionID id)
 	{
 		STATIC_CONTRACT_NOTHROW;
-		return reinterpret_cast<HANDLE>(ep_get_wait_handle(id));
+
+		EventPipeSession *const session = ep_get_session (id);
+		if (!session)
+			return false;
+
+		return ep_rt_wait_event_set (ep_session_get_wait_event (session));
+	}
+
+	static inline bool WaitForSessionSignal(EventPipeSessionID id, INT32 timeoutMs)
+	{
+		STATIC_CONTRACT_NOTHROW;
+
+		EventPipeSession *const session = ep_get_session (id);
+		if (!session)
+			return false;
+
+		return !ep_rt_wait_event_wait (ep_session_get_wait_event (session), (uint32_t)timeoutMs, false) ? true : false;
 	}
 
 	static inline FILETIME GetSessionStartTime(EventPipeSession *session)

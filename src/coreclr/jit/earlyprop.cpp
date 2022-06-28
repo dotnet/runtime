@@ -221,7 +221,7 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
     if (actualVal != nullptr)
     {
         assert(propKind == optPropKind::OPK_ARRAYLEN);
-        assert(actualVal->IsCnsIntOrI() && !actualVal->AsIntCon()->IsIconHandle());
+        assert(actualVal->IsCnsIntOrI() && !actualVal->IsIconHandle());
         assert(actualVal->GetNodeSize() == TREE_NODE_SZ_SMALL);
 
         ssize_t actualConstVal = actualVal->AsIntCon()->IconValue();

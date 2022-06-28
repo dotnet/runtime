@@ -30,6 +30,7 @@ namespace Internal.Cryptography
             // the OidCollection or individual oids can be modified by another thread and
             // potentially cause a buffer overflow
             var oidStrings = new string[oids.Count];
+
             for (int i = 0; i < oidStrings.Length; i++)
             {
                 oidStrings[i] = oids[i].Value!;
@@ -75,6 +76,7 @@ namespace Internal.Cryptography
 
         public unsafe delegate void DecodedObjectReceiver(void* pvDecodedObject, int cbDecodedObject);
         public unsafe delegate TResult DecodedObjectReceiver<TResult>(void* pvDecodedObject, int cbDecodedObject);
+        public unsafe delegate TResult DecodedObjectReceiver<TState, TResult>(void* pvDecodedObject, int cbDecodedObject, TState state);
 
         public static TResult DecodeObject<TResult>(
             this byte[] encoded,
@@ -97,99 +99,122 @@ namespace Internal.Cryptography
                     throw Marshal.GetLastWin32Error().ToCryptographicException();
                 }
 
-                byte* decoded = stackalloc byte[cb];
+                int MaxStackAllocSize = 256;
+                Span<byte> decoded = stackalloc byte[MaxStackAllocSize];
 
-                if (!Interop.crypt32.CryptDecodeObjectPointer(
-                    Interop.Crypt32.CertEncodingType.All,
-                    lpszStructType,
-                    encoded,
-                    encoded.Length,
-                    Interop.Crypt32.CryptDecodeObjectFlags.None,
-                    decoded,
-                    ref cb))
+                if ((uint)cb > MaxStackAllocSize)
                 {
-                    throw Marshal.GetLastWin32Error().ToCryptographicException();
+                    decoded = new byte[cb];
                 }
 
-                return receiver(decoded, cb);
+                fixed (byte* pDecoded = decoded)
+                {
+                    if (!Interop.crypt32.CryptDecodeObjectPointer(
+                        Interop.Crypt32.CertEncodingType.All,
+                        lpszStructType,
+                        encoded,
+                        encoded.Length,
+                        Interop.Crypt32.CryptDecodeObjectFlags.None,
+                        pDecoded,
+                        ref cb))
+                    {
+                        throw Marshal.GetLastWin32Error().ToCryptographicException();
+                    }
+
+                    return receiver(pDecoded, cb);
+                }
             }
         }
 
-        public static TResult DecodeObject<TResult>(
+        public static unsafe TResult DecodeObject<TResult>(
             this byte[] encoded,
             string lpszStructType,
             DecodedObjectReceiver<TResult> receiver)
         {
-            unsafe
+            int cb = 0;
+
+            if (!Interop.Crypt32.CryptDecodeObjectPointer(
+                Interop.Crypt32.CertEncodingType.All,
+                lpszStructType,
+                encoded,
+                encoded.Length,
+                Interop.Crypt32.CryptDecodeObjectFlags.None,
+                null,
+                ref cb))
             {
-                int cb = 0;
+                throw Marshal.GetLastWin32Error().ToCryptographicException();
+            }
 
+            const int MaxStackAllocSize = 256;
+            Span<byte> decoded = stackalloc byte[MaxStackAllocSize];
+
+            if ((uint)cb > MaxStackAllocSize)
+            {
+                decoded = new byte[cb];
+            }
+
+            fixed (byte* pDecoded = decoded)
+            {
                 if (!Interop.Crypt32.CryptDecodeObjectPointer(
                     Interop.Crypt32.CertEncodingType.All,
                     lpszStructType,
                     encoded,
                     encoded.Length,
                     Interop.Crypt32.CryptDecodeObjectFlags.None,
-                    null,
+                    pDecoded,
                     ref cb))
                 {
                     throw Marshal.GetLastWin32Error().ToCryptographicException();
                 }
 
-                byte* decoded = stackalloc byte[cb];
-
-                if (!Interop.Crypt32.CryptDecodeObjectPointer(
-                    Interop.Crypt32.CertEncodingType.All,
-                    lpszStructType,
-                    encoded,
-                    encoded.Length,
-                    Interop.Crypt32.CryptDecodeObjectFlags.None,
-                    decoded,
-                    ref cb))
-                {
-                    throw Marshal.GetLastWin32Error().ToCryptographicException();
-                }
-
-                return receiver(decoded, cb);
+                return receiver(pDecoded, cb);
             }
         }
 
-        public static bool DecodeObjectNoThrow(
-            this byte[] encoded,
+        public static unsafe bool DecodeObjectNoThrow<TState, TResult>(
+            this ReadOnlySpan<byte> encoded,
             CryptDecodeObjectStructType lpszStructType,
-            DecodedObjectReceiver receiver)
+            TState state,
+            DecodedObjectReceiver<TState, TResult> receiver,
+            out TResult? result)
         {
-            unsafe
+            int cb = 0;
+
+            if (!Interop.crypt32.CryptDecodeObjectPointer(
+                Interop.Crypt32.CertEncodingType.All,
+                lpszStructType,
+                encoded,
+                Interop.Crypt32.CryptDecodeObjectFlags.None,
+                null,
+                ref cb))
             {
-                int cb = 0;
+                result = default;
+                return false;
+            }
 
+            const int MaxStackAllocSize = 256;
+            Span<byte> decoded = stackalloc byte[MaxStackAllocSize];
+
+            if ((uint)cb > MaxStackAllocSize)
+            {
+                decoded = new byte[cb];
+            }
+
+            fixed (byte* pDecoded = decoded)
+            {
                 if (!Interop.crypt32.CryptDecodeObjectPointer(
                     Interop.Crypt32.CertEncodingType.All,
                     lpszStructType,
                     encoded,
-                    encoded.Length,
                     Interop.Crypt32.CryptDecodeObjectFlags.None,
-                    null,
+                    pDecoded,
                     ref cb))
                 {
+                    result = default;
                     return false;
                 }
 
-                byte* decoded = stackalloc byte[cb];
-
-                if (!Interop.crypt32.CryptDecodeObjectPointer(
-                    Interop.Crypt32.CertEncodingType.All,
-                    lpszStructType,
-                    encoded,
-                    encoded.Length,
-                    Interop.Crypt32.CryptDecodeObjectFlags.None,
-                    decoded,
-                    ref cb))
-                {
-                    return false;
-                }
-
-                receiver(decoded, cb);
+                result = receiver(pDecoded, cb, state);
             }
 
             return true;

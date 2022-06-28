@@ -11,7 +11,7 @@ namespace System.Text.RegularExpressions.Symbolic
 {
 #if DEBUG
     /// <summary>Utility for generating unicode category ranges and corresponing binary decision diagrams.</summary>
-    [ExcludeFromCodeCoverage]
+    [ExcludeFromCodeCoverage(Justification = "Used from tests to generate src data files")]
     internal static class UnicodeCategoryRangesGenerator
     {
         /// <summary>Generator for BDD Unicode category definitions.</summary>
@@ -60,14 +60,14 @@ namespace {namespacename}
 
             sw.WriteLine("        /// <summary>Serialized BDD representation of the set of all whitespace characters.</summary>");
             sw.Write($"        public static ReadOnlySpan<byte> SerializedWhitespaceBDD => ");
-            WriteByteArrayInitSyntax(sw, charSetSolver.CreateSetFromRanges(whitespace.ranges).SerializeToBytes());
+            WriteByteArrayInitSyntax(sw, charSetSolver.CreateBDDFromRanges(whitespace.ranges).SerializeToBytes());
             sw.WriteLine(";");
 
             // Generate a BDD representation of each UnicodeCategory.
             BDD[] catBDDs = new BDD[catMap.Count];
             for (int c = 0; c < catBDDs.Length; c++)
             {
-                catBDDs[c] = charSetSolver.CreateSetFromRanges(catMap[(UnicodeCategory)c].ranges);
+                catBDDs[c] = charSetSolver.CreateBDDFromRanges(catMap[(UnicodeCategory)c].ranges);
             }
 
             sw.WriteLine();
@@ -104,33 +104,32 @@ namespace {namespacename}
                 sw.Write(" }");
             }
         }
-    }
 
-    /// <summary>Used internally for creating a collection of ranges for serialization.</summary>
-    [ExcludeFromCodeCoverage]
-    internal sealed class Ranges
-    {
-        public readonly List<(char Lower, char Upper)> ranges = new List<(char Lower, char Upper)>();
-
-        public void Add(char n)
+        /// <summary>Used internally for creating a collection of ranges for serialization.</summary>
+        private sealed class Ranges
         {
-            // Add the character, extending an existing range if there's already one contiguous
-            // with the new character.
+            public readonly List<(char Lower, char Upper)> ranges = new List<(char Lower, char Upper)>();
 
-            for (int i = 0; i < ranges.Count; i++)
+            public void Add(char n)
             {
-                (char lower, char upper) = ranges[i];
-                if (upper == (n - 1))
+                // Add the character, extending an existing range if there's already one contiguous
+                // with the new character.
+
+                for (int i = 0; i < ranges.Count; i++)
                 {
-                    ranges[i] = (lower, n);
-                    return;
+                    (char lower, char upper) = ranges[i];
+                    if (upper == (n - 1))
+                    {
+                        ranges[i] = (lower, n);
+                        return;
+                    }
                 }
+
+                ranges.Add((n, n));
             }
 
-            ranges.Add((n, n));
+            public int Count => ranges.Count;
         }
-
-        public int Count => ranges.Count;
     }
 #endif
 }

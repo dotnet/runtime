@@ -431,7 +431,7 @@ namespace System.Globalization
                 int i = 0;
                 while (i < s.Length)
                 {
-                    if ((uint)(pSource[i] - 'A') <= (uint)('Z' - 'A'))
+                    if (char.IsAsciiLetterUpper(pSource[i]))
                     {
                         break;
                     }
@@ -487,7 +487,7 @@ namespace System.Globalization
                 int i = 0;
                 while (i < s.Length)
                 {
-                    if ((uint)(pSource[i] - 'a') <= (uint)('z' - 'a'))
+                    if (char.IsAsciiLetterLower(pSource[i]))
                     {
                         break;
                     }
@@ -534,7 +534,7 @@ namespace System.Globalization
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static char ToLowerAsciiInvariant(char c)
         {
-            if (UnicodeUtility.IsInRangeInclusive(c, 'A', 'Z'))
+            if (char.IsAsciiLetterUpper(c))
             {
                 // on x86, extending BYTE -> DWORD is more efficient than WORD -> DWORD
                 c = (char)(byte)(c | 0x20);
@@ -591,7 +591,7 @@ namespace System.Globalization
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static char ToUpperAsciiInvariant(char c)
         {
-            if (UnicodeUtility.IsInRangeInclusive(c, 'a', 'z'))
+            if (char.IsAsciiLetterLower(c))
             {
                 c = (char)(c & 0x5F); // = low 7 bits of ~0x20
             }
@@ -724,7 +724,7 @@ namespace System.Globalization
                         else if (!IsWordSeparator(charType))
                         {
                             // This category is considered to be part of the word.
-                            // This is any category that is marked as false in wordSeprator array.
+                            // This is any category that is marked as false in wordSeparator array.
                             i += charLen;
                         }
                         else
@@ -852,7 +852,7 @@ namespace System.Globalization
 
         // Used in ToTitleCase():
         // When we find a starting letter, the following array decides if a category should be
-        // considered as word seprator or not.
+        // considered as word separator or not.
         private const int c_wordSeparatorMask =
             /* false */ (0 <<  0) | // UppercaseLetter = 0,
             /* false */ (0 <<  1) | // LowercaseLetter = 1,

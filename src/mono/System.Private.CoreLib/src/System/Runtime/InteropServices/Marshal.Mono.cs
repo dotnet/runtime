@@ -44,17 +44,12 @@ namespace System.Runtime.InteropServices
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static extern void StructureToPtr(object structure, IntPtr ptr, bool fDeleteOld);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern bool IsPinnableType(QCallTypeHandle type);
-
         internal static bool IsPinnable(object? obj)
         {
             if (obj == null || obj is string)
                 return true;
             var type = (obj.GetType() as RuntimeType)!;
-            return IsPinnableType(new QCallTypeHandle(ref type));
-            //Type type = obj.GetType ();
-            //return !type.IsValueType || RuntimeTypeHandle.HasReferences (type as RuntimeType);
+            return !RuntimeTypeHandle.HasReferences (type);
         }
 
         private static void PrelinkCore(MethodInfo m)

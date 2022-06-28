@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.Tests;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -192,6 +194,49 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void Remove_EqualityComparer()
+        {
+            var mutable = ImmutableList<double>.Empty.ToBuilder();
+            mutable.Add(1.5);
+            mutable.Add(2.4);
+            mutable.Add(3.6);
+
+            Assert.True(mutable.Remove(2.4, null));
+            Assert.Equal(new[] { 1.5, 3.6 }, mutable);
+
+            var absComparer = new DelegateEqualityComparer<double>(equals: (x, y) => Math.Abs(x) == Math.Abs(y));
+            Assert.True(mutable.Remove(-1.5, absComparer));
+            Assert.Equal(new[] { 3.6 }, mutable);
+
+            Assert.False(mutable.Remove(5, absComparer));
+            Assert.False(mutable.Remove(5, null));
+        }
+
+        [Fact]
+        public void RemoveRange()
+        {
+            var mutable = ImmutableList<double>.Empty.ToBuilder();
+            mutable.Add(1.5);
+            mutable.Add(2.4);
+            mutable.Add(3.6);
+            mutable.Add(4.7);
+            mutable.Add(5.8);
+            mutable.Add(6.2);
+
+            mutable.RemoveRange(4, 2);
+            Assert.Equal(new[] { 1.5, 2.4, 3.6, 4.7 }, mutable);
+
+            mutable.RemoveRange(new double[] { 2.4, 3.6 });
+            Assert.Equal(new[] { 1.5, 4.7 }, mutable);
+            
+            var absComparer = new DelegateEqualityComparer<double>(equals: (x, y) => Math.Abs(x) == Math.Abs(y));
+            mutable.RemoveRange(new double[] { -1.5 }, absComparer);
+            Assert.Equal(new[] { 4.7 }, mutable);
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => mutable.RemoveRange(2, 3));
+        }
+
+        [Fact]
         public void RemoveAt()
         {
             var mutable = ImmutableList<int>.Empty.ToBuilder();
@@ -211,6 +256,22 @@ namespace System.Collections.Immutable.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => mutable.RemoveAt(0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => mutable.RemoveAt(-1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => mutable.RemoveAt(1));
+        }
+
+        [Fact]
+        public void Replace()
+        {
+            var mutable = ImmutableList<double>.Empty.ToBuilder();
+            mutable.Add(1.5);
+            mutable.Add(2.4);
+            mutable.Add(3.6);
+
+            mutable.Replace(3.6, 3.8);
+            Assert.Equal(new[] { 1.5, 2.4, 3.8 }, mutable);
+
+            var absComparer = new DelegateEqualityComparer<double>(equals: (x, y) => Math.Abs(x) == Math.Abs(y));
+            mutable.Replace(-1.5, 1.2, absComparer);
+            Assert.Equal(new[] { 1.2, 2.4, 3.8 }, mutable);
         }
 
         [Fact]

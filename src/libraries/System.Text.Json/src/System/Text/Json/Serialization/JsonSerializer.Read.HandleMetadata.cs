@@ -11,17 +11,15 @@ namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
-        internal static readonly byte[] s_idPropertyName
-            = new byte[] { (byte)'$', (byte)'i', (byte)'d' };
+        internal const string IdPropertyName = "$id";
+        internal const string RefPropertyName = "$ref";
+        internal const string TypePropertyName = "$type";
+        internal const string ValuesPropertyName = "$values";
 
-        internal static readonly byte[] s_refPropertyName
-            = new byte[] { (byte)'$', (byte)'r', (byte)'e', (byte)'f' };
-
-        internal static readonly byte[] s_typePropertyName
-            = new byte[] { (byte)'$', (byte)'t', (byte)'y', (byte)'p', (byte)'e' };
-
-        internal static readonly byte[] s_valuesPropertyName
-            = new byte[] { (byte)'$', (byte)'v', (byte)'a', (byte)'l', (byte)'u', (byte)'e', (byte)'s' };
+        internal static readonly byte[] s_idPropertyName = Encoding.UTF8.GetBytes(IdPropertyName);
+        internal static readonly byte[] s_refPropertyName = Encoding.UTF8.GetBytes(RefPropertyName);
+        internal static readonly byte[] s_typePropertyName = Encoding.UTF8.GetBytes(TypePropertyName);
+        internal static readonly byte[] s_valuesPropertyName = Encoding.UTF8.GetBytes(ValuesPropertyName);
 
         internal static bool TryReadMetadata(JsonConverter converter, JsonTypeInfo jsonTypeInfo, ref Utf8JsonReader reader, ref ReadStack state)
         {
@@ -104,7 +102,7 @@ namespace System.Text.Json
                             break;
 
                         case MetadataPropertyName.Type:
-                            state.Current.JsonPropertyName = jsonTypeInfo.PolymorphicTypeResolver?.CustomTypeDiscriminatorPropertyNameUtf8 ?? s_typePropertyName;
+                            state.Current.JsonPropertyName = jsonTypeInfo.PolymorphicTypeResolver?.TypeDiscriminatorPropertyNameUtf8 ?? s_typePropertyName;
 
                             if (jsonTypeInfo.PolymorphicTypeResolver is null)
                             {
@@ -183,13 +181,21 @@ namespace System.Text.Json
                         break;
 
                     case MetadataPropertyName.Type:
-                        if (reader.TokenType != JsonTokenType.String)
+                        Debug.Assert(state.PolymorphicTypeDiscriminator == null);
+
+                        switch (reader.TokenType)
                         {
-                            ThrowHelper.ThrowJsonException_MetadataValueWasNotString(reader.TokenType);
+                            case JsonTokenType.String:
+                                state.PolymorphicTypeDiscriminator = reader.GetString();
+                                break;
+                            case JsonTokenType.Number:
+                                state.PolymorphicTypeDiscriminator = reader.GetInt32();
+                                break;
+                            default:
+                                ThrowHelper.ThrowJsonException_MetadataValueWasNotString(reader.TokenType);
+                                break;
                         }
 
-                        Debug.Assert(state.PolymorphicTypeDiscriminator == null);
-                        state.PolymorphicTypeDiscriminator = reader.GetString();
                         break;
 
                     case MetadataPropertyName.Values:
@@ -218,7 +224,7 @@ namespace System.Text.Json
         {
             return
                 (propertyName.Length > 0 && propertyName[0] == '$') ||
-                (resolver?.CustomTypeDiscriminatorPropertyNameUtf8?.AsSpan().SequenceEqual(propertyName) == true);
+                (resolver?.TypeDiscriminatorPropertyNameUtf8?.AsSpan().SequenceEqual(propertyName) == true);
         }
 
         internal static MetadataPropertyName GetMetadataPropertyName(ReadOnlySpan<byte> propertyName, PolymorphicTypeResolver? resolver)
@@ -244,7 +250,7 @@ namespace System.Text.Json
                         }
                         break;
 
-                    case 5 when resolver?.CustomTypeDiscriminatorPropertyNameUtf8 is null:
+                    case 5 when resolver?.TypeDiscriminatorPropertyNameUtf8 is null:
                         if (propertyName[1] == 't' &&
                             propertyName[2] == 'y' &&
                             propertyName[3] == 'p' &&
@@ -268,7 +274,7 @@ namespace System.Text.Json
                 }
             }
 
-            if (resolver?.CustomTypeDiscriminatorPropertyNameUtf8 is byte[] customTypeDiscriminator &&
+            if (resolver?.TypeDiscriminatorPropertyNameUtf8 is byte[] customTypeDiscriminator &&
                 propertyName.SequenceEqual(customTypeDiscriminator))
             {
                 return MetadataPropertyName.Type;

@@ -5,14 +5,16 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using Xunit.Abstractions;
 
 #nullable enable
 
 namespace Wasm.Build.Tests
 {
-    public class ToolCommand
+    public class ToolCommand : IDisposable
     {
         private string _label;
+        protected ITestOutputHelper _testOutput;
 
         protected string _command;
 
@@ -26,9 +28,10 @@ namespace Wasm.Build.Tests
 
         public string? WorkingDirectory { get; set; }
 
-        public ToolCommand(string command, string label="")
+        public ToolCommand(string command, ITestOutputHelper testOutput, string label="")
         {
             _command = command;
+            _testOutput = testOutput;
             _label = label;
         }
 
@@ -55,6 +58,18 @@ namespace Wasm.Build.Tests
             return this;
         }
 
+        public ToolCommand WithOutputDataReceived(Action<string?> handler)
+        {
+            OutputDataReceived += (_, args) => handler(args.Data);
+            return this;
+        }
+
+        public ToolCommand WithErrorDataReceived(Action<string?> handler)
+        {
+            ErrorDataReceived += (_, args) => handler(args.Data);
+            return this;
+        }
+
         public virtual CommandResult Execute(params string[] args)
         {
             return Task.Run(async () => await ExecuteAsync(args)).Result;
@@ -64,7 +79,7 @@ namespace Wasm.Build.Tests
         {
             var resolvedCommand = _command;
             string fullArgs = GetFullArgs(args);
-            Console.WriteLine($"[{_label}] Executing - {resolvedCommand} {fullArgs} - {WorkingDirectoryInfo()}");
+            _testOutput.WriteLine($"[{_label}] Executing - {resolvedCommand} {fullArgs} - {WorkingDirectoryInfo()}");
             return await ExecuteAsyncInternal(resolvedCommand, fullArgs);
         }
 
@@ -72,8 +87,18 @@ namespace Wasm.Build.Tests
         {
             var resolvedCommand = _command;
             string fullArgs = GetFullArgs(args);
-            Console.WriteLine($"[{_label}] Executing (Captured Output) - {resolvedCommand} {fullArgs} - {WorkingDirectoryInfo()}");
+            _testOutput.WriteLine($"[{_label}] Executing (Captured Output) - {resolvedCommand} {fullArgs} - {WorkingDirectoryInfo()}");
             return Task.Run(async () => await ExecuteAsyncInternal(resolvedCommand, fullArgs)).Result;
+        }
+
+        public virtual void Dispose()
+        {
+            if (CurrentProcess is not null && !CurrentProcess.HasExited)
+            {
+                CurrentProcess.KillTree();
+                CurrentProcess.Dispose();
+                CurrentProcess = null;
+            }
         }
 
         protected virtual string GetFullArgs(params string[] args) => string.Join(" ", args);
@@ -88,7 +113,7 @@ namespace Wasm.Build.Tests
                     return;
 
                 output.Add($"[{_label}] {e.Data}");
-                Console.WriteLine($"[{_label}] {e.Data}");
+                _testOutput.WriteLine($"[{_label}] {e.Data}");
                 ErrorDataReceived?.Invoke(s, e);
             };
 
@@ -98,7 +123,7 @@ namespace Wasm.Build.Tests
                     return;
 
                 output.Add($"[{_label}] {e.Data}");
-                Console.WriteLine($"[{_label}] {e.Data}");
+                _testOutput.WriteLine($"[{_label}] {e.Data}");
                 OutputDataReceived?.Invoke(s, e);
             };
 
@@ -107,7 +132,6 @@ namespace Wasm.Build.Tests
             CurrentProcess.BeginErrorReadLine();
             await completionTask;
 
-            CurrentProcess.WaitForExit();
             RemoveNullTerminator(output);
 
             return new CommandResult(

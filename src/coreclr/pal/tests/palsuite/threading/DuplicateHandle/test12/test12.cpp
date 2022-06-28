@@ -7,7 +7,7 @@
 **
 ** Purpose:   Tests the PAL implementation of the DuplicateHandle function.
 **            This test will create handle to file (to write) and close it,
-**            then call duplicate handle to read what was written. 
+**            then call duplicate handle to read what was written.
 **
 **
 **===================================================================*/
@@ -24,7 +24,7 @@ PALTEST(threading_DuplicateHandle_test12_paltest_duplicatehandle_test12, "thread
     DWORD   dwBytesRead;
     BOOL    bRetVal;
 
-    /*Initalize the PAL*/
+    /*Initialize the PAL*/
     if ((PAL_Initialize(argc,argv)) != 0)
     {
         return (FAIL);
@@ -34,9 +34,9 @@ PALTEST(threading_DuplicateHandle_test12_paltest_duplicatehandle_test12, "thread
     hFile = CreateFile(lpFileName,
                 GENERIC_WRITE|GENERIC_READ,
                 FILE_SHARE_WRITE|FILE_SHARE_READ,
-                NULL, 
+                NULL,
                 OPEN_ALWAYS,
-                FILE_ATTRIBUTE_NORMAL, 
+                FILE_ATTRIBUTE_NORMAL,
                 NULL);
     if (hFile == INVALID_HANDLE_VALUE)
     {
@@ -45,7 +45,7 @@ PALTEST(threading_DuplicateHandle_test12_paltest_duplicatehandle_test12, "thread
             lpFileName);
     }
 
-    /*Write test string to the file.*/    
+    /*Write test string to the file.*/
     bRetVal = WriteFile(hFile,      // handle to file
                 teststr,            // data buffer
                 strlen(teststr),    // number of bytes to write
@@ -64,12 +64,12 @@ PALTEST(threading_DuplicateHandle_test12_paltest_duplicatehandle_test12, "thread
 
     /*Create a duplicate handle with DuplicateHandle.*/
     if (!(DuplicateHandle(
-            GetCurrentProcess(), 
+            GetCurrentProcess(),
             hFile,
-            GetCurrentProcess(), 
+            GetCurrentProcess(),
             &hDupFile,
             GENERIC_READ|GENERIC_WRITE,
-            FALSE, 
+            FALSE,
             DUPLICATE_SAME_ACCESS)))
     {
         Trace("ERROR: %u : Fail to create the duplicate handle"
@@ -84,7 +84,7 @@ PALTEST(threading_DuplicateHandle_test12_paltest_duplicatehandle_test12, "thread
     {
         Fail("Duplicate Handle:Unable to close original file: Error[%u]\n", GetLastError());
     }
-  
+
     memset(buf, 0, 256);
 
     /*Read from the Duplicated handle.*/
@@ -110,7 +110,7 @@ PALTEST(threading_DuplicateHandle_test12_paltest_duplicatehandle_test12, "thread
         CloseHandle(hDupFile);
         Fail("");
     }
-    
+
     /*Close the handles*/
     CloseHandle(hDupFile);
 

@@ -11,7 +11,6 @@ using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#pragma warning disable CA1066 // Implement IEquatable when overriding Object.Equals
 
 #if TARGET_64BIT
 using nint_t = System.Int64;
@@ -34,28 +33,24 @@ namespace System
           IMinMaxValue<nint>,
           ISignedNumber<nint>
     {
-        // WARNING: We allow diagnostic tools to directly inspect this member (_value).
-        // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details.
-        // Please do not change the type, the name, or the semantic usage of this member without understanding the implication for tools.
-        // Get in touch with the diagnostics team if you have questions.
-        private readonly unsafe void* _value; // Do not rename (binary serialization)
+        private readonly nint _value;
 
         [Intrinsic]
-        public static readonly IntPtr Zero;
+        public static readonly nint Zero;
 
         [NonVersionable]
-        public unsafe IntPtr(int value)
+        public IntPtr(int value)
         {
-            _value = (void*)value;
+            _value = value;
         }
 
         [NonVersionable]
-        public unsafe IntPtr(long value)
+        public IntPtr(long value)
         {
 #if TARGET_64BIT
-            _value = (void*)value;
+            _value = (nint)value;
 #else
-            _value = (void*)checked((int)value);
+            _value = checked((nint)value);
 #endif
         }
 
@@ -63,111 +58,100 @@ namespace System
         [NonVersionable]
         public unsafe IntPtr(void* value)
         {
-            _value = value;
+            _value = (nint)value;
         }
 
-        private unsafe IntPtr(SerializationInfo info, StreamingContext context)
+        private IntPtr(SerializationInfo info, StreamingContext context)
         {
-            long l = info.GetInt64("value");
+            long value = info.GetInt64("value");
 
-            if (Size == 4 && (l > int.MaxValue || l < int.MinValue))
+#if TARGET_32BIT
+            if ((value > int.MaxValue) || (value < int.MinValue))
+            {
                 throw new ArgumentException(SR.Serialization_InvalidPtrValue);
+            }
+#endif
 
-            _value = (void*)l;
+            _value = (nint)value;
         }
 
-        unsafe void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             ArgumentNullException.ThrowIfNull(info);
 
-            info.AddValue("value", ToInt64());
+            long value = _value;
+            info.AddValue("value", value);
         }
 
-        public override unsafe bool Equals([NotNullWhen(true)] object? obj) =>
-            obj is IntPtr other &&
-            _value == other._value;
+        public override bool Equals([NotNullWhen(true)] object? obj) => (obj is nint other) && Equals(other);
 
-        public override unsafe int GetHashCode()
+        public override int GetHashCode()
         {
 #if TARGET_64BIT
-            long l = (long)_value;
-            return unchecked((int)l) ^ (int)(l >> 32);
-#else
-            return unchecked((int)_value);
-#endif
-        }
-
-        [NonVersionable]
-        public unsafe int ToInt32()
-        {
-#if TARGET_64BIT
-            long l = (long)_value;
-            return checked((int)l);
+            long value = _value;
+            return value.GetHashCode();
 #else
             return (int)_value;
 #endif
         }
 
         [NonVersionable]
-        public unsafe long ToInt64() =>
-            (nint)_value;
-
-        [NonVersionable]
-        public static unsafe explicit operator IntPtr(int value) =>
-            new IntPtr(value);
-
-        [NonVersionable]
-        public static unsafe explicit operator IntPtr(long value) =>
-            new IntPtr(value);
-
-        [CLSCompliant(false)]
-        [NonVersionable]
-        public static unsafe explicit operator IntPtr(void* value) =>
-            new IntPtr(value);
-
-        [CLSCompliant(false)]
-        [NonVersionable]
-        public static unsafe explicit operator void*(IntPtr value) =>
-            value._value;
-
-        [NonVersionable]
-        public static unsafe explicit operator int(IntPtr value)
+        public int ToInt32()
         {
 #if TARGET_64BIT
-            long l = (long)value._value;
-            return checked((int)l);
+            return checked((int)_value);
 #else
-            return (int)value._value;
+            return (int)_value;
 #endif
         }
 
         [NonVersionable]
-        public static unsafe explicit operator long(IntPtr value) =>
-            (nint)value._value;
+        public long ToInt64() => _value;
 
         [NonVersionable]
-        public static unsafe bool operator ==(IntPtr value1, IntPtr value2) =>
-            value1._value == value2._value;
+        public static explicit operator nint(int value) => value;
 
         [NonVersionable]
-        public static unsafe bool operator !=(IntPtr value1, IntPtr value2) =>
-            value1._value != value2._value;
+        public static explicit operator nint(long value) => checked((nint)value);
+
+        [CLSCompliant(false)]
+        [NonVersionable]
+        public static unsafe explicit operator nint(void* value) => (nint)value;
+
+        [CLSCompliant(false)]
+        [NonVersionable]
+        public static unsafe explicit operator void*(nint value) => (void*)value;
 
         [NonVersionable]
-        public static IntPtr Add(IntPtr pointer, int offset) =>
-            pointer + offset;
+        public static explicit operator int(nint value)
+        {
+#if TARGET_64BIT
+            return checked((int)value);
+#else
+            return (int)value;
+#endif
+        }
 
         [NonVersionable]
-        public static unsafe IntPtr operator +(IntPtr pointer, int offset) =>
-            (nint)pointer._value + offset;
+        public static explicit operator long(nint value) => value;
 
         [NonVersionable]
-        public static IntPtr Subtract(IntPtr pointer, int offset) =>
-            pointer - offset;
+        public static bool operator ==(nint value1, nint value2) => value1 == value2;
 
         [NonVersionable]
-        public static unsafe IntPtr operator -(IntPtr pointer, int offset) =>
-            (nint)pointer._value - offset;
+        public static bool operator !=(nint value1, nint value2) => value1 != value2;
+
+        [NonVersionable]
+        public static nint Add(nint pointer, int offset) => pointer + offset;
+
+        [NonVersionable]
+        public static nint operator +(nint pointer, int offset) => pointer + offset;
+
+        [NonVersionable]
+        public static nint Subtract(nint pointer, int offset) => pointer - offset;
+
+        [NonVersionable]
+        public static nint operator -(nint pointer, int offset) => pointer - offset;
 
         public static int Size
         {
@@ -177,93 +161,95 @@ namespace System
 
         [CLSCompliant(false)]
         [NonVersionable]
-        public unsafe void* ToPointer() => _value;
+        public unsafe void* ToPointer() => (void*)_value;
 
         /// <inheritdoc cref="IMinMaxValue{TSelf}.MaxValue" />
-        public static IntPtr MaxValue
+        public static nint MaxValue
         {
             [NonVersionable]
-            get => (IntPtr)nint_t.MaxValue;
+            get => unchecked((nint)nint_t.MaxValue);
         }
 
         /// <inheritdoc cref="IMinMaxValue{TSelf}.MinValue" />
-        public static IntPtr MinValue
+        public static nint MinValue
         {
             [NonVersionable]
-            get => (IntPtr)nint_t.MinValue;
+            get => unchecked((nint)nint_t.MinValue);
         }
 
-        // Don't just delegate to nint_t.CompareTo as it needs to throw when not IntPtr
-        public unsafe int CompareTo(object? value)
+        public int CompareTo(object? value)
         {
-            if (value is null)
+            if (value is nint other)
+            {
+                return CompareTo(other);
+            }
+            else if (value is null)
             {
                 return 1;
-            }
-            if (value is nint i)
-            {
-                if ((nint)_value < i) return -1;
-                if ((nint)_value > i) return 1;
-                return 0;
             }
 
             throw new ArgumentException(SR.Arg_MustBeIntPtr);
         }
 
-        public unsafe int CompareTo(IntPtr value) => ((nint_t)_value).CompareTo((nint_t)value);
+        public int CompareTo(nint value)
+        {
+            if (_value < value) return -1;
+            if (_value > value) return 1;
+            return 0;
+        }
 
         [NonVersionable]
-        public unsafe bool Equals(IntPtr other) => (nint_t)_value == (nint_t)other;
+        public bool Equals(nint other) => _value == other;
 
-        public unsafe override string ToString() => ((nint_t)_value).ToString();
-        public unsafe string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format) => ((nint_t)_value).ToString(format);
-        public unsafe string ToString(IFormatProvider? provider) => ((nint_t)_value).ToString(provider);
-        public unsafe string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider) => ((nint_t)_value).ToString(format, provider);
+        public override string ToString() => ((nint_t)_value).ToString();
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format) => ((nint_t)_value).ToString(format);
+        public string ToString(IFormatProvider? provider) => ((nint_t)_value).ToString(provider);
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider) => ((nint_t)_value).ToString(format, provider);
 
-        public unsafe bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
+        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
             ((nint_t)_value).TryFormat(destination, out charsWritten, format, provider);
 
-        public static IntPtr Parse(string s) => (IntPtr)nint_t.Parse(s);
-        public static IntPtr Parse(string s, NumberStyles style) => (IntPtr)nint_t.Parse(s, style);
-        public static IntPtr Parse(string s, IFormatProvider? provider) => (IntPtr)nint_t.Parse(s, provider);
-        public static IntPtr Parse(string s, NumberStyles style, IFormatProvider? provider) => (IntPtr)nint_t.Parse(s, style, provider);
-        public static IntPtr Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => (IntPtr)nint_t.Parse(s, provider);
-        public static IntPtr Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null) => (IntPtr)nint_t.Parse(s, style, provider);
+        public static nint Parse(string s) => (nint)nint_t.Parse(s);
+        public static nint Parse(string s, NumberStyles style) => (nint)nint_t.Parse(s, style);
+        public static nint Parse(string s, IFormatProvider? provider) => (nint)nint_t.Parse(s, provider);
+        public static nint Parse(string s, NumberStyles style, IFormatProvider? provider) => (nint)nint_t.Parse(s, style, provider);
+        public static nint Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => (nint)nint_t.Parse(s, provider);
+        public static nint Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null) => (nint)nint_t.Parse(s, style, provider);
 
-        public static bool TryParse([NotNullWhen(true)] string? s, out IntPtr result)
+        public static bool TryParse([NotNullWhen(true)] string? s, out nint result)
         {
             Unsafe.SkipInit(out result);
-            return nint_t.TryParse(s, out Unsafe.As<IntPtr, nint_t>(ref result));
+            return nint_t.TryParse(s, out Unsafe.As<nint, nint_t>(ref result));
         }
 
-        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out IntPtr result)
+        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out nint result)
         {
             Unsafe.SkipInit(out result);
-            return nint_t.TryParse(s, provider, out Unsafe.As<IntPtr, nint_t>(ref result));
+            return nint_t.TryParse(s, provider, out Unsafe.As<nint, nint_t>(ref result));
         }
 
-        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out IntPtr result)
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out nint result)
         {
             Unsafe.SkipInit(out result);
-            return nint_t.TryParse(s, style, provider, out Unsafe.As<IntPtr, nint_t>(ref result));
+            return nint_t.TryParse(s, style, provider, out Unsafe.As<nint, nint_t>(ref result));
         }
 
-        public static bool TryParse(ReadOnlySpan<char> s, out IntPtr result)
+        public static bool TryParse(ReadOnlySpan<char> s, out nint result)
         {
             Unsafe.SkipInit(out result);
-            return nint_t.TryParse(s, out Unsafe.As<IntPtr, nint_t>(ref result));
+            return nint_t.TryParse(s, out Unsafe.As<nint, nint_t>(ref result));
         }
 
-        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out IntPtr result)
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out nint result)
         {
             Unsafe.SkipInit(out result);
-            return nint_t.TryParse(s, provider, out Unsafe.As<IntPtr, nint_t>(ref result));
+            return nint_t.TryParse(s, provider, out Unsafe.As<nint, nint_t>(ref result));
         }
 
-        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out IntPtr result)
+        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out nint result)
         {
             Unsafe.SkipInit(out result);
-            return nint_t.TryParse(s, style, provider, out Unsafe.As<IntPtr, nint_t>(ref result));
+            return nint_t.TryParse(s, style, provider, out Unsafe.As<nint, nint_t>(ref result));
         }
 
         //
@@ -288,100 +274,78 @@ namespace System
         //
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.DivRem(TSelf, TSelf)" />
-        static (nint Quotient, nint Remainder) IBinaryInteger<nint>.DivRem(nint left, nint right) => Math.DivRem(left, right);
+        public static (nint Quotient, nint Remainder) DivRem(nint left, nint right) => Math.DivRem(left, right);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
-        static nint IBinaryInteger<nint>.LeadingZeroCount(nint value)
-        {
-            if (Environment.Is64BitProcess)
-            {
-                return BitOperations.LeadingZeroCount((ulong)value);
-            }
-            else
-            {
-                return BitOperations.LeadingZeroCount((uint)value);
-            }
-        }
+        public static nint LeadingZeroCount(nint value) => BitOperations.LeadingZeroCount((nuint)value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
-        static nint IBinaryInteger<nint>.PopCount(nint value)
-        {
-            if (Environment.Is64BitProcess)
-            {
-                return BitOperations.PopCount((ulong)value);
-            }
-            else
-            {
-                return BitOperations.PopCount((uint)value);
-            }
-        }
+        public static nint PopCount(nint value) => BitOperations.PopCount((nuint)value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateLeft(TSelf, int)" />
-        static nint IBinaryInteger<nint>.RotateLeft(nint value, int rotateAmount)
-        {
-            if (Environment.Is64BitProcess)
-            {
-                return (nint)BitOperations.RotateLeft((ulong)value, rotateAmount);
-            }
-            else
-            {
-                return (nint)BitOperations.RotateLeft((uint)value, rotateAmount);
-            }
-        }
+        public static nint RotateLeft(nint value, int rotateAmount) => (nint)BitOperations.RotateLeft((nuint)value, rotateAmount);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateRight(TSelf, int)" />
-        static nint IBinaryInteger<nint>.RotateRight(nint value, int rotateAmount)
-        {
-            if (Environment.Is64BitProcess)
-            {
-                return (nint)BitOperations.RotateRight((ulong)value, rotateAmount);
-            }
-            else
-            {
-                return (nint)BitOperations.RotateRight((uint)value, rotateAmount);
-            }
-        }
+        public static nint RotateRight(nint value, int rotateAmount) => (nint)BitOperations.RotateRight((nuint)value, rotateAmount);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
-        static nint IBinaryInteger<nint>.TrailingZeroCount(nint value)
-        {
-            if (Environment.Is64BitProcess)
-            {
-                return BitOperations.TrailingZeroCount((ulong)value);
-            }
-            else
-            {
-                return BitOperations.TrailingZeroCount((uint)value);
-            }
-        }
+        public static nint TrailingZeroCount(nint value) => BitOperations.TrailingZeroCount(value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
-        unsafe long IBinaryInteger<nint>.GetShortestBitLength()
+        int IBinaryInteger<nint>.GetShortestBitLength()
         {
-            nint value = (nint)_value;
+            nint value = _value;
 
             if (value >= 0)
             {
-                return (sizeof(nint) * 8) - BitOperations.LeadingZeroCount((nuint)value);
+                return (sizeof(nint_t) * 8) - BitOperations.LeadingZeroCount((nuint)value);
             }
             else
             {
-                return (sizeof(nint) * 8) + 1 - BitOperations.LeadingZeroCount((nuint)(~value));
+                return (sizeof(nint_t) * 8) + 1 - BitOperations.LeadingZeroCount((nuint)(~value));
             }
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetByteCount()" />
-        unsafe int IBinaryInteger<nint>.GetByteCount() => sizeof(nint);
+        int IBinaryInteger<nint>.GetByteCount() => sizeof(nint_t);
 
-        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteLittleEndian(Span{byte}, out int)" />
-        unsafe bool IBinaryInteger<nint>.TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteBigEndian(Span{byte}, out int)" />
+        bool IBinaryInteger<nint>.TryWriteBigEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= sizeof(nint))
+            if (destination.Length >= sizeof(nint_t))
             {
-                nint value = BitConverter.IsLittleEndian ? (nint)_value : (nint)BinaryPrimitives.ReverseEndianness((nint)_value);
+                nint_t value = (nint_t)_value;
+
+                if (BitConverter.IsLittleEndian)
+                {
+                    value = BinaryPrimitives.ReverseEndianness(value);
+                }
                 Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
 
-                bytesWritten = sizeof(nint);
+                bytesWritten = sizeof(nint_t);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteLittleEndian(Span{byte}, out int)" />
+        bool IBinaryInteger<nint>.TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(nint_t))
+            {
+                nint_t value = (nint_t)_value;
+
+                if (!BitConverter.IsLittleEndian)
+                {
+                    value = BinaryPrimitives.ReverseEndianness(value);
+                }
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
+
+                bytesWritten = sizeof(nint_t);
                 return true;
             }
             else
@@ -396,24 +360,16 @@ namespace System
         //
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
-        static bool IBinaryNumber<nint>.IsPow2(nint value) => BitOperations.IsPow2(value);
+        public static bool IsPow2(nint value) => BitOperations.IsPow2(value);
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
-        static nint IBinaryNumber<nint>.Log2(nint value)
+        public static nint Log2(nint value)
         {
             if (value < 0)
             {
                 ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
             }
-
-            if (Environment.Is64BitProcess)
-            {
-                return BitOperations.Log2((ulong)value);
-            }
-            else
-            {
-                return BitOperations.Log2((uint)value);
-            }
+            return BitOperations.Log2((nuint)value);
         }
 
         //
@@ -465,9 +421,6 @@ namespace System
         /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
         static nint IDivisionOperators<nint, nint, nint>.operator /(nint left, nint right) => left / right;
 
-        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        static nint IDivisionOperators<nint, nint, nint>.operator checked /(nint left, nint right) => left / right;
-
         //
         // IIncrementOperators
         //
@@ -516,14 +469,11 @@ namespace System
         // INumber
         //
 
-        /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
-        static nint INumber<nint>.Abs(nint value) => Math.Abs(value);
-
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
-        static nint INumber<nint>.Clamp(nint value, nint min, nint max) => Math.Clamp(value, min, max);
+        public static nint Clamp(nint value, nint min, nint max) => Math.Clamp(value, min, max);
 
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
-        static nint INumber<nint>.CopySign(nint value, nint sign)
+        public static nint CopySign(nint value, nint sign)
         {
             nint absValue = value;
 
@@ -545,427 +495,20 @@ namespace System
             return -absValue;
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static nint INumber<nint>.CreateChecked<TOther>(TOther value)
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return checked((nint)(decimal)(object)value);
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return checked((nint)(double)(object)value);
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return checked((nint)(long)(object)value);
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return checked((nint)(float)(object)value);
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return checked((nint)(uint)(object)value);
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return checked((nint)(ulong)(object)value);
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return checked((nint)(nuint)(object)value);
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
-        }
-
-        /// <inheritdoc cref="INumber{TSelf}.CreateSaturating{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static nint INumber<nint>.CreateSaturating<TOther>(TOther value)
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                var actualValue = (decimal)(object)value;
-                return (actualValue > nint.MaxValue) ? MaxValue :
-                       (actualValue < nint.MinValue) ? MinValue : (nint)actualValue;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                var actualValue = (double)(object)value;
-                return (actualValue > nint.MaxValue) ? MaxValue :
-                       (actualValue < nint.MinValue) ? MinValue : (nint)actualValue;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                var actualValue = (long)(object)value;
-                return (actualValue > nint.MaxValue) ? MaxValue :
-                       (actualValue < nint.MinValue) ? MinValue : (nint)actualValue;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                var actualValue = (float)(object)value;
-                return (actualValue > nint.MaxValue) ? MaxValue :
-                       (actualValue < nint.MinValue) ? MinValue : (nint)actualValue;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                var actualValue = (uint)(object)value;
-                return (actualValue > nint.MaxValue) ? MaxValue : (nint)actualValue;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                var actualValue = (ulong)(object)value;
-                return (actualValue > (nuint)nint.MaxValue) ? MaxValue : (nint)actualValue;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                var actualValue = (nuint)(object)value;
-                return (actualValue > (nuint)nint.MaxValue) ? MaxValue : (nint)actualValue;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
-        }
-
-        /// <inheritdoc cref="INumber{TSelf}.CreateTruncating{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static nint INumber<nint>.CreateTruncating<TOther>(TOther value)
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return (nint)(decimal)(object)value;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return (nint)(double)(object)value;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return (nint)(long)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return (nint)(float)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (nint)(uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (nint)(ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (nint)(nuint)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
-        }
-
-        /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
-        static bool INumber<nint>.IsNegative(nint value) => value < 0;
-
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
-        static nint INumber<nint>.Max(nint x, nint y) => Math.Max(x, y);
+        public static nint Max(nint x, nint y) => Math.Max(x, y);
 
-        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
-        static nint INumber<nint>.MaxMagnitude(nint x, nint y)
-        {
-            nint absX = x;
-
-            if (absX < 0)
-            {
-                absX = -absX;
-
-                if (absX < 0)
-                {
-                    return x;
-                }
-            }
-
-            nint absY = y;
-
-            if (absY < 0)
-            {
-                absY = -absY;
-
-                if (absY < 0)
-                {
-                    return y;
-                }
-            }
-
-            return (absX >= absY) ? x : y;
-        }
+        /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
+        static nint INumber<nint>.MaxNumber(nint x, nint y) => Max(x, y);
 
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
-        static nint INumber<nint>.Min(nint x, nint y) => Math.Min(x, y);
+        public static nint Min(nint x, nint y) => Math.Min(x, y);
 
-        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
-        static nint INumber<nint>.MinMagnitude(nint x, nint y)
-        {
-            nint absX = x;
-
-            if (absX < 0)
-            {
-                absX = -absX;
-
-                if (absX < 0)
-                {
-                    return y;
-                }
-            }
-
-            nint absY = y;
-
-            if (absY < 0)
-            {
-                absY = -absY;
-
-                if (absY < 0)
-                {
-                    return x;
-                }
-            }
-
-            return (absX <= absY) ? x : y;
-        }
+        /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
+        static nint INumber<nint>.MinNumber(nint x, nint y) => Min(x, y);
 
         /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        static int INumber<nint>.Sign(nint value) => Math.Sign(value);
-
-        /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumber<nint>.TryCreate<TOther>(TOther value, out nint result)
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                result = (byte)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                result = (char)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                var actualValue = (decimal)(object)value;
-
-                if ((actualValue < nint.MinValue) || (actualValue > nint.MaxValue))
-                {
-                    result = default;
-                    return false;
-                }
-
-                result = (nint)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                var actualValue = (double)(object)value;
-
-                if ((actualValue < nint.MinValue) || (actualValue > nint.MaxValue))
-                {
-                    result = default;
-                    return false;
-                }
-
-                result = (nint)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                result = (short)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                result = (int)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                var actualValue = (long)(object)value;
-
-                if ((actualValue < nint.MinValue) || (actualValue > nint.MaxValue))
-                {
-                    result = default;
-                    return false;
-                }
-
-                result = (nint)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                result = (nint)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                result = (sbyte)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                var actualValue = (float)(object)value;
-
-                if ((actualValue < nint.MinValue) || (actualValue > nint.MaxValue))
-                {
-                    result = default;
-                    return false;
-                }
-
-                result = (nint)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                result = (ushort)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                var actualValue = (uint)(object)value;
-
-                if (actualValue > nint.MaxValue)
-                {
-                    result = default;
-                    return false;
-                }
-
-                result = (nint)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                var actualValue = (ulong)(object)value;
-
-                if (actualValue > (nuint)nint.MaxValue)
-                {
-                    result = default;
-                    return false;
-                }
-
-                result = (nint)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                var actualValue = (nuint)(object)value;
-
-                if (actualValue > (nuint)nint.MaxValue)
-                {
-                    result = default;
-                    return false;
-                }
-
-                result = (nint)actualValue;
-                return true;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                result = default;
-                return false;
-            }
-        }
+        public static int Sign(nint value) => Math.Sign(value);
 
         //
         // INumberBase
@@ -974,8 +517,571 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.One" />
         static nint INumberBase<nint>.One => 1;
 
+        /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
+        static int INumberBase<nint>.Radix => 2;
+
         /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
         static nint INumberBase<nint>.Zero => 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
+        public static nint Abs(nint value) => Math.Abs(value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
+        static bool INumberBase<nint>.IsCanonical(nint value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
+        static bool INumberBase<nint>.IsComplexNumber(nint value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsEvenInteger(TSelf)" />
+        public static bool IsEvenInteger(nint value) => (value & 1) == 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsFinite(TSelf)" />
+        static bool INumberBase<nint>.IsFinite(nint value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
+        static bool INumberBase<nint>.IsImaginaryNumber(nint value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInfinity(TSelf)" />
+        static bool INumberBase<nint>.IsInfinity(nint value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInteger(TSelf)" />
+        static bool INumberBase<nint>.IsInteger(nint value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNaN(TSelf)" />
+        static bool INumberBase<nint>.IsNaN(nint value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegative(TSelf)" />
+        public static bool IsNegative(nint value) => value < 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegativeInfinity(TSelf)" />
+        static bool INumberBase<nint>.IsNegativeInfinity(nint value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNormal(TSelf)" />
+        static bool INumberBase<nint>.IsNormal(nint value) => value != 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
+        public static bool IsOddInteger(nint value) => (value & 1) != 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositive(TSelf)" />
+        public static bool IsPositive(nint value) => value >= 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositiveInfinity(TSelf)" />
+        static bool INumberBase<nint>.IsPositiveInfinity(nint value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsRealNumber(TSelf)" />
+        static bool INumberBase<nint>.IsRealNumber(nint value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsSubnormal(TSelf)" />
+        static bool INumberBase<nint>.IsSubnormal(nint value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
+        static bool INumberBase<nint>.IsZero(nint value) => (value == 0);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        public static nint MaxMagnitude(nint x, nint y)
+        {
+            nint absX = x;
+
+            if (absX < 0)
+            {
+                absX = -absX;
+
+                if (absX < 0)
+                {
+                    return x;
+                }
+            }
+
+            nint absY = y;
+
+            if (absY < 0)
+            {
+                absY = -absY;
+
+                if (absY < 0)
+                {
+                    return y;
+                }
+            }
+
+            if (absX > absY)
+            {
+                return x;
+            }
+
+            if (absX == absY)
+            {
+                return IsNegative(x) ? y : x;
+            }
+
+            return y;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        static nint INumberBase<nint>.MaxMagnitudeNumber(nint x, nint y) => MaxMagnitude(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        public static nint MinMagnitude(nint x, nint y)
+        {
+            nint absX = x;
+
+            if (absX < 0)
+            {
+                absX = -absX;
+
+                if (absX < 0)
+                {
+                    return y;
+                }
+            }
+
+            nint absY = y;
+
+            if (absY < 0)
+            {
+                absY = -absY;
+
+                if (absY < 0)
+                {
+                    return x;
+                }
+            }
+
+            if (absX < absY)
+            {
+                return x;
+            }
+
+            if (absX == absY)
+            {
+                return IsNegative(x) ? x : y;
+            }
+
+            return y;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        static nint INumberBase<nint>.MinMagnitudeNumber(nint x, nint y) => MinMagnitude(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<nint>.TryConvertFromChecked<TOther>(TOther value, out nint result)
+        {
+            // In order to reduce overall code duplication and improve the inlinabilty of these
+            // methods for the corelib types we have `ConvertFrom` handle the same sign and
+            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
+            //
+            // That is, `ConvertFrom` for `nint` will handle the other signed types and
+            // `ConvertTo` will handle the unsigned types
+
+            if (typeof(TOther) == typeof(double))
+            {
+                double actualValue = (double)(object)value;
+                result = checked((nint)actualValue);
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                Half actualValue = (Half)(object)value;
+                result = checked((nint)actualValue);
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                short actualValue = (short)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                int actualValue = (int)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                long actualValue = (long)(object)value;
+                result = checked((nint)actualValue);
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                Int128 actualValue = (Int128)(object)value;
+                result = checked((nint)actualValue);
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                sbyte actualValue = (sbyte)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                float actualValue = (float)(object)value;
+                result = checked((nint)actualValue);
+                return true;
+            }
+            else
+            {
+                result = default;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<nint>.TryConvertFromSaturating<TOther>(TOther value, out nint result)
+        {
+            // In order to reduce overall code duplication and improve the inlinabilty of these
+            // methods for the corelib types we have `ConvertFrom` handle the same sign and
+            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
+            //
+            // That is, `ConvertFrom` for `nint` will handle the other signed types and
+            // `ConvertTo` will handle the unsigned types
+
+            if (typeof(TOther) == typeof(double))
+            {
+                double actualValue = (double)(object)value;
+                result = (actualValue >= nint_t.MaxValue) ? unchecked((nint)nint_t.MaxValue) :
+                         (actualValue <= nint_t.MinValue) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                Half actualValue = (Half)(object)value;
+                result = (actualValue == Half.PositiveInfinity) ? unchecked((nint)nint_t.MaxValue) :
+                         (actualValue == Half.NegativeInfinity) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                short actualValue = (short)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                int actualValue = (int)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                long actualValue = (long)(object)value;
+                result = (actualValue >= nint_t.MaxValue) ? unchecked((nint)nint_t.MaxValue) :
+                         (actualValue <= nint_t.MinValue) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                Int128 actualValue = (Int128)(object)value;
+                result = (actualValue >= nint_t.MaxValue) ? unchecked((nint)nint_t.MaxValue) :
+                         (actualValue <= nint_t.MinValue) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                sbyte actualValue = (sbyte)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                float actualValue = (float)(object)value;
+                result = (actualValue >= nint_t.MaxValue) ? unchecked((nint)nint_t.MaxValue) :
+                         (actualValue <= nint_t.MinValue) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
+                return true;
+            }
+            else
+            {
+                result = default;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<nint>.TryConvertFromTruncating<TOther>(TOther value, out nint result)
+        {
+            // In order to reduce overall code duplication and improve the inlinabilty of these
+            // methods for the corelib types we have `ConvertFrom` handle the same sign and
+            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
+            //
+            // That is, `ConvertFrom` for `nint` will handle the other signed types and
+            // `ConvertTo` will handle the unsigned types
+
+            if (typeof(TOther) == typeof(double))
+            {
+                double actualValue = (double)(object)value;
+                result = (actualValue >= nint_t.MaxValue) ? unchecked((nint)nint_t.MaxValue) :
+                         (actualValue <= nint_t.MinValue) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                Half actualValue = (Half)(object)value;
+                result = (actualValue == Half.PositiveInfinity) ? unchecked((nint)nint_t.MaxValue) :
+                         (actualValue == Half.NegativeInfinity) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                short actualValue = (short)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                int actualValue = (int)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                long actualValue = (long)(object)value;
+                result = (nint)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                Int128 actualValue = (Int128)(object)value;
+                result = (nint)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                sbyte actualValue = (sbyte)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                float actualValue = (float)(object)value;
+                result = (actualValue >= nint_t.MaxValue) ? unchecked((nint)nint_t.MaxValue) :
+                         (actualValue <= nint_t.MinValue) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
+                return true;
+            }
+            else
+            {
+                result = default;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<nint>.TryConvertToChecked<TOther>(nint value, [NotNullWhen(true)] out TOther result)
+        {
+            // In order to reduce overall code duplication and improve the inlinabilty of these
+            // methods for the corelib types we have `ConvertFrom` handle the same sign and
+            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
+            //
+            // That is, `ConvertFrom` for `nint` will handle the other signed types and
+            // `ConvertTo` will handle the unsigned types
+
+            if (typeof(TOther) == typeof(byte))
+            {
+                byte actualResult = checked((byte)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                char actualResult = checked((char)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                decimal actualResult = value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                ushort actualResult = checked((ushort)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                uint actualResult = checked((uint)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                ulong actualResult = checked((ulong)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                UInt128 actualResult = checked((UInt128)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                nuint actualResult = checked((nuint)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else
+            {
+                result = default!;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<nint>.TryConvertToSaturating<TOther>(nint value, [NotNullWhen(true)] out TOther result)
+        {
+            // In order to reduce overall code duplication and improve the inlinabilty of these
+            // methods for the corelib types we have `ConvertFrom` handle the same sign and
+            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
+            //
+            // That is, `ConvertFrom` for `nint` will handle the other signed types and
+            // `ConvertTo` will handle the unsigned types
+
+            if (typeof(TOther) == typeof(byte))
+            {
+                byte actualResult = (value >= byte.MaxValue) ? byte.MaxValue :
+                                    (value <= byte.MinValue) ? byte.MinValue : (byte)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                char actualResult = (value >= char.MaxValue) ? char.MaxValue :
+                                    (value <= char.MinValue) ? char.MinValue : (char)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                decimal actualResult = value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                ushort actualResult = (value >= ushort.MaxValue) ? ushort.MaxValue :
+                                      (value <= ushort.MinValue) ? ushort.MinValue : (ushort)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                uint actualResult = (value >= uint.MaxValue) ? uint.MaxValue :
+                                    (value <= uint.MinValue) ? uint.MinValue : (uint)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                ulong actualResult = (value <= 0) ? ulong.MinValue : (ulong)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                UInt128 actualResult = (value <= 0) ? UInt128.MinValue : (UInt128)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                nuint actualResult = (value <= 0) ? 0 : (nuint)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else
+            {
+                result = default!;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<nint>.TryConvertToTruncating<TOther>(nint value, [NotNullWhen(true)] out TOther result)
+        {
+            // In order to reduce overall code duplication and improve the inlinabilty of these
+            // methods for the corelib types we have `ConvertFrom` handle the same sign and
+            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
+            //
+            // That is, `ConvertFrom` for `nint` will handle the other signed types and
+            // `ConvertTo` will handle the unsigned types
+
+            if (typeof(TOther) == typeof(byte))
+            {
+                byte actualResult = (byte)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                char actualResult = (char)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                decimal actualResult = value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                ushort actualResult = (ushort)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                uint actualResult = (uint)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                ulong actualResult = (ulong)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                UInt128 actualResult = (UInt128)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                nuint actualResult = (nuint)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else
+            {
+                result = default!;
+                return false;
+            }
+        }
 
         //
         // IShiftOperators

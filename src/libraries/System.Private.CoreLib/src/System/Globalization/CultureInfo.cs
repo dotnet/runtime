@@ -101,11 +101,6 @@ namespace System.Globalization
         // The culture used in the user interface. This is mostly used to load correct localized resources.
         private static volatile CultureInfo? s_userDefaultUICulture;
 
-        // WARNING: We allow diagnostic tools to directly inspect these three members (s_InvariantCultureInfo, s_DefaultThreadCurrentUICulture and s_DefaultThreadCurrentCulture)
-        // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details.
-        // Please do not change the type, the name, or the semantic usage of this member without understanding the implication for tools.
-        // Get in touch with the diagnostics team if you have questions.
-
         // The Invariant culture;
         private static readonly CultureInfo s_InvariantCultureInfo = new CultureInfo(CultureData.Invariant, isReadOnly: true);
 

@@ -1909,7 +1909,7 @@ yynewstate:
 		YYAPI_TOKENNAME = YYLEX();
 		YYAPI_CALLAFTERYYLEX(YYAPI_TOKENNAME);
 	}
-	if( ((yyn += YYAPI_TOKENEME(YYAPI_TOKENNAME)) < 0) || (yyn >= YYLAST) ) {
+	if( ((yyn += (short)YYAPI_TOKENEME(YYAPI_TOKENNAME)) < 0) || (yyn >= YYLAST) ) {
 		goto yydefault;
 	}
 	if( YYCHK[ yyn = YYACT[ yyn ] ] == YYAPI_TOKENEME(YYAPI_TOKENNAME) ) {		/* valid shift */
@@ -2066,7 +2066,7 @@ yyreduce:
 		yyval = yypv[1];
  		yyprintf("REDUCE: rule %4d, popped %2d tokens, uncovered state %4d, ",yyn, YYR2[yyn], *yyps);
 		yym = yyn;
-		yyn = YYR1[yyn];		/* consult goto table to find next state */
+		yyn = (short)YYR1[yyn];		/* consult goto table to find next state */
 		yyj = YYPGO[yyn] + *yyps + 1;
 		if( (yyj >= YYLAST) || (YYCHK[ yystate = YYACT[yyj] ] != -yyn) ) {
 			yystate = YYACT[YYPGO[yyn]];
@@ -3139,7 +3139,7 @@ case 352:
                                                                 PASM->m_pCurMethod->m_dwExportOrdinal = yypvt[-1].int32;
                                                                 PASM->m_pCurMethod->m_szExportAlias = NULL;
                                                                 if(PASM->m_pCurMethod->m_wVTEntry == 0) PASM->m_pCurMethod->m_wVTEntry = 1;
-                                                                if(PASM->m_pCurMethod->m_wVTSlot  == 0) PASM->m_pCurMethod->m_wVTSlot = yypvt[-1].int32 + 0x8000;
+                                                                if(PASM->m_pCurMethod->m_wVTSlot  == 0) PASM->m_pCurMethod->m_wVTSlot = (WORD)(yypvt[-1].int32 + 0x8000);
                                                               }
                                                               else
                                                                 PASM->report->warn("Duplicate .export directive, ignored\n");
@@ -3151,7 +3151,7 @@ case 353:
                                                                 PASM->m_pCurMethod->m_dwExportOrdinal = yypvt[-3].int32;
                                                                 PASM->m_pCurMethod->m_szExportAlias = yypvt[-0].string;
                                                                 if(PASM->m_pCurMethod->m_wVTEntry == 0) PASM->m_pCurMethod->m_wVTEntry = 1;
-                                                                if(PASM->m_pCurMethod->m_wVTSlot  == 0) PASM->m_pCurMethod->m_wVTSlot = yypvt[-3].int32 + 0x8000;
+                                                                if(PASM->m_pCurMethod->m_wVTSlot  == 0) PASM->m_pCurMethod->m_wVTSlot = (WORD)(yypvt[-3].int32 + 0x8000);
                                                               }
                                                               else
                                                                 PASM->report->warn("Duplicate .export directive, ignored\n");

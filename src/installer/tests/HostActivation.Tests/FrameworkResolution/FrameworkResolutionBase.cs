@@ -90,6 +90,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             private readonly string _builtDotnet;
             private readonly RepoDirectoriesProvider _repoDirectories;
             private readonly string _baseDir;
+            private readonly TestArtifact _baseDirArtifact;
 
             public SharedTestStateBase()
             {
@@ -98,6 +99,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 
                 string baseDir = Path.Combine(TestArtifact.TestArtifactsPath, "frameworkResolution");
                 _baseDir = SharedFramework.CalculateUniqueTestDirectory(baseDir);
+                _baseDirArtifact = new TestArtifact(_baseDir);
             }
 
             public DotNetBuilder DotNet(string name)
@@ -167,10 +169,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             {
                 if (disposing)
                 {
-                    if (!TestArtifact.PreserveTestRuns() && Directory.Exists(_baseDir))
-                    {
-                        Directory.Delete(_baseDir, true);
-                    }
+                    _baseDirArtifact.Dispose();
                 }
             }
         }

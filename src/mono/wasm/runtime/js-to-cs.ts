@@ -15,8 +15,8 @@ import { wrap_error_root } from "./method-calls";
 import { js_string_to_mono_string_root, js_string_to_mono_string_interned_root } from "./strings";
 import { isThenable } from "./cancelable-promise";
 import { has_backing_array_buffer } from "./buffers";
-import { JSHandle, MonoArray, MonoMethod, MonoObject, MonoObjectNull, wasm_type_symbol, MonoClass, MonoObjectRef } from "./types";
-import { setI32, setU32, setF64 } from "./memory";
+import { JSHandle, MonoArray, MonoMethod, MonoObject, MonoObjectNull, wasm_type_symbol, MonoClass, MonoObjectRef, is_nullish } from "./types";
+import { setF64, setI32_unchecked, setU32_unchecked, setB32 } from "./memory";
 import { Int32Ptr, TypedArray } from "./types/emscripten";
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
@@ -67,6 +67,9 @@ export function _js_to_mono_obj_unsafe(should_add_in_flight: boolean, js_obj: an
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function js_to_mono_obj_root(js_obj: any, result: WasmRoot<MonoObject>, should_add_in_flight: boolean): void {
+    if (is_nullish(result))
+        throw new Error("Expected (value, WasmRoot, boolean)");
+
     switch (true) {
         case js_obj === null:
         case typeof js_obj === "undefined":
@@ -75,10 +78,10 @@ export function js_to_mono_obj_root(js_obj: any, result: WasmRoot<MonoObject>, s
         case typeof js_obj === "number": {
             let box_class : MonoClass;
             if ((js_obj | 0) === js_obj) {
-                setI32(runtimeHelpers._box_buffer, js_obj);
+                setI32_unchecked(runtimeHelpers._box_buffer, js_obj);
                 box_class = runtimeHelpers._class_int32;
             } else if ((js_obj >>> 0) === js_obj) {
-                setU32(runtimeHelpers._box_buffer, js_obj);
+                setU32_unchecked(runtimeHelpers._box_buffer, js_obj);
                 box_class = runtimeHelpers._class_uint32;
             } else {
                 setF64(runtimeHelpers._box_buffer, js_obj);
@@ -95,7 +98,7 @@ export function js_to_mono_obj_root(js_obj: any, result: WasmRoot<MonoObject>, s
             js_string_to_mono_string_interned_root(js_obj, <any>result);
             return;
         case typeof js_obj === "boolean":
-            setI32(runtimeHelpers._box_buffer, js_obj ? 1 : 0);
+            setB32(runtimeHelpers._box_buffer, js_obj);
             cwraps.mono_wasm_box_primitive_ref(runtimeHelpers._class_boolean, runtimeHelpers._box_buffer, 4, result.address);
             return;
         case isThenable(js_obj) === true: {
@@ -275,17 +278,16 @@ export function _wrap_js_thenable_as_task_root(thenable: Promise<any>, resultRoo
 }
 
 export function mono_wasm_typed_array_to_array_ref(js_handle: JSHandle, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
-    const resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
+    const resultRoot = mono_wasm_new_external_root<MonoArray>(result_address);
     try {
         const js_obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
-        if (!js_obj) {
+        if (is_nullish(js_obj)) {
             wrap_error_root(is_exception, "ERR06: Invalid JS object handle '" + js_handle + "'", resultRoot);
             return;
         }
 
         // returns pointer to C# array
-        // FIXME: ref
-        resultRoot.value = js_typed_array_to_array(js_obj);
+        js_typed_array_to_array_root(js_obj, resultRoot);
     } catch (exc) {
         wrap_error_root(is_exception, String(exc), resultRoot);
     } finally {

@@ -433,10 +433,10 @@
     <value>The key is too small for the requested operation.</value>
   </data>
   <data name="Cryptography_MatchBlockSize" xml:space="preserve">
-    <value>The specified plaintext size is not valid for the the padding and block size.</value>
+    <value>The specified plaintext size is not valid for the padding and block size.</value>
   </data>
   <data name="Cryptography_MatchFeedbackSize" xml:space="preserve">
-    <value>The specified plaintext size is not valid for the the padding and feedback size.</value>
+    <value>The specified plaintext size is not valid for the padding and feedback size.</value>
   </data>
   <data name="Cryptography_Encryption_MessageTooLong" xml:space="preserve">
     <value>The message exceeds the maximum allowable length for the chosen options ({0}).</value>
@@ -596,6 +596,12 @@
   </data>
   <data name="Cryptography_UnsupportedPaddingMode" xml:space="preserve">
     <value>The specified PaddingMode is not supported.</value>
+  </data>
+  <data name="Cryptography_X509_AIA_MustNotBuildEmpty" xml:space="preserve">
+    <value>At least one of the ocspUris or caIssuersUris values must be non-empty.</value>
+  </data>
+  <data name="Cryptography_X509_AIA_NullValue" xml:space="preserve">
+    <value>One of the ocspUris or caIssuersUris enumerables contains a null value.</value>
   </data>
   <data name="Cryptography_X509_CertificateCorrupted" xml:space="preserve">
     <value>Certificate '{0}' is corrupted.</value>

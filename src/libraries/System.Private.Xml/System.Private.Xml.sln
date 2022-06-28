@@ -73,6 +73,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraryImportGenerator", ".
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.SourceGeneration", "..\System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj", "{9CDA14FB-7312-45E7-BF4C-1E446C2242BC}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.RegularExpressions.Generator", "..\System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj", "{19C87966-6C1B-4CFA-9798-E989270CAB2B}"
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{E96EBB95-6AC7-4ECD-AD77-30F089F2C1F9}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{41E18B29-2DB1-495A-8460-E7A257F8EA07}"
@@ -233,6 +235,10 @@ Global
 		{9CDA14FB-7312-45E7-BF4C-1E446C2242BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9CDA14FB-7312-45E7-BF4C-1E446C2242BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9CDA14FB-7312-45E7-BF4C-1E446C2242BC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{19C87966-6C1B-4CFA-9798-E989270CAB2B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{19C87966-6C1B-4CFA-9798-E989270CAB2B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{19C87966-6C1B-4CFA-9798-E989270CAB2B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{19C87966-6C1B-4CFA-9798-E989270CAB2B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -275,6 +281,7 @@ Global
 		{B49AD269-3938-4F33-AEF8-029D3A94138F} = {41E18B29-2DB1-495A-8460-E7A257F8EA07}
 		{6BC66CAC-5D61-48C2-8343-FF32DC7BC626} = {75FE1E48-B986-46E6-874F-336D74FF6C94}
 		{9CDA14FB-7312-45E7-BF4C-1E446C2242BC} = {75FE1E48-B986-46E6-874F-336D74FF6C94}
+		{19C87966-6C1B-4CFA-9798-E989270CAB2B} = {75FE1E48-B986-46E6-874F-336D74FF6C94}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {80121011-1A73-45DC-80FC-B3727F3DF58C}

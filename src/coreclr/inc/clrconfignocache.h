@@ -60,7 +60,7 @@ public:
                 return {};
             }
 
-            *nameBuffer = W('\0');
+            *nameBuffer = '\0';
         }
         else
         {

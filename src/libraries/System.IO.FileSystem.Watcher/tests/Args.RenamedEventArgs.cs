@@ -47,43 +47,57 @@ namespace System.IO.Tests
 
         [Theory]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [InlineData("bar", "foo.txt", "bar.txt")]
-        [InlineData("bar\\baz", "foo.txt", "bar.txt")]
-        public static void RenamedEventArgs_ctor_OldFullPath_DirectoryIsRelativePath_Windows(string directory, string name, string oldName)
+        [InlineData("", "", "", "\\")]
+        [InlineData("", "foo.txt", "bar.txt", "\\bar.txt")]
+        [InlineData("bar", "foo.txt", "bar.txt", "bar\\bar.txt")]
+        [InlineData("bar\\baz", "foo.txt", "bar.txt", "bar\\baz\\bar.txt")]
+        public static void RenamedEventArgs_ctor_OldFullPath_DirectoryIsRelativePath_Windows(string directory, string name, string oldName, string expectedOldFullPath)
         {
             RenamedEventArgs args = new RenamedEventArgs(WatcherChangeTypes.All, directory, name, oldName);
 
-            Assert.Equal(Path.Combine(Directory.GetCurrentDirectory(), directory, oldName), args.OldFullPath);
+            Assert.Equal(expectedOldFullPath, args.OldFullPath);
         }
 
         [Theory]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [InlineData("bar", "foo.txt", "bar.txt")]
-        [InlineData("bar/baz", "foo.txt", "bar.txt")]
-        public static void RenamedEventArgs_ctor_OldFullPath_DirectoryIsRelativePath_Unix(string directory, string name, string oldName)
+        [InlineData("", "", "", "/")]
+        [InlineData("", "foo.txt", "bar.txt", "/bar.txt")]
+        [InlineData("bar", "foo.txt", "bar.txt", "bar/bar.txt")]
+        [InlineData("bar/baz", "foo.txt", "bar.txt", "bar/baz/bar.txt")]
+        public static void RenamedEventArgs_ctor_OldFullPath_DirectoryIsRelativePath_Unix(string directory, string name, string oldName, string expectedOldFullPath)
         {
             RenamedEventArgs args = new RenamedEventArgs(WatcherChangeTypes.All, directory, name, oldName);
 
-            Assert.Equal(Path.Combine(Directory.GetCurrentDirectory(), directory, oldName), args.OldFullPath);
+            Assert.Equal(expectedOldFullPath, args.OldFullPath);
         }
 
         [Theory]
-        [InlineData("bar", "", "")]
-        [InlineData("bar", null, null)]
-        [InlineData("bar", "foo.txt", null)]
-        public static void RenamedEventArgs_ctor_When_EmptyOldFileName_Then_OldFullPathReturnsTheDirectoryFullPath_WithTrailingSeparator(string directory, string name, string oldName)
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData("bar", "", "", "bar\\")]
+        [InlineData("bar", null, null, "bar\\")]
+        [InlineData("bar", "foo.txt", null, "bar\\")]
+        public static void RenamedEventArgs_ctor_EmptyOldFileName_Windows(string directory, string name, string oldName, string expectedOldFullPath)
         {
             RenamedEventArgs args = new RenamedEventArgs(WatcherChangeTypes.All, directory, name, oldName);
 
-            directory = PathInternal.EnsureTrailingSeparator(directory);
+            Assert.Equal(expectedOldFullPath, args.OldFullPath);
+        }
 
-            Assert.Equal(PathInternal.EnsureTrailingSeparator(Directory.GetCurrentDirectory()) + directory, args.OldFullPath);
+        [Theory]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [InlineData("bar", "", "", "bar/")]
+        [InlineData("bar", null, null, "bar/")]
+        [InlineData("bar", "foo.txt", null, "bar/")]
+        public static void RenamedEventArgs_ctor_EmptyOldFileName_Unix(string directory, string name, string oldName, string expectedOldFullPath)
+        {
+            RenamedEventArgs args = new RenamedEventArgs(WatcherChangeTypes.All, directory, name, oldName);
+
+            Assert.Equal(expectedOldFullPath, args.OldFullPath);
         }
 
         [Fact]
         public static void RenamedEventArgs_ctor_Invalid()
         {
-            Assert.Throws<ArgumentException>(() => new RenamedEventArgs((WatcherChangeTypes)0, "", "foo.txt", "bar.txt"));
             Assert.Throws<ArgumentNullException>(() => new RenamedEventArgs((WatcherChangeTypes)0, null, "foo.txt", "bar.txt"));
         }
     }

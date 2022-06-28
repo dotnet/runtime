@@ -22,6 +22,7 @@ namespace LibraryImportGenerator.UnitTests
         {
             string source = @"
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [{|#0:NativeMarshalling(null)|}]
 struct S
@@ -39,6 +40,7 @@ struct S
         {
             string source = @"
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [{|#0:NativeMarshalling(typeof(int*))|}]
 struct S
@@ -56,6 +58,7 @@ struct S
         {
             string source = @"
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 struct S
@@ -86,6 +89,7 @@ struct {|#0:Native|}
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 struct S
@@ -115,6 +119,7 @@ class {|#0:Native|}
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 struct S
@@ -144,6 +149,7 @@ struct Native
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 struct S
@@ -178,6 +184,7 @@ struct Native
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 struct S
@@ -210,6 +217,7 @@ struct Native
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -246,6 +254,7 @@ unsafe struct Native
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -280,6 +289,7 @@ unsafe struct Native
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -314,6 +324,7 @@ unsafe struct Native
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -348,6 +359,7 @@ unsafe struct Native
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -384,6 +396,7 @@ unsafe struct Native
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -418,6 +431,7 @@ unsafe struct Native
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -450,6 +464,7 @@ unsafe struct Native
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -483,6 +498,7 @@ unsafe struct Native
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -514,6 +530,7 @@ unsafe struct Native
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -545,6 +562,7 @@ unsafe struct Native
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -568,6 +586,7 @@ struct {|#0:Native|}
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -591,6 +610,7 @@ struct {|#0:Native|}
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -610,6 +630,7 @@ ref struct {|#0:Native|}
             string fixedSource = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -643,6 +664,7 @@ ref struct Native
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -669,6 +691,7 @@ ref struct Native
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -688,6 +711,7 @@ ref struct {|#0:Native|}
             string fixedSource = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -727,6 +751,7 @@ ref struct Native
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -746,6 +771,7 @@ ref struct {|#0:Native|}
             string fixedSource = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -780,6 +806,7 @@ ref struct Native
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -798,6 +825,7 @@ ref struct {|#0:Native|}
             string fixedSource = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -830,6 +858,7 @@ ref struct Native
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -848,6 +877,7 @@ ref struct {|#0:Native|}
             string fixedSource = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -880,6 +910,7 @@ ref struct Native
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -911,6 +942,7 @@ ref struct Native
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -945,6 +977,7 @@ ref struct Native
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -967,6 +1000,7 @@ struct Native
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -989,6 +1023,7 @@ struct Native
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -1006,6 +1041,7 @@ struct {|#0:Native|}
             string fixedSource = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -1036,6 +1072,7 @@ struct Native
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -1051,6 +1088,7 @@ struct {|#0:Native|}
             string fixedSource = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -1081,6 +1119,7 @@ struct Native
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class {|#0:S|}
@@ -1106,6 +1145,7 @@ struct {|#1:Native|}
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -1126,6 +1166,7 @@ struct {|#0:Native|}
             string fixedSource = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -1159,6 +1200,7 @@ struct Native
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -1178,6 +1220,7 @@ struct {|#0:Native|}
             string fixedSource = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -1211,6 +1254,7 @@ struct Native
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 struct S
 {
@@ -1246,6 +1290,7 @@ static class Test
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 struct S
 {
@@ -1282,6 +1327,7 @@ static class Test
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 struct S
 {
@@ -1318,6 +1364,7 @@ static class Test
 
             string source = @"
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native<int>))]
 struct S
@@ -1347,6 +1394,7 @@ struct Native<T>
 
             string source = @"
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [{|#0:NativeMarshalling(typeof(Native<>))|}]
 struct S
@@ -1378,6 +1426,7 @@ struct Native<T>
 
             string source = @"
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 struct S
 {
@@ -1413,6 +1462,7 @@ static class Test
         {
             string source = @"
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [{|#0:NativeMarshalling(typeof(Native<,>))|}]
 struct S<T>
@@ -1444,6 +1494,7 @@ struct {|#1:Native|}<T, U>
         {
             string source = @"
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native<>))]
 struct S<T>
@@ -1473,6 +1524,7 @@ struct Native<T>
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -1498,6 +1550,7 @@ struct Native
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [CustomTypeMarshaller(typeof(CustomTypeMarshallerAttribute.GenericPlaceholder), Direction = CustomTypeMarshallerDirection.In)]
 struct Native<T>
@@ -1514,6 +1567,7 @@ struct Native<T>
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [CustomTypeMarshaller(typeof(CustomTypeMarshallerAttribute.GenericPlaceholder[]), Direction = CustomTypeMarshallerDirection.In)]
 struct Native<T>
@@ -1530,6 +1584,7 @@ struct Native<T>
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [CustomTypeMarshaller(typeof(CustomTypeMarshallerAttribute.GenericPlaceholder*), Direction = CustomTypeMarshallerDirection.In)]
 unsafe struct Native<T> where T : unmanaged
@@ -1546,6 +1601,7 @@ unsafe struct Native<T> where T : unmanaged
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [CustomTypeMarshaller(typeof(CustomTypeMarshallerAttribute.GenericPlaceholder*[]), Direction = CustomTypeMarshallerDirection.In)]
 unsafe struct Native<T> where T : unmanaged
@@ -1562,6 +1618,7 @@ unsafe struct Native<T> where T : unmanaged
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 struct S { }
 
@@ -1575,6 +1632,7 @@ unsafe struct {|#0:Native|}
             string fixedSource = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 struct S { }
 
@@ -1597,6 +1655,7 @@ unsafe struct Native
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 struct S { }
 
@@ -1610,6 +1669,7 @@ unsafe struct {|#0:Native|}
             string fixedSource = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 struct S { }
 
@@ -1633,6 +1693,7 @@ unsafe struct Native
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 struct S { }
 
@@ -1646,6 +1707,7 @@ unsafe struct {|#0:Native|}
             string fixedSource = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 struct S { }
 
@@ -1669,6 +1731,7 @@ unsafe struct Native
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 struct S { }
 
@@ -1694,6 +1757,7 @@ unsafe struct {|#1:Native2|}
             string fixedSource = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 struct S { }
 
@@ -1752,6 +1816,7 @@ unsafe struct Native2
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [NativeMarshalling(typeof(Native))]
 class S
@@ -1782,6 +1847,7 @@ unsafe struct Native
             string source = @"
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using Value2 = N.Value;
 
 namespace N

@@ -14,7 +14,7 @@ namespace System.Text.Json
         public const byte LineFeed = (byte)'\n';
         public const byte Tab = (byte)'\t';
         public const byte ListSeparator = (byte)',';
-        public const byte KeyValueSeperator = (byte)':';
+        public const byte KeyValueSeparator = (byte)':';
         public const byte Quote = (byte)'"';
         public const byte BackSlash = (byte)'\\';
         public const byte Slash = (byte)'/';

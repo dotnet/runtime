@@ -20,7 +20,7 @@ namespace System.ComponentModel.Design
         /// </summary>
         public DesignerOptionCollection Options
         {
-            get => _options ?? (_options = new DesignerOptionCollection(this, null, string.Empty, null));
+            get => _options ??= new DesignerOptionCollection(this, null, string.Empty, null);
         }
 
         /// <summary>
@@ -467,7 +467,7 @@ namespace System.ComponentModel.Design
             {
                 if (destinationType == typeof(string))
                 {
-                    return SR.CollectionConverterText;
+                    return SR.GetResourceString(nameof(SR.CollectionConverterText), "(Collection)");
                 }
                 return base.ConvertTo(cxt, culture, value, destinationType);
             }

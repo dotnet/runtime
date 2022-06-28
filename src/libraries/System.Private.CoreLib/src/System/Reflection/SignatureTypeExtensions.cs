@@ -5,13 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection
 {
-#if CORERT
-    [System.Runtime.CompilerServices.ReflectionBlocked]
-    public // Needs to be public so that Reflection.Core can see it.
-#else
-    internal
-#endif
-    static class SignatureTypeExtensions
+    internal static class SignatureTypeExtensions
     {
         /// <summary>
         /// This is semantically identical to

@@ -94,7 +94,7 @@ struct HashTableInfo<unsigned>
 //
 // Resolving collisions using a bucket chain avoids the primary clustering
 // issue common in linearly-probed open addressed hash tables, while using
-// buckets as chain nodes avoids the allocaiton traffic typical of chained
+// buckets as chain nodes avoids the allocation traffic typical of chained
 // tables. Applying the hopscotch algorithm in the aforementioned paper
 // could further improve performance by optimizing access patterns for
 // better cache usage.

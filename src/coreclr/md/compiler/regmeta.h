@@ -2059,8 +2059,6 @@ private:
 
     bool        m_bKeepKnownCa;             // Should all known CA's be kept?
 
-    CorProfileData  *m_pCorProfileData;
-
     MetaDataReorderingOptions m_ReorderingOptions;
 
 #ifdef FEATURE_METADATA_RELEASE_MEMORY_ON_REOPEN

@@ -156,7 +156,7 @@ namespace System.DirectoryServices
             set
             {
                 // user explicitly set CacheResults to true and also want VLV
-                if (directoryVirtualListViewSpecified == true && value == true)
+                if (directoryVirtualListViewSpecified && value)
                     throw new ArgumentException(SR.DSBadCacheResultsVLV);
 
                 _cacheResults = value;
@@ -220,7 +220,7 @@ namespace System.DirectoryServices
                     throw new ArgumentException(SR.DSBadPageSize);
 
                 // specify non-zero pagesize explicitly and also want dirsync
-                if (directorySynchronizationSpecified == true && value != 0)
+                if (directorySynchronizationSpecified && value != 0)
                     throw new ArgumentException(SR.DSBadPageSizeDirsync);
 
                 _pageSize = value;
@@ -277,7 +277,7 @@ namespace System.DirectoryServices
                     throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(SearchScope));
 
                 // user explicitly set SearchScope to something other than Base and also want to do ASQ, it is not supported
-                if (_attributeScopeQuerySpecified == true && value != SearchScope.Base)
+                if (_attributeScopeQuerySpecified && value != SearchScope.Base)
                 {
                     throw new ArgumentException(SR.DSBadASQSearchScope);
                 }
@@ -419,7 +419,7 @@ namespace System.DirectoryServices
                 // user explicitly set AttributeScopeQuery and value is not null or empty string
                 if (value.Length != 0)
                 {
-                    if (_scopeSpecified == true && SearchScope != SearchScope.Base)
+                    if (_scopeSpecified && SearchScope != SearchScope.Base)
                     {
                         throw new ArgumentException(SR.DSBadASQSearchScope);
                     }
@@ -556,7 +556,7 @@ namespace System.DirectoryServices
                 // if user explicitly set CacheResults to true and also want to set VLV
                 if (value != null)
                 {
-                    if (_cacheResultsSpecified == true && CacheResults == true)
+                    if (_cacheResultsSpecified && CacheResults)
                         throw new ArgumentException(SR.DSBadCacheResultsVLV);
 
                     directoryVirtualListViewSpecified = true;
@@ -733,7 +733,7 @@ namespace System.DirectoryServices
             prefList.Add(info);
 
             // asynchronous
-            if (Asynchronous == true)
+            if (Asynchronous)
             {
                 info = default;
                 info.dwSearchPref = (int)AdsSearchPreferences.ASYNCHRONOUS;
@@ -742,7 +742,7 @@ namespace System.DirectoryServices
             }
 
             // tombstone
-            if (Tombstone == true)
+            if (Tombstone)
             {
                 info = default;
                 info.dwSearchPref = (int)AdsSearchPreferences.TOMBSTONE;

@@ -150,7 +150,7 @@ namespace System.Threading
         public static extern object? CompareExchange(ref object? location1, object? value, object? comparand);
 
         // Note that getILIntrinsicImplementationForInterlocked() in vm\jitinterface.cpp replaces
-        // the body of the following method with the the following IL:
+        // the body of the following method with the following IL:
         //     ldarg.0
         //     ldarg.1
         //     ldarg.2

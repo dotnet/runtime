@@ -71,11 +71,11 @@ namespace System.Reflection.TypeLoading.Ecma
         public MethodSig<RoParameter> SpecializeMethodSig(IRoMethodBase roMethodBase)
         {
             MetadataReader reader = Reader;
-            MethodDefinition methodDefiniton = MethodDefinition;
-            MethodSignature<RoType> sig = methodDefiniton.DecodeSignature(_module, roMethodBase.TypeContext);
+            MethodDefinition methodDefinition = MethodDefinition;
+            MethodSignature<RoType> sig = methodDefinition.DecodeSignature(_module, roMethodBase.TypeContext);
             int numParameters = sig.RequiredParameterCount;
             MethodSig<RoParameter> methodSig = new MethodSig<RoParameter>(numParameters);
-            foreach (ParameterHandle ph in methodDefiniton.GetParameters())
+            foreach (ParameterHandle ph in methodDefinition.GetParameters())
             {
                 Parameter p = ph.GetParameter(reader);
                 int position = p.SequenceNumber - 1;

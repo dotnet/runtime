@@ -38,9 +38,8 @@ namespace System.Runtime.InteropServices
                                                         wideCharLen,
                                                         multiByteStr,
                                                         multiByteLen,
-                                                        default(IntPtr),
-                                                        default(IntPtr)
-                                                        );
+                                                        null,
+                                                        null);
         }
 
         // Convert a UTF16 string to ANSI byte array using flags
@@ -52,17 +51,16 @@ namespace System.Runtime.InteropServices
                                                             bool throwOnUnmappableChar)
         {
             uint flags = (bestFit ? 0 : Interop.Kernel32.WC_NO_BEST_FIT_CHARS);
-            int defaultCharUsed = 0;
+            Interop.BOOL defaultCharUsed = Interop.BOOL.FALSE;
             int ret = Interop.Kernel32.WideCharToMultiByte(Interop.Kernel32.CP_ACP,
                                                         flags,
                                                         wideCharStr,
                                                         wideCharLen,
                                                         multiByteStr,
                                                         multiByteLen,
-                                                        default(IntPtr),
-                                                        throwOnUnmappableChar ? new System.IntPtr(&defaultCharUsed) : default(IntPtr)
-                                                        );
-            if (defaultCharUsed != 0)
+                                                        null,
+                                                        throwOnUnmappableChar ? &defaultCharUsed : null);
+            if (defaultCharUsed != Interop.BOOL.FALSE)
             {
                 throw new ArgumentException(SR.Interop_Marshal_Unmappable_Char);
             }
@@ -79,9 +77,8 @@ namespace System.Runtime.InteropServices
                                                         wideStrLen,
                                                         default(byte*),
                                                         0,
-                                                        default(IntPtr),
-                                                        default(IntPtr)
-                                                        );
+                                                        null,
+                                                        null);
         }
 
         // Return number of charaters encoded in native byte array lpMultiByteStr

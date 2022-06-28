@@ -17,6 +17,6 @@ namespace System.Numerics
         /// <param name="value">The value to increment.</param>
         /// <returns>The result of incrementing <paramref name="value" />.</returns>
         /// <exception cref="OverflowException">The result of incrementing <paramref name="value" /> is not representable by <typeparamref name="TSelf" />.</exception>
-        static abstract TSelf operator checked ++(TSelf value);
+        static virtual TSelf operator checked ++(TSelf value) => ++value;
     }
 }

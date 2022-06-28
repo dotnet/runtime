@@ -800,7 +800,7 @@ class X64LeaRIP : public InstructionFormat
 
             pOutBufferRW[0] = rex;
             pOutBufferRW[1] = 0x8D;
-            pOutBufferRW[2] = 0x05 | (reg << 3);
+            pOutBufferRW[2] = (BYTE)(0x05 | (reg << 3));
             // only support absolute pushimm32 of the label address. The fixedUpReference is
             // the offset to the label from the current point, so add to get address
             *((__int32*)(3+pOutBufferRW)) = (__int32)(fixedUpReference);
@@ -5019,7 +5019,7 @@ BOOL ThisPtrRetBufPrecode::SetTargetInterlocked(TADDR target, TADDR expected)
 
     _ASSERTE(IS_ALIGNED(&m_rel32, sizeof(INT32)));
     ExecutableWriterHolder<INT32> rel32WriterHolder(&m_rel32, sizeof(INT32));
-    FastInterlockExchange((LONG*)rel32WriterHolder.GetRW(), (LONG)newRel32);
+    InterlockedExchange((LONG*)rel32WriterHolder.GetRW(), (LONG)newRel32);
 
     return TRUE;
 }

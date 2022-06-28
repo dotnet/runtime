@@ -21,7 +21,6 @@
 #include "strongnameinternal.h"
 #include "strongnameholders.h"
 
-#include "../binder/inc/textualidentityparser.hpp"
 #include "../binder/inc/assemblyidentity.hpp"
 #include "../binder/inc/assembly.hpp"
 #include "../binder/inc/assemblyname.hpp"
@@ -67,19 +66,12 @@ HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAs
     if (IsCoreLibSatellite())
     {
         StackSString sSystemDirectory(SystemDomain::System()->SystemDirectory());
-        StackSString tmpString;
         StackSString sSimpleName;
-        StackSString sCultureName;
+        SmallStackSString sCultureName;
 
-        tmpString.SetUTF8(m_pAssemblyName);
-        tmpString.ConvertToUnicode(sSimpleName);
-
-        tmpString.Clear();
-        if ((m_context.szLocale != NULL) && (m_context.szLocale[0] != 0))
-        {
-            tmpString.SetUTF8(m_context.szLocale);
-            tmpString.ConvertToUnicode(sCultureName);
-        }
+        SString(SString::Utf8Literal, m_pAssemblyName).ConvertToUnicode(sSimpleName);
+        if (m_context.szLocale != NULL)
+            SString(SString::Utf8Literal, m_context.szLocale).ConvertToUnicode(sCultureName);
 
         hr = BINDER_SPACE::AssemblyBinderCommon::BindToSystemSatellite(sSystemDirectory, sSimpleName, sCultureName, &pPrivAsm);
     }
@@ -164,59 +156,75 @@ ErrExit:
     return hr;
 }
 
-HRESULT BaseAssemblySpec::ParseName()
+void BaseAssemblySpec::Init(SString& assemblyDisplayName)
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        GC_TRIGGERS;
+        THROWS;
+    }
+    CONTRACTL_END;
+
+    PCWSTR pAssemblyDisplayName = assemblyDisplayName.GetUnicode();
+
+    GCX_COOP();
+
+    OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
+
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__ASSEMBLY_NAME__PARSE_AS_ASSEMBLYSPEC);
+    DECLARE_ARGHOLDER_ARRAY(args, 2);
+    args[ARGNUM_0] = PTR_TO_ARGHOLDER(pAssemblyDisplayName);
+    args[ARGNUM_1] = PTR_TO_ARGHOLDER(this);
+    CALL_MANAGED_METHOD_NORET(args);
+}
+
+extern "C" void QCALLTYPE AssemblyName_InitializeAssemblySpec(NativeAssemblyNameParts* pAssemblyNameParts, BaseAssemblySpec* pAssemblySpec)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    StackSString ssName;
+    ssName.SetAndConvertToUTF8(pAssemblyNameParts->_pName);
+
+    AssemblyMetaDataInternal asmInfo;
+
+    asmInfo.usMajorVersion = pAssemblyNameParts->_major;
+    asmInfo.usMinorVersion = pAssemblyNameParts->_minor;
+    asmInfo.usBuildNumber = pAssemblyNameParts->_build;
+    asmInfo.usRevisionNumber = pAssemblyNameParts->_revision;
+
+    SmallStackSString ssLocale;
+    if (pAssemblyNameParts->_pCultureName != NULL)
+        ssLocale.SetAndConvertToUTF8(pAssemblyNameParts->_pCultureName);
+    asmInfo.szLocale = (pAssemblyNameParts->_pCultureName != NULL) ? ssLocale.GetUTF8() : NULL;
+
+    // Initialize spec
+    pAssemblySpec->Init(ssName.GetUTF8(), &asmInfo,
+        pAssemblyNameParts->_pPublicKeyOrToken, pAssemblyNameParts->_cbPublicKeyOrToken, pAssemblyNameParts->_flags);
+
+    // Copy and own any fields we do not own
+    pAssemblySpec->CloneFields();
+
+    END_QCALL;
+}
+
+HRESULT BaseAssemblySpec::InitNoThrow(SString& assemblyDisplayName)
 {
     CONTRACTL
     {
         INSTANCE_CHECK;
         GC_TRIGGERS;
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
     }
     CONTRACTL_END;
-
-    if (!m_pAssemblyName)
-        return S_OK;
 
     HRESULT hr = S_OK;
 
     EX_TRY
     {
-        BINDER_SPACE::AssemblyIdentityUTF8* pAssemblyIdentity;
-        AppDomain *pDomain = ::GetAppDomain();
-        _ASSERTE(pDomain);
-
-        BINDER_SPACE::ApplicationContext *pAppContext = NULL;
-        DefaultAssemblyBinder *pBinder = pDomain->GetDefaultBinder();
-
-        hr = pBinder->GetAppContext()->GetAssemblyIdentity(m_pAssemblyName, &pAssemblyIdentity);
-
-        if (FAILED(hr))
-        {
-            m_ownedFlags |= BAD_NAME_OWNED;
-            IfFailThrow(hr);
-        }
-
-        // Name - does not copy the data
-        SetName(pAssemblyIdentity->GetSimpleNameUTF8());
-
-        // Culture - does not copy the data
-        if (pAssemblyIdentity->Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_CULTURE))
-        {
-            if (!pAssemblyIdentity->m_cultureOrLanguage.IsEmpty())
-            {
-                SetCulture(pAssemblyIdentity->GetCultureOrLanguageUTF8());
-            }
-            else
-            {
-                SetCulture("");
-            }
-        }
-
-        InitializeWithAssemblyIdentity(pAssemblyIdentity);
-
-        // Copy and own any fields we do not already own
-        CloneFields();
+        Init(assemblyDisplayName);
     }
     EX_CATCH_HRESULT(hr);
 
@@ -424,8 +432,8 @@ VOID BaseAssemblySpec::GetDisplayName(DWORD flags, SString &result) const
     }
 
     IfFailThrow(BINDER_SPACE::TextualIdentityParser::ToString(&assemblyIdentity,
-                                                              assemblyIdentity.m_dwIdentityFlags,
-                                                              result));
+                                                             assemblyIdentity.m_dwIdentityFlags,
+                                                             result));
 }
 
 void BaseAssemblySpec::PopulateAssemblyNameData(AssemblyNameData &data) const

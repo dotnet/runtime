@@ -47,7 +47,7 @@ namespace System.Buffers.Text.Tests
             {
                 int numBytes = rnd.Next(100, 1000 * 1000);
                 Span<byte> source = new byte[numBytes];
-                Base64TestHelper.InitalizeBytes(source, numBytes);
+                Base64TestHelper.InitializeBytes(source, numBytes);
 
                 Span<byte> encodedBytes = new byte[Base64.GetMaxEncodedToUtf8Length(source.Length)];
                 Assert.Equal(OperationStatus.Done, Base64.EncodeToUtf8(source, encodedBytes, out int consumed, out int encodedBytesCount));
@@ -65,7 +65,7 @@ namespace System.Buffers.Text.Tests
             {
                 int numBytes = rnd.Next(100, 1000 * 1000);
                 Span<byte> source = new byte[numBytes];
-                Base64TestHelper.InitalizeBytes(source, numBytes);
+                Base64TestHelper.InitializeBytes(source, numBytes);
 
                 Span<byte> encodedBytes = new byte[Base64.GetMaxEncodedToUtf8Length(source.Length)];
                 int expectedConsumed = source.Length / 3 * 3; // only consume closest multiple of three since isFinalBlock is false
@@ -155,7 +155,7 @@ namespace System.Buffers.Text.Tests
             for (int numBytes = 4; numBytes < 20; numBytes++)
             {
                 Span<byte> source = new byte[numBytes];
-                Base64TestHelper.InitalizeBytes(source, numBytes);
+                Base64TestHelper.InitializeBytes(source, numBytes);
 
                 Span<byte> encodedBytes = new byte[4];
                 Assert.Equal(OperationStatus.DestinationTooSmall, Base64.EncodeToUtf8(source, encodedBytes, out int consumed, out int written, isFinalBlock));
@@ -172,7 +172,7 @@ namespace System.Buffers.Text.Tests
         public void EncodingOutputTooSmallRetry(bool isFinalBlock)
         {
             Span<byte> source = new byte[750];
-            Base64TestHelper.InitalizeBytes(source);
+            Base64TestHelper.InitializeBytes(source);
 
             int outputSize = 320;
             int requiredSize = Base64.GetMaxEncodedToUtf8Length(source.Length);
@@ -264,7 +264,7 @@ namespace System.Buffers.Text.Tests
         {
             const int numberOfBytes = 15;
             Span<byte> testBytes = new byte[numberOfBytes / 3 * 4]; // slack since encoding inflates the data
-            Base64TestHelper.InitalizeBytes(testBytes);
+            Base64TestHelper.InitializeBytes(testBytes);
 
             for (int numberOfBytesToTest = 0; numberOfBytesToTest <= numberOfBytes; numberOfBytesToTest++)
             {

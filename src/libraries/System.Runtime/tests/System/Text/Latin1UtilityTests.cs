@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -325,9 +326,10 @@ namespace System.Text.Tests
             }
         }
 
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         private static Type GetLatin1UtilityType()
         {
-            return typeof(object).Assembly.GetType("System.Text.Latin1Utility");
+            return Type.GetType("System.Text.Latin1Utility, System.Private.CoreLib");
         }
 
         private sealed class UnsafeLazyDelegate<TDelegate> where TDelegate : class

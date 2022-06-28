@@ -9,6 +9,8 @@
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+
+    <HelixTargetsFile Condition="'$(TargetOS)' == 'Browser'">wasm.helix.targets</HelixTargetsFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'Android'">
     <UseAndroidCrypto>true</UseAndroidCrypto>
@@ -28,6 +30,8 @@
              Link="ProductionCode\Common\System\Net\MultiArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs"
              Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\SignatureSupport.cs"
+             Link="CommonTest\System\Security\Cryptography\SignatureSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherTests.Data.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherTests.Data.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherTests.cs"

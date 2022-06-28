@@ -55,7 +55,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         public int LastChunk = -1;
     }
 
-    class PgoDataLoader : IPgoSchemaDataLoader<TypeSystemEntityOrUnknown>
+    class PgoDataLoader : IPgoSchemaDataLoader<TypeSystemEntityOrUnknown, TypeSystemEntityOrUnknown>
     {
         private TraceRuntimeDescToTypeSystemDesc _idParser;
 
@@ -80,6 +80,27 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             if (type != null)
             {
                 return new TypeSystemEntityOrUnknown(type);
+            }
+            // Unknown type, apply unique value, but keep the upper byte zeroed so that it can be distinguished from a token
+            return new TypeSystemEntityOrUnknown(System.HashCode.Combine(input) & 0x7FFFFF | 0x800000);
+        }
+
+        public TypeSystemEntityOrUnknown MethodFromLong(long input)
+        {
+            if (input == 0)
+                return new TypeSystemEntityOrUnknown(0);
+
+            MethodDesc method = null;
+
+            try
+            {
+                method = _idParser.ResolveMethodID(input, false);
+            }
+            catch
+            { }
+            if (method != null)
+            {
+                return new TypeSystemEntityOrUnknown(method);
             }
             // Unknown type, apply unique value, but keep the upper byte zeroed so that it can be distinguished from a token
             return new TypeSystemEntityOrUnknown(System.HashCode.Combine(input) & 0x7FFFFF | 0x800000);
@@ -193,7 +214,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 ZippedETLReader etlReader = new ZippedETLReader(inputFileName, log);
                 etlReader.EtlFileName = unzipedEtlFile;
 
-                // Figure out where to put the symbols.  
+                // Figure out where to put the symbols.
                 var inputDir = Path.GetDirectoryName(inputFileName);
                 if (inputDir.Length == 0)
                 {
@@ -576,7 +597,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                     List<int> typeHandleHistogramCallSites =
                         prof1.SchemaData.Concat(prof2.SchemaData)
-                        .Where(e => e.InstrumentationKind == PgoInstrumentationKind.GetLikelyClass || e.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramTypeHandle)
+                        .Where(e => e.InstrumentationKind == PgoInstrumentationKind.GetLikelyClass || e.InstrumentationKind == PgoInstrumentationKind.HandleHistogramTypes)
                         .Select(e => e.ILOffset)
                         .Distinct()
                         .ToList();
@@ -781,8 +802,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             PrintOutput($"# Methods with 64-bit block counts: {profiledMethods.Count(spd => spd.SchemaData.Any(elem => elem.InstrumentationKind == PgoInstrumentationKind.BasicBlockLongCount))}");
             PrintOutput($"# Methods with 32-bit edge counts: {profiledMethods.Count(spd => spd.SchemaData.Any(elem => elem.InstrumentationKind == PgoInstrumentationKind.EdgeIntCount))}");
             PrintOutput($"# Methods with 64-bit edge counts: {profiledMethods.Count(spd => spd.SchemaData.Any(elem => elem.InstrumentationKind == PgoInstrumentationKind.EdgeLongCount))}");
-            int numTypeHandleHistograms = profiledMethods.Sum(spd => spd.SchemaData.Count(elem => elem.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramTypeHandle));
-            int methodsWithTypeHandleHistograms = profiledMethods.Count(spd => spd.SchemaData.Any(elem => elem.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramTypeHandle));
+            int numTypeHandleHistograms = profiledMethods.Sum(spd => spd.SchemaData.Count(elem => elem.InstrumentationKind == PgoInstrumentationKind.HandleHistogramTypes));
+            int methodsWithTypeHandleHistograms = profiledMethods.Count(spd => spd.SchemaData.Any(elem => elem.InstrumentationKind == PgoInstrumentationKind.HandleHistogramTypes));
             PrintOutput($"# Type handle histograms: {numTypeHandleHistograms} in {methodsWithTypeHandleHistograms} methods");
             int numGetLikelyClass = profiledMethods.Sum(spd => spd.SchemaData.Count(elem => elem.InstrumentationKind == PgoInstrumentationKind.GetLikelyClass));
             int methodsWithGetLikelyClass = profiledMethods.Count(spd => spd.SchemaData.Any(elem => elem.InstrumentationKind == PgoInstrumentationKind.GetLikelyClass));
@@ -793,7 +814,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             {
                 var sites =
                     mpd.SchemaData
-                    .Where(e => e.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramTypeHandle || e.InstrumentationKind == PgoInstrumentationKind.GetLikelyClass)
+                    .Where(e => e.InstrumentationKind == PgoInstrumentationKind.HandleHistogramTypes || e.InstrumentationKind == PgoInstrumentationKind.GetLikelyClass)
                     .Select(e => e.ILOffset)
                     .Distinct();
 
@@ -826,7 +847,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
             PrintCallsitesByLikelyClassesChart(profiledMethods
                 .SelectMany(m => m.SchemaData)
-                .Where(sd => sd.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramTypeHandle)
+                .Where(sd => sd.InstrumentationKind == PgoInstrumentationKind.HandleHistogramTypes)
                 .Select(GetUniqueClassesSeen)
                 .ToArray());
 
@@ -841,7 +862,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
             PrintLikelihoodHistogram(profiledMethods
                 .SelectMany(m => m.SchemaData)
-                .Where(sd => sd.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramTypeHandle)
+                .Where(sd => sd.InstrumentationKind == PgoInstrumentationKind.HandleHistogramTypes)
                 .Select(GetLikelihoodOfMostPopularType)
                 .ToArray());
 
@@ -890,10 +911,10 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 }
 
                 bool isHistogramCount =
-                    elem.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramIntCount ||
-                    elem.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramLongCount;
+                    elem.InstrumentationKind == PgoInstrumentationKind.HandleHistogramIntCount ||
+                    elem.InstrumentationKind == PgoInstrumentationKind.HandleHistogramLongCount;
 
-                if (isHistogramCount && elem.Count == 1 && i + 1 < schema.Length && schema[i + 1].InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramTypeHandle)
+                if (isHistogramCount && elem.Count == 1 && i + 1 < schema.Length && schema[i + 1].InstrumentationKind == PgoInstrumentationKind.HandleHistogramTypes)
                 {
                     var handles = (TypeSystemEntityOrUnknown[])schema[i + 1].DataObject;
                     var histogram = handles.Where(e => !e.IsNull).GroupBy(e => e).ToList();
@@ -1572,7 +1593,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             }
 
                             var intDecompressor = new PgoProcessor.PgoEncodedCompressedIntParser(instrumentationData, 0);
-                            methodData.InstrumentationData = PgoProcessor.ParsePgoData<TypeSystemEntityOrUnknown>(pgoDataLoader, intDecompressor, true).ToArray();
+                            methodData.InstrumentationData = PgoProcessor.ParsePgoData<TypeSystemEntityOrUnknown, TypeSystemEntityOrUnknown>(pgoDataLoader, intDecompressor, true).ToArray();
                         }
                         else
                         {
@@ -1671,7 +1692,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                 methodPrepareInstruction.Clear();
                 instantiationBuilder.Clear();
-                // Format is FriendlyNameOfMethod~typeIndex~ArgCount~GenericParameterCount:genericParamsSeperatedByColons~MethodName
+                // Format is FriendlyNameOfMethod~typeIndex~ArgCount~GenericParameterCount:genericParamsSeparatedByColons~MethodName
                 // This format is not sufficient to exactly describe methods, so the runtime component may compile similar methods
                 // In the various strings \ is escaped to \\ and in the outer ~ csv the ~ character is escaped to \s. In the inner csv : is escaped to \s
                 try

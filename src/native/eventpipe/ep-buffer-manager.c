@@ -501,7 +501,12 @@ buffer_manager_allocate_buffer_for_thread (
 	EP_ASSERT(buffer_size > 0);
 	ep_return_null_if_nok(buffer_manager_try_reserve_buffer(buffer_manager, buffer_size));
 
-	// Allocating a buffer requires us to take the lock.
+	// The sequence counter is exclusively mutated on this thread so this is a thread-local read.
+	sequence_number = ep_thread_session_state_get_volatile_sequence_number (thread_session_state);
+	new_buffer = ep_buffer_alloc (buffer_size, ep_thread_session_state_get_thread (thread_session_state), sequence_number);
+	ep_raise_error_if_nok (new_buffer != NULL);
+
+	// Adding a buffer to the buffer list requires us to take the lock.
 	EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section1)
 		thread_buffer_list = ep_thread_session_state_get_buffer_list (thread_session_state);
 		if (thread_buffer_list == NULL) {
@@ -512,11 +517,6 @@ buffer_manager_allocate_buffer_for_thread (
 			ep_thread_session_state_set_buffer_list (thread_session_state, thread_buffer_list);
 			thread_buffer_list = NULL;
 		}
-
-		// The sequence counter is exclusively mutated on this thread so this is a thread-local read.
-		sequence_number = ep_thread_session_state_get_volatile_sequence_number (thread_session_state);
-		new_buffer = ep_buffer_alloc (buffer_size, ep_thread_session_state_get_thread (thread_session_state), sequence_number);
-		ep_raise_error_if_nok_holding_spin_lock (new_buffer != NULL, section1);
 
 		if (buffer_manager->sequence_point_alloc_budget != 0) {
 			// sequence point bookkeeping

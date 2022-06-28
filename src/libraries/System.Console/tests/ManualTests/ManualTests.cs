@@ -318,7 +318,7 @@ namespace System
         {
             Console.WriteLine(Console.OutputEncoding);
             Console.WriteLine("'\u03A0\u03A3'.");
-            AssertUserExpectedResults("Pi and Segma or question marks");
+            AssertUserExpectedResults("Pi and Sigma or question marks");
         }
 
         private static void AssertUserExpectedResults(string expected)

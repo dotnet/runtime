@@ -10,18 +10,19 @@ namespace System.Diagnostics
     internal static partial class ProcessManager
     {
         /// <summary>Gets process infos for each process on the specified machine.</summary>
+        /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
         /// <param name="machineName">The target machine.</param>
         /// <returns>An array of process infos, one per found process.</returns>
-        public static ProcessInfo[] GetProcessInfos(string machineName)
+        public static ProcessInfo[] GetProcessInfos(string? processNameFilter, string machineName)
         {
             ThrowIfRemoteMachine(machineName);
-            int[] procIds = GetProcessIds(machineName);
 
             // Iterate through all process IDs to load information about each process
-            var processes = new List<ProcessInfo>(procIds.Length);
-            foreach (int pid in procIds)
+            int[] pids = GetProcessIds(machineName);
+            var processes = new ArrayBuilder<ProcessInfo>(processNameFilter is null ? pids.Length : 0);
+            foreach (int pid in pids)
             {
-                ProcessInfo pi = CreateProcessInfo(pid);
+                ProcessInfo? pi = CreateProcessInfo(pid, processNameFilter);
                 if (pi != null)
                 {
                     processes.Add(pi);

@@ -172,7 +172,7 @@ HRESULT RegMeta::_SaveToStream(         // S_OK or error.
     HRESULT     hr=S_OK;
 
     IfFailGo(PreSave());
-    IfFailGo( m_pStgdb->SaveToStream(pIStream, m_ReorderingOptions, m_pCorProfileData) );
+    IfFailGo( m_pStgdb->SaveToStream(pIStream, m_ReorderingOptions) );
 
     // Reset m_bSaveOptimized, this is to handle the incremental and ENC
     // scenerios where one may do multiple saves.
@@ -281,7 +281,7 @@ STDMETHODIMP RegMeta::GetSaveSize(      // S_OK or error.
 
     IfFailGo(PreSave());
 
-    hr = m_pStgdb->GetSaveSize(fSave, (UINT32 *)pdwSaveSize, m_ReorderingOptions, m_pCorProfileData);
+    hr = m_pStgdb->GetSaveSize(fSave, (UINT32 *)pdwSaveSize, m_ReorderingOptions);
 
 ErrExit:
     STOP_MD_PERF(GetSaveSize);
@@ -792,7 +792,7 @@ HRESULT RegMeta::PreSave()              // Return code.
     m_bSaveOptimized = true;
 
     // call get save size to trigger the PreSaveXXX on MetaModelRW class.
-    IfFailGo(m_pStgdb->m_MiniMd.PreSave(m_ReorderingOptions, m_pCorProfileData));
+    IfFailGo(m_pStgdb->m_MiniMd.PreSave(m_ReorderingOptions));
 
 ErrExit:
     m_bRemap =  bRemapOld;
@@ -890,7 +890,7 @@ HRESULT RegMeta::RefToDefOptimization()
             }
 
             // In the case of global function, we have tkParent as m_tdModule.
-            // We will always do the optmization.
+            // We will always do the optimization.
             if (TypeFromToken(tkParent) == mdtTypeRef)
             {
                 // If we're preserving local typerefs, skip this token

@@ -249,7 +249,7 @@ namespace System.Globalization
         private void InitializeOverridableProperties(CultureData cultureData, CalendarId calendarId)
         {
             Debug.Assert(cultureData != null);
-            Debug.Assert(calendarId != CalendarId.UNINITIALIZED_VALUE, "[DateTimeFormatInfo.Populate] Expected initalized calendarId");
+            Debug.Assert(calendarId != CalendarId.UNINITIALIZED_VALUE, "[DateTimeFormatInfo.Populate] Expected initialized calendarId");
 
             if (firstDayOfWeek == -1)
             {

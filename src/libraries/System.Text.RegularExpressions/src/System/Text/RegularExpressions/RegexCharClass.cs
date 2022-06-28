@@ -48,12 +48,40 @@ namespace System.Text.RegularExpressions
         private const string WordCategories = "\u0000\u0002\u0004\u0005\u0003\u0001\u0006\u0009\u0013\u0000";
         private const string NotWordCategories = "\u0000\uFFFE\uFFFC\uFFFB\uFFFD\uFFFF\uFFFA\uFFF7\uFFED\u0000";
 
-        internal const string SpaceClass = "\u0000\u0000\u0001\u0064";
-        internal const string NotSpaceClass = "\u0000\u0000\u0001\uFF9C";
-        internal const string WordClass = "\u0000\u0000\u000A\u0000\u0002\u0004\u0005\u0003\u0001\u0006\u0009\u0013\u0000";
-        internal const string NotWordClass = "\u0000\u0000\u000A\u0000\uFFFE\uFFFC\uFFFB\uFFFD\uFFFF\uFFFA\uFFF7\uFFED\u0000";
-        internal const string DigitClass = "\u0000\u0000\u0001\u0009";
-        internal const string NotDigitClass = "\u0000\u0000\u0001\uFFF7";
+        internal const string SpaceClass = "\u0000\u0000\u0001\u0064"; // \s
+        internal const string NotSpaceClass = "\u0000\u0000\u0001\uFF9C"; // \S
+        internal const string WordClass = "\u0000\u0000\u000A\u0000\u0002\u0004\u0005\u0003\u0001\u0006\u0009\u0013\u0000"; // \w
+        internal const string NotWordClass = "\u0000\u0000\u000A\u0000\uFFFE\uFFFC\uFFFB\uFFFD\uFFFF\uFFFA\uFFF7\uFFED\u0000"; // \W
+        internal const string DigitClass = "\u0000\u0000\u0001\u0009"; // \d
+        internal const string NotDigitClass = "\u0000\u0000\u0001\uFFF7"; // \D
+        internal const string ControlClass = "\0\0\u0001\u000f"; // \p{Cc}
+        internal const string NotControlClass = "\0\0\u0001\ufff1"; // \P{Cc}
+        internal const string LetterClass = "\0\0\a\0\u0002\u0004\u0005\u0003\u0001\0"; // \p{L}
+        internal const string NotLetterClass = "\0\0\u0007\0\ufffe\ufffc\ufffb\ufffd\uffff\0"; // \P{L}
+        internal const string LetterOrDigitClass = "\0\0\b\0\u0002\u0004\u0005\u0003\u0001\0\t"; // [\p{L}\d]
+        internal const string NotLetterOrDigitClass = "\u0001\0\b\0\u0002\u0004\u0005\u0003\u0001\0\t"; // [^\p{L}\d]
+        internal const string LowerClass = "\0\0\u0001\u0002"; // \p{Ll}
+        internal const string NotLowerClass = "\0\0\u0001\ufffe"; // \P{Ll}
+        internal const string UpperClass = "\0\0\u0001\u0001"; // \p{Lu}
+        internal const string NotUpperClass = "\0\0\u0001\uffff"; // \P{Lu}
+        internal const string NumberClass = "\0\0\u0005\0\t\n\v\0"; // \p{N}
+        internal const string NotNumberClass = "\0\0\u0005\0\ufff7\ufff6\ufff5\0"; // \P{N}
+        internal const string PunctuationClass = "\0\0\t\0\u0013\u0014\u0016\u0019\u0015\u0018\u0017\0"; // \p{P}
+        internal const string NotPunctuationClass = "\0\0\u0009\0\uffed\uffec\uffea\uffe7\uffeb\uffe8\uffe9\0"; // \P{P}
+        internal const string SeparatorClass = "\0\0\u0005\0\r\u000e\f\0"; // \p{Z}
+        internal const string NotSeparatorClass = "\0\0\u0005\0\ufff3\ufff2\ufff4\0"; // \P{Z}
+        internal const string SymbolClass = "\0\0\u0006\0\u001b\u001c\u001a\u001d\0"; // \p{S}
+        internal const string NotSymbolClass = "\0\0\u0006\0\uffe5\uffe4\uffe6\uffe3\0"; // \P{S}
+        internal const string AsciiLetterClass = "\0\u0004\0A[a{"; // [A-Za-z]
+        internal const string NotAsciiLetterClass = "\u0001\u0004\0A[a{"; // [^A-Za-z]
+        internal const string AsciiLetterOrDigitClass = "\0\u0006\00:A[a{"; // [A-Za-z0-9]
+        internal const string NotAsciiLetterOrDigitClass = "\u0001\u0006\00:A[a{"; // [^A-Za-z0-9]
+        internal const string HexDigitClass = "\0\u0006\00:AGag"; // [A-Fa-f0-9]
+        internal const string NotHexDigitClass = "\u0001\u0006\00:AGag"; // [^A-Fa-f0-9]
+        internal const string HexDigitUpperClass = "\0\u0004\00:AG"; // [A-F0-9]
+        internal const string NotHexDigitUpperClass = "\u0001\u0004\00:AG"; // [A-F0-9]
+        internal const string HexDigitLowerClass = "\0\u0004\00:ag"; // [a-f0-9]
+        internal const string NotHexDigitLowerClass = "\u0001\u0004\00:ag"; // [a-f0-9]
 
         private const string ECMASpaceRanges = "\u0009\u000E\u0020\u0021";
         private const string NotECMASpaceRanges = "\0\u0009\u000E\u0020\u0021";
@@ -361,10 +389,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private void AddRanges(ReadOnlySpan<char> set)
         {
-            if (set.Length == 0)
-            {
-                return;
-            }
+            Debug.Assert(!set.IsEmpty);
 
             List<(char First, char Last)> rangeList = EnsureRangeList();
 
@@ -966,7 +991,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Gets whether the specified character is an ASCII letter.</summary>
-        public static bool IsAsciiLetter(char c) => // TODO https://github.com/dotnet/runtime/issues/28230: Replace once Ascii is available
+        public static bool IsAsciiLetter(char c) =>
             (uint)((c | 0x20) - 'a') <= 'z' - 'a';
 
         /// <summary>Gets whether we can iterate through the set list pairs in order to completely enumerate the set's contents.</summary>
@@ -1725,15 +1750,15 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Produces a human-readable description for a set string.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         public static string DescribeSet(string set)
         {
             int setLength = set[SetLengthIndex];
             int categoryLength = set[CategoryLengthIndex];
             int endPosition = SetStartIndex + setLength + categoryLength;
             bool negated = IsNegated(set);
+            Span<char> scratch = stackalloc char[32];
 
-            // Special-case of set of a single character to output that character.
+            // Special-case set of a single character to output that character without set square brackets.
             if (!negated && // no negation
                 categoryLength == 0 && // no categories
                 endPosition >= set.Length && // no subtraction
@@ -1743,77 +1768,100 @@ namespace System.Text.RegularExpressions
                 return DescribeChar(set[SetStartIndex]);
             }
 
-            var desc = new StringBuilder();
-
-            desc.Append('[');
-
             int index = SetStartIndex;
             char ch1;
             char ch2;
+            StringBuilder desc = new StringBuilder().Append('[');
+
+            void RenderRanges()
+            {
+                for (; index < SetStartIndex + set[SetLengthIndex]; index += 2)
+                {
+                    ch1 = set[index];
+                    ch2 = index + 1 < set.Length ?
+                        (char)(set[index + 1] - 1) :
+                        LastChar;
+
+                    desc.Append(DescribeChar(ch1));
+
+                    if (ch2 != ch1)
+                    {
+                        if (ch1 + 1 != ch2)
+                        {
+                            desc.Append('-');
+                        }
+
+                        desc.Append(DescribeChar(ch2));
+                    }
+                }
+            }
+
+            // Special-case sets where the description will be more succinct by rendering it as negated, e.g. where
+            // there are fewer gaps between ranges than there are ranges.  This is the case when the first range
+            // includes \0 and the last range includes 0xFFFF, and typically occurs for sets that were actually
+            // initially negated but ended up as non-negated from various transforms along the way.
+            if (categoryLength == 0 && // no categories
+                endPosition >= set.Length && // no subtraction
+                setLength % 2 == 1 && // odd number of values because the last range won't include an upper bound
+                set[index] == 0)
+            {
+                // We now have an odd number of values structures as:
+                //     0,end0,start1,end1,start2,end2,...,startN
+                // Rather than walking the pairs starting from index 0, we walk pairs starting from index 1 (creating a range from end0 to start1),
+                // since we're creating ranges from the gaps.
+                index++;
+                desc.Append('^');
+                RenderRanges();
+                return desc.Append(']').ToString();
+            }
 
             if (negated)
             {
                 desc.Append('^');
             }
 
-            while (index < SetStartIndex + set[SetLengthIndex])
-            {
-                ch1 = set[index];
-                ch2 = index + 1 < set.Length ?
-                    (char)(set[index + 1] - 1) :
-                    LastChar;
-
-                desc.Append(DescribeChar(ch1));
-
-                if (ch2 != ch1)
-                {
-                    if (ch1 + 1 != ch2)
-                    {
-                        desc.Append('-');
-                    }
-
-                    desc.Append(DescribeChar(ch2));
-                }
-                index += 2;
-            }
+            RenderRanges();
 
             while (index < SetStartIndex + set[SetLengthIndex] + set[CategoryLengthIndex])
             {
                 ch1 = set[index];
                 if (ch1 == 0)
                 {
-                    bool found = false;
-
-                    const char GroupChar = (char)0;
+                    const char GroupChar = '\0';
                     int lastindex = set.IndexOf(GroupChar, index + 1);
                     if (lastindex != -1)
                     {
-                        string group = set.Substring(index, lastindex - index + 1);
-
-                        foreach (KeyValuePair<string, string> kvp in s_definedCategories)
+                        ReadOnlySpan<char> group = set.AsSpan(index, lastindex - index + 1);
+                        switch (group)
                         {
-                            if (group.Equals(kvp.Value))
-                            {
-                                desc.Append((short)set[index + 1] > 0 ? "\\p{" : "\\P{").Append(kvp.Key).Append('}');
-                                found = true;
+                            case WordCategories:
+                                desc.Append(@"\w");
                                 break;
-                            }
-                        }
 
-                        if (!found)
-                        {
-                            if (group.Equals(WordCategories))
-                            {
-                                desc.Append("\\w");
-                            }
-                            else if (group.Equals(NotWordCategories))
-                            {
-                                desc.Append("\\W");
-                            }
-                            else
-                            {
-                                // TODO: The code is incorrectly handling pretty-printing groups like \P{P}.
-                            }
+                            case NotWordCategories:
+                                desc.Append(@"\W");
+                                break;
+
+                            default:
+                                // The inverse of a group as created by AddCategoryFromName simply negates every character as a 16-bit value.
+                                Span<char> invertedGroup = group.Length <= scratch.Length ? scratch.Slice(0, group.Length) : new char[group.Length];
+                                for (int i = 0; i < group.Length; i++)
+                                {
+                                    invertedGroup[i] = (char)-(short)group[i];
+                                }
+
+                                // Determine whether the group is a known Unicode category, e.g. \p{Mc}, or group of categories, e.g. \p{L},
+                                // or the inverse of those.
+                                foreach (KeyValuePair<string, string> kvp in s_definedCategories)
+                                {
+                                    bool equalsGroup = group.SequenceEqual(kvp.Value.AsSpan());
+                                    if (equalsGroup || invertedGroup.SequenceEqual(kvp.Value.AsSpan()))
+                                    {
+                                        desc.Append(equalsGroup ? @"\p{" : @"\P{").Append(kvp.Key).Append('}');
+                                        break;
+                                    }
+                                }
+                                break;
                         }
 
                         index = lastindex;
@@ -1836,10 +1884,10 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Produces a human-readable description for a single character.</summary>
-        [ExcludeFromCodeCoverage]
         public static string DescribeChar(char ch) =>
             ch switch
             {
+                '\0' => @"\0",
                 '\a' => "\\a",
                 '\b' => "\\b",
                 '\t' => "\\t",
@@ -1852,7 +1900,6 @@ namespace System.Text.RegularExpressions
                 _ => $"\\u{(uint)ch:X4}"
             };
 
-        [ExcludeFromCodeCoverage]
         private static string DescribeCategory(char ch) =>
             (short)ch switch
             {

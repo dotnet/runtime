@@ -545,7 +545,7 @@ private:
     // INT32      lowerBounds[rank];  Valid indexes are lowerBounds[i] <= index[i] < lowerBounds[i] + bounds[i]
 
 public:
-    // Get the element type for the array, this works whether the the element
+    // Get the element type for the array, this works whether the element
     // type is stored in the array or not
     inline TypeHandle GetArrayElementTypeHandle() const;
 
@@ -785,18 +785,18 @@ public:
 
 typedef DPTR(TypedByRef) PTR_TypedByRef;
 
-typedef Array<I1>   I1Array;
-typedef Array<I2>   I2Array;
-typedef Array<I4>   I4Array;
-typedef Array<I8>   I8Array;
-typedef Array<R4>   R4Array;
-typedef Array<R8>   R8Array;
-typedef Array<U1>   U1Array;
-typedef Array<U1>   BOOLArray;
-typedef Array<U2>   U2Array;
-typedef Array<WCHAR>   CHARArray;
-typedef Array<U4>   U4Array;
-typedef Array<U8>   U8Array;
+typedef Array<CLR_I1>   I1Array;
+typedef Array<CLR_I2>   I2Array;
+typedef Array<CLR_I4>   I4Array;
+typedef Array<CLR_I8>   I8Array;
+typedef Array<CLR_R4>   R4Array;
+typedef Array<CLR_R8>   R8Array;
+typedef Array<CLR_U1>   U1Array;
+typedef Array<CLR_U1>   BOOLArray;
+typedef Array<CLR_U2>   U2Array;
+typedef Array<CLR_CHAR> CHARArray;
+typedef Array<CLR_U4>   U4Array;
+typedef Array<CLR_U8>   U8Array;
 typedef Array<UPTR> UPTRArray;
 typedef PtrArray    PTRArray;
 
@@ -1097,7 +1097,7 @@ public:
 //   m_object - a field that has a reference type in it. Used only for RuntimeMethodInfoStub to keep the real type alive.
 // This structure matches the structure up to the m_pMD for several different managed types.
 // (RuntimeConstructorInfo, RuntimeMethodInfo, and RuntimeMethodInfoStub). These types are unrelated in the type
-// system except that they all implement a particular interface. It is important that that interface is not attached to any
+// system except that they all implement a particular interface. It is important that such interface is not attached to any
 // type that does not sufficiently match this data structure.
 class ReflectMethodObject : public BaseObjectWithCachedData
 {
@@ -1141,7 +1141,7 @@ public:
 //   m_object - a field that has a reference type in it. Used only for RuntimeFieldInfoStub to keep the real type alive.
 // This structure matches the structure up to the m_pFD for several different managed types.
 // (RtFieldInfo and RuntimeFieldInfoStub). These types are unrelated in the type
-// system except that they all implement a particular interface. It is important that that interface is not attached to any
+// system except that they all implement a particular interface. It is important that such interface is not attached to any
 // type that does not sufficiently match this data structure.
 class ReflectFieldObject : public BaseObjectWithCachedData
 {
@@ -1486,7 +1486,7 @@ class AssemblyLoadContextBaseObject : public Object
     //  classlib class definition of this object.
 #ifdef TARGET_64BIT
     OBJECTREF     _unloadLock;
-    OBJECTREF     _resovlingUnmanagedDll;
+    OBJECTREF     _resolvingUnmanagedDll;
     OBJECTREF     _resolving;
     OBJECTREF     _unloading;
     OBJECTREF     _name;
@@ -1497,7 +1497,7 @@ class AssemblyLoadContextBaseObject : public Object
 #else // TARGET_64BIT
     int64_t       _id; // On 32-bit platforms this 64-bit value type is larger than a pointer so JIT places it first
     OBJECTREF     _unloadLock;
-    OBJECTREF     _resovlingUnmanagedDll;
+    OBJECTREF     _resolvingUnmanagedDll;
     OBJECTREF     _resolving;
     OBJECTREF     _unloading;
     OBJECTREF     _name;
@@ -1517,70 +1517,22 @@ class AssemblyLoadContextBaseObject : public Object
 #include "poppack.h"
 #endif // defined(TARGET_X86) && !defined(TARGET_UNIX)
 
+struct NativeAssemblyNameParts
+{
+    PCWSTR      _pName;
+    UINT16      _major, _minor, _build, _revision;
+    PCWSTR      _pCultureName;
+    BYTE*       _pPublicKeyOrToken;
+    int         _cbPublicKeyOrToken;
+    DWORD       _flags;
+};
+
 // AssemblyNameBaseObject
 // This class is the base class for assembly names
 //
 class AssemblyNameBaseObject : public Object
 {
-    friend class AssemblyNative;
-    friend class AppDomainNative;
-    friend class CoreLibBinder;
-
-  protected:
-    // READ ME:
-    // Modifying the order or fields of this object may require other changes to the
-    //  classlib class definition of this object.
-
-    OBJECTREF     _name;
-    U1ARRAYREF    _publicKey;
-    U1ARRAYREF    _publicKeyToken;
-    OBJECTREF     _cultureInfo;
-    OBJECTREF     _codeBase;
-    OBJECTREF     _version;
-    DWORD         _hashAlgorithm;
-    DWORD         _versionCompatibility;
-    DWORD         _flags;
-
-  protected:
-    AssemblyNameBaseObject() { LIMITED_METHOD_CONTRACT; }
-   ~AssemblyNameBaseObject() { LIMITED_METHOD_CONTRACT; }
-
-  public:
-    OBJECTREF GetSimpleName() { LIMITED_METHOD_CONTRACT; return _name; }
-    U1ARRAYREF GetPublicKey() { LIMITED_METHOD_CONTRACT; return _publicKey; }
-    U1ARRAYREF GetPublicKeyToken() { LIMITED_METHOD_CONTRACT; return _publicKeyToken; }
-    OBJECTREF GetCultureInfo() { LIMITED_METHOD_CONTRACT; return _cultureInfo; }
-    OBJECTREF GetAssemblyCodeBase() { LIMITED_METHOD_CONTRACT; return _codeBase; }
-    OBJECTREF GetVersion() { LIMITED_METHOD_CONTRACT; return _version; }
-    DWORD GetAssemblyHashAlgorithm() { LIMITED_METHOD_CONTRACT; return _hashAlgorithm; }
-    DWORD GetFlags() { LIMITED_METHOD_CONTRACT; return _flags; }
-};
-
-// VersionBaseObject
-// This class is the base class for versions
-//
-class VersionBaseObject : public Object
-{
-    friend class CoreLibBinder;
-
-  protected:
-    // READ ME:
-    // Modifying the order or fields of this object may require other changes to the
-    //  classlib class definition of this object.
-
-    int m_Major;
-    int m_Minor;
-    int m_Build;
-    int m_Revision;
-
-    VersionBaseObject() {LIMITED_METHOD_CONTRACT;}
-   ~VersionBaseObject() {LIMITED_METHOD_CONTRACT;}
-
-  public:
-    int GetMajor() { LIMITED_METHOD_CONTRACT; return m_Major; }
-    int GetMinor() { LIMITED_METHOD_CONTRACT; return m_Minor; }
-    int GetBuild() { LIMITED_METHOD_CONTRACT; return m_Build; }
-    int GetRevision() { LIMITED_METHOD_CONTRACT; return m_Revision; }
+    // Dummy definition
 };
 
 class WeakReferenceObject : public Object
@@ -1601,16 +1553,11 @@ typedef REF<ReflectFieldObject> REFLECTFIELDREF;
 
 typedef REF<ThreadBaseObject> THREADBASEREF;
 
-typedef REF<MarshalByRefObjectBaseObject> MARSHALBYREFOBJECTBASEREF;
-
 typedef REF<AssemblyBaseObject> ASSEMBLYREF;
 
 typedef REF<AssemblyLoadContextBaseObject> ASSEMBLYLOADCONTEXTREF;
 
 typedef REF<AssemblyNameBaseObject> ASSEMBLYNAMEREF;
-
-typedef REF<VersionBaseObject> VERSIONREF;
-
 
 typedef REF<WeakReferenceObject> WEAKREFERENCEREF;
 
@@ -1658,8 +1605,6 @@ typedef PTR_AssemblyLoadContextBaseObject ASSEMBLYLOADCONTEXTREF;
 typedef PTR_AssemblyNameBaseObject ASSEMBLYNAMEREF;
 
 #ifndef DACCESS_COMPILE
-typedef MarshalByRefObjectBaseObject* MARSHALBYREFOBJECTBASEREF;
-typedef VersionBaseObject* VERSIONREF;
 typedef WeakReferenceObject* WEAKREFERENCEREF;
 #endif // #ifndef DACCESS_COMPILE
 
@@ -2239,7 +2184,7 @@ private:
         return dac_cast<PTR_StackTraceElement>(GetRaw() + sizeof(ArrayHeader));
     }
 
-    I1 const * GetRaw() const
+    CLR_I1 const * GetRaw() const
     {
         WRAPPER_NO_CONTRACT;
         assert(!!m_array);
@@ -2247,13 +2192,13 @@ private:
         return const_cast<I1ARRAYREF &>(m_array)->GetDirectPointerToNonObjectElements();
     }
 
-    PTR_I1 GetRaw()
+    PTR_INT8 GetRaw()
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
         assert(!!m_array);
 
-        return dac_cast<PTR_I1>(m_array->GetDirectPointerToNonObjectElements());
+        return dac_cast<PTR_INT8>(m_array->GetDirectPointerToNonObjectElements());
     }
 
     ArrayHeader const * GetHeader() const
@@ -2669,7 +2614,6 @@ public:
     static OBJECTREF Box(void* src, MethodTable* nullable);
     static BOOL UnBox(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static BOOL UnBoxNoGC(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
-    static BOOL UnBoxIntoArgNoGC(ArgDestination *argDest, OBJECTREF boxedVal, MethodTable* destMT);
     static void UnBoxNoCheck(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static OBJECTREF BoxedNullableNull(TypeHandle nullableType) { return 0; }
 
