@@ -41,7 +41,7 @@ namespace System.Net.Security
         }
 
         private static byte[] GssWrap(
-            SafeGssContextHandle? context,
+            SafeGssContextHandle context,
             bool encrypt,
             ReadOnlySpan<byte> buffer)
         {
@@ -634,34 +634,18 @@ namespace System.Net.Security
             return GssUnwrap(gssContext, buffer);
         }
 
-        internal static int VerifySignature(SafeDeleteContext securityContext, ReadOnlySpan<byte> buffer)
+        internal static unsafe int Unwrap(SafeDeleteContext securityContext, Span<byte> buffer, out int newOffset, out bool wasConfidential)
         {
-            Interop.NetSecurityNative.GssBuffer decryptedBuffer = default(Interop.NetSecurityNative.GssBuffer);
-            try
-            {
-                Interop.NetSecurityNative.Status minorStatus;
-                Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.UnwrapBuffer(
-                    out minorStatus,
-                    ((SafeDeleteNegoContext)securityContext).GssContext,
-                    buffer,
-                    ref decryptedBuffer);
-                if (status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE)
-                {
-                    throw new Interop.NetSecurityNative.GssApiException(status, minorStatus);
-                }
-
-                return decryptedBuffer.Span.Length;
-            }
-            finally
-            {
-                decryptedBuffer.Dispose();
-            }
+            SafeGssContextHandle gssContext = ((SafeDeleteNegoContext)securityContext).GssContext!;
+            newOffset = 0;
+            wasConfidential = false; // TODO
+            return GssUnwrap(gssContext, buffer);
         }
 
-        internal static int MakeSignature(SafeDeleteContext securityContext, ReadOnlySpan<byte> buffer, [AllowNull] ref byte[] output)
+        internal static unsafe int Wrap(SafeDeleteContext securityContext, ReadOnlySpan<byte> buffer, [NotNull] ref byte[]? output, bool isConfidential)
         {
-            SafeDeleteNegoContext gssContext = (SafeDeleteNegoContext)securityContext;
-            output = GssWrap(gssContext.GssContext, false, buffer);
+            SafeGssContextHandle gssContext = ((SafeDeleteNegoContext)securityContext).GssContext!;
+            output = GssWrap(gssContext, isConfidential, buffer);
             return output.Length;
         }
     }

@@ -121,10 +121,13 @@ namespace System.Net.Mail
             byte[] input = Convert.FromBase64String(challenge);
 
             int len;
+            int newOffset;
+            Span<byte> unwrappedChallenge;
 
             try
             {
-                len = clientContext.VerifySignature(input);
+                len = clientContext.Unwrap(input, out newOffset, out _);
+                unwrappedChallenge = input.AsSpan(newOffset, len);
             }
             catch (Win32Exception)
             {
@@ -154,11 +157,11 @@ namespace System.Net.Mail
             // and the 2nd-4th bytes are value zero since token size is not
             // applicable when there is no security layer.
 
-            if (len < 4 ||          // expect 4 bytes
-                input[0] != 1 ||    // first value 1
-                input[1] != 0 ||    // rest value 0
-                input[2] != 0 ||
-                input[3] != 0)
+            if (unwrappedChallenge.Length < 4 ||          // expect 4 bytes
+                unwrappedChallenge[0] != 1 ||    // first value 1
+                unwrappedChallenge[1] != 0 ||    // rest value 0
+                unwrappedChallenge[2] != 0 ||
+                unwrappedChallenge[3] != 0)
             {
                 return null;
             }
@@ -179,7 +182,7 @@ namespace System.Net.Mail
             byte[]? output = null;
             try
             {
-                len = clientContext.MakeSignature(input.AsSpan(0, 4), ref output);
+                len = clientContext.Wrap(unwrappedChallenge.Slice(0, 4), ref output, false);
             }
             catch (Win32Exception)
             {

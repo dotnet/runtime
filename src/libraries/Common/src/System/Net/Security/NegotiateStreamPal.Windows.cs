@@ -194,7 +194,7 @@ namespace System.Net.Security
             return new Win32Exception((int)SecurityStatusAdapterPal.GetInteropFromSecurityStatusPal(statusCode));
         }
 
-        internal static unsafe int VerifySignature(SafeDeleteContext securityContext, ReadOnlySpan<byte> buffer)
+        internal static unsafe int Unwrap(SafeDeleteContext securityContext, Span<byte> buffer, out int newOffset, out bool wasConfidential)
         {
             fixed (byte* bufferPtr = buffer)
             {
@@ -213,7 +213,8 @@ namespace System.Net.Security
                     pBuffers = unmanagedBuffer
                 };
 
-                int errorCode = GlobalSSPI.SSPIAuth.DecryptMessage(securityContext, ref sdcInOut, out _);
+                uint qop;
+                int errorCode = GlobalSSPI.SSPIAuth.DecryptMessage(securityContext, ref sdcInOut, out qop);
                 if (errorCode != 0)
                 {
                     Exception e = new Win32Exception(errorCode);
@@ -226,15 +227,16 @@ namespace System.Net.Security
                     throw new InternalException(dataBuffer->BufferType);
                 }
 
+                wasConfidential = qop != Interop.SspiCli.SECQOP_WRAP_NO_ENCRYPT;
+
                 Debug.Assert((nint)dataBuffer->pvBuffer >= (nint)bufferPtr);
                 Debug.Assert((nint)dataBuffer->pvBuffer + dataBuffer->cbBuffer <= (nint)bufferPtr + buffer.Length);
-
-                // return validated payload size
+                newOffset = (int)((byte*)dataBuffer->pvBuffer - bufferPtr);
                 return dataBuffer->cbBuffer;
             }
         }
 
-        internal static unsafe int MakeSignature(SafeDeleteContext securityContext, ReadOnlySpan<byte> buffer, [AllowNull] ref byte[] output)
+        internal static unsafe int Wrap(SafeDeleteContext securityContext, ReadOnlySpan<byte> buffer, [NotNull] ref byte[]? output, bool isConfidential)
         {
             SecPkgContext_Sizes sizes = default;
             bool success = SSPIWrapper.QueryBlittableContextAttributes(GlobalSSPI.SSPIAuth, securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_SIZES, ref sizes);
@@ -268,7 +270,7 @@ namespace System.Net.Security
                     pBuffers = unmanagedBuffer
                 };
 
-                uint qop = Interop.SspiCli.SECQOP_WRAP_NO_ENCRYPT;
+                uint qop = isConfidential ? 0 : Interop.SspiCli.SECQOP_WRAP_NO_ENCRYPT;
                 int errorCode = GlobalSSPI.SSPIAuth.EncryptMessage(securityContext, ref sdcInOut, qop);
 
                 if (errorCode != 0)
