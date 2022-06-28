@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
+using System.Runtime.InteropServices.JavaScript;
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
 {

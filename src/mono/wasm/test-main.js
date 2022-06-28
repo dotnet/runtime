@@ -355,7 +355,38 @@ if (is_browser) {
 Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntime]) => {
     applyArguments();
 
-    return createDotnetRuntime(({ MONO, INTERNAL, BINDING, Module }) => ({
+    if (is_node) {
+        const modulesToLoad = runArgs.environmentVariables["NPM_MODULES"];
+        if (modulesToLoad) {
+            modulesToLoad.split(',').forEach(module => {
+                const { 0: moduleName, 1: globalAlias } = module.split(':');
+
+                let message = `Loading npm '${moduleName}'`;
+                let moduleExport = INTERNAL.require(moduleName);
+
+                if (globalAlias) {
+                    message += ` and attaching to global as '${globalAlias}'`;
+                    globalThis[globalAlias] = moduleExport;
+                } else if (moduleName == "node-fetch") {
+                    message += ' and attaching to global';
+                    globalThis.fetch = moduleExport.default;
+                    globalThis.Headers = moduleExport.Headers;
+                    globalThis.Request = moduleExport.Request;
+                    globalThis.Response = moduleExport.Response;
+                } else if (moduleName == "node-abort-controller") {
+                    message += ' and attaching to global';
+                    globalThis.AbortController = moduleExport.AbortController;
+                }
+
+                console.log(message);
+            });
+        }
+    }
+
+    // Must be after loading npm modules.
+    runArgs.environmentVariables["IsWebSocketSupported"] = ("WebSocket" in globalThis).toString().toLowerCase();
+
+    return createDotnetRuntime(({ MONO, INTERNAL, BINDING, IMPORTS, EXPORTS, Module }) => ({
         disableDotnet6Compatibility: true,
         config: null,
         configSrc: "./mono-config.json",
@@ -377,16 +408,16 @@ Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntim
 
                 config.wait_for_debugger = -1;
             }
-    
+
             if (is_node) {
                 const modulesToLoad = runArgs.environmentVariables["NPM_MODULES"];
                 if (modulesToLoad) {
                     modulesToLoad.split(',').forEach(module => {
                         const { 0: moduleName, 1: globalAlias } = module.split(':');
-        
+
                         let message = `Loading npm '${moduleName}'`;
                         let moduleExport = INTERNAL.require(moduleName);
-        
+
                         if (globalAlias) {
                             message += ` and attaching to global as '${globalAlias}'`;
                             globalThis[globalAlias] = moduleExport;
@@ -400,7 +431,7 @@ Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntim
                             message += ' and attaching to global';
                             globalThis.AbortController = moduleExport.AbortController;
                         }
-        
+
                         console.log(message);
                     });
                 }
@@ -423,7 +454,7 @@ Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntim
 
             Module.FS.chdir(runArgs.workingDirectory);
 
-            App.init({ MONO, INTERNAL, BINDING, Module, runArgs });
+            App.init({ MONO, INTERNAL, BINDING, IMPORTS, EXPORTS, Module, runArgs });
         },
         onAbort: (error) => {
             set_exit_code(1, stringify_as_error_with_stack(new Error()));
@@ -434,8 +465,8 @@ Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntim
 });
 
 const App = {
-    init: async function ({ MONO, INTERNAL, BINDING, Module, runArgs }) {
-        Object.assign(App, { MONO, INTERNAL, BINDING, Module, runArgs });
+    init: async function ({ MONO, INTERNAL, BINDING, IMPORTS, EXPORTS, Module, runArgs }) {
+        Object.assign(App, { MONO, INTERNAL, BINDING, IMPORTS, EXPORTS, Module, runArgs });
         console.info("Initializing.....");
 
         for (let i = 0; i < runArgs.profilers.length; ++i) {
@@ -506,6 +537,26 @@ const App = {
             console.error("exception thrown in", fqn);
             throw exc;
         }
+    },
+
+    create_function(...args) {
+        const code = args.pop();
+        const arg_count = args.length;
+        args.push("MONO");
+        args.push("BINDING");
+        args.push("INTERNAL");
+        args.push("IMPORTS");
+        args.push("EXPORTS");
+
+        const userFunction = new Function(...args, code);
+        return function (...args) {
+            args[arg_count + 0] = globalThis.App.MONO;
+            args[arg_count + 1] = globalThis.App.BINDING;
+            args[arg_count + 2] = globalThis.App.INTERNAL;
+            args[arg_count + 3] = globalThis.App.IMPORTS;
+            args[arg_count + 4] = globalThis.App.EXPORTS;
+            return userFunction(...args);
+        };
     }
 };
 globalThis.App = App; // Necessary as System.Runtime.InteropServices.JavaScript.Tests.MarshalTests (among others) call the App.call_test_method directly

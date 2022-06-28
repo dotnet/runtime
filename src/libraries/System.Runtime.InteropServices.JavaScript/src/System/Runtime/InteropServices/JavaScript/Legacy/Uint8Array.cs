@@ -3,33 +3,28 @@
 
 namespace System.Runtime.InteropServices.JavaScript
 {
+    [Obsolete]
     public sealed class Uint8Array : JSObject
     {
-        /// <summary>
-        /// Initializes a new instance of the JavaScript Core Uint8Array class.
-        /// </summary>
-        public Uint8Array()
-        { }
+        public Uint8Array(int length)
+            : base(JavaScriptImports.CreateCSOwnedObject(nameof(Uint8Array), new object[] { length }))
+        {
+            JSHostImplementation.RegisterCSOwnedObject(this);
+        }
 
-        public Uint8Array(int length) : base(nameof(Uint8Array), length)
-        { }
-
-        public Uint8Array(ArrayBuffer buffer) : base(nameof(Uint8Array), buffer)
-        { }
-
-        public Uint8Array(ArrayBuffer buffer, int byteOffset) : base(nameof(Uint8Array), buffer, byteOffset)
-        { }
-
-        public Uint8Array(ArrayBuffer buffer, int byteOffset, int length) : base(nameof(Uint8Array), buffer, byteOffset, length)
-        { }
+        public Uint8Array(ArrayBuffer buffer)
+            : base(JavaScriptImports.CreateCSOwnedObject(nameof(Uint8Array), new object[] { buffer }))
+        {
+            JSHostImplementation.RegisterCSOwnedObject(this);
+        }
 
         internal Uint8Array(IntPtr jsHandle) : base(jsHandle)
         { }
 
         public int Length
         {
-            get => Convert.ToInt32(GetObjectProperty("length"));
-            set => SetObjectProperty("length", value, false);
+            get => Convert.ToInt32(this.GetObjectProperty("length"));
+            set => this.SetObjectProperty("length", value, false);
         }
 
         /// <summary>
@@ -41,7 +36,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public byte[] ToArray()
         {
-            AssertNotDisposed();
+            this.AssertNotDisposed();
 
             Interop.Runtime.TypedArrayToArrayRef(JSHandle, out int exception, out object res);
 

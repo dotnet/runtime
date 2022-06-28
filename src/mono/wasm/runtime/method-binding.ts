@@ -26,7 +26,12 @@ const _signature_converters = new Map<string, Converter>();
 export function _get_type_name(typePtr: MonoType): string {
     if (!typePtr)
         return "<null>";
-    return cwraps.mono_wasm_get_type_name(typePtr);
+    try {
+        return cwraps.mono_wasm_get_type_name(typePtr);
+    }
+    catch (ex) {
+        return "<not-found>";
+    }
 }
 
 export function _get_type_aqn(typePtr: MonoType): string {
@@ -46,9 +51,9 @@ export function find_method(klass: MonoClass, name: string, n: number): MonoMeth
 }
 
 export function get_method(method_name: string): MonoMethod {
-    const res = find_method(runtimeHelpers.wasm_runtime_class, method_name, -1);
+    const res = find_method(runtimeHelpers.runtime_interop_exports_class, method_name, -1);
     if (!res)
-        throw "Can't find method " + runtimeHelpers.runtime_namespace + "." + runtimeHelpers.runtime_classname + ":" + method_name;
+        throw "Can't find method " + runtimeHelpers.runtime_interop_namespace + "." + runtimeHelpers.runtime_interop_exports_classname + ":" + method_name;
     return res;
 }
 

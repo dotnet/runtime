@@ -402,7 +402,7 @@ export function bindings_lazy_init(): void {
         return;
     runtimeHelpers.mono_wasm_bindings_is_ready = true;
 
-    // please keep System.Runtime.InteropServices.JavaScript.Runtime.MappedType in sync
+    // please keep System.Runtime.InteropServices.JavaScript.JSHostImplementation.MappedType in sync
     (<any>Object.prototype)[wasm_type_symbol] = 0;
     (<any>Array.prototype)[wasm_type_symbol] = 1;
     (<any>ArrayBuffer.prototype)[wasm_type_symbol] = 2;
@@ -430,16 +430,16 @@ export function bindings_lazy_init(): void {
         throw "Can't find bindings module assembly: " + binding_fqn_asm;
 
     if (binding_fqn_class && binding_fqn_class.length) {
-        runtimeHelpers.runtime_classname = binding_fqn_class;
+        runtimeHelpers.runtime_interop_exports_classname = binding_fqn_class;
         if (binding_fqn_class.indexOf(".") != -1) {
             const idx = binding_fqn_class.lastIndexOf(".");
-            runtimeHelpers.runtime_namespace = binding_fqn_class.substring(0, idx);
-            runtimeHelpers.runtime_classname = binding_fqn_class.substring(idx + 1);
+            runtimeHelpers.runtime_interop_namespace = binding_fqn_class.substring(0, idx);
+            runtimeHelpers.runtime_interop_exports_classname = binding_fqn_class.substring(idx + 1);
         }
     }
 
-    runtimeHelpers.wasm_runtime_class = cwraps.mono_wasm_assembly_find_class(binding_module, runtimeHelpers.runtime_namespace, runtimeHelpers.runtime_classname);
-    if (!runtimeHelpers.wasm_runtime_class)
+    runtimeHelpers.runtime_interop_exports_class = cwraps.mono_wasm_assembly_find_class(binding_module, runtimeHelpers.runtime_interop_namespace, runtimeHelpers.runtime_interop_exports_classname);
+    if (!runtimeHelpers.runtime_interop_exports_class)
         throw "Can't find " + binding_fqn_class + " class";
 
     runtimeHelpers.get_call_sig_ref = get_method("GetCallSignatureRef");
@@ -690,7 +690,7 @@ export async function mono_wasm_load_config(configFilePath: string): Promise<voi
         const configRaw = await runtimeHelpers.fetch(configFilePath);
         const config = await configRaw.json();
 
-        runtimeHelpers.config = config;
+        runtimeHelpers.config = config || {};
         config.environment_variables = config.environment_variables || {};
         config.assets = config.assets || [];
         config.runtime_options = config.runtime_options || [];
@@ -699,7 +699,7 @@ export async function mono_wasm_load_config(configFilePath: string): Promise<voi
     } catch (err) {
         const errMessage = `Failed to load config file ${configFilePath} ${err}`;
         Module.printErr(errMessage);
-        runtimeHelpers.config = { message: errMessage, error: err, isError: true };
+        runtimeHelpers.config = <any>{ message: errMessage, error: err, isError: true };
         runtime_is_initialized_reject(err);
         throw err;
     }
