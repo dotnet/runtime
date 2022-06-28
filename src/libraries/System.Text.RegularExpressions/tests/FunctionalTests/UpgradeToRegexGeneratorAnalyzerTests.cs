@@ -721,7 +721,7 @@ public partial class A
                     Regex regex = MyRegex();
                 }
 
-                [RegexGenerator(""pattern"", (RegexOptions)0x0800)]
+                [RegexGenerator(""pattern"", (RegexOptions)2048)]
                 private static partial Regex MyRegex();
             }
         }
@@ -754,6 +754,9 @@ public class A
     }
 }
 ";
+            // The literal -10000 should be parenthesized. We already produce a parenthesized expression
+            // in the code fix, but probably there is a Roslyn bug where the parentheses are removed (there are
+            // set of reducers that run after the code fix is applied)
             string fixedSource = @"using System.Text.RegularExpressions;
 
 public partial class A
@@ -769,7 +772,7 @@ public partial class A
                     Regex regex = MyRegex();
                 }
 
-                [RegexGenerator(""pattern"", (RegexOptions)(-10000))]
+                [RegexGenerator(""pattern"", (RegexOptions)-10000)]
                 private static partial Regex MyRegex();
             }
         }
