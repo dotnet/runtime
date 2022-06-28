@@ -229,22 +229,18 @@ namespace System.Xml
             }
         }
 
-        protected unsafe void UnsafeWriteBytes(byte* bytes, int byteCount)
+        protected void WriteBytes(Span<byte> bytes)
         {
-            FlushBuffer();
-            byte[] buffer = _buffer;
-            while (byteCount >= bufferLength)
+            if (bytes.Length < bufferLength)
             {
-                for (int i = 0; i < bufferLength; i++)
-                    buffer[i] = bytes[i];
-                _stream.Write(buffer, 0, bufferLength);
-                bytes += bufferLength;
-                byteCount -= bufferLength;
+                var buffer = GetBuffer(bytes.Length, out int offset).AsSpan(offset, bytes.Length);
+                bytes.CopyTo(buffer);
+                Advance(bytes.Length);
             }
+            else
             {
-                for (int i = 0; i < byteCount; i++)
-                    buffer[i] = bytes[i];
-                _stream.Write(buffer, 0, byteCount);
+                FlushBuffer();
+                _stream.Write(bytes);
             }
         }
 

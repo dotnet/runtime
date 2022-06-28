@@ -133,12 +133,6 @@ namespace System.Xml
                 value = BinaryPrimitives.ReverseEndianness(value);
             }
             Unsafe.WriteUnaligned(ref Unsafe.Add(ref bytePtr, 1), value);
-            {
-                Unsafe.Add(ref bytePtr, 1) = (byte)(value);
-                Unsafe.Add(ref bytePtr, 2) = (byte)(value >> 8);
-                Unsafe.Add(ref bytePtr, 3) = (byte)(value >> 16);
-                Unsafe.Add(ref bytePtr, 4) = (byte)(value >> 24);
-            }
             Advance(5);
         }
 
@@ -151,16 +145,6 @@ namespace System.Xml
                 value = BinaryPrimitives.ReverseEndianness(value);
             }
             Unsafe.WriteUnaligned(ref Unsafe.Add(ref bytePtr, 1), value);
-            {
-                Unsafe.Add(ref bytePtr, 1) = (byte)(value);
-                Unsafe.Add(ref bytePtr, 2) = (byte)((uint)value >> 8);
-                Unsafe.Add(ref bytePtr, 3) = (byte)((uint)value >> 16);
-                Unsafe.Add(ref bytePtr, 4) = (byte)((uint)value >> 24);
-                Unsafe.Add(ref bytePtr, 5) = (byte)(value >> 32);
-                Unsafe.Add(ref bytePtr, 6) = (byte)(value >> 40);
-                Unsafe.Add(ref bytePtr, 7) = (byte)(value >> 48);
-                Unsafe.Add(ref bytePtr, 8) = (byte)(value >> 56);
-            }
             Advance(9);
         }
 
@@ -487,16 +471,13 @@ namespace System.Xml
         {
             if (value == (sbyte)value)
             {
-                if ((byte)value <= 1)
+                if (value == 0)
                 {
-                    if ((byte)value < 1)
-                    {
-                        WriteTextNode(XmlBinaryNodeType.ZeroText);
-                    }
-                    else
-                    {
-                        WriteTextNode(XmlBinaryNodeType.OneText);
-                    }
+                    WriteTextNode(XmlBinaryNodeType.ZeroText);
+                }
+                else if (value == 1)
+                {
+                    WriteTextNode(XmlBinaryNodeType.OneText);
                 }
                 else
                 {
@@ -509,7 +490,7 @@ namespace System.Xml
             }
             else
             {
-                WriteTextNodeWithInt32(XmlBinaryNodeType.Int32Text, (short)value);
+                WriteTextNodeWithInt32(XmlBinaryNodeType.Int32Text, value);
             }
         }
 
@@ -543,7 +524,6 @@ namespace System.Xml
             if (!BitConverter.IsLittleEndian)
             {
                 value = BinaryPrimitives.ReverseEndianness(value);
-                Unsafe.WriteUnaligned(ref bytePtr, value);
             }
             Unsafe.WriteUnaligned(ref bytePtr, value);
             Advance(8);
@@ -624,19 +604,19 @@ namespace System.Xml
             }
         }
 
-        public unsafe override void WriteText(char[] chars, int offset, int count)
+        private unsafe void WriteText(Span<char> chars)
         {
             if (_inAttribute)
             {
-                _attributeValue.WriteText(new string(chars, offset, count));
+                _attributeValue.WriteText(chars.ToString());
             }
             else
             {
-                if (count > 0)
+                if (chars.Length > 0)
                 {
-                    fixed (char* pch = &chars[offset])
+                    fixed (char* pch = chars)
                     {
-                        UnsafeWriteText(pch, count);
+                        UnsafeWriteText(pch, chars.Length);
                     }
                 }
                 else
@@ -644,6 +624,11 @@ namespace System.Xml
                     WriteEmptyText();
                 }
             }
+        }
+
+        public unsafe override void WriteText(char[] chars, int offset, int count)
+        {
+            WriteText(chars.AsSpan(offset, count));
         }
 
         public override void WriteText(byte[] chars, int charOffset, int charCount)
@@ -733,41 +718,38 @@ namespace System.Xml
 
         public override void WriteCharEntity(int ch)
         {
+            Span<char> chars = stackalloc char[2];
             if (ch > char.MaxValue)
             {
                 SurrogateChar sch = new SurrogateChar(ch);
-                char[] chars = new char[2] { sch.HighChar, sch.LowChar, };
-                WriteText(chars, 0, 2);
+                chars[0] = sch.HighChar;
+                chars[1] = sch.LowChar;
+                WriteText(chars);
             }
             else
             {
-                char[] chars = new char[1] { (char)ch };
-                WriteText(chars, 0, 1);
+                chars[0] = (char)ch;
+                WriteText(chars.Slice(0, 1));
             }
         }
 
         public unsafe override void WriteFloatText(float f)
         {
-            long l;
-            if (f >= long.MinValue && f <= long.MaxValue && (l = (long)f) == f)
+            int i;
+            if ((i = (int)f) == f)
             {
-                WriteInt64Text(l);
+                WriteInt32Text(i);
             }
             else
             {
-                int offset;
-                byte[] buffer = GetTextNodeBuffer(1 + sizeof(float), out offset);
-                byte* bytes = (byte*)&f;
-                buffer[offset + 0] = (byte)XmlBinaryNodeType.FloatText;
-                buffer[offset + 1] = bytes[0];
-                buffer[offset + 2] = bytes[1];
-                buffer[offset + 3] = bytes[2];
-                buffer[offset + 4] = bytes[3];
+                ref byte bytePtr = ref GetTextNodeBufferRef(1 + Unsafe.SizeOf<float>());
+                bytePtr = (byte)XmlBinaryNodeType.FloatText;
+                Unsafe.WriteUnaligned(ref Unsafe.Add(ref bytePtr, 1), f);
                 Advance(1 + sizeof(float));
             }
         }
 
-        public unsafe override void WriteDoubleText(double d)
+        public override void WriteDoubleText(double d)
         {
             float f;
             if (d >= float.MinValue && d <= float.MaxValue && (f = (float)d) == d)
@@ -776,19 +758,10 @@ namespace System.Xml
             }
             else
             {
-                int offset;
-                byte[] buffer = GetTextNodeBuffer(1 + sizeof(double), out offset);
-                byte* bytes = (byte*)&d;
-                buffer[offset + 0] = (byte)XmlBinaryNodeType.DoubleText;
-                buffer[offset + 1] = bytes[0];
-                buffer[offset + 2] = bytes[1];
-                buffer[offset + 3] = bytes[2];
-                buffer[offset + 4] = bytes[3];
-                buffer[offset + 5] = bytes[4];
-                buffer[offset + 6] = bytes[5];
-                buffer[offset + 7] = bytes[6];
-                buffer[offset + 8] = bytes[7];
-                Advance(1 + sizeof(double));
+                ref byte bytePtr = ref GetTextNodeBufferRef(1 + Unsafe.SizeOf<double>());
+                bytePtr = (byte)XmlBinaryNodeType.DoubleText;
+                Unsafe.WriteUnaligned(ref Unsafe.Add(ref bytePtr, 1), d);
+                Advance(1 + Unsafe.SizeOf<double>());
             }
         }
 
@@ -844,11 +817,8 @@ namespace System.Xml
         public override void WriteGuidText(Guid guid)
         {
             var span = GetTextNodeBuffer(17, out int offset).AsSpan(offset, 17);
-
             span[0] = (byte)XmlBinaryNodeType.GuidText;
-            bool ok = guid.TryWriteBytes(span.Slice(1));
-            DiagnosticUtility.DebugAssert(ok, "");
-
+            guid.TryWriteBytes(span.Slice(1));
             Advance(17);
         }
 
@@ -890,12 +860,7 @@ namespace System.Xml
         public unsafe void UnsafeWriteArray(XmlBinaryNodeType nodeType, int count, byte* array, byte* arrayMax)
         {
             WriteArrayInfo(nodeType, count);
-            UnsafeWriteArray(array, (int)(arrayMax - array));
-        }
-
-        private unsafe void UnsafeWriteArray(byte* array, int byteCount)
-        {
-            base.UnsafeWriteBytes(array, byteCount);
+            base.WriteBytes(new Span<byte>(array, (int)(arrayMax - array)));
         }
 
         public void WriteDateTimeArray(DateTime[] array, int offset, int count)
@@ -909,11 +874,12 @@ namespace System.Xml
 
         public void WriteGuidArray(Guid[] array, int offset, int count)
         {
+            Span<byte> bytes = stackalloc byte[16];
             WriteArrayInfo(XmlBinaryNodeType.GuidTextWithEndElement, count);
             for (int i = 0; i < count; i++)
             {
-                byte[] buffer = array[offset + i].ToByteArray();
-                WriteBytes(buffer, 0, 16);
+                array[offset + i].TryWriteBytes(bytes);
+                WriteBytes(bytes);
             }
         }
 
@@ -938,8 +904,7 @@ namespace System.Xml
                 int key;
                 if (prefix.Length == 1 && char.IsAsciiLetterLower(ch) && TryGetKey(localName, out key))
                 {
-                    WriteTextNode(XmlBinaryNodeType.QNameDictionaryText);
-                    WriteByte((byte)(ch - 'a'));
+                    WriteTextNodeWithInt8(XmlBinaryNodeType.QNameDictionaryText, (byte)(ch - 'a'));
                     WriteDictionaryString(localName, key);
                 }
                 else
