@@ -25,8 +25,7 @@ public unsafe class MisSizedStructs_ArmSplit
     {
         result = 100;
 
-        // TODO: enable for x64 once https://github.com/dotnet/runtime/issues/65937 has been fixed.
-        if (!OperatingSystem.IsLinux() || (RuntimeInformation.ProcessArchitecture == Architecture.X64))
+        if (!OperatingSystem.IsLinux())
         {
             return false;
         }
