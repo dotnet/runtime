@@ -39,15 +39,12 @@ namespace System.Net.Security.Tests
             Assert.Equal(16 + s_Hello.Length, len);
             // Unseal the content and check it
             byte[] temp = new byte[s_Hello.Length];
-            fakeNtlmServer.Unseal(output.AsSpan(16), temp);
+            fakeNtlmServer.Unwrap(output, temp);
             Assert.Equal(s_Hello, temp);
-            // Check the signature
-            fakeNtlmServer.VerifyMIC(temp, output.AsSpan(0, 16), sequenceNumber: 0);
 
             // Test creating signature on server side and decoding it with VerifySignature on client side 
             byte[] serverSignedMessage = new byte[16 + s_Hello.Length];
-            fakeNtlmServer.Seal(s_Hello, serverSignedMessage.AsSpan(16, s_Hello.Length));
-            fakeNtlmServer.GetMIC(s_Hello, serverSignedMessage.AsSpan(0, 16), sequenceNumber: 0);
+            fakeNtlmServer.Wrap(s_Hello, serverSignedMessage);
             len = ntAuth.Unwrap(serverSignedMessage, out int newOffset, out _);
             Assert.Equal(s_Hello.Length, len);
             Assert.Equal(s_Hello, serverSignedMessage.AsSpan(newOffset, len).ToArray());
