@@ -12,7 +12,7 @@ trigger:
     - '*'
     - docs/manpages/*
     exclude:
-    - /**/*.md
+    - **.md
     - eng/Version.Details.xml
     - .github/*
     - docs/*
@@ -38,7 +38,7 @@ pr:
     - '*'
     - docs/manpages/*
     exclude:
-    - /**/*.md
+    - **.md
     - eng/Version.Details.xml
     - .github/*
     - docs/*

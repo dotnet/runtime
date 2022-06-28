@@ -10,7 +10,7 @@ trigger:
     include:
     - '*'
     exclude:
-    - /**/*.md
+    - **.md
     - eng/Version.Details.xml
     - .github/*
     - docs/*
@@ -35,7 +35,7 @@ pr:
     include:
     - '*'
     exclude:
-    - /**/*.md
+    - **.md
     - eng/Version.Details.xml
     - .github/*
     - docs/*
