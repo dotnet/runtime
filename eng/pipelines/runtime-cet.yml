@@ -52,15 +52,6 @@ jobs:
 # Build CoreCLR release
 # Always as they are needed by Installer and we always build and test the Installer.
 #
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
-    buildConfig: release
-    platforms:
-    - windows_x64
-    jobParameters:
-      testGroup: innerloop
-
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
