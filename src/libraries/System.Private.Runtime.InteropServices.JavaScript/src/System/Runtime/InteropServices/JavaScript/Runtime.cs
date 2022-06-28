@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace System.Runtime.InteropServices.JavaScript
@@ -11,6 +12,13 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         private const string TaskGetResultName = "get_Result";
         private static readonly MethodInfo _taskGetResultMethodInfo = typeof(Task<>).GetMethod(TaskGetResultName)!;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int DoNothing()
+        {
+            Interop.Runtime.DoNothing(out int exception);
+            return exception;
+        }
 
         /// <summary>
         /// Execute the provided string in the JavaScript context

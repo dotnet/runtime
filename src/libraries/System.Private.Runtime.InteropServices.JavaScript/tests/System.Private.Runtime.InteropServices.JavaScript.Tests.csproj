@@ -7,16 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\JavaScript\JavaScriptTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\DataViewTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\MemoryTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\TypedArrayTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\ArrayTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\MarshalTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\DelegateTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\HelperMarshal.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Http\HttpRequestMessageTest.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\ParallelTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\TimerTests.cs" />
   </ItemGroup>
 
   <ItemGroup>

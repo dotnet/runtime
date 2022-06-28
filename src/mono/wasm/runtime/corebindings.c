@@ -35,6 +35,7 @@ extern void mono_wasm_web_socket_send (int webSocket_js_handle, void* buffer_ptr
 extern void mono_wasm_web_socket_receive (int webSocket_js_handle, void* buffer_ptr, int offset, int length, void* response_ptr, int *thenable_js_handle, int *is_exception, MonoObject **result);
 extern void mono_wasm_web_socket_close_ref (int webSocket_js_handle, int code, MonoString **reason, int wait_for_close_received, int *thenable_js_handle, int *is_exception, MonoObject **result);
 extern void mono_wasm_web_socket_abort (int webSocket_js_handle, int *is_exception, MonoString **result);
+extern void mono_wasm_do_nothing (int *is_exception);
 
 void core_initialize_internals ()
 {
@@ -56,6 +57,7 @@ void core_initialize_internals ()
 	mono_add_internal_call ("Interop/Runtime::WebSocketCloseRef", mono_wasm_web_socket_close_ref);
 	mono_add_internal_call ("Interop/Runtime::WebSocketAbort", mono_wasm_web_socket_abort);
 	mono_add_internal_call ("Interop/Runtime::CancelPromiseRef", mono_wasm_cancel_promise_ref);
+	mono_add_internal_call ("Interop/Runtime::DoNothing", mono_wasm_do_nothing);
 }
 
 // Int8Array 		| int8_t	| byte or SByte (signed byte)

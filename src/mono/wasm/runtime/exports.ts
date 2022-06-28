@@ -48,6 +48,7 @@ import {
 import {
     call_static_method, mono_bind_static_method, mono_call_assembly_entry_point,
     mono_method_resolve,
+    mono_wasm_do_nothing,
     mono_wasm_get_by_index_ref, mono_wasm_get_global_object_ref, mono_wasm_get_object_property_ref,
     mono_wasm_invoke_js,
     mono_wasm_invoke_js_blazor,
@@ -374,7 +375,9 @@ export const __linker_exports: any = {
     // pal_crypto_webworker.c
     dotnet_browser_can_use_subtle_crypto_impl,
     dotnet_browser_simple_digest_hash,
-    dotnet_browser_sign
+    dotnet_browser_sign,
+
+    mono_wasm_do_nothing
 };
 
 const INTERNAL: any = {

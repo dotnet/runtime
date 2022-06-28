@@ -23,7 +23,7 @@ import {
 import { conv_string, conv_string_root, js_string_to_mono_string, js_string_to_mono_string_root } from "./strings";
 import cwraps from "./cwraps";
 import { bindings_lazy_init } from "./startup";
-import { _create_temp_frame, _release_temp_frame } from "./memory";
+import { getI32, _create_temp_frame, _release_temp_frame } from "./memory";
 import { VoidPtr, Int32Ptr, EmscriptenModule } from "./types/emscripten";
 
 function _verify_args_for_method_call(args_marshal: string/*ArgsMarshalString*/, args: any) {
@@ -261,6 +261,12 @@ export function mono_wasm_invoke_js_with_args_ref(js_handle: JSHandle, method_na
         resultRoot.release();
     }
 }
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function mono_wasm_do_nothing(is_exception: Int32Ptr): any {
+    console.log(`mono_wasm_do_nothing ptr: ${is_exception} value: ${getI32(is_exception)}`);
+}
+
 
 export function mono_wasm_get_object_property_ref(js_handle: JSHandle, property_name: MonoStringRef, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     const nameRoot = mono_wasm_new_external_root<MonoString>(property_name),

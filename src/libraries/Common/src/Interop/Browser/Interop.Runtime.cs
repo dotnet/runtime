@@ -56,6 +56,9 @@ internal static partial class Interop
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void CancelPromiseRef(IntPtr promiseJSHandle, out int exceptionalResult, out string result);
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern void DoNothing(out int exceptionalResult);
+
         // / <summary>
         // / Execute the provided string in the JavaScript context
         // / </summary>
