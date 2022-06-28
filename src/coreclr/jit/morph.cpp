@@ -3157,18 +3157,13 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                         canTransform =
                             (!arg.AbiInfo.IsHfaArg() || (passingSize == genTypeSize(arg.AbiInfo.GetHfaType())));
                     }
-
-#if defined(TARGET_ARM64) || defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
-                    // For ARM64 or AMD64/UX we can pass non-power-of-2 structs in a register, but we can
-                    // only transform in that case if the arg is a local.
-                    // TODO-CQ: This transformation should be applicable in general, not just for the ARM64
-                    // or UNIX_AMD64_ABI cases where they will be passed in registers.
                     else
                     {
+                        // We can pass non-power-of-2 structs in a register, but we can only transform in that
+                        // case if the arg is a local.
                         canTransform = argIsLocal;
                         passingSize  = genTypeSize(structBaseType);
                     }
-#endif //  TARGET_ARM64 || UNIX_AMD64_ABI || TARGET_LOONGARCH64
                 }
 
                 if (!canTransform)
@@ -3230,11 +3225,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     // as those load registers fully always, but currently we
                     // do not.
                     if ((arg.AbiInfo.NumRegs > 0) && ((passingSize % REGSIZE_BYTES) == 3))
-                    {
-                        makeOutArgCopy = true;
-                    }
-
-                    if (structSize < TARGET_POINTER_SIZE)
                     {
                         makeOutArgCopy = true;
                     }
