@@ -1261,13 +1261,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
     DISPNODE(arg);
     assert(arg->IsValue());
 
-    var_types type = arg->TypeGet();
-
-    if (varTypeIsSmall(type))
-    {
-        // Normalize 'type', it represents the item that we will be storing in the Outgoing Args
-        type = TYP_INT;
-    }
+    var_types type = genActualType(arg);
 
 #if defined(FEATURE_SIMD)
 #if defined(TARGET_X86)
