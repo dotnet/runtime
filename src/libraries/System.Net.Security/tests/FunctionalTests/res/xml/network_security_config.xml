@@ -2,7 +2,7 @@
 <network-security-config>
     <base-config>
         <trust-anchors>
-            <certificates src="@raw/ndx_ca"/>
+            <certificates src="@raw/ndx_test_root_ca"/>
             <certificates src="@raw/testselfsignedservereku_contoso_com"/>
         </trust-anchors>
     </base-config>
