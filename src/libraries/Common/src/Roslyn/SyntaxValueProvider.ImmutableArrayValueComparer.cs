@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using Roslyn.Utilities;
 
 namespace Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
@@ -15,21 +15,7 @@ internal static partial class SyntaxValueProviderExtensions
         public static readonly IEqualityComparer<ImmutableArray<T>> Instance = new ImmutableArrayValueComparer<T>();
 
         public bool Equals(ImmutableArray<T> x, ImmutableArray<T> y)
-        {
-            if (x == y)
-                return true;
-
-            if (x.Length != y.Length)
-                return false;
-
-            for (int i = 0, n = x.Length; i < n; i++)
-            {
-                if (!EqualityComparer<T>.Default.Equals(x[i], y[i]))
-                    return false;
-            }
-
-            return true;
-        }
+            => x.SequenceEqual(y, EqualityComparer<T>.Default);
 
         public int GetHashCode(ImmutableArray<T> obj)
         {
