@@ -75,7 +75,7 @@ import {
     dotnet_browser_simple_digest_hash,
     dotnet_browser_sign
 } from "./crypto-worker";
-import { mono_wasm_pthread_on_pthread_created, mono_wasm_pthread_on_pthread_attached, afterThreadInit } from "./pthreads/worker";
+import { mono_wasm_pthread_on_pthread_attached, afterThreadInit } from "./pthreads/worker";
 import { afterLoadWasmModuleToWorker } from "./pthreads/browser";
 
 const MONO = {
@@ -352,7 +352,6 @@ export const __initializeImportsAndExports: any = initializeImportsAndExports; /
 // --- keep in sync with dotnet.cjs.lib.js ---
 const mono_wasm_threads_exports = !MonoWasmThreads ? undefined : {
     // mono-threads-wasm.c
-    mono_wasm_pthread_on_pthread_created,
     mono_wasm_pthread_on_pthread_attached,
 };
 

@@ -413,9 +413,6 @@ mono_threads_platform_stw_defer_initial_suspend (MonoThreadInfo *info)
 
 #ifndef DISABLE_THREADS
 extern void
-mono_wasm_pthread_on_pthread_created (gpointer pthread_id);
-
-extern void
 mono_wasm_pthread_on_pthread_attached (gpointer pthread_id);
 #endif
 
