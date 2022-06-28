@@ -431,6 +431,8 @@ namespace System.Collections.Specialized
         ///    <para>Returns an array of the specified type containing
         ///       all the values in the <see cref='System.Collections.Specialized.NameObjectCollectionBase'/> instance.</para>
         /// </devdoc>
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "The API only works for reference type arguments and code for reference typed arrays is shareable.")]
         protected object?[] BaseGetAllValues(Type type)
         {
             ArgumentNullException.ThrowIfNull(type);
