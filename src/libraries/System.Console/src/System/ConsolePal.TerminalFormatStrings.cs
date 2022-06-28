@@ -11,10 +11,6 @@ internal static partial class ConsolePal
     /// <summary>Provides format strings and related information for use with the current terminal.</summary>
     internal sealed class TerminalFormatStrings
     {
-        /// <summary>Gets the lazily-initialized terminal information for the terminal.</summary>
-        public static TerminalFormatStrings Instance { get { return s_instance.Value; } }
-        private static readonly Lazy<TerminalFormatStrings> s_instance = new Lazy<TerminalFormatStrings>(() => new TerminalFormatStrings(TermInfo.DatabaseFactory.ReadActiveDatabase()));
-
         /// <summary>The format string to use to change the foreground color.</summary>
         public readonly string? Foreground;
         /// <summary>The format string to use to change the background color.</summary>

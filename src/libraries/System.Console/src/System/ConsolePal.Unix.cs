@@ -39,6 +39,10 @@ namespace System
         private static int s_windowHeight;  // Cached WindowHeight, invalid when s_windowWidth == -1.
         private static int s_invalidateCachedSettings = 1; // Tracks whether we should invalidate the cached settings.
 
+        /// <summary>Gets the lazily-initialized terminal information for the terminal.</summary>
+        public static TerminalFormatStrings TerminalFormatStringsInstance { get { return s_terminalFormatStringsInstance.Value; } }
+        private static readonly Lazy<TerminalFormatStrings> s_terminalFormatStringsInstance = new(() => new TerminalFormatStrings(TermInfo.DatabaseFactory.ReadActiveDatabase()));
+
         public static Stream OpenStandardInput()
         {
             return new UnixConsoleStream(Interop.CheckIo(Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDIN_FILENO)), FileAccess.Read,
@@ -198,7 +202,7 @@ namespace System
                 if (Console.IsOutputRedirected)
                     return;
 
-                string? titleFormat = TerminalFormatStrings.Instance.Title;
+                string? titleFormat = TerminalFormatStringsInstance.Title;
                 if (!string.IsNullOrEmpty(titleFormat))
                 {
                     string ansiStr = TermInfo.ParameterizedStrings.Evaluate(titleFormat, value);
@@ -211,7 +215,7 @@ namespace System
         {
             if (!Console.IsOutputRedirected)
             {
-                WriteStdoutAnsiString(TerminalFormatStrings.Instance.Bell, mayChangeCursorPosition: false);
+                WriteStdoutAnsiString(TerminalFormatStringsInstance.Bell, mayChangeCursorPosition: false);
             }
         }
 
@@ -224,7 +228,7 @@ namespace System
         {
             if (!Console.IsOutputRedirected)
             {
-                WriteStdoutAnsiString(TerminalFormatStrings.Instance.Clear);
+                WriteStdoutAnsiString(TerminalFormatStringsInstance.Clear);
             }
         }
 
@@ -242,7 +246,7 @@ namespace System
                     return;
                 }
 
-                string? cursorAddressFormat = TerminalFormatStrings.Instance.CursorAddress;
+                string? cursorAddressFormat = TerminalFormatStringsInstance.CursorAddress;
                 if (!string.IsNullOrEmpty(cursorAddressFormat))
                 {
                     string ansiStr = TermInfo.ParameterizedStrings.Evaluate(cursorAddressFormat, top, left);
@@ -372,8 +376,8 @@ namespace System
                     }
                     else
                     {
-                        s_windowWidth = TerminalFormatStrings.Instance.Columns;
-                        s_windowHeight = TerminalFormatStrings.Instance.Lines;
+                        s_windowWidth = TerminalFormatStringsInstance.Columns;
+                        s_windowHeight = TerminalFormatStringsInstance.Lines;
                     }
                 }
                 width = s_windowWidth;
@@ -399,8 +403,8 @@ namespace System
                 if (!Console.IsOutputRedirected)
                 {
                     WriteStdoutAnsiString(value ?
-                        TerminalFormatStrings.Instance.CursorVisible :
-                        TerminalFormatStrings.Instance.CursorInvisible);
+                        TerminalFormatStringsInstance.CursorVisible :
+                        TerminalFormatStringsInstance.CursorInvisible);
                 }
             }
         }
@@ -784,10 +788,10 @@ namespace System
             }
 
             // We haven't yet computed a format string.  Compute it, use it, then cache it.
-            string? formatString = foreground ? TerminalFormatStrings.Instance.Foreground : TerminalFormatStrings.Instance.Background;
+            string? formatString = foreground ? TerminalFormatStringsInstance.Foreground : TerminalFormatStringsInstance.Background;
             if (!string.IsNullOrEmpty(formatString))
             {
-                int maxColors = TerminalFormatStrings.Instance.MaxColors; // often 8 or 16; 0 is invalid
+                int maxColors = TerminalFormatStringsInstance.MaxColors; // often 8 or 16; 0 is invalid
                 if (maxColors > 0)
                 {
                     // The values of the ConsoleColor enums unfortunately don't map to the
@@ -831,7 +835,7 @@ namespace System
         {
             if (ConsoleUtils.EmitAnsiColorCodes)
             {
-                WriteStdoutAnsiString(TerminalFormatStrings.Instance.Reset);
+                WriteStdoutAnsiString(TerminalFormatStringsInstance.Reset);
             }
         }
 
@@ -856,17 +860,17 @@ namespace System
             }
 
             // Then process terminfo mappings.
-            int minRange = TerminalFormatStrings.Instance.MinKeyFormatLength;
+            int minRange = TerminalFormatStringsInstance.MinKeyFormatLength;
             if (unprocessedCharCount >= minRange)
             {
-                int maxRange = Math.Min(unprocessedCharCount, TerminalFormatStrings.Instance.MaxKeyFormatLength);
+                int maxRange = Math.Min(unprocessedCharCount, TerminalFormatStringsInstance.MaxKeyFormatLength);
 
                 for (int i = maxRange; i >= minRange; i--)
                 {
                     var currentString = new ReadOnlyMemory<char>(givenChars, startIndex, i);
 
                     // Check if the string prefix matches.
-                    if (TerminalFormatStrings.Instance.KeyFormatToConsoleKey.TryGetValue(currentString, out key))
+                    if (TerminalFormatStringsInstance.KeyFormatToConsoleKey.TryGetValue(currentString, out key))
                     {
                         keyLength = currentString.Length;
                         return true;
@@ -921,7 +925,7 @@ namespace System
                     // the native lib later to handle signals that require re-entering the mode.
                     if (!Console.IsOutputRedirected)
                     {
-                        string? keypadXmit = TerminalFormatStrings.Instance.KeypadXmit;
+                        string? keypadXmit = TerminalFormatStringsInstance.KeypadXmit;
                         if (keypadXmit != null)
                         {
                             Interop.Sys.SetKeypadXmit(keypadXmit);

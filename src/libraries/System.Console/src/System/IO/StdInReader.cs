@@ -207,7 +207,7 @@ namespace System.IO
                             {
                                 if (s_clearToEol == null)
                                 {
-                                    s_clearToEol = ConsolePal.TerminalFormatStrings.Instance.ClrEol ?? string.Empty;
+                                    s_clearToEol = ConsolePal.TerminalFormatStringsInstance.ClrEol ?? string.Empty;
                                 }
 
                                 // Move to end of previous line
@@ -219,7 +219,7 @@ namespace System.IO
                             {
                                 if (s_moveLeftString == null)
                                 {
-                                    string? moveLeft = ConsolePal.TerminalFormatStrings.Instance.CursorLeft;
+                                    string? moveLeft = ConsolePal.TerminalFormatStringsInstance.CursorLeft;
                                     s_moveLeftString = !string.IsNullOrEmpty(moveLeft) ? moveLeft + " " + moveLeft : string.Empty;
                                 }
 
