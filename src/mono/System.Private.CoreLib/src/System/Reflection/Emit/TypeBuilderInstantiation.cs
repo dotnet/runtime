@@ -180,7 +180,7 @@ namespace System.Reflection.Emit
             methods ??= new Dictionary<MethodInfo, MethodInfo>();
             if (!methods.TryGetValue(fromNoninstanciated, out MethodInfo? mi))
             {
-                methods[fromNoninstanciated] = mi = new MethodOnTypeBuilderInst(this, fromNoninstanciated)
+                methods[fromNoninstanciated] = mi = new MethodOnTypeBuilderInst(this, fromNoninstanciated);
             }
             return mi;
         }
