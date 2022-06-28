@@ -8,49 +8,55 @@ using static System.Security.Cryptography.Cose.Tests.CoseTestHelpers;
 
 namespace System.Security.Cryptography.Cose.Tests
 {
-    public class CoseSign1MessageTests_SignStream_Async : CoseMessageTests_SignStream_Async
+    public class CoseMultiSignMessageTests_SignStream_Async : CoseMessageTests_SignStream_Async
     {
-        internal override CoseMessageKind MessageKind => CoseMessageKind.Sign1;
+        internal override CoseMessageKind MessageKind => CoseMessageKind.MultiSign;
 
         internal override CoseMessage Decode(ReadOnlySpan<byte> cborPayload)
-            => CoseMessage.DecodeSign1(cborPayload);
+            => CoseMessage.DecodeMultiSign(cborPayload);
 
         internal override CoseHeaderMap GetSigningHeaderMap(CoseMessage msg, bool getProtectedMap)
         {
-            Assert.IsType<CoseSign1Message>(msg);
-            return getProtectedMap ? msg.ProtectedHeaders : msg.UnprotectedHeaders;
+            CoseMultiSignMessage multiSignMsg = Assert.IsType<CoseMultiSignMessage>(msg);
+            Assert.Equal(1, multiSignMsg.Signatures.Count);
+            CoseSignature signature = multiSignMsg.Signatures[0];
+
+            return getProtectedMap ? signature.ProtectedHeaders : signature.UnprotectedHeaders;
         }
 
         internal override Task<byte[]> SignDetachedAsync(Stream detachedContent, CoseSigner signer, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, byte[]? associatedData = null)
-            => CoseSign1Message.SignDetachedAsync(detachedContent, signer, associatedData);
+            => CoseMultiSignMessage.SignDetachedAsync(detachedContent, signer, protectedHeaders, unprotectedHeaders, associatedData);
 
         internal override bool Verify(CoseMessage msg, AsymmetricAlgorithm key, byte[] content, byte[]? associatedData = null)
         {
             Assert.True(!OnlySupportsDetachedContent || msg.Content == null);
-            return Sign1Verify(msg, key, content, associatedData);
+            return MultiSignVerify(msg, key, content, expectedSignatures: 1, associatedData);
         }
     }
 
-    public class CoseSign1MessageTests_SignStream_Sync : CoseMessageTests_SignStream_Sync
+    public class CoseMultiSignMessageTests_SignStream_Sync : CoseMessageTests_SignStream_Sync
     {
-        internal override CoseMessageKind MessageKind => CoseMessageKind.Sign1;
+        internal override CoseMessageKind MessageKind => CoseMessageKind.MultiSign;
 
         internal override CoseMessage Decode(ReadOnlySpan<byte> cborPayload)
-            => CoseMessage.DecodeSign1(cborPayload);
+            => CoseMessage.DecodeMultiSign(cborPayload);
 
         internal override CoseHeaderMap GetSigningHeaderMap(CoseMessage msg, bool getProtectedMap)
         {
-            CoseSign1Message sign1Msg = Assert.IsType<CoseSign1Message>(msg);
-            return getProtectedMap ? msg.ProtectedHeaders : msg.UnprotectedHeaders;
+            CoseMultiSignMessage multiSignMsg = Assert.IsType<CoseMultiSignMessage>(msg);
+            Assert.Equal(1, multiSignMsg.Signatures.Count);
+            CoseSignature signature = multiSignMsg.Signatures[0];
+
+            return getProtectedMap ? signature.ProtectedHeaders : signature.UnprotectedHeaders;
         }
 
         internal override byte[] SignDetached(Stream detachedContent, CoseSigner signer, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, byte[]? associatedData = null)
-            => CoseSign1Message.SignDetached(detachedContent, signer, associatedData);
+            => CoseMultiSignMessage.SignDetached(detachedContent, signer, protectedHeaders, unprotectedHeaders, associatedData);
 
         internal override bool Verify(CoseMessage msg, AsymmetricAlgorithm key, byte[] content, byte[]? associatedData = null)
         {
             Assert.True(!OnlySupportsDetachedContent || msg.Content == null);
-            return Sign1Verify(msg, key, content, associatedData);
+            return MultiSignVerify(msg, key, content, expectedSignatures: 1, associatedData);
         }
     }
 }

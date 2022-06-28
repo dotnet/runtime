@@ -19,33 +19,33 @@ namespace System.Security.Cryptography.Cose.Tests
         {
             if (content == null)
             {
-                return msg.VerifyAsync(key, null!).GetAwaiter().GetResult();
+                return msg.VerifyDetachedAsync(key, null!).GetAwaiter().GetResult();
             }
 
             using Stream stream = GetTestStream(content);
-            return msg.VerifyAsync(key, stream).GetAwaiter().GetResult();
+            return msg.VerifyDetachedAsync(key, stream).GetAwaiter().GetResult();
         }
 
         [Fact]
         public async Task VerifyAsyncWithUnseekableStream()
         {
             using Stream stream = GetTestStream(s_sampleContent);
-            byte[] encodedMsg = await CoseSign1Message.SignAsync(stream, DefaultKey, DefaultHash);
+            byte[] encodedMsg = await CoseSign1Message.SignDetachedAsync(stream, GetCoseSigner(DefaultKey, DefaultHash));
 
             CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
             using Stream unseekableStream = GetTestStream(s_sampleContent, StreamKind.Unseekable);
-            await Assert.ThrowsAsync<ArgumentException>("detachedContent", () => msg.VerifyAsync(DefaultKey, unseekableStream));
+            await Assert.ThrowsAsync<ArgumentException>("detachedContent", () => msg.VerifyDetachedAsync(DefaultKey, unseekableStream));
         }
 
         [Fact]
         public async Task VerifyAsyncWithUnreadableStream()
         {
             using Stream stream = GetTestStream(s_sampleContent);
-            byte[] encodedMsg = await CoseSign1Message.SignAsync(stream, DefaultKey, DefaultHash);
+            byte[] encodedMsg = await CoseSign1Message.SignDetachedAsync(stream, GetCoseSigner(DefaultKey, DefaultHash));
 
             CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
             using Stream unseekableStream = GetTestStream(s_sampleContent, StreamKind.Unreadable);
-            await Assert.ThrowsAsync<ArgumentException>("detachedContent", () => msg.VerifyAsync(DefaultKey, unseekableStream));
+            await Assert.ThrowsAsync<ArgumentException>("detachedContent", () => msg.VerifyDetachedAsync(DefaultKey, unseekableStream));
         }
     }
 
@@ -55,33 +55,33 @@ namespace System.Security.Cryptography.Cose.Tests
         {
             if (content == null)
             {
-                return msg.Verify(key, (Stream)null!);
+                return msg.VerifyDetached(key, (Stream)null!);
             }
 
             using Stream stream = GetTestStream(content);
-            return msg.Verify(key, stream);
+            return msg.VerifyDetached(key, stream);
         }
 
         [Fact]
         public void VerifyWithUnseekableStream()
         {
             using Stream stream = GetTestStream(s_sampleContent);
-            byte[] encodedMsg = CoseSign1Message.Sign(stream, DefaultKey, DefaultHash);
+            byte[] encodedMsg = CoseSign1Message.SignDetached(stream, GetCoseSigner(DefaultKey, DefaultHash));
 
             CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
             using Stream unseekableStream = GetTestStream(s_sampleContent, StreamKind.Unseekable);
-            Assert.Throws<ArgumentException>("detachedContent", () => msg.Verify(DefaultKey, unseekableStream));
+            Assert.Throws<ArgumentException>("detachedContent", () => msg.VerifyDetached(DefaultKey, unseekableStream));
         }
 
         [Fact]
         public void VerifyWithUnreadableStream()
         {
             using Stream stream = GetTestStream(s_sampleContent);
-            byte[] encodedMsg = CoseSign1Message.Sign(stream, DefaultKey, DefaultHash);
+            byte[] encodedMsg = CoseSign1Message.SignDetached(stream, GetCoseSigner(DefaultKey, DefaultHash));
 
             CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
             using Stream unseekableStream = GetTestStream(s_sampleContent, StreamKind.Unreadable);
-            Assert.Throws<ArgumentException>("detachedContent", () => msg.Verify(DefaultKey, unseekableStream));
+            Assert.Throws<ArgumentException>("detachedContent", () => msg.VerifyDetached(DefaultKey, unseekableStream));
         }
     }
 }

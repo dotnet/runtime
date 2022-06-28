@@ -4,19 +4,39 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Formats.Cbor;
-using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography.Cose
 {
-    public sealed class CoseHeaderMap : IEnumerable<(CoseHeaderLabel Label, ReadOnlyMemory<byte> EncodedValue)>
+    public sealed class CoseHeaderMap : IDictionary<CoseHeaderLabel, CoseHeaderValue>, IReadOnlyDictionary<CoseHeaderLabel, CoseHeaderValue>
     {
-        private static readonly byte[] s_emptyBstrEncoded = new byte[] { 0x40 };
         private static readonly CoseHeaderMap s_emptyMap = new CoseHeaderMap(isReadOnly: true);
 
         public bool IsReadOnly { get; internal set; }
 
-        private readonly Dictionary<CoseHeaderLabel, ReadOnlyMemory<byte>> _headerParameters = new Dictionary<CoseHeaderLabel, ReadOnlyMemory<byte>>();
+        public ICollection<CoseHeaderLabel> Keys => _headerParameters.Keys;
+
+        public ICollection<CoseHeaderValue> Values => _headerParameters.Values;
+
+        public int Count => _headerParameters.Count;
+
+        IEnumerable<CoseHeaderLabel> IReadOnlyDictionary<CoseHeaderLabel, CoseHeaderValue>.Keys => _headerParameters.Keys;
+
+        IEnumerable<CoseHeaderValue> IReadOnlyDictionary<CoseHeaderLabel, CoseHeaderValue>.Values => _headerParameters.Values;
+
+        public CoseHeaderValue this[CoseHeaderLabel key]
+        {
+            get => _headerParameters[key];
+            set
+            {
+                ValidateIsReadOnly();
+                ValidateInsertion(key, value);
+                _headerParameters[key] = value;
+            }
+        }
+
+        private readonly Dictionary<CoseHeaderLabel, CoseHeaderValue> _headerParameters = new Dictionary<CoseHeaderLabel, CoseHeaderValue>();
 
         public CoseHeaderMap() : this (isReadOnly: false) { }
 
@@ -25,88 +45,63 @@ namespace System.Security.Cryptography.Cose
             IsReadOnly = isReadOnly;
         }
 
-        public bool TryGetEncodedValue(CoseHeaderLabel label, out ReadOnlyMemory<byte> encodedValue)
-            => _headerParameters.TryGetValue(label, out encodedValue);
+        public int GetValueAsInt32(CoseHeaderLabel label) => _headerParameters[label].GetValueAsInt32();
 
-        public ReadOnlyMemory<byte> GetEncodedValue(CoseHeaderLabel label)
-        {
-            if (TryGetEncodedValue(label, out ReadOnlyMemory<byte> encodedValue))
-            {
-                return encodedValue;
-            }
+        public string GetValueAsString(CoseHeaderLabel label) => _headerParameters[label].GetValueAsString();
 
-            throw new InvalidOperationException(SR.Format(SR.CoseHeaderMapLabelDoeNotExist, label.LabelName));
-        }
+        public byte[] GetValueAsBytes(CoseHeaderLabel label) => _headerParameters[label].GetValueAsBytes();
 
-        public int GetValueAsInt32(CoseHeaderLabel label)
-        {
-            var reader = new CborReader(GetEncodedValue(label));
-            int retVal = reader.ReadInt32();
-            Debug.Assert(reader.BytesRemaining == 0);
-            return retVal;
-        }
+        public int GetValueAsBytes(CoseHeaderLabel label, Span<byte> destination) => _headerParameters[label].GetValueAsBytes(destination);
 
-        public string GetValueAsString(CoseHeaderLabel label)
-        {
-            var reader = new CborReader(GetEncodedValue(label));
-            string retVal = reader.ReadTextString();
-            Debug.Assert(reader.BytesRemaining == 0);
-            return retVal;
-        }
-
-        public ReadOnlySpan<byte> GetValueAsBytes(CoseHeaderLabel label)
-        {
-            var reader = new CborReader(GetEncodedValue(label));
-            ReadOnlySpan<byte> retVal = reader.ReadByteString();
-            Debug.Assert(reader.BytesRemaining == 0);
-            return retVal;
-        }
-
-        public void SetEncodedValue(CoseHeaderLabel label, ReadOnlySpan<byte> encodedValue)
-            => SetEncodedValue(label, new ReadOnlyMemory<byte>(encodedValue.ToArray()));
-
-        internal void SetEncodedValue(CoseHeaderLabel label, ReadOnlyMemory<byte> encodedValue)
+        public void Add(CoseHeaderLabel key, CoseHeaderValue value)
         {
             ValidateIsReadOnly();
-            ValidateHeaderValue(label, null, encodedValue);
-
-            _headerParameters[label] = encodedValue;
+            ValidateInsertion(key, value);
+            _headerParameters.Add(key, value);
         }
 
-        public void SetValue(CoseHeaderLabel label, int value)
+        public void Add(KeyValuePair<CoseHeaderLabel, CoseHeaderValue> item) => Add(item.Key, item.Value);
+
+        public void Add(CoseHeaderLabel label, int value) => Add(label, CoseHeaderValue.FromInt32(value));
+
+        public void Add(CoseHeaderLabel label, string value) => Add(label, CoseHeaderValue.FromString(value));
+
+        public void Add(CoseHeaderLabel label, byte[] value) => Add(label, CoseHeaderValue.FromBytes(value));
+
+        public void Add(CoseHeaderLabel label, ReadOnlySpan<byte> value) => Add(label, CoseHeaderValue.FromBytes(value));
+
+        public bool ContainsKey(CoseHeaderLabel key) => _headerParameters.ContainsKey(key);
+
+        public bool TryGetValue(CoseHeaderLabel key, [MaybeNullWhen(false)] out CoseHeaderValue value) => _headerParameters.TryGetValue(key, out value);
+
+        public void Clear()
         {
             ValidateIsReadOnly();
-            ValidateHeaderValue(label, value < 0 ? CborReaderState.NegativeInteger : CborReaderState.UnsignedInteger, null);
-
-            var writer = new CborWriter();
-            writer.WriteInt32(value);
-            _headerParameters[label] = writer.Encode();
+            _headerParameters.Clear();
         }
 
-        public void SetValue(CoseHeaderLabel label, string value)
+        public bool Contains(KeyValuePair<CoseHeaderLabel, CoseHeaderValue> item)
+            => ((ICollection<KeyValuePair<CoseHeaderLabel, CoseHeaderValue>>)_headerParameters).Contains(item);
+
+        public void CopyTo(KeyValuePair<CoseHeaderLabel, CoseHeaderValue>[] array, int arrayIndex)
+            => ((ICollection<KeyValuePair<CoseHeaderLabel, CoseHeaderValue>>)_headerParameters).CopyTo(array, arrayIndex);
+
+        IEnumerator<KeyValuePair<CoseHeaderLabel, CoseHeaderValue>> IEnumerable<KeyValuePair<CoseHeaderLabel, CoseHeaderValue>>.GetEnumerator()
+            => _headerParameters.GetEnumerator();
+
+        public IEnumerator GetEnumerator()
+            => _headerParameters.GetEnumerator();
+
+        public bool Remove(CoseHeaderLabel label)
         {
             ValidateIsReadOnly();
-            ValidateHeaderValue(label, CborReaderState.TextString, null);
-
-            var writer = new CborWriter();
-            writer.WriteTextString(value);
-            _headerParameters[label] = writer.Encode();
+            return _headerParameters.Remove(label);
         }
 
-        public void SetValue(CoseHeaderLabel label, ReadOnlySpan<byte> value)
+        public bool Remove(KeyValuePair<CoseHeaderLabel, CoseHeaderValue> item)
         {
             ValidateIsReadOnly();
-            ValidateHeaderValue(label, CborReaderState.ByteString, null);
-
-            var writer = new CborWriter();
-            writer.WriteByteString(value);
-            _headerParameters[label] = writer.Encode();
-        }
-
-        public void Remove(CoseHeaderLabel label)
-        {
-            ValidateIsReadOnly();
-            _headerParameters.Remove(label);
+            return ((ICollection<KeyValuePair<CoseHeaderLabel, CoseHeaderValue>>)_headerParameters).Remove(item);
         }
 
         private void ValidateIsReadOnly()
@@ -117,90 +112,90 @@ namespace System.Security.Cryptography.Cose
             }
         }
 
-        private static void ValidateHeaderValue(CoseHeaderLabel label, CborReaderState? state, ReadOnlyMemory<byte>? encodedValue)
+        private static void ValidateInsertion(CoseHeaderLabel label, CoseHeaderValue headerValue)
         {
-            if (state != null)
+            var reader = new CborReader(headerValue.EncodedValue);
+
+            if (label.LabelAsString != null) // all known headers are integers.
             {
-                Debug.Assert(encodedValue == null);
-                if (label.LabelAsString == null)
-                {
-                    // all known headers are integers.
-                    ValidateKnownHeaderValue(label.LabelAsInt32, state, null);
-                }
+                reader.SkipValue();
             }
             else
             {
-                Debug.Assert(encodedValue != null);
-                var reader = new CborReader(encodedValue.Value);
+                CborReaderState initialState = reader.PeekState();
+                int intLabel = label.LabelAsInt32;
 
-                if (label.LabelAsString == null)
-                {
-                    // all known headers are integers.
-                    ValidateKnownHeaderValue(label.LabelAsInt32, reader.PeekState(), reader);
-                }
-                else
-                {
-                    reader.SkipValue();
-                }
-
-                if (reader.BytesRemaining != 0)
-                {
-                    throw new InvalidOperationException(SR.Format(SR.CoseHeaderMapCborEncodedValueNotValid, label));
-                }
-            }
-
-            static void ValidateKnownHeaderValue(int label, CborReaderState? initialState, CborReader? reader)
-            {
-                switch (label)
+                switch (intLabel)
                 {
                     case KnownHeaders.Alg:
                         if (initialState != CborReaderState.NegativeInteger &&
                             initialState != CborReaderState.UnsignedInteger &&
                             initialState != CborReaderState.TextString)
                         {
-                            throw new InvalidOperationException(SR.Format(SR.CoseHeaderMapHeaderDoesNotAcceptSpecifiedValue, label));
+                            throw new InvalidOperationException(SR.Format(SR.CoseHeaderMapHeaderDoesNotAcceptSpecifiedValue, intLabel));
                         }
-                        reader?.SkipValue();
+                        reader.SkipValue();
                         break;
                     case KnownHeaders.Crit:
-                        reader?.SkipValue(); // TODO
-                        break;
-                    case KnownHeaders.CounterSignature:
-                        reader?.SkipValue(); // TODO
+                        int length = reader.ReadStartArray().GetValueOrDefault();
+                        if (length < 1)
+                        {
+                            throw new InvalidOperationException(SR.CriticalHeadersMustBeArrayOfAtLeastOne);
+                        }
+
+                        for (int i = 0; i < length; i++)
+                        {
+                            CborReaderState state = reader.PeekState();
+                            if (state == CborReaderState.UnsignedInteger || state == CborReaderState.NegativeInteger)
+                            {
+                                reader.ReadInt32();
+                            }
+                            else if (state == CborReaderState.TextString)
+                            {
+                                reader.ReadTextString();
+                            }
+                            else
+                            {
+                                throw new InvalidOperationException(SR.Format(SR.CoseHeaderMapHeaderDoesNotAcceptSpecifiedValue, intLabel));
+                            }
+                        }
+                        reader.SkipToParent();
                         break;
                     case KnownHeaders.ContentType:
                         if (initialState != CborReaderState.TextString &&
                             initialState != CborReaderState.UnsignedInteger)
                         {
-                            throw new InvalidOperationException(SR.Format(SR.CoseHeaderMapHeaderDoesNotAcceptSpecifiedValue, label));
+                            throw new InvalidOperationException(SR.Format(SR.CoseHeaderMapHeaderDoesNotAcceptSpecifiedValue, intLabel));
                         }
-                        reader?.SkipValue();
+                        reader.SkipValue();
                         break;
                     case KnownHeaders.Kid:
-                    case KnownHeaders.IV:
-                    case KnownHeaders.PartialIV:
                         if (initialState != CborReaderState.ByteString)
                         {
-                            throw new InvalidOperationException(SR.Format(SR.CoseHeaderMapHeaderDoesNotAcceptSpecifiedValue, label));
+                            throw new InvalidOperationException(SR.Format(SR.CoseHeaderMapHeaderDoesNotAcceptSpecifiedValue, intLabel));
                         }
-                        reader?.SkipValue();
+                        reader.SkipValue();
                         break;
                     default:
-                        reader?.SkipValue();
+                        reader.SkipValue();
                         break;
                 }
             }
+
+            if (reader.BytesRemaining != 0)
+            {
+                throw new InvalidOperationException(SR.Format(SR.CoseHeaderMapCborEncodedValueNotValid));
+            }
         }
 
-        internal static int Encode(CoseHeaderMap? map, Span<byte> destination, bool mustReturnEmptyBstrIfEmpty = false, int? algHeaderValueToSlip = null)
+        internal static int Encode(CoseHeaderMap? map, Span<byte> destination, bool isProtected = false, int? algHeaderValueToSlip = null)
         {
             map ??= s_emptyMap;
             bool shouldSlipAlgHeader = algHeaderValueToSlip.HasValue;
 
-            if (map._headerParameters.Count == 0 && mustReturnEmptyBstrIfEmpty && !shouldSlipAlgHeader)
+            if (map._headerParameters.Count == 0 && isProtected && !shouldSlipAlgHeader)
             {
-                s_emptyBstrEncoded.CopyTo(destination);
-                return s_emptyBstrEncoded.Length;
+                return 0;
             }
 
             int mapLength = map._headerParameters.Count;
@@ -214,13 +209,16 @@ namespace System.Security.Cryptography.Cose
 
             if (shouldSlipAlgHeader)
             {
-                Debug.Assert(!map.TryGetEncodedValue(CoseHeaderLabel.Algorithm, out _));
+                Debug.Assert(!map.ContainsKey(CoseHeaderLabel.Algorithm));
                 writer.WriteInt32(KnownHeaders.Alg);
                 writer.WriteInt32(algHeaderValueToSlip!.Value);
             }
 
-            foreach ((CoseHeaderLabel label, ReadOnlyMemory<byte> encodedValue) in map)
+            foreach (KeyValuePair<CoseHeaderLabel, CoseHeaderValue> kvp in map)
             {
+                CoseHeaderLabel label = kvp.Key;
+                CoseHeaderValue value = kvp.Value;
+
                 if (label.LabelAsString == null)
                 {
                     writer.WriteInt32(label.LabelAsInt32);
@@ -229,11 +227,15 @@ namespace System.Security.Cryptography.Cose
                 {
                     writer.WriteTextString(label.LabelAsString);
                 }
-                writer.WriteEncodedValue(encodedValue.Span);
+
+                writer.WriteEncodedValue(value.EncodedValue.Span);
             }
             writer.WriteEndMap();
 
-            return writer.Encode(destination);
+            int bytesWritten = writer.Encode(destination);
+            Debug.Assert(bytesWritten == ComputeEncodedSize(map, algHeaderValueToSlip));
+
+            return bytesWritten;
         }
 
         internal static int ComputeEncodedSize(CoseHeaderMap? map, int? algHeaderValueToSlip = null)
@@ -253,34 +255,15 @@ namespace System.Security.Cryptography.Cose
 
             encodedSize += CoseHelpers.GetIntegerEncodedSize(mapLength);
 
-            foreach ((CoseHeaderLabel label, ReadOnlyMemory<byte> encodedValue) in map)
+            foreach (KeyValuePair<CoseHeaderLabel, CoseHeaderValue> kvp in map)
             {
-                encodedSize += label.EncodedSize + encodedValue.Length;
+                CoseHeaderLabel label = kvp.Key;
+                CoseHeaderValue value = kvp.Value;
+
+                encodedSize += label.EncodedSize + value.EncodedValue.Length;
             }
 
             return encodedSize;
-        }
-
-        public Enumerator GetEnumerator() => new Enumerator(_headerParameters.GetEnumerator());
-        IEnumerator<(CoseHeaderLabel Label, ReadOnlyMemory<byte> EncodedValue)> IEnumerable<(CoseHeaderLabel Label, ReadOnlyMemory<byte> EncodedValue)>.GetEnumerator() => GetEnumerator();
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-        public struct Enumerator : IEnumerator<(CoseHeaderLabel Label, ReadOnlyMemory<byte> EncodedValue)>
-        {
-            private Dictionary<CoseHeaderLabel, ReadOnlyMemory<byte>>.Enumerator _dictionaryEnumerator;
-
-            internal Enumerator(Dictionary<CoseHeaderLabel, ReadOnlyMemory<byte>>.Enumerator dictionaryEnumerator)
-            {
-                _dictionaryEnumerator = dictionaryEnumerator;
-            }
-
-            public readonly (CoseHeaderLabel Label, ReadOnlyMemory<byte> EncodedValue) Current => (_dictionaryEnumerator.Current.Key, _dictionaryEnumerator.Current.Value);
-
-            object IEnumerator.Current => Current;
-
-            public void Dispose() => _dictionaryEnumerator.Dispose();
-            public bool MoveNext() => _dictionaryEnumerator.MoveNext();
-            public void Reset() => ((IEnumerator)_dictionaryEnumerator).Reset();
         }
     }
 }

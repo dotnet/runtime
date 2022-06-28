@@ -16,6 +16,10 @@ namespace System.Security.Cryptography.Cose
         internal const int PS256 = -37;
         internal const int PS384 = -38;
         internal const int PS512 = -39;
+        // RSASSA-PKCS1-v1_5 using SHA
+        internal const int RS256 = -257;
+        internal const int RS384 = -258;
+        internal const int RS512 = -259;
 
         internal static void ThrowIfNotSupported(long alg)
         {

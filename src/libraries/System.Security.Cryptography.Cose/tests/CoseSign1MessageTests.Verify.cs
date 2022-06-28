@@ -1,7 +1,6 @@
 ﻿using Xunit;
 using Test.Cryptography;
 using System.Formats.Cbor;
-using System.IO;
 using static System.Security.Cryptography.Cose.Tests.CoseTestHelpers;
 
 namespace System.Security.Cryptography.Cose.Tests
@@ -49,10 +48,10 @@ namespace System.Security.Cryptography.Cose.Tests
                     AssertExtensions.SequenceEqual(s_sampleContent, msg.Content.GetValueOrDefault().Span);
                 }
 
-                Assert.True(msg.ProtectedHeaders.TryGetEncodedValue(CoseHeaderLabel.Algorithm, out ReadOnlyMemory<byte> encodedAlg),
+                Assert.True(msg.ProtectedHeaders.TryGetValue(CoseHeaderLabel.Algorithm, out CoseHeaderValue value),
                     "Algorithm header must be protected");
 
-                Assert.Equal(algorithm, new CborReader(encodedAlg).ReadInt32());
+                Assert.Equal(algorithm, new CborReader(value.EncodedValue).ReadInt32());
             }
         }
 
@@ -115,7 +114,7 @@ namespace System.Security.Cryptography.Cose.Tests
             byte[] wrongContent = new byte[s_sampleContent.Length];
             wrongContent.AsSpan().Fill(42);
 
-            ReadOnlySpan<byte> encodedMsg = CoseSign1Message.Sign(correctContent, DefaultKey, DefaultHash, isDetached: true);
+            ReadOnlySpan<byte> encodedMsg = CoseSign1Message.SignDetached(correctContent, GetCoseSigner(DefaultKey, DefaultHash));
             CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
 
             Assert.False(Verify(msg, DefaultKey, wrongContent), "Calling Verify with the wrong content");
@@ -134,7 +133,7 @@ namespace System.Security.Cryptography.Cose.Tests
             byte[] wrongContent = new byte[s_sampleContent.Length];
             wrongContent.AsSpan().Fill(42);
 
-            ReadOnlySpan<byte> encodedMsg = CoseSign1Message.Sign(correctContent, DefaultKey, DefaultHash, isDetached: true);
+            ReadOnlySpan<byte> encodedMsg = CoseSign1Message.SignDetached(correctContent, GetCoseSigner(DefaultKey, DefaultHash));
             CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
 
             Assert.True(Verify(msg, DefaultKey, s_sampleContent), "Calling Verify with the correct content");
@@ -149,7 +148,7 @@ namespace System.Security.Cryptography.Cose.Tests
                 return;
             }
 
-            byte[] encodedMsg = CoseSign1Message.Sign(s_sampleContent, DefaultKey, DefaultHash, isDetached: true);
+            byte[] encodedMsg = CoseSign1Message.SignDetached(s_sampleContent, GetCoseSigner(DefaultKey, DefaultHash));
             CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
 
             ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => Verify(msg, DefaultKey, null!));
@@ -159,7 +158,11 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void VerifyThrowsIfKeyIsNull()
         {
-            byte[] encodedMsg = CoseSign1Message.Sign(s_sampleContent, DefaultKey, DefaultHash, isDetached: UseDetachedContent);
+            var signer = GetCoseSigner(DefaultKey, DefaultHash);
+            byte[] encodedMsg = UseDetachedContent ?
+                CoseSign1Message.SignDetached(s_sampleContent, signer) :
+                CoseSign1Message.SignEmbedded(s_sampleContent, signer);
+
             CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
 
             Assert.Throws<ArgumentNullException>("key", () => Verify(msg, null!, s_sampleContent));
@@ -168,7 +171,11 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void VerifyThrowsIfKeyIsNotSupported()
         {
-            byte[] encodedMsg = CoseSign1Message.Sign(s_sampleContent, DefaultKey, DefaultHash, isDetached: UseDetachedContent);
+            var signer = GetCoseSigner(DefaultKey, DefaultHash);
+            byte[] encodedMsg = UseDetachedContent ?
+                CoseSign1Message.SignDetached(s_sampleContent, signer) :
+                CoseSign1Message.SignEmbedded(s_sampleContent, signer);
+
             CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
 
             AsymmetricAlgorithm key = ECDiffieHellman.Create();
@@ -212,25 +219,6 @@ namespace System.Security.Cryptography.Cose.Tests
             Assert.Throws<CryptographicException>(() => Verify(msg, DefaultKey, s_sampleContent));
         }
 
-        [Fact]
-        public void VerifyThrowsIfUnsupportedHeaderWasIncluded()
-        {
-            foreach (bool useProtected in new[] { false, true })
-            {
-                foreach (CoseHeaderLabel unsupportedHeader in new[] {CoseHeaderLabel.Critical, CoseHeaderLabel.CounterSignature })
-                {
-                    CoseHeaderMap protectedHeaders = GetHeaderMapWithAlgorithm();
-                    CoseHeaderMap unprotectedHeaders = GetEmptyHeaderMap();
-                    (useProtected ? protectedHeaders : unprotectedHeaders).SetValue(unsupportedHeader, ReadOnlySpan<byte>.Empty);
-
-                    byte[] encodedMsg = CoseSign1Message.Sign(s_sampleContent, DefaultKey, DefaultHash, protectedHeaders, unprotectedHeaders, isDetached: UseDetachedContent);
-                    CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
-
-                    Assert.Throws<NotSupportedException>(() => Verify(msg, DefaultKey, s_sampleContent));
-                }
-            }
-        }
-
         private void ReplaceContentInHexCborMessage(ref string hexCborMessage)
         {
             if (UseDetachedContent)
@@ -244,13 +232,13 @@ namespace System.Security.Cryptography.Cose.Tests
     {
         internal override bool UseDetachedContent => false;
         internal override bool Verify(CoseSign1Message msg, AsymmetricAlgorithm key, byte[] content)
-            => msg.Verify(key);
+            => msg.VerifyEmbedded(key);
     }
 
     public class CoseSign1MessageTests_VerifyDetached : CoseSign1MessageTests_Verify
     {
         internal override bool UseDetachedContent => true;
         internal override bool Verify(CoseSign1Message msg, AsymmetricAlgorithm key, byte[] content)
-            => msg.Verify(key, content);
+            => msg.VerifyDetached(key, content);
     }
 }
