@@ -434,7 +434,7 @@
     </ItemGroup>
 
     <Message Text="Stripping symbols from dotnet.wasm ..." Importance="High" Condition="'$(WasmNativeStrip)' == 'true'" />
-    <Exec Command="wasm-opt$(_ExeExt) --enable-exception-handling @(WasmOptConfigurationFlags, ' ') --strip-dwarf &quot;$(_WasmIntermediateOutputPath)dotnet.wasm&quot; -o &quot;$(_WasmIntermediateOutputPath)dotnet.wasm&quot;"
+    <Exec Command="wasm-opt$(_ExeExt) --enable-simd --enable-exception-handling @(WasmOptConfigurationFlags, ' ') --strip-dwarf &quot;$(_WasmIntermediateOutputPath)dotnet.wasm&quot; -o &quot;$(_WasmIntermediateOutputPath)dotnet.wasm&quot;"
           Condition="'$(WasmNativeStrip)' == 'true'"
           IgnoreStandardErrorWarningFormat="true"
           EnvironmentVariables="@(EmscriptenEnvVars)" />
