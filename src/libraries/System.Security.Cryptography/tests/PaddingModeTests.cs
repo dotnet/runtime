@@ -12,28 +12,16 @@ namespace System.Security.Cryptography.Tests
 {
     public static class PaddingModeTests
     {
-        public static IEnumerable<object[]> ValidatePaddingMode_NonISO10126Data
-        {
-            get
-            {
-                yield return new object[] { PaddingMode.PKCS7, 1, "46785BDE46622B92FF7C8EBB91508A", "DB5B7829CCE732BFE609140CF45A8843" };
-                yield return new object[] { PaddingMode.PKCS7, 13, "E505A2", "46785BDE46622B92FF7C8EBB91508A4D" };
-                yield return new object[] { PaddingMode.PKCS7, 16, "", "D5450767BCC31793FE5065251B96B715" };
-
-                if (PlatformDetection.IsNotBrowser)
-                {
-                    yield return new object[] { PaddingMode.Zeros, 0, "", "" }; // no block is added in this case!
-                    yield return new object[] { PaddingMode.Zeros, 1, "46785BDE46622B92FF7C8EBB91508A", "1BE8AA365A15D11FC7826B3A10602D09" };
-                    yield return new object[] { PaddingMode.Zeros, 13, "E505A2", "0A2E62938B03E5822EE251117A4CE066" };
-                    yield return new object[] { PaddingMode.ANSIX923, 1, "46785BDE46622B92FF7C8EBB91508A", "DB5B7829CCE732BFE609140CF45A8843" };
-                    yield return new object[] { PaddingMode.ANSIX923, 13, "E505A2", "43B27D41A9FDE73CA5DB22C0FDA76CB1" };
-                    yield return new object[] { PaddingMode.ANSIX923, 16, "", "A3D32A3A9DCA71B6F961F5A8ED7E414F" };
-                }
-            }
-        }
-
         [Theory]
-        [MemberData(nameof(ValidatePaddingMode_NonISO10126Data))]
+        [InlineData(PaddingMode.Zeros, 0, "", "")] // no block is added in this case!
+        [InlineData(PaddingMode.Zeros, 1, "46785BDE46622B92FF7C8EBB91508A", "1BE8AA365A15D11FC7826B3A10602D09")]
+        [InlineData(PaddingMode.Zeros, 13, "E505A2", "0A2E62938B03E5822EE251117A4CE066")]
+        [InlineData(PaddingMode.PKCS7, 1, "46785BDE46622B92FF7C8EBB91508A", "DB5B7829CCE732BFE609140CF45A8843")]
+        [InlineData(PaddingMode.PKCS7, 13, "E505A2", "46785BDE46622B92FF7C8EBB91508A4D")]
+        [InlineData(PaddingMode.PKCS7, 16, "", "D5450767BCC31793FE5065251B96B715")]
+        [InlineData(PaddingMode.ANSIX923, 1, "46785BDE46622B92FF7C8EBB91508A", "DB5B7829CCE732BFE609140CF45A8843")]
+        [InlineData(PaddingMode.ANSIX923, 13, "E505A2", "43B27D41A9FDE73CA5DB22C0FDA76CB1")]
+        [InlineData(PaddingMode.ANSIX923, 16, "", "A3D32A3A9DCA71B6F961F5A8ED7E414F")]
         public static void ValidatePaddingMode_NonISO10126(PaddingMode paddingMode, int expectedPaddingSize, string plainTextStr, string expectedCipherStr)
         {
             Assert.True(paddingMode != PaddingMode.ISO10126, "This tests only non-ISO10126 padding");
@@ -54,19 +42,10 @@ namespace System.Security.Cryptography.Tests
 
                 Assert.Equal(expectedCipherStr, cipher.ByteArrayToHex());
 
-                if (PlatformDetection.IsNotBrowser)
-                {
-                    // decrypt it with PaddingMode.None so that we can inspect the padding manually
-                    a.Padding = PaddingMode.None;
-                    byte[] decrypted = a.Decrypt(cipher);
-                    ValidatePadding(decrypted, paddingMode, expectedPaddingSize);
-                }
-                else
-                {
-                    // Browser doesn't support PaddingMode.None so just verify it round trips correctly
-                    byte[] decrypted = a.Decrypt(cipher);
-                    Assert.Equal(decrypted, plainText);
-                }
+                // decrypt it with PaddingMode.None so that we can inspect the padding manually
+                a.Padding = PaddingMode.None;
+                byte[] decrypted = a.Decrypt(cipher);
+                ValidatePadding(decrypted, paddingMode, expectedPaddingSize);
             }
         }
 
@@ -74,7 +53,6 @@ namespace System.Security.Cryptography.Tests
         [InlineData(1, "46785BDE46622B92FF7C8EBB91508A")]
         [InlineData(13, "E505A2")]
         [InlineData(16, "")]
-        [SkipOnPlatform(TestPlatforms.Browser, "PaddingMode.ISO10126 is not supported on Browser")]
         public static void ValidatePaddingMode_ISO10126(int expectedPaddingSize, string plainTextStr)
         {
             byte[] key = "1ed2f625c187b993256a8b3ccf9dcbfa5b44b4795c731012f70e4e64732efd5d".HexToByteArray();

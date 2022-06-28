@@ -39,33 +39,5 @@ namespace System.Security.Cryptography.Tests
                 Assert.Throws<PlatformNotSupportedException>(() => aes.CreateDecryptor());
             }
         }
-
-        [Fact]
-        public static void AesThrows_PlatformNotSupported_PaddingMode_Browser()
-        {
-            using (Aes aes = Aes.Create())
-            {
-                Assert.Throws<PlatformNotSupportedException>(() => aes.EncryptCbc(s_plainText, s_iv, PaddingMode.None));
-                Assert.Throws<PlatformNotSupportedException>(() => aes.EncryptCbc(s_plainText, s_iv, PaddingMode.Zeros));
-                Assert.Throws<PlatformNotSupportedException>(() => aes.EncryptCbc(s_plainText, s_iv, PaddingMode.ANSIX923));
-                Assert.Throws<PlatformNotSupportedException>(() => aes.EncryptCbc(s_plainText, s_iv, PaddingMode.ISO10126));
-
-                aes.Padding = PaddingMode.None;
-                Assert.Throws<PlatformNotSupportedException>(() => aes.CreateEncryptor());
-                Assert.Throws<PlatformNotSupportedException>(() => aes.CreateDecryptor());
-
-                aes.Padding = PaddingMode.Zeros;
-                Assert.Throws<PlatformNotSupportedException>(() => aes.CreateEncryptor());
-                Assert.Throws<PlatformNotSupportedException>(() => aes.CreateDecryptor());
-
-                aes.Padding = PaddingMode.ANSIX923;
-                Assert.Throws<PlatformNotSupportedException>(() => aes.CreateEncryptor());
-                Assert.Throws<PlatformNotSupportedException>(() => aes.CreateDecryptor());
-
-                aes.Padding = PaddingMode.ISO10126;
-                Assert.Throws<PlatformNotSupportedException>(() => aes.CreateEncryptor());
-                Assert.Throws<PlatformNotSupportedException>(() => aes.CreateDecryptor());
-            }
-        }
     }
 }

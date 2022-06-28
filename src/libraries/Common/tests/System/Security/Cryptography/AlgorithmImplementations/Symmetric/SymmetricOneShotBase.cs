@@ -437,25 +437,13 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        public static IEnumerable<object[]> DecryptOneShot_Cbc_InvalidPadding_DoesNotContainPlaintextData
-        {
-            get
-            {
-                yield return new object[] { PaddingMode.PKCS7, 0 };
-                yield return new object[] { PaddingMode.PKCS7, 2048 };
-
-                if (PlatformDetection.IsNotBrowser)
-                {
-                    yield return new object[] { PaddingMode.ANSIX923, 0 };
-                    yield return new object[] { PaddingMode.ISO10126, 0 };
-                    yield return new object[] { PaddingMode.ANSIX923, 2048 };
-                    yield return new object[] { PaddingMode.ISO10126, 2048 };
-                }
-            }
-        }
-
         [Theory]
-        [MemberData(nameof(DecryptOneShot_Cbc_InvalidPadding_DoesNotContainPlaintextData))]
+        [InlineData(PaddingMode.PKCS7, 0)]
+        [InlineData(PaddingMode.ANSIX923, 0)]
+        [InlineData(PaddingMode.ISO10126, 0)]
+        [InlineData(PaddingMode.PKCS7, 2048)]
+        [InlineData(PaddingMode.ANSIX923, 2048)]
+        [InlineData(PaddingMode.ISO10126, 2048)]
         public void DecryptOneShot_Cbc_InvalidPadding_DoesNotContainPlaintext(PaddingMode paddingMode, int ciphertextSize)
         {
             using (SymmetricAlgorithm alg = CreateAlgorithm())
@@ -468,20 +456,8 @@ namespace System.Security.Cryptography.Tests
                 invalidPadding.AsSpan().Fill(plaintextByte);
                 byte[] destination = new byte[size];
 
-                byte[] ciphertext;
-                if (PlatformDetection.IsNotBrowser)
-                {
-                    // Use paddingMode: None since we manually padded our data
-                    ciphertext = alg.EncryptCbc(invalidPadding, IV, paddingMode: PaddingMode.None);
-                }
-                else
-                {
-                    // Browser doesn't support PaddingMode.None, only PKCS7. Since we know that we are working with a whole
-                    // block, use PKCS7 but then cut the padding (one whole block of 0x10 values) off and use that to simulate
-                    // PaddingMode.None.
-                    ciphertext = alg.EncryptCbc(invalidPadding, IV, PaddingMode.PKCS7);
-                    ciphertext = ciphertext.AsSpan(..^(alg.BlockSize / 8)).ToArray();
-                }
+                // Use paddingMode: None since we manually padded our data
+                byte[] ciphertext = alg.EncryptCbc(invalidPadding, IV, paddingMode: PaddingMode.None);
                 Assert.Throws<CryptographicException>(() => alg.DecryptCbc(ciphertext, IV, destination, paddingMode: paddingMode));
                 Assert.True(destination.AsSpan().IndexOf(plaintextByte) < 0, "does not contain plaintext data");
             }
