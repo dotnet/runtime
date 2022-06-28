@@ -50,6 +50,11 @@ namespace Microsoft.Interop
             return false;
         }
 
+        public static bool HasEntryPointMarshallerAttribute(ITypeSymbol entryPointType)
+        {
+            return entryPointType.GetAttributes().Any(attr => attr.AttributeClass.ToDisplayString() == TypeNames.ManagedToUnmanagedMarshallersAttribute);
+        }
+
         public static bool TryGetMarshallers(ITypeSymbol entryPointType, ITypeSymbol managedType, bool isLinearCollectionMarshalling, Compilation compilation, out CustomTypeMarshallers? marshallers)
         {
             marshallers = null;
