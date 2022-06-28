@@ -988,8 +988,9 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
         }
 
 #if FEATURE_MULTIREG_ARGS
-        // For RyuJIT backend we will expand a Multireg arg into a GT_FIELD_LIST
-        // with multiple indirections, so here we consider spilling it into a tmp LclVar.
+        // In "fgMorphMultiRegStructArg" we will expand the arg into a GT_FIELD_LIST with multiple indirections, so
+        // here we consider spilling it into a local. We also need to spill it in case we have a node that we do not
+        // currently handle in multi-reg morphing.
         //
         if (varTypeIsStruct(argx) && !arg.m_needTmp)
         {
