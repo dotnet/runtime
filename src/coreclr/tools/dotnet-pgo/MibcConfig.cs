@@ -21,6 +21,6 @@ public class MibcConfig
             Os:            {Os}
             Arch:          {Arch}
 
-            """; ;
+            """;
     }
 }
