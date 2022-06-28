@@ -358,9 +358,6 @@ if (is_browser) {
 Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntime]) => {
     applyArguments();
 
-    // Must be after loading npm modules.
-    runArgs.environmentVariables["IsWebSocketSupported"] = ("WebSocket" in globalThis).toString().toLowerCase();
-
     return createDotnetRuntime(({ MONO, INTERNAL, BINDING, Module }) => ({
         disableDotnet6Compatibility: true,
         config: null,
@@ -383,20 +380,6 @@ Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntim
 
                 config.wait_for_debugger = -1;
             }
-        },
-        preRun: () => {
-            if (!runArgs.enableGC) {
-                INTERNAL.mono_wasm_enable_on_demand_gc(0);
-            }
-        },
-        onDotnetReady: () => {
-            let wds = Module.FS.stat(runArgs.workingDirectory);
-            if (wds === undefined || !Module.FS.isDir(wds.mode)) {
-                set_exit_code(1, `Could not find working directory ${runArgs.workingDirectory}`);
-                return;
-            }
-
-            Module.FS.chdir(runArgs.workingDirectory);
     
             if (is_node) {
                 const modulesToLoad = runArgs.environmentVariables["NPM_MODULES"];
@@ -425,6 +408,23 @@ Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntim
                     });
                 }
             }
+
+            // Must be after loading npm modules.
+            config.environment_variables["IsWebSocketSupported"] = ("WebSocket" in globalThis).toString().toLowerCase();
+        },
+        preRun: () => {
+            if (!runArgs.enableGC) {
+                INTERNAL.mono_wasm_enable_on_demand_gc(0);
+            }
+        },
+        onDotnetReady: () => {
+            let wds = Module.FS.stat(runArgs.workingDirectory);
+            if (wds === undefined || !Module.FS.isDir(wds.mode)) {
+                set_exit_code(1, `Could not find working directory ${runArgs.workingDirectory}`);
+                return;
+            }
+
+            Module.FS.chdir(runArgs.workingDirectory);
 
             App.init({ MONO, INTERNAL, BINDING, Module, runArgs });
         },
