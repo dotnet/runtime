@@ -33,7 +33,7 @@ namespace ILCompiler.Dataflow
     {
         private readonly Logger _logger;
         private readonly NodeFactory _factory;
-        private readonly ReflectionMarker _reflectionMarker;
+        private ReflectionMarker _reflectionMarker;
         private readonly TrimAnalysisPatternStore TrimAnalysisPatterns;
 
         private MessageOrigin _origin;
@@ -93,8 +93,9 @@ namespace ILCompiler.Dataflow
         {
             base.InterproceduralScan(methodBody);
 
-            var reflectionMarker = new ReflectionMarker(_logger, _factory, _annotations, typeHierarchyDataFlow: false, enabled: true);
-            TrimAnalysisPatterns.MarkAndProduceDiagnostics(reflectionMarker);
+            // Replace the reflection marker with one which actually marks
+            _reflectionMarker = new ReflectionMarker(_logger, _factory, _annotations, typeHierarchyDataFlow: false, enabled: true);
+            TrimAnalysisPatterns.MarkAndProduceDiagnostics(_reflectionMarker);
         }
 
         protected override void Scan(MethodIL methodBody, ref ValueSet<MethodProxy> methodsInGroup)
