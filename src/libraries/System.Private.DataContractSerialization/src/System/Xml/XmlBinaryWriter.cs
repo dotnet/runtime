@@ -14,6 +14,7 @@ using System.Globalization;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Buffers.Binary;
 
 namespace System.Xml
 {
@@ -127,11 +128,11 @@ namespace System.Xml
         {
             ref byte bytePtr = ref GetTextNodeBufferRef(5);
             bytePtr = (byte)nodeType;
-            if (BitConverter.IsLittleEndian)
+            if (!BitConverter.IsLittleEndian)
             {
-                Unsafe.WriteUnaligned(ref Unsafe.Add(ref bytePtr, 1), value);
+                value = BinaryPrimitives.ReverseEndianness(value);
             }
-            else
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref bytePtr, 1), value);
             {
                 Unsafe.Add(ref bytePtr, 1) = (byte)(value);
                 Unsafe.Add(ref bytePtr, 2) = (byte)(value >> 8);
@@ -145,11 +146,11 @@ namespace System.Xml
         {
             ref byte bytePtr = ref GetTextNodeBufferRef(9);
             bytePtr = (byte)nodeType;
-            if (BitConverter.IsLittleEndian)
+            if (!BitConverter.IsLittleEndian)
             {
-                Unsafe.WriteUnaligned(ref Unsafe.Add(ref bytePtr, 1), value);
+                value = BinaryPrimitives.ReverseEndianness(value);
             }
-            else
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref bytePtr, 1), value);
             {
                 Unsafe.Add(ref bytePtr, 1) = (byte)(value);
                 Unsafe.Add(ref bytePtr, 2) = (byte)((uint)value >> 8);
@@ -539,21 +540,12 @@ namespace System.Xml
         private void WriteInt64(long value)
         {
             ref byte bytePtr = ref GetBufferRef(8);
-            if (BitConverter.IsLittleEndian)
+            if (!BitConverter.IsLittleEndian)
             {
+                value = BinaryPrimitives.ReverseEndianness(value);
                 Unsafe.WriteUnaligned(ref bytePtr, value);
             }
-            else
-            {
-                Unsafe.Add(ref bytePtr, 0) = (byte)(value);
-                Unsafe.Add(ref bytePtr, 1) = (byte)((uint)value >> 8);
-                Unsafe.Add(ref bytePtr, 2) = (byte)((uint)value >> 16);
-                Unsafe.Add(ref bytePtr, 3) = (byte)((uint)value >> 24);
-                Unsafe.Add(ref bytePtr, 4) = (byte)(value >> 32);
-                Unsafe.Add(ref bytePtr, 5) = (byte)(value >> 40);
-                Unsafe.Add(ref bytePtr, 6) = (byte)(value >> 48);
-                Unsafe.Add(ref bytePtr, 7) = (byte)(value >> 56);
-            }
+            Unsafe.WriteUnaligned(ref bytePtr, value);
             Advance(8);
         }
 
