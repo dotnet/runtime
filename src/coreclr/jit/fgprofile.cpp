@@ -3590,13 +3590,18 @@ weight_t Compiler::fgComputeMissingBlockWeights()
                 if (bbIsHandlerBeg(bDst))
                 {
                     bSrc = bDst->bbPreds->getBlock();
-                    if (bSrc->bbJumpKind == BBJ_CALLFINALLY)
+
+                    // To minimize asmdiffs for now, modify weights only if splitting.
+                    if (fgFirstColdBlock != nullptr)
                     {
-                        newWeight = bSrc->bbWeight;
-                    }
-                    else
-                    {
-                        newWeight = BB_ZERO_WEIGHT;
+                        if (bSrc->bbJumpKind == BBJ_CALLFINALLY)
+                        {
+                            newWeight = bSrc->bbWeight;
+                        }
+                        else
+                        {
+                            newWeight = BB_ZERO_WEIGHT;
+                        }
                     }
                 }
 
@@ -3620,9 +3625,14 @@ weight_t Compiler::fgComputeMissingBlockWeights()
                 // Assume handler/filter entries are rarely executed.
                 // To avoid unnecessary loop iterations, set weight
                 // only if bDst->bbWeight is not already zero.
-                changed  = true;
-                modified = true;
-                bDst->bbSetRunRarely();
+
+                // To minimize asmdiffs for now, modify weights only if splitting.
+                if (fgFirstColdBlock != nullptr)
+                {
+                    changed  = true;
+                    modified = true;
+                    bDst->bbSetRunRarely();
+                }
             }
 
             // Sum up the weights of all of the return blocks and throw blocks
