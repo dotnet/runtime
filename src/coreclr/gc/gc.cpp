@@ -13117,7 +13117,7 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
     }
 
     GCConfig::SetConcurrentGC(gc_can_use_concurrent);
-#else
+#else //BACKGROUND_GC 
     GCConfig::SetConcurrentGC(false);
 #endif //BACKGROUND_GC
 #endif //WRITE_WATCH
@@ -14122,7 +14122,6 @@ gc_heap::init_gc_heap (int  h_number)
 #ifdef DOUBLY_LINKED_FL
     current_sweep_seg = 0;
 #endif //DOUBLY_LINKED_FL
-#else
 
 #endif //BACKGROUND_GC
 
@@ -44238,9 +44237,11 @@ HRESULT GCHeap::Initialize()
     dynamic_data* gen0_dd = hp->dynamic_data_of (0);
     gc_heap::min_gen0_balance_delta = (dd_min_size (gen0_dd) >> 3);
 
+    bool can_use_cpu_groups = GCToOSInterface::CanEnableGCCPUGroups();
+    GCConfig::SetGCCpuGroup(can_use_cpu_groups);
+
 #ifdef HEAP_BALANCE_INSTRUMENTATION
-    cpu_group_enabled_p = GCToOSInterface::CanEnableGCCPUGroups();
-    GCConfig::SetGCCpuGroup(cpu_group_enabled_p);
+    cpu_group_enabled_p = can_use_cpu_groups; 
 
     if (!GCToOSInterface::GetNumaInfo (&total_numa_nodes_on_machine, &procs_per_numa_node))
     {

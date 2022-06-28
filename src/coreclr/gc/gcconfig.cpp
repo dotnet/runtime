@@ -13,7 +13,7 @@
 
 #define INT_CONFIG(name, unused_private_key, unused_public_key, default, unused_enumerated, unused_doc)  \
   int64_t GCConfig::Get##name() { return s_##name; }                                  \
-  void GCConfig::Set##name(long long value) { s_Updated##name = value; }              \
+  void GCConfig::Set##name(int64_t value) { s_Updated##name = value; }              \
   int64_t GCConfig::s_##name = default;                                               \
   int64_t GCConfig::s_Updated##name = default;
 

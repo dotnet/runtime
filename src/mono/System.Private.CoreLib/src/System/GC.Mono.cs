@@ -319,7 +319,7 @@ namespace System
 
         public static System.Collections.Generic.IReadOnlyDictionary<string, object> GetConfigurationVariables()
         {
-            throw new NotImplementedException();
+            return new System.Collections.Generic.Dictionary<string, object>();
         }
     }
 }

@@ -778,7 +778,9 @@ namespace System
         }
 
         /// <summary>
-        /// Returns a dictionary keyed on GC Configuration Names with values as the configuration values.
+        /// Gets the Configurations used by the Garbage Collector. The value of these configurations used don't neccessarily have to be the same as the ones that are passed by the user.
+        /// For example for the ``GCHeapCount`` configuration, if the user supplies a value higher than the number of CPUs, the configuration that will be used is that of the number of CPUs.
+        /// <returns> A Read Only Dictionary with configuration names and values of the configuration as the keys and values of the dictionary, respectively.</returns>
         /// </summary>
         public static unsafe IReadOnlyDictionary<string, object> GetConfigurationVariables()
         {
