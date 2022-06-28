@@ -3247,12 +3247,14 @@ namespace System.Reflection.PortableExecutable
         ThreadTerm = (ushort)8,
         HighEntropyVirtualAddressSpace = (ushort)32,
         DynamicBase = (ushort)64,
+        ForceIntegrity = (ushort)128,
         NxCompatible = (ushort)256,
         NoIsolation = (ushort)512,
         NoSeh = (ushort)1024,
         NoBind = (ushort)2048,
         AppContainer = (ushort)4096,
         WdmDriver = (ushort)8192,
+        ControlFlowGuard = (ushort)16384,
         TerminalServerAware = (ushort)32768,
     }
     public enum Machine : ushort
