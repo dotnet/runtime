@@ -1,21 +1,4 @@
 
-trigger:
-  batch: true
-  branches:
-    include:
-    - release/*.*
-  paths:
-    include:
-    - '*'
-    - docs/manpages/*
-    exclude:
-    - /**/*.md
-    - eng/Version.Details.xml
-    - .github/*
-    - docs/*
-    - LICENSE.TXT
-    - PATENTS.TXT
-    - THIRD-PARTY-NOTICES.TXT
 
 
 variables:
