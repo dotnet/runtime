@@ -145,6 +145,24 @@ namespace Mono.Linker.Tests.TestCases
 		}
 
 		[Test]
+		public void CandumpDependenciesToUncompressedDgml ()
+		{
+			var testcase = CreateIndividualCase (typeof (CanDumpDependenciesToUncompressedDgml));
+			var result = Run (testcase);
+
+			var outputPath = result.OutputAssemblyPath.Parent.Combine ("linker-dependencies.dgml");
+			if (!outputPath.Exists ())
+				Assert.Fail ($"The dependency dump file is missing.  Expected it to exist at {outputPath}");
+
+			using (var reader = new XmlTextReader (outputPath.ToString ())) {
+				reader.Read ();
+				reader.Read ();
+				reader.Read ();
+				Assert.That (reader.Name, Is.EqualTo ("DirectedGraph"), $"Expected to be at the DirectedGraph element, but the current node name is `{reader.Name}`");
+			}
+		}
+
+		[Test]
 		public void CanEnableReducedTracing ()
 		{
 			var testcase = CreateIndividualCase (typeof (CanEnableReducedTracing));

@@ -27,8 +27,8 @@
 //
 
 using System;
+using System.Diagnostics;
 using System.IO;
-using System.IO.Compression;
 using System.Xml;
 using Mono.Cecil;
 
@@ -39,7 +39,7 @@ namespace Mono.Linker
 	/// </summary>
 	public class XmlDependencyRecorder : IDependencyRecorder, IDisposable
 	{
-		public const string DefaultDependenciesFileName = "linker-dependencies.xml.gz";
+		public const string DefaultDependenciesFileName = "linker-dependencies.xml";
 
 		private readonly LinkContext context;
 		private XmlWriter? writer;
@@ -63,11 +63,7 @@ namespace Mono.Linker
 			}
 
 			var depsFile = File.OpenWrite (fileName);
-
-			if (Path.GetExtension (fileName) == ".xml")
-				stream = depsFile;
-			else
-				stream = new GZipStream (depsFile, CompressionMode.Compress);
+			stream = depsFile;
 
 			writer = XmlWriter.Create (stream, settings);
 			writer.WriteStartDocument ();
@@ -77,14 +73,20 @@ namespace Mono.Linker
 			writer.WriteEndAttribute ();
 		}
 
+		public void FinishRecording ()
+		{
+			Debug.Assert (writer != null);
+
+			writer.WriteEndElement ();
+			writer.WriteEndDocument ();
+			writer.Flush ();
+		}
+
 		public void Dispose ()
 		{
 			if (writer == null)
 				return;
 
-			writer.WriteEndElement ();
-			writer.WriteEndDocument ();
-			writer.Flush ();
 			writer.Dispose ();
 			stream?.Dispose ();
 			writer = null;
@@ -108,7 +110,7 @@ namespace Mono.Linker
 			if (writer == null)
 				throw new InvalidOperationException ();
 
-			if (!ShouldRecord (source) && !ShouldRecord (target))
+			if (!DependencyRecorderHelper.ShouldRecord (context, source) && !DependencyRecorderHelper.ShouldRecord (context, target))
 				return;
 
 			// We use a few hacks to work around MarkStep outputting thousands of edges even
@@ -127,104 +129,10 @@ namespace Mono.Linker
 				writer.WriteStartElement ("edge");
 				if (marked)
 					writer.WriteAttributeString ("mark", "1");
-				writer.WriteAttributeString ("b", TokenString (source));
-				writer.WriteAttributeString ("e", TokenString (target));
+				writer.WriteAttributeString ("b", DependencyRecorderHelper.TokenString (context, source));
+				writer.WriteAttributeString ("e", DependencyRecorderHelper.TokenString (context, target));
 				writer.WriteEndElement ();
 			}
-		}
-
-		static bool IsAssemblyBound (TypeDefinition td)
-		{
-			do {
-				if (td.IsNestedPrivate || td.IsNestedAssembly || td.IsNestedFamilyAndAssembly)
-					return true;
-
-				td = td.DeclaringType;
-			} while (td != null);
-
-			return false;
-		}
-
-		string TokenString (object? o)
-		{
-			if (o == null)
-				return "N:null";
-
-			if (o is TypeReference t) {
-				bool addAssembly = true;
-				var td = context.TryResolve (t);
-
-				if (td != null) {
-					addAssembly = td.IsNotPublic || IsAssemblyBound (td);
-					t = td;
-				}
-
-				var addition = addAssembly ? $":{t.Module}" : "";
-
-				return $"{((IMetadataTokenProvider) o).MetadataToken.TokenType}:{o}{addition}";
-			}
-
-			if (o is IMetadataTokenProvider provider)
-				return provider.MetadataToken.TokenType + ":" + o;
-
-			return "Other:" + o;
-		}
-
-		bool WillAssemblyBeModified (AssemblyDefinition assembly)
-		{
-			switch (context.Annotations.GetAction (assembly)) {
-			case AssemblyAction.Link:
-			case AssemblyAction.AddBypassNGen:
-			case AssemblyAction.AddBypassNGenUsed:
-				return true;
-			default:
-				return false;
-			}
-		}
-
-		bool ShouldRecord (object? o)
-		{
-			if (!context.EnableReducedTracing)
-				return true;
-
-			if (o is TypeDefinition t)
-				return WillAssemblyBeModified (t.Module.Assembly);
-
-			if (o is IMemberDefinition m)
-				return WillAssemblyBeModified (m.DeclaringType.Module.Assembly);
-
-			if (o is TypeReference typeRef) {
-				var resolved = context.TryResolve (typeRef);
-
-				// Err on the side of caution if we can't resolve
-				if (resolved == null)
-					return true;
-
-				return WillAssemblyBeModified (resolved.Module.Assembly);
-			}
-
-			if (o is MemberReference mRef) {
-				var resolved = mRef.Resolve ();
-
-				// Err on the side of caution if we can't resolve
-				if (resolved == null)
-					return true;
-
-				return WillAssemblyBeModified (resolved.DeclaringType.Module.Assembly);
-			}
-
-			if (o is ModuleDefinition module)
-				return WillAssemblyBeModified (module.Assembly);
-
-			if (o is AssemblyDefinition assembly)
-				return WillAssemblyBeModified (assembly);
-
-			if (o is ParameterDefinition parameter) {
-				if (parameter.Method is MethodDefinition parameterMethodDefinition)
-					return WillAssemblyBeModified (parameterMethodDefinition.DeclaringType.Module.Assembly);
-			}
-
-			return true;
 		}
 	}
 }

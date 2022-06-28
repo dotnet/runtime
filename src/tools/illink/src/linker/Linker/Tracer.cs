@@ -50,6 +50,7 @@ namespace Mono.Linker
 		{
 			if (recorders != null) {
 				foreach (var recorder in recorders) {
+					recorder.FinishRecording ();
 					if (recorder is IDisposable disposableRecorder)
 						disposableRecorder.Dispose ();
 				}

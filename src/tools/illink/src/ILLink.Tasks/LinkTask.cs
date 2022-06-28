@@ -183,6 +183,12 @@ namespace ILLink.Tasks
 		public bool DumpDependencies { get; set; }
 
 		/// <summary>
+		///   Make illink dump dependencies to the specified file type.
+		///   Maps to '--dependencies-file-format'.
+		/// </summary>
+		public string DependenciesFileFormat { get; set; }
+
+		/// <summary>
 		///   Remove debug symbols from linked assemblies.
 		///   Maps to '-b' if false.
 		///   Default if not specified is to remove symbols, like
@@ -475,6 +481,10 @@ namespace ILLink.Tasks
 
 			if (DumpDependencies)
 				args.AppendLine ("--dump-dependencies");
+
+			if (DependenciesFileFormat != null) {
+				args.Append ("--dependencies-file-format ").AppendLine (DependenciesFileFormat);
+			}
 
 			return args.ToString ();
 		}

@@ -10,6 +10,12 @@ namespace ILLink.RoslynAnalyzer.Tests.Tracing
 		protected override string TestSuiteName => "Tracing.Individual";
 
 		[Fact]
+		public Task CanDumpDependenciesToUncompressedDgml ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task CanDumpDependenciesToUncompressedXml ()
 		{
 			return RunTest (allowMissingWarnings: true);
