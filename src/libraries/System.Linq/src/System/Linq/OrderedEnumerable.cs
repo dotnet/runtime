@@ -120,6 +120,10 @@ namespace System.Linq
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
+            if (keySelector is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
+            }
 
             _parent = parent;
             _keySelector = keySelector;
