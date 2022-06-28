@@ -1,5 +1,3 @@
 {
-    "compilerOptions": {
-        "lib": ["esnext", "webworker"]
-    }
+    "extends": "../../tsconfig.worker.json"
 }
