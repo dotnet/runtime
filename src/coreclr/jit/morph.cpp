@@ -3630,8 +3630,10 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
         }
         if ((lcl != nullptr) && (lvaGetPromotionType(lcl->GetLclNum()) == PROMOTION_TYPE_INDEPENDENT))
         {
-            if (argNode->OperIs(GT_LCL_VAR) ||
-                ClassLayout::AreCompatible(argNode->AsObj()->GetLayout(), lvaGetDesc(lcl)->GetLayout()))
+            // TODO-Arm-CQ: support decomposing "large" promoted structs into field lists.
+            if (!arg->AbiInfo.IsSplit() &&
+                (argNode->OperIs(GT_LCL_VAR) ||
+                 ClassLayout::AreCompatible(argNode->AsObj()->GetLayout(), lvaGetDesc(lcl)->GetLayout())))
             {
                 argNode = fgMorphLclArgToFieldlist(lcl);
             }
