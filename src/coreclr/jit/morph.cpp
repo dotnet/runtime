@@ -3200,18 +3200,16 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                         }
                     }
 #endif // UNIX_AMD64_ABI
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
                     if ((passingSize != structSize) && !argIsLocal)
                     {
                         makeOutArgCopy = true;
                     }
-#endif
+#endif // defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
 
 #ifdef TARGET_ARM
-                    // TODO-1stClassStructs: Unify these conditions across targets.
-                    if (((lclVar != nullptr) &&
-                         (lvaGetPromotionType(lclVar->AsLclVarCommon()->GetLclNum()) == PROMOTION_TYPE_INDEPENDENT)) ||
-                        ((argObj->OperIs(GT_OBJ)) && (passingSize != structSize)))
+                    if ((lclVar != nullptr) &&
+                        (lvaGetPromotionType(lclVar->AsLclVarCommon()->GetLclNum()) == PROMOTION_TYPE_INDEPENDENT))
                     {
                         makeOutArgCopy = true;
                     }
