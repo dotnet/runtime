@@ -1394,10 +1394,15 @@ CONTEXT_SetThreadContextOnPort(
 
         StateCount = sizeof(State) / sizeof(natural_t);
 
-        MachRet = thread_set_state(Port,
-                                   StateFlavor,
-                                   (thread_state_t)&State,
-                                   StateCount);
+        do
+        {
+            MachRet = thread_set_state(Port,
+                                       StateFlavor,
+                                       (thread_state_t)&State,
+                                       StateCount);
+        }
+        while (MachRet == KERN_ABORTED);
+
         if (MachRet != KERN_SUCCESS)
         {
             ASSERT("thread_set_state(THREAD_STATE) failed: %d\n", MachRet);
@@ -1498,10 +1503,15 @@ CONTEXT_SetThreadContextOnPort(
         }
 #endif
 
-        MachRet = thread_set_state(Port,
-                                   StateFlavor,
-                                   (thread_state_t)&State,
-                                   StateCount);
+        do
+        {
+            MachRet = thread_set_state(Port,
+                                       StateFlavor,
+                                       (thread_state_t)&State,
+                                       StateCount);
+        }
+        while (MachRet == KERN_ABORTED);
+
         if (MachRet != KERN_SUCCESS)
         {
             ASSERT("thread_set_state(FLOAT_STATE) failed: %d\n", MachRet);
