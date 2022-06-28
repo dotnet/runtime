@@ -12079,6 +12079,13 @@ DONE_MORPHING_CHILDREN:
                 }
             }
 
+            if (op2->IsNothingNode() && op1->IsInvariant())
+            {
+                DEBUG_DESTROY_NODE(tree);
+                DEBUG_DESTROY_NODE(op1);
+                return op2;
+            }
+
             break;
 
         case GT_JTRUE:

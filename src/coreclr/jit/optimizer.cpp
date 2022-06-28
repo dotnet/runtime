@@ -6294,13 +6294,6 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
     assert(hoistExpr != origExpr);
     assert(hoistExpr->gtFlags & GTF_MAKE_CSE);
 
-    GenTree* hoist = hoistExpr;
-    // The value of the expression isn't used (unless it's an assignment).
-    if (hoistExpr->OperGet() != GT_ASG)
-    {
-        hoist = gtUnusedValNode(hoistExpr);
-    }
-
     /* Put the statement in the preheader */
 
     INDEBUG(optLoopTable[lnum].lpValidatePreHeader());
@@ -6310,7 +6303,14 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
     // fgMorphTree requires that compCurBB be the block that contains
     // (or in this case, will contain) the expression.
     compCurBB = preHead;
-    hoist     = fgMorphTree(hoist);
+    hoistExpr = fgMorphTree(hoistExpr);
+
+    GenTree* hoist = hoistExpr;
+    // The value of the expression isn't used (unless it's an assignment).
+    if (hoistExpr->OperGet() != GT_ASG)
+    {
+        hoist = gtUnusedValNode(hoistExpr);
+    }
 
     preHead->bbFlags |= (exprBb->bbFlags & (BBF_HAS_IDX_LEN | BBF_HAS_NULLCHECK));
 
@@ -6343,7 +6343,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
     if (verbose)
     {
         printf("This hoisted copy placed in PreHeader (" FMT_BB "):\n", preHead->bbNum);
-        gtDispTree(hoist);
+        gtDispTree(hoistExpr);
         printf("\n");
     }
 #endif
