@@ -35,14 +35,11 @@ namespace System.Formats.Tar
             }
             else if (bytesToDiscard > 0)
             {
-                byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength: MaxBufferLength);
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength: (int)Math.Min(MaxBufferLength, bytesToDiscard));
                 while (bytesToDiscard > 0)
                 {
                     int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToDiscard);
-                    if (archiveStream.Read(buffer.AsSpan(0, currentLengthToRead)) != currentLengthToRead)
-                    {
-                        throw new EndOfStreamException();
-                    }
+                    archiveStream.ReadExactly(buffer.AsSpan(0, currentLengthToRead));
                     bytesToDiscard -= currentLengthToRead;
                 }
                 ArrayPool<byte>.Shared.Return(buffer);
@@ -58,15 +55,11 @@ namespace System.Formats.Tar
             }
             else if (bytesToDiscard > 0)
             {
-                byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength: MaxBufferLength);
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength: (int)Math.Min(MaxBufferLength, bytesToDiscard));
                 while (bytesToDiscard > 0)
                 {
                     int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToDiscard);
-                    int bytesRead = await archiveStream.ReadAsync(buffer.AsMemory(0, currentLengthToRead), cancellationToken).ConfigureAwait(false);
-                    if (bytesRead != currentLengthToRead)
-                    {
-                        throw new EndOfStreamException();
-                    }
+                    await archiveStream.ReadExactlyAsync(buffer, 0, currentLengthToRead, cancellationToken).ConfigureAwait(false);
                     bytesToDiscard -= currentLengthToRead;
                 }
                 ArrayPool<byte>.Shared.Return(buffer);
