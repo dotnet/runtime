@@ -9,6 +9,7 @@ namespace System.Net.Mail
 {
     internal sealed class SmtpNegotiateAuthenticationModule : ISmtpAuthenticationModule
     {
+        private static byte[] _saslNoSecurtyLayerToken = new byte[] { 1, 0, 0, 0 };
         private readonly Dictionary<object, NTAuthentication> _sessions = new Dictionary<object, NTAuthentication>();
 
         internal SmtpNegotiateAuthenticationModule()
@@ -153,15 +154,11 @@ namespace System.Net.Mail
             //       Sender calls GSS_Wrap with conf_flag set to TRUE
             //
             // Exchange 2007 and our client only support
-            // "No security layer". Therefore verify first byte is value 1
-            // and the 2nd-4th bytes are value zero since token size is not
-            // applicable when there is no security layer.
+            // "No security layer". We verify that the server offers
+            // option to use no security layer and negotiate that if
+            // possible.
 
-            if (unwrappedChallenge.Length < 4 ||          // expect 4 bytes
-                unwrappedChallenge[0] != 1 ||    // first value 1
-                unwrappedChallenge[1] != 0 ||    // rest value 0
-                unwrappedChallenge[2] != 0 ||
-                unwrappedChallenge[3] != 0)
+            if (unwrappedChallenge.Length != 4 || (unwrappedChallenge[0] & 1) != 1)
             {
                 return null;
             }
@@ -174,15 +171,13 @@ namespace System.Net.Mail
             //   is able to receive, and the remaining octets containing the
             //   authorization identity.
             //
-            // So now this contructs the "wrapped" response.  The response is
-            // payload is identical to the received server payload and the
-            // "authorization identity" is not supplied as it is unnecessary.
+            // So now this contructs the "wrapped" response.
 
             // let MakeSignature figure out length of output
             byte[]? output = null;
             try
             {
-                len = clientContext.Wrap(unwrappedChallenge.Slice(0, 4), ref output, false);
+                len = clientContext.Wrap(_saslNoSecurtyLayerToken, ref output, false);
             }
             catch (Win32Exception)
             {
