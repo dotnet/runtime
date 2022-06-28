@@ -781,6 +781,16 @@ partial class Program
                 {
                     Sources = { "public class C { }", @"var r = [|new System.Text.RegularExpressions.Regex("""")|];" },
                 },
+                FixedState =
+                {
+                    Sources = { "public class C { }", @"var r = MyRegex();
+
+partial class Program
+{
+    [System.Text.RegularExpressions.RegexGenerator("""")]
+    private static partial System.Text.RegularExpressions.Regex MyRegex();
+}" }
+                }
             }.RunAsync();
         }
 
