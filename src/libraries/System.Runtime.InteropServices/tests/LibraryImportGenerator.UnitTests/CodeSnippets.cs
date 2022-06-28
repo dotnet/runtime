@@ -690,7 +690,7 @@ public struct S
 }}
 ";
             private static string NonStatic = @"
-[ManagedToUnmanagedMarshallers(typeof(S))]
+[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedIn, typeof(Marshaller))]
 public class Marshaller
 {
     public struct Native { }
@@ -705,7 +705,7 @@ public class Marshaller
             public static class Stateless
             {
                 private static string In = @"
-[ManagedToUnmanagedMarshallers(typeof(S))]
+[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedIn, typeof(Marshaller))]
 public static class Marshaller
 {
     public struct Native { }
@@ -714,7 +714,7 @@ public static class Marshaller
 }
 ";
                 private static string InBuffer = @"
-[ManagedToUnmanagedMarshallers(typeof(S))]
+[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedIn, typeof(Marshaller))]
 public static class Marshaller
 {
     public struct Native { }
@@ -724,7 +724,7 @@ public static class Marshaller
 }
 ";
                 private static string Out = @"
-[ManagedToUnmanagedMarshallers(typeof(S))]
+[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedOut, typeof(Marshaller))]
 public static class Marshaller
 {
     public struct Native { }
@@ -733,7 +733,7 @@ public static class Marshaller
 }
 ";
                 private static string OutGuaranteed = @"
-[ManagedToUnmanagedMarshallers(typeof(S))]
+[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedOut, typeof(Marshaller))]
 public static class Marshaller
 {
     public struct Native { }
@@ -742,7 +742,7 @@ public static class Marshaller
 }
 ";
                 public static string Ref = @"
-[ManagedToUnmanagedMarshallers(typeof(S))]
+[CustomMarshaller(typeof(S), Scenario.Default, typeof(Marshaller))]
 public static class Marshaller
 {
     public struct Native { }
@@ -752,7 +752,8 @@ public static class Marshaller
 }
 ";
                 public static string RefBuffer = @"
-[ManagedToUnmanagedMarshallers(typeof(S))]
+[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedIn, typeof(Marshaller))]
+[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedOut, typeof(Marshaller))]
 public static class Marshaller
 {
     public struct Native { }
@@ -763,7 +764,7 @@ public static class Marshaller
 }
 ";
                 public static string RefOptionalBuffer = @"
-[ManagedToUnmanagedMarshallers(typeof(S))]
+[CustomMarshaller(typeof(S), Scenario.Default, typeof(Marshaller))]
 public static class Marshaller
 {
     public struct Native { }
@@ -831,7 +832,7 @@ public static class Marshaller
             public static class Stateful
             {
                 private static string In = @"
-[ManagedToUnmanagedMarshallers(typeof(S), InMarshaller = typeof(M))]
+[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedIn, typeof(M))]
 public static class Marshaller
 {
     public struct Native { }
@@ -845,7 +846,7 @@ public static class Marshaller
 ";
 
                 private static string InBuffer = @"
-[ManagedToUnmanagedMarshallers(typeof(S), InMarshaller = typeof(M))]
+[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedIn, typeof(M))]
 public static class Marshaller
 {
     public struct Native { }
@@ -859,7 +860,7 @@ public static class Marshaller
 }
 ";
                 private static string Out = @"
-[ManagedToUnmanagedMarshallers(typeof(S), OutMarshaller = typeof(M))]
+[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedOut, typeof(M))]
 public static class Marshaller
 {
     public struct Native { }
@@ -872,7 +873,7 @@ public static class Marshaller
 }
 ";
                 private static string OutGuaranteed = @"
-[ManagedToUnmanagedMarshallers(typeof(S), OutMarshaller = typeof(M))]
+[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedOut, typeof(M))]
 public static class Marshaller
 {
     public struct Native { }
@@ -885,7 +886,7 @@ public static class Marshaller
 }
 ";
                 public static string Ref = @"
-[ManagedToUnmanagedMarshallers(typeof(S), InMarshaller = typeof(M), RefMarshaller = typeof(M), OutMarshaller = typeof(M))]
+[CustomMarshaller(typeof(S), Scenario.Default, typeof(M))]
 public static class Marshaller
 {
     public struct Native { }
@@ -900,7 +901,7 @@ public static class Marshaller
 }
 ";
                 public static string RefWithFree = @"
-[ManagedToUnmanagedMarshallers(typeof(S), InMarshaller = typeof(M), RefMarshaller = typeof(M), OutMarshaller = typeof(M))]
+[CustomMarshaller(typeof(S), Scenario.Default, typeof(M))]
 public static class Marshaller
 {
     public struct Native { }
@@ -916,7 +917,7 @@ public static class Marshaller
 }
 ";
                 public static string RefWithNotifyInvokeSucceeded = @"
-[ManagedToUnmanagedMarshallers(typeof(S), InMarshaller = typeof(M), RefMarshaller = typeof(M), OutMarshaller = typeof(M))]
+[CustomMarshaller(typeof(S), Scenario.Default, typeof(M))]
 public static class Marshaller
 {
     public struct Native { }
@@ -932,7 +933,8 @@ public static class Marshaller
 }
 ";
                 public static string RefBuffer = @"
-[ManagedToUnmanagedMarshallers(typeof(S), InMarshaller = typeof(M), RefMarshaller = typeof(M), OutMarshaller = typeof(M))]
+[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedIn, typeof(M))]
+[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedOut, typeof(M))]
 public static class Marshaller
 {
     public struct Native { }
@@ -948,7 +950,7 @@ public static class Marshaller
 }
 ";
                 public static string RefOptionalBuffer = @"
-[ManagedToUnmanagedMarshallers(typeof(S), InMarshaller = typeof(M), RefMarshaller = typeof(M), OutMarshaller = typeof(M))]
+[CustomMarshaller(typeof(S), Scenario.Default, typeof(M))]
 public static class Marshaller
 {
     public struct Native { }

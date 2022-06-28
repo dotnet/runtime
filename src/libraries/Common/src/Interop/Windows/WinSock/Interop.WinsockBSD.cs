@@ -74,7 +74,8 @@ internal static partial class Interop
         {
             internal byte[] MulticastAddress; // IP address of group.
             internal int InterfaceIndex; // Local interface index.
-            [ManagedToUnmanagedMarshallers(typeof(IPv6MulticastRequest), InMarshaller = typeof(Marshaller), RefMarshaller = typeof(Marshaller), OutMarshaller = typeof(Marshaller))]
+
+            [CustomMarshaller(typeof(IPv6MulticastRequest), Scenario.Default, typeof(Marshaller))]
             public static class Marshaller
             {
                 public static Native ConvertToUnmanaged(IPv6MulticastRequest managed) => new(managed);
@@ -89,10 +90,7 @@ internal static partial class Interop
                     public Native(IPv6MulticastRequest managed)
                     {
                         Debug.Assert(managed.MulticastAddress.Length == MulticastAddressLength);
-                        fixed (void* dest = _multicastAddress)
-                        {
-                            managed.MulticastAddress.CopyTo(new Span<byte>(dest, MulticastAddressLength));
-                        }
+                        managed.MulticastAddress.CopyTo(MemoryMarshal.CreateSpan(ref _multicastAddress[0], MulticastAddressLength));
                         _interfaceIndex = managed.InterfaceIndex;
                     }
 
@@ -103,10 +101,7 @@ internal static partial class Interop
                             MulticastAddress = new byte[MulticastAddressLength],
                             InterfaceIndex = _interfaceIndex
                         };
-                        fixed (void* src = _multicastAddress)
-                        {
-                            new Span<byte>(src, 16).CopyTo(managed.MulticastAddress);
-                        }
+                        MemoryMarshal.CreateReadOnlySpan(ref _multicastAddress[0], MulticastAddressLength).CopyTo(managed.MulticastAddress);
                         return managed;
                     }
                 }

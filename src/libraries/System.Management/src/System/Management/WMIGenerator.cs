@@ -5775,10 +5775,7 @@ namespace System.Management
         /// </summary>
         private void AddPropertySet(CodeIndexerExpression prop, bool bArray, CodeStatementCollection statColl, string strType, CodeVariableReferenceExpression varValue)
         {
-            if (varValue == null)
-            {
-                varValue = new CodeVariableReferenceExpression("value");
-            }
+            varValue ??= new CodeVariableReferenceExpression("value");
 
             if (bArray == false)
             {

@@ -1217,17 +1217,7 @@ namespace System.Transactions
         [AllowNull]
         internal static ContextData TLSCurrentData
         {
-            get
-            {
-                ContextData? data = t_staticData;
-                if (data == null)
-                {
-                    data = new ContextData(false);
-                    t_staticData = data;
-                }
-
-                return data;
-            }
+            get => t_staticData ??= new ContextData(false);
             set
             {
                 if (value == null && t_staticData != null)

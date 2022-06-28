@@ -4572,6 +4572,9 @@ void Compiler::lvaMarkLocalVars(BasicBlock* block, bool isRecompute)
 //------------------------------------------------------------------------
 // lvaMarkLocalVars: enable normal ref counting, compute initial counts, sort locals table
 //
+// Returns:
+//    suitable phase status
+//
 // Notes:
 //    Now behaves differently in minopts / debug. Instead of actually inspecting
 //    the IR and counting references, the jit assumes all locals are referenced
@@ -4580,9 +4583,8 @@ void Compiler::lvaMarkLocalVars(BasicBlock* block, bool isRecompute)
 //    Also, when optimizing, lays the groundwork for assertion prop and more.
 //    See details in lvaMarkLclRefs.
 
-void Compiler::lvaMarkLocalVars()
+PhaseStatus Compiler::lvaMarkLocalVars()
 {
-
     JITDUMP("\n*************** In lvaMarkLocalVars()");
 
     // If we have direct pinvokes, verify the frame list root local was set up properly
@@ -4594,6 +4596,8 @@ void Compiler::lvaMarkLocalVars()
             noway_assert(info.compLvFrameListRoot >= info.compLocalsCount && info.compLvFrameListRoot < lvaCount);
         }
     }
+
+    unsigned const lvaCountOrig = lvaCount;
 
 #if !defined(FEATURE_EH_FUNCLETS)
 
@@ -4676,7 +4680,9 @@ void Compiler::lvaMarkLocalVars()
     // If we don't need precise reference counts, e.g. we're not optimizing, we're done.
     if (!PreciseRefCountsRequired())
     {
-        return;
+        // This phase may add new locals
+        //
+        return (lvaCount != lvaCountOrig) ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
     }
 
     const bool reportParamTypeArg = lvaReportParamTypeArg();
@@ -4695,8 +4701,9 @@ void Compiler::lvaMarkLocalVars()
 
     assert(PreciseRefCountsRequired());
 
-    // Note: optAddCopies() depends on lvaRefBlks, which is set in lvaMarkLocalVars(BasicBlock*), called above.
-    optAddCopies();
+    // This phase may add new locals.
+    //
+    return (lvaCount != lvaCountOrig) ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------

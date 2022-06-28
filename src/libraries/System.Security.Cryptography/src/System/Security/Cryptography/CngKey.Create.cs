@@ -36,8 +36,7 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(algorithm);
 
-            if (creationParameters == null)
-                creationParameters = new CngKeyCreationParameters();
+            creationParameters ??= new CngKeyCreationParameters();
 
             SafeNCryptProviderHandle providerHandle = creationParameters.Provider!.OpenStorageProvider();
             SafeNCryptKeyHandle keyHandle;

@@ -229,5 +229,13 @@ namespace System.Text.Json.Serialization.Tests
             public int IntProp { get; set; }
             public SomeRecursiveClass RecursiveProperty { get; set; }
         }
+
+        [JsonDerivedType(typeof(DerivedClass))]
+        private class SomePolymorphicClass
+        {
+            public class DerivedClass : SomePolymorphicClass
+            {
+            }
+        }
     }
 }

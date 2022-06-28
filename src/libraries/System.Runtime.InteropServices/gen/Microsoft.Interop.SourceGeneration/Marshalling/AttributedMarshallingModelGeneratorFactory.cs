@@ -213,15 +213,15 @@ namespace Microsoft.Interop
             CustomTypeMarshallerData marshallerData;
             if (info.IsManagedReturnPosition)
             {
-                marshallerData = marshalInfo.ManagedToUnmanagedMarshallers.Out.Value;
+                marshallerData = marshalInfo.Marshallers.GetScenarioOrDefault(Scenario.ManagedToUnmanagedOut);
             }
             else
             {
                 marshallerData = info.RefKind switch
                 {
-                    RefKind.None or RefKind.In => marshalInfo.ManagedToUnmanagedMarshallers.In.Value,
-                    RefKind.Ref => marshalInfo.ManagedToUnmanagedMarshallers.Ref.Value,
-                    RefKind.Out => marshalInfo.ManagedToUnmanagedMarshallers.Out.Value,
+                    RefKind.None or RefKind.In => marshalInfo.Marshallers.GetScenarioOrDefault(Scenario.ManagedToUnmanagedIn),
+                    RefKind.Ref => marshalInfo.Marshallers.GetScenarioOrDefault(Scenario.ManagedToUnmanagedRef),
+                    RefKind.Out => marshalInfo.Marshallers.GetScenarioOrDefault(Scenario.ManagedToUnmanagedOut),
                     _ => throw new MarshallingNotSupportedException(info, context)
                 };
             }
@@ -259,30 +259,30 @@ namespace Microsoft.Interop
         {
             // Marshalling out or return parameter, but no out marshaller is specified
             if ((info.RefKind == RefKind.Out || info.IsManagedReturnPosition)
-                && !marshalInfo.ManagedToUnmanagedMarshallers.Out.HasValue)
+                && !marshalInfo.Marshallers.IsDefinedOrDefault(Scenario.ManagedToUnmanagedOut))
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
-                    NotSupportedDetails = string.Format(SR.UnmanagedToManagedMissingRequiredMarshaller, ManualTypeMarshallingHelper.MarshallersProperties.OutMarshaller, marshalInfo.EntryPointType.FullTypeName)
+                    NotSupportedDetails = string.Format(SR.UnmanagedToManagedMissingRequiredMarshaller, marshalInfo.EntryPointType.FullTypeName)
                 };
             }
 
             // Marshalling ref parameter, but no ref marshaller is specified
-            if (info.RefKind == RefKind.Ref && !marshalInfo.ManagedToUnmanagedMarshallers.Ref.HasValue)
+            if (info.RefKind == RefKind.Ref && !marshalInfo.Marshallers.IsDefinedOrDefault(Scenario.ManagedToUnmanagedRef))
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
-                    NotSupportedDetails = string.Format(SR.BidirectionalMissingRequiredMarshaller, ManualTypeMarshallingHelper.MarshallersProperties.RefMarshaller, marshalInfo.EntryPointType.FullTypeName)
+                    NotSupportedDetails = string.Format(SR.BidirectionalMissingRequiredMarshaller, marshalInfo.EntryPointType.FullTypeName)
                 };
             }
 
             // Marshalling in parameter, but no in marshaller is specified
             if (info.RefKind == RefKind.In
-                && !marshalInfo.ManagedToUnmanagedMarshallers.In.HasValue)
+                && !marshalInfo.Marshallers.IsDefinedOrDefault(Scenario.ManagedToUnmanagedIn))
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
-                    NotSupportedDetails = string.Format(SR.ManagedToUnmanagedMissingRequiredMarshaller, ManualTypeMarshallingHelper.MarshallersProperties.InMarshaller, marshalInfo.EntryPointType.FullTypeName)
+                    NotSupportedDetails = string.Format(SR.ManagedToUnmanagedMissingRequiredMarshaller, marshalInfo.EntryPointType.FullTypeName)
                 };
             }
 
@@ -290,11 +290,11 @@ namespace Microsoft.Interop
             if (!info.IsByRef
                 && !info.IsManagedReturnPosition
                 && context.SingleFrameSpansNativeContext
-                && !(marshalInfo.IsPinnableManagedType || marshalInfo.ManagedToUnmanagedMarshallers.In.HasValue))
+                && !(marshalInfo.IsPinnableManagedType || marshalInfo.Marshallers.IsDefinedOrDefault(Scenario.ManagedToUnmanagedIn)))
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
-                    NotSupportedDetails = string.Format(SR.ManagedToUnmanagedMissingRequiredMarshaller, ManualTypeMarshallingHelper.MarshallersProperties.InMarshaller, marshalInfo.EntryPointType.FullTypeName)
+                    NotSupportedDetails = string.Format(SR.ManagedToUnmanagedMissingRequiredMarshaller, marshalInfo.EntryPointType.FullTypeName)
                 };
             }
         }

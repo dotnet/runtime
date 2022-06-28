@@ -33,7 +33,7 @@ namespace System.Security.Cryptography
                     hashAlgorithm,
                     secretPrepend,
                     secretAppend,
-                    (pubKey, hasher) => DeriveSecretAgreement(pubKey, hasher));
+                    DeriveSecretAgreement);
             }
 
             public override byte[] DeriveKeyFromHmac(
@@ -54,7 +54,7 @@ namespace System.Security.Cryptography
                     hmacKey,
                     secretPrepend,
                     secretAppend,
-                    (pubKey, hasher) => DeriveSecretAgreement(pubKey, hasher));
+                    DeriveSecretAgreement);
             }
 
             public override byte[] DeriveKeyTls(ECDiffieHellmanPublicKey otherPartyPublicKey, byte[] prfLabel, byte[] prfSeed)
@@ -69,7 +69,7 @@ namespace System.Security.Cryptography
                     otherPartyPublicKey,
                     prfLabel,
                     prfSeed,
-                    (pubKey, hasher) => DeriveSecretAgreement(pubKey, hasher));
+                    DeriveSecretAgreement);
             }
 
             /// <summary>

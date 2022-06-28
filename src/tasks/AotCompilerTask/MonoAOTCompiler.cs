@@ -522,7 +522,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             ParallelLoopResult result = Parallel.ForEach(
                                             Partitioner.Create(argsList, EnumerablePartitionerOptions.NoBuffering),
                                             new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
-                                            (args, state) => PrecompileLibraryParallel(args, state));
+                                            PrecompileLibraryParallel);
 
             if (result.IsCompleted)
             {

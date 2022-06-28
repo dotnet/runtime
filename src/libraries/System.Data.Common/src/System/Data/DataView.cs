@@ -153,15 +153,8 @@ namespace System.Data
                 throw ExceptionBuilder.SetRowStateFilter();
             }
 
-            if (Sort == null)
-            {
-                Sort = string.Empty;
-            }
-
-            if (RowFilter == null)
-            {
-                RowFilter = string.Empty;
-            }
+            Sort ??= string.Empty;
+            RowFilter ??= string.Empty;
 
             DataExpression newFilter = new DataExpression(table, RowFilter);
             SetIndex(Sort, RowState, newFilter);

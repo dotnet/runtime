@@ -1261,13 +1261,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
     DISPNODE(arg);
     assert(arg->IsValue());
 
-    var_types type = arg->TypeGet();
-
-    if (varTypeIsSmall(type))
-    {
-        // Normalize 'type', it represents the item that we will be storing in the Outgoing Args
-        type = TYP_INT;
-    }
+    var_types type = genActualType(arg);
 
 #if defined(FEATURE_SIMD)
 #if defined(TARGET_X86)
@@ -6401,8 +6395,7 @@ PhaseStatus Lowering::DoPhase()
     // local var liveness can delete code, which may create empty blocks
     if (comp->opts.OptimizationEnabled())
     {
-        comp->optLoopsMarked = false;
-        bool modified        = comp->fgUpdateFlowGraph();
+        bool modified = comp->fgUpdateFlowGraph();
         modified |= comp->fgRemoveDeadBlocks();
 
         if (modified)

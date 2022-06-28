@@ -142,7 +142,7 @@ namespace Microsoft.Interop
     /// </summary>
     public record NativeMarshallingAttributeInfo(
         ManagedTypeInfo EntryPointType,
-        CustomTypeMarshallers ManagedToUnmanagedMarshallers,
+        CustomTypeMarshallers Marshallers,
         bool IsPinnableManagedType) : MarshallingInfo;
 
     /// <summary>
@@ -592,7 +592,7 @@ namespace Microsoft.Interop
                     return NoMarshallingInfo.Instance;
                 }
 
-                if (ManualTypeMarshallingHelper.TryGetMarshallers(entryPointType, type, isLinearCollectionMarshalling, _compilation, out CustomTypeMarshallers? marshallers))
+                if (ManualTypeMarshallingHelper.TryGetMarshallersFromEntryType(entryPointType, type, isLinearCollectionMarshalling, _compilation, out CustomTypeMarshallers? marshallers))
                 {
                     bool isPinnableManagedType = !isMarshalUsingAttribute && ManualTypeMarshallingHelper.FindGetPinnableReference(type) is not null;
                     return isLinearCollectionMarshalling

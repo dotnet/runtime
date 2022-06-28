@@ -385,10 +385,7 @@ namespace System.Net.Security
             ref byte[] resultBlob,
             ref ContextFlagsPal contextFlags)
         {
-            if (securityContext == null)
-            {
-                securityContext = new SafeDeleteNegoContext((SafeFreeNegoCredentials)credentialsHandle!);
-            }
+            securityContext ??= new SafeDeleteNegoContext((SafeFreeNegoCredentials)credentialsHandle!);
 
             SafeDeleteNegoContext negoContext = (SafeDeleteNegoContext)securityContext;
             try

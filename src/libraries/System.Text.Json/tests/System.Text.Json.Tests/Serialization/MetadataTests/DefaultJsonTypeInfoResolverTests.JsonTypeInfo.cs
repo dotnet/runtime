@@ -385,12 +385,26 @@ namespace System.Text.Json.Serialization.Tests
             Assert.True(typeInfo.Converter.CanConvert(typeof(T)));
 
             JsonPropertyInfo prop = typeInfo.CreateJsonPropertyInfo(typeof(string), "foo");
+            Assert.True(typeInfo.Properties.IsReadOnly);
             Assert.Throws<InvalidOperationException>(() => untyped.CreateObject = untyped.CreateObject);
             Assert.Throws<InvalidOperationException>(() => typeInfo.CreateObject = typeInfo.CreateObject);
             Assert.Throws<InvalidOperationException>(() => typeInfo.NumberHandling = typeInfo.NumberHandling);
             Assert.Throws<InvalidOperationException>(() => typeInfo.Properties.Clear());
             Assert.Throws<InvalidOperationException>(() => typeInfo.Properties.Add(prop));
             Assert.Throws<InvalidOperationException>(() => typeInfo.Properties.Insert(0, prop));
+            Assert.Throws<InvalidOperationException>(() => typeInfo.PolymorphismOptions = null);
+            Assert.Throws<InvalidOperationException>(() => typeInfo.PolymorphismOptions = new());
+
+            if (typeInfo.PolymorphismOptions is JsonPolymorphismOptions jpo)
+            {
+                Assert.True(jpo.DerivedTypes.IsReadOnly);
+                Assert.Throws<InvalidOperationException>(() => jpo.IgnoreUnrecognizedTypeDiscriminators = true);
+                Assert.Throws<InvalidOperationException>(() => jpo.TypeDiscriminatorPropertyName = "__case");
+                Assert.Throws<InvalidOperationException>(() => jpo.UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor);
+                Assert.Throws<InvalidOperationException>(() => jpo.DerivedTypes.Clear());
+                Assert.Throws<InvalidOperationException>(() => jpo.DerivedTypes.Add(default));
+                Assert.Throws<InvalidOperationException>(() => jpo.DerivedTypes.Insert(0, default));
+            }
 
             foreach (var property in typeInfo.Properties)
             {
@@ -687,6 +701,7 @@ namespace System.Text.Json.Serialization.Tests
             yield return new object[] { 13 };
             yield return new object[] { new SomeClass { IntProp = 17 } };
             yield return new object[] { new SomeRecursiveClass() };
+            yield return new object[] { new SomePolymorphicClass() };
         }
 
         [Fact]

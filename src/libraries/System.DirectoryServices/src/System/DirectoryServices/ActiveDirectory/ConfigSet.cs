@@ -280,11 +280,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedSites == null)
-                {
-                    _cachedSites = new ReadOnlySiteCollection(GetSites());
-                }
-                return _cachedSites;
+                return _cachedSites ??= new ReadOnlySiteCollection(GetSites());
             }
         }
 
@@ -293,11 +289,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedADAMInstances == null)
-                {
-                    _cachedADAMInstances = FindAllAdamInstances();
-                }
-                return _cachedADAMInstances;
+                return _cachedADAMInstances ??= FindAllAdamInstances();
             }
         }
 
@@ -306,11 +298,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedApplicationPartitions == null)
-                {
-                    _cachedApplicationPartitions = new ApplicationPartitionCollection(GetApplicationPartitions());
-                }
-                return _cachedApplicationPartitions;
+                return _cachedApplicationPartitions ??= new ApplicationPartitionCollection(GetApplicationPartitions());
             }
         }
 
@@ -339,11 +327,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedSchemaRoleOwner == null)
-                {
-                    _cachedSchemaRoleOwner = GetRoleOwner(AdamRole.SchemaRole);
-                }
-                return _cachedSchemaRoleOwner;
+                return _cachedSchemaRoleOwner ??= GetRoleOwner(AdamRole.SchemaRole);
             }
         }
 
@@ -352,11 +336,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedNamingRoleOwner == null)
-                {
-                    _cachedNamingRoleOwner = GetRoleOwner(AdamRole.NamingRole);
-                }
-                return _cachedNamingRoleOwner;
+                return _cachedNamingRoleOwner ??= GetRoleOwner(AdamRole.NamingRole);
             }
         }
 

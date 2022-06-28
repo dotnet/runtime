@@ -1152,8 +1152,10 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private unsafe void FinishTypeDictionary(TypeDesc type, TypeBuilderState state)
+        private unsafe void FinishTypeDictionary(TypeDesc type)
         {
+            TypeBuilderState state = type.GetTypeBuilderState();
+
             if (state.Dictionary != null)
             {
                 // First, update the dictionary slot in the type's vtable to point to the created dictionary when applicable
@@ -1348,8 +1350,6 @@ namespace Internal.Runtime.TypeLoader
 
                 FinishInterfaces(type, state);
 
-                FinishTypeDictionary(type, state);
-
                 FinishClassConstructor(type, state);
 
 #if FEATURE_UNIVERSAL_GENERICS
@@ -1371,8 +1371,6 @@ namespace Internal.Runtime.TypeLoader
 
                     if (typeAsSzArrayType.IsSzArray && !typeAsSzArrayType.ElementType.IsPointer)
                     {
-                        FinishTypeDictionary(type, state);
-
 #if FEATURE_UNIVERSAL_GENERICS
                         // For types that were allocated from universal canonical templates, patch their vtables with
                         // pointers to calling convention conversion thunks
@@ -1520,6 +1518,11 @@ namespace Internal.Runtime.TypeLoader
             for (int i = 0; i < _typesThatNeedTypeHandles.Count; i++)
             {
                 FinishRuntimeType(_typesThatNeedTypeHandles[i]);
+            }
+
+            for (int i = 0; i < _typesThatNeedTypeHandles.Count; i++)
+            {
+                FinishTypeDictionary(_typesThatNeedTypeHandles[i]);
             }
 
             for (int i = 0; i < _methodsThatNeedDictionaries.Count; i++)

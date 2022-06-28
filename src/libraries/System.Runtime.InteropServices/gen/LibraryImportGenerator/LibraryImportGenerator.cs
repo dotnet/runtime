@@ -270,12 +270,9 @@ namespace Microsoft.Interop
             var generatorDiagnostics = new GeneratorDiagnostics();
 
             // Process the LibraryImport attribute
-            LibraryImportData? libraryImportData = ProcessLibraryImportAttribute(generatedDllImportAttr!);
-
-            if (libraryImportData is null)
-            {
-                libraryImportData = new LibraryImportData("INVALID_CSHARP_SYNTAX");
-            }
+            LibraryImportData libraryImportData =
+                ProcessLibraryImportAttribute(generatedDllImportAttr!) ??
+                new LibraryImportData("INVALID_CSHARP_SYNTAX");
 
             if (libraryImportData.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling))
             {
