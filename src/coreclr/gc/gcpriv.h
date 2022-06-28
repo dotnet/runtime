@@ -1477,7 +1477,7 @@ public:
     void shutdown_gc();
 
     PER_HEAP_ISOLATED
-    uint32_t adjust_heaps_hard_limit (uint32_t nhp, size_t limit);
+    uint32_t adjust_heaps_hard_limit (uint32_t nhp);
 
     PER_HEAP_ISOLATED
     size_t adjust_segment_size_hard_limit_va (size_t seg_size);
