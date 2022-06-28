@@ -76,7 +76,6 @@ namespace System.Net.Security.Tests
 
         [ConditionalTheory]
         [MemberData(nameof(OneOrBothUseDefaulData))]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ClientAndServer_OneOrBothUseDefault_Ok(SslProtocols? clientProtocols, SslProtocols? serverProtocols)
         {
             using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())

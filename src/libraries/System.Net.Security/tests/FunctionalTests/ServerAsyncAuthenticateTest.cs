@@ -38,14 +38,12 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ServerAsyncAuthenticate_EachSupportedProtocol_Success(SslProtocols protocol)
         {
             await ServerAsyncSslHelper(protocol, protocol);
         }
 
         [Theory]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         [MemberData(nameof(ProtocolMismatchData))]
         public async Task ServerAsyncAuthenticate_MismatchProtocols_Fails(
             SslProtocols clientProtocol,
@@ -67,7 +65,6 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ServerAsyncAuthenticate_AllClientVsIndividualServerSupportedProtocols_Success(
             SslProtocols serverProtocol)
         {
@@ -75,7 +72,6 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ServerAsyncAuthenticate_SimpleSniOptions_Success()
         {
             var state = new object();
@@ -104,7 +100,6 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [MemberData(nameof(SupportedProtocolData))]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ServerAsyncAuthenticate_SniSetVersion_Success(SslProtocols version)
         {
             var serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = _serverCertificate, EnabledSslProtocols = version };
@@ -146,7 +141,6 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ServerAsyncAuthenticate_AsyncOptions_Success()
         {
             var state = new object();
@@ -203,7 +197,6 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ServerAsyncAuthenticate_VerificationDelegate_Success()
         {
             bool validationCallbackCalled = false;
@@ -236,7 +229,6 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ServerAsyncAuthenticate_ConstructorVerificationDelegate_Success()
         {
             bool validationCallbackCalled = false;
