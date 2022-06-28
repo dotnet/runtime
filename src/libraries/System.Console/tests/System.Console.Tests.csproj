@@ -4,6 +4,7 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-windows</TargetFrameworks>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
+    <StringResourcesPath>..\src\Resources\Strings.resx</StringResourcesPath>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CancelKeyPress.cs" />
@@ -50,5 +51,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Fcntl.cs"
              Link="Common\Interop\Unix\System.Native\Interop.Fcntl.cs" />
     <Compile Include="..\src\System\TermInfo.WellKnownStrings.cs" Link="src\System\TermInfo.WellKnownStrings.cs" />
+    <Compile Include="..\src\System\TermInfo.WellKnownNumbers.cs" Link="src\System\TermInfo.WellKnownNumbers.cs" />
+    <Compile Include="..\src\System\TermInfo.Database.cs" Link="src\System\TermInfo.Database.cs" />
   </ItemGroup>
 </Project>
