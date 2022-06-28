@@ -22,11 +22,7 @@ namespace System
         {
             Debug.Assert(variable != null);
 
-            if (s_environment == null)
-            {
-                return Marshal.PtrToStringAnsi(Interop.Sys.GetEnv(variable));
-            }
-
+            EnsureEnvironmentCached();
             lock (s_environment)
             {
                 variable = TrimStringOnFirstZero(variable);
