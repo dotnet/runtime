@@ -1,6 +1,8 @@
 # Compiling with Native AOT
 
-Please consult [documentation](https://github.com/dotnet/docs/blob/main/docs/core/deploying/native-aot.md) for instructions how to compile amd publish application.
+Please consult [documentation](https://docs.microsoft.com/dotnet/core/deploying/native-aot) for instructions how to compile and publish application.
+
+The rest of this document covers advanced topics only.
 
 
 
