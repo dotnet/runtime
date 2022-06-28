@@ -12,6 +12,8 @@ using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Globalization;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Xml
 {
@@ -72,6 +74,12 @@ namespace System.Xml
             _textNodeOffset = this.BufferOffset - 1;
         }
 
+        private ref byte GetBufferRef(int size)
+            => ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(GetBuffer(size, out int offset)), offset);
+
+        private ref byte GetTextNodeBufferRef(int size)
+            => ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(GetTextNodeBuffer(size, out int offset)), offset);
+
         private byte[] GetTextNodeBuffer(int size, out int offset)
         {
             if (_inAttribute)
@@ -84,56 +92,74 @@ namespace System.Xml
         private void WriteTextNodeWithLength(XmlBinaryNodeType nodeType, int length)
         {
             DiagnosticUtility.DebugAssert(nodeType == XmlBinaryNodeType.Chars8Text || nodeType == XmlBinaryNodeType.Bytes8Text || nodeType == XmlBinaryNodeType.UnicodeChars8Text, "");
-            int offset;
-            byte[] buffer = GetTextNodeBuffer(5, out offset);
             if (length < 256)
             {
-                buffer[offset + 0] = (byte)nodeType;
-                buffer[offset + 1] = (byte)length;
-                Advance(2);
+                WriteTextNodeWithInt8(nodeType, unchecked((byte)length));
             }
             else if (length < 65536)
             {
-                buffer[offset + 0] = (byte)(nodeType + 1 * 2); // WithEndElements interleave
-                buffer[offset + 1] = unchecked((byte)length);
-                length >>= 8;
-                buffer[offset + 2] = (byte)length;
-                Advance(3);
+                WriteTextNodeWithInt16(nodeType + /* WithEndElements interleave */ 1 * 2, unchecked((short)length));
             }
             else
             {
-                buffer[offset + 0] = (byte)(nodeType + 2 * 2); // WithEndElements interleave
-                buffer[offset + 1] = (byte)length;
-                length >>= 8;
-                buffer[offset + 2] = (byte)length;
-                length >>= 8;
-                buffer[offset + 3] = (byte)length;
-                length >>= 8;
-                buffer[offset + 4] = (byte)length;
-                Advance(5);
+                WriteTextNodeWithInt32(nodeType + /* WithEndElements interleave */ 2 * 2, length);
             }
+        }
+
+        private void WriteTextNodeWithInt8(XmlBinaryNodeType nodeType, byte value)
+        {
+            ref byte bytePtr = ref GetTextNodeBufferRef(2);
+            bytePtr = (byte)nodeType;
+            Unsafe.Add(ref bytePtr, 1) = value;
+            Advance(2);
+        }
+
+        private void WriteTextNodeWithInt16(XmlBinaryNodeType nodeType, short value)
+        {
+            ref byte bytePtr = ref GetTextNodeBufferRef(3);
+            bytePtr = (byte)nodeType;
+            Unsafe.Add(ref bytePtr, 1) = (byte)(value);
+            Unsafe.Add(ref bytePtr, 2) = (byte)(value >> 8);
+            Advance(3);
+        }
+
+        private void WriteTextNodeWithInt32(XmlBinaryNodeType nodeType, int value)
+        {
+            ref byte bytePtr = ref GetTextNodeBufferRef(5);
+            bytePtr = (byte)nodeType;
+            if (BitConverter.IsLittleEndian)
+            {
+                Unsafe.WriteUnaligned(ref Unsafe.Add(ref bytePtr, 1), value);
+            }
+            else
+            {
+                Unsafe.Add(ref bytePtr, 1) = (byte)(value);
+                Unsafe.Add(ref bytePtr, 2) = (byte)(value >> 8);
+                Unsafe.Add(ref bytePtr, 3) = (byte)(value >> 16);
+                Unsafe.Add(ref bytePtr, 4) = (byte)(value >> 24);
+            }
+            Advance(5);
         }
 
         private void WriteTextNodeWithInt64(XmlBinaryNodeType nodeType, long value)
         {
-            int offset;
-            byte[] buffer = GetTextNodeBuffer(9, out offset);
-            buffer[offset + 0] = (byte)nodeType;
-            buffer[offset + 1] = (byte)value;
-            value >>= 8;
-            buffer[offset + 2] = (byte)value;
-            value >>= 8;
-            buffer[offset + 3] = (byte)value;
-            value >>= 8;
-            buffer[offset + 4] = (byte)value;
-            value >>= 8;
-            buffer[offset + 5] = (byte)value;
-            value >>= 8;
-            buffer[offset + 6] = (byte)value;
-            value >>= 8;
-            buffer[offset + 7] = (byte)value;
-            value >>= 8;
-            buffer[offset + 8] = (byte)value;
+            ref byte bytePtr = ref GetTextNodeBufferRef(9);
+            bytePtr = (byte)nodeType;
+            if (BitConverter.IsLittleEndian)
+            {
+                Unsafe.WriteUnaligned(ref Unsafe.Add(ref bytePtr, 1), value);
+            }
+            else
+            {
+                Unsafe.Add(ref bytePtr, 1) = (byte)(value);
+                Unsafe.Add(ref bytePtr, 2) = (byte)((uint)value >> 8);
+                Unsafe.Add(ref bytePtr, 3) = (byte)((uint)value >> 16);
+                Unsafe.Add(ref bytePtr, 4) = (byte)((uint)value >> 24);
+                Unsafe.Add(ref bytePtr, 5) = (byte)(value >> 32);
+                Unsafe.Add(ref bytePtr, 6) = (byte)(value >> 40);
+                Unsafe.Add(ref bytePtr, 7) = (byte)(value >> 48);
+                Unsafe.Add(ref bytePtr, 8) = (byte)(value >> 56);
+            }
             Advance(9);
         }
 
@@ -458,54 +484,37 @@ namespace System.Xml
 
         public override void WriteInt32Text(int value)
         {
-            if (value >= -128 && value < 128)
+            if (value == (sbyte)value)
             {
-                if (value == 0)
+                if ((byte)value <= 1)
                 {
-                    WriteTextNode(XmlBinaryNodeType.ZeroText);
-                }
-                else if (value == 1)
-                {
-                    WriteTextNode(XmlBinaryNodeType.OneText);
+                    if ((byte)value < 1)
+                    {
+                        WriteTextNode(XmlBinaryNodeType.ZeroText);
+                    }
+                    else
+                    {
+                        WriteTextNode(XmlBinaryNodeType.OneText);
+                    }
                 }
                 else
                 {
-                    int offset;
-                    byte[] buffer = GetTextNodeBuffer(2, out offset);
-                    buffer[offset + 0] = (byte)XmlBinaryNodeType.Int8Text;
-                    buffer[offset + 1] = (byte)value;
-                    Advance(2);
+                    WriteTextNodeWithInt8(XmlBinaryNodeType.Int8Text, (byte)value);
                 }
             }
-            else if (value >= -32768 && value < 32768)
+            else if (value == (short)value)
             {
-                int offset;
-                byte[] buffer = GetTextNodeBuffer(3, out offset);
-                buffer[offset + 0] = (byte)XmlBinaryNodeType.Int16Text;
-                buffer[offset + 1] = (byte)value;
-                value >>= 8;
-                buffer[offset + 2] = (byte)value;
-                Advance(3);
+                WriteTextNodeWithInt16(XmlBinaryNodeType.Int16Text, (short)value);
             }
             else
             {
-                int offset;
-                byte[] buffer = GetTextNodeBuffer(5, out offset);
-                buffer[offset + 0] = (byte)XmlBinaryNodeType.Int32Text;
-                buffer[offset + 1] = (byte)value;
-                value >>= 8;
-                buffer[offset + 2] = (byte)value;
-                value >>= 8;
-                buffer[offset + 3] = (byte)value;
-                value >>= 8;
-                buffer[offset + 4] = (byte)value;
-                Advance(5);
+                WriteTextNodeWithInt32(XmlBinaryNodeType.Int32Text, (short)value);
             }
         }
 
         public override void WriteInt64Text(long value)
         {
-            if (value >= int.MinValue && value <= int.MaxValue)
+            if (value == (int)(value))
             {
                 WriteInt32Text((int)value);
             }
@@ -529,23 +538,22 @@ namespace System.Xml
 
         private void WriteInt64(long value)
         {
-            int offset;
-            byte[] buffer = GetBuffer(8, out offset);
-            buffer[offset + 0] = (byte)value;
-            value >>= 8;
-            buffer[offset + 1] = (byte)value;
-            value >>= 8;
-            buffer[offset + 2] = (byte)value;
-            value >>= 8;
-            buffer[offset + 3] = (byte)value;
-            value >>= 8;
-            buffer[offset + 4] = (byte)value;
-            value >>= 8;
-            buffer[offset + 5] = (byte)value;
-            value >>= 8;
-            buffer[offset + 6] = (byte)value;
-            value >>= 8;
-            buffer[offset + 7] = (byte)value;
+            ref byte bytePtr = ref GetBufferRef(8);
+            if (BitConverter.IsLittleEndian)
+            {
+                Unsafe.WriteUnaligned(ref bytePtr, value);
+            }
+            else
+            {
+                Unsafe.Add(ref bytePtr, 0) = (byte)(value);
+                Unsafe.Add(ref bytePtr, 1) = (byte)((uint)value >> 8);
+                Unsafe.Add(ref bytePtr, 2) = (byte)((uint)value >> 16);
+                Unsafe.Add(ref bytePtr, 3) = (byte)((uint)value >> 24);
+                Unsafe.Add(ref bytePtr, 4) = (byte)(value >> 32);
+                Unsafe.Add(ref bytePtr, 5) = (byte)(value >> 40);
+                Unsafe.Add(ref bytePtr, 6) = (byte)(value >> 48);
+                Unsafe.Add(ref bytePtr, 7) = (byte)(value >> 56);
+            }
             Advance(8);
         }
 
@@ -792,17 +800,12 @@ namespace System.Xml
             }
         }
 
-        public unsafe override void WriteDecimalText(decimal d)
+        public override void WriteDecimalText(decimal d)
         {
-            int offset;
-            byte[] buffer = GetTextNodeBuffer(1 + sizeof(decimal), out offset);
-            byte* bytes = (byte*)&d;
-            buffer[offset++] = (byte)XmlBinaryNodeType.DecimalText;
-            for (int i = 0; i < sizeof(decimal); i++)
-            {
-                buffer[offset++] = bytes[i];
-            }
-            Advance(1 + sizeof(decimal));
+            ref byte bytePtr = ref GetTextNodeBufferRef(1 + Unsafe.SizeOf<decimal>());
+            bytePtr = (byte)XmlBinaryNodeType.DecimalText;
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref bytePtr, 1), d);
+            Advance(1 + Unsafe.SizeOf<decimal>());
         }
 
         public override void WriteDateTimeText(DateTime dt)
@@ -848,10 +851,12 @@ namespace System.Xml
 
         public override void WriteGuidText(Guid guid)
         {
-            int offset;
-            byte[] buffer = GetTextNodeBuffer(17, out offset);
-            buffer[offset] = (byte)XmlBinaryNodeType.GuidText;
-            Buffer.BlockCopy(guid.ToByteArray(), 0, buffer, offset + 1, 16);
+            var span = GetTextNodeBuffer(17, out int offset).AsSpan(offset, 17);
+
+            span[0] = (byte)XmlBinaryNodeType.GuidText;
+            bool ok = guid.TryWriteBytes(span.Slice(1));
+            DiagnosticUtility.DebugAssert(ok, "");
+
             Advance(17);
         }
 
