@@ -358,34 +358,6 @@ if (is_browser) {
 Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntime]) => {
     applyArguments();
 
-    if (is_node) {
-        const modulesToLoad = runArgs.environmentVariables["NPM_MODULES"];
-        if (modulesToLoad) {
-            modulesToLoad.split(',').forEach(module => {
-                const { 0: moduleName, 1: globalAlias } = module.split(':');
-
-                let message = `Loading npm '${moduleName}'`;
-                let moduleExport = INTERNAL.require(moduleName);
-
-                if (globalAlias) {
-                    message += ` and attaching to global as '${globalAlias}'`;
-                    globalThis[globalAlias] = moduleExport;
-                } else if (moduleName == "node-fetch") {
-                    message += ' and attaching to global';
-                    globalThis.fetch = moduleExport.default;
-                    globalThis.Headers = moduleExport.Headers;
-                    globalThis.Request = moduleExport.Request;
-                    globalThis.Response = moduleExport.Response;
-                } else if (moduleName == "node-abort-controller") {
-                    message += ' and attaching to global';
-                    globalThis.AbortController = moduleExport.AbortController;
-                }
-
-                console.log(message);
-            });
-        }
-    }
-
     // Must be after loading npm modules.
     runArgs.environmentVariables["IsWebSocketSupported"] = ("WebSocket" in globalThis).toString().toLowerCase();
 
@@ -425,13 +397,41 @@ Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntim
             }
 
             Module.FS.chdir(runArgs.workingDirectory);
+    
+            if (is_node) {
+                const modulesToLoad = runArgs.environmentVariables["NPM_MODULES"];
+                if (modulesToLoad) {
+                    modulesToLoad.split(',').forEach(module => {
+                        const { 0: moduleName, 1: globalAlias } = module.split(':');
+        
+                        let message = `Loading npm '${moduleName}'`;
+                        let moduleExport = INTERNAL.require(moduleName);
+        
+                        if (globalAlias) {
+                            message += ` and attaching to global as '${globalAlias}'`;
+                            globalThis[globalAlias] = moduleExport;
+                        } else if (moduleName == "node-fetch") {
+                            message += ' and attaching to global';
+                            globalThis.fetch = moduleExport.default;
+                            globalThis.Headers = moduleExport.Headers;
+                            globalThis.Request = moduleExport.Request;
+                            globalThis.Response = moduleExport.Response;
+                        } else if (moduleName == "node-abort-controller") {
+                            message += ' and attaching to global';
+                            globalThis.AbortController = moduleExport.AbortController;
+                        }
+        
+                        console.log(message);
+                    });
+                }
+            }
 
             App.init({ MONO, INTERNAL, BINDING, Module, runArgs });
         },
         onAbort: (error) => {
             set_exit_code(1, stringify_as_error_with_stack(new Error()));
         },
-    }))
+    }));
 }).catch(function (err) {
     set_exit_code(1, "failed to load the dotnet.js file.\n" + stringify_as_error_with_stack(err));
 });
