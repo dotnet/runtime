@@ -272,33 +272,11 @@ namespace System.Transactions
 
 
         private static DefaultSettingsSection? s_defaultSettings;
-        private static DefaultSettingsSection DefaultSettings
-        {
-            get
-            {
-                if (s_defaultSettings == null)
-                {
-                    s_defaultSettings = DefaultSettingsSection.GetSection();
-                }
-
-                return s_defaultSettings;
-            }
-        }
+        private static DefaultSettingsSection DefaultSettings => s_defaultSettings ??= DefaultSettingsSection.GetSection();
 
 
         private static MachineSettingsSection? s_machineSettings;
-        private static MachineSettingsSection MachineSettings
-        {
-            get
-            {
-                if (s_machineSettings == null)
-                {
-                    s_machineSettings = MachineSettingsSection.GetSection();
-                }
-
-                return s_machineSettings;
-            }
-        }
+        private static MachineSettingsSection MachineSettings => s_machineSettings ??= MachineSettingsSection.GetSection();
 
         private static bool s_defaultTimeoutValidated;
         private static TimeSpan s_defaultTimeout;

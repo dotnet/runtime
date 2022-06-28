@@ -178,10 +178,7 @@ namespace System.Reflection.Metadata.Ecma335
                     Debug.Assert(data.Namespaces!.Count == 0);
                     data.MergeInto(existingRecord);
 
-                    if (remaps == null)
-                    {
-                        remaps = new List<KeyValuePair<NamespaceDefinitionHandle, NamespaceDataBuilder>>();
-                    }
+                    remaps ??= new List<KeyValuePair<NamespaceDefinitionHandle, NamespaceDataBuilder>>();
                     remaps.Add(new KeyValuePair<NamespaceDefinitionHandle, NamespaceDataBuilder>(group.Key, existingRecord));
                 }
                 else

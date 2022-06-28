@@ -1427,10 +1427,7 @@ namespace System.Xml
 
         private void GetPosition(out int row, out int column)
         {
-            if (_rowOffsets == null)
-            {
-                _rowOffsets = BufferReader.GetRows();
-            }
+            _rowOffsets ??= BufferReader.GetRows();
 
             int offset = BufferReader.Offset;
 

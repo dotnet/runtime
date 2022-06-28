@@ -117,10 +117,8 @@ namespace System.Diagnostics.Metrics
         /// <param name="measurementCallback">The callback which can be used to get measurement recording of numeric type T.</param>
         public void SetMeasurementEventCallback<T>(MeasurementCallback<T>? measurementCallback) where T : struct
         {
-            if (measurementCallback is null)
-            {
-                measurementCallback = (instrument, measurement, tags, state) => { /* no-op */};
-            }
+            measurementCallback ??= (instrument, measurement, tags, state) => { /* no-op */};
+
             if (typeof(T) == typeof(byte))
             {
                 _byteMeasurementCallback = (MeasurementCallback<byte>)(object)measurementCallback;

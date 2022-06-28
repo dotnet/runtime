@@ -42,7 +42,7 @@ namespace System.Runtime.Serialization
                     // For each method find if attribute is present, the return type is void and the method is not virtual
                     if (m.IsDefined(attribute, false))
                     {
-                        if (mi == null) mi = new List<MethodInfo>();
+                        mi ??= new List<MethodInfo>();
                         mi.Add(m);
                     }
                 }

@@ -104,7 +104,7 @@ namespace System.Net.Mail
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, _transport);
             _onSendCompletedDelegate = new SendOrPostCallback(SendCompletedWaitCallback);
 
-            if (_host != null && _host.Length != 0)
+            if (!string.IsNullOrEmpty(_host))
             {
                 _host = _host.Trim();
             }
@@ -114,8 +114,7 @@ namespace System.Net.Mail
                 _port = DefaultPort;
             }
 
-            if (_targetName == null)
-                _targetName = "SMTPSVC/" + _host;
+            _targetName ??= "SMTPSVC/" + _host;
 
             if (_clientDomain == null)
             {

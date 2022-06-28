@@ -224,10 +224,7 @@ namespace System.Xml
 
         public override void WriteWhitespace(string? ws)
         {
-            if (ws == null)
-            {
-                ws = string.Empty;
-            }
+            ws ??= string.Empty;
 
             // "checkNames" is intentional here; if false, the whitespace is checked in XmlWellformedWriter
             if (_checkNames)
@@ -406,10 +403,7 @@ namespace System.Xml
                     {
                         continue;
                     }
-                    if (sb == null)
-                    {
-                        sb = new StringBuilder(str.Length + 5);
-                    }
+                    sb ??= new StringBuilder(str.Length + 5);
                     sb.Append(str, start, i - start);
                 }
                 else if (ch == '\r')
@@ -422,11 +416,7 @@ namespace System.Xml
                             continue;
                         }
 
-                        if (sb == null)
-                        {
-                            sb = new StringBuilder(str.Length + 5);
-                        }
-
+                        sb ??= new StringBuilder(str.Length + 5);
                         sb.Append(str, start, i - start);
                         i++;
                     }

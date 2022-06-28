@@ -62,17 +62,17 @@ namespace Microsoft.Interop
                 return false;
 
             var namedArguments = attr.NamedArguments.ToImmutableDictionary();
-            CustomTypeMarshallerData? inMarshaller = GetNamedArgumentAsMarshallerData(namedArguments, MarshallersProperties.InMarshaller, MarshallingDirection.ManagedToUnmanaged, managedTypeOnAttr, compilation);
-            if (inMarshaller is null)
-                inMarshaller = GetMarshallerDataForType(entryPointType, MarshallingDirection.ManagedToUnmanaged, managedTypeOnAttr, compilation);
+            CustomTypeMarshallerData? inMarshaller =
+                GetNamedArgumentAsMarshallerData(namedArguments, MarshallersProperties.InMarshaller, MarshallingDirection.ManagedToUnmanaged, managedTypeOnAttr, compilation) ??
+                GetMarshallerDataForType(entryPointType, MarshallingDirection.ManagedToUnmanaged, managedTypeOnAttr, compilation);
 
-            CustomTypeMarshallerData? refMarshaller = GetNamedArgumentAsMarshallerData(namedArguments, MarshallersProperties.RefMarshaller, MarshallingDirection.Bidirectional, managedTypeOnAttr, compilation);
-            if (refMarshaller is null)
-                refMarshaller = GetMarshallerDataForType(entryPointType, MarshallingDirection.Bidirectional, managedTypeOnAttr, compilation);
+            CustomTypeMarshallerData? refMarshaller =
+                GetNamedArgumentAsMarshallerData(namedArguments, MarshallersProperties.RefMarshaller, MarshallingDirection.Bidirectional, managedTypeOnAttr, compilation) ??
+                GetMarshallerDataForType(entryPointType, MarshallingDirection.Bidirectional, managedTypeOnAttr, compilation);
 
-            CustomTypeMarshallerData? outMarshaller = GetNamedArgumentAsMarshallerData(namedArguments, MarshallersProperties.OutMarshaller, MarshallingDirection.UnmanagedToManaged, managedTypeOnAttr, compilation);
-            if (outMarshaller is null)
-                outMarshaller = GetMarshallerDataForType(entryPointType, MarshallingDirection.UnmanagedToManaged, managedTypeOnAttr, compilation);
+            CustomTypeMarshallerData? outMarshaller =
+                GetNamedArgumentAsMarshallerData(namedArguments, MarshallersProperties.OutMarshaller, MarshallingDirection.UnmanagedToManaged, managedTypeOnAttr, compilation) ??
+                GetMarshallerDataForType(entryPointType, MarshallingDirection.UnmanagedToManaged, managedTypeOnAttr, compilation);
 
             if (inMarshaller is null && refMarshaller is null && outMarshaller is null)
                 return false;

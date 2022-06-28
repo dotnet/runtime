@@ -80,17 +80,7 @@ namespace System.Diagnostics
             }
         }
 
-        internal static string AppName
-        {
-            get
-            {
-                if (s_appName == null)
-                {
-                    s_appName = Assembly.GetEntryAssembly()?.GetName().Name ?? string.Empty;
-                }
-                return s_appName;
-            }
-        }
+        internal static string AppName => s_appName ??= Assembly.GetEntryAssembly()?.GetName().Name ?? string.Empty;
 
         public static bool AutoFlush
         {

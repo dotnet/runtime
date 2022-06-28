@@ -109,17 +109,7 @@ namespace System.Net.Http
         }
 #endif
 
-        public HttpContentHeaders Headers
-        {
-            get
-            {
-                if (_headers == null)
-                {
-                    _headers = new HttpContentHeaders(this);
-                }
-                return _headers;
-            }
-        }
+        public HttpContentHeaders Headers => _headers ??= new HttpContentHeaders(this);
 
         private bool IsBuffered
         {

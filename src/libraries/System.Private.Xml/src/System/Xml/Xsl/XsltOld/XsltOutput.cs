@@ -199,10 +199,7 @@ namespace System.Xml.Xsl.XsltOld
             {
                 string[] qnames = XmlConvert.SplitString(value);
 
-                if (_cdataElements == null)
-                {
-                    _cdataElements = new Hashtable(qnames.Length);
-                }
+                _cdataElements ??= new Hashtable(qnames.Length);
 
                 for (int i = 0; i < qnames.Length; i++)
                 {

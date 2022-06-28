@@ -55,35 +55,11 @@ namespace System.Xml.Serialization
             return (IList)SchemaSet.Schemas(ns);
         }
 
-        internal SchemaObjectCache Cache
-        {
-            get
-            {
-                if (_cache == null)
-                    _cache = new SchemaObjectCache();
-                return _cache;
-            }
-        }
+        internal SchemaObjectCache Cache => _cache ??= new SchemaObjectCache();
 
-        internal Hashtable MergedSchemas
-        {
-            get
-            {
-                if (_mergedSchemas == null)
-                    _mergedSchemas = new Hashtable();
-                return _mergedSchemas;
-            }
-        }
+        internal Hashtable MergedSchemas => _mergedSchemas ??= new Hashtable();
 
-        internal Hashtable References
-        {
-            get
-            {
-                if (_references == null)
-                    _references = new Hashtable();
-                return _references;
-            }
-        }
+        internal Hashtable References => _references ??= new Hashtable();
 
         internal XmlSchemaSet SchemaSet
         {
@@ -737,29 +713,11 @@ namespace System.Xml.Serialization
             return;
         }
 
-        internal static XmlSchema XsdSchema
-        {
-            get
-            {
-                if (s_xsd == null)
-                {
-                    s_xsd = CreateFakeXsdSchema(XmlSchema.Namespace, "schema");
-                }
-                return s_xsd;
-            }
-        }
+        internal static XmlSchema XsdSchema =>
+            s_xsd ??= CreateFakeXsdSchema(XmlSchema.Namespace, "schema");
 
-        internal static XmlSchema XmlSchema
-        {
-            get
-            {
-                if (s_xml == null)
-                {
-                    s_xml = XmlSchema.Read(new StringReader(xmlSchema), null)!;
-                }
-                return s_xml;
-            }
-        }
+        internal static XmlSchema XmlSchema =>
+            s_xml ??= XmlSchema.Read(new StringReader(xmlSchema), null)!;
 
         private static XmlSchema CreateFakeXsdSchema(string ns, string name)
         {

@@ -190,10 +190,7 @@ namespace System.Text.Json
             }
 
             // Priority 3: Attempt to get built-in converter.
-            if (converter == null)
-            {
-                converter = DefaultJsonTypeInfoResolver.GetDefaultConverter(typeToConvert);
-            }
+            converter ??= DefaultJsonTypeInfoResolver.GetDefaultConverter(typeToConvert);
 
             // Allow redirection for generic types or the enum converter.
             if (converter is JsonConverterFactory factory)

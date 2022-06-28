@@ -221,10 +221,7 @@ namespace System.ServiceModel.Syndication
                         {
                             SyndicationCategory category = CreateCategory(inlineCategories);
                             Atom10FeedFormatter.ReadCategory(reader, category, version, preserveAttributeExtensions: true, preserveElementExtensions: true, maxExtensionSize);
-                            if (category.Scheme == null)
-                            {
-                                category.Scheme = inlineCategories.Scheme;
-                            }
+                            category.Scheme ??= inlineCategories.Scheme;
                             inlineCategories.Categories.Add(category);
                         }
                         else if (!TryParseElement(reader, inlineCategories, version))
