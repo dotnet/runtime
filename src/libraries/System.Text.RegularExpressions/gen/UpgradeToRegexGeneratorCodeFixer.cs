@@ -113,7 +113,6 @@ namespace System.Text.RegularExpressions.Generator
 
             ImmutableDictionary<string, string?> properties = diagnostic.Properties;
 
-            var annotation = new SyntaxAnnotation();
             DocumentEditor editor = await DocumentEditor.CreateAsync(document, cancellationToken).ConfigureAwait(false);
             SyntaxGenerator generator = editor.Generator;
 
