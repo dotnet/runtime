@@ -1415,8 +1415,10 @@ enum class PhaseChecks
 // Specify compiler data that a phase might modify
 enum class PhaseStatus : unsigned
 {
-    MODIFIED_NOTHING,
-    MODIFIED_EVERYTHING
+    MODIFIED_NOTHING,    // Phase did not make any changes that warrant running post-phase checks or dumping
+                         // the main jit data strutures.
+    MODIFIED_EVERYTHING, // Phase made changes that warrant running post-phase checks or dumping
+                         // the main jit data strutures.
 };
 
 // The following enum provides a simple 1:1 mapping to CLR API's
@@ -5180,7 +5182,7 @@ public:
 
     bool fgCheckRemoveStmt(BasicBlock* block, Statement* stmt);
 
-    void fgCreateLoopPreHeader(unsigned lnum);
+    bool fgCreateLoopPreHeader(unsigned lnum);
 
     void fgUnreachableBlock(BasicBlock* block);
 
@@ -6099,6 +6101,8 @@ public:
                                   // hoisted
         int lpLoopVarFPCount;     // The register count for the FP LclVars that are read/written inside this loop
         int lpVarInOutFPCount;    // The register count for the FP LclVars that are alive inside or across this loop
+
+        bool lpHoistAddedPreheader; // The loop preheader was added during hoisting
 
         typedef JitHashTable<CORINFO_FIELD_HANDLE, JitPtrKeyFuncs<struct CORINFO_FIELD_STRUCT_>, FieldKindForVN>
                         FieldHandleSet;

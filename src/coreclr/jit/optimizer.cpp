@@ -6629,9 +6629,10 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, Basi
 
     VARSET_TP loopVars(VarSetOps::Intersection(this, pLoopDsc->lpVarInOut, pLoopDsc->lpVarUseDef));
 
-    pLoopDsc->lpVarInOutCount    = VarSetOps::Count(this, pLoopDsc->lpVarInOut);
-    pLoopDsc->lpLoopVarCount     = VarSetOps::Count(this, loopVars);
-    pLoopDsc->lpHoistedExprCount = 0;
+    pLoopDsc->lpVarInOutCount       = VarSetOps::Count(this, pLoopDsc->lpVarInOut);
+    pLoopDsc->lpLoopVarCount        = VarSetOps::Count(this, loopVars);
+    pLoopDsc->lpHoistedExprCount    = 0;
+    pLoopDsc->lpHoistAddedPreheader = false;
 
 #ifndef TARGET_64BIT
     unsigned longVarsCount = VarSetOps::Count(this, lvaLongVars);
@@ -6810,8 +6811,7 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, Basi
     optHoistLoopBlocks(lnum, &defExec, hoistCtxt);
 
     const unsigned numHoisted = pLoopDsc->lpHoistedFPExprCount + pLoopDsc->lpHoistedExprCount;
-
-    return numHoisted > 0;
+    return pLoopDsc->lpHoistAddedPreheader || (numHoisted > 0);
 }
 
 bool Compiler::optIsProfitableToHoistTree(GenTree* tree, unsigned lnum)
@@ -7665,6 +7665,10 @@ void Compiler::optHoistCandidate(GenTree* tree, BasicBlock* treeBb, unsigned lnu
         return;
     }
 
+    // Create a loop pre-header in which to put the hoisted code.
+    const bool newPreheader = fgCreateLoopPreHeader(lnum);
+    optLoopTable[lnum].lpHoistAddedPreheader |= newPreheader;
+
     // If the block we're hoisting from and the pre-header are in different EH regions, don't hoist.
     // TODO: we could probably hoist things that won't raise exceptions, such as constants.
     if (!BasicBlock::sameTryRegion(optLoopTable[lnum].lpHead, treeBb))
@@ -7674,9 +7678,6 @@ void Compiler::optHoistCandidate(GenTree* tree, BasicBlock* treeBb, unsigned lnu
                 lnum, optLoopTable[lnum].lpHead->bbTryIndex, treeBb->bbNum, treeBb->bbTryIndex);
         return;
     }
-
-    // Create a loop pre-header in which to put the hoisted code.
-    fgCreateLoopPreHeader(lnum);
 
     // Expression can be hoisted
     optPerformHoistExpr(tree, treeBb, lnum);
@@ -7824,7 +7825,10 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, unsigned lnum, VNSet* loopVnInv
 // Arguments:
 //    lnum  - loop index
 //
-void Compiler::fgCreateLoopPreHeader(unsigned lnum)
+// Returns:
+//    true if new preheader was created
+//
+bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
 {
 #ifdef DEBUG
     if (verbose)
@@ -7841,7 +7845,7 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
     {
         JITDUMP("   pre-header already exists\n");
         INDEBUG(loop.lpValidatePreHeader());
-        return;
+        return false;
     }
 
     BasicBlock* head  = loop.lpHead;
@@ -7895,7 +7899,7 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
                 head->bbFlags |= BBF_LOOP_PREHEADER;
                 INDEBUG(loop.lpValidatePreHeader());
                 INDEBUG(fgDebugCheckLoopTable());
-                return;
+                return false;
             }
             else
             {
@@ -8264,6 +8268,8 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
         optPrintLoopTable();
     }
 #endif
+
+    return true;
 }
 
 bool Compiler::optBlockIsLoopEntry(BasicBlock* blk, unsigned* pLnum)

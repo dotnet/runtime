@@ -4051,7 +4051,9 @@ PhaseStatus Compiler::fgSetBlockOrder()
     }
 #endif // DEBUG
 
-    return PhaseStatus::MODIFIED_NOTHING;
+    // Return "everything" to enable consistency checking of the statement links during post phase.
+    //
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 /*****************************************************************************/

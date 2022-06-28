@@ -4840,7 +4840,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     if (opts.OptimizationEnabled())
     {
-        // xxx
+        // Introduce copies for some single-def locals to make them more
+        // amenable to optimization
         //
         DoPhase(this, PHASE_OPTIMIZE_ADD_COPIES, &Compiler::optAddCopies);
 

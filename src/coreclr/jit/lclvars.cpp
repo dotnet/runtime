@@ -4592,7 +4592,7 @@ PhaseStatus Compiler::lvaMarkLocalVars()
         }
     }
 
-    bool addedLocal = false;
+    unsigned const lvaCountOrig = lvaCount;
 
 #if !defined(FEATURE_EH_FUNCLETS)
 
@@ -4620,8 +4620,6 @@ PhaseStatus Compiler::lvaMarkLocalVars()
         LclVarDsc* shadowSPslotsVar   = lvaGetDesc(lvaShadowSPslotsVar);
         shadowSPslotsVar->lvType      = TYP_BLK;
         shadowSPslotsVar->lvExactSize = (slotsNeeded * TARGET_POINTER_SIZE);
-
-        addedLocal = true;
     }
 
 #endif // !FEATURE_EH_FUNCLETS
@@ -4636,7 +4634,6 @@ PhaseStatus Compiler::lvaMarkLocalVars()
             LclVarDsc* lclPSPSym = lvaGetDesc(lvaPSPSym);
             lclPSPSym->lvType    = TYP_I_IMPL;
             lvaSetVarDoNotEnregister(lvaPSPSym DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
-            addedLocal = true;
         }
 #endif // FEATURE_EH_FUNCLETS
 
@@ -4659,7 +4656,6 @@ PhaseStatus Compiler::lvaMarkLocalVars()
             lvaLocAllocSPvar         = lvaGrabTempWithImplicitUse(false DEBUGARG("LocAllocSPvar"));
             LclVarDsc* locAllocSPvar = lvaGetDesc(lvaLocAllocSPvar);
             locAllocSPvar->lvType    = TYP_I_IMPL;
-            addedLocal               = true;
         }
 #endif // JIT32_GCENCODER
     }
@@ -4681,7 +4677,7 @@ PhaseStatus Compiler::lvaMarkLocalVars()
     {
         // This phase may add new locals
         //
-        return addedLocal ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+        return (lvaCount != lvaCountOrig) ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
     }
 
     const bool reportParamTypeArg = lvaReportParamTypeArg();
@@ -4702,7 +4698,7 @@ PhaseStatus Compiler::lvaMarkLocalVars()
 
     // This phase may add new locals.
     //
-    return addedLocal ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+    return (lvaCount != lvaCountOrig) ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------
