@@ -10,13 +10,6 @@ namespace System
     /// <summary>Provides access to and processing of a terminfo database.</summary>
     internal static partial class TermInfo
     {
-        internal enum WellKnownNumbers
-        {
-            Columns = 0,
-            Lines = 2,
-            MaxColors = 13,
-        }
-
         /// <summary>Provides support for evaluating parameterized terminfo database format strings.</summary>
         internal static class ParameterizedStrings
         {
