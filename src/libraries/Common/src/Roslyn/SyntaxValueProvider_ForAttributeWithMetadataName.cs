@@ -154,18 +154,25 @@ internal static partial class SyntaxValueProviderExtensions
             string fullyQualifiedMetadataName)
         {
             var targetSyntaxTree = attributeTarget.SyntaxTree;
-            using var result = new ValueListBuilder<AttributeData>(Span<AttributeData>.Empty);
+            var result = new ValueListBuilder<AttributeData>(Span<AttributeData>.Empty);
 
-            addMatchingAttributes(ref result, symbol.GetAttributes());
-            addMatchingAttributes(ref result, (symbol as IMethodSymbol)?.GetReturnTypeAttributes());
-
-            if (symbol is IAssemblySymbol assemblySymbol)
+            try
             {
-                foreach (var module in assemblySymbol.Modules)
-                    addMatchingAttributes(ref result, module.GetAttributes());
-            }
+                addMatchingAttributes(ref result, symbol.GetAttributes());
+                addMatchingAttributes(ref result, (symbol as IMethodSymbol)?.GetReturnTypeAttributes());
 
-            return result.AsSpan().ToImmutableArray();
+                if (symbol is IAssemblySymbol assemblySymbol)
+                {
+                    foreach (var module in assemblySymbol.Modules)
+                        addMatchingAttributes(ref result, module.GetAttributes());
+                }
+
+                return result.AsSpan().ToImmutableArray();
+            }
+            finally
+            {
+                result.Dispose();
+            }
 
             void addMatchingAttributes(
                 ref ValueListBuilder<AttributeData> result,
