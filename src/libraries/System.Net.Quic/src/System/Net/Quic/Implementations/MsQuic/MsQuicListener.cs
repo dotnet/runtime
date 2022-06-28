@@ -188,10 +188,11 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 QuicAddr address = listenEndPoint.ToQuicAddr();
 
-                if (listenEndPoint.Address == IPAddress.IPv6Any)
+                if (listenEndPoint.Address.Equals(IPAddress.IPv6Any))
                 {
-                    // For IPv6Any, MsQuic would listen only for IPv6 connections. To mimic the behavior of TCP sockets,
-                    // we leave the address family unspecified and let MsQuic handle connections from all IP addresses.
+                    // For IPv6Any, MsQuic would listen only for IPv6 connections. This would make it impossible
+                    // to connect the listener by using the IPv4 address (which could have been e.g. resolved by DNS).
+                    // Using the Unspecified family makes MsQuic handle connections from all IP addresses.
                     address.Family = QUIC_ADDRESS_FAMILY_UNSPEC;
                 }
 

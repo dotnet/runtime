@@ -303,18 +303,8 @@ namespace Internal.Cryptography
             return null;
         }
 
-        internal static bool AreByteArraysEqual(byte[] ba1, byte[] ba2)
-        {
-            if (ba1.Length != ba2.Length)
-                return false;
-
-            for (int i = 0; i < ba1.Length; i++)
-            {
-                if (ba1[i] != ba2[i])
-                    return false;
-            }
-            return true;
-        }
+        internal static bool AreByteArraysEqual(byte[] ba1, byte[] ba2) =>
+            ba1.AsSpan().SequenceEqual(ba2.AsSpan());
 
         /// <summary>
         /// Asserts on bad or non-canonicalized input. Input must come from trusted sources.

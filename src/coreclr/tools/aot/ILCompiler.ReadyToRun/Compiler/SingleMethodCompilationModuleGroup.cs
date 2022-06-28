@@ -38,7 +38,7 @@ namespace ILCompiler
         public override ReadyToRunFlags GetReadyToRunFlags()
         {
             // Partial by definition.
-            return base.GetReadyToRunFlags() | ReadyToRunFlags.READYTORUN_FLAG_Partial;
+            return ReadyToRunFlags.READYTORUN_FLAG_Partial;
         }
     }
 }

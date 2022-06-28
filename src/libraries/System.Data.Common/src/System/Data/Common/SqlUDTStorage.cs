@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Data.SqlTypes;
-using System.Xml;
-using System.IO;
-using System.Xml.Serialization;
 using System.Collections;
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Collections.Concurrent;
-using System.Reflection;
+using System.Data.SqlTypes;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Xml;
+using System.Xml.Serialization;
 
 namespace System.Data.Common
 {
@@ -137,12 +137,7 @@ namespace System.Data.Common
 
         public override void SetCapacity(int capacity)
         {
-            object[] newValues = new object[capacity];
-            if (_values != null)
-            {
-                Array.Copy(_values, newValues, Math.Min(capacity, _values.Length));
-            }
-            _values = newValues;
+            Array.Resize(ref _values, capacity);
             base.SetCapacity(capacity);
         }
 

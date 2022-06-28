@@ -55,9 +55,9 @@ namespace System.Text.Json.Serialization.Tests
             // Those options are overwritten when context is binded via options.AddContext<TContext>();
             JsonSerializerOptions options = new();
             options.AddContext<MyJsonContextThatSetsOptionsInParameterlessCtor>(); // No error.
-            FieldInfo contextField = typeof(JsonSerializerOptions).GetField("_serializerContext", BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.NotNull(contextField);
-            Assert.Same(options, ((JsonSerializerContext)contextField.GetValue(options)).Options);
+            FieldInfo resolverField = typeof(JsonSerializerOptions).GetField("_typeInfoResolver", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(resolverField);
+            Assert.Same(options, ((JsonSerializerContext)resolverField.GetValue(options)).Options);
         }
 
         [Fact]

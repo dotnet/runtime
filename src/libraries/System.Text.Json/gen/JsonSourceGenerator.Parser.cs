@@ -1473,11 +1473,11 @@ namespace System.Text.Json.SourceGeneration
 
                     if (forType)
                     {
-                        return $"{Emitter.GetConverterFromFactoryMethodName}(typeof({type.GetCompilableName()}), new {converterType.GetCompilableName()}())";
+                        return $"{Emitter.GetConverterFromFactoryMethodName}({OptionsLocalVariableName}, typeof({type.GetCompilableName()}), new {converterType.GetCompilableName()}())";
                     }
                     else
                     {
-                        return $"{Emitter.JsonContextVarName}.{Emitter.GetConverterFromFactoryMethodName}<{type.GetCompilableName()}>(new {converterType.GetCompilableName()}())";
+                        return $"{Emitter.GetConverterFromFactoryMethodName}<{type.GetCompilableName()}>({OptionsLocalVariableName}, new {converterType.GetCompilableName()}())";
                     }
                 }
 

@@ -293,8 +293,7 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
     {
         None,
         LclVar,
-        LclFld,
-        ObjAddrLclFld
+        LclFld
     };
 
     ArrayStack<Value> m_valueStack;
@@ -914,32 +913,6 @@ private:
                 lclNode = indir->AsLclVarCommon();
                 break;
 
-            // TODO-ADDR: support TYP_STRUCT LCL_FLD for all users and use it instead.
-            case IndirTransform::ObjAddrLclFld:
-            {
-                indir->SetOper(indirLayout->IsBlockLayout() ? GT_BLK : GT_OBJ);
-                indir->AsBlk()->SetLayout(indirLayout);
-                indir->AsBlk()->gtBlkOpKind = GenTreeBlk::BlkOpKindInvalid;
-#ifndef JIT32_GCENCODER
-                indir->AsBlk()->gtBlkOpGcUnsafe = false;
-#endif
-
-                GenTree* addr = indir->AsBlk()->Addr();
-                assert(addr->OperIs(GT_ADDR));
-
-                GenTree* location = addr->gtGetOp1();
-                // Types of LCL_FLD location nodes do not matter. We arbitrarily choose TYP_UBYTE.
-                location->ChangeType(TYP_UBYTE);
-                location->ChangeOper(GT_LCL_FLD);
-                location->AsLclFld()->SetLclNum(val.LclNum());
-                location->AsLclFld()->SetLclOffs(val.Offset());
-                location->AsLclFld()->SetLayout(nullptr);
-
-                lclNode = location->AsLclVarCommon();
-                lclNodeFlags |= GTF_DONT_CSE;
-            }
-            break;
-
             default:
                 unreached();
         }
@@ -1088,14 +1061,14 @@ private:
 
         // Current matrix of matches/users/types:
         //
-        // |------------|---------|-------------|---------|
-        // | STRUCT     | CALL(*) | ASG         | RETURN  |
-        // |------------|---------|-------------|---------|
-        // | Compatible | LCL_VAR | LCL_VAR     | LCL_VAR |
-        // | Partial    | LCL_FLD | OBJ/LCL_FLD | LCL_FLD |
-        // |------------|---------|-------------|---------|
+        // |------------|---------|---------|---------|
+        // | STRUCT     | CALL(*) | ASG     | RETURN  |
+        // |------------|---------|---------|---------|
+        // | Compatible | LCL_VAR | LCL_VAR | LCL_VAR |
+        // | Partial    | LCL_FLD | LCL_FLD | LCL_FLD |
+        // |------------|---------|---------|---------|
         //
-        // * - On Windows x64 only.
+        // * - On XArch only.
         //
         // |------------|------|------|--------|----------|
         // | SIMD       | CALL | ASG  | RETURN | HWI/SIMD |
@@ -1113,19 +1086,14 @@ private:
 
         if (user->IsCall())
         {
-#ifndef WINDOWS_AMD64_ABI
+#if !defined(TARGET_XARCH)
             return IndirTransform::None;
-#endif // !WINDOWS_AMD64_ABI
+#endif // !defined(TARGET_XARCH)
         }
 
         if (match == StructMatch::Compatible)
         {
             return IndirTransform::LclVar;
-        }
-
-        if (user->OperIs(GT_ASG) && (indir == user->AsOp()->gtGetOp1()))
-        {
-            return IndirTransform::ObjAddrLclFld;
         }
 
         return IndirTransform::LclFld;

@@ -1652,7 +1652,11 @@ AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurTh
             }
 
             LONG newValue = oldValue | tid;
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+            if (FastInterlockedCompareExchangeAcquire((LONG*)&m_SyncBlockValue, newValue, oldValue) == oldValue)
+#else
             if (InterlockedCompareExchangeAcquire((LONG*)&m_SyncBlockValue, newValue, oldValue) == oldValue)
+#endif
             {
                 return AwareLock::EnterHelperResult_Entered;
             }

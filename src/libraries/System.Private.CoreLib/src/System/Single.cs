@@ -11,6 +11,7 @@
 ===========================================================*/
 
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
@@ -900,7 +901,7 @@ namespace System
         public static float Clamp(float value, float min, float max) => Math.Clamp(value, min, max);
 
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
-        public static float CopySign(float x, float y) => MathF.CopySign(x, y);
+        public static float CopySign(float value, float sign) => MathF.CopySign(value, sign);
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static float Max(float x, float y) => MathF.Max(x, y);
@@ -1336,14 +1337,185 @@ namespace System
         /// <inheritdoc cref="IRootFunctions{TSelf}.Cbrt(TSelf)" />
         public static float Cbrt(float x) => MathF.Cbrt(x);
 
-        // /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
-        // public static float Hypot(float x, float y) => MathF.Hypot(x, y);
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
+        public static float Hypot(float x, float y)
+        {
+            // This code is based on `hypotf` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2020 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            float result;
+
+            if (IsFinite(x) && IsFinite(y))
+            {
+                float ax = Abs(x);
+                float ay = Abs(y);
+
+                if (ax == 0.0f)
+                {
+                    result = ay;
+                }
+                else if (ay == 0.0f)
+                {
+                    result = ax;
+                }
+                else
+                {
+                    double xx = ax;
+                    xx *= xx;
+
+                    double yy = ay;
+                    yy *= yy;
+
+                    result = (float)double.Sqrt(xx + yy);
+                }
+            }
+            else if (IsInfinity(x) || IsInfinity(y))
+            {
+                // IEEE 754 requires that we return +Infinity
+                // even if one of the inputs is NaN
+
+                result = PositiveInfinity;
+            }
+            else
+            {
+                // IEEE 754 requires that we return NaN
+                // if either input is NaN and neither is Infinity
+
+                Debug.Assert(IsNaN(x) || IsNaN(y));
+                result = NaN;
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Root(TSelf, int)" />
+        public static float Root(float x, int n)
+        {
+            float result;
+
+            if (n > 0)
+            {
+                if (n == 2)
+                {
+                    result = (x != 0.0f) ? Sqrt(x) : 0.0f;
+                }
+                else if (n == 3)
+                {
+                    result = Cbrt(x);
+                }
+                else
+                {
+                    result = PositiveN(x, n);
+                }
+            }
+            else if (n < 0)
+            {
+                result = NegativeN(x, n);
+            }
+            else
+            {
+                Debug.Assert(n == 0);
+                result = NaN;
+            }
+
+            return result;
+
+            static float PositiveN(float x, int n)
+            {
+                float result;
+
+                if (IsFinite(x))
+                {
+                    if (x != 0)
+                    {
+                        if ((x > 0) || IsOddInteger(n))
+                        {
+                            result = (float)double.Pow(Abs(x), 1.0 / n);
+                            result = CopySign(result, x);
+                        }
+                        else
+                        {
+                            result = NaN;
+                        }
+                    }
+                    else if (IsEvenInteger(n))
+                    {
+                        result = 0.0f;
+                    }
+                    else
+                    {
+                        result = CopySign(0.0f, x);
+                    }
+                }
+                else if (IsNaN(x))
+                {
+                    result = NaN;
+                }
+                else if (x > 0)
+                {
+                    Debug.Assert(IsPositiveInfinity(x));
+                    result = PositiveInfinity;
+                }
+                else
+                {
+                    Debug.Assert(IsNegativeInfinity(x));
+                    result = int.IsOddInteger(n) ? NegativeInfinity : NaN;
+                }
+
+                return result;
+            }
+
+            static float NegativeN(float x, int n)
+            {
+                float result;
+
+                if (IsFinite(x))
+                {
+                    if (x != 0)
+                    {
+                        if ((x > 0) || IsOddInteger(n))
+                        {
+                            result = (float)double.Pow(Abs(x), 1.0 / n);
+                            result = CopySign(result, x);
+                        }
+                        else
+                        {
+                            result = NaN;
+                        }
+                    }
+                    else if (IsEvenInteger(n))
+                    {
+                        result = PositiveInfinity;
+                    }
+                    else
+                    {
+                        result = CopySign(PositiveInfinity, x);
+                    }
+                }
+                else if (IsNaN(x))
+                {
+                    result = NaN;
+                }
+                else if (x > 0)
+                {
+                    Debug.Assert(IsPositiveInfinity(x));
+                    result = 0.0f;
+                }
+                else
+                {
+                    Debug.Assert(IsNegativeInfinity(x));
+                    result = int.IsOddInteger(n) ? -0.0f : NaN;
+                }
+
+                return result;
+            }
+        }
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
         public static float Sqrt(float x) => MathF.Sqrt(x);
-
-        // /// <inheritdoc cref="IRootFunctions{TSelf}.Root(TSelf, TSelf)" />
-        // public static float Root(float x, float n) => MathF.Root(x, n);
 
         //
         // ISignedNumber
@@ -1376,8 +1548,20 @@ namespace System
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Acos(TSelf)" />
         public static float Acos(float x) => MathF.Acos(x);
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
+        public static float AcosPi(float x)
+        {
+            return Acos(x) / Pi;
+        }
+
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Asin(TSelf)" />
         public static float Asin(float x) => MathF.Asin(x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
+        public static float AsinPi(float x)
+        {
+            return Asin(x) / Pi;
+        }
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan(TSelf)" />
         public static float Atan(float x) => MathF.Atan(x);
@@ -1385,8 +1569,107 @@ namespace System
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2(TSelf, TSelf)" />
         public static float Atan2(float y, float x) => MathF.Atan2(y, x);
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2Pi(TSelf, TSelf)" />
+        public static float Atan2Pi(float y, float x)
+        {
+            return Atan2(y, x) / Pi;
+        }
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
+        public static float AtanPi(float x)
+        {
+            return Atan(x) / Pi;
+        }
+
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Cos(TSelf)" />
         public static float Cos(float x) => MathF.Cos(x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
+        public static float CosPi(float x)
+        {
+            // This code is based on `cospif` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2020 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            float result;
+
+            if (IsFinite(x))
+            {
+                float ax = Abs(x);
+
+                if (ax < 8_388_608.0f)              // |x| < 2^23
+                {
+                    if (ax > 0.25f)
+                    {
+                        int integral = (int)ax;
+
+                        float fractional = ax - integral;
+                        float sign = int.IsOddInteger(integral) ? -1.0f : +1.0f;
+
+                        if (fractional <= 0.25f)
+                        {
+                            result = sign;
+
+                            if (fractional != 0.00f)
+                            {
+                                result *= CosForIntervalPiBy4(fractional * Pi);
+                            }
+                        }
+                        else if (fractional <= 0.50f)
+                        {
+                            if (fractional != 0.50f)
+                            {
+                                result = sign * SinForIntervalPiBy4((0.5f - fractional) * Pi);
+                            }
+                            else
+                            {
+                                result = 0.0f;
+                            }
+                        }
+                        else if (fractional <= 0.75)
+                        {
+                            result = -sign * SinForIntervalPiBy4((fractional - 0.5f) * Pi);
+                        }
+                        else
+                        {
+                            result = -sign * CosForIntervalPiBy4((1.0f - fractional) * Pi);
+                        }
+                    }
+                    else if (ax >= 7.8125E-3f)      // |x| >= 2^-7
+                    {
+                        result = CosForIntervalPiBy4(x * Pi);
+                    }
+                    else if (ax >= 1.22070313E-4f)  // |x| >= 2^-13
+                    {
+                        result = x * Pi;
+                        result = 1.0f - (result * result * 0.5f);
+                    }
+                    else
+                    {
+                        result = 1.0f;
+                    }
+                }
+                else if (ax < 16_777_216.0f)        // |x| < 2^24
+                {
+                    // x is an integer
+                    int bits = BitConverter.SingleToInt32Bits(ax);
+                    result = int.IsOddInteger(bits) ? -1.0f : +1.0f;
+                }
+                else
+                {
+                    // x is an even integer
+                    result = 1.0f;
+                }
+            }
+            else
+            {
+                result = NaN;
+            }
+
+            return result;
+        }
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
         public static float Sin(float x) => MathF.Sin(x);
@@ -1394,29 +1677,181 @@ namespace System
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
         public static (float Sin, float Cos) SinCos(float x) => MathF.SinCos(x);
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
+        public static float SinPi(float x)
+        {
+            // This code is based on `sinpif` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2020 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            float result;
+
+            if (IsFinite(x))
+            {
+                float ax = Abs(x);
+
+                if (ax < 8_388_608.0f)              // |x| < 2^23
+                {
+                    if (ax > 0.25f)
+                    {
+                        int integral = (int)ax;
+
+                        float fractional = ax - integral;
+                        float sign = ((x > 0.0f) ? +1.0f : -1.0f) * (int.IsOddInteger(integral) ? -1.0f : +1.0f);
+
+                        if (fractional <= 0.25f)
+                        {
+                            if (fractional != 0.00f)
+                            {
+                                result = sign * SinForIntervalPiBy4(fractional * Pi);
+                            }
+                            else
+                            {
+                                result = x * 0.0f;
+                            }
+                        }
+                        else if (fractional <= 0.50f)
+                        {
+                            result = sign;
+
+                            if (fractional != 0.50f)
+                            {
+                                result *= CosForIntervalPiBy4((0.5f - fractional) * Pi);
+                            }
+                        }
+                        else if (fractional <= 0.75f)
+                        {
+                            result = sign * CosForIntervalPiBy4((fractional - 0.5f) * Pi);
+                        }
+                        else
+                        {
+                            result = sign * SinForIntervalPiBy4((1.0f - fractional) * Pi);
+                        }
+                    }
+                    else if (ax >= 7.8125E-3f)      // |x| >= 2^-7
+                    {
+                        result = SinForIntervalPiBy4(x * Pi);
+                    }
+                    else if (ax >= 1.22070313E-4f)  // |x| >= 2^-13
+                    {
+                        result = x * Pi;
+                        result -= result * (result * (result * (1.0f / 6.0f)));
+                    }
+                    else
+                    {
+                        result = x * Pi;
+                    }
+                }
+                else
+                {
+                    // x is an integer
+                    result = x * 0.0f;
+                }
+            }
+            else
+            {
+                result = NaN;
+            }
+
+            return result;
+        }
+
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Tan(TSelf)" />
         public static float Tan(float x) => MathF.Tan(x);
 
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
-        // public static float AcosPi(float x) => MathF.AcosPi(x);
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
+        public static float TanPi(float x)
+        {
+            // This code is based on `tanpif` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2020 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
 
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
-        // public static float AsinPi(float x) => MathF.AsinPi(x);
+            float result;
 
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
-        // public static float AtanPi(float x) => MathF.AtanPi(x);
+            if (IsFinite(x))
+            {
+                float ax = Abs(x);
+                float sign = (x > 0.0f) ? +1.0f : -1.0f;
 
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2Pi(TSelf)" />
-        // public static float Atan2Pi(float y, float x) => MathF.Atan2Pi(y, x);
+                if (ax < 8_388_608.0f)              // |x| < 2^23
+                {
+                    if (ax > 0.25f)
+                    {
+                        int integral = (int)ax;
+                        float fractional = ax - integral;
 
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
-        // public static float CosPi(float x) => MathF.CosPi(x);
+                        if (fractional <= 0.25f)
+                        {
+                            result = sign;
 
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
-        // public static float SinPi(float x) => MathF.SinPi(x, y);
+                            if (fractional != 0.00f)
+                            {
+                                result *= TanForIntervalPiBy4(fractional * Pi, isReciprocal: false);
+                            }
+                            else
+                            {
+                                result *= int.IsOddInteger(integral) ? -0.0f : +0.0f;
+                            }
+                        }
+                        else if (fractional <= 0.50f)
+                        {
+                            result = sign;
 
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
-        // public static float TanPi(float x) => MathF.TanPi(x, y);
+                            if (fractional != 0.50f)
+                            {
+                                result *= -TanForIntervalPiBy4((0.5f - fractional) * Pi, isReciprocal: true);
+                            }
+                            else
+                            {
+                                result *= int.IsOddInteger(integral) ? NegativeInfinity : PositiveInfinity;
+                            }
+                        }
+                        else if (fractional <= 0.75f)
+                        {
+                            result = +sign * TanForIntervalPiBy4((fractional - 0.5f) * Pi, isReciprocal: true);
+                        }
+                        else
+                        {
+                            result = -sign * TanForIntervalPiBy4((1.0f - fractional) * Pi, isReciprocal: false);
+                        }
+                    }
+                    else if (ax >= 7.8125E-3f)      // |x| >= 2^-7
+                    {
+                        result = TanForIntervalPiBy4(x * Pi, isReciprocal: false);
+                    }
+                    else if (ax >= 1.22070313E-4f)  // |x| >= 2^-13
+                    {
+                        result = x * Pi;
+                        result += (result * (result * (result * (1.0f / 3.0f))));
+                    }
+                    else
+                    {
+                        result = x * Pi;
+                    }
+                }
+                else if (ax < 16_777_216)           // |x| < 2^24
+                {
+                    // x is an integer
+                    int bits = BitConverter.SingleToInt32Bits(ax);
+                    result = sign * (int.IsOddInteger(bits) ? -0.0f : +0.0f);
+                }
+                else
+                {
+                    // x is an even integer
+                    result = sign * 0.0f;
+                }
+            }
+            else
+            {
+                result = NaN;
+            }
+
+            return result;
+        }
 
         //
         // IUnaryNegationOperators
@@ -1431,5 +1866,112 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static float IUnaryPlusOperators<float, float>.operator +(float value) => (float)(+value);
+
+        //
+        // Helpers
+        //
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static float CosForIntervalPiBy4(float x)
+        {
+            // This code is based on `cos_piby4` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2020 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            // Taylor series for cos(x) is: 1 - (x^2 / 2!) + (x^4 / 4!) - (x^6 / 6!) ...
+            //
+            // Then define f(xx) where xx = (x * x)
+            // and f(xx) = 1 - (xx / 2!) + (xx^2 / 4!) - (xx^3 / 6!) ...
+            //
+            // We use a minimax approximation of (f(xx) - 1 + (xx / 2)) / (xx * xx)
+            // because this produces an expansion in even powers of x.
+
+            const double C1 = +0.41666666666666665390037E-1;        // approx: +1 / 4!
+            const double C2 = -0.13888888888887398280412E-2;        // approx: -1 / 6!
+            const double C3 = +0.248015872987670414957399E-4;       // approx: +1 / 8!
+            const double C4 = -0.275573172723441909470836E-6;       // approx: -1 / 10!
+
+            double xx = x * x;
+            double result = C4;
+
+            result = (result * xx) + C3;
+            result = (result * xx) + C2;
+            result = (result * xx) + C1;
+
+            result *= xx * xx;
+            result += 1.0 - (0.5 * xx);
+
+            return (float)result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static float SinForIntervalPiBy4(float x)
+        {
+            // This code is based on `sin_piby4` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2020 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            // Taylor series for sin(x) is x - (x^3 / 3!) + (x^5 / 5!) - (x^7 / 7!) ...
+            // Which can be expressed as x * (1 - (x^2 / 3!) + (x^4 /5!) - (x^6 /7!) ...)
+            //
+            // Then define f(xx) where xx = (x * x)
+            // and f(xx) = 1 - (xx / 3!) + (xx^2 / 5!) - (xx^3 / 7!) ...
+            //
+            // We use a minimax approximation of (f(xx) - 1) / xx
+            // because this produces an expansion in even powers of x.
+
+            const double C1 = -0.166666666666666646259241729;       // approx: -1 / 3!
+            const double C2 = +0.833333333333095043065222816E-2;    // approx: +1 / 5!
+            const double C3 = -0.19841269836761125688538679E-3;     // approx: -1 / 7!
+            const double C4 = +0.275573161037288022676895908448E-5; // approx: +1 / 9!
+
+            double xx = x * x;
+            double result = C4;
+
+            result = (result * xx) + C3;
+            result = (result * xx) + C2;
+            result = (result * xx) + C1;
+
+            result *= x * xx;
+            result += x;
+
+            return (float)result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static float TanForIntervalPiBy4(float  x, bool isReciprocal)
+        {
+            // This code is based on `tan_piby4` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2020 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            // Core Remez [1, 2] approximation to tan(x) on the interval [0, pi / 4].
+
+            double xx = x * x;
+
+            double denominator = +0.1844239256901656082986661E-1;
+            denominator = -0.51396505478854532132342E+0 + (denominator * xx);
+            denominator = +0.115588821434688393452299E+1 + (denominator * xx);
+
+            double numerator = -0.172032480471481694693109E-1;
+            numerator = 0.385296071263995406715129E+0 + (numerator * xx);
+
+            double result = x * xx;
+            result *= numerator / denominator;
+            result += x;
+
+            if (isReciprocal)
+            {
+                result = -1.0 / result;
+            }
+
+            return (float)result;
+        }
     }
 }

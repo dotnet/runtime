@@ -138,6 +138,12 @@ hot_reload_added_fields_iter (MonoClass *klass, gboolean lazy, gpointer *iter);
 static uint32_t
 hot_reload_get_num_fields_added (MonoClass *klass);
 
+static uint32_t
+hot_reload_get_num_methods_added (MonoClass *klass);
+
+static const char *
+hot_reload_get_capabilities (void);
+
 static MonoClassMetadataUpdateField *
 metadata_update_field_setup_basic_info_and_resolve (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t fielddef_token, uint32_t field_flags, MonoError *error);
 
@@ -172,6 +178,8 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_added_methods_iter,
 	&hot_reload_added_fields_iter,
 	&hot_reload_get_num_fields_added,
+	&hot_reload_get_num_methods_added,
+	&hot_reload_get_capabilities
 };
 
 MonoComponentHotReload *
@@ -738,11 +746,12 @@ hot_reload_wait_for_update (uint32_t timeout_ms)
 }
 
 static void
-hot_reload_update_publish (MonoAssemblyLoadContext *alc, uint32_t generation)
+hot_reload_update_publish (MonoAssemblyLoadContext *alc, uint32_t generation, gboolean should_invalidate_transformed_code)
 {
 	g_assert (update_published < generation && generation <= update_alloc_frontier);
 	/* TODO: wait for all threads that are using old metadata to update. */
-	hot_reload_update_published_invoke_hook (alc, generation);
+	if (should_invalidate_transformed_code)
+		hot_reload_update_published_invoke_hook (alc, generation);
 	update_published = update_alloc_frontier;
 	mono_memory_write_barrier ();
 	publish_unlock ();
@@ -933,8 +942,6 @@ scope_to_string (uint32_t tok)
 static void
 dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta)
 {
-	int rows;
-
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "dmeta tables:");
 	for (int idx = 0; idx < MONO_TABLE_NUM; ++idx) {
 		if (image_dmeta->tables [idx].base)
@@ -942,8 +949,8 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta)
 	}
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "================================");
 
-	rows = mono_image_get_table_rows (image_base, MONO_TABLE_TYPEREF);
-	for (int i = 1; i <= rows; ++i) {
+	guint32 rows = table_info_get_rows (&image_base->tables [MONO_TABLE_TYPEREF]);
+	for (guint32 i = 1; i <= rows; ++i) {
 		guint32 cols [MONO_TYPEREF_SIZE];
 		mono_metadata_decode_row (&image_base->tables [MONO_TABLE_TYPEREF], i - 1, cols, MONO_TYPEREF_SIZE);
 		const char *scope = scope_to_string (cols [MONO_TYPEREF_SCOPE]);
@@ -960,8 +967,8 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta)
 	if (!image_dmeta->minimal_delta) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "--------------------------------");
 
-		rows = mono_image_get_table_rows (image_dmeta, MONO_TABLE_TYPEREF);
-		for (int i = 1; i <= rows; ++i) {
+		rows = table_info_get_rows (&image_dmeta->tables [MONO_TABLE_TYPEREF]);
+		for (guint32 i = 1; i <= rows; ++i) {
 			guint32 cols [MONO_TYPEREF_SIZE];
 			mono_metadata_decode_row (&image_dmeta->tables [MONO_TABLE_TYPEREF], i - 1, cols, MONO_TYPEREF_SIZE);
 			const char *scope = scope_to_string (cols [MONO_TYPEREF_SCOPE]);
@@ -972,8 +979,8 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta)
 	}
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "================================");
 
-	rows = mono_image_get_table_rows (image_dmeta, MONO_TABLE_TYPEDEF);
-	for (int i = 1; i <= rows; ++i) {
+	rows = table_info_get_rows (&image_dmeta->tables [MONO_TABLE_TYPEDEF]);
+	for (guint32 i = 1; i <= rows; ++i) {
 		guint32 cols [MONO_TYPEDEF_SIZE];
 		mono_metadata_decode_row (&image_dmeta->tables [MONO_TABLE_TYPEDEF], i - 1, cols, MONO_TYPEDEF_SIZE);
 		const char *name = mono_metadata_string_heap (image_base, cols [MONO_TYPEDEF_NAME]);
@@ -983,8 +990,8 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta)
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "================================");
 
-	rows = mono_image_get_table_rows (image_base, MONO_TABLE_METHOD);
-	for (int i = 1; i <= rows ; ++i) {
+	rows = table_info_get_rows (&image_base->tables [MONO_TABLE_METHOD]);
+	for (guint32 i = 1; i <= rows ; ++i) {
 		guint32 cols [MONO_METHOD_SIZE];
 		mono_metadata_decode_row_raw (&image_base->tables [MONO_TABLE_METHOD], i - 1, cols, MONO_METHOD_SIZE);
 		const char *name = mono_metadata_string_heap (image_base, cols [MONO_METHOD_NAME]);
@@ -993,8 +1000,8 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta)
 	}
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "--------------------------------");
 
-	rows = mono_image_get_table_rows (image_dmeta, MONO_TABLE_METHOD);
-	for (int i = 1; i <= rows ; ++i) {
+	rows = table_info_get_rows (&image_dmeta->tables [MONO_TABLE_METHOD]);
+	for (guint32 i = 1; i <= rows ; ++i) {
 		guint32 cols [MONO_METHOD_SIZE];
 		mono_metadata_decode_row_raw (&image_dmeta->tables [MONO_TABLE_METHOD], i - 1, cols, MONO_METHOD_SIZE);
 		const char *name = mono_metadata_string_heap (image_base, cols [MONO_METHOD_NAME]);
@@ -1003,8 +1010,8 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta)
 	}
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "================================");
 
-	rows = mono_image_get_table_rows (image_base, MONO_TABLE_STANDALONESIG);
-	for (int i = 1; i <= rows; ++i) {
+	rows = table_info_get_rows (&image_base->tables [MONO_TABLE_STANDALONESIG]);
+	for (guint32 i = 1; i <= rows; ++i) {
 		guint32 cols [MONO_STAND_ALONE_SIGNATURE_SIZE];
 		mono_metadata_decode_row (&image_base->tables [MONO_TABLE_STANDALONESIG], i - 1, cols, MONO_STAND_ALONE_SIGNATURE_SIZE);
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base  standalonesig i=%d (token=0x%08x) -> 0x%08x", i, MONO_TOKEN_SIGNATURE | i, cols [MONO_STAND_ALONE_SIGNATURE]);
@@ -1013,8 +1020,8 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta)
 	if (!image_dmeta->minimal_delta) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "--------------------------------");
 
-		rows = mono_image_get_table_rows (image_dmeta, MONO_TABLE_STANDALONESIG);
-		for (int i = 1; i <= rows; ++i) {
+		rows = table_info_get_rows (&image_dmeta->tables [MONO_TABLE_STANDALONESIG]);
+		for (guint32 i = 1; i <= rows; ++i) {
 			guint32 cols [MONO_STAND_ALONE_SIGNATURE_SIZE];
 			mono_metadata_decode_row_raw (&image_dmeta->tables [MONO_TABLE_STANDALONESIG], i - 1, cols, MONO_STAND_ALONE_SIGNATURE_SIZE);
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "dmeta standalonesig i=%d (token=0x%08x) -> 0x%08x", i, MONO_TOKEN_SIGNATURE | i, cols [MONO_STAND_ALONE_SIGNATURE]);
@@ -1101,11 +1108,11 @@ hot_reload_relative_delta_index (MonoImage *image_dmeta, DeltaInfo *delta_info, 
 {
 	MonoTableInfo *encmap = &image_dmeta->tables [MONO_TABLE_ENCMAP];
 
-	int table = mono_metadata_token_table (token);
-	int index = mono_metadata_token_index (token);
+	guint32 table = mono_metadata_token_table (token);
+	guint32 index = mono_metadata_token_index (token);
 
-	int index_map = delta_info->enc_recs [table];
-	int encmap_rows = table_info_get_rows (encmap);
+	guint32 index_map = delta_info->enc_recs [table];
+	guint32 encmap_rows = table_info_get_rows (encmap);
 
 	if (!table_info_get_rows (encmap) || !image_dmeta->minimal_delta)
 		return mono_metadata_token_index (token);
@@ -1118,7 +1125,7 @@ hot_reload_relative_delta_index (MonoImage *image_dmeta, DeltaInfo *delta_info, 
 
 	guint32 cols[MONO_ENCMAP_SIZE];
 	mono_metadata_decode_row (encmap, index_map - 1, cols, MONO_ENCMAP_SIZE);
-	int map_entry = cols [MONO_ENCMAP_TOKEN];
+	guint32 map_entry = cols [MONO_ENCMAP_TOKEN];
 
 	/* we're looking at the beginning of a sequence of encmap rows that are all the
 	 * modifications+additions for the table we are looking for (or we're looking at an entry
@@ -1134,7 +1141,7 @@ hot_reload_relative_delta_index (MonoImage *image_dmeta, DeltaInfo *delta_info, 
 		if (mono_metadata_token_index (map_entry) == index) {
 			/* token resolves to this generation */
 			int return_val = index_map - delta_info->enc_recs [table] + 1;
-			g_assert (return_val > 0 && return_val <= table_info_get_rows (&image_dmeta->tables[table]));
+			g_assert (return_val > 0 && GINT_TO_UINT32(return_val) <= table_info_get_rows (&image_dmeta->tables[table]));
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "relative index for token 0x%08x -> table 0x%02x row 0x%08x", token, table, return_val);
 			return return_val;
 		} else {
@@ -1192,7 +1199,8 @@ delta_info_compute_table_records (MonoImage *image_dmeta, MonoImage *image_base,
 {
 	MonoTableInfo *encmap = &image_dmeta->tables [MONO_TABLE_ENCMAP];
 
-	int table, prev_table = -1, idx;
+	int table, prev_table = -1;
+	guint32 idx;
 
 	/*** Compute logical table sizes ***/
 	if (base_info->delta_info == base_info->delta_info_last) {
@@ -1212,7 +1220,7 @@ delta_info_compute_table_records (MonoImage *image_dmeta, MonoImage *image_base,
 
 	/* TODO: while going through the tables, update delta_info->count[tbl].{modified,inserted}_rows */
 
-	int encmap_rows = table_info_get_rows (encmap);
+	guint32 encmap_rows = table_info_get_rows (encmap);
 	for (idx = 1; idx <= encmap_rows; ++idx) {
 		guint32 cols[MONO_ENCMAP_SIZE];
 		mono_metadata_decode_row (encmap, idx - 1, cols, MONO_ENCMAP_SIZE);
@@ -1285,7 +1293,7 @@ static void
 delta_info_mutate_row (MonoImage *image_dmeta, DeltaInfo *cur_delta, guint32 log_token)
 {
 	int token_table = mono_metadata_token_table (log_token);
-	int token_index = mono_metadata_token_index (log_token); /* 1-based */
+	guint32 token_index = mono_metadata_token_index (log_token); /* 1-based */
 
 	gboolean modified = token_index <= cur_delta->count [token_table].prev_gen_rows;
 
@@ -1304,7 +1312,7 @@ delta_info_mutate_row (MonoImage *image_dmeta, DeltaInfo *cur_delta, guint32 log
 	char *dst_base = (char*)cur_delta->mutants [token_table].base + (token_index - 1) * cur_delta->mutants [token_table].row_size;
 
 	guint32 src_offset = 0, dst_offset = 0;
-	for (int col = 0; col < mono_metadata_table_count (dst_bitfield); ++col) {
+	for (guint col = 0; col < mono_metadata_table_count (dst_bitfield); ++col) {
 		guint32 dst_col_size = mono_metadata_table_size (dst_bitfield, col);
 		guint32 src_col_size = mono_metadata_table_size (src_bitfield, col);
 		if ((m_SuppressedDeltaColumns [token_table] & (1 << col)) == 0) {
@@ -1355,9 +1363,9 @@ delta_info_mutate_row (MonoImage *image_dmeta, DeltaInfo *cur_delta, guint32 log
 static void
 prepare_mutated_rows (const MonoTableInfo *table_enclog, MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *delta_info)
 {
-	int rows = table_info_get_rows (table_enclog);
+	guint32 rows = table_info_get_rows (table_enclog);
 	/* Prepare the mutated metadata tables */
-	for (int i = 0; i < rows ; ++i) {
+	for (guint32 i = 0; i < rows ; ++i) {
 		guint32 cols [MONO_ENCLOG_SIZE];
 		mono_metadata_decode_row (table_enclog, i, cols, MONO_ENCLOG_SIZE);
 
@@ -1375,17 +1383,18 @@ prepare_mutated_rows (const MonoTableInfo *table_enclog, MonoImage *image_base, 
  * function will fail and the metadata update should be aborted. This should
  * run before anything in the metadata world is updated. */
 static gboolean
-apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *delta_info, gconstpointer dil_data, uint32_t dil_length, MonoError *error)
+apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *delta_info, gconstpointer dil_data, uint32_t dil_length, gboolean *should_invalidate_transformed_code, MonoError *error)
 {
+	*should_invalidate_transformed_code = false;
 	MonoTableInfo *table_enclog = &image_dmeta->tables [MONO_TABLE_ENCLOG];
-	int rows = table_info_get_rows (table_enclog);
+	guint32 rows = table_info_get_rows (table_enclog);
 
 	gboolean unsupported_edits = FALSE;
 
 	/* hack: make a pass over it, looking only for table method updates, in
 	 * order to give more meaningful error messages first */
 
-	for (int i = 0; i < rows ; ++i) {
+	for (guint32 i = 0; i < rows ; ++i) {
 		guint32 cols [MONO_ENCLOG_SIZE];
 		mono_metadata_decode_row (table_enclog, i, cols, MONO_ENCLOG_SIZE);
 
@@ -1398,7 +1407,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 		int func_code = cols [MONO_ENCLOG_FUNC_CODE];
 
 		int token_table = mono_metadata_token_table (log_token);
-		int token_index = mono_metadata_token_index (log_token);
+		guint32 token_index = mono_metadata_token_index (log_token);
 
 		gboolean is_addition = token_index-1 >= delta_info->count[token_table].prev_gen_rows ;
 
@@ -1416,7 +1425,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 		g_assert (func_code == 0); /* anything else doesn't make sense here */
 	}
 
-	for (int i = 0; i < rows ; ++i) {
+	for (guint32 i = 0; i < rows ; ++i) {
 		guint32 cols [MONO_ENCLOG_SIZE];
 		mono_metadata_decode_row (table_enclog, i, cols, MONO_ENCLOG_SIZE);
 
@@ -1424,7 +1433,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 		int func_code = cols [MONO_ENCLOG_FUNC_CODE];
 
 		int token_table = mono_metadata_token_table (log_token);
-		int token_index = mono_metadata_token_index (log_token);
+		guint32 token_index = mono_metadata_token_index (log_token);
 
 		gboolean is_addition = token_index-1 >= delta_info->count[token_table].prev_gen_rows ;
 
@@ -1433,6 +1442,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 			/* okay, supported */
 			break;
 		case MONO_TABLE_METHOD:
+			*should_invalidate_transformed_code = true;
 			if (func_code == ENC_FUNC_ADD_PARAM)
 				continue; /* ok, allowed */
 			/* handled above */
@@ -1442,6 +1452,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 			g_assert (func_code == ENC_FUNC_DEFAULT);
 			break;
 		case MONO_TABLE_PROPERTYMAP: {
+			*should_invalidate_transformed_code = true;
 			if (func_code == ENC_FUNC_ADD_PROPERTY) {
 				g_assert (i + 1 < rows);
 				i++; /* skip the next record */
@@ -1458,10 +1469,12 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 		}
 		case MONO_TABLE_PROPERTY: {
 			/* ok */
+			*should_invalidate_transformed_code = true;
 			g_assert (func_code == ENC_FUNC_DEFAULT);
 			break;
 		}
 		case MONO_TABLE_EVENTMAP: {
+			*should_invalidate_transformed_code = true;
 			if (func_code == ENC_FUNC_ADD_EVENT) {
 				g_assert (i + 1 < rows);
 				i++; /* skip the next record */
@@ -1477,6 +1490,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 			break;
 		}
 		case MONO_TABLE_METHODSEMANTICS: {
+			*should_invalidate_transformed_code = true;
 			if (is_addition) {
 				/* new rows are fine */
 				break;
@@ -1488,6 +1502,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 			}
 		}
 		case MONO_TABLE_CUSTOMATTRIBUTE: {
+			*should_invalidate_transformed_code = true;
 			if (!is_addition) {
 				/* modifying existing rows is ok, as long as the parent and ctor are the same */
 				guint32 ca_upd_cols [MONO_CUSTOM_ATTR_SIZE];
@@ -1533,6 +1548,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 			}
 		}
 		case MONO_TABLE_PARAM: {
+			*should_invalidate_transformed_code = true;
 			if (!is_addition) {
 				/* We only allow modifications where the parameter name doesn't change. */
 				uint32_t base_param [MONO_PARAM_SIZE];
@@ -1558,6 +1574,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 				break; /* added a row. ok */
 		}
 		case MONO_TABLE_TYPEDEF: {
+			*should_invalidate_transformed_code = true;
 			if (func_code == ENC_FUNC_ADD_METHOD) {
 				/* next record should be a MONO_TABLE_METHOD addition (func == default) */
 				g_assert (i + 1 < rows);
@@ -1566,7 +1583,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 				g_assert (next_cols [MONO_ENCLOG_FUNC_CODE] == ENC_FUNC_DEFAULT);
 				int next_token = next_cols [MONO_ENCLOG_TOKEN];
 				int next_table = mono_metadata_token_table (next_token);
-				int next_index = mono_metadata_token_index (next_token);
+				guint32 next_index = mono_metadata_token_index (next_token);
 				g_assert (next_table == MONO_TABLE_METHOD);
 				/* expecting an added method */
 				g_assert (next_index-1 >= delta_info->count[next_table].prev_gen_rows);
@@ -1582,7 +1599,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 				g_assert (next_cols [MONO_ENCLOG_FUNC_CODE] == ENC_FUNC_DEFAULT);
 				int next_token = next_cols [MONO_ENCLOG_TOKEN];
 				int next_table = mono_metadata_token_table (next_token);
-				int next_index = mono_metadata_token_index (next_token);
+				guint32 next_index = mono_metadata_token_index (next_token);
 				g_assert (next_table == MONO_TABLE_FIELD);
 				/* expecting an added field */
 				g_assert (next_index-1 >= delta_info->count[next_table].prev_gen_rows);
@@ -1643,14 +1660,14 @@ hot_reload_get_method_debug_information (MonoPPDBFile *ppdb_file, int idx)
 
 	MonoImage *image_dppdb = ppdb_file->image;
 	MonoTableInfo *table_encmap = &image_dppdb->tables [MONO_TABLE_ENCMAP];
-	int rows = table_info_get_rows (table_encmap);
-	for (int i = 0; i < rows ; ++i) {
+	guint32 rows = table_info_get_rows (table_encmap);
+	for (guint32 i = 0; i < rows ; ++i) {
 		guint32 cols [MONO_ENCMAP_SIZE];
 		mono_metadata_decode_row (table_encmap, i, cols, MONO_ENCMAP_SIZE);
 		int map_token = cols [MONO_ENCMAP_TOKEN];
 		int token_table = mono_metadata_token_table (map_token);
 		if (token_table == MONO_TABLE_METHODBODY) {
-			int token_index = mono_metadata_token_index (map_token);
+			guint32 token_index = mono_metadata_token_index (map_token);
 			if (token_index == idx)	{
 				MonoDebugInformationEnc *encDebugInfo = g_new0 (MonoDebugInformationEnc, 1);
 				encDebugInfo->idx = i + 1;
@@ -1972,7 +1989,7 @@ static gboolean
 apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, MonoImage *image_dmeta, DeltaInfo *delta_info, gconstpointer dil_data, uint32_t dil_length, MonoError *error)
 {
 	MonoTableInfo *table_enclog = &image_dmeta->tables [MONO_TABLE_ENCLOG];
-	int rows = table_info_get_rows (table_enclog);
+	guint32 rows = table_info_get_rows (table_enclog);
 
 	/* NOTE: Suppressed colums
 	 *
@@ -2004,7 +2021,7 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 	uint32_t add_event_eventmap = 0;
 
 	gboolean assemblyref_updated = FALSE;
-	for (int i = 0; i < rows ; ++i) {
+	for (guint32 i = 0; i < rows ; ++i) {
 		guint32 cols [MONO_ENCLOG_SIZE];
 		mono_metadata_decode_row (table_enclog, i, cols, MONO_ENCLOG_SIZE);
 
@@ -2012,7 +2029,7 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 		int func_code = cols [MONO_ENCLOG_FUNC_CODE];
 
 		int token_table = mono_metadata_token_table (log_token);
-		int token_index = mono_metadata_token_index (log_token);
+		guint32 token_index = mono_metadata_token_index (log_token);
 
 		gboolean is_addition = token_index-1 >= delta_info->count[token_table].prev_gen_rows ;
 
@@ -2073,7 +2090,7 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 				MonoImage *delta_child = ((DeltaInfo*)l->data)->delta_image;
 				old_rows += table_info_get_rows (&delta_child->tables [MONO_TABLE_ASSEMBLYREF]);
 			}
-			int new_rows = table_info_get_rows (&image_dmeta->tables [MONO_TABLE_ASSEMBLYREF]);
+			guint32 new_rows = table_info_get_rows (&image_dmeta->tables [MONO_TABLE_ASSEMBLYREF]);
 
 			old_rows -= new_rows;
 			g_assert (new_rows > 0);
@@ -2131,7 +2148,7 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 				delta_info->method_ppdb_table_update = g_hash_table_new (g_direct_hash, g_direct_equal);
 
 			int mapped_token = hot_reload_relative_delta_index (image_dmeta, delta_info, mono_metadata_make_token (token_table, token_index));
-			int rva = mono_metadata_decode_row_col (&image_dmeta->tables [MONO_TABLE_METHOD], mapped_token - 1, MONO_METHOD_RVA);
+			guint32 rva = mono_metadata_decode_row_col (&image_dmeta->tables [MONO_TABLE_METHOD], mapped_token - 1, MONO_METHOD_RVA);
 			if (rva < dil_length) {
 				char *il_address = ((char *) dil_data) + rva;
 				MonoDebugInformationEnc *method_debug_information = hot_reload_get_method_debug_information (delta_info->ppdb_file, token_index);
@@ -2504,8 +2521,8 @@ hot_reload_apply_changes (int origin, MonoImage *image_base, gconstpointer dmeta
 
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "Populated mutated tables for delta image %p", image_dmeta);
 
-
-	if (!apply_enclog_pass1 (image_base, image_dmeta, delta_info, dil_bytes, dil_length, error)) {
+	gboolean should_invalidate_transformed_code = false;
+	if (!apply_enclog_pass1 (image_base, image_dmeta, delta_info, dil_bytes, dil_length, &should_invalidate_transformed_code, error)) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "Error on sanity-checking delta image to base=%s, due to: %s", basename, mono_error_get_message (error));
 		hot_reload_update_cancel (generation);
 		return;
@@ -2533,7 +2550,7 @@ hot_reload_apply_changes (int origin, MonoImage *image_base, gconstpointer dmeta
 	pass2_context_destroy (&pass2ctx);
 
 	MonoAssemblyLoadContext *alc = mono_image_get_alc (image_base);
-	hot_reload_update_publish (alc, generation);
+	hot_reload_update_publish (alc, generation, should_invalidate_transformed_code);
 
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, ">>> EnC delta for base=%s (generation %d) applied", basename, generation);
 }
@@ -2636,7 +2653,7 @@ hot_reload_table_bounds_check (MonoImage *base_image, int table_index, int token
 
 		table = &delta_info->mutants [table_index];
 		ridx = token_index - 1;
-	} while (ridx < 0 || ridx >= table_info_get_rows (table));
+	} while (ridx < 0 || GINT_TO_UINT32(ridx) >= table_info_get_rows (table));
 
 	return FALSE;
 }
@@ -2703,7 +2720,7 @@ hot_reload_table_num_rows_slow (MonoImage *base, int table_index)
 
 	uint32_t current_gen = hot_reload_get_thread_generation ();
 
-	int rows = table_info_get_rows (&base->tables [table_index]);
+	guint32 rows = table_info_get_rows (&base->tables [table_index]);
 	GList *cur;
 	for (cur = base_info->delta_info; cur; cur = cur->next) {
 		DeltaInfo *delta_info = (DeltaInfo*)cur->data;
@@ -2805,8 +2822,8 @@ hot_reload_field_parent (MonoImage *base_image, uint32_t field_token)
 
 /* HACK - keep in sync with locator_t in metadata/metadata.c */
 typedef struct {
-	int idx;			/* The index that we are trying to locate */
-	int col_idx;		/* The index in the row where idx may be stored */
+	guint32 idx;			/* The index that we are trying to locate */
+	guint32 col_idx;		/* The index in the row where idx may be stored */
 	MonoTableInfo *t;	/* pointer to the table */
 	guint32 result;
 } upd_locator_t;
@@ -3112,4 +3129,24 @@ hot_reload_get_num_fields_added (MonoClass *klass)
 	if (!info)
 		return 0;
 	return g_slist_length (info->added_fields);
+}
+
+static uint32_t
+hot_reload_get_num_methods_added (MonoClass *klass)
+{
+	uint32_t count = 0;
+	GSList *members = hot_reload_get_added_members (klass);
+	for (GSList *ptr = members; ptr; ptr = ptr->next) {
+		uint32_t token = GPOINTER_TO_UINT(ptr->data);
+		if (mono_metadata_token_table (token) != MONO_TABLE_METHOD)
+			continue;
+		count++;
+	}
+	return count;
+}
+
+static const char *
+hot_reload_get_capabilities (void)
+{
+	return "Baseline AddMethodToExistingType AddStaticFieldToExistingType NewTypeDefinition ChangeCustomAttributes";
 }

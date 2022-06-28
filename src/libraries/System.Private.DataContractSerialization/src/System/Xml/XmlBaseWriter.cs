@@ -967,14 +967,9 @@ namespace System.Xml
 
             ArgumentNullException.ThrowIfNull(whitespace);
 
-            for (int i = 0; i < whitespace.Length; ++i)
+            if (whitespace.AsSpan().IndexOfAnyExcept(" \t\r\n") >= 0)
             {
-                char c = whitespace[i];
-                if (c != ' ' &&
-                    c != '\t' &&
-                    c != '\n' &&
-                    c != '\r')
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.XmlOnlyWhitespace, nameof(whitespace)));
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.XmlOnlyWhitespace, nameof(whitespace)));
             }
 
             WriteString(whitespace);

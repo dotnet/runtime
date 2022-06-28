@@ -25,6 +25,9 @@ namespace System.Threading.RateLimiting
         /// </summary>
         public TKey PartitionKey { get; }
 
-        internal readonly Func<TKey, RateLimiter> Factory;
+        /// <summary>
+        /// The function called when a rate limiter for the given partitionKey is needed.
+        /// </summary>
+        public Func<TKey, RateLimiter> Factory { get; }
     }
 }

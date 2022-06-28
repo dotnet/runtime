@@ -2678,6 +2678,9 @@ NO_MORE_LOOPS:
 
     // Make sure that loops are canonical: that every loop has a unique "top", by creating an empty "nop"
     // one, if necessary, for loops containing others that share a "top."
+    //
+    // Also make sure that no loop's "bottom" is another loop's "head".
+    //
     for (unsigned char loopInd = 0; loopInd < optLoopCount; loopInd++)
     {
         // Traverse the outermost loops as entries into the loop nest; so skip non-outermost.
@@ -2923,7 +2926,7 @@ bool Compiler::optCanonicalizeLoopNest(unsigned char loopInd)
 
 //-----------------------------------------------------------------------------
 // optCanonicalizeLoop: ensure that each loop top's back edges come only from
-//   blocks in the same loop.
+//   blocks in the same loop, and that no loop head/bottom blocks coincide.
 //
 // Arguments:
 //   loopInd - index of the loop to consider
@@ -3004,6 +3007,84 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
         const bool didCanon = optCanonicalizeLoopCore(loopInd, LoopCanonicalizationOption::Current);
         assert(didCanon);
         modified |= didCanon;
+    }
+
+    // Check if this loopInd head is also the bottom of some sibling.
+    // If so, add a block in between to serve as the new head.
+    //
+    auto repairLoop = [this](unsigned char loopInd, unsigned char sibling) {
+
+        BasicBlock* const h        = optLoopTable[loopInd].lpHead;
+        BasicBlock* const siblingB = optLoopTable[sibling].lpBottom;
+
+        if (h == siblingB)
+        {
+            // We have
+            //
+            //   sibling.B (== loopInd.H) -e-> loopInd.T
+            //
+            // where e is a "critical edge", that is
+            // * sibling.B has other successors (notably sibling.T),
+            // * loopInd.T has other predecessors (notably loopInd.B)
+            //
+            // turn this into
+            //
+            //  sibling.B -> newH (== loopInd.H) -> loopInd.T
+            //
+            // Ideally we'd just call fgSplitEdge, but we are
+            // not keeping pred lists in good shape.
+            //
+            BasicBlock* const t = optLoopTable[loopInd].lpTop;
+            assert(siblingB->bbJumpKind == BBJ_COND);
+            assert(siblingB->bbNext == t);
+
+            JITDUMP(FMT_LP " head " FMT_BB " is also " FMT_LP " bottom\n", loopInd, h->bbNum, sibling);
+
+            BasicBlock* const newH = fgNewBBbefore(BBJ_NONE, t, /*extendRegion*/ true);
+
+            // Anything that flows into sibling will flow here.
+            // So we use sibling.H as our best guess for weight.
+            //
+            newH->inheritWeight(optLoopTable[sibling].lpHead);
+            newH->bbNatLoopNum = optLoopTable[loopInd].lpParent;
+            optUpdateLoopHead(loopInd, h, newH);
+
+            return true;
+        }
+        return false;
+    };
+
+    if (optLoopTable[loopInd].lpParent == BasicBlock::NOT_IN_LOOP)
+    {
+        // check against all other top-level loops
+        //
+        for (unsigned char sibling = 0; sibling < optLoopCount; sibling++)
+        {
+            if (optLoopTable[sibling].lpParent != BasicBlock::NOT_IN_LOOP)
+            {
+                continue;
+            }
+
+            modified |= repairLoop(loopInd, sibling);
+        }
+    }
+    else
+    {
+        // check against all other sibling loops
+        //
+        const unsigned char parentLoop = optLoopTable[loopInd].lpParent;
+
+        for (unsigned char sibling = optLoopTable[parentLoop].lpChild; //
+             sibling != BasicBlock::NOT_IN_LOOP;                       //
+             sibling = optLoopTable[sibling].lpSibling)
+        {
+            if (sibling == loopInd)
+            {
+                continue;
+            }
+
+            modified |= repairLoop(loopInd, sibling);
+        }
     }
 
     if (modified)

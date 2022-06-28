@@ -181,7 +181,7 @@ The wasm templates, located in the `templates` directory, are templates for `dot
 
 For details about using `dotnet new` see the dotnet tool [documentation](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-new).
 
-To test changes in the templates, use `dotnet new -i <path>`.
+To test changes in the templates, use `dotnet new install --force src/mono/wasm/templates/templates/browser`.
 
 Example use of the `wasmconsole` template:
 

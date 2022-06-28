@@ -454,7 +454,14 @@ namespace System.Runtime
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhResolveDispatchOnType")]
-        internal static extern IntPtr RhResolveDispatchOnType(EETypePtr instanceType, EETypePtr interfaceType, ushort slot);
+        // For my life cannot figure out the ordering of modifiers this is expecting.
+#pragma warning disable IDE0036
+        internal static extern unsafe IntPtr RhResolveDispatchOnType(EETypePtr instanceType, EETypePtr interfaceType, ushort slot, EETypePtr* pGenericContext);
+
+        internal static unsafe IntPtr RhResolveDispatchOnType(EETypePtr instanceType, EETypePtr interfaceType, ushort slot)
+        {
+            return RhResolveDispatchOnType(instanceType, interfaceType, slot, null);
+        }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetRuntimeHelperForType")]

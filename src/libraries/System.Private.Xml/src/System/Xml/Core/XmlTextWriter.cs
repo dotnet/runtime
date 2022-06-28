@@ -1785,19 +1785,11 @@ namespace System.Xml
 
         private static void VerifyPrefixXml(string? prefix, string ns)
         {
-            if (prefix != null && prefix.Length == 3)
+            if (prefix != null &&
+                prefix.Equals("xml", StringComparison.OrdinalIgnoreCase) &&
+                XmlReservedNs.NsXml != ns)
             {
-                if (
-                   (prefix[0] == 'x' || prefix[0] == 'X') &&
-                   (prefix[1] == 'm' || prefix[1] == 'M') &&
-                   (prefix[2] == 'l' || prefix[2] == 'L')
-                   )
-                {
-                    if (XmlReservedNs.NsXml != ns)
-                    {
-                        throw new ArgumentException(SR.Xml_InvalidPrefix);
-                    }
-                }
+                throw new ArgumentException(SR.Xml_InvalidPrefix);
             }
         }
 

@@ -1566,6 +1566,7 @@ void EEJitManager::SetCpuInfo()
     if (IsProcessorFeaturePresent(PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE))
     {
         CPUCompileFlags.Set(InstructionSet_Atomics);
+        g_arm64_atomics_present = true;
     }
 
     // PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE (43)
@@ -2516,7 +2517,11 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     DWORD dwSizeAcquiredFromInitialBlock = 0;
     bool fAllocatedFromEmergencyJumpStubReserve = false;
 
-    pBaseAddr = (BYTE *)pInfo->m_pAllocator->GetCodeHeapInitialBlock(loAddr, hiAddr, (DWORD)initialRequestSize, &dwSizeAcquiredFromInitialBlock);
+    size_t allocationSize = pCodeHeap->m_LoaderHeap.AllocMem_TotalSize(initialRequestSize);
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+    allocationSize += pCodeHeap->m_LoaderHeap.AllocMem_TotalSize(JUMP_ALLOCATE_SIZE);
+#endif
+    pBaseAddr = (BYTE *)pInfo->m_pAllocator->GetCodeHeapInitialBlock(loAddr, hiAddr, (DWORD)allocationSize, &dwSizeAcquiredFromInitialBlock);
     if (pBaseAddr != NULL)
     {
         pCodeHeap->m_LoaderHeap.SetReservedRegion(pBaseAddr, dwSizeAcquiredFromInitialBlock, FALSE);
