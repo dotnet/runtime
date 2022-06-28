@@ -115,6 +115,7 @@ namespace Microsoft.Interop
                 if (marshallerTypeOnAttr is null)
                     continue;
 
+                // TODO: We can probably get rid of MarshallingDirection and just use Scenario instead
                 MarshallingDirection direction = marshallerScenario switch
                 {
                     Scenario.Default
@@ -140,10 +141,11 @@ namespace Microsoft.Interop
                     _ => throw new UnreachableException()
                 };
 
+                // TODO: Report invalid shape for scenario
+                //       Skip checking for bidirectional support for Default scenario - always take / store marshaller data
                 CustomTypeMarshallerData? data = GetMarshallerDataForType(marshallerTypeOnAttr, direction, managedTypeOnAttr, compilation);
 
-                // TODO: Report invalid shape for scenario
-                // Should we fire a diagnostic for duplicated scenarios or just take the last one?
+                // TODO: Should we fire a diagnostic for duplicated scenarios or just take the last one?
                 if (data is null
                     || scenarios.ContainsKey(marshallerScenario))
                 {

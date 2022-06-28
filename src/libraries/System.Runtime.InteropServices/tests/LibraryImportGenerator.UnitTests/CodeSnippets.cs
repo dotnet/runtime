@@ -718,7 +718,7 @@ public static class Marshaller
 }
 ";
             private static string StatelessOut = @"
-[CustomMarshaller(typeof(S), Scenario.UnmanagedToManagedOut, typeof(Marshaller))]
+[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedOut, typeof(Marshaller))]
 public static class Marshaller
 {
     public struct Native { }
@@ -727,7 +727,7 @@ public static class Marshaller
 }
 ";
             private static string StatelessOutGuaranteed = @"
-[CustomMarshaller(typeof(S), Scenario.UnmanagedToManagedOut, typeof(Marshaller))]
+[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedOut, typeof(Marshaller))]
 public static class Marshaller
 {
     public struct Native { }
@@ -746,7 +746,8 @@ public static class Marshaller
 }
 ";
             public static string StatelessRefBuffer = @"
-[CustomMarshaller(typeof(S), Scenario.Default, typeof(Marshaller))]
+[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedIn, typeof(Marshaller))]
+[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedOut, typeof(Marshaller))]
 public static class Marshaller
 {
     public struct Native { }
