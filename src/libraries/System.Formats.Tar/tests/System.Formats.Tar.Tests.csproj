@@ -12,7 +12,6 @@
     <Compile Include="CompressedTar.Tests.cs" />
     <Compile Include="TarEntry\TarEntry.ExtractToFile.Tests.cs" />
     <Compile Include="TarEntry\TarEntry.ExtractToFileAsync.Tests.cs" />
-    <Compile Include="TarFile\TarFile.ExtractToDirectoryAsync.File.Tests.Windows.cs" />
     <Compile Include="TarFile\TarFile.ExtractToDirectoryAsync.Stream.Tests.cs" />
     <Compile Include="TarFile\TarFile.ExtractToDirectoryAsync.File.Tests.cs" />
     <Compile Include="TarFile\TarFile.CreateFromDirectoryAsync.Stream.Tests.cs" />
@@ -68,6 +67,7 @@
   <!-- Windows specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="TarFile\TarFile.ExtractToDirectory.File.Tests.Windows.cs" />
+    <Compile Include="TarFile\TarFile.ExtractToDirectoryAsync.File.Tests.Windows.cs" />
     <Compile Include="TarWriter\TarWriter.File.Base.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" Link="Common\Interop\Windows\Interop.BOOL.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs" Link="Common\Interop\Windows\Interop.Errors.cs" />
