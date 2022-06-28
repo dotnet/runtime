@@ -684,6 +684,102 @@ public partial class A
             await VerifyCS.VerifyCodeFixAsync(test, expectedDiagnostic, fixedSource);
         }
 
+        [Fact]
+        public async Task InvalidRegexOptions()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+public class A
+{
+    public partial class B
+    {
+        public class C
+        {
+            public partial class D
+            {
+                public void Foo()
+                {
+                    Regex regex = [|new Regex(""pattern"", (RegexOptions)0x0800)|];
+                }
+            }
+        }
+    }
+}
+";
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+public partial class A
+{
+    public partial class B
+    {
+        public partial class C
+        {
+            public partial class D
+            {
+                public void Foo()
+                {
+                    Regex regex = MyRegex();
+                }
+
+                [RegexGenerator(""pattern"", (RegexOptions)0x0800)]
+                private static partial Regex MyRegex();
+            }
+        }
+    }
+}
+";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task InvalidRegexOptions_Negative()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+public class A
+{
+    public partial class B
+    {
+        public class C
+        {
+            public partial class D
+            {
+                public void Foo()
+                {
+                    Regex regex = [|new Regex(""pattern"", (RegexOptions)(-10000))|];
+                }
+            }
+        }
+    }
+}
+";
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+public partial class A
+{
+    public partial class B
+    {
+        public partial class C
+        {
+            public partial class D
+            {
+                public void Foo()
+                {
+                    Regex regex = MyRegex();
+                }
+
+                [RegexGenerator(""pattern"", (RegexOptions)(-10000))]
+                private static partial Regex MyRegex();
+            }
+        }
+    }
+}
+";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
         [Theory]
         [MemberData(nameof(InvocationTypes))]
         public async Task NoDiagnosticForRegexOptionsNonBacktracking(InvocationType invocationType)

@@ -205,18 +205,23 @@ namespace System.Text.RegularExpressions.Generator
 
             static SyntaxNode? Literal(string options, SyntaxGenerator generator)
             {
-                if (int.TryParse(options, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
+                IdentifierNameSyntax regexOptionsExpression = SyntaxFactory.IdentifierName("RegexOptions");
+                if (int.TryParse(options, NumberStyles.Integer, CultureInfo.InvariantCulture, out int value))
                 {
                     // The options were formatted as an int, which means the runtime couldn't
                     // produce a textual representation.  So just output casting the value as an int.
-                    Debug.Fail("This shouldn't happen, as we should only get to the point of emitting code if RegexOptions was valid.");
-                    return null;
+                    ExpressionSyntax expression = SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(value));
+                    if (value < 0)
+                    {
+                        expression = SyntaxFactory.ParenthesizedExpression(expression);
+                    }
+
+                    return SyntaxFactory.CastExpression(regexOptionsExpression, expression);
                 }
 
                 // Parse the runtime-generated "Option1, Option2" into each piece and then concat
                 // them back together.
                 string[] parts = options.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                SyntaxNode regexOptionsExpression = generator.IdentifierName("RegexOptions");
                 SyntaxNode result = generator.MemberAccessExpression(regexOptionsExpression, parts[0].Trim());
                 for (int i = 1; i < parts.Length; i++)
                 {
