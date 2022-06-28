@@ -134,7 +134,7 @@ then
   exit 1
 fi
 
-$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll --map -r:$CORE_ROOT/*.dll -r:../testv1/test/test.dll -r:/IL_DLLS/fieldgetter.dll -o:mainv1.dll IL_DLLS/mainv1.dll
+$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll --map -r:$CORE_ROOT/*.dll -r:../testv1/test/test.dll -r:IL_DLLS/fieldgetter.dll -o:mainv1.dll IL_DLLS/mainv1.dll
 
 __cgExitCode=$?
 if [ $__cgExitCode -ne 0 ]
