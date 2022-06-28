@@ -107,7 +107,7 @@ namespace System.Net.Security.Tests
         [InlineData(true)]
         public Task ConnectWithRevocation_StapledOcsp(bool offlineContext)
         {
-            if (PlatformDetection.IsRedHatFamily7)
+            if (PlatformDetection.IsRedHatFamily7 && !offlineContext)
             {
                 throw new SkipTestException("Active test issue https://github.com/dotnet/runtime/issues/71037");
             }
