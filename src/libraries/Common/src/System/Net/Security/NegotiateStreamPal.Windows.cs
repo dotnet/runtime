@@ -288,8 +288,7 @@ namespace System.Net.Security
             ReadOnlySpan<byte> buffer,
             bool isConfidential,
             bool isNtlm,
-            [NotNull] ref byte[]? output,
-            uint sequenceNumber)
+            [NotNull] ref byte[]? output)
         {
             SecPkgContext_Sizes sizes = default;
             bool success = SSPIWrapper.QueryBlittableContextAttributes(GlobalSSPI.SSPIAuth, securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_SIZES, ref sizes);
@@ -374,12 +373,11 @@ namespace System.Net.Security
             Span<byte> buffer,
             bool isConfidential,
             bool isNtlm,
-            out int newOffset,
-            uint sequenceNumber)
+            out int newOffset)
         {
             if (isNtlm)
             {
-                return DecryptNtlm(securityContext, buffer, isConfidential, out newOffset, sequenceNumber);
+                return DecryptNtlm(securityContext, buffer, isConfidential, out newOffset);
             }
 
             //
@@ -434,8 +432,7 @@ namespace System.Net.Security
             SafeDeleteContext securityContext,
             Span<byte> buffer,
             bool isConfidential,
-            out int newOffset,
-            uint sequenceNumber)
+            out int newOffset)
         {
             const int NtlmSignatureLength = 16;
 

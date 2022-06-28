@@ -324,26 +324,24 @@ namespace System.Net
             return spn;
         }
 
-        internal int Encrypt(ReadOnlySpan<byte> buffer, [NotNull] ref byte[]? output, uint sequenceNumber)
+        internal int Encrypt(ReadOnlySpan<byte> buffer, [NotNull] ref byte[]? output)
         {
             return NegotiateStreamPal.Encrypt(
                 _securityContext!,
                 buffer,
                 (_contextFlags & ContextFlagsPal.Confidentiality) != 0,
                 IsNTLM,
-                ref output,
-                sequenceNumber);
+                ref output);
         }
 
-        internal int Decrypt(Span<byte> payload, out int newOffset, uint expectedSeqNumber)
+        internal int Decrypt(Span<byte> payload, out int newOffset)
         {
             return NegotiateStreamPal.Decrypt(
                 _securityContext!,
                 payload,
                 (_contextFlags & ContextFlagsPal.Confidentiality) != 0,
                 IsNTLM,
-                out newOffset,
-                expectedSeqNumber);
+                out newOffset);
         }
     }
 }

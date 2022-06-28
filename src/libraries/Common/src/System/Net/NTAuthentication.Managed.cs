@@ -1000,12 +1000,12 @@ namespace System.Net
         }
 
 #pragma warning disable CA1822
-        internal int Encrypt(ReadOnlySpan<byte> buffer, [NotNull] ref byte[]? output, uint sequenceNumber)
+        internal int Encrypt(ReadOnlySpan<byte> buffer, [NotNull] ref byte[]? output)
         {
             throw new PlatformNotSupportedException();
         }
 
-        internal int Decrypt(Span<byte> payload, out int newOffset, uint expectedSeqNumber)
+        internal int Decrypt(Span<byte> payload, out int newOffset)
         {
             throw new PlatformNotSupportedException();
         }

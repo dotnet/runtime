@@ -545,8 +545,7 @@ namespace System.Net.Security
             ReadOnlySpan<byte> buffer,
             bool isConfidential,
             bool isNtlm,
-            [NotNull] ref byte[]? output,
-            uint sequenceNumber)
+            [NotNull] ref byte[]? output)
         {
             SafeGssContextHandle gssContext = ((SafeDeleteNegoContext)securityContext).GssContext!;
             int resultSize;
@@ -602,8 +601,7 @@ namespace System.Net.Security
             Span<byte> buffer,
             bool isConfidential,
             bool isNtlm,
-            out int newOffset,
-            uint sequenceNumber)
+            out int newOffset)
         {
             SafeGssContextHandle gssContext = ((SafeDeleteNegoContext)securityContext).GssContext!;
 
