@@ -1597,14 +1597,10 @@ namespace System.Security.Cryptography
     }
     public enum PaddingMode
     {
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         None = 1,
         PKCS7 = 2,
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         Zeros = 3,
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         ANSIX923 = 4,
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         ISO10126 = 5,
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]

@@ -324,7 +324,6 @@ namespace System.Security.Cryptography
             int blockSizeBytes = blockSizeBits >> 3;
             int wholeBlocks = Math.DivRem(plaintextLength, blockSizeBytes, out int remainder) * blockSizeBytes;
 
-#pragma warning disable CA1416 // All PaddingModes except PKCS7 are unsupported on Browser. Callers will get a warning.
             switch (paddingMode)
             {
                 case PaddingMode.None when remainder != 0:
@@ -345,7 +344,6 @@ namespace System.Security.Cryptography
                 default:
                     throw new ArgumentOutOfRangeException(nameof(paddingMode), SR.Cryptography_InvalidPaddingMode);
             }
-#pragma warning restore CA1416
         }
 
         /// <summary>

@@ -15,7 +15,6 @@ namespace System.Security.Cryptography
              //divisor and factor are same and won't overflow.
             int wholeBlocks = Math.DivRem(plaintextLength, paddingSizeInBytes, out int remainder) * paddingSizeInBytes;
 
-#pragma warning disable CA1416 // All PaddingModes except PKCS7 are unsupported on Browser. Callers will get a warning.
             switch (paddingMode)
             {
                 case PaddingMode.None when (remainder != 0):
@@ -32,7 +31,6 @@ namespace System.Security.Cryptography
                     Debug.Fail($"Unknown padding mode {paddingMode}.");
                     throw new CryptographicException(SR.Cryptography_UnknownPaddingMode);
             }
-#pragma warning restore CA1416
         }
 
             public static int PadBlock(ReadOnlySpan<byte> block, Span<byte> destination, int paddingSizeInBytes, PaddingMode paddingMode)
@@ -41,7 +39,6 @@ namespace System.Security.Cryptography
             int paddingRemainder = count % paddingSizeInBytes;
             int padBytes = paddingSizeInBytes - paddingRemainder;
 
-#pragma warning disable CA1416 // All PaddingModes except PKCS7 are unsupported on Browser. Callers will get a warning.
             switch (paddingMode)
             {
                 case PaddingMode.None when (paddingRemainder != 0):
@@ -130,13 +127,11 @@ namespace System.Security.Cryptography
                 default:
                     throw new CryptographicException(SR.Cryptography_UnknownPaddingMode);
             }
-#pragma warning restore CA1416
         }
 
         public static bool DepaddingRequired(PaddingMode padding)
         {
             // Some padding modes encode sufficient information to allow for automatic depadding to happen.
-#pragma warning disable CA1416 // All PaddingModes except PKCS7 are unsupported on Browser. Callers will get a warning.
             switch (padding)
             {
                 case PaddingMode.PKCS7:
@@ -150,7 +145,6 @@ namespace System.Security.Cryptography
                     Debug.Fail($"Unknown padding mode {padding}.");
                     throw new CryptographicException(SR.Cryptography_UnknownPaddingMode);
             }
-#pragma warning restore CA1416
         }
 
         public static int GetPaddingLength(ReadOnlySpan<byte> block, PaddingMode paddingMode, int blockSize)
@@ -160,7 +154,6 @@ namespace System.Security.Cryptography
             int padBytes;
 
             // See PadBlock for a description of the padding modes.
-#pragma warning disable CA1416 // All PaddingModes except PKCS7 are unsupported on Browser. Callers will get a warning.
             switch (paddingMode)
             {
                 case PaddingMode.ANSIX923:
@@ -221,7 +214,6 @@ namespace System.Security.Cryptography
                 default:
                     throw new CryptographicException(SR.Cryptography_UnknownPaddingMode);
             }
-#pragma warning restore CA1416
 
             return block.Length - padBytes;
         }

@@ -17,14 +17,10 @@ namespace System.Security.Cryptography
     // "ANSI X.923" fills the bytes with zeros and puts the number of padding  bytes in the last byte.
     public enum PaddingMode
     {
-        [UnsupportedOSPlatform("browser")]
         None = 1,
         PKCS7 = 2,
-        [UnsupportedOSPlatform("browser")]
         Zeros = 3,
-        [UnsupportedOSPlatform("browser")]
         ANSIX923 = 4,
-        [UnsupportedOSPlatform("browser")]
         ISO10126 = 5,
     }
 }
