@@ -12,7 +12,7 @@ public class TermInfo
 {
     // Names of internal members accessed via reflection
     private const string TerminfoType = "System.TermInfo";
-    private const string TerminfoDatabaseType = TerminfoType + "+Database";
+    private const string TerminfoDatabaseFactoryType = TerminfoType + "+DatabaseFactory";
     private const string ParameterizedStringsType = TerminfoType + "+ParameterizedStrings";
     private const string FormatParamType = ParameterizedStringsType + "+FormatParam";
     private const string TerminalFormatStringsType = "System.ConsolePal+TerminalFormatStrings";
@@ -30,7 +30,7 @@ public class TermInfo
     {
         bool foundAtLeastOne = false;
 
-        string[] locations = GetFieldValueOnObject<string[]>(TerminfoLocationsField, null, typeof(Console).GetTypeInfo().Assembly.GetType(TerminfoDatabaseType));
+        string[] locations = GetFieldValueOnObject<string[]>(TerminfoLocationsField, null, typeof(Console).GetTypeInfo().Assembly.GetType(TerminfoDatabaseFactoryType));
         foreach (string location in locations)
         {
             if (!Directory.Exists(location))
@@ -62,7 +62,7 @@ public class TermInfo
     [PlatformSpecific(TestPlatforms.AnyUnix)] // Tests TermInfo
     public void VerifyTermInfoSupportsNewAndLegacyNcurses()
     {
-        MethodInfo readDbMethod = typeof(Console).GetTypeInfo().Assembly.GetType(TerminfoDatabaseType).GetTypeInfo().GetDeclaredMethods(ReadDatabaseMethod).Where(m => m.GetParameters().Count() == 2).Single();
+        MethodInfo readDbMethod = typeof(Console).GetTypeInfo().Assembly.GetType(TerminfoDatabaseFactoryType).GetTypeInfo().GetDeclaredMethods(ReadDatabaseMethod).Where(m => m.GetParameters().Count() == 2).Single();
         readDbMethod.Invoke(null, new object[] { "xterm", "ncursesFormats" }); // This will throw InvalidOperationException in case we don't support the legacy format
         readDbMethod.Invoke(null, new object[] { "screen-256color", "ncursesFormats" }); // This will throw InvalidOperationException if we can't parse the new format
     }
@@ -121,7 +121,7 @@ public class TermInfo
 
     private object ReadTermInfoDatabase(string term)
     {
-        MethodInfo readDbMethod = typeof(Console).GetTypeInfo().Assembly.GetType(TerminfoDatabaseType).GetTypeInfo().GetDeclaredMethods(ReadDatabaseMethod).Where(m => m.GetParameters().Count() == 1).Single();
+        MethodInfo readDbMethod = typeof(Console).GetTypeInfo().Assembly.GetType(TerminfoDatabaseFactoryType).GetTypeInfo().GetDeclaredMethods(ReadDatabaseMethod).Where(m => m.GetParameters().Count() == 1).Single();
         return readDbMethod.Invoke(null, new object[] { term });
     }
 
