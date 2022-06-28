@@ -154,7 +154,7 @@ namespace System
             Number.ParsingStatus status = Number.TryParseInt32(s, style, info, out int i);
             if (status != Number.ParsingStatus.OK)
             {
-                Number.ThrowOverflowOrFormatException(status, TypeCode.Int16);
+                Number.ThrowOverflowOrFormatException(status, s, TypeCode.Int16);
             }
 
             // For hex number styles AllowHexSpecifier << 6 == 0x8000 and cancels out MinValue so the check is effectively: (uint)i > ushort.MaxValue
@@ -458,9 +458,6 @@ namespace System
 
         /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
         static short IDivisionOperators<short, short, short>.operator /(short left, short right) => (short)(left / right);
-
-        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        static short IDivisionOperators<short, short, short>.operator checked /(short left, short right) => (short)(left / right);
 
         //
         // IEqualityOperators

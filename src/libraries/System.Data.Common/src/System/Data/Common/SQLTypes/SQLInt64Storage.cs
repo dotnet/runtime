@@ -90,7 +90,7 @@ namespace System.Data.Common
                             if ((prec < 1e-15) || (var < 0))
                                 var = 0;
                             else
-                                var = var / (count * (count - 1));
+                                var /= (count * (count - 1));
 
                             if (kind == AggregateType.StDev)
                             {
@@ -201,12 +201,7 @@ namespace System.Data.Common
 
         public override void SetCapacity(int capacity)
         {
-            SqlInt64[] newValues = new SqlInt64[capacity];
-            if (null != _values)
-            {
-                Array.Copy(_values, newValues, Math.Min(capacity, _values.Length));
-            }
-            _values = newValues;
+            Array.Resize(ref _values, capacity);
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]

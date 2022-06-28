@@ -548,13 +548,12 @@ static LONG _debugFilter(LPEXCEPTION_POINTERS ep, PVOID pv)
         // We can't really use SStrings on the helper thread; though if we're at this point, we've already died.
         // So go ahead and risk it and use them anyways.
         SString sStack;
-        StackScratchBuffer buffer;
         GetStackTraceAtContext(sStack, ep->ContextRecord);
         const CHAR *string = NULL;
 
         EX_TRY
         {
-            string = sStack.GetANSI(buffer);
+            string = sStack.GetUTF8();
         }
         EX_CATCH
         {

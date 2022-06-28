@@ -236,12 +236,12 @@ namespace NativeExports
 
         [UnmanagedCallersOnly(EntryPoint = "and_all_members")]
         [DNNE.C99DeclCode("struct bool_struct;")]
-        public static byte AndAllMembers([DNNE.C99Type("struct bool_struct*")] BoolStructNative* pArray, int length)
+        public static byte AndAllMembers([DNNE.C99Type("struct bool_struct*")] BoolStructNative_V1* pArray, int length)
         {
             bool result = true;
             for (int i = 0; i < length; i++)
             {
-                BoolStruct managed = pArray[i].ToManaged();
+                BoolStruct_V1 managed = pArray[i].ToManaged();
                 result &= managed.b1 && managed.b2 && managed.b3;
             }
             return (byte)(result ? 1 : 0);

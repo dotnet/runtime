@@ -51,12 +51,16 @@ namespace System.Security.Cryptography.Cose
 
         public override int GetHashCode()
         {
+            // Since this type is used as a key in a dictionary (see CoseHeaderMap)
+            // and since the label is potentially adversary-provided, we'll need
+            // to randomize the hash code.
+
             if (LabelAsString != null)
             {
-                return LabelAsString.GetHashCode();
+                return LabelAsString.GetRandomizedOrdinalHashCode();
             }
 
-            return LabelAsInt32.GetHashCode();
+            return LabelAsInt32.GetRandomizedHashCode();
         }
 
         public static bool operator ==(CoseHeaderLabel left, CoseHeaderLabel right) => left.Equals(right);

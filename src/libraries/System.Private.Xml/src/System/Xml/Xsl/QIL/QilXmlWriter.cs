@@ -153,10 +153,8 @@ namespace System.Xml.Xsl.Qil
                 this.writer.WriteValue(Convert.ToString(((QilLiteral)node).Value, CultureInfo.InvariantCulture));
                 return node;
             }
-            else if (node is QilReference)
+            else if (node is QilReference reference)
             {
-                QilReference reference = (QilReference)node;
-
                 // Write the generated identifier for this iterator
                 this.writer.WriteAttributeString("id", _ngen.NameOf(node));
 

@@ -347,10 +347,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                     // Record our best match in the memgroup as well. This is temporary.
 
-                    if (true)
-                    {
-                        ReportErrorsOnSuccess();
-                    }
+                    ReportErrorsOnSuccess();
 
                     return true;
                 }

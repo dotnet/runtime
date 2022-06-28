@@ -18,7 +18,7 @@ namespace System.Security.Cryptography.Cose.Tests
         internal const int KnownHeaderCrit = 2;
         internal const int KnownHeaderContentType = 3;
         internal const int KnownHeaderKid = 4;
-        internal static readonly byte[] s_sampleContent = Encoding.UTF8.GetBytes("This is the content.");
+        internal static readonly byte[] s_sampleContent = "This is the content."u8.ToArray();
         internal const string ContentTypeDummyValue = "application/cose; cose-type=\"cose-sign1\"";
 
         internal const string NullCborHex = "F6";

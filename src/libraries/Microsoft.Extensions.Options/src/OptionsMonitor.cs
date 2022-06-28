@@ -63,7 +63,7 @@ namespace Microsoft.Extensions.Options
 
         private void InvokeChanged(string? name)
         {
-            name = name ?? Options.DefaultName;
+            name ??= Options.DefaultName;
             _cache.TryRemove(name);
             TOptions options = Get(name);
             if (_onChange != null)

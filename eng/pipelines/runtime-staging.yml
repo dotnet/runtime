@@ -97,6 +97,8 @@ jobs:
     platforms:
       - Browser_wasm_firefox
     browser: firefox
+    # ff tests are unstable currently
+    shouldContinueOnError: true
     alwaysRun: ${{ variables.isRollingBuild }}
 
 #

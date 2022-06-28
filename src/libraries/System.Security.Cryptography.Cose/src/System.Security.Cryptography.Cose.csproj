@@ -13,6 +13,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="$(CommonPath)System\HashCodeRandomization.cs" Link="Common\System\HashCodeRandomization.cs" />
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs" Link="Common\System\Memory\PointerMemoryManager.cs" />
     <Compile Include="$(LibrariesProjectRoot)System.Formats.Cbor\src\System\Formats\Cbor\CborInitialByte.cs" Link="System\Formats\Cbor\CborInitialByte.cs" />
     <Compile Include="System\Security\Cryptography\Cose\CoseHeaderLabel.cs" />
@@ -36,6 +37,11 @@
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Formats.Cbor\src\System.Formats.Cbor.csproj" />
+  </ItemGroup>
+
+  <!-- For System.HashCode -->
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <PackageReference Include="Microsoft.Bcl.HashCode" Version="$(MicrosoftBclHashCodeVersion)" />
   </ItemGroup>
 
   <!-- For IncrementalHash -->

@@ -63,7 +63,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public override string Value
         {
-            get { return (_val == null) ? base.Value : _val; }
+            get { return _val ?? base.Value; }
         }
 
         /// <summary>

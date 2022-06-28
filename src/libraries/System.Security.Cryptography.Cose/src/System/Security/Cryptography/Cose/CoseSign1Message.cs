@@ -79,7 +79,7 @@ namespace System.Security.Cryptography.Cose
 
         internal static byte[] SignCore(ReadOnlySpan<byte> contentBytes, Stream? contentStream, CoseSigner signer, ReadOnlySpan<byte> associatedData, bool isDetached)
         {
-            Debug.Assert(contentStream == null || (isDetached == true && contentBytes.Length == 0));
+            Debug.Assert(contentStream == null || (isDetached && contentBytes.Length == 0));
 
             ValidateBeforeSign(signer, out int? algHeaderValueToSlip);
 

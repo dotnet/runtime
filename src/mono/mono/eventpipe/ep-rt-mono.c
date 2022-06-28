@@ -1469,7 +1469,7 @@ eventpipe_fire_method_events (
 				il_offsets = (uint32_t*)events_data->buffer;
 				native_offsets = il_offsets + offset_entries;
 
-				for (int32_t offset_count = 0; offset_count < offset_entries; ++offset_count) {
+				for (uint32_t offset_count = 0; offset_count < offset_entries; ++offset_count) {
 					il_offsets [offset_count] = debug_info->line_numbers [offset_count].il_offset;
 					native_offsets [offset_count] = debug_info->line_numbers [offset_count].native_offset;
 				}
@@ -2511,7 +2511,7 @@ ep_rt_mono_system_time_get (EventPipeSystemTime *system_time)
 		int old_seconds;
 		int new_seconds;
 
-		milliseconds = time_val.tv_usec / MSECS_TO_MIS;
+		milliseconds = (uint16_t)(time_val.tv_usec / MSECS_TO_MIS);
 
 		old_seconds = ut_ptr->tm_sec;
 		new_seconds = time_val.tv_sec % 60;
@@ -2523,13 +2523,13 @@ ep_rt_mono_system_time_get (EventPipeSystemTime *system_time)
 
 	ep_system_time_set (
 		system_time,
-		1900 + ut_ptr->tm_year,
-		ut_ptr->tm_mon + 1,
-		ut_ptr->tm_wday,
-		ut_ptr->tm_mday,
-		ut_ptr->tm_hour,
-		ut_ptr->tm_min,
-		ut_ptr->tm_sec,
+		(uint16_t)(1900 + ut_ptr->tm_year),
+		(uint16_t)ut_ptr->tm_mon + 1,
+		(uint16_t)ut_ptr->tm_wday,
+		(uint16_t)ut_ptr->tm_mday,
+		(uint16_t)ut_ptr->tm_hour,
+		(uint16_t)ut_ptr->tm_min,
+		(uint16_t)ut_ptr->tm_sec,
 		milliseconds);
 }
 
@@ -2609,7 +2609,7 @@ void
 ep_rt_mono_provider_config_init (EventPipeProviderConfiguration *provider_config)
 {
 	if (!ep_rt_utf8_string_compare (ep_config_get_rundown_provider_name_utf8 (), ep_provider_config_get_provider_name (provider_config))) {
-		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context.Level = ep_provider_config_get_logging_level (provider_config);
+		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context.Level = (uint8_t)ep_provider_config_get_logging_level (provider_config);
 		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context.EnabledKeywordsBitmask = ep_provider_config_get_keywords (provider_config);
 		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context.IsEnabled = true;
 	}
@@ -3106,7 +3106,7 @@ ep_rt_mono_fire_bulk_type_event (BulkTypeEventLogger *type_logger)
 
 	char *ptr = (char *)type_logger->bulk_type_event_buffer;
 
-	for (int type_value_index = 0; type_value_index < type_logger->bulk_type_value_count; type_value_index++) {
+	for (uint32_t type_value_index = 0; type_value_index < type_logger->bulk_type_value_count; type_value_index++) {
 		BulkTypeValue *target = &type_logger->bulk_type_values [type_value_index];
 
 		values_element_size += write_event_buffer_int64 (target->fixed_sized_data.type_id, ptr, &ptr);
@@ -3120,7 +3120,7 @@ ep_rt_mono_fire_bulk_type_event (BulkTypeEventLogger *type_logger)
 
 		values_element_size += write_event_buffer_int32 (target->type_parameters_count, ptr, &ptr);
 
-		for (int i = 0; i < target->type_parameters_count; i++) {
+		for (uint32_t i = 0; i < target->type_parameters_count; i++) {
 			uint64_t type_parameter = get_typeid_for_type (target->mono_type_parameters [i]);
 			values_element_size += write_event_buffer_int64 ((int64_t)type_parameter, ptr, &ptr);
 		}
@@ -3274,7 +3274,7 @@ ep_rt_mono_log_single_type (
 		// NOTE: If name is actively used, set it to NULL and relevant memory management to reduce byte count
 		// This type is apparently so huge, it's too big to squeeze into an event, even
 		// if it were the only type batched in the whole event.  Bail
-		mono_trace (G_LOG_LEVEL_ERROR, MONO_TRACE_DIAGNOSTICS, "Failed to log single mono type %p with typeID %llu. Type is too large for the BulkType Event.\n", (gpointer)mono_type, val->fixed_sized_data.type_id);
+		mono_trace (G_LOG_LEVEL_ERROR, MONO_TRACE_DIAGNOSTICS, "Failed to log single mono type %p with typeID %llu. Type is too large for the BulkType Event.\n", (gpointer)mono_type, (unsigned long long)val->fixed_sized_data.type_id);
 		return -1;
 	}
 
@@ -3413,7 +3413,7 @@ ep_rt_mono_send_method_details_event (MonoMethod *method)
 		method_inst_parameter_types_count = method_inst->type_argc;
 
 	uint64_t *method_inst_parameters_type_ids = mono_mempool_alloc0 (type_logger->mem_pool, method_inst_parameter_types_count * sizeof (uint64_t));
-	for (int i = 0; i < method_inst_parameter_types_count; i++) {
+	for (uint32_t i = 0; i < method_inst_parameter_types_count; i++) {
 		method_inst_parameters_type_ids [i] = get_typeid_for_type (method_inst->type_argv [i]);
 
 		ep_rt_mono_log_type_and_parameters_if_necessary (type_logger, method_inst->type_argv [i]);
@@ -3524,7 +3524,7 @@ ep_rt_mono_write_event_method_il_to_native_map (
 				}
 				if (il_offsets) {
 					native_offsets = il_offsets + offset_entries;
-					for (int32_t offset_count = 0; offset_count < offset_entries; ++offset_count) {
+					for (uint32_t offset_count = 0; offset_count < offset_entries; ++offset_count) {
 						il_offsets [offset_count] = debug_info->line_numbers [offset_count].il_offset;
 						native_offsets [offset_count] = debug_info->line_numbers [offset_count].native_offset;
 					}
@@ -4276,6 +4276,24 @@ ep_rt_write_event_threadpool_worker_thread_wait (
 	return FireEtwThreadPoolWorkerThreadWait (
 		active_thread_count,
 		retired_worker_thread_count,
+		clr_instance_id,
+		NULL,
+		NULL) == 0 ? true : false;
+}
+
+bool
+ep_rt_write_event_threadpool_min_max_threads (
+	uint16_t min_worker_threads,
+	uint16_t max_worker_threads,
+	uint16_t min_io_completion_threads,
+	uint16_t max_io_completion_threads,
+	uint16_t clr_instance_id)
+{
+	return FireEtwThreadPoolMinMaxThreads (
+		min_worker_threads,
+		max_worker_threads,
+		min_io_completion_threads,
+		max_io_completion_threads,
 		clr_instance_id,
 		NULL,
 		NULL) == 0 ? true : false;

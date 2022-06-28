@@ -23,7 +23,7 @@ namespace Internal.Runtime.TypeLoader
     {
         internal abstract void Prepare(TypeBuilder builder);
         internal abstract IntPtr Create(TypeBuilder builder);
-        internal unsafe virtual void WriteCellIntoDictionary(TypeBuilder typeBuilder, IntPtr* pDictionary, int slotIndex)
+        internal virtual unsafe void WriteCellIntoDictionary(TypeBuilder typeBuilder, IntPtr* pDictionary, int slotIndex)
         {
             pDictionary[slotIndex] = Create(typeBuilder);
         }
@@ -57,7 +57,7 @@ namespace Internal.Runtime.TypeLoader
                 throw new NotSupportedException();
             }
 
-            internal unsafe override void WriteCellIntoDictionary(TypeBuilder typeBuilder, IntPtr* pDictionary, int slotIndex)
+            internal override unsafe void WriteCellIntoDictionary(TypeBuilder typeBuilder, IntPtr* pDictionary, int slotIndex)
             {
                 pDictionary[slotIndex] = new IntPtr(pDictionary + OtherDictionarySlot);
             }
@@ -239,6 +239,43 @@ namespace Internal.Runtime.TypeLoader
         }
 #endif
 
+        /// <summary>
+        /// Used for non-generic static constrained Methods
+        /// </summary>
+        private class NonGenericStaticConstrainedMethodCell : GenericDictionaryCell
+        {
+            internal TypeDesc ConstraintType;
+            internal TypeDesc ConstrainedMethodType;
+            internal int ConstrainedMethodSlot;
+
+            internal override void Prepare(TypeBuilder builder)
+            {
+                if (ConstraintType.IsCanonicalSubtype(CanonicalFormKind.Any) || ConstrainedMethodType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                    Environment.FailFast("Unable to compute call information for a canonical type/method.");
+
+                builder.RegisterForPreparation(ConstraintType);
+                builder.RegisterForPreparation(ConstrainedMethodType);
+            }
+
+            internal override IntPtr Create(TypeBuilder builder)
+            {
+                IntPtr result = RuntimeAugments.ResolveStaticDispatchOnType(
+                    builder.GetRuntimeTypeHandle(ConstraintType),
+                    builder.GetRuntimeTypeHandle(ConstrainedMethodType),
+                    ConstrainedMethodSlot,
+                    out RuntimeTypeHandle genericContext);
+
+                Debug.Assert(result != IntPtr.Zero);
+
+                if (!genericContext.IsNull())
+                {
+                    result = FunctionPointerOps.GetGenericMethodFunctionPointer(result, genericContext.ToIntPtr());
+                }
+
+                return result;
+            }
+        }
+
         private class StaticDataCell : GenericDictionaryCell
         {
             internal StaticDataKind DataKind;
@@ -289,7 +326,7 @@ namespace Internal.Runtime.TypeLoader
         {
             internal InstantiatedMethod GenericMethod;
 
-            internal unsafe override void Prepare(TypeBuilder builder)
+            internal override unsafe void Prepare(TypeBuilder builder)
             {
                 if (GenericMethod.IsCanonicalMethod(CanonicalFormKind.Any))
                     Environment.FailFast("Method dictionaries of canonical methods do not exist");
@@ -312,7 +349,7 @@ namespace Internal.Runtime.TypeLoader
             internal TypeDesc ContainingType;
             internal IntPtr FieldName;
 
-            internal unsafe override void Prepare(TypeBuilder builder)
+            internal override unsafe void Prepare(TypeBuilder builder)
             {
                 if (ContainingType.IsCanonicalSubtype(CanonicalFormKind.Any))
                     Environment.FailFast("Ldtoken is not permitted for a canonical field");
@@ -336,7 +373,7 @@ namespace Internal.Runtime.TypeLoader
             internal IntPtr MethodName;
             internal RuntimeSignature MethodSignature;
 
-            internal unsafe override void Prepare(TypeBuilder builder)
+            internal override unsafe void Prepare(TypeBuilder builder)
             {
                 if (Method.IsCanonicalMethod(CanonicalFormKind.Any))
                     Environment.FailFast("Ldtoken is not permitted for a canonical method");
@@ -532,11 +569,11 @@ namespace Internal.Runtime.TypeLoader
         private class IntPtrCell : GenericDictionaryCell
         {
             internal IntPtr Value;
-            internal unsafe override void Prepare(TypeBuilder builder)
+            internal override unsafe void Prepare(TypeBuilder builder)
             {
             }
 
-            internal unsafe override IntPtr Create(TypeBuilder builder)
+            internal override unsafe IntPtr Create(TypeBuilder builder)
             {
                 return Value;
             }
@@ -567,7 +604,7 @@ namespace Internal.Runtime.TypeLoader
             private MethodDesc _methodToUseForInstantiatingParameters;
             private IntPtr _exactFunctionPointer;
 
-            internal unsafe override void Prepare(TypeBuilder builder)
+            internal override unsafe void Prepare(TypeBuilder builder)
             {
                 _methodToUseForInstantiatingParameters = Method;
 
@@ -761,7 +798,7 @@ namespace Internal.Runtime.TypeLoader
                 return Method.OwningType.IsValueType && !Method.UnboxingStub;
             }
 
-            internal unsafe override IntPtr Create(TypeBuilder builder)
+            internal override unsafe IntPtr Create(TypeBuilder builder)
             {
                 if (_exactFunctionPointer != IntPtr.Zero)
                 {
@@ -1749,6 +1786,21 @@ namespace Internal.Runtime.TypeLoader
                     }
                     break;
 #endif
+                case FixupSignatureKind.NonGenericStaticConstrainedMethod:
+                    {
+                        var constraintType = nativeLayoutInfoLoadContext.GetType(ref parser);
+                        var constrainedMethodType = nativeLayoutInfoLoadContext.GetType(ref parser);
+                        var constrainedMethodSlot = parser.GetUnsigned();
+                        TypeLoaderLogger.WriteLine("NonGenericStaticConstrainedMethod: " + constraintType.ToString() + " Method " + constrainedMethodType.ToString() + ", slot #" + constrainedMethodSlot.LowLevelToString());
+
+                        cell = new NonGenericStaticConstrainedMethodCell()
+                        {
+                            ConstraintType = constraintType,
+                            ConstrainedMethodType = constrainedMethodType,
+                            ConstrainedMethodSlot = (int)constrainedMethodSlot
+                        };
+                    }
+                    break;
 
                 case FixupSignatureKind.IsInst:
                 case FixupSignatureKind.CastClass:
@@ -1793,6 +1845,7 @@ namespace Internal.Runtime.TypeLoader
 
                 case FixupSignatureKind.NotYetSupported:
                 case FixupSignatureKind.ThreadStaticIndex:
+                case FixupSignatureKind.GenericStaticConstrainedMethod:
                     TypeLoaderLogger.WriteLine("Valid dictionary entry, but not yet supported by the TypeLoader!");
                     throw new TypeBuilder.MissingTemplateException();
 
