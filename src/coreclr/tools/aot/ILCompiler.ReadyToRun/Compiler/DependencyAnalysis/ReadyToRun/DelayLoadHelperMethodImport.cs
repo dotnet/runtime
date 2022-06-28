@@ -48,8 +48,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 MethodDesc canonMethod = _method.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
                 if (factory.CompilationModuleGroup.ContainsMethodBody(canonMethod, false))
                 {
-                    ISymbolNode canonMethodNode = factory.CompiledMethodNode(canonMethod);
-                    yield return new DependencyListEntry(canonMethodNode, "Canonical method for instantiating stub");
+                    bool useDependency = true;
+                    try
+                    {
+                        factory.TypeSystemContext.DetectGenericCycles(_method.Method, canonMethod, "canonical method for instantiating stub");
+                    }
+                    catch (TypeSystemException)
+                    {
+                        useDependency = false;
+                    }
+                    if (useDependency)
+                    {
+                        ISymbolNode canonMethodNode = factory.CompiledMethodNode(canonMethod);
+                        yield return new DependencyListEntry(canonMethodNode, "Canonical method for instantiating stub");
+                    }
                 }
             }
         }

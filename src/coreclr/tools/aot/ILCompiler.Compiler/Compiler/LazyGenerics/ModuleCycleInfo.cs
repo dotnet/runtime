@@ -166,6 +166,8 @@ namespace ILCompiler
                 return IsDeepPossiblyCyclicInstantiation(method.Instantiation) || IsDeepPossiblyCyclicInstantiation(method.OwningType);
             }
 
+            HashSet<EcmaModule> _modulesReported = new HashSet<EcmaModule>();
+
             public void DetectCycle(TypeSystemEntity owner, TypeSystemEntity referent)
             {
                 // This allows to disable cycle detection completely (typically for perf reasons as the algorithm is pretty slow)
@@ -195,6 +197,17 @@ namespace ILCompiler
                 EcmaModule ownerModule = (ownerDefinition as EcmaType)?.EcmaModule ?? ((EcmaMethod)ownerDefinition).Module;
 
                 ModuleCycleInfo cycleInfo = _hashtable.GetOrCreateValue(ownerModule);
+                if (_modulesReported.Add(ownerModule))
+                {
+                    Console.WriteLine("Cycle info for {0}", ownerModule.Assembly.GetName().Name);
+                    int counter = 0;
+                    foreach (TypeSystemEntity entity in cycleInfo.EntitiesInCycles)
+                    {
+                        Console.WriteLine("   {0}: {1}", counter, entity);
+                        counter++;
+                    }
+                }
+
                 if (cycleInfo.FormsCycle(ownerDefinition))
                 {
                     // Just the presence of a cycle is not a problem, but once we start getting too deep,

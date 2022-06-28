@@ -271,7 +271,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             foreach (ISymbolNode node in _fixups)
             {
-                dependencyList.Add(node, "classMustBeLoadedBeforeCodeIsRun");
+                try
+                {
+                    if (node is IMethodNode methodNode)
+                    {
+                        _method.Context.DetectGenericCycles(Method, methodNode.Method, "classMustBeLoadedBeforeCodeIsRun");
+                    }
+                    dependencyList.Add(node, "classMustBeLoadedBeforeCodeIsRun");
+
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine($"Info: Dependency `{node}` was dropped due to introducing a generic cycle.");
+                }
             }
 
             if (_nonRelocationDependencies != null)

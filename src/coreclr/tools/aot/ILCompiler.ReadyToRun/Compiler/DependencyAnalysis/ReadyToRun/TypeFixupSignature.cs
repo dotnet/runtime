@@ -182,7 +182,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         {
                             case "MoveNext":
                             case ".cctor":
-                                dependencies.Add(factory.CompiledMethodNode(method), $"AsyncStateMachineBox Method on type {type.ToString()}");
+                                try
+                                {
+                                    factory.TypeSystemContext.DetectGenericCycles(type, method, "AsyncStateMachineBox Method on type");
+                                    dependencies.Add(factory.CompiledMethodNode(method), $"AsyncStateMachineBox Method on type {type.ToString()}");
+                                }
+                                catch (TypeSystemException)
+                                {
+                                }
                                 break;
                         }
                     }

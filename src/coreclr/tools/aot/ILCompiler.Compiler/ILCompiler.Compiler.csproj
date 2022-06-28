@@ -439,6 +439,7 @@
     <Compile Include="Compiler\GeneratingMetadataManager.cs" />
     <Compile Include="Compiler\GenericRootProvider.cs" />
     <Compile Include="Compiler\LazyGenerics\ModuleCycleInfo.cs" />
+    <Compile Include="Compiler\LazyGenerics\ModuleCycleInfo.Logging.cs" />
     <Compile Include="Compiler\LazyGenerics\Graph.cs" />
     <Compile Include="Compiler\LazyGenerics\Graph.Cycles.cs" />
     <Compile Include="Compiler\LazyGenerics\Graph.Vertex.cs" />

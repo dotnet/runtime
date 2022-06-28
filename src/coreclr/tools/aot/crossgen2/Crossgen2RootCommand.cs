@@ -77,6 +77,8 @@ namespace ILCompiler
             new(new[] { "--resilient" }, SR.ResilientOption);
         public Option<string> ImageBase { get; } =
             new(new[] { "--imagebase" }, SR.ImageBase);
+        public Option<bool> DisableGenericCycleDetection { get; } =
+            new(new[] { "--disable-generic-cycle-detection" }, SR.DisableGenericCycleDetection);
         public Option<TargetArchitecture> TargetArchitecture { get; } =
             new(new[] { "--targetarch" }, result =>
             {

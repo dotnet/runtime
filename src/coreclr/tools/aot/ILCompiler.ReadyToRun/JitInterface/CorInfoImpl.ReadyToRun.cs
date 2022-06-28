@@ -865,12 +865,14 @@ namespace Internal.JitInterface
                         if (helperId == ReadyToRunHelperId.MethodEntry && pGenericLookupKind.runtimeLookupArgs != null)
                         {
                             constrainedType = (TypeDesc)GetRuntimeDeterminedObjectForToken(ref *(CORINFO_RESOLVED_TOKEN*)pGenericLookupKind.runtimeLookupArgs);
+                            _compilation.TypeSystemContext.DetectGenericCycles(MethodBeingCompiled, constrainedType, "GenericHandle - constrained type");
                         }
                         object helperArg = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
                         if (helperArg is MethodDesc methodDesc)
                         {
                             var methodIL = HandleToObject(pResolvedToken.tokenScope);
                             MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
+                            _compilation.TypeSystemContext.DetectGenericCycles(MethodBeingCompiled, sharedMethod, "GenericHandle - method");
                             helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken), constrainedType, unboxing: false, context: sharedMethod);
                         }
                         else if (helperArg is FieldDesc fieldDesc)
@@ -1816,6 +1818,11 @@ namespace Internal.JitInterface
                 //
                 // Unless this is a call made while compiling a CrossModuleInlineable method
                 throw new RequiresRuntimeJitException(callerMethod.ToString() + " -> " + originalMethod.ToString());
+            }
+
+            if (originalMethod.HasInstantiation || originalMethod.OwningType.HasInstantiation)
+            {
+                _compilation.TypeSystemContext.DetectGenericCycles(callerMethod, originalMethod, "ceeInfoGetCallInfo");
             }
 
             callerModule = ((EcmaMethod)callerMethod.GetTypicalMethodDefinition()).Module;

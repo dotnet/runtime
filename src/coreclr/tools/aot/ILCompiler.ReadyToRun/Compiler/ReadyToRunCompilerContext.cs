@@ -3,7 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-
+using System.Linq;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -32,13 +32,25 @@ namespace ILCompiler
 
     public partial class ReadyToRunCompilerContext : CompilerTypeSystemContext
     {
+        // For Crossgen2 we don't really need a high generic cycle cutoff as arbitrary methods
+        // may be JITted at runtime. (We're already compiling too much as a rule of thumb.)
+        private const int DefaultGenericCycleCutoffPoint = 1;
+
         private ReadyToRunMetadataFieldLayoutAlgorithm _r2rFieldLayoutAlgorithm;
         private SystemObjectFieldLayoutAlgorithm _systemObjectFieldLayoutAlgorithm;
         private VectorOfTFieldLayoutAlgorithm _vectorOfTFieldLayoutAlgorithm;
         private VectorFieldLayoutAlgorithm _vectorFieldLayoutAlgorithm;
         private Int128FieldLayoutAlgorithm _int128FieldLayoutAlgorithm;
 
-        public ReadyToRunCompilerContext(TargetDetails details, SharedGenericsMode genericsMode, bool bubbleIncludesCorelib, InstructionSetSupport instructionSetSupport, CompilerTypeSystemContext oldTypeSystemContext = null)
+        private readonly LazyGenericsSupport.GenericCycleDetector _genericCycleDetector;
+        private bool _disableGenericCycleDetection;
+
+        public ReadyToRunCompilerContext(
+            TargetDetails details,
+            SharedGenericsMode genericsMode,
+            bool bubbleIncludesCorelib,
+            CompilerTypeSystemContext oldTypeSystemContext = null,
+            bool disableGenericCycleDetection = false)
             : base(details, genericsMode)
         {
             InstructionSetSupport = instructionSetSupport;
@@ -66,6 +78,9 @@ namespace ILCompiler
             {
                 InheritOpenModules(oldTypeSystemContext);
             }
+
+            _genericCycleDetector = new LazyGenericsSupport.GenericCycleDetector(DefaultGenericCycleCutoffPoint);
+            _disableGenericCycleDetection = disableGenericCycleDetection;
         }
 
         public InstructionSetSupport InstructionSetSupport { get; }
@@ -108,6 +123,69 @@ namespace ILCompiler
         {
             _r2rFieldLayoutAlgorithm.SetCompilationGroup(compilationModuleGroup);
         }
+
+        private static int _dependencyLevel = 0;
+        public const int DependencyLevelCutoff = 8;
+        private Dictionary<string, int> _blockedGenericCycleCounts = new Dictionary<string, int>();
+        private Dictionary<string, int> _passedGenericCycleCounts = new Dictionary<string, int>();
+
+        public void RecordBlockedGenericCycle(string name)
+        {
+            _blockedGenericCycleCounts.TryGetValue(name, out int count);
+            _blockedGenericCycleCounts[name] = count + 1;
+        }
+
+        public void RecordPassedGenericCycle(string name)
+        {
+            _passedGenericCycleCounts.TryGetValue(name, out int count);
+            _passedGenericCycleCounts[name] = count + 1;
+        }
+
+        public void DumpBlockedGenericCycles()
+        {
+            Console.WriteLine("  COUNT | BLOCKED GENERIC CYCLES");
+            Console.WriteLine("--------------------------------");
+
+            foreach (KeyValuePair<string, int> kvpNameCount in _blockedGenericCycleCounts.OrderByDescending(kvp => kvp.Value))
+            {
+                Console.WriteLine("{0,7} | {1}", kvpNameCount.Value, kvpNameCount.Key);
+            }
+
+            Console.WriteLine();
+
+            Console.WriteLine("  COUNT | PASSED GENERIC CYCLES");
+            Console.WriteLine("-------------------------------");
+
+            foreach (KeyValuePair<string, int> kvpNameCount in _passedGenericCycleCounts.OrderByDescending(kvp => kvp.Value))
+            {
+                Console.WriteLine("{0,7} | {1}", kvpNameCount.Value, kvpNameCount.Key);
+            }
+
+            Console.WriteLine();
+        }
+
+        public override void DetectGenericCycles(TypeSystemEntity caller, TypeSystemEntity callee, string name)
+        {
+            if (_dependencyLevel >= DependencyLevelCutoff)
+            {
+                Internal.TypeSystem.ThrowHelper.ThrowInvalidProgramException();
+            }
+            if (!_disableGenericCycleDetection)
+            {
+                try
+                {
+                    _genericCycleDetector.DetectCycle(caller, callee);
+                    RecordPassedGenericCycle(name);
+                }
+                catch (TypeSystemException)
+                {
+                    RecordBlockedGenericCycle(name);
+                    throw;
+                }
+            }
+        }
+
+        public static int IncrementDependencyLevel() => ++_dependencyLevel;
 
         /// <summary>
         /// Prevent any synthetic methods being added to types in the base CompilerTypeSystemContext

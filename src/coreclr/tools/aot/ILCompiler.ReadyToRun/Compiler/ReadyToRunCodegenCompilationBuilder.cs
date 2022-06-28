@@ -42,6 +42,7 @@ namespace ILCompiler
         private CompositeImageSettings _compositeImageSettings;
         private ulong _imageBase;
         private NodeFactoryOptimizationFlags _nodeFactoryOptimizationFlags = new NodeFactoryOptimizationFlags();
+        private bool _disableGenericCycleDetection;
 
         private string _jitPath;
         private string _outputFile;
@@ -210,6 +211,12 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseDisableGenericCycleDetection(bool disableGenericCycleDetection)
+        {
+            _disableGenericCycleDetection = disableGenericCycleDetection;
+            return this;
+        }
+
         public override ICompilation ToCompilation()
         {
             // TODO: only copy COR headers for single-assembly build and for composite build with embedded MSIL
@@ -326,7 +333,8 @@ namespace ILCompiler
                 _r2rMethodLayoutAlgorithm,
                 _r2rFileLayoutAlgorithm,
                 _customPESectionAlignment,
-                _verifyTypeAndFieldLayout);
+                _verifyTypeAndFieldLayout,
+                disableGenericCycleDetection: _disableGenericCycleDetection);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!--
     Microsoft ResX Schema
@@ -401,5 +401,8 @@
   </data>
   <data name="Crossgen2BannerText" xml:space="preserve">
     <value>.NET Crossgen2 Compiler</value>
+  </data>
+  <data name="DisableGenericCycleDetection" xml:space="preserve">
+    <value>Don't perform generic cycle detection during compilation</value>
   </data>
 </root>

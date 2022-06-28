@@ -58,7 +58,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 factory.CompilationModuleGroup.ContainsMethodBody(canonMethod, false))
             {
                 list = list ?? new DependencyAnalysisFramework.DependencyNodeCore<NodeFactory>.DependencyList();
-                list.Add(factory.CompiledMethodNode(canonMethod), "Virtual function dependency on cross module inlineable method");
+                try
+                {
+                    factory.TypeSystemContext.DetectGenericCycles(_method.Method, canonMethod, "virtual function dependency on cross module inlineable method");
+                    list.Add(factory.CompiledMethodNode(canonMethod), "Virtual function dependency on cross module inlineable method");
+                }
+                catch (TypeSystemException)
+                {
+                }
             }
 
             return list;
