@@ -251,6 +251,11 @@ namespace Microsoft.Interop
 
             IMarshallingGenerator marshallingGenerator = new CustomNativeTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: false);
 
+            if (marshallerData.Shape.HasFlag(MarshallerShape.StatelessPinnableReference))
+            {
+                marshallingGenerator = new StaticPinnableManagedValueMarshaller(marshallingGenerator, marshallerData.MarshallerType);
+            }
+
             return marshalInfo.IsPinnableManagedType
                 ? new PinnableManagedValueMarshaller(marshallingGenerator)
                 : marshallingGenerator;
