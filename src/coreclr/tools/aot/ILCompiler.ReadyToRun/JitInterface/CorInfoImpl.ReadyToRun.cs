@@ -2569,6 +2569,13 @@ namespace Internal.JitInterface
                     return false;
                 }
 
+                // If this method is in another versioning unit, then the compilation cannot inline the pinvoke (as we aren't currently
+                // able to construct a token correctly to refer to the pinvoke method.
+                if (!_compilation.CompilationModuleGroup.VersionsWithMethodBody(method))
+                {
+                    return true;
+                }
+
                 MethodIL stubIL = null;
                 try
                 {

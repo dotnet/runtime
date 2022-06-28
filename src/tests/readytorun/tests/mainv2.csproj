@@ -87,7 +87,7 @@ mkdir IL_DLLS
 
 if [ ! -f IL_DLLS/fieldgetter.dll ]
 then
-  cp test.dll IL_DLLS/fieldgetter.dll
+  cp fieldgetter.dll IL_DLLS/fieldgetter.dll
 fi
 if [ ! -f IL_DLLS/fieldgetter.dll ]
 then
@@ -97,7 +97,7 @@ fi
 
 if [ ! -f IL_DLLS/mainv2.dll ]
 then
-  cp test.dll IL_DLLS/mainv2.dll
+  cp mainv2.dll IL_DLLS/mainv2.dll
 fi
 if [ ! -f IL_DLLS/mainv2.dll ]
 then
