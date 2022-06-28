@@ -69,7 +69,7 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(nameof(Tls13Supported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public void NegotiatedCipherSuite_SslProtocolIsTls13_ShouldBeTls13()
         {
             var p = new ConnectionParams()
@@ -91,7 +91,7 @@ namespace System.Net.Security.Tests
         [InlineData(SslProtocols.Tls11)]
 #pragma warning restore SYSLIB0039
         [InlineData(SslProtocols.Tls12)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public void NegotiatedCipherSuite_SslProtocolIsLowerThanTls13_ShouldMatchTheProtocol(SslProtocols protocol)
         {
             var p = new ConnectionParams()
@@ -631,7 +631,7 @@ namespace System.Net.Security.Tests
                     try
                     {
                         // since we broke connection the server should finish
-                        await serverTask;
+                        await serverTask.WaitAsync(TestConfiguration.PassingTestTimeout);
                     }
                     catch (AuthenticationException) { }
                     catch (Win32Exception) { }

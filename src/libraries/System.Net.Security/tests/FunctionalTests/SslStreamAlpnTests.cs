@@ -104,7 +104,7 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [MemberData(nameof(Alpn_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_StreamToStream_Alpn_Success(List<SslApplicationProtocol> clientProtocols, List<SslApplicationProtocol> serverProtocols, SslApplicationProtocol expected)
         {
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
@@ -183,7 +183,7 @@ namespace System.Net.Security.Tests
             {
                 try
                 {
-                    await client.ConnectAsync(server.Host, server.Port);
+                    await client.ConnectAsync(server.Host, server.Port).WaitAsync(TestConfiguration.PassingTestTimeout);
                     using (SslStream clientStream = new SslStream(client.GetStream(), leaveInnerStreamOpen: false))
                     {
                         SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
@@ -192,7 +192,7 @@ namespace System.Net.Security.Tests
                             TargetHost = server.Host
                         };
 
-                        await clientStream.AuthenticateAsClientAsync(TestAuthenticateAsync, clientOptions);
+                        await clientStream.AuthenticateAsClientAsync(TestAuthenticateAsync, clientOptions).WaitAsync(TestConfiguration.PassingTestTimeout);
                         Assert.Equal("h2", clientStream.NegotiatedApplicationProtocol.ToString());
                     }
                 }

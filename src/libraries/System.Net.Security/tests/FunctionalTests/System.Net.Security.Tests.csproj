@@ -134,4 +134,14 @@
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
   </ItemGroup>
+
+  <!-- Android - PEM certificates -->
+  <PropertyGroup Condition="'$(TargetOS)' == 'Android'">
+    <IncludeNetworkSecurityConfig>true</IncludeNetworkSecurityConfig>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetOS)' == 'Android'">
+    <None Include="$(MSBuildProjectDirectory)\res\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>

@@ -55,6 +55,9 @@ namespace System.Net.Security.Tests
         [MemberData(nameof(HostNameData))]
         public async Task SslStream_ServerCallbackAndLocalCertificateSelectionSet_Throws(string hostName)
         {
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(TestConfiguration.PassingTestTimeout);
+
             X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
 
             int timesCallbackCalled = 0;
@@ -88,7 +91,7 @@ namespace System.Net.Security.Tests
                     return serverCert;
                 };
 
-                await Assert.ThrowsAsync<InvalidOperationException>(() => server.AuthenticateAsServerAsync(options, CancellationToken.None));
+                await Assert.ThrowsAsync<InvalidOperationException>(() => server.AuthenticateAsServerAsync(options, cts.Token));
 
                 Assert.Equal(0, timesCallbackCalled);
             }
@@ -99,6 +102,9 @@ namespace System.Net.Security.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_ServerCallbackNotSet_UsesLocalCertificateSelection(string hostName)
         {
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(TestConfiguration.PassingTestTimeout);
+
             X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
 
             int timesCallbackCalled = 0;
@@ -128,7 +134,7 @@ namespace System.Net.Security.Tests
                 SslServerAuthenticationOptions options = DefaultServerOptions();
                 options.ServerCertificate = serverCert;
 
-                await TaskTimeoutExtensions.WhenAllOrAnyFailed(new[] { clientJob, server.AuthenticateAsServerAsync(options, CancellationToken.None) });
+                await TaskTimeoutExtensions.WhenAllOrAnyFailed(new[] { clientJob, server.AuthenticateAsServerAsync(options, cts.Token) });
 
                 Assert.Equal(1, timesCallbackCalled);
             }
@@ -156,6 +162,8 @@ namespace System.Net.Security.Tests
                 };
 
                 var cts = new CancellationTokenSource();
+                cts.CancelAfter(TestConfiguration.PassingTestTimeout);
+
                 await Assert.ThrowsAsync<AuthenticationException>(WithAggregateExceptionUnwrapping(async () =>
                     await server.AuthenticateAsServerAsync(options, cts.Token)
                 ));

@@ -40,7 +40,7 @@ $HARNESS_RUNNER android test                \
     --package-name="net.dot.$ASSEMBLY_NAME" \
     --app="$EXECUTION_DIR/bin/$TEST_NAME.apk" \
     --output-directory="$XHARNESS_OUT" \
-    --timeout=1800 \
+    --timeout=5600 \
     $ADDITIONAL_ARGS
 
 _exitCode=$?

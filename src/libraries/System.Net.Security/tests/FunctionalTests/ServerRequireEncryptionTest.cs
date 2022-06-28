@@ -21,7 +21,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ServerRequireEncryption_ClientRequireEncryption_ConnectWithEncryption()
         {
             (NetworkStream clientStream, NetworkStream serverStream) = TestHelper.GetConnectedTcpStreams();
@@ -44,7 +44,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ServerRequireEncryption_ClientAllowNoEncryption_ConnectWithEncryption()
         {
             (NetworkStream clientStream, NetworkStream serverStream) = TestHelper.GetConnectedTcpStreams();

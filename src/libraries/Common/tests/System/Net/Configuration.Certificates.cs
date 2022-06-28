@@ -37,6 +37,8 @@ namespace System.Net.Test.Common
                 {
                     try
                     {
+                        // TODO these server certificates should be added into the network_security_config.xml on Android
+                        // + can we even read those files on Android? are they copied correctly into the APK? --- they are copied into the assets/assets.zip archive, so I guess they should be readable just fine
                         byte[] serverCertificateBytes = File.ReadAllBytes(Path.Combine(TestDataFolder, "testservereku.contoso.com.pfx"));
                         byte[] clientCertificateBytes = File.ReadAllBytes(Path.Combine(TestDataFolder, "testclienteku.contoso.com.pfx"));
                         byte[] noEKUCertificateBytes = File.ReadAllBytes(Path.Combine(TestDataFolder, "testnoeku.contoso.com.pfx"));
