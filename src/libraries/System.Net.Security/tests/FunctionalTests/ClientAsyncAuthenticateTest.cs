@@ -67,7 +67,6 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        // TODO we need to update the network security config to make this work on Android
         public async Task ClientAsyncAuthenticate_AllServerAllClient_Success()
         {
             await ClientAsyncSslHelper(
@@ -146,7 +145,7 @@ namespace System.Net.Security.Tests
                     Task clientTask = client.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
                         {
                             EnabledSslProtocols = clientSslProtocols,
-                            RemoteCertificateValidationCallback = AllowAnyServerCertificate, // TODO this is not enough on Android - the OS will interfere with the validation process
+                            RemoteCertificateValidationCallback = AllowAnyServerCertificate,
                             TargetHost = serverName });
                     serverTask = server.AuthenticateAsServerAsync( new SslServerAuthenticationOptions
                         {
@@ -168,7 +167,7 @@ namespace System.Net.Security.Tests
                     client.Close();
                     try
                     {
-                        await serverTask.WaitAsync(TestConfiguration.PassingTestTimeout);
+                        await serverTask;
                     }
                     catch (Exception ex)
                     {

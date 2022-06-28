@@ -629,7 +629,7 @@ namespace System.Net.Security.Tests
                     try
                     {
                         // since we broke connection the server should finish
-                        await serverTask.WaitAsync(TestConfiguration.PassingTestTimeout);
+                        await serverTask;
                     }
                     catch (AuthenticationException) { }
                     catch (Win32Exception) { }

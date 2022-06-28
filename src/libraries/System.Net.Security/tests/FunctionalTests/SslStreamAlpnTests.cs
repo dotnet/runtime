@@ -182,7 +182,7 @@ namespace System.Net.Security.Tests
             {
                 try
                 {
-                    await client.ConnectAsync(server.Host, server.Port).WaitAsync(TestConfiguration.PassingTestTimeout);
+                    await client.ConnectAsync(server.Host, server.Port);
                     using (SslStream clientStream = new SslStream(client.GetStream(), leaveInnerStreamOpen: false))
                     {
                         SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
@@ -191,7 +191,7 @@ namespace System.Net.Security.Tests
                             TargetHost = server.Host
                         };
 
-                        await clientStream.AuthenticateAsClientAsync(TestAuthenticateAsync, clientOptions).WaitAsync(TestConfiguration.PassingTestTimeout);
+                        await clientStream.AuthenticateAsClientAsync(TestAuthenticateAsync, clientOptions);
                         Assert.Equal("h2", clientStream.NegotiatedApplicationProtocol.ToString());
                     }
                 }
