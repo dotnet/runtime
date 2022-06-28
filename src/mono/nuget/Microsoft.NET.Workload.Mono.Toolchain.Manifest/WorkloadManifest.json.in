@@ -119,6 +119,15 @@
       "extends": [ "microsoft-net-runtime-mono-tooling" ],
       "platforms": [ "win-x64", "osx-arm64", "osx-x64" ]
     },
+    "runtimes-windows": {
+      "description": "Windows Runtime Packs",
+      "packs": [
+        "Microsoft.NETCore.App.Runtime.win-x64",
+        "Microsoft.NETCore.App.Runtime.win-x86",
+        "Microsoft.NETCore.App.Runtime.win-arm",
+        "Microsoft.NETCore.App.Runtime.win-arm64"
+      ]
+    },
     "microsoft-net-runtime-mono-tooling": {
       "abstract": true,
       "description": "Shared native build tooling for Mono runtime",
@@ -351,5 +360,21 @@
       "kind": "framework",
       "version": "${PackageVersion}"
     },
+    "Microsoft.NETCore.App.Runtime.win-x64" : {
+      "kind": "framework",
+      "version": "${PackageVersion}"
+    },
+    "Microsoft.NETCore.App.Runtime.win-x86" : {
+      "kind": "framework",
+      "version": "${PackageVersion}"
+    },
+    "Microsoft.NETCore.App.Runtime.win-arm" : {
+      "kind": "framework",
+      "version": "${PackageVersion}"
+    },
+    "Microsoft.NETCore.App.Runtime.win-arm64" : {
+      "kind": "framework",
+      "version": "${PackageVersion}"
+    }
   }
 }

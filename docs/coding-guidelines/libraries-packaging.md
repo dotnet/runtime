@@ -14,7 +14,7 @@ In some occasions we may want to include a library in the shared framework, but 
 
 Libraries included in the shared framework should ensure all direct and transitive assembly references are also included in the shared framework. This will be validated as part of the build and errors raised if any dependencies are unsatisfied.
 
-Source generators and analyzers can be included in the shared framework by specifying `IsNetCoreAppAnalyzer`.  These projects should specify `AnalyzerLanguage` as mentioned [below](#analyzers--source-generators).
+Source generators and analyzers can be included in the shared framework by adding their project name into the NetCoreAppLibrary.props file under the `NetCoreAppLibraryGenerator` section. These projects should specify `AnalyzerLanguage` as mentioned [below](#analyzers--source-generators).
 
 Removing a library from the shared framework is a breaking change and should be avoided.
 
@@ -70,10 +70,10 @@ Build props and targets may be needed in NuGet packages. To define these, author
 
 Some packages may wish to include a companion analyzer or source-generator with their library. Analyzers are much different from normal library contributors: their dependencies shouldn't be treated as nuget package dependencies, their TargetFramework isn't applicable to the project they are consumed in (since they run in the compiler). To facilitate this, we've defined some common infrastructure for packaging Analyzers.
 
-To include an analyzer in a package, simply add an `AnalyzerReference` item to the project that produces the package that should contain the analyzer
+To include an analyzer in a package, simply add an `AnalyzerReference` item to the project that produces the package that should contain the analyzer and set the `Pack` metadata to true. If you just want to include the analyzer but not consume it, set the `ReferenceAnalyzer` metadata to false.
 ```xml
   <ItemGroup> 
-    <AnalyzerReference Include="..\gen\System.Banana.Generators.csproj" />
+    <AnalyzerReference Include="..\gen\System.Banana.Generators.csproj" Pack="true" ReferenceAnalyzer="false" />
   </ItemGroup>
 ```
 

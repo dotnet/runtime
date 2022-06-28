@@ -20,7 +20,7 @@ namespace System.ComponentModel.Design
         /// </summary>
         public DesignerOptionCollection Options
         {
-            get => _options ?? (_options = new DesignerOptionCollection(this, null, string.Empty, null));
+            get => _options ??= new DesignerOptionCollection(this, null, string.Empty, null);
         }
 
         /// <summary>

@@ -12,6 +12,11 @@
         <target state="translated">Wartość „SizeParamIndex” w atrybucie „MarshalAsAttribute” jest poza zakresem.</target>
         <note />
       </trans-unit>
+      <trans-unit id="BidirectionalMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
+        <target state="new">The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="CannotHaveMultipleMarshallingAttributesDescription">
         <source>The 'BlittableTypeAttribute' and 'NativeMarshallingAttribute' attributes are mutually exclusive.</source>
         <target state="translated">Atrybuty „BlittableTypeAttribute” i „NativeMarshallingAttribute” wzajemnie się wykluczają.</target>
@@ -92,6 +97,16 @@
         <target state="translated">Podane atrybuty „[In]” i „[Out]” w tym parametrze nie są obsługiwane w tym parametrze.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</source>
+        <target state="new">The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeStatic">
+        <source>The marshaller type '{0}' for managed type '{1}' must be static.</source>
+        <target state="new">The marshaller type '{0}' for managed type '{1}' must be static.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MarshallingBoolAsUndefinedNotSupported">
         <source>Marshalling bool without explicit marshalling information is not supported. Specify either 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
         <target state="translated">Skierowanie wartości logicznej bez wyraźnych informacji o skierowaniu nie jest obsługiwane. Określ atrybut „MarshalUsingAttribute” lub atrybut „MarshalAsAttribute”.</target>
@@ -99,17 +114,17 @@
       </trans-unit>
       <trans-unit id="MarshallingCharAsSpecifiedStringMarshallingNotSupported">
         <source>Marshalling char with 'StringMarshalling.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</source>
-        <target state="new">Marshalling char with 'StringMarshalling.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</target>
+        <target state="translated">Znak marshallingu o wartości „StringMarshalling.{0}” nie jest obsługiwany. Zamiast tego ręcznie przekonwertuj typ znaków na żądaną reprezentację bajtów i przekaż do wygenerowanego źródła funkcji P/Invoke.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallingCharAsStringMarshallingCustomNotSupported">
         <source>Marshalling char with 'StringMarshalling.Custom' is not supported. To use a custom type marshaller, specify 'MarshalUsingAttribute'.</source>
-        <target state="new">Marshalling char with 'StringMarshalling.Custom' is not supported. To use a custom type marshaller, specify 'MarshalUsingAttribute'.</target>
+        <target state="translated">Znak marshallingu o wartości „StringMarshalling.Custom” nie jest obsługiwany. Aby użyć marshallera typu niestandardowego, określ atrybut „MarshalUsingAttribute”.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallingStringOrCharAsUndefinedNotSupported">
         <source>Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
-        <target state="new">Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</target>
+        <target state="translated">Ciągu lub znak marshallingu bez jawnych informacji o marshallingu nie jest obsługiwany. Określ atrybuty „LibraryImportAttribute.StringMarshalling”, „LibraryImportAttribute.StringMarshallingCustomType”, „MarshalUsingAttribute” lub „MarshalAsAttribute”.</target>
         <note />
       </trans-unit>
       <trans-unit id="NativeGenericTypeMustBeClosedOrMatchArityMessage">
@@ -129,7 +144,7 @@
       </trans-unit>
       <trans-unit id="RuntimeMarshallingMustBeDisabled">
         <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
-        <target state="new">Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</target>
+        <target state="translated">Marshalling środowiska uruchomieniowego musi być wyłączony w tym projekcie przez zastosowanie do zestawu atrybutu „System.Runtime.InteropServices.DisableRuntimeMarshallingAttribute”, aby umożliwić marshalling tego typu.</target>
         <note />
       </trans-unit>
       <trans-unit id="SafeHandleByRefMustBeConcrete">
@@ -142,9 +157,14 @@
         <target state="translated">Określony typ nie jest obsługiwany przez funkcję P/Invokes generowaną przez źródło</target>
         <note />
       </trans-unit>
+      <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
+        <target state="new">The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorMessage">
         <source>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a one-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</source>
-        <target state="new">The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a one-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</target>
+        <target state="translated">Typ „{0}” określa, że obsługuje marshalling „In” z funkcją „CallerAllocatedBuffer” dla elementu „{1}”, ale nie zapewnia konstruktora z jednym parametrem, który przyjmuje element „{1}” i wartości „Span” typu „unmanaged” jako parametry</target>
         <note />
       </trans-unit>
     </body>

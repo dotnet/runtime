@@ -16,8 +16,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
     internal sealed unsafe class MsQuicApi
     {
-        private static readonly byte[] s_appName = Encoding.ASCII.GetBytes("System.Net.Quic");
-
         private static readonly Version MinWindowsVersion = new Version(10, 0, 20145, 1000);
 
         private static readonly Version MsQuicVersion = new Version(2, 0);
@@ -38,9 +36,10 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         {
             ApiTable = apiTable;
 
-            fixed (byte* pAppName = s_appName)
+            fixed (byte* pAppName = "System.Net.Quic"u8)
             {
-                var cfg = new QUIC_REGISTRATION_CONFIG {
+                var cfg = new QUIC_REGISTRATION_CONFIG
+                {
                     AppName = (sbyte*)pAppName,
                     ExecutionProfile = QUIC_EXECUTION_PROFILE.LOW_LATENCY
                 };
@@ -56,7 +55,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         internal static bool IsQuicSupported { get; }
 
-        internal static bool Tls13MayBeDisabled { get; }
+        internal static bool Tls13ServerMayBeDisabled { get; }
+        internal static bool Tls13ClientMayBeDisabled { get; }
 
         static MsQuicApi()
         {
@@ -72,7 +72,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     return;
                 }
 
-                Tls13MayBeDisabled = IsTls13Disabled();
+                Tls13ServerMayBeDisabled = IsTls13Disabled(true);
+                Tls13ClientMayBeDisabled = IsTls13Disabled(false);
             }
 
             IntPtr msQuicHandle;
@@ -122,24 +123,28 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         private static bool IsWindowsVersionSupported() => OperatingSystem.IsWindowsVersionAtLeast(MinWindowsVersion.Major,
             MinWindowsVersion.Minor, MinWindowsVersion.Build, MinWindowsVersion.Revision);
 
-        private static bool IsTls13Disabled()
+        private static bool IsTls13Disabled(bool isServer)
         {
 #if TARGET_WINDOWS
-            string[] SChannelTLS13RegKeys = {
-                @"SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Client",
-                @"SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Server"
-            };
+            string SChannelTls13RegistryKey = isServer
+                ? @"SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Server"
+                : @"SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Client";
 
-            foreach (var key in SChannelTLS13RegKeys)
+            using var regKey = Registry.LocalMachine.OpenSubKey(SChannelTls13RegistryKey);
+
+            if (regKey is null)
             {
-                using var regKey = Registry.LocalMachine.OpenSubKey(key);
+                return false;
+            }
 
-                if (regKey is null) return false;
+            if (regKey.GetValue("Enabled") is int enabled && enabled == 0)
+            {
+                return true;
+            }
 
-                if (regKey.GetValue("Enabled") is int enabled && enabled == 0)
-                {
-                    return true;
-                }
+            if (regKey.GetValue("DisabledByDefault") is int disabled && disabled == 1)
+            {
+                return true;
             }
 #endif
             return false;

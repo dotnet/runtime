@@ -3818,7 +3818,7 @@ namespace System.Globalization
                 char ch = name[i];
 
                 Debug.Assert(ch <= 'z');
-                lower_case[i] = ((uint)(ch - 'A') <= 'Z' - 'A') ? (byte)(ch | 0x20) : (byte)ch;
+                lower_case[i] = char.IsAsciiLetterUpper(ch) ? (byte)(ch | 0x20) : (byte)ch;
             }
 
             ReadOnlySpan<byte> lname = lower_case;

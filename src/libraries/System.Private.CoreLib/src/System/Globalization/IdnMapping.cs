@@ -657,7 +657,7 @@ namespace System.Globalization
                                 throw new ArgumentException(SR.Argument_IdnBadPunycode, nameof(ascii));
 
                             // When appending make sure they get lower cased
-                            output.Append((char)(ascii[copyAscii] >= 'A' && ascii[copyAscii] <= 'Z' ? ascii[copyAscii] - 'A' + 'a' : ascii[copyAscii]));
+                            output.Append((char)(char.IsAsciiLetterUpper(ascii[copyAscii]) ? ascii[copyAscii] - 'A' + 'a' : ascii[copyAscii]));
                         }
                     }
 
@@ -817,14 +817,14 @@ namespace System.Globalization
 
         private static int DecodeDigit(char cp)
         {
-            if (cp >= '0' && cp <= '9')
+            if (char.IsAsciiDigit(cp))
                 return cp - '0' + 26;
 
             // Two flavors for case differences
-            if (cp >= 'a' && cp <= 'z')
+            if (char.IsAsciiLetterLower(cp))
                 return cp - 'a';
 
-            if (cp >= 'A' && cp <= 'Z')
+            if (char.IsAsciiLetterUpper(cp))
                 return cp - 'A';
 
             // Expected 0-9, A-Z or a-z, everything else is illegal
@@ -856,15 +856,11 @@ namespace System.Globalization
 
         private static char EncodeBasic(char bcp)
         {
-            if (HasUpperCaseFlag(bcp))
+            if (char.IsAsciiLetterUpper(bcp))
                 bcp += (char)('a' - 'A');
 
             return bcp;
         }
-
-        // Return whether a punycode code point is flagged as being upper case.
-        private static bool HasUpperCaseFlag(char punychar) =>
-            punychar >= 'A' && punychar <= 'Z';
 
         /* EncodeDigit(d,flag) returns the basic code point whose value      */
         /* (when used for representing integers) is d, which needs to be in   */

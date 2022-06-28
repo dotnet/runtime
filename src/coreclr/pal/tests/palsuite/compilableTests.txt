@@ -109,11 +109,9 @@ c_runtime/ilogbf/test1/paltest_ilogbf_test1
 c_runtime/isalnum/test1/paltest_isalnum_test1
 c_runtime/isalpha/test1/paltest_isalpha_test1
 c_runtime/isdigit/test1/paltest_isdigit_test1
-c_runtime/islower/test1/paltest_islower_test1
 c_runtime/isprint/test1/paltest_isprint_test1
 c_runtime/isprint/test2/paltest_isprint_test2
 c_runtime/isspace/test1/paltest_isspace_test1
-c_runtime/isupper/test1/paltest_isupper_test1
 c_runtime/iswdigit/test1/paltest_iswdigit_test1
 c_runtime/iswspace/test1/paltest_iswspace_test1
 c_runtime/iswupper/test1/paltest_iswupper_test1
@@ -206,14 +204,12 @@ c_runtime/strcat/test1/paltest_strcat_test1
 c_runtime/strchr/test1/paltest_strchr_test1
 c_runtime/strcmp/test1/paltest_strcmp_test1
 c_runtime/strcpy/test1/paltest_strcpy_test1
-c_runtime/strcspn/test1/paltest_strcspn_test1
 c_runtime/strlen/test1/paltest_strlen_test1
 c_runtime/strncat/test1/paltest_strncat_test1
 c_runtime/strncmp/test1/paltest_strncmp_test1
 c_runtime/strncpy/test1/paltest_strncpy_test1
 c_runtime/strpbrk/test1/paltest_strpbrk_test1
 c_runtime/strrchr/test1/paltest_strrchr_test1
-c_runtime/strspn/test1/paltest_strspn_test1
 c_runtime/strstr/test1/paltest_strstr_test1
 c_runtime/strtod/test1/paltest_strtod_test1
 c_runtime/strtod/test2/paltest_strtod_test2
@@ -659,8 +655,6 @@ miscellaneous/GetLastError/test1/paltest_getlasterror_test1
 miscellaneous/GetSystemInfo/test1/paltest_getsysteminfo_test1
 miscellaneous/GetTickCount/test1/paltest_gettickcount_test1
 miscellaneous/GlobalMemoryStatusEx/test1/paltest_globalmemorystatusex_test1
-miscellaneous/InterlockedBit/test1/paltest_interlockedbit_test1
-miscellaneous/InterlockedBit/test2/paltest_interlockedbit_test2
 miscellaneous/InterlockedCompareExchange/test1/paltest_interlockedcompareexchange_test1
 miscellaneous/InterlockedCompareExchange/test2/paltest_interlockedcompareexchange_test2
 miscellaneous/InterlockedCompareExchange64/test1/paltest_interlockedcompareexchange64_test1

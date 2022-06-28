@@ -97,56 +97,49 @@ inline T genFindLowestBit(T value)
     return (value & (0 - value));
 }
 
-/*****************************************************************************/
-/*****************************************************************************
- *
- *  Return the highest bit that is set (that is, a mask that includes just the highest bit).
- *  TODO-ARM64-Throughput: we should convert these to use the _BitScanReverse() / _BitScanReverse64()
- *  compiler intrinsics, but our CRT header file intrin.h doesn't define these for ARM64 yet.
- */
-
+//------------------------------------------------------------------------
+// genFindHighestBit:  Return the highest bit that is set (that is, a mask that includes just the
+//                     highest bit).
+//
+// Return Value:
+//    The highest position (0 is LSB) of bit that is set in the 'value'.
+//
+// Note:
+//    It performs the "LeadingZeroCount " operation using intrinsics and then mask out everything
+//    but the highest bit.
 inline unsigned int genFindHighestBit(unsigned int mask)
 {
     assert(mask != 0);
-    unsigned int bit = 1U << ((sizeof(unsigned int) * 8) - 1); // start looking at the top
-    while ((bit & mask) == 0)
-    {
-        bit >>= 1;
-    }
-    return bit;
-}
-
-inline unsigned __int64 genFindHighestBit(unsigned __int64 mask)
-{
-    assert(mask != 0);
-    unsigned __int64 bit = 1ULL << ((sizeof(unsigned __int64) * 8) - 1); // start looking at the top
-    while ((bit & mask) == 0)
-    {
-        bit >>= 1;
-    }
-    return bit;
-}
-
-#if 0
-// TODO-ARM64-Cleanup: These should probably be the implementation, when intrin.h is updated for ARM64
-inline
-unsigned int genFindHighestBit(unsigned int mask)
-{
-    assert(mask != 0);
+#if defined(_MSC_VER)
+    unsigned long index;
+#else
     unsigned int index;
-    _BitScanReverse(&index, mask);
+#endif
+    BitScanReverse(&index, mask);
     return 1L << index;
 }
 
-inline
-unsigned __int64 genFindHighestBit(unsigned __int64 mask)
+//------------------------------------------------------------------------
+// genFindHighestBit:  Return the highest bit that is set (that is, a mask that includes just the
+//                     highest bit).
+//
+// Return Value:
+//    The highest position (0 is LSB) of bit that is set in the 'value'.
+//
+// Note:
+//    It performs the "LeadingZeroCount " operation using intrinsics and then mask out everything
+//    but the highest bit.
+inline unsigned __int64 genFindHighestBit(unsigned __int64 mask)
 {
     assert(mask != 0);
+#if defined(_MSC_VER)
+    unsigned long index;
+#else
     unsigned int index;
-    _BitScanReverse64(&index, mask);
+#endif
+    BitScanReverse64(&index, mask);
     return 1LL << index;
 }
-#endif // 0
 
 /*****************************************************************************
 *
@@ -222,8 +215,11 @@ inline unsigned uhi32(unsigned __int64 value)
 
 inline unsigned genLog2(unsigned __int64 value)
 {
-    unsigned lo32 = ulo32(value);
-    unsigned hi32 = uhi32(value);
+#ifdef HOST_64BIT
+    return BitPosition(value);
+#else // HOST_32BIT
+    unsigned     lo32 = ulo32(value);
+    unsigned     hi32 = uhi32(value);
 
     if (lo32 != 0)
     {
@@ -234,6 +230,7 @@ inline unsigned genLog2(unsigned __int64 value)
     {
         return genLog2(hi32) + 32;
     }
+#endif
 }
 
 /*****************************************************************************
@@ -905,9 +902,8 @@ inline GenTree* Compiler::gtNewLargeOperNode(genTreeOps oper, var_types type, Ge
  *  that may need to be fixed up).
  */
 
-inline GenTree* Compiler::gtNewIconHandleNode(size_t value, GenTreeFlags flags, FieldSeqNode* fields)
+inline GenTreeIntCon* Compiler::gtNewIconHandleNode(size_t value, GenTreeFlags flags, FieldSeqNode* fields)
 {
-    GenTree* node;
     assert((flags & (GTF_ICON_HDL_MASK | GTF_ICON_FIELD_OFF)) != 0);
 
     // Interpret "fields == NULL" as "not a field."
@@ -916,6 +912,7 @@ inline GenTree* Compiler::gtNewIconHandleNode(size_t value, GenTreeFlags flags, 
         fields = FieldSeqStore::NotAField();
     }
 
+    GenTreeIntCon* node;
 #if defined(LATE_DISASM)
     node = new (this, LargeOpOpcode()) GenTreeIntCon(TYP_I_IMPL, value, fields DEBUGARG(/*largeNode*/ true));
 #else
@@ -1126,19 +1123,16 @@ inline GenTreeField* Compiler::gtNewFieldRef(var_types type, CORINFO_FIELD_HANDL
         LclVarDsc* varDsc = lvaGetDesc(obj->AsUnOp()->gtOp1->AsLclVarCommon());
 
         varDsc->lvFieldAccessed = 1;
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
-        // These structs are passed by reference and can easily become global
-        // references if those references are exposed. We clear out
-        // address-exposure information for these parameters when they are
-        // converted into references in fgRetypeImplicitByRefArgs() so we do
-        // not have the necessary information in morph to know if these
-        // indirections are actually global references, so we have to be
-        // conservative here.
-        if (varDsc->lvIsParam)
+
+        if (lvaIsImplicitByRefLocal(lvaGetLclNum(varDsc)))
         {
+            // These structs are passed by reference and can easily become global references if those
+            // references are exposed. We clear out address-exposure information for these parameters
+            // when they are converted into references in fgRetypeImplicitByRefArgs() so we do not have
+            // the necessary information in morph to know if these indirections are actually global
+            // references, so we have to be conservative here.
             fieldNode->gtFlags |= GTF_GLOB_REF;
         }
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     }
     else
     {
@@ -1148,16 +1142,48 @@ inline GenTreeField* Compiler::gtNewFieldRef(var_types type, CORINFO_FIELD_HANDL
     return fieldNode;
 }
 
-/*****************************************************************************
- *
- *  A little helper to create an array index node.
- */
-
-inline GenTree* Compiler::gtNewIndexRef(var_types typ, GenTree* arrayOp, GenTree* indexOp)
+inline GenTreeIndexAddr* Compiler::gtNewIndexAddr(GenTree*             arrayOp,
+                                                  GenTree*             indexOp,
+                                                  var_types            elemType,
+                                                  CORINFO_CLASS_HANDLE elemClassHandle,
+                                                  unsigned             firstElemOffset,
+                                                  unsigned             lengthOffset)
 {
-    GenTreeIndex* gtIndx = new (this, GT_INDEX) GenTreeIndex(typ, arrayOp, indexOp, genTypeSize(typ));
+    unsigned elemSize =
+        (elemType == TYP_STRUCT) ? info.compCompHnd->getClassSize(elemClassHandle) : genTypeSize(elemType);
 
-    return gtIndx;
+    GenTreeIndexAddr* indexAddr = new (this, GT_INDEX_ADDR)
+        GenTreeIndexAddr(arrayOp, indexOp, elemType, elemClassHandle, elemSize, lengthOffset, firstElemOffset);
+
+    return indexAddr;
+}
+
+inline GenTreeIndexAddr* Compiler::gtNewArrayIndexAddr(GenTree*             arrayOp,
+                                                       GenTree*             indexOp,
+                                                       var_types            elemType,
+                                                       CORINFO_CLASS_HANDLE elemClassHandle)
+{
+    unsigned lengthOffset    = OFFSETOF__CORINFO_Array__length;
+    unsigned firstElemOffset = OFFSETOF__CORINFO_Array__data;
+
+    return gtNewIndexAddr(arrayOp, indexOp, elemType, elemClassHandle, firstElemOffset, lengthOffset);
+}
+
+inline GenTreeIndir* Compiler::gtNewIndexIndir(GenTreeIndexAddr* indexAddr)
+{
+    GenTreeIndir* index;
+    if (varTypeIsStruct(indexAddr->gtElemType))
+    {
+        index = gtNewObjNode(indexAddr->gtStructElemClass, indexAddr);
+    }
+    else
+    {
+        index = gtNewIndir(indexAddr->gtElemType, indexAddr);
+    }
+
+    index->gtFlags |= GTF_GLOB_REF;
+
+    return index;
 }
 
 //------------------------------------------------------------------------------
@@ -1341,6 +1367,7 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     {
         case GT_CNS_INT:
             AsIntCon()->gtFieldSeq = FieldSeqStore::NotAField();
+            INDEBUG(AsIntCon()->gtTargetHandle = 0);
             break;
 #if defined(TARGET_ARM)
         case GT_MUL_LONG:
@@ -1351,7 +1378,7 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 #endif
         case GT_LCL_FLD:
             AsLclFld()->SetLclOffs(0);
-            AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());
+            AsLclFld()->SetLayout(nullptr);
             break;
 
         case GT_CALL:
@@ -1850,10 +1877,10 @@ inline void LclVarDsc::incRefCnts(weight_t weight, Compiler* comp, RefCountState
 
             bool doubleWeight = lvIsTemp;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if FEATURE_IMPLICIT_BYREFS
             // and, for the time being, implicit byref params
             doubleWeight |= lvIsImplicitByRef;
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#endif // FEATURE_IMPLICIT_BYREFS
 
             if (doubleWeight && (weight * 2 > weight))
             {
@@ -4205,6 +4232,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_CNS_LNG:
         case GT_CNS_DBL:
         case GT_CNS_STR:
+        case GT_CNS_VEC:
         case GT_MEMORYBARRIER:
         case GT_JMP:
         case GT_JCC:
@@ -4582,7 +4610,7 @@ inline unsigned short LclVarDsc::lvRefCnt(RefCountState state) const
 //    state: the requestor's expected ref count state; defaults to RCS_NORMAL
 //
 // Notes:
-//    It is currently the caller's responsibilty to ensure this increment
+//    It is currently the caller's responsibility to ensure this increment
 //    will not cause overflow.
 
 inline void LclVarDsc::incLvRefCnt(unsigned short delta, RefCountState state)
@@ -4656,7 +4684,7 @@ inline weight_t LclVarDsc::lvRefCntWtd(RefCountState state) const
 //    state: the requestor's expected ref count state; defaults to RCS_NORMAL
 //
 // Notes:
-//    It is currently the caller's responsibilty to ensure this increment
+//    It is currently the caller's responsibility to ensure this increment
 //    will not cause overflow.
 
 inline void LclVarDsc::incLvRefCntWtd(weight_t delta, RefCountState state)

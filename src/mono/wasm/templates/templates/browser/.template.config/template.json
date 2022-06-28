@@ -5,6 +5,7 @@
   "identity": "WebAssembly.Browser",
   "name": "WebAssembly Browser App",
   "shortName": "wasmbrowser",
+  "sourceName": "browser.0",
   "tags": {
     "language": "C#",
     "type": "project"

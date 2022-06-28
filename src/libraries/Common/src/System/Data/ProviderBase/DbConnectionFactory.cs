@@ -144,7 +144,7 @@ namespace System.Data.ProviderBase
         private static Task<DbConnectionInternal?> GetCompletedTask()
         {
             Debug.Assert(Monitor.IsEntered(s_pendingOpenNonPooled), $"Expected {nameof(s_pendingOpenNonPooled)} lock to be held.");
-            return s_completedTask ?? (s_completedTask = Task.FromResult<DbConnectionInternal?>(null));
+            return s_completedTask ??= Task.FromResult<DbConnectionInternal?>(null);
         }
 
         private DbConnectionPool? GetConnectionPool(DbConnection owningObject, DbConnectionPoolGroup connectionPoolGroup)

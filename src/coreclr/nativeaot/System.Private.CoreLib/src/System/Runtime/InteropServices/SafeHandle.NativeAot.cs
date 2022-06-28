@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.ConstrainedExecution;
 
 namespace System.Runtime.InteropServices
 {
-    public abstract partial class SafeHandle
+    public abstract partial class SafeHandle : CriticalFinalizerObject, IDisposable
     {
         // The handle cannot be closed until we are sure that no other objects might
         // be using it.  In the case of finalization, there may be other objects in
@@ -24,11 +25,12 @@ namespace System.Runtime.InteropServices
         // finalization cycle, but should be released in the next.
         //
         // This has the effect of delaying cleanup for much longer than would have
-        // happened on the CLR.  This also means that we may not close some handles
+        // happened on the CLR, which is an observable behavior change.
+        // This also means that we may not close some handles
         // at shutdown, since there may not be another finalization cycle to run
         // the delayed finalizer.  If either of these end up being a problem, we should
-        // consider adding more control over finalization order to MRT (or, better,
-        // turning over control of finalization ordering to System.Private.CoreLib).
+        // consider implementing MethodTable::HasCriticalFinalizer
+        // Same applies to `CriticalHandle`
 
         private sealed class DelayedFinalizer
         {

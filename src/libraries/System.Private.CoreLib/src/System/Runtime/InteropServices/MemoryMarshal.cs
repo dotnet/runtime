@@ -77,13 +77,13 @@ namespace System.Runtime.InteropServices
         /// Returns a reference to the 0th element of the Span. If the Span is empty, returns a reference to the location where the 0th element
         /// would have been stored. Such a reference may or may not be null. It can be used for pinning but must never be dereferenced.
         /// </summary>
-        public static ref T GetReference<T>(Span<T> span) => ref span._reference.Value;
+        public static ref T GetReference<T>([LifetimeAnnotation(false, true)] Span<T> span) => ref span._reference.Value;
 
         /// <summary>
         /// Returns a reference to the 0th element of the ReadOnlySpan. If the ReadOnlySpan is empty, returns a reference to the location where the 0th element
         /// would have been stored. Such a reference may or may not be null. It can be used for pinning but must never be dereferenced.
         /// </summary>
-        public static ref T GetReference<T>(ReadOnlySpan<T> span) => ref span._reference.Value;
+        public static ref T GetReference<T>([LifetimeAnnotation(false, true)] ReadOnlySpan<T> span) => ref span._reference.Value;
 
         /// <summary>
         /// Returns a reference to the 0th element of the Span. If the Span is empty, returns a reference to fake non-null pointer. Such a reference can be used
@@ -219,7 +219,7 @@ namespace System.Runtime.InteropServices
         /// <returns>A span representing the specified reference and length.</returns>
         /// <remarks>The lifetime of the returned span will not be validated for safety by span-aware languages.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Span<T> CreateSpan<T>(ref T reference, int length) => new Span<T>(ref reference, length);
+        public static Span<T> CreateSpan<T>([LifetimeAnnotation(true, false)] ref T reference, int length) => new Span<T>(ref reference, length);
 
         /// <summary>
         /// Creates a new read-only span over a portion of a regular managed object. This can be useful
@@ -231,7 +231,7 @@ namespace System.Runtime.InteropServices
         /// <returns>A read-only span representing the specified reference and length.</returns>
         /// <remarks>The lifetime of the returned span will not be validated for safety by span-aware languages.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<T> CreateReadOnlySpan<T>(ref T reference, int length) => new ReadOnlySpan<T>(ref reference, length);
+        public static ReadOnlySpan<T> CreateReadOnlySpan<T>([LifetimeAnnotation(true, false)] ref T reference, int length) => new ReadOnlySpan<T>(ref reference, length);
 
         /// <summary>Creates a new read-only span for a null-terminated string.</summary>
         /// <param name="value">The pointer to the null-terminated string of characters.</param>
@@ -315,7 +315,7 @@ namespace System.Runtime.InteropServices
         /// If unable to get the <typeparamref name="TManager"/> type, returns false.
         /// </summary>
         /// <typeparam name="T">The element type of the <paramref name="memory" />.</typeparam>
-        /// <typeparam name="TManager">The type of <see cref="MemoryManager{T}"/> to try and retrive.</typeparam>
+        /// <typeparam name="TManager">The type of <see cref="MemoryManager{T}"/> to try and retrieve.</typeparam>
         /// <param name="memory">The memory to get the manager for.</param>
         /// <param name="manager">The returned manager of the <see cref="ReadOnlyMemory{T}"/>.</param>
         /// <returns>A <see cref="bool"/> indicating if it was successful.</returns>
@@ -334,7 +334,7 @@ namespace System.Runtime.InteropServices
         /// If unable to get the <typeparamref name="TManager"/> type, returns false.
         /// </summary>
         /// <typeparam name="T">The element type of the <paramref name="memory" />.</typeparam>
-        /// <typeparam name="TManager">The type of <see cref="MemoryManager{T}"/> to try and retrive.</typeparam>
+        /// <typeparam name="TManager">The type of <see cref="MemoryManager{T}"/> to try and retrieve.</typeparam>
         /// <param name="memory">The memory to get the manager for.</param>
         /// <param name="manager">The returned manager of the <see cref="ReadOnlyMemory{T}"/>.</param>
         /// <param name="start">The offset from the start of the <paramref name="manager" /> that the <paramref name="memory" /> represents.</param>

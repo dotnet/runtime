@@ -1179,7 +1179,9 @@ void MDInfo::DisplayParamInfo(mdParamDef inParamDef)
                             &nameLen, &flags, &dwCPlusFlags, &pValue, &cbValue);
     if (FAILED(hr)) Error("GetParamProps failed.", hr);
 
+#ifdef FEATURE_COMINTEROP
     _FillVariant((BYTE)dwCPlusFlags, pValue, cbValue, &defValue);
+#endif
 
     char sFlags[STRING_BUFFER_LEN];
     sFlags[0] = 0;
@@ -1379,7 +1381,7 @@ LPCWSTR MDInfo::TypeDefName(mdTypeDef inTypeDef, _Out_writes_(bufLen) LPWSTR buf
         NULL);                  // [OUT] Put base class TypeDef/TypeRef here.
     if (FAILED(hr))
     {
-        swprintf_s(buffer, bufLen, W("[Invalid TypeDef]"));
+        wcscpy_s(buffer, bufLen, W("[Invalid TypeDef]"));
     }
 
     return buffer;
@@ -1451,7 +1453,7 @@ LPCWSTR MDInfo::TypeRefName(mdTypeRef tr, _Out_writes_(bufLen) LPWSTR buffer, UL
         NULL);              // Put actual size of name here.
     if (FAILED(hr))
     {
-        swprintf_s(buffer, bufLen, W("[Invalid TypeRef]"));
+        wcscpy_s(buffer, bufLen, W("[Invalid TypeRef]"));
     }
 
     return (buffer);
@@ -2950,7 +2952,7 @@ void MDInfo::DisplayCorNativeLink(COR_NATIVE_LINK *pCorNLnk, const char *preFix)
 // Fills given varaint with value given in pValue and of type in bCPlusTypeFlag
 //
 // Taken from MetaInternal.cpp
-
+#ifdef FEATURE_COMINTEROP
 HRESULT _FillVariant(
     BYTE        bCPlusTypeFlag,
     const void  *pValue,
@@ -3043,6 +3045,7 @@ HRESULT _FillVariant(
 
     return hr;
 } // HRESULT _FillVariant()
+#endif // FEATURE_COMINTEROP
 
 void MDInfo::DisplayAssembly()
 {

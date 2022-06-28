@@ -57,6 +57,9 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="Arg_HexStyleNotSupported" xml:space="preserve">
+    <value>The number style AllowHexSpecifier is not supported on floating point data types.</value>
+  </data>
   <data name="Argument_BadFormatSpecifier" xml:space="preserve">
     <value>Format specifier was invalid.</value>
   </data>
@@ -96,11 +99,17 @@
   <data name="Overflow_Int64" xml:space="preserve">
     <value>Value was either too large or too small for an Int64.</value>
   </data>
+  <data name="Overflow_Int128" xml:space="preserve">
+    <value>Value was either too large or too small for an Int128.</value>
+  </data>
   <data name="Overflow_UInt32" xml:space="preserve">
     <value>Value was either too large or too small for a UInt32.</value>
   </data>
   <data name="Overflow_UInt64" xml:space="preserve">
     <value>Value was either too large or too small for a UInt64.</value>
+  </data>
+  <data name="Overflow_UInt128" xml:space="preserve">
+    <value>Value was either too large or too small for a UInt128.</value>
   </data>
   <data name="Overflow_Decimal" xml:space="preserve">
     <value>Value was either too large or too small for a Decimal.</value>

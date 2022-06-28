@@ -39,9 +39,6 @@ namespace System
         private static int s_windowHeight;  // Cached WindowHeight, invalid when s_windowWidth == -1.
         private static int s_invalidateCachedSettings = 1; // Tracks whether we should invalidate the cached settings.
 
-        /// <summary>Whether to output ansi color strings.</summary>
-        private static volatile int s_emitAnsiColorCodes = -1;
-
         public static Stream OpenStandardInput()
         {
             return new UnixConsoleStream(Interop.CheckIo(Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDIN_FILENO)), FileAccess.Read,
@@ -629,7 +626,7 @@ namespace System
                     for (int i = startExclusive + 1; i < endExclusive; i++)
                     {
                         byte b = source[i];
-                        if (IsDigit(b))
+                        if (char.IsAsciiDigit((char)b))
                         {
                             try
                             {
@@ -674,9 +671,6 @@ namespace System
         {
             throw new PlatformNotSupportedException();
         }
-
-        /// <summary>Gets whether the specified character is a digit 0-9.</summary>
-        private static bool IsDigit(byte c) => c >= '0' && c <= '9';
 
         /// <summary>
         /// Gets whether the specified file descriptor was redirected.
@@ -773,7 +767,7 @@ namespace System
             // Changing the color involves writing an ANSI character sequence out to the output stream.
             // We only want to do this if we know that sequence will be interpreted by the output.
             // rather than simply displayed visibly.
-            if (!EmitAnsiColorCodes)
+            if (!ConsoleUtils.EmitAnsiColorCodes)
             {
                 return;
             }
@@ -835,49 +829,9 @@ namespace System
         /// <summary>Writes out the ANSI string to reset colors.</summary>
         private static void WriteResetColorString()
         {
-            if (EmitAnsiColorCodes)
+            if (ConsoleUtils.EmitAnsiColorCodes)
             {
                 WriteStdoutAnsiString(TerminalFormatStrings.Instance.Reset);
-            }
-        }
-
-        /// <summary>Get whether to emit ANSI color codes.</summary>
-        private static bool EmitAnsiColorCodes
-        {
-            get
-            {
-                // The flag starts at -1.  If it's no longer -1, it's 0 or 1 to represent false or true.
-                int emitAnsiColorCodes = s_emitAnsiColorCodes;
-                if (emitAnsiColorCodes != -1)
-                {
-                    return Convert.ToBoolean(emitAnsiColorCodes);
-                }
-
-                // We've not yet computed whether to emit codes or not.  Do so now.  We may race with
-                // other threads, and that's ok; this is idempotent unless someone is currently changing
-                // the value of the relevant environment variables, in which case behavior here is undefined.
-
-                // By default, we emit ANSI color codes if output isn't redirected, and suppress them if output is redirected.
-                bool enabled = !Console.IsOutputRedirected;
-
-                if (enabled)
-                {
-                    // We subscribe to the informal standard from https://no-color.org/.  If we'd otherwise emit
-                    // ANSI color codes but the NO_COLOR environment variable is set, disable emitting them.
-                    enabled = Environment.GetEnvironmentVariable("NO_COLOR") is null;
-                }
-                else
-                {
-                    // We also support overriding in the other direction.  If we'd otherwise avoid emitting color
-                    // codes but the DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION environment variable is
-                    // set to 1 or true, enable color.
-                    string? envVar = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION");
-                    enabled = envVar is not null && (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase));
-                }
-
-                // Store and return the computed answer.
-                s_emitAnsiColorCodes = Convert.ToInt32(enabled);
-                return enabled;
             }
         }
 

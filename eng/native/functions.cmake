@@ -175,6 +175,10 @@ function(find_unwind_libs UnwindLibs)
       find_library(UNWIND_ARCH NAMES unwind-s390x)
     endif()
 
+    if(CLR_CMAKE_HOST_ARCH_POWERPC64)
+      find_library(UNWIND_ARCH NAMES unwind-ppc64le)
+    endif()
+
     if(NOT UNWIND_ARCH STREQUAL UNWIND_ARCH-NOTFOUND)
        set(UNWIND_LIBS ${UNWIND_ARCH})
     endif()
@@ -390,11 +394,12 @@ function(strip_symbols targetName outputFilename)
         message(FATAL_ERROR "strip not found")
       endif()
 
+      set(strip_command ${STRIP} -no_code_signature_warning -S ${strip_source_file})
+
+      # codesign release build
       string(TOLOWER "${CMAKE_BUILD_TYPE}" LOWERCASE_CMAKE_BUILD_TYPE)
       if (LOWERCASE_CMAKE_BUILD_TYPE STREQUAL release)
-        set(strip_command ${STRIP} -no_code_signature_warning -S ${strip_source_file} && codesign -f -s - ${strip_source_file})
-      else ()
-        set(strip_command)
+        set(strip_command ${strip_command} && codesign -f -s - ${strip_source_file})
       endif ()
 
       execute_process(

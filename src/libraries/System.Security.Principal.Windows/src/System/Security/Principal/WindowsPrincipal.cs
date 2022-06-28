@@ -4,6 +4,7 @@
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.Security.Claims;
 
 namespace System.Security.Principal
@@ -152,7 +153,7 @@ namespace System.Security.Principal
                                                   (uint)TokenImpersonationLevel.Identification,
                                                   (uint)TokenType.TokenImpersonation,
                                                   ref token))
-                    throw new SecurityException(new Win32Exception().Message);
+                    throw new SecurityException(Marshal.GetLastPInvokeErrorMessage());
             }
 
             bool isMember = false;
@@ -161,7 +162,7 @@ namespace System.Security.Principal
             if (!Interop.Advapi32.CheckTokenMembership((_identity.ImpersonationLevel != TokenImpersonationLevel.None ? _identity.AccessToken : token),
                                                   sid.BinaryForm,
                                                   ref isMember))
-                throw new SecurityException(new Win32Exception().Message);
+                throw new SecurityException(Marshal.GetLastPInvokeErrorMessage());
 
             token.Dispose();
             return isMember;

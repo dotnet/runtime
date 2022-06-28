@@ -335,25 +335,25 @@ namespace R2RDump
             }
 
             bool haveQuery = false;
-            if (_options.Section != null)
+            if (_options.Section.Length > 0)
             {
                 haveQuery = true;
                 QuerySection(r2r, _options.Section);
             }
 
-            if (_options.RuntimeFunction != null)
+            if (_options.RuntimeFunction.Length > 0)
             {
                 haveQuery = true;
                 QueryRuntimeFunction(r2r, _options.RuntimeFunction);
             }
 
-            if (_options.Query != null)
+            if (_options.Query.Length > 0)
             {
                 haveQuery = true;
                 QueryMethod(r2r, "R2R Methods by Query", _options.Query, true);
             }
 
-            if (_options.Keyword != null)
+            if (_options.Keyword.Length > 0)
             {
                 haveQuery = true;
                 QueryMethod(r2r, "R2R Methods by Keyword", _options.Keyword, false);
@@ -561,7 +561,7 @@ namespace R2RDump
 
             try
             {
-                if (_options.In == null || _options.In.Length == 0)
+                if (_options.In.Length == 0)
                     throw new ArgumentException("Input filename must be specified (--in <file>)");
 
                 if (_options.Diff && _options.In.Length < 2)

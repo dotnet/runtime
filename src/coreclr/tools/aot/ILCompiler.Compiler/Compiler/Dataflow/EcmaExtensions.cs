@@ -22,7 +22,7 @@ namespace ILCompiler.Dataflow
         public static bool IsPublic(this FieldDesc field)
         {
             return field.GetTypicalFieldDefinition() is EcmaField ecmaField
-                && (ecmaField.Attributes & FieldAttributes.FieldAccessMask) == FieldAttributes.Public;  
+                && (ecmaField.Attributes & FieldAttributes.FieldAccessMask) == FieldAttributes.Public;
         }
 
         public static bool IsPrivate(this MethodDesc method)
@@ -60,25 +60,6 @@ namespace ILCompiler.Dataflow
             mdType = mdType.MetadataBaseType;
             if (mdType != null)
                 return GetProperty(mdType, name, signature);
-
-            return null;
-        }
-
-        public static PropertyPseudoDesc GetPropertyForAccessor(this MethodDesc accessor)
-        {
-            var ecmaAccessor = (EcmaMethod)accessor.GetTypicalMethodDefinition();
-            var type = (EcmaType)ecmaAccessor.OwningType;
-            var reader = type.MetadataReader;
-            var module = type.EcmaModule;
-            foreach (var propertyHandle in reader.GetTypeDefinition(type.Handle).GetProperties())
-            {
-                var accessors = reader.GetPropertyDefinition(propertyHandle).GetAccessors();
-                if (ecmaAccessor.Handle == accessors.Getter
-                    || ecmaAccessor.Handle == accessors.Setter)
-                {
-                    return new PropertyPseudoDesc(type, propertyHandle);
-                }
-            }
 
             return null;
         }

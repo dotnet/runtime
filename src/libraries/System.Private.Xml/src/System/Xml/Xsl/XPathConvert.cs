@@ -428,7 +428,7 @@ namespace System.Xml.Xsl
                     w2 = 32 - w1;
                     _u2 = (_u2 << w1) | (_u1 >> w2);
                     _u1 = (_u1 << w1) | (_u0 >> w2);
-                    _u0 = (_u0 << w1);
+                    _u0 <<= w1;
                     _exp -= w1;
                 }
             }

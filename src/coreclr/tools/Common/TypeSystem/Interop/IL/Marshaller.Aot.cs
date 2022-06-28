@@ -182,7 +182,7 @@ namespace Internal.TypeSystem.Interop
         internal override void EmitElementCleanup(ILCodeStream codeStream, ILEmitter emitter)
         {
             codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                                Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
+                                InteropTypes.GetMarshal(Context).GetKnownMethod("FreeCoTaskMem", null)));
         }
 
         protected override void AllocNativeToManaged(ILCodeStream codeStream)
@@ -240,9 +240,10 @@ namespace Internal.TypeSystem.Interop
 
         protected override void EmitCleanupManaged(ILCodeStream codeStream)
         {
+            ILEmitter emitter = _ilCodeStreams.Emitter;
             LoadNativeValue(codeStream);
-            codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
-                                Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(
+                                InteropTypes.GetMarshal(Context).GetKnownMethod("FreeCoTaskMem", null)));
         }
     }
 

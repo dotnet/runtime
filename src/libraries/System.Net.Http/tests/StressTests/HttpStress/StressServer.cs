@@ -118,9 +118,9 @@ namespace HttpStress
                         else
                         {
                             listenOptions.Protocols =
-                                configuration.HttpVersion ==  HttpVersion.Version20 ?
+                                configuration.HttpVersion == HttpVersion.Version20 ?
                                 HttpProtocols.Http2 :
-                                HttpProtocols.Http1 ;
+                                HttpProtocols.Http1;
                         }
                     }
                 });
@@ -139,7 +139,8 @@ namespace HttpStress
                     try
                     {
                         File.Delete(filename);
-                    } catch {}
+                    }
+                    catch { }
                 }
 
                 loggerConfiguration = loggerConfiguration

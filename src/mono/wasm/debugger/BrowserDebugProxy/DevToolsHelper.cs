@@ -301,6 +301,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public static MonoCommands GetLoadedFiles(int runtimeId) => new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_get_loaded_files()");
 
+        public static MonoCommands SetDebuggerAttached(int runtimeId) => new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_debugger_attached()");
+
         public static MonoCommands SendDebuggerAgentCommand(int runtimeId, int id, int command_set, int command, string command_parameters)
         {
             return new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_send_dbg_command ({id}, {command_set}, {command},'{command_parameters}')");
@@ -399,11 +401,12 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal class ExecutionContext
     {
-        public ExecutionContext(MonoSDBHelper sdbAgent, int id, object auxData)
+        public ExecutionContext(MonoSDBHelper sdbAgent, int id, object auxData, PauseOnExceptionsKind pauseOnExceptions)
         {
             Id = id;
             AuxData = auxData;
             SdbAgent = sdbAgent;
+            PauseOnExceptions = pauseOnExceptions;
         }
 
         public string DebugId { get; set; }
@@ -435,6 +438,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private Dictionary<int, PerScopeCache> perScopeCaches { get; } = new Dictionary<int, PerScopeCache>();
 
         internal int TempBreakpointForSetNextIP { get; set; }
+        internal bool FirstBreakpoint { get; set; }
 
         public DebugStore Store
         {
@@ -470,6 +474,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public Dictionary<string, JObject> Locals { get; } = new Dictionary<string, JObject>();
         public Dictionary<string, JObject> MemberReferences { get; } = new Dictionary<string, JObject>();
         public Dictionary<string, JObject> ObjectFields { get; } = new Dictionary<string, JObject>();
+        public Dictionary<string, JObject> EvaluationResults { get; } = new();
         public PerScopeCache(JArray objectValues)
         {
             foreach (var objectValue in objectValues)

@@ -26,14 +26,10 @@ namespace System.Net.Http
         private long _streamId = -1; // A stream does not have an ID until the first I/O against it. This gets set almost immediately following construction.
         private QuicStream _stream;
         private ArrayBuffer _sendBuffer;
-        private readonly ReadOnlyMemory<byte>[] _gatheredSendBuffer = new ReadOnlyMemory<byte>[2];
         private ArrayBuffer _recvBuffer;
         private TaskCompletionSource<bool>? _expect100ContinueCompletionSource; // True indicates we should send content (e.g. received 100 Continue).
         private bool _disposed;
-
-        private CancellationTokenSource? _goawayCancellationSource;
-        private CancellationToken _goawayCancellationToken;
-        private CancellationTokenSource? _sendContentCts;
+        private CancellationTokenSource _requestBodyCancellationSource;
 
         // Allocated when we receive a :status header.
         private HttpResponseMessage? _response;
@@ -76,8 +72,7 @@ namespace System.Net.Http
             _headerBudgetRemaining = connection.Pool.Settings._maxResponseHeadersLength * 1024L; // _maxResponseHeadersLength is in KiB.
             _headerDecoder = new QPackDecoder(maxHeadersLength: (int)Math.Min(int.MaxValue, _headerBudgetRemaining));
 
-            _goawayCancellationSource = new CancellationTokenSource();
-            _goawayCancellationToken = _goawayCancellationSource.Token;
+            _requestBodyCancellationSource = new CancellationTokenSource();
         }
 
         public void Dispose()
@@ -108,16 +103,11 @@ namespace System.Net.Http
 
             _sendBuffer.Dispose();
             _recvBuffer.Dispose();
-
-            // Dispose() might be called concurrently with GoAway(), we need to make sure to not Dispose/Cancel the CTS concurrently.
-            Interlocked.Exchange(ref _goawayCancellationSource, null)?.Dispose();
         }
 
         public void GoAway()
         {
-            // Dispose() might be called concurrently with GoAway(), we need to make sure to not Dispose/Cancel the CTS concurrently.
-            using CancellationTokenSource? cts = Interlocked.Exchange(ref _goawayCancellationSource, null);
-            cts?.Cancel();
+            _requestBodyCancellationSource.Cancel();
         }
 
         public async Task<HttpResponseMessage> SendAsync(CancellationToken cancellationToken)
@@ -125,10 +115,13 @@ namespace System.Net.Http
             // If true, dispose the stream upon return. Will be set to false if we're duplex or returning content.
             bool disposeSelf = true;
 
-            // Link the input token with _resetCancellationTokenSource, so cancellation will trigger on GoAway() or Abort().
-            using CancellationTokenSource requestCancellationSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _goawayCancellationToken);
-            CancellationTokenRegistration sendContentCancellationRegistration = default;
+            bool duplex = _request.Content != null && _request.Content.AllowDuplex;
 
+            // Link the input token with _requestBodyCancellationSource, so cancellation will trigger on GoAway() or Abort().
+            CancellationTokenRegistration linkedTokenRegistration = cancellationToken.UnsafeRegister(cts => ((CancellationTokenSource)cts!).Cancel(), _requestBodyCancellationSource);
+
+            // upon failure, we should cancel the _requestBodyCancellationSource
+            bool shouldCancelBody = true;
             try
             {
                 BufferHeaders(_request);
@@ -147,28 +140,13 @@ namespace System.Net.Http
 
                     // End the stream writing if there's no content to send, do it as part of the write so that the FIN flag isn't send in an empty QUIC frame.
                     // Note that there's no need to call Shutdown separately since the FIN flag in the last write is the same thing.
-                    await FlushSendBufferAsync(endStream: _request.Content == null, requestCancellationSource.Token).ConfigureAwait(false);
+                    await FlushSendBufferAsync(endStream: _request.Content == null, _requestBodyCancellationSource.Token).ConfigureAwait(false);
                 }
 
                 Task sendContentTask;
                 if (_request.Content != null)
                 {
-                    // If using duplex content, the content will continue sending after this method completes.
-                    // So, only observe the cancellation token during this method.
-                    CancellationToken sendContentCancellationToken;
-                    if (requestCancellationSource.Token.CanBeCanceled)
-                    {
-                        _sendContentCts = new CancellationTokenSource();
-                        sendContentCancellationToken = _sendContentCts.Token;
-                        sendContentCancellationRegistration = requestCancellationSource.Token.UnsafeRegister(
-                            static s => ((CancellationTokenSource)s!).Cancel(), _sendContentCts);
-                    }
-                    else
-                    {
-                        sendContentCancellationToken = default;
-                    }
-
-                    sendContentTask = SendContentAsync(_request.Content!, sendContentCancellationToken);
+                    sendContentTask = SendContentAsync(_request.Content!, _requestBodyCancellationSource.Token);
                 }
                 else
                 {
@@ -177,7 +155,7 @@ namespace System.Net.Http
 
                 // In parallel, send content and read response.
                 // Depending on Expect 100 Continue usage, one will depend on the other making progress.
-                Task readResponseTask = ReadResponseAsync(requestCancellationSource.Token);
+                Task readResponseTask = ReadResponseAsync(_requestBodyCancellationSource.Token);
                 bool sendContentObserved = false;
 
                 // If we're not doing duplex, wait for content to finish sending here.
@@ -212,10 +190,6 @@ namespace System.Net.Http
                 // Wait for the response headers to be read.
                 await readResponseTask.ConfigureAwait(false);
 
-                // Now that we've received the response, we no longer need to observe GOAWAY.
-                // Use an atomic exchange to avoid a race to Cancel()/Dispose().
-                Interlocked.Exchange(ref _goawayCancellationSource, null)?.Dispose();
-
                 Debug.Assert(_response != null && _response.Content != null);
                 // Set our content stream.
                 var responseContent = (HttpConnectionResponseContent)_response.Content;
@@ -227,7 +201,7 @@ namespace System.Net.Http
                 if (useEmptyResponseContent)
                 {
                     // Drain the response frames to read any trailing headers.
-                    await DrainContentLength0Frames(requestCancellationSource.Token).ConfigureAwait(false);
+                    await DrainContentLength0Frames(_requestBodyCancellationSource.Token).ConfigureAwait(false);
                     responseContent.SetStream(EmptyReadStream.Instance);
                 }
                 else
@@ -250,6 +224,8 @@ namespace System.Net.Http
                 // If we're 100% done with the stream, dispose.
                 disposeSelf = useEmptyResponseContent;
 
+                // Success, don't cancel the body.
+                shouldCancelBody = false;
                 return response;
             }
             catch (QuicStreamAbortedException ex) when (ex.ErrorCode == (long)Http3ErrorCode.VersionFallback)
@@ -265,19 +241,17 @@ namespace System.Net.Http
             catch (QuicStreamAbortedException ex)
             {
                 // Our stream was reset.
-
                 Exception? abortException = _connection.AbortException;
                 throw new HttpRequestException(SR.net_http_client_execution_error, abortException ?? ex);
             }
             catch (QuicConnectionAbortedException ex)
             {
                 // Our connection was reset. Start shutting down the connection.
-
                 Exception abortException = _connection.Abort(ex);
                 throw new HttpRequestException(SR.net_http_client_execution_error, abortException);
             }
             // It is possible for user's Content code to throw an unexpected OperationCanceledException.
-            catch (OperationCanceledException ex) when (ex.CancellationToken == requestCancellationSource.Token || ex.CancellationToken == _sendContentCts?.Token)
+            catch (OperationCanceledException ex) when (ex.CancellationToken == _requestBodyCancellationSource.Token || ex.CancellationToken == cancellationToken)
             {
                 // We're either observing GOAWAY, or the cancellationToken parameter has been canceled.
                 if (cancellationToken.IsCancellationRequested)
@@ -287,7 +261,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    Debug.Assert(_goawayCancellationToken.IsCancellationRequested == true);
+                    Debug.Assert(_requestBodyCancellationSource.IsCancellationRequested);
                     throw new HttpRequestException(SR.net_http_request_aborted, ex, RequestRetryType.RetryOnConnectionFailure);
                 }
             }
@@ -308,7 +282,12 @@ namespace System.Net.Http
             }
             finally
             {
-                sendContentCancellationRegistration.Dispose();
+                if (shouldCancelBody)
+                {
+                    _requestBodyCancellationSource.Cancel();
+                }
+
+                linkedTokenRegistration.Dispose();
                 if (disposeSelf)
                 {
                     await DisposeAsync().ConfigureAwait(false);
@@ -446,9 +425,8 @@ namespace System.Net.Http
                     // Because we have a Content-Length, we can write it in a single DATA frame.
                     BufferFrameEnvelope(Http3FrameType.Data, remaining);
 
-                    _gatheredSendBuffer[0] = _sendBuffer.ActiveMemory;
-                    _gatheredSendBuffer[1] = buffer;
-                    await _stream.WriteAsync(_gatheredSendBuffer, cancellationToken).ConfigureAwait(false);
+                    await _stream.WriteAsync(_sendBuffer.ActiveMemory, cancellationToken).ConfigureAwait(false);
+                    await _stream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
 
                     _sendBuffer.Discard(_sendBuffer.ActiveLength);
 
@@ -466,9 +444,8 @@ namespace System.Net.Http
                 // It's up to the HttpContent to give us sufficiently large writes to avoid excessively small DATA frames.
                 BufferFrameEnvelope(Http3FrameType.Data, buffer.Length);
 
-                _gatheredSendBuffer[0] = _sendBuffer.ActiveMemory;
-                _gatheredSendBuffer[1] = buffer;
-                await _stream.WriteAsync(_gatheredSendBuffer, cancellationToken).ConfigureAwait(false);
+                await _stream.WriteAsync(_sendBuffer.ActiveMemory, cancellationToken).ConfigureAwait(false);
+                await _stream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
 
                 _sendBuffer.Discard(_sendBuffer.ActiveLength);
             }
@@ -1209,15 +1186,15 @@ namespace System.Net.Http
             switch (ex)
             {
                 // Peer aborted the stream
-                case QuicStreamAbortedException _:
+                case QuicStreamAbortedException:
                 // User aborted the stream
-                case QuicOperationAbortedException _:
+                case QuicOperationAbortedException:
                     throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));
-                case QuicConnectionAbortedException _:
+                case QuicConnectionAbortedException:
                     // Our connection was reset. Start aborting the connection.
                     Exception abortException = _connection.Abort(ex);
                     throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, abortException));
-                case Http3ConnectionException _:
+                case Http3ConnectionException:
                     // A connection-level protocol error has occurred on our stream.
                     _connection.Abort(ex);
                     throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));

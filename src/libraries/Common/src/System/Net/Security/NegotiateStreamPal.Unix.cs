@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Buffers;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -96,7 +97,7 @@ namespace System.Net.Security
             ChannelBinding? channelBinding,
             SafeGssNameHandle? targetName,
             Interop.NetSecurityNative.GssFlags inFlags,
-            byte[]? buffer,
+            ReadOnlySpan<byte> buffer,
             out byte[]? outputBuffer,
             out uint outFlags,
             out bool isNtlmUsed)
@@ -138,7 +139,6 @@ namespace System.Net.Security
                                                                       targetName,
                                                                       (uint)inFlags,
                                                                       buffer,
-                                                                      (buffer == null) ? 0 : buffer.Length,
                                                                       ref token,
                                                                       out outFlags,
                                                                       out isNtlmUsed);
@@ -152,7 +152,6 @@ namespace System.Net.Security
                                                                       targetName,
                                                                       (uint)inFlags,
                                                                       buffer,
-                                                                      (buffer == null) ? 0 : buffer.Length,
                                                                       ref token,
                                                                       out outFlags,
                                                                       out isNtlmUsed);
@@ -182,7 +181,7 @@ namespace System.Net.Security
         private static bool GssAcceptSecurityContext(
             ref SafeGssContextHandle? context,
             SafeGssCredHandle credential,
-            byte[]? buffer,
+            ReadOnlySpan<byte> buffer,
             out byte[] outputBuffer,
             out uint outFlags,
             out bool isNtlmUsed)
@@ -206,7 +205,6 @@ namespace System.Net.Security
                                                                     credential,
                                                                     ref context,
                                                                     buffer,
-                                                                    buffer?.Length ?? 0,
                                                                     ref token,
                                                                     out outFlags,
                                                                     out isNtlmUsed);
@@ -275,7 +273,7 @@ namespace System.Net.Security
           ChannelBinding? channelBinding,
           string? targetName,
           ContextFlagsPal inFlags,
-          byte[]? incomingBlob,
+          ReadOnlySpan<byte> incomingBlob,
           ref byte[]? resultBuffer,
           ref ContextFlagsPal outFlags)
         {
@@ -353,7 +351,7 @@ namespace System.Net.Security
             ref SafeDeleteContext? securityContext,
             string? spn,
             ContextFlagsPal requestedContextFlags,
-            byte[]? incomingBlob,
+            ReadOnlySpan<byte> incomingBlob,
             ChannelBinding? channelBinding,
             ref byte[]? resultBlob,
             ref ContextFlagsPal contextFlags)
@@ -375,16 +373,6 @@ namespace System.Net.Security
                 ref resultBlob,
                 ref contextFlags);
 
-            // Confidentiality flag should not be set if not requested
-            if (status.ErrorCode == SecurityStatusPalErrorCode.CompleteNeeded)
-            {
-                ContextFlagsPal mask = ContextFlagsPal.Confidentiality;
-                if ((requestedContextFlags & mask) != (contextFlags & mask))
-                {
-                    throw new PlatformNotSupportedException(SR.net_nego_protection_level_not_supported);
-                }
-            }
-
             return status;
         }
 
@@ -392,7 +380,7 @@ namespace System.Net.Security
             SafeFreeCredentials? credentialsHandle,
             ref SafeDeleteContext? securityContext,
             ContextFlagsPal requestedContextFlags,
-            byte[]? incomingBlob,
+            ReadOnlySpan<byte> incomingBlob,
             ChannelBinding? channelBinding,
             ref byte[] resultBlob,
             ref ContextFlagsPal contextFlags)
@@ -526,6 +514,12 @@ namespace System.Net.Security
                 throw new PlatformNotSupportedException(SR.net_ntlm_not_possible_default_cred);
             }
 
+            if (!ntlmOnly && !string.Equals(package, NegotiationInfoClass.Negotiate))
+            {
+                // Native shim currently supports only NTLM and Negotiate
+                throw new PlatformNotSupportedException(SR.net_securitypackagesupport);
+            }
+
             try
             {
                 return isEmptyCredential ?
@@ -618,21 +612,8 @@ namespace System.Net.Security
         internal static int MakeSignature(SafeDeleteContext securityContext, byte[] buffer, int offset, int count, [AllowNull] ref byte[] output)
         {
             SafeDeleteNegoContext gssContext = (SafeDeleteNegoContext)securityContext;
-            byte[] tempOutput = GssWrap(gssContext.GssContext, false, new ReadOnlySpan<byte>(buffer, offset, count));
-            // Create space for prefixing with the length
-            const int prefixLength = 4;
-            output = new byte[tempOutput.Length + prefixLength];
-            Array.Copy(tempOutput, 0, output, prefixLength, tempOutput.Length);
-            int resultSize = tempOutput.Length;
-            unchecked
-            {
-                output[0] = (byte)((resultSize) & 0xFF);
-                output[1] = (byte)(((resultSize) >> 8) & 0xFF);
-                output[2] = (byte)(((resultSize) >> 16) & 0xFF);
-                output[3] = (byte)(((resultSize) >> 24) & 0xFF);
-            }
-
-            return resultSize + 4;
+            output = GssWrap(gssContext.GssContext, false, new ReadOnlySpan<byte>(buffer, offset, count));
+            return output.Length;
         }
     }
 }

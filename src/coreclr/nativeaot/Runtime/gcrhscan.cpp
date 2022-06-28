@@ -50,9 +50,6 @@ void GCToEEInterface::GcScanRoots(EnumGcRefCallbackFunc * fn,  int condemned, in
             continue;
 
 #if !defined (ISOLATED_HEAPS)
-        // @TODO: it is very bizarre that this IsThreadUsingAllocationContextHeap takes a copy of the
-        // allocation context instead of a reference or a pointer to it. This seems very wasteful given how
-        // large the alloc_context is.
         if (!GCHeapUtilities::GetGCHeap()->IsThreadUsingAllocationContextHeap(pThread->GetAllocContext(),
                                                                      sc->thread_number))
         {
@@ -102,9 +99,9 @@ void GCToEEInterface::GcEnumAllocContexts (enum_alloc_context_func* fn, void* pa
 void PromoteCarefully(PTR_PTR_Object obj, uint32_t flags, EnumGcRefCallbackFunc * fnGcEnumRef, EnumGcRefScanContext * pSc)
 {
     //
-    // Sanity check that the flags contain only these three values
+    // Sanity check that the flags contain only these values
     //
-    assert((flags & ~(GC_CALL_INTERIOR|GC_CALL_PINNED|GC_CALL_CHECK_APP_DOMAIN)) == 0);
+    assert((flags & ~(GC_CALL_INTERIOR|GC_CALL_PINNED)) == 0);
 
     //
     // Sanity check that GC_CALL_INTERIOR FLAG is set
@@ -122,9 +119,9 @@ void PromoteCarefully(PTR_PTR_Object obj, uint32_t flags, EnumGcRefCallbackFunc 
 void GcEnumObject(PTR_PTR_Object ppObj, uint32_t flags, EnumGcRefCallbackFunc * fnGcEnumRef, EnumGcRefScanContext * pSc)
 {
     //
-    // Sanity check that the flags contain only these three values
+    // Sanity check that the flags contain only these values
     //
-    assert((flags & ~(GC_CALL_INTERIOR|GC_CALL_PINNED|GC_CALL_CHECK_APP_DOMAIN)) == 0);
+    assert((flags & ~(GC_CALL_INTERIOR|GC_CALL_PINNED)) == 0);
 
     // for interior pointers, we optimize the case in which
     //  it points into the current threads stack area

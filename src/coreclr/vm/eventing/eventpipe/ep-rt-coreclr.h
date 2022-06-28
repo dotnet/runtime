@@ -1369,10 +1369,9 @@ ep_rt_method_get_full_name (
 	EX_TRY
 	{
 		SString method_name;
-		StackScratchBuffer conversion;
 
 		TypeString::AppendMethodInternal (method_name, method, TypeString::FormatNamespace | TypeString::FormatSignature);
-		const ep_char8_t *method_name_utf8 = method_name.GetUTF8 (conversion);
+		const ep_char8_t *method_name_utf8 = method_name.GetUTF8 ();
 		if (method_name_utf8) {
 			size_t method_name_utf8_len = strlen (method_name_utf8) + 1;
 			size_t to_copy = method_name_utf8_len < name_len ? method_name_utf8_len : name_len;

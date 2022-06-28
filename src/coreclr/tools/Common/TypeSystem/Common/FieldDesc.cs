@@ -45,6 +45,9 @@ namespace Internal.TypeSystem
             get;
         }
 
+        // Get the embedded signature data used to hold custom modifiers and such within a field signature
+        public abstract EmbeddedSignatureData[] GetEmbeddedSignatureData();
+
         public abstract bool IsStatic
         {
             get;

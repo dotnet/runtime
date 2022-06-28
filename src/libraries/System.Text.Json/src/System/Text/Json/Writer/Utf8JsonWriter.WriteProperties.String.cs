@@ -183,7 +183,7 @@ namespace System.Text.Json
             TranscodeAndWrite(escapedPropertyName, output);
 
             output[BytesPending++] = JsonConstants.Quote;
-            output[BytesPending++] = JsonConstants.KeyValueSeperator;
+            output[BytesPending++] = JsonConstants.KeyValueSeparator;
         }
 
         private void WriteStringIndentedPropertyName(ReadOnlySpan<char> escapedPropertyName)
@@ -223,7 +223,7 @@ namespace System.Text.Json
             TranscodeAndWrite(escapedPropertyName, output);
 
             output[BytesPending++] = JsonConstants.Quote;
-            output[BytesPending++] = JsonConstants.KeyValueSeperator;
+            output[BytesPending++] = JsonConstants.KeyValueSeparator;
             output[BytesPending++] = JsonConstants.Space;
         }
 
@@ -347,7 +347,7 @@ namespace System.Text.Json
             BytesPending += escapedPropertyName.Length;
 
             output[BytesPending++] = JsonConstants.Quote;
-            output[BytesPending++] = JsonConstants.KeyValueSeperator;
+            output[BytesPending++] = JsonConstants.KeyValueSeparator;
         }
 
         // AggressiveInlining used since this is only called from one location.
@@ -416,7 +416,7 @@ namespace System.Text.Json
             BytesPending += escapedPropertyName.Length;
 
             output[BytesPending++] = JsonConstants.Quote;
-            output[BytesPending++] = JsonConstants.KeyValueSeperator;
+            output[BytesPending++] = JsonConstants.KeyValueSeparator;
             output[BytesPending++] = JsonConstants.Space;
         }
 
@@ -1433,7 +1433,7 @@ namespace System.Text.Json
             TranscodeAndWrite(escapedPropertyName, output);
 
             output[BytesPending++] = JsonConstants.Quote;
-            output[BytesPending++] = JsonConstants.KeyValueSeperator;
+            output[BytesPending++] = JsonConstants.KeyValueSeparator;
 
             output[BytesPending++] = JsonConstants.Quote;
 
@@ -1468,7 +1468,7 @@ namespace System.Text.Json
             BytesPending += escapedPropertyName.Length;
 
             output[BytesPending++] = JsonConstants.Quote;
-            output[BytesPending++] = JsonConstants.KeyValueSeperator;
+            output[BytesPending++] = JsonConstants.KeyValueSeparator;
 
             output[BytesPending++] = JsonConstants.Quote;
 
@@ -1504,7 +1504,7 @@ namespace System.Text.Json
             TranscodeAndWrite(escapedPropertyName, output);
 
             output[BytesPending++] = JsonConstants.Quote;
-            output[BytesPending++] = JsonConstants.KeyValueSeperator;
+            output[BytesPending++] = JsonConstants.KeyValueSeparator;
 
             output[BytesPending++] = JsonConstants.Quote;
 
@@ -1541,7 +1541,7 @@ namespace System.Text.Json
             BytesPending += escapedPropertyName.Length;
 
             output[BytesPending++] = JsonConstants.Quote;
-            output[BytesPending++] = JsonConstants.KeyValueSeperator;
+            output[BytesPending++] = JsonConstants.KeyValueSeparator;
 
             output[BytesPending++] = JsonConstants.Quote;
 
@@ -1590,7 +1590,7 @@ namespace System.Text.Json
             TranscodeAndWrite(escapedPropertyName, output);
 
             output[BytesPending++] = JsonConstants.Quote;
-            output[BytesPending++] = JsonConstants.KeyValueSeperator;
+            output[BytesPending++] = JsonConstants.KeyValueSeparator;
             output[BytesPending++] = JsonConstants.Space;
 
             output[BytesPending++] = JsonConstants.Quote;
@@ -1640,7 +1640,7 @@ namespace System.Text.Json
             BytesPending += escapedPropertyName.Length;
 
             output[BytesPending++] = JsonConstants.Quote;
-            output[BytesPending++] = JsonConstants.KeyValueSeperator;
+            output[BytesPending++] = JsonConstants.KeyValueSeparator;
             output[BytesPending++] = JsonConstants.Space;
 
             output[BytesPending++] = JsonConstants.Quote;
@@ -1691,7 +1691,7 @@ namespace System.Text.Json
             TranscodeAndWrite(escapedPropertyName, output);
 
             output[BytesPending++] = JsonConstants.Quote;
-            output[BytesPending++] = JsonConstants.KeyValueSeperator;
+            output[BytesPending++] = JsonConstants.KeyValueSeparator;
             output[BytesPending++] = JsonConstants.Space;
 
             output[BytesPending++] = JsonConstants.Quote;
@@ -1743,7 +1743,7 @@ namespace System.Text.Json
             BytesPending += escapedPropertyName.Length;
 
             output[BytesPending++] = JsonConstants.Quote;
-            output[BytesPending++] = JsonConstants.KeyValueSeperator;
+            output[BytesPending++] = JsonConstants.KeyValueSeparator;
             output[BytesPending++] = JsonConstants.Space;
 
             output[BytesPending++] = JsonConstants.Quote;

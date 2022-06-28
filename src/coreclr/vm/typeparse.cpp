@@ -1094,7 +1094,7 @@ TypeHandle TypeName::GetTypeFromAsm()
         {
             if (bThrowIfNotFound)
             {
-                COMPlusThrow(kArgumentException, IDS_EE_ASSEMBLY_GETTYPE_CANNONT_HAVE_ASSEMBLY_SPEC);
+                COMPlusThrow(kArgumentException, W("Argument_AssemblyGetTypeCannotSpecifyAssembly"));
             }
             else
             {
@@ -1143,8 +1143,7 @@ TypeHandle TypeName::GetTypeFromAsm()
                 for (COUNT_T i = 0; i < GetNames().GetCount(); i ++)
                     tnb.AddName(GetNames()[i]->GetUnicode());
 
-                StackScratchBuffer bufFullName;
-                DomainAssembly* pDomainAssembly = pDomain->RaiseTypeResolveEventThrowing(pRequestingAssembly?pRequestingAssembly->GetDomainAssembly():NULL,tnb.GetString()->GetANSI(bufFullName), pAsmRef);
+                DomainAssembly* pDomainAssembly = pDomain->RaiseTypeResolveEventThrowing(pRequestingAssembly?pRequestingAssembly->GetDomainAssembly():NULL,tnb.GetString()->GetUTF8(), pAsmRef);
                 if (pDomainAssembly)
                     th = GetTypeHaveAssembly(pDomainAssembly->GetAssembly(), bThrowIfNotFound, bIgnoreCase, pKeepAlive);
             }
@@ -1303,8 +1302,7 @@ TypeName::GetTypeHaveAssemblyHelper(
             if (bIgnoreCase)
                 name.LowerCase();
 
-            StackScratchBuffer buffer;
-            typeName.SetName(name.GetUTF8(buffer));
+            typeName.SetName(name.GetUTF8());
 
             // typeName.m_pBucket gets set here if the type is found
             // it will be used in the next iteration to look up the nested type

@@ -855,10 +855,9 @@ namespace System.Net
 
         internal static string CheckQuoted(string value)
         {
-            if (value.Length < 2 || value[0] != '\"' || value[value.Length - 1] != '\"')
-                return value;
-
-            return value.Length == 2 ? string.Empty : value.Substring(1, value.Length - 2);
+            return (value.Length >= 2 && value.StartsWith('\"') && value.EndsWith('\"'))
+                ? value.Substring(1, value.Length - 2)
+                : value;
         }
 
         internal bool EndofHeader()

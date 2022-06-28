@@ -100,10 +100,7 @@ namespace System.Formats.Tar.Tests
 
             string filePath = Path.Join(destination.Path, "file.txt");
 
-            using (StreamWriter writer = File.CreateText(filePath))
-            {
-                writer.WriteLine("My existence should cause an exception");
-            }
+            File.Create(filePath).Dispose();
 
             Assert.Throws<IOException>(() => TarFile.ExtractToDirectory(sourceArchiveFileName, destination.Path, overwriteFiles: false));
         }
@@ -138,6 +135,29 @@ namespace System.Formats.Tar.Tests
 
             string filePath = Path.Join(segment2Path, "file.txt");
             Assert.True(File.Exists(filePath), $"{filePath}' does not exist.");
+        }
+
+        [Fact]
+        public void ExtractArchiveWithEntriesThatStartWithSlashDotPrefix()
+        {
+            using TempDirectory root = new TempDirectory();
+
+            using MemoryStream archiveStream = GetStrangeTarMemoryStream("prefixDotSlashAndCurrentFolderEntry");
+
+            TarFile.ExtractToDirectory(archiveStream, root.Path, overwriteFiles: true);
+
+            archiveStream.Position = 0;
+
+            using TarReader reader = new TarReader(archiveStream, leaveOpen: false);
+
+            TarEntry entry;
+            while ((entry = reader.GetNextEntry()) != null)
+            {
+                // Normalize the path (remove redundant segments), remove trailing separators
+                // this is so the first entry can be skipped if it's the same as the root directory
+                string entryPath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(Path.Join(root.Path, entry.Name)));
+                Assert.True(Path.Exists(entryPath), $"Entry was not extracted: {entryPath}");
+            }
         }
     }
 }

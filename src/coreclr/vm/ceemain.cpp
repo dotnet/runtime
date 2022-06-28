@@ -401,7 +401,26 @@ static BOOL WINAPI DbgCtrlCHandler(DWORD dwCtrlType)
 // A host can specify that it only wants one version of hosting interface to be used.
 BOOL g_singleVersionHosting;
 
+#ifdef TARGET_WINDOWS
+typedef BOOL(WINAPI* PINITIALIZECONTEXT2)(PVOID Buffer, DWORD ContextFlags, PCONTEXT* Context, PDWORD ContextLength, ULONG64 XStateCompactionMask);
+PINITIALIZECONTEXT2 g_pfnInitializeContext2 = NULL;
 
+#ifdef TARGET_X86
+typedef VOID(__cdecl* PRTLRESTORECONTEXT)(PCONTEXT ContextRecord, struct _EXCEPTION_RECORD* ExceptionRecord);
+PRTLRESTORECONTEXT g_pfnRtlRestoreContext = NULL;
+#endif // TARGET_X86
+
+void InitializeOptionalWindowsAPIPointers()
+{
+    HMODULE hm = GetModuleHandleW(_T("kernel32.dll"));
+    g_pfnInitializeContext2 = (PINITIALIZECONTEXT2)GetProcAddress(hm, "InitializeContext2");
+
+#ifdef TARGET_X86
+    hm = GetModuleHandleW(_T("ntdll.dll"));
+    g_pfnRtlRestoreContext = (PRTLRESTORECONTEXT)GetProcAddress(hm, "RtlRestoreContext");
+#endif //TARGET_X86
+}
+#endif // TARGET_WINDOWS
 
 void InitializeStartupFlags()
 {
@@ -595,6 +614,9 @@ void EEStartupHelper()
         ::SetConsoleCtrlHandler(DbgCtrlCHandler, TRUE/*add*/);
 #endif
 
+#ifdef HOST_WINDOWS
+        InitializeOptionalWindowsAPIPointers();
+#endif // HOST_WINDOWS
 
         // SString initialization
         // This needs to be done before config because config uses SString::Empty()
@@ -1238,41 +1260,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         PerfMap::Destroy();
 #endif
 
-        {
-            // If we're doing basic block profiling, we need to write the log files to disk.
-            static BOOL fIBCLoggingDone = FALSE;
-            if (!fIBCLoggingDone)
-            {
-                if (g_IBCLogger.InstrEnabled())
-                {
-                    Thread * pThread = GetThreadNULLOk();
-                    ThreadLocalIBCInfo* pInfo = NULL;
-
-                    if (pThread != NULL)
-                    {
-                        pInfo = pThread->GetIBCInfo();
-                        if (pInfo == NULL)
-                        {
-                            CONTRACT_VIOLATION( ThrowsViolation | FaultViolation);
-                            pInfo = new ThreadLocalIBCInfo();
-                            pThread->SetIBCInfo(pInfo);
-                        }
-                    }
-
-                    // Acquire the Crst lock before creating the IBCLoggingDisabler object.
-                    // Only one thread at a time can be processing an IBC logging event.
-                    CrstHolder lock(IBCLogger::GetSync());
-                    {
-                        IBCLoggingDisabler disableLogging( pInfo );  // runs IBCLoggingDisabler::DisableLogging
-
-                        CONTRACT_VIOLATION(GCViolation);
-                        Module::WriteAllModuleProfileData(true);
-                    }
-                }
-                fIBCLoggingDone = TRUE;
-            }
-        }
-
         ceeInf.JitProcessShutdownWork();  // Do anything JIT-related that needs to happen at shutdown.
 
 #ifdef FEATURE_INTERPRETER
@@ -1369,11 +1356,6 @@ part2:
 
                 // No longer process exceptions
                 g_fNoExceptions = true;
-
-                //
-                // Remove our global exception filter. If it was NULL before, we want it to be null now.
-                //
-                UninstallUnhandledExceptionFilter();
 
                 // <TODO>@TODO: This does things which shouldn't occur in part 2.  Namely,
                 // calling managed dll main callbacks (AppDomain::SignalProcessDetach), and
@@ -1568,7 +1550,7 @@ void STDMETHODCALLTYPE EEShutDown(BOOL fIsDllUnloading)
 
     if (!fIsDllUnloading)
     {
-        if (FastInterlockIncrement(&OnlyOne) != 0)
+        if (InterlockedIncrement(&OnlyOne) != 0)
         {
             // I'm in a regular shutdown -- but another thread got here first.
             // It's a race if I return from here -- I'll call ExitProcess next, and

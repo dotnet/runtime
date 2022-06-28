@@ -35,8 +35,8 @@ namespace System.ComponentModel.DataAnnotations
             // Note: string.Reverse() does not exist for WinPhone
             for (var i = ccValue.Length - 1; i >= 0; i--)
             {
-                var digit = ccValue[i];
-                if (digit < '0' || digit > '9')
+                char digit = ccValue[i];
+                if (!char.IsAsciiDigit(digit))
                 {
                     return false;
                 }

@@ -36,6 +36,12 @@ namespace Microsoft.Extensions.Hosting
         public static readonly string Production;
         public static readonly string Staging;
     }
+    public sealed partial class HostAbortedException : System.Exception
+    {
+        public HostAbortedException() { }
+        public HostAbortedException(string? message) { }
+        public HostAbortedException(string? message, System.Exception? innerException) { }
+    }
     public partial class HostBuilderContext
     {
         public HostBuilderContext(System.Collections.Generic.IDictionary<object, object> properties) { }

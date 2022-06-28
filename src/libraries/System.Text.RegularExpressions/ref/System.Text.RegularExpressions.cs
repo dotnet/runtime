@@ -164,6 +164,7 @@ namespace System.Text.RegularExpressions
         public static void CompileToAssembly(System.Text.RegularExpressions.RegexCompilationInfo[] regexinfos, System.Reflection.AssemblyName assemblyname, System.Reflection.Emit.CustomAttributeBuilder[]? attributes, string? resourceFile) { }
         public int Count(string input) { throw null; }
         public int Count(System.ReadOnlySpan<char> input) { throw null; }
+        public int Count(System.ReadOnlySpan<char> input, int startat) { throw null; }
         public static int Count(string input, [System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex)] string pattern) { throw null; }
         public static int Count(string input, [System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.RegexOptions options) { throw null; }
         public static int Count(string input, [System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { throw null; }
@@ -172,6 +173,7 @@ namespace System.Text.RegularExpressions
         public static int Count(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { throw null; }
         public static string Escape(string str) { throw null; }
         public System.Text.RegularExpressions.Regex.ValueMatchEnumerator EnumerateMatches(System.ReadOnlySpan<char> input) { throw null; }
+        public System.Text.RegularExpressions.Regex.ValueMatchEnumerator EnumerateMatches(System.ReadOnlySpan<char> input, int startat) { throw null; }
         public static System.Text.RegularExpressions.Regex.ValueMatchEnumerator EnumerateMatches(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex")] string pattern) { throw null; }
         public static System.Text.RegularExpressions.Regex.ValueMatchEnumerator EnumerateMatches(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", new object[]{ "options"})] string pattern, System.Text.RegularExpressions.RegexOptions options) { throw null; }
         public static System.Text.RegularExpressions.Regex.ValueMatchEnumerator EnumerateMatches(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", new object[]{ "options"})] string pattern, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { throw null; }
@@ -181,6 +183,7 @@ namespace System.Text.RegularExpressions
         public int GroupNumberFromName(string name) { throw null; }
         protected void InitializeReferences() { }
         public bool IsMatch(System.ReadOnlySpan<char> input) { throw null; }
+        public bool IsMatch(System.ReadOnlySpan<char> input, int startat) { throw null; }
         public static bool IsMatch(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex")] string pattern) { throw null; }
         public static bool IsMatch(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", "options")] string pattern, System.Text.RegularExpressions.RegexOptions options) { throw null; }
         public static bool IsMatch(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", "options")] string pattern, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { throw null; }

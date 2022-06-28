@@ -72,6 +72,161 @@ PhaseStatus Compiler::optRedundantBranches()
     return visitor.madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
+static const ValueNumStore::VN_RELATION_KIND s_vnRelations[] = {ValueNumStore::VN_RELATION_KIND::VRK_Same,
+                                                                ValueNumStore::VN_RELATION_KIND::VRK_Reverse,
+                                                                ValueNumStore::VN_RELATION_KIND::VRK_Swap,
+                                                                ValueNumStore::VN_RELATION_KIND::VRK_SwapReverse};
+
+//------------------------------------------------------------------------
+// RelopImplicationInfo
+//
+// Describes information needed to check for and describe the
+// inferences between two relops.
+//
+struct RelopImplicationInfo
+{
+    // Dominating relop, whose value may be determined by control flow
+    ValueNum domCmpNormVN = ValueNumStore::NoVN;
+    // Dominated relop, whose value we would like to determine
+    ValueNum treeNormVN = ValueNumStore::NoVN;
+    // Relationship between the two relops, if any
+    ValueNumStore::VN_RELATION_KIND vnRelation = ValueNumStore::VN_RELATION_KIND::VRK_Same;
+    // Can we draw an inference?
+    bool canInfer = false;
+    // If canInfer and ominating relop is true, can we infer value of dominated relop?
+    bool canInferFromTrue = true;
+    // If canInfer and dominating relop is false, can we infer value of dominated relop?
+    bool canInferFromFalse = true;
+    // Reverse the sense of the inference
+    bool reverseSense = false;
+};
+
+//------------------------------------------------------------------------
+// optRedundantBranch: try and optimize a possibly redundant branch
+//
+// Arguments:
+//   rii - struct with relop implication information
+//
+// Returns:
+//   No return value.
+//   Sets rii->canInfer and other fields, if inference is possible.
+//
+// Notes:
+//
+// First looks for exact or similar relations.
+//
+// If that fails, then looks for cases where the user or optOptimizeBools
+// has combined two distinct predicates with a boolean AND, OR, or has wrapped
+// a predicate in NOT.
+//
+// This will be expressed as  {NE/EQ}({AND/OR/NOT}(...), 0).
+// If the operator is EQ then a true {AND/OR} result implies
+// a false taken branch, so we need to invert the sense of our
+// inferences.
+//
+// Note we could also infer the tree relop's value from other
+// dominating relops, for example, (x >= 0) dominating (x > 0).
+// That is left as a future enhancement.
+//
+void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
+{
+    assert(!rii->canInfer);
+
+    // Look for related VNs
+    //
+    for (auto vnRelation : s_vnRelations)
+    {
+        const ValueNum relatedVN = vnStore->GetRelatedRelop(rii->domCmpNormVN, vnRelation);
+        if ((relatedVN != ValueNumStore::NoVN) && (relatedVN == rii->treeNormVN))
+        {
+            rii->canInfer   = true;
+            rii->vnRelation = vnRelation;
+            return;
+        }
+    }
+
+    // VNs are not directly related. See if dominating
+    // compare encompasses a related VN.
+    //
+    VNFuncApp funcApp;
+    if (!vnStore->GetVNFunc(rii->domCmpNormVN, &funcApp))
+    {
+        return;
+    }
+
+    genTreeOps const oper = genTreeOps(funcApp.m_func);
+
+    // Look for {EQ,NE}({AND,OR,NOT}, 0)
+    //
+    if (!GenTree::StaticOperIs(oper, GT_EQ, GT_NE))
+    {
+        return;
+    }
+
+    const ValueNum constantVN = funcApp.m_args[1];
+    if (constantVN != vnStore->VNZeroForType(TYP_INT))
+    {
+        return;
+    }
+
+    const ValueNum predVN = funcApp.m_args[0];
+    VNFuncApp      predFuncApp;
+    if (!vnStore->GetVNFunc(predVN, &predFuncApp))
+    {
+        return;
+    }
+
+    genTreeOps const predOper = genTreeOps(predFuncApp.m_func);
+
+    if (!GenTree::StaticOperIs(predOper, GT_AND, GT_OR, GT_NOT))
+    {
+        return;
+    }
+
+    // Dominating compare is {EQ,NE}({AND,OR,NOT}, 0).
+    //
+    // See if one of {AND,OR,NOT} operands is related.
+    //
+    for (unsigned int i = 0; (i < predFuncApp.m_arity) && !rii->canInfer; i++)
+    {
+        ValueNum pVN = predFuncApp.m_args[i];
+
+        for (auto vnRelation : s_vnRelations)
+        {
+            const ValueNum relatedVN = vnStore->GetRelatedRelop(pVN, vnRelation);
+
+            if ((relatedVN != ValueNumStore::NoVN) && (relatedVN == rii->treeNormVN))
+            {
+                rii->vnRelation = vnRelation;
+                rii->canInfer   = true;
+
+                // If dom predicate is wrapped in EQ(*,0) then a true dom
+                // predicate implies a false branch outcome, and vice versa.
+                //
+                // And if the dom predicate is GT_NOT we reverse yet again.
+                //
+                rii->reverseSense = (oper == GT_EQ) ^ (predOper == GT_NOT);
+
+                // We only get partial knowledge in these cases.
+                //
+                //   AND(p1,p2) = true  ==> both p1 and p2 must be true
+                //   AND(p1,p2) = false ==> don't know p1 or p2
+                //    OR(p1,p2) = true  ==> don't know p1 or p2
+                //    OR(p1,p2) = false ==> both p1 and p2 must be false
+                //
+                if (predOper != GT_NOT)
+                {
+                    rii->canInferFromFalse = rii->reverseSense ^ (predOper == GT_OR);
+                    rii->canInferFromTrue  = rii->reverseSense ^ (predOper == GT_AND);
+                }
+
+                JITDUMP("Inferring predicate value from %s\n", GenTree::OpName(predOper));
+                return;
+            }
+        }
+    }
+}
+
 //------------------------------------------------------------------------
 // optRedundantBranch: try and optimize a possibly redundant branch
 //
@@ -120,12 +275,25 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
         return false;
     }
 
-    const ValueNumStore::VN_RELATION_KIND vnRelations[] = {ValueNumStore::VN_RELATION_KIND::VRK_Same,
-                                                           ValueNumStore::VN_RELATION_KIND::VRK_Reverse,
-                                                           ValueNumStore::VN_RELATION_KIND::VRK_Swap,
-                                                           ValueNumStore::VN_RELATION_KIND::VRK_SwapReverse};
+    // Unpack the tree's VN
+    //
+    ValueNum treeNormVN;
+    vnStore->VNUnpackExc(tree->GetVN(VNK_Liberal), &treeNormVN, &treeExcVN);
 
-    while (domBlock != nullptr)
+    // If the treeVN is a constant, we optimize directly.
+    //
+    // Note the inferencing we do below is not valid for constant VNs,
+    // so handling/avoiding this case up front is a correctness requirement.
+    //
+    if (vnStore->IsVNConstant(treeNormVN))
+    {
+
+        relopValue = (treeNormVN == vnStore->VNZeroForType(TYP_INT)) ? 0 : 1;
+        JITDUMP("Relop [%06u] " FMT_BB " has known value %s\n ", dspTreeID(tree), block->bbNum,
+                relopValue == 0 ? "false" : "true");
+    }
+
+    while ((relopValue == -1) && (domBlock != nullptr))
     {
         // Check the current dominator
         //
@@ -141,34 +309,15 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                 // We can use liberal VNs here, as bounds checks are not yet
                 // manifest explicitly as relops.
                 //
-                // Look for an exact match and also try the various swapped/reversed forms.
-                //
-                ValueNum treeNormVN;
-                vnStore->VNUnpackExc(tree->GetVN(VNK_Liberal), &treeNormVN, &treeExcVN);
-                ValueNum domCmpNormVN;
-                vnStore->VNUnpackExc(domCmpTree->GetVN(VNK_Liberal), &domCmpNormVN, &domCmpExcVN);
-                ValueNumStore::VN_RELATION_KIND vnRelationMatch = ValueNumStore::VN_RELATION_KIND::VRK_Same;
-                bool                            matched         = false;
+                RelopImplicationInfo rii;
+                rii.treeNormVN = treeNormVN;
+                vnStore->VNUnpackExc(domCmpTree->GetVN(VNK_Liberal), &rii.domCmpNormVN, &domCmpExcVN);
 
-                for (auto vnRelation : vnRelations)
-                {
-                    const ValueNum relatedVN = vnStore->GetRelatedRelop(domCmpNormVN, vnRelation);
-                    if ((relatedVN != ValueNumStore::NoVN) && (relatedVN == treeNormVN))
-                    {
-                        vnRelationMatch = vnRelation;
-                        matched         = true;
-                        break;
-                    }
-                }
+                // See if knowing the value of domCmpNormVN implies knowing the value of treeNormVN.
+                //
+                optRelopImpliesRelop(&rii);
 
-                // Note we could also infer the tree relop's value from relops higher in the dom tree
-                // that involve the same operands but are not swaps or reverses.
-                //
-                // For example, (x >= 0) dominating (x > 0).
-                //
-                // That is left as a future enhancement.
-                //
-                if (matched)
+                if (rii.canInfer)
                 {
                     // If we have a long skinny dominator tree we may scale poorly,
                     // and in particular reachability (below) is costly. Give up if
@@ -184,20 +333,23 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                     // Is there a unique path from the dominating compare?
                     //
                     JITDUMP("\nDominator " FMT_BB " of " FMT_BB " has relop with %s liberal VN\n", domBlock->bbNum,
-                            block->bbNum, ValueNumStore::VNRelationString(vnRelationMatch));
+                            block->bbNum, ValueNumStore::VNRelationString(rii.vnRelation));
                     DISPTREE(domCmpTree);
                     JITDUMP(" Redundant compare; current relop:\n");
                     DISPTREE(tree);
 
-                    const bool domIsSameRelop = (vnRelationMatch == ValueNumStore::VN_RELATION_KIND::VRK_Same) ||
-                                                (vnRelationMatch == ValueNumStore::VN_RELATION_KIND::VRK_Swap);
+                    const bool domIsSameRelop = (rii.vnRelation == ValueNumStore::VN_RELATION_KIND::VRK_Same) ||
+                                                (rii.vnRelation == ValueNumStore::VN_RELATION_KIND::VRK_Swap);
 
                     BasicBlock* const trueSuccessor  = domBlock->bbJumpDest;
                     BasicBlock* const falseSuccessor = domBlock->bbNext;
-                    const bool        trueReaches    = optReachable(trueSuccessor, block, domBlock);
-                    const bool        falseReaches   = optReachable(falseSuccessor, block, domBlock);
 
-                    if (trueReaches && falseReaches)
+                    // If we can trace the flow from the dominating relop, we can infer its value.
+                    //
+                    const bool trueReaches  = optReachable(trueSuccessor, block, domBlock);
+                    const bool falseReaches = optReachable(falseSuccessor, block, domBlock);
+
+                    if (trueReaches && falseReaches && rii.canInferFromTrue && rii.canInferFromFalse)
                     {
                         // Both dominating compare outcomes reach the current block so we can't infer the
                         // value of the relop.
@@ -212,22 +364,26 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                             return true;
                         }
                     }
-                    else if (trueReaches)
+                    else if (trueReaches && !falseReaches && rii.canInferFromTrue)
                     {
                         // Taken jump in dominator reaches, fall through doesn't; relop must be true/false.
                         //
-                        JITDUMP("Jump successor " FMT_BB " of " FMT_BB " reaches, relop must be %s\n",
-                                domBlock->bbJumpDest->bbNum, domBlock->bbNum, domIsSameRelop ? "true" : "false");
-                        relopValue = domIsSameRelop ? 1 : 0;
+                        const bool relopIsTrue = rii.reverseSense ^ domIsSameRelop;
+                        JITDUMP("Jump successor " FMT_BB " of " FMT_BB " reaches, relop [%06u] must be %s\n",
+                                domBlock->bbJumpDest->bbNum, domBlock->bbNum, dspTreeID(tree),
+                                relopIsTrue ? "true" : "false");
+                        relopValue = relopIsTrue ? 1 : 0;
                         break;
                     }
-                    else if (falseReaches)
+                    else if (falseReaches && !trueReaches && rii.canInferFromFalse)
                     {
                         // Fall through from dominator reaches, taken jump doesn't; relop must be false/true.
                         //
-                        JITDUMP("Fall through successor " FMT_BB " of " FMT_BB " reaches, relop must be %s\n",
-                                domBlock->bbNext->bbNum, domBlock->bbNum, domIsSameRelop ? "false" : "true");
-                        relopValue = domIsSameRelop ? 0 : 1;
+                        const bool relopIsFalse = rii.reverseSense ^ domIsSameRelop;
+                        JITDUMP("Fall through successor " FMT_BB " of " FMT_BB " reaches, relop [%06u] must be %s\n",
+                                domBlock->bbNext->bbNum, domBlock->bbNum, dspTreeID(tree),
+                                relopIsFalse ? "false" : "true");
+                        relopValue = relopIsFalse ? 0 : 1;
                         break;
                     }
                     else
@@ -822,7 +978,6 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
     //
     if (stmt == block->firstStmt())
     {
-        JITDUMP(" -- no, no prior stmt\n");
         return false;
     }
 
@@ -876,11 +1031,6 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
     Statement*                      candidateStmt       = nullptr;
     ValueNumStore::VN_RELATION_KIND candidateVnRelation = ValueNumStore::VN_RELATION_KIND::VRK_Same;
     bool                            sideEffect          = false;
-
-    const ValueNumStore::VN_RELATION_KIND vnRelations[] = {ValueNumStore::VN_RELATION_KIND::VRK_Same,
-                                                           ValueNumStore::VN_RELATION_KIND::VRK_Reverse,
-                                                           ValueNumStore::VN_RELATION_KIND::VRK_Swap,
-                                                           ValueNumStore::VN_RELATION_KIND::VRK_SwapReverse};
 
     // We need to keep track of which locals might be killed by
     // the trees between the expression we want to forward substitute
@@ -1012,7 +1162,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
         bool                            matched         = false;
         ValueNumStore::VN_RELATION_KIND vnRelationMatch = ValueNumStore::VN_RELATION_KIND::VRK_Same;
 
-        for (auto vnRelation : vnRelations)
+        for (auto vnRelation : s_vnRelations)
         {
             const ValueNum relatedVN = vnStore->GetRelatedRelop(domCmpVN, vnRelation);
             if ((relatedVN != ValueNumStore::NoVN) && (relatedVN == treeVN))

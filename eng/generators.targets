@@ -41,17 +41,18 @@
        That is required as the EnabledGenerators condition checks on the Reference and ProjectReference items and hence can't be a property condition. -->
   <ItemGroup Condition="'@(EnabledGenerators)' != '' and
                         @(EnabledGenerators->AnyHaveMetadataValue('Identity', 'LibraryImportGenerator'))">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj;
-                                $(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj"
-                      OutputItemType="Analyzer"
-                      ReferenceOutputAssembly="false" />
+    <AnalyzerReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj;
+                                $(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj" />
   </ItemGroup>
 
-  <!-- Use a normal property condition as this source generator is opt-in and doesn't read from an item list. -->
-  <ItemGroup Condition="'$(EnableRegexGenerator)' == 'true'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj"
+  <!-- AnalyzerReference items are transformed to ProjectReferences with the required analyzer metadata. -->
+  <ItemGroup>
+    <ProjectReference Include="@(AnalyzerReference)"
+                      ReferenceOutputAssembly="false"
                       OutputItemType="Analyzer"
-                      ReferenceOutputAssembly="false" />
+                      Pack="false" />
+    <ProjectReference Update="@(AnalyzerReference->WithMetadataValue('ReferenceAnalyzer', 'false'))"
+                      OutputItemType="" />
   </ItemGroup>
 
   <Target Name="ConfigureGenerators"
@@ -66,6 +67,11 @@
     <PropertyGroup>
         <LibraryImportGenerator_UseMarshalType>true</LibraryImportGenerator_UseMarshalType>
     </PropertyGroup>
+
+    <ItemGroup Condition="'$(NetCoreAppCurrentTargetFrameworkMoniker)' == '$(TargetFrameworkMoniker)' and '$(IncludeLibraryImportGeneratorSources)' != 'false'">
+      <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices/tests/Ancillary.Interop/CustomTypeMarshallersAttributeBase.cs" />
+      <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices/tests/Ancillary.Interop/ManagedToUnmanagedMarshallersAttribute.cs" />
+    </ItemGroup>
   </Target>
 
   <Import Project="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\LibraryImportGenerator\Microsoft.Interop.LibraryImportGenerator.props" />

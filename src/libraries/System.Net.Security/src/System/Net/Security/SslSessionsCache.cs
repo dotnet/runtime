@@ -72,47 +72,21 @@ namespace System.Net.Security
                 return hashCode;
             }
 
-            public override bool Equals([NotNullWhen(true)] object? obj) => (obj is SslCredKey && Equals((SslCredKey)obj));
+            public override bool Equals([NotNullWhen(true)] object? obj) =>
+                obj is SslCredKey other && Equals(other);
 
             public bool Equals(SslCredKey other)
             {
                 byte[] thumbPrint = _thumbPrint;
                 byte[] otherThumbPrint = other._thumbPrint;
 
-                if (thumbPrint.Length != otherThumbPrint.Length)
-                {
-                    return false;
-                }
-
-                if (_encryptionPolicy != other._encryptionPolicy)
-                {
-                    return false;
-                }
-
-                if (_allowedProtocols != other._allowedProtocols)
-                {
-                    return false;
-                }
-
-                if (_isServerMode != other._isServerMode)
-                {
-                    return false;
-                }
-
-                if (_sendTrustList != other._sendTrustList)
-                {
-                    return false;
-                }
-
-                for (int i = 0; i < thumbPrint.Length; ++i)
-                {
-                    if (thumbPrint[i] != otherThumbPrint[i])
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
+                return
+                    thumbPrint.Length == otherThumbPrint.Length &&
+                    _encryptionPolicy == other._encryptionPolicy &&
+                    _allowedProtocols == other._allowedProtocols &&
+                    _isServerMode == other._isServerMode &&
+                    _sendTrustList == other._sendTrustList &&
+                    thumbPrint.AsSpan().SequenceEqual(otherThumbPrint);
             }
         }
 

@@ -888,13 +888,13 @@ void CALLBACK BlockResetAgeMapForBlocks(TableSegment *pSegment, uint32_t uBlock,
 
 static void VerifyObject(_UNCHECKED_OBJECTREF from, _UNCHECKED_OBJECTREF obj)
 {
-#if defined(FEATURE_REDHAWK) || defined(BUILD_AS_STANDALONE)
+#if defined(FEATURE_NATIVEAOT) || defined(BUILD_AS_STANDALONE)
     UNREFERENCED_PARAMETER(from);
     MethodTable* pMT = (MethodTable*)(obj->GetGCSafeMethodTable());
     pMT->SanityCheck();
 #else
     obj->ValidateHeap();
-#endif // FEATURE_REDHAWK
+#endif // FEATURE_NATIVEAOT
 }
 
 static void VerifyObjectAndAge(_UNCHECKED_OBJECTREF from, _UNCHECKED_OBJECTREF obj, uint8_t minAge)

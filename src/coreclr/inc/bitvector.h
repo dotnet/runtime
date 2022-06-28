@@ -198,7 +198,7 @@ public:
         }
     }
 
-    // Note that that is set difference, not subtration
+    // Note that this is set difference, not subtration
     void operator -=(const BitVector& arg)
     {
         WRAPPER_NO_CONTRACT;

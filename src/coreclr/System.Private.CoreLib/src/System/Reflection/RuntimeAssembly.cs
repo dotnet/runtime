@@ -36,12 +36,18 @@ namespace System.Reflection
 
         private sealed class ManifestResourceStream : UnmanagedMemoryStream
         {
+            // ensures the RuntimeAssembly is kept alive for as long as the stream lives
             private RuntimeAssembly _manifestAssembly;
 
             internal unsafe ManifestResourceStream(RuntimeAssembly manifestAssembly, byte* pointer, long length, long capacity, FileAccess access) : base(pointer, length, capacity, access)
             {
                 _manifestAssembly = manifestAssembly;
             }
+
+            // override Read(Span<byte>) because the base UnmanagedMemoryStream doesn't optimize it for derived types
+            public override int Read(Span<byte> buffer) => ReadCore(buffer);
+
+            // NOTE: no reason to override Write(Span<byte>), since a ManifestResourceStream is read-only.
         }
 
         internal object SyncRoot
@@ -128,9 +134,10 @@ namespace System.Reflection
 
             an.RawFlags = GetFlags() | AssemblyNameFlags.PublicKey;
 
-#pragma warning disable IL3000 // System.Reflection.AssemblyName.CodeBase' always returns an empty string for assemblies embedded in a single-file app.
+#pragma warning disable IL3000, SYSLIB0044 // System.Reflection.AssemblyName.CodeBase' always returns an empty string for assemblies embedded in a single-file app.
+                                           // AssemblyName.CodeBase and AssemblyName.EscapedCodeBase are obsolete. Using them for loading an assembly is not supported.
             an.CodeBase = GetCodeBase();
-#pragma warning restore IL3000
+#pragma warning restore IL3000, SYSLIB0044
 
 #pragma warning disable SYSLIB0037 // AssemblyName.HashAlgorithm is obsolete
             an.HashAlgorithm = GetHashAlgorithm();

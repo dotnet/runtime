@@ -344,8 +344,6 @@ GARY_DECL(TypeHandle, g_pPredefinedArrayTypes, ELEMENT_TYPE_MAX);
 
 extern "C" Volatile<int32_t>   g_TrapReturningThreads;
 
-EXTERN IBCLogger            g_IBCLogger;
-
 #ifdef _DEBUG
 // next two variables are used to enforce an ASSERT in Thread::DbgFindThread
 // that does not allow g_TrapReturningThreads to creep up unchecked.
@@ -718,5 +716,16 @@ enum HostCallPreference
     AllowHostCalls,
     NoHostCalls,
 };
+
+#ifdef TARGET_WINDOWS
+typedef BOOL(WINAPI* PINITIALIZECONTEXT2)(PVOID Buffer, DWORD ContextFlags, PCONTEXT* Context, PDWORD ContextLength, ULONG64 XStateCompactionMask);
+extern PINITIALIZECONTEXT2 g_pfnInitializeContext2;
+
+#ifdef TARGET_X86
+typedef VOID(__cdecl* PRTLRESTORECONTEXT)(PCONTEXT ContextRecord, struct _EXCEPTION_RECORD* ExceptionRecord);
+extern PRTLRESTORECONTEXT g_pfnRtlRestoreContext;
+#endif // TARGET_X86
+
+#endif // TARGET_WINDOWS
 
 #endif /* _VARS_HPP */

@@ -112,16 +112,16 @@ static int Internal_Convertfwrite(CPalThread *pthrCurrent, const void *buffer, s
 Function:
   Internal_ExtractFormatA
 
-Paramaters:
+Parameters:
   Fmt
     - format string to parse
     - first character must be a '%'
-    - paramater gets updated to point to the character after
+    - parameter gets updated to point to the character after
       the %<foo> format string
   Out
     - buffer will contain the %<foo> format string
   Flags
-    - paramater will be set with the PRINTF_FORMAT_FLAGS defined above
+    - parameter will be set with the PRINTF_FORMAT_FLAGS defined above
   Width
     - will contain the width specified by the format string
     - -1 if none given
@@ -706,7 +706,7 @@ BOOL Internal_ExtractFormatW(CPalThread *pthrCurrent, LPCWSTR *Fmt, LPSTR Out, L
             *Out++ = 'l';
             *Out++ = 'l';
         }
-        *Out++ = *(*Fmt)++;
+        *Out++ = (CHAR)*(*Fmt)++;
         Result = TRUE;
     }
     else if (**Fmt == 'e' || **Fmt == 'E' || **Fmt == 'f' ||
@@ -719,7 +719,7 @@ BOOL Internal_ExtractFormatW(CPalThread *pthrCurrent, LPCWSTR *Fmt, LPSTR Out, L
         }
 
         *Type = PFF_TYPE_FLOAT;
-        *Out++ = *(*Fmt)++;
+        *Out++ = (CHAR)*(*Fmt)++;
         Result = TRUE;
     }
     else if (**Fmt == 'n')
@@ -733,7 +733,7 @@ BOOL Internal_ExtractFormatW(CPalThread *pthrCurrent, LPCWSTR *Fmt, LPSTR Out, L
         {
             *Out++ = 'h';
         }
-        *Out++ = *(*Fmt)++;
+        *Out++ = (CHAR)*(*Fmt)++;
         *Type = PFF_TYPE_N;
         Result = TRUE;
     }
@@ -1220,8 +1220,8 @@ int CoreVfwprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const wchar_16 *for
                     TempInt = va_arg(ap, INT); /* value not used */
                 }
 
-                TempWChar[0] = va_arg(ap, int);
-                TempWChar[1] = 0;
+                TempWChar[0] = (WCHAR)va_arg(ap, int);
+                TempWChar[1] = W('\0');
 
                /* do the padding (if needed)*/
                 paddingReturnValue =
@@ -1254,7 +1254,7 @@ int CoreVfwprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const wchar_16 *for
 
                 if (Prefix == PFF_PREFIX_SHORT)
                 {
-                    *(va_arg(ap, short *)) = written;
+                    *(va_arg(ap, short *)) = (short)written;
                 }
                 else
                 {
@@ -1605,7 +1605,7 @@ int CoreVfprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const char *format, 
                     TempInt = va_arg(ap, INT); /* value not used */
                 }
 
-                TempWChar = va_arg(ap, int);
+                TempWChar = (WCHAR)va_arg(ap, int);
                 Length = WideCharToMultiByte(CP_ACP, 0, &TempWChar, 1,
                                              TempBuffer, sizeof(TempBuffer),
                                              0, 0);
@@ -1617,7 +1617,7 @@ int CoreVfprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const char *format, 
                     va_end(ap);
                     return -1;
                 }
-                TempBuffer[Length] = 0;
+                TempBuffer[Length] = W('\0');
 
                 /* do the padding (if needed)*/
                 paddingReturnValue =
@@ -1648,7 +1648,7 @@ int CoreVfprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const char *format, 
 
                 if (Prefix == PFF_PREFIX_SHORT)
                 {
-                    *(va_arg(ap, short *)) = written;
+                    *(va_arg(ap, short *)) = (short)written;
                 }
                 else
                 {

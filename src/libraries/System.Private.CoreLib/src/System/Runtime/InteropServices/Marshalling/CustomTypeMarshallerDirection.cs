@@ -1,9 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-
+using System;
 using System.ComponentModel;
 
+#if MICROSOFT_INTEROP_SOURCEGENERATION
+namespace Microsoft.Interop
+#else
 namespace System.Runtime.InteropServices.Marshalling
+#endif
 {
     /// <summary>
     /// A direction of marshalling data into or out of the managed environment

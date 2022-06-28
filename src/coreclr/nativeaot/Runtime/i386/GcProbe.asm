@@ -237,7 +237,7 @@ ifdef FEATURE_GC_STRESS
 ;;  All other registers trashed
 ;;
 StressGC macro
-        mov         [ebx + OFFSETOF__Thread__m_pHackPInvokeTunnel], esp
+        mov         [ebx + OFFSETOF__Thread__m_pDeferredTransitionFrame], esp
         call        REDHAWKGCINTERFACE__STRESSGC
 endm
 

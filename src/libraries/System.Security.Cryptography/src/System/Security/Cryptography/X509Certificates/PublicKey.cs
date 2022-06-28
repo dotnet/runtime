@@ -300,8 +300,8 @@ namespace System.Security.Cryptography.X509Certificates
                 }
 
                 oid = new Oid(spki.Algorithm.Algorithm, null);
-                parameters = new AsnEncodedData(spki.Algorithm.Parameters?.ToArray() ?? Array.Empty<byte>());
-                keyValue = new AsnEncodedData(spki.SubjectPublicKey.ToArray());
+                parameters = new AsnEncodedData(spki.Algorithm.Parameters.GetValueOrDefault().Span);
+                keyValue = new AsnEncodedData(spki.SubjectPublicKey.Span);
                 return read;
             }
         }

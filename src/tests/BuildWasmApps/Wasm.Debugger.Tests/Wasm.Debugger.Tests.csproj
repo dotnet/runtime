@@ -38,12 +38,12 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(DebuggerHost)' == 'chrome'">
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BROWSER_PATH_FOR_DEBUGGER_TESTS=$HELIX_CORRELATION_PAYLOAD/chrome-linux/chrome" />
-      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BROWSER_PATH_FOR_DEBUGGER_TESTS=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BROWSER_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/chrome-linux/chrome" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BROWSER_PATH_FOR_TESTS=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(DebuggerHost)' == 'firefox'">
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BROWSER_PATH_FOR_DEBUGGER_TESTS=$HELIX_CORRELATION_PAYLOAD/firefox/firefox" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BROWSER_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/firefox/firefox" />
     </ItemGroup>
 
     <PropertyGroup>

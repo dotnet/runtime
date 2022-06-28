@@ -198,14 +198,8 @@
 
 <HRESULT NumericValue="0x80131058">
 	<SymbolicName>COR_E_LOADING_REFERENCE_ASSEMBLY</SymbolicName>
-	<Message>"Reference assemblies should not be loaded for execution.  They can only be loaded in the Reflection-only loader context."</Message>
-	<Comment> Reference assemblies should not be loaded for execution.  They can only be loaded in the Reflection-only loader context. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131069">
-  <SymbolicName>COR_E_LOADING_WINMD_REFERENCE_ASSEMBLY</SymbolicName>
-  <Message>"Contract Windows Runtime assemblies cannot be loaded for execution.  Make sure your application only contains non-contract Windows Runtime assemblies."</Message>
-  <Comment> Contract Windows Runtime assemblies cannot be loaded for execution.  Make sure your application only contains non-contract Windows Runtime assemblies </Comment>
+	<Message>"Reference assemblies cannot not be loaded for execution."</Message>
+	<Comment> Reference assemblies cannot not be loaded for execution.  </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x8013106A">

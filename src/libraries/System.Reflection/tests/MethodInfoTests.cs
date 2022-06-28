@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -769,6 +768,33 @@ namespace System.Reflection.Tests
             args = new object[] { o };
             GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.SetToNullByRef)).Invoke(null, args);
             Assert.Null(args[0]);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69919", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public static void CallStackFrame_AggressiveInlining()
+        {
+            MethodInfo mi = typeof(System.Reflection.TestAssembly.ClassToInvoke).GetMethod(nameof(System.Reflection.TestAssembly.ClassToInvoke.CallMe_AggressiveInlining),
+                BindingFlags.Public | BindingFlags.Static)!;
+
+            // Although the target method has AggressiveInlining, currently reflection should not inline the target into any generated IL.
+            FirstCall(mi);
+            SecondCall(mi);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // Separate non-inlineable method to aid any test failures
+        private static void FirstCall(MethodInfo mi)
+        {
+            Assembly asm = (Assembly)mi.Invoke(null, null);
+            Assert.Contains("TestAssembly", asm.ToString());
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // Separate non-inlineable method to aid any test failures
+        private static void SecondCall(MethodInfo mi)
+        {
+            Assembly asm = (Assembly)mi.Invoke(null, null);
+            Assert.Contains("TestAssembly", asm.ToString());
         }
 
         //Methods for Reflection Metadata

@@ -1,0 +1,21 @@
+project (Int128Native)
+include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake")
+if(CLR_CMAKE_TARGET_ARCH_I386)
+  add_definitions(-DTARGET_X86)
+  add_definitions(-DTARGET_XARCH)
+elseif(CLR_CMAKE_TARGET_ARCH_AMD64)
+  add_definitions(-DTARGET_AMD64)
+  add_definitions(-DTARGET_XARCH)
+elseif(CLR_CMAKE_TARGET_ARCH_ARM)
+  add_definitions(-DTARGET_ARM)
+  add_definitions(-DTARGET_ARMARCH)
+elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
+  add_definitions(-DTARGET_ARM64)
+  add_definitions(-DTARGET_ARMARCH)
+endif()
+set(SOURCES
+  Int128Native.cpp
+  UInt128Native.cpp
+)
+add_library (Int128Native SHARED ${SOURCES})
+install (TARGETS Int128Native DESTINATION bin)

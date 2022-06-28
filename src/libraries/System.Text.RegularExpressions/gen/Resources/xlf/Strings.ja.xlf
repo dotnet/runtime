@@ -14,7 +14,7 @@
       </trans-unit>
       <trans-unit id="AlternationHasMalformedReference">
         <source>Conditional alternation is missing a closing parenthesis after the group number {0}.</source>
-        <target state="new">Conditional alternation is missing a closing parenthesis after the group number {0}.</target>
+        <target state="translated">条件付き代替には、グループ番号 {0} の後に終わりかっこがありません。</target>
         <note />
       </trans-unit>
       <trans-unit id="AlternationHasNamedCapture">
@@ -29,7 +29,7 @@
       </trans-unit>
       <trans-unit id="AlternationHasUndefinedReference">
         <source>Conditional alternation refers to an undefined group number {0}.</source>
-        <target state="new">Conditional alternation refers to an undefined group number {0}.</target>
+        <target state="translated">条件付き代替は、未定義のグループ番号 {0} を参照しています。</target>
         <note />
       </trans-unit>
       <trans-unit id="Arg_ArrayPlusOffTooSmall">
@@ -92,11 +92,6 @@
         <target state="translated">不十分な 16 進数の数字です。</target>
         <note />
       </trans-unit>
-      <trans-unit id="InternalError_ScanRegex">
-        <source>Internal error in ScanRegex.</source>
-        <target state="translated">ScanRegex に内部エラーが発生しました。</target>
-        <note>{Locked="ScanRegex"}</note>
-      </trans-unit>
       <trans-unit id="InvalidGroupingConstruct">
         <source>Unrecognized grouping construct.</source>
         <target state="translated">認識されないグループ化構成体です。</target>
@@ -134,7 +129,7 @@
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationMessage">
         <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation.</source>
-        <target state="new">The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation.</target>
+        <target state="translated">内部制限により、RegexGenerator は指定された正規表現の完全なソース実装を生成できませんでした。</target>
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationTitle">
@@ -194,12 +189,12 @@
       </trans-unit>
       <trans-unit id="QuantifierAfterNothing">
         <source>Quantifier '{0}' following nothing.</source>
-        <target state="new">Quantifier '{0}' following nothing.</target>
+        <target state="translated">量指定子 '{0}' の前に何もありません。</target>
         <note />
       </trans-unit>
       <trans-unit id="QuantifierOrCaptureGroupOutOfRange">
         <source>Quantifier and capture group numbers must be less than or equal to Int32.MaxValue.</source>
-        <target state="new">Quantifier and capture group numbers must be less than or equal to Int32.MaxValue.</target>
+        <target state="translated">量指定子およびキャプチャ グループ番号は Int32.MaxValue 以下でなければなりません。</target>
         <note>{Locked="Int32.MaxValue"}</note>
       </trans-unit>
       <trans-unit id="RegexMatchTimeoutException_Occurred">
@@ -210,11 +205,6 @@
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
         <source>RegexGenerator method must be partial, parameterless, non-generic, non-abstract, and return Regex</source>
         <target state="translated">RegexGenerator メソッドは、部分的、パラメーターなし、非ジェネリック、非抽象で、正規表現を返す必要があります</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ReplacementError">
-        <source>Replacement pattern error.</source>
-        <target state="translated">置換パターン エラーです。</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">
@@ -270,6 +260,16 @@
       <trans-unit id="UnterminatedComment">
         <source>Unterminated (?#...) comment.</source>
         <target state="translated">未終了の (?#...) コメントです。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UseRegexSourceGeneratorMessage">
+        <source>Use 'RegexGeneratorAttribute' to generate the regular expression implementation at compile-time.</source>
+        <target state="translated">「RegexGeneratorAttribute」を使用すると、コンパイル時に正規表現の実装が生成されます。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UseRegexSourceGeneratorTitle">
+        <source>Convert to 'RegexGenerator'.</source>
+        <target state="translated">「RegexGenerator」に変換します。</target>
         <note />
       </trans-unit>
     </body>

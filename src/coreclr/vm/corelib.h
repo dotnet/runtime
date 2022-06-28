@@ -282,6 +282,9 @@ DEFINE_FIELD(DELEGATE,            METHOD_PTR_AUX,         _methodPtrAux)
 DEFINE_METHOD(DELEGATE,             CONSTRUCT_DELEGATE,     DelegateConstruct,          IM_Obj_IntPtr_RetVoid)
 DEFINE_METHOD(DELEGATE,             GET_INVOKE_METHOD,      GetInvokeMethod,            IM_RetIntPtr)
 
+DEFINE_CLASS(INT128,               System,                 Int128)
+DEFINE_CLASS(UINT128,              System,                 UInt128)
+
 DEFINE_CLASS(DYNAMICMETHOD,         ReflectionEmit,         DynamicMethod)
 
 DEFINE_CLASS(DYNAMICRESOLVER,       ReflectionEmit,         DynamicResolver)
@@ -300,7 +303,7 @@ DEFINE_CLASS(ENUM,                  System,                 Enum)
 
 DEFINE_CLASS(ENVIRONMENT,           System,                 Environment)
 DEFINE_METHOD(ENVIRONMENT,       GET_RESOURCE_STRING_LOCAL, GetResourceStringLocal,     SM_Str_RetStr)
-DEFINE_METHOD(ENVIRONMENT,       SET_COMMAND_LINE_ARGS,     SetCommandLineArgs,         SM_ArrStr_RetVoid)
+DEFINE_METHOD(ENVIRONMENT,       INITIALIZE_COMMAND_LINE_ARGS, InitializeCommandLineArgs, SM_PtrChar_Int_PtrPtrChar_RetArrStr)
 
 DEFINE_CLASS(EVENT,                 Reflection,             RuntimeEventInfo)
 
@@ -327,11 +330,12 @@ DEFINE_FIELD_U(_xptrs,             ExceptionObject,    _xptrs)
 DEFINE_FIELD_U(_xcode,             ExceptionObject,    _xcode)
 DEFINE_FIELD_U(_HResult,           ExceptionObject,    _HResult)
 DEFINE_CLASS(EXCEPTION,             System,                 Exception)
+DEFINE_METHOD(EXCEPTION,            INTERNAL_PRESERVE_STACK_TRACE, InternalPreserveStackTrace, IM_RetVoid)
+// Following Exception members are only used when FEATURE_COMINTEROP
 DEFINE_METHOD(EXCEPTION,            GET_CLASS_NAME,         GetClassName,               IM_RetStr)
 DEFINE_PROPERTY(EXCEPTION,          MESSAGE,                Message,                    Str)
 DEFINE_PROPERTY(EXCEPTION,          SOURCE,                 Source,                     Str)
-DEFINE_PROPERTY(EXCEPTION,          HELP_LINK,              HelpLink,                   Str)
-DEFINE_METHOD(EXCEPTION,            INTERNAL_PRESERVE_STACK_TRACE, InternalPreserveStackTrace, IM_RetVoid)
+DEFINE_METHOD(EXCEPTION,            GET_HELP_CONTEXT,       GetHelpContext,             IM_RefUInt_RetStr)
 
 
 DEFINE_CLASS(SYSTEM_EXCEPTION,      System,                 SystemException)
@@ -575,6 +579,7 @@ DEFINE_CLASS(BYREFERENCE,           System,                 ByReference`1)
 DEFINE_METHOD(BYREFERENCE,          CTOR,                   .ctor, NoSig)
 DEFINE_METHOD(BYREFERENCE,          GET_VALUE,              get_Value, NoSig)
 DEFINE_CLASS(SPAN,                  System,                 Span`1)
+DEFINE_METHOD(SPAN,                 CTOR_PTR_INT,           .ctor, IM_VoidPtr_Int_RetVoid)
 DEFINE_METHOD(SPAN,                 GET_ITEM,               get_Item, IM_Int_RetRefT)
 DEFINE_CLASS(READONLY_SPAN,         System,                 ReadOnlySpan`1)
 DEFINE_METHOD(READONLY_SPAN,        GET_ITEM,               get_Item, IM_Int_RetReadOnlyRefT)
@@ -1035,7 +1040,6 @@ DEFINE_METHOD(CSTRMARSHALER,        CONVERT_TO_NATIVE,      ConvertToNative,    
 DEFINE_METHOD(CSTRMARSHALER,        CONVERT_FIXED_TO_NATIVE,ConvertFixedToNative,       SM_Int_Str_IntPtr_Int_RetVoid)
 DEFINE_METHOD(CSTRMARSHALER,        CONVERT_TO_MANAGED,     ConvertToManaged,           SM_IntPtr_RetStr)
 DEFINE_METHOD(CSTRMARSHALER,        CONVERT_FIXED_TO_MANAGED,ConvertFixedToManaged,     SM_IntPtr_Int_RetStr)
-DEFINE_METHOD(CSTRMARSHALER,        CLEAR_NATIVE,           ClearNative,                SM_IntPtr_RetVoid)
 
 DEFINE_CLASS(FIXEDWSTRMARSHALER,   StubHelpers,            FixedWSTRMarshaler)
 DEFINE_METHOD(FIXEDWSTRMARSHALER,  CONVERT_TO_NATIVE,      ConvertToNative,            SM_Str_IntPtr_Int_RetVoid)
@@ -1183,10 +1187,13 @@ DEFINE_METHOD(ICASTABLEHELPERS,        GETIMPLTYPE,        GetImplType, SM_ICast
 
 #endif // FEATURE_ICASTABLE
 
-DEFINE_CLASS(CUTF8MARSHALER, StubHelpers, UTF8Marshaler)
-DEFINE_METHOD(CUTF8MARSHALER, CONVERT_TO_NATIVE, ConvertToNative, SM_Int_Str_IntPtr_RetIntPtr)
-DEFINE_METHOD(CUTF8MARSHALER, CONVERT_TO_MANAGED, ConvertToManaged, SM_IntPtr_RetStr)
-DEFINE_METHOD(CUTF8MARSHALER, CLEAR_NATIVE, ClearNative, SM_IntPtr_RetVoid)
+DEFINE_CLASS(UTF8STRINGMARSHALLER, Marshalling, Utf8StringMarshaller)
+DEFINE_METHOD(UTF8STRINGMARSHALLER, CTOR, .ctor, IM_Str_RetVoid)
+DEFINE_METHOD(UTF8STRINGMARSHALLER, CTOR_SPAN, .ctor, IM_Str_SpanOfByte_RetVoid)
+DEFINE_METHOD(UTF8STRINGMARSHALLER, TO_NATIVE_VALUE, ToNativeValue, IM_RetPtrByte)
+DEFINE_METHOD(UTF8STRINGMARSHALLER, FROM_NATIVE_VALUE, FromNativeValue, IM_PtrByte_RetVoid)
+DEFINE_METHOD(UTF8STRINGMARSHALLER, TO_MANAGED, ToManaged, IM_RetStr)
+DEFINE_METHOD(UTF8STRINGMARSHALLER, FREE_NATIVE, FreeNative, IM_RetVoid)
 
 DEFINE_CLASS(UTF8BUFFERMARSHALER, StubHelpers, UTF8BufferMarshaler)
 DEFINE_METHOD(UTF8BUFFERMARSHALER, CONVERT_TO_NATIVE, ConvertToNative, NoSig)

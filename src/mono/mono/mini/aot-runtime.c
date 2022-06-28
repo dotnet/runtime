@@ -682,7 +682,7 @@ decode_type (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError *err
 	if (*p == MONO_TYPE_CMOD_REQD) {
 		++p;
 
-		int count = decode_value (p, &p);
+		uint8_t count = GINT32_TO_UINT8 (decode_value (p, &p));
 
 		/* TODO: encode aggregate cmods differently than simple cmods and make it possible to use the more compact encoding here. */
 		t = (MonoType*)g_malloc0 (mono_sizeof_type_with_mods (count, TRUE));
@@ -692,7 +692,7 @@ decode_type (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError *err
 		g_assert (count < MONO_MAX_EXPECTED_CMODS);
 		MonoAggregateModContainer *cm = g_alloca (mono_sizeof_aggregate_modifiers (count));
 		cm->count = count;
-		for (int i = 0; i < count; ++i) {
+		for (uint8_t i = 0; i < count; ++i) {
 			MonoSingleCustomMod *cmod = &cm->modifiers [i];
 			cmod->required = decode_value (p, &p);
 			cmod->type = decode_type (module, p, &p, error);
@@ -700,7 +700,7 @@ decode_type (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError *err
 		}
 
 		mono_type_set_amods (t, mono_metadata_get_canonical_aggregate_modifiers (cm));
-		for (int i = 0; i < count; ++i)
+		for (uint8_t i = 0; i < count; ++i)
 			mono_metadata_free_type (cm->modifiers [i].type);
 	} else {
 		t = (MonoType *) g_malloc0 (MONO_SIZEOF_TYPE);
@@ -794,15 +794,15 @@ decode_type (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError *err
 		array->eklass = decode_klass_ref (module, p, &p, error);
 		if (!array->eklass)
 			goto fail;
-		array->rank = decode_value (p, &p);
-		array->numsizes = decode_value (p, &p);
+		array->rank = GINT32_TO_UINT8 (decode_value (p, &p));
+		array->numsizes = GINT32_TO_UINT8 (decode_value (p, &p));
 
 		if (array->numsizes)
 			array->sizes = (int *)g_malloc0 (sizeof (int) * array->numsizes);
 		for (i = 0; i < array->numsizes; ++i)
 			array->sizes [i] = decode_value (p, &p);
 
-		array->numlobounds = decode_value (p, &p);
+		array->numlobounds = GINT32_TO_UINT8 (decode_value (p, &p));
 		if (array->numlobounds)
 			array->lobounds = (int *)g_malloc0 (sizeof (int) * array->numlobounds);
 		for (i = 0; i < array->numlobounds; ++i)
@@ -839,7 +839,9 @@ decode_signature_with_target (MonoAotModule *module, MonoMethodSignature *target
 	ERROR_DECL (error);
 	MonoMethodSignature *sig;
 	guint32 flags;
-	int i, gen_param_count = 0, param_count, call_conv;
+	guint16 param_count;
+	unsigned int gen_param_count = 0;
+	int call_conv;
 	guint8 *p = buf;
 	gboolean hasthis, explicit_this, has_gen_params, pinvoke;
 
@@ -853,7 +855,7 @@ decode_signature_with_target (MonoAotModule *module, MonoMethodSignature *target
 
 	if (has_gen_params)
 		gen_param_count = decode_value (p, &p);
-	param_count = decode_value (p, &p);
+	param_count = GINT32_TO_UINT16 (decode_value (p, &p));
 	if (target && param_count != target->param_count)
 		return NULL;
 	sig = (MonoMethodSignature *)g_malloc0 (MONO_SIZEOF_METHOD_SIGNATURE + param_count * sizeof (MonoType *));
@@ -867,7 +869,7 @@ decode_signature_with_target (MonoAotModule *module, MonoMethodSignature *target
 	sig->ret = decode_type (module, p, &p, error);
 	if (!sig->ret)
 		goto fail;
-	for (i = 0; i < param_count; ++i) {
+	for (guint16 i = 0; i < param_count; ++i) {
 		if (*p == MONO_TYPE_SENTINEL) {
 			g_assert (sig->call_convention == MONO_CALL_VARARG);
 			sig->sentinelpos = i;
@@ -2293,7 +2295,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 		mono_tramp_info_create (
 			NULL,
 			amodule->plt,
-			amodule->plt_end - amodule->plt,
+			GPTRDIFF_TO_UINT32 (amodule->plt_end - amodule->plt),
 			NULL,
 			mono_unwind_get_cie_program ()
 			),
@@ -2856,7 +2858,7 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoJitInfo *jinfo,
 		code_end = (guint8 *)amodule->methods [table [(pos + 1) * 2]];
 	}
 	if (!code_len)
-		code_len = code_end - code_start;
+		code_len = GPTRDIFF_TO_UINT32 (code_end - code_start);
 
 	g_assert (code >= code_start && code < code_end);
 
@@ -3187,8 +3189,8 @@ decode_exception_debug_info (MonoAotModule *amodule,
 		table->num_holes = (guint16)num_holes;
 		for (int i = 0; i < num_holes; ++i) {
 			MonoTryBlockHoleJitInfo *hole = &table->holes [i];
-			hole->clause = decode_value (p, &p);
-			hole->length = decode_value (p, &p);
+			hole->clause = GINT32_TO_UINT16 (decode_value (p, &p));
+			hole->length = GINT32_TO_UINT16 (decode_value (p, &p));
 			hole->offset = decode_value (p, &p);
 		}
 	}
@@ -3238,11 +3240,11 @@ decode_exception_debug_info (MonoAotModule *amodule,
 		} else {
 			if (from_llvm) {
 				gi->has_this = this_reg != -1;
-				gi->this_reg = this_reg;
+				gi->this_reg = GINT_TO_UINT8 (this_reg);
 				gi->this_offset = this_offset;
 			} else {
 				gi->has_this = decode_value (p, &p);
-				gi->this_reg = decode_value (p, &p);
+				gi->this_reg = GINT32_TO_UINT8 (decode_value (p, &p));
 				gi->this_offset = decode_value (p, &p);
 			}
 		}
@@ -3456,7 +3458,8 @@ MonoJitInfo *
 mono_aot_find_jit_info (MonoImage *image, gpointer addr)
 {
 	ERROR_DECL (error);
-	int pos, left, right, code_len;
+	ptrdiff_t code_len;
+	int pos, left, right;
 	int method_index, table_len;
 	guint32 token;
 	MonoAotModule *amodule = image->aot_module;
@@ -3625,7 +3628,7 @@ mono_aot_find_jit_info (MonoImage *image, gpointer addr)
 
 	//printf ("F: %s\n", mono_method_full_name (method, TRUE));
 
-	jinfo = decode_exception_debug_info (amodule, method, ex_info, code, code_len);
+	jinfo = decode_exception_debug_info (amodule, method, ex_info, code, GPTRDIFF_TO_UINT32 (code_len));
 
 	g_assert ((guint8*)addr >= (guint8*)jinfo->code_start);
 
@@ -5963,7 +5966,7 @@ mono_aot_get_unbox_trampoline (MonoMethod *method, gpointer addr)
 		return amodule->unbox_tramp_per_method [method_index];
 
 	if (amodule->info.llvm_unbox_tramp_indexes) {
-		int unbox_tramp_idx;
+		ptrdiff_t unbox_tramp_idx;
 
 		/* Search the llvm_unbox_tramp_indexes table using a binary search */
 		if (amodule->info.llvm_unbox_tramp_elemsize == sizeof (guint32)) {
@@ -6007,7 +6010,7 @@ mono_aot_get_unbox_trampoline (MonoMethod *method, gpointer addr)
 	/* Do a binary search in the sorted table */
 	code = NULL;
 	low = 0;
-	high = (ut_end - ut);
+	high = GPTRDIFF_TO_INT (ut_end - ut);
 	while (low < high) {
 		entry_index = (low + high) / 2;
 		entry = &ut [entry_index];
