@@ -44,7 +44,7 @@ void
 mono_threads_wasm_async_run_in_main_thread_vii (void (*func)(gpointer, gpointer), gpointer user_data1, gpointer user_data2);
 #endif /* DISABLE_THREADS */
 
-// Called from the start wrapper when the runtime creates a thread.
+// Called from register_thread when a pthread attaches to the runtime
 void
 mono_threads_wasm_on_thread_attached (void);
 
