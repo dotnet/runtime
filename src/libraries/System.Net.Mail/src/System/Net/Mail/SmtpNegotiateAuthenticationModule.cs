@@ -30,10 +30,19 @@ namespace System.Net.Mail
                             return null;
                         }
 
+                        ContextFlagsPal contextFlags = ContextFlagsPal.Connection | ContextFlagsPal.InitIntegrity;
+                        // Workaround for https://github.com/gssapi/gss-ntlmssp/issues/77
+                        // GSSAPI NTLM SSP does not support gss_wrap/gss_unwrap unless confidentiality
+                        // is negotiated.
+                        if (OperatingSystem.IsLinux())
+                        {
+                            contextFlags |= ContextFlagsPal.Confidentiality;
+                        }
+
                         _sessions[sessionCookie] =
                             clientContext =
                             new NTAuthentication(false, "Negotiate", credential, spn,
-                                                 ContextFlagsPal.Connection | ContextFlagsPal.InitIntegrity, channelBindingToken);
+                                                 contextFlags, channelBindingToken);
                     }
 
                     byte[]? byteResp;
