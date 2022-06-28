@@ -115,26 +115,35 @@ namespace Microsoft.Interop
                 if (marshallerTypeOnAttr is null)
                     continue;
 
-                CustomTypeMarshallerData? data = marshallerScenario switch
+                MarshallingDirection direction = marshallerScenario switch
                 {
-                    Scenario.Default => GetMarshallerDataForType(entryPointType, MarshallingDirection.Bidirectional, managedTypeOnAttr, compilation),
+                    Scenario.Default
+                        => MarshallingDirection.Bidirectional,
 
                     Scenario.ManagedToUnmanagedIn
-                    or Scenario.ManagedToUnmanagedRef
-                    or Scenario.ManagedToUnmanagedOut => GetMarshallerDataForType(entryPointType, MarshallingDirection.ManagedToUnmanaged, managedTypeOnAttr, compilation),
+                    or Scenario.UnmanagedToManagedOut
+                        => MarshallingDirection.ManagedToUnmanaged,
 
-                    Scenario.UnmanagedToManagedIn
+                    Scenario.ManagedToUnmanagedOut
+                    or Scenario.UnmanagedToManagedIn
+                        => MarshallingDirection.UnmanagedToManaged,
+
+                    Scenario.ManagedToUnmanagedRef
                     or Scenario.UnmanagedToManagedRef
-                    or Scenario.UnmanagedToManagedOut => GetMarshallerDataForType(entryPointType, MarshallingDirection.UnmanagedToManaged, managedTypeOnAttr, compilation),
+                        => MarshallingDirection.Bidirectional,
 
                     Scenario.ElementIn
                     or Scenario.ElementRef
-                    or Scenario.ElementOut => GetMarshallerDataForType(entryPointType, MarshallingDirection.Bidirectional, managedTypeOnAttr, compilation),
+                    or Scenario.ElementOut
+                        => MarshallingDirection.Bidirectional,
 
-                    _ => null
+                    _ => throw new UnreachableException()
                 };
 
-                // TODO: Should we fire a diagnostic for duplicated scenarios or just take the last one?
+                CustomTypeMarshallerData? data = GetMarshallerDataForType(marshallerTypeOnAttr, direction, managedTypeOnAttr, compilation);
+
+                // TODO: Report invalid shape for scenario
+                // Should we fire a diagnostic for duplicated scenarios or just take the last one?
                 if (data is null
                     || scenarios.ContainsKey(marshallerScenario))
                 {
