@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Composition;
 using System.Diagnostics;
@@ -17,7 +16,6 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.Simplification;
-using Microsoft.CodeAnalysis.Text;
 
 namespace System.Text.RegularExpressions.Generator
 {
@@ -154,13 +152,13 @@ namespace System.Text.RegularExpressions.Generator
             // Try to get the pattern and RegexOptions values out from the diagnostic's property bag.
             if (operation is IObjectCreationOperation objectCreationOperation) // When using the Regex constructors
             {
-                patternValue = GetNode((objectCreationOperation).Arguments, properties, UpgradeToRegexGeneratorAnalyzer.PatternIndexName, generator, useOptionsMemberExpression: false, compilation, cancellationToken);
-                regexOptionsValue = GetNode((objectCreationOperation).Arguments, properties, UpgradeToRegexGeneratorAnalyzer.RegexOptionsIndexName, generator, useOptionsMemberExpression: true, compilation, cancellationToken);
+                patternValue = GetNode(objectCreationOperation.Arguments, properties, UpgradeToRegexGeneratorAnalyzer.PatternIndexName, generator, useOptionsMemberExpression: false);
+                regexOptionsValue = GetNode(objectCreationOperation.Arguments, properties, UpgradeToRegexGeneratorAnalyzer.RegexOptionsIndexName, generator, useOptionsMemberExpression: true);
             }
             else if (operation is IInvocationOperation invocation) // When using the Regex static methods.
             {
-                patternValue = GetNode(invocation.Arguments, properties, UpgradeToRegexGeneratorAnalyzer.PatternIndexName, generator, useOptionsMemberExpression: false, compilation, cancellationToken);
-                regexOptionsValue = GetNode(invocation.Arguments, properties, UpgradeToRegexGeneratorAnalyzer.RegexOptionsIndexName, generator, useOptionsMemberExpression: true, compilation, cancellationToken);
+                patternValue = GetNode(invocation.Arguments, properties, UpgradeToRegexGeneratorAnalyzer.PatternIndexName, generator, useOptionsMemberExpression: false);
+                regexOptionsValue = GetNode(invocation.Arguments, properties, UpgradeToRegexGeneratorAnalyzer.RegexOptionsIndexName, generator, useOptionsMemberExpression: true);
             }
 
             // Generate the new static partial method
@@ -231,7 +229,7 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // Helper method that looks int the properties bag for the index of the passed in propertyname, and then returns that index from the args parameter.
-            static SyntaxNode? GetNode(ImmutableArray<IArgumentOperation> args, ImmutableDictionary<string, string?> properties, string propertyName, SyntaxGenerator generator, bool useOptionsMemberExpression, Compilation compilation, CancellationToken cancellationToken)
+            static SyntaxNode? GetNode(ImmutableArray<IArgumentOperation> args, ImmutableDictionary<string, string?> properties, string propertyName, SyntaxGenerator generator, bool useOptionsMemberExpression)
             {
                 int? index = TryParseInt32(properties, propertyName);
                 if (index == null)
@@ -239,19 +237,19 @@ namespace System.Text.RegularExpressions.Generator
                     return null;
                 }
 
+                var argumentOperation = args[index.Value];
                 if (!useOptionsMemberExpression)
                 {
-                    return generator.LiteralExpression(args[index.Value].Value.ConstantValue.Value);
+                    return generator.LiteralExpression(argumentOperation.Value.ConstantValue.Value);
                 }
                 else
                 {
-                    RegexOptions options = (RegexOptions)(int)args[index.Value].Value.ConstantValue.Value;
-                    string optionsLiteral = Literal(options);
-                    return SyntaxFactory.ParseExpression(optionsLiteral).SyntaxTree.GetRoot(cancellationToken);
+                    RegexOptions options = (RegexOptions)(int)argumentOperation.Value.ConstantValue.Value;
+                    return Literal(options, generator, argumentOperation.Parameter.Type);
                 }
             }
 
-            static string Literal(RegexOptions options)
+            static SyntaxNode Literal(RegexOptions options, SyntaxGenerator generator, ITypeSymbol typeSymbol)
             {
                 string s = options.ToString();
                 if (int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
@@ -259,17 +257,20 @@ namespace System.Text.RegularExpressions.Generator
                     // The options were formatted as an int, which means the runtime couldn't
                     // produce a textual representation.  So just output casting the value as an int.
                     Debug.Fail("This shouldn't happen, as we should only get to the point of emitting code if RegexOptions was valid.");
-                    return $"(RegexOptions)({(int)options})";
+                    return generator.CastExpression(typeSymbol, generator.LiteralExpression((int)options));
                 }
 
                 // Parse the runtime-generated "Option1, Option2" into each piece and then concat
                 // them back together.
                 string[] parts = s.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                for (int i = 0; i < parts.Length; i++)
+                SyntaxNode regexOptionsExpression = generator.IdentifierName("RegexOptions");
+                SyntaxNode result = generator.MemberAccessExpression(regexOptionsExpression, parts[0].Trim());
+                for (int i = 1; i < parts.Length; i++)
                 {
-                    parts[i] = "RegexOptions." + parts[i].Trim();
+                    result = generator.BitwiseOrExpression(result, generator.MemberAccessExpression(regexOptionsExpression, parts[i].Trim()));
                 }
-                return string.Join(" | ", parts);
+
+                return result;
             }
         }
     }
