@@ -1019,10 +1019,6 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                 }
             }
 
-#ifndef TARGET_ARM
-            // TODO-Arm: This optimization is not implemented for ARM32
-            // so we skip this for ARM32 until it is ported to use RyuJIT backend
-            //
             if (argx->OperIs(GT_OBJ) && (arg.AbiInfo.GetRegNum() != REG_STK))
             {
                 GenTreeObj* argObj     = argx->AsObj();
@@ -1030,22 +1026,25 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                 switch (structSize)
                 {
                     case 3:
+#ifdef TARGET_64BIT
                     case 5:
                     case 6:
+#endif // TARGET_64BIT
                     case 7:
                         // If we have a stack based LclVar we can perform a wider read of 4 or 8 bytes
-                        //
-                        if (argObj->AsObj()->gtOp1->IsLocalAddrExpr() == nullptr) // Is the source not a LclVar?
+                        // TODO-ADDR: delete this code once local morph transforms all such OBJs into local nodes.
+                        if (argObj->Addr()->IsLocalAddrExpr() == nullptr) // Is the source not a LclVar?
                         {
                             // If we don't have a LclVar we need to read exactly 3,5,6 or 7 bytes
                             // For now we use a GT_CPBLK to copy the exact size into a GT_LCL_VAR temp.
-                            //
                             SetNeedsTemp(&arg);
                         }
                         break;
                     case 11:
+#ifdef TARGET_64BIT
                     case 13:
                     case 14:
+#endif // TARGET_64BIT
                     case 15:
                         // Spill any GT_OBJ multireg structs that are difficult to extract
                         //
@@ -1063,7 +1062,6 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                         break;
                 }
             }
-#endif // !TARGET_ARM
         }
 #endif // FEATURE_MULTIREG_ARGS
     }
@@ -3214,18 +3212,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     if (((lclVar != nullptr) &&
                          (lvaGetPromotionType(lclVar->AsLclVarCommon()->GetLclNum()) == PROMOTION_TYPE_INDEPENDENT)) ||
                         ((argObj->OperIs(GT_OBJ)) && (passingSize != structSize)))
-                    {
-                        makeOutArgCopy = true;
-                    }
-
-                    // If the arg may go into registers (both fully or split)
-                    // then we cannot handle passing it from an arbitrary
-                    // source if it would require passing a 3 byte chunk.
-                    // Placing 3 bytes into a register requires multiple loads/shifts/or.
-                    // In theory we could more easily support it for split args
-                    // as those load registers fully always, but currently we
-                    // do not.
-                    if ((arg.AbiInfo.NumRegs > 0) && ((passingSize % REGSIZE_BYTES) == 3))
                     {
                         makeOutArgCopy = true;
                     }
