@@ -304,7 +304,8 @@ namespace System.Net
 
             byte[]? result =
                 resultBlobLength == 0 || _tokenBuffer == null ? null :
-                (_tokenBuffer.Length == resultBlobLength ? _tokenBuffer : _tokenBuffer.AsSpan(0, resultBlobLength).ToArray());
+                _tokenBuffer.Length == resultBlobLength ? _tokenBuffer :
+                _tokenBuffer[0..resultBlobLength];
 
             // The return value will tell us correctly if the handshake is over or not
             if (statusCode.ErrorCode == SecurityStatusPalErrorCode.OK
