@@ -63,7 +63,7 @@ Project maintainers will merge changes that improve the product significantly an
 
 Maintainers will not merge changes that have narrowly-defined benefits, due to compatibility risk. The .NET Core codebase is used by several Microsoft products (for example, ASP.NET Core, .NET Framework 4.x, Windows Universal Apps) to enable execution of managed code. Other companies are building products on top of .NET, too. We may revert changes if they are found to be breaking.
 
-Contributions must also satisfy the other published guidelines defined in this document.
+Contributions must also satisfy the other published guidelines defined in this document as well as in [pr-guide docs](docs/pr-guide.md).
 
 ### DOs and DON'Ts
 
@@ -86,7 +86,6 @@ Please do not:
 * **DON'T** commit code that you didn't write. If you find code that you think is a good fit to add to .NET Core, file an issue and start a discussion before proceeding.
 * **DON'T** submit PRs that alter licensing related files or headers. If you believe there's a problem with them, file an issue and we'll be happy to discuss it.
 * **DON'T** add API additions without filing an issue and discussing with us first. See [API Review Process](docs/project/api-review-process.md).
-* **DON'T** squash commits into the existing commits that are sent out in PR. All the changes done as part of addressing the review feedback should be part of separate commits that are pushed on top of existing commits out for review. This helps reviewers to review the incremental changes instead of reviewing all the changes submitted in the PR.
 
 ### Breaking Changes
 
