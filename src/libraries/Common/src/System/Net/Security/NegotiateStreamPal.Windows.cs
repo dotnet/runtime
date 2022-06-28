@@ -213,7 +213,7 @@ namespace System.Net.Security
                     pBuffers = unmanagedBuffer
                 };
 
-                int errorCode = GlobalSSPI.SSPIAuth.VerifySignature(securityContext, ref sdcInOut, 0);
+                int errorCode = GlobalSSPI.SSPIAuth.DecryptMessage(securityContext, ref sdcInOut, out _);
                 if (errorCode != 0)
                 {
                     Exception e = new Win32Exception(errorCode);
@@ -268,7 +268,8 @@ namespace System.Net.Security
                     pBuffers = unmanagedBuffer
                 };
 
-                int errorCode = GlobalSSPI.SSPIAuth.MakeSignature(securityContext, ref sdcInOut, 0);
+                uint qop = Interop.SspiCli.SECQOP_WRAP_NO_ENCRYPT;
+                int errorCode = GlobalSSPI.SSPIAuth.EncryptMessage(securityContext, ref sdcInOut, qop);
 
                 if (errorCode != 0)
                 {
@@ -331,21 +332,13 @@ namespace System.Net.Security
                     pBuffers = unmanagedBuffer
                 };
 
-                int errorCode;
-
-                if (isConfidential)
+                if (isNtlm && !isConfidential)
                 {
-                    errorCode = GlobalSSPI.SSPIAuth.EncryptMessage(securityContext, ref sdcInOut, sequenceNumber);
+                    dataBuffer->BufferType |= SecurityBufferType.SECBUFFER_READONLY;
                 }
-                else
-                {
-                    if (isNtlm)
-                    {
-                       dataBuffer->BufferType |= SecurityBufferType.SECBUFFER_READONLY;
-                    }
 
-                    errorCode = GlobalSSPI.SSPIAuth.MakeSignature(securityContext, ref sdcInOut, 0);
-                }
+                uint qop = isConfidential ? 0 : Interop.SspiCli.SECQOP_WRAP_NO_ENCRYPT;
+                int errorCode = GlobalSSPI.SSPIAuth.EncryptMessage(securityContext, ref sdcInOut, qop);
 
                 if (errorCode != 0)
                 {
@@ -409,15 +402,20 @@ namespace System.Net.Security
                     pBuffers = unmanagedBuffer
                 };
 
-                int errorCode = isConfidential ?
-                    GlobalSSPI.SSPIAuth.DecryptMessage(securityContext, ref sdcInOut, sequenceNumber) :
-                    GlobalSSPI.SSPIAuth.VerifySignature(securityContext, ref sdcInOut, sequenceNumber);
+                uint qop;
+                int errorCode = GlobalSSPI.SSPIAuth.DecryptMessage(securityContext, ref sdcInOut, out qop);
 
                 if (errorCode != 0)
                 {
                     Exception e = new Win32Exception(errorCode);
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, e);
                     throw new Win32Exception(errorCode);
+                }
+
+                if (qop == Interop.SspiCli.SECQOP_WRAP_NO_ENCRYPT && isConfidential)
+                {
+                    Debug.Fail($"Expected qop = 0, returned value = {qop}");
+                    throw new InvalidOperationException(SR.net_auth_message_not_encrypted);
                 }
 
                 if (dataBuffer->BufferType != SecurityBufferType.SECBUFFER_DATA)
@@ -465,24 +463,28 @@ namespace System.Net.Security
                 {
                     pBuffers = unmanagedBuffer
                 };
+                uint qop;
                 int errorCode;
 
-                if (isConfidential)
-                {
-                    errorCode = GlobalSSPI.SSPIAuth.DecryptMessage(securityContext, ref sdcInOut, sequenceNumber);
-                }
-                else
+                if (!isConfidential)
                 {
                     realDataType |= SecurityBufferType.SECBUFFER_READONLY;
                     dataBuffer->BufferType = realDataType;
-                    errorCode = GlobalSSPI.SSPIAuth.VerifySignature(securityContext, ref sdcInOut, sequenceNumber);
                 }
+
+                errorCode = GlobalSSPI.SSPIAuth.DecryptMessage(securityContext, ref sdcInOut, out qop);
 
                 if (errorCode != 0)
                 {
                     Exception e = new Win32Exception(errorCode);
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, e);
                     throw new Win32Exception(errorCode);
+                }
+
+                if (isConfidential && qop == Interop.SspiCli.SECQOP_WRAP_NO_ENCRYPT)
+                {
+                    Debug.Fail($"Expected qop = 0, returned value = {qop}");
+                    throw new InvalidOperationException(SR.net_auth_message_not_encrypted);
                 }
 
                 if (dataBuffer->BufferType != realDataType)
