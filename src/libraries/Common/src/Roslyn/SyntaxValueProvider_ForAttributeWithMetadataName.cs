@@ -119,7 +119,7 @@ internal static partial class SyntaxValueProviderExtensions
         {
             var (grouping, compilation) = tuple;
 
-            var result = new ValueListBuilder<T>(Span<T>.Empty);
+            using var result = new ValueListBuilder<T>(Span<T>.Empty);
             var syntaxTree = grouping.SyntaxTree;
             var semanticModel = compilation.GetSemanticModel(syntaxTree);
 
@@ -154,7 +154,7 @@ internal static partial class SyntaxValueProviderExtensions
             string fullyQualifiedMetadataName)
         {
             var targetSyntaxTree = attributeTarget.SyntaxTree;
-            var result = new ValueListBuilder<AttributeData>(Span<AttributeData>.Empty);
+            using var result = new ValueListBuilder<AttributeData>(Span<AttributeData>.Empty);
 
             addMatchingAttributes(ref result, symbol.GetAttributes());
             addMatchingAttributes(ref result, (symbol as IMethodSymbol)?.GetReturnTypeAttributes());

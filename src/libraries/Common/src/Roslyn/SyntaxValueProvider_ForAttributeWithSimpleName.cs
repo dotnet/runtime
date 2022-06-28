@@ -135,16 +135,26 @@ internal static partial class SyntaxValueProviderExtensions
 
         // Used to ensure that as we recurse through alias names to see if they could bind to attributeName that we
         // don't get into cycles.
+
         var seenNames = new ValueListBuilder<string>(Span<string>.Empty);
         var results = new ValueListBuilder<SyntaxNode>(Span<SyntaxNode>.Empty);
         var attributeTargets = new ValueListBuilder<SyntaxNode>(Span<SyntaxNode>.Empty);
 
-        recurse(compilationUnit, ref localAliases, ref seenNames, ref results, ref attributeTargets);
+        try
+        {
+            recurse(compilationUnit, ref localAliases, ref seenNames, ref results, ref attributeTargets);
 
-        if (results.Length == 0)
-            return ImmutableArray<SyntaxNode>.Empty;
+            if (results.Length == 0)
+                return ImmutableArray<SyntaxNode>.Empty;
 
-        return results.AsSpan().ToArray().Distinct().ToImmutableArray();
+            return results.AsSpan().ToArray().Distinct().ToImmutableArray();
+        }
+        finally
+        {
+            attributeTargets.Dispose();
+            results.Dispose();
+            seenNames.Dispose();
+        }
 
         void recurse(
             SyntaxNode node,

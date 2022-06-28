@@ -595,7 +595,7 @@ ExitDecodeTypeName:
                 return name == SystemString ? s_splitQualifiedNameSystem : ImmutableArray.Create(name);
             }
 
-            var result = new ValueListBuilder<string>(Span<string>.Empty);
+            using var result = new ValueListBuilder<string>(Span<string>.Empty);
 
             int start = 0;
             for (int i = 0; dots > 0; i++)
