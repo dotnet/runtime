@@ -158,6 +158,7 @@
   <!-- Unix -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix'">
     <Compile Include="System\ConsolePal.Unix.cs" />
+    <Compile Include="System\ConsolePal.TerminalFormatStrings.cs" />
     <Compile Include="$(CommonPath)System\Console\ConsoleUtils.cs"
              Link="Common\System\Console\ConsoleUtils.cs" />
     <Compile Include="System\TermInfo.cs" />
