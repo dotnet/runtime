@@ -61,13 +61,13 @@ namespace System.Net.WebSockets
                             || (options.HttpVersion == HttpVersion.Version11 && options.HttpVersionPolicy == HttpVersionPolicy.RequestVersionOrHigher))
                         {
                             request = new HttpRequestMessage(HttpMethod.Connect, uri);
-                            request.Version = new Version(2, 0);
+                            request.Version = HttpVersion.Version20;
                             tryDowngrade = true;
                         }
                         else if (tryDowngrade || options.HttpVersion == HttpVersion.Version11)
                         {
                             request = new HttpRequestMessage(HttpMethod.Get, uri);
-                            request.Version = new Version(1, 1);
+                            request.Version = HttpVersion.Version11;
                             tryDowngrade = false;
                         }
                         else
@@ -344,7 +344,6 @@ namespace System.Net.WebSockets
         /// <param name="options">The options controlling the request.</param>
         private static string? AddWebSocketHeaders(HttpRequestMessage request, ClientWebSocketOptions options)
         {
-            request.Version = options.HttpVersion;
             // always exact because we handle downgrade here
             request.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
             string? secValue = null;
@@ -360,7 +359,6 @@ namespace System.Net.WebSockets
             }
             else if (request.Version == HttpVersion.Version20)
             {
-                request.Method = HttpMethod.Connect;
                 request.Headers.Protocol = "websocket";
                 request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.Origin, request.Headers.Host);
             }
