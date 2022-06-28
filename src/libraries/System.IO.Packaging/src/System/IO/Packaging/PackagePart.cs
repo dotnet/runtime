@@ -722,7 +722,7 @@ namespace System.IO.Packaging
         //If the part has been deleted then we throw
         private void ThrowIfPackagePartDeleted()
         {
-            if (_deleted == true)
+            if (_deleted)
                 throw new InvalidOperationException(SR.PackagePartDeleted);
         }
 

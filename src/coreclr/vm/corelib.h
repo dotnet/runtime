@@ -303,7 +303,7 @@ DEFINE_CLASS(ENUM,                  System,                 Enum)
 
 DEFINE_CLASS(ENVIRONMENT,           System,                 Environment)
 DEFINE_METHOD(ENVIRONMENT,       GET_RESOURCE_STRING_LOCAL, GetResourceStringLocal,     SM_Str_RetStr)
-DEFINE_METHOD(ENVIRONMENT,       SET_COMMAND_LINE_ARGS,     SetCommandLineArgs,         SM_ArrStr_RetVoid)
+DEFINE_METHOD(ENVIRONMENT,       INITIALIZE_COMMAND_LINE_ARGS, InitializeCommandLineArgs, SM_PtrChar_Int_PtrPtrChar_RetArrStr)
 
 DEFINE_CLASS(EVENT,                 Reflection,             RuntimeEventInfo)
 
@@ -330,11 +330,12 @@ DEFINE_FIELD_U(_xptrs,             ExceptionObject,    _xptrs)
 DEFINE_FIELD_U(_xcode,             ExceptionObject,    _xcode)
 DEFINE_FIELD_U(_HResult,           ExceptionObject,    _HResult)
 DEFINE_CLASS(EXCEPTION,             System,                 Exception)
+DEFINE_METHOD(EXCEPTION,            INTERNAL_PRESERVE_STACK_TRACE, InternalPreserveStackTrace, IM_RetVoid)
+// Following Exception members are only used when FEATURE_COMINTEROP
 DEFINE_METHOD(EXCEPTION,            GET_CLASS_NAME,         GetClassName,               IM_RetStr)
 DEFINE_PROPERTY(EXCEPTION,          MESSAGE,                Message,                    Str)
 DEFINE_PROPERTY(EXCEPTION,          SOURCE,                 Source,                     Str)
-DEFINE_PROPERTY(EXCEPTION,          HELP_LINK,              HelpLink,                   Str)
-DEFINE_METHOD(EXCEPTION,            INTERNAL_PRESERVE_STACK_TRACE, InternalPreserveStackTrace, IM_RetVoid)
+DEFINE_METHOD(EXCEPTION,            GET_HELP_CONTEXT,       GetHelpContext,             IM_RefUInt_RetStr)
 
 
 DEFINE_CLASS(SYSTEM_EXCEPTION,      System,                 SystemException)
@@ -488,7 +489,6 @@ DEFINE_CLASS(MEMBER,                Reflection,             MemberInfo)
 
 DEFINE_CLASS(METHOD_INVOKER,        Reflection,             MethodInvoker)
 DEFINE_CLASS(CONSTRUCTOR_INVOKER,   Reflection,             ConstructorInvoker)
-DEFINE_CLASS(DYNAMIC_METHOD_INVOKER,ReflectionEmit,         DynamicMethodInvoker)
 
 DEFINE_CLASS_U(Reflection,             RuntimeMethodInfo,  NoClass)
 DEFINE_FIELD_U(m_handle,                   ReflectMethodObject, m_pMD)

@@ -333,11 +333,11 @@ namespace System.Linq.Expressions.Interpreter
         {
             if (value)
             {
-                Emit(s_true ?? (s_true = new LoadObjectInstruction(Utils.BoxedTrue)));
+                Emit(s_true ??= new LoadObjectInstruction(Utils.BoxedTrue));
             }
             else
             {
-                Emit(s_false ?? (s_false = new LoadObjectInstruction(Utils.BoxedFalse)));
+                Emit(s_false ??= new LoadObjectInstruction(Utils.BoxedFalse));
             }
         }
 
@@ -345,7 +345,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             if (value == null)
             {
-                Emit(s_null ?? (s_null = new LoadObjectInstruction(null)));
+                Emit(s_null ??= new LoadObjectInstruction(null));
                 return;
             }
 
@@ -357,9 +357,8 @@ namespace System.Linq.Expressions.Interpreter
                     return;
                 }
 
-                if (value is int)
+                if (value is int i)
                 {
-                    int i = (int)value;
                     if (i >= PushIntMinCachedValue && i <= PushIntMaxCachedValue)
                     {
                         if (s_Ints == null)

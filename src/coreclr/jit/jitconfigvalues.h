@@ -42,6 +42,8 @@ CONFIG_INTEGER(JitBreakOnBadCode, W("JitBreakOnBadCode"), 0)
 CONFIG_INTEGER(JitBreakOnMinOpts, W("JITBreakOnMinOpts"), 0) // Halt if jit switches to MinOpts
 CONFIG_INTEGER(JitBreakOnUnsafeCode, W("JitBreakOnUnsafeCode"), 0)
 CONFIG_INTEGER(JitCloneLoops, W("JitCloneLoops"), 1) // If 0, don't clone. Otherwise clone loops for optimizations.
+CONFIG_INTEGER(JitCloneLoopsWithTypeTests, W("JitCloneLoopsWithTypeTests"), 1) // If 0, don't clone loops based on
+                                                                               // invariant type tests
 CONFIG_INTEGER(JitDebugLogLoopCloning, W("JitDebugLogLoopCloning"), 0) // In debug builds log places where loop cloning
                                                                        // optimizations are performed on the fast path.
 CONFIG_INTEGER(JitDefaultFill, W("JitDefaultFill"), 0xdd) // In debug builds, initialize the memory allocated by the nra
@@ -164,6 +166,9 @@ CONFIG_INTEGER(JitStressBiasedCSE, W("JitStressBiasedCSE"), 0x101)     // Intern
                                                                        // stress.
 CONFIG_INTEGER(JitStressModeNamesOnly, W("JitStressModeNamesOnly"), 0) // Internal Jit stress: if nonzero, only enable
                                                                        // stress modes listed in JitStressModeNames
+CONFIG_INTEGER(JitStressProcedureSplitting, W("JitStressProcedureSplitting"), 0) // Always split after the first basic
+                                                                                 // block. Skips functions with EH
+                                                                                 // for simplicity.
 CONFIG_INTEGER(JitStressRegs, W("JitStressRegs"), 0)
 CONFIG_STRING(JitStressRegsRange, W("JitStressRegsRange")) // Only apply JitStressRegs to methods in this hash range
 
@@ -192,6 +197,7 @@ CONFIG_INTEGER(JitDumpAtOSROffset, W("JitDumpAtOSROffset"), -1) // Only dump OSR
 CONFIG_INTEGER(JitDumpInlinePhases, W("JitDumpInlinePhases"), 1) // Dump inline compiler phases
 CONFIG_METHODSET(JitEHDump, W("JitEHDump")) // Dump the EH table for the method, as reported to the VM
 CONFIG_METHODSET(JitExclude, W("JitExclude"))
+CONFIG_INTEGER(JitFakeProcedureSplitting, W("JitFakeProcedureSplitting"), 0) // Do code splitting independent of VM.
 CONFIG_METHODSET(JitForceProcedureSplitting, W("JitForceProcedureSplitting"))
 CONFIG_METHODSET(JitGCDump, W("JitGCDump"))
 CONFIG_METHODSET(JitDebugDump, W("JitDebugDump"))
@@ -239,6 +245,8 @@ CONFIG_INTEGER(JitDumpFgBlockID, W("JitDumpFgBlockID"), 0) // 0 == display block
                                                            // bbNum and bbID
 CONFIG_INTEGER(JitDumpFgBlockFlags, W("JitDumpFgBlockFlags"), 0) // 0 == don't display block flags; 1 == display flags
 CONFIG_INTEGER(JitDumpFgLoopFlags, W("JitDumpFgLoopFlags"), 0)   // 0 == don't display loop flags; 1 == display flags
+CONFIG_INTEGER(JitDumpFgBlockOrder, W("JitDumpFgBlockOrder"), 0) // 0 == bbNext order;  1 == bbNum order; 2 == bbID
+                                                                 // order
 
 CONFIG_STRING(JitDumpPreciseDebugInfoFile, W("JitDumpPreciseDebugInfoFile"))
 CONFIG_INTEGER(JitDisasmWithDebugInfo, W("JitDisasmWithDebugInfo"), 0)
@@ -346,9 +354,9 @@ CONFIG_INTEGER(JitDisableSimdVN, W("JitDisableSimdVN"), 0) // Default 0, ValueNu
 //
 CONFIG_INTEGER(JitConstCSE, W("JitConstCSE"), 0)
 
-#define CONST_CSE_ENABLE_ARM64 0
+#define CONST_CSE_ENABLE_ARM 0
 #define CONST_CSE_DISABLE_ALL 1
-#define CONST_CSE_ENABLE_ARM64_NO_SHARING 2
+#define CONST_CSE_ENABLE_ARM_NO_SHARING 2
 #define CONST_CSE_ENABLE_ALL 3
 #define CONST_CSE_ENABLE_ALL_NO_SHARING 4
 
@@ -400,6 +408,7 @@ CONFIG_INTEGER(JitDoLoopHoisting, W("JitDoLoopHoisting"), 1)   // Perform loop h
 CONFIG_INTEGER(JitDoLoopInversion, W("JitDoLoopInversion"), 1) // Perform loop inversion on "for/while" loops
 CONFIG_INTEGER(JitDoRangeAnalysis, W("JitDoRangeAnalysis"), 1) // Perform range check analysis
 CONFIG_INTEGER(JitDoRedundantBranchOpts, W("JitDoRedundantBranchOpts"), 1) // Perform redundant branch optimizations
+
 CONFIG_INTEGER(JitDoSsa, W("JitDoSsa"), 1) // Perform Static Single Assignment (SSA) numbering on the variables
 CONFIG_INTEGER(JitDoValueNumber, W("JitDoValueNumber"), 1) // Perform value numbering on method expressions
 
@@ -539,10 +548,12 @@ CONFIG_INTEGER(JitMinimalJitProfiling, W("JitMinimalJitProfiling"), 1)
 CONFIG_INTEGER(JitMinimalPrejitProfiling, W("JitMinimalPrejitProfiling"), 0)
 
 CONFIG_INTEGER(JitProfileCasts, W("JitProfileCasts"), 0)                     // Profile castclass/isinst
-CONFIG_INTEGER(JitConsumeProfileForCasts, W("JitConsumeProfileForCasts"), 0) // Consume profile data (if any) for
+CONFIG_INTEGER(JitConsumeProfileForCasts, W("JitConsumeProfileForCasts"), 1) // Consume profile data (if any) for
                                                                              // castclass/isinst
 
 CONFIG_INTEGER(JitClassProfiling, W("JitClassProfiling"), 1)         // Profile virtual and interface calls
+CONFIG_INTEGER(JitDelegateProfiling, W("JitDelegateProfiling"), 1)   // Profile resolved delegate call targets
+CONFIG_INTEGER(JitVTableProfiling, W("JitVTableProfiling"), 0)       // Profile resolved vtable call targets
 CONFIG_INTEGER(JitEdgeProfiling, W("JitEdgeProfiling"), 1)           // Profile edges instead of blocks
 CONFIG_INTEGER(JitCollect64BitCounts, W("JitCollect64BitCounts"), 0) // Collect counts as 64-bit values.
 
@@ -594,6 +605,8 @@ CONFIG_STRING(JitFunctionFile, W("JitFunctionFile"))
 //    1: disable frames that save FP/LR registers with the callee-saved registers (at the top of the frame)
 //    2: force all frames to use the frame types that save FP/LR registers with the callee-saved registers (at the top
 //    of the frame)
+//    3: force all frames to use the frame types that save FP/LR registers with the callee-saved registers (at the top
+//    of the frame) and also force using the large funclet frame variation (frame 5) if possible.
 CONFIG_INTEGER(JitSaveFpLrWithCalleeSavedRegisters, W("JitSaveFpLrWithCalleeSavedRegisters"), 0)
 #endif // defined(TARGET_ARM64)
 

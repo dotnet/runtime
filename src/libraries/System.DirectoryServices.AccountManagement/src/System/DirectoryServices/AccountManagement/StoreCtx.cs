@@ -374,9 +374,8 @@ namespace System.DirectoryServices.AccountManagement
                             value.GetType().ToString());
 
                     // Build the right filter based on type of the property value
-                    if (value is PrincipalValueCollection<string>)
+                    if (value is PrincipalValueCollection<string> trackingList)
                     {
-                        PrincipalValueCollection<string> trackingList = (PrincipalValueCollection<string>)value;
                         foreach (string s in trackingList.Inserted)
                         {
                             object filter = FilterFactory.CreateFilter(propertyName);
@@ -384,11 +383,10 @@ namespace System.DirectoryServices.AccountManagement
                             qbeFilterDescription.FiltersToApply.Add(filter);
                         }
                     }
-                    else if (value is X509Certificate2Collection)
+                    else if (value is X509Certificate2Collection certCollection)
                     {
                         // Since QBE filter objects are always unpersisted, any certs in the collection
                         // must have been inserted by the application.
-                        X509Certificate2Collection certCollection = (X509Certificate2Collection)value;
                         foreach (X509Certificate2 cert in certCollection)
                         {
                             object filter = FilterFactory.CreateFilter(propertyName);

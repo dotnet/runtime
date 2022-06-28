@@ -46,7 +46,7 @@ namespace System.Net.Http.Headers
             }
 
             // GetProductInfoLength() already skipped trailing whitespace. No need to do it here again.
-            current = current + length;
+            current += length;
 
             // If we have more values, make sure we saw a whitespace before. Values like "product/1.0(comment)" are
             // invalid since there must be a whitespace between the product and the comment value.

@@ -86,6 +86,19 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowArgumentException_CannotSerializeInvalidType(string paramName, Type type, Type? parentClassType, string? propertyName)
+        {
+            if (parentClassType == null)
+            {
+                Debug.Assert(propertyName == null);
+                throw new ArgumentException(SR.Format(SR.CannotSerializeInvalidType, type), paramName);
+            }
+
+            Debug.Assert(propertyName != null);
+            throw new ArgumentException(SR.Format(SR.CannotSerializeInvalidMember, type, propertyName, parentClassType), paramName);
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_CannotSerializeInvalidType(Type type, Type? parentClassType, MemberInfo? memberInfo)
         {
             if (parentClassType == null)
@@ -102,6 +115,24 @@ namespace System.Text.Json
         public static void ThrowInvalidOperationException_SerializationConverterNotCompatible(Type converterType, Type type)
         {
             throw new InvalidOperationException(SR.Format(SR.SerializationConverterNotCompatible, converterType, type));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_ResolverTypeNotCompatible(Type requestedType, Type actualType)
+        {
+            throw new InvalidOperationException(SR.Format(SR.ResolverTypeNotCompatible, requestedType, actualType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_ResolverTypeInfoOptionsNotCompatible()
+        {
+            throw new InvalidOperationException(SR.ResolverTypeInfoOptionsNotCompatible);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_JsonTypeInfoUsedButTypeInfoResolverNotSet()
+        {
+            throw new InvalidOperationException(SR.JsonTypeInfoUsedButTypeInfoResolverNotSet);
         }
 
         [DoesNotReturn]
@@ -140,9 +171,33 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_SerializerPropertyNameConflict(Type type, JsonPropertyInfo jsonPropertyInfo)
+        public static void ThrowInvalidOperationException_SerializerContextOptionsImmutable()
         {
-            throw new InvalidOperationException(SR.Format(SR.SerializerPropertyNameConflict, type, jsonPropertyInfo.ClrName));
+            throw new InvalidOperationException(SR.SerializerContextOptionsImmutable);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_TypeInfoResolverImmutable()
+        {
+            throw new InvalidOperationException(SR.TypeInfoResolverImmutable);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_TypeInfoImmutable()
+        {
+            throw new InvalidOperationException(SR.TypeInfoImmutable);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_PropertyInfoImmutable()
+        {
+            throw new InvalidOperationException(SR.PropertyInfoImmutable);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_SerializerPropertyNameConflict(Type type, string propertyName)
+        {
+            throw new InvalidOperationException(SR.Format(SR.SerializerPropertyNameConflict, type, propertyName));
         }
 
         [DoesNotReturn]
@@ -192,9 +247,9 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_ExtensionDataCannotBindToCtorParam(JsonPropertyInfo jsonPropertyInfo)
+        public static void ThrowInvalidOperationException_ExtensionDataCannotBindToCtorParam(string propertyName, JsonPropertyInfo jsonPropertyInfo)
         {
-            throw new InvalidOperationException(SR.Format(SR.ExtensionDataCannotBindToCtorParam, jsonPropertyInfo.ClrName, jsonPropertyInfo.DeclaringType));
+            throw new InvalidOperationException(SR.Format(SR.ExtensionDataCannotBindToCtorParam, propertyName, jsonPropertyInfo.DeclaringType));
         }
 
         [DoesNotReturn]
@@ -237,6 +292,18 @@ namespace System.Text.Json
             NotSupportedException ex = new NotSupportedException(
                 SR.Format(SR.ObjectWithParameterizedCtorRefMetadataNotSupported, jsonTypeInfo.Type));
             ThrowNotSupportedException(ref state, reader, ex);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKindNone()
+        {
+            throw new InvalidOperationException(SR.JsonTypeInfoOperationNotPossibleForKindNone);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_CollectionIsReadOnly()
+        {
+            throw new InvalidOperationException(SR.CollectionIsReadOnly);
         }
 
         [DoesNotReturn]
@@ -567,6 +634,13 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_JsonPropertyInfoIsBoundToDifferentJsonTypeInfo(JsonPropertyInfo propertyInfo)
+        {
+            Debug.Assert(propertyInfo.ParentTypeInfo != null, "We should not throw this exception when ParentTypeInfo is null");
+            throw new InvalidOperationException(SR.Format(SR.JsonPropertyInfoBoundToDifferentParent, propertyInfo.Name, propertyInfo.ParentTypeInfo.Type.FullName));
+        }
+
+        [DoesNotReturn]
         internal static void ThrowUnexpectedMetadataException(
             ReadOnlySpan<byte> propertyName,
             ref Utf8JsonReader reader,
@@ -672,9 +746,9 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_TypeDicriminatorIdIsAlreadySpecified(Type baseType, string typeDiscriminatorId)
+        public static void ThrowInvalidOperationException_TypeDicriminatorIdIsAlreadySpecified(Type baseType, object typeDiscriminator)
         {
-            throw new InvalidOperationException(SR.Format(SR.Polymorphism_TypeDicriminatorIdIsAlreadySpecified, baseType, typeDiscriminatorId));
+            throw new InvalidOperationException(SR.Format(SR.Polymorphism_TypeDicriminatorIdIsAlreadySpecified, baseType, typeDiscriminator));
         }
 
         [DoesNotReturn]
@@ -690,9 +764,9 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowJsonException_UnrecognizedTypeDiscriminator(string typeDiscriminatorId)
+        public static void ThrowJsonException_UnrecognizedTypeDiscriminator(object typeDiscriminator)
         {
-            ThrowJsonException(SR.Format(SR.Polymorphism_UnrecognizedTypeDiscriminator, typeDiscriminatorId));
+            ThrowJsonException(SR.Format(SR.Polymorphism_UnrecognizedTypeDiscriminator, typeDiscriminator));
         }
     }
 }

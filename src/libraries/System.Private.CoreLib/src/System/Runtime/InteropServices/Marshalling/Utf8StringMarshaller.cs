@@ -48,6 +48,7 @@ namespace System.Runtime.InteropServices.Marshalling
             const int MaxUtf8BytesPerChar = 3;
 
             // >= for null terminator
+            // Use the cast to long to avoid the checked operation
             if ((long)MaxUtf8BytesPerChar * str.Length >= buffer.Length)
             {
                 // Calculate accurate byte count when the provided stack-allocated buffer is not sufficient

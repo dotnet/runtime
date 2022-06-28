@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
@@ -148,19 +148,18 @@
     <Compile Include="$(BclSourcesRoot)\System\IO\FileNotFoundException.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Math.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\MathF.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\MissingMemberException.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\MulticastDelegate.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Object.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Assembly.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\AssemblyName.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Associates.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\ConstructorInfo.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\ConstructorInvoker.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\AssemblyBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ConstructorBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\CustomAttributeBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicILGenerator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicMethod.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicMethodInvoker.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\EnumBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\EventBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\FieldBuilder.cs" />
@@ -187,6 +186,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\AssemblyExtensions.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\MetadataUpdater.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBase.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodInvoker.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RtFieldInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeAssembly.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeConstructorInfo.CoreCLR.cs" />

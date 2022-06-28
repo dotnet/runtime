@@ -175,7 +175,7 @@ PhaseStatus Compiler::fgInsertGCPolls()
     if (createdPollBlocks)
     {
         noway_assert(opts.OptimizationEnabled());
-        fgReorderBlocks();
+        fgReorderBlocks(/* useProfileData */ false);
         constexpr bool computePreds = true;
         constexpr bool computeDoms  = false;
         fgUpdateChangedFlowGraph(computePreds, computeDoms);
@@ -961,13 +961,6 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
         {
             return false;
         }
-
-        LclVarDsc* varDsc = lvaGetDesc(varNum);
-
-        if (varDsc->lvStackByref)
-        {
-            return false;
-        }
     }
     else if (addr->gtOper == GT_ADDR)
     {
@@ -1284,11 +1277,16 @@ bool Compiler::fgCastNeeded(GenTree* tree, var_types toType)
         return false;
     }
     //
-    // If the sign-ness of the two types are different then a cast is necessary
+    // If the sign-ness of the two types are different then a cast is necessary, except for
+    // an unsigned -> signed cast where we already know the sign bit is zero.
     //
     if (varTypeIsUnsigned(toType) != varTypeIsUnsigned(fromType))
     {
-        return true;
+        bool isZeroExtension = varTypeIsUnsigned(fromType) && (genTypeSize(fromType) < genTypeSize(toType));
+        if (!isZeroExtension)
+        {
+            return true;
+        }
     }
     //
     // If the from type is the same size or smaller then an additional cast is not necessary
@@ -1535,7 +1533,7 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
         critSect = info.compCompHnd->getMethodSync(info.compMethodHnd, (void**)&pCrit);
         noway_assert((!critSect) != (!pCrit));
 
-        tree = gtNewIconEmbHndNode(critSect, pCrit, GTF_ICON_METHOD_HDL, info.compMethodHnd);
+        tree = gtNewIconEmbHndNode(critSect, pCrit, GTF_ICON_GLOBAL_PTR, info.compMethodHnd);
     }
     else
     {
@@ -1783,8 +1781,9 @@ void Compiler::fgAddSyncMethodEnterExit()
     }
 
     // Create a 'monitor acquired' boolean (actually, an unsigned byte: 1 = acquired, 0 = not acquired).
-
-    var_types typeMonAcquired = TYP_UBYTE;
+    // For EnC this is part of the frame header. Furthermore, this is allocated above PSP on ARM64.
+    // To avoid complicated reasoning about alignment we always allocate a full pointer sized slot for this.
+    var_types typeMonAcquired = TYP_I_IMPL;
     this->lvaMonAcquired      = lvaGrabTemp(true DEBUGARG("Synchronized method monitor acquired boolean"));
 
     lvaTable[lvaMonAcquired].lvType = typeMonAcquired;
@@ -1810,10 +1809,12 @@ void Compiler::fgAddSyncMethodEnterExit()
 #endif
     }
 
-    // Make a copy of the 'this' pointer to be used in the handler so it does not inhibit enregistration
-    // of all uses of the variable.
-    unsigned lvaCopyThis = 0;
-    if (!info.compIsStatic)
+    // Make a copy of the 'this' pointer to be used in the handler so it does
+    // not inhibit enregistration of all uses of the variable. We cannot do
+    // this optimization in EnC code as we would need to take care to save the
+    // copy on EnC transitions, so guard this on optimizations being enabled.
+    unsigned lvaCopyThis = BAD_VAR_NUM;
+    if (opts.OptimizationEnabled() && !info.compIsStatic)
     {
         lvaCopyThis                  = lvaGrabTemp(true DEBUGARG("Synchronized method copy of this for handler"));
         lvaTable[lvaCopyThis].lvType = TYP_REF;
@@ -1833,7 +1834,8 @@ void Compiler::fgAddSyncMethodEnterExit()
     }
 
     // exceptional case
-    fgCreateMonitorTree(lvaMonAcquired, lvaCopyThis, faultBB, false /*exit*/);
+    fgCreateMonitorTree(lvaMonAcquired, lvaCopyThis != BAD_VAR_NUM ? lvaCopyThis : info.compThisArg, faultBB,
+                        false /*exit*/);
 
     // non-exceptional cases
     for (BasicBlock* const block : Blocks())
@@ -1857,10 +1859,9 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
 {
     // Insert the expression "enter/exitCrit(this, &acquired)" or "enter/exitCrit(handle, &acquired)"
 
-    var_types typeMonAcquired = TYP_UBYTE;
-    GenTree*  varNode         = gtNewLclvNode(lvaMonAcquired, typeMonAcquired);
-    GenTree*  varAddrNode     = gtNewOperNode(GT_ADDR, TYP_BYREF, varNode);
-    GenTree*  tree;
+    GenTree* varNode     = gtNewLclvNode(lvaMonAcquired, lvaGetDesc(lvaMonAcquired)->TypeGet());
+    GenTree* varAddrNode = gtNewOperNode(GT_ADDR, TYP_BYREF, varNode);
+    GenTree* tree;
 
     if (info.compIsStatic)
     {
@@ -3414,49 +3415,65 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
     BasicBlock* block;
     BasicBlock* lblk;
 
-    for (lblk = nullptr, block = fgFirstBB; block != nullptr; lblk = block, block = block->bbNext)
+    bool forceSplit = false;
+
+#ifdef DEBUG
+    // If stress-splitting, split right after the first block; don't handle functions with EH
+    forceSplit = JitConfig.JitStressProcedureSplitting() && (compHndBBtabCount == 0);
+#endif
+
+    if (forceSplit)
     {
-        bool blockMustBeInHotSection = false;
+        firstColdBlock       = fgFirstBB->bbNext;
+        prevToFirstColdBlock = fgFirstBB;
+        JITDUMP("JitStressProcedureSplitting is enabled: Splitting after the first basic block\n");
+    }
+    else
+    {
+        for (lblk = nullptr, block = fgFirstBB; block != nullptr; lblk = block, block = block->bbNext)
+        {
+            bool blockMustBeInHotSection = false;
 
 #if HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
-        if (bbIsHandlerBeg(block))
-        {
-            blockMustBeInHotSection = true;
-        }
+            if (bbIsHandlerBeg(block))
+            {
+                blockMustBeInHotSection = true;
+            }
 #endif // HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
 
-        // Do we have a candidate for the first cold block?
-        if (firstColdBlock != nullptr)
-        {
-            // We have a candidate for first cold block
-
-            // Is this a hot block?
-            if (blockMustBeInHotSection || (block->isRunRarely() == false))
+            // Do we have a candidate for the first cold block?
+            if (firstColdBlock != nullptr)
             {
-                // We have to restart the search for the first cold block
-                firstColdBlock       = nullptr;
-                prevToFirstColdBlock = nullptr;
-            }
-        }
-        else // (firstColdBlock == NULL)
-        {
-            // We don't have a candidate for first cold block
+                // We have a candidate for first cold block
 
-            // Is this a cold block?
-            if (!blockMustBeInHotSection && (block->isRunRarely() == true))
-            {
-                //
-                // If the last block that was hot was a BBJ_COND
-                // then we will have to add an unconditional jump
-                // so the code size for block needs be large
-                // enough to make it worth our while
-                //
-                if ((lblk == nullptr) || (lblk->bbJumpKind != BBJ_COND) || (fgGetCodeEstimate(block) >= 8))
+                // Is this a hot block?
+                if (blockMustBeInHotSection || (block->isRunRarely() == false))
                 {
-                    // This block is now a candidate for first cold block
-                    // Also remember the predecessor to this block
-                    firstColdBlock       = block;
-                    prevToFirstColdBlock = lblk;
+                    // We have to restart the search for the first cold block
+                    firstColdBlock       = nullptr;
+                    prevToFirstColdBlock = nullptr;
+                }
+            }
+            else // (firstColdBlock == NULL)
+            {
+                // We don't have a candidate for first cold block
+
+                // Is this a cold block?
+                if (!blockMustBeInHotSection && (block->isRunRarely() == true))
+                {
+                    //
+                    // If the last block that was hot was a BBJ_COND
+                    // then we will have to add an unconditional jump
+                    // so the code size for block needs be large
+                    // enough to make it worth our while
+                    //
+                    if ((lblk == nullptr) || (lblk->bbJumpKind != BBJ_COND) || (fgGetCodeEstimate(block) >= 8))
+                    {
+                        // This block is now a candidate for first cold block
+                        // Also remember the predecessor to this block
+                        firstColdBlock       = block;
+                        prevToFirstColdBlock = lblk;
+                    }
                 }
             }
         }
@@ -3483,8 +3500,9 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
         // then it may not be worth it to move it
         // into the Cold section as a jump to the
         // Cold section is 5 bytes in size.
+        // Ignore if stress-splitting.
         //
-        if (firstColdBlock->bbNext == nullptr)
+        if (!forceSplit && firstColdBlock->bbNext == nullptr)
         {
             // If the size of the cold block is 7 or less
             // then we will keep it in the Hot section.
@@ -3557,6 +3575,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
     for (block = firstColdBlock; block != nullptr; block = block->bbNext)
     {
         block->bbFlags |= BBF_COLD;
+        block->unmarkLoopAlign(this DEBUG_ARG("Loop alignment disabled for cold blocks"));
     }
 
 EXIT:;
@@ -4114,48 +4133,6 @@ void Compiler::fgSetBlockOrder(BasicBlock* block)
     }
 
     return firstNode;
-}
-
-/*static*/ Compiler::fgWalkResult Compiler::fgChkThrowCB(GenTree** pTree, fgWalkData* data)
-{
-    GenTree* tree = *pTree;
-
-    // If this tree doesn't have the EXCEPT flag set, then there is no
-    // way any of the child nodes could throw, so we can stop recursing.
-    if (!(tree->gtFlags & GTF_EXCEPT))
-    {
-        return Compiler::WALK_SKIP_SUBTREES;
-    }
-
-    switch (tree->gtOper)
-    {
-        case GT_MUL:
-        case GT_ADD:
-        case GT_SUB:
-        case GT_CAST:
-            if (tree->gtOverflow())
-            {
-                return Compiler::WALK_ABORT;
-            }
-            break;
-
-        case GT_INDEX:
-        case GT_INDEX_ADDR:
-            // These two call CORINFO_HELP_RNGCHKFAIL for Debug code
-            if (tree->gtFlags & GTF_INX_RNGCHK)
-            {
-                return Compiler::WALK_ABORT;
-            }
-            break;
-
-        case GT_BOUNDS_CHECK:
-            return Compiler::WALK_ABORT;
-
-        default:
-            break;
-    }
-
-    return Compiler::WALK_CONTINUE;
 }
 
 /*static*/ Compiler::fgWalkResult Compiler::fgChkLocAllocCB(GenTree** pTree, fgWalkData* data)

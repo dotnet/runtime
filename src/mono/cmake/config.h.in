@@ -10,7 +10,6 @@
 #pragma warning(disable:4152) // W4: nonstandard extension, function/data pointer conversion in expression
 #pragma warning(disable:4201) // W4: nonstandard extension used: nameless struct/union
 #pragma warning(disable:4210) // W4: nonstandard extension used: function given file scope
-#pragma warning(disable:4244) // W2: integer conversion, possible loss of data
 #pragma warning(disable:4245) // W4: signed/unsigned mismatch
 #pragma warning(disable:4389) // W4: signed/unsigned mismatch
 #pragma warning(disable:4505) // W4: unreferenced function with internal linkage has been removed
@@ -411,9 +410,6 @@
 /* Define to 1 if you have the `sched_getcpu' function. */
 #cmakedefine HAVE_SCHED_GETCPU 1
 
-/* Define to 1 if you have the `getpwuid_r' function. */
-#cmakedefine HAVE_GETPWUID_R 1
-
 /* Define to 1 if you have the `chmod' function. */
 #cmakedefine HAVE_CHMOD 1
 
@@ -563,9 +559,6 @@
 /* Have mktemp */
 #cmakedefine HAVE_MKTEMP 1
 
-/* Define to 1 if you have the <sys/sendfile.h> header file. */
-#cmakedefine HAVE_SYS_SENDFILE_H 1
-
 /* Define to 1 if you have the <sys/statvfs.h> header file. */
 #cmakedefine HAVE_SYS_STATVFS_H 1
 
@@ -589,9 +582,6 @@
 
 /* Define to 1 if you have the `vsnprintf' function. */
 #cmakedefine HAVE_VSNPRINTF 1
-
-/* Define to 1 if you have the `sendfile' function. */
-#cmakedefine HAVE_SENDFILE 1
 
 /* struct statfs */
 #cmakedefine HAVE_STATFS 1
@@ -714,9 +704,6 @@
 
 /* ... */
 #cmakedefine TARGET_PS3 1
-
-/* ... */
-#cmakedefine __mono_ppc64__ 1
 
 /* ... */
 #cmakedefine TARGET_XBOX360 1

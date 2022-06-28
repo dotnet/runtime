@@ -3867,7 +3867,6 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69424", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void Vector64DoubleEqualsNaNTest()
         {
             Vector64<double> nan = Vector64.Create(double.NaN);
@@ -3875,7 +3874,6 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69424", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void Vector64SingleEqualsNaNTest()
         {
             Vector64<float> nan = Vector64.Create(float.NaN);

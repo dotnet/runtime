@@ -35,6 +35,18 @@ namespace System.Text.Json
             throw GetArgumentOutOfRangeException(parameterName, SR.CommentHandlingMustBeValid);
         }
 
+        [DoesNotReturn]
+        public static void ThrowArgumentOutOfRangeException_ArrayIndexNegative(string paramName)
+        {
+            throw new ArgumentOutOfRangeException(paramName, SR.ArrayIndexNegative);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgumentException_ArrayTooSmall(string paramName)
+        {
+            throw new ArgumentException(SR.ArrayTooSmall, paramName);
+        }
+
         private static ArgumentException GetArgumentException(string message)
         {
             return new ArgumentException(message);
@@ -49,6 +61,12 @@ namespace System.Text.Json
         public static InvalidOperationException GetInvalidOperationException_CallFlushFirst(int _buffered)
         {
             return GetInvalidOperationException(SR.Format(SR.CallFlushToAvoidDataLoss, _buffered));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgumentException_DestinationTooShort()
+        {
+            throw GetArgumentException(SR.DestinationTooShort);
         }
 
         [DoesNotReturn]
@@ -480,7 +498,7 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_ReadInvalidUTF16()
+        public static void ThrowInvalidOperationException_ReadIncompleteUTF16()
         {
             throw GetInvalidOperationException(SR.CannotReadIncompleteUTF16);
         }
@@ -622,6 +640,7 @@ namespace System.Text.Json
                 case DataType.DateOnly:
                 case DataType.DateTime:
                 case DataType.DateTimeOffset:
+                case DataType.TimeOnly:
                 case DataType.TimeSpan:
                 case DataType.Guid:
                 case DataType.Version:
@@ -717,6 +736,7 @@ namespace System.Text.Json
         DateOnly,
         DateTime,
         DateTimeOffset,
+        TimeOnly,
         TimeSpan,
         Base64String,
         Guid,

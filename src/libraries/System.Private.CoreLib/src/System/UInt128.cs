@@ -22,11 +22,13 @@ namespace System
     {
         internal const int Size = 16;
 
-        // Unix System V ABI actually requires this to be little endian
-        // order and not `upper, lower` on big endian systems.
-
+#if BIGENDIAN
+        private readonly ulong _upper;
+        private readonly ulong _lower;
+#else
         private readonly ulong _lower;
         private readonly ulong _upper;
+#endif
 
         /// <summary>Initializes a new instance of the <see cref="UInt128" /> struct.</summary>
         /// <param name="upper">The upper 64-bits of the 128-bit value.</param>
@@ -587,17 +589,6 @@ namespace System
             }
         }
 
-        /// <summary>Explicitly converts a <see cref="Half" /> value to a 128-bit unsigned integer.</summary>
-        /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
-        public static explicit operator UInt128(Half value) => (UInt128)(double)(value);
-
-        /// <summary>Explicitly converts a <see cref="Half" /> value to a 128-bit unsigned integer, throwing an overflow exception for any values that fall outside the representable range.</summary>
-        /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
-        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="UInt128" />.</exception>
-        public static explicit operator checked UInt128(Half value) => checked((UInt128)(double)(value));
-
         /// <summary>Explicitly converts a <see cref="short" /> value to a 128-bit unsigned integer.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
@@ -1052,12 +1043,32 @@ namespace System
                 // we need to get a Span<uint> containing the value represented
                 // in the least number of elements possible.
 
+                // We need to ensure that we end up with 4x uints representing the bits from
+                // least significant to most significant so the math will be correct on both
+                // little and big endian systems. So we'll just allocate the relevant buffer
+                // space and then write out the four parts using the native endianness of the
+                // system.
+
                 uint* pLeft = stackalloc uint[Size / sizeof(uint)];
-                quotient.WriteLittleEndianUnsafe(new Span<byte>(pLeft, Size));
+
+                Unsafe.WriteUnaligned(ref *(byte*)(pLeft + 0), (uint)(quotient._lower >> 00));
+                Unsafe.WriteUnaligned(ref *(byte*)(pLeft + 1), (uint)(quotient._lower >> 32));
+
+                Unsafe.WriteUnaligned(ref *(byte*)(pLeft + 2), (uint)(quotient._upper >> 00));
+                Unsafe.WriteUnaligned(ref *(byte*)(pLeft + 3), (uint)(quotient._upper >> 32));
+
                 Span<uint> left = new Span<uint>(pLeft, (Size / sizeof(uint)) - (BitOperations.LeadingZeroCount(quotient) / 32));
 
+                // Repeat the same operation with the divisor
+
                 uint* pRight = stackalloc uint[Size / sizeof(uint)];
-                divisor.WriteLittleEndianUnsafe(new Span<byte>(pRight, Size));
+
+                Unsafe.WriteUnaligned(ref *(byte*)(pRight + 0), (uint)(divisor._lower >> 00));
+                Unsafe.WriteUnaligned(ref *(byte*)(pRight + 1), (uint)(divisor._lower >> 32));
+
+                Unsafe.WriteUnaligned(ref *(byte*)(pRight + 2), (uint)(divisor._upper >> 00));
+                Unsafe.WriteUnaligned(ref *(byte*)(pRight + 3), (uint)(divisor._upper >> 32));
+
                 Span<uint> right = new Span<uint>(pRight, (Size / sizeof(uint)) - (BitOperations.LeadingZeroCount(divisor) / 32));
 
                 Span<uint> rawBits = stackalloc uint[Size / sizeof(uint)];
@@ -1290,9 +1301,6 @@ namespace System
         // INumber
         //
 
-        /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
-        static UInt128 INumber<UInt128>.Abs(UInt128 value) => value;
-
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static UInt128 Clamp(UInt128 value, UInt128 min, UInt128 max)
         {
@@ -1316,406 +1324,20 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         static UInt128 INumber<UInt128>.CopySign(UInt128 value, UInt128 sign) => value;
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static UInt128 CreateChecked<TOther>(TOther value)
-            where TOther : INumber<TOther>
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return checked((UInt128)(decimal)(object)value);
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return checked((UInt128)(double)(object)value);
-            }
-            else if (typeof(TOther) == typeof(Half))
-            {
-                return checked((UInt128)(Half)(object)value);
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return checked((UInt128)(short)(object)value);
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return checked((UInt128)(int)(object)value);
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return checked((UInt128)(long)(object)value);
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return checked((UInt128)(nint)(object)value);
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return checked((UInt128)(sbyte)(object)value);
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return checked((UInt128)(float)(object)value);
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (nuint)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
-        }
-
-        /// <inheritdoc cref="INumber{TSelf}.CreateSaturating{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static UInt128 CreateSaturating<TOther>(TOther value)
-            where TOther : INumber<TOther>
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                var actualValue = (decimal)(object)value;
-                return (actualValue < 0) ? MinValue : (UInt128)actualValue;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return (UInt128)(double)(object)value;
-            }
-            else if (typeof(TOther) == typeof(Half))
-            {
-                return (UInt128)(Half)(object)value;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                var actualValue = (short)(object)value;
-                return (actualValue < 0) ? MinValue : (UInt128)actualValue;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                var actualValue = (int)(object)value;
-                return (actualValue < 0) ? MinValue : (UInt128)actualValue;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                var actualValue = (long)(object)value;
-                return (actualValue < 0) ? MinValue : (UInt128)actualValue;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                var actualValue = (nint)(object)value;
-                return (actualValue < 0) ? MinValue : (UInt128)actualValue;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                var actualValue = (sbyte)(object)value;
-                return (actualValue < 0) ? MinValue : (UInt128)actualValue;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return (UInt128)(float)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (nuint)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
-        }
-
-        /// <inheritdoc cref="INumber{TSelf}.CreateTruncating{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static UInt128 CreateTruncating<TOther>(TOther value)
-            where TOther : INumber<TOther>
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                var actualValue = (decimal)(object)value;
-                return (actualValue < 0) ? MinValue : (UInt128)actualValue;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return (UInt128)(double)(object)value;
-            }
-            else if (typeof(TOther) == typeof(Half))
-            {
-                return (UInt128)(Half)(object)value;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (UInt128)(short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (UInt128)(int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return (UInt128)(long)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (UInt128)(nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (UInt128)(sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return (UInt128)(float)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (nuint)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
-        }
-
-        /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
-        static bool INumber<UInt128>.IsNegative(UInt128 value) => false;
-
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static UInt128 Max(UInt128 x, UInt128 y) => (x >= y) ? x : y;
 
-        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
-        static UInt128 INumber<UInt128>.MaxMagnitude(UInt128 x, UInt128 y) => Max(x, y);
+        /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
+        static UInt128 INumber<UInt128>.MaxNumber(UInt128 x, UInt128 y) => Max(x, y);
 
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         public static UInt128 Min(UInt128 x, UInt128 y) => (x <= y) ? x : y;
 
-        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
-        static UInt128 INumber<UInt128>.MinMagnitude(UInt128 x, UInt128 y) => Min(x, y);
+        /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
+        static UInt128 INumber<UInt128>.MinNumber(UInt128 x, UInt128 y) => Min(x, y);
 
         /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
         public static int Sign(UInt128 value) => (value == 0U) ? 0 : 1;
-
-        /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryCreate<TOther>(TOther value, out UInt128 result)
-            where TOther : INumber<TOther>
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                result = (byte)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                result = (char)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                var actualValue = (decimal)(object)value;
-
-                if (actualValue < 0.0m)
-                {
-                    result = default;
-                    return false;
-                }
-
-                result = (UInt128)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                var actualValue = (double)(object)value;
-
-                if ((actualValue < 0.0) || (actualValue >= +340282366920938463463374607431768211456.0) || double.IsNaN(actualValue))
-                {
-                    result = default;
-                    return false;
-                }
-
-                result = (UInt128)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(Half))
-            {
-                var actualValue = (Half)(object)value;
-
-                if ((actualValue < Half.Zero) || (actualValue > Half.MaxValue) || Half.IsNaN(actualValue))
-                {
-                    result = default;
-                    return false;
-                }
-
-                result = (UInt128)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                var actualValue = (short)(object)value;
-
-                if (actualValue < 0)
-                {
-                    result = default;
-                    return false;
-                }
-
-                result = (UInt128)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                var actualValue = (int)(object)value;
-
-                if (actualValue < 0)
-                {
-                    result = default;
-                    return false;
-                }
-
-                result = (UInt128)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                var actualValue = (long)(object)value;
-
-                if (actualValue < 0)
-                {
-                    result = default;
-                    return false;
-                }
-
-                result = (UInt128)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                var actualValue = (nint)(object)value;
-
-                if (actualValue < 0)
-                {
-                    result = default;
-                    return false;
-                }
-
-                result = (UInt128)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                var actualValue = (sbyte)(object)value;
-
-                if (actualValue < 0)
-                {
-                    result = default;
-                    return false;
-                }
-
-                result = (UInt128)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                var actualValue = (float)(object)value;
-
-                if ((actualValue < 0.0f) || (actualValue > float.MaxValue) || float.IsNaN(actualValue))
-                {
-                    result = default;
-                    return false;
-                }
-
-                result = (UInt128)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                result = (ushort)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                result = (uint)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                result = (ulong)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                result = (nuint)(object)value;
-                return true;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                result = default;
-                return false;
-            }
-        }
 
         //
         // INumberBase
@@ -1724,8 +1346,491 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.One" />
         public static UInt128 One => new UInt128(0, 1);
 
+        /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
+        static int INumberBase<UInt128>.Radix => 2;
+
         /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
         public static UInt128 Zero => default;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
+        static UInt128 INumberBase<UInt128>.Abs(UInt128 value) => value;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
+        static bool INumberBase<UInt128>.IsCanonical(UInt128 value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
+        static bool INumberBase<UInt128>.IsComplexNumber(UInt128 value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsEvenInteger(TSelf)" />
+        public static bool IsEvenInteger(UInt128 value) => (value._lower & 1) == 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsFinite(TSelf)" />
+        static bool INumberBase<UInt128>.IsFinite(UInt128 value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
+        static bool INumberBase<UInt128>.IsImaginaryNumber(UInt128 value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInfinity(TSelf)" />
+        static bool INumberBase<UInt128>.IsInfinity(UInt128 value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInteger(TSelf)" />
+        static bool INumberBase<UInt128>.IsInteger(UInt128 value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNaN(TSelf)" />
+        static bool INumberBase<UInt128>.IsNaN(UInt128 value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegative(TSelf)" />
+        static bool INumberBase<UInt128>.IsNegative(UInt128 value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegativeInfinity(TSelf)" />
+        static bool INumberBase<UInt128>.IsNegativeInfinity(UInt128 value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNormal(TSelf)" />
+        static bool INumberBase<UInt128>.IsNormal(UInt128 value) => value != 0U;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
+        public static bool IsOddInteger(UInt128 value) => (value._lower & 1) != 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositive(TSelf)" />
+        static bool INumberBase<UInt128>.IsPositive(UInt128 value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositiveInfinity(TSelf)" />
+        static bool INumberBase<UInt128>.IsPositiveInfinity(UInt128 value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsRealNumber(TSelf)" />
+        static bool INumberBase<UInt128>.IsRealNumber(UInt128 value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsSubnormal(TSelf)" />
+        static bool INumberBase<UInt128>.IsSubnormal(UInt128 value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
+        static bool INumberBase<UInt128>.IsZero(UInt128 value) => (value == 0U);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        static UInt128 INumberBase<UInt128>.MaxMagnitude(UInt128 x, UInt128 y) => Max(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        static UInt128 INumberBase<UInt128>.MaxMagnitudeNumber(UInt128 x, UInt128 y) => Max(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        static UInt128 INumberBase<UInt128>.MinMagnitude(UInt128 x, UInt128 y) => Min(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        static UInt128 INumberBase<UInt128>.MinMagnitudeNumber(UInt128 x, UInt128 y) => Min(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<UInt128>.TryConvertFromChecked<TOther>(TOther value, out UInt128 result)
+        {
+            // In order to reduce overall code duplication and improve the inlinabilty of these
+            // methods for the corelib types we have `ConvertFrom` handle the same sign and
+            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
+            //
+            // That is, `ConvertFrom` for `UInt128` will handle the other unsigned types and
+            // `ConvertTo` will handle the signed types
+
+            if (typeof(TOther) == typeof(byte))
+            {
+                byte actualValue = (byte)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                char actualValue = (char)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                decimal actualValue = (decimal)(object)value;
+                result = checked((UInt128)actualValue);
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                ushort actualValue = (ushort)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                uint actualValue = (uint)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                ulong actualValue = (ulong)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                nuint actualValue = (nuint)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else
+            {
+                result = default;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<UInt128>.TryConvertFromSaturating<TOther>(TOther value, out UInt128 result)
+        {
+            // In order to reduce overall code duplication and improve the inlinabilty of these
+            // methods for the corelib types we have `ConvertFrom` handle the same sign and
+            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
+            //
+            // That is, `ConvertFrom` for `UInt128` will handle the other unsigned types and
+            // `ConvertTo` will handle the signed types
+
+            if (typeof(TOther) == typeof(byte))
+            {
+                byte actualValue = (byte)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                char actualValue = (char)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                decimal actualValue = (decimal)(object)value;
+                result = (actualValue < 0) ? MinValue : (UInt128)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                ushort actualValue = (ushort)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                uint actualValue = (uint)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                ulong actualValue = (ulong)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                nuint actualValue = (nuint)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else
+            {
+                result = default;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<UInt128>.TryConvertFromTruncating<TOther>(TOther value, out UInt128 result)
+        {
+            // In order to reduce overall code duplication and improve the inlinabilty of these
+            // methods for the corelib types we have `ConvertFrom` handle the same sign and
+            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
+            //
+            // That is, `ConvertFrom` for `UInt128` will handle the other unsigned types and
+            // `ConvertTo` will handle the signed types
+
+            if (typeof(TOther) == typeof(byte))
+            {
+                byte actualValue = (byte)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                char actualValue = (char)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                decimal actualValue = (decimal)(object)value;
+                result = (actualValue < 0) ? MinValue : (UInt128)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                ushort actualValue = (ushort)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                uint actualValue = (uint)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                ulong actualValue = (ulong)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                nuint actualValue = (nuint)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else
+            {
+                result = default;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<UInt128>.TryConvertToChecked<TOther>(UInt128 value, [NotNullWhen(true)] out TOther result)
+        {
+            // In order to reduce overall code duplication and improve the inlinabilty of these
+            // methods for the corelib types we have `ConvertFrom` handle the same sign and
+            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
+            //
+            // That is, `ConvertFrom` for `UInt128` will handle the other unsigned types and
+            // `ConvertTo` will handle the signed types
+
+            if (typeof(TOther) == typeof(double))
+            {
+                double actualResult = (double)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                Half actualResult = (Half)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                short actualResult = checked((short)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                int actualResult = checked((int)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                long actualResult = checked((long)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                Int128 actualResult = checked((Int128)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                nint actualResult = checked((nint)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                sbyte actualResult = checked((sbyte)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                float actualResult = (float)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else
+            {
+                result = default!;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<UInt128>.TryConvertToSaturating<TOther>(UInt128 value, [NotNullWhen(true)] out TOther result)
+        {
+            // In order to reduce overall code duplication and improve the inlinabilty of these
+            // methods for the corelib types we have `ConvertFrom` handle the same sign and
+            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
+            //
+            // That is, `ConvertFrom` for `UInt128` will handle the other unsigned types and
+            // `ConvertTo` will handle the signed types
+
+            if (typeof(TOther) == typeof(double))
+            {
+                double actualResult = (double)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                Half actualResult = (Half)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                short actualResult = (value >= new UInt128(0x0000_0000_0000_0000, 0x0000_0000_0000_7FFF)) ? short.MaxValue : (short)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                int actualResult = (value >= new UInt128(0x0000_0000_0000_0000, 0x0000_0000_7FFF_FFFF)) ? int.MaxValue : (int)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                long actualResult = (value >= new UInt128(0x0000_0000_0000_0000, 0x7FFF_FFFF_FFFF_FFFF)) ? long.MaxValue : (long)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                Int128 actualResult = (value >= new UInt128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)) ? Int128.MaxValue : (Int128)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+#if TARGET_32BIT
+                nint actualResult = (value >= new UInt128(0x0000_0000_0000_0000, 0x0000_0000_7FFF_FFFF)) ? nint.MaxValue : (nint)value;
+                result = (TOther)(object)actualResult;
+                return true;
+#else
+                nint actualResult = (value >= new UInt128(0x0000_0000_0000_0000, 0x7FFF_FFFF_FFFF_FFFF)) ? nint.MaxValue : (nint)value;
+                result = (TOther)(object)actualResult;
+                return true;
+#endif
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                sbyte actualResult = (value >= new UInt128(0x0000_0000_0000_0000, 0x0000_0000_0000_007F)) ? sbyte.MaxValue : (sbyte)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                float actualResult = (float)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else
+            {
+                result = default!;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<UInt128>.TryConvertToTruncating<TOther>(UInt128 value, [NotNullWhen(true)] out TOther result)
+        {
+            // In order to reduce overall code duplication and improve the inlinabilty of these
+            // methods for the corelib types we have `ConvertFrom` handle the same sign and
+            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
+            //
+            // That is, `ConvertFrom` for `UInt128` will handle the other unsigned types and
+            // `ConvertTo` will handle the signed types
+
+            if (typeof(TOther) == typeof(double))
+            {
+                double actualResult = (double)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                Half actualResult = (Half)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                short actualResult = (short)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                int actualResult = (int)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                long actualResult = (long)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                Int128 actualResult = (Int128)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                nint actualResult = (nint)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                sbyte actualResult = (sbyte)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                float actualResult = (float)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else
+            {
+                result = default!;
+                return false;
+            }
+        }
 
         //
         // IParsable

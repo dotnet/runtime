@@ -39,9 +39,9 @@ namespace System.Numerics
         /// <summary>Gets the mathematical constant <c>tau</c>.</summary>
         static abstract TSelf Tau { get; }
 
-        /// <summary>Decrements a value to the smallest value that compares less than a given value.</summary>
+        /// <summary>Decrements a value to the largest value that compares less than a given value.</summary>
         /// <param name="x">The value to be bitwise decremented.</param>
-        /// <returns>The smallest value that compares less than <paramref name="x" />.</returns>
+        /// <returns>The largest value that compares less than <paramref name="x" />.</returns>
         static abstract TSelf BitDecrement(TSelf x);
 
         /// <summary>Increments a value to the smallest value that compares greater than a given value.</summary>
@@ -67,78 +67,15 @@ namespace System.Numerics
         /// <returns>The integer logarithm of <paramref name="x" />.</returns>
         static abstract int ILogB(TSelf x);
 
-        /// <summary>Determines if a value is finite.</summary>
-        /// <param name="value">The value to be checked.</param>
-        /// <returns><c>true</c> if <paramref name="value" /> is finite; otherwise, <c>false</c>.</returns>
-        static abstract bool IsFinite(TSelf value);
-
-        /// <summary>Determines if a value is infinite.</summary>
-        /// <param name="value">The value to be checked.</param>
-        /// <returns><c>true</c> if <paramref name="value" /> is infinite; otherwise, <c>false</c>.</returns>
-        static abstract bool IsInfinity(TSelf value);
-
-        /// <summary>Determines if a value is NaN.</summary>
-        /// <param name="value">The value to be checked.</param>
-        /// <returns><c>true</c> if <paramref name="value" /> is NaN; otherwise, <c>false</c>.</returns>
-        static abstract bool IsNaN(TSelf value);
-
-        /// <summary>Determines if a value is negative infinity.</summary>
-        /// <param name="value">The value to be checked.</param>
-        /// <returns><c>true</c> if <paramref name="value" /> is negative infinity; otherwise, <c>false</c>.</returns>
-        static abstract bool IsNegativeInfinity(TSelf value);
-
-        /// <summary>Determines if a value is normal.</summary>
-        /// <param name="value">The value to be checked.</param>
-        /// <returns><c>true</c> if <paramref name="value" /> is normal; otherwise, <c>false</c>.</returns>
-        static abstract bool IsNormal(TSelf value);
-
-        /// <summary>Determines if a value is positive infinity.</summary>
-        /// <param name="value">The value to be checked.</param>
-        /// <returns><c>true</c> if <paramref name="value" /> is positive infinity; otherwise, <c>false</c>.</returns>
-        static abstract bool IsPositiveInfinity(TSelf value);
-
-        /// <summary>Determines if a value is subnormal.</summary>
-        /// <param name="value">The value to be checked.</param>
-        /// <returns><c>true</c> if <paramref name="value" /> is subnormal; otherwise, <c>false</c>.</returns>
-        static abstract bool IsSubnormal(TSelf value);
-
-        /// <summary>Compares two values to compute which has the greater magnitude and returning the other value if an input is <c>NaN</c>.</summary>
-        /// <param name="x">The value to compare with <paramref name="y" />.</param>
-        /// <param name="y">The value to compare with <paramref name="x" />.</param>
-        /// <returns><paramref name="x" /> if it is greater than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
-        /// <remarks>For <see cref="IFloatingPointIeee754{TSelf}" /> this method matches the IEEE 754:2019 <c>maximumMagnitudeNumber</c> function. This requires NaN inputs to not be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
-        static abstract TSelf MaxMagnitudeNumber(TSelf x, TSelf y);
-
-        /// <summary>Compares two values to compute which is greater and returning the other value if an input is <c>NaN</c>.</summary>
-        /// <param name="x">The value to compare with <paramref name="y" />.</param>
-        /// <param name="y">The value to compare with <paramref name="x" />.</param>
-        /// <returns><paramref name="x" /> if it is greater than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
-        /// <remarks>For <see cref="IFloatingPoint{TSelf}" /> this method matches the IEEE 754:2019 <c>maximumNumber</c> function. This requires NaN inputs to not be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
-        static abstract TSelf MaxNumber(TSelf x, TSelf y);
-
-        /// <summary>Compares two values to compute which has the lesser magnitude and returning the other value if an input is <c>NaN</c>.</summary>
-        /// <param name="x">The value to compare with <paramref name="y" />.</param>
-        /// <param name="y">The value to compare with <paramref name="x" />.</param>
-        /// <returns><paramref name="x" /> if it is less than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
-        /// <remarks>For <see cref="IFloatingPointIeee754{TSelf}" /> this method matches the IEEE 754:2019 <c>minimumMagnitudeNumber</c> function. This requires NaN inputs to not be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
-        static abstract TSelf MinMagnitudeNumber(TSelf x, TSelf y);
-
-        /// <summary>Compares two values to compute which is lesser and returning the other value if an input is <c>NaN</c>.</summary>
-        /// <param name="x">The value to compare with <paramref name="y" />.</param>
-        /// <param name="y">The value to compare with <paramref name="x" />.</param>
-        /// <returns><paramref name="x" /> if it is less than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
-        /// <remarks>For <see cref="IFloatingPoint{TSelf}" /> this method matches the IEEE 754:2019 <c>minimumNumber</c> function. This requires NaN inputs to not be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
-        static abstract TSelf MinNumber(TSelf x, TSelf y);
-
         /// <summary>Computes an estimate of the reciprocal of a value.</summary>
         /// <param name="x">The value whose estimate of the reciprocal is to be computed.</param>
         /// <returns>An estimate of the reciprocal of <paramref name="x" />.</returns>
-        static abstract TSelf ReciprocalEstimate(TSelf x);
+        static virtual TSelf ReciprocalEstimate(TSelf x) => TSelf.One / x;
 
         /// <summary>Computes an estimate of the reciprocal square root of a value.</summary>
         /// <param name="x">The value whose estimate of the reciprocal square root is to be computed.</param>
         /// <returns>An estimate of the reciprocal square root of <paramref name="x" />.</returns>
-        static abstract TSelf ReciprocalSqrtEstimate(TSelf x);
+        static virtual TSelf ReciprocalSqrtEstimate(TSelf x) => TSelf.One / TSelf.Sqrt(x);
 
         /// <summary>Computes the product of a value and its base-radix raised to the specified power.</summary>
         /// <param name="x">The value which base-radix raised to the power of <paramref name="n" /> multiplies.</param>

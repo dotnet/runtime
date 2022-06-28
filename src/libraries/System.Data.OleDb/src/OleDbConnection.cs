@@ -9,11 +9,10 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
+using SysTx = System.Transactions;
 
 namespace System.Data.OleDb
 {
-    using SysTx = Transactions;
-
     // wraps the OLEDB IDBInitialize interface which represents a connection
     // Notes about connection pooling
     // 1. Only happens if we use the IDataInitialize or IDBPromptInitialize interfaces
@@ -177,8 +176,7 @@ namespace System.Data.OleDb
             get
             {
                 OleDbConnectionString? constr = this.OleDbConnectionStringValue;
-                string? value = ((null != constr) ? constr.ConvertValueToString(ODB.Provider, null) : null);
-                return ((null != value) ? value : string.Empty);
+                return constr?.ConvertValueToString(ODB.Provider, null) ?? string.Empty;
             }
         }
 
@@ -218,9 +216,8 @@ namespace System.Data.OleDb
             if (IsOpen)
             {
                 object? value = GetDataSourcePropertyValue(OleDbPropertySetGuid.DataSourceInfo, ODB.DBPROP_CONNECTIONSTATUS);
-                if (value is int)
+                if (value is int connectionStatus)
                 {
-                    int connectionStatus = (int)value;
                     switch (connectionStatus)
                     {
                         case ODB.DBPROPVAL_CS_UNINITIALIZED: // provider closed on us
@@ -619,7 +616,7 @@ namespace System.Data.OleDb
             }
             else if ((int)hresult < 0)
             {
-                e = ODB.NoErrorInformation((null != connection) ? connection.Provider : null, hresult, null); // OleDbException
+                e = ODB.NoErrorInformation(connection?.Provider, hresult, null); // OleDbException
 
                 ResetState(connection);
             }

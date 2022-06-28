@@ -41,7 +41,7 @@ initNonPortableDistroRid()
             # We have forced __PortableBuild=0. This is because -portablebuld
             # has been passed as false.
             if (( isPortable == 0 )); then
-                if [[ "${ID}" == "rhel" || "${ID}" == "rocky" ]]; then
+                if [[ "${ID}" == "rhel" || "${ID}" == "rocky" || "${ID}" == "alpine" ]]; then
                     # remove the last version digit
                     VERSION_ID="${VERSION_ID%.*}"
                 fi

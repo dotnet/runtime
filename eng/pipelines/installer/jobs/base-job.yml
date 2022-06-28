@@ -23,7 +23,7 @@ parameters:
   pgoType: ''
 
   packageDistroList:
-  - image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-debpkg-20220408155542-cfdd435
+  - image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-debpkg-20220504035737-cfdd435
     packageType: deb
     packagingArgs: /p:BuildDebPackage=true
   - image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-rpmpkg-20210714125410-daa5116

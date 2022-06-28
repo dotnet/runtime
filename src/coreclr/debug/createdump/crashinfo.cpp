@@ -67,7 +67,7 @@ CrashInfo::~CrashInfo()
         kern_return_t result = ::mach_port_deallocate(mach_task_self(), m_task);
         if (result != KERN_SUCCESS)
         {
-            printf_error("~CrashInfo: mach_port_deallocate FAILED %x %s\n", result, mach_error_string(result));
+            printf_error("Internal error: mach_port_deallocate FAILED %s (%x)\n", mach_error_string(result), result);
         }
     }
 #endif
@@ -219,6 +219,27 @@ CrashInfo::GatherCrashInfo(MINIDUMP_TYPE minidumpType)
     return true;
 }
 
+static const char*
+GetHResultString(HRESULT hr)
+{
+    switch (hr)
+    {
+        case E_FAIL:
+            return "The operation has failed";
+        case E_INVALIDARG:
+            return "Invalid argument";
+        case E_OUTOFMEMORY:
+            return "Out of memory";
+        case CORDBG_E_UNCOMPATIBLE_PLATFORMS:
+            return "The operation failed because debuggee and debugger are on incompatible platforms";
+        case CORDBG_E_MISSING_DEBUGGER_EXPORTS:
+            return "The debuggee memory space does not have the expected debugging export table";
+        case CORDBG_E_UNSUPPORTED:
+            return "The specified action is unsupported by this version of the runtime";
+    }
+    return "";
+}
+
 //
 // Enumerate all the memory regions using the DAC memory region support given a minidump type
 //
@@ -241,31 +262,31 @@ CrashInfo::InitializeDAC()
         m_hdac = LoadLibraryA(dacPath.c_str());
         if (m_hdac == nullptr)
         {
-            printf_error("LoadLibraryA(%s) FAILED %d\n", dacPath.c_str(), GetLastError());
+            printf_error("InitializeDAC: LoadLibraryA(%s) FAILED %s\n", dacPath.c_str(), GetLastErrorString().c_str());
             goto exit;
         }
         pfnCLRDataCreateInstance = (PFN_CLRDataCreateInstance)GetProcAddress(m_hdac, "CLRDataCreateInstance");
         if (pfnCLRDataCreateInstance == nullptr)
         {
-            printf_error("GetProcAddress(CLRDataCreateInstance) FAILED %d\n", GetLastError());
+            printf_error("InitializeDAC: GetProcAddress(CLRDataCreateInstance) FAILED %s\n", GetLastErrorString().c_str());
             goto exit;
         }
         hr = pfnCLRDataCreateInstance(__uuidof(ICLRDataEnumMemoryRegions), dataTarget, (void**)&m_pClrDataEnumRegions);
         if (FAILED(hr))
         {
-            printf_error("CLRDataCreateInstance(ICLRDataEnumMemoryRegions) FAILED %08x\n", hr);
+            printf_error("InitializeDAC: CLRDataCreateInstance(ICLRDataEnumMemoryRegions) FAILED %s (%08x)\n", GetHResultString(hr), hr);
             goto exit;
         }
         hr = pfnCLRDataCreateInstance(__uuidof(IXCLRDataProcess), dataTarget, (void**)&m_pClrDataProcess);
         if (FAILED(hr))
         {
-            printf_error("CLRDataCreateInstance(IXCLRDataProcess) FAILED %08x\n", hr);
+            printf_error("InitializeDAC: CLRDataCreateInstance(IXCLRDataProcess) FAILED %s (%08x)\n", GetHResultString(hr), hr);
             goto exit;
         }
     }
     else
     {
-        TRACE("InitializeDAC: coreclr not found; not using DAC\n");
+        printf_error("InitializeDAC: coreclr not found; not using DAC\n");
     }
     result = true;
 exit:
@@ -302,7 +323,7 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType)
         HRESULT hr = m_pClrDataEnumRegions->EnumMemoryRegions(this, minidumpType, CLRDATA_ENUM_MEM_DEFAULT);
         if (FAILED(hr))
         {
-            printf_error("EnumMemoryRegions FAILED %08x\n", hr);
+            printf_error("EnumMemoryRegions FAILED %s (%08x)\n", GetHResultString(hr), hr);
             return false;
         }
         TRACE("EnumerateMemoryRegionsWithDAC: Memory enumeration FINISHED\n");
@@ -324,7 +345,7 @@ CrashInfo::EnumerateManagedModules()
         TRACE("EnumerateManagedModules: Module enumeration STARTED\n");
 
         if (FAILED(hr = m_pClrDataProcess->StartEnumModules(&enumModules))) {
-            printf_error("StartEnumModules FAILED %08x\n", hr);
+            printf_error("StartEnumModules FAILED %s (%08x)\n", GetHResultString(hr), hr);
             return false;
         }
 

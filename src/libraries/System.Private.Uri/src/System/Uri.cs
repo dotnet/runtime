@@ -759,7 +759,7 @@ namespace System
                     throw new InvalidOperationException(SR.net_uri_NotAbsolute);
                 }
 
-                // Note: Compatibilty with V1 that does not report user info
+                // Note: Compatibility with V1 that does not report user info
                 return GetParts(UriComponents.Host | UriComponents.Port, UriFormat.UriEscaped);
             }
         }
@@ -981,14 +981,7 @@ namespace System
                     }
 
                     // check for all back slashes
-                    for (int i = 0; i < str.Length; ++i)
-                    {
-                        if (str[i] == '/')
-                        {
-                            str = str.Replace('/', '\\');
-                            break;
-                        }
-                    }
+                    str = str.Replace('/', '\\');
 
                     return str;
                 }
@@ -2690,10 +2683,7 @@ namespace System
                             }
                             else
                             {
-                                if (InFact(Flags.E_UserNotCanonical))
-                                {
-                                    // We should throw here but currently just accept user input known as invalid
-                                }
+                                // We would ideally throw here if InFact(Flags.E_UserNotCanonical) but currently just accept user input known as invalid
                                 dest.Append(slice);
                             }
                             break;
@@ -4877,13 +4867,10 @@ namespace System
                     if (basePart.IsUnc)
                     {
                         ReadOnlySpan<char> share = basePart.GetParts(UriComponents.Path | UriComponents.KeepDelimiter, UriFormat.Unescaped);
-                        for (int i = 1; i < share.Length; ++i)
+                        int i = share.Slice(1).IndexOf('/');
+                        if (i >= 0)
                         {
-                            if (share[i] == '/')
-                            {
-                                share = share.Slice(0, i);
-                                break;
-                            }
+                            share = share.Slice(0, i + 1);
                         }
 
                         if (basePart.IsImplicitFile)

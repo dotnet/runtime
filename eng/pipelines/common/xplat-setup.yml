@@ -9,12 +9,13 @@ parameters:
   platform: ''
   targetRid: ''
   jobParameters: {}
+  shouldContinueOnError: false
   variables: []
 
 jobs:
 - template: ${{ coalesce(parameters.helixQueuesTemplate, parameters.jobTemplate) }}
   parameters:
-    shouldContinueOnError: ${{ and(endsWith(variables['Build.DefinitionName'], 'staging'), eq(variables['Build.Reason'], 'PullRequest')) }}
+    shouldContinueOnError: ${{ or(eq(parameters.shouldContinueOnError, true), and(endsWith(variables['Build.DefinitionName'], 'staging'), eq(variables['Build.Reason'], 'PullRequest'))) }}
 
     # keep in sync with /eng/pipelines/common/variables.yml
     dependOnEvaluatePaths: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-staging', 'runtime-community', 'runtime-extra-platforms')) }}

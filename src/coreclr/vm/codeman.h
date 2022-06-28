@@ -484,7 +484,7 @@ struct HeapList
 
     TADDR GetModuleBase()
     {
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         return (TADDR)CLRPersonalityRoutine;
  #else
         return (TADDR)mapBase;

@@ -477,7 +477,12 @@ namespace System.Runtime.CompilerServices
         private static object? ChkCastClassSpecial(void* toTypeHnd, object obj)
         {
             MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
-            Debug.Assert(mt != toTypeHnd, "The check for the trivial cases should be inlined by the JIT");
+
+            // Normally, this case is expected to be handled by JIT inline.
+            // However, with PGO data JIT might decide to check a different type instead
+            // so this one has to be always checked here
+            if (toTypeHnd == mt)
+                goto done;
 
             for (; ; )
             {

@@ -703,7 +703,7 @@ namespace System.Linq.Parallel
                     {
                         if ((mutables._chunkCounter++ & chunksPerChunkSize) == chunksPerChunkSize)
                         {
-                            mutables._nextChunkMaxSize = mutables._nextChunkMaxSize * 2;
+                            mutables._nextChunkMaxSize *= 2;
                             if (mutables._nextChunkMaxSize > chunkBuffer.Length)
                             {
                                 mutables._nextChunkMaxSize = chunkBuffer.Length;

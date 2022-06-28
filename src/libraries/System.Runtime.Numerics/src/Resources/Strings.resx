@@ -57,6 +57,9 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="Arg_HexStyleNotSupported" xml:space="preserve">
+    <value>The number style AllowHexSpecifier is not supported on floating point data types.</value>
+  </data>
   <data name="Argument_BadFormatSpecifier" xml:space="preserve">
     <value>Format specifier was invalid.</value>
   </data>

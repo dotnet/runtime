@@ -29,45 +29,21 @@ namespace System.Text.Json.Serialization.Converters
 
         private DateOnly ReadCore(ref Utf8JsonReader reader)
         {
-            bool isEscaped = reader._stringHasEscaping;
-            ReadOnlySpan<byte> source = stackalloc byte[0];
-
-            if (reader.HasValueSequence)
+            if (!JsonHelpers.IsInRangeInclusive(reader.ValueLength, FormatLength, MaxEscapedFormatLength))
             {
-                ReadOnlySequence<byte> valueSequence = reader.ValueSequence;
-                long sequenceLength = valueSequence.Length;
+                ThrowHelper.ThrowFormatException(DataType.DateOnly);
+            }
 
-                if (!JsonHelpers.IsInRangeInclusive(sequenceLength, FormatLength, MaxEscapedFormatLength))
-                {
-                    ThrowHelper.ThrowFormatException(DataType.DateOnly);
-                }
-
-                Span<byte> stackSpan = stackalloc byte[isEscaped ? FormatLength : MaxEscapedFormatLength];
-                valueSequence.CopyTo(stackSpan);
-                source = stackSpan.Slice(0, (int)sequenceLength);
+            ReadOnlySpan<byte> source = stackalloc byte[0];
+            if (!reader.HasValueSequence && !reader.ValueIsEscaped)
+            {
+                source = reader.ValueSpan;
             }
             else
             {
-                source = reader.ValueSpan;
-
-                if (!JsonHelpers.IsInRangeInclusive(source.Length, FormatLength, MaxEscapedFormatLength))
-                {
-                    ThrowHelper.ThrowFormatException(DataType.DateOnly);
-                }
-            }
-
-            if (isEscaped)
-            {
-                int backslash = source.IndexOf(JsonConstants.BackSlash);
-                Debug.Assert(backslash != -1);
-
-                Span<byte> sourceUnescaped = stackalloc byte[MaxEscapedFormatLength];
-
-                JsonReaderHelper.Unescape(source, sourceUnescaped, backslash, out int written);
-                Debug.Assert(written > 0);
-
-                source = sourceUnescaped.Slice(0, written);
-                Debug.Assert(!source.IsEmpty);
+                Span<byte> stackSpan = stackalloc byte[MaxEscapedFormatLength];
+                int bytesWritten = reader.CopyString(stackSpan);
+                source = stackSpan.Slice(0, bytesWritten);
             }
 
             if (!JsonHelpers.TryParseAsIso(source, out DateOnly value))

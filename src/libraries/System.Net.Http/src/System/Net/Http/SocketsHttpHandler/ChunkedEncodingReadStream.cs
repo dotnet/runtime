@@ -14,15 +14,6 @@ namespace System.Net.Http
     {
         private sealed class ChunkedEncodingReadStream : HttpContentReadStream
         {
-            /// <summary>How long a chunk indicator is allowed to be.</summary>
-            /// <remarks>
-            /// While most chunks indicators will contain no more than ulong.MaxValue.ToString("X").Length characters,
-            /// "chunk extensions" are allowed. We place a limit on how long a line can be to avoid OOM issues if an
-            /// infinite chunk length is sent.  This value is arbitrary and can be changed as needed.
-            /// </remarks>
-            private const int MaxChunkBytesAllowed = 16 * 1024;
-            /// <summary>How long a trailing header can be.  This value is arbitrary and can be changed as needed.</summary>
-            private const int MaxTrailingHeaderLength = 16 * 1024;
             /// <summary>The number of bytes remaining in the chunk.</summary>
             private ulong _chunkBytesRemaining;
             /// <summary>The current state of the parsing state machine for the chunked response.</summary>
@@ -332,8 +323,7 @@ namespace System.Net.Http
                             Debug.Assert(_chunkBytesRemaining == 0, $"Expected {nameof(_chunkBytesRemaining)} == 0, got {_chunkBytesRemaining}");
 
                             // Read the chunk header line.
-                            _connection._allowedReadLineBytes = MaxChunkBytesAllowed;
-                            if (!_connection.TryReadNextLine(out currentLine))
+                            if (!_connection.TryReadNextChunkedLine(readingHeader: false, out currentLine))
                             {
                                 // Could not get a whole line, so we can't parse the chunk header.
                                 return default;
@@ -389,8 +379,7 @@ namespace System.Net.Http
                         case ParsingState.ExpectChunkTerminator:
                             Debug.Assert(_chunkBytesRemaining == 0, $"Expected {nameof(_chunkBytesRemaining)} == 0, got {_chunkBytesRemaining}");
 
-                            _connection._allowedReadLineBytes = MaxChunkBytesAllowed;
-                            if (!_connection.TryReadNextLine(out currentLine))
+                            if (!_connection.TryReadNextChunkedLine(readingHeader: false, out currentLine))
                             {
                                 return default;
                             }
@@ -408,8 +397,7 @@ namespace System.Net.Http
 
                             while (true)
                             {
-                                _connection._allowedReadLineBytes = MaxTrailingHeaderLength;
-                                if (!_connection.TryReadNextLine(out currentLine))
+                                if (!_connection.TryReadNextChunkedLine(readingHeader: true, out currentLine))
                                 {
                                     break;
                                 }

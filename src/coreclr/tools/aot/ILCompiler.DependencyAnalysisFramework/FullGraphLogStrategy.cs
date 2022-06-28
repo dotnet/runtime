@@ -157,7 +157,7 @@ namespace ILCompiler.DependencyAnalysisFramework
                         {
                             var combinedNode = new Tuple<DependencyNodeCore<DependencyContextType>, DependencyNodeCore<DependencyContextType>>(markData.Reason1, markData.Reason2);
 
-                            if (!combinedNodesReported.Contains(combinedNode))
+                            if (combinedNodesReported.Add(combinedNode))
                             {
                                 logNodeVisitor.VisitCombinedNode(combinedNode);
                             }

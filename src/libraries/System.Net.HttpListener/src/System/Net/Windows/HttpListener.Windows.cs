@@ -35,11 +35,7 @@ namespace System.Net
         // 0.5 seconds per request.  Respond with a 400 Bad Request.
         private const int UnknownHeaderLimit = 1000;
 
-        private static readonly byte[] s_wwwAuthenticateBytes = new byte[]
-        {
-            (byte) 'W', (byte) 'W', (byte) 'W', (byte) '-', (byte) 'A', (byte) 'u', (byte) 't', (byte) 'h',
-            (byte) 'e', (byte) 'n', (byte) 't', (byte) 'i', (byte) 'c', (byte) 'a', (byte) 't', (byte) 'e'
-        };
+        private static readonly byte[] s_wwwAuthenticateBytes = "WWW-Authenticate"u8.ToArray();
 
         private HttpListenerSession? _currentSession;
 
@@ -807,13 +803,10 @@ namespace System.Net
                 if (authorizationHeader != null && (authenticationScheme & ~AuthenticationSchemes.Anonymous) != AuthenticationSchemes.None)
                 {
                     // Find the end of the scheme name.  Trust that HTTP.SYS parsed out just our header ok.
-                    for (index = 0; index < authorizationHeader.Length; index++)
+                    index = authorizationHeader.AsSpan().IndexOfAny(" \t\r\n");
+                    if (index < 0)
                     {
-                        if (authorizationHeader[index] == ' ' || authorizationHeader[index] == '\t' ||
-                            authorizationHeader[index] == '\r' || authorizationHeader[index] == '\n')
-                        {
-                            break;
-                        }
+                        index = authorizationHeader.Length;
                     }
 
                     // Currently only allow one Authorization scheme/header per request.
@@ -848,7 +841,7 @@ namespace System.Net
                 // See if we found an acceptable auth header
                 if (headerScheme == AuthenticationSchemes.None)
                 {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, SR.Format(SR.net_log_listener_unmatched_authentication_scheme, authenticationScheme.ToString(), (authorizationHeader == null ? "<null>" : authorizationHeader)));
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, SR.Format(SR.net_log_listener_unmatched_authentication_scheme, authenticationScheme.ToString(), authorizationHeader ?? "<null>"));
 
                     // If anonymous is allowed, just return the context.  Otherwise go for the 401.
                     if ((authenticationScheme & AuthenticationSchemes.Anonymous) != AuthenticationSchemes.None)
@@ -873,14 +866,8 @@ namespace System.Net
 
                     // Find the beginning of the blob.  Trust that HTTP.SYS parsed out just our header ok.
                     Debug.Assert(authorizationHeader != null);
-                    for (index++; index < authorizationHeader!.Length; index++)
-                    {
-                        if (authorizationHeader[index] != ' ' && authorizationHeader[index] != '\t' &&
-                            authorizationHeader[index] != '\r' && authorizationHeader[index] != '\n')
-                        {
-                            break;
-                        }
-                    }
+                    int nonWhitespace = authorizationHeader.AsSpan(index + 1).IndexOfAnyExcept(" \t\r\n");
+                    index = nonWhitespace >= 0 ? index + 1 + nonWhitespace : authorizationHeader.Length;
                     string inBlob = index < authorizationHeader.Length ? authorizationHeader.Substring(index) : "";
 
                     IPrincipal? principal = null;

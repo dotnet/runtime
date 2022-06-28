@@ -1,6 +1,9 @@
 <Project DefaultTargets="BundleTestAppleApp">
   <Import Project="Directory.Build.props" />
   <PropertyGroup>
+    <MonoEnableLLVM>true</MonoEnableLLVM>
+  </PropertyGroup>
+  <PropertyGroup>
     <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' != ''">$(HELIX_WORKITEM_ROOT)\apple_build\</TestRootDir>
     <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' == ''">$(MSBuildThisFileDirectory)..\apple_build\</TestRootDir>
 

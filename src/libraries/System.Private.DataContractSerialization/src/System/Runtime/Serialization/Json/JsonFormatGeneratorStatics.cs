@@ -116,8 +116,7 @@ namespace System.Runtime.Serialization
                                                                  (s_extensionDataObjectCtor =
                                                                      typeof(ExtensionDataObject).GetConstructor(Globals.ScanAllMembers, Type.EmptyTypes))!;
 
-        public static PropertyInfo ExtensionDataProperty => s_extensionDataProperty ??
-                                                            (s_extensionDataProperty = typeof(IExtensibleDataObject).GetProperty("ExtensionData")!);
+        public static PropertyInfo ExtensionDataProperty => s_extensionDataProperty ??= typeof(IExtensibleDataObject).GetProperty("ExtensionData")!;
 
         public static MethodInfo GetCurrentMethod
         {

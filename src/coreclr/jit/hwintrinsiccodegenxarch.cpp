@@ -1103,38 +1103,6 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        case NI_Vector128_get_Zero:
-        case NI_Vector256_get_Zero:
-        {
-            emit->emitIns_SIMD_R_R_R(ins, attr, targetReg, targetReg, targetReg);
-            break;
-        }
-
-        case NI_Vector128_get_AllBitsSet:
-            if (varTypeIsFloating(baseType) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX))
-            {
-                // The following corresponds to vcmptrueps pseudo-op and not available without VEX prefix.
-                emit->emitIns_SIMD_R_R_R_I(ins, attr, targetReg, targetReg, targetReg, 15);
-            }
-            else
-            {
-                emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, attr, targetReg, targetReg, targetReg);
-            }
-            break;
-
-        case NI_Vector256_get_AllBitsSet:
-            if (varTypeIsIntegral(baseType) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                emit->emitIns_SIMD_R_R_R(ins, attr, targetReg, targetReg, targetReg);
-            }
-            else
-            {
-                assert(compiler->compIsaSupportedDebugOnly(InstructionSet_AVX));
-                // The following corresponds to vcmptrueps pseudo-op.
-                emit->emitIns_SIMD_R_R_R_I(INS_cmpps, attr, targetReg, targetReg, targetReg, 15);
-            }
-            break;
-
         default:
         {
             unreached();

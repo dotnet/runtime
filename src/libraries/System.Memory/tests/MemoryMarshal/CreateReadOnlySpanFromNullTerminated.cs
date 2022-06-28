@@ -68,7 +68,7 @@ namespace System.SpanTests
             char* mem;
             try
             {
-                mem = (char*)Marshal.AllocHGlobal((IntPtr)(sizeof(char) * (2L + int.MaxValue)));
+                mem = (char*)Marshal.AllocHGlobal(unchecked((nint)(sizeof(char) * (2L + int.MaxValue))));
             }
             catch (OutOfMemoryException)
             {
@@ -96,7 +96,7 @@ namespace System.SpanTests
             byte* mem;
             try
             {
-                mem = (byte*)Marshal.AllocHGlobal((IntPtr)(2L + int.MaxValue));
+                mem = (byte*)Marshal.AllocHGlobal(unchecked((nint)(2L + int.MaxValue)));
             }
             catch (OutOfMemoryException)
             {

@@ -141,7 +141,7 @@ namespace System.DirectoryServices
             _options = new DirectoryEntryConfiguration(this);
 
             // We are starting from an already bound connection so make sure the options are set properly.
-            // If this is an externallly managed com object then we don't want to change it's current behavior
+            // If this is an externally managed com object then we don't want to change it's current behavior
             if (!AdsObjIsExternal)
             {
                 InitADsObjectOptions();
@@ -806,13 +806,9 @@ namespace System.DirectoryServices
             }
             catch (TargetInvocationException e)
             {
-                if (e.InnerException != null)
+                if (e.InnerException is COMException inner)
                 {
-                    if (e.InnerException is COMException)
-                    {
-                        COMException inner = (COMException)e.InnerException;
-                        throw new TargetInvocationException(e.Message, COMExceptionHelper.CreateFormattedComException(inner));
-                    }
+                    throw new TargetInvocationException(e.Message, COMExceptionHelper.CreateFormattedComException(inner));
                 }
 
                 throw;
@@ -843,13 +839,9 @@ namespace System.DirectoryServices
             }
             catch (TargetInvocationException e)
             {
-                if (e.InnerException != null)
+                if (e.InnerException is COMException inner)
                 {
-                    if (e.InnerException is COMException)
-                    {
-                        COMException inner = (COMException)e.InnerException;
-                        throw new TargetInvocationException(e.Message, COMExceptionHelper.CreateFormattedComException(inner));
-                    }
+                    throw new TargetInvocationException(e.Message, COMExceptionHelper.CreateFormattedComException(inner));
                 }
 
                 throw;
@@ -876,13 +868,9 @@ namespace System.DirectoryServices
             }
             catch (TargetInvocationException e)
             {
-                if (e.InnerException != null)
+                if (e.InnerException is COMException inner)
                 {
-                    if (e.InnerException is COMException)
-                    {
-                        COMException inner = (COMException)e.InnerException;
-                        throw new TargetInvocationException(e.Message, COMExceptionHelper.CreateFormattedComException(inner));
-                    }
+                    throw new TargetInvocationException(e.Message, COMExceptionHelper.CreateFormattedComException(inner));
                 }
 
                 throw;

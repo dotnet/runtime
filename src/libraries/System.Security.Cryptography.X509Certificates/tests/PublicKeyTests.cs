@@ -347,7 +347,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 0x11, 0xE0, 0x6E, 0xD2, 0x22, 0x75, 0xE7, 0x7C,
             };
 
-            byte[] helloBytes = Encoding.ASCII.GetBytes("Hello");
+            byte[] helloBytes = "Hello"u8.ToArray();
 
             using (var cert = new X509Certificate2(TestData.Rsa384CertificatePemBytes))
             using (RSA rsa = cert.GetRSAPublicKey())
@@ -360,7 +360,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void TestKey_ECDsabrainpool_PublicKey(byte[] curveData, byte[] notUsed)
         {
             _ = notUsed;
-            byte[] helloBytes = Encoding.ASCII.GetBytes("Hello");
+            byte[] helloBytes = "Hello"u8.ToArray();
 
             try
             {
@@ -386,7 +386,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void TestECDsaPublicKey()
         {
-            byte[] helloBytes = Encoding.ASCII.GetBytes("Hello");
+            byte[] helloBytes = "Hello"u8.ToArray();
 
             using (var cert = new X509Certificate2(TestData.ECDsa384Certificate))
             using (ECDsa publicKey = cert.GetECDsaPublicKey())
@@ -439,7 +439,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 0x08, 0xC5, 0xAA, 0xA6, 0xE5, 0xFD, 0xD0, 0x96,
             };
 
-            byte[] helloBytes = Encoding.ASCII.GetBytes("Hello");
+            byte[] helloBytes = "Hello"u8.ToArray();
 
             using (var cert = new X509Certificate2(TestData.ECDsa384Certificate))
             using (ECDsa publicKey = cert.GetECDsaPublicKey())
@@ -476,7 +476,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Theory, MemberData(nameof(BrainpoolCurves))]
         public static void TestECDsaPublicKey_BrainpoolP160r1_ValidatesSignature(byte[] curveData, byte[] existingSignature)
         {
-            byte[] helloBytes = Encoding.ASCII.GetBytes("Hello");
+            byte[] helloBytes = "Hello"u8.ToArray();
 
             try
             {

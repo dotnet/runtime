@@ -264,13 +264,39 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowArgumentNullException(nameof(underlyingTypeInfo));
             }
 
-            JsonConverter<T>? underlyingConverter = underlyingTypeInfo.PropertyInfoForTypeInfo?.ConverterBase as JsonConverter<T>;
-            if (underlyingConverter == null)
-            {
-                throw new InvalidOperationException(SR.Format(SR.SerializationConverterNotCompatible, underlyingConverter, typeof(T)));
-            }
+            JsonConverter<T> underlyingConverter = GetTypedConverter<T>(underlyingTypeInfo.Converter);
 
             return new NullableConverter<T>(underlyingConverter);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="JsonConverter{T}"/> instance that converts <typeparamref name="T?"/> values.
+        /// </summary>
+        /// <typeparam name="T">The generic definition for the underlying nullable type.</typeparam>
+        /// <param name="options">The <see cref="JsonSerializerOptions"/> to use for serialization and deserialization.</param>
+        /// <returns>A <see cref="JsonConverter{T}"/> instance that converts <typeparamref name="T?"/> values</returns>
+        /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
+        public static JsonConverter<T?> GetNullableConverter<T>(JsonSerializerOptions options) where T : struct
+        {
+            if (options is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(options));
+            }
+
+            JsonConverter<T> underlyingConverter = GetTypedConverter<T>(options.GetConverterFromTypeInfo(typeof(T)));
+
+            return new NullableConverter<T>(underlyingConverter);
+        }
+
+        internal static JsonConverter<T> GetTypedConverter<T>(JsonConverter converter)
+        {
+            JsonConverter<T>? typedConverter = converter as JsonConverter<T>;
+            if (typedConverter == null)
+            {
+                throw new InvalidOperationException(SR.Format(SR.SerializationConverterNotCompatible, typedConverter, typeof(T)));
+            }
+
+            return typedConverter;
         }
     }
 }

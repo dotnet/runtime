@@ -220,10 +220,8 @@ void PgoManager::WritePgoData()
         SString tClass, tMethodName, tMethodSignature;
         pgoData->header.method->GetMethodInfo(tClass, tMethodName, tMethodSignature);
 
-        StackScratchBuffer nameBuffer;
-        StackScratchBuffer nameBuffer2;
-        fprintf(pgoDataFile, "MethodName: %s.%s\n", tClass.GetUTF8(nameBuffer), tMethodName.GetUTF8(nameBuffer2));
-        fprintf(pgoDataFile, "Signature: %s\n", tMethodSignature.GetUTF8(nameBuffer));
+        fprintf(pgoDataFile, "MethodName: %s.%s\n", tClass.GetUTF8(), tMethodName.GetUTF8());
+        fprintf(pgoDataFile, "Signature: %s\n", tMethodSignature.GetUTF8());
 
         uint8_t* data = pgoData->header.GetData();
 
@@ -262,7 +260,6 @@ void PgoManager::WritePgoData()
                             else
                             {
                                 StackSString ss;
-                                StackScratchBuffer nameBuffer;
                                 TypeString::AppendType(ss, th, TypeString::FormatNamespace | TypeString::FormatFullInst | TypeString::FormatAssembly);
                                 if (ss.GetCount() > 8192)
                                 {
@@ -270,7 +267,7 @@ void PgoManager::WritePgoData()
                                 }
                                 else
                                 {
-                                    fprintf(pgoDataFile, s_TypeHandle, ss.GetUTF8(nameBuffer));
+                                    fprintf(pgoDataFile, s_TypeHandle, ss.GetUTF8());
                                 }
                             }
                             break;
@@ -281,11 +278,11 @@ void PgoManager::WritePgoData()
                             MethodDesc* md = reinterpret_cast<MethodDesc*>(methodHandleData);
                             if (md == nullptr)
                             {
-                                fprintf(pgoDataFile, "MethodHandle: NULL");
+                                fprintf(pgoDataFile, "MethodHandle: NULL\n");
                             }
                             else if (ICorJitInfo::IsUnknownHandle(methodHandleData))
                             {
-                                fprintf(pgoDataFile, "MethodHandle: UNKNOWN");
+                                fprintf(pgoDataFile, "MethodHandle: UNKNOWN\n");
                             }
                             else
                             {
@@ -297,13 +294,11 @@ void PgoManager::WritePgoData()
                                 // MethodName|@|fully_qualified_type_name
                                 if (tTypeName.GetCount() + 1 + tMethodName.GetCount() > 8192)
                                 {
-                                    fprintf(pgoDataFile, "MethodHandle: UNKNOWN");
+                                    fprintf(pgoDataFile, "MethodHandle: UNKNOWN\n");
                                 }
                                 else
                                 {
-                                    StackScratchBuffer methodNameBuffer;
-                                    StackScratchBuffer typeBuffer;
-                                    fprintf(pgoDataFile, "MethodHandle: %s|@|%s", tMethodName.GetUTF8(methodNameBuffer), tTypeName.GetUTF8(typeBuffer));
+                                    fprintf(pgoDataFile, "MethodHandle: %s|@|%s\n", tMethodName.GetUTF8(), tTypeName.GetUTF8());
                                 }
                             }
                             break;
@@ -871,7 +866,7 @@ HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, BYTE** pAlloca
                                                     TypeHandle th = TypeName::GetTypeManaged(typeString.GetUnicode(), NULL, FALSE, FALSE, FALSE, NULL, NULL);
                                                     if (!th.IsNull())
                                                     {
-                                                        MethodDesc* pMD = MemberLoader::FindMethodByName(th.GetMethodTable(), methodString.GetUTF8NoConvert());
+                                                        MethodDesc* pMD = MemberLoader::FindMethodByName(th.GetMethodTable(), methodString.GetUTF8());
                                                         newPtr = (INT_PTR)pMD;
                                                     }
                                                 }
@@ -976,7 +971,7 @@ public:
                     if (importSection != 0xF)
                     {
                         COUNT_T countImportSections;
-                        PTR_CORCOMPILE_IMPORT_SECTION pImportSections = m_pReadyToRunInfo->GetImportSections(&countImportSections);
+                        PTR_READYTORUN_IMPORT_SECTION pImportSections = m_pReadyToRunInfo->GetImportSections(&countImportSections);
 
                         if (importSection >= countImportSections)
                         {
@@ -984,7 +979,7 @@ public:
                             return false;
                         }
 
-                        PTR_CORCOMPILE_IMPORT_SECTION pImportSection = &pImportSections[importSection];
+                        PTR_READYTORUN_IMPORT_SECTION pImportSection = &pImportSections[importSection];
                         COUNT_T cbData;
                         TADDR pData = m_pNativeImage->GetDirectoryData(&pImportSection->Section, &cbData);
                         uint32_t fixupIndex = (uint32_t)typeIndex;

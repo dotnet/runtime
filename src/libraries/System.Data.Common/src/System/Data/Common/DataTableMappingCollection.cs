@@ -145,7 +145,7 @@ namespace System.Data.Common
 
         // implemented as a method, not as a property because the VS7 debugger
         // object browser calls properties to display their value, and we want this delayed
-        private List<DataTableMapping> ArrayList() => _items ?? (_items = new List<DataTableMapping>());
+        private List<DataTableMapping> ArrayList() => _items ??= new List<DataTableMapping>();
 
         public void Clear()
         {

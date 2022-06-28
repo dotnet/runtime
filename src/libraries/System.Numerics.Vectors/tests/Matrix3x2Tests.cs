@@ -983,7 +983,6 @@ namespace System.Numerics.Tests
 
         // A test for Matrix3x2 comparison involving NaN values
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69424", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void Matrix3x2EqualsNaNTest()
         {
             Matrix3x2 a = new Matrix3x2(float.NaN, 0, 0, 0, 0, 0);

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
@@ -317,11 +318,31 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override T ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            string? enumString = reader.GetString();
+#if NETCOREAPP
+            char[]? rentedBuffer = null;
+            int bufferLength = reader.ValueLength;
+
+            Span<char> charBuffer = bufferLength <= JsonConstants.StackallocCharThreshold
+                ? stackalloc char[JsonConstants.StackallocCharThreshold]
+                : (rentedBuffer = ArrayPool<char>.Shared.Rent(bufferLength));
+
+            int charsWritten = reader.CopyString(charBuffer);
+            ReadOnlySpan<char> source = charBuffer.Slice(0, charsWritten);
 
             // Try parsing case sensitive first
-            if (!Enum.TryParse(enumString, out T value)
-                && !Enum.TryParse(enumString, ignoreCase: true, out value))
+            bool success = Enum.TryParse(source, out T value) || Enum.TryParse(source, ignoreCase: true, out value);
+
+            if (rentedBuffer != null)
+            {
+                charBuffer.Slice(0, charsWritten).Clear();
+                ArrayPool<char>.Shared.Return(rentedBuffer);
+            }
+#else
+            string? enumString = reader.GetString();
+            // Try parsing case sensitive first
+            bool success = Enum.TryParse(enumString, out T value) || Enum.TryParse(enumString, ignoreCase: true, out value);
+#endif
+            if (!success)
             {
                 ThrowHelper.ThrowJsonException();
             }

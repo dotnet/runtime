@@ -11,16 +11,16 @@ namespace ILCompiler.DependencyAnalysisFramework
     /// <summary>
     /// Implement a dependency analysis framework. This works much like a Garbage Collector's mark algorithm
     /// in that it finds a set of nodes from an initial root set.
-    /// 
+    ///
     /// However, in contrast to a typical GC in addition to simple edges from a node, there may also
     /// be conditional edges where a node has a dependency if some other specific node exists in the
     /// graph, and dynamic edges in which a node has a dependency if some other node exists in the graph,
     /// but what that other node might be is not known until it may exist in the graph.
-    /// 
+    ///
     /// This analyzer also attempts to maintain a serialized state of why nodes are in the graph
     /// with strings describing the reason a given node was added to the graph. The degree of logging
     /// is configurable via the MarkStrategy
-    /// 
+    ///
     /// </summary>
     public sealed class DependencyAnalyzer<MarkStrategy, DependencyContextType> : DependencyAnalyzerBase<DependencyContextType> where MarkStrategy : struct, IDependencyAnalysisMarkStrategy<DependencyContextType>
     {
@@ -244,7 +244,7 @@ namespace ILCompiler.DependencyAnalysisFramework
                     Debug.Assert(currentNode.Marked);
 
                     // Only some marked objects are interesting for dynamic dependencies
-                    // store those in a seperate list to avoid excess scanning over non-interesting
+                    // store those in a separate list to avoid excess scanning over non-interesting
                     // nodes during dynamic dependency discovery
                     if (currentNode.InterestingForDynamicDependencyAnalysis)
                     {
@@ -262,7 +262,7 @@ namespace ILCompiler.DependencyAnalysisFramework
                         _markedNodesWithDynamicDependencies.Add(new DynamicDependencyNode(currentNode));
                     }
 
-                    // If this new node satisfies any stored conditional dependencies, 
+                    // If this new node satisfies any stored conditional dependencies,
                     // add them to the mark stack
                     HashSet<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry> storedDependencySet = null;
                     if (_conditional_dependency_store.TryGetValue(currentNode, out storedDependencySet))

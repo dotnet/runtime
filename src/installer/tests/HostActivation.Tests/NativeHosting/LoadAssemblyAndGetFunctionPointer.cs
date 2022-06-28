@@ -223,7 +223,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             };
 
             sharedState.CreateNativeHostCommand(args, sharedState.DotNetRoot)
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.InitializeContextForConfig(componentProject.RuntimeConfigJson)
                 .And.ExecuteComponentEntryPointWithException(entryPoint, 1);

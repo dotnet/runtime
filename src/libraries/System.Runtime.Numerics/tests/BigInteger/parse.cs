@@ -253,12 +253,12 @@ namespace System.Numerics.Tests
             for (int i = 0; i < s_samples; i++)
             {
                 int[] sizes = null;
-                string seperator = null;
+                string separator = null;
                 string digits = null;
 
                 sizes = CultureInfo.CurrentCulture.NumberFormat.NumberGroupSizes;
-                seperator = CultureInfo.CurrentCulture.NumberFormat.NumberGroupSeparator;
-                digits = GenerateGroups(sizes, seperator, random);
+                separator = CultureInfo.CurrentCulture.NumberFormat.NumberGroupSeparator;
+                digits = GenerateGroups(sizes, separator, random);
                 if (NoGrouping(sizes))
                 {
                     VerifyParseToString(digits);
@@ -382,12 +382,12 @@ namespace System.Numerics.Tests
             for (int i = 0; i < s_samples; i++)
             {
                 int[] sizes = null;
-                string seperator = null;
+                string separator = null;
                 string digits = null;
 
                 sizes = CultureInfo.CurrentCulture.NumberFormat.NumberGroupSizes;
-                seperator = CultureInfo.CurrentCulture.NumberFormat.NumberGroupSeparator;
-                digits = GenerateGroups(sizes, seperator, random);
+                separator = CultureInfo.CurrentCulture.NumberFormat.NumberGroupSeparator;
+                digits = GenerateGroups(sizes, separator, random);
                 VerifyParseToString(digits, ns, NoGrouping(sizes) || ((ns & NumberStyles.AllowThousands) != 0));
             }
 
@@ -767,7 +767,7 @@ namespace System.Numerics.Tests
             return y2;
         }
 
-        private static string GenerateGroups(int[] sizes, string seperator, Random random)
+        private static string GenerateGroups(int[] sizes, string separator, Random random)
         {
             List<int> total_sizes = new List<int>();
             int total;
@@ -823,7 +823,7 @@ namespace System.Numerics.Tests
                 num_digits -= group_size;
                 if (num_digits > 0)
                 {
-                    digits += seperator;
+                    digits += separator;
                 }
             }
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -12,14 +13,13 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using System.Net.Sockets;
 using Microsoft.Quic;
 using System.Runtime.CompilerServices;
 using static Microsoft.Quic.MsQuic;
 
 namespace System.Net.Quic.Implementations.MsQuic
 {
-    internal sealed class MsQuicListener : QuicListenerProvider, IDisposable
+    internal sealed class MsQuicListener : IDisposable
     {
         private readonly State _state;
         private GCHandle _stateHandle;
@@ -118,7 +118,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        internal override IPEndPoint ListenEndPoint
+        internal IPEndPoint ListenEndPoint
         {
             get
             {
@@ -126,7 +126,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        internal override async ValueTask<QuicConnectionProvider> AcceptConnectionAsync(CancellationToken cancellationToken = default)
+        internal async ValueTask<MsQuicConnection> AcceptConnectionAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
 
@@ -140,7 +140,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        public override void Dispose()
+        public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
@@ -179,26 +179,28 @@ namespace System.Net.Quic.Implementations.MsQuic
             List<SslApplicationProtocol> applicationProtocols = options.ServerAuthenticationOptions!.ApplicationProtocols!;
             IPEndPoint listenEndPoint = options.ListenEndPoint!;
 
-            Internals.SocketAddress address = IPEndPointExtensions.Serialize(listenEndPoint);
-
             Debug.Assert(_stateHandle.IsAllocated);
             try
             {
                 Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
                 using var msquicBuffers = new MsQuicBuffers();
                 msquicBuffers.Initialize(applicationProtocols, applicationProtocol => applicationProtocol.Protocol);
-                // TODO: is the layout same for SocketAddress.Buffer and QuicAddr?
-                // TODO: maybe add simple extensions/helpers:
-                //       - QuicAddr ToQuicAddr(this IPEndPoint ipEndPoint)
-                //       - IPEndPoint ToIPEndPoint(this ref QuicAddr quicAddress)
-                fixed (byte* paddress = address.Buffer)
+
+                QuicAddr address = listenEndPoint.ToQuicAddr();
+
+                if (listenEndPoint.Address.Equals(IPAddress.IPv6Any))
                 {
-                    ThrowIfFailure(MsQuicApi.Api.ApiTable->ListenerStart(
-                        _state.Handle.QuicHandle,
-                        msquicBuffers.Buffers,
-                        (uint)applicationProtocols.Count,
-                        (QuicAddr*)paddress), "ListenerStart failed");
+                    // For IPv6Any, MsQuic would listen only for IPv6 connections. This would make it impossible
+                    // to connect the listener by using the IPv4 address (which could have been e.g. resolved by DNS).
+                    // Using the Unspecified family makes MsQuic handle connections from all IP addresses.
+                    address.Family = QUIC_ADDRESS_FAMILY_UNSPEC;
                 }
+
+                ThrowIfFailure(MsQuicApi.Api.ApiTable->ListenerStart(
+                    _state.Handle.QuicHandle,
+                    msquicBuffers.Buffers,
+                    (uint)applicationProtocols.Count,
+                    &address), "ListenerStart failed");
             }
             catch
             {
@@ -207,7 +209,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
 
             Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-            return MsQuicParameterHelpers.GetIPEndPointParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LISTENER_LOCAL_ADDRESS);
+            // override the address family to the original value in case we had to use UNSPEC
+            return MsQuicParameterHelpers.GetIPEndPointParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LISTENER_LOCAL_ADDRESS, listenEndPoint.AddressFamily);
         }
 
         private unsafe Task StopAsync()

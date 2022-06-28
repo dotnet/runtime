@@ -40,17 +40,10 @@ namespace System.IO.Compression
         /// </summary>
         internal static void ReadBytes(Stream stream, byte[] buffer, int bytesToRead)
         {
-            int bytesLeftToRead = bytesToRead;
-
-            int totalBytesRead = 0;
-
-            while (bytesLeftToRead > 0)
+            int bytesRead = stream.ReadAtLeast(buffer.AsSpan(0, bytesToRead), bytesToRead, throwOnEndOfStream: false);
+            if (bytesRead < bytesToRead)
             {
-                int bytesRead = stream.Read(buffer, totalBytesRead, bytesLeftToRead);
-                if (bytesRead == 0) throw new IOException(SR.UnexpectedEndOfStream);
-
-                totalBytesRead += bytesRead;
-                bytesLeftToRead -= bytesRead;
+                throw new IOException(SR.UnexpectedEndOfStream);
             }
         }
 

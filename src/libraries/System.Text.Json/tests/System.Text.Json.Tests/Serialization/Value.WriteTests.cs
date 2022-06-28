@@ -49,7 +49,7 @@ namespace System.Text.Json.Serialization.Tests
 
             {
                 Span<byte> json = JsonSerializer.SerializeToUtf8Bytes(1);
-                Assert.Equal(Encoding.UTF8.GetBytes("1"), json.ToArray());
+                Assert.Equal("1"u8.ToArray(), json.ToArray());
             }
 
             {

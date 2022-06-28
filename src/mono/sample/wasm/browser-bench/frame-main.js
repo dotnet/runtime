@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 "use strict";
+
+import createDotnetRuntime from './dotnet.js'
+
 class FrameApp {
     async init({ BINDING }) {
         const reachManagedReached = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample] Sample.AppStartTask/ReachManaged:Reached");
@@ -13,11 +16,17 @@ class FrameApp {
     }
 }
 
-globalThis.frameApp = new FrameApp();
+try {
+    globalThis.frameApp = new FrameApp();
 
-let mute = false;
-createDotnetRuntime(({ BINDING }) => {
-    return {
+    let mute = false;
+    window.addEventListener("pageshow", event => { window.parent.resolveAppStartEvent("pageshow"); })
+
+    window.muteErrors = () => {
+        mute = true;
+    }
+
+    const { BINDING } = await createDotnetRuntime(() => ({
         disableDotnet6Compatibility: true,
         configSrc: "./mono-config.json",
         printErr: function () {
@@ -29,37 +38,29 @@ createDotnetRuntime(({ BINDING }) => {
             window.parent.resolveAppStartEvent("onConfigLoaded");
             // Module.config.diagnostic_tracing = true;
         },
-        onDotnetReady: async () => {
-            window.parent.resolveAppStartEvent("onDotnetReady");
-            try {
-                await frameApp.init({ BINDING });
-            } catch (error) {
-                set_exit_code(1, error);
-                throw (error);
-            }
-        },
         onAbort: (error) => {
-            set_exit_code(1, error);
+            wasm_exit(1, error);
         },
-    }
-}).catch(err => {
+    }));
+
+    window.parent.resolveAppStartEvent("onDotnetReady");
+    await frameApp.init({ BINDING });
+}
+catch (err) {
     if (!mute) {
         console.error(`WASM ERROR ${err}`);
     }
-})
-
-window.addEventListener("pageshow", event => { window.parent.resolveAppStartEvent("pageshow"); })
-
-window.muteErrors = () => {
-    mute = true;
+    wasm_exit(1, err);
 }
 
-function set_exit_code(exit_code, reason) {
+function wasm_exit(exit_code, reason) {
     /* Set result in a tests_done element, to be read by xharness */
     var tests_done_elem = document.createElement("label");
     tests_done_elem.id = "tests_done";
     tests_done_elem.innerHTML = exit_code.toString();
+    if (exit_code) tests_done_elem.style.background = "red";
     document.body.appendChild(tests_done_elem);
 
+    if (reason) console.error(reason);
     console.log(`WASM EXIT ${exit_code}`);
 };

@@ -300,7 +300,7 @@ namespace System.Xml
 
         public override void WriteStartAttribute(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri)
         {
-            StartAttribute(ref prefix, (localName != null ? localName.Value : null)!, (namespaceUri != null ? namespaceUri.Value : null), namespaceUri);
+            StartAttribute(ref prefix, localName?.Value!, namespaceUri?.Value, namespaceUri);
             if (!_isXmlnsAttribute)
             {
                 _writer.WriteStartAttribute(prefix, localName!);
@@ -604,7 +604,7 @@ namespace System.Xml
 
         public override void WriteStartElement(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri)
         {
-            StartElement(ref prefix, localName.Value, (namespaceUri != null ? namespaceUri.Value : null), namespaceUri);
+            StartElement(ref prefix, localName.Value, namespaceUri?.Value, namespaceUri);
             _writer.WriteStartElement(prefix, localName);
         }
 
@@ -967,14 +967,9 @@ namespace System.Xml
 
             ArgumentNullException.ThrowIfNull(whitespace);
 
-            for (int i = 0; i < whitespace.Length; ++i)
+            if (whitespace.AsSpan().IndexOfAnyExcept(" \t\r\n") >= 0)
             {
-                char c = whitespace[i];
-                if (c != ' ' &&
-                    c != '\t' &&
-                    c != '\n' &&
-                    c != '\r')
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.XmlOnlyWhitespace, nameof(whitespace)));
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.XmlOnlyWhitespace, nameof(whitespace)));
             }
 
             WriteString(whitespace);

@@ -1,15 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Reflection;
+using System.Collections;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml.Serialization
 {
-    using System;
-    using System.Reflection;
-    using System.Collections;
-    using System.Diagnostics;
-    using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
-
     // These classes define the abstract serialization model, e.g. the rules for WHAT is serialized.
     // The answer of HOW the values are serialized is answered by a particular reflection importer
     // by looking for a particular set of custom attributes specific to the serialization format

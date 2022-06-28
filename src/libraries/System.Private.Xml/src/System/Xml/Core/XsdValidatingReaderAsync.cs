@@ -695,7 +695,7 @@ namespace System.Xml
                     if (_validationState == ValidatingReaderState.OnDefaultAttribute)
                     {
                         XmlSchemaAttribute schemaAttr = _attributePSVI.attributeSchemaInfo.SchemaAttribute!;
-                        originalStringValue = (schemaAttr.DefaultValue != null) ? schemaAttr.DefaultValue : schemaAttr.FixedValue!;
+                        originalStringValue = schemaAttr.DefaultValue ?? schemaAttr.FixedValue!;
                     }
 
                     return (originalStringValue, ReturnBoxedValue(_attributePSVI.typedAttributeValue, AttributeSchemaInfo.XmlType!, unwrapTypedValue));

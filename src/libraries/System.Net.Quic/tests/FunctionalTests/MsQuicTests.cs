@@ -21,11 +21,11 @@ using Xunit.Abstractions;
 
 namespace System.Net.Quic.Tests
 {
-    [ConditionalClass(typeof(QuicTestBase<MsQuicProviderFactory>), nameof(IsSupported))]
     [Collection(nameof(DisableParallelization))]
-    public class MsQuicTests : QuicTestBase<MsQuicProviderFactory>
+    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported))]
+    public class MsQuicTests : QuicTestBase
     {
-        private static byte[] s_data = Encoding.UTF8.GetBytes("Hello world!");
+        private static byte[] s_data = "Hello world!"u8.ToArray();
 
         public MsQuicTests(ITestOutputHelper output) : base(output) { }
 
@@ -60,7 +60,6 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/46837", TestPlatforms.OSX)]
         public async Task ConnectWithCertificateChain()
         {
             (X509Certificate2 certificate, X509Certificate2Collection chain) = System.Net.Security.Tests.TestHelper.GenerateCertificates("localhost", longChain: true);
@@ -106,10 +105,14 @@ namespace System.Net.Quic.Tests
             clientConnection.Dispose();
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/64944", TestPlatforms.Windows)]
+        [ConditionalFact]
         public async Task UntrustedClientCertificateFails()
         {
+            if (PlatformDetection.IsWindows10Version20348OrLower)
+            {
+                throw new SkipTestException("Client certificates are not supported on Windows Server 2022.");
+            }
+
             var listenerOptions = new QuicListenerOptions();
             listenerOptions.ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0);
             listenerOptions.ServerAuthenticationOptions = GetSslServerAuthenticationOptions();
@@ -119,11 +122,11 @@ namespace System.Net.Quic.Tests
                 return false;
             };
 
-            using QuicListener listener = new QuicListener(QuicImplementationProviders.MsQuic, listenerOptions);
+            using QuicListener listener = await CreateQuicListener(listenerOptions);
             QuicClientConnectionOptions clientOptions = CreateQuicClientOptions();
             clientOptions.RemoteEndPoint = listener.ListenEndPoint;
             clientOptions.ClientAuthenticationOptions.ClientCertificates = new X509CertificateCollection() { ClientCertificate };
-            QuicConnection clientConnection = CreateQuicConnection(clientOptions);
+            QuicConnection clientConnection = await CreateQuicConnection(clientOptions);
 
             using CancellationTokenSource cts = new CancellationTokenSource();
             cts.CancelAfter(500); //Some delay to see if we would get failed connection.
@@ -133,7 +136,7 @@ namespace System.Net.Quic.Tests
 
             t.AsTask().Wait(PassingTestTimeout);
             await Assert.ThrowsAsync<OperationCanceledException>(() => serverTask);
-            // The task will likely succed but we don't really care.
+            // The task will likely succeed but we don't really care.
             // It may fail if the server aborts quickly.
             try
             {
@@ -155,7 +158,7 @@ namespace System.Net.Quic.Tests
             var listenerOptions = new QuicListenerOptions();
             listenerOptions.ListenEndPoint = new IPEndPoint(Socket.OSSupportsIPv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback, 0);
             listenerOptions.ServerAuthenticationOptions = GetSslServerAuthenticationOptions();
-            using QuicListener listener = new QuicListener(QuicImplementationProviders.MsQuic, listenerOptions);
+            using QuicListener listener = await CreateQuicListener(listenerOptions);
 
             QuicClientConnectionOptions clientOptions = CreateQuicClientOptions();
             clientOptions.RemoteEndPoint = listener.ListenEndPoint;
@@ -171,14 +174,14 @@ namespace System.Net.Quic.Tests
             };
 
             clientOptions.ClientAuthenticationOptions.TargetHost = "foobar1";
-            QuicConnection clientConnection = new QuicConnection(QuicImplementationProviders.MsQuic, clientOptions);
+            QuicConnection clientConnection = await CreateQuicConnection(clientOptions);
 
             await Assert.ThrowsAsync<ArithmeticException>(() => clientConnection.ConnectAsync(cts.Token).AsTask());
 
             Assert.Equal(listenerOptions.ServerAuthenticationOptions.ServerCertificate, receivedCertificate);
             clientConnection.Dispose();
 
-            // Make sure the listner is still usable and there is no lingering bad conenction
+            // Make sure the listener is still usable and there is no lingering bad connection
             validationResult = true;
             (clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(listener);
             await PingPong(clientConnection, serverConnection);
@@ -187,7 +190,7 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
-        public async Task ConnectWithCertificateCallback()
+        public async Task ConnectWithServerCertificateCallback()
         {
             X509Certificate2 c1 = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
             X509Certificate2 c2 = System.Net.Test.Common.Configuration.Certificates.GetClientCertificate(); // This 'wrong' certificate but should be sufficient
@@ -217,7 +220,7 @@ namespace System.Net.Quic.Tests
                 return null;
             };
 
-            using QuicListener listener = new QuicListener(QuicImplementationProviders.MsQuic, listenerOptions);
+            using QuicListener listener = await CreateQuicListener(listenerOptions);
             QuicClientConnectionOptions clientOptions = CreateQuicClientOptions();
             clientOptions.ClientAuthenticationOptions.TargetHost = "foobar1";
             clientOptions.ClientAuthenticationOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
@@ -234,7 +237,7 @@ namespace System.Net.Quic.Tests
 
             // This should fail when callback return null.
             clientOptions.ClientAuthenticationOptions.TargetHost = "foobar3";
-            clientConnection = new QuicConnection(QuicImplementationProviders.MsQuic, clientOptions);
+            clientConnection = await CreateQuicConnection(clientOptions);
             Task clientTask = clientConnection.ConnectAsync(cts.Token).AsTask();
 
             await Assert.ThrowsAnyAsync<QuicException>(() => clientTask);
@@ -267,7 +270,7 @@ namespace System.Net.Quic.Tests
                 return certificate;
             };
 
-            using QuicListener listener = new QuicListener(QuicImplementationProviders.MsQuic, listenerOptions);
+            using QuicListener listener = await CreateQuicListener(listenerOptions);
 
             QuicClientConnectionOptions clientOptions = CreateQuicClientOptions();
             clientOptions.ClientAuthenticationOptions.TargetHost = expectedName;
@@ -288,7 +291,7 @@ namespace System.Net.Quic.Tests
             quicOptions.ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0);
             quicOptions.ServerAuthenticationOptions = GetSslServerAuthenticationOptions();
             quicOptions.ServerAuthenticationOptions.ServerCertificate = certificate;
-            using QuicListener listener = new QuicListener(QuicImplementationProviders.MsQuic, quicOptions);
+            using QuicListener listener = await CreateQuicListener(quicOptions);
 
             QuicClientConnectionOptions clientOptions = CreateQuicClientOptions();
             clientOptions.RemoteEndPoint = listener.ListenEndPoint;
@@ -302,7 +305,7 @@ namespace System.Net.Quic.Tests
                 return SslPolicyErrors.None == errors;
             };
 
-            using QuicConnection clientConnection = new QuicConnection(QuicImplementationProviders.MsQuic, clientOptions);
+            using QuicConnection clientConnection = await CreateQuicConnection(clientOptions);
             ValueTask clientTask = clientConnection.ConnectAsync();
 
             await Assert.ThrowsAsync<AuthenticationException>(async () => await clientTask);
@@ -336,12 +339,19 @@ namespace System.Net.Quic.Tests
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions, listenerOptions);
         }
 
-        [Theory]
-        [InlineData(true)]
-        // [InlineData(false)] [ActiveIssue("https://github.com/dotnet/runtime/issues/57308")]
+        [ConditionalTheory]
+        [InlineData(true, true)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/64944", TestPlatforms.Windows)]
-        public async Task ConnectWithClientCertificate(bool sendCerttificate)
+        public async Task ConnectWithClientCertificate(bool sendCertificate, bool useClientSelectionCallback)
         {
+            if (PlatformDetection.IsWindows10Version20348OrLower)
+            {
+                throw new SkipTestException("Client certificates are not supported on Windows Server 2022.");
+            }
+
             bool clientCertificateOK = false;
 
             var listenerOptions = new QuicListenerOptions();
@@ -350,7 +360,7 @@ namespace System.Net.Quic.Tests
             listenerOptions.ServerAuthenticationOptions.ClientCertificateRequired = true;
             listenerOptions.ServerAuthenticationOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
             {
-                if (sendCerttificate)
+                if (sendCertificate)
                 {
                     _output.WriteLine("client certificate {0}", cert);
                     Assert.NotNull(cert);
@@ -361,9 +371,16 @@ namespace System.Net.Quic.Tests
                 return true;
             };
 
-            using QuicListener listener = new QuicListener(QuicImplementationProviders.MsQuic, listenerOptions);
+            using QuicListener listener = await CreateQuicListener(listenerOptions);
             QuicClientConnectionOptions clientOptions = CreateQuicClientOptions();
-            if (sendCerttificate)
+            if (useClientSelectionCallback)
+            {
+                clientOptions.ClientAuthenticationOptions.LocalCertificateSelectionCallback = delegate
+                {
+                    return sendCertificate ? ClientCertificate : null;
+                };
+            }
+            else if (sendCertificate)
             {
                 clientOptions.ClientAuthenticationOptions.ClientCertificates = new X509CertificateCollection() { ClientCertificate };
             }
@@ -373,7 +390,7 @@ namespace System.Net.Quic.Tests
             await PingPong(clientConnection, serverConnection);
             // check we completed the client certificate verification.
             Assert.True(clientCertificateOK);
-            Assert.Equal(ClientCertificate, serverConnection.RemoteCertificate);
+            Assert.Equal(sendCertificate ? ClientCertificate : null, serverConnection.RemoteCertificate);
 
             await serverConnection.CloseAsync(0);
             clientConnection.Dispose();
@@ -545,12 +562,6 @@ namespace System.Net.Quic.Tests
                                     await stream.WriteAsync(new byte[bufferLength]);
                                 }
                                 break;
-                            case WriteType.GatheredBuffers:
-                                var buffers = bufferLengths
-                                    .Select(bufferLength => new ReadOnlyMemory<byte>(new byte[bufferLength]))
-                                    .ToArray();
-                                await stream.WriteAsync(buffers);
-                                break;
                             case WriteType.GatheredSequence:
                                 var firstSegment = new BufferSegment(new byte[bufferLengths[0]]);
                                 BufferSegment lastSegment = firstSegment;
@@ -613,7 +624,6 @@ namespace System.Net.Quic.Tests
         public enum WriteType
         {
             SingleBuffer,
-            GatheredBuffers,
             GatheredSequence
         }
 
@@ -622,7 +632,7 @@ namespace System.Net.Quic.Tests
         {
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection();
 
-            ReadOnlyMemory<byte> helloWorld = Encoding.ASCII.GetBytes("Hello world!");
+            ReadOnlyMemory<byte> helloWorld = "Hello world!"u8.ToArray();
             ReadOnlySequence<byte> ros = CreateReadOnlySequenceFromBytes(helloWorld.ToArray());
 
             Assert.False(ros.IsSingleSegment);
@@ -634,12 +644,7 @@ namespace System.Net.Quic.Tests
             byte[] memory = new byte[24];
             int res = await serverStream.ReadAsync(memory);
             Assert.Equal(12, res);
-            ReadOnlyMemory<ReadOnlyMemory<byte>> romrom = new ReadOnlyMemory<ReadOnlyMemory<byte>>(new ReadOnlyMemory<byte>[] { helloWorld, helloWorld });
 
-            await clientStream.WriteAsync(romrom);
-
-            res = await serverStream.ReadAsync(memory);
-            Assert.Equal(24, res);
             clientConnection.Dispose();
             serverConnection.Dispose();
         }

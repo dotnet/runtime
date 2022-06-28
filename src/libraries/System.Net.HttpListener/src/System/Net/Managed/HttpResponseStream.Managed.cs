@@ -128,7 +128,7 @@ namespace System.Net
             }
         }
 
-        private static byte[] s_crlf = new byte[] { 13, 10 };
+        private static readonly byte[] s_crlf = "\r\n"u8.ToArray();
         private static byte[] GetChunkSizeBytes(int size, bool final) =>
             Encoding.ASCII.GetBytes($"{size:x}\r\n{(final ? "\r\n" : "")}");
 

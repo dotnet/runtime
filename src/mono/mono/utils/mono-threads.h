@@ -634,6 +634,7 @@ void mono_threads_platform_init (void);
 gboolean mono_threads_platform_in_critical_region (THREAD_INFO_TYPE *info);
 gboolean mono_threads_platform_yield (void);
 void mono_threads_platform_exit (gsize exit_code);
+gboolean mono_threads_platform_stw_defer_initial_suspend (THREAD_INFO_TYPE *info);
 
 void mono_threads_coop_begin_global_suspend (void);
 void mono_threads_coop_end_global_suspend (void);

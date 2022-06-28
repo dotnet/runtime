@@ -1918,7 +1918,7 @@ VOID Stub::IncRef()
     CONTRACTL_END;
 
     _ASSERTE(m_signature == kUsedStub);
-    FastInterlockIncrement((LONG*)&m_refcount);
+    InterlockedIncrement((LONG*)&m_refcount);
 }
 
 //-------------------------------------------------------------------
@@ -1934,7 +1934,7 @@ BOOL Stub::DecRef()
     CONTRACTL_END;
 
     _ASSERTE(m_signature == kUsedStub);
-    int count = FastInterlockDecrement((LONG*)&m_refcount);
+    int count = InterlockedDecrement((LONG*)&m_refcount);
     if (count <= 0) {
         DeleteStub();
         return TRUE;

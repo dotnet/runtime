@@ -13,20 +13,21 @@ namespace System.Formats.Tar.Tests
         public void Write_V7RegularFileEntry_As_RegularFileEntry()
         {
             using MemoryStream archive = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archive, archiveFormat: TarFormat.Ustar, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archive, format: TarEntryFormat.Ustar, leaveOpen: true))
             {
                 V7TarEntry entry = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
 
-                // Should be written as RegularFile
+                // Should be written in the format of the entry
                 writer.WriteEntry(entry);
             }
 
             archive.Seek(0, SeekOrigin.Begin);
             using (TarReader reader = new TarReader(archive))
             {
-                UstarTarEntry entry = reader.GetNextEntry() as UstarTarEntry;
+                TarEntry entry = reader.GetNextEntry();
                 Assert.NotNull(entry);
-                Assert.Equal(TarEntryType.RegularFile, entry.EntryType);
+                Assert.Equal(TarEntryFormat.V7, entry.Format);
+                Assert.True(entry is V7TarEntry);
 
                 Assert.Null(reader.GetNextEntry());
             }
@@ -36,7 +37,7 @@ namespace System.Formats.Tar.Tests
         public void WriteRegularFile()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Ustar, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Ustar, leaveOpen: true))
             {
                 UstarTarEntry regularFile = new UstarTarEntry(TarEntryType.RegularFile, InitialEntryName);
                 SetRegularFile(regularFile);
@@ -56,7 +57,7 @@ namespace System.Formats.Tar.Tests
         public void WriteHardLink()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Ustar, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Ustar, leaveOpen: true))
             {
                 UstarTarEntry hardLink = new UstarTarEntry(TarEntryType.HardLink, InitialEntryName);
                 SetHardLink(hardLink);
@@ -76,7 +77,7 @@ namespace System.Formats.Tar.Tests
         public void WriteSymbolicLink()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Ustar, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Ustar, leaveOpen: true))
             {
                 UstarTarEntry symbolicLink = new UstarTarEntry(TarEntryType.SymbolicLink, InitialEntryName);
                 SetSymbolicLink(symbolicLink);
@@ -96,7 +97,7 @@ namespace System.Formats.Tar.Tests
         public void WriteDirectory()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Ustar, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Ustar, leaveOpen: true))
             {
                 UstarTarEntry directory = new UstarTarEntry(TarEntryType.Directory, InitialEntryName);
                 SetDirectory(directory);
@@ -116,7 +117,7 @@ namespace System.Formats.Tar.Tests
         public void WriteCharacterDevice()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Ustar, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Ustar, leaveOpen: true))
             {
                 UstarTarEntry charDevice = new UstarTarEntry(TarEntryType.CharacterDevice, InitialEntryName);
                 SetCharacterDevice(charDevice);
@@ -136,7 +137,7 @@ namespace System.Formats.Tar.Tests
         public void WriteBlockDevice()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Ustar, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Ustar, leaveOpen: true))
             {
                 UstarTarEntry blockDevice = new UstarTarEntry(TarEntryType.BlockDevice, InitialEntryName);
                 SetBlockDevice(blockDevice);
@@ -156,7 +157,7 @@ namespace System.Formats.Tar.Tests
         public void WriteFifo()
         {
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, TarFormat.Ustar, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Ustar, leaveOpen: true))
             {
                 UstarTarEntry fifo = new UstarTarEntry(TarEntryType.Fifo, InitialEntryName);
                 SetFifo(fifo);

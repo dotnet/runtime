@@ -112,7 +112,7 @@ namespace System.Security.Cryptography.Xml
 
         private void Initialize(XmlElement element)
         {
-            _containingDocument = (element == null ? null : element.OwnerDocument);
+            _containingDocument = element?.OwnerDocument;
             _context = element;
             m_signature = new Signature();
             m_signature.SignedXml = this;
@@ -784,7 +784,7 @@ namespace System.Security.Cryptography.Xml
             bool isKeyedHashAlgorithm = hash is KeyedHashAlgorithm;
             if (isKeyedHashAlgorithm || !_bCacheValid || !SignedInfo.CacheValid)
             {
-                string baseUri = (_containingDocument == null ? null : _containingDocument.BaseURI);
+                string baseUri = _containingDocument?.BaseURI;
                 XmlResolver resolver = (_bResolverSet ? _xmlResolver : new XmlSecureResolver(new XmlUrlResolver(), baseUri));
                 XmlDocument doc = Utils.PreProcessElementInput(SignedInfo.GetXml(), resolver, baseUri);
 
@@ -976,7 +976,7 @@ namespace System.Security.Cryptography.Xml
                     // This cannot overflow more than once (and back to 0) because bytes are 1 byte
                     // in length, and result is 4 bytes. The OR propagates all set bytes, so the differences
                     // can't add up and overflow a second time.
-                    result = result | (a[i] - b[i]);
+                    result |= (a[i] - b[i]);
             }
 
             return (0 == result);
@@ -1063,11 +1063,8 @@ namespace System.Security.Cryptography.Xml
             // Calculate the hash
             byte[] hashValue = GetC14NDigest(macAlg);
             SignedXmlDebugLog.LogVerifySignedInfo(this, macAlg, hashValue, m_signature.SignatureValue);
-            for (int i = 0; i < m_signature.SignatureValue.Length; i++)
-            {
-                if (m_signature.SignatureValue[i] != hashValue[i]) return false;
-            }
-            return true;
+
+            return m_signature.SignatureValue.AsSpan().SequenceEqual(hashValue.AsSpan(0, m_signature.SignatureValue.Length));
         }
 
         private static XmlElement GetSingleReferenceTarget(XmlDocument document, string idAttributeName, string idValue)
