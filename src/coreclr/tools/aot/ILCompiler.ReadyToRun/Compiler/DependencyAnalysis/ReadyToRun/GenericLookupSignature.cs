@@ -53,7 +53,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             // Determine the need for module override
-            IEcmaModule targetModule;
+            EcmaModule targetModule;
             if (_methodArgument != null)
             {
                 targetModule = _methodArgument.Token.Module;
@@ -128,16 +128,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             return dataBuilder.ToObjectData();
-        }
-
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
-        {
-            DependencyList dependencies = null;
-            if (_fixupKind == ReadyToRunFixupKind.TypeHandle)
-            {
-                TypeFixupSignature.AddDependenciesForAsyncStateMachineBox(ref dependencies, factory, _typeArgument);
-            }
-            return dependencies;
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

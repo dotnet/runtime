@@ -161,7 +161,7 @@ namespace System
             Number.ParsingStatus status = Number.TryParseInt32(s, style, info, out int i);
             if (status != Number.ParsingStatus.OK)
             {
-                Number.ThrowOverflowOrFormatException(status, TypeCode.SByte);
+                Number.ThrowOverflowOrFormatException(status, s, TypeCode.SByte);
             }
 
             // For hex number styles AllowHexSpecifier >> 2 == 0x80 and cancels out MinValue so the check is effectively: (uint)i > byte.MaxValue

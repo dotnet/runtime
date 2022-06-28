@@ -407,7 +407,7 @@ void CoreLibBinder::BuildConvertedSignature(const BYTE* pSig, SigBuilder * pSigB
     }
     else {
         if ((callConv & IMAGE_CEE_CS_CALLCONV_MASK) != IMAGE_CEE_CS_CALLCONV_FIELD)
-            THROW_BAD_FORMAT(BFA_BAD_SIGNATURE, (ModuleBase*)NULL);
+            THROW_BAD_FORMAT(BFA_BAD_SIGNATURE, (Module*)NULL);
         argCount = 0;
     }
 
@@ -801,8 +801,7 @@ static void FCallCheckSignature(MethodDesc* pMD, PCODE pImpl)
             size_t len = pUnmanagedTypeEnd - pUnmanagedArg;
             // generate the unmanaged argument signature to show them in the error message if possible
             StackSString ssUnmanagedType(SString::Ascii, pUnmanagedArg, (COUNT_T)len);
-            StackScratchBuffer buffer;
-            const char * pUnManagedType = ssUnmanagedType.GetANSI(buffer);
+            const char * pUnManagedType = ssUnmanagedType.GetUTF8();
 
             if (expectedType != NULL)
             {

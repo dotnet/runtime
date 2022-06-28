@@ -1227,14 +1227,12 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             }
             else if (ch == '\0')
             {
-                for (int i = str.Index; i < str.Length; i++)
+                // Nulls are only valid if they are the only trailing character
+                if (str.Value.Slice(str.Index + 1).IndexOfAnyExcept('\0') >= 0)
                 {
-                    if (str.Value[i] != '\0')
-                    {
-                        // Nulls are only valid if they are the only trailing character
-                        return false;
-                    }
+                    return false;
                 }
+
                 // Move to the end of the string
                 str.Index = str.Length;
                 return true;

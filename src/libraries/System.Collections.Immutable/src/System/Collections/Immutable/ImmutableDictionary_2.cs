@@ -424,15 +424,8 @@ namespace System.Collections.Immutable
         /// </summary>
         public ImmutableDictionary<TKey, TValue> WithComparers(IEqualityComparer<TKey>? keyComparer, IEqualityComparer<TValue>? valueComparer)
         {
-            if (keyComparer == null)
-            {
-                keyComparer = EqualityComparer<TKey>.Default;
-            }
-
-            if (valueComparer == null)
-            {
-                valueComparer = EqualityComparer<TValue>.Default;
-            }
+            keyComparer ??= EqualityComparer<TKey>.Default;
+            valueComparer ??= EqualityComparer<TValue>.Default;
 
             if (this.KeyComparer == keyComparer)
             {

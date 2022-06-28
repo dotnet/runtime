@@ -27,7 +27,6 @@ class ReadyToRunCoreInfo
 private:
     PTR_PEImageLayout               m_pLayout;
     PTR_READYTORUN_CORE_HEADER      m_pCoreHeader;
-    Volatile<bool>                  m_fForbidLoadILBodyFixups;
     
 public:
     ReadyToRunCoreInfo();
@@ -35,8 +34,6 @@ public:
 
     PTR_PEImageLayout GetLayout() const { return m_pLayout; }
     IMAGE_DATA_DIRECTORY * FindSection(ReadyToRunSectionType type) const;
-    void ForbidProcessMoreILBodyFixups() { m_fForbidLoadILBodyFixups = true; }
-    bool IsForbidProcessMoreILBodyFixups() { return m_fForbidLoadILBodyFixups; }
 
     PTR_PEImageLayout GetImage() const
     {
@@ -53,7 +50,6 @@ class ReadyToRunInfo
     friend class ReadyToRunJitManager;
 
     PTR_Module                      m_pModule;
-    PTR_ModuleBase                  m_pNativeManifestModule;
     PTR_READYTORUN_HEADER           m_pHeader;
     bool                            m_isComponentAssembly;
     PTR_NativeImage                 m_pNativeImage;
@@ -85,7 +81,6 @@ class ReadyToRunInfo
     PtrHashMap                      m_entryPointToMethodDescMap;
 
     PTR_PersistentInlineTrackingMapR2R m_pPersistentInlineTrackingMap;
-    PTR_PersistentInlineTrackingMapR2R m_pCrossModulePersistentInlineTrackingMap;
 
 public:
     ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocator, PEImageLayout * pLayout, READYTORUN_HEADER * pHeader, NativeImage * pNativeImage, AllocMemTracker *pamTracker);
@@ -97,8 +92,6 @@ public:
     bool IsComponentAssembly() const { return m_isComponentAssembly; }
 
     static bool IsNativeImageSharedBy(PTR_Module pModule1, PTR_Module pModule2);
-
-    PTR_ModuleBase GetNativeManifestModule() const { return m_pNativeManifestModule; }
 
     PTR_READYTORUN_HEADER GetReadyToRunHeader() const { return m_pHeader; }
 
@@ -141,19 +134,10 @@ public:
         return m_readyToRunCodeDisabled;
     }
 
-    void ForbidProcessMoreILBodyFixups() { m_pComposite->ForbidProcessMoreILBodyFixups(); }
-    bool IsForbidProcessMoreILBodyFixups() { return m_pComposite->IsForbidProcessMoreILBodyFixups(); }
-
     BOOL HasNonShareablePInvokeStubs()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_NONSHARED_PINVOKE_STUBS;
-    }
-
-    bool MultiModuleVersionBubble()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_MULTIMODULE_VERSION_BUBBLE;
     }
 
     PTR_READYTORUN_IMPORT_SECTION GetImportSections(COUNT_T * pCount)
@@ -232,48 +216,14 @@ public:
         return m_pPersistentInlineTrackingMap;
     }
 
-    bool HasReadyToRunInlineTrackingMap()
-    {
-        return (m_pPersistentInlineTrackingMap != NULL || m_pCrossModulePersistentInlineTrackingMap != NULL);
-    }
-
-    COUNT_T GetInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule *inliners, BOOL *incompleteData)
-    {
-        COUNT_T inlinersCount = 0;
-        if (m_pPersistentInlineTrackingMap != NULL)
-        {
-            COUNT_T newInliners = m_pPersistentInlineTrackingMap->GetInliners(inlineeOwnerMod, inlineeTkn, inlinersSize, inliners, incompleteData);
-            if (newInliners < inlinersSize)
-            {
-                inlinersSize -= newInliners;
-                inliners += newInliners;
-            }
-            inlinersCount += newInliners;
-        }
-
-        if (m_pCrossModulePersistentInlineTrackingMap != NULL)
-        {
-            COUNT_T newInliners = m_pCrossModulePersistentInlineTrackingMap->GetInliners(inlineeOwnerMod, inlineeTkn, inlinersSize, inliners, incompleteData);
-            if (newInliners < inlinersSize)
-            {
-                inlinersSize -= newInliners;
-                inliners += newInliners;
-            }
-            inlinersCount += newInliners;
-        }
-
-        return inlinersCount;
-    }
-
-
     bool MayHaveCustomAttribute(WellKnownAttribute attribute, mdToken token);
     void DisableCustomAttributeFilter();
 
-    BOOL IsImageVersionAtLeast(int majorVersion, int minorVersion);
 private:
     BOOL GetTypeNameFromToken(IMDInternalImport * pImport, mdToken mdType, LPCUTF8 * ppszName, LPCUTF8 * ppszNameSpace);
     BOOL GetEnclosingToken(IMDInternalImport * pImport, mdToken mdType, mdToken * pEnclosingToken);
     BOOL CompareTypeNameOfTokens(mdToken mdToken1, IMDInternalImport * pImport1, mdToken mdToken2, IMDInternalImport * pImport2);
+    BOOL IsImageVersionAtLeast(int majorVersion, int minorVersion);
 
     PTR_MethodDesc GetMethodDescForEntryPointInNativeImage(PCODE entryPoint);
     void SetMethodDescForEntryPointInNativeImage(PCODE entryPoint, PTR_MethodDesc methodDesc);

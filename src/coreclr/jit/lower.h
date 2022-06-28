@@ -308,7 +308,10 @@ private:
     void LowerBlockStore(GenTreeBlk* blkNode);
     void LowerBlockStoreCommon(GenTreeBlk* blkNode);
     void ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr);
-    void LowerPutArgStk(GenTreePutArgStk* tree);
+    void LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode);
+#ifdef TARGET_XARCH
+    void LowerPutArgStk(GenTreePutArgStk* putArgStk);
+#endif // TARGET_XARCH
 
     bool TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent);
 

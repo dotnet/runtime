@@ -17,7 +17,7 @@ namespace System.IO
 {
     // Class for creating FileStream objects, and some basic file management
     // routines such as Delete, etc.
-    public static class File
+    public static partial class File
     {
         private const int ChunkSize = 8192;
         private static Encoding? s_UTF8NoBOM;
@@ -219,6 +219,51 @@ namespace System.IO
 
         public static void SetAttributes(string path, FileAttributes fileAttributes)
             => FileSystem.SetAttributes(Path.GetFullPath(path), fileAttributes);
+
+        /// <summary>Gets the <see cref="T:System.IO.UnixFileMode" /> of the file on the path.</summary>
+        /// <param name="path">The path to the file.</param>
+        /// <returns>The <see cref="T:System.IO.UnixFileMode" /> of the file on the path.</returns>
+        /// <exception cref="T:System.ArgumentException"><paramref name="path" /> is a zero-length string, or contains one or more invalid characters. You can query for invalid characters by using the <see cref="M:System.IO.Path.GetInvalidPathChars" /> method.</exception>
+        /// <exception cref="T:System.ArgumentNullException"><paramref name="path" /> is <see langword="null" />.</exception>
+        /// <exception cref="T:System.UnauthorizedAccessException">The caller does not have the required permission.</exception>
+        /// <exception cref="T:System.IO.PathTooLongException">The specified path exceeds the system-defined maximum length.</exception>
+        /// <exception cref="T:System.IO.DirectoryNotFoundException">A component of the <paramref name="path" /> is not a directory.</exception>
+        /// <exception cref="T:System.IO.FileNotFoundException">The file cannot be found.</exception>
+        [UnsupportedOSPlatform("windows")]
+        public static UnixFileMode GetUnixFileMode(string path)
+            => GetUnixFileModeCore(path);
+
+        /// <summary>Gets the <see cref="T:System.IO.UnixFileMode" /> of the specified file handle.</summary>
+        /// <param name="fileHandle">The file handle.</param>
+        /// <returns>The <see cref="T:System.IO.UnixFileMode" /> of the file handle.</returns>
+        /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
+        [UnsupportedOSPlatform("windows")]
+        public static UnixFileMode GetUnixFileMode(SafeFileHandle fileHandle)
+            => GetUnixFileModeCore(fileHandle);
+
+        /// <summary>Sets the specified <see cref="T:System.IO.UnixFileMode" /> of the file on the specified path.</summary>
+        /// <param name="path">The path to the file.</param>
+        /// <param name="mode">The unix file mode.</param>
+        /// <exception cref="T:System.ArgumentException"><paramref name="path" /> is a zero-length string, or contains one or more invalid characters. You can query for invalid characters by using the <see cref="M:System.IO.Path.GetInvalidPathChars" /> method.</exception>
+        /// <exception cref="T:System.ArgumentNullException"><paramref name="path" /> is <see langword="null" />.</exception>
+        /// <exception cref="T:System.ArgumentException">The caller attempts to use an invalid file mode.</exception>
+        /// <exception cref="T:System.UnauthorizedAccessException">The caller does not have the required permission.</exception>
+        /// <exception cref="T:System.IO.PathTooLongException">The specified path exceeds the system-defined maximum length.</exception>
+        /// <exception cref="T:System.IO.DirectoryNotFoundException">A component of the <paramref name="path" /> is not a directory.</exception>
+        /// <exception cref="T:System.IO.FileNotFoundException">The file cannot be found.</exception>
+        [UnsupportedOSPlatform("windows")]
+        public static void SetUnixFileMode(string path, UnixFileMode mode)
+            => SetUnixFileModeCore(path, mode);
+
+        /// <summary>Sets the specified <see cref="T:System.IO.UnixFileMode" /> of the specified file handle.</summary>
+        /// <param name="fileHandle">The file handle.</param>
+        /// <param name="mode">The unix file mode.</param>
+        /// <exception cref="T:System.ArgumentException">The caller attempts to use an invalid file mode.</exception>
+        /// <exception cref="T:System.UnauthorizedAccessException">The caller does not have the required permission.</exception>
+        /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
+        [UnsupportedOSPlatform("windows")]
+        public static void SetUnixFileMode(SafeFileHandle fileHandle, UnixFileMode mode)
+            => SetUnixFileModeCore(fileHandle, mode);
 
         public static FileStream OpenRead(string path)
             => new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);

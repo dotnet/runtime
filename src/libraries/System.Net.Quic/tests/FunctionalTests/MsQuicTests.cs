@@ -562,12 +562,6 @@ namespace System.Net.Quic.Tests
                                     await stream.WriteAsync(new byte[bufferLength]);
                                 }
                                 break;
-                            case WriteType.GatheredBuffers:
-                                var buffers = bufferLengths
-                                    .Select(bufferLength => new ReadOnlyMemory<byte>(new byte[bufferLength]))
-                                    .ToArray();
-                                await stream.WriteAsync(buffers);
-                                break;
                             case WriteType.GatheredSequence:
                                 var firstSegment = new BufferSegment(new byte[bufferLengths[0]]);
                                 BufferSegment lastSegment = firstSegment;
@@ -630,7 +624,6 @@ namespace System.Net.Quic.Tests
         public enum WriteType
         {
             SingleBuffer,
-            GatheredBuffers,
             GatheredSequence
         }
 
@@ -651,12 +644,7 @@ namespace System.Net.Quic.Tests
             byte[] memory = new byte[24];
             int res = await serverStream.ReadAsync(memory);
             Assert.Equal(12, res);
-            ReadOnlyMemory<ReadOnlyMemory<byte>> romrom = new ReadOnlyMemory<ReadOnlyMemory<byte>>(new ReadOnlyMemory<byte>[] { helloWorld, helloWorld });
 
-            await clientStream.WriteAsync(romrom);
-
-            res = await serverStream.ReadAsync(memory);
-            Assert.Equal(24, res);
             clientConnection.Dispose();
             serverConnection.Dispose();
         }

@@ -2094,13 +2094,15 @@ public:
     // Specify allowVariantMatches to permit generic interface variance
     // Specify uniqueResolution to store the flag saying whether the resolution was unambiguous;
     // when NULL, throw an AmbiguousResolutionException upon hitting ambiguous SVM resolution.
+    // The 'level' parameter specifies the load level for the class containing the resolved MethodDesc.
     MethodDesc *ResolveVirtualStaticMethod(
         MethodTable* pInterfaceType,
         MethodDesc* pInterfaceMD,
         BOOL allowNullResult,
         BOOL verifyImplemented = FALSE,
         BOOL allowVariantMatches = TRUE,
-        BOOL *uniqueResolution = NULL);
+        BOOL *uniqueResolution = NULL,
+        ClassLoadLevel level = CLASS_LOADED);
 
     // Try a partial resolve of the constraint call, up to generic code sharing.
     //
@@ -2179,7 +2181,8 @@ public:
         MethodTable *pObjectMT,
         MethodDesc **ppDefaultMethod,
         BOOL allowVariance,
-        BOOL throwOnConflict);
+        BOOL throwOnConflict,
+        ClassLoadLevel level = CLASS_LOADED);
 #endif // DACCESS_COMPILE
 
     DispatchSlot FindDispatchSlot(UINT32 typeID, UINT32 slotNumber, BOOL throwOnConflict);
@@ -2218,7 +2221,7 @@ public:
 
     // Try to resolve a given static virtual method override on this type. Return nullptr
     // when not found.
-    MethodDesc *TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL verifyImplemented);
+    MethodDesc *TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL verifyImplemented, ClassLoadLevel level);
 
 public:
     static MethodDesc *MapMethodDeclToMethodImpl(MethodDesc *pMDDecl);

@@ -39,10 +39,7 @@ namespace System.Net.Security
         {
             Debug.Assert(e != null, $"Expected non-null Exception to be passed to {nameof(SetException)}");
 
-            if (_exception == null)
-            {
-                _exception = ExceptionDispatchInfo.Capture(e);
-            }
+            _exception ??= ExceptionDispatchInfo.Capture(e);
 
             CloseContext();
         }

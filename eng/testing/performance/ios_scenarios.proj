@@ -42,7 +42,7 @@
     </HelixWorkItem>
     <XHarnessAppBundleToTest Include="Device Startup - iOS Mono HelloWorld $(LlvmPath)">
       <AppBundlePath>$(WorkItemDirectory).zip</AppBundlePath>
-      <WorkItemTimeout>00:05:00</WorkItemTimeout>
+      <WorkItemTimeout>00:15:00</WorkItemTimeout>
       <TestTarget>ios-device</TestTarget>
       <CustomCommands>
         <![CDATA[
@@ -98,7 +98,7 @@
     </HelixWorkItem>
 	<XHarnessAppBundleToTest Include="Device Startup - iOS Maui Default" Condition="'$(iOSLlvmBuild)' == 'False'">
     <AppBundlePath>$(WorkItemDirectory).zip</AppBundlePath>
-    <WorkItemTimeout>00:05:00</WorkItemTimeout>
+    <WorkItemTimeout>00:15:00</WorkItemTimeout>
 	  <TestTarget>ios-device</TestTarget>
 	  <CustomCommands>
 	   	<![CDATA[
@@ -124,7 +124,7 @@
 	</XHarnessAppBundleToTest>
     <XHarnessAppBundleToTest Include="Device Startup - iOS Maui Podcast" Condition="'$(iOSLlvmBuild)' == 'False'">
     <AppBundlePath>$(WorkItemDirectory).zip</AppBundlePath>
-    <WorkItemTimeout>00:05:00</WorkItemTimeout>
+    <WorkItemTimeout>00:15:00</WorkItemTimeout>
 	  <TestTarget>ios-device</TestTarget>
 	  <CustomCommands>
 	   	<![CDATA[

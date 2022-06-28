@@ -173,8 +173,7 @@ namespace System.Xml.Xsl.Runtime
             WriteNamespaceDeclarationUnchecked(prefix, ns);
 
             // Cache attributes in order to detect duplicates
-            if (_attrCache == null)
-                _attrCache = new XmlAttributeCache();
+            _attrCache ??= new XmlAttributeCache();
 
             _attrCache.Init(Writer);
             Writer = _attrCache;
@@ -1400,8 +1399,7 @@ namespace System.Xml.Xsl.Runtime
             string genPrefix;
             Debug.Assert(prefix != null && ns != null && ns.Length != 0);
 
-            if (_conflictPrefixes == null)
-                _conflictPrefixes = new Dictionary<string, string>(16);
+            _conflictPrefixes ??= new Dictionary<string, string>(16);
 
             if (_nsmgr == null)
             {
@@ -1542,8 +1540,7 @@ namespace System.Xml.Xsl.Runtime
         private void PushElementNames(string prefix, string localName, string ns)
         {
             // Push the name parts onto a stack
-            if (_stkNames == null)
-                _stkNames = new Stack<string>(15);
+            _stkNames ??= new Stack<string>(15);
 
             _stkNames.Push(prefix);
             _stkNames.Push(localName);

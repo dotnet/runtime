@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Text;
 
@@ -22,27 +21,8 @@ namespace System.Formats.Tar
         // "{dirName}/PaxHeaders.{processId}/{fileName}{trailingSeparator}"
         private const string PaxHeadersFormat = "{0}/PaxHeaders.{1}/{2}{3}";
 
-        // Global Extended Attribute entries have a special format in the Name field:
-        // "{tmpFolder}/GlobalHead.{processId}.1"
-        private const string GlobalHeadFormat = "{0}/GlobalHead.{1}.1";
-
         // Predefined text for the Name field of a GNU long metadata entry. Applies for both LongPath ('L') and LongLink ('K').
         private const string GnuLongMetadataName = "././@LongLink";
-
-        // Creates a PAX Global Extended Attributes header and writes it into the specified archive stream.
-        internal static void WriteGlobalExtendedAttributesHeader(Stream archiveStream, Span<byte> buffer, IEnumerable<KeyValuePair<string, string>> globalExtendedAttributes)
-        {
-            TarHeader geaHeader = default;
-            geaHeader._name = GenerateGlobalExtendedAttributeName();
-            geaHeader._mode = (int)TarHelpers.DefaultMode;
-            geaHeader._typeFlag = TarEntryType.GlobalExtendedAttributes;
-            geaHeader._linkName = string.Empty;
-            geaHeader._magic = string.Empty;
-            geaHeader._version = string.Empty;
-            geaHeader._gName = string.Empty;
-            geaHeader._uName = string.Empty;
-            geaHeader.WriteAsPaxExtendedAttributes(archiveStream, buffer, globalExtendedAttributes, isGea: true);
-        }
 
         // Writes the current header as a V7 entry into the archive stream.
         internal void WriteAsV7(Stream archiveStream, Span<byte> buffer)
@@ -82,15 +62,28 @@ namespace System.Formats.Tar
             }
         }
 
+        // Writes the current header as a PAX Global Extended Attributes entry into the archive stream.
+        internal void WriteAsPaxGlobalExtendedAttributes(Stream archiveStream, Span<byte> buffer, int globalExtendedAttributesEntryNumber)
+        {
+            Debug.Assert(_typeFlag is TarEntryType.GlobalExtendedAttributes);
+
+            _name = GenerateGlobalExtendedAttributeName(globalExtendedAttributesEntryNumber);
+            _extendedAttributes ??= new Dictionary<string, string>();
+            WriteAsPaxExtendedAttributes(archiveStream, buffer, _extendedAttributes, isGea: true);
+        }
+
         // Writes the current header as a PAX entry into the archive stream.
-        // Makes sure to add the preceding exteded attributes entry before the actual entry.
+        // Makes sure to add the preceding extended attributes entry before the actual entry.
         internal void WriteAsPax(Stream archiveStream, Span<byte> buffer)
         {
+            Debug.Assert(_typeFlag is not TarEntryType.GlobalExtendedAttributes);
+
             // First, we write the preceding extended attributes header
             TarHeader extendedAttributesHeader = default;
             // Fill the current header's dict
             CollectExtendedAttributesFromStandardFieldsIfNeeded();
-            // And pass them to the extended attributes header for writing
+            // And pass the attributes to the preceding extended attributes header for writing
+            Debug.Assert(_extendedAttributes != null);
             extendedAttributesHeader.WriteAsPaxExtendedAttributes(archiveStream, buffer, _extendedAttributes, isGea: false);
 
             buffer.Clear(); // Reset it to reuse it
@@ -393,11 +386,13 @@ namespace System.Formats.Tar
         // extended attributes. They get collected and saved in that dictionary, with no restrictions.
         private void CollectExtendedAttributesFromStandardFieldsIfNeeded()
         {
+            _extendedAttributes ??= new Dictionary<string, string>();
             _extendedAttributes.Add(PaxEaName, _name);
 
-            AddTimestampAsUnixSeconds(_extendedAttributes, PaxEaATime, _aTime);
-            AddTimestampAsUnixSeconds(_extendedAttributes, PaxEaCTime, _cTime);
-            AddTimestampAsUnixSeconds(_extendedAttributes, PaxEaMTime, _mTime);
+            if (!_extendedAttributes.ContainsKey(PaxEaMTime))
+            {
+                AddTimestampAsUnixSeconds(_extendedAttributes, PaxEaMTime, _mTime);
+            }
             TryAddStringField(_extendedAttributes, PaxEaGName, _gName, FieldLengths.GName);
             TryAddStringField(_extendedAttributes, PaxEaUName, _uName, FieldLengths.UName);
 
@@ -414,12 +409,7 @@ namespace System.Formats.Tar
             // Adds the specified datetime to the dictionary as a decimal number.
             static void AddTimestampAsUnixSeconds(Dictionary<string, string> extendedAttributes, string key, DateTimeOffset value)
             {
-                // Avoid overwriting if the user already added it before
-                if (!extendedAttributes.ContainsKey(key))
-                {
-                    double unixTimeSeconds = ((double)(value.UtcDateTime - DateTime.UnixEpoch).Ticks) / TimeSpan.TicksPerSecond;
-                    extendedAttributes.Add(key, unixTimeSeconds.ToString("F6", CultureInfo.InvariantCulture)); // 6 decimals, no commas
-                }
+                extendedAttributes.Add(key, TarHelpers.GetTimestampStringFromDateTimeOffset(value));
             }
 
             // Adds the specified string to the dictionary if it's longer than the specified max byte length.
@@ -600,30 +590,30 @@ namespace System.Formats.Tar
         }
 
         // Gets the special name for the 'name' field in a global extended attribute entry.
-        // Format: "%d/GlobalHead.%p/%f"
+        // Format: "%d/GlobalHead.%p/%n"
         // - %d: The path of the $TMPDIR variable, if found. Otherwise, the value is '/tmp'.
         // - %p: The current process ID.
         // - %n: The sequence number of the global extended header record of the archive, starting at 1. In our case, since we only generate one, the value is always 1.
         // If the path of $TMPDIR makes the final string too long to fit in the 'name' field,
         // then the TMPDIR='/tmp' is used.
-        private static string GenerateGlobalExtendedAttributeName()
+        private static string GenerateGlobalExtendedAttributeName(int globalExtendedAttributesEntryNumber)
         {
-            string? tmpDir = Environment.GetEnvironmentVariable("TMPDIR");
-            if (string.IsNullOrWhiteSpace(tmpDir))
-            {
-                tmpDir = "/tmp";
-            }
-            else if (Path.EndsInDirectorySeparator(tmpDir))
+            Debug.Assert(globalExtendedAttributesEntryNumber >= 1);
+
+            string tmpDir = Path.GetTempPath();
+            if (Path.EndsInDirectorySeparator(tmpDir))
             {
                 tmpDir = Path.TrimEndingDirectorySeparator(tmpDir);
             }
             int processId = Environment.ProcessId;
 
-            string result = string.Format(GlobalHeadFormat, tmpDir, processId);
-            if (result.Length >= FieldLengths.Name)
+            string result = string.Format(GlobalHeadFormatPrefix, tmpDir, processId);
+            string suffix = $".{globalExtendedAttributesEntryNumber}"; // GEA sequence number
+            if (result.Length + suffix.Length >= FieldLengths.Name)
             {
-                result = string.Format(GlobalHeadFormat, "/tmp", processId);
+                result = string.Format(GlobalHeadFormatPrefix, "/tmp", processId);
             }
+            result += suffix;
 
             return result;
         }

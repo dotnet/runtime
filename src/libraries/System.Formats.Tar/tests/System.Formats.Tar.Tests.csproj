@@ -9,6 +9,11 @@
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs" Link="Common\System\IO\TempDirectory.cs" />
     <Compile Include="CompressedTar.Tests.cs" />
+    <Compile Include="TarEntry\TarEntry.Conversion.Tests.Base.cs" />
+    <Compile Include="TarEntry\GnuTarEntry.Conversion.Tests.cs" />
+    <Compile Include="TarEntry\PaxTarEntry.Conversion.Tests.cs" />
+    <Compile Include="TarEntry\UstarTarEntry.Conversion.Tests.cs" />
+    <Compile Include="TarEntry\V7TarEntry.Conversion.Tests.cs" />
     <Compile Include="TarEntry\TarEntryV7.Tests.cs" />
     <Compile Include="TarEntry\TarEntryUstar.Tests.cs" />
     <Compile Include="TarEntry\TarEntryPax.Tests.cs" />
@@ -17,6 +22,8 @@
     <Compile Include="TarFile\TarFile.CreateFromDirectory.Stream.Tests.cs" />
     <Compile Include="TarFile\TarFile.ExtractToDirectory.File.Tests.cs" />
     <Compile Include="TarFile\TarFile.ExtractToDirectory.Stream.Tests.cs" />
+    <Compile Include="TarReader\TarReader.File.GlobalExtendedAttributes.Tests.cs" />
+    <Compile Include="TarReader\TarReader.File.Tests.Base.cs" />
     <Compile Include="TarReader\TarReader.ExtractToFile.Tests.cs" />
     <Compile Include="TarReader\TarReader.File.Tests.cs" />
     <Compile Include="TarReader\TarReader.GetNextEntry.Tests.cs" />

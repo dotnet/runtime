@@ -1341,10 +1341,10 @@ namespace System.Threading.Tasks.Dataflow
 
                     // Task final state: Faulted
                     case ReceiveCoreByLinkingCleanupReason.SourceCompletion:
-                        if (_receivedException == null) _receivedException = CreateExceptionForSourceCompletion();
+                        _receivedException ??= CreateExceptionForSourceCompletion();
                         goto case ReceiveCoreByLinkingCleanupReason.SourceProtocolError;
                     case ReceiveCoreByLinkingCleanupReason.Timer:
-                        if (_receivedException == null) _receivedException = CreateExceptionForTimeout();
+                        _receivedException ??= CreateExceptionForTimeout();
                         goto case ReceiveCoreByLinkingCleanupReason.SourceProtocolError;
                     case ReceiveCoreByLinkingCleanupReason.SourceProtocolError:
                     case ReceiveCoreByLinkingCleanupReason.ErrorDuringCleanup:
@@ -2574,7 +2574,7 @@ namespace System.Threading.Tasks.Dataflow
                                 if (sendAsyncTask.Status != TaskStatus.RanToCompletion)
                                 {
                                     // Ensure the SendAsyncTaskList is instantiated
-                                    if (_tempSendAsyncTaskList == null) _tempSendAsyncTaskList = new List<Task<bool>>();
+                                    _tempSendAsyncTaskList ??= new List<Task<bool>>();
 
                                     // Add the task to the list
                                     _tempSendAsyncTaskList.Add(sendAsyncTask);

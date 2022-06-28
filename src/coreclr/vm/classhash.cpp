@@ -205,14 +205,12 @@ static void ConstructKeyFromDataCaseInsensitive(EEClassHashTable::ConstructKeyCa
     StackSString nameSpace(SString::Utf8, pszNameSpace);
     nameSpace.LowerCase();
 
-    StackScratchBuffer nameSpaceBuffer;
-    Key[0] = (LPUTF8)nameSpace.GetUTF8(nameSpaceBuffer);
+    Key[0] = (LPUTF8)nameSpace.GetUTF8();
 
     StackSString name(SString::Utf8, pszName);
     name.LowerCase();
 
-    StackScratchBuffer nameBuffer;
-    Key[1] = (LPUTF8)name.GetUTF8(nameBuffer);
+    Key[1] = (LPUTF8)name.GetUTF8();
 
     pCallback->UseKeys(Key);
 }

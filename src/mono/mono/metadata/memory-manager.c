@@ -35,7 +35,7 @@ lock_free_mempool_chunk_new (LockFreeMempool *mp, int len)
 	int size;
 
 	size = mono_pagesize ();
-	while (size - sizeof (LockFreeMempoolChunk) < len)
+	while (size - sizeof (LockFreeMempoolChunk) < GINT_TO_UINT(len))
 		size += mono_pagesize ();
 	chunk = (LockFreeMempoolChunk *)mono_valloc (0, size, MONO_MMAP_READ|MONO_MMAP_WRITE, MONO_MEM_ACCOUNT_MEM_MANAGER);
 	g_assert (chunk);
@@ -77,9 +77,9 @@ lock_free_mempool_alloc0 (LockFreeMempool *mp, guint size)
 
 	/* The code below is lock-free, 'chunk' is shared state */
 	oldpos = mono_atomic_fetch_add_i32 (&chunk->pos, size);
-	if (oldpos + size > chunk->size) {
+	if (oldpos + size > GINT_TO_UINT(chunk->size)) {
 		chunk = lock_free_mempool_chunk_new (mp, size);
-		g_assert (chunk->pos + size <= chunk->size);
+		g_assert (chunk->pos + size <= GINT_TO_UINT(chunk->size));
 		res = chunk->mem;
 		chunk->pos += size;
 		mono_memory_barrier ();
@@ -150,7 +150,7 @@ memory_manager_delete_objects (MonoMemoryManager *memory_manager)
 	memory_manager->freeing = TRUE;
 
 	// Must be done before type_hash is freed
-	for (int i = 0; i < memory_manager->class_vtable_array->len; i++)
+	for (guint i = 0; i < memory_manager->class_vtable_array->len; i++)
 		unregister_vtable_reflection_type ((MonoVTable *)g_ptr_array_index (memory_manager->class_vtable_array, i));
 
 	g_ptr_array_free (memory_manager->class_vtable_array, TRUE);
@@ -454,7 +454,7 @@ get_mem_manager_for_alcs (MonoAssemblyLoadContext **alcs, int nalcs)
 	mem_managers = alc->generic_memory_managers;
 
 	res = NULL;
-	for (int mindex = 0; mindex < mem_managers->len; ++mindex) {
+	for (guint mindex = 0; mindex < mem_managers->len; ++mindex) {
 		MonoMemoryManager *mm = (MonoMemoryManager*)g_ptr_array_index (mem_managers, mindex);
 
 		if (match_mem_manager (mm, alcs, nalcs)) {

@@ -684,11 +684,9 @@ namespace System.Runtime.Serialization
                         }
                         else
                         {
-                            _itemContract = DataContract.GetDataContractFromGeneratedAssembly(ItemType);
-                            if (_itemContract == null)
-                            {
-                                _itemContract = DataContract.GetDataContract(ItemType);
-                            }
+                            _itemContract =
+                                DataContract.GetDataContractFromGeneratedAssembly(ItemType) ??
+                                DataContract.GetDataContract(ItemType);
                         }
                     }
                     return _itemContract;
@@ -857,25 +855,14 @@ namespace System.Runtime.Serialization
 
             private static MethodInfo? s_buildIncrementCollectionCountDelegateMethod;
 
-            private static MethodInfo BuildIncrementCollectionCountDelegateMethod
-            {
-                get
-                {
-                    if (s_buildIncrementCollectionCountDelegateMethod == null)
-                    {
-                        s_buildIncrementCollectionCountDelegateMethod = typeof(CollectionDataContractCriticalHelper).GetMethod(nameof(BuildIncrementCollectionCountDelegate), Globals.ScanAllMembers)!;
-                    }
-
-                    return s_buildIncrementCollectionCountDelegateMethod;
-                }
-            }
+            private static MethodInfo BuildIncrementCollectionCountDelegateMethod =>
+                s_buildIncrementCollectionCountDelegateMethod ??= typeof(CollectionDataContractCriticalHelper).GetMethod(nameof(BuildIncrementCollectionCountDelegate), Globals.ScanAllMembers)!;
 
             private static IncrementCollectionCountDelegate BuildIncrementCollectionCountDelegate<T>()
             {
                 return (xmlwriter, obj, context) =>
                 {
                     context.IncrementCollectionCountGeneric<T>(xmlwriter, (ICollection<T>)obj);
-
                 };
             }
 
@@ -965,18 +952,8 @@ namespace System.Runtime.Serialization
 
             private static MethodInfo? s_buildCreateGenericDictionaryEnumerator;
 
-            private static MethodInfo GetBuildCreateGenericDictionaryEnumeratorMethodInfo
-            {
-                get
-                {
-                    if (s_buildCreateGenericDictionaryEnumerator == null)
-                    {
-                        s_buildCreateGenericDictionaryEnumerator = typeof(CollectionDataContractCriticalHelper).GetMethod(nameof(BuildCreateGenericDictionaryEnumerator), Globals.ScanAllMembers)!;
-                    }
-
-                    return s_buildCreateGenericDictionaryEnumerator;
-                }
-            }
+            private static MethodInfo GetBuildCreateGenericDictionaryEnumeratorMethodInfo =>
+                s_buildCreateGenericDictionaryEnumerator ??= typeof(CollectionDataContractCriticalHelper).GetMethod(nameof(BuildCreateGenericDictionaryEnumerator), Globals.ScanAllMembers)!;
 
             private static CreateGenericDictionaryEnumeratorDelegate BuildCreateGenericDictionaryEnumerator<K, V>()
             {
@@ -1439,9 +1416,9 @@ namespace System.Runtime.Serialization
                 getEnumeratorMethod = type.GetMethod(Globals.GetEnumeratorMethodName, BindingFlags.Instance | BindingFlags.Public, Type.EmptyTypes);
                 if (getEnumeratorMethod == null || !Globals.TypeOfIEnumerator.IsAssignableFrom(getEnumeratorMethod.ReturnType))
                 {
-                    Type? ienumerableInterface = interfaceType.GetInterfaces().Where(t => t.FullName!.StartsWith("System.Collections.Generic.IEnumerable")).FirstOrDefault();
-                    if (ienumerableInterface == null)
-                        ienumerableInterface = Globals.TypeOfIEnumerable;
+                    Type? ienumerableInterface =
+                        interfaceType.GetInterfaces().Where(t => t.FullName!.StartsWith("System.Collections.Generic.IEnumerable")).FirstOrDefault() ??
+                        Globals.TypeOfIEnumerable;
                     getEnumeratorMethod = GetIEnumerableGetEnumeratorMethod(type, ienumerableInterface);
                 }
             }

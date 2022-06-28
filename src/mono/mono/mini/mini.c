@@ -4405,7 +4405,7 @@ mini_class_is_system_array (MonoClass *klass)
  *
  *   query pagesize used to determine if an implicit NRE can be used
  */
-int
+guint
 mono_target_pagesize (void)
 {
 	/* We could query the system's pagesize via mono_pagesize (), however there

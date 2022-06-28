@@ -627,9 +627,13 @@ namespace System.Xml.Xsl.XsltOld
                         if (minus)
                         {
                             if (newComment == null)
+                            {
                                 newComment = new StringBuilder(comment, begin, index, 2 * comment.Length);
+                            }
                             else
+                            {
                                 newComment.Append(comment, begin, index - begin);
+                            }
 
                             newComment.Append(s_SpaceMinus);
                             begin = index + 1;

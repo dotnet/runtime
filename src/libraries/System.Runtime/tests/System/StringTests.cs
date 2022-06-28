@@ -1969,5 +1969,22 @@ namespace System.Tests
                 }
             }
         }
+
+        [Theory]
+        [InlineData("a", "A", 0)]
+        [InlineData("A", "a", 0)]
+        [InlineData("Ab", "aB", 0)]
+        [InlineData("aB", "Ab", 0)]
+        [InlineData("aB", "Aa", 1)]
+        [InlineData("aa", "aB", -1)]
+        [InlineData("\u0160a", "\u0160A", 0)]
+        [InlineData("\u0160a", "\u0160B", -1)]
+        [InlineData("\u0160b", "\u0160A", 1)]
+        [InlineData("\u0160b\u0160\u0160\u0160", "\u0160A\u0160\u0160\u0160", 1)]
+        [InlineData("\u0160A\u0160\u0160\u0160", "\u0160b\u0160\u0160\u0160", -1)]
+        public static void TestCompareOrdinalIgnoreCase(string a, string b, int sign)
+        {
+            Assert.Equal(sign, Math.Sign(string.Compare(a, b, StringComparison.OrdinalIgnoreCase)));
+        }
     }
 }

@@ -71,10 +71,7 @@ namespace System.Runtime.Serialization
                 }
                 else
                 {
-                    return (obj) =>
-                    {
-                        return propInfo.GetValue(obj);
-                    };
+                    return propInfo.GetValue;
                 }
             }
             else if (memberInfo is FieldInfo fieldInfo)

@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using Microsoft.Win32.SafeHandles;
@@ -15,42 +14,83 @@ namespace System.Formats.Tar
     public abstract partial class TarEntry
     {
         internal TarHeader _header;
+
         // Used to access the data section of this entry in an unseekable file
         private TarReader? _readerOfOrigin;
 
-        // Constructor used when reading an existing archive.
-        internal TarEntry(TarHeader header, TarReader readerOfOrigin)
+        // Constructor called when reading a TarEntry from a TarReader.
+        internal TarEntry(TarHeader header, TarReader readerOfOrigin, TarEntryFormat format)
         {
+            // This constructor is called after reading a header from the archive,
+            // and we should've already detected the format of the header.
+            Debug.Assert(header._format == format);
             _header = header;
             _readerOfOrigin = readerOfOrigin;
         }
 
-        // Constructor called when creating a new 'TarEntry*' instance that can be passed to a TarWriter.
-        internal TarEntry(TarEntryType entryType, string entryName, TarEntryFormat format)
+        // Constructor called when the user creates a TarEntry instance from scratch.
+        internal TarEntry(TarEntryType entryType, string entryName, TarEntryFormat format, bool isGea)
         {
             ArgumentException.ThrowIfNullOrEmpty(entryName);
 
-            // Throws if format is unknown or out of range
-            TarHelpers.VerifyEntryTypeIsSupported(entryType, format, forWriting: false);
+            Debug.Assert(!isGea || entryType is TarEntryType.GlobalExtendedAttributes);
 
-            _readerOfOrigin = null;
+            if (!isGea)
+            {
+                TarHelpers.ThrowIfEntryTypeNotSupported(entryType, format);
+            }
 
             _header = default;
+            _header._format = format;
 
-            _header._extendedAttributes = new Dictionary<string, string>();
-
+            // Default values for fields shared by all supported formats
             _header._name = entryName;
-            _header._linkName = string.Empty;
-            _header._typeFlag = entryType;
             _header._mode = (int)TarHelpers.DefaultMode;
+            _header._mTime = DateTimeOffset.UtcNow;
+            _header._typeFlag = entryType;
+            _header._linkName = string.Empty;
+        }
 
-            _header._gName = string.Empty;
-            _header._uName = string.Empty;
+        // Constructor called when converting an entry to the selected format.
+        internal TarEntry(TarEntry other, TarEntryFormat format)
+        {
+            if (other is PaxGlobalExtendedAttributesTarEntry)
+            {
+                throw new InvalidOperationException(SR.TarCannotConvertPaxGlobalExtendedAttributesEntry);
+            }
 
-            DateTimeOffset now = DateTimeOffset.Now;
-            _header._mTime = now;
-            _header._aTime = now;
-            _header._cTime = now;
+            TarEntryType compatibleEntryType;
+            if (other.Format is TarEntryFormat.V7 && other.EntryType is TarEntryType.V7RegularFile && format is TarEntryFormat.Ustar or TarEntryFormat.Pax or TarEntryFormat.Gnu)
+            {
+                compatibleEntryType = TarEntryType.RegularFile;
+            }
+            else if (other.Format is TarEntryFormat.Ustar or TarEntryFormat.Pax or TarEntryFormat.Gnu && other.EntryType is TarEntryType.RegularFile && format is TarEntryFormat.V7)
+            {
+                compatibleEntryType = TarEntryType.V7RegularFile;
+            }
+            else
+            {
+                compatibleEntryType = other.EntryType;
+            }
+
+            TarHelpers.ThrowIfEntryTypeNotSupported(compatibleEntryType, format);
+
+            _readerOfOrigin = other._readerOfOrigin;
+
+            _header = default;
+            _header._format = format;
+
+            _header._name = other._header._name;
+            _header._mode = other._header._mode;
+            _header._uid = other._header._uid;
+            _header._gid = other._header._gid;
+            _header._size = other._header._size;
+            _header._mTime = other._header._mTime;
+            _header._checksum = 0;
+            _header._typeFlag = compatibleEntryType;
+            _header._linkName = other._header._linkName;
+
+            _header._dataStream = other._header._dataStream;
         }
 
         /// <summary>
@@ -62,6 +102,11 @@ namespace System.Formats.Tar
         /// The type of filesystem object represented by this entry.
         /// </summary>
         public TarEntryType EntryType => _header._typeFlag;
+
+        /// <summary>
+        /// The format of the entry.
+        /// </summary>
+        public TarEntryFormat Format => _header._format;
 
         /// <summary>
         /// The ID of the group that owns the file represented by this entry.
@@ -117,9 +162,9 @@ namespace System.Formats.Tar
         /// Represents the Unix file permissions of the file represented by this entry.
         /// </summary>
         /// <remarks>The value in this field has no effect on Windows platforms.</remarks>
-        public TarFileMode Mode
+        public UnixFileMode Mode
         {
-            get => (TarFileMode)_header._mode;
+            get => (UnixFileMode)_header._mode;
             set
             {
                 if ((int)value is < 0 or > 4095) // 4095 in decimal is 7777 in octal
@@ -174,7 +219,7 @@ namespace System.Formats.Tar
         /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
         public void ExtractToFile(string destinationFileName, bool overwrite)
         {
-            if (EntryType is TarEntryType.SymbolicLink or TarEntryType.HardLink)
+            if (EntryType is TarEntryType.SymbolicLink or TarEntryType.HardLink or TarEntryType.GlobalExtendedAttributes)
             {
                 throw new InvalidOperationException(string.Format(SR.TarEntryTypeNotSupportedForExtracting, EntryType));
             }

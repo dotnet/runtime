@@ -202,10 +202,7 @@ namespace System.Security.Cryptography
                     return null;
                 }
 
-                if (_enumerator == null)
-                {
-                    _enumerator = _enumerable.GetEnumerator();
-                }
+                _enumerator ??= _enumerable.GetEnumerator();
 
                 int origIdx = _index;
                 int idx = origIdx;
