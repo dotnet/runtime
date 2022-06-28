@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 
@@ -57,12 +58,12 @@ internal readonly struct GeneratorAttributeSyntaxContext
 
 internal static partial class SyntaxValueProviderExtensions
 {
-    private static readonly char[] s_nestedTypeNameSeparators = new char[] { '+' };
-
 #if false
 
     // Deviation from roslyn.  We do not support attributes that are nested or generic.  That's ok as that's not a
     // scenario that ever arises in our generators.
+
+    private static readonly char[] s_nestedTypeNameSeparators = new char[] { '+' };
 
     private static readonly SymbolDisplayFormat s_metadataDisplayFormat =
         SymbolDisplayFormat.QualifiedNameArityFormat.AddCompilerInternalOptions(SymbolDisplayCompilerInternalOptions.UsePlusForNestedTypes);
@@ -91,11 +92,26 @@ internal static partial class SyntaxValueProviderExtensions
         Func<SyntaxNode, CancellationToken, bool> predicate,
         Func<GeneratorAttributeSyntaxContext, CancellationToken, T> transform)
     {
+#if false
+
+        // Deviation from roslyn.  We do not support attributes that are nested or generic.  That's ok as that's not a
+        // scenario that ever arises in our generators.
+
         var metadataName = fullyQualifiedMetadataName.Contains('+')
             ? MetadataTypeName.FromFullName(fullyQualifiedMetadataName.Split(s_nestedTypeNameSeparators).Last())
             : MetadataTypeName.FromFullName(fullyQualifiedMetadataName);
 
         var nodesWithAttributesMatchingSimpleName = @this.ForAttributeWithSimpleName(context, metadataName.UnmangledTypeName, predicate);
+
+#else
+
+        var lastDotIndex = fullyQualifiedMetadataName.LastIndexOf('.');
+        Debug.Assert(lastDotIndex > 0);
+        var unmangledTypeName = fullyQualifiedMetadataName.Substring(lastDotIndex + 1);
+
+        var nodesWithAttributesMatchingSimpleName = @this.ForAttributeWithSimpleName(context, unmangledTypeName, predicate);
+
+#endif
 
         var collectedNodes = nodesWithAttributesMatchingSimpleName
             .Collect()
