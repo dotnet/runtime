@@ -1486,7 +1486,7 @@ namespace System.Tests
             AssertExtensions.Equal(+expectedResult, double.Atan2Pi(+y, +x), allowedVariance);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroid), nameof(PlatformDetection.IsNotX86Process))]   // disabled on Android x86, see https://github.com/dotnet/runtime/issues/71252
         [InlineData( double.NaN,               double.NaN,          0.0)]
         [InlineData( 0.0,                      0.0,                 0.0)]
         [InlineData( 1.5574077246549022,       0.31830988618379067, CrossPlatformMachineEpsilon)]
