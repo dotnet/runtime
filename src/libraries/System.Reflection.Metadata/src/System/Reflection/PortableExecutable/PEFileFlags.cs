@@ -109,7 +109,7 @@ namespace System.Reflection.PortableExecutable
         /// Driver uses WDM model.
         /// </summary>
         WdmDriver = 0x2000,
-        
+
         /// <summary>
         /// Image supports Control Flow Guard.
         /// </summary>
