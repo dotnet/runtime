@@ -19,14 +19,14 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 void Compiler::optInit()
 {
-    optLoopsMarked      = false;
     fgHasLoops          = false;
     loopAlignCandidates = 0;
 
     /* Initialize the # of tracked loops to 0 */
-    optLoopCount    = 0;
-    optLoopTable    = nullptr;
-    optCurLoopEpoch = 0;
+    optLoopCount      = 0;
+    optLoopTable      = nullptr;
+    optLoopTableValid = false;
+    optCurLoopEpoch   = 0;
 
 #ifdef DEBUG
     loopsAligned = 0;
@@ -392,7 +392,7 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
 
 void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmarkLoop)
 {
-    if (!optLoopsMarked)
+    if (!optLoopTableValid)
     {
         return;
     }
@@ -591,7 +591,7 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
 // but becomes invalid afterwards. Clear the info that might be used incorrectly afterwards
 // in JitDump or by subsequent phases.
 //
-void Compiler::optClearLoopIterInfo()
+PhaseStatus Compiler::optClearLoopIterInfo()
 {
     for (unsigned lnum = 0; lnum < optLoopCount; lnum++)
     {
@@ -604,6 +604,8 @@ void Compiler::optClearLoopIterInfo()
         loop.lpConstInit = -1;
         loop.lpTestTree  = nullptr;
     }
+
+    return PhaseStatus::MODIFIED_NOTHING;
 }
 
 #ifdef DEBUG
@@ -4557,7 +4559,6 @@ PhaseStatus Compiler::optUnrollLoops()
 
 #ifdef DEBUG
     fgDebugCheckBBlist(true);
-    fgDebugCheckLoopTable();
 #endif // DEBUG
 
     return PhaseStatus::MODIFIED_EVERYTHING;
@@ -5323,7 +5324,8 @@ void Compiler::optResetLoopInfo()
     // TODO: the loop table is always allocated as the same (maximum) size, so this is wasteful.
     // We could zero it out (possibly only in DEBUG) to be paranoid, but there's no reason to
     // force it to be re-allocated.
-    optLoopTable = nullptr;
+    optLoopTable      = nullptr;
+    optLoopTableValid = false;
 
     for (BasicBlock* const block : Blocks())
     {
@@ -5466,11 +5468,7 @@ void Compiler::optFindLoops()
         optIdentifyLoopsForAlignment(); // Check if any of the loops need alignment
     }
 
-#ifdef DEBUG
-    fgDebugCheckLoopTable();
-#endif
-
-    optLoopsMarked = true;
+    optLoopTableValid = true;
 }
 
 //-----------------------------------------------------------------------------
@@ -6412,13 +6410,19 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
 #endif // LOOP_HOIST_STATS
 }
 
-void Compiler::optHoistLoopCode()
+//------------------------------------------------------------------------
+// optHoistLoopNest: run loop hoisting for indicated loop and all contained loops
+//
+// Returns:
+//    suitable phase status
+//
+PhaseStatus Compiler::optHoistLoopCode()
 {
     // If we don't have any loops in the method then take an early out now.
     if (optLoopCount == 0)
     {
         JITDUMP("\nNo loops; no hoisting\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
 #ifdef DEBUG
@@ -6426,7 +6430,7 @@ void Compiler::optHoistLoopCode()
     if (jitNoHoist > 0)
     {
         JITDUMP("\nJitNoHoist set; no hoisting\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 #endif
 
@@ -6451,7 +6455,9 @@ void Compiler::optHoistLoopCode()
         // methHashHi = (unsigned(atoi(histr)) << 2);  // So we don't have to use negative numbers.
     }
     if (methHash < methHashLo || methHash > methHashHi)
-        return;
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
     printf("Doing loop hoisting in %s (0x%x).\n", info.compFullName, methHash);
 #endif // DEBUG
 #endif // 0     -- debugging loop hoisting issues
@@ -6460,15 +6466,14 @@ void Compiler::optHoistLoopCode()
     if (verbose)
     {
         printf("\n*************** In optHoistLoopCode()\n");
-        printf("Blocks/Trees before phase\n");
-        fgDispBasicBlocks(true);
         fgDispHandlerTab();
         optPrintLoopTable();
     }
 #endif
 
-    // Consider all the loop nests, in outer-to-inner order (thus hoisting expressions outside the largest loop in which
-    // they are invariant.)
+    // Consider all the loop nests, in inner-to-outer order
+    //
+    bool             modified = false;
     LoopHoistContext hoistCtxt(this);
     for (unsigned lnum = 0; lnum < optLoopCount; lnum++)
     {
@@ -6480,57 +6485,53 @@ void Compiler::optHoistLoopCode()
 
         if (optLoopTable[lnum].lpParent == BasicBlock::NOT_IN_LOOP)
         {
-            optHoistLoopNest(lnum, &hoistCtxt);
+            modified |= optHoistLoopNest(lnum, &hoistCtxt);
         }
     }
-
-#if DEBUG
-    if (fgModified)
-    {
-        if (verbose)
-        {
-            printf("Blocks/Trees after optHoistLoopCode() modified flowgraph\n");
-            fgDispBasicBlocks(true);
-            printf("");
-        }
-
-        // Make sure that the predecessor lists are accurate
-        fgDebugCheckBBlist();
-    }
-#endif
 
 #ifdef DEBUG
     // Test Data stuff..
-    // If we have no test data, early out.
+    //
     if (m_nodeTestData == nullptr)
     {
-        return;
-    }
-    NodeToTestDataMap* testData = GetNodeTestData();
-    for (NodeToTestDataMap::KeyIterator ki = testData->Begin(); !ki.Equal(testData->End()); ++ki)
-    {
-        TestLabelAndNum tlAndN;
-        GenTree*        node = ki.Get();
-        bool            b    = testData->Lookup(node, &tlAndN);
-        assert(b);
-        if (tlAndN.m_tl != TL_LoopHoist)
+        NodeToTestDataMap* testData = GetNodeTestData();
+        for (NodeToTestDataMap::KeyIterator ki = testData->Begin(); !ki.Equal(testData->End()); ++ki)
         {
-            continue;
-        }
-        // Otherwise, it is a loop hoist annotation.
-        assert(tlAndN.m_num < 100); // >= 100 indicates nested static field address, should already have been moved.
-        if (tlAndN.m_num >= 0)
-        {
-            printf("Node ");
-            printTreeID(node);
-            printf(" was declared 'must hoist', but has not been hoisted.\n");
-            assert(false);
+            TestLabelAndNum tlAndN;
+            GenTree*        node = ki.Get();
+            bool            b    = testData->Lookup(node, &tlAndN);
+            assert(b);
+            if (tlAndN.m_tl != TL_LoopHoist)
+            {
+                continue;
+            }
+            // Otherwise, it is a loop hoist annotation.
+            assert(tlAndN.m_num < 100); // >= 100 indicates nested static field address, should already have been moved.
+            if (tlAndN.m_num >= 0)
+            {
+                printf("Node ");
+                printTreeID(node);
+                printf(" was declared 'must hoist', but has not been hoisted.\n");
+                assert(false);
+            }
         }
     }
 #endif // DEBUG
+
+    return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
-void Compiler::optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt)
+//------------------------------------------------------------------------
+// optHoistLoopNest: run loop hoisting for indicated loop and all contained loops
+//
+// Arguments:
+//    lnum - loop to process
+//    hoistCtxt - context for the hoisting
+//
+// Returns:
+//    true if any hoisting was done
+//
+bool Compiler::optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt)
 {
     // Do this loop, then recursively do all nested loops.
     JITDUMP("\n%s " FMT_LP "\n", optLoopTable[lnum].lpParent == BasicBlock::NOT_IN_LOOP ? "Loop Nest" : "Nested Loop",
@@ -6545,6 +6546,8 @@ void Compiler::optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt)
     BasicBlockList* preHeadersOfChildLoops = nullptr;
     BasicBlockList* firstPreHeader         = nullptr;
 
+    bool modified = false;
+
     if (optLoopTable[lnum].lpChild != BasicBlock::NOT_IN_LOOP)
     {
         BitVecTraits m_visitedTraits(fgBBNumMax * 2, this);
@@ -6553,7 +6556,7 @@ void Compiler::optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt)
         for (unsigned child = optLoopTable[lnum].lpChild; child != BasicBlock::NOT_IN_LOOP;
              child          = optLoopTable[child].lpSibling)
         {
-            optHoistLoopNest(child, hoistCtxt);
+            modified |= optHoistLoopNest(child, hoistCtxt);
 
             if (optLoopTable[child].lpFlags & LPFLG_HAS_PREHEAD)
             {
@@ -6583,10 +6586,23 @@ void Compiler::optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt)
         }
     }
 
-    optHoistThisLoop(lnum, hoistCtxt, firstPreHeader);
+    modified |= optHoistThisLoop(lnum, hoistCtxt, firstPreHeader);
+
+    return modified;
 }
 
-void Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, BasicBlockList* existingPreHeaders)
+//------------------------------------------------------------------------
+// optHoistThisLoop: run loop hoisting for the indicated loop
+//
+// Arguments:
+//    lnum - loop to process
+//    hoistCtxt - context for the hoisting
+//    existingPreHeaders - list of preheaders created for child loops
+//
+// Returns:
+//    true if any hoisting was done
+//
+bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, BasicBlockList* existingPreHeaders)
 {
     LoopDsc* pLoopDsc = &optLoopTable[lnum];
 
@@ -6595,7 +6611,7 @@ void Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, Basi
     if (pLoopDsc->lpFlags & LPFLG_REMOVED)
     {
         JITDUMP("   ... not hoisting " FMT_LP ": removed\n", lnum);
-        return;
+        return false;
     }
 
     // Ensure the per-loop sets/tables are empty.
@@ -6613,9 +6629,10 @@ void Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, Basi
 
     VARSET_TP loopVars(VarSetOps::Intersection(this, pLoopDsc->lpVarInOut, pLoopDsc->lpVarUseDef));
 
-    pLoopDsc->lpVarInOutCount    = VarSetOps::Count(this, pLoopDsc->lpVarInOut);
-    pLoopDsc->lpLoopVarCount     = VarSetOps::Count(this, loopVars);
-    pLoopDsc->lpHoistedExprCount = 0;
+    pLoopDsc->lpVarInOutCount       = VarSetOps::Count(this, pLoopDsc->lpVarInOut);
+    pLoopDsc->lpLoopVarCount        = VarSetOps::Count(this, loopVars);
+    pLoopDsc->lpHoistedExprCount    = 0;
+    pLoopDsc->lpHoistAddedPreheader = false;
 
 #ifndef TARGET_64BIT
     unsigned longVarsCount = VarSetOps::Count(this, lvaLongVars);
@@ -6792,6 +6809,9 @@ void Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, Basi
     defExec.Push(pLoopDsc->lpEntry);
 
     optHoistLoopBlocks(lnum, &defExec, hoistCtxt);
+
+    const unsigned numHoisted = pLoopDsc->lpHoistedFPExprCount + pLoopDsc->lpHoistedExprCount;
+    return pLoopDsc->lpHoistAddedPreheader || (numHoisted > 0);
 }
 
 bool Compiler::optIsProfitableToHoistTree(GenTree* tree, unsigned lnum)
@@ -7646,7 +7666,8 @@ void Compiler::optHoistCandidate(GenTree* tree, BasicBlock* treeBb, unsigned lnu
     }
 
     // Create a loop pre-header in which to put the hoisted code.
-    fgCreateLoopPreHeader(lnum);
+    const bool newPreheader = fgCreateLoopPreHeader(lnum);
+    optLoopTable[lnum].lpHoistAddedPreheader |= newPreheader;
 
     // If the block we're hoisting from and the pre-header are in different EH regions, don't hoist.
     // TODO: we could probably hoist things that won't raise exceptions, such as constants.
@@ -7804,7 +7825,10 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, unsigned lnum, VNSet* loopVnInv
 // Arguments:
 //    lnum  - loop index
 //
-void Compiler::fgCreateLoopPreHeader(unsigned lnum)
+// Returns:
+//    true if new preheader was created
+//
+bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
 {
 #ifdef DEBUG
     if (verbose)
@@ -7821,7 +7845,7 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
     {
         JITDUMP("   pre-header already exists\n");
         INDEBUG(loop.lpValidatePreHeader());
-        return;
+        return false;
     }
 
     BasicBlock* head  = loop.lpHead;
@@ -7875,7 +7899,7 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
                 head->bbFlags |= BBF_LOOP_PREHEADER;
                 INDEBUG(loop.lpValidatePreHeader());
                 INDEBUG(fgDebugCheckLoopTable());
-                return;
+                return false;
             }
             else
             {
@@ -8244,6 +8268,8 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
         optPrintLoopTable();
     }
 #endif
+
+    return true;
 }
 
 bool Compiler::optBlockIsLoopEntry(BasicBlock* blk, unsigned* pLnum)
@@ -9701,6 +9727,9 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
 //-----------------------------------------------------------------------------
 // optOptimizeBools:    Folds boolean conditionals for GT_JTRUE/GT_RETURN nodes
 //
+// Returns:
+//    suitable phase status
+//
 // Notes:
 //      If the operand of GT_JTRUE/GT_RETURN node is GT_EQ/GT_NE of the form
 //      "if (boolVal ==/!=  0/1)", the GT_EQ/GT_NE nodes are translated into a
@@ -9754,23 +9783,23 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
 //          - x == 1 || y == 1 ==> (x|y)!=0: Skip cases where either x or y is greater than 1, e.g., x=2, y=0
 //          - x == 0 || y == 0 ==> (x&y)==0: Skip cases where x and y have opposite bits set, e.g., x=2, y=1
 //
-void Compiler::optOptimizeBools()
+PhaseStatus Compiler::optOptimizeBools()
 {
 #ifdef DEBUG
     if (verbose)
     {
         printf("*************** In optOptimizeBools()\n");
-        if (verboseTrees)
-        {
-            printf("Blocks/Trees before phase\n");
-            fgDispBasicBlocks(true);
-        }
     }
 #endif
-    bool change;
+    bool     change    = false;
+    unsigned numCond   = 0;
+    unsigned numReturn = 0;
+    unsigned numPasses = 0;
+    unsigned stress    = false;
 
     do
     {
+        numPasses++;
         change = false;
 
         for (BasicBlock* const b1 : Blocks())
@@ -9812,6 +9841,7 @@ void Compiler::optOptimizeBools()
                 if (optBoolsDsc.optOptimizeBoolsCondBlock())
                 {
                     change = true;
+                    numCond++;
                 }
             }
             else if (b2->bbJumpKind == BBJ_RETURN)
@@ -9836,20 +9866,23 @@ void Compiler::optOptimizeBools()
                 if (optBoolsDsc.optOptimizeBoolsReturnBlock(b3))
                 {
                     change = true;
+                    numReturn++;
                 }
             }
             else
             {
 #ifdef DEBUG
                 optBoolsDsc.optOptimizeBoolsGcStress();
+                stress = true;
 #endif
             }
         }
     } while (change);
 
-#ifdef DEBUG
-    fgDebugCheckBBlist();
-#endif
+    JITDUMP("\noptimized %u BBJ_COND cases, %u BBJ_RETURN cases in %u passes\n", numCond, numReturn, numPasses);
+
+    const bool modified = stress || ((numCond + numReturn) > 0);
+    return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, unsigned> LclVarRefCounts;
