@@ -253,7 +253,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 ThrowIfDisposed();
 
-                return (_catalogExportProvider != null) ? _catalogExportProvider.Catalog : null;
+                return _catalogExportProvider?.Catalog;
             }
         }
 

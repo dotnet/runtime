@@ -114,8 +114,7 @@ namespace System.Management
 
         internal void FireIdentifierChanged()
         {
-            if (IdentifierChanged != null)
-                IdentifierChanged(this, null);
+            IdentifierChanged?.Invoke(this, null);
         }
 
         internal bool PutButNotGot
@@ -2309,7 +2308,7 @@ namespace System.Management
                 {
                     securityHandler = scope.GetSecurityHandler();
 
-                    IWbemClassObjectFreeThreaded inParams = (null == inParameters) ? null : inParameters.wbemObject;
+                    IWbemClassObjectFreeThreaded inParams = inParameters?.wbemObject;
                     IWbemClassObjectFreeThreaded outParams = null;
 
                     status = scope.GetSecuredIWbemServicesHandler(scope.GetIWbemServices()).ExecMethod_(
@@ -2574,7 +2573,7 @@ namespace System.Management
                 }
 
                 //Have we already got this object
-                if (!IsBound && (getObject == true))
+                if (!IsBound && getObject)
                     needToGetObject = true;
 
                 if (null == scope)
@@ -2614,7 +2613,7 @@ namespace System.Management
                         scope.Initialize();
 
                         // If we have just connected, make sure we get the object
-                        if (getObject == true)
+                        if (getObject)
                         {
                             needToGetObject = true;
                         }

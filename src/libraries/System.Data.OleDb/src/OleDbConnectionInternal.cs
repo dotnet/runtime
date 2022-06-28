@@ -8,11 +8,10 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Threading;
+using SysTx = System.Transactions;
 
 namespace System.Data.OleDb
 {
-    using SysTx = Transactions;
-
     internal sealed class OleDbConnectionInternal : DbConnectionInternal, IDisposable
     {
         private static volatile OleDbServicesWrapper? idataInitialize;

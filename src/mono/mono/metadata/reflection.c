@@ -281,9 +281,8 @@ module_object_construct (MonoClass *unused_klass, MonoImage *image, gpointer use
 	if (image->assembly->image == image) {
 		token  = mono_metadata_make_token (MONO_TABLE_MODULE, 1);
 	} else {
-		int i;
 		if (image->assembly->image->modules) {
-			for (i = 0; i < image->assembly->image->module_count; i++) {
+			for (guint32 i = 0; i < image->assembly->image->module_count; i++) {
 				if (image->assembly->image->modules [i] == image)
 					token = mono_metadata_make_token (MONO_TABLE_MODULEREF, i + 1);
 			}
@@ -326,7 +325,7 @@ mono_module_file_get_object_handle (MonoImage *image, int table_index, MonoError
 	MonoTableInfo *table;
 	guint32 cols [MONO_FILE_SIZE];
 	const char *name;
-	guint32 i, name_idx;
+	guint32 name_idx;
 	const char *val;
 
 	error_init (error);
@@ -335,7 +334,7 @@ mono_module_file_get_object_handle (MonoImage *image, int table_index, MonoError
 	goto_if_nok (error, fail);
 
 	table = &image->tables [MONO_TABLE_FILE];
-	g_assert (table_index < table_info_get_rows (table));
+	g_assert (GINT_TO_UINT32(table_index) < table_info_get_rows (table));
 	mono_metadata_decode_row (table, table_index, cols, MONO_FILE_SIZE);
 
 	MONO_HANDLE_SETVAL (res, image, MonoImage*, NULL);
@@ -347,8 +346,8 @@ mono_module_file_get_object_handle (MonoImage *image, int table_index, MonoError
 
 	/* Check whenever the row has a corresponding row in the moduleref table */
 	table = &image->tables [MONO_TABLE_MODULEREF];
-	int rows = table_info_get_rows (table);
-	for (i = 0; i < rows; ++i) {
+	guint32 rows = table_info_get_rows (table);
+	for (guint32 i = 0; i < rows; ++i) {
 		name_idx = mono_metadata_decode_row_col (table, i, MONO_MODULEREF_NAME);
 		val = mono_metadata_string_heap (image, name_idx);
 		if (strcmp (val, name) == 0)
@@ -372,7 +371,6 @@ fail:
 static MonoType*
 mono_type_normalize (MonoType *type)
 {
-	int i;
 	MonoGenericClass *gclass;
 	MonoGenericInst *ginst;
 	MonoClass *gtd;
@@ -392,7 +390,7 @@ mono_type_normalize (MonoType *type)
 	gcontainer = mono_class_get_generic_container (gtd);
 	argv = g_newa (MonoType*, ginst->type_argc);
 
-	for (i = 0; i < ginst->type_argc; ++i) {
+	for (guint i = 0; i < ginst->type_argc; ++i) {
 		MonoType *t = ginst->type_argv [i], *norm;
 		if (t->type != MONO_TYPE_VAR || t->data.generic_param->num != i || t->data.generic_param->owner != gcontainer)
 			is_denorm_gtd = FALSE;
@@ -2096,9 +2094,8 @@ mono_reflection_get_type_internal (MonoAssemblyLoadContext *alc, MonoImage *root
 		MonoType **type_args = g_new0 (MonoType *, info->type_arguments->len);
 		MonoReflectionTypeHandle the_type;
 		MonoType *instance;
-		int i;
 
-		for (i = 0; i < info->type_arguments->len; i++) {
+		for (guint i = 0; i < info->type_arguments->len; i++) {
 			MonoTypeNameParse *subinfo = (MonoTypeNameParse *)g_ptr_array_index (info->type_arguments, i);
 
 			type_args [i] = _mono_reflection_get_type_from_info (alc, subinfo, rootimage, ignorecase, search_mscorlib, error);
@@ -2331,9 +2328,7 @@ mono_reflection_free_type_info (MonoTypeNameParse *info)
 	g_list_free (info->nested);
 
 	if (info->type_arguments) {
-		int i;
-
-		for (i = 0; i < info->type_arguments->len; i++) {
+		for (guint i = 0; i < info->type_arguments->len; i++) {
 			MonoTypeNameParse *subinfo = (MonoTypeNameParse *)g_ptr_array_index (info->type_arguments, i);
 
 			mono_reflection_free_type_info (subinfo);
@@ -2752,15 +2747,14 @@ mono_declsec_get_flags (MonoImage *image, guint32 token)
 	MonoTableInfo *t = &image->tables [MONO_TABLE_DECLSECURITY];
 	guint32 result = 0;
 	guint32 action;
-	int i;
 
 	/* HasSecurity can be present for other, not specially encoded, attributes,
 	   e.g. SuppressUnmanagedCodeSecurityAttribute */
 	if (index < 0)
 		return 0;
 
-	int rows = table_info_get_rows (t);
-	for (i = index; i < rows; i++) {
+	guint32 rows = table_info_get_rows (t);
+	for (guint32 i = index; i < rows; i++) {
 		guint32 cols [MONO_DECL_SECURITY_SIZE];
 
 		mono_metadata_decode_row (t, i, cols, MONO_DECL_SECURITY_SIZE);
@@ -2855,12 +2849,11 @@ fill_actions_from_index (MonoImage *image, guint32 token, MonoDeclSecurityAction
 	MonoBoolean result = FALSE;
 	MonoTableInfo *t;
 	guint32 cols [MONO_DECL_SECURITY_SIZE];
-	int index = mono_metadata_declsec_from_index (image, token);
-	int i;
+	guint32 index = mono_metadata_declsec_from_index (image, token);
 
 	t  = &image->tables [MONO_TABLE_DECLSECURITY];
-	int rows = table_info_get_rows (t);
-	for (i = index; i < rows; i++) {
+	guint32 rows = table_info_get_rows (t);
+	for (guint32 i = index; i < rows; i++) {
 		mono_metadata_decode_row (t, i, cols, MONO_DECL_SECURITY_SIZE);
 
 		if (cols [MONO_DECL_SECURITY_PARENT] != token)
@@ -3080,15 +3073,13 @@ static MonoBoolean
 get_declsec_action (MonoImage *image, guint32 token, guint32 action, MonoDeclSecurityEntry *entry)
 {
 	guint32 cols [MONO_DECL_SECURITY_SIZE];
-	int i;
-
-	int index = mono_metadata_declsec_from_index (image, token);
+	guint32 index = mono_metadata_declsec_from_index (image, token);
 	if (index == -1)
 		return FALSE;
 
 	MonoTableInfo *t =  &image->tables [MONO_TABLE_DECLSECURITY];
-	int rows = table_info_get_rows (t);
-	for (i = index; i < rows; i++) {
+	guint32 rows = table_info_get_rows (t);
+	for (guint32 i = index; i < rows; i++) {
 		mono_metadata_decode_row (t, i, cols, MONO_DECL_SECURITY_SIZE);
 
 		/* shortcut - index are ordered */

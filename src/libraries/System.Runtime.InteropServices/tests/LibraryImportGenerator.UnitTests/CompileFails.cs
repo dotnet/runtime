@@ -92,11 +92,16 @@ namespace LibraryImportGenerator.UnitTests
             yield return new object[] { CodeSnippets.MarshalUsingArrayParameterWithSizeParam<bool>(isByRef: false), 2, 0 };
 
             // Custom type marshalling with invalid members
-            yield return new object[] { CodeSnippets.CustomStructMarshalling.TwoStageRefReturn, 3, 0 };
             yield return new object[] { CodeSnippets.CustomStructMarshalling.ManagedToNativeOnlyOutParameter, 1, 0 };
             yield return new object[] { CodeSnippets.CustomStructMarshalling.ManagedToNativeOnlyReturnValue, 1, 0 };
             yield return new object[] { CodeSnippets.CustomStructMarshalling.NativeToManagedOnlyInParameter, 1, 0 };
+            yield return new object[] { CodeSnippets.CustomStructMarshalling.NonStaticMarshallerEntryPoint, 2, 0 };
             yield return new object[] { CodeSnippets.CustomStructMarshalling.StackallocOnlyRefParameter, 1, 0 };
+            yield return new object[] { CodeSnippets.CustomStructMarshalling_V1.TwoStageRefReturn, 3, 0 };
+            yield return new object[] { CodeSnippets.CustomStructMarshalling_V1.ManagedToNativeOnlyOutParameter, 1, 0 };
+            yield return new object[] { CodeSnippets.CustomStructMarshalling_V1.ManagedToNativeOnlyReturnValue, 1, 0 };
+            yield return new object[] { CodeSnippets.CustomStructMarshalling_V1.NativeToManagedOnlyInParameter, 1, 0 };
+            yield return new object[] { CodeSnippets.CustomStructMarshalling_V1.StackallocOnlyRefParameter, 1, 0 };
 
             // Abstract SafeHandle type by reference
             yield return new object[] { CodeSnippets.BasicParameterWithByRefModifier("ref", "System.Runtime.InteropServices.SafeHandle"), 1, 0 };

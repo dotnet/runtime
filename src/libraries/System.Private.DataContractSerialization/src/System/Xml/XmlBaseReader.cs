@@ -1485,7 +1485,7 @@ namespace System.Xml
                     {
                         if (_trailChars == null)
                             _trailChars = new char[4];
-                        charCount = charCount - _trailCharCount;
+                        charCount -= _trailCharCount;
                         Array.Copy(chars, charCount, _trailChars, 0, _trailCharCount);
                     }
                 }

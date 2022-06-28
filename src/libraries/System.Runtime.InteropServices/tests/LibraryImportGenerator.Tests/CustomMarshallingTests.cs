@@ -13,26 +13,53 @@ namespace LibraryImportGenerator.IntegrationTests
 {
     partial class NativeExportsNE
     {
-        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "stringcontainer_deepduplicate")]
-        public static partial void DeepDuplicateStrings(StringContainer strings, out StringContainer pStringsOut);
+        internal partial class Stateless
+        {
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "stringcontainer_deepduplicate")]
+            public static partial void DeepDuplicateStrings(StringContainer strings, out StringContainer pStringsOut);
 
-        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "stringcontainer_reverse_strings")]
-        public static partial void ReverseStrings(ref StringContainer strings);
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "stringcontainer_reverse_strings")]
+            public static partial void ReverseStrings(ref StringContainer strings);
 
-        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "get_long_bytes_as_double")]
-        public static partial double GetLongBytesAsDouble([MarshalUsing(typeof(DoubleToLongMarshaler))] double d);
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "get_long_bytes_as_double")]
+            public static partial double GetLongBytesAsDouble([MarshalUsing(typeof(DoubleToLongMarshaller))] double d);
 
-        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "negate_bools")]
-        public static partial void NegateBools(
-            BoolStruct boolStruct,
-            out BoolStruct pBoolStructOut);
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "get_bytes_as_double_big_endian")]
+            public static partial double GetBytesAsDoubleBigEndian([MarshalUsing(typeof(DoubleToBytesBigEndianMarshaller))] double d);
 
-        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "and_bools_ref")]
-        [return: MarshalAs(UnmanagedType.U1)]
-        public static partial bool AndBoolsRef(in BoolStruct boolStruct);
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "negate_bools")]
+            public static partial void NegateBools(
+                BoolStruct boolStruct,
+                out BoolStruct pBoolStructOut);
 
-        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "double_int_ref")]
-        public static partial IntWrapper DoubleIntRef(IntWrapper pInt);
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "and_bools_ref")]
+            [return: MarshalAs(UnmanagedType.U1)]
+            public static partial bool AndBoolsRef(in BoolStruct boolStruct);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "double_int_ref")]
+            public static partial IntWrapper DoubleIntRef(IntWrapper pInt);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "return_zero")]
+            [return: MarshalUsing(typeof(IntGuaranteedUnmarshal))]
+            public static partial int GuaranteedUnmarshal([MarshalUsing(typeof(ExceptionOnUnmarshal))] out int ret);
+
+            [ManagedToUnmanagedMarshallers(typeof(int))]
+            public static class ExceptionOnUnmarshal
+            {
+                public static int ConvertToManaged(int unmanaged) => throw new Exception();
+            }
+
+            [ManagedToUnmanagedMarshallers(typeof(int))]
+            public static unsafe class IntGuaranteedUnmarshal
+            {
+                public static bool ConvertToManagedGuaranteedCalled = false;
+                public static int ConvertToManagedGuaranteed(int unmanaged)
+                {
+                    ConvertToManagedGuaranteedCalled = true;
+                    return unmanaged;
+                }
+            }
+        }
 
         [LibraryImport(NativeExportsNE_Binary, EntryPoint = "reverse_replace_ref_ushort")]
         public static partial void ReverseReplaceString([MarshalUsing(typeof(Utf16StringMarshaller))] ref string s);
@@ -52,7 +79,7 @@ namespace LibraryImportGenerator.IntegrationTests
                 str2 = "Bar"
             };
 
-            NativeExportsNE.DeepDuplicateStrings(stringContainer, out var stringContainer2);
+            NativeExportsNE.Stateless.DeepDuplicateStrings(stringContainer, out var stringContainer2);
 
             Assert.Equal(stringContainer, stringContainer2);
         }
@@ -62,7 +89,23 @@ namespace LibraryImportGenerator.IntegrationTests
         {
             double d = 1234.56789;
 
-            Assert.Equal(d, NativeExportsNE.GetLongBytesAsDouble(d));
+            Assert.Equal(d, NativeExportsNE.Stateless.GetLongBytesAsDouble(d));
+        }
+
+        [Fact]
+        public void CallerAllocatedBuffer()
+        {
+            double d = 1234.56789;
+
+            Assert.Equal(d, NativeExportsNE.Stateless.GetBytesAsDoubleBigEndian(d));
+        }
+
+        [Fact]
+        public void GuaranteedUnmarshal()
+        {
+            NativeExportsNE.Stateless.IntGuaranteedUnmarshal.ConvertToManagedGuaranteedCalled = false;
+            Assert.Throws<Exception>(() => NativeExportsNE.Stateless.GuaranteedUnmarshal(out _));
+            Assert.True(NativeExportsNE.Stateless.IntGuaranteedUnmarshal.ConvertToManagedGuaranteedCalled);
         }
 
         [Fact]
@@ -75,7 +118,7 @@ namespace LibraryImportGenerator.IntegrationTests
                 b3 = true
             };
 
-            NativeExportsNE.NegateBools(boolStruct, out BoolStruct boolStructNegated);
+            NativeExportsNE.Stateless.NegateBools(boolStruct, out BoolStruct boolStructNegated);
 
             Assert.Equal(!boolStruct.b1, boolStructNegated.b1);
             Assert.Equal(!boolStruct.b2, boolStructNegated.b2);
@@ -88,7 +131,7 @@ namespace LibraryImportGenerator.IntegrationTests
             int originalValue = 42;
             var wrapper = new IntWrapper { i = originalValue };
 
-            var retVal = NativeExportsNE.DoubleIntRef(wrapper);
+            var retVal = NativeExportsNE.Stateless.DoubleIntRef(wrapper);
 
             Assert.Equal(originalValue * 2, wrapper.i);
             Assert.Equal(originalValue * 2, retVal.i);
@@ -111,7 +154,7 @@ namespace LibraryImportGenerator.IntegrationTests
 
             var stringContainerCopy = stringContainer;
 
-            NativeExportsNE.ReverseStrings(ref stringContainerCopy);
+            NativeExportsNE.Stateless.ReverseStrings(ref stringContainerCopy);
 
             Assert.Equal(expected, stringContainerCopy);
         }
@@ -134,7 +177,7 @@ namespace LibraryImportGenerator.IntegrationTests
                 b3 = b3
             };
 
-            Assert.Equal(b1 && b2 && b3, NativeExportsNE.AndBoolsRef(container));
+            Assert.Equal(b1 && b2 && b3, NativeExportsNE.Stateless.AndBoolsRef(container));
         }
 
         [Fact]

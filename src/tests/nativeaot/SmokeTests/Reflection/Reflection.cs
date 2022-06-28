@@ -9,6 +9,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Reflection;
@@ -31,6 +32,8 @@ internal static class ReflectionTest
         TestVirtualDelegateTargets.Run();
         TestRunClassConstructor.Run();
         TestFieldMetadata.Run();
+        TestLinqInvocation.Run();
+        TestGenericMethodsHaveSameReflectability.Run();
 #if !OPTIMIZED_MODE_WITHOUT_SCANNER
         TestContainment.Run();
         TestInterfaceMethod.Run();
@@ -55,6 +58,10 @@ internal static class ReflectionTest
         TestNotReflectedIsNotReflectable.Run();
         TestGenericInstantiationsAreEquallyReflectable.Run();
 #endif
+        TestAttributeInheritance2.Run();
+        TestInvokeMethodMetadata.Run();
+        TestVTableOfNullableUnderlyingTypes.Run();
+        TestInterfaceLists.Run();
 
         //
         // Mostly functionality tests
@@ -1855,6 +1862,48 @@ internal static class ReflectionTest
         }
     }
 
+    class TestLinqInvocation
+    {
+        delegate void RunMeDelegate();
+
+        static void RunMe() { }
+
+        public static void Run()
+        {
+            Expression<Action<RunMeDelegate>> ex = (RunMeDelegate m) => m();
+            ex.Compile()(RunMe);
+        }
+    }
+
+    class TestGenericMethodsHaveSameReflectability
+    {
+        public interface IHardToGuess { }
+
+        struct SomeStruct<T> : IHardToGuess { }
+
+        public static void TakeAGuess<T>() where T : struct, IHardToGuess { }
+
+        class Atom1 { }
+        class Atom2 { }
+
+        static Type s_someStructOverAtom1 = typeof(SomeStruct<Atom1>);
+
+        public static void Run()
+        {
+            // Statically call with SomeStruct over Atom2
+            TakeAGuess<SomeStruct<Atom2>>();
+
+            // MakeGenericMethod the method with SomeStruct over Atom1
+            // Note the compiler cannot figure out a suitable instantiation here because
+            // of the "struct, interface" constraint on T. But the expected side effect is that the static
+            // call above now became reflection-visible and will let the type loader make this
+            // work at runtime. All generic instantiations share the same refection visibility.
+            var mi = typeof(TestGenericMethodsHaveSameReflectability).GetMethod(nameof(TakeAGuess)).MakeGenericMethod(s_someStructOverAtom1);
+
+            mi.Invoke(null, Array.Empty<object>());
+        }
+    }
+
     class TestRunClassConstructor
     {
         static class TypeWithNoStaticFieldsButACCtor
@@ -1872,6 +1921,97 @@ internal static class ReflectionTest
             RuntimeHelpers.RunClassConstructor(typeof(TypeWithNoStaticFieldsButACCtor).TypeHandle);
             if (!s_cctorRan)
                 throw new Exception();
+        }
+    }
+
+    class TestAttributeInheritance2
+    {
+        [AttributeUsage(AttributeTargets.All, Inherited = true)]
+        class AttAttribute : Attribute { }
+
+        class Base
+        {
+            [Att]
+            public virtual void VirtualMethodWithAttribute() { }
+        }
+
+        class Derived : Base
+        {
+            public override void VirtualMethodWithAttribute() { }
+        }
+
+        public static void Run()
+        {
+            object[] attrs = typeof(Derived).GetMethod(nameof(Derived.VirtualMethodWithAttribute)).GetCustomAttributes(inherit: true);
+            if (attrs.Length != 1 || attrs[0].GetType().Name != nameof(AttAttribute))
+            {
+                throw new Exception();
+            }
+        }
+    }
+
+    class TestInvokeMethodMetadata
+    {
+        delegate int WithDefaultParameter1(int value = 1234);
+        delegate DateTime WithDefaultParameter2(DateTime value);
+
+        public static int Method(int value) => value;
+
+        public static DateTime Method(DateTime value) => value;
+
+        public static void Run()
+        {
+            // Check that we have metadata for the Invoke method to convert Type.Missing to the actual value.
+            WithDefaultParameter1 del1 = Method;
+            int val = (int)del1.DynamicInvoke(new object[] { Type.Missing });
+            if (val != 1234)
+                throw new Exception();
+
+            // Check that we have metadata for the Invoke method to find a matching method
+            Delegate del2 = Delegate.CreateDelegate(typeof(WithDefaultParameter2), typeof(TestInvokeMethodMetadata), nameof(Method));
+            if (del2.Method.ReturnType != typeof(DateTime))
+                throw new Exception();
+        }
+    }
+
+    class TestVTableOfNullableUnderlyingTypes
+    {
+        struct NeverAllocated
+        {
+            public override string ToString() => "Never allocated";
+        }
+
+        static Type s_hidden = typeof(Nullable<NeverAllocated>);
+
+        public static void Run()
+        {
+            // Underlying type of a Nullable needs to be considered constructed.
+            // Trimming warning suppressions in the libraries depend on this invariant.
+            var instance = RuntimeHelpers.GetUninitializedObject(s_hidden);
+            if (instance.ToString() != "Never allocated")
+                throw new Exception();
+        }
+    }
+
+    class TestInterfaceLists
+    {
+        interface IGeneric<T> { }
+
+        class Class<T> : IGeneric<T> { }
+
+        static Type s_hidden = typeof(Class<string>);
+
+        public static void Run()
+        {
+            // Can't drop an interface from the interface list if the interface is referenced.
+            // Trimming warning suppressions in the libraries depend on this invariant.
+            foreach (var intface in s_hidden.GetInterfaces())
+            {
+                if (intface.HasSameMetadataDefinitionAs(typeof(IGeneric<object>)))
+                    return;
+            }
+
+            throw new Exception();
         }
     }
 

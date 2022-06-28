@@ -18,8 +18,8 @@ internal static partial class Interop
             Sha512,
         };
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "SystemCryptoNativeBrowser_CanUseSimpleDigestHash")]
-        internal static partial int CanUseSimpleDigestHash();
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "SystemCryptoNativeBrowser_CanUseSubtleCryptoImpl")]
+        internal static partial int CanUseSubtleCryptoImpl();
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "SystemCryptoNativeBrowser_SimpleDigestHash")]
         internal static unsafe partial int SimpleDigestHash(

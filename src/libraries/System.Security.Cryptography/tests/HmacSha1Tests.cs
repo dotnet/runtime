@@ -113,6 +113,16 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        public void HmacSha1_EmptyKey()
+        {
+            VerifyRepeating(
+                input: "Crypto is fun!",
+                1,
+                hexKey: "",
+                output: "C979AD8DE8CC546CF82D948226FDD8024599F6CE");
+        }
+
+        [Fact]
         public void HmacSha1_Rfc2202_1()
         {
             VerifyHmac(1, s_testMacs2202[1]);

@@ -463,17 +463,26 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
 }
 
 //------------------------------------------------------------------------
+// LowerPutArgStkOrSplit: Lower a GT_PUTARG_STK/GT_PUTARG_SPLIT.
+//
+// Arguments:
+//    putArgNode - The node of interest
+//
+void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
+{
+    assert(putArgNode->OperIs(GT_PUTARG_STK)); // No split args on XArch.
+    LowerPutArgStk(putArgNode);
+}
+
+//------------------------------------------------------------------------
 // LowerPutArgStk: Lower a GT_PUTARG_STK.
 //
 // Arguments:
-//    tree      - The node of interest
-//
-// Return Value:
-//    None.
+//    putArgStk - The node of interest
 //
 void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
 {
-    GenTree* src        = putArgStk->gtGetOp1();
+    GenTree* src        = putArgStk->Data();
     bool     srcIsLocal = src->OperIsLocalRead();
 
     if (src->OperIs(GT_FIELD_LIST))
@@ -544,9 +553,11 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
     if (src->TypeIs(TYP_STRUCT))
     {
-        ClassLayout* layout  = src->AsObj()->GetLayout();
+        assert(src->OperIs(GT_OBJ) || src->OperIsLocalRead());
+
+        ClassLayout* layout  = src->GetLayout(comp);
         var_types    regType = layout->GetRegisterType();
-        srcIsLocal |= src->AsObj()->Addr()->OperIsLocalAddr();
+        srcIsLocal |= src->OperIs(GT_OBJ) && src->AsObj()->Addr()->OperIsLocalAddr();
 
         if (regType == TYP_UNDEF)
         {
@@ -556,30 +567,24 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
             // The cpyXXXX code is rather complex and this could cause it to be more complex, but
             // it might be the right thing to do.
 
-            unsigned size     = putArgStk->GetStackByteSize();
-            unsigned loadSize = layout->GetSize();
-
-            assert(loadSize <= size);
+            // If possible, widen the load, this results in more compact code.
+            unsigned loadSize = srcIsLocal ? roundUp(layout->GetSize(), TARGET_POINTER_SIZE) : layout->GetSize();
+            putArgStk->SetArgLoadSize(loadSize);
 
             // TODO-X86-CQ: The helper call either is not supported on x86 or required more work
             // (I don't know which).
-
             if (!layout->HasGCPtr())
             {
 #ifdef TARGET_X86
                 // Codegen for "Kind::Push" will always load bytes in TARGET_POINTER_SIZE
-                // chunks. As such, the correctness of this code depends on the fact that
-                // morph will copy any "mis-sized" (too small) non-local OBJs into a temp,
-                // thus preventing any possible out-of-bounds memory reads.
-                assert(((layout->GetSize() % TARGET_POINTER_SIZE) == 0) || src->OperIsLocalRead() ||
-                       (src->OperIsIndir() && src->AsIndir()->Addr()->IsLocalAddrExpr()));
-                if (size < XMM_REGSIZE_BYTES)
+                // chunks. As such, we'll only use this path for correctly-sized sources.
+                if ((loadSize < XMM_REGSIZE_BYTES) && ((loadSize % TARGET_POINTER_SIZE) == 0))
                 {
                     putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Push;
                 }
                 else
 #endif // TARGET_X86
-                    if (size <= CPBLK_UNROLL_LIMIT)
+                    if (loadSize <= CPBLK_UNROLL_LIMIT)
                 {
                     putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Unroll;
                 }
@@ -600,14 +605,25 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
 #endif // !TARGET_X86
             }
 
-            // Always mark the OBJ and ADDR as contained trees by the putarg_stk. The codegen will deal with this tree.
-            MakeSrcContained(putArgStk, src);
             if (src->OperIs(GT_OBJ) && src->AsObj()->Addr()->OperIsLocalAddr())
             {
-                // If the source address is the address of a lclVar, make the source address contained to avoid
-                // unnecessary copies.
-                MakeSrcContained(putArgStk, src->AsObj()->Addr());
+                // TODO-ADDR: always perform this transformation in local morph and delete this code.
+                GenTreeLclVarCommon* lclAddrNode = src->AsObj()->Addr()->AsLclVarCommon();
+                BlockRange().Remove(lclAddrNode);
+
+                src->ChangeOper(GT_LCL_FLD);
+                src->AsLclFld()->SetLclNum(lclAddrNode->GetLclNum());
+                src->AsLclFld()->SetLclOffs(lclAddrNode->GetLclOffs());
+                src->AsLclFld()->SetLayout(layout);
             }
+            else if (src->OperIs(GT_LCL_VAR))
+            {
+                comp->lvaSetVarDoNotEnregister(src->AsLclVar()->GetLclNum()
+                                                   DEBUGARG(DoNotEnregisterReason::IsStructArg));
+            }
+
+            // Always mark the OBJ/LCL_VAR/LCL_FLD as contained trees.
+            MakeSrcContained(putArgStk, src);
         }
         else
         {
@@ -615,13 +631,17 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
             // so if possible, widen the load to avoid the sign/zero-extension.
             if (varTypeIsSmall(regType) && srcIsLocal)
             {
-                assert(putArgStk->GetStackByteSize() <= genTypeSize(TYP_INT));
+                assert(genTypeSize(TYP_INT) <= putArgStk->GetStackByteSize());
                 regType = TYP_INT;
             }
 
-            src->SetOper(GT_IND);
             src->ChangeType(regType);
-            LowerIndir(src->AsIndir());
+
+            if (src->OperIs(GT_OBJ))
+            {
+                src->SetOper(GT_IND);
+                LowerIndir(src->AsIndir());
+            }
         }
     }
 
@@ -3759,7 +3779,7 @@ void Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
         case TYP_USHORT:
         case TYP_UINT:
         {
-            node->gtType = TYP_UINT;
+            node->gtType = TYP_INT;
             node->SetSimdBaseJitType(CORINFO_TYPE_UINT);
             node->ChangeHWIntrinsicId(NI_SSE2_ConvertToUInt32);
             break;
@@ -4709,22 +4729,6 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
             // contained we must clear it.
             ctrlExpr->SetRegNum(REG_NA);
             MakeSrcContained(call, ctrlExpr);
-        }
-    }
-
-    for (CallArg& arg : call->gtArgs.EarlyArgs())
-    {
-        if (arg.GetEarlyNode()->OperIs(GT_PUTARG_STK))
-        {
-            LowerPutArgStk(arg.GetEarlyNode()->AsPutArgStk());
-        }
-    }
-
-    for (CallArg& arg : call->gtArgs.LateArgs())
-    {
-        if (arg.GetLateNode()->OperIs(GT_PUTARG_STK))
-        {
-            LowerPutArgStk(arg.GetLateNode()->AsPutArgStk());
         }
     }
 }

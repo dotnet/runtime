@@ -24,10 +24,10 @@ MonoImage*
 mono_image_loaded_internal (MonoAssemblyLoadContext *alc, const char *name);
 
 MonoImage*
-mono_image_load_file_for_image_checked (MonoImage *image, int fileidx, MonoError *error);
+mono_image_load_file_for_image_checked (MonoImage *image, uint32_t fileidx, MonoError *error);
 
 MonoImage*
-mono_image_load_module_checked (MonoImage *image, int idx, MonoError *error);
+mono_image_load_module_checked (MonoImage *image, uint32_t idx, MonoError *error);
 
 MonoImage *
 mono_image_open_a_lot (MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status, const MonoImageOpenOptions *options);

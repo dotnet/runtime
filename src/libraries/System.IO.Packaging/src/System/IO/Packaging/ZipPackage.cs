@@ -209,29 +209,14 @@ namespace System.IO.Packaging
             {
                 if (disposing)
                 {
-                    if (_contentTypeHelper != null)
-                    {
-                        _contentTypeHelper.SaveToFile();
-                    }
-
-                    if (_zipStreamManager != null)
-                    {
-                        _zipStreamManager.Dispose();
-                    }
-
-                    if (_zipArchive != null)
-                    {
-                        _zipArchive.Dispose();
-                    }
+                    _contentTypeHelper?.SaveToFile();
+                    _zipArchive?.Dispose();
 
                     // _containerStream may be opened given a file name, in which case it should be closed here.
                     // _containerStream may be passed into the constructor, in which case, it should not be closed here.
                     if (_shouldCloseContainerStream)
                     {
                         _containerStream.Dispose();
-                    }
-                    else
-                    {
                     }
                     _containerStream = null!;
                 }

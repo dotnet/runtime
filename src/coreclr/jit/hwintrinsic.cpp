@@ -314,20 +314,35 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         return NI_Throw_PlatformNotSupportedException;
     }
 
-#if defined(TARGET_XARCH)
-    if ((isa == InstructionSet_Vector128) || (isa == InstructionSet_Vector256))
-#elif defined(TARGET_ARM64)
-    if ((isa == InstructionSet_Vector64) || (isa == InstructionSet_Vector128))
-#endif
+    // Special case: For Vector64/128/256 we currently don't accelerate any of the methods when
+    // IsHardwareAccelerated reports false. For Vector64 and Vector128 this is when the baseline
+    // ISA is unsupported. For Vector256 this is when AVX2 is unsupported since integer types
+    // can't get properly accelerated.
+
+    if (isa == InstructionSet_Vector128)
     {
         if (!comp->IsBaselineSimdIsaSupported())
         {
-            // Special case: For Vector64/128/256 we currently don't accelerate any of the methods when SSE/SSE2
-            // aren't supported since IsHardwareAccelerated reports false. To simplify the importation logic we'll
-            // just return illegal here and let it fallback to the software path instead.
             return NI_Illegal;
         }
     }
+#if defined(TARGET_XARCH)
+    else if (isa == InstructionSet_Vector256)
+    {
+        if (!comp->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+        {
+            return NI_Illegal;
+        }
+    }
+#elif defined(TARGET_ARM64)
+    else if (isa == InstructionSet_Vector64)
+    {
+        if (!comp->IsBaselineSimdIsaSupported())
+        {
+            return NI_Illegal;
+        }
+    }
+#endif
 
     for (int i = 0; i < (NI_HW_INTRINSIC_END - NI_HW_INTRINSIC_START - 1); i++)
     {

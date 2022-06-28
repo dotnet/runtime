@@ -1282,6 +1282,39 @@ Compiler::AssertionDsc* Compiler::optGetAssertion(AssertionIndex assertIndex)
 }
 
 //------------------------------------------------------------------------
+// optCastConstantSmall: Cast a constant to a small type.
+//
+// Parameters:
+//   iconVal - the integer constant
+//   smallType - the small type to cast to
+//
+// Returns:
+//   The cast constant after sign/zero extension.
+//
+ssize_t Compiler::optCastConstantSmall(ssize_t iconVal, var_types smallType)
+{
+    switch (smallType)
+    {
+        case TYP_BYTE:
+            return int8_t(iconVal);
+
+        case TYP_SHORT:
+            return int16_t(iconVal);
+
+        case TYP_USHORT:
+            return uint16_t(iconVal);
+
+        case TYP_BOOL:
+        case TYP_UBYTE:
+            return uint8_t(iconVal);
+
+        default:
+            assert(!"Unexpected type to truncate to");
+            return iconVal;
+    }
+}
+
+//------------------------------------------------------------------------
 // optCreateAssertion: Create an (op1 assertionKind op2) assertion.
 //
 // Arguments:
@@ -1344,12 +1377,12 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             if (op1->gtGetOp2()->IsCnsIntOrI())
             {
                 offset += op1->gtGetOp2()->AsIntCon()->gtIconVal;
-                op1 = op1->gtGetOp1();
+                op1 = op1->gtGetOp1()->gtEffectiveVal(/* commaOnly */ true);
             }
             else if (op1->gtGetOp1()->IsCnsIntOrI())
             {
                 offset += op1->gtGetOp1()->AsIntCon()->gtIconVal;
-                op1 = op1->gtGetOp2();
+                op1 = op1->gtGetOp2()->gtEffectiveVal(/* commaOnly */ true);
             }
             else
             {
@@ -1431,9 +1464,6 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
         assertion.op2.vn           = ValueNumStore::VNForNull();
         assertion.op2.u1.iconVal   = 0;
         assertion.op2.u1.iconFlags = GTF_EMPTY;
-#ifdef TARGET_64BIT
-        assertion.op2.u1.iconFlags |= GTF_ASSERTION_PROP_LONG; // Signify that this is really TYP_LONG
-#endif                                                         // TARGET_64BIT
     }
     //
     // Are we making an assertion about a local variable?
@@ -1557,24 +1587,25 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
 
                     if (op2->gtOper == GT_CNS_INT)
                     {
+                        ssize_t iconVal = op2->AsIntCon()->gtIconVal;
+
+                        if (varTypeIsSmall(lclVar))
+                        {
+                            iconVal = optCastConstantSmall(iconVal, lclVar->TypeGet());
+                        }
+
 #ifdef TARGET_ARM
                         // Do not Constant-Prop large constants for ARM
                         // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had
                         // target_ssize_t type.
-                        if (!codeGen->validImmForMov((target_ssize_t)op2->AsIntCon()->gtIconVal))
+                        if (!codeGen->validImmForMov((target_ssize_t)iconVal))
                         {
                             goto DONE_ASSERTION; // Don't make an assertion
                         }
 #endif // TARGET_ARM
-                        assertion.op2.u1.iconVal   = op2->AsIntCon()->gtIconVal;
+
+                        assertion.op2.u1.iconVal   = iconVal;
                         assertion.op2.u1.iconFlags = op2->GetIconHandleFlag();
-#ifdef TARGET_64BIT
-                        if (op2->TypeGet() == TYP_LONG || op2->TypeGet() == TYP_BYREF)
-                        {
-                            assertion.op2.u1.iconFlags |=
-                                GTF_ASSERTION_PROP_LONG; // Signify that this is really TYP_LONG
-                        }
-#endif // TARGET_64BIT
                     }
                     else if (op2->gtOper == GT_CNS_LNG)
                     {
@@ -1731,12 +1762,6 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                 /* iconFlags should only contain bits in GTF_ICON_HDL_MASK */
                 assert((iconFlags & ~GTF_ICON_HDL_MASK) == 0);
                 assertion.op2.u1.iconFlags = iconFlags;
-#ifdef TARGET_64BIT
-                if (op2->AsOp()->gtOp1->TypeGet() == TYP_LONG)
-                {
-                    assertion.op2.u1.iconFlags |= GTF_ASSERTION_PROP_LONG; // Signify that this is really TYP_LONG
-                }
-#endif // TARGET_64BIT
             }
             // JIT case
             else if (optIsTreeKnownIntValue(!optLocalAssertionProp, op2, &cnsValue, &iconFlags))
@@ -1749,12 +1774,6 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                 /* iconFlags should only contain bits in GTF_ICON_HDL_MASK */
                 assert((iconFlags & ~GTF_ICON_HDL_MASK) == 0);
                 assertion.op2.u1.iconFlags = iconFlags;
-#ifdef TARGET_64BIT
-                if (op2->TypeGet() == TYP_LONG)
-                {
-                    assertion.op2.u1.iconFlags |= GTF_ASSERTION_PROP_LONG; // Signify that this is really TYP_LONG
-                }
-#endif // TARGET_64BIT
             }
             else
             {
@@ -2047,13 +2066,9 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
         case O2K_IND_CNS_INT:
         case O2K_CONST_INT:
         {
-// The only flags that can be set are those in the GTF_ICON_HDL_MASK, or GTF_ASSERTION_PROP_LONG, which is
-// used to indicate a long constant.
-#ifdef TARGET_64BIT
-            assert((assertion->op2.u1.iconFlags & ~(GTF_ICON_HDL_MASK | GTF_ASSERTION_PROP_LONG)) == 0);
-#else
+            // The only flags that can be set are those in the GTF_ICON_HDL_MASK.
             assert((assertion->op2.u1.iconFlags & ~GTF_ICON_HDL_MASK) == 0);
-#endif
+
             switch (assertion->op1.kind)
             {
                 case O1K_EXACT_TYPE:
@@ -3316,6 +3331,16 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
             {
                 return nullptr;
             }
+
+            // We assume that we do not try to do assertion prop on mismatched
+            // accesses (note that we widen normalize-on-load local accesses
+            // and insert casts in morph, which would be problematic to track
+            // here).
+            assert(tree->TypeGet() == lvaGetDesc(lclNum)->TypeGet());
+            // Assertions for small-typed locals should have been normalized
+            // when the assertion was created.
+            assert(!varTypeIsSmall(tree) || (curAssertion->op2.u1.iconVal ==
+                                             optCastConstantSmall(curAssertion->op2.u1.iconVal, tree->TypeGet())));
 
             if (curAssertion->op2.u1.iconFlags & GTF_ICON_HDL_MASK)
             {
