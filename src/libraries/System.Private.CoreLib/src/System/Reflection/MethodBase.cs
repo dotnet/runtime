@@ -207,6 +207,11 @@ namespace System.Reflection
                         }
                         else
                         {
+                            if (arg != null && sigType.IsNullableOfT && sigType.GetGenericArguments()[0].IsEnum)
+                            {
+                                arg = Enum.ToObject(sigType.GetGenericArguments()[0], arg);
+                            }
+
                             isValueType = sigType.CheckValue(ref arg, ref copyBackArg, binder, culture, invokeAttr);
                         }
                     }
