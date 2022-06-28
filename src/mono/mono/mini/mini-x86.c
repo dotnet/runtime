@@ -1361,7 +1361,7 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 LLVMCallInfo*
 mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 {
-	int i, n;
+	guint n;
 	CallInfo *cinfo;
 	ArgInfo *ainfo;
 	LLVMCallInfo *linfo;
@@ -1408,7 +1408,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 		cfg->disable_llvm = TRUE;
 	}
 
-	for (i = 0; i < n; ++i) {
+	for (guint i = 0; i < n; ++i) {
 		ainfo = cinfo->args + i;
 
 		if (i >= sig->hasthis)
