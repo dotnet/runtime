@@ -55,7 +55,7 @@ namespace System.Text.RegularExpressions.Generator
                 .ForAttributeWithMetadataName(
                     context,
                     RegexGeneratorAttributeName,
-                    (n, c) => n is MethodDeclarationSyntax,
+                    (node, _) => node is MethodDeclarationSyntax,
                     GetSemanticTargetForGeneration)
                 .Where(static m => m is not null)
 
