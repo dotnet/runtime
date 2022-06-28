@@ -86,6 +86,7 @@ Please do not:
 * **DON'T** commit code that you didn't write. If you find code that you think is a good fit to add to .NET Core, file an issue and start a discussion before proceeding.
 * **DON'T** submit PRs that alter licensing related files or headers. If you believe there's a problem with them, file an issue and we'll be happy to discuss it.
 * **DON'T** add API additions without filing an issue and discussing with us first. See [API Review Process](docs/project/api-review-process.md).
+* **DON'T** squash commits into the existing commits that are sent out in PR. All the changes done as part of addressing the review feedback should be part of separate commits that are pushed on top of existing commits out for review. This helps reviewers to review the incremental changes instead of reviewing all the changes submitted in the PR.
 
 ### Breaking Changes
 
