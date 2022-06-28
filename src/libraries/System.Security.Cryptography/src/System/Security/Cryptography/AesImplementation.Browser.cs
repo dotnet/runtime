@@ -21,10 +21,10 @@ namespace System.Security.Cryptography
             ValidateCipherMode(cipherMode);
             ValidatePaddingMode(paddingMode);
 
-            Debug.Assert(blockSize == RijndaelManagedTransform.BlockSizeBytes);
+            Debug.Assert(blockSize == AesManagedTransform.BlockSizeBytes);
             Debug.Assert(paddingSize == blockSize);
 
-            return new RijndaelManagedTransform(key, iv, encrypting);
+            return new AesManagedTransform(key, iv, encrypting);
         }
 
         private static ILiteSymmetricCipher CreateLiteCipher(
@@ -38,10 +38,10 @@ namespace System.Security.Cryptography
         {
             ValidateCipherMode(cipherMode);
 
-            Debug.Assert(blockSize == RijndaelManagedTransform.BlockSizeBytes);
+            Debug.Assert(blockSize == AesManagedTransform.BlockSizeBytes);
             Debug.Assert(paddingSize == blockSize);
 
-            return new RijndaelManagedTransform(key, iv, encrypting);
+            return new AesManagedTransform(key, iv, encrypting);
         }
 
         private static void ValidateCipherMode(CipherMode cipherMode)

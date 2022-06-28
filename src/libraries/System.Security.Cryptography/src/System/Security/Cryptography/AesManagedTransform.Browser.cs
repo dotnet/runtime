@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography
 {
-    internal sealed class RijndaelManagedTransform : ICryptoTransform, ILiteSymmetricCipher
+    internal sealed class AesManagedTransform : ICryptoTransform, ILiteSymmetricCipher
     {
         public const int BlockSizeBytes = 16; // 128 bits
         private const int BlockSizeInts = BlockSizeBytes / 4;
@@ -24,7 +24,7 @@ namespace System.Security.Cryptography
         private int[] _lastBlockBuffer;
         private byte[]? _depadBuffer;
 
-        public RijndaelManagedTransform(ReadOnlySpan<byte> key,
+        public AesManagedTransform(ReadOnlySpan<byte> key,
                                         ReadOnlySpan<byte> iv,
                                         bool encrypting)
         {
