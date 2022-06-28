@@ -5,10 +5,28 @@ using System;
 using System.Collections.Generic;
 using Internal.TypeSystem;
 using System.Linq;
-using Microsoft.Diagnostics.Tools.Pgo;
 
 namespace ILCompiler.IBC
 {
+    public class MibcConfig
+    {
+        public string FormatVersion = "1.0";
+        public string Os;
+        public string Arch;
+        public string Runtime;
+
+        public override string ToString()
+        {
+            return
+                $"""
+                FormatVersion: {FormatVersion}
+                Runtime:       {Runtime}
+                Os:            {Os}
+                Arch:          {Arch}
+
+                """;
+        }
+    }
 
     public class IBCProfileData : ProfileData
     {

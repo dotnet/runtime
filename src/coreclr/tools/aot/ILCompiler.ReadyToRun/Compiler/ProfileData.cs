@@ -9,7 +9,6 @@ using ILCompiler.IBC;
 using Internal.Pgo;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
-using Microsoft.Diagnostics.Tools.Pgo;
 
 namespace ILCompiler
 {

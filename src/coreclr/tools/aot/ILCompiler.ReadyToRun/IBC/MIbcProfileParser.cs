@@ -17,7 +17,6 @@ using System.IO;
 using System.Diagnostics;
 
 using System.Reflection.PortableExecutable;
-using Microsoft.Diagnostics.Tools.Pgo;
 
 namespace ILCompiler.IBC
 {
