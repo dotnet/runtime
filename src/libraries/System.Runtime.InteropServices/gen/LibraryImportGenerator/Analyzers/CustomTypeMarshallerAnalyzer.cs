@@ -494,14 +494,29 @@ namespace Microsoft.Interop.Analyzers
                             managedType.ToDisplayString()));
                 }
 
-                bool isLinearCollectionMarshalling = ManualTypeMarshallingHelper.IsLinearCollectionEntryPoint(entryType);
-                bool hasMarshallers = ManualTypeMarshallingHelper.TryGetMarshallersFromEntryType(
-                    entryType,
-                    managedType,
-                    isLinearCollectionMarshalling,
-                    context.Compilation,
-                    out CustomTypeMarshallers? _);
-                if (!hasMarshallers)
+                (bool hasCustomTypeMarshallerAttribute, ITypeSymbol? marshallerManagedType, _) = ManualTypeMarshallingHelper_V1.GetMarshallerShapeInfo(entryType);
+
+                marshallerManagedType = ManualTypeMarshallingHelper.ResolveManagedType(marshallerManagedType, entryType, context.Compilation);
+
+                if (!hasCustomTypeMarshallerAttribute)
+                {
+                    context.ReportDiagnostic(
+                        attributeData.CreateDiagnostic(
+                            NativeTypeMustHaveCustomTypeMarshallerAttributeRule,
+                            managedType.ToDisplayString()));
+                    return;
+                }
+
+                if (marshallerManagedType is null)
+                {
+                    context.ReportDiagnostic(
+                        attributeData.CreateDiagnostic(
+                            NativeTypeMustHaveCustomTypeMarshallerAttributeRule,
+                            managedType.ToDisplayString()));
+                    return;
+                }
+
+                if (!TypeSymbolsConstructedFromEqualTypes(managedType, marshallerManagedType))
                 {
                     context.ReportDiagnostic(
                         attributeData.CreateDiagnostic(
