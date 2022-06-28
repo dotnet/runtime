@@ -1240,6 +1240,7 @@ internal sealed class ProxyFile
         }
         finally
         {
+            _cache.Log.LogMessage(MessageImportance.Low, $"Deleting temp file {TempFile}");
             File.Delete(TempFile);
         }
     }
