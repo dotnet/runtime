@@ -1,8 +1,9 @@
 # Compiling with Native AOT
 
-This document explains how to compile and publish your project using Native AOT toolchain. First, please _ensure that [pre-requisites](prerequisites.md) are installed_. If you are starting a new project, you may find the [HelloWorld sample](https://github.com/dotnet/samples/tree/main/core/nativeaot/HelloWorld/README.md) directions useful.
+Please consult [documentation](https://github.com/dotnet/docs/blob/main/docs/core/deploying/native-aot.md) for instructions how to compile amd publish application.
 
-Please consult [documentation](https://github.com/dotnet/docs/blob/main/docs/core/deploying/native-aot.md) for instructions how to compile application.
+If you are starting a new project, you may find the [HelloWorld sample](https://github.com/dotnet/samples/tree/main/core/nativeaot/HelloWorld/README.md) directions useful.
+
 
 
 ## Using daily builds
@@ -31,20 +32,6 @@ or by adding the following element to the project file:
     <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="7.0.0-*" />
   </ItemGroup>
 ```
-
-## Compile and publish your app
-
-Use the `dotnet publish` command to compile and publish your app:
-```bash
-> dotnet publish -r <RID> -c <Configuration>
-```
-
-where `<Configuration>` is your project configuration (such as Debug or Release) and `<RID>` is the runtime identifier reflecting your host OS and architecture (one of win-x64, linux-x64, osx-x64). For example, to publish the Release build of your app for Windows x64, run the following command:
-```bash
-> dotnet publish -r win-x64 -c Release
-```
-
-If the compilation succeeds, the native executable will be placed under the `bin/<Configuration>/net6.0/<RID>/publish/` path relative to your project's root directory.
 
 ## Cross-architecture compilation
 
