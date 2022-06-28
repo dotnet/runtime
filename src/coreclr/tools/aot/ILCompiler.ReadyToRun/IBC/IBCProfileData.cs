@@ -5,13 +5,14 @@ using System;
 using System.Collections.Generic;
 using Internal.TypeSystem;
 using System.Linq;
+using Microsoft.Diagnostics.Tools.Pgo;
 
 namespace ILCompiler.IBC
 {
 
     public class IBCProfileData : ProfileData
     {
-        public IBCProfileData(bool partialNGen, IEnumerable<MethodProfileData> methodData)
+        public IBCProfileData(MibcConfig config, bool partialNGen, IEnumerable<MethodProfileData> methodData)
         {
             MethodProfileData[] dataArray = methodData.ToArray();
             foreach (MethodProfileData data in dataArray)
@@ -22,12 +23,16 @@ namespace ILCompiler.IBC
                 }
             }
             _partialNGen = partialNGen;
+            _config = config;
         }
 
         private readonly Dictionary<MethodDesc, MethodProfileData> _methodData = new Dictionary<MethodDesc, MethodProfileData>();
         private readonly bool _partialNGen;
+        private readonly MibcConfig _config;
 
-        public override bool PartialNGen { get { return _partialNGen; } }
+        public override MibcConfig Config => _config;
+
+        public override bool PartialNGen => _partialNGen;
 
         public override MethodProfileData GetMethodProfileData(MethodDesc m)
         {

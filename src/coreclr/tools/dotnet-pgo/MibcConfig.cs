@@ -14,12 +14,13 @@ public class MibcConfig
 
     public override string ToString()
     {
-        string str = "";
-        foreach (FieldInfo field in GetType().GetFields())
-        {
-            string paddedName = (field.Name + ":").PadRight(18, ' ');
-            str += $"{paddedName} {field.GetValue(this)}\n";
-        }
-        return str;
+        return
+            $"""
+            FormatVersion: {FormatVersion}
+            Runtime:       {Runtime}
+            Os:            {Os}
+            Arch:          {Arch}
+
+            """; ;
     }
 }
