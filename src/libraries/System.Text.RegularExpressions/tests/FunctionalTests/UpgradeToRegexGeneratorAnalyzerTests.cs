@@ -779,8 +779,12 @@ public partial class A
     }
 }
 ";
-
-            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+            await new VerifyCS.Test(null, usePreviewLanguageVersion: true, 1)
+            {
+                TestCode = test,
+                FixedCode = fixedSource,
+                CodeActionValidationMode = CodeActionValidationMode.None,
+            }.RunAsync();
         }
 
         [Theory]
