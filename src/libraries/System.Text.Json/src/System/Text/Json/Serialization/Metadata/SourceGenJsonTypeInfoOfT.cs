@@ -20,6 +20,7 @@ namespace System.Text.Json.Serialization.Metadata
         public SourceGenJsonTypeInfo(JsonConverter converter, JsonSerializerOptions options)
             : base(converter, options)
         {
+            PolymorphismOptions = JsonPolymorphismOptions.CreateFromAttributeDeclarations(Type);
         }
 
         /// <summary>
@@ -42,6 +43,7 @@ namespace System.Text.Json.Serialization.Metadata
             SerializeHandler = objectInfo.SerializeHandler;
 
             NumberHandling = objectInfo.NumberHandling;
+            PolymorphismOptions = JsonPolymorphismOptions.CreateFromAttributeDeclarations(Type);
         }
 
         /// <summary>
@@ -68,6 +70,7 @@ namespace System.Text.Json.Serialization.Metadata
             CreateObjectWithArgs = createObjectWithArgs;
             AddMethodDelegate = addFunc;
             CreateObject = collectionInfo.ObjectCreator;
+            PolymorphismOptions = JsonPolymorphismOptions.CreateFromAttributeDeclarations(Type);
         }
 
         private static JsonConverter GetConverter(JsonObjectInfoValues<T> objectInfo)

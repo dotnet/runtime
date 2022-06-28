@@ -665,4 +665,7 @@
   <data name="JsonTypeInfoUsedButTypeInfoResolverNotSet" xml:space="preserve">
     <value>JsonTypeInfo metadata references a JsonSerializerOptions instance that doesn't specify a TypeInfoResolver.</value>
   </data>
+  <data name="JsonPolymorphismOptionsAssociatedWithDifferentJsonTypeInfo" xml:space="preserve">
+    <value>Parameter already associated with a different JsonTypeInfo instance.</value>
+  </data>
 </root>
