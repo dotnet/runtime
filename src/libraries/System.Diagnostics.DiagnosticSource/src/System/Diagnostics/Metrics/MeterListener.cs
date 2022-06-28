@@ -67,7 +67,7 @@ namespace System.Diagnostics.Metrics
             {
                 if (instrument is not null && !_disposed && !instrument.Meter.Disposed)
                 {
-                    _enabledMeasurementInstruments.AddIfNotExist(instrument, (instrument1, instrument2) => object.ReferenceEquals(instrument1, instrument2));
+                    _enabledMeasurementInstruments.AddIfNotExist(instrument, object.ReferenceEquals);
                     oldState = instrument.EnableMeasurement(new ListenerSubscription(this, state), out oldStateStored);
                     enabled = true;
                 }
@@ -98,7 +98,7 @@ namespace System.Diagnostics.Metrics
             object? state =  null;
             lock (Instrument.SyncObject)
             {
-                if (instrument is null || _enabledMeasurementInstruments.Remove(instrument, (instrument1, instrument2) => object.ReferenceEquals(instrument1, instrument2)) == default)
+                if (instrument is null || _enabledMeasurementInstruments.Remove(instrument, object.ReferenceEquals) == default)
                 {
                     return default;
                 }

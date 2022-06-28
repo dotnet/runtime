@@ -273,10 +273,7 @@ namespace System.Reflection.TypeLoading
             MetadataLoadContext loader = defaultAssembly.Loader;
 
             Func<AssemblyName, Assembly> assemblyResolver =
-                delegate (AssemblyName assemblyName)
-                {
-                    return loader.LoadFromAssemblyName(assemblyName);
-                };
+                loader.LoadFromAssemblyName;
 
             Func<Assembly?, string, bool, Type?> typeResolver =
                 delegate (Assembly? assembly, string fullName, bool ignoreCase2)

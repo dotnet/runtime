@@ -760,8 +760,8 @@ namespace System.Security.Cryptography.X509Certificates
             using (SafeOcspRequestHandle req = Interop.Crypto.X509ChainBuildOcspRequest(_storeCtx, chainDepth))
             {
                 ArraySegment<byte> encoded = Interop.Crypto.OpenSslRentEncode(
-                    handle => Interop.Crypto.GetOcspRequestDerSize(handle),
-                    (handle, buf) => Interop.Crypto.EncodeOcspRequest(handle, buf),
+                    Interop.Crypto.GetOcspRequestDerSize,
+                    Interop.Crypto.EncodeOcspRequest,
                     req);
 
                 ArraySegment<char> urlEncoded = UrlBase64Encoding.RentEncode(encoded);
@@ -1303,7 +1303,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             return s_errorStrings.GetOrAdd(
                 code.Code,
-                c => Interop.Crypto.GetX509VerifyCertErrorString(c));
+                Interop.Crypto.GetX509VerifyCertErrorString);
         }
 
         private sealed class WorkingChain : IDisposable
