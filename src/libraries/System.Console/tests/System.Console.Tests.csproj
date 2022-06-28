@@ -49,5 +49,6 @@
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Fcntl.cs"
              Link="Common\Interop\Unix\System.Native\Interop.Fcntl.cs" />
+    <Compile Include="..\src\System\TermInfo.WellKnownStrings.cs" Link="src\System\TermInfo.WellKnownStrings.cs" />
   </ItemGroup>
 </Project>

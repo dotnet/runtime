@@ -161,6 +161,7 @@
     <Compile Include="$(CommonPath)System\Console\ConsoleUtils.cs"
              Link="Common\System\Console\ConsoleUtils.cs" />
     <Compile Include="System\TermInfo.cs" />
+    <Compile Include="System\TermInfo.WellKnownStrings.cs" />
     <Compile Include="System\IO\StdInReader.cs" />
     <Compile Include="System\IO\SyncTextReader.Unix.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Unix.cs"
