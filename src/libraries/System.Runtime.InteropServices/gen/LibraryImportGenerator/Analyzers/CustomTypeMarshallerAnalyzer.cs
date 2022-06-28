@@ -405,7 +405,7 @@ namespace Microsoft.Interop.Analyzers
 
                 // Analyze NativeMarshalling/MarshalUsing for correctness
                 context.RegisterSymbolAction(PerCompilationAnalyzer.AnalyzeTypeDefinition, SymbolKind.NamedType);
-                context.RegisterSymbolAction(PerCompilationAnalyzer.AnalyzeElement, SymbolKind.Parameter, SymbolKind.Field);
+                context.RegisterSymbolAction(PerCompilationAnalyzer.AnalyzeParameterOrField, SymbolKind.Parameter, SymbolKind.Field);
                 context.RegisterSymbolAction(PerCompilationAnalyzer.AnalyzeReturnType, SymbolKind.Method);
 
                 // Analyze marshaller type to validate shape.
@@ -431,18 +431,16 @@ namespace Microsoft.Interop.Analyzers
             public static void AnalyzeTypeDefinition(SymbolAnalysisContext context)
             {
                 INamedTypeSymbol type = (INamedTypeSymbol)context.Symbol;
-
-                (AttributeData? attributeData, INamedTypeSymbol? marshallerType) = ManualTypeMarshallingHelper.GetDefaultMarshallerInfo(type);
-
+                (AttributeData? attributeData, INamedTypeSymbol? entryType) = ManualTypeMarshallingHelper.GetDefaultMarshallerEntryType(type);
                 if (attributeData is null)
                 {
                     return;
                 }
 
-                AnalyzeManagedTypeMarshallingInfo(context, type, attributeData, marshallerType);
+                AnalyzeManagedTypeMarshallingInfo(context, type, attributeData, entryType);
             }
 
-            public static void AnalyzeElement(SymbolAnalysisContext context)
+            public static void AnalyzeParameterOrField(SymbolAnalysisContext context)
             {
                 ITypeSymbol managedType = context.Symbol switch
                 {
@@ -455,6 +453,7 @@ namespace Microsoft.Interop.Analyzers
                 {
                     return;
                 }
+
                 AnalyzeManagedTypeMarshallingInfo(context, managedType, attributeData, attributeData.ConstructorArguments[0].Value as INamedTypeSymbol);
             }
 
@@ -467,57 +466,47 @@ namespace Microsoft.Interop.Analyzers
                 {
                     return;
                 }
+
                 AnalyzeManagedTypeMarshallingInfo(context, managedType, attributeData, attributeData.ConstructorArguments[0].Value as INamedTypeSymbol);
             }
 
-            private static void AnalyzeManagedTypeMarshallingInfo(SymbolAnalysisContext context, ITypeSymbol type, AttributeData attributeData, INamedTypeSymbol? marshallerType)
+            private static void AnalyzeManagedTypeMarshallingInfo(
+                SymbolAnalysisContext context,
+                ITypeSymbol managedType,
+                AttributeData attributeData,
+                INamedTypeSymbol? entryType)
             {
-                if (marshallerType is null)
+                if (entryType is null)
                 {
                     context.ReportDiagnostic(
                         attributeData.CreateDiagnostic(
                             NativeTypeMustHaveCustomTypeMarshallerAttributeRule,
-                            type.ToDisplayString()));
+                            managedType.ToDisplayString()));
                     return;
                 }
 
-                if (marshallerType.IsUnboundGenericType)
+                if (entryType.IsUnboundGenericType)
                 {
                     context.ReportDiagnostic(
                         attributeData.CreateDiagnostic(
                             NativeGenericTypeMustBeClosedOrMatchArityRule,
-                            marshallerType.ToDisplayString(),
-                            type.ToDisplayString()));
+                            entryType.ToDisplayString(),
+                            managedType.ToDisplayString()));
                 }
 
-                (bool hasCustomTypeMarshallerAttribute, ITypeSymbol? marshallerManagedType, _) = ManualTypeMarshallingHelper_V1.GetMarshallerShapeInfo(marshallerType);
-
-                marshallerManagedType = ManualTypeMarshallingHelper.ResolveManagedType(marshallerManagedType, marshallerType, context.Compilation);
-
-                if (!hasCustomTypeMarshallerAttribute)
+                bool isLinearCollectionMarshalling = ManualTypeMarshallingHelper.IsLinearCollectionEntryPoint(entryType);
+                bool hasMarshallers = ManualTypeMarshallingHelper.TryGetMarshallersFromEntryType(
+                    entryType,
+                    managedType,
+                    isLinearCollectionMarshalling,
+                    context.Compilation,
+                    out CustomTypeMarshallers? _);
+                if (!hasMarshallers)
                 {
                     context.ReportDiagnostic(
                         attributeData.CreateDiagnostic(
                             NativeTypeMustHaveCustomTypeMarshallerAttributeRule,
-                            type.ToDisplayString()));
-                    return;
-                }
-
-                if (marshallerManagedType is null)
-                {
-                    context.ReportDiagnostic(
-                        attributeData.CreateDiagnostic(
-                            NativeTypeMustHaveCustomTypeMarshallerAttributeRule,
-                            type.ToDisplayString()));
-                    return;
-                }
-
-                if (!TypeSymbolsConstructedFromEqualTypes(type, marshallerManagedType))
-                {
-                    context.ReportDiagnostic(
-                        attributeData.CreateDiagnostic(
-                            NativeTypeMustHaveCustomTypeMarshallerAttributeRule,
-                            type.ToDisplayString()));
+                            managedType.ToDisplayString()));
                     return;
                 }
             }
@@ -846,7 +835,7 @@ namespace Microsoft.Interop.Analyzers
                             type.ToDisplayString()));
                 }
 
-                if (SymbolEqualityComparer.Default.Equals(ManualTypeMarshallingHelper.GetDefaultMarshallerInfo(type).marshallerType, marshallerType)
+                if (SymbolEqualityComparer.Default.Equals(ManualTypeMarshallingHelper.GetDefaultMarshallerEntryType(type).entryType, marshallerType)
                     && ManualTypeMarshallingHelper.FindGetPinnableReference(type) is IMethodSymbol managedGetPinnableReferenceMethod)
                 {
                     if (!managedGetPinnableReferenceMethod.ReturnType.IsConsideredBlittable())

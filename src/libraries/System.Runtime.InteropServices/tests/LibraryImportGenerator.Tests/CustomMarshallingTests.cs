@@ -43,13 +43,13 @@ namespace LibraryImportGenerator.IntegrationTests
             [return: MarshalUsing(typeof(IntGuaranteedUnmarshal))]
             public static partial int GuaranteedUnmarshal([MarshalUsing(typeof(ExceptionOnUnmarshal))] out int ret);
 
-            [ManagedToUnmanagedMarshallers(typeof(int))]
+            [CustomMarshaller(typeof(int), Scenario.ManagedToUnmanagedIn, typeof(ExceptionOnUnmarshal))]
             public static class ExceptionOnUnmarshal
             {
                 public static int ConvertToManaged(int unmanaged) => throw new Exception();
             }
 
-            [ManagedToUnmanagedMarshallers(typeof(int))]
+            [CustomMarshaller(typeof(int), Scenario.Default, typeof(IntGuaranteedUnmarshal))]
             public static unsafe class IntGuaranteedUnmarshal
             {
                 public static bool ConvertToManagedGuaranteedCalled = false;
