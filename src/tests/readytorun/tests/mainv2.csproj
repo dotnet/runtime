@@ -106,7 +106,7 @@ then
 fi
 
 # NOTE THAT THIS IS WHERE WE BUILD THE R2R IMAGE using V2 of test not V1
-$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll --map -r:$CORE_ROOT/*.dll -r:`pwd`/IL_DLLS/fieldgetter.dll -r:`pwd`/IL_DLLS/mainv2.dll -o:`pwd`/test.dll `pwd`/../testv2/test/test.dll
+$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll --map -r:$CORE_ROOT/*.dll -r:IL_DLLS/fieldgetter.dll -r:IL_DLLS/mainv2.dll -o:test.dll ../testv2/test/test.dll
 
 __cgExitCode=$?
 if [ $__cgExitCode -ne 0 ]
@@ -120,7 +120,7 @@ then
   exit 1
 fi
 
-$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll --map -r:$CORE_ROOT/*.dll -r:`pwd`/../testv1/test/test.dll -r:`pwd`/IL_DLLS/mainv2.dll -o:`pwd`/fieldgetter.dll `pwd`/IL_DLLS/fieldgetter.dll
+$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll --map -r:$CORE_ROOT/*.dll -r:../testv1/test/test.dll -r:IL_DLLS/mainv2.dll -o:fieldgetter.dll IL_DLLS/fieldgetter.dll
 
 __cgExitCode=$?
 if [ $__cgExitCode -ne 0 ]
@@ -134,7 +134,7 @@ then
   exit 1
 fi
 
-$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll --map -r:`pwd`/../testv1/test/test.dll -r:`pwd`/IL_DLLS/fieldgetter.dll -o:`pwd`/mainv2.dll `pwd`/IL_DLLS/mainv2.dll
+$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll --map -r:$CORE_ROOT/*.dll -r:../testv1/test/test.dll -r:IL_DLLS/fieldgetter.dll -o:mainv2.dll IL_DLLS/mainv2.dll
 
 __cgExitCode=$?
 if [ $__cgExitCode -ne 0 ]
