@@ -407,7 +407,57 @@ inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc)
 
 #if defined(HOST_ARM64)
 
-#ifndef TARGET_OSX
+#if defined(TARGET_FREEBSD)
+
+#define MCREG_X0(mc)  (mc.mc_gpregs.gp_x[0])
+#define MCREG_X1(mc)  (mc.mc_gpregs.gp_x[1])
+#define MCREG_X2(mc)  (mc.mc_gpregs.gp_x[2])
+#define MCREG_X3(mc)  (mc.mc_gpregs.gp_x[3])
+#define MCREG_X4(mc)  (mc.mc_gpregs.gp_x[4])
+#define MCREG_X5(mc)  (mc.mc_gpregs.gp_x[5])
+#define MCREG_X6(mc)  (mc.mc_gpregs.gp_x[6])
+#define MCREG_X7(mc)  (mc.mc_gpregs.gp_x[7])
+#define MCREG_X8(mc)  (mc.mc_gpregs.gp_x[8])
+#define MCREG_X9(mc)  (mc.mc_gpregs.gp_x[9])
+#define MCREG_X10(mc) (mc.mc_gpregs.gp_x[10])
+#define MCREG_X11(mc) (mc.mc_gpregs.gp_x[11])
+#define MCREG_X12(mc) (mc.mc_gpregs.gp_x[12])
+#define MCREG_X13(mc) (mc.mc_gpregs.gp_x[13])
+#define MCREG_X14(mc) (mc.mc_gpregs.gp_x[14])
+#define MCREG_X15(mc) (mc.mc_gpregs.gp_x[15])
+#define MCREG_X16(mc) (mc.mc_gpregs.gp_x[16])
+#define MCREG_X17(mc) (mc.mc_gpregs.gp_x[17])
+#define MCREG_X18(mc) (mc.mc_gpregs.gp_x[18])
+#define MCREG_X19(mc) (mc.mc_gpregs.gp_x[19])
+#define MCREG_X20(mc) (mc.mc_gpregs.gp_x[20])
+#define MCREG_X21(mc) (mc.mc_gpregs.gp_x[21])
+#define MCREG_X22(mc) (mc.mc_gpregs.gp_x[22])
+#define MCREG_X23(mc) (mc.mc_gpregs.gp_x[23])
+#define MCREG_X24(mc) (mc.mc_gpregs.gp_x[24])
+#define MCREG_X25(mc) (mc.mc_gpregs.gp_x[25])
+#define MCREG_X26(mc) (mc.mc_gpregs.gp_x[26])
+#define MCREG_X27(mc) (mc.mc_gpregs.gp_x[27])
+#define MCREG_X28(mc) (mc.mc_gpregs.gp_x[28])
+
+#define MCREG_Cpsr(mc) (mc.mc_fpregs.fp_sr)
+#define MCREG_Lr(mc)  (mc.mc_gpregs.gp_lr)
+#define MCREG_Sp(mc)  (mc.mc_gpregs.gp_sp)
+#define MCREG_Pc(mc)  (mc.mc_gpregs.gp_elr)
+#define MCREG_Fp(mc)  (mc.mc_gpregs.gp_x[29])
+
+inline
+struct fpregs* GetNativeSigSimdContext(native_context_t *mc)
+{
+        return &(mc->uc_mcontext.mc_fpregs);
+}
+
+inline
+const struct fpregs* GetConstNativeSigSimdContext(const native_context_t *mc)
+{
+        return GetNativeSigSimdContext(const_cast<native_context_t*>(mc));
+}
+
+#elif !defined(TARGET_OSX) // TARGET_FREEBSD
 
 #define MCREG_X0(mc)      ((mc).regs[0])
 #define MCREG_X1(mc)      ((mc).regs[1])
@@ -912,6 +962,8 @@ const VfpSigFrame* GetConstNativeSigSimdContext(const native_context_t *mc)
 
 #ifdef HOST_64BIT
 
+#ifdef HOST_AMD64
+
 #define BSDREG_Rbx(reg)     BSD_REGS_STYLE(reg,RBX,rbx)
 #define BSDREG_Rcx(reg)     BSD_REGS_STYLE(reg,RCX,rcx)
 #define BSDREG_Rdx(reg)     BSD_REGS_STYLE(reg,RDX,rdx)
@@ -932,6 +984,45 @@ const VfpSigFrame* GetConstNativeSigSimdContext(const native_context_t *mc)
 #define BSDREG_R14(reg)     BSD_REGS_STYLE(reg,R14,r14)
 #define BSDREG_R15(reg)     BSD_REGS_STYLE(reg,R15,r15)
 #define BSDREG_EFlags(reg)  BSD_REGS_STYLE(reg,RFLAGS,rflags)
+
+#elif defined(HOST_ARM64)
+
+#define BSDREG_X0(reg) BSD_REGS_STYLE(reg,X[0],x[0])
+#define BSDREG_X1(reg) BSD_REGS_STYLE(reg,X[1],x[1])
+#define BSDREG_X2(reg) BSD_REGS_STYLE(reg,X[2],x[2])
+#define BSDREG_X3(reg) BSD_REGS_STYLE(reg,X[3],x[3])
+#define BSDREG_X4(reg) BSD_REGS_STYLE(reg,X[4],x[4])
+#define BSDREG_X5(reg) BSD_REGS_STYLE(reg,X[5],x[5])
+#define BSDREG_X6(reg) BSD_REGS_STYLE(reg,X[6],x[6])
+#define BSDREG_X7(reg) BSD_REGS_STYLE(reg,X[7],x[7])
+#define BSDREG_X8(reg) BSD_REGS_STYLE(reg,X[8],x[8])
+#define BSDREG_X9(reg) BSD_REGS_STYLE(reg,X[9],x[9])
+#define BSDREG_X10(reg) BSD_REGS_STYLE(reg,X[10],x[10])
+#define BSDREG_X11(reg) BSD_REGS_STYLE(reg,X[11],x[11])
+#define BSDREG_X12(reg) BSD_REGS_STYLE(reg,X[12],x[12])
+#define BSDREG_X13(reg) BSD_REGS_STYLE(reg,X[13],x[13])
+#define BSDREG_X14(reg) BSD_REGS_STYLE(reg,X[14],x[14])
+#define BSDREG_X15(reg) BSD_REGS_STYLE(reg,X[15],x[15])
+#define BSDREG_X16(reg) BSD_REGS_STYLE(reg,X[16],x[16])
+#define BSDREG_X17(reg) BSD_REGS_STYLE(reg,X[17],x[17])
+#define BSDREG_X18(reg) BSD_REGS_STYLE(reg,X[18],x[18])
+#define BSDREG_X19(reg) BSD_REGS_STYLE(reg,X[19],x[19])
+#define BSDREG_X20(reg) BSD_REGS_STYLE(reg,X[20],x[20])
+#define BSDREG_X21(reg) BSD_REGS_STYLE(reg,X[21],x[21])
+#define BSDREG_X22(reg) BSD_REGS_STYLE(reg,X[22],x[22])
+#define BSDREG_X23(reg) BSD_REGS_STYLE(reg,X[23],x[23])
+#define BSDREG_X24(reg) BSD_REGS_STYLE(reg,X[24],x[24])
+#define BSDREG_X25(reg) BSD_REGS_STYLE(reg,X[25],x[25])
+#define BSDREG_X26(reg) BSD_REGS_STYLE(reg,X[26],x[26])
+#define BSDREG_X27(reg) BSD_REGS_STYLE(reg,X[27],x[27])
+#define BSDREG_X28(reg) BSD_REGS_STYLE(reg,X[28],x[28])
+#define BSDREG_Pc(reg) BSD_REGS_STYLE(reg,Elr,elr)
+#define BSDREG_Fp(reg) BSD_REGS_STYLE(reg,X[29],x[29])
+#define BSDREG_Sp(reg) BSD_REGS_STYLE(reg,Sp,sp)
+#define BSDREG_Lr(reg) BSD_REGS_STYLE(reg,Lr,lr)
+#define BSDREG_Cpsr(reg) BSD_REGS_STYLE(reg,Spsr,spsr)
+
+#endif // HOST_AMD64
 
 #else // HOST_64BIT
 

@@ -173,6 +173,42 @@ enum
     ASSIGN_REG(R29)        \
     ASSIGN_REG(R30)        \
     ASSIGN_REG(R31)        
+#elif (defined(HOST_ARM64) && defined(TARGET_FREEBSD))
+#define ASSIGN_UNWIND_REGS \
+    ASSIGN_REG(X0) \
+    ASSIGN_REG(X1) \
+    ASSIGN_REG(X2) \
+    ASSIGN_REG(X3) \
+    ASSIGN_REG(X4) \
+    ASSIGN_REG(X5) \
+    ASSIGN_REG(X6) \
+    ASSIGN_REG(X7) \
+    ASSIGN_REG(X8) \
+    ASSIGN_REG(X9) \
+    ASSIGN_REG(X10) \
+    ASSIGN_REG(X11) \
+    ASSIGN_REG(X12) \
+    ASSIGN_REG(X13) \
+    ASSIGN_REG(X14) \
+    ASSIGN_REG(X15) \
+    ASSIGN_REG(X16) \
+    ASSIGN_REG(X17) \
+    ASSIGN_REG(X18) \
+    ASSIGN_REG(X19) \
+    ASSIGN_REG(X20) \
+    ASSIGN_REG(X21) \
+    ASSIGN_REG(X22) \
+    ASSIGN_REG(X23) \
+    ASSIGN_REG(X24) \
+    ASSIGN_REG(X25) \
+    ASSIGN_REG(X26) \
+    ASSIGN_REG(X27) \
+    ASSIGN_REG(X28) \
+    ASSIGN_REG(Lr) \
+    ASSIGN_REG(Sp) \
+    ASSIGN_REG(Pc) \
+    ASSIGN_REG(Fp) \
+    ASSIGN_REG(Cpsr)
 #else
 #error unsupported architecture
 #endif

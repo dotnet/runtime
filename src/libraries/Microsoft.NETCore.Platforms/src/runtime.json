@@ -1226,6 +1226,12 @@
         "unix-x64"
       ]
     },
+    "freebsd-arm64": {
+      "#import": [
+        "freebsd",
+        "unix-arm64"
+      ]
+    },
     "freebsd.12": {
       "#import": [
         "freebsd"
@@ -1237,6 +1243,12 @@
         "freebsd-x64"
       ]
     },
+    "freebsd.12-arm64": {
+      "#import": [
+        "freebsd.12",
+        "freebsd-arm64"
+      ]
+    },
     "freebsd.13": {
       "#import": [
         "freebsd.12"
@@ -1246,6 +1258,12 @@
       "#import": [
         "freebsd.13",
         "freebsd.12-x64"
+      ]
+    },
+    "freebsd.13-arm64": {
+      "#import": [
+        "freebsd.13",
+        "freebsd.12-arm64"
       ]
     },
     "gentoo": {

@@ -596,6 +596,17 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
         {
             *(NEON128*) &fp->__v[i] = lpContext->V[i];
         }
+#elif defined(TARGET_FREEBSD)
+        struct fpregs* fp = GetNativeSigSimdContext(native);
+        if (fp)
+        {
+            fp->fp_sr = lpContext->Fpsr;
+            fp->fp_cr = lpContext->Fpcr;
+            for (int i = 0; i < 32; i++)
+            {
+                *(NEON128*) &fp->fp_q[i] = lpContext->V[i];
+            }
+        }
 #else // TARGET_OSX
         fpsimd_context* fp = GetNativeSigSimdContext(native);
         if (fp)
@@ -739,6 +750,17 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
         for (int i = 0; i < 32; i++)
         {
             lpContext->V[i] = *(NEON128*) &fp->__v[i];
+        }
+#elif defined(TARGET_FREEBSD)
+        const struct fpregs* fp = GetConstNativeSigSimdContext(native);
+        if (fp)
+        {
+            lpContext->Fpsr = fp->fp_sr;
+            lpContext->Fpcr = fp->fp_cr;
+            for (int i = 0; i < 32; i++)
+            {
+                lpContext->V[i] = *(NEON128*) &fp->fp_q[i];
+            }
         }
 #else // TARGET_OSX
         const fpsimd_context* fp = GetConstNativeSigSimdContext(native);
