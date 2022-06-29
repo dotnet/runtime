@@ -37,6 +37,8 @@ class InheritingFromGrowingBase : GrowingBase
     public int x;
 }
 
+struct LocallyDefinedStructure {}
+
 
 static class OpenClosedDelegateExtension
 {
@@ -422,8 +424,16 @@ class Program
         Assert.AreEqual(assembly2.FullName, assembly1.FullName);
     }
 
-    static void RunAllTests()
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    static void TestILBodyChange()
     {
+        int actualMethodCallResult = (int)typeof(ILInliningTest).GetMethod("TestDifferentIntValue").Invoke(null, new object[]{});
+        Console.WriteLine(actualMethodCallResult);
+        Assert.AreEqual(ILInliningTest.TestDifferentIntValue(), actualMethodCallResult);
+    }
+
+    static void RunAllTests()
+    {/*
         TestVirtualMethodCalls();
         TestMovedVirtualMethods();
 
@@ -476,6 +486,10 @@ class Program
         RVAFieldTest();
 
         TestLoadR2RImageFromByteArray();
+
+        TestILBodyChange();
+*/
+        ILInliningVersioningTest<LocallyDefinedStructure>.RunAllTests(typeof(Program).Assembly);
     }
 
     static int Main()

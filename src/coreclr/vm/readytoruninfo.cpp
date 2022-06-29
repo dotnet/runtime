@@ -617,7 +617,7 @@ ReadyToRunInfo* s_pGlobalR2RModules = NULL;
 PTR_ReadyToRunInfo ReadyToRunInfo::GetUnrelatedR2RModules() { return s_pGlobalR2RModules; }
 void ReadyToRunInfo::RegisterUnrelatedR2RModule()
 {
-    STANDARD_VM_CONTRACT;
+    LIMITED_METHOD_CONTRACT; // This function takes no locks, and can never fail
 
     if (m_pNativeImage == NULL)
     {

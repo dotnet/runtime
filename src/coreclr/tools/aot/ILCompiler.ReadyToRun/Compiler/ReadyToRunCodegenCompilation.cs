@@ -769,7 +769,16 @@ namespace ILCompiler
             }
         }
 
-        public ISymbolNode GetFieldRvaData(FieldDesc field) => NodeFactory.CopiedFieldRva(field);
+        public ISymbolNode GetFieldRvaData(FieldDesc field)
+        {
+            if (!CompilationModuleGroup.ContainsType(field.OwningType.GetTypeDefinition()))
+            {
+                // TODO: cross-bubble RVA field
+                throw new RequiresRuntimeJitException($"GetFieldRvaData({field})");
+            }
+
+            return NodeFactory.CopiedFieldRva(field);
+        }
 
         public override void Dispose()
         {

@@ -474,6 +474,21 @@ namespace Internal.JitInterface
             }
         }
 
+        // At the moment, cross module code embedding does not support embedding cross module references within the EH clauses of a method
+        // Obviously this could be fixed, but it is not necessary to demonstrate significant value from the feature as written now.
+        private static bool FunctionHasNonReferenceableTypedILCatchClause(MethodIL methodIL, CompilationModuleGroup compilationGroup)
+        {
+            if (!compilationGroup.VersionsWithMethodBody(methodIL.OwningMethod.GetTypicalMethodDefinition()))
+            {
+                foreach (var clause in methodIL.GetExceptionRegions())
+                {
+                    if (clause.Kind == ILExceptionRegionKind.Catch)
+                        return true;
+                }
+            }
+            return false;
+        }
+
         public static bool IsMethodCompilable(Compilation compilation, MethodDesc method)
         {
             // This logic must mirror the logic in CompileMethod used to get to the point of calling CompileMethodInternal
@@ -485,6 +500,9 @@ namespace Internal.JitInterface
                 return false;
 
             if (FunctionJustThrows(methodIL))
+                return false;
+
+            if (FunctionHasNonReferenceableTypedILCatchClause(methodIL, compilation.NodeFactory.CompilationModuleGroup))
                 return false;
 
             return true;
@@ -522,6 +540,13 @@ namespace Internal.JitInterface
                 {
                     if (logger.IsVerbose)
                         logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` was not compiled because it always throws an exception");
+                    return;
+                }
+
+                if (FunctionHasNonReferenceableTypedILCatchClause(methodIL, _compilation.NodeFactory.CompilationModuleGroup))
+                {
+                    if (logger.IsVerbose)
+                        logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` was not compiled because it has a non referenceable catch clause");
                     return;
                 }
 
