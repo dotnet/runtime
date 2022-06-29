@@ -6,7 +6,6 @@ using System.IO;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
-using System.Threading.Tasks;
 
 #nullable enable
 
@@ -42,6 +41,8 @@ namespace Wasm.Build.Tests
                             TargetFramework: "net7.0"
                         ));
 
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true);
+
             if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
                 throw new XunitException($"Test bug: could not get the build product in the cache");
 
@@ -61,6 +62,8 @@ namespace Wasm.Build.Tests
                             Publish: true,
                             TargetFramework: "net7.0",
                             UseCache: false));
+
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking);
         }
 
         [Theory]
@@ -86,6 +89,8 @@ namespace Wasm.Build.Tests
                         TargetFramework: "net7.0"
                         ));
 
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true);
+
             (int exitCode, string output) = RunProcess(s_buildEnv.DotNet, _testOutput, args: $"run --no-build -c {config}", workingDir: _projectDir);
             Assert.Equal(0, exitCode);
             Assert.Contains("Hello, Console!", output);
@@ -108,6 +113,8 @@ namespace Wasm.Build.Tests
                             Publish: true,
                             TargetFramework: "net7.0",
                             UseCache: false));
+
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking);
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
@@ -140,6 +147,8 @@ namespace Wasm.Build.Tests
                             Publish: false,
                             TargetFramework: "net7.0"
                             ));
+
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true);
 
             (int exitCode, string output) = RunProcess(s_buildEnv.DotNet, _testOutput, args: $"run --no-build -c {config} x y z", workingDir: _projectDir);
             Assert.Equal(0, exitCode);
@@ -184,6 +193,8 @@ namespace Wasm.Build.Tests
                             Publish: true,
                             TargetFramework: "net7.0",
                             UseCache: false));
+
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking);
 
             // FIXME: pass envvars via the environment, once that is supported
             string runArgs = $"run --no-build -c {config}";

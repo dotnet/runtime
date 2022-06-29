@@ -549,6 +549,11 @@ namespace Wasm.Build.Tests
                        same: fromRuntimePack);
         }
 
+        protected static void AssertDotNetJsSymbols(string bundleDir, bool fromRuntimePack)
+            => AssertFile(Path.Combine(s_buildEnv.RuntimeNativeDir, "dotnet.js.symbols"),
+                            Path.Combine(bundleDir, "dotnet.js.symbols"),
+                            same: fromRuntimePack);
+
         protected static void AssertFilesDontExist(string dir, string[] filenames, string? label = null)
             => AssertFilesExist(dir, filenames, label, expectToExist: false);
 
