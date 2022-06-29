@@ -14,6 +14,11 @@ namespace System.Formats.Tar
     /// </summary>
     public static class TarFile
     {
+        // Windows' MaxPath (260) is used as an arbitrary default capacity, as it is likely
+        // to be greater than the length of typical entry names from the file system, even
+        // on non-Windows platforms. The capacity will be increased, if needed.
+        private const int DefaultCapacity = 260;
+
         /// <summary>
         /// Creates a tar stream that contains all the filesystem entries from the specified directory.
         /// </summary>
@@ -270,26 +275,14 @@ namespace System.Formats.Tar
         // It assumes the sourceDirectoryName is a fully qualified path, and allows choosing if the archive stream should be left open or not.
         private static void CreateFromDirectoryInternal(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, bool leaveOpen)
         {
-            Debug.Assert(!string.IsNullOrEmpty(sourceDirectoryName));
-            Debug.Assert(destination != null);
-            Debug.Assert(Path.IsPathFullyQualified(sourceDirectoryName));
-            Debug.Assert(destination.CanWrite);
+            Debug.Assert(VerifyCreateFromDirectoryArguments(sourceDirectoryName, destination));
 
             using (TarWriter writer = new TarWriter(destination, TarEntryFormat.Pax, leaveOpen))
             {
                 bool baseDirectoryIsEmpty = true;
                 DirectoryInfo di = new(sourceDirectoryName);
-                string basePath = di.FullName;
+                string basePath = GetBasePathForCreateFromDirectory(di, includeBaseDirectory);
 
-                if (includeBaseDirectory && di.Parent != null)
-                {
-                    basePath = di.Parent.FullName;
-                }
-
-                // Windows' MaxPath (260) is used as an arbitrary default capacity, as it is likely
-                // to be greater than the length of typical entry names from the file system, even
-                // on non-Windows platforms. The capacity will be increased, if needed.
-                const int DefaultCapacity = 260;
                 char[] entryNameBuffer = ArrayPool<char>.Shared.Rent(DefaultCapacity);
 
                 try
@@ -297,20 +290,12 @@ namespace System.Formats.Tar
                     foreach (FileSystemInfo file in di.EnumerateFileSystemInfos("*", SearchOption.AllDirectories))
                     {
                         baseDirectoryIsEmpty = false;
-
-                        int entryNameLength = file.FullName.Length - basePath.Length;
-                        Debug.Assert(entryNameLength > 0);
-
-                        bool isDirectory = file.Attributes.HasFlag(FileAttributes.Directory);
-                        string entryName = ArchivingUtils.EntryFromPath(file.FullName, basePath.Length, entryNameLength, ref entryNameBuffer, appendPathSeparator: isDirectory);
-                        writer.WriteEntry(file.FullName, entryName);
+                        writer.WriteEntry(file.FullName, GetEntryNameForFileSystemInfo(file, basePath.Length, ref entryNameBuffer));
                     }
 
                     if (includeBaseDirectory && baseDirectoryIsEmpty)
                     {
-                        string entryName = ArchivingUtils.EntryFromPath(di.Name, 0, di.Name.Length, ref entryNameBuffer, appendPathSeparator: true);
-                        PaxTarEntry entry = new PaxTarEntry(TarEntryType.Directory, entryName);
-                        writer.WriteEntry(entry);
+                        writer.WriteEntry(GetEntryForBaseDirectory(di.Name, ref entryNameBuffer));
                     }
                 }
                 finally
@@ -346,11 +331,7 @@ namespace System.Formats.Tar
         // It assumes the sourceDirectoryName is a fully qualified path, and allows choosing if the archive stream should be left open or not.
         private static async Task CreateFromDirectoryInternalAsync(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, bool leaveOpen, CancellationToken cancellationToken)
         {
-            Debug.Assert(!string.IsNullOrEmpty(sourceDirectoryName));
-            Debug.Assert(destination != null);
-            Debug.Assert(Path.IsPathFullyQualified(sourceDirectoryName));
-            Debug.Assert(destination.CanWrite);
-
+            Debug.Assert(VerifyCreateFromDirectoryArguments(sourceDirectoryName, destination));
             cancellationToken.ThrowIfCancellationRequested();
 
             TarWriter writer = new TarWriter(destination, TarEntryFormat.Pax, leaveOpen);
@@ -358,17 +339,8 @@ namespace System.Formats.Tar
             {
                 bool baseDirectoryIsEmpty = true;
                 DirectoryInfo di = new(sourceDirectoryName);
-                string basePath = di.FullName;
+                string basePath = GetBasePathForCreateFromDirectory(di, includeBaseDirectory);
 
-                if (includeBaseDirectory && di.Parent != null)
-                {
-                    basePath = di.Parent.FullName;
-                }
-
-                // Windows' MaxPath (260) is used as an arbitrary default capacity, as it is likely
-                // to be greater than the length of typical entry names from the file system, even
-                // on non-Windows platforms. The capacity will be increased, if needed.
-                const int DefaultCapacity = 260;
                 char[] entryNameBuffer = ArrayPool<char>.Shared.Rent(DefaultCapacity);
 
                 try
@@ -376,20 +348,12 @@ namespace System.Formats.Tar
                     foreach (FileSystemInfo file in di.EnumerateFileSystemInfos("*", SearchOption.AllDirectories))
                     {
                         baseDirectoryIsEmpty = false;
-
-                        int entryNameLength = file.FullName.Length - basePath.Length;
-                        Debug.Assert(entryNameLength > 0);
-
-                        bool isDirectory = file.Attributes.HasFlag(FileAttributes.Directory);
-                        string entryName = ArchivingUtils.EntryFromPath(file.FullName, basePath.Length, entryNameLength, ref entryNameBuffer, appendPathSeparator: isDirectory);
-                        await writer.WriteEntryAsync(file.FullName, entryName, cancellationToken).ConfigureAwait(false);
+                        await writer.WriteEntryAsync(file.FullName, GetEntryNameForFileSystemInfo(file, basePath.Length, ref entryNameBuffer), cancellationToken).ConfigureAwait(false);
                     }
 
                     if (includeBaseDirectory && baseDirectoryIsEmpty)
                     {
-                        string entryName = ArchivingUtils.EntryFromPath(di.Name, 0, di.Name.Length, ref entryNameBuffer, appendPathSeparator: true);
-                        PaxTarEntry entry = new PaxTarEntry(TarEntryType.Directory, entryName);
-                        await writer.WriteEntryAsync(entry, cancellationToken).ConfigureAwait(false);
+                        await writer.WriteEntryAsync(GetEntryForBaseDirectory(di.Name, ref entryNameBuffer), cancellationToken).ConfigureAwait(false);
                     }
                 }
                 finally
@@ -399,14 +363,41 @@ namespace System.Formats.Tar
             }
         }
 
+        // Determines what should be the base path for all the entries when creating an archive.
+        private static string GetBasePathForCreateFromDirectory(DirectoryInfo di, bool includeBaseDirectory)
+        {
+            string basePath = di.FullName;
+
+            if (includeBaseDirectory && di.Parent != null)
+            {
+                basePath = di.Parent.FullName;
+            }
+
+            return basePath;
+        }
+
+        // Constructs the entry name used for a filesystem entry when creating an archive.
+        private static string GetEntryNameForFileSystemInfo(FileSystemInfo file, int basePathLength, ref char[] entryNameBuffer)
+        {
+            int entryNameLength = file.FullName.Length - basePathLength;
+            Debug.Assert(entryNameLength > 0);
+
+            bool isDirectory = file.Attributes.HasFlag(FileAttributes.Directory);
+            return ArchivingUtils.EntryFromPath(file.FullName, basePathLength, entryNameLength, ref entryNameBuffer, appendPathSeparator: isDirectory);
+        }
+
+        // Constructs a PaxTarEntry for a base directory entry when creating an archive.
+        private static PaxTarEntry GetEntryForBaseDirectory(string name, ref char[] entryNameBuffer)
+        {
+            string entryName = ArchivingUtils.EntryFromPath(name, 0, name.Length, ref entryNameBuffer, appendPathSeparator: true);
+            return new PaxTarEntry(TarEntryType.Directory, entryName);
+        }
+
         // Extracts an archive into the specified directory.
         // It assumes the destinationDirectoryName is a fully qualified path, and allows choosing if the archive stream should be left open or not.
         private static void ExtractToDirectoryInternal(Stream source, string destinationDirectoryPath, bool overwriteFiles, bool leaveOpen)
         {
-            Debug.Assert(source != null);
-            Debug.Assert(!string.IsNullOrEmpty(destinationDirectoryPath));
-            Debug.Assert(Path.IsPathFullyQualified(destinationDirectoryPath));
-            Debug.Assert(source.CanRead);
+            Debug.Assert(ValidateExtractToDirectoryArguments(source, destinationDirectoryPath));
 
             using TarReader reader = new TarReader(source, leaveOpen);
 
@@ -445,11 +436,7 @@ namespace System.Formats.Tar
         // It assumes the destinationDirectoryName is a fully qualified path, and allows choosing if the archive stream should be left open or not.
         private static async Task ExtractToDirectoryInternalAsync(Stream source, string destinationDirectoryPath, bool overwriteFiles, bool leaveOpen, CancellationToken cancellationToken)
         {
-            Debug.Assert(source != null);
-            Debug.Assert(!string.IsNullOrEmpty(destinationDirectoryPath));
-            Debug.Assert(Path.IsPathFullyQualified(destinationDirectoryPath));
-            Debug.Assert(source.CanRead);
-
+            Debug.Assert(ValidateExtractToDirectoryArguments(source, destinationDirectoryPath));
             cancellationToken.ThrowIfCancellationRequested();
 
             TarReader reader = new TarReader(source, leaveOpen);
@@ -464,6 +451,24 @@ namespace System.Formats.Tar
                     }
                 }
             }
+        }
+
+        private static bool VerifyCreateFromDirectoryArguments(string sourceDirectoryName, Stream destination)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(sourceDirectoryName));
+            Debug.Assert(destination != null);
+            Debug.Assert(Path.IsPathFullyQualified(sourceDirectoryName));
+            Debug.Assert(destination.CanWrite);
+            return true;
+        }
+
+        private static bool ValidateExtractToDirectoryArguments(Stream source, string destinationDirectoryPath)
+        {
+            Debug.Assert(source != null);
+            Debug.Assert(!string.IsNullOrEmpty(destinationDirectoryPath));
+            Debug.Assert(Path.IsPathFullyQualified(destinationDirectoryPath));
+            Debug.Assert(source.CanRead);
+            return true;
         }
     }
 }
