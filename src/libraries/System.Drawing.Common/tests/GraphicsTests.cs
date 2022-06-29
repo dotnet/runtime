@@ -12,7 +12,7 @@ namespace System.Drawing.Tests
 {
     public partial class GraphicsTests
     {
-        public static bool IsWindows7OrWindowsArm64 => PlatformDetection.IsWindows7 || (PlatformDetection.IsWindows && PlatformDetection.IsArm64);
+        public static bool IsWindows7OrWindowsArm64 => PlatformDetection.IsWindows7 || (PlatformDetection.IsWindows && PlatformDetection.IsArm64Process);
         
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetHdc_FromHdc_Roundtrips()
