@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -11,6 +12,14 @@ namespace System.Formats.Tar.Tests
 {
     public class TarFile_CreateFromDirectoryAsync_File_Tests : TarTestsBase
     {
+        [Fact]
+        public Task CreateFromDirectoryAsync_Cancel()
+        {
+            CancellationTokenSource cs = new CancellationTokenSource();
+            cs.Cancel();
+            return Assert.ThrowsAsync<TaskCanceledException>(() => TarFile.CreateFromDirectoryAsync("directory", "file.tar", includeBaseDirectory: false, cs.Token));
+        }
+
         [Fact]
         public async Task InvalidPaths_Throw_Async()
         {

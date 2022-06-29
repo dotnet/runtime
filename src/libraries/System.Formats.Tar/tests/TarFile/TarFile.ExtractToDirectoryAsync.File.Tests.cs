@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -10,6 +11,14 @@ namespace System.Formats.Tar.Tests
 {
     public partial class TarFile_ExtractToDirectoryAsync_File_Tests : TarTestsBase
     {
+        [Fact]
+        public Task ExtractToDirectoryAsync_Cancel()
+        {
+            CancellationTokenSource cs = new CancellationTokenSource();
+            cs.Cancel();
+            return Assert.ThrowsAsync<TaskCanceledException>(() => TarFile.ExtractToDirectoryAsync("file.tar", "directory", overwriteFiles: true, cs.Token));
+        }
+
         [Fact]
         public async Task InvalidPaths_Throw()
         {

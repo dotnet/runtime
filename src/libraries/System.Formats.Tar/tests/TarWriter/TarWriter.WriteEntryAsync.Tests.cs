@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -11,6 +12,28 @@ namespace System.Formats.Tar.Tests
     // Tests that are independent of the archive format.
     public class TarWriter_WriteEntryAsync_Tests : TarWriter_WriteEntry_Base
     {
+        [Theory]
+        [InlineData(TarEntryFormat.V7)]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public async Task WriteEntryAsync_Cancel(TarEntryFormat format)
+        {
+            CancellationTokenSource cs = new CancellationTokenSource();
+            cs.Cancel();
+            MemoryStream archiveStream = new MemoryStream();
+            await using (archiveStream)
+            {
+                TarWriter writer = new TarWriter(archiveStream, leaveOpen: false);
+                await using (writer)
+                {
+                    TarEntry entry = InvokeTarEntryCreationConstructor(format, TarEntryType.Directory, "dir");
+                    await Assert.ThrowsAsync<TaskCanceledException>(() => writer.WriteEntryAsync(entry, cs.Token));
+                    await Assert.ThrowsAsync<TaskCanceledException>(() => writer.WriteEntryAsync("file.txt", "file.txt", cs.Token));
+                }
+            }
+        }
+
         [Fact]
         public async Task WriteEntry_AfterDispose_Throws_Async()
         {

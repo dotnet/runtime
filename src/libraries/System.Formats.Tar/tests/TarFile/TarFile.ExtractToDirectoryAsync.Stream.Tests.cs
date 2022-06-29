@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -11,6 +12,15 @@ namespace System.Formats.Tar.Tests
 {
     public class TarFile_ExtractToDirectoryAsync_Stream_Tests : TarTestsBase
     {
+        [Fact]
+        public Task ExtractToDirectoryAsync_Cancel()
+        {
+            CancellationTokenSource cs = new CancellationTokenSource();
+            cs.Cancel();
+            MemoryStream archiveStream = new MemoryStream();
+            return Assert.ThrowsAsync<TaskCanceledException>(() => TarFile.ExtractToDirectoryAsync(archiveStream, "directory", overwriteFiles: true, cs.Token));
+        }
+
         [Fact]
         public async Task NullStream_Throws_Async()
         {

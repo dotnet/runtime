@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -9,6 +10,23 @@ namespace System.Formats.Tar.Tests
 {
     public class TarReader_GetNextEntryAsync_Tests : TarTestsBase
     {
+        [Fact]
+        public async Task GetNextEntryAsync_Cancel()
+        {
+            CancellationTokenSource cs = new CancellationTokenSource();
+            cs.Cancel();
+            MemoryStream archiveStream = new MemoryStream();
+            await using (archiveStream)
+            {
+                TarReader reader = new TarReader(archiveStream, leaveOpen: false);
+                await using (reader)
+                {
+                    await Assert.ThrowsAsync<TaskCanceledException>(async () => await reader.GetNextEntryAsync(copyData: false, cs.Token));
+                }
+            }
+        }
+
+
         [Fact]
         public async Task MalformedArchive_TooSmall_Async()
         {

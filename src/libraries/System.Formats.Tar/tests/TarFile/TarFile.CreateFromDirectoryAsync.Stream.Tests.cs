@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -9,6 +10,15 @@ namespace System.Formats.Tar.Tests
 {
     public class TarFile_CreateFromDirectoryAsync_Stream_Tests : TarTestsBase
     {
+        [Fact]
+        public Task CreateFromDirectoryAsync_Cancel()
+        {
+            CancellationTokenSource cs = new CancellationTokenSource();
+            cs.Cancel();
+            MemoryStream archiveStream = new MemoryStream();
+            return Assert.ThrowsAsync<TaskCanceledException>(() => TarFile.CreateFromDirectoryAsync("directory", archiveStream, includeBaseDirectory: false, cs.Token));
+        }
+
         [Fact]
         public async Task InvalidPath_Throws_Async()
         {
