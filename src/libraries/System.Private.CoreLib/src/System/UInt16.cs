@@ -374,7 +374,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
-        static ushort IBinaryNumber<ushort>.AllBitsSet => 0xFFFF;
+        static ushort IBinaryNumber<ushort>.AllBitsSet => ushort.MaxValue;
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(ushort value) => BitOperations.IsPow2((uint)value);

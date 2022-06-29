@@ -359,7 +359,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
-        static ulong IBinaryNumber<ulong>.AllBitsSet => 0xFFFFFFFFFFFFFFFF;
+        static ulong IBinaryNumber<ulong>.AllBitsSet => ulong.MaxValue;
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(ulong value) => BitOperations.IsPow2(value);

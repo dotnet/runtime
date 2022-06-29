@@ -548,7 +548,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
-        static double IBinaryNumber<double>.AllBitsSet => BitConverter.UInt64BitsToDouble(0xFFFFFFFFFFFFFFFF);
+        static double IBinaryNumber<double>.AllBitsSet => BitConverter.UInt64BitsToDouble(0xFFFF_FFFF_FFFF_FFFF);
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(double value)
