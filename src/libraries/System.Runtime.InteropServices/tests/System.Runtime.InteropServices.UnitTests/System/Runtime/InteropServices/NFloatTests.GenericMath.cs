@@ -220,17 +220,16 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public static void AllBitsSetTest()
         {
-            if (NFloat.Size == sizeof(float))
+            if (Environment.Is64BitProcess)
             {
-                Assert.Equal(0xFFFFFFFF, BitConverter.SingleToUInt32Bits((float)BinaryNumberHelper<NFloat>.AllBitsSet));
-                Assert.Equal((uint)0, (uint)(BitConverter.SingleToUInt32Bits((float)BinaryNumberHelper<NFloat>.AllBitsSet) + 1));
+                Assert.Equal(0xFFFF_FFFF_FFFF_FFFF, BitConverter.DoubleToUInt64Bits((double)BinaryNumberHelper<NFloat>.AllBitsSet));
+                Assert.Equal((ulong)0, (ulong)(BitConverter.DoubleToUInt64Bits((double)BinaryNumberHelper<NFloat>.AllBitsSet) + 1));
             }
             else
             {
-                Assert.Equal(0xFFFFFFFFFFFFFFFF, BitConverter.DoubleToUInt64Bits((double)BinaryNumberHelper<NFloat>.AllBitsSet));
-                Assert.Equal((ulong)0, (ulong)(BitConverter.DoubleToUInt64Bits((double)BinaryNumberHelper<NFloat>.AllBitsSet) + 1));
+                Assert.Equal(0xFFFF_FFFF, BitConverter.SingleToUInt32Bits((float)BinaryNumberHelper<NFloat>.AllBitsSet));
+                Assert.Equal((uint)0, (uint)(BitConverter.SingleToUInt32Bits((float)BinaryNumberHelper<NFloat>.AllBitsSet) + 1));
             }
-
         }
 
         [Fact]
