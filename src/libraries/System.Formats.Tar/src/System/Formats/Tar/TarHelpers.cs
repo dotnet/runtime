@@ -73,10 +73,7 @@ namespace System.Formats.Tar
             while (bytesToCopy > 0)
             {
                 int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToCopy);
-                if (origin.Read(buffer.AsSpan(0, currentLengthToRead)) != currentLengthToRead)
-                {
-                    throw new EndOfStreamException();
-                }
+                origin.ReadExactly(buffer.AsSpan(0, currentLengthToRead));
                 destination.Write(buffer.AsSpan(0, currentLengthToRead));
                 bytesToCopy -= currentLengthToRead;
             }
@@ -91,11 +88,7 @@ namespace System.Formats.Tar
             {
                 int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToCopy);
                 Memory<byte> memory = buffer.AsMemory(0, currentLengthToRead);
-                int bytesRead = await origin.ReadAsync(memory, cancellationToken).ConfigureAwait(false);
-                if (bytesRead != currentLengthToRead)
-                {
-                    throw new EndOfStreamException();
-                }
+                await origin.ReadExactlyAsync(buffer, 0, currentLengthToRead, cancellationToken).ConfigureAwait(false);
                 await destination.WriteAsync(memory, cancellationToken).ConfigureAwait(false);
                 bytesToCopy -= currentLengthToRead;
             }
