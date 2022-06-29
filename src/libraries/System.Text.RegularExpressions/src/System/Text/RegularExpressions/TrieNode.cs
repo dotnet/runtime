@@ -5,49 +5,6 @@ using System.Collections.Generic;
 
 namespace System.Text.RegularExpressions
 {
-    internal struct Trie
-    {
-        private readonly List<TrieNode> _nodes = new List<TrieNode>() { TrieNode.CreateRoot() };
-
-        public Trie() { }
-
-        public TrieNode this[int index] => _nodes[index];
-
-        public int Add(int nodeIndex, char c, bool isMatch)
-        {
-            TrieNode node = this[nodeIndex];
-            if (!node.Children.TryGetValue(c, out int nextNodeIndex))
-            {
-                nextNodeIndex = _nodes.Count;
-
-                TrieNode newNode = new TrieNode()
-                {
-                    Parent = nodeIndex,
-                    AccessingCharacter = c,
-                    Depth = node.Depth + 1,
-                    IsMatch = isMatch,
-#if DEBUG
-                    Path = node.Path + c
-#endif
-                };
-            }
-            else
-            {
-                this[nextNodeIndex].IsMatch |= isMatch;
-            }
-            return nextNodeIndex;
-        }
-
-        public int Add(int nodeIndex, string s, bool isMatch)
-        {
-            for (int i = 0; i < s.Length; i++)
-            {
-                nodeIndex = Add(nodeIndex, s[i], i == s.Length - 1 && isMatch);
-            }
-            return nodeIndex;
-        }
-    }
-
     internal sealed class TrieNode
     {
         public const int Root = 0;

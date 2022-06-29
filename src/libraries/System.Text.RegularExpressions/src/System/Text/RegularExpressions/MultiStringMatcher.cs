@@ -16,12 +16,7 @@ namespace System.Text.RegularExpressions
 
         private static Trie BuildTrie(ReadOnlySpan<string> words)
         {
-            Trie trie = new Trie();
-
-            for (int i = 0; i < words.Length; i++)
-            {
-                trie.Add(TrieNode.Root, words[i], true);
-            }
+            Trie trie = new Trie(words);
 
             BuildTrieLinks(trie);
 

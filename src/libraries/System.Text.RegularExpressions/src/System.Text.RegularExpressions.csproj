@@ -50,6 +50,7 @@
     <Compile Include="System\Text\RegularExpressions\RegexTreeAnalyzer.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexWriter.cs" />
     <Compile Include="System\Text\RegularExpressions\ThrowHelper.cs" />
+    <Compile Include="System\Text\RegularExpressions\Trie.cs" />
     <Compile Include="System\Text\RegularExpressions\TrieNode.cs" />
     <Compile Include="System\Text\RegularExpressions\ValueMatch.cs" />
     <!-- RegexOptions.Compiled -->
