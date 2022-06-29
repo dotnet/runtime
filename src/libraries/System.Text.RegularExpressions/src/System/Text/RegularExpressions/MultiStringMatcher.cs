@@ -7,23 +7,23 @@ namespace System.Text.RegularExpressions
 {
     internal sealed class MultiStringMatcher
     {
-        private readonly Trie _trie;
+        private readonly List<TrieNode> _trie;
 
         public MultiStringMatcher(ReadOnlySpan<string> words)
         {
             _trie = BuildTrie(words);
         }
 
-        private static Trie BuildTrie(ReadOnlySpan<string> words)
+        private static List<TrieNode> BuildTrie(ReadOnlySpan<string> words)
         {
-            Trie trie = new Trie(words);
+            List<TrieNode> trie = TrieBuilder.Create(words);
 
             BuildTrieLinks(trie);
 
             return trie;
         }
 
-        private static void BuildTrieLinks(Trie trie)
+        private static void BuildTrieLinks(List<TrieNode> trie)
         {
             Queue<int> vertexQueue = new Queue<int>();
             vertexQueue.Enqueue(TrieNode.Root);
@@ -38,7 +38,7 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        private static void CalculateSuffixAndDictionaryLinks(Trie trie, int vertex)
+        private static void CalculateSuffixAndDictionaryLinks(List<TrieNode> trie, int vertex)
         {
             TrieNode node = trie[vertex];
             if (vertex == TrieNode.Root)

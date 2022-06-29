@@ -3,15 +3,14 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System.Text.RegularExpressions
 {
-    internal struct Trie
+    internal struct TrieBuilder
     {
         private readonly List<TrieNode> _nodes = new List<TrieNode>() { TrieNode.CreateRoot() };
-
-        public int NodeCount => _nodes.Count;
 
         /// <summary>
         /// How many times the regex node traversal can branch.
@@ -34,45 +33,48 @@ namespace System.Text.RegularExpressions
         /// and <c>be</c>.</remarks>
         private const int SetLimit = 2;
 
-        public Trie() { }
+        public TrieBuilder() { }
 
         /// <summary>
         /// Creates a trie that matches <paramref name="words"/>.
         /// </summary>
-        public Trie(ReadOnlySpan<string> words)
+        public static List<TrieNode> Create(ReadOnlySpan<string> words)
         {
             Debug.Assert(!words.IsEmpty);
+
+            TrieBuilder builder = new TrieBuilder();
             for (int i = 0; i < words.Length; i++)
             {
-                int endNodeIndex = Add(TrieNode.Root, words[i]);
-                this[endNodeIndex].IsMatch = true;
+                int endNodeIndex = builder.Add(TrieNode.Root, words[i]);
+                builder._nodes[endNodeIndex].IsMatch = true;
             }
+
+            return builder._nodes;
         }
 
         /// <summary>
         /// Tries to create a trie from the leading fixed part of a <see cref="RegexNode"/>.
         /// </summary>
-        public static bool TryCreate(RegexNode regexNode, out Trie trie)
+        public static bool TryCreate(RegexNode regexNode, [NotNullWhen(true)] out List<TrieNode>? trie)
         {
             // RightToLeft is not supported.
             Debug.Assert((regexNode.Options & RegexOptions.RightToLeft) == 0);
 
-            trie = new Trie();
+            TrieBuilder builder = new TrieBuilder();
             int branchingDepth = 0;
-            NodeCollection matchNodes = trie.Add(new NodeCollection(TrieNode.Root), regexNode, ref branchingDepth, out _);
-            trie.AcceptMatches(matchNodes);
+            NodeCollection matchNodes = builder.Add(new NodeCollection(TrieNode.Root), regexNode, ref branchingDepth, out _);
+            builder.AcceptMatches(matchNodes);
 
             // If we still have one trie node -the root one-, the regex node has no fixed leading part
             // (i.e. it starts with (a)*) and we cannot make a trie.
-            if (trie.NodeCount == 1)
+            if (builder._nodes.Count == 1)
             {
                 trie = default;
                 return false;
             }
+            trie = builder._nodes;
             return true;
         }
-
-        public TrieNode this[int index] => _nodes[index];
 
         /// <summary>
         /// Marks all nodes in <paramref name="nodes"/> as matching.
@@ -82,7 +84,7 @@ namespace System.Text.RegularExpressions
             int count = nodes.Count;
             for (int i = 0; i < count; i++)
             {
-                this[nodes[i]].IsMatch = true;
+                _nodes[nodes[i]].IsMatch = true;
             }
         }
 
@@ -96,7 +98,7 @@ namespace System.Text.RegularExpressions
         /// <paramref name="state"/>, and returns a new node index. Typically it would call either
         /// <see cref="Add(int, char)"/> or <see cref="Add(int, string)"/>.</param>
         /// <returns></returns>
-        private NodeCollection AddOneToOneHelper<T>(NodeCollection nodes, T state, Func<Trie, int, T, int> func)
+        private NodeCollection AddOneToOneHelper<T>(NodeCollection nodes, T state, Func<TrieBuilder, int, T, int> func)
         {
             int count = nodes.Count;
             switch (count)
@@ -138,10 +140,10 @@ namespace System.Text.RegularExpressions
         /// leads to, at <paramref name="c"/>.</returns>
         private int Add(int nodeIndex, char c)
         {
-            TrieNode node = this[nodeIndex];
+            TrieNode node = _nodes[nodeIndex];
             if (!node.Children.TryGetValue(c, out int nextNodeIndex))
             {
-                nextNodeIndex = NodeCount;
+                nextNodeIndex = _nodes.Count;
 
                 TrieNode newNode = new TrieNode()
                 {
