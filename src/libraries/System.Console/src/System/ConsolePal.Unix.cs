@@ -842,55 +842,13 @@ namespace System
         /// <summary>Cache of the format strings for foreground/background and ConsoleColor.</summary>
         private static readonly string[,] s_fgbgAndColorStrings = new string[2, 16]; // 2 == fg vs bg, 16 == ConsoleColor values
 
-        public static bool TryGetSpecialConsoleKey(char[] givenChars, int startIndex, int endIndex, out ConsoleKeyInfo key, out int keyLength)
-        {
-            int unprocessedCharCount = endIndex - startIndex;
-
-            // First process special control character codes.  These override anything from terminfo.
-            if (unprocessedCharCount > 0)
-            {
-                // Is this an erase / backspace?
-                char c = givenChars[startIndex];
-                if (c != s_posixDisableValue && c == s_veraseCharacter)
-                {
-                    key = new ConsoleKeyInfo(c, ConsoleKey.Backspace, shift: false, alt: false, control: false);
-                    keyLength = 1;
-                    return true;
-                }
-            }
-
-            // Then process terminfo mappings.
-            int minRange = TerminalFormatStringsInstance.MinKeyFormatLength;
-            if (unprocessedCharCount >= minRange)
-            {
-                int maxRange = Math.Min(unprocessedCharCount, TerminalFormatStringsInstance.MaxKeyFormatLength);
-
-                for (int i = maxRange; i >= minRange; i--)
-                {
-                    var currentString = new ReadOnlyMemory<char>(givenChars, startIndex, i);
-
-                    // Check if the string prefix matches.
-                    if (TerminalFormatStringsInstance.KeyFormatToConsoleKey.TryGetValue(currentString, out key))
-                    {
-                        keyLength = currentString.Length;
-                        return true;
-                    }
-                }
-            }
-
-            // Otherwise, not a known special console key.
-            key = default(ConsoleKeyInfo);
-            keyLength = 0;
-            return false;
-        }
-
         /// <summary>Whether keypad_xmit has already been written out to the terminal.</summary>
         private static volatile bool s_initialized;
 
         /// <summary>Value used to indicate that a special character code isn't available.</summary>
         internal static byte s_posixDisableValue;
         /// <summary>Special control character code used to represent an erase (backspace).</summary>
-        private static byte s_veraseCharacter;
+        internal static byte s_veraseCharacter;
         /// <summary>Special control character that represents the end of a line.</summary>
         internal static byte s_veolCharacter;
         /// <summary>Special control character that represents the end of a line.</summary>
