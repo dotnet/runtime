@@ -1,5 +1,7 @@
+import MonoWasmThreads from "consts:monoWasmThreads";
 
 import type { pthread_ptr } from "../shared";
+import { mono_assert } from "../../types";
 
 export const dotnetPthreadCreated = "dotnet:pthread:created" as const;
 export const dotnetPthreadAttached = "dotnet:pthread:attached" as const;
@@ -14,20 +16,19 @@ export interface WorkerThreadEventMap {
     [dotnetPthreadAttached]: WorkerThreadEvent;
 }
 
-interface WorkerThreadEventDetail {
-    pthread_ptr: pthread_ptr;
-    portToMain: MessagePort;
+export interface WorkerThreadEvent extends Event {
+    readonly pthread_ptr: pthread_ptr;
+    readonly portToMain: MessagePort;
 }
 
-export class WorkerThreadEvent extends CustomEvent<WorkerThreadEventDetail> {
+
+class WorkerThreadEventImpl extends Event implements WorkerThreadEvent {
+    readonly pthread_ptr: pthread_ptr;
+    readonly portToMain: MessagePort;
     constructor(type: keyof WorkerThreadEventMap, pthread_ptr: pthread_ptr, portToMain: MessagePort) {
-        super(type, { detail: { pthread_ptr, portToMain } });
-    }
-    get pthread_ptr(): pthread_ptr {
-        return this.detail.pthread_ptr;
-    }
-    get portToMain(): MessagePort {
-        return this.detail.portToMain;
+        super(type);
+        this.pthread_ptr = pthread_ptr;
+        this.portToMain = portToMain;
     }
 }
 
@@ -53,5 +54,7 @@ export interface WorkerThreadEventTarget extends EventTarget {
 // }
 
 export function makeWorkerThreadEvent(type: keyof WorkerThreadEventMap, pthread_ptr: pthread_ptr, port: MessagePort): WorkerThreadEvent {
-    return new WorkerThreadEvent(type, pthread_ptr, port);
+    // this assert helps to tree-shake the WorkerThreadEventImpl class if threads are disabled
+    mono_assert(MonoWasmThreads, "threads support disabled"); // this causes WorkerThreadEvent to be linked out
+    return new WorkerThreadEventImpl(type, pthread_ptr, port);
 }
