@@ -11137,7 +11137,7 @@ void Compiler::gtDispConst(GenTree* tree)
                 }
             }
 
-            if (tree->AsIntCon()->gtFieldSeq != FieldSeqStore::NotAField())
+            if (tree->AsIntCon()->gtFieldSeq != nullptr)
             {
                 FieldSeqNode* fieldSeq = tree->AsIntCon()->gtFieldSeq;
                 gtDispFieldSeq(fieldSeq, tree->AsIntCon()->IconValue() - fieldSeq->GetOffset());
@@ -11223,7 +11223,7 @@ void Compiler::gtDispConst(GenTree* tree)
 //
 void Compiler::gtDispFieldSeq(FieldSeqNode* fieldSeq, ssize_t offset)
 {
-    if (fieldSeq == FieldSeqStore::NotAField())
+    if (fieldSeq == nullptr)
     {
         return;
     }
@@ -14034,7 +14034,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
     float         f1, f2;
     double        d1, d2;
     var_types     switchType;
-    FieldSeqNode* fieldSeq = FieldSeqStore::NotAField(); // default unless we override it when folding
+    FieldSeqNode* fieldSeq = nullptr; // default unless we override it when folding
 
     assert(tree->OperIsUnary() || tree->OperIsBinary());
 
@@ -14887,7 +14887,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
         CNS_LONG:
 #if !defined(TARGET_64BIT)
-            if (fieldSeq != FieldSeqStore::NotAField())
+            if (fieldSeq != nullptr)
             {
                 assert(!"Field sequences on CNS_LNG nodes!?");
                 return tree;
@@ -17183,10 +17183,10 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pF
     assert(TypeIs(TYP_I_IMPL, TYP_BYREF, TYP_REF));
 
     *pBaseAddr = nullptr;
-    *pFldSeq   = FieldSeqStore::NotAField();
+    *pFldSeq   = nullptr;
 
     GenTree*      baseAddr = nullptr;
-    FieldSeqNode* fldSeq   = FieldSeqStore::NotAField();
+    FieldSeqNode* fldSeq   = nullptr;
     ssize_t       offset   = 0;
 
     if (OperIs(GT_ADD))
@@ -17215,7 +17215,7 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pF
 
     assert(baseAddr != nullptr);
 
-    if (fldSeq == FieldSeqStore::NotAField())
+    if (fldSeq == nullptr)
     {
         return false;
     }
@@ -17641,7 +17641,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                     {
                         FieldSeqNode* fieldSeq = op2->AsIntCon()->gtFieldSeq;
 
-                        if ((fieldSeq != FieldSeqStore::NotAField()) &&
+                        if ((fieldSeq != nullptr) &&
                             (fieldSeq->GetOffset() == op2->AsIntCon()->IconValue()))
                         {
                             // No benefit to calling gtGetFieldClassHandle here, as
@@ -18144,7 +18144,7 @@ void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum*
                     // If the other arg is an int constant, and is a "not-a-field", choose
                     // that as the multiplier, thus preserving constant index offsets...
                     if (tree->AsOp()->gtOp2->OperGet() == GT_CNS_INT &&
-                        tree->AsOp()->gtOp2->AsIntCon()->gtFieldSeq == FieldSeqStore::NotAField())
+                        tree->AsOp()->gtOp2->AsIntCon()->gtFieldSeq == nullptr)
                     {
                         assert(!tree->AsOp()->gtOp2->AsIntCon()->ImmedValNeedsReloc(comp));
                         // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntConCommon::gtIconVal had
@@ -18279,17 +18279,17 @@ FieldSeqNode* FieldSeqStore::CreateSingleton(CORINFO_FIELD_HANDLE    fieldHnd,
 
 FieldSeqNode* FieldSeqStore::Append(FieldSeqNode* a, FieldSeqNode* b)
 {
-    if (a == NotAField())
+    if (a == nullptr)
     {
         return b;
     }
-    if (b == NotAField())
+    if (b == nullptr)
     {
         return a;
     }
 
     assert(!"Duplicate field sequences!");
-    return NotAField();
+    return nullptr;
 }
 
 FieldSeqNode::FieldSeqNode(CORINFO_FIELD_HANDLE fieldHnd, ssize_t offset, FieldKind fieldKind) : m_offset(offset)

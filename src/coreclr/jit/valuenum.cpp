@@ -4836,7 +4836,7 @@ void Compiler::fgValueNumberArrayElemStore(GenTree* storeNode, VNFuncApp* addrFu
 //
 void Compiler::fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, FieldSeqNode* fieldSeq, ssize_t offset)
 {
-    assert(fieldSeq != FieldSeqStore::NotAField());
+    assert(fieldSeq != nullptr);
 
     // Two cases:
     //
@@ -4886,7 +4886,7 @@ void Compiler::fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, Fiel
 void Compiler::fgValueNumberFieldStore(
     GenTree* storeNode, GenTree* baseAddr, FieldSeqNode* fieldSeq, ssize_t offset, unsigned storeSize, ValueNum value)
 {
-    assert(fieldSeq != FieldSeqStore::NotAField());
+    assert(fieldSeq != nullptr);
 
     // Two cases:
     //  1) Instance field / "complex" static: heap[field][baseAddr][offset + load size] = value.
@@ -8119,7 +8119,7 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
             ssize_t              offset     = 0;
             unsigned             storeSize  = lhs->AsIndir()->Size();
             GenTree*             baseAddr   = nullptr;
-            FieldSeqNode*        fldSeq     = FieldSeqStore::NotAField();
+            FieldSeqNode*        fldSeq     = nullptr;
 
             if (argIsVNFunc && (funcApp.m_func == VNF_PtrToStatic))
             {
@@ -8135,7 +8135,7 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
             }
             else if (arg->IsFieldAddr(this, &baseAddr, &fldSeq, &offset))
             {
-                assert(fldSeq != FieldSeqStore::NotAField());
+                assert(fldSeq != nullptr);
                 fgValueNumberFieldStore(tree, baseAddr, fldSeq, offset, storeSize, rhsVNPair.GetLiberal());
             }
             else if (arg->DefinesLocalAddr(&lclVarTree, &offset))
@@ -8472,7 +8472,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             // can recognize redundant loads with no stores between them.
             GenTree*             addr       = tree->AsIndir()->Addr();
             GenTreeLclVarCommon* lclVarTree = nullptr;
-            FieldSeqNode*        fldSeq     = FieldSeqStore::NotAField();
+            FieldSeqNode*        fldSeq     = nullptr;
             GenTree*             baseAddr   = nullptr;
             bool                 isVolatile = (tree->gtFlags & GTF_IND_VOLATILE) != 0;
 
@@ -8584,7 +8584,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 }
                 else if (addr->IsFieldAddr(this, &baseAddr, &fldSeq, &offset))
                 {
-                    assert(fldSeq != FieldSeqStore::NotAField());
+                    assert(fldSeq != nullptr);
                     fgValueNumberFieldLoad(tree, baseAddr, fldSeq, offset);
                 }
                 else // We don't know where the address points, so it is an ByrefExposed load.

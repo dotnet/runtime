@@ -1360,7 +1360,7 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     switch (oper)
     {
         case GT_CNS_INT:
-            AsIntCon()->gtFieldSeq = FieldSeqStore::NotAField();
+            AsIntCon()->gtFieldSeq = nullptr;
             INDEBUG(AsIntCon()->gtTargetHandle = 0);
             break;
 #if defined(TARGET_ARM)
@@ -1542,7 +1542,7 @@ void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
             }
 
             AsIntCon()->SetIconValue(static_cast<ssize_t>(value));
-            AsIntCon()->gtFieldSeq = FieldSeqStore::NotAField();
+            AsIntCon()->gtFieldSeq = nullptr;
             break;
 
 #if !defined(TARGET_64BIT)

@@ -8825,8 +8825,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
     // read-only (using "stsfld" on them is UB). In mixed-mode assemblies, RVA statics can
     // be mutable, but the only current producer of such images, the C++/CLI compiler, does
     // not appear to support mapping different fields to the same address. So we will say
-    // that "mutable overlapping RVA statics" are UB as well. If this ever changes, code in
-    // value numbering will need to be updated to respect "NotAField FldSeq".
+    // that "mutable overlapping RVA statics" are UB as well.
 
     // For statics that are not "boxed", the initial address tree will contain the field sequence.
     // For those that are, we will attach it later, when adding the indirection for the box, since
@@ -8841,7 +8840,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
     FieldSeqNode* outerFldSeq;
     if (isBoxedStatic)
     {
-        innerFldSeq = FieldSeqStore::NotAField();
+        innerFldSeq = nullptr;
         outerFldSeq = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField, TARGET_POINTER_SIZE, fieldKind);
     }
     else
@@ -8861,7 +8860,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
         }
 
         innerFldSeq = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField, offset, fieldKind);
-        outerFldSeq = FieldSeqStore::NotAField();
+        outerFldSeq = nullptr;
     }
 
     GenTree* op1;

@@ -8457,7 +8457,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                     {
                         GenTreeArrAddr* arrAddr  = nullptr;
                         GenTree*        baseAddr = nullptr;
-                        FieldSeqNode*   fldSeq   = FieldSeqStore::NotAField();
+                        FieldSeqNode*   fldSeq   = nullptr;
                         ssize_t         offset   = 0;
 
                         if (arg->IsArrayAddr(&arrAddr))
@@ -8472,7 +8472,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                         }
                         else if (arg->IsFieldAddr(this, &baseAddr, &fldSeq, &offset))
                         {
-                            assert(fldSeq != FieldSeqStore::NotAField());
+                            assert(fldSeq != nullptr);
 
                             FieldKindForVN fieldKind =
                                 (baseAddr != nullptr) ? FieldKindForVN::WithBaseAddr : FieldKindForVN::SimpleStatic;

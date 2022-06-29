@@ -5032,7 +5032,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
     unsigned             fldOffset     = tree->AsField()->gtFldOffset;
     GenTree*             objRef        = tree->AsField()->GetFldObj();
     bool                 fldMayOverlap = tree->AsField()->gtFldMayOverlap;
-    FieldSeqNode*        fieldSeq      = FieldSeqStore::NotAField();
+    FieldSeqNode*        fieldSeq      = nullptr;
 
     // Reset the flag because we may reuse the node.
     tree->AsField()->gtFldMayOverlap = false;
@@ -11217,7 +11217,7 @@ DONE_MORPHING_CHILDREN:
                     // except when `op2` is a const byref.
 
                     op2->AsIntConCommon()->SetIconValue(-op2->AsIntConCommon()->IconValue());
-                    op2->AsIntConRef().gtFieldSeq = FieldSeqStore::NotAField();
+                    op2->AsIntConRef().gtFieldSeq = nullptr;
                     oper                          = GT_ADD;
                     tree->ChangeOper(oper);
                     goto CM_ADD_OP;
@@ -12759,7 +12759,7 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
     if (op2->IsIntegralConst(0) && (genActualType(add) == genActualType(op1)))
     {
         // Keep the offset nodes with annotations for value numbering purposes.
-        if (!op2->IsCnsIntOrI() || (op2->AsIntCon()->gtFieldSeq == FieldSeqStore::NotAField()))
+        if (!op2->IsCnsIntOrI() || (op2->AsIntCon()->gtFieldSeq == nullptr))
         {
             DEBUG_DESTROY_NODE(op2);
             DEBUG_DESTROY_NODE(add);

@@ -349,12 +349,6 @@ public:
                                   ssize_t                 offset,
                                   FieldSeqNode::FieldKind fieldKind = FieldSeqNode::FieldKind::Instance);
 
-    // We will use "nullptr" to denote field sequences that do not represent class or static fields.
-    static FieldSeqNode* NotAField()
-    {
-        return nullptr;
-    }
-
     FieldSeqNode* Append(FieldSeqNode* a, FieldSeqNode* b);
 };
 
@@ -3100,7 +3094,7 @@ struct GenTreeIntCon : public GenTreeIntConCommon
         : GenTreeIntConCommon(GT_CNS_INT, type DEBUGARG(largeNode))
         , gtIconVal(value)
         , gtCompileTimeHandle(0)
-        , gtFieldSeq(FieldSeqStore::NotAField())
+        , gtFieldSeq(nullptr)
     {
     }
 
