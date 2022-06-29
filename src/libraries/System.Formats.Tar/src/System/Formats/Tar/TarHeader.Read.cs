@@ -33,30 +33,30 @@ namespace System.Formats.Tar
             try
             {
                 // Confirms if v7 or pax, or tentatively selects ustar
-                if (!TryReadCommonAttributesSpan(buffer))
+                if (!TryReadCommonAttributes(buffer))
                 {
                     return false;
                 }
 
                 // Confirms if gnu, or tentatively selects ustar
-                ReadMagicAttributeSpan(buffer);
+                ReadMagicAttribute(buffer);
 
                 if (_format != TarEntryFormat.V7)
                 {
                     // Confirms if gnu
-                    ReadVersionAttributeSpan(buffer);
+                    ReadVersionAttribute(buffer);
 
                     // Fields that ustar, pax and gnu share identically
-                    ReadPosixAndGnuSharedAttributesSpan(buffer);
+                    ReadPosixAndGnuSharedAttributes(buffer);
 
                     Debug.Assert(_format is TarEntryFormat.Ustar or TarEntryFormat.Pax or TarEntryFormat.Gnu);
                     if (_format == TarEntryFormat.Ustar)
                     {
-                        ReadUstarAttributesSpan(buffer);
+                        ReadUstarAttributes(buffer);
                     }
                     else if (_format == TarEntryFormat.Gnu)
                     {
-                        ReadGnuAttributesSpan(buffer);
+                        ReadGnuAttributes(buffer);
                     }
                     // In PAX, there is nothing to read in this section (empty space)
                 }
@@ -89,30 +89,30 @@ namespace System.Formats.Tar
             await archiveStream.ReadExactlyAsync(buffer, cancellationToken).ConfigureAwait(false);
 
             // Confirms if v7 or pax, or tentatively selects ustar
-            if (!header.TryReadCommonAttributesSpan(buffer.Span))
+            if (!header.TryReadCommonAttributes(buffer.Span))
             {
                 return (false, default);
             }
 
             // Confirms if gnu, or tentatively selects ustar
-            header.ReadMagicAttributeSpan(buffer.Span);
+            header.ReadMagicAttribute(buffer.Span);
 
             if (header._format != TarEntryFormat.V7)
             {
                 // Confirms if gnu
-                header.ReadVersionAttributeSpan(buffer.Span);
+                header.ReadVersionAttribute(buffer.Span);
 
                 // Fields that ustar, pax and gnu share identically
-                header.ReadPosixAndGnuSharedAttributesSpan(buffer.Span);
+                header.ReadPosixAndGnuSharedAttributes(buffer.Span);
 
                 Debug.Assert(header._format is TarEntryFormat.Ustar or TarEntryFormat.Pax or TarEntryFormat.Gnu);
                 if (header._format == TarEntryFormat.Ustar)
                 {
-                    header.ReadUstarAttributesSpan(buffer.Span);
+                    header.ReadUstarAttributes(buffer.Span);
                 }
                 else if (header._format == TarEntryFormat.Gnu)
                 {
-                    header.ReadGnuAttributesSpan(buffer.Span);
+                    header.ReadGnuAttributes(buffer.Span);
                 }
                 // In PAX, there is nothing to read in this section (empty space)
             }
@@ -394,7 +394,7 @@ namespace System.Formats.Tar
         // Attempts to read the fields shared by all formats and stores them in their expected data type.
         // Throws if any data type conversion fails.
         // Returns true on success, false if checksum is zero.
-        private bool TryReadCommonAttributesSpan(Span<byte> buffer)
+        private bool TryReadCommonAttributes(Span<byte> buffer)
         {
             // Start by collecting fields that need special checks that return early when data is wrong
 
@@ -457,7 +457,7 @@ namespace System.Formats.Tar
 
         // Reads fields only found in ustar format or above and converts them to their expected data type.
         // Throws if any conversion fails.
-        private void ReadMagicAttributeSpan(Span<byte> buffer)
+        private void ReadMagicAttribute(Span<byte> buffer)
         {
             Span<byte> magic = buffer.Slice(FieldLocations.Magic, FieldLengths.Magic);
 
@@ -484,7 +484,7 @@ namespace System.Formats.Tar
 
         // Reads the version string and determines the format depending on its value.
         // Throws if converting the bytes to string fails or if an unexpected version string is found.
-        private void ReadVersionAttributeSpan(Span<byte> buffer)
+        private void ReadVersionAttribute(Span<byte> buffer)
         {
             if (_format == TarEntryFormat.V7)
             {
@@ -510,7 +510,7 @@ namespace System.Formats.Tar
 
         // Reads the attributes shared by the POSIX and GNU formats.
         // Throws if converting the bytes to their expected data type fails.
-        private void ReadPosixAndGnuSharedAttributesSpan(Span<byte> buffer)
+        private void ReadPosixAndGnuSharedAttributes(Span<byte> buffer)
         {
             // Convert the byte arrays
             _uName = TarHelpers.GetTrimmedAsciiString(buffer.Slice(FieldLocations.UName, FieldLengths.UName));
@@ -530,7 +530,7 @@ namespace System.Formats.Tar
 
         // Reads attributes specific to the GNU format.
         // Throws if any conversion fails.
-        private void ReadGnuAttributesSpan(Span<byte> buffer)
+        private void ReadGnuAttributes(Span<byte> buffer)
         {
             // Convert byte arrays
             long aTime = TarHelpers.GetTenBaseLongFromOctalAsciiChars(buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
@@ -544,7 +544,7 @@ namespace System.Formats.Tar
 
         // Reads the ustar prefix attribute.
         // Throws if a conversion to an expected data type fails.
-        private void ReadUstarAttributesSpan(Span<byte> buffer)
+        private void ReadUstarAttributes(Span<byte> buffer)
         {
             _prefix = TarHelpers.GetTrimmedUtf8String(buffer.Slice(FieldLocations.Prefix, FieldLengths.Prefix));
 
