@@ -416,7 +416,7 @@ namespace System.Formats.Tar
         {
             fullNameBytes = Encoding.ASCII.GetBytes(_name);
             int nameBytesLength = Math.Min(fullNameBytes.Length, FieldLengths.Name);
-            int checksum = WriteLeftAlignedBytesAndGetChecksumSpan(fullNameBytes.AsSpan(0, nameBytesLength), buffer.Slice(FieldLocations.Name, FieldLengths.Name));
+            int checksum = WriteLeftAlignedBytesAndGetChecksum(fullNameBytes.AsSpan(0, nameBytesLength), buffer.Slice(FieldLocations.Name, FieldLengths.Name));
             return checksum;
         }
 
@@ -425,7 +425,7 @@ namespace System.Formats.Tar
         {
             fullNameBytes = Encoding.ASCII.GetBytes(_name);
             int nameBytesLength = Math.Min(fullNameBytes.Length, FieldLengths.Name);
-            int checksum = WriteLeftAlignedBytesAndGetChecksumMemory(fullNameBytes.AsMemory(0, nameBytesLength), buffer.Slice(FieldLocations.Name, FieldLengths.Name));
+            int checksum = WriteLeftAlignedBytesAndGetChecksum(fullNameBytes.AsSpan(0, nameBytesLength), buffer.Span.Slice(FieldLocations.Name, FieldLengths.Name));
             return checksum;
         }
 
@@ -436,7 +436,7 @@ namespace System.Formats.Tar
             if (fullNameBytes.Length > FieldLengths.Name)
             {
                 int prefixBytesLength = Math.Min(fullNameBytes.Length - FieldLengths.Name, FieldLengths.Name);
-                checksum += WriteLeftAlignedBytesAndGetChecksumSpan(fullNameBytes.AsSpan(FieldLengths.Name, prefixBytesLength), buffer.Slice(FieldLocations.Prefix, FieldLengths.Prefix));
+                checksum += WriteLeftAlignedBytesAndGetChecksum(fullNameBytes.AsSpan(FieldLengths.Name, prefixBytesLength), buffer.Slice(FieldLocations.Prefix, FieldLengths.Prefix));
             }
             return checksum;
         }
@@ -448,7 +448,7 @@ namespace System.Formats.Tar
             if (fullNameBytes.Length > FieldLengths.Name)
             {
                 int prefixBytesLength = Math.Min(fullNameBytes.Length - FieldLengths.Name, FieldLengths.Name);
-                checksum += WriteLeftAlignedBytesAndGetChecksumMemory(fullNameBytes.AsMemory(FieldLengths.Name, prefixBytesLength), buffer.Slice(FieldLocations.Prefix, FieldLengths.Prefix));
+                checksum += WriteLeftAlignedBytesAndGetChecksum(fullNameBytes.AsSpan(FieldLengths.Name, prefixBytesLength), buffer.Span.Slice(FieldLocations.Prefix, FieldLengths.Prefix));
             }
             return checksum;
         }
@@ -532,16 +532,16 @@ namespace System.Formats.Tar
         // Writes the magic and version fields of a ustar or pax entry into the specified spans.
         private static int WritePosixMagicAndVersion(Span<byte> buffer)
         {
-            int checksum = WriteLeftAlignedBytesAndGetChecksumSpan(PaxMagicBytes, buffer.Slice(FieldLocations.Magic, FieldLengths.Magic));
-            checksum += WriteLeftAlignedBytesAndGetChecksumSpan(PaxVersionBytes, buffer.Slice(FieldLocations.Version, FieldLengths.Version));
+            int checksum = WriteLeftAlignedBytesAndGetChecksum(PaxMagicBytes, buffer.Slice(FieldLocations.Magic, FieldLengths.Magic));
+            checksum += WriteLeftAlignedBytesAndGetChecksum(PaxVersionBytes, buffer.Slice(FieldLocations.Version, FieldLengths.Version));
             return checksum;
         }
 
         // Writes the magic and vresion fields of a gnu entry into the specified spans.
         private static int WriteGnuMagicAndVersion(Span<byte> buffer)
         {
-            int checksum = WriteLeftAlignedBytesAndGetChecksumSpan(GnuMagicBytes, buffer.Slice(FieldLocations.Magic, FieldLengths.Magic));
-            checksum += WriteLeftAlignedBytesAndGetChecksumSpan(GnuVersionBytes, buffer.Slice(FieldLocations.Version, FieldLengths.Version));
+            int checksum = WriteLeftAlignedBytesAndGetChecksum(GnuMagicBytes, buffer.Slice(FieldLocations.Magic, FieldLengths.Magic));
+            checksum += WriteLeftAlignedBytesAndGetChecksum(GnuVersionBytes, buffer.Slice(FieldLocations.Version, FieldLengths.Version));
             return checksum;
         }
 
@@ -581,7 +581,7 @@ namespace System.Formats.Tar
 
             if (_gnuUnusedBytes != null)
             {
-                checksum += WriteLeftAlignedBytesAndGetChecksumSpan(_gnuUnusedBytes, buffer.Slice(FieldLocations.GnuUnused, FieldLengths.AllGnuUnused));
+                checksum += WriteLeftAlignedBytesAndGetChecksum(_gnuUnusedBytes, buffer.Slice(FieldLocations.GnuUnused, FieldLengths.AllGnuUnused));
             }
 
             return checksum;
@@ -758,7 +758,7 @@ namespace System.Formats.Tar
         }
 
         // Writes the specified bytes into the specified destination, aligned to the left. Returns the sum of the value of all the bytes that were written.
-        private static int WriteLeftAlignedBytesAndGetChecksumSpan(ReadOnlySpan<byte> bytesToWrite, Span<byte> destination)
+        private static int WriteLeftAlignedBytesAndGetChecksum(ReadOnlySpan<byte> bytesToWrite, Span<byte> destination)
         {
             Debug.Assert(destination.Length > 1);
 
@@ -768,22 +768,6 @@ namespace System.Formats.Tar
             {
                 destination[i] = bytesToWrite[j];
                 checksum += destination[i];
-            }
-
-            return checksum;
-        }
-
-        // Writes the specified bytes into the specified destination, aligned to the left. Returns the sum of the value of all the bytes that were written.
-        private static int WriteLeftAlignedBytesAndGetChecksumMemory(ReadOnlyMemory<byte> bytesToWrite, Memory<byte> destination)
-        {
-            Debug.Assert(destination.Length > 1);
-
-            int checksum = 0;
-
-            for (int i = 0, j = 0; i < destination.Length && j < bytesToWrite.Length; i++, j++)
-            {
-                destination.Span[i] = bytesToWrite.Span[j];
-                checksum += destination.Span[i];
             }
 
             return checksum;
@@ -838,7 +822,7 @@ namespace System.Formats.Tar
         private static int WriteAsAsciiString(string str, Span<byte> buffer, int location, int length)
         {
             byte[] bytes = Encoding.ASCII.GetBytes(str);
-            return WriteLeftAlignedBytesAndGetChecksumSpan(bytes.AsSpan(), buffer.Slice(location, length));
+            return WriteLeftAlignedBytesAndGetChecksum(bytes.AsSpan(), buffer.Slice(location, length));
         }
 
         // Gets the special name for the 'name' field in an extended attribute entry.
