@@ -46,7 +46,7 @@ namespace Microsoft.Interop
 
         public static LocalDeclarationStatementSyntax Declare(TypeSyntax typeSyntax, string identifier, bool initializeToDefault)
         {
-            return Declare(typeSyntax, identifier, LiteralExpression(SyntaxKind.DefaultLiteralExpression));
+            return Declare(typeSyntax, identifier, initializeToDefault ? LiteralExpression(SyntaxKind.DefaultLiteralExpression) : null);
         }
 
         public static LocalDeclarationStatementSyntax Declare(TypeSyntax typeSyntax, string identifier, ExpressionSyntax? initializer)
@@ -61,7 +61,7 @@ namespace Microsoft.Interop
 
             // <type> <identifier>;
             // or
-            // <type> <identifier> = default;
+            // <type> <identifier> = <initializer>;
             return LocalDeclarationStatement(
                 VariableDeclaration(
                     typeSyntax,
