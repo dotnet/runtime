@@ -314,31 +314,7 @@ namespace System.Formats.Tar
         // Extracts the current entry to a location relative to the specified directory.
         internal void ExtractRelativeToDirectory(string destinationDirectoryPath, bool overwrite)
         {
-            Debug.Assert(!string.IsNullOrEmpty(destinationDirectoryPath));
-            Debug.Assert(Path.IsPathFullyQualified(destinationDirectoryPath));
-
-            destinationDirectoryPath = Path.TrimEndingDirectorySeparator(destinationDirectoryPath);
-
-            string? fileDestinationPath = GetSanitizedFullPath(destinationDirectoryPath, Name);
-            if (fileDestinationPath == null)
-            {
-                throw new IOException(string.Format(SR.TarExtractingResultsFileOutside, Name, destinationDirectoryPath));
-            }
-
-            string? linkTargetPath = null;
-            if (EntryType is TarEntryType.SymbolicLink or TarEntryType.HardLink)
-            {
-                if (string.IsNullOrEmpty(LinkName))
-                {
-                    throw new FormatException(SR.TarEntryHardLinkOrSymlinkLinkNameEmpty);
-                }
-
-                linkTargetPath = GetSanitizedFullPath(destinationDirectoryPath, LinkName);
-                if (linkTargetPath == null)
-                {
-                    throw new IOException(string.Format(SR.TarExtractingResultsLinkOutside, LinkName, destinationDirectoryPath));
-                }
-            }
+            (string fileDestinationPath, string? linkTargetPath) = GetDestinationAndLinkPaths(destinationDirectoryPath);
 
             if (EntryType == TarEntryType.Directory)
             {
@@ -355,13 +331,31 @@ namespace System.Formats.Tar
         // Asynchronously extracts the current entry to a location relative to the specified directory.
         internal Task ExtractRelativeToDirectoryAsync(string destinationDirectoryPath, bool overwrite, CancellationToken cancellationToken)
         {
-            Debug.Assert(!string.IsNullOrEmpty(destinationDirectoryPath));
-            Debug.Assert(Path.IsPathFullyQualified(destinationDirectoryPath));
-
             if (cancellationToken.IsCancellationRequested)
             {
                 return Task.FromCanceled(cancellationToken);
             }
+
+            (string fileDestinationPath, string? linkTargetPath) = GetDestinationAndLinkPaths(destinationDirectoryPath);
+
+            if (EntryType == TarEntryType.Directory)
+            {
+                Directory.CreateDirectory(fileDestinationPath);
+                return Task.CompletedTask;
+            }
+            else
+            {
+                // If it is a file, create containing directory.
+                Directory.CreateDirectory(Path.GetDirectoryName(fileDestinationPath)!);
+                return ExtractToFileInternalAsync(fileDestinationPath, linkTargetPath, overwrite, cancellationToken);
+            }
+        }
+
+        // Gets the sanitized paths for the file destination and link target paths to be used when extracting relative to a directory.
+        private (string, string?) GetDestinationAndLinkPaths(string destinationDirectoryPath)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(destinationDirectoryPath));
+            Debug.Assert(Path.IsPathFullyQualified(destinationDirectoryPath));
 
             destinationDirectoryPath = Path.TrimEndingDirectorySeparator(destinationDirectoryPath);
 
@@ -386,17 +380,7 @@ namespace System.Formats.Tar
                 }
             }
 
-            if (EntryType == TarEntryType.Directory)
-            {
-                Directory.CreateDirectory(fileDestinationPath);
-                return Task.CompletedTask;
-            }
-            else
-            {
-                // If it is a file, create containing directory.
-                Directory.CreateDirectory(Path.GetDirectoryName(fileDestinationPath)!);
-                return ExtractToFileInternalAsync(fileDestinationPath, linkTargetPath, overwrite, cancellationToken);
-            }
+            return (fileDestinationPath, linkTargetPath);
         }
 
         // If the path can be extracted in the specified destination directory, returns the full path with sanitized file name. Otherwise, returns null.
