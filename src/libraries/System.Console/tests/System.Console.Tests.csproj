@@ -46,6 +46,7 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows'">
     <Compile Include="CancelKeyPress.Unix.cs" />
     <Compile Include="NonStandardConfiguration.Unix.cs" />
+    <Compile Include="KeyMapperTests.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Fcntl.cs"
