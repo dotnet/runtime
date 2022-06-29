@@ -433,62 +433,91 @@ class Program
     }
 
     static void RunAllTests()
-    {/*
+    {
+        Console.WriteLine("TestVirtualMethodCalls");
         TestVirtualMethodCalls();
+        Console.WriteLine("TestMovedVirtualMethod");
         TestMovedVirtualMethods();
 
+        Console.WriteLine("TestConstrainedMethodCalls");
         TestConstrainedMethodCalls();
 
+        Console.WriteLine("TestConstrainedMethodCalls_Unsupported");
         TestConstrainedMethodCalls_Unsupported();
 
+        Console.WriteLine("TestInterop");
         TestInterop();
 
+        Console.WriteLine("TestStaticFields");
         TestStaticFields();
 
+        Console.WriteLine("TestPreInitializedArray");
         TestPreInitializedArray();
 
+        Console.WriteLine("TestMultiDimmArray");
         TestMultiDimmArray();
 
+        Console.WriteLine("TestGenericVirtualMethod");
         TestGenericVirtualMethod();
+        Console.WriteLine("TestMovedGenericVirtualMethod");
         TestMovedGenericVirtualMethod();
+        Console.WriteLine("TestGenericNonVirtualMethod");
         TestGenericNonVirtualMethod();
 
+        Console.WriteLine("TestGenericOverStruct");
         TestGenericOverStruct();
 
+        Console.WriteLine("TestInstanceFields");
         TestInstanceFields();
 
+        Console.WriteLine("TestInstanceFieldsWithLayout");
         TestInstanceFieldsWithLayout();
 
+        Console.WriteLine("TestInheritingFromGrowingBase");
         TestInheritingFromGrowingBase();
 
+        Console.WriteLine("TestGrowingStruct");
         TestGrowingStruct();
+        Console.WriteLine("TestChangingStruct");
         TestChangingStruct();
+        Console.WriteLine("TestChangingHFAStruct");
         TestChangingHFAStruct();
 
+        Console.WriteLine("TestGetType");
         TestGetType();
 
+        Console.WriteLine("TestMultipleLoads");
         TestMultipleLoads();
 
+        Console.WriteLine("TestFieldLayoutNGenMixAndMatch");
         TestFieldLayoutNGenMixAndMatch();
 
+        Console.WriteLine("TestStaticBaseCSE");
         TestStaticBaseCSE();
 
+        Console.WriteLine("TestIsInstCSE");
         TestIsInstCSE();
 
+        Console.WriteLine("TestCastClassCSE");
         TestCastClassCSE();
 
+        Console.WriteLine("TestRangeCheckElimination");
         TestRangeCheckElimination();
 
+        Console.WriteLine("TestOpenClosedDelegate");
         TestOpenClosedDelegate();
 
+        Console.WriteLine("GenericLdtokenFieldsTest");
         GenericLdtokenFieldsTest();
 
+        Console.WriteLine("RVAFieldTest");
         RVAFieldTest();
 
+        Console.WriteLine("TestLoadR2RImageFromByteArray");
         TestLoadR2RImageFromByteArray();
 
+        Console.WriteLine("TestILBodyChange");
         TestILBodyChange();
-*/
         ILInliningVersioningTest<LocallyDefinedStructure>.RunAllTests(typeof(Program).Assembly);
     }
 
@@ -498,7 +527,10 @@ class Program
         for (int i = 0; i < 3; i++)
            RunAllTests();
 
-        Console.WriteLine("PASSED");
+        if (!Assert.HasAssertFired)
+            Console.WriteLine("PASSED");
+        else
+            Console.WriteLine("FAILED");
         return Assert.HasAssertFired ? 1 : 100;
     }
 
