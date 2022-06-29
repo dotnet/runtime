@@ -6343,6 +6343,7 @@ void Compiler::optPerformHoistExpr(GenTree** link, BasicBlock* exprBb, Statement
 
     hoistStmt->SetNextStmt(nullptr);
 
+    /// The link has changed so we need to update the side effects of the statement.
     gtUpdateStmtSideEffects(exprStmt);
 
 #ifdef DEBUG
@@ -6358,6 +6359,8 @@ void Compiler::optPerformHoistExpr(GenTree** link, BasicBlock* exprBb, Statement
     {
         gtSetStmtInfo(hoistStmt);
         fgSetStmtSeq(hoistStmt);
+        gtSetStmtInfo(exprStmt);
+        fgSetStmtSeq(exprStmt);
     }
 
 #ifdef DEBUG
