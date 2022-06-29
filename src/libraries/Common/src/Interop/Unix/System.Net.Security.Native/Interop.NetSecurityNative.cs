@@ -204,7 +204,7 @@ internal static partial class Interop
         private static unsafe partial Status Wrap(
             out Status minorStatus,
             SafeGssContextHandle? contextHandle,
-            [MarshalAs(UnmanagedType.Bool)] bool isEncrypt,
+            [MarshalAs(UnmanagedType.Bool)] ref bool isEncrypt,
             byte* inputBytes,
             int count,
             ref GssBuffer outBuffer);
@@ -213,8 +213,8 @@ internal static partial class Interop
         private static unsafe partial Status Unwrap(
             out Status minorStatus,
             SafeGssContextHandle? contextHandle,
+            [MarshalAs(UnmanagedType.Bool)] out bool isEncrypt,
             byte* inputBytes,
-            int offset,
             int count,
             ref GssBuffer outBuffer);
 
@@ -238,25 +238,26 @@ internal static partial class Interop
         internal static unsafe Status WrapBuffer(
             out Status minorStatus,
             SafeGssContextHandle? contextHandle,
-            bool isEncrypt,
+            ref bool isEncrypt,
             ReadOnlySpan<byte> inputBytes,
             ref GssBuffer outBuffer)
         {
             fixed (byte* inputBytesPtr = inputBytes)
             {
-                return Wrap(out minorStatus, contextHandle, isEncrypt, inputBytesPtr, inputBytes.Length, ref outBuffer);
+                return Wrap(out minorStatus, contextHandle, ref isEncrypt, inputBytesPtr, inputBytes.Length, ref outBuffer);
             }
         }
 
         internal static unsafe Status UnwrapBuffer(
             out Status minorStatus,
             SafeGssContextHandle? contextHandle,
+            out bool isEncrypt,
             ReadOnlySpan<byte> inputBytes,
             ref GssBuffer outBuffer)
         {
             fixed (byte* inputBytesPtr = inputBytes)
             {
-                return Unwrap(out minorStatus, contextHandle, inputBytesPtr, 0, inputBytes.Length, ref outBuffer);
+                return Unwrap(out minorStatus, contextHandle, out isEncrypt, inputBytesPtr, inputBytes.Length, ref outBuffer);
             }
         }
 

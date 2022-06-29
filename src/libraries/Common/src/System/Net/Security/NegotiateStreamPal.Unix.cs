@@ -42,14 +42,14 @@ namespace System.Net.Security
 
         private static byte[] GssWrap(
             SafeGssContextHandle context,
-            bool encrypt,
+            ref bool encrypt,
             ReadOnlySpan<byte> buffer)
         {
             Interop.NetSecurityNative.GssBuffer encryptedBuffer = default;
             try
             {
                 Interop.NetSecurityNative.Status minorStatus;
-                Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.WrapBuffer(out minorStatus, context, encrypt, buffer, ref encryptedBuffer);
+                Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.WrapBuffer(out minorStatus, context, ref encrypt, buffer, ref encryptedBuffer);
                 if (status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE)
                 {
                     throw new Interop.NetSecurityNative.GssApiException(status, minorStatus);
@@ -65,13 +65,14 @@ namespace System.Net.Security
 
         private static int GssUnwrap(
             SafeGssContextHandle context,
+            out bool encrypt,
             Span<byte> buffer)
         {
             Interop.NetSecurityNative.GssBuffer decryptedBuffer = default(Interop.NetSecurityNative.GssBuffer);
             try
             {
                 Interop.NetSecurityNative.Status minorStatus;
-                Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.UnwrapBuffer(out minorStatus, context, buffer, ref decryptedBuffer);
+                Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.UnwrapBuffer(out minorStatus, context, out encrypt, buffer, ref decryptedBuffer);
                 if (status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE)
                 {
                     throw new Interop.NetSecurityNative.GssApiException(status, minorStatus);
@@ -584,7 +585,7 @@ namespace System.Net.Security
                 }
             }
 
-            byte[] tempOutput = GssWrap(gssContext, isConfidential, buffer);
+            byte[] tempOutput = GssWrap(gssContext, ref isConfidential, buffer);
 
             // Create space for prefixing with the length
             const int prefixLength = 4;
@@ -631,21 +632,20 @@ namespace System.Net.Security
             }
 
             newOffset = 0;
-            return GssUnwrap(gssContext, buffer);
+            return GssUnwrap(gssContext, out _, buffer);
         }
 
         internal static unsafe int Unwrap(SafeDeleteContext securityContext, Span<byte> buffer, out int newOffset, out bool wasConfidential)
         {
             SafeGssContextHandle gssContext = ((SafeDeleteNegoContext)securityContext).GssContext!;
             newOffset = 0;
-            wasConfidential = false; // TODO
-            return GssUnwrap(gssContext, buffer);
+            return GssUnwrap(gssContext, out wasConfidential, buffer);
         }
 
         internal static unsafe int Wrap(SafeDeleteContext securityContext, ReadOnlySpan<byte> buffer, [NotNull] ref byte[]? output, bool isConfidential)
         {
             SafeGssContextHandle gssContext = ((SafeDeleteNegoContext)securityContext).GssContext!;
-            output = GssWrap(gssContext, isConfidential, buffer);
+            output = GssWrap(gssContext, ref isConfidential, buffer);
             return output.Length;
         }
     }

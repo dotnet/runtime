@@ -157,7 +157,7 @@ Shims the gss_wrap method.
 */
 PALEXPORT uint32_t NetSecurityNative_Wrap(uint32_t* minorStatus,
                                           GssCtxId* contextHandle,
-                                          int32_t isEncrypt,
+                                          int32_t* isEncrypt,
                                           uint8_t* inputBytes,
                                           int32_t count,
                                           PAL_GssBuffer* outBuffer);
@@ -167,8 +167,8 @@ Shims the gss_unwrap method.
 */
 PALEXPORT uint32_t NetSecurityNative_Unwrap(uint32_t* minorStatus,
                                             GssCtxId* contextHandle,
+                                            int32_t* isEncrypt,
                                             uint8_t* inputBytes,
-                                            int32_t offset,
                                             int32_t count,
                                             PAL_GssBuffer* outBuffer);
 
