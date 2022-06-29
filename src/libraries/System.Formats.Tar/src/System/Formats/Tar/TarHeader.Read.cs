@@ -30,45 +30,39 @@ namespace System.Formats.Tar
 
             archiveStream.ReadExactly(buffer);
 
-            try
+            // Confirms if v7 or pax, or tentatively selects ustar
+            if (!TryReadCommonAttributes(buffer))
             {
-                // Confirms if v7 or pax, or tentatively selects ustar
-                if (!TryReadCommonAttributes(buffer))
-                {
-                    return false;
-                }
-
-                // Confirms if gnu, or tentatively selects ustar
-                ReadMagicAttribute(buffer);
-
-                if (_format != TarEntryFormat.V7)
-                {
-                    // Confirms if gnu
-                    ReadVersionAttribute(buffer);
-
-                    // Fields that ustar, pax and gnu share identically
-                    ReadPosixAndGnuSharedAttributes(buffer);
-
-                    Debug.Assert(_format is TarEntryFormat.Ustar or TarEntryFormat.Pax or TarEntryFormat.Gnu);
-                    if (_format == TarEntryFormat.Ustar)
-                    {
-                        ReadUstarAttributes(buffer);
-                    }
-                    else if (_format == TarEntryFormat.Gnu)
-                    {
-                        ReadGnuAttributes(buffer);
-                    }
-                    // In PAX, there is nothing to read in this section (empty space)
-                }
-
-                ProcessDataBlock(archiveStream, copyData);
-
-                ArrayPool<byte>.Shared.Return(rented);
-                return true;
+                return false;
             }
-            finally
+
+            // Confirms if gnu, or tentatively selects ustar
+            ReadMagicAttribute(buffer);
+
+            if (_format != TarEntryFormat.V7)
             {
+                // Confirms if gnu
+                ReadVersionAttribute(buffer);
+
+                // Fields that ustar, pax and gnu share identically
+                ReadPosixAndGnuSharedAttributes(buffer);
+
+                Debug.Assert(_format is TarEntryFormat.Ustar or TarEntryFormat.Pax or TarEntryFormat.Gnu);
+                if (_format == TarEntryFormat.Ustar)
+                {
+                    ReadUstarAttributes(buffer);
+                }
+                else if (_format == TarEntryFormat.Gnu)
+                {
+                    ReadGnuAttributes(buffer);
+                }
+                // In PAX, there is nothing to read in this section (empty space)
             }
+
+            ProcessDataBlock(archiveStream, copyData);
+
+            ArrayPool<byte>.Shared.Return(rented);
+            return true;
         }
 
         // Asynchronously attempts read all the fields of the next header.
