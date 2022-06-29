@@ -55,11 +55,8 @@ export function mono_wasm_get_js_handle(js_obj: any): JSHandle {
     const js_handle = _js_handle_free_list.length ? _js_handle_free_list.pop() : _next_js_handle++;
     // note _cs_owned_objects_by_js_handle is list, not Map. That's why we maintain _js_handle_free_list.
     _cs_owned_objects_by_js_handle[<number>js_handle!] = js_obj;
-    try {
+    if (Object.isExtensible(js_obj)) {
         js_obj[cs_owned_js_handle_symbol] = js_handle;
-    }
-    catch {
-        // ignore "Cannot add property, object is not extensible"
     }
     return js_handle as JSHandle;
 }

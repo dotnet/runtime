@@ -1,46 +1,43 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-#nullable disable
 
 using System.Threading.Tasks;
 using System.Reflection;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
     internal static unsafe partial class JSHostImplementation
     {
-        internal const string TaskGetResultName = "get_Result";
-        internal static readonly MethodInfo _taskGetResultMethodInfo = typeof(Task<>).GetMethod(TaskGetResultName)!;
-        internal static readonly Dictionary<int, WeakReference<JSObject>> _csOwnedObjects = new Dictionary<int, WeakReference<JSObject>>();
-        internal static object JSOwnedObjectLock = new object();
+        private const string TaskGetResultName = "get_Result";
+        private static readonly MethodInfo s_taskGetResultMethodInfo = typeof(Task<>).GetMethod(TaskGetResultName)!;
+        // we use this to maintain identity of JSHandle for a JSObject proxy
+        public static readonly Dictionary<int, WeakReference<JSObject>> s_csOwnedObjects = new Dictionary<int, WeakReference<JSObject>>();
         // we use this to maintain identity of GCHandle for a managed object
-        internal static Dictionary<object, IntPtr> GCHandleFromJSOwnedObject = new Dictionary<object, IntPtr>(ReferenceEqualityComparer.Instance);
+        public static Dictionary<object, IntPtr> s_gcHandleFromJSOwnedObject = new Dictionary<object, IntPtr>(ReferenceEqualityComparer.Instance);
 
-        internal static void RegisterCSOwnedObject(JSObject proxy)
+        public static void RegisterCSOwnedObject(JSObject proxy)
         {
-            lock (_csOwnedObjects)
+            lock (s_csOwnedObjects)
             {
-                _csOwnedObjects[(int)proxy.JSHandle] = new WeakReference<JSObject>(proxy, trackResurrection: true);
+                s_csOwnedObjects[(int)proxy.JSHandle] = new WeakReference<JSObject>(proxy, trackResurrection: true);
             }
         }
 
-        internal static void ReleaseCSOwnedObject(IntPtr jsHandle)
+        public static void ReleaseCSOwnedObject(IntPtr jsHandle)
         {
             if (jsHandle != IntPtr.Zero)
             {
-                lock (_csOwnedObjects)
+                lock (s_csOwnedObjects)
                 {
-                    _csOwnedObjects.Remove((int)jsHandle);
+                    s_csOwnedObjects.Remove((int)jsHandle);
                 }
                 Interop.Runtime.ReleaseCSOwnedObject(jsHandle);
             }
         }
 
-        internal static object GetTaskResult(Task task)
+        public static object GetTaskResult(Task task)
         {
             MethodInfo method = GetTaskResultMethodInfo(task.GetType());
             if (method != null)
@@ -52,37 +49,44 @@ namespace System.Runtime.InteropServices.JavaScript
             throw new InvalidOperationException();
         }
 
-        internal static void ReleaseInFlight(object obj)
+        public static void ReleaseInFlight(object obj)
         {
-            JSObject jsObj = obj as JSObject;
+            JSObject? jsObj = obj as JSObject;
             jsObj?.ReleaseInFlight();
         }
 
+        // A JSOwnedObject is a managed object with its lifetime controlled by javascript.
+        // The managed side maintains a strong reference to the object, while the JS side
+        //  maintains a weak reference and notifies the managed side if the JS wrapper object
+        //  has been reclaimed by the JS GC. At that point, the managed side will release its
+        //  strong references, allowing the managed object to be collected.
+        // This ensures that things like delegates and promises will never 'go away' while JS
+        //  is expecting to be able to invoke or await them.
         public static IntPtr GetJSOwnedObjectGCHandleRef(object obj, GCHandleType handleType)
         {
             if (obj == null)
                 return IntPtr.Zero;
 
             IntPtr result;
-            lock (JSOwnedObjectLock)
+            lock (s_gcHandleFromJSOwnedObject)
             {
                 IntPtr gcHandle;
-                if (GCHandleFromJSOwnedObject.TryGetValue(obj, out gcHandle))
+                if (s_gcHandleFromJSOwnedObject.TryGetValue(obj, out gcHandle))
                     return gcHandle;
 
                 result = (IntPtr)GCHandle.Alloc(obj, handleType);
-                GCHandleFromJSOwnedObject[obj] = result;
+                s_gcHandleFromJSOwnedObject[obj] = result;
                 return result;
             }
         }
 
-        internal static RuntimeMethodHandle GetMethodHandleFromIntPtr(IntPtr ptr)
+        public static RuntimeMethodHandle GetMethodHandleFromIntPtr(IntPtr ptr)
         {
             var temp = new IntPtrAndHandle { ptr = ptr };
             return temp.methodHandle;
         }
 
-        internal static MarshalType GetMarshalTypeFromType(Type type)
+        public static MarshalType GetMarshalTypeFromType(Type type)
         {
             if (type is null)
                 return MarshalType.VOID;
@@ -178,7 +182,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 return MarshalType.OBJECT;
         }
 
-        internal static char GetCallSignatureCharacterForMarshalType(MarshalType t, char? defaultValue)
+        public static char GetCallSignatureCharacterForMarshalType(MarshalType t, char? defaultValue)
         {
             switch (t)
             {
@@ -234,14 +238,14 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </remarks>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Task<T>.Result is preserved by the ILLinker because _taskGetResultMethodInfo was initialized with it.")]
-        internal static MethodInfo GetTaskResultMethodInfo(Type taskType)
+        public static MethodInfo GetTaskResultMethodInfo(Type taskType)
         {
             if (taskType != null)
             {
 #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
                 MethodInfo result = taskType.GetMethod(TaskGetResultName);
 #pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
-                if (result != null && result.HasSameMetadataDefinitionAs(_taskGetResultMethodInfo))
+                if (result != null && result.HasSameMetadataDefinitionAs(s_taskGetResultMethodInfo))
                 {
                     return result;
                 }

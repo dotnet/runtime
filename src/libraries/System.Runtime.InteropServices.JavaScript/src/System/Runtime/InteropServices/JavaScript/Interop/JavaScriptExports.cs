@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-#nullable disable
 
-using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -11,13 +9,13 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     internal static unsafe partial class JavaScriptExports
     {
-        public static void GetCSOwnedObjectByJSHandleRef(IntPtr jsHandle, int shouldAddInflight, out JSObject result)
+        public static void GetCSOwnedObjectByJSHandleRef(IntPtr jsHandle, int shouldAddInflight, out JSObject? result)
         {
-            lock (JSHostImplementation._csOwnedObjects)
+            lock (JSHostImplementation.s_csOwnedObjects)
             {
-                if (JSHostImplementation._csOwnedObjects.TryGetValue((int)jsHandle, out WeakReference<JSObject> reference))
+                if (JSHostImplementation.s_csOwnedObjects.TryGetValue((int)jsHandle, out WeakReference<JSObject>? reference))
                 {
-                    reference.TryGetTarget(out JSObject jsObject);
+                    reference.TryGetTarget(out JSObject? jsObject);
                     if (shouldAddInflight != 0 && jsObject != null)
                     {
                         jsObject.AddInFlight();
@@ -31,7 +29,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static IntPtr TryGetCSOwnedObjectJSHandleRef(in object rawObj, int shouldAddInflight)
         {
-            JSObject jsObject = rawObj as JSObject;
+            JSObject? jsObject = rawObj as JSObject;
             if (jsObject != null && shouldAddInflight != 0)
             {
                 jsObject.AddInFlight();
@@ -39,13 +37,13 @@ namespace System.Runtime.InteropServices.JavaScript
             return jsObject?.JSHandle ?? IntPtr.Zero;
         }
 
-        public static void CreateCSOwnedProxyRef(IntPtr jsHandle, JSHostImplementation.MappedType mappedType, int shouldAddInflight, out JSObject jsObject)
+        public static void CreateCSOwnedProxyRef(IntPtr jsHandle, JSHostImplementation.MappedType mappedType, int shouldAddInflight, out JSObject? jsObject)
         {
             jsObject = null;
 
-            lock (JSHostImplementation._csOwnedObjects)
+            lock (JSHostImplementation.s_csOwnedObjects)
             {
-                if (!JSHostImplementation._csOwnedObjects.TryGetValue((int)jsHandle, out WeakReference<JSObject> reference) ||
+                if (!JSHostImplementation.s_csOwnedObjects.TryGetValue((int)jsHandle, out WeakReference<JSObject>? reference) ||
                     !reference.TryGetTarget(out jsObject) ||
                     jsObject.IsDisposed)
                 {
@@ -61,7 +59,7 @@ namespace System.Runtime.InteropServices.JavaScript
                         _ => throw new ArgumentOutOfRangeException(nameof(mappedType))
                     };
 #pragma warning restore CS0612 // Type or member is obsolete
-                    JSHostImplementation._csOwnedObjects[(int)jsHandle] = new WeakReference<JSObject>(jsObject, trackResurrection: true);
+                    JSHostImplementation.s_csOwnedObjects[(int)jsHandle] = new WeakReference<JSObject>(jsObject, trackResurrection: true);
                 }
             }
             if (shouldAddInflight != 0)
@@ -76,13 +74,6 @@ namespace System.Runtime.InteropServices.JavaScript
             result = h.Target!;
         }
 
-        // A JSOwnedObject is a managed object with its lifetime controlled by javascript.
-        // The managed side maintains a strong reference to the object, while the JS side
-        //  maintains a weak reference and notifies the managed side if the JS wrapper object
-        //  has been reclaimed by the JS GC. At that point, the managed side will release its
-        //  strong references, allowing the managed object to be collected.
-        // This ensures that things like delegates and promises will never 'go away' while JS
-        //  is expecting to be able to invoke or await them.
         public static IntPtr GetJSOwnedObjectGCHandleRef(in object obj)
         {
             return JSHostImplementation.GetJSOwnedObjectGCHandleRef(obj, GCHandleType.Normal);
@@ -93,9 +84,9 @@ namespace System.Runtime.InteropServices.JavaScript
         public static void ReleaseJSOwnedObjectByGCHandle(IntPtr gcHandle)
         {
             GCHandle handle = (GCHandle)gcHandle;
-            lock (JSHostImplementation.JSOwnedObjectLock)
+            lock (JSHostImplementation.s_gcHandleFromJSOwnedObject)
             {
-                JSHostImplementation.GCHandleFromJSOwnedObject.Remove(handle.Target!);
+                JSHostImplementation.s_gcHandleFromJSOwnedObject.Remove(handle.Target!);
                 handle.Free();
             }
         }
@@ -152,7 +143,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     if (task.Exception == null)
                     {
-                        object result;
+                        object? result;
                         Type task_type = task.GetType();
                         if (task_type == typeof(Task))
                         {
@@ -221,7 +212,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             var methodHandle = JSHostImplementation.GetMethodHandleFromIntPtr(_methodHandle);
 
-            MethodBase mb = objForRuntimeType is null ? MethodBase.GetMethodFromHandle(methodHandle) : MethodBase.GetMethodFromHandle(methodHandle, Type.GetTypeHandle(objForRuntimeType));
+            MethodBase? mb = objForRuntimeType is null ? MethodBase.GetMethodFromHandle(methodHandle) : MethodBase.GetMethodFromHandle(methodHandle, Type.GetTypeHandle(objForRuntimeType));
             if (mb is null)
                 return string.Empty;
 

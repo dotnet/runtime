@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -60,16 +59,12 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public override int GetHashCode() => (int)JSHandle;
 
-        public override string ToString()
-        {
-            return $"(js-obj js '{JSHandle}')";
-        }
+        public override string ToString() => $"(js-obj js '{JSHandle}')";
 
         private void Dispose(bool disposing)
         {
             if (!_isDisposed)
             {
-
                 JSHostImplementation.ReleaseCSOwnedObject(JSHandle);
                 JSHandle = IntPtr.Zero;
                 _isDisposed = true;

@@ -199,7 +199,6 @@ namespace System.Net.Http
                     // Cors has its own restrictions on headers.
                     // https://developer.mozilla.org/en-US/docs/Web/API/Headers
 
-
                     using (JSObject jsHeaders = (JSObject)HeadersFactory.Call())
                     {
                         foreach (KeyValuePair<string, IEnumerable<string>> header in request.Headers)
