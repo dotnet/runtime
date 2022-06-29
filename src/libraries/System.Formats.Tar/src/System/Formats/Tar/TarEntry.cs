@@ -595,7 +595,8 @@ namespace System.Formats.Tar
                 Options = FileOptions.Asynchronous
             };
             // Rely on FileStream's ctor for further checking destinationFileName parameter
-            using (FileStream fs = new FileStream(destinationFileName, fileStreamOptions))
+            FileStream fs = new FileStream(destinationFileName, fileStreamOptions);
+            await using (fs)
             {
                 if (DataStream != null)
                 {
