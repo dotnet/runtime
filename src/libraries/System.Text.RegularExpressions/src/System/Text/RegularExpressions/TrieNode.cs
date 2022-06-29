@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -24,7 +24,19 @@ namespace System.Text.RegularExpressions
 
         public Dictionary<char, int> Children = new();
 
-        public bool IsMatch;
+        private bool _isMatch;
+
+        public bool IsMatch
+        {
+            get => _isMatch;
+            set
+            {
+                if (Parent != -1)
+                {
+                    _isMatch = value;
+                }
+            }
+        }
 
         public int Parent { get; init; }
 
