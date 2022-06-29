@@ -5,22 +5,27 @@ namespace System.Net.Quic.Implementations.MsQuic
 {
     internal static class ThrowHelper
     {
-        internal static Exception GetConnectionAbortedException(long errorCode)
+        internal static QuicException GetConnectionAbortedException(long errorCode)
         {
             return errorCode switch
             {
-                -1 => new QuicOperationAbortedException(), // Shutdown initiated by us.
-                long err => new QuicConnectionAbortedException(err) // Shutdown initiated by peer.
+                -1 => GetOperationAbortedException(), // Shutdown initiated by us.
+                long err => new QuicException(QuicError.ConnectionAborted, SR.Format(SR.net_quic_connectionaborted, err), err, null) // Shutdown initiated by peer.
             };
         }
 
-        internal static Exception GetStreamAbortedException(long errorCode)
+        internal static QuicException GetStreamAbortedException(long errorCode)
         {
             return errorCode switch
             {
-                -1 => new QuicOperationAbortedException(), // Shutdown initiated by us.
-                long err => new QuicStreamAbortedException(err) // Shutdown initiated by peer.
+                -1 => GetOperationAbortedException(), // Shutdown initiated by us.
+                long err => new QuicException(QuicError.StreamAborted, SR.Format(SR.net_quic_streamaborted, err), err, null) // Shutdown initiated by peer.
             };
+        }
+
+        internal static QuicException GetOperationAbortedException(string? message = null)
+        {
+            return new QuicException(QuicError.OperationAborted, message ?? SR.net_quic_operationaborted, null, null);
         }
     }
 }

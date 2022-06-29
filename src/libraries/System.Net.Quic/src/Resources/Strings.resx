@@ -130,7 +130,10 @@
     <value>Reading is not allowed on stream.</value>
   </data>
   <data name="net_quic_sending_aborted" xml:space="preserve">
-    <value>Sending has already been aborted on the stream</value>
+    <value>Sending has been aborted on the stream</value>
+  </data>
+  <data name="net_quic_receiving_aborted" xml:space="preserve">
+    <value>Receiving has been aborted on the stream</value>
   </data>
   <data name="net_quic_streamaborted" xml:space="preserve">
     <value>Stream aborted by peer ({0}).</value>

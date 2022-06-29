@@ -8,12 +8,12 @@ using static Microsoft.Quic.MsQuic;
 
 namespace Microsoft.Quic
 {
-    internal sealed class MsQuicException : QuicException
+    internal sealed class MsQuicException : Exception
     {
         public int Status { get; }
 
         public MsQuicException(int status, string? message = null, Exception? innerException = null)
-            : base($"{(message ?? nameof(MsQuicException))}: {GetErrorCodeForStatus(status)}", innerException, MapMsQuicStatusToHResult(status))
+            : base($"{(message ?? nameof(MsQuicException))}: {GetErrorCodeForStatus(status)}", innerException)
         {
             Status = status;
         }

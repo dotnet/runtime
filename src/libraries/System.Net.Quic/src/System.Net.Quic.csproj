@@ -16,14 +16,12 @@
     <Compile Include="System\Net\Quic\NetEventSource.Quic.cs" />
     <Compile Include="System\Net\Quic\QuicClientConnectionOptions.cs" />
     <Compile Include="System\Net\Quic\QuicConnection.cs" />
-    <Compile Include="System\Net\Quic\QuicConnectionAbortedException.cs" />
+    <Compile Include="System\Net\Quic\QuicError.cs" />
     <Compile Include="System\Net\Quic\QuicException.cs" />
     <Compile Include="System\Net\Quic\QuicListener.cs" />
     <Compile Include="System\Net\Quic\QuicListenerOptions.cs" />
-    <Compile Include="System\Net\Quic\QuicOperationAbortedException.cs" />
     <Compile Include="System\Net\Quic\QuicOptions.cs" />
     <Compile Include="System\Net\Quic\QuicStream.cs" />
-    <Compile Include="System\Net\Quic\QuicStreamAbortedException.cs" />
     <Compile Include="System\Net\Quic\Implementations\*.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\*.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\*.cs" />

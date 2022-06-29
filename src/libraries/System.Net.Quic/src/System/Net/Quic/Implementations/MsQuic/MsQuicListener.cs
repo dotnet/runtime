@@ -136,7 +136,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
             catch (ChannelClosedException)
             {
-                throw new QuicOperationAbortedException();
+                throw ThrowHelper.GetOperationAbortedException();
             }
         }
 
