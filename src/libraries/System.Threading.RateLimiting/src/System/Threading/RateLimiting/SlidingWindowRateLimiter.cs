@@ -26,6 +26,7 @@ namespace System.Threading.RateLimiting
 
         private readonly Timer? _renewTimer;
         private readonly SlidingWindowRateLimiterOptions _options;
+        private readonly TimeSpan _replenishmentPeriod;
         private readonly Deque<RequestRegistration> _queue = new Deque<RequestRegistration>();
 
         // Use the queue as the lock field so we don't need to allocate another object for a lock and have another field in the object
@@ -42,7 +43,7 @@ namespace System.Threading.RateLimiting
         public override bool IsAutoReplenishing => _options.AutoReplenishment;
 
         /// <inheritdoc />
-        public override TimeSpan ReplenishmentPeriod => new TimeSpan(_options.Window.Ticks / _options.SegmentsPerWindow);
+        public override TimeSpan ReplenishmentPeriod => _replenishmentPeriod;
 
         /// <summary>
         /// Initializes the <see cref="SlidingWindowRateLimiter"/>.
@@ -78,6 +79,7 @@ namespace System.Threading.RateLimiting
             };
 
             _requestCount = options.PermitLimit;
+            _replenishmentPeriod = new TimeSpan(_options.Window.Ticks / _options.SegmentsPerWindow);
 
             // _requestsPerSegment holds the no. of acquired requests in each window segment
             _requestsPerSegment = new int[options.SegmentsPerWindow];
@@ -287,26 +289,38 @@ namespace System.Threading.RateLimiting
                     return;
                 }
 
-                if ((long)((nowTicks - _lastReplenishmentTick) * TickFrequency) < ReplenishmentPeriod.Ticks)
+                long periods = (long)((nowTicks - _lastReplenishmentTick) * TickFrequency) / ReplenishmentPeriod.Ticks;
+                if (periods == 0)
                 {
                     return;
                 }
 
-                _lastReplenishmentTick = nowTicks;
+                // increment last tick by the number of replenish periods that occurred since the last replenish
+                // this way if replenish isn't being called every ReplenishmentPeriod we correctly track it so we know when replenishes should be occurring
+                _lastReplenishmentTick += (long)(periods * ReplenishmentPeriod.Ticks / TickFrequency);
 
-                // Increment the current segment index while move the window
-                // We need to know the no. of requests that were acquired in a segment previously to ensure that we don't acquire more than the permit limit.
-                _currentSegmentIndex = (_currentSegmentIndex + 1) % _options.SegmentsPerWindow;
-                int oldSegmentRequestCount = _requestsPerSegment[_currentSegmentIndex];
-                _requestsPerSegment[_currentSegmentIndex] = 0;
-
-                if (oldSegmentRequestCount == 0)
+                int initialRequestCount = _requestCount;
+                do
                 {
+                    // Increment the current segment index while move the window
+                    // We need to know the no. of requests that were acquired in a segment previously to ensure that we don't acquire more than the permit limit.
+                    _currentSegmentIndex = (_currentSegmentIndex + 1) % _options.SegmentsPerWindow;
+                    int oldSegmentRequestCount = _requestsPerSegment[_currentSegmentIndex];
+                    _requestsPerSegment[_currentSegmentIndex] = 0;
+
+                    if (oldSegmentRequestCount != 0)
+                    {
+                        _requestCount += oldSegmentRequestCount;
+                        Debug.Assert(_requestCount <= _options.PermitLimit);
+                    }
+                    periods--;
+                } while (periods > 0);
+
+                if (initialRequestCount == _requestCount)
+                {
+                    // no requests added, queued items don't need updating
                     return;
                 }
-
-                _requestCount += oldSegmentRequestCount;
-                Debug.Assert(_requestCount <= _options.PermitLimit);
 
                 // Process queued requests
                 while (_queue.Count > 0)
