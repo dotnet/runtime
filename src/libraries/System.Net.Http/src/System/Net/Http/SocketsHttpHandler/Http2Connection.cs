@@ -993,14 +993,8 @@ namespace System.Net.Http
 
             _incomingBuffer.Discard(frameHeader.PayloadLength);
 
-            if (protocolError == Http2ProtocolErrorCode.RefusedStream)
-            {
-                http2Stream.OnReset(HttpProtocolException.CreateHttp2StreamException(protocolError), resetStreamErrorCode: protocolError, canRetry: true);
-            }
-            else
-            {
-                http2Stream.OnReset(HttpProtocolException.CreateHttp2StreamException(protocolError), resetStreamErrorCode: protocolError);
-            }
+            bool canRetry = protocolError == Http2ProtocolErrorCode.RefusedStream;
+            http2Stream.OnReset(HttpProtocolException.CreateHttp2StreamException(protocolError), resetStreamErrorCode: protocolError, canRetry: canRetry);
         }
 
         private void ProcessGoAwayFrame(FrameHeader frameHeader)
