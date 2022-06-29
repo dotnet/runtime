@@ -72,7 +72,7 @@ namespace System.Security.Cryptography.Cose
 
         public bool ContainsKey(CoseHeaderLabel key) => _headerParameters.ContainsKey(key);
 
-        public bool TryGetValue(CoseHeaderLabel key, [MaybeNullWhen(false)] out CoseHeaderValue value) => _headerParameters.TryGetValue(key, out value);
+        public bool TryGetValue(CoseHeaderLabel key, out CoseHeaderValue value) => _headerParameters.TryGetValue(key, out value);
 
         public void Clear()
         {

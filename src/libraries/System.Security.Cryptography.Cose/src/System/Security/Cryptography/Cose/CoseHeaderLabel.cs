@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.Cose
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public readonly struct CoseHeaderLabel : IEquatable<CoseHeaderLabel>
     {
-        internal string LabelName => $"\"{LabelAsString}\"" ?? LabelAsInt32.ToString();
+        internal string LabelName => LabelAsString != null ? $"\"{LabelAsString}\"" : LabelAsInt32.ToString();
         private string DebuggerDisplay => $"Label = {LabelName}, Type = {(LabelAsString != null ? typeof(string) : typeof(int))}";
 
         // https://www.iana.org/assignments/cose/cose.xhtml#header-parameters

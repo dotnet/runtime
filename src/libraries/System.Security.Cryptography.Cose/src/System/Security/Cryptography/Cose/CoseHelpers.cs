@@ -155,7 +155,6 @@ namespace System.Security.Cryptography.Cose
 
             if (!key.TrySignHash(hash, destination, hashAlgorithm, padding, out int bytesWritten))
             {
-                Debugger.Launch();
                 Debug.Fail("TrySignData failed with a pre-calculated destination");
                 throw new CryptographicException();
             }

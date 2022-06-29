@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.Cose
 {
     public sealed class CoseSign1Message : CoseMessage
     {
-        private const int Sign1ArrayLegth = 4;
+        private const int Sign1ArrayLength = 4;
         private const int Sign1SizeOfCborTag = 1;
         private readonly byte[] _signature;
 
@@ -158,7 +158,7 @@ namespace System.Security.Cryptography.Cose
         {
             var writer = new CborWriter();
             writer.WriteTag(Sign1Tag);
-            writer.WriteStartArray(Sign1ArrayLegth);
+            writer.WriteStartArray(Sign1ArrayLength);
 
             int protectedMapBytesWritten = CoseHelpers.WriteHeaderMap(buffer, writer, signer._protectedHeaders, isProtected: true, algHeaderValueToSlip);
             // We're going to use the encoded protected headers again after this step (for the toBeSigned construction),
@@ -181,7 +181,7 @@ namespace System.Security.Cryptography.Cose
         {
             var writer = new CborWriter();
             writer.WriteTag(Sign1Tag);
-            writer.WriteStartArray(Sign1ArrayLegth);
+            writer.WriteStartArray(Sign1ArrayLength);
 
             int protectedMapBytesWritten = CoseHelpers.WriteHeaderMap(buffer, writer, signer._protectedHeaders, isProtected: true, algHeaderValueToSlip);
             // We're going to use the encoded protected headers again after this step (for the toBeSigned construction),
@@ -451,7 +451,7 @@ namespace System.Security.Cryptography.Cose
                 writer.WriteTag(Sign1Tag);
             }
 
-            writer.WriteStartArray(Sign1ArrayLegth);
+            writer.WriteStartArray(Sign1ArrayLength);
 
             writer.WriteByteString(_protectedHeaderAsBstr);
 

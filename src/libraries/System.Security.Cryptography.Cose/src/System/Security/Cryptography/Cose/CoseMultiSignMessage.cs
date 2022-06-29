@@ -14,7 +14,7 @@ namespace System.Security.Cryptography.Cose
 {
     public sealed class CoseMultiSignMessage : CoseMessage
     {
-        private const int MultiSignArrayLegth = 4;
+        private const int MultiSignArrayLength = 4;
         private const int CoseSignatureArrayLength = 3;
         private const int MultiSignSizeOfCborTag = 2;
 
@@ -159,7 +159,7 @@ namespace System.Security.Cryptography.Cose
         {
             var writer = new CborWriter();
             writer.WriteTag(MultiSignTag);
-            writer.WriteStartArray(MultiSignArrayLegth);
+            writer.WriteStartArray(MultiSignArrayLength);
 
             int protectedMapBytesWritten = CoseHelpers.WriteHeaderMap(buffer, writer, protectedHeaders, isProtected: true, null);
             // We're going to use the encoded protected headers again after this step (for the toBeSigned construction),
@@ -186,7 +186,7 @@ namespace System.Security.Cryptography.Cose
         {
             var writer = new CborWriter();
             writer.WriteTag(MultiSignTag);
-            writer.WriteStartArray(MultiSignArrayLegth);
+            writer.WriteStartArray(MultiSignArrayLength);
 
             int protectedMapBytesWritten = CoseHelpers.WriteHeaderMap(buffer, writer, protectedHeaders, isProtected: true, null);
             // We're going to use the encoded protected headers again after this step (for the toBeSigned construction),
@@ -333,7 +333,7 @@ namespace System.Security.Cryptography.Cose
                 writer.WriteTag(MultiSignTag);
             }
 
-            writer.WriteStartArray(MultiSignArrayLegth);
+            writer.WriteStartArray(MultiSignArrayLength);
 
             writer.WriteByteString(_protectedHeaderAsBstr);
 

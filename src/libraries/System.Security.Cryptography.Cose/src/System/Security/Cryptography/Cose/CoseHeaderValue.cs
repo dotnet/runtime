@@ -10,6 +10,7 @@ namespace System.Security.Cryptography.Cose
     public readonly struct CoseHeaderValue : IEquatable<CoseHeaderValue>
     {
         public readonly ReadOnlyMemory<byte> EncodedValue { get; }
+
         private CoseHeaderValue(ReadOnlyMemory<byte> encodedValue)
         {
             EncodedValue = encodedValue;
