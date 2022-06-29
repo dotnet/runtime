@@ -107,18 +107,8 @@ namespace System.Formats.Tar
         /// <exception cref="IOException">An I/O problem occurred.</exception>
         public void WriteEntry(string fileName, string? entryName)
         {
-            ThrowIfDisposed();
-
-            ArgumentException.ThrowIfNullOrEmpty(fileName);
-
-            string fullPath = Path.GetFullPath(fileName);
-
-            if (string.IsNullOrEmpty(entryName))
-            {
-                entryName = Path.GetFileName(fileName);
-            }
-
-            ReadFileFromDiskAndWriteToArchiveStreamAsEntry(fullPath, entryName);
+            (string fullPath, string actualEntryName) = ValidateWriteEntryArguments(fileName, entryName);
+            ReadFileFromDiskAndWriteToArchiveStreamAsEntry(fullPath, actualEntryName);
         }
 
         /// <summary>
@@ -137,18 +127,35 @@ namespace System.Formats.Tar
             {
                 return Task.FromCanceled(cancellationToken);
             }
-            ThrowIfDisposed();
 
-            ArgumentException.ThrowIfNullOrEmpty(fileName);
+            (string fullPath, string actualEntryName) = ValidateWriteEntryArguments(fileName, entryName);
+            return ReadFileFromDiskAndWriteToArchiveStreamAsEntryAsync(fullPath, actualEntryName, cancellationToken);
+        }
 
-            string fullPath = Path.GetFullPath(fileName);
+        // Reads an entry from disk and writes it into the archive stream.
+        private void ReadFileFromDiskAndWriteToArchiveStreamAsEntry(string fullPath, string entryName)
+        {
+            TarEntry entry = ConstructEntryForWriting(fullPath, entryName, FileOptions.None);
 
-            if (string.IsNullOrEmpty(entryName))
+            WriteEntry(entry);
+            if (entry._header._dataStream != null)
             {
-                entryName = Path.GetFileName(fileName);
+                entry._header._dataStream.Dispose();
             }
+        }
 
-            return ReadFileFromDiskAndWriteToArchiveStreamAsEntryAsync(fullPath, entryName, cancellationToken);
+        // Asynchronously reads an entry from disk and writes it into the archive stream.
+        private async Task ReadFileFromDiskAndWriteToArchiveStreamAsEntryAsync(string fullPath, string entryName, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            TarEntry entry = ConstructEntryForWriting(fullPath, entryName, FileOptions.Asynchronous);
+
+            await WriteEntryAsync(entry, cancellationToken).ConfigureAwait(false);
+            if (entry._header._dataStream != null)
+            {
+                await entry._header._dataStream.DisposeAsync().ConfigureAwait(false);
+            }
         }
 
         /// <summary>
@@ -394,6 +401,17 @@ namespace System.Formats.Tar
             byte[] emptyRecord = new byte[TarHelpers.RecordSize];
             await _archiveStream.WriteAsync(emptyRecord, cancellationToken: default).ConfigureAwait(false);
             await _archiveStream.WriteAsync(emptyRecord, cancellationToken: default).ConfigureAwait(false);
+        }
+
+        private (string, string) ValidateWriteEntryArguments(string fileName, string? entryName)
+        {
+            ThrowIfDisposed();
+            ArgumentException.ThrowIfNullOrEmpty(fileName);
+
+            string fullPath = Path.GetFullPath(fileName);
+            string? actualEntryName = string.IsNullOrEmpty(entryName) ? Path.GetFileName(fileName) : entryName;
+
+            return (fullPath, actualEntryName);
         }
     }
 }
