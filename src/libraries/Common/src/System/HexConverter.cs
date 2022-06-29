@@ -120,24 +120,8 @@ namespace System
                 uint block = Unsafe.ReadUnaligned<uint>(
                     ref Unsafe.Add(ref MemoryMarshal.GetReference(bytes), pos));
 
-                // TODO: Remove once cross-platform Shuffle is landed
-                // https://github.com/dotnet/runtime/issues/63331
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                static Vector128<byte> Shuffle(Vector128<byte> value, Vector128<byte> mask)
-                {
-                    if (Ssse3.IsSupported)
-                    {
-                        return Ssse3.Shuffle(value, mask);
-                    }
-                    else if (!AdvSimd.Arm64.IsSupported)
-                    {
-                        ThrowHelper.ThrowNotSupportedException();
-                    }
-                    return AdvSimd.Arm64.VectorTableLookup(value, mask);
-                }
-
                 // Calculate nibbles
-                Vector128<byte> lowNibbles = Shuffle(
+                Vector128<byte> lowNibbles = Vector128.Shuffle(
                     Vector128.CreateScalarUnsafe(block).AsByte(), shuffleMask);
 
                 // ExtractVector128 is not entirely the same as ShiftRightLogical128BitLane, but it works here since
@@ -150,7 +134,7 @@ namespace System
 
                 // Lookup the hex values at the positions of the indices
                 Vector128<byte> indices = (lowNibbles | highNibbles) & Vector128.Create((byte)0xF);
-                Vector128<byte> hex = Shuffle(asciiTable, indices);
+                Vector128<byte> hex = Vector128.Shuffle(asciiTable, indices);
 
                 // The high bytes (0x00) of the chars have also been converted
                 // to ascii hex '0', so clear them out.
