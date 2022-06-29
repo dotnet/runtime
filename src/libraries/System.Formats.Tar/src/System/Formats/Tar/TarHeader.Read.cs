@@ -562,9 +562,9 @@ namespace System.Formats.Tar
                 return;
             }
 
-            // It is not expected that the extended attributes data section will be longer than int.MaxValue, considering
+            // It is not expected that the extended attributes data section will be longer than Array.MaxLength, considering
             // 4096 is a common max path length, and also the size field is 12 bytes long, which is under int.MaxValue.
-            if (_size > int.MaxValue)
+            if (_size > Array.MaxLength)
             {
                 throw new InvalidOperationException(string.Format(SR.TarSizeFieldTooLargeForEntryType, _typeFlag.ToString()));
             }
@@ -583,9 +583,9 @@ namespace System.Formats.Tar
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            // It is not expected that the extended attributes data section will be longer than int.MaxValue, considering
+            // It is not expected that the extended attributes data section will be longer than Array.MaxLength, considering
             // 4096 is a common max path length, and also the size field is 12 bytes long, which is under int.MaxValue.
-            if (size > int.MaxValue)
+            if (size > Array.MaxLength)
             {
                 throw new InvalidOperationException(string.Format(SR.TarSizeFieldTooLargeForEntryType, entryType.ToString()));
             }
@@ -629,7 +629,7 @@ namespace System.Formats.Tar
         {
             Debug.Assert(_typeFlag is TarEntryType.LongLink or TarEntryType.LongPath);
 
-            if (_size > int.MaxValue)
+            if (_size > Array.MaxLength)
             {
                 throw new InvalidOperationException(string.Format(SR.TarSizeFieldTooLargeForEntryType, _typeFlag.ToString()));
             }
@@ -668,7 +668,7 @@ namespace System.Formats.Tar
                 return null;
             }
 
-            if (size > int.MaxValue)
+            if (size > Array.MaxLength)
             {
                 throw new InvalidOperationException(string.Format(SR.TarSizeFieldTooLargeForEntryType, entryType.ToString()));
             }
