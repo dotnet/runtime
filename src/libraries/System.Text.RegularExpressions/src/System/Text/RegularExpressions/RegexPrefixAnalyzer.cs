@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -12,8 +11,41 @@ namespace System.Text.RegularExpressions
     /// <summary>Detects various forms of prefixes in the regular expression that can help FindFirstChars optimize its search.</summary>
     internal static class RegexPrefixAnalyzer
     {
+        // The minimum number of use to match that it would make sense to use a MultiStringMatcher.
+        private const int MinMultiPrefixes = 5;
+
+        /// <summary>
+        /// Tries to create a <see cref="MultiStringMatcher"/> from the leading fixed part
+        /// of a <see cref="RegexNode"/>. In case it consists of only one non-empty string,
+        /// that string will be returned and the <see cref="MultiStringMatcher"/>
+        /// will be <see langword="null"/>.
+        /// </summary>
+        internal static (string? SinglePrefix, MultiStringMatcher? MultiPrefixMatcher) CreatePrefixMatcher(RegexNode node)
+        {
+            if ((node.Options & RegexOptions.RightToLeft) != 0)
+            {
+                // MultiStringMatcher is not yet supported in RightToLeft.
+                // We use a more lightweight method to get that single prefix if it exists.
+                return (FindPrefix(node), null);
+            }
+
+            if (TrieBuilder.TryCreateFromPrefix(node, out List<TrieNode>? trie))
+            {
+                (int matchCount, string? singleMatch) = trie.GetMatchCountAndSingleMatch();
+                if (singleMatch is not null)
+                {
+                    return (singleMatch, null);
+                }
+                else if (matchCount >= MinMultiPrefixes)
+                {
+                    return (null, new MultiStringMatcher(trie));
+                }
+            }
+            return (null, null);
+        }
+
         /// <summary>Computes the leading substring in <paramref name="node"/>; may be empty.</summary>
-        public static string FindPrefix(RegexNode node)
+        private static string FindPrefix(RegexNode node)
         {
             var vsb = new ValueStringBuilder(stackalloc char[64]);
             Process(node, ref vsb);

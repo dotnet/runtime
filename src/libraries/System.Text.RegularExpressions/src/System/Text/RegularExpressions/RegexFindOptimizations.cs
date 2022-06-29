@@ -65,14 +65,24 @@ namespace System.Text.RegularExpressions
                 }
             }
 
-            // If there's a leading substring, just use IndexOf and inherit all of its optimizations.
-            string prefix = RegexPrefixAnalyzer.FindPrefix(root);
-            if (prefix.Length > 1)
+            // We try to find fixed prefixes in the regex.
+            (string? prefix, MultiStringMatcher? prefixMatcher) = RegexPrefixAnalyzer.CreatePrefixMatcher(root);
+
+            // If there's only one, just use IndexOf and inherit all of its optimizations.
+            if (prefix is { Length: > 1 })
             {
                 LeadingPrefix = prefix;
                 FindMode = _rightToLeft ?
                     FindNextStartingPositionMode.LeadingString_RightToLeft :
                     FindNextStartingPositionMode.LeadingString_LeftToRight;
+                return;
+            }
+
+            if (prefixMatcher is not null)
+            {
+                Debug.Assert(!_rightToLeft);
+                PrefixMatcher = prefixMatcher;
+                FindMode = FindNextStartingPositionMode.LeadingMultiString_LeftToRight;
                 return;
             }
 
@@ -104,8 +114,7 @@ namespace System.Text.RegularExpressions
                         chars = scratch.Slice(0, scratchCount).ToArray();
                     }
 
-                    if (!compiled &&
-                        chars is { Length: 1 })
+                    if (!compiled && chars is { Length: 1 })
                     {
                         // The set contains one and only one character, meaning every match starts
                         // with the same literal value (potentially case-insensitive). Search for that.
@@ -221,6 +230,8 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Gets the leading prefix.  May be an empty string.</summary>
         public string LeadingPrefix { get; } = string.Empty;
+
+        public MultiStringMatcher? PrefixMatcher { get; }
 
         /// <summary>When in fixed distance literal mode, gets the literal and how far it is from the start of the pattern.</summary>
         public (char Char, string? String, int Distance) FixedDistanceLiteral { get; }
@@ -465,6 +476,22 @@ namespace System.Text.RegularExpressions
                         }
 
                         pos = 0;
+                        return false;
+                    }
+
+                // The pattern starts with one of a finite number of strings.  Use the MultiStringMatcher to find the first instance.
+
+                case FindNextStartingPositionMode.LeadingMultiString_LeftToRight:
+                    {
+                        Debug.Assert(PrefixMatcher is not null);
+                        int i = PrefixMatcher.Find(textSpan.Slice(pos));
+                        if (i >= 0)
+                        {
+                            pos += i;
+                            return true;
+                        }
+
+                        pos = textSpan.Length;
                         return false;
                     }
 
@@ -728,6 +755,9 @@ namespace System.Text.RegularExpressions
         LeadingString_LeftToRight,
         /// <summary>A multi-character substring at the beginning of the right-to-left pattern.</summary>
         LeadingString_RightToLeft,
+
+        /// <summary>A string in a finite set of strings at the beginning of the pattern.</summary>
+        LeadingMultiString_LeftToRight,
 
         /// <summary>A set starting the pattern.</summary>
         LeadingSet_LeftToRight,
