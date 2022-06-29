@@ -29,11 +29,6 @@ namespace System.Net.Http
             ErrorCode = errorCode;
         }
 
-        private HttpProtocolException(long errorCode, string message)
-            : this(errorCode, message, null)
-        {
-        }
-
         /// <summary>
         /// Gets the HTTP/2 or HTTP/3 error code associated with this exception.
         /// </summary>
@@ -42,13 +37,13 @@ namespace System.Net.Http
         internal static HttpProtocolException CreateHttp2StreamException(Http2ProtocolErrorCode protocolError)
         {
             string message = SR.Format(SR.net_http_http2_stream_error, GetName(protocolError), ((int)protocolError).ToString("x"));
-            return new HttpProtocolException((long)protocolError, message);
+            return new HttpProtocolException((long)protocolError, message, null);
         }
 
         internal static HttpProtocolException CreateHttp2ConnectionException(Http2ProtocolErrorCode protocolError)
         {
             string message = SR.Format(SR.net_http_http2_connection_error, GetName(protocolError), ((int)protocolError).ToString("x"));
-            return new HttpProtocolException((long)protocolError, message);
+            return new HttpProtocolException((long)protocolError, message, null);
         }
 
         private static string GetName(Http2ProtocolErrorCode code) =>

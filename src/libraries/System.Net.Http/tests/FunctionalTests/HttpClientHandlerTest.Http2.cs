@@ -32,9 +32,7 @@ namespace System.Net.Http.Functional.Tests
         {
             HttpRequestException outerEx = await Assert.ThrowsAsync<HttpRequestException>(() => task);
             _output.WriteLine(outerEx.InnerException.Message);
-            HttpProtocolException protocolEx = outerEx.InnerException as HttpProtocolException;
-
-            Assert.NotNull(protocolEx);
+            HttpProtocolException protocolEx = Assert.IsType<HttpProtocolException>(outerEx.InnerException);
             Assert.Equal(errorCode, (ProtocolErrors)protocolEx.ErrorCode);
         }
 
@@ -954,7 +952,6 @@ namespace System.Net.Http.Functional.Tests
                         sendTask
                     }.WhenAllOrAnyFailed(TestHelper.PassingTestTimeoutMilliseconds));
 
-                Assert.NotNull(exception.InnerException);
                 var protocolException = Assert.IsType<HttpProtocolException>(exception.InnerException);
                 Assert.Equal((long)ProtocolErrors.PROTOCOL_ERROR, protocolException.ErrorCode);
             }

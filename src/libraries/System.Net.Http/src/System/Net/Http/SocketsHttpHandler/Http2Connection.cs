@@ -2064,7 +2064,7 @@ namespace System.Net.Http
             throw new HttpRequestException(message, innerException, allowRetry: RequestRetryType.RetryOnConnectionFailure);
 
         private static Exception GetRequestAbortedException(Exception? innerException = null) =>
-            innerException is HttpProtocolException ? innerException : new IOException(SR.net_http_request_aborted, innerException);
+            innerException as HttpProtocolException ?? new IOException(SR.net_http_request_aborted, innerException);
 
         [DoesNotReturn]
         private static void ThrowRequestAborted(Exception? innerException = null) =>
