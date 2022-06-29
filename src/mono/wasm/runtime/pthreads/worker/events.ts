@@ -16,14 +16,18 @@ export interface WorkerThreadEventMap {
 
 interface WorkerThreadEventDetail {
     pthread_ptr: pthread_ptr;
+    portToMain: MessagePort;
 }
 
 export class WorkerThreadEvent extends CustomEvent<WorkerThreadEventDetail> {
-    constructor(type: keyof WorkerThreadEventMap, pthread_ptr: pthread_ptr) {
-        super(type, { detail: { pthread_ptr } });
+    constructor(type: keyof WorkerThreadEventMap, pthread_ptr: pthread_ptr, portToMain: MessagePort) {
+        super(type, { detail: { pthread_ptr, portToMain } });
     }
     get pthread_ptr(): pthread_ptr {
         return this.detail.pthread_ptr;
+    }
+    get portToMain(): MessagePort {
+        return this.detail.portToMain;
     }
 }
 
@@ -48,6 +52,6 @@ export interface WorkerThreadEventTarget extends EventTarget {
 //     }
 // }
 
-export function makeWorkerThreadEvent(type: keyof WorkerThreadEventMap, pthread_ptr: pthread_ptr): WorkerThreadEvent {
-    return new WorkerThreadEvent(type, pthread_ptr);
+export function makeWorkerThreadEvent(type: keyof WorkerThreadEventMap, pthread_ptr: pthread_ptr, port: MessagePort): WorkerThreadEvent {
+    return new WorkerThreadEvent(type, pthread_ptr, port);
 }

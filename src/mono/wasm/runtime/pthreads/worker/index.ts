@@ -34,21 +34,27 @@ function monoDedicatedChannelMessageFromMainToWorker(event: MessageEvent<string>
     console.debug("got message from main on the dedicated channel", event.data);
 }
 
-function setupChannelToMainThread(pthread_ptr: pthread_ptr): void {
+let portToMain: MessagePort | null = null;
+
+function setupChannelToMainThread(pthread_ptr: pthread_ptr): MessagePort {
     console.debug("creating a channel", pthread_ptr);
     const channel = new MessageChannel();
     const workerPort = channel.port1;
     const mainPort = channel.port2;
     workerPort.addEventListener("message", monoDedicatedChannelMessageFromMainToWorker);
     workerPort.start();
+    portToMain = workerPort;
     self.postMessage(makeChannelCreatedMonoMessage(pthread_ptr, mainPort), [mainPort]);
+    return workerPort;
 }
 
 /// This is an implementation detail function.
 /// Called in the worker thread from mono when a pthread becomes attached to the mono runtime.
 export function mono_wasm_pthread_on_pthread_attached(pthread_id: pthread_ptr): void {
+    const port = portToMain;
+    mono_assert(port !== null, "expected a port to the main thread");
     console.debug("attaching pthread to runtime", pthread_id);
-    currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadAttached, pthread_id));
+    currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadAttached, pthread_id, port));
 }
 
 /// This is an implementation detail function.
@@ -60,7 +66,7 @@ export function afterThreadInit(): void {
         const pthread_ptr = (<any>Module)["_pthread_self"]();
         mono_assert(!is_nullish(pthread_ptr), "pthread_self() returned null");
         console.debug("after thread init, pthread ptr", pthread_ptr);
-        setupChannelToMainThread(pthread_ptr);
-        currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadCreated, pthread_ptr));
+        const port = setupChannelToMainThread(pthread_ptr);
+        currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadCreated, pthread_ptr, port));
     }
 }

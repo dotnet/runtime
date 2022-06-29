@@ -60,7 +60,7 @@ function monoWorkerMessageHandler(worker: Worker, ev: MessageEvent<MonoWorkerMes
     }
 }
 
-/// Called by Emscripten internals when a new pthread worker is created and added to the pthread worker pool.
+/// Called by Emscripten internals on the browser thread when a new pthread worker is created and added to the pthread worker pool.
 /// At this point the worker doesn't have any pthread assigned to it, yet.
 export function afterLoadWasmModuleToWorker(worker: Worker): void {
     worker.addEventListener("message", (ev) => monoWorkerMessageHandler(worker, ev));
