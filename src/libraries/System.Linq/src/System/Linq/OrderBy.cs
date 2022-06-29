@@ -45,24 +45,10 @@ namespace System.Linq
             OrderBy(source, static element => element, comparer);
 
         public static IOrderedEnumerable<TSource> OrderBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector)
-        {
-            if (keySelector is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
-            }
-
-            return new OrderedEnumerable<TSource, TKey>(source, keySelector, null, false, null);
-        }
+            => OrderBy(source, keySelector, null);
 
         public static IOrderedEnumerable<TSource> OrderBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey>? comparer)
-        {
-            if (keySelector is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
-            }
-
-            return new OrderedEnumerable<TSource, TKey>(source, keySelector, comparer, false, null);
-        }
+            => new OrderedEnumerable<TSource, TKey>(source, keySelector, comparer, false, null);
 
         /// <summary>
         /// Sorts the elements of a sequence in descending order.
@@ -108,60 +94,16 @@ namespace System.Linq
             new OrderedEnumerable<TSource, TKey>(source, keySelector, comparer, true, null);
 
         public static IOrderedEnumerable<TSource> ThenBy<TSource, TKey>(this IOrderedEnumerable<TSource> source, Func<TSource, TKey> keySelector)
-        {
-            if (source == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
-            }
-            if (keySelector is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
-            }
-
-            return source.CreateOrderedEnumerable(keySelector, null, false);
-        }
+            => source.CreateOrderedEnumerable(keySelector, null, false);
 
         public static IOrderedEnumerable<TSource> ThenBy<TSource, TKey>(this IOrderedEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey>? comparer)
-        {
-            if (source == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
-            }
-            if (keySelector is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
-            }
-
-            return source.CreateOrderedEnumerable(keySelector, comparer, false);
-        }
+            => source.CreateOrderedEnumerable(keySelector, comparer, false);
 
         public static IOrderedEnumerable<TSource> ThenByDescending<TSource, TKey>(this IOrderedEnumerable<TSource> source, Func<TSource, TKey> keySelector)
-        {
-            if (source == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
-            }
-            if (keySelector is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
-            }
-
-            return source.CreateOrderedEnumerable(keySelector, null, true);
-        }
+            => source.CreateOrderedEnumerable(keySelector, null, true);
 
         public static IOrderedEnumerable<TSource> ThenByDescending<TSource, TKey>(this IOrderedEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey>? comparer)
-        {
-            if (source == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
-            }
-            if (keySelector is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
-            }
-
-            return source.CreateOrderedEnumerable(keySelector, comparer, true);
-        }
+            => source.CreateOrderedEnumerable(keySelector, comparer, true);
     }
 
     public interface IOrderedEnumerable<out TElement> : IEnumerable<TElement>
