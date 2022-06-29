@@ -256,6 +256,25 @@ namespace System.Net.Sockets.Tests
             var r = await ReceiveMessageFromAsync(receiver, new byte[1], sender.LocalEndPoint);
             Assert.Equal(1, r.ReceivedBytes);
         }
+
+        [Fact]
+        public async Task ReturnsSocketFlags()
+        {
+            using var receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            ConfigureNonBlocking(receiver);
+            int receiverPort = receiver.BindToAnonymousPort(IPAddress.Loopback);
+
+            using var sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            sender.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, 1);
+            int senderPort = sender.BindToAnonymousPort(IPAddress.Loopback);
+            var destEp = new IPEndPoint(IPAddress.Broadcast, receiverPort);
+
+            sender.SendTo(new byte[1], destEp);
+
+            var sourceEp = new IPEndPoint(IPAddress.Any, senderPort);
+            var r = await ReceiveMessageFromAsync(receiver, new byte[1], sourceEp);
+            Assert.Equal(SocketFlags.Broadcast, r.SocketFlags);
+        }
     }
 
     public sealed class ReceiveMessageFrom_Sync : ReceiveMessageFrom<SocketHelperArraySync>
