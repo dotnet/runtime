@@ -69,23 +69,5 @@ namespace System.Security.Cryptography.Cose.Tests
             writer.WriteEndArray();
             Assert.Throws<CryptographicException>(() => CoseMessage.DecodeSign1(writer.Encode()));
         }
-
-        [Fact]
-        public void Encode()
-        {
-            byte[] encodedMsg = "8445A201260300A10442313154546869732069732074686520636F6E74656E742E58406520BBAF2081D7E0ED0F95F76EB0733D667005F7467CEC4B87B9381A6BA1EDE8E00DF29F32A37230F39A842A54821FDD223092819D7728EFB9D3A0080B75380B".HexToByteArray();
-            var msg = CoseMessage.DecodeSign1(encodedMsg);
-
-            AssertExtensions.SequenceEqual(encodedMsg, msg.Encode());
-        }
-
-        [Fact]
-        public void Encode2()
-        {
-            byte[] encodedMsg = "8440A054546869732069732074686520636F6E74656E742E818343A10126A1044231315840E2AEAFD40D69D19DFE6E52077C5D7FF4E408282CBEFB5D06CBF414AF2E19D982AC45AC98B8544C908B4507DE1E90B717C3D34816FE926A2B98F53AFD2FA0F30A".HexToByteArray();
-            var msg = CoseMessage.DecodeMultiSign(encodedMsg);
-
-            AssertExtensions.SequenceEqual(encodedMsg, msg.Encode());
-        }
     }
 }

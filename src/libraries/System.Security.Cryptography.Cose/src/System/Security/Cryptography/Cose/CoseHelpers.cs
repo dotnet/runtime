@@ -215,16 +215,18 @@ namespace System.Security.Cryptography.Cose
 
         // If we Validate: The caller did specify a COSE Algorithm, we will make sure it matches the specified key and hash algorithm.
         // If we Slip: The caller did not specify a COSE Algorithm, we will write the header for them, rather than throw.
-        internal static int? ValidateOrSlipAlgorithmHeader(CoseHeaderMap? protectedHeaders, CoseHeaderMap? unprotectedHeaders, KeyType keyType, HashAlgorithmName hashAlgorithm)
+        internal static int? ValidateOrSlipAlgorithmHeader(CoseSigner signer)
         {
-            int algHeaderValue = GetCoseAlgorithmHeaderFromKeyTypeAndHashAlgorithm(keyType, hashAlgorithm);
+            int algHeaderValue = GetCoseAlgorithmHeaderFromCoseSigner(signer);
 
-            if (protectedHeaders != null && protectedHeaders.TryGetValue(CoseHeaderLabel.Algorithm, out CoseHeaderValue value))//TryGetEncodedValue(CoseHeaderLabel.Algorithm, out ReadOnlyMemory<byte> encodedAlg))
+            CoseHeaderMap? protectedHeaders = signer._protectedHeaders;
+            if (protectedHeaders != null && protectedHeaders.TryGetValue(CoseHeaderLabel.Algorithm, out CoseHeaderValue value))
             {
-                ValidateAlgorithmHeader(value.EncodedValue, algHeaderValue, keyType, hashAlgorithm);
+                ValidateAlgorithmHeader(value.EncodedValue, algHeaderValue, signer);
                 return null;
             }
 
+            CoseHeaderMap? unprotectedHeaders = signer._unprotectedHeaders;
             if (unprotectedHeaders != null && unprotectedHeaders.ContainsKey(CoseHeaderLabel.Algorithm))
             {
                 throw new CryptographicException(SR.Sign1SignAlgMustBeProtected);
@@ -232,14 +234,25 @@ namespace System.Security.Cryptography.Cose
 
             return algHeaderValue;
 
-            static void ValidateAlgorithmHeader(ReadOnlyMemory<byte> encodedAlg, int expectedAlg, KeyType keyType, HashAlgorithmName hashAlgorithm)
+            static void ValidateAlgorithmHeader(ReadOnlyMemory<byte> encodedAlg, int expectedAlg, CoseSigner signer)
             {
                 int? alg = DecodeCoseAlgorithmHeader(encodedAlg);
                 Debug.Assert(alg.HasValue, "Algorithm (alg) is a known header and should have been validated in Set[Encoded]Value()");
 
                 if (expectedAlg != alg.Value)
                 {
-                    throw new CryptographicException(SR.Format(SR.Sign1SignCoseAlgorithDoesNotMatchSpecifiedKeyAndHashAlgorithm, alg.Value, keyType.ToString(), hashAlgorithm.Name));
+                    KeyType keyType = signer._keyType;
+                    string exMsg;
+                    if (keyType == KeyType.RSA)
+                    {
+                        exMsg = SR.Format(SR.Sign1SignCoseAlgorithDoesNotMatchSpecifiedKeyHashAlgorithmAndPadding, alg.Value, keyType.ToString(), signer.HashAlgorithm.Name, signer.RSASignaturePadding!.ToString());
+                    }
+                    else
+                    {
+                        exMsg = SR.Format(SR.Sign1SignCoseAlgorithDoesNotMatchSpecifiedKeyAndHashAlgorithm, alg.Value, keyType.ToString(), signer.HashAlgorithm.Name);
+                    }
+
+                    throw new CryptographicException(exMsg);
                 }
             }
         }
@@ -288,24 +301,47 @@ namespace System.Security.Cryptography.Cose
             return null;
         }
 
-        private static int GetCoseAlgorithmHeaderFromKeyTypeAndHashAlgorithm(KeyType keyType, HashAlgorithmName hashAlgorithm)
-            => keyType switch
+        private static int GetCoseAlgorithmHeaderFromCoseSigner(CoseSigner signer)
+        {
+            KeyType keyType = signer._keyType;
+            HashAlgorithmName hashAlgorithm = signer.HashAlgorithm;
+
+            if (keyType == KeyType.ECDsa)
             {
-                KeyType.ECDsa => hashAlgorithm.Name switch
+                return hashAlgorithm.Name switch
                 {
                     nameof(HashAlgorithmName.SHA256) => KnownCoseAlgorithms.ES256,
                     nameof(HashAlgorithmName.SHA384) => KnownCoseAlgorithms.ES384,
                     nameof(HashAlgorithmName.SHA512) => KnownCoseAlgorithms.ES512,
                     _ => throw new CryptographicException(SR.Format(SR.Sign1SignUnsupportedHashAlgorithm, hashAlgorithm.Name))
-                },
-                _ => hashAlgorithm.Name switch // KeyType.RSA
+                };
+            }
+
+            Debug.Assert(keyType == KeyType.RSA);
+            Debug.Assert(signer.RSASignaturePadding != null);
+
+            RSASignaturePadding padding = signer.RSASignaturePadding;
+            if (padding == RSASignaturePadding.Pss)
+            {
+                return hashAlgorithm.Name switch
                 {
                     nameof(HashAlgorithmName.SHA256) => KnownCoseAlgorithms.PS256,
                     nameof(HashAlgorithmName.SHA384) => KnownCoseAlgorithms.PS384,
                     nameof(HashAlgorithmName.SHA512) => KnownCoseAlgorithms.PS512,
                     _ => throw new CryptographicException(SR.Format(SR.Sign1SignUnsupportedHashAlgorithm, hashAlgorithm.Name))
-                },
+                };
+            }
+
+            Debug.Assert(padding == RSASignaturePadding.Pkcs1);
+
+            return hashAlgorithm.Name switch
+            {
+                nameof(HashAlgorithmName.SHA256) => KnownCoseAlgorithms.RS256,
+                nameof(HashAlgorithmName.SHA384) => KnownCoseAlgorithms.RS384,
+                nameof(HashAlgorithmName.SHA512) => KnownCoseAlgorithms.RS512,
+                _ => throw new CryptographicException(SR.Format(SR.Sign1SignUnsupportedHashAlgorithm, hashAlgorithm.Name))
             };
+        }
 
         internal static HashAlgorithmName GetHashAlgorithmFromCoseAlgorithmAndKeyType(int algorithm, KeyType keyType, out RSASignaturePadding? padding)
         {

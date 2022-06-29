@@ -15,15 +15,27 @@ namespace System.Security.Cryptography.Cose.Tests
 
     public class CoseSign1MessageTests_VerifyStream_Async : CoseSign1MessageTests_VerifyStream
     {
-        internal override bool Verify(CoseSign1Message msg, AsymmetricAlgorithm key, byte[] content)
+        internal override bool Verify(CoseMessage msg, AsymmetricAlgorithm key, byte[] content, byte[]? associatedData = null)
         {
+            CoseSign1Message sign1Msg = Assert.IsType<CoseSign1Message>(msg);
             if (content == null)
             {
-                return msg.VerifyDetachedAsync(key, null!).GetAwaiter().GetResult();
+                return sign1Msg.VerifyDetachedAsync(key, null!, associatedData).GetAwaiter().GetResult();
             }
 
             using Stream stream = GetTestStream(content);
-            return msg.VerifyDetachedAsync(key, stream).GetAwaiter().GetResult();
+            return sign1Msg.VerifyDetachedAsync(key, stream, associatedData).GetAwaiter().GetResult();
+        }
+
+        internal override byte[] Sign(byte[] content, CoseSigner signer)
+        {
+            if (content == null)
+            {
+                return CoseSign1Message.SignDetachedAsync(null!, signer).GetAwaiter().GetResult();
+            }
+
+            using Stream stream = GetTestStream(content);
+            return CoseSign1Message.SignDetachedAsync(stream, signer).GetAwaiter().GetResult();
         }
 
         [Fact]
@@ -51,15 +63,27 @@ namespace System.Security.Cryptography.Cose.Tests
 
     public class CoseSign1MessageTests_VerifyStream_Sync : CoseSign1MessageTests_VerifyStream
     {
-        internal override bool Verify(CoseSign1Message msg, AsymmetricAlgorithm key, byte[] content)
+        internal override bool Verify(CoseMessage msg, AsymmetricAlgorithm key, byte[] content, byte[]? associatedData = null)
         {
+            CoseSign1Message sign1Msg = Assert.IsType<CoseSign1Message>(msg);
             if (content == null)
             {
-                return msg.VerifyDetached(key, (Stream)null!);
+                return sign1Msg.VerifyDetached(key, (Stream)null!, associatedData);
             }
 
             using Stream stream = GetTestStream(content);
-            return msg.VerifyDetached(key, stream);
+            return sign1Msg.VerifyDetached(key, stream, associatedData);
+        }
+
+        internal override byte[] Sign(byte[] content, CoseSigner signer)
+        {
+            if (content == null)
+            {
+                return CoseSign1Message.SignDetached((Stream)null!, signer);
+            }
+
+            using Stream stream = GetTestStream(content);
+            return CoseSign1Message.SignDetached(stream, signer);
         }
 
         [Fact]

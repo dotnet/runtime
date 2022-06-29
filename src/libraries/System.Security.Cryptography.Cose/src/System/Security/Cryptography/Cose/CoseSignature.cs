@@ -130,6 +130,16 @@ namespace System.Security.Cryptography.Cose
                 throw new CryptographicException(SR.Sign1VerifyContentWasEmbedded);
             }
 
+            if (!detachedContent.CanRead)
+            {
+                throw new ArgumentException(SR.Sign1ArgumentStreamNotReadable, nameof(detachedContent));
+            }
+
+            if (!detachedContent.CanSeek)
+            {
+                throw new ArgumentException(SR.Sign1ArgumentStreamNotSeekable, nameof(detachedContent));
+            }
+
             return VerifyCore(key, default, detachedContent, associatedData, CoseHelpers.GetKeyType(key));
         }
 

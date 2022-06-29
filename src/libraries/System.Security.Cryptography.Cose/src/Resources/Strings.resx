@@ -192,6 +192,9 @@
   <data name="Sign1SignCoseAlgorithDoesNotMatchSpecifiedKeyAndHashAlgorithm" xml:space="preserve">
     <value>COSE Algorithm '{0}' doesn't match with the specified Key '{1}' and Hash Algorithm '{2}'.</value>
   </data>
+  <data name="Sign1SignCoseAlgorithDoesNotMatchSpecifiedKeyHashAlgorithmAndPadding" xml:space="preserve">
+    <value>COSE Algorithm '{0}' doesn't match with the specified Key '{1}', Hash Algorithm '{2}', and Signature Padding {3}.</value>
+  </data>
   <data name="Sign1SignHeaderDuplicateLabels" xml:space="preserve">
     <value>Protected and Unprotected buckets must not contain duplicate labels.</value>
   </data>

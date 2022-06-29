@@ -14,14 +14,17 @@ namespace System.Security.Cryptography.Cose.Tests
     {
         internal override List<CoseAlgorithm> CoseAlgorithms => Enum.GetValues(typeof(CoseAlgorithm)).Cast<CoseAlgorithm>().ToList();
 
+        // This method always uses the specified headers for signing.
+        // That is, sign headers for MultiSign and body headers for Sign1.
         internal byte[] Sign(
             byte[] content,
             AsymmetricAlgorithm key,
             HashAlgorithmName hashAlgorithm,
             CoseHeaderMap? protectedHeaders = null,
             CoseHeaderMap? unprotectedHeaders = null,
+            RSASignaturePadding? padding = null,
             bool isDetached = false)
-            => Sign(content, GetCoseSigner(key, hashAlgorithm, protectedHeaders, unprotectedHeaders), null, null, null, isDetached);
+            => Sign(content, GetCoseSigner(key, hashAlgorithm, protectedHeaders, unprotectedHeaders, padding), null, null, null, isDetached);
 
         // Returns the map that is set in CoseSigner and used for Signing.
         // For sign1, it returns one of the the body header maps.
@@ -31,15 +34,16 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void SignVerifyWithCustomCoseHeaderMaps()
         {
-            foreach ((AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, CoseAlgorithm algorithm) in GetKeyHashAlgorithmTriplet())
+            foreach ((AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, CoseAlgorithm algorithm, RSASignaturePadding? padding)
+                in GetKeyHashAlgorithmPaddingQuadruplet())
             {
-                var protectedHeaders = new CoseHeaderMap();
+                var protectedHeaders = GetEmptyHeaderMap();
                 protectedHeaders.Add(CoseHeaderLabel.Algorithm, (int)algorithm);
 
                 CoseHeaderMap unprotectedHeaders = new CoseHeaderMap();
                 unprotectedHeaders.Add(CoseHeaderLabel.ContentType, ContentTypeDummyValue);
 
-                ReadOnlySpan<byte> encodedMsg = Sign(s_sampleContent, key, hashAlgorithm, protectedHeaders, unprotectedHeaders);
+                ReadOnlySpan<byte> encodedMsg = Sign(s_sampleContent, key, hashAlgorithm, protectedHeaders, unprotectedHeaders, padding);
 
                 List<(CoseHeaderLabel, ReadOnlyMemory<byte>)>? expectedProtectedHeaders = GetExpectedProtectedHeaders(algorithm);
                 List<(CoseHeaderLabel, ReadOnlyMemory<byte>)>? expectedUnprotectedHeaders = GetEmptyExpectedHeaders();
@@ -53,11 +57,54 @@ namespace System.Security.Cryptography.Cose.Tests
         }
 
         [Fact]
-        public void SignWithUnsupportedKey()
+        public void SignVerifyWithStringAlgorithm()
         {
-            AsymmetricAlgorithm key = ECDiffieHellman.Create();
-            // Header still says that a supported combination of key-algorithm will be used.
-            Assert.Throws<CryptographicException>(() => Sign(s_sampleContent, key, DefaultHash, GetHeaderMapWithAlgorithm(DefaultAlgorithm)));
+            foreach ((AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, CoseAlgorithm algorithm, RSASignaturePadding? padding)
+                in GetKeyHashAlgorithmPaddingQuadruplet())
+            {
+                string algString = algorithm.ToString();
+                var protectedHeaders = GetEmptyHeaderMap();
+                protectedHeaders.Add(CoseHeaderLabel.Algorithm, algString);
+
+                ReadOnlySpan<byte> encodedMsg = Sign(s_sampleContent, key, hashAlgorithm, protectedHeaders, padding: padding);
+
+                List<(CoseHeaderLabel, ReadOnlyMemory<byte>)>? expectedProtectedHeaders = GetEmptyExpectedHeaders();
+                AddEncoded(expectedProtectedHeaders, CoseHeaderLabel.Algorithm, algString);
+                List<(CoseHeaderLabel, ReadOnlyMemory<byte>)>? expectedUnprotectedHeaders = GetEmptyExpectedHeaders();
+
+                AssertCoseSignMessage(encodedMsg, s_sampleContent, key, algorithm, expectedProtectedHeaders, expectedUnprotectedHeaders);
+
+                CoseMessage decodedMsg = Decode(encodedMsg);
+                Assert.True(Verify(decodedMsg, key, s_sampleContent));
+            }
+        }
+
+        [Fact]
+        public void SignWithIncorrectAlgorithm()
+        {
+            foreach ((AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, CoseAlgorithm algorithm, RSASignaturePadding? padding)
+                in GetKeyHashAlgorithmPaddingQuadruplet())
+            {
+                // Values out of the ranges of CoseAlgorithm.
+                foreach (int edgeValue in new[] { -6, -8, -34, -40, -256, -260 })
+                {
+                    var protectedHeaders = GetEmptyHeaderMap();
+                    protectedHeaders.Add(CoseHeaderLabel.Algorithm, edgeValue);
+                    Assert.Throws<CryptographicException>(() => Sign(s_sampleContent, key, hashAlgorithm, protectedHeaders, padding: padding));
+                }
+            }
+        }
+
+        [Fact]
+        public void SignWithIncorrectStringAlgorithm()
+        {
+            foreach ((AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, CoseAlgorithm algorithm, RSASignaturePadding? padding)
+                in GetKeyHashAlgorithmPaddingQuadruplet())
+            {
+                var protectedHeaders = GetEmptyHeaderMap();
+                protectedHeaders.Add(CoseHeaderLabel.Algorithm, "FOO");
+                Assert.Throws<CryptographicException>(() => Sign(s_sampleContent, key, hashAlgorithm, protectedHeaders, padding: padding));
+            }
         }
 
         [Fact]

@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Formats.Cbor;
 using System.IO;
 using System.Linq;
-using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using Test.Cryptography;
 using Xunit;
@@ -35,7 +34,10 @@ namespace System.Security.Cryptography.Cose.Tests
         {
             PS256 = -37,
             PS384 = -38,
-            PS512 = -39
+            PS512 = -39,
+            RS256 = -257,
+            RS384 = -258,
+            RS512 = -259
         }
 
         public enum CoseAlgorithm
@@ -46,9 +48,9 @@ namespace System.Security.Cryptography.Cose.Tests
             PS256 = -37,
             PS384 = -38,
             PS512 = -39,
-            //RS256 = -257,
-            //RS384 = -258,
-            //RS512 = -259
+            RS256 = -257,
+            RS384 = -258,
+            RS512 = -259
         }
 
         public enum ContentTestCase
@@ -387,16 +389,19 @@ namespace System.Security.Cryptography.Cose.Tests
             return RSA.Create(rsaParameters);
         }
 
-        internal static (T Key, HashAlgorithmName Hash) GetKeyHashPair<T>(CoseAlgorithm algorithm, bool useNonPrivateKey = false)
+        internal static (T Key, HashAlgorithmName Hash, RSASignaturePadding? Padding) GetKeyHashPaddingTriplet<T>(CoseAlgorithm algorithm, bool useNonPrivateKey = false)
         {
             return algorithm switch
             {
-                CoseAlgorithm.ES256 => (GetKey(ES256, ES256WithoutPrivateKey, useNonPrivateKey), HashAlgorithmName.SHA256),
-                CoseAlgorithm.ES384 => (GetKey(ES384, ES384WithoutPrivateKey, useNonPrivateKey), HashAlgorithmName.SHA384),
-                CoseAlgorithm.ES512 => (GetKey(ES512, ES512WithoutPrivateKey, useNonPrivateKey), HashAlgorithmName.SHA512),
-                CoseAlgorithm.PS256 => (GetKey(RSAKey, RSAKeyWithoutPrivateKey, useNonPrivateKey), HashAlgorithmName.SHA256),
-                CoseAlgorithm.PS384 => (GetKey(RSAKey, RSAKeyWithoutPrivateKey, useNonPrivateKey), HashAlgorithmName.SHA384),
-                CoseAlgorithm.PS512 => (GetKey(RSAKey, RSAKeyWithoutPrivateKey, useNonPrivateKey), HashAlgorithmName.SHA512),
+                CoseAlgorithm.ES256 => (GetKey(ES256, ES256WithoutPrivateKey, useNonPrivateKey), HashAlgorithmName.SHA256, null),
+                CoseAlgorithm.ES384 => (GetKey(ES384, ES384WithoutPrivateKey, useNonPrivateKey), HashAlgorithmName.SHA384, null),
+                CoseAlgorithm.ES512 => (GetKey(ES512, ES512WithoutPrivateKey, useNonPrivateKey), HashAlgorithmName.SHA512, null),
+                CoseAlgorithm.PS256 => (GetKey(RSAKey, RSAKeyWithoutPrivateKey, useNonPrivateKey), HashAlgorithmName.SHA256, RSASignaturePadding.Pss),
+                CoseAlgorithm.PS384 => (GetKey(RSAKey, RSAKeyWithoutPrivateKey, useNonPrivateKey), HashAlgorithmName.SHA384, RSASignaturePadding.Pss),
+                CoseAlgorithm.PS512 => (GetKey(RSAKey, RSAKeyWithoutPrivateKey, useNonPrivateKey), HashAlgorithmName.SHA512, RSASignaturePadding.Pss),
+                CoseAlgorithm.RS256 => (GetKey(RSAKey, RSAKeyWithoutPrivateKey, useNonPrivateKey), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1),
+                CoseAlgorithm.RS384 => (GetKey(RSAKey, RSAKeyWithoutPrivateKey, useNonPrivateKey), HashAlgorithmName.SHA384, RSASignaturePadding.Pkcs1),
+                CoseAlgorithm.RS512 => (GetKey(RSAKey, RSAKeyWithoutPrivateKey, useNonPrivateKey), HashAlgorithmName.SHA512, RSASignaturePadding.Pkcs1),
                 _ => throw new InvalidOperationException()
             };
 
@@ -427,11 +432,11 @@ namespace System.Security.Cryptography.Cose.Tests
             return ms;
         }
 
-        internal static CoseSigner GetCoseSigner(AsymmetricAlgorithm key, HashAlgorithmName hash, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null)
+        internal static CoseSigner GetCoseSigner(AsymmetricAlgorithm key, HashAlgorithmName hash, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, RSASignaturePadding? padding = null)
         {
             if (key is RSA rsa)
             {
-                return new CoseSigner(rsa, RSASignaturePadding.Pss, hash, protectedHeaders, unprotectedHeaders);
+                return new CoseSigner(rsa, padding ?? RSASignaturePadding.Pss, hash, protectedHeaders, unprotectedHeaders);
             }
 
             return new CoseSigner(key, hash, protectedHeaders, unprotectedHeaders);
@@ -508,6 +513,12 @@ namespace System.Security.Cryptography.Cose.Tests
             var writer = new CborWriter();
             WriteDummyCritHeaderValue(writer);
             return writer.Encode();
+        }
+
+        internal static string ReplaceFirst(string text, string search, string replace)
+        {
+            int pos = text.IndexOf(search);
+            return text.Substring(0, pos) + replace + text.Substring(pos + search.Length);
         }
     }
 }

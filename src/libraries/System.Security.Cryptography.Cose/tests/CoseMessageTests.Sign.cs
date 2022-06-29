@@ -13,16 +13,11 @@ namespace System.Security.Cryptography.Cose.Tests
     public abstract class CoseMessageTests_Sign<T> where T : AsymmetricAlgorithm
     {
         internal virtual bool OnlySupportsDetachedContent => false;
-        internal CoseAlgorithm DefaultAlgorithm => CoseAlgorithms[0];
-        internal T DefaultKey => GetKeyHashPair<T>(CoseAlgorithms[0]).Key;
-        internal HashAlgorithmName DefaultHash => GetKeyHashPair<T>(CoseAlgorithms[0]).Hash;
+        internal CoseAlgorithm DefaultAlgorithm => CoseAlgorithms[CoseAlgorithms.Count - 1];
+        internal T DefaultKey => GetKeyHashPaddingTriplet<T>(CoseAlgorithms[CoseAlgorithms.Count - 1]).Key;
+        internal HashAlgorithmName DefaultHash => GetKeyHashPaddingTriplet<T>(CoseAlgorithms[CoseAlgorithms.Count - 1]).Hash;
         internal abstract List<CoseAlgorithm> CoseAlgorithms { get; }
         internal abstract CoseMessageKind MessageKind { get; }
-
-        internal byte[] Sign(byte[] content, T key, HashAlgorithmName hashAlgorithm, bool isDetached = false)
-        {
-            return Sign(content, GetCoseSigner(key, hashAlgorithm), null, null, null, isDetached);
-        }
 
         internal abstract byte[] Sign(byte[] content,
             CoseSigner signer,
@@ -34,12 +29,12 @@ namespace System.Security.Cryptography.Cose.Tests
         internal abstract bool Verify(CoseMessage msg, T key, byte[] content, byte[]? associatedData = null);
         internal abstract CoseMessage Decode(ReadOnlySpan<byte> cborPayload);
 
-        internal IEnumerable<(T Key, HashAlgorithmName Hash, CoseAlgorithm Algorithm)> GetKeyHashAlgorithmTriplet(bool useNonPrivateKey = false)
+        internal IEnumerable<(T Key, HashAlgorithmName Hash, CoseAlgorithm Algorithm, RSASignaturePadding? Padding)> GetKeyHashAlgorithmPaddingQuadruplet(bool useNonPrivateKey = false)
         {
             foreach (var algorithm in CoseAlgorithms)
             {
-                var keyHashPair = GetKeyHashPair<T>(algorithm, useNonPrivateKey);
-                yield return (keyHashPair.Key, keyHashPair.Hash, algorithm);
+                var keyHashTriplet = GetKeyHashPaddingTriplet<T>(algorithm, useNonPrivateKey);
+                yield return (keyHashTriplet.Key, keyHashTriplet.Hash, algorithm, keyHashTriplet.Padding);
             }
         }
 
@@ -96,9 +91,11 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void SignVerify()
         {
-            foreach ((T key, HashAlgorithmName hashAlgorithm, CoseAlgorithm algorithm) in GetKeyHashAlgorithmTriplet())
+            foreach ((T key, HashAlgorithmName hashAlgorithm, CoseAlgorithm algorithm, RSASignaturePadding? padding)
+                in GetKeyHashAlgorithmPaddingQuadruplet())
             {
-                ReadOnlySpan<byte> encodedMsg = Sign(s_sampleContent, key, hashAlgorithm);
+                var signer = GetCoseSigner(key, hashAlgorithm, padding: padding);
+                ReadOnlySpan<byte> encodedMsg = Sign(s_sampleContent, signer);
                 AssertCoseSignMessage(encodedMsg, s_sampleContent, key, algorithm);
 
                 CoseMessage msg = Decode(encodedMsg);
@@ -109,7 +106,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void SignWithNullContent()
         {
-            ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => Sign(null!, DefaultKey, DefaultHash));
+            ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => Sign(null!, GetCoseSigner(DefaultKey, DefaultHash)));
             Assert.True(ex.ParamName == "embeddedContent" || ex.ParamName == "detachedContent");
         }
 
@@ -120,22 +117,17 @@ namespace System.Security.Cryptography.Cose.Tests
         public void SignWithValidContent(ContentTestCase @case)
         {
             byte[] content = GetDummyContent(@case);
-            ReadOnlySpan<byte> encodedMsg = Sign(content, DefaultKey, DefaultHash);
+            ReadOnlySpan<byte> encodedMsg = Sign(content, GetCoseSigner(DefaultKey, DefaultHash));
             AssertCoseSignMessage(encodedMsg, content, DefaultKey, DefaultAlgorithm);
-        }
-
-        [Fact]
-        public void SignWithNullKey()
-        {
-            Assert.Throws<ArgumentNullException>("key", () => Sign(s_sampleContent, null!, DefaultHash));
         }
 
         [Fact]
         public void SignWithNonPrivateKey()
         {
-            foreach ((T nonPrivateKey, HashAlgorithmName hashAlgorithm, _) in GetKeyHashAlgorithmTriplet(useNonPrivateKey: true))
+            foreach ((T nonPrivateKey, HashAlgorithmName hashAlgorithm, _, RSASignaturePadding? padding)
+                in GetKeyHashAlgorithmPaddingQuadruplet(useNonPrivateKey: true))
             {
-                Assert.ThrowsAny<CryptographicException>(() => Sign(s_sampleContent, nonPrivateKey, hashAlgorithm));
+                Assert.ThrowsAny<CryptographicException>(() => Sign(s_sampleContent, GetCoseSigner(nonPrivateKey, hashAlgorithm, padding: padding)));
             }
         }
 
@@ -144,7 +136,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [InlineData("FOO")]
         public void SignWithUnsupportedHashAlgorithm(string hashAlgorithm)
         {
-            Assert.Throws<CryptographicException>(() => Sign(s_sampleContent, DefaultKey, new HashAlgorithmName(hashAlgorithm)));
+            Assert.Throws<CryptographicException>(() => Sign(s_sampleContent, GetCoseSigner(DefaultKey, new HashAlgorithmName(hashAlgorithm))));
         }
 
         [Theory]
@@ -157,7 +149,7 @@ namespace System.Security.Cryptography.Cose.Tests
                 return;
             }
 
-            ReadOnlySpan<byte> messageEncoded = Sign(s_sampleContent, DefaultKey, DefaultHash, isDetached: isDetached);
+            ReadOnlySpan<byte> messageEncoded = Sign(s_sampleContent, GetCoseSigner(DefaultKey, DefaultHash), isDetached: isDetached);
             AssertCoseSignMessage(messageEncoded, s_sampleContent, DefaultKey, DefaultAlgorithm, expectedDetachedContent: isDetached);
         }
 
@@ -181,11 +173,12 @@ namespace System.Security.Cryptography.Cose.Tests
                 return;
             }
 
-            CoseMessage msg = Decode(Sign(s_sampleContent, DefaultKey, DefaultHash));
+            CoseSigner signer = GetCoseSigner(DefaultKey, DefaultHash);
+            CoseMessage msg = Decode(Sign(s_sampleContent, signer));
             CoseMultiSignMessage multiSignMsg = Assert.IsType<CoseMultiSignMessage>(msg);
             ReadOnlyCollection<CoseSignature> signatures = multiSignMsg.Signatures;
 
-            CoseSigner signer = GetCoseSigner(DefaultKey, DefaultHash);
+            signer = GetCoseSigner(DefaultKey, DefaultHash);
             multiSignMsg.AddSignature(signer);
             Assert.Equal(2, signatures.Count);
 
@@ -208,7 +201,7 @@ namespace System.Security.Cryptography.Cose.Tests
                 return;
             }
 
-            CoseMessage msg = Decode(Sign(s_sampleContent, DefaultKey, DefaultHash));
+            CoseMessage msg = Decode(Sign(s_sampleContent, GetCoseSigner(DefaultKey, DefaultHash)));
             CoseMultiSignMessage multiSignMsg = Assert.IsType<CoseMultiSignMessage>(msg);
             ReadOnlyCollection<CoseSignature> signatures = multiSignMsg.Signatures;
             Assert.Equal(1, signatures.Count);
@@ -230,7 +223,7 @@ namespace System.Security.Cryptography.Cose.Tests
                 return;
             }
 
-            CoseMessage msg = Decode(Sign(s_sampleContent, DefaultKey, DefaultHash));
+            CoseMessage msg = Decode(Sign(s_sampleContent, GetCoseSigner(DefaultKey, DefaultHash)));
             CoseMultiSignMessage multiSignMsg = Assert.IsType<CoseMultiSignMessage>(msg);
             ReadOnlyCollection<CoseSignature> signatures = multiSignMsg.Signatures;
 
@@ -260,11 +253,12 @@ namespace System.Security.Cryptography.Cose.Tests
                 return;
             }
 
-            CoseMessage msg = Decode(Sign(s_sampleContent, DefaultKey, DefaultHash));
+            CoseSigner signer = GetCoseSigner(DefaultKey, DefaultHash);
+            CoseMessage msg = Decode(Sign(s_sampleContent, signer));
             CoseMultiSignMessage multiSignMsg = Assert.IsType<CoseMultiSignMessage>(msg);
             ReadOnlyCollection<CoseSignature> signatures = multiSignMsg.Signatures;
 
-            CoseSigner signer = GetCoseSigner(DefaultKey, DefaultHash);
+            signer = GetCoseSigner(DefaultKey, DefaultHash);
             multiSignMsg.AddSignature(signer);
             Assert.Equal(2, signatures.Count);
 

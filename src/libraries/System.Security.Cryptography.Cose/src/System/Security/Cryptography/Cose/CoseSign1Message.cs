@@ -149,12 +149,9 @@ namespace System.Security.Cryptography.Cose
 
         internal static void ValidateBeforeSign(CoseSigner signer, out int? algHeaderValueToSlip)
         {
-            CoseHeaderMap? protectedHeaders = signer._protectedHeaders;
-            CoseHeaderMap? unprotectedHeaders = signer._unprotectedHeaders;
-
-            ThrowIfDuplicateLabels(protectedHeaders, unprotectedHeaders);
-            ThrowIfMissingCriticalHeaders(protectedHeaders);
-            algHeaderValueToSlip = CoseHelpers.ValidateOrSlipAlgorithmHeader(protectedHeaders, unprotectedHeaders, signer._keyType, signer.HashAlgorithm);
+            ThrowIfDuplicateLabels(signer._protectedHeaders, signer._unprotectedHeaders);
+            ThrowIfMissingCriticalHeaders(signer._protectedHeaders);
+            algHeaderValueToSlip = CoseHelpers.ValidateOrSlipAlgorithmHeader(signer);
         }
 
         private static int CreateCoseSign1Message(ReadOnlySpan<byte> contentBytes, Stream? contentStream, Span<byte> buffer, CoseSigner signer, ReadOnlySpan<byte> associatedData, bool isDetached, int? algHeaderValueToSlip)

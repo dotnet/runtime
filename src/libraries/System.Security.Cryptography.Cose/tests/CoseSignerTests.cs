@@ -40,5 +40,12 @@ namespace System.Security.Cryptography.Cose.Tests
         {
             Assert.Throws<CryptographicException>(() => new CoseSigner(ECDiffieHellman.Create(), HashAlgorithmName.SHA256));
         }
+
+        [Fact]
+        public void CoseSigner_NullKey()
+        {
+            Assert.Throws<ArgumentNullException>("key", () => new CoseSigner(null!, HashAlgorithmName.SHA256));
+            Assert.Throws<ArgumentNullException>("key", () => new CoseSigner(null!, RSASignaturePadding.Pss, HashAlgorithmName.SHA256));
+        }
     }
 }

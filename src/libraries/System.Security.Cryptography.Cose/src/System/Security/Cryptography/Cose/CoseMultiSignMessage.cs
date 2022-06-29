@@ -207,7 +207,7 @@ namespace System.Security.Cryptography.Cose
             ThrowIfMissingCriticalHeaders(signer._protectedHeaders);
             ThrowIfMissingCriticalHeaders(protectedHeaders);
 
-            algHeaderValueToSlip = CoseHelpers.ValidateOrSlipAlgorithmHeader(signer._protectedHeaders, signer._unprotectedHeaders, signer._keyType, signer.HashAlgorithm);
+            algHeaderValueToSlip = CoseHelpers.ValidateOrSlipAlgorithmHeader(signer);
         }
 
         private static void WriteCoseSignaturesArray(CborWriter writer, CoseSigner signer, Span<byte> buffer, ReadOnlySpan<byte> bodyProtected, ReadOnlySpan<byte> associatedData, ReadOnlySpan<byte> content, Stream? contentStream, int? algHeaderValueToSlip)

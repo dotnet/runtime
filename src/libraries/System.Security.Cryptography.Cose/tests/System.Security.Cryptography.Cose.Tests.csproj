@@ -11,6 +11,7 @@
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs">
       <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
     </Compile>
+    <Compile Include="CoseMessageTests.Verify.cs" />
     <Compile Include="CoseHeaderLabelTests.cs" />
     <Compile Include="CoseHeaderMapTests.cs" />
     <Compile Include="CoseMessageTests.DecodeMultiSign.cs" />
@@ -21,6 +22,8 @@
     <Compile Include="CoseMultiSignMessageTests.Sign.cs" />
     <Compile Include="CoseMultiSignMessageTests.Sign.CustomHeaderMaps.cs" />
     <Compile Include="CoseMultiSignMessageTests.Sign.CustomHeaderMaps.Stream.cs" />
+    <Compile Include="CoseMultiSignMessageTests.Verify.cs" />
+    <Compile Include="CoseMultiSignMessageTests.Verify.Stream.cs" />
     <Compile Include="CoseSign1MessageTests.Sign.cs" />
     <Compile Include="CoseSign1MessageTests.Sign.CustomHeaderMaps.cs" />
     <Compile Include="CoseSign1MessageTests.Sign.CustomHeaderMaps.Stream.cs" />
