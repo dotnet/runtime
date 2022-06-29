@@ -364,17 +364,8 @@ namespace System.Formats.Tar
         }
 
         // Determines what should be the base path for all the entries when creating an archive.
-        private static string GetBasePathForCreateFromDirectory(DirectoryInfo di, bool includeBaseDirectory)
-        {
-            string basePath = di.FullName;
-
-            if (includeBaseDirectory && di.Parent != null)
-            {
-                basePath = di.Parent.FullName;
-            }
-
-            return basePath;
-        }
+        private static string GetBasePathForCreateFromDirectory(DirectoryInfo di, bool includeBaseDirectory) =>
+            includeBaseDirectory && di.Parent != null ? di.Parent.FullName : di.FullName;
 
         // Constructs the entry name used for a filesystem entry when creating an archive.
         private static string GetEntryNameForFileSystemInfo(FileSystemInfo file, int basePathLength, ref char[] entryNameBuffer)
