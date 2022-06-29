@@ -776,11 +776,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 											continue;
 									}
 								} else if (isCompilerGeneratedCode == true) {
-									if (loggedMessage.Origin?.Provider is MethodDefinition methodDefinition) {
+									if (loggedMessage.Origin?.Provider is IMemberDefinition memberDefinition) {
 										if (attrProvider is not IMemberDefinition expectedMember)
 											continue;
-
-										string actualName = methodDefinition.DeclaringType.FullName + "." + methodDefinition.Name;
+										string actualName = memberDefinition.DeclaringType.FullName + "." + memberDefinition.Name;
 
 										if (actualName.StartsWith (expectedMember.DeclaringType.FullName) &&
 											actualName.Contains ("<" + expectedMember.Name + ">")) {
@@ -788,14 +787,16 @@ namespace Mono.Linker.Tests.TestCasesRunner
 											loggedMessages.Remove (loggedMessage);
 											break;
 										}
+										if (memberDefinition is not MethodDefinition)
+											continue;
 										if (actualName.StartsWith (expectedMember.DeclaringType.FullName) &&
 											actualName.Contains (".cctor") && (expectedMember is FieldDefinition || expectedMember is PropertyDefinition)) {
 											expectedWarningFound = true;
 											loggedMessages.Remove (loggedMessage);
 											break;
 										}
-										if (methodDefinition.Name == ".ctor" &&
-										methodDefinition.DeclaringType.FullName == expectedMember.FullName) {
+										if (memberDefinition.Name == ".ctor" &&
+											memberDefinition.DeclaringType.FullName == expectedMember.FullName) {
 											expectedWarningFound = true;
 											loggedMessages.Remove (loggedMessage);
 											break;
@@ -833,13 +834,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
 						}
 						break;
 
-					case nameof (ExpectedNoWarningsAttribute):
-						// Postpone processing of negative checks, to make it possible to mark some warnings as expected (will be removed from the list above)
-						// and then do the negative check on the rest.
-						var memberDefinition = attrProvider as IMemberDefinition;
-						Assert.NotNull (memberDefinition);
-						expectedNoWarningsAttributes.Add ((memberDefinition, attr));
-						break;
+					case nameof (ExpectedNoWarningsAttribute): {
+							// Postpone processing of negative checks, to make it possible to mark some warnings as expected (will be removed from the list above)
+							// and then do the negative check on the rest.
+							var memberDefinition = attrProvider as IMemberDefinition;
+							Assert.NotNull (memberDefinition);
+							expectedNoWarningsAttributes.Add ((memberDefinition, attr));
+							break;
+						}
 					}
 				}
 			}

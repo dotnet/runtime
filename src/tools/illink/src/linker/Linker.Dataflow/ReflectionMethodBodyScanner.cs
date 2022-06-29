@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using ILLink.Shared;
-using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
 using ILLink.Shared.TypeSystemProxy;
 using Mono.Cecil;
@@ -59,7 +58,7 @@ namespace Mono.Linker.Dataflow
 			_origin = origin;
 			_annotations = context.Annotations.FlowAnnotations;
 			_reflectionMarker = new ReflectionMarker (context, parent, enabled: false);
-			TrimAnalysisPatterns = new TrimAnalysisPatternStore (context);
+			TrimAnalysisPatterns = new TrimAnalysisPatternStore (MultiValueLattice, context);
 		}
 
 		public override void InterproceduralScan (MethodBody methodBody)
@@ -70,10 +69,10 @@ namespace Mono.Linker.Dataflow
 			TrimAnalysisPatterns.MarkAndProduceDiagnostics (reflectionMarker, _markStep);
 		}
 
-		protected override void Scan (MethodBody methodBody, ref ValueSet<MethodProxy> methodsInGroup)
+		protected override void Scan (MethodBody methodBody, ref InterproceduralState interproceduralState)
 		{
 			_origin = new MessageOrigin (methodBody.Method);
-			base.Scan (methodBody, ref methodsInGroup);
+			base.Scan (methodBody, ref interproceduralState);
 
 			if (!methodBody.Method.ReturnsVoid ()) {
 				var method = methodBody.Method;

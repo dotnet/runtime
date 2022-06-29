@@ -89,11 +89,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			// https://github.com/dotnet/linker/issues/2669
 			[ExpectedWarning ("IL2026", nameof (StaticPropertyExpressionAccess), ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", nameof (StaticPropertyViaReflection))]
-			[ExpectedWarning ("IL2026", nameof (StaticPropertyViaRuntimeMethod))]
+			[ExpectedWarning ("IL2026", nameof (StaticPropertyViaReflection), ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", nameof (StaticPropertyViaRuntimeMethod), ProducedBy = ProducedBy.Trimmer)]
 			// https://github.com/dotnet/linker/issues/2669
 			[ExpectedWarning ("IL2026", nameof (InstancePropertyExpressionAccess), ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", nameof (InstancePropertyViaReflection))]
+			[ExpectedWarning ("IL2026", nameof (InstancePropertyViaReflection), ProducedBy = ProducedBy.Trimmer)]
 			public static void Test ()
 			{
 				Expression<Func<int>> staticGetter = () => StaticPropertyExpressionAccess;

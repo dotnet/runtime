@@ -59,6 +59,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task CompilerGeneratedCodeDataflow ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
 		public Task CompilerGeneratedTypes ()
 		{
 			return RunTest ();

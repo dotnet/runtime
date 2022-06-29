@@ -2,6 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Diagnostics;
+using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 
@@ -18,6 +20,16 @@ namespace Mono.Linker.Dataflow
 			Source = source.Clone ();
 			Target = target.Clone ();
 			Origin = origin;
+		}
+
+		public TrimAnalysisAssignmentPattern Merge (ValueSetLattice<SingleValue> lattice, TrimAnalysisAssignmentPattern other)
+		{
+			Debug.Assert (Origin == other.Origin);
+
+			return new TrimAnalysisAssignmentPattern (
+				lattice.Meet (Source, other.Source),
+				lattice.Meet (Target, other.Target),
+				Origin);
 		}
 
 		public void MarkAndProduceDiagnostics (ReflectionMarker reflectionMarker, LinkContext context)

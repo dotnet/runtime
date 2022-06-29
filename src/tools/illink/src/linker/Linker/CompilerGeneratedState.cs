@@ -53,6 +53,14 @@ namespace Mono.Linker
 			}
 		}
 
+		public static bool IsHoistedLocal (FieldDefinition field)
+		{
+			// Treat all fields on compiler-generated types as hoisted locals.
+			// This avoids depending on the name mangling scheme for hoisted locals.
+			var declaringTypeName = field.DeclaringType.Name;
+			return CompilerGeneratedNames.IsLambdaDisplayClass (declaringTypeName) || CompilerGeneratedNames.IsStateMachineType (declaringTypeName);
+		}
+
 		// "Nested function" refers to lambdas and local functions.
 		public static bool IsNestedFunctionOrStateMachineMember (IMemberDefinition member)
 		{
