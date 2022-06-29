@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
@@ -661,6 +662,12 @@ namespace System.Text.Json
         public static void ThrowInvalidOperationException_ExpectedChar(JsonTokenType tokenType)
         {
             throw GetInvalidOperationException("char", tokenType);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_SerializationCallbacksNotSupported(JsonTypeInfoKind typeInfoKind)
+        {
+            throw GetInvalidOperationException(SR.Format(SR.SerializationCallbacksNotSupported, typeInfoKind));
         }
 
         [DoesNotReturn]
