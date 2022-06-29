@@ -26,6 +26,7 @@
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
     <Compile Include="..\..\src\System\Threading\StackHelper.cs" Link="Production\StackHelper.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\MultiStringMatcher.cs" Link="Production\MultiStringMatcher.cs" />
     <Compile Include="..\..\src\System\Text\RegularExpressions\RegexCaseEquivalences.Data.cs" Link="Production\RegexCaseEquivalences.Data.cs" />
     <Compile Include="..\..\src\System\Text\RegularExpressions\RegexCaseEquivalences.cs" Link="Production\RegexCaseEquivalences.cs" />
     <Compile Include="..\..\src\System\Text\RegularExpressions\RegexCaseBehavior.cs" Link="Production\RegexCaseBehavior.cs" />
@@ -43,6 +44,8 @@
     <Compile Include="..\..\src\System\Text\RegularExpressions\RegexTree.cs" Link="Production\RegexTree.cs" />
     <Compile Include="..\..\src\System\Text\RegularExpressions\RegexTreeAnalyzer.cs" Link="Production\RegexTreeAnalyzer.cs" />
     <Compile Include="..\..\src\System\Text\RegularExpressions\RegexWriter.cs" Link="Production\RegexWriter.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\TrieBuilder.cs" Link="Production\TrieBuilder.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\TrieNode.cs" Link="Production\TrieNode.cs" />
     <Compile Include="..\..\src\System\Collections\HashtableExtensions.cs" Link="Production\HashtableExtensions.cs" />
 
     <!-- Code included from System.Text.RegularExpressions.Symbolic -->

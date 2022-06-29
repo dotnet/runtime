@@ -24,7 +24,7 @@ namespace System.Text.RegularExpressions
             };
         }
 
-        public Dictionary<char, int> Children = new();
+        public readonly Dictionary<char, int> Children = new();
 
         private bool _isMatch;
 

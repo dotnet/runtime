@@ -151,6 +151,9 @@ namespace System.Text.RegularExpressions
                     Path = node.Path + c
 #endif
                 };
+
+                node.Children.Add(c, nextNodeIndex);
+                _nodes.Add(newNode);
             }
             return nextNodeIndex;
         }
