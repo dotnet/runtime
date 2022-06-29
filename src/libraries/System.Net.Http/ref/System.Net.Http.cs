@@ -239,9 +239,9 @@ namespace System.Net.Http
         public override string ToString() { throw null; }
     }
 
-    public partial class HttpProtocolException : System.IO.IOException
+    public sealed class HttpProtocolException : System.IO.IOException
     {
-        public HttpProtocolException(string? message, long errorCode, Exception? innerException) { }
+        public HttpProtocolException(long errorCode, string? message, System.Exception? innerException) { }
         public long ErrorCode { get { throw null; } }
     }
 

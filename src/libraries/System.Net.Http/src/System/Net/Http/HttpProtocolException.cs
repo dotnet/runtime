@@ -5,31 +5,50 @@ using System.IO;
 
 namespace System.Net.Http
 {
-    public partial class HttpProtocolException : IOException
+    /// <summary>
+    /// The exception thrown when an HTTP/2 or an HTTP/3 protocol error occurs.
+    /// </summary>
+    /// <remarks>
+    /// When calling <see cref="HttpClient"/> or <see cref="SocketsHttpHandler"/> methods, <see cref="HttpProtocolException"/> will be the inner exception of
+    /// <see cref="HttpRequestException"/> if a protocol error occurs.
+    /// When calling <see cref="Stream"/> methods on the stream returned by <see cref="HttpContent.ReadAsStream()"/> or
+    /// <see cref="HttpContent.ReadAsStreamAsync(Threading.CancellationToken)"/>, <see cref="HttpProtocolException"/> can be thrown directly.
+    /// </remarks>
+    public sealed class HttpProtocolException : IOException
     {
-        public HttpProtocolException(string? message, long errorCode, Exception? innerException)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="HttpProtocolException"/> class with the specified error code,
+        /// message, and inner exception.
+        /// </summary>
+        /// <param name="errorCode">The HTTP/2 or HTTP/3 error code.</param>
+        /// <param name="message">The error message that explains the reason for the exception.</param>
+        /// <param name="innerException">The exception that is the cause of the current exception.</param>
+        public HttpProtocolException(long errorCode, string message, Exception? innerException)
             : base(message, innerException)
         {
             ErrorCode = errorCode;
         }
 
-        private HttpProtocolException(string message, long errorCode)
-            : this(message, errorCode, null)
+        private HttpProtocolException(long errorCode, string message)
+            : this(errorCode, message, null)
         {
         }
 
+        /// <summary>
+        /// Gets the HTTP/2 or HTTP/3 error code associated with this exception.
+        /// </summary>
         public long ErrorCode { get; }
 
         internal static HttpProtocolException CreateHttp2StreamException(Http2ProtocolErrorCode protocolError)
         {
             string message = SR.Format(SR.net_http_http2_stream_error, GetName(protocolError), ((int)protocolError).ToString("x"));
-            return new HttpProtocolException(message, (long)protocolError);
+            return new HttpProtocolException((long)protocolError, message);
         }
 
         internal static HttpProtocolException CreateHttp2ConnectionException(Http2ProtocolErrorCode protocolError)
         {
             string message = SR.Format(SR.net_http_http2_connection_error, GetName(protocolError), ((int)protocolError).ToString("x"));
-            return new HttpProtocolException(message, (long)protocolError);
+            return new HttpProtocolException((long)protocolError, message);
         }
 
         private static string GetName(Http2ProtocolErrorCode code) =>
