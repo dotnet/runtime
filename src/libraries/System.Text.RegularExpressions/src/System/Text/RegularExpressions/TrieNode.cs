@@ -1,7 +1,9 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.RegularExpressions
 {
@@ -48,6 +50,25 @@ namespace System.Text.RegularExpressions
 
         public int DictionaryLink = -1;
 
+        public string GetPath(List<TrieNode> trie)
+        {
+#if REGEXGENERATOR
+            string path = StringExtensions.Create(Depth, (trie, this), (span, x) =>
+#else
+            string path = string.Create(Depth, (trie, this), (span, x) =>
+#endif
+            {
+                TrieNode currentNode = x.Item2;
+                for (int i = span.Length - 1; i >= 0; i--)
+                {
+                    span[i] = currentNode.AccessingCharacter;
+                    currentNode = x.trie[currentNode.Parent];
+                }
+            });
+            Debug.Assert(path == Path);
+            return path;
+        }
+
 #if DEBUG
         public string? Path { get; init; }
         public string? SuffixLinkPath;
@@ -56,5 +77,23 @@ namespace System.Text.RegularExpressions
         public override string ToString() =>
             $"Path: {Path} Suffix Link: {SuffixLinkPath} Dictionary Link: {DictionaryLinkPath}";
 #endif
+    }
+
+    internal static class TrieExtensions
+    {
+        public static (int MatchCount, string? SingleMatch) GetMatchCountAndSingleMatch(this List<TrieNode> trie)
+        {
+            int matchCount = 0;
+            string? singleMatch = null;
+            foreach (TrieNode node in trie)
+            {
+                if (node.IsMatch)
+                {
+                    matchCount++;
+                    singleMatch ??= node.GetPath(trie);
+                }
+            }
+            return (matchCount, singleMatch);
+        }
     }
 }

@@ -5,9 +5,25 @@ using System.Collections.Generic;
 
 namespace System.Text.RegularExpressions
 {
+    /// <summary>
+    /// Efficiently finds a set of strings in text.
+    /// Currently uses the Aho-Corasick algorithm.
+    /// </summary>
     internal sealed class MultiStringMatcher
     {
         private readonly List<TrieNode> _trie;
+
+        /// <summary>
+        /// Creates a <see cref="MultiStringMatcher"/> from a trie, and
+        /// calculates its nodes' suffix and dictionary links.
+        /// </summary>
+        /// <param name="trie"></param>
+        internal MultiStringMatcher(List<TrieNode> trie)
+        {
+            BuildTrieLinks(trie);
+
+            _trie = trie;
+        }
 
         public MultiStringMatcher(ReadOnlySpan<string> words)
         {

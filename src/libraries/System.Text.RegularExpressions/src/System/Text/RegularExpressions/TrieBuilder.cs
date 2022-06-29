@@ -55,11 +55,8 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Tries to create a trie from the leading fixed part of a <see cref="RegexNode"/>.
         /// </summary>
-        public static bool TryCreate(RegexNode regexNode, [NotNullWhen(true)] out List<TrieNode>? trie)
+        public static bool TryCreateFromPrefix(RegexNode regexNode, [NotNullWhen(true)] out List<TrieNode>? trie)
         {
-            // RightToLeft is not supported.
-            Debug.Assert((regexNode.Options & RegexOptions.RightToLeft) == 0);
-
             TrieBuilder builder = new TrieBuilder();
             int branchingDepth = 0;
             NodeCollection matchNodes = builder.Add(new NodeCollection(TrieNode.Root), regexNode, ref branchingDepth, out _);
