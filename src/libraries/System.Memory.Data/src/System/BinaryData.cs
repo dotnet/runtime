@@ -275,8 +275,13 @@ namespace System
         [RequiresUnreferencedCode(JsonSerializerRequiresUnreferencedCode)]
         public T? ToObjectFromJson<T>(JsonSerializerOptions? options = default)
         {
-            using var stream = new ReadOnlyMemoryStream(_bytes);
-            return JsonSerializer.Deserialize<T>(stream, options);
+            ReadOnlySpan<byte> span = _bytes.Span;
+
+            // Check for the UTF-8 byte order mark (BOM) EF BB BF
+            if (span.Length > 2 && span[0] == 0xEF && span[1] == 0xBB && span[2] == 0xBF)
+                span = span.Slice(3);
+
+            return JsonSerializer.Deserialize<T>(span, options);
         }
 
         /// <summary>
