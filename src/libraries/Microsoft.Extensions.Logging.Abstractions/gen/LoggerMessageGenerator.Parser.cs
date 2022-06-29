@@ -534,30 +534,28 @@ namespace Microsoft.Extensions.Logging.Generators
 
             private (string? loggerField, bool multipleLoggerFields) FindLoggerField(SemanticModel sm, TypeDeclarationSyntax classDec, ITypeSymbol loggerSymbol)
             {
-                List<IFieldSymbol> fields = new();
-
-                INamedTypeSymbol? classType = sm.GetDeclaredSymbol(classDec, _cancellationToken);
-                while (classType is { SpecialType: not SpecialType.System_Object })
-                {
-                    fields.AddRange(classType.GetMembers().OfType<IFieldSymbol>());
-                    classType = classType.BaseType;
-                }
-
                 string? loggerField = null;
 
-                foreach (IFieldSymbol v in fields)
+                INamedTypeSymbol? classType = sm.GetDeclaredSymbol(classDec, _cancellationToken);
+
+                while (classType is { SpecialType: not SpecialType.System_Object })
                 {
-                    if (IsBaseOrIdentity(v.Type, loggerSymbol))
+                    foreach (IFieldSymbol fs in classType.GetMembers().OfType<IFieldSymbol>())
                     {
-                        if (loggerField == null)
+                        if (IsBaseOrIdentity(fs.Type, loggerSymbol))
                         {
-                            loggerField = v.Name;
-                        }
-                        else
-                        {
-                            return (null, true);
+                            if (loggerField == null)
+                            {
+                                loggerField = fs.Name;
+                            }
+                            else
+                            {
+                                return (null, true);
+                            }
                         }
                     }
+
+                    classType = classType.BaseType;
                 }
 
                 return (loggerField, false);
