@@ -5285,7 +5285,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
         // We only need to attach the field offset information for class fields.
         if ((objRefType == TYP_REF) && !fldMayOverlap)
         {
-            fieldSeq = GetFieldSeqStore()->CreateSingleton(symHnd, fldOffset, FieldSeqNode::FieldKind::Instance);
+            fieldSeq = GetFieldSeqStore()->Create(symHnd, fldOffset, FieldSeqNode::FieldKind::Instance);
         }
 
         // Add the member offset to the object's address.
@@ -5400,7 +5400,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
 
             // Add the TLS static field offset to the address.
             assert(!fldMayOverlap);
-            fieldSeq = GetFieldSeqStore()->CreateSingleton(symHnd, fldOffset, FieldSeqNode::FieldKind::SimpleStatic);
+            fieldSeq = GetFieldSeqStore()->Create(symHnd, fldOffset, FieldSeqNode::FieldKind::SimpleStatic);
             tlsRef   = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsRef, gtNewIconNode(fldOffset, fieldSeq));
 
             // Final indirect to get to actual value of TLS static field
@@ -5431,8 +5431,8 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             if (!isBoxedStatic)
             {
                 // Only simple statics get importred as GT_FIELDs.
-                fieldSeq = GetFieldSeqStore()->CreateSingleton(symHnd, reinterpret_cast<size_t>(fldAddr),
-                                                               FieldSeqNode::FieldKind::SimpleStatic);
+                fieldSeq = GetFieldSeqStore()->Create(symHnd, reinterpret_cast<size_t>(fldAddr),
+                                                      FieldSeqNode::FieldKind::SimpleStatic);
             }
 
             // TODO-CQ: enable this optimization for 32 bit targets.

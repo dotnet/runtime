@@ -263,7 +263,7 @@ public:
 // For value numbering, we would like to preserve the aliasing information for class and static fields,
 // and so will annotate such lowered addresses with "field sequences", representing the "base" static or
 // class field and any additional struct fields. We only need to preserve the handle for the first field,
-// so any struct fields will be represented implicitly (as the offset). See also "IsFieldAddr".
+// so any struct fields will be represented implicitly (via offsets). See also "IsFieldAddr".
 //
 class FieldSeqNode
 {
@@ -317,37 +317,22 @@ public:
     {
         return GetKind() == FieldKind::SharedStatic;
     }
-
-    // Make sure this provides methods that allow it to be used as a KeyFuncs type in JitHashTable.
-    // Note that there is a one-to-one relationship between the field handle and the field kind, so
-    // we do not need to mask away the latter for comparison purposes. Likewise, we do not need to
-    // include the offset.
-    static int GetHashCode(FieldSeqNode fsn)
-    {
-        return static_cast<int>(fsn.m_fieldHandleAndKind);
-    }
-
-    static bool Equals(const FieldSeqNode& fsn1, const FieldSeqNode& fsn2)
-    {
-        return fsn1.m_fieldHandleAndKind == fsn2.m_fieldHandleAndKind;
-    }
 };
 
 // This class canonicalizes field sequences.
+//
 class FieldSeqStore
 {
-    typedef JitHashTable<FieldSeqNode, /*KeyFuncs*/ FieldSeqNode, FieldSeqNode*> FieldSeqNodeCanonMap;
-
-    CompAllocator         m_alloc;
-    FieldSeqNodeCanonMap* m_canonMap;
+    // Maps field handles to field sequence instances.
+    //
+    JitHashTable<CORINFO_FIELD_HANDLE, JitPtrKeyFuncs<CORINFO_FIELD_STRUCT_>, FieldSeqNode> m_map;
 
 public:
-    FieldSeqStore(CompAllocator alloc);
+    FieldSeqStore(CompAllocator alloc) : m_map(alloc)
+    {
+    }
 
-    // Returns the (canonical in the store) singleton field sequence for the given handle.
-    FieldSeqNode* CreateSingleton(CORINFO_FIELD_HANDLE    fieldHnd,
-                                  ssize_t                 offset,
-                                  FieldSeqNode::FieldKind fieldKind = FieldSeqNode::FieldKind::Instance);
+    FieldSeqNode* Create(CORINFO_FIELD_HANDLE fieldHnd, ssize_t offset, FieldSeqNode::FieldKind fieldKind);
 
     FieldSeqNode* Append(FieldSeqNode* a, FieldSeqNode* b);
 };

@@ -18253,30 +18253,51 @@ bool GenTree::IsArrayAddr(GenTreeArrAddr** pArrAddr)
     return false;
 }
 
-// FieldSeqStore methods.
-FieldSeqStore::FieldSeqStore(CompAllocator alloc) : m_alloc(alloc), m_canonMap(new (alloc) FieldSeqNodeCanonMap(alloc))
+//------------------------------------------------------------------------
+// Create: Create or retrieve a field sequence for the given field handle.
+//
+// The field sequence instance contains some cached information relevant to
+// its usage; thus for a given handle all callers of this method must pass
+// the same set of arguments.
+//
+// Arguments:
+//    fieldHnd  - The field handle
+//    offset    - The "offset" value for the field sequence
+//    fieldKind - The field's kind
+//
+// Return Value:
+//    The canonical field sequence for the given field.
+//
+FieldSeqNode* FieldSeqStore::Create(CORINFO_FIELD_HANDLE fieldHnd, ssize_t offset, FieldSeqNode::FieldKind fieldKind)
 {
+    FieldSeqNode* fieldSeq = m_map.Emplace(fieldHnd, fieldHnd, offset, fieldKind);
+
+    assert(fieldSeq->GetOffset() == offset);
+    assert(fieldSeq->GetKind() == fieldKind);
+
+    return fieldSeq;
 }
 
-FieldSeqNode* FieldSeqStore::CreateSingleton(CORINFO_FIELD_HANDLE    fieldHnd,
-                                             ssize_t                 offset,
-                                             FieldSeqNode::FieldKind fieldKind)
-{
-    FieldSeqNode  fsn(fieldHnd, offset, fieldKind);
-    FieldSeqNode* res = nullptr;
-    if (m_canonMap->Lookup(fsn, &res))
-    {
-        return res;
-    }
-    else
-    {
-        res  = m_alloc.allocate<FieldSeqNode>(1);
-        *res = fsn;
-        m_canonMap->Set(fsn, res);
-        return res;
-    }
-}
-
+//------------------------------------------------------------------------
+// Append: "Merge" two field sequences together.
+//
+// A field sequence only explicitly represents its "head", i. e. the static
+// or class field with which it begins. The struct fields that are part of
+// it are "implicit" - represented in IR as offsets with "empty" sequences.
+// Thus when two sequences are merged, only one can be explicit:
+//
+//    field seq + empty     => field seq
+//    empty     + field seq => field seq
+//    empty     + empty     => empty
+//    field seq + field seq => illegal
+//
+// Arguments:
+//    a - The field sequence
+//    b - The second sequence
+//
+// Return Value:
+//    The result of "merging" "a" and "b" (see description).
+//
 FieldSeqNode* FieldSeqStore::Append(FieldSeqNode* a, FieldSeqNode* b)
 {
     if (a == nullptr)

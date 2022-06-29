@@ -10407,8 +10407,6 @@ public:
     void JitTestCheckVN();  // Value numbering tests.
 #endif                      // DEBUG
 
-    // The "FieldSeqStore", for canonicalizing field sequences.  See the definition of FieldSeqStore for
-    // operations.
     FieldSeqStore* m_fieldSeqStore;
 
     FieldSeqStore* GetFieldSeqStore()
@@ -10416,9 +10414,8 @@ public:
         Compiler* compRoot = impInlineRoot();
         if (compRoot->m_fieldSeqStore == nullptr)
         {
-            // Create a CompAllocator that labels sub-structure with CMK_FieldSeqStore, and use that for allocation.
-            CompAllocator ialloc(getAllocator(CMK_FieldSeqStore));
-            compRoot->m_fieldSeqStore = new (ialloc) FieldSeqStore(ialloc);
+            CompAllocator alloc = getAllocator(CMK_FieldSeqStore);
+            compRoot->m_fieldSeqStore = new (alloc) FieldSeqStore(alloc);
         }
         return compRoot->m_fieldSeqStore;
     }

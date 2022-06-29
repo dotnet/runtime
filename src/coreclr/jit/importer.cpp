@@ -8841,7 +8841,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
     if (isBoxedStatic)
     {
         innerFldSeq = nullptr;
-        outerFldSeq = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField, TARGET_POINTER_SIZE, fieldKind);
+        outerFldSeq = GetFieldSeqStore()->Create(pResolvedToken->hField, TARGET_POINTER_SIZE, fieldKind);
     }
     else
     {
@@ -8859,7 +8859,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             offset = pFieldInfo->offset;
         }
 
-        innerFldSeq = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField, offset, fieldKind);
+        innerFldSeq = GetFieldSeqStore()->Create(pResolvedToken->hField, offset, fieldKind);
         outerFldSeq = nullptr;
     }
 
