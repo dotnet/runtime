@@ -876,10 +876,10 @@ namespace System.Runtime.InteropServices
         {
 #if TARGET_64BIT
             [NonVersionable]
-            get => (NFloat)BitConverter.UInt64BitsToDouble(0xFFFFFFFFFFFFFFFF);
+            get => (NFloat)BitConverter.UInt64BitsToDouble(0xFFFF_FFFF_FFFF_FFFF);
 #else
             [NonVersionable]
-            get => BitConverter.UInt32BitsToSingle(0xFFFFFFFF);
+            get => BitConverter.UInt32BitsToSingle(0xFFFF_FFFF);
 #endif
         }
 

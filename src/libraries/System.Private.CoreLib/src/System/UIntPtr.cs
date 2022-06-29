@@ -349,10 +349,10 @@ namespace System
         {
 #if TARGET_64BIT
             [NonVersionable]
-            get => unchecked((nuint)0xFFFFFFFFFFFFFFFF);
+            get => unchecked((nuint)0xFFFF_FFFF_FFFF_FFFF);
 #else
             [NonVersionable]
-            get => (nuint)0xFFFFFFFF;
+            get => (nuint)0xFFFF_FFFF;
 #endif
         }
 

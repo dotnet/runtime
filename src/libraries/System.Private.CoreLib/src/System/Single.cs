@@ -540,7 +540,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
-        static float IBinaryNumber<float>.AllBitsSet => BitConverter.UInt32BitsToSingle(0xFFFFFFFF);
+        static float IBinaryNumber<float>.AllBitsSet => BitConverter.UInt32BitsToSingle(0xFFFF_FFFF);
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(float value)
