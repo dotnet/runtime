@@ -12,7 +12,7 @@ namespace System.Drawing.Tests
 {
     public partial class GraphicsTests
     {
-        public bool IsWindows7OrWindowsArm64 => PlatformDetection.IsWindows7 || (PlatformDetection.IsWindows && PlatformDetection.IsArm64);
+        public static bool IsWindows7OrWindowsArm64 => PlatformDetection.IsWindows7 || (PlatformDetection.IsWindows && PlatformDetection.IsArm64);
         
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetHdc_FromHdc_Roundtrips()
@@ -95,7 +95,7 @@ namespace System.Drawing.Tests
             yield return new object[] { Helpers.GetDC(foregroundWindow) };
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51097", nameof(IsWindows7OrWindowsArm64))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51097", typeof(GraphicsTests), nameof(IsWindows7OrWindowsArm64))]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(FromHdc_TestData))]
         public void FromHdc_ValidHdc_ReturnsExpected(IntPtr hdc)
@@ -107,7 +107,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51097", nameof(IsWindows7OrWindowsArm64))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51097", typeof(GraphicsTests), nameof(IsWindows7OrWindowsArm64))]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(FromHdc_TestData))]
         public void FromHdc_ValidHdcWithContext_ReturnsExpected(IntPtr hdc)
@@ -119,7 +119,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51097", nameof(IsWindows7OrWindowsArm64))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51097", typeof(GraphicsTests), nameof(IsWindows7OrWindowsArm64))]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(FromHdc_TestData))]
         public void FromHdcInternal_GetDC_ReturnsExpected(IntPtr hdc)
@@ -247,7 +247,7 @@ namespace System.Drawing.Tests
             yield return new object[] { Helpers.GetForegroundWindow() };
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51097", nameof(IsWindows7OrWindowsArm64))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51097", typeof(GraphicsTests), nameof(IsWindows7OrWindowsArm64))]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Hwnd_TestData))]
         public void FromHwnd_ValidHwnd_ReturnsExpected(IntPtr hWnd)
@@ -259,7 +259,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51097", nameof(IsWindows7OrWindowsArm64))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51097", typeof(GraphicsTests), nameof(IsWindows7OrWindowsArm64))]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Hwnd_TestData))]
         public void FromHwndInternal_ValidHwnd_ReturnsExpected(IntPtr hWnd)
