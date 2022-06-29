@@ -83,6 +83,8 @@ namespace System.Formats.Tar
         // Windows specific implementation of the method that asynchronously reads an entry from disk and writes it into the archive stream.
         private async Task ReadFileFromDiskAndWriteToArchiveStreamAsEntryAsync(string fullPath, string entryName, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             TarEntryType entryType;
             FileAttributes attributes = File.GetAttributes(fullPath);
 

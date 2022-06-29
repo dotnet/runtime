@@ -49,6 +49,8 @@ namespace System.Formats.Tar
         // Asynchronously helps advance the stream a total number of bytes larger than int.MaxValue.
         internal static async ValueTask AdvanceStreamAsync(Stream archiveStream, long bytesToDiscard, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (archiveStream.CanSeek)
             {
                 archiveStream.Position += bytesToDiscard;
@@ -83,6 +85,8 @@ namespace System.Formats.Tar
         // Asynchronously helps copy a specific number of bytes from one stream into another.
         internal static async ValueTask CopyBytesAsync(Stream origin, Stream destination, long bytesToCopy, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength: MaxBufferLength);
             while (bytesToCopy > 0)
             {
@@ -259,6 +263,8 @@ namespace System.Formats.Tar
         // Asynchronously skip them and set the stream position to the first byte of the next entry.
         internal static async ValueTask<int> SkipBlockAlignmentPaddingAsync(Stream archiveStream, long size, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             int bytesToSkip = CalculatePadding(size);
             await AdvanceStreamAsync(archiveStream, bytesToSkip, cancellationToken).ConfigureAwait(false);
             return bytesToSkip;

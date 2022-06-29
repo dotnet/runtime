@@ -51,6 +51,10 @@ namespace System.Formats.Tar
         /// <returns>A task that represents the asynchronous creation operation.</returns>
         public static Task CreateFromDirectoryAsync(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, CancellationToken cancellationToken = default)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
             ArgumentException.ThrowIfNullOrEmpty(sourceDirectoryName);
             ArgumentNullException.ThrowIfNull(destination);
 
@@ -106,6 +110,10 @@ namespace System.Formats.Tar
         /// <returns>A task that represents the asynchronous creation operation.</returns>
         public static Task CreateFromDirectoryAsync(string sourceDirectoryName, string destinationFileName, bool includeBaseDirectory, CancellationToken cancellationToken = default)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
             ArgumentException.ThrowIfNullOrEmpty(sourceDirectoryName);
             ArgumentException.ThrowIfNullOrEmpty(destinationFileName);
 
@@ -165,6 +173,10 @@ namespace System.Formats.Tar
         /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
         public static Task ExtractToDirectoryAsync(Stream source, string destinationDirectoryName, bool overwriteFiles, CancellationToken cancellationToken = default)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
             ArgumentNullException.ThrowIfNull(source);
             ArgumentException.ThrowIfNullOrEmpty(destinationDirectoryName);
 
@@ -230,6 +242,10 @@ namespace System.Formats.Tar
         /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
         public static Task ExtractToDirectoryAsync(string sourceFileName, string destinationDirectoryName, bool overwriteFiles, CancellationToken cancellationToken = default)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
             ArgumentException.ThrowIfNullOrEmpty(sourceFileName);
             ArgumentException.ThrowIfNullOrEmpty(destinationDirectoryName);
 
@@ -310,6 +326,8 @@ namespace System.Formats.Tar
             Debug.Assert(!string.IsNullOrEmpty(sourceDirectoryName));
             Debug.Assert(!string.IsNullOrEmpty(destinationFileName));
 
+            cancellationToken.ThrowIfCancellationRequested();
+
             FileStreamOptions options = new()
             {
                 Access = FileAccess.Write,
@@ -332,6 +350,8 @@ namespace System.Formats.Tar
             Debug.Assert(destination != null);
             Debug.Assert(Path.IsPathFullyQualified(sourceDirectoryName));
             Debug.Assert(destination.CanWrite);
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             TarWriter writer = new TarWriter(destination, TarEntryFormat.Pax, leaveOpen);
             await using (writer.ConfigureAwait(false))
@@ -406,6 +426,8 @@ namespace System.Formats.Tar
             Debug.Assert(!string.IsNullOrEmpty(sourceFileName));
             Debug.Assert(!string.IsNullOrEmpty(destinationDirectoryName));
 
+            cancellationToken.ThrowIfCancellationRequested();
+
             FileStreamOptions options = new()
             {
                 Access = FileAccess.Read,
@@ -427,6 +449,8 @@ namespace System.Formats.Tar
             Debug.Assert(!string.IsNullOrEmpty(destinationDirectoryPath));
             Debug.Assert(Path.IsPathFullyQualified(destinationDirectoryPath));
             Debug.Assert(source.CanRead);
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             TarReader reader = new TarReader(source, leaveOpen);
             await using (reader.ConfigureAwait(false))

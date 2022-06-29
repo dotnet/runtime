@@ -76,6 +76,8 @@ namespace System.Formats.Tar
         // Returns true if all the attributes were read successfully, false otherwise.
         internal static async ValueTask<(bool, TarHeader)> TryGetNextHeaderAsync(Stream archiveStream, bool copyData, TarEntryFormat initialFormat, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             TarHeader header = default;
             header._format = initialFormat;
 
@@ -370,6 +372,8 @@ namespace System.Formats.Tar
         // Otherwise, it returns an unseekable wrapper stream.
         private static async ValueTask<Stream> GetDataStreamAsync(Stream archiveStream, bool copyData, long size, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (size == 0)
             {
                 return new MemoryStream();
@@ -599,6 +603,8 @@ namespace System.Formats.Tar
         {
             Debug.Assert(entryType is TarEntryType.ExtendedAttributes or TarEntryType.GlobalExtendedAttributes);
 
+            cancellationToken.ThrowIfCancellationRequested();
+
             // It is not expected that the extended attributes data section will be longer than int.MaxValue, considering
             // 4096 is a common max path length, and also the size field is 12 bytes long, which is under int.MaxValue.
             if (size > int.MaxValue)
@@ -671,6 +677,8 @@ namespace System.Formats.Tar
         private static async ValueTask<string?> ReadGnuLongPathDataBlockAsync(Stream archiveStream, TarEntryType entryType, long size, CancellationToken cancellationToken)
         {
             Debug.Assert(entryType is TarEntryType.LongLink or TarEntryType.LongPath);
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             if (size == 0)
             {

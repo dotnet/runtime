@@ -143,6 +143,8 @@ namespace System.Formats.Tar
         /// <exception cref="IOException">An I/O problem occurred.</exception>
         public async ValueTask<TarEntry?> GetNextEntryAsync(bool copyData = false, CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (_reachedEndMarkers)
             {
                 // Avoid advancing the stream if we already found the end of the archive.
@@ -228,6 +230,8 @@ namespace System.Formats.Tar
         // Asynchronously moves the underlying archive stream position pointer to the beginning of the next header.
         internal async ValueTask AdvanceDataStreamIfNeededAsync(CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (_previouslyReadEntry == null)
             {
                 return;
@@ -369,6 +373,8 @@ namespace System.Formats.Tar
         // Metadata typeflag entries get handled internally by this method until a valid header entry can be returned.
         private async ValueTask<(bool, TarHeader)> TryGetNextEntryHeaderAsync(bool copyData, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             Debug.Assert(!_reachedEndMarkers);
 
             (bool result, TarHeader header) = await TarHeader.TryGetNextHeaderAsync(_archiveStream, copyData, TarEntryFormat.Unknown, cancellationToken).ConfigureAwait(false);
@@ -448,6 +454,8 @@ namespace System.Formats.Tar
         // and returns the actual entry with the processed extended attributes saved in the _extendedAttributes dictionary.
         private async ValueTask<(bool, TarHeader)> TryProcessExtendedAttributesHeaderAsync(TarHeader extendedAttributesHeader, bool copyData, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             // Now get the actual entry
             (bool result, TarHeader actualHeader) = await TarHeader.TryGetNextHeaderAsync(_archiveStream, copyData, TarEntryFormat.Pax, cancellationToken).ConfigureAwait(false);
             if (!result)
@@ -560,6 +568,8 @@ namespace System.Formats.Tar
         // or the actual entry. Processes them all and returns the actual entry updating its path and/or linkpath fields as needed.
         private async ValueTask<(bool, TarHeader)> TryProcessGnuMetadataHeaderAsync(TarHeader header, bool copyData, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             // Get the second entry, which is the actual entry
             (bool result1, TarHeader secondHeader) = await TarHeader.TryGetNextHeaderAsync(_archiveStream, copyData, TarEntryFormat.Gnu, cancellationToken).ConfigureAwait(false);
             if (!result1)

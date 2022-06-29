@@ -133,6 +133,10 @@ namespace System.Formats.Tar
         /// <exception cref="IOException">An I/O problem occurred.</exception>
         public Task WriteEntryAsync(string fileName, string? entryName, CancellationToken cancellationToken = default)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
             ThrowIfDisposed();
 
             ArgumentException.ThrowIfNullOrEmpty(fileName);
@@ -260,6 +264,10 @@ namespace System.Formats.Tar
         /// <exception cref="IOException">An I/O problem occurred.</exception>
         public Task WriteEntryAsync(TarEntry entry, CancellationToken cancellationToken = default)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
             ThrowIfDisposed();
             return WriteEntryAsyncInternal(entry, cancellationToken);
         }
@@ -328,6 +336,8 @@ namespace System.Formats.Tar
         // Portion of the WriteEntryAsync(TarEntry, CancellationToken) method containing awaits.
         private async Task WriteEntryAsyncInternal(TarEntry entry, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             byte[] rented = ArrayPool<byte>.Shared.Rent(minimumLength: TarHelpers.RecordSize);
             Memory<byte> buffer = rented.AsMemory(0, TarHelpers.RecordSize); // minimumLength means the array could've been larger
             buffer.Span.Clear(); // Rented arrays aren't clean
@@ -378,6 +388,7 @@ namespace System.Formats.Tar
 
         // The spec indicates that the end of the archive is indicated
         // by two records consisting entirely of zero bytes.
+        // This method is called from DisposeAsync, so we don't want to propagate a cancelled CancellationToken.
         private async ValueTask WriteFinalRecordsAsync()
         {
             byte[] emptyRecord = new byte[TarHelpers.RecordSize];

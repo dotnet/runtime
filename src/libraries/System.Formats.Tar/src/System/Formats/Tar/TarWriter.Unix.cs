@@ -106,6 +106,8 @@ namespace System.Formats.Tar
         // Unix specific implementation of the method that reads an entry from disk and writes it into the archive stream.
         private async Task ReadFileFromDiskAndWriteToArchiveStreamAsEntryAsync(string fullPath, string entryName, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             Interop.Sys.FileStatus status = default;
             status.Mode = default;
             status.Dev = default;

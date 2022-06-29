@@ -249,6 +249,10 @@ namespace System.Formats.Tar
         /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
         public Task ExtractToFileAsync(string destinationFileName, bool overwrite, CancellationToken cancellationToken = default)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
             ArgumentException.ThrowIfNullOrEmpty(destinationFileName);
             if (EntryType is TarEntryType.SymbolicLink or TarEntryType.HardLink or TarEntryType.GlobalExtendedAttributes)
             {
@@ -354,6 +358,11 @@ namespace System.Formats.Tar
             Debug.Assert(!string.IsNullOrEmpty(destinationDirectoryPath));
             Debug.Assert(Path.IsPathFullyQualified(destinationDirectoryPath));
 
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+
             destinationDirectoryPath = Path.TrimEndingDirectorySeparator(destinationDirectoryPath);
 
             string? fileDestinationPath = GetSanitizedFullPath(destinationDirectoryPath, Name);
@@ -417,6 +426,10 @@ namespace System.Formats.Tar
         // Asynchronously extracts the current entry into the filesystem, regardless of the entry type.
         private Task ExtractToFileInternalAsync(string filePath, string? linkTargetPath, bool overwrite, CancellationToken cancellationToken)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
             VerifyPathsForEntryType(filePath, linkTargetPath, overwrite);
 
             if (EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile or TarEntryType.ContiguousFile)
@@ -570,6 +583,8 @@ namespace System.Formats.Tar
         private async Task ExtractAsRegularFileAsync(string destinationFileName, CancellationToken cancellationToken)
         {
             Debug.Assert(!Path.Exists(destinationFileName));
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             FileStreamOptions fileStreamOptions = new()
             {
