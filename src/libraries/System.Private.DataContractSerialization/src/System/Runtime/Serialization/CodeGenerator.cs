@@ -88,6 +88,14 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "The trimmer will never remove the Invoke method from delegates.")]
+        internal static MethodInfo GetInvokeMethod(Type delegateType)
+        {
+            Debug.Assert(typeof(Delegate).IsAssignableFrom(delegateType));
+            return delegateType.GetMethod("Invoke")!;
+        }
+
         private Type _delegateType = null!; // initialized in BeginMethod
 
         private static Module? s_serializationModule;
@@ -100,17 +108,9 @@ namespace System.Runtime.Serialization
         private Stack<object> _blockStack = null!; // initialized in BeginMethod
         private Label _methodEndLabel;
 
-        private readonly Dictionary<LocalBuilder, string> _localNames = new Dictionary<LocalBuilder, string>();
-
-        private enum CodeGenTrace { None, Save, Tron };
-        private readonly CodeGenTrace _codeGenTrace;
         private LocalBuilder? _stringFormatArray;
 
-        internal CodeGenerator()
-        {
-            //Defaulting to None as thats the default value in WCF
-            _codeGenTrace = CodeGenTrace.None;
-        }
+        internal CodeGenerator() { }
 
         internal void BeginMethod(DynamicMethod dynamicMethod, Type delegateType, string methodName, Type[] argTypes, bool allowPrivateMemberAccess)
         {
@@ -123,7 +123,7 @@ namespace System.Runtime.Serialization
 
         internal void BeginMethod(string methodName, Type delegateType, bool allowPrivateMemberAccess)
         {
-            MethodInfo signature = JsonFormatWriterGenerator.GetInvokeMethod(delegateType);
+            MethodInfo signature = GetInvokeMethod(delegateType);
             ParameterInfo[] parameters = signature.GetParameters();
             Type[] paramTypes = new Type[parameters.Length];
             for (int i = 0; i < parameters.Length; i++)
@@ -148,15 +148,11 @@ namespace System.Runtime.Serialization
             _argList = new List<ArgBuilder>();
             for (int i = 0; i < argTypes.Length; i++)
                 _argList.Add(new ArgBuilder(i, argTypes[i]));
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceLabel("Begin method " + methodName + " {");
         }
 
         internal Delegate EndMethod()
         {
             MarkLabel(_methodEndLabel);
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceLabel("} End method");
             Ret();
 
             Delegate? retVal;
@@ -208,13 +204,7 @@ namespace System.Runtime.Serialization
 
         internal LocalBuilder DeclareLocal(Type type, string name, bool isPinned)
         {
-            LocalBuilder local = _ilGen.DeclareLocal(type, isPinned);
-            if (_codeGenTrace != CodeGenTrace.None)
-            {
-                _localNames[local] = name;
-                EmitSourceComment("Declare local '" + name + "' of type " + type);
-            }
-            return local;
+            return _ilGen.DeclareLocal(type, isPinned);
         }
 
         internal void Set(LocalBuilder local, object value)
@@ -285,8 +275,7 @@ namespace System.Runtime.Serialization
                         forState.EndLabel = DefineLabel();
                         forState.RequiresEndLabel = true;
                     }
-                    if (_codeGenTrace != CodeGenTrace.None)
-                        EmitSourceInstruction(branchInstruction + " " + forState.EndLabel.GetHashCode());
+
                     _ilGen.Emit(branchInstruction, forState.EndLabel);
                     break;
                 }
@@ -329,7 +318,7 @@ namespace System.Runtime.Serialization
         internal void IfNotDefaultValue(object value)
         {
             Type type = GetVariableType(value);
-            TypeCode typeCode = type.GetTypeCode();
+            TypeCode typeCode = Type.GetTypeCode(type);
             if ((typeCode == TypeCode.Object && type.IsValueType) ||
                 typeCode == TypeCode.DateTime || typeCode == TypeCode.Decimal)
             {
@@ -507,51 +496,36 @@ namespace System.Runtime.Serialization
         {
             if (methodInfo.IsVirtual && !methodInfo.DeclaringType!.IsValueType)
             {
-                if (_codeGenTrace != CodeGenTrace.None)
-                    EmitSourceInstruction("Callvirt " + methodInfo.ToString() + " on type " + methodInfo.DeclaringType.ToString());
                 _ilGen.Emit(OpCodes.Callvirt, methodInfo);
             }
             else if (methodInfo.IsStatic)
             {
-                if (_codeGenTrace != CodeGenTrace.None)
-                    EmitSourceInstruction("Static Call " + methodInfo.ToString() + " on type " + methodInfo.DeclaringType!.ToString());
                 _ilGen.Emit(OpCodes.Call, methodInfo);
             }
             else
             {
-                if (_codeGenTrace != CodeGenTrace.None)
-                    EmitSourceInstruction("Call " + methodInfo.ToString() + " on type " + methodInfo.DeclaringType!.ToString());
                 _ilGen.Emit(OpCodes.Call, methodInfo);
             }
         }
 
         internal void Call(ConstructorInfo ctor)
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Call " + ctor.ToString() + " on type " + ctor.DeclaringType!.ToString());
             _ilGen.Emit(OpCodes.Call, ctor);
         }
 
         internal void New(ConstructorInfo constructorInfo)
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Newobj " + constructorInfo.ToString() + " on type " + constructorInfo.DeclaringType!.ToString());
             _ilGen.Emit(OpCodes.Newobj, constructorInfo);
         }
 
-
         internal void InitObj(Type valueType)
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Initobj " + valueType);
             _ilGen.Emit(OpCodes.Initobj, valueType);
         }
 
         internal void NewArray(Type elementType, object len)
         {
             Load(len);
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Newarr " + elementType);
             _ilGen.Emit(OpCodes.Newarr, elementType);
         }
 
@@ -605,27 +579,20 @@ namespace System.Runtime.Serialization
                 memberType = fieldInfo.FieldType;
                 if (fieldInfo.IsStatic)
                 {
-                    if (_codeGenTrace != CodeGenTrace.None)
-                        EmitSourceInstruction("Ldsfld " + fieldInfo + " on type " + fieldInfo.DeclaringType);
                     _ilGen.Emit(OpCodes.Ldsfld, fieldInfo);
                 }
                 else
                 {
-                    if (_codeGenTrace != CodeGenTrace.None)
-                        EmitSourceInstruction("Ldfld " + fieldInfo + " on type " + fieldInfo.DeclaringType);
                     _ilGen.Emit(OpCodes.Ldfld, fieldInfo);
                 }
             }
             else if (memberInfo is PropertyInfo property)
             {
                 memberType = property.PropertyType;
-                if (property != null)
-                {
-                    MethodInfo? getMethod = property.GetMethod;
-                    if (getMethod == null)
-                        throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.NoGetMethodForProperty, property.DeclaringType, property)));
-                    Call(getMethod);
-                }
+                MethodInfo? getMethod = property.GetMethod;
+                if (getMethod == null)
+                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.NoGetMethodForProperty, property.DeclaringType, property)));
+                Call(getMethod);
             }
             else if (memberInfo is MethodInfo method)
             {
@@ -645,30 +612,22 @@ namespace System.Runtime.Serialization
             {
                 if (fieldInfo.IsStatic)
                 {
-                    if (_codeGenTrace != CodeGenTrace.None)
-                        EmitSourceInstruction("Stsfld " + fieldInfo + " on type " + fieldInfo.DeclaringType);
                     _ilGen.Emit(OpCodes.Stsfld, fieldInfo);
                 }
                 else
                 {
-                    if (_codeGenTrace != CodeGenTrace.None)
-                        EmitSourceInstruction("Stfld " + fieldInfo + " on type " + fieldInfo.DeclaringType);
                     _ilGen.Emit(OpCodes.Stfld, fieldInfo);
                 }
             }
-            else if (memberInfo is PropertyInfo)
+            else if (memberInfo is PropertyInfo property)
             {
-                PropertyInfo? property = memberInfo as PropertyInfo;
-                if (property != null)
-                {
-                    MethodInfo? setMethod = property.SetMethod;
-                    if (setMethod == null)
-                        throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.NoSetMethodForProperty, property.DeclaringType, property)));
-                    Call(setMethod);
-                }
+                MethodInfo? setMethod = property.SetMethod;
+                if (setMethod == null)
+                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.NoSetMethodForProperty, property.DeclaringType, property)));
+                Call(setMethod);
             }
-            else if (memberInfo is MethodInfo)
-                Call((MethodInfo)memberInfo);
+            else if (memberInfo is MethodInfo method)
+                Call(method);
             else
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.CannotLoadMemberType, "Unknown")));
         }
@@ -677,7 +636,7 @@ namespace System.Runtime.Serialization
         {
             if (type.IsValueType)
             {
-                switch (type.GetTypeCode())
+                switch (Type.GetTypeCode(type))
                 {
                     case TypeCode.Boolean:
                         Ldc(false);
@@ -719,8 +678,6 @@ namespace System.Runtime.Serialization
         {
             if (obj == null)
             {
-                if (_codeGenTrace != CodeGenTrace.None)
-                    EmitSourceInstruction("Ldnull");
                 _ilGen.Emit(OpCodes.Ldnull);
             }
             else if (obj is ArgBuilder)
@@ -776,22 +733,16 @@ namespace System.Runtime.Serialization
 
         internal void Castclass(Type target)
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Castclass " + target);
             _ilGen.Emit(OpCodes.Castclass, target);
         }
 
         internal void Box(Type type)
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Box " + type);
             _ilGen.Emit(OpCodes.Box, type);
         }
 
         internal void Unbox(Type type)
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Unbox " + type);
             _ilGen.Emit(OpCodes.Unbox, type);
         }
 
@@ -816,47 +767,35 @@ namespace System.Runtime.Serialization
 
         internal void Ldobj(Type type)
         {
-            OpCode opCode = GetLdindOpCode(type.GetTypeCode());
+            OpCode opCode = GetLdindOpCode(Type.GetTypeCode(type));
             if (!opCode.Equals(OpCodes.Nop))
             {
-                if (_codeGenTrace != CodeGenTrace.None)
-                    EmitSourceInstruction(opCode.ToString()!);
                 _ilGen.Emit(opCode);
             }
             else
             {
-                if (_codeGenTrace != CodeGenTrace.None)
-                    EmitSourceInstruction("Ldobj " + type);
                 _ilGen.Emit(OpCodes.Ldobj, type);
             }
         }
 
         internal void Stobj(Type type)
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Stobj " + type);
             _ilGen.Emit(OpCodes.Stobj, type);
         }
 
 
         internal void Ceq()
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Ceq");
             _ilGen.Emit(OpCodes.Ceq);
         }
 
         internal void Throw()
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Throw");
             _ilGen.Emit(OpCodes.Throw);
         }
 
         internal void Ldtoken(Type t)
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Ldtoken " + t);
             _ilGen.Emit(OpCodes.Ldtoken, t);
         }
 
@@ -870,13 +809,11 @@ namespace System.Runtime.Serialization
             }
             else if (valueType.IsEnum)
             {
-                if (_codeGenTrace != CodeGenTrace.None)
-                    EmitSourceComment("Ldc " + o.GetType() + "." + o);
                 Ldc(Convert.ChangeType(o, Enum.GetUnderlyingType(valueType), null));
             }
             else
             {
-                switch (valueType.GetTypeCode())
+                switch (Type.GetTypeCode(valueType))
                 {
                     case TypeCode.Boolean:
                         Ldc((bool)o);
@@ -915,6 +852,7 @@ namespace System.Runtime.Serialization
                     case TypeCode.Decimal:
                     case TypeCode.DateTime:
                     case TypeCode.Empty:
+                    case TypeCode.DBNull:
                     default:
                         throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.UnknownConstantType, DataContract.GetClrTypeFullName(valueType))));
                 }
@@ -925,50 +863,36 @@ namespace System.Runtime.Serialization
         {
             if (boolVar)
             {
-                if (_codeGenTrace != CodeGenTrace.None)
-                    EmitSourceInstruction("Ldc.i4 1");
                 _ilGen.Emit(OpCodes.Ldc_I4_1);
             }
             else
             {
-                if (_codeGenTrace != CodeGenTrace.None)
-                    EmitSourceInstruction("Ldc.i4 0");
                 _ilGen.Emit(OpCodes.Ldc_I4_0);
             }
         }
 
         internal void Ldc(int intVar)
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Ldc.i4 " + intVar);
             _ilGen.Emit(OpCodes.Ldc_I4, intVar);
         }
 
         internal void Ldc(long l)
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Ldc.i8 " + l);
             _ilGen.Emit(OpCodes.Ldc_I8, l);
         }
 
         internal void Ldc(float f)
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Ldc.r4 " + f);
             _ilGen.Emit(OpCodes.Ldc_R4, f);
         }
 
         internal void Ldc(double d)
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Ldc.r8 " + d);
             _ilGen.Emit(OpCodes.Ldc_R8, d);
         }
 
         internal void Ldstr(string strVar)
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Ldstr " + strVar);
             _ilGen.Emit(OpCodes.Ldstr, strVar);
         }
 
@@ -982,25 +906,18 @@ namespace System.Runtime.Serialization
 
         internal void Ldloc(LocalBuilder localBuilder)
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Ldloc " + _localNames[localBuilder]);
             _ilGen.Emit(OpCodes.Ldloc, localBuilder);
             EmitStackTop(localBuilder.LocalType);
         }
 
         internal void Stloc(LocalBuilder local)
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Stloc " + _localNames[local]);
             EmitStackTop(local.LocalType);
             _ilGen.Emit(OpCodes.Stloc, local);
         }
 
-
         internal void Ldloca(LocalBuilder localBuilder)
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Ldloca " + _localNames[localBuilder]);
             _ilGen.Emit(OpCodes.Ldloca, localBuilder);
             EmitStackTop(localBuilder.LocalType);
         }
@@ -1025,17 +942,11 @@ namespace System.Runtime.Serialization
 
         internal void Ldarg(int slot)
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Ldarg " + slot);
-
             _ilGen.Emit(OpCodes.Ldarg, slot);
         }
 
         internal void Starg(int slot)
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Starg " + slot);
-
             _ilGen.Emit(OpCodes.Starg, slot);
         }
 
@@ -1046,26 +957,19 @@ namespace System.Runtime.Serialization
 
         internal void Ldarga(int slot)
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Ldarga " + slot);
-
             _ilGen.Emit(OpCodes.Ldarga, slot);
         }
 
         internal void Ldlen()
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Ldlen");
             _ilGen.Emit(OpCodes.Ldlen);
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Conv.i4");
             _ilGen.Emit(OpCodes.Conv_I4);
         }
 
         private static OpCode GetLdelemOpCode(TypeCode typeCode) =>
             typeCode switch
             {
-                TypeCode.Object => OpCodes.Ldelem_Ref, // TypeCode.Object:
+                TypeCode.Object or TypeCode.DBNull => OpCodes.Ldelem_Ref, // TypeCode.Object:
                 TypeCode.Boolean => OpCodes.Ldelem_I1, // TypeCode.Boolean:
                 TypeCode.Char => OpCodes.Ldelem_I2,    // TypeCode.Char:
                 TypeCode.SByte => OpCodes.Ldelem_I1,   // TypeCode.SByte:
@@ -1090,11 +994,9 @@ namespace System.Runtime.Serialization
             }
             else
             {
-                OpCode opCode = GetLdelemOpCode(arrayElementType.GetTypeCode());
+                OpCode opCode = GetLdelemOpCode(Type.GetTypeCode(arrayElementType));
                 if (opCode.Equals(OpCodes.Nop))
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ArrayTypeIsNotSupported_GeneratingCode, DataContract.GetClrTypeFullName(arrayElementType))));
-                if (_codeGenTrace != CodeGenTrace.None)
-                    EmitSourceInstruction(opCode.ToString()!);
                 _ilGen.Emit(opCode);
                 EmitStackTop(arrayElementType);
             }
@@ -1102,8 +1004,6 @@ namespace System.Runtime.Serialization
         internal void Ldelema(Type arrayElementType)
         {
             OpCode opCode = OpCodes.Ldelema;
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction(opCode.ToString()!);
             _ilGen.Emit(opCode, arrayElementType);
 
             EmitStackTop(arrayElementType);
@@ -1112,7 +1012,7 @@ namespace System.Runtime.Serialization
         private static OpCode GetStelemOpCode(TypeCode typeCode) =>
             typeCode switch
             {
-                TypeCode.Object => OpCodes.Stelem_Ref, // TypeCode.Object:
+                TypeCode.Object or TypeCode.DBNull => OpCodes.Stelem_Ref, // TypeCode.Object:
                 TypeCode.Boolean => OpCodes.Stelem_I1, // TypeCode.Boolean:
                 TypeCode.Char => OpCodes.Stelem_I2,    // TypeCode.Char:
                 TypeCode.SByte => OpCodes.Stelem_I1,   // TypeCode.SByte:
@@ -1135,11 +1035,10 @@ namespace System.Runtime.Serialization
                 Stelem(Enum.GetUnderlyingType(arrayElementType));
             else
             {
-                OpCode opCode = GetStelemOpCode(arrayElementType.GetTypeCode());
+                OpCode opCode = GetStelemOpCode(Type.GetTypeCode(arrayElementType));
                 if (opCode.Equals(OpCodes.Nop))
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ArrayTypeIsNotSupported_GeneratingCode, DataContract.GetClrTypeFullName(arrayElementType))));
-                if (_codeGenTrace != CodeGenTrace.None)
-                    EmitSourceInstruction(opCode.ToString()!);
+
                 EmitStackTop(arrayElementType);
                 _ilGen.Emit(opCode);
             }
@@ -1153,92 +1052,64 @@ namespace System.Runtime.Serialization
         internal void MarkLabel(Label label)
         {
             _ilGen.MarkLabel(label);
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceLabel(label.GetHashCode() + ":");
         }
 
         internal void Add()
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Add");
             _ilGen.Emit(OpCodes.Add);
         }
 
         internal void Subtract()
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Sub");
             _ilGen.Emit(OpCodes.Sub);
         }
 
         internal void And()
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("And");
             _ilGen.Emit(OpCodes.And);
         }
         internal void Or()
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Or");
             _ilGen.Emit(OpCodes.Or);
         }
 
         internal void Not()
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Not");
             _ilGen.Emit(OpCodes.Not);
         }
 
         internal void Ret()
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Ret");
             _ilGen.Emit(OpCodes.Ret);
         }
 
         internal void Br(Label label)
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Br " + label.GetHashCode());
             _ilGen.Emit(OpCodes.Br, label);
         }
 
         internal void Blt(Label label)
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Blt " + label.GetHashCode());
             _ilGen.Emit(OpCodes.Blt, label);
         }
 
         internal void Brfalse(Label label)
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Brfalse " + label.GetHashCode());
             _ilGen.Emit(OpCodes.Brfalse, label);
         }
 
         internal void Brtrue(Label label)
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Brtrue " + label.GetHashCode());
             _ilGen.Emit(OpCodes.Brtrue, label);
         }
 
-
-
         internal void Pop()
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Pop");
             _ilGen.Emit(OpCodes.Pop);
         }
 
         internal void Dup()
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("Dup");
             _ilGen.Emit(OpCodes.Dup);
         }
 
@@ -1296,13 +1167,11 @@ namespace System.Runtime.Serialization
             {
                 if (source.IsValueType)
                 {
-                    OpCode opCode = GetConvOpCode(target.GetTypeCode());
+                    OpCode opCode = GetConvOpCode(Type.GetTypeCode(target));
                     if (opCode.Equals(OpCodes.Nop))
                         throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.NoConversionPossibleTo, DataContract.GetClrTypeFullName(target))));
                     else
                     {
-                        if (_codeGenTrace != CodeGenTrace.None)
-                            EmitSourceInstruction(opCode.ToString()!);
                         _ilGen.Emit(opCode);
                     }
                 }
@@ -1351,24 +1220,9 @@ namespace System.Runtime.Serialization
             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ExpectingEnd, expected.ToString())));
         }
 
-
-        internal static void EmitSourceInstruction(string line)
+        internal static void EmitStackTop(Type stackTopType)
         {
-        }
-
-        internal static void EmitSourceLabel(string line)
-        {
-        }
-
-        internal static void EmitSourceComment(string comment)
-        {
-        }
-
-
-        internal void EmitStackTop(Type stackTopType)
-        {
-            if (_codeGenTrace != CodeGenTrace.Tron)
-                return;
+            return;
         }
 
         internal Label[] Switch(int labelCount)
@@ -1385,8 +1239,6 @@ namespace System.Runtime.Serialization
         }
         internal void Case(Label caseLabel1, string caseLabelName)
         {
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("case " + caseLabelName + "{");
             MarkLabel(caseLabel1);
         }
 
@@ -1397,8 +1249,6 @@ namespace System.Runtime.Serialization
             if (switchState == null)
                 ThrowMismatchException(stackTop);
             Br(switchState.EndOfSwitchLabel);
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("} //end case ");
         }
 
         internal void EndSwitch()
@@ -1407,8 +1257,6 @@ namespace System.Runtime.Serialization
             SwitchState? switchState = stackTop as SwitchState;
             if (switchState == null)
                 ThrowMismatchException(stackTop);
-            if (_codeGenTrace != CodeGenTrace.None)
-                EmitSourceInstruction("} //end switch");
             if (!switchState.DefaultDefined)
                 MarkLabel(switchState.DefaultLabel);
             MarkLabel(switchState.EndOfSwitchLabel);

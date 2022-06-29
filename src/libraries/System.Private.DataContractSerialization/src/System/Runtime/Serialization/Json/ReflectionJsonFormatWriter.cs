@@ -146,7 +146,7 @@ namespace System.Runtime.Serialization.Json
 
             XmlDictionaryString? itemNamespace = null;
 
-            switch (itemType.GetTypeCode())
+            switch (Type.GetTypeCode(itemType))
             {
                 case TypeCode.Boolean:
                     ReflectionWriteArrayAttribute(jsonWriter);

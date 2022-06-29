@@ -251,7 +251,7 @@ namespace System.Xml
             {
                 WriteStartElement(reader.Prefix, reader.LocalName, reader.NamespaceURI);
             }
-            if (defattr || !reader.IsDefault)
+            if (defattr || (!reader.IsDefault && (reader.SchemaInfo == null || !reader.SchemaInfo.IsDefault)))
             {
                 if (reader.MoveToFirstAttribute())
                 {

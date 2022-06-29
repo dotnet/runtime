@@ -17,26 +17,11 @@ namespace System.Runtime.Serialization
         private readonly ICollection<Type> _referencedTypes;
         private readonly ICollection<Type> _referencedCollectionTypes;
 
-#if SUPPORT_SURROGATE
-        private IDataContractSurrogate _dataContractSurrogate;
-        private Hashtable _surrogateDataTable;
-
-        internal DataContractSet(IDataContractSurrogate dataContractSurrogate) : this(dataContractSurrogate, null, null) { }
-
-        internal DataContractSet(IDataContractSurrogate dataContractSurrogate, ICollection<Type> referencedTypes, ICollection<Type> referencedCollectionTypes)
-        {
-            _dataContractSurrogate = dataContractSurrogate;
-            _referencedTypes = referencedTypes;
-            _referencedCollectionTypes = referencedCollectionTypes;
-        }
-#endif
-
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal DataContractSet(DataContractSet dataContractSet)
         {
             ArgumentNullException.ThrowIfNull(dataContractSet);
 
-            //this.dataContractSurrogate = dataContractSet.dataContractSurrogate;
             _referencedTypes = dataContractSet._referencedTypes;
             _referencedCollectionTypes = dataContractSet._referencedCollectionTypes;
 
@@ -59,10 +44,6 @@ namespace System.Runtime.Serialization
 
         private Dictionary<DataContract, object> ProcessedContracts =>
             _processedContracts ??= new Dictionary<DataContract, object>();
-
-#if SUPPORT_SURROGATE
-        private Hashtable SurrogateDataTable => _surrogateDataTable ??= new Hashtable();
-#endif
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void Add(Type type)
@@ -143,17 +124,6 @@ namespace System.Runtime.Serialization
                     {
                         DataMember dataMember = classDataContract.Members[i];
                         DataContract memberDataContract = GetMemberTypeDataContract(dataMember);
-#if SUPPORT_SURROGATE
-                        if (_dataContractSurrogate != null && dataMember.MemberInfo != null)
-                        {
-                            object customData = DataContractSurrogateCaller.GetCustomDataToExport(
-                                                   _dataContractSurrogate,
-                                                   dataMember.MemberInfo,
-                                                   memberDataContract.UnderlyingType);
-                            if (customData != null)
-                                SurrogateDataTable.Add(dataMember, customData);
-                        }
-#endif
                         Add(memberDataContract.StableName, memberDataContract);
                     }
                 }
@@ -199,30 +169,12 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static DataContract GetDataContract(Type clrType)
         {
-#if SUPPORT_SURROGATE
-            if (_dataContractSurrogate == null)
-                return DataContract.GetDataContract(clrType);
-#endif
             DataContract? dataContract = DataContract.GetBuiltInDataContract(clrType);
             if (dataContract != null)
                 return dataContract;
 
-#if SUPPORT_SURROGATE
-            Type dcType = DataContractSurrogateCaller.GetDataContractType(_dataContractSurrogate, clrType);
-            if (clrType.IsValueType != dcType.IsValueType)
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.GetString(SR.ValueTypeMismatchInSurrogatedType, dcType, clrType)));
-#endif
             Type dcType = clrType;
             dataContract = DataContract.GetDataContract(dcType);
-#if SUPPORT_SURROGATE
-            if (!SurrogateDataTable.Contains(dataContract))
-            {
-                object customData = DataContractSurrogateCaller.GetCustomDataToExport(
-                                      _dataContractSurrogate, clrType, dcType);
-                if (customData != null)
-                    SurrogateDataTable.Add(dataContract, customData);
-            }
-#endif
             return dataContract;
         }
 
@@ -232,18 +184,7 @@ namespace System.Runtime.Serialization
             Type dataMemberType = dataMember.MemberType;
             if (dataMember.IsGetOnlyCollection)
             {
-#if SUPPORT_SURROGATE
-                    if (_dataContractSurrogate != null)
-                    {
-                        Type dcType = DataContractSurrogateCaller.GetDataContractType(_dataContractSurrogate, dataMemberType);
-                        if (dcType != dataMemberType)
-                        {
-                            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.GetString(SR.SurrogatesWithGetOnlyCollectionsNotSupported,
-                                DataContract.GetClrTypeFullName(dataMemberType), DataContract.GetClrTypeFullName(dataMember.MemberInfo.DeclaringType), dataMember.MemberInfo.Name)));
-                        }
-                    }
-#endif
-                return DataContract.GetGetOnlyCollectionDataContract(DataContract.GetId(dataMemberType.TypeHandle), dataMemberType.TypeHandle, dataMemberType, SerializationMode.SharedContract);
+                return DataContract.GetGetOnlyCollectionDataContract(DataContract.GetId(dataMemberType.TypeHandle), dataMemberType.TypeHandle, dataMemberType);
             }
             else
             {
@@ -259,23 +200,6 @@ namespace System.Runtime.Serialization
             return collectionContract.ItemContract;
         }
 
-#if SUPPORT_SURROGATE
-        internal object GetSurrogateData(object key)
-        {
-            return SurrogateDataTable[key];
-        }
-
-        internal void SetSurrogateData(object key, object surrogateData)
-        {
-            SurrogateDataTable[key] = surrogateData;
-        }
-
-        public IDataContractSurrogate DataContractSurrogate
-        {
-            get { return _dataContractSurrogate; }
-        }
-#endif
-
         public IEnumerator<KeyValuePair<XmlQualifiedName, DataContract>> GetEnumerator()
         {
             return Contracts.GetEnumerator();
@@ -290,20 +214,5 @@ namespace System.Runtime.Serialization
         {
             ProcessedContracts.Add(dataContract, dataContract);
         }
-
-#if SUPPORT_SURROGATE
-        internal ContractCodeDomInfo GetContractCodeDomInfo(DataContract dataContract)
-        {
-            object info;
-            if (ProcessedContracts.TryGetValue(dataContract, out info))
-                return (ContractCodeDomInfo)info;
-            return null;
-        }
-
-        internal void SetContractCodeDomInfo(DataContract dataContract, ContractCodeDomInfo info)
-        {
-            ProcessedContracts.Add(dataContract, info);
-        }
-#endif
     }
 }

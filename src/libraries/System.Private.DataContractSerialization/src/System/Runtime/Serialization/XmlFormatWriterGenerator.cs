@@ -92,6 +92,10 @@ namespace System.Runtime.Serialization
                         }
                     }
                     InitArgs(classContract.UnderlyingType);
+                    if (classContract.IsReadOnlyContract)
+                    {
+                        ThrowIfCannotSerializeReadOnlyTypes(classContract);
+                    }
                     WriteClass(classContract);
                     return (XmlFormatClassWriterDelegate)_ilg.EndMethod();
                 }
@@ -130,6 +134,10 @@ namespace System.Runtime.Serialization
                         }
                     }
                     InitArgs(collectionContract.UnderlyingType);
+                    if (collectionContract.IsReadOnlyContract)
+                    {
+                        ThrowIfCannotSerializeReadOnlyTypes(collectionContract);
+                    }
                     WriteCollection(collectionContract);
                     return (XmlFormatCollectionWriterDelegate)_ilg.EndMethod();
                 }
@@ -160,13 +168,6 @@ namespace System.Runtime.Serialization
                     _ilg.ConvertValue(objectArg.ArgType, Globals.TypeOfMemoryStream);
                     _ilg.Call(XmlFormatGeneratorStatics.GetMemoryStreamAdapterMethod);
                 }
-                //Copy the KeyValuePair<K,T> to a KeyValuePairAdapter<K,T>.
-                else if (objType.IsGenericType && objType.GetGenericTypeDefinition() == Globals.TypeOfKeyValuePairAdapter)
-                {
-                    ClassDataContract dc = (ClassDataContract)DataContract.GetDataContract(objType);
-                    _ilg.ConvertValue(objectArg.ArgType, Globals.TypeOfKeyValuePair.MakeGenericType(dc.KeyValuePairGenericArguments!));
-                    _ilg.New(dc.KeyValuePairAdapterConstructorInfo!);
-                }
                 else
                 {
                     _ilg.ConvertValue(objectArg.ArgType, objType);
@@ -174,6 +175,27 @@ namespace System.Runtime.Serialization
                 _ilg.Stloc(_objectLocal);
             }
 
+            private void ThrowIfCannotSerializeReadOnlyTypes(ClassDataContract classContract)
+            {
+                ThrowIfCannotSerializeReadOnlyTypes(XmlFormatGeneratorStatics.ClassSerializationExceptionMessageProperty);
+            }
+
+            private void ThrowIfCannotSerializeReadOnlyTypes(CollectionDataContract classContract)
+            {
+                ThrowIfCannotSerializeReadOnlyTypes(XmlFormatGeneratorStatics.CollectionSerializationExceptionMessageProperty);
+            }
+
+            private void ThrowIfCannotSerializeReadOnlyTypes(PropertyInfo serializationExceptionMessageProperty)
+            {
+                _ilg.Load(_contextArg);
+                _ilg.LoadMember(XmlFormatGeneratorStatics.SerializeReadOnlyTypesProperty);
+                _ilg.IfNot();
+                _ilg.Load(_dataContractArg);
+                _ilg.LoadMember(serializationExceptionMessageProperty);
+                _ilg.Load(null);
+                _ilg.Call(XmlFormatGeneratorStatics.ThrowInvalidDataContractExceptionMethod);
+                _ilg.EndIf();
+            }
 
             private void InvokeOnSerializing(ClassDataContract classContract)
             {
@@ -559,7 +581,7 @@ namespace System.Runtime.Serialization
                     return false;
 
                 string? writeArrayMethod = null;
-                switch (itemType.GetTypeCode())
+                switch (Type.GetTypeCode(itemType))
                 {
                     case TypeCode.Boolean:
                         writeArrayMethod = "WriteBooleanArray";
@@ -601,6 +623,15 @@ namespace System.Runtime.Serialization
             private void WriteValue(LocalBuilder memberValue, bool writeXsiType)
             {
                 Type memberType = memberValue.LocalType;
+                if (memberType.IsPointer)
+                {
+                    _ilg.Load(memberValue);
+                    _ilg.Load(memberType);
+                    _ilg.Call(XmlFormatGeneratorStatics.BoxPointer);
+                    memberType = Globals.TypeOfReflectionPointer;
+                    memberValue = _ilg.DeclareLocal(memberType, "memberValueRefPointer");
+                    _ilg.Store(memberValue);
+                }
                 bool isNullableOfT = (memberType.IsGenericType &&
                                       memberType.GetGenericTypeDefinition() == Globals.TypeOfNullable);
                 if (memberType.IsValueType && !isNullableOfT)
@@ -670,10 +701,12 @@ namespace System.Runtime.Serialization
                 _ilg.Load(_xmlWriterArg);
                 _ilg.Load(memberValue);
                 _ilg.ConvertValue(memberValue.LocalType, Globals.TypeOfObject);
-                //In SL GetTypeHandle throws MethodAccessException as its internal and extern.
-                //So as a workaround, call XmlObjectSerializerWriteContext.IsMemberTypeSameAsMemberValue that
-                //does the actual comparison and returns the bool value we care.
-                _ilg.Call(null, XmlFormatGeneratorStatics.IsMemberTypeSameAsMemberValue, memberValue, memberType);
+                LocalBuilder typeHandleValue = _ilg.DeclareLocal(typeof(RuntimeTypeHandle), "typeHandleValue");
+                _ilg.Call(null, typeof(Type).GetMethod("GetTypeHandle")!, memberValue);
+                _ilg.Stloc(typeHandleValue);
+                _ilg.LoadAddress(typeHandleValue);
+                _ilg.Ldtoken(memberType);
+                _ilg.Call(typeof(RuntimeTypeHandle).GetMethod("Equals", new Type[] { typeof(RuntimeTypeHandle) })!);
                 _ilg.Load(writeXsiType);
                 _ilg.Load(DataContract.GetId(memberType.TypeHandle));
                 _ilg.Ldtoken(memberType);

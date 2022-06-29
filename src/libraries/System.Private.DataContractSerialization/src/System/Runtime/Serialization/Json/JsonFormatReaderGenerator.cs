@@ -109,12 +109,6 @@ namespace System.Runtime.Serialization.Json
                         _ilg.Call(XmlFormatGeneratorStatics.GetMemoryStreamMethod);
                         _ilg.ConvertValue(Globals.TypeOfMemoryStream, _ilg.CurrentMethod.ReturnType);
                     }
-                    //Copy the KeyValuePairAdapter<K,T> to a KeyValuePair<K,T>.
-                    else if (classContract.IsKeyValuePairAdapter)
-                    {
-                        _ilg.Call(classContract.GetKeyValuePairMethodInfo);
-                        _ilg.ConvertValue(Globals.TypeOfKeyValuePair.MakeGenericType(classContract.KeyValuePairGenericArguments), _ilg.CurrentMethod.ReturnType);
-                    }
                     else
                     {
                         _ilg.ConvertValue(_objectLocal.LocalType, _ilg.CurrentMethod.ReturnType);
@@ -174,7 +168,7 @@ namespace System.Runtime.Serialization.Json
 
             private static void BeginMethod(CodeGenerator ilg, string methodName, Type delegateType, bool allowPrivateMemberAccess)
             {
-                MethodInfo signature = JsonFormatWriterGenerator.GetInvokeMethod(delegateType);
+                MethodInfo signature = CodeGenerator.GetInvokeMethod(delegateType);
                 ParameterInfo[] parameters = signature.GetParameters();
                 Type[] paramTypes = new Type[parameters.Length];
                 for (int i = 0; i < parameters.Length; i++)
@@ -906,7 +900,7 @@ namespace System.Runtime.Serialization.Json
                     return false;
 
                 string? readArrayMethod = null;
-                switch (itemType.GetTypeCode())
+                switch (Type.GetTypeCode(itemType))
                 {
                     case TypeCode.Boolean:
                         readArrayMethod = "TryReadBooleanArray";

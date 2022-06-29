@@ -95,7 +95,7 @@ namespace System.Runtime.Serialization
             if (primitiveContract == null)
                 return false;
 
-            switch (itemType.GetTypeCode())
+            switch (Type.GetTypeCode(itemType))
             {
                 case TypeCode.Boolean:
                     xmlWriter.WriteBooleanArray((bool[])obj, collectionItemName, itemNamespace);

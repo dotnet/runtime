@@ -140,7 +140,7 @@ namespace System.Runtime.Serialization
             Debug.Assert(rootTypeDataContract != null);
 
             bool verifyKnownType = false;
-            Type declaredType = rootTypeDataContract.UnderlyingType;
+            Type declaredType = rootTypeDataContract.OriginalUnderlyingType;
 
             if (declaredType.IsInterface && CollectionDataContract.IsCollectionInterface(declaredType))
             {
@@ -501,11 +501,12 @@ namespace System.Runtime.Serialization
             var serInfo = new SerializationInfo(objType, XmlObjectSerializer.FormatterConverter /*!UnsafeTypeForwardingEnabled is always false*/);
             GetObjectData(obj, serInfo, GetStreamingContext());
 
-            if (!UnsafeTypeForwardingEnabled && serInfo.AssemblyName == Globals.MscorlibAssemblyName)
-            {
-                // Throw if a malicious type tries to set its assembly name to "0" to get deserialized in mscorlib
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ISerializableAssemblyNameSetToZero, DataContract.GetClrTypeFullName(obj.GetType()))));
-            }
+            // (!UnsafeTypeForwardingEnabled) is always false
+            //if (!UnsafeTypeForwardingEnabled && serInfo.AssemblyName == Globals.MscorlibAssemblyName)
+            //{
+            //    // Throw if a malicious type tries to set its assembly name to "0" to get deserialized in mscorlib
+            //    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ISerializableAssemblyNameSetToZero, DataContract.GetClrTypeFullName(obj.GetType()))));
+            //}
 
             WriteSerializationInfo(xmlWriter, objType, serInfo);
         }

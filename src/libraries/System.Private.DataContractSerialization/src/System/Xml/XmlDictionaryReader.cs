@@ -358,6 +358,9 @@ namespace System.Xml
             int length;
             if (TryGetBase64ContentLength(out length))
             {
+                if (length > maxByteArrayContentLength)
+                    XmlExceptionHelper.ThrowMaxArrayLengthExceeded(this, maxByteArrayContentLength);
+
                 if (length <= maxInitialCount)
                 {
                     byte[] buffer = new byte[length];
@@ -522,6 +525,8 @@ namespace System.Xml
                         break;
                     read += actual;
                 }
+                if (totalRead > maxByteArrayContentLength - read)
+                    XmlExceptionHelper.ThrowMaxArrayLengthExceeded(this, maxByteArrayContentLength);
                 totalRead += read;
                 if (read < buffer.Length)
                     break;
@@ -1497,6 +1502,13 @@ namespace System.Xml
                 }
             }
 
+            public override char QuoteChar
+            {
+                get
+                {
+                    return _reader.QuoteChar;
+                }
+            }
 
             public override bool Read()
             {
@@ -1508,6 +1520,15 @@ namespace System.Xml
                 return _reader.ReadAttributeValue();
             }
 
+            public override string ReadElementString(string name)
+            {
+                return _reader.ReadElementString(name);
+            }
+
+            public override string ReadElementString(string localName, string namespaceUri)
+            {
+                return _reader.ReadElementString(localName, namespaceUri);
+            }
 
             public override string ReadInnerXml()
             {
@@ -1532,6 +1553,11 @@ namespace System.Xml
             public override void ReadEndElement()
             {
                 _reader.ReadEndElement();
+            }
+
+            public override string ReadString()
+            {
+                return _reader.ReadString();
             }
 
             public override ReadState ReadState

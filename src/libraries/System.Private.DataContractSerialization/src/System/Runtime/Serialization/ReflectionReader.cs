@@ -426,11 +426,6 @@ namespace System.Runtime.Serialization
             {
                 obj = MemoryStreamAdapter.GetMemoryStream((MemoryStreamAdapter)obj);
             }
-            else if (obj is IKeyValuePairAdapter)
-            {
-                obj = classContract.GetKeyValuePairMethodInfo!.Invoke(obj, Array.Empty<object>())!;
-            }
-
             return obj;
         }
 
@@ -612,7 +607,7 @@ namespace System.Runtime.Serialization
             if (primitiveContract == null)
                 return false;
 
-            switch (itemType.GetTypeCode())
+            switch (Type.GetTypeCode(itemType))
             {
                 case TypeCode.Boolean:
                     {

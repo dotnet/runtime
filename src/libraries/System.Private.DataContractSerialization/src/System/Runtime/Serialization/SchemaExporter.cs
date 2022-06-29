@@ -400,8 +400,6 @@ namespace System.Runtime.Serialization
         {
             XmlSchemaSimpleType type = new XmlSchemaSimpleType();
             type.Name = enumDataContract.StableName.Name;
-            // https://github.com/dotnet/runtime/issues/41448 - enumDataContract.BaseContractName is always null, but this method is not reachable
-            Debug.Assert(enumDataContract.BaseContractName != null, "BaseContractName is always null, but this method is not reachable. Suppressing compiler error.");
             XmlElement? actualTypeElement = (enumDataContract.BaseContractName == DefaultEnumBaseTypeName) ? null : ExportActualType(enumDataContract.BaseContractName);
             type.Annotation = GetSchemaAnnotation(actualTypeElement, ExportSurrogateData(enumDataContract));
             schema.Items.Add(type);

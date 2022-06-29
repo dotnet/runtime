@@ -178,11 +178,6 @@ namespace System.Runtime.Serialization
 
         private static Type GetSurrogatedType(Type type)
         {
-#if SUPPORT_SURROGATE
-            IDataContractSurrogate dataContractSurrogate;
-            if (options != null && (dataContractSurrogate = Options.GetSurrogate()) != null)
-                type = DataContractSurrogateCaller.GetDataContractType(dataContractSurrogate, type);
-#endif
             return type;
         }
 

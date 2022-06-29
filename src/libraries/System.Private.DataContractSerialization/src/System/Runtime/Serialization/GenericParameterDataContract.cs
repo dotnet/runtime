@@ -24,7 +24,7 @@ namespace System.Runtime.Serialization
             { return _helper.ParameterPosition; }
         }
 
-        public override bool IsBuiltInDataContract
+        internal override bool IsBuiltInDataContract
         {
             get
             {
@@ -50,11 +50,6 @@ namespace System.Runtime.Serialization
             {
                 get { return _parameterPosition; }
             }
-        }
-
-        internal DataContract BindGenericParameters(DataContract[] paramContracts, Dictionary<DataContract, DataContract> boundContracts)
-        {
-            return paramContracts[ParameterPosition];
         }
     }
 }

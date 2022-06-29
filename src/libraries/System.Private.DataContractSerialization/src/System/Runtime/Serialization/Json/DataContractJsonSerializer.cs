@@ -32,7 +32,7 @@ namespace System.Runtime.Serialization.Json
         private XmlDictionaryString? _rootName;
         private bool _rootNameRequiresMapping;
         private Type _rootType;
-
+        private ISerializationSurrogateProvider? _serializationSurrogateProvider;
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public DataContractJsonSerializer(Type type)
@@ -90,6 +90,12 @@ namespace System.Runtime.Serialization.Json
         {
             EmitTypeInformation emitTypeInformation = alwaysEmitTypeInformation ? EmitTypeInformation.Always : EmitTypeInformation.AsNeeded;
             Initialize(type, rootName, knownTypes, maxItemsInObjectGraph, ignoreExtensionDataObject, emitTypeInformation, false, null, false);
+        }
+
+        internal ISerializationSurrogateProvider? SerializationSurrogateProvider
+        {
+            get { return _serializationSurrogateProvider; }
+            set { _serializationSurrogateProvider = value; }
         }
 
         public bool IgnoreExtensionDataObject
@@ -450,6 +456,11 @@ namespace System.Runtime.Serialization.Json
             DataContract contract = RootContract;
             Type declaredType = contract.UnderlyingType;
             Type graphType = (graph == null) ? declaredType : graph.GetType();
+
+            if (_serializationSurrogateProvider != null)
+            {
+                graph = DataContractSerializer.SurrogateToDataContractType(_serializationSurrogateProvider, graph, declaredType, ref graphType);
+            }
 
             if (graph == null)
             {

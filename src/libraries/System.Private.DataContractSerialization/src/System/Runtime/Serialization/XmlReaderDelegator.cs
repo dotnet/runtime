@@ -55,7 +55,8 @@ namespace System.Runtime.Serialization
             return reader.GetAttribute(i);
         }
 
-        internal static bool IsEmptyElement
+        [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Conceptually, this property describes this instance. Callers should expect to have an instance on hand to 'ask' about this 'emtpy' circumstance.")]
+        internal bool IsEmptyElement
         {
             get { return false; }
         }
@@ -496,7 +497,7 @@ namespace System.Runtime.Serialization
             if (isEndOfEmptyElement)
                 ThrowNotAtElement();
 
-            return XmlConvert.ToDateTime(reader.ReadElementContentAsString(), XmlDateTimeSerializationMode.RoundtripKind);
+            return reader.ReadElementContentAsDateTime();
         }
 
         internal virtual DateTime ReadContentAsDateTime()
@@ -783,9 +784,12 @@ namespace System.Runtime.Serialization
             context.IncrementItemCount(arrayLength);
         }
 
-        protected static int GetArrayLengthQuota(XmlObjectSerializerReadContext context)
+        protected int GetArrayLengthQuota(XmlObjectSerializerReadContext context)
         {
-            return Math.Min(context.RemainingItemCount, int.MaxValue);
+            if (dictionaryReader?.Quotas == null)
+                return context.RemainingItemCount;
+
+            return Math.Min(context.RemainingItemCount, dictionaryReader.Quotas.MaxArrayLength);
         }
 
         private static void CheckActualArrayLength(int expectedLength, int actualLength, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)

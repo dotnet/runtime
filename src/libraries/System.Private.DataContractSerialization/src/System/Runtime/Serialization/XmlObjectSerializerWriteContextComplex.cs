@@ -19,12 +19,10 @@ namespace System.Runtime.Serialization
     internal class XmlObjectSerializerWriteContextComplex : XmlObjectSerializerWriteContext
     {
         private readonly ISerializationSurrogateProvider? _serializationSurrogateProvider;
-        private readonly SerializationMode _mode;
 
         internal XmlObjectSerializerWriteContextComplex(DataContractSerializer serializer, DataContract rootTypeDataContract, DataContractResolver? dataContractResolver)
             : base(serializer, rootTypeDataContract, dataContractResolver)
         {
-            _mode = SerializationMode.SharedContract;
             this.preserveObjectReferences = serializer.PreserveObjectReferences;
             _serializationSurrogateProvider = serializer.SerializationSurrogateProvider;
         }
@@ -32,11 +30,6 @@ namespace System.Runtime.Serialization
         internal XmlObjectSerializerWriteContextComplex(XmlObjectSerializer serializer, int maxItemsInObjectGraph, StreamingContext streamingContext, bool ignoreExtensionDataObject)
             : base(serializer, maxItemsInObjectGraph, streamingContext, ignoreExtensionDataObject)
         {
-        }
-
-        internal override SerializationMode Mode
-        {
-            get { return _mode; }
         }
 
         internal override bool WriteClrTypeInfo(XmlWriterDelegator xmlWriter, DataContract dataContract)

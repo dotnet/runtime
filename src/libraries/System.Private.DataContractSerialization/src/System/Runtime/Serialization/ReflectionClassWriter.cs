@@ -155,11 +155,6 @@ namespace System.Runtime.Serialization
             {
                 obj = MemoryStreamAdapter.GetMemoryStreamAdapter((MemoryStream)obj);
             }
-            else if (type.IsGenericType && type.GetGenericTypeDefinition() == Globals.TypeOfKeyValuePair)
-            {
-                obj = classContract.KeyValuePairAdapterConstructorInfo!.Invoke(new object[] { obj });
-            }
-
             return obj;
         }
 

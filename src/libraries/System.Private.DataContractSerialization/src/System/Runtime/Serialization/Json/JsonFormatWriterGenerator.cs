@@ -36,14 +36,6 @@ namespace System.Runtime.Serialization.Json
             return _helper.GenerateCollectionWriter(collectionContract);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "The trimmer will never remove the Invoke method from delegates.")]
-        internal static MethodInfo GetInvokeMethod(Type delegateType)
-        {
-            Debug.Assert(typeof(Delegate).IsAssignableFrom(delegateType));
-            return delegateType.GetMethod("Invoke")!;
-        }
-
         private sealed class CriticalHelper
         {
             private CodeGenerator _ilg = null!; // initialized in GenerateXXXWriter
@@ -114,7 +106,7 @@ namespace System.Runtime.Serialization.Json
 
             private static void BeginMethod(CodeGenerator ilg, string methodName, Type delegateType, bool allowPrivateMemberAccess)
             {
-                MethodInfo signature = GetInvokeMethod(delegateType);
+                MethodInfo signature = CodeGenerator.GetInvokeMethod(delegateType);
                 ParameterInfo[] parameters = signature.GetParameters();
                 Type[] paramTypes = new Type[parameters.Length];
                 for (int i = 0; i < parameters.Length; i++)
@@ -148,13 +140,6 @@ namespace System.Runtime.Serialization.Json
                 {
                     _ilg.ConvertValue(objectArg.ArgType, Globals.TypeOfMemoryStream);
                     _ilg.Call(XmlFormatGeneratorStatics.GetMemoryStreamAdapterMethod);
-                }
-                //Copy the KeyValuePair<K,T> to a KeyValuePairAdapter<K,T>.
-                else if (objType.IsGenericType && objType.GetGenericTypeDefinition() == Globals.TypeOfKeyValuePairAdapter)
-                {
-                    ClassDataContract dc = (ClassDataContract)DataContract.GetDataContract(objType);
-                    _ilg.ConvertValue(objectArg.ArgType, Globals.TypeOfKeyValuePair.MakeGenericType(dc.KeyValuePairGenericArguments!));
-                    _ilg.New(dc.KeyValuePairAdapterConstructorInfo!);
                 }
                 else
                 {

@@ -118,14 +118,14 @@ namespace System.Runtime.Serialization
                         ReadClass(classContract);
                     }
 
-                    _ = InvokeFactoryMethod(classContract, objectId);
+                    bool isFactoryType = InvokeFactoryMethod(classContract, objectId);
                     if (Globals.TypeOfIDeserializationCallback.IsAssignableFrom(classContract.UnderlyingType))
                     {
                         _ilg.Call(_objectLocal, XmlFormatGeneratorStatics.OnDeserializationMethod, null);
                     }
 
                     InvokeOnDeserialized(classContract);
-                    if (objectId == null)
+                    if (objectId == null || !isFactoryType)
                     {
                         _ilg.Load(_objectLocal);
 
@@ -144,12 +144,6 @@ namespace System.Runtime.Serialization
                             _ilg.ConvertValue(_objectLocal.LocalType, Globals.TypeOfMemoryStreamAdapter);
                             _ilg.Call(XmlFormatGeneratorStatics.GetMemoryStreamMethod);
                             _ilg.ConvertValue(Globals.TypeOfMemoryStream, _ilg.CurrentMethod.ReturnType);
-                        }
-                        //Copy the KeyValuePairAdapter<K,T> to a KeyValuePair<K,T>.
-                        else if (classContract.IsKeyValuePairAdapter)
-                        {
-                            _ilg.Call(classContract.GetKeyValuePairMethodInfo);
-                            _ilg.ConvertValue(Globals.TypeOfKeyValuePair.MakeGenericType(classContract.KeyValuePairGenericArguments), _ilg.CurrentMethod.ReturnType);
                         }
                         else
                         {
@@ -384,9 +378,16 @@ namespace System.Runtime.Serialization
                     _ilg.Call(_contextArg, XmlFormatGeneratorStatics.GetMemberIndexWithRequiredMembersMethod, _xmlReaderArg, _memberNamesArg, _memberNamespacesArg, memberIndexLocal, requiredIndexLocal, extensionDataLocal);
                 else
                     _ilg.Call(_contextArg, XmlFormatGeneratorStatics.GetMemberIndexMethod, _xmlReaderArg, _memberNamesArg, _memberNamespacesArg, memberIndexLocal, extensionDataLocal);
-                Label[] memberLabels = _ilg.Switch(memberCount);
-                ReadMembers(classContract, requiredMembers, memberLabels, memberIndexLocal, requiredIndexLocal);
-                _ilg.EndSwitch();
+                if (memberCount > 0)
+                {
+                    Label[] memberLabels = _ilg.Switch(memberCount);
+                    ReadMembers(classContract, requiredMembers, memberLabels, memberIndexLocal, requiredIndexLocal);
+                    _ilg.EndSwitch();
+                }
+                else
+                {
+                    _ilg.Pop();
+                }
                 _ilg.EndFor();
                 if (hasRequiredMembers)
                 {
@@ -580,14 +581,18 @@ namespace System.Runtime.Serialization
             {
                 _ilg.Load(_contextArg);
                 _ilg.Load(_xmlReaderArg);
-                Type declaredType = type;
+                Type declaredType = type.IsPointer ? Globals.TypeOfReflectionPointer : type;
                 _ilg.Load(DataContract.GetId(declaredType.TypeHandle));
                 _ilg.Ldtoken(declaredType);
                 _ilg.Load(name);
                 _ilg.Load(ns);
                 _ilg.Call(XmlFormatGeneratorStatics.InternalDeserializeMethod);
 
-                _ilg.ConvertValue(Globals.TypeOfObject, type);
+                if (type.IsPointer)
+                    _ilg.Call(XmlFormatGeneratorStatics.UnboxPointer);
+                else
+                    _ilg.ConvertValue(Globals.TypeOfObject, type);
+
                 _ilg.Stloc(value);
             }
 
@@ -821,7 +826,7 @@ namespace System.Runtime.Serialization
                     return false;
 
                 string? readArrayMethod = null;
-                switch (itemType.GetTypeCode())
+                switch (Type.GetTypeCode(itemType))
                 {
                     case TypeCode.Boolean:
                         readArrayMethod = "TryReadBooleanArray";
@@ -953,19 +958,15 @@ namespace System.Runtime.Serialization
                 _ilg.Throw();
             }
 
-            private void ThrowValidationException(string msg, params object[] values)
+            private void ThrowValidationException(string msg)
             {
-                {
-                    _ilg.Load(msg);
-                }
+                _ilg.Load(msg);
                 ThrowValidationException();
             }
 
             private void ThrowValidationException()
             {
-                //SerializationException is internal in SL and so cannot be directly invoked from DynamicMethod
-                //So use helper function to create SerializationException
-                _ilg.Call(XmlFormatGeneratorStatics.CreateSerializationExceptionMethod);
+                _ilg.New(XmlFormatGeneratorStatics.SerializationExceptionCtor);
                 _ilg.Throw();
             }
         }

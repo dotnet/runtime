@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.ComponentModel;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -227,6 +226,10 @@ namespace System.Runtime.Serialization
         internal static Type TypeOfNullable =>
             s_typeOfNullable ??= typeof(Nullable<>);
 
+        private static Type? s_typeOfReflectionPointer;
+        internal static Type TypeOfReflectionPointer =>
+            s_typeOfReflectionPointer ??= typeof(System.Reflection.Pointer);
+
         private static Type? s_typeOfIDictionaryGeneric;
         internal static Type TypeOfIDictionaryGeneric =>
             s_typeOfIDictionaryGeneric ??= typeof(IDictionary<,>);
@@ -271,10 +274,6 @@ namespace System.Runtime.Serialization
         internal static Type TypeOfKeyValuePair =>
             s_typeOfKeyValuePair ??= typeof(KeyValuePair<,>);
 
-        private static Type? s_typeOfKeyValuePairAdapter;
-        internal static Type TypeOfKeyValuePairAdapter =>
-            s_typeOfKeyValuePairAdapter ??= typeof(KeyValuePairAdapter<,>);
-
         private static Type? s_typeOfKeyValue;
         internal static Type TypeOfKeyValue =>
             s_typeOfKeyValue ??= typeof(KeyValue<,>);
@@ -318,18 +317,6 @@ namespace System.Runtime.Serialization
         internal static Uri DataContractXsdBaseNamespaceUri =>
             s_dataContractXsdBaseNamespaceUri ??= new Uri(DataContractXsdBaseNamespace);
 
-        private static readonly Type? s_typeOfScriptObject;
-
-        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal static ClassDataContract CreateScriptObjectClassDataContract()
-        {
-            Debug.Assert(s_typeOfScriptObject != null);
-            return new ClassDataContract(s_typeOfScriptObject);
-        }
-
-        internal static bool TypeOfScriptObject_IsAssignableFrom(Type type) =>
-            s_typeOfScriptObject != null && s_typeOfScriptObject.IsAssignableFrom(type);
-
         public const bool DefaultIsRequired = false;
         public const bool DefaultEmitDefaultValue = true;
         public const int DefaultOrder = 0;
@@ -341,6 +328,10 @@ namespace System.Runtime.Serialization
         public const string FullSRSInternalsVisiblePattern = @"^[\s]*System\.Runtime\.Serialization[\s]*,[\s]*PublicKey[\s]*=[\s]*(?i:00240000048000009400000006020000002400005253413100040000010001008d56c76f9e8649383049f383c44be0ec204181822a6c31cf5eb7ef486944d032188ea1d3920763712ccb12d75fb77e9811149e6148e5d32fbaab37611c1878ddc19e20ef135d0cb2cff2bfec3d115810c3d9069638fe4be215dbf795861920e5ab6f7db2e2ceef136ac23d5dd2bf031700aec232f6c6b1c785b4305c123b37ab)[\s]*$";
         [RegexGenerator(FullSRSInternalsVisiblePattern)]
         public static partial Regex FullSRSInternalsVisibleRegex();
+        public const char SpaceChar = ' ';
+        public const char OpenBracketChar = '[';
+        public const char CloseBracketChar = ']';
+        public const char CommaChar = ',';
         public const string Space = " ";
         public const string XsiPrefix = "i";
         public const string XsdPrefix = "x";
