@@ -576,24 +576,12 @@ namespace System.Formats.Tar
             byte[] buffer = new byte[(int)_size];
             archiveStream.ReadExactly(buffer);
 
-            string dataAsString = TarHelpers.GetTrimmedUtf8String(buffer);
-
-            using StringReader reader = new(dataAsString);
-
-            while (TryGetNextExtendedAttribute(reader, out string? key, out string? value))
-            {
-                _extendedAttributes ??= new Dictionary<string, string>();
-                if (_extendedAttributes.ContainsKey(key))
-                {
-                    throw new FormatException(string.Format(SR.TarDuplicateExtendedAttribute, _name));
-                }
-                _extendedAttributes.Add(key, value);
-            }
+            _extendedAttributes = ReadExtendedAttributesFromBuffer(buffer, _name);
         }
 
         // Asynchronously collects the extended attributes found in the data section of a PAX entry of type 'x' or 'g'.
         // Throws if end of stream is reached or if an attribute is malformed.
-        private static async ValueTask<Dictionary<string, string>> ReadExtendedAttributesBlockAsync(Stream archiveStream, TarEntryType entryType, long size, string name, CancellationToken cancellationToken)
+        private static async ValueTask<Dictionary<string, string>?> ReadExtendedAttributesBlockAsync(Stream archiveStream, TarEntryType entryType, long size, string name, CancellationToken cancellationToken)
         {
             Debug.Assert(entryType is TarEntryType.ExtendedAttributes or TarEntryType.GlobalExtendedAttributes);
 
@@ -606,16 +594,21 @@ namespace System.Formats.Tar
                 throw new InvalidOperationException(string.Format(SR.TarSizeFieldTooLargeForEntryType, entryType.ToString()));
             }
 
-            // Regardless of the size, this entry should always have a valid dictionary object
-            Dictionary<string, string> extendedAttributes = new Dictionary<string, string>();
-
             if (size == 0)
             {
-                return extendedAttributes;
+                return null;
             }
 
             byte[] buffer = new byte[(int)size];
             await archiveStream.ReadExactlyAsync(buffer, cancellationToken).ConfigureAwait(false);
+
+            return ReadExtendedAttributesFromBuffer(buffer, name);
+        }
+
+        // Returns a dictionary containing the extended attributes collected from the provided byte buffer.
+        private static Dictionary<string, string> ReadExtendedAttributesFromBuffer(ReadOnlySpan<byte> buffer, string name)
+        {
+            Dictionary<string, string> extendedAttributes = new();
 
             string dataAsString = TarHelpers.GetTrimmedUtf8String(buffer);
 
