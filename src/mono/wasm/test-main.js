@@ -105,26 +105,23 @@ function set_exit_code(exit_code, reason) {
 
     } else if (App && App.INTERNAL) {
         if (is_node) {
-            let _flush = function (_stream) {
-                return new Promise((resolve, reject) => {
-                    if (!_stream.write('')) {
-                        _stream.on('drain', () => resolve());
-                        setTimeout(reject, 3000);
-                    } else {
-                        resolve();
-                    }
-                });
+            let _flush = function(_stream) {
+                 return new Promise((resolve, reject) => {
+                     setTimeout(reject, 30000);
+                     _stream.write('', function() { resolve () });
+                     _stream.on('error', (error) => reject(error));
+                 });
             };
             let stderrFlushed = _flush(process.stderr);
             let stdoutFlushed = _flush(process.stdout);
 
-            Promise.all([stdoutFlushed, stderrFlushed])
-                .then(
-                    () => App.INTERNAL.mono_wasm_exit(exit_code),
-                    reason => {
-                        console.error(`flushing std* streams failed: ${reason}`);
-                        App.INTERNAL.mono_wasm_exit(123);
-                    });
+            Promise.all([ stdoutFlushed, stderrFlushed ])
+                    .then(
+                        () => App.INTERNAL.mono_wasm_exit(exit_code),
+                        reason => {
+                            console.error(`flushing std* streams failed: ${reason}`);
+                            App.INTERNAL.mono_wasm_exit(123456);
+                        });
         } else {
             App.INTERNAL.mono_wasm_exit(exit_code);
         }
