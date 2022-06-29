@@ -69,10 +69,8 @@ void Compiler::optCheckFlagsAreSet(unsigned    methodFlag,
 // optEarlyProp: The entry point of the early value propagation.
 //
 // Notes:
-//    This phase performs an SSA-based value propagation, including
-//      1. Array length propagation.
-//      2. Runtime type handle propagation.
-//      3. Null check folding.
+//    This phase performs an SSA-based value propagation, including array
+//    length propagation and null check folding.
 //
 //    For array length propagation, a demand-driven SSA-based backwards tracking of constant
 //    array lengths is performed at each array length reference site which is in form of a
@@ -82,10 +80,6 @@ void Compiler::optCheckFlagsAreSet(unsigned    methodFlag,
 //    at the original array allocation site where we can grab the array length. The
 //    GT_ARR_LENGTH node will then be rewritten to a GT_CNS_INT node if the array length is
 //    constant.
-//
-//    Similarly, the same algorithm also applies to rewriting a method table (also known as
-//    vtable) reference site which is in form of GT_INDIR node. The base pointer, which is
-//    an object reference pointer, is treated in the same way as an array reference pointer.
 //
 //    Null check folding tries to find GT_INDIR(obj + const) that GT_NULLCHECK(obj) can be folded into
 //    and removed. Currently, the algorithm only matches GT_INDIR and GT_NULLCHECK in the same basic block.
