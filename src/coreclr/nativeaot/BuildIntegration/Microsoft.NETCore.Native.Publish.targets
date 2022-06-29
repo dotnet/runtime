@@ -94,9 +94,9 @@
     <Delete Files="$(PublishDir)\$(TargetName).pdb" />
 
     <!-- replace native symbol file if it exists -->
-    <Delete Files="$(PublishDir)\$(TargetName)$(NativeBinaryExt)$(NativeSymbolExt)" />
-    <Copy SourceFiles="$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)$(NativeSymbolExt)" DestinationFolder="$(PublishDir)"
-      Condition="Exists('$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)$(NativeSymbolExt)')" />
+    <Delete Files="$(PublishDir)\$(TargetName)$(NativeSymbolExt)" />
+    <Copy SourceFiles="$(NativeOutputPath)$(TargetName)$(NativeSymbolExt)" DestinationFolder="$(PublishDir)"
+      Condition="Exists('$(NativeOutputPath)$(TargetName)$(NativeSymbolExt)')" />
   </Target>
 
 </Project>
