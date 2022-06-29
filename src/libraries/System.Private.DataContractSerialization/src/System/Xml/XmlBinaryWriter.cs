@@ -736,7 +736,7 @@ namespace System.Xml
         public unsafe override void WriteFloatText(float f)
         {
             int i;
-            if ((i = (int)f) == f)
+            if (f >= short.MinValue && f <= short.MaxValue && (i = (int)f) == f)
             {
                 WriteInt32Text(i);
             }
