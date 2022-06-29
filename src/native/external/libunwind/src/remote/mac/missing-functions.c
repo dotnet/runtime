@@ -1,6 +1,6 @@
-/* libunwind - a platform-independent unwind library
-   Copyright (c) 2003, 2005 Hewlett-Packard Development Company, L.P.
-        Contributed by David Mosberger-Tang <davidm@hpl.hp.com>
+/* Copyright (C) 2022 Hewlett-Packard Co.
+     Contributed by David Mosberger-Tang <davidm@hpl.hp.com>.
+This file is part of libunwind.
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -41,12 +41,12 @@ unw_get_accessors (unw_addr_space_t as)
   return &as->acc;
 }
 
-unw_accessors_t * 
+unw_accessors_t *
 unw_get_accessors_int (unw_addr_space_t as)
 {
   return unw_get_accessors(as);
 }
- 
+
 #if defined(TARGET_AMD64) && !defined(HOST_AMD64)
 #define X86_64_SCF_NONE 0
 #endif
