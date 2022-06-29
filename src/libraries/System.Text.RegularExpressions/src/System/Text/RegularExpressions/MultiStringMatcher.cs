@@ -27,8 +27,14 @@ namespace System.Text.RegularExpressions
         {
             Queue<int> vertexQueue = new Queue<int>();
             vertexQueue.Enqueue(TrieNode.Root);
+#if REGEXGENERATOR
+            while (vertexQueue.Count > 0)
+            {
+                int currentVertex = vertexQueue.Dequeue();
+#else
             while (vertexQueue.TryDequeue(out int currentVertex))
             {
+#endif
                 CalculateSuffixAndDictionaryLinks(trie, currentVertex);
 
                 foreach (int vertex in trie[currentVertex].Children.Values)
