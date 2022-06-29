@@ -690,7 +690,7 @@ namespace ILCompiler
             bool scanReflection = (_generationOptions & UsageBasedMetadataGenerationOptions.ReflectionILScanning) != 0;
             if (scanReflection)
             {
-                (new AttributeDataFlow(Logger, factory, FlowAnnotations, new Logging.MessageOrigin(attributeCtor))).ProcessAttributeDataflow(attributeCtor, decodedValue);
+                return (new AttributeDataFlow(Logger, factory, FlowAnnotations, new Logging.MessageOrigin(attributeCtor))).ProcessAttributeDataflow(attributeCtor, decodedValue);
             }
 
             return null;

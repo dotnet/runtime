@@ -72,7 +72,7 @@ namespace ILCompiler.Dataflow
                     MethodDesc setter = property.SetMethod;
                     if (setter != null && setter.Signature.Length > 0 && !setter.Signature.IsStatic)
                     {
-                        ProcessAttributeDataflow(method, ImmutableArray.Create(namedArgument.Value), ref result);
+                        ProcessAttributeDataflow(setter, ImmutableArray.Create(namedArgument.Value), ref result);
                     }
                 }
             }
