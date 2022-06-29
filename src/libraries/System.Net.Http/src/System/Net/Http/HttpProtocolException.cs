@@ -34,6 +34,7 @@ namespace System.Net.Http
         /// </summary>
         public long ErrorCode { get; }
 
+#if !TARGET_BROWSER
         internal static HttpProtocolException CreateHttp2StreamException(Http2ProtocolErrorCode protocolError)
         {
             string message = SR.Format(SR.net_http_http2_stream_error, GetName(protocolError), ((int)protocolError).ToString("x"));
@@ -66,5 +67,6 @@ namespace System.Net.Http
                 Http2ProtocolErrorCode.Http11Required => "HTTP_1_1_REQUIRED",
                 _ => "(unknown error)",
             };
+#endif
     }
 }
