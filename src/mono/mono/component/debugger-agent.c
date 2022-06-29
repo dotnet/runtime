@@ -689,6 +689,25 @@ debugger_agent_parse_options (char *options)
 			exit (1);
 		}
 	}
+
+	mini_get_debug_options ()->gen_sdb_seq_points = TRUE;
+	/*
+	 * This is needed because currently we don't handle liveness info.
+	 */
+	mini_get_debug_options ()->mdb_optimizations = TRUE;
+
+#ifndef MONO_ARCH_HAVE_CONTEXT_SET_INT_REG
+	/* This is needed because we can't set local variables in registers yet */
+	mono_disable_optimizations (MONO_OPT_LINEARS);
+#endif
+
+	/*
+	 * The stack walk done from thread_interrupt () needs to be signal safe, but it
+	 * isn't, since it can call into mono_aot_find_jit_info () which is not signal
+	 * safe (#3411). So load AOT info eagerly when the debugger is running as a
+	 * workaround.
+	 */
+	mini_get_debug_options ()->load_aot_jit_info_eagerly = TRUE;
 }
 
 void
@@ -807,25 +826,6 @@ debugger_agent_init (void)
 	ids_init ();
 	objrefs_init ();
 	suspend_init ();
-
-	mini_get_debug_options ()->gen_sdb_seq_points = TRUE;
-	/*
-	 * This is needed because currently we don't handle liveness info.
-	 */
-	mini_get_debug_options ()->mdb_optimizations = TRUE;
-
-#ifndef MONO_ARCH_HAVE_CONTEXT_SET_INT_REG
-	/* This is needed because we can't set local variables in registers yet */
-	mono_disable_optimizations (MONO_OPT_LINEARS);
-#endif
-
-	/*
-	 * The stack walk done from thread_interrupt () needs to be signal safe, but it
-	 * isn't, since it can call into mono_aot_find_jit_info () which is not signal
-	 * safe (#3411). So load AOT info eagerly when the debugger is running as a
-	 * workaround.
-	 */
-	mini_get_debug_options ()->load_aot_jit_info_eagerly = TRUE;
 
 #ifdef HAVE_SETPGID
 	if (agent_config.setpgid)
