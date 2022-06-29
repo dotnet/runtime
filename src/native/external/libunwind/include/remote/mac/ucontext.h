@@ -1,4 +1,4 @@
-/* Copyright (C) 2004 Hewlett-Packard Co.
+/* Copyright (C) 2022 Hewlett-Packard Co.
      Contributed by David Mosberger-Tang <davidm@hpl.hp.com>.
 
 This file is part of libunwind.
