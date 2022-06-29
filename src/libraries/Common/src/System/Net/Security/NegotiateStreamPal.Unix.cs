@@ -510,7 +510,7 @@ namespace System.Net.Security
             bool isEmptyCredential = string.IsNullOrWhiteSpace(credential.UserName) ||
                                      string.IsNullOrWhiteSpace(credential.Password);
             bool ntlmOnly = string.Equals(package, NegotiationInfoClass.NTLM, StringComparison.OrdinalIgnoreCase);
-            if (ntlmOnly && isEmptyCredential)
+            if (ntlmOnly && isEmptyCredential && !isServer)
             {
                 // NTLM authentication is not possible with default credentials which are no-op
                 throw new PlatformNotSupportedException(SR.net_ntlm_not_possible_default_cred);
@@ -525,7 +525,7 @@ namespace System.Net.Security
             try
             {
                 return isEmptyCredential ?
-                    new SafeFreeNegoCredentials(false, string.Empty, string.Empty, string.Empty) :
+                    new SafeFreeNegoCredentials(ntlmOnly, string.Empty, string.Empty, string.Empty) :
                     new SafeFreeNegoCredentials(ntlmOnly, credential.UserName, credential.Password, credential.Domain);
             }
             catch (Exception ex)
