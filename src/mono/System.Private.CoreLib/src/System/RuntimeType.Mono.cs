@@ -2004,10 +2004,14 @@ namespace System
 
         internal static object CreateInstanceForAnotherGenericParameter(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type genericType,
-            RuntimeType genericArgument)
+            RuntimeType genericArgument,
+            RuntimeType? genericArgument2 = null)
         {
             RuntimeType? gt = null;
-            MakeGenericType(genericType, new Type[] { genericArgument }, ObjectHandleOnStack.Create(ref gt));
+            if (genericArgument2 != null)
+                MakeGenericType(genericType, new Type[] { genericArgument, genericArgument2 }, ObjectHandleOnStack.Create(ref gt));
+            else
+                MakeGenericType(genericType, new Type[] { genericArgument }, ObjectHandleOnStack.Create(ref gt));
             RuntimeConstructorInfo? ctor = gt!.GetDefaultConstructor();
 
             // CreateInstanceForAnotherGenericParameter requires type to have a public parameterless constructor so it can be annotated for trimming without preserving private constructors.
