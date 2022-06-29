@@ -2266,7 +2266,7 @@ public:
                                 GenTree*   op2  = nullptr);
 
     GenTreeIntCon* gtNewIconNode(ssize_t value, var_types type = TYP_INT);
-    GenTreeIntCon* gtNewIconNode(unsigned fieldOffset, FieldSeqNode* fieldSeq);
+    GenTreeIntCon* gtNewIconNode(unsigned fieldOffset, FieldSeq* fieldSeq);
     GenTreeIntCon* gtNewNull();
     GenTreeIntCon* gtNewTrue();
     GenTreeIntCon* gtNewFalse();
@@ -2277,7 +2277,7 @@ public:
 
     GenTree* gtNewIndOfIconHandleNode(var_types indType, size_t value, GenTreeFlags iconFlags, bool isInvariant);
 
-    GenTreeIntCon* gtNewIconHandleNode(size_t value, GenTreeFlags flags, FieldSeqNode* fields = nullptr);
+    GenTreeIntCon* gtNewIconHandleNode(size_t value, GenTreeFlags flags, FieldSeq* fields = nullptr);
 
     GenTreeFlags gtTokenToIconFlags(unsigned token);
 
@@ -2871,7 +2871,7 @@ public:
     void gtGetArgMsg(GenTreeCall* call, CallArg* arg, char* bufp, unsigned bufLength);
     void gtGetLateArgMsg(GenTreeCall* call, CallArg* arg, char* bufp, unsigned bufLength);
     void gtDispArgList(GenTreeCall* call, GenTree* lastCallOperand, IndentStack* indentStack);
-    void gtDispFieldSeq(FieldSeqNode* fieldSeq, ssize_t offset);
+    void gtDispFieldSeq(FieldSeq* fieldSeq, ssize_t offset);
 
     void gtDispRange(LIR::ReadOnlyRange const& range);
 
@@ -4736,14 +4736,14 @@ public:
 
     void fgValueNumberArrayElemStore(GenTree* storeNode, VNFuncApp* addrFunc, unsigned storeSize, ValueNum value);
 
-    void fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, FieldSeqNode* fieldSeq, ssize_t offset);
+    void fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, FieldSeq* fieldSeq, ssize_t offset);
 
-    void fgValueNumberFieldStore(GenTree*      storeNode,
-                                 GenTree*      baseAddr,
-                                 FieldSeqNode* fieldSeq,
-                                 ssize_t       offset,
-                                 unsigned      storeSize,
-                                 ValueNum      value);
+    void fgValueNumberFieldStore(GenTree*  storeNode,
+                                 GenTree*  baseAddr,
+                                 FieldSeq* fieldSeq,
+                                 ssize_t   offset,
+                                 unsigned  storeSize,
+                                 ValueNum  value);
 
     // Compute the value number for a byref-exposed load of the given type via the given pointerVN.
     ValueNum fgValueNumberByrefExposedLoad(var_types type, ValueNum pointerVN);
@@ -10420,7 +10420,7 @@ public:
         return compRoot->m_fieldSeqStore;
     }
 
-    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, FieldSeqNode*> NodeToFieldSeqMap;
+    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, FieldSeq*> NodeToFieldSeqMap;
 
     NodeToUnsignedMap* m_memorySsaMap[MemoryKindCount];
 

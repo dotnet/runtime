@@ -5032,7 +5032,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
     unsigned             fldOffset     = tree->AsField()->gtFldOffset;
     GenTree*             objRef        = tree->AsField()->GetFldObj();
     bool                 fldMayOverlap = tree->AsField()->gtFldMayOverlap;
-    FieldSeqNode*        fieldSeq      = nullptr;
+    FieldSeq*            fieldSeq      = nullptr;
 
     // Reset the flag because we may reuse the node.
     tree->AsField()->gtFldMayOverlap = false;
@@ -5285,7 +5285,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
         // We only need to attach the field offset information for class fields.
         if ((objRefType == TYP_REF) && !fldMayOverlap)
         {
-            fieldSeq = GetFieldSeqStore()->Create(symHnd, fldOffset, FieldSeqNode::FieldKind::Instance);
+            fieldSeq = GetFieldSeqStore()->Create(symHnd, fldOffset, FieldSeq::FieldKind::Instance);
         }
 
         // Add the member offset to the object's address.
@@ -5400,7 +5400,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
 
             // Add the TLS static field offset to the address.
             assert(!fldMayOverlap);
-            fieldSeq = GetFieldSeqStore()->Create(symHnd, fldOffset, FieldSeqNode::FieldKind::SimpleStatic);
+            fieldSeq = GetFieldSeqStore()->Create(symHnd, fldOffset, FieldSeq::FieldKind::SimpleStatic);
             tlsRef   = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsRef, gtNewIconNode(fldOffset, fieldSeq));
 
             // Final indirect to get to actual value of TLS static field
@@ -5432,7 +5432,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             {
                 // Only simple statics get importred as GT_FIELDs.
                 fieldSeq = GetFieldSeqStore()->Create(symHnd, reinterpret_cast<size_t>(fldAddr),
-                                                      FieldSeqNode::FieldKind::SimpleStatic);
+                                                      FieldSeq::FieldKind::SimpleStatic);
             }
 
             // TODO-CQ: enable this optimization for 32 bit targets.

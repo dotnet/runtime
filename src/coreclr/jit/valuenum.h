@@ -734,13 +734,13 @@ public:
 
     ValueNum VNForBitCast(ValueNum srcVN, var_types castToType);
 
-    ValueNum VNForFieldSeq(FieldSeqNode* fieldSeq);
+    ValueNum VNForFieldSeq(FieldSeq* fieldSeq);
 
-    FieldSeqNode* FieldSeqVNToFieldSeq(ValueNum vn);
+    FieldSeq* FieldSeqVNToFieldSeq(ValueNum vn);
 
     ValueNum ExtendPtrVN(GenTree* opA, GenTree* opB);
 
-    ValueNum ExtendPtrVN(GenTree* opA, FieldSeqNode* fieldSeq, ssize_t offset);
+    ValueNum ExtendPtrVN(GenTree* opA, FieldSeq* fieldSeq, ssize_t offset);
 
     // Queries on value numbers.
     // All queries taking value numbers require that those value numbers are valid, that is, that

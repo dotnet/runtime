@@ -6749,7 +6749,7 @@ GenTreeIntCon* Compiler::gtNewIconNode(ssize_t value, var_types type)
     return new (this, GT_CNS_INT) GenTreeIntCon(type, value);
 }
 
-GenTreeIntCon* Compiler::gtNewIconNode(unsigned fieldOffset, FieldSeqNode* fieldSeq)
+GenTreeIntCon* Compiler::gtNewIconNode(unsigned fieldOffset, FieldSeq* fieldSeq)
 {
     return new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, static_cast<ssize_t>(fieldOffset), fieldSeq);
 }
@@ -11139,7 +11139,7 @@ void Compiler::gtDispConst(GenTree* tree)
 
             if (tree->AsIntCon()->gtFieldSeq != nullptr)
             {
-                FieldSeqNode* fieldSeq = tree->AsIntCon()->gtFieldSeq;
+                FieldSeq* fieldSeq = tree->AsIntCon()->gtFieldSeq;
                 gtDispFieldSeq(fieldSeq, tree->AsIntCon()->IconValue() - fieldSeq->GetOffset());
             }
             break;
@@ -11221,7 +11221,7 @@ void Compiler::gtDispConst(GenTree* tree)
 //    fieldSeq - The field sequence
 //    offset   - Offset of the (implicit) struct fields in the sequence
 //
-void Compiler::gtDispFieldSeq(FieldSeqNode* fieldSeq, ssize_t offset)
+void Compiler::gtDispFieldSeq(FieldSeq* fieldSeq, ssize_t offset)
 {
     if (fieldSeq == nullptr)
     {
@@ -14034,7 +14034,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
     float         f1, f2;
     double        d1, d2;
     var_types     switchType;
-    FieldSeqNode* fieldSeq = nullptr; // default unless we override it when folding
+    FieldSeq* fieldSeq = nullptr; // default unless we override it when folding
 
     assert(tree->OperIsUnary() || tree->OperIsBinary());
 
@@ -17178,16 +17178,16 @@ var_types GenTreeVecCon::GetSimdBaseType() const
 //    for statics - the address to which the field offset with the field sequence
 //    is added, see "impImportStaticFieldAccess" and "fgMorphField".
 //
-bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pFldSeq, ssize_t* pOffset)
+bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeq** pFldSeq, ssize_t* pOffset)
 {
     assert(TypeIs(TYP_I_IMPL, TYP_BYREF, TYP_REF));
 
     *pBaseAddr = nullptr;
     *pFldSeq   = nullptr;
 
-    GenTree*      baseAddr = nullptr;
-    FieldSeqNode* fldSeq   = nullptr;
-    ssize_t       offset   = 0;
+    GenTree*  baseAddr = nullptr;
+    FieldSeq* fldSeq   = nullptr;
+    ssize_t   offset   = 0;
 
     if (OperIs(GT_ADD))
     {
@@ -17639,7 +17639,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
 
                     if (op1IsStaticFieldBase && (op2->OperGet() == GT_CNS_INT))
                     {
-                        FieldSeqNode* fieldSeq = op2->AsIntCon()->gtFieldSeq;
+                        FieldSeq* fieldSeq = op2->AsIntCon()->gtFieldSeq;
 
                         if ((fieldSeq != nullptr) &&
                             (fieldSeq->GetOffset() == op2->AsIntCon()->IconValue()))
@@ -18268,9 +18268,9 @@ bool GenTree::IsArrayAddr(GenTreeArrAddr** pArrAddr)
 // Return Value:
 //    The canonical field sequence for the given field.
 //
-FieldSeqNode* FieldSeqStore::Create(CORINFO_FIELD_HANDLE fieldHnd, ssize_t offset, FieldSeqNode::FieldKind fieldKind)
+FieldSeq* FieldSeqStore::Create(CORINFO_FIELD_HANDLE fieldHnd, ssize_t offset, FieldSeq::FieldKind fieldKind)
 {
-    FieldSeqNode* fieldSeq = m_map.Emplace(fieldHnd, fieldHnd, offset, fieldKind);
+    FieldSeq* fieldSeq = m_map.Emplace(fieldHnd, fieldHnd, offset, fieldKind);
 
     assert(fieldSeq->GetOffset() == offset);
     assert(fieldSeq->GetKind() == fieldKind);
@@ -18298,7 +18298,7 @@ FieldSeqNode* FieldSeqStore::Create(CORINFO_FIELD_HANDLE fieldHnd, ssize_t offse
 // Return Value:
 //    The result of "merging" "a" and "b" (see description).
 //
-FieldSeqNode* FieldSeqStore::Append(FieldSeqNode* a, FieldSeqNode* b)
+FieldSeq* FieldSeqStore::Append(FieldSeq* a, FieldSeq* b)
 {
     if (a == nullptr)
     {
@@ -18313,7 +18313,7 @@ FieldSeqNode* FieldSeqStore::Append(FieldSeqNode* a, FieldSeqNode* b)
     return nullptr;
 }
 
-FieldSeqNode::FieldSeqNode(CORINFO_FIELD_HANDLE fieldHnd, ssize_t offset, FieldKind fieldKind) : m_offset(offset)
+FieldSeq::FieldSeq(CORINFO_FIELD_HANDLE fieldHnd, ssize_t offset, FieldKind fieldKind) : m_offset(offset)
 {
     assert(fieldHnd != NO_FIELD_HANDLE);
 

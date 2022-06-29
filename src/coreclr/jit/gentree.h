@@ -265,7 +265,7 @@ public:
 // class field and any additional struct fields. We only need to preserve the handle for the first field,
 // so any struct fields will be represented implicitly (via offsets). See also "IsFieldAddr".
 //
-class FieldSeqNode
+class FieldSeq
 {
 public:
     enum class FieldKind : uintptr_t
@@ -284,7 +284,7 @@ private:
     ssize_t   m_offset;
 
 public:
-    FieldSeqNode(CORINFO_FIELD_HANDLE fieldHnd, ssize_t offset, FieldKind fieldKind);
+    FieldSeq(CORINFO_FIELD_HANDLE fieldHnd, ssize_t offset, FieldKind fieldKind);
 
     FieldKind GetKind() const
     {
@@ -325,16 +325,16 @@ class FieldSeqStore
 {
     // Maps field handles to field sequence instances.
     //
-    JitHashTable<CORINFO_FIELD_HANDLE, JitPtrKeyFuncs<CORINFO_FIELD_STRUCT_>, FieldSeqNode> m_map;
+    JitHashTable<CORINFO_FIELD_HANDLE, JitPtrKeyFuncs<CORINFO_FIELD_STRUCT_>, FieldSeq> m_map;
 
 public:
     FieldSeqStore(CompAllocator alloc) : m_map(alloc)
     {
     }
 
-    FieldSeqNode* Create(CORINFO_FIELD_HANDLE fieldHnd, ssize_t offset, FieldSeqNode::FieldKind fieldKind);
+    FieldSeq* Create(CORINFO_FIELD_HANDLE fieldHnd, ssize_t offset, FieldSeq::FieldKind fieldKind);
 
-    FieldSeqNode* Append(FieldSeqNode* a, FieldSeqNode* b);
+    FieldSeq* Append(FieldSeq* a, FieldSeq* b);
 };
 
 class GenTreeUseEdgeIterator;
@@ -564,7 +564,7 @@ enum GenTreeFlags : unsigned int
     GTF_ICON_CIDMID_HDL         = 0x0E000000, // GT_CNS_INT -- constant is a class ID or a module ID
     GTF_ICON_BBC_PTR            = 0x0F000000, // GT_CNS_INT -- constant is a basic block count pointer
     GTF_ICON_STATIC_BOX_PTR     = 0x10000000, // GT_CNS_INT -- constant is an address of the box for a STATIC_IN_HEAP field
-    GTF_ICON_FIELD_SEQ          = 0x11000000, // <--------> -- constant is a FieldSeqNode* (used only as VNHandle)
+    GTF_ICON_FIELD_SEQ          = 0x11000000, // <--------> -- constant is a FieldSeq* (used only as VNHandle)
 
  // GTF_ICON_REUSE_REG_VAL      = 0x00800000  // GT_CNS_INT -- GTF_REUSE_REG_VAL, defined above
     GTF_ICON_SIMD_COUNT         = 0x00200000, // GT_CNS_INT -- constant is Vector<T>.Count
@@ -1932,7 +1932,7 @@ public:
     // Determine whether this tree is a basic block profile count update.
     bool IsBlockProfileUpdate();
 
-    bool IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pFldSeq, ssize_t* pOffset);
+    bool IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeq** pFldSeq, ssize_t* pOffset);
 
     bool IsArrayAddr(GenTreeArrAddr** pArrAddr);
 
@@ -3068,7 +3068,7 @@ struct GenTreeIntCon : public GenTreeIntConCommon
 
     // If this constant represents the offset of one or more fields, "gtFieldSeq" represents that
     // sequence of fields.
-    FieldSeqNode* gtFieldSeq;
+    FieldSeq* gtFieldSeq;
 
 #ifdef DEBUG
     // If the value represents target address (for a field or call), holds the handle of the field (or call).
@@ -3083,7 +3083,7 @@ struct GenTreeIntCon : public GenTreeIntConCommon
     {
     }
 
-    GenTreeIntCon(var_types type, ssize_t value, FieldSeqNode* fields DEBUGARG(bool largeNode = false))
+    GenTreeIntCon(var_types type, ssize_t value, FieldSeq* fields DEBUGARG(bool largeNode = false))
         : GenTreeIntConCommon(GT_CNS_INT, type DEBUGARG(largeNode))
         , gtIconVal(value)
         , gtCompileTimeHandle(0)
