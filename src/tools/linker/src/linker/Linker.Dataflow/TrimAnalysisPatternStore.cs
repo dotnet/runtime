@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
 using Mono.Linker.Steps;
 
@@ -11,12 +12,14 @@ namespace Mono.Linker.Dataflow
 	{
 		readonly Dictionary<(MessageOrigin, bool), TrimAnalysisAssignmentPattern> AssignmentPatterns;
 		readonly Dictionary<MessageOrigin, TrimAnalysisMethodCallPattern> MethodCallPatterns;
+		readonly ValueSetLattice<SingleValue> Lattice;
 		readonly LinkContext _context;
 
-		public TrimAnalysisPatternStore (LinkContext context)
+		public TrimAnalysisPatternStore (ValueSetLattice<SingleValue> lattice, LinkContext context)
 		{
 			AssignmentPatterns = new Dictionary<(MessageOrigin, bool), TrimAnalysisAssignmentPattern> ();
 			MethodCallPatterns = new Dictionary<MessageOrigin, TrimAnalysisMethodCallPattern> ();
+			Lattice = lattice;
 			_context = context;
 		}
 
@@ -27,12 +30,23 @@ namespace Mono.Linker.Dataflow
 			// https://github.com/dotnet/linker/issues/2778
 			// For now, work around it with a separate bit.
 			bool isReturnValue = pattern.Target.AsSingleValue () is MethodReturnValue;
-			AssignmentPatterns.Add ((pattern.Origin, isReturnValue), pattern);
+
+			if (!AssignmentPatterns.TryGetValue ((pattern.Origin, isReturnValue), out var existingPattern)) {
+				AssignmentPatterns.Add ((pattern.Origin, isReturnValue), pattern);
+				return;
+			}
+
+			AssignmentPatterns[(pattern.Origin, isReturnValue)] = pattern.Merge (Lattice, existingPattern);
 		}
 
 		public void Add (TrimAnalysisMethodCallPattern pattern)
 		{
-			MethodCallPatterns.Add (pattern.Origin, pattern);
+			if (!MethodCallPatterns.TryGetValue (pattern.Origin, out var existingPattern)) {
+				MethodCallPatterns.Add (pattern.Origin, pattern);
+				return;
+			}
+
+			MethodCallPatterns[pattern.Origin] = pattern.Merge (Lattice, existingPattern);
 		}
 
 		public void MarkAndProduceDiagnostics (ReflectionMarker reflectionMarker, MarkStep markStep)

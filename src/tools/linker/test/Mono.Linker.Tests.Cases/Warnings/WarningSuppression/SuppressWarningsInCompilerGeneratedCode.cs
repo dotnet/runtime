@@ -55,8 +55,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 				yield return 0;
 			}
 
-			// See https://github.com/dotnet/linker/issues/2587
-			[UnconditionalSuppressMessage ("Linker sees the compiler generated property", "IL2077")]
+			[UnconditionalSuppressMessage ("Test", "IL2067")]
 			static IEnumerable<int> TestMethodParameterWithRequirements (Type unknownType = null)
 			{
 				unknownType.RequiresNonPublicMethods ();
@@ -122,8 +121,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 				await MethodAsync ();
 			}
 
-			// See https://github.com/dotnet/linker/issues/2587
-			[UnconditionalSuppressMessage ("Linker sees the compiler generated property", "IL2077")]
+			[UnconditionalSuppressMessage ("Test", "IL2067")]
 			static async void TestMethodParameterWithRequirements (Type unknownType = null)
 			{
 				unknownType.RequiresNonPublicMethods ();
@@ -199,7 +197,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 				void LocalFunction () => typeof (TypeWithRUCMethod).RequiresNonPublicMethods ();
 			}
 
-			[UnconditionalSuppressMessage ("Test", "IL2077")]
+			[UnconditionalSuppressMessage ("Test", "IL2067")]
 			static void TestMethodParameterWithRequirements (Type unknownType = null)
 			{
 				LocalFunction ();
@@ -403,7 +401,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 				() => typeof (TypeWithRUCMethod).RequiresNonPublicMethods ();
 			}
 
-			[UnconditionalSuppressMessage ("Test", "IL2077")]
+			[UnconditionalSuppressMessage ("Test", "IL2067")]
 			static void TestMethodParameterWithRequirements (Type unknownType = null)
 			{
 				Action _ =

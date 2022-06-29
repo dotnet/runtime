@@ -1628,31 +1628,42 @@ namespace Mono.Linker.Steps
 			if (reportOnMember)
 				origin = new MessageOrigin (member);
 
-			// Warn on reflection access to compiler-generated code. This includes MoveNext methods.
-			if (member is MethodDefinition method) {
-				if (ShouldWarnForReflectionAccessToCompilerGeneratedCode (method)) {
-					var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMember : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMemberOnBase;
-					Context.LogWarning (origin, id, type.GetDisplayName (), method.GetDisplayName ());
-				}
 
-				// All override methods should have the same annotations as their base methods
-				// (else we will produce warning IL2046 or IL2092 or some other warning).
-				// When marking override methods via DynamicallyAccessedMembers, we should only issue a warning for the base method.
-				if (method.IsVirtual && Annotations.GetBaseMethods (method) != null)
-					return;
-			}
+			// All override methods should have the same annotations as their base methods
+			// (else we will produce warning IL2046 or IL2092 or some other warning).
+			// When marking override methods via DynamicallyAccessedMembers, we should only issue a warning for the base method.
+			bool skipWarningsForOverride = member is MethodDefinition m && m.IsVirtual && Annotations.GetBaseMethods (m) != null;
 
-			if (Annotations.DoesMemberRequireUnreferencedCode (member, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCodeAttribute)) {
+			bool isReflectionAccessCoveredByRUC = Annotations.DoesMemberRequireUnreferencedCode (member, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCodeAttribute);
+			if (isReflectionAccessCoveredByRUC && !skipWarningsForOverride) {
 				var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberWithRequiresUnreferencedCode : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithRequiresUnreferencedCode;
 				Context.LogWarning (origin, id, type.GetDisplayName (),
 					((MemberReference) member).GetDisplayName (), // The cast is valid since it has to be a method or field
-					MessageFormat.FormatRequiresAttributeMessageArg (requiresUnreferencedCodeAttribute.Message),
-					MessageFormat.FormatRequiresAttributeMessageArg (requiresUnreferencedCodeAttribute.Url));
+					MessageFormat.FormatRequiresAttributeMessageArg (requiresUnreferencedCodeAttribute!.Message),
+					MessageFormat.FormatRequiresAttributeMessageArg (requiresUnreferencedCodeAttribute!.Url));
 			}
 
-			if (Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (member)) {
+			bool isReflectionAccessCoveredByDAM = Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (member);
+			if (isReflectionAccessCoveredByDAM && !skipWarningsForOverride) {
 				var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberWithDynamicallyAccessedMembers : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithDynamicallyAccessedMembers;
 				Context.LogWarning (origin, id, type.GetDisplayName (), ((MemberReference) member).GetDisplayName ());
+			}
+
+			// Warn on reflection access to compiler-generated methods, if the method isn't already unsafe to access via reflection
+			// due to annotations. For the annotation-based warnings, we skip virtual overrides since those will produce warnings on
+			// the base, but for unannotated compiler-generated methods this is not the case, so we must produce these warnings even
+			// for virtual overrides. This ensures that we include the unannotated MoveNext state machine method. Lambdas and local
+			// functions should never be virtual overrides in the first place.
+			bool isCoveredByAnnotations = isReflectionAccessCoveredByRUC || isReflectionAccessCoveredByDAM;
+			if (member is MethodDefinition method && ShouldWarnForReflectionAccessToCompilerGeneratedCode (method, isCoveredByAnnotations)) {
+				var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMember : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMemberOnBase;
+				Context.LogWarning (origin, id, type.GetDisplayName (), method.GetDisplayName ());
+			}
+
+			// Warn on reflection access to compiler-generated fields.
+			if (member is FieldDefinition field && ShouldWarnForReflectionAccessToCompilerGeneratedCode (field, isCoveredByAnnotations)) {
+				var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMember : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMemberOnBase;
+				Context.LogWarning (origin, id, type.GetDisplayName (), field.GetDisplayName ());
 			}
 		}
 
@@ -1669,25 +1680,7 @@ namespace Mono.Linker.Steps
 				Annotations.Mark (field, reason, origin);
 			}
 
-			if (reason.Kind != DependencyKind.DynamicallyAccessedMemberOnType &&
-				Annotations.DoesFieldRequireUnreferencedCode (field, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCodeAttribute) &&
-				!Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (origin.Provider))
-				ReportRequiresUnreferencedCode (field.GetDisplayName (), requiresUnreferencedCodeAttribute, new DiagnosticContext (origin, diagnosticsEnabled: true, Context));
-
-			switch (reason.Kind) {
-			case DependencyKind.AccessedViaReflection:
-			case DependencyKind.DynamicDependency:
-			case DependencyKind.DynamicallyAccessedMember:
-			case DependencyKind.InteropMethodDependency:
-				if (Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (field) &&
-					!Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (origin.Provider))
-					Context.LogWarning (origin, DiagnosticId.DynamicallyAccessedMembersFieldAccessedViaReflection, field.GetDisplayName ());
-
-				break;
-			case DependencyKind.DynamicallyAccessedMemberOnType:
-				ReportWarningsForTypeHierarchyReflectionAccess (field, origin);
-				break;
-			}
+			ProcessAnalysisAnnotationsForField (field, reason.Kind, in origin);
 
 			if (CheckProcessed (field))
 				return;
@@ -1732,6 +1725,65 @@ namespace Mono.Linker.Steps
 			if (Annotations.HasSubstitutedInit (field)) {
 				Annotations.SetPreservedStaticCtor (parent);
 				Annotations.SetSubstitutedInit (parent);
+			}
+		}
+
+		bool ShouldWarnForReflectionAccessToCompilerGeneratedCode (FieldDefinition field, bool isCoveredByAnnotations)
+		{
+			// No need to warn if it's already covered by the Requires attribute or explicit annotations on the field.
+			if (isCoveredByAnnotations)
+				return false;
+
+			if (!CompilerGeneratedState.IsNestedFunctionOrStateMachineMember (field))
+				return false;
+
+			// Only warn for types which are interesting for dataflow. Note that this does
+			// not include integer types, even though we track integers in the dataflow analysis.
+			// Technically we should also warn for integer types, but this leads to more warnings
+			// for example about the compiler-generated "state" field for state machine methods.
+			// This should be ok because in most cases the state machine types will also have other
+			// hoisted locals that produce warnings anyway when accessed via reflection.
+			return Annotations.FlowAnnotations.IsTypeInterestingForDataflow (field.FieldType);
+		}
+
+		void ProcessAnalysisAnnotationsForField (FieldDefinition field, DependencyKind dependencyKind, in MessageOrigin origin)
+		{
+			if (origin.Provider != ScopeStack.CurrentScope.Origin.Provider) {
+				Debug.Assert (dependencyKind == DependencyKind.DynamicallyAccessedMemberOnType ||
+					(origin.Provider is MethodDefinition originMethod && CompilerGeneratedState.IsNestedFunctionOrStateMachineMember (originMethod)));
+			}
+
+			if (dependencyKind == DependencyKind.DynamicallyAccessedMemberOnType) {
+				ReportWarningsForTypeHierarchyReflectionAccess (field, origin);
+				return;
+			}
+
+			if (Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (origin.Provider))
+				return;
+
+			bool isReflectionAccessCoveredByRUC;
+			if (isReflectionAccessCoveredByRUC = Annotations.DoesFieldRequireUnreferencedCode (field, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCodeAttribute))
+				ReportRequiresUnreferencedCode (field.GetDisplayName (), requiresUnreferencedCodeAttribute!, new DiagnosticContext (origin, diagnosticsEnabled: true, Context));
+
+			bool isReflectionAccessCoveredByDAM = false;
+			switch (dependencyKind) {
+			case DependencyKind.AccessedViaReflection:
+			case DependencyKind.DynamicDependency:
+			case DependencyKind.DynamicallyAccessedMember:
+			case DependencyKind.InteropMethodDependency:
+				if (isReflectionAccessCoveredByDAM = Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (field))
+					Context.LogWarning (origin, DiagnosticId.DynamicallyAccessedMembersFieldAccessedViaReflection, field.GetDisplayName ());
+
+				break;
+			}
+
+			switch (dependencyKind) {
+			case DependencyKind.AccessedViaReflection:
+			case DependencyKind.DynamicallyAccessedMember:
+				bool isCoveredByAnnotations = isReflectionAccessCoveredByRUC || isReflectionAccessCoveredByDAM;
+				if (ShouldWarnForReflectionAccessToCompilerGeneratedCode (field, isCoveredByAnnotations))
+					Context.LogWarning (origin, DiagnosticId.CompilerGeneratedMemberAccessedViaReflection, field.GetDisplayName ());
+				break;
 			}
 		}
 
@@ -2820,13 +2872,13 @@ namespace Mono.Linker.Steps
 			return method;
 		}
 
-		bool ShouldWarnForReflectionAccessToCompilerGeneratedCode (MethodDefinition method)
+		bool ShouldWarnForReflectionAccessToCompilerGeneratedCode (MethodDefinition method, bool isCoveredByAnnotations)
 		{
-			if (!CompilerGeneratedState.IsNestedFunctionOrStateMachineMember (method) || method.Body == null)
+			// No need to warn if it's already covered by the Requires attribute or explicit annotations on the method.
+			if (isCoveredByAnnotations)
 				return false;
 
-			// No need to warn if it's already covered by the Requires attribute or explicit annotations on the method.
-			if (Annotations.DoesMethodRequireUnreferencedCode (method, out _) || Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (method))
+			if (!CompilerGeneratedState.IsNestedFunctionOrStateMachineMember (method) || method.Body == null)
 				return false;
 
 			// Warn only if it has potential dataflow issues, as approximated by our check to see if it requires
@@ -2917,41 +2969,41 @@ namespace Mono.Linker.Steps
 			if (Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (origin.Provider))
 				return;
 
-			// Warn about reflection access to compiler-generated code.
-			// This must happen before the check for virtual methods, because it should include the
-			// virtual MoveNext method of state machines.
-			switch (dependencyKind) {
-			case DependencyKind.AccessedViaReflection:
-			case DependencyKind.DynamicallyAccessedMember:
-				if (ShouldWarnForReflectionAccessToCompilerGeneratedCode (method))
-					Context.LogWarning (origin, DiagnosticId.CompilerGeneratedMemberAccessedViaReflection, method.GetDisplayName ());
-				break;
-			}
+			// All override methods should have the same annotations as their base methods
+			// (else we will produce warning IL2046 or IL2092 or some other warning).
+			// When marking override methods via DynamicallyAccessedMembers, we should only issue a warning for the base method.
+			bool skipWarningsForOverride = dependencyKind == DependencyKind.DynamicallyAccessedMember && method.IsVirtual && Annotations.GetBaseMethods (method) != null;
 
-			if (dependencyKind == DependencyKind.DynamicallyAccessedMember) {
-				// All override methods should have the same annotations as their base methods
-				// (else we will produce warning IL2046 or IL2092 or some other warning).
-				// When marking override methods via DynamicallyAccessedMembers, we should only issue a warning for the base method.
-				if (method.IsVirtual && Annotations.GetBaseMethods (method) != null)
-					return;
-			}
+			bool isReflectionAccessCoveredByRUC = Annotations.DoesMethodRequireUnreferencedCode (method, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCode);
+			if (isReflectionAccessCoveredByRUC && !skipWarningsForOverride)
+				ReportRequiresUnreferencedCode (method.GetDisplayName (), requiresUnreferencedCode!, new DiagnosticContext (origin, diagnosticsEnabled: true, Context));
 
-			if (Annotations.DoesMethodRequireUnreferencedCode (method, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCode))
-				ReportRequiresUnreferencedCode (method.GetDisplayName (), requiresUnreferencedCode, new DiagnosticContext (origin, diagnosticsEnabled: true, Context));
-
-			if (Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (method)) {
+			bool isReflectionAccessCoveredByDAM = Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (method);
+			if (isReflectionAccessCoveredByDAM && !skipWarningsForOverride) {
 				// ReflectionMethodBodyScanner handles more cases for data flow annotations
 				// so don't warn for those.
 				switch (dependencyKind) {
 				case DependencyKind.AttributeConstructor:
 				case DependencyKind.AttributeProperty:
-					return;
-
+					break;
 				default:
+					Context.LogWarning (origin, DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection, method.GetDisplayName ());
 					break;
 				}
+			}
 
-				Context.LogWarning (origin, DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection, method.GetDisplayName ());
+			// Warn on reflection access to compiler-generated methods, if the method isn't already unsafe to access via reflection
+			// due to annotations. For the annotation-based warnings, we skip virtual overrides since those will produce warnings on
+			// the base, but for unannotated compiler-generated methods this is not the case, so we must produce these warnings even
+			// for virtual overrides. This ensures that we include the unannotated MoveNext state machine method. Lambdas and local
+			// functions should never be virtual overrides in the first place.
+			bool isCoveredByAnnotations = isReflectionAccessCoveredByRUC || isReflectionAccessCoveredByDAM;
+			switch (dependencyKind) {
+			case DependencyKind.AccessedViaReflection:
+			case DependencyKind.DynamicallyAccessedMember:
+				if (ShouldWarnForReflectionAccessToCompilerGeneratedCode (method, isCoveredByAnnotations))
+					Context.LogWarning (origin, DiagnosticId.CompilerGeneratedMemberAccessedViaReflection, method.GetDisplayName ());
+				break;
 			}
 		}
 
