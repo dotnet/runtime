@@ -32,7 +32,7 @@ namespace System.Formats.Tar
             long actualLength = GetTotalDataBytesToWrite();
             TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.V7);
 
-            int checksum = WriteNameSpan(buffer, out _);
+            int checksum = WriteName(buffer, out _);
             checksum += WriteCommonFields(buffer, actualLength, actualEntryType);
             _checksum = WriteChecksum(checksum, buffer);
 
@@ -52,7 +52,7 @@ namespace System.Formats.Tar
             long actualLength = GetTotalDataBytesToWrite();
             TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.V7);
 
-            int checksum = WriteNameMemory(buffer, out _);
+            int checksum = WriteName(buffer.Span, out _);
             checksum += WriteCommonFields(buffer.Span, actualLength, actualEntryType);
             int finalChecksum = WriteChecksum(checksum, buffer.Span);
 
@@ -72,7 +72,7 @@ namespace System.Formats.Tar
             long actualLength = GetTotalDataBytesToWrite();
             TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.Ustar);
 
-            int checksum = WritePosixNameSpan(buffer);
+            int checksum = WritePosixName(buffer);
             checksum += WriteCommonFields(buffer, actualLength, actualEntryType);
             checksum += WritePosixMagicAndVersion(buffer);
             checksum += WritePosixAndGnuSharedFields(buffer);
@@ -94,7 +94,7 @@ namespace System.Formats.Tar
             long actualLength = GetTotalDataBytesToWrite();
             TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.Ustar);
 
-            int checksum = WritePosixNameMemory(buffer);
+            int checksum = WritePosixName(buffer.Span);
             checksum += WriteCommonFields(buffer.Span, actualLength, actualEntryType);
             checksum += WritePosixMagicAndVersion(buffer.Span);
             checksum += WritePosixAndGnuSharedFields(buffer.Span);
@@ -220,25 +220,15 @@ namespace System.Formats.Tar
             }
 
             // Third, we write this header as a normal one
-           return await WriteAsGnuInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+            return await WriteAsGnuInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
         }
 
         // Creates and returns a GNU long metadata header, with the specified long text written into its data stream.
         private static TarHeader GetGnuLongMetadataHeader(TarEntryType entryType, string longText)
         {
-            Debug.Assert((entryType is TarEntryType.LongPath && longText.Length > FieldLengths.Name) ||
-                         (entryType is TarEntryType.LongLink && longText.Length > FieldLengths.LinkName));
+            TarHeader longMetadataHeader = GetDefaultGnuLongMetadataHeader(longText.Length, entryType);
+            Debug.Assert(longMetadataHeader._dataStream != null);
 
-            TarHeader longMetadataHeader = default;
-
-            longMetadataHeader._name = GnuLongMetadataName; // Same name for both longpath or longlink
-            longMetadataHeader._mode = (int)TarHelpers.DefaultMode;
-            longMetadataHeader._uid = 0;
-            longMetadataHeader._gid = 0;
-            longMetadataHeader._mTime = DateTimeOffset.MinValue; // 0
-            longMetadataHeader._typeFlag = entryType;
-
-            longMetadataHeader._dataStream = new MemoryStream();
             longMetadataHeader._dataStream.Write(Encoding.UTF8.GetBytes(longText));
             longMetadataHeader._dataStream.Seek(0, SeekOrigin.Begin); // Ensure it gets written into the archive from the beginning
 
@@ -248,10 +238,22 @@ namespace System.Formats.Tar
         // Asynchronously creates and returns a GNU long metadata header, with the specified long text written into its data stream.
         private static async Task<TarHeader> GetGnuLongMetadataHeaderAsync(TarEntryType entryType, string longText, CancellationToken cancellationToken)
         {
-            Debug.Assert((entryType is TarEntryType.LongPath && longText.Length > FieldLengths.Name) ||
-                         (entryType is TarEntryType.LongLink && longText.Length > FieldLengths.LinkName));
-
             cancellationToken.ThrowIfCancellationRequested();
+
+            TarHeader longMetadataHeader = GetDefaultGnuLongMetadataHeader(longText.Length, entryType);
+            Debug.Assert(longMetadataHeader._dataStream != null);
+
+            await longMetadataHeader._dataStream.WriteAsync(Encoding.UTF8.GetBytes(longText), cancellationToken).ConfigureAwait(false);
+            longMetadataHeader._dataStream.Seek(0, SeekOrigin.Begin); // Ensure it gets written into the archive from the beginning
+
+            return longMetadataHeader;
+        }
+
+        // Constructs a GNU metadata header with default values for the specified entry type.
+        private static TarHeader GetDefaultGnuLongMetadataHeader(int longTextLength, TarEntryType entryType)
+        {
+            Debug.Assert((entryType is TarEntryType.LongPath && longTextLength > FieldLengths.Name) ||
+                         (entryType is TarEntryType.LongLink && longTextLength > FieldLengths.LinkName));
 
             TarHeader longMetadataHeader = default;
 
@@ -261,10 +263,7 @@ namespace System.Formats.Tar
             longMetadataHeader._gid = 0;
             longMetadataHeader._mTime = DateTimeOffset.MinValue; // 0
             longMetadataHeader._typeFlag = entryType;
-
             longMetadataHeader._dataStream = new MemoryStream();
-            await longMetadataHeader._dataStream.WriteAsync(Encoding.UTF8.GetBytes(longText), cancellationToken).ConfigureAwait(false);
-            longMetadataHeader._dataStream.Seek(0, SeekOrigin.Begin); // Ensure it gets written into the archive from the beginning
 
             return longMetadataHeader;
         }
@@ -272,20 +271,7 @@ namespace System.Formats.Tar
         // Writes the current header as a GNU entry into the archive stream.
         internal void WriteAsGnuInternal(Stream archiveStream, Span<byte> buffer)
         {
-            // Unused GNU fields: offset, longnames, unused, sparse struct, isextended and realsize
-            // If this header came from another archive, it will have a value
-            // If it was constructed by the user, it will be an empty array
-            _gnuUnusedBytes ??= new byte[FieldLengths.AllGnuUnused];
-
-            long actualLength = GetTotalDataBytesToWrite();
-            TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.Gnu);
-
-            int checksum = WriteNameSpan(buffer, out _);
-            checksum += WriteCommonFields(buffer, actualLength, actualEntryType);
-            checksum += WriteGnuMagicAndVersion(buffer);
-            checksum += WritePosixAndGnuSharedFields(buffer);
-            checksum += WriteGnuFields(buffer);
-            _checksum = WriteChecksum(checksum, buffer);
+            WriteAsGnuSharedInternal(buffer, out long actualLength, out _checksum);
 
             archiveStream.Write(buffer);
 
@@ -300,20 +286,7 @@ namespace System.Formats.Tar
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            // Unused GNU fields: offset, longnames, unused, sparse struct, isextended and realsize
-            // If this header came from another archive, it will have a value
-            // If it was constructed by the user, it will be an empty array
-            _gnuUnusedBytes ??= new byte[FieldLengths.AllGnuUnused];
-
-            long actualLength = GetTotalDataBytesToWrite();
-            TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.Gnu);
-
-            int checksum = WriteNameMemory(buffer, out _);
-            checksum += WriteCommonFields(buffer.Span, actualLength, actualEntryType);
-            checksum += WriteGnuMagicAndVersion(buffer.Span);
-            checksum += WritePosixAndGnuSharedFields(buffer.Span);
-            checksum += WriteGnuFields(buffer.Span);
-            int finalChecksum = WriteChecksum(checksum, buffer.Span);
+            WriteAsGnuSharedInternal(buffer.Span, out long actualLength, out int checksum);
 
             await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
 
@@ -322,7 +295,20 @@ namespace System.Formats.Tar
                 await WriteDataAsync(archiveStream, _dataStream, actualLength, cancellationToken).ConfigureAwait(false);
             }
 
-            return finalChecksum;
+            return checksum;
+        }
+
+        // Shared checksum and data length calculations for GNU entry writing.
+        private void WriteAsGnuSharedInternal(Span<byte> buffer, out long actualLength, out int checksum)
+        {
+            actualLength = GetTotalDataBytesToWrite();
+
+            checksum = WriteName(buffer, out _);
+            checksum += WriteCommonFields(buffer, actualLength, GetCorrectTypeFlagForFormat(TarEntryFormat.Gnu));
+            checksum += WriteGnuMagicAndVersion(buffer);
+            checksum += WritePosixAndGnuSharedFields(buffer);
+            checksum += WriteGnuFields(buffer);
+            checksum += WriteChecksum(checksum, buffer);
         }
 
         // Writes the current header as a PAX Extended Attributes entry into the archive stream.
@@ -369,14 +355,7 @@ namespace System.Formats.Tar
         // This method writes an entry as both entries require, using the data from the current header instance.
         private void WriteAsPaxInternal(Stream archiveStream, Span<byte> buffer)
         {
-            long actualLength = GetTotalDataBytesToWrite();
-            TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.Pax);
-
-            int checksum = WritePosixNameSpan(buffer);
-            checksum += WriteCommonFields(buffer, actualLength, actualEntryType);
-            checksum += WritePosixMagicAndVersion(buffer);
-            checksum += WritePosixAndGnuSharedFields(buffer);
-            WriteChecksum(checksum, buffer);
+            WriteAsPaxSharedInternal(buffer, out long actualLength, out _checksum);
 
             archiveStream.Write(buffer);
 
@@ -392,14 +371,7 @@ namespace System.Formats.Tar
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            long actualLength = GetTotalDataBytesToWrite();
-            TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.Pax);
-
-            int checksum = WritePosixNameMemory(buffer);
-            checksum += WriteCommonFields(buffer.Span, actualLength, actualEntryType);
-            checksum += WritePosixMagicAndVersion(buffer.Span);
-            checksum += WritePosixAndGnuSharedFields(buffer.Span);
-            int finalChecksum = WriteChecksum(checksum, buffer.Span);
+            WriteAsPaxSharedInternal(buffer.Span, out long actualLength, out int checksum);
 
             await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
 
@@ -408,11 +380,23 @@ namespace System.Formats.Tar
                 await WriteDataAsync(archiveStream, _dataStream, actualLength, cancellationToken).ConfigureAwait(false);
             }
 
-            return finalChecksum;
+            return checksum;
+        }
+
+        // Shared checksum and data length calculations for PAX entry writing.
+        private void WriteAsPaxSharedInternal(Span<byte> buffer, out long actualLength, out int checksum)
+        {
+            actualLength = GetTotalDataBytesToWrite();
+
+            checksum = WritePosixName(buffer);
+            checksum += WriteCommonFields(buffer, actualLength, GetCorrectTypeFlagForFormat(TarEntryFormat.Pax));
+            checksum += WritePosixMagicAndVersion(buffer);
+            checksum += WritePosixAndGnuSharedFields(buffer);
+            checksum += WriteChecksum(checksum, buffer);
         }
 
         // All formats save in the name byte array only the ASCII bytes that fit. The full string is returned in the out byte array.
-        private int WriteNameSpan(Span<byte> buffer, out byte[] fullNameBytes)
+        private int WriteName(Span<byte> buffer, out byte[] fullNameBytes)
         {
             fullNameBytes = Encoding.ASCII.GetBytes(_name);
             int nameBytesLength = Math.Min(fullNameBytes.Length, FieldLengths.Name);
@@ -420,35 +404,14 @@ namespace System.Formats.Tar
             return checksum;
         }
 
-        // All formats save in the name byte array only the ASCII bytes that fit. The full string is returned in the out byte array.
-        private int WriteNameMemory(Memory<byte> buffer, out byte[] fullNameBytes)
-        {
-            fullNameBytes = Encoding.ASCII.GetBytes(_name);
-            int nameBytesLength = Math.Min(fullNameBytes.Length, FieldLengths.Name);
-            int checksum = WriteLeftAlignedBytesAndGetChecksum(fullNameBytes.AsSpan(0, nameBytesLength), buffer.Span.Slice(FieldLocations.Name, FieldLengths.Name));
-            return checksum;
-        }
-
         // Ustar and PAX save in the name byte array only the ASCII bytes that fit, and the rest of that string is saved in the prefix field.
-        private int WritePosixNameSpan(Span<byte> buffer)
+        private int WritePosixName(Span<byte> buffer)
         {
-            int checksum = WriteNameSpan(buffer, out byte[] fullNameBytes);
+            int checksum = WriteName(buffer, out byte[] fullNameBytes);
             if (fullNameBytes.Length > FieldLengths.Name)
             {
                 int prefixBytesLength = Math.Min(fullNameBytes.Length - FieldLengths.Name, FieldLengths.Name);
                 checksum += WriteLeftAlignedBytesAndGetChecksum(fullNameBytes.AsSpan(FieldLengths.Name, prefixBytesLength), buffer.Slice(FieldLocations.Prefix, FieldLengths.Prefix));
-            }
-            return checksum;
-        }
-
-        // Ustar and PAX save in the name byte array only the ASCII bytes that fit, and the rest of that string is saved in the prefix field.
-        private int WritePosixNameMemory(Memory<byte> buffer)
-        {
-            int checksum = WriteNameMemory(buffer, out byte[] fullNameBytes);
-            if (fullNameBytes.Length > FieldLengths.Name)
-            {
-                int prefixBytesLength = Math.Min(fullNameBytes.Length - FieldLengths.Name, FieldLengths.Name);
-                checksum += WriteLeftAlignedBytesAndGetChecksum(fullNameBytes.AsSpan(FieldLengths.Name, prefixBytesLength), buffer.Span.Slice(FieldLocations.Prefix, FieldLengths.Prefix));
             }
             return checksum;
         }
@@ -648,7 +611,7 @@ namespace System.Formats.Tar
 
             if (!_extendedAttributes.ContainsKey(PaxEaMTime))
             {
-                AddTimestampAsUnixSeconds(_extendedAttributes, PaxEaMTime, _mTime);
+                _extendedAttributes.Add(PaxEaMTime, TarHelpers.GetTimestampStringFromDateTimeOffset(_mTime));
             }
             TryAddStringField(_extendedAttributes, PaxEaGName, _gName, FieldLengths.GName);
             TryAddStringField(_extendedAttributes, PaxEaUName, _uName, FieldLengths.UName);
@@ -663,11 +626,6 @@ namespace System.Formats.Tar
                 _extendedAttributes.Add(PaxEaSize, _size.ToString());
             }
 
-            // Adds the specified datetime to the dictionary as a decimal number.
-            static void AddTimestampAsUnixSeconds(Dictionary<string, string> extendedAttributes, string key, DateTimeOffset value)
-            {
-                extendedAttributes.Add(key, TarHelpers.GetTimestampStringFromDateTimeOffset(value));
-            }
 
             // Adds the specified string to the dictionary if it's longer than the specified max byte length.
             static void TryAddStringField(Dictionary<string, string> extendedAttributes, string key, string value, int maxLength)
