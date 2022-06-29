@@ -94,16 +94,44 @@ namespace System.Linq
             new OrderedEnumerable<TSource, TKey>(source, keySelector, comparer, true, null);
 
         public static IOrderedEnumerable<TSource> ThenBy<TSource, TKey>(this IOrderedEnumerable<TSource> source, Func<TSource, TKey> keySelector)
-            => source.CreateOrderedEnumerable(keySelector, null, false);
+        {
+            if (source == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            return source.CreateOrderedEnumerable(keySelector, null, false);
+        }
 
         public static IOrderedEnumerable<TSource> ThenBy<TSource, TKey>(this IOrderedEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey>? comparer)
-            => source.CreateOrderedEnumerable(keySelector, comparer, false);
+        {
+            if (source == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            return source.CreateOrderedEnumerable(keySelector, comparer, false);
+        }
 
         public static IOrderedEnumerable<TSource> ThenByDescending<TSource, TKey>(this IOrderedEnumerable<TSource> source, Func<TSource, TKey> keySelector)
-            => source.CreateOrderedEnumerable(keySelector, null, true);
+        {
+            if (source == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            return source.CreateOrderedEnumerable(keySelector, null, true);
+        }
 
         public static IOrderedEnumerable<TSource> ThenByDescending<TSource, TKey>(this IOrderedEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey>? comparer)
-            => source.CreateOrderedEnumerable(keySelector, comparer, true);
+        {
+            if (source == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            return source.CreateOrderedEnumerable(keySelector, comparer, false);
+        }
     }
 
     public interface IOrderedEnumerable<out TElement> : IEnumerable<TElement>
