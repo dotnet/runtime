@@ -9,8 +9,12 @@ using Xunit;
 namespace System.Formats.Tar.Tests
 {
     // Tests specific to PAX format.
-    public class TarWriter_WriteEntry_Pax_Tests : TarTestsBase
+    public class TarWriter_WriteEntry_Pax_Tests : TarWriter_WriteEntry_Base
     {
+        [Fact]
+        public void WriteEntry_Null_Throws() =>
+            WriteEntry_Null_Throws_Internal(TarEntryFormat.Pax);
+
         [Fact]
         public void WriteRegularFile()
         {

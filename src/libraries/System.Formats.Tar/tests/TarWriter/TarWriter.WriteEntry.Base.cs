@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,6 +13,26 @@ namespace System.Formats.Tar.Tests
 {
     public class TarWriter_WriteEntry_Base : TarTestsBase
     {
+        protected void WriteEntry_Null_Throws_Internal(TarEntryFormat format)
+        {
+            using MemoryStream archiveStream = new MemoryStream();
+            using TarWriter writer = new TarWriter(archiveStream, format, leaveOpen: false);
+            Assert.Throws<ArgumentNullException>(() => writer.WriteEntry(null));
+        }
+
+        protected async Task WriteEntry_Null_Throws_Async_Internal(TarEntryFormat format)
+        {
+            MemoryStream archiveStream = new MemoryStream();
+            await using (archiveStream)
+            {
+                TarWriter writer = new TarWriter(archiveStream, format, leaveOpen: false);
+                await using (writer)
+                {
+                    await Assert.ThrowsAsync<ArgumentNullException>(() => writer.WriteEntryAsync(null));
+                }
+            }
+        }
+
         protected void VerifyDirectory(TarEntry entry, TarEntryFormat format, string name)
         {
             Assert.NotNull(entry);

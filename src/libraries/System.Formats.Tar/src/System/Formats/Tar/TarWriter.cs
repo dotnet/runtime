@@ -194,6 +194,7 @@ namespace System.Formats.Tar
         public void WriteEntry(TarEntry entry)
         {
             ThrowIfDisposed();
+            ArgumentNullException.ThrowIfNull(entry);
 
             byte[] rented = ArrayPool<byte>.Shared.Rent(minimumLength: TarHelpers.RecordSize);
             Span<byte> buffer = rented.AsSpan(0, TarHelpers.RecordSize); // minimumLength means the array could've been larger
@@ -276,6 +277,7 @@ namespace System.Formats.Tar
                 return Task.FromCanceled(cancellationToken);
             }
             ThrowIfDisposed();
+            ArgumentNullException.ThrowIfNull(entry);
             return WriteEntryAsyncInternal(entry, cancellationToken);
         }
 

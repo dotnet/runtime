@@ -7,8 +7,12 @@ using Xunit;
 namespace System.Formats.Tar.Tests
 {
     // Tests specific to V7 format.
-    public class TarWriter_WriteEntry_V7_Tests : TarTestsBase
+    public class TarWriter_WriteEntry_V7_Tests : TarWriter_WriteEntry_Base
     {
+        [Fact]
+        public void WriteEntry_Null_Throws() =>
+            WriteEntry_Null_Throws_Internal(TarEntryFormat.V7);
+
         [Fact]
         public void WriteRegularFile()
         {

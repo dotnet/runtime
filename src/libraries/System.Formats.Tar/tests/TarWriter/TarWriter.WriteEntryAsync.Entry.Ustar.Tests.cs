@@ -8,8 +8,12 @@ using Xunit;
 namespace System.Formats.Tar.Tests
 {
     // Tests specific to Ustar format.
-    public class TarWriter_WriteEntryAsync_Ustar_Tests : TarTestsBase
+    public class TarWriter_WriteEntryAsync_Ustar_Tests : TarWriter_WriteEntry_Base
     {
+        [Fact]
+        public Task WriteEntry_Null_Throws_Async() =>
+            WriteEntry_Null_Throws_Async_Internal(TarEntryFormat.Ustar);
+
         [Fact]
         public async Task WriteRegularFile_Async()
         {

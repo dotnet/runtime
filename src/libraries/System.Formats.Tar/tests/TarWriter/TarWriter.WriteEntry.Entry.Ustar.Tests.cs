@@ -7,8 +7,12 @@ using Xunit;
 namespace System.Formats.Tar.Tests
 {
     // Tests specific to Ustar format.
-    public class TarWriter_WriteEntry_Ustar_Tests : TarTestsBase
+    public class TarWriter_WriteEntry_Ustar_Tests : TarWriter_WriteEntry_Base
     {
+        [Fact]
+        public void WriteEntry_Null_Throws() =>
+            WriteEntry_Null_Throws_Internal(TarEntryFormat.Ustar);
+
         [Fact]
         public void WriteRegularFile()
         {

@@ -8,8 +8,12 @@ using Xunit;
 namespace System.Formats.Tar.Tests
 {
     // Tests specific to V7 format.
-    public class TarWriter_WriteEntryAsync_V7_Tests : TarTestsBase
+    public class TarWriter_WriteEntryAsync_V7_Tests : TarWriter_WriteEntry_Base
     {
+        [Fact]
+        public Task WriteEntry_Null_Throws_Async() =>
+            WriteEntry_Null_Throws_Async_Internal(TarEntryFormat.V7);
+
         [Fact]
         public async Task WriteRegularFile_Async()
         {
