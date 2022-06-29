@@ -278,7 +278,7 @@ namespace System.Threading.RateLimiting
             limiter!.ReplenishInternal(nowTicks);
         }
 
-        // Used in tests that test behavior with specific time intervals
+        // Used in tests to avoid dealing with real time
         private void ReplenishInternal(long nowTicks)
         {
             // method is re-entrant (from Timer), lock to avoid multiple simultaneous replenishes
@@ -289,21 +289,23 @@ namespace System.Threading.RateLimiting
                     return;
                 }
 
-                if ((long)((nowTicks - _lastReplenishmentTick) * TickFrequency) < _options.ReplenishmentPeriod.Ticks)
+                long periods = (long)((nowTicks - _lastReplenishmentTick) * TickFrequency) / _options.ReplenishmentPeriod.Ticks;
+                if (periods == 0)
                 {
                     return;
                 }
 
-                _lastReplenishmentTick = nowTicks;
+                // increment last tick by the number of replenish periods that occurred since the last replenish
+                // this way if replenish isn't being called every ReplenishmentPeriod we correctly track it so we know when replenishes should be occurring
+                _lastReplenishmentTick += (long)(periods * _options.ReplenishmentPeriod.Ticks / TickFrequency);
 
                 int availablePermits = _tokenCount;
-                TokenBucketRateLimiterOptions options = _options;
-                int maxPermits = options.TokenLimit;
+                int maxPermits = _options.TokenLimit;
                 int resourcesToAdd;
 
                 if (availablePermits < maxPermits)
                 {
-                    resourcesToAdd = Math.Min(options.TokensPerPeriod, maxPermits - availablePermits);
+                    resourcesToAdd = (int)Math.Min(_options.TokensPerPeriod * periods, maxPermits - availablePermits);
                 }
                 else
                 {
@@ -319,7 +321,7 @@ namespace System.Threading.RateLimiting
                 while (queue.Count > 0)
                 {
                     RequestRegistration nextPendingRequest =
-                          options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
+                          _options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
                           ? queue.PeekHead()
                           : queue.PeekTail();
 
@@ -327,7 +329,7 @@ namespace System.Threading.RateLimiting
                     {
                         // Request can be fulfilled
                         nextPendingRequest =
-                            options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
+                            _options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
                             ? queue.DequeueHead()
                             : queue.DequeueTail();
 
