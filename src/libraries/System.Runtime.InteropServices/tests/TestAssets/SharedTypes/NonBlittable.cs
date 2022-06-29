@@ -167,7 +167,7 @@ namespace SharedTypes
     }
 
 
-    [ManagedToUnmanagedMarshallers(typeof(IntWrapper), InMarshaller = typeof(Marshaller), RefMarshaller = typeof(Marshaller), OutMarshaller = typeof(Marshaller))]
+    [CustomMarshaller(typeof(IntWrapper), Scenario.Default, typeof(Marshaller))]
     public static unsafe class IntWrapperMarshallerStateful
     {
         public struct Marshaller
@@ -225,7 +225,7 @@ namespace SharedTypes
         }
     }
 
-    [ManagedToUnmanagedMarshallers(typeof(IntWrapperWithNotification), InMarshaller = typeof(Marshaller), RefMarshaller = typeof(Marshaller), OutMarshaller = typeof(Marshaller))]
+    [CustomMarshaller(typeof(IntWrapperWithNotification), Scenario.Default, typeof(Marshaller))]
     public static class IntWrapperWithNotificationMarshaller
     {
         public struct Marshaller
@@ -244,7 +244,7 @@ namespace SharedTypes
         }
     }
 
-    [ManagedToUnmanagedMarshallers(typeof(BoolStruct), InMarshaller = typeof(Marshaller), RefMarshaller = typeof(Marshaller), OutMarshaller = typeof(Marshaller))]
+    [CustomMarshaller(typeof(BoolStruct), Scenario.Default, typeof(Marshaller))]
     public static class BoolStructMarshallerStateful
     {
         public struct BoolStructNative
