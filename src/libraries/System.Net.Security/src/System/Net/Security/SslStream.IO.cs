@@ -193,7 +193,7 @@ namespace System.Net.Security
 
                 if (nextmsg is { Length: > 0 })
                 {
-                    await TIOAdapter.WriteAsync(InnerStream, nextmsg, 0, nextmsg.Length, cancellationToken).ConfigureAwait(false);
+                    await TIOAdapter.WriteAsync(InnerStream, nextmsg, cancellationToken).ConfigureAwait(false);
                     await TIOAdapter.FlushAsync(InnerStream, cancellationToken).ConfigureAwait(false);
                 }
 
@@ -216,7 +216,7 @@ namespace System.Net.Security
                     message = await ReceiveBlobAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
                     if (message.Size > 0)
                     {
-                        await TIOAdapter.WriteAsync(InnerStream, message.Payload!, 0, message.Size, cancellationToken).ConfigureAwait(false);
+                        await TIOAdapter.WriteAsync(InnerStream, new ReadOnlyMemory<byte>(message.Payload!, 0, message.Size), cancellationToken).ConfigureAwait(false);
                         await TIOAdapter.FlushAsync(InnerStream, cancellationToken).ConfigureAwait(false);
                     }
                 }
@@ -261,7 +261,7 @@ namespace System.Net.Security
                     message = NextMessage(reAuthenticationData);
                     if (message.Size > 0)
                     {
-                        await TIOAdapter.WriteAsync(InnerStream, message.Payload!, 0, message.Size, cancellationToken).ConfigureAwait(false);
+                        await TIOAdapter.WriteAsync(InnerStream, new ReadOnlyMemory<byte>(message.Payload!, 0, message.Size), cancellationToken).ConfigureAwait(false);
                         await TIOAdapter.FlushAsync(InnerStream, cancellationToken).ConfigureAwait(false);
                         if (NetEventSource.Log.IsEnabled())
                             NetEventSource.Log.SentFrame(this, message.Payload);
@@ -288,28 +288,25 @@ namespace System.Net.Security
                 {
                     message = await ReceiveBlobAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
 
-                    byte[]? payload = null;
-                    int size = 0;
+                    ReadOnlyMemory<byte> payload = default;
                     if (message.Size > 0)
                     {
-                        payload = message.Payload;
-                        size = message.Size;
+                        payload = new ReadOnlyMemory<byte>(message.Payload, 0, message.Size);
                     }
                     else if (message.Failed && (_lastFrame.Header.Type == TlsContentType.Handshake || _lastFrame.Header.Type == TlsContentType.ChangeCipherSpec))
                     {
                         // If we failed without OS sending out alert, inject one here to be consistent across platforms.
                         payload = TlsFrameHelper.CreateAlertFrame(_lastFrame.Header.Version, TlsAlertDescription.ProtocolVersion);
-                        size = payload.Length;
                     }
 
-                    if (payload != null && size > 0)
+                    if (!payload.IsEmpty)
                     {
                         // If there is message send it out even if call failed. It may contain TLS Alert.
-                        await TIOAdapter.WriteAsync(InnerStream, payload!, 0, size, cancellationToken).ConfigureAwait(false);
+                        await TIOAdapter.WriteAsync(InnerStream, payload, cancellationToken).ConfigureAwait(false);
                         await TIOAdapter.FlushAsync(InnerStream, cancellationToken).ConfigureAwait(false);
 
                         if (NetEventSource.Log.IsEnabled())
-                            NetEventSource.Log.SentFrame(this, payload);
+                            NetEventSource.Log.SentFrame(this, payload.Span);
                     }
 
                     if (message.Failed)
@@ -589,7 +586,7 @@ namespace System.Net.Security
                 return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_io_encrypt, SslStreamPal.GetException(status))));
             }
 
-            ValueTask t = TIOAdapter.WriteAsync(InnerStream, outBuffer, 0, encryptedBytes, cancellationToken);
+            ValueTask t = TIOAdapter.WriteAsync(InnerStream, new ReadOnlyMemory<byte>(outBuffer, 0, encryptedBytes), cancellationToken);
             if (t.IsCompletedSuccessfully)
             {
                 ArrayPool<byte>.Shared.Return(rentedBuffer);
@@ -623,7 +620,7 @@ namespace System.Net.Security
                     }
                     else if (status.ErrorCode == SecurityStatusPalErrorCode.OK)
                     {
-                        await TIOAdapter.WriteAsync(InnerStream, outBuffer, 0, encryptedBytes, cancellationToken).ConfigureAwait(false);
+                        await TIOAdapter.WriteAsync(InnerStream, new ReadOnlyMemory<byte>(outBuffer, 0, encryptedBytes), cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {

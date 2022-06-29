@@ -210,10 +210,10 @@ internal static partial class Interop
             ref GssBuffer outBuffer);
 
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_Unwrap")]
-        private static partial Status Unwrap(
+        private static unsafe partial Status Unwrap(
             out Status minorStatus,
             SafeGssContextHandle? contextHandle,
-            byte[] inputBytes,
+            byte* inputBytes,
             int offset,
             int count,
             ref GssBuffer outBuffer);
@@ -231,19 +231,16 @@ internal static partial class Interop
             }
         }
 
-        internal static Status UnwrapBuffer(
+        internal static unsafe Status UnwrapBuffer(
             out Status minorStatus,
             SafeGssContextHandle? contextHandle,
-            byte[] inputBytes,
-            int offset,
-            int count,
+            ReadOnlySpan<byte> inputBytes,
             ref GssBuffer outBuffer)
         {
-            Debug.Assert(inputBytes != null, "inputBytes must be valid value");
-            Debug.Assert(offset >= 0 && offset <= inputBytes.Length, "offset must be valid");
-            Debug.Assert(count >= 0 && count <= inputBytes.Length, "count must be valid");
-
-            return Unwrap(out minorStatus, contextHandle, inputBytes, offset, count, ref outBuffer);
+            fixed (byte* inputBytesPtr = inputBytes)
+            {
+                return Unwrap(out minorStatus, contextHandle, inputBytesPtr, 0, inputBytes.Length, ref outBuffer);
+            }
         }
     }
 }
