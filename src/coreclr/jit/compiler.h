@@ -6914,10 +6914,7 @@ public:
                                     GenTree*    nullCheckTree,
                                     GenTree**   nullCheckParent,
                                     Statement** nullCheckStmt);
-    bool optCanMoveNullCheckPastTree(GenTree* tree,
-                                     unsigned nullCheckLclNum,
-                                     bool     isInsideTry,
-                                     bool     checkSideEffectSummary);
+    bool optCanMoveNullCheckPastTree(GenTree* tree, unsigned nullCheckLclNum, bool isInsideTry, bool checkWholeTree);
 #if DEBUG
     void optCheckFlagsAreSet(unsigned    methodFlag,
                              const char* methodFlagStr,

@@ -721,28 +721,29 @@ bool Compiler::optIsNullCheckFoldingLegal(GenTree*    tree,
 //    tree                  - The tree to check.
 //    nullCheckLclNum       - The local variable that GT_NULLCHECK checks.
 //    isInsideTry           - True if tree is inside try, false otherwise.
-//    checkSideEffectSummary -If true, check side effect summary flags only,
-//                            otherwise check the side effects of the operation itself.
+//    checkWholeTree        - If true, check the tree and child nodes for interference.
+//                            If false, check only 'tree' in anticipation of the children being checked separately.
 //
 // Return Value:
 //    True if nullcheck may be folded into a node that is after tree in execution order,
 //    false otherwise.
-
+//
 bool Compiler::optCanMoveNullCheckPastTree(GenTree* tree,
                                            unsigned nullCheckLclNum,
                                            bool     isInsideTry,
-                                           bool     checkSideEffectSummary)
+                                           bool     checkWholeTree)
 {
     bool result = true;
 
     if ((tree->gtFlags & GTF_CALL) != 0)
     {
-        result = !checkSideEffectSummary && !tree->OperRequiresCallFlag(this);
+        result = !checkWholeTree && !tree->OperRequiresCallFlag(this);
     }
 
     if (result && (tree->gtFlags & GTF_EXCEPT) != 0)
     {
-        result = !checkSideEffectSummary && !tree->OperMayThrow(this);
+        ExceptionSetFlags flags = checkWholeTree ? gtCollectExceptions(tree) : tree->OperExceptions(this);
+        result = (flags == ExceptionSetFlags::None) || (flags == ExceptionSetFlags::NullReferenceException);
     }
 
     if (result && ((tree->gtFlags & GTF_ASG) != 0))
@@ -751,7 +752,7 @@ bool Compiler::optCanMoveNullCheckPastTree(GenTree* tree,
         {
             GenTree* lhs = tree->gtGetOp1();
             GenTree* rhs = tree->gtGetOp2();
-            if (checkSideEffectSummary && ((rhs->gtFlags & GTF_ASG) != 0))
+            if (checkWholeTree && ((rhs->gtFlags & GTF_ASG) != 0))
             {
                 result = false;
             }
@@ -767,7 +768,7 @@ bool Compiler::optCanMoveNullCheckPastTree(GenTree* tree,
                 result = ((lhs->gtFlags & GTF_GLOB_REF) == 0);
             }
         }
-        else if (checkSideEffectSummary)
+        else if (checkWholeTree)
         {
             result = !isInsideTry && ((tree->gtFlags & GTF_GLOB_REF) == 0);
         }
