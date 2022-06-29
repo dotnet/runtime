@@ -275,7 +275,8 @@ namespace System
         [RequiresUnreferencedCode(JsonSerializerRequiresUnreferencedCode)]
         public T? ToObjectFromJson<T>(JsonSerializerOptions? options = default)
         {
-            return JsonSerializer.Deserialize<T>(_bytes.Span, options);
+            using var stream = new ReadOnlyMemoryStream(_bytes);
+            return JsonSerializer.Deserialize<T>(stream, options);
         }
 
         /// <summary>
