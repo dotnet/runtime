@@ -258,7 +258,8 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public async Task ReturnsSocketFlags()
+        [PlatformSpecific(TestPlatforms.Windows)] // MSG_BCAST is Windows-specifc
+        public async Task SendBroadcast_BroadcastFlagIsSetOnReceive()
         {
             using var receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             ConfigureNonBlocking(receiver);
@@ -267,7 +268,7 @@ namespace System.Net.Sockets.Tests
             using var sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             sender.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, 1);
             int senderPort = sender.BindToAnonymousPort(IPAddress.Loopback);
-            var destEp = new IPEndPoint(IPAddress.Broadcast, receiverPort);
+            var destEp = new IPEndPoint(IPAddress.Parse("127.255.255.255"), receiverPort);
 
             sender.SendTo(new byte[1], destEp);
 

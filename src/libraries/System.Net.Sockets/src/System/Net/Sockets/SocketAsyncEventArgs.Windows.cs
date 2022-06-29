@@ -1186,6 +1186,7 @@ namespace System.Net.Sockets
         private unsafe void FinishOperationReceiveMessageFrom()
         {
             Interop.Winsock.WSAMsg* PtrMessage = (Interop.Winsock.WSAMsg*)Marshal.UnsafeAddrOfPinnedArrayElement(_wsaMessageBufferPinned!, 0);
+            _socketFlags = PtrMessage->flags;
 
             if (_controlBufferPinned!.Length == sizeof(Interop.Winsock.ControlData))
             {
