@@ -869,6 +869,9 @@ namespace System
         // IBinaryNumber
         //
 
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
+        static Int128 IBinaryNumber<Int128>.AllBitsSet => new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
+
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(Int128 value) => (PopCount(value) == 1U) && IsPositive(value);
 
