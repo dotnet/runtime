@@ -364,13 +364,13 @@ namespace System.Formats.Tar
         // If copyData is true, then a total number of _size bytes will be copied to a new MemoryStream, which is then returned.
         // Otherwise, if the archive stream is seekable, returns a seekable wrapper stream.
         // Otherwise, it returns an unseekable wrapper stream.
-        private static async ValueTask<Stream> GetDataStreamAsync(Stream archiveStream, bool copyData, long size, CancellationToken cancellationToken)
+        private static async ValueTask<Stream?> GetDataStreamAsync(Stream archiveStream, bool copyData, long size, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             if (size == 0)
             {
-                return new MemoryStream();
+                return null;
             }
 
             if (copyData)
