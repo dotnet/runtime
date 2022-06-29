@@ -65,7 +65,6 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner)
     _ASSERTE(!pOwner->HasLoadedLayout());
 
     ReleaseHolder<FlatImageLayout> pFlat;
-    bool createdFromFile = false;
     if (pOwner->IsOpened())
     {
         pFlat = (FlatImageLayout*)pOwner->GetFlatLayout();
@@ -74,7 +73,6 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner)
     else if (pOwner->IsFile())
     {
         pFlat = new FlatImageLayout(pOwner);
-        createdFromFile = true;
     }
 
     if (pFlat == NULL || !pFlat->CheckILOnlyFormat())
@@ -83,11 +81,11 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner)
 // TODO: enable on OSX eventually
 //       right now we have binaries that will trigger this in a singlefile bundle.
 #ifdef TARGET_LINUX
-    // we should not see R2R files here on Unix unless the image is loaded from a byte array.
-    // ConvertedImageLayout is able to handle them, but the fact that we were unable to
+    // we should not see R2R files here on Unix.
+    // ConvertedImageLayout may be able to handle them, but the fact that we were unable to
     // load directly implies that MAPMapPEFile could not consume what crossgen produced.
     // that is suspicious, one or another might have a bug.
-    _ASSERTE(!pFlat->HasReadyToRunHeader() || !createdFromFile);
+    _ASSERTE(!pFlat->HasReadyToRunHeader());
 #endif
 
     if (!pFlat->HasReadyToRunHeader() && !pFlat->HasWriteableSections())
