@@ -430,84 +430,6 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalRestoreContext(CONTEXT * pCtx)
     RtlRestoreContext(pCtx, NULL);
 }
 
-REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalGetThreadContext(HANDLE hThread, _Out_ PAL_LIMITED_CONTEXT * pCtx)
-{
-    CONTEXT win32ctx;
-
-    win32ctx.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_EXCEPTION_REQUEST;
-
-    if (!GetThreadContext(hThread, &win32ctx))
-        return false;
-
-    // The CONTEXT_SERVICE_ACTIVE and CONTEXT_EXCEPTION_ACTIVE output flags indicate we suspended the thread
-    // at a point where the kernel cannot guarantee a completely accurate context. We'll fail the request in
-    // this case (which should force our caller to resume the thread and try again -- since this is a fairly
-    // narrow window we're highly likely to succeed next time).
-    // Note: in some cases (x86 WOW64, ARM32 on ARM64) the OS will not set the CONTEXT_EXCEPTION_REPORTING flag
-    // if the thread is executing in kernel mode (i.e. in the middle of a syscall or exception handling).
-    // Therefore, we should treat the absence of the CONTEXT_EXCEPTION_REPORTING flag as an indication that
-    // it is not safe to manipulate with the current state of the thread context.
-    if ((win32ctx.ContextFlags & CONTEXT_EXCEPTION_REPORTING) == 0 ||
-        (win32ctx.ContextFlags & (CONTEXT_SERVICE_ACTIVE | CONTEXT_EXCEPTION_ACTIVE)))
-        return false;
-
-#ifdef HOST_X86
-    pCtx->IP = win32ctx.Eip;
-    pCtx->Rsp = win32ctx.Esp;
-    pCtx->Rbp = win32ctx.Ebp;
-    pCtx->Rdi = win32ctx.Edi;
-    pCtx->Rsi = win32ctx.Esi;
-    pCtx->Rax = win32ctx.Eax;
-    pCtx->Rbx = win32ctx.Ebx;
-#elif defined(HOST_AMD64)
-    pCtx->IP = win32ctx.Rip;
-    pCtx->Rsp = win32ctx.Rsp;
-    pCtx->Rbp = win32ctx.Rbp;
-    pCtx->Rdi = win32ctx.Rdi;
-    pCtx->Rsi = win32ctx.Rsi;
-    pCtx->Rax = win32ctx.Rax;
-    pCtx->Rbx = win32ctx.Rbx;
-    pCtx->R12 = win32ctx.R12;
-    pCtx->R13 = win32ctx.R13;
-    pCtx->R14 = win32ctx.R14;
-    pCtx->R15 = win32ctx.R15;
-#elif defined(HOST_ARM)
-    pCtx->IP = win32ctx.Pc;
-    pCtx->R0 = win32ctx.R0;
-    pCtx->R4 = win32ctx.R4;
-    pCtx->R5 = win32ctx.R5;
-    pCtx->R6 = win32ctx.R6;
-    pCtx->R7 = win32ctx.R7;
-    pCtx->R8 = win32ctx.R8;
-    pCtx->R9 = win32ctx.R9;
-    pCtx->R10 = win32ctx.R10;
-    pCtx->R11 = win32ctx.R11;
-    pCtx->SP = win32ctx.Sp;
-    pCtx->LR = win32ctx.Lr;
-#elif defined(HOST_ARM64)
-    pCtx->IP = win32ctx.Pc;
-    pCtx->X0 = win32ctx.X0;
-    pCtx->X1 = win32ctx.X1;
-    // TODO: Copy X2-X7 when we start supporting HVA's
-    pCtx->X19 = win32ctx.X19;
-    pCtx->X20 = win32ctx.X20;
-    pCtx->X21 = win32ctx.X21;
-    pCtx->X22 = win32ctx.X22;
-    pCtx->X23 = win32ctx.X23;
-    pCtx->X24 = win32ctx.X24;
-    pCtx->X25 = win32ctx.X25;
-    pCtx->X26 = win32ctx.X26;
-    pCtx->X27 = win32ctx.X27;
-    pCtx->X28 = win32ctx.X28;
-    pCtx->SP = win32ctx.Sp;
-    pCtx->LR = win32ctx.Lr;
-    pCtx->FP = win32ctx.Fp;
-#else
-#error Unsupported platform
-#endif
-    return true;
-}
-
 static PalHijackCallback g_pHijackCallback;
 
 REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalHijackCallback callback)
@@ -530,16 +452,28 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ voi
         return HRESULT_FROM_WIN32(GetLastError());
     }
 
-    PAL_LIMITED_CONTEXT ctx;
-    HRESULT result;
-    if (!PalGetThreadContext(hThread, &ctx))
+    CONTEXT win32ctx;
+
+    win32ctx.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_EXCEPTION_REQUEST;
+
+    if (!GetThreadContext(hThread, &win32ctx))
+        return false;
+
+    // The CONTEXT_SERVICE_ACTIVE and CONTEXT_EXCEPTION_ACTIVE output flags indicate we suspended the thread
+    // at a point where the kernel cannot guarantee a completely accurate context. We'll fail the request in
+    // this case (which should force our caller to resume the thread and try again -- since this is a fairly
+    // narrow window we're highly likely to succeed next time).
+    // Note: in some cases (x86 WOW64, ARM32 on ARM64) the OS will not set the CONTEXT_EXCEPTION_REPORTING flag
+    // if the thread is executing in kernel mode (i.e. in the middle of a syscall or exception handling).
+    // Therefore, we should treat the absence of the CONTEXT_EXCEPTION_REPORTING flag as an indication that
+    // it is not safe to manipulate with the current state of the thread context.
+    if ((win32ctx.ContextFlags & CONTEXT_EXCEPTION_REPORTING) == 0 ||
+        (win32ctx.ContextFlags & (CONTEXT_SERVICE_ACTIVE | CONTEXT_EXCEPTION_ACTIVE)))
     {
-        result = HRESULT_FROM_WIN32(GetLastError());
+        return false;
     }
-    else
-    {
-        result = g_pHijackCallback(&ctx, pThreadToHijack) ? S_OK : E_FAIL;
-    }
+
+    HRESULT result = g_pHijackCallback(&win32ctx, pThreadToHijack) ? S_OK : E_FAIL;
 
     ResumeThread(hThread);
 

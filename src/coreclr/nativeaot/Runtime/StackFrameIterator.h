@@ -34,6 +34,7 @@ class StackFrameIterator
 public:
     StackFrameIterator() {}
     StackFrameIterator(Thread * pThreadToWalk, PInvokeTransitionFrame* pInitialTransitionFrame);
+    StackFrameIterator(Thread* pThreadToWalk, NATIVE_CONTEXT* pCtx);
     StackFrameIterator(Thread * pThreadToWalk, PTR_PAL_LIMITED_CONTEXT pCtx);
 
     bool             IsValid();
@@ -82,7 +83,7 @@ private:
 
     void InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransitionFrame pFrame, uint32_t dwFlags); // GC stackwalk
     void InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CONTEXT pCtx, uint32_t dwFlags);  // EH and hijack stackwalk, and collided unwind
-    void InternalInit(Thread * pThreadToWalk, CONTEXT* pCtx, uint32_t dwFlags);  // GC stackwalk of redirected thread
+    void InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pCtx, uint32_t dwFlags);  // GC stackwalk of redirected thread
 
     void InternalInitForEH(Thread * pThreadToWalk, PAL_LIMITED_CONTEXT * pCtx, bool instructionFault); // EH stackwalk
     void InternalInitForStackTrace();  // Environment.StackTrace

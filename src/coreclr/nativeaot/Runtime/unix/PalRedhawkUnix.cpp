@@ -958,15 +958,10 @@ static void ActivationHandler(int code, siginfo_t* siginfo, void* context)
 #endif
         ))
     {
-        PAL_LIMITED_CONTEXT palContext;
-        NativeContextToPalContext(context, &palContext);
-        int savedErrNo = errno; // Make sure that errno is not modified
-        g_pHijackCallback(&palContext, NULL);
+        // Make sure that errno is not modified 
+        int savedErrNo = errno;
+        g_pHijackCallback((NATIVE_CONTEXT*)context, NULL);
         errno = savedErrNo;
-
-        //TODO: VS update conditionally, this is rare
-        // Activation function may have modified the context, so update it.
-        UpdateNativeContextFromPalContext(context, &palContext);
     }
     else
     {
@@ -999,7 +994,7 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalHija
 REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* pThreadToHijack)
 {
     ThreadUnixHandle* threadHandle = (ThreadUnixHandle*)hThread;
-    int status = pthread_kill(*threadHandle->GetObject(), INJECT_ACTIVATION_SIGNAL);
+    int status = 0; // pthread_kill(*threadHandle->GetObject(), INJECT_ACTIVATION_SIGNAL);
     // We can get EAGAIN when printing stack overflow stack trace and when other threads hit
     // stack overflow too. Those are held in the sigsegv_handler with blocked signals until
     // the process exits.

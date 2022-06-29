@@ -4,6 +4,8 @@
 #ifndef __UNIX_CONTEXT_H__
 #define __UNIX_CONTEXT_H__
 
+#include <ucontext.h>
+
 // Convert Unix native context to PAL_LIMITED_CONTEXT
 void NativeContextToPalContext(const void* context, PAL_LIMITED_CONTEXT* palContext);
 // Update integer registers in Unix native context from PAL_LIMITED_CONTEXT
@@ -23,5 +25,74 @@ uint64_t GetRegisterValueByIndex(void* context, uint32_t index);
 // Get value of the program counter from the native context
 uint64_t GetPC(void* context);
 #endif // HOST_AMD64
+
+struct UNIX_CONTEXT
+{
+    ucontext_t ctx;
+
+#ifdef TARGET_ARM64
+
+    uint64_t& X0();
+    uint64_t& X1();
+    uint64_t& X2();
+    uint64_t& X3();
+    uint64_t& X4();
+    uint64_t& X5();
+    uint64_t& X6();
+    uint64_t& X7();
+    uint64_t& X8();
+    uint64_t& X9();
+    uint64_t& X10();
+    uint64_t& X11();
+    uint64_t& X12();
+    uint64_t& X13();
+    uint64_t& X14();
+    uint64_t& X15();
+    uint64_t& X16();
+    uint64_t& X17();
+    uint64_t& X18();
+    uint64_t& X19();
+    uint64_t& X20();
+    uint64_t& X21();
+    uint64_t& X22();
+    uint64_t& X23();
+    uint64_t& X24();
+    uint64_t& X25();
+    uint64_t& X26();
+    uint64_t& X27();
+    uint64_t& X28();
+    uint64_t& Fp(); // X29
+    uint64_t& Lr(); // X30
+    uint64_t& Sp();
+    uint64_t& Pc();
+
+    uintptr_t GetIp() { return (uintptr_t)Pc(); }
+    uintptr_t GetSp() { return (uintptr_t)Sp(); }
+
+#elif defined(TARGET_AMD64)
+    uint64_t& Rax();
+    uint64_t& Rcx();
+    uint64_t& Rdx();
+    uint64_t& Rbx();
+    uint64_t& Rsp();
+    uint64_t& Rbp();
+    uint64_t& Rsi();
+    uint64_t& Rdi();
+    uint64_t& R8 ();
+    uint64_t& R9 ();
+    uint64_t& R10();
+    uint64_t& R11();
+    uint64_t& R12();
+    uint64_t& R13();
+    uint64_t& R14();
+    uint64_t& R15();
+    uint64_t& Rip();
+
+    uintptr_t GetIp() { return (uintptr_t)Rip(); }
+    uintptr_t GetSp() { return (uintptr_t)Rsp(); }
+#else
+    PORTABILITY_ASSERT("UNIX_CONTEXT");
+#endif // TARGET_ARM
+};
 
 #endif // __UNIX_CONTEXT_H__
