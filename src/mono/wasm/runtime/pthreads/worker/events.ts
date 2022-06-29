@@ -1,7 +1,5 @@
 import MonoWasmThreads from "consts:monoWasmThreads";
-
 import type { pthread_ptr } from "../shared";
-import { mono_assert } from "../../types";
 
 export const dotnetPthreadCreated = "dotnet:pthread:created" as const;
 export const dotnetPthreadAttached = "dotnet:pthread:attached" as const;
@@ -20,7 +18,6 @@ export interface WorkerThreadEvent extends Event {
     readonly pthread_ptr: pthread_ptr;
     readonly portToMain: MessagePort;
 }
-
 
 class WorkerThreadEventImpl extends Event implements WorkerThreadEvent {
     readonly pthread_ptr: pthread_ptr;
@@ -41,7 +38,10 @@ export interface WorkerThreadEventTarget extends EventTarget {
 }
 
 export function makeWorkerThreadEvent(type: keyof WorkerThreadEventMap, pthread_ptr: pthread_ptr, port: MessagePort): WorkerThreadEvent {
-    // this assert helps to tree-shake the WorkerThreadEventImpl class if threads are disabled
-    mono_assert(MonoWasmThreads, "threads support disabled"); // this should cause WorkerThreadEvent to be linked out
-    return new WorkerThreadEventImpl(type, pthread_ptr, port);
+    // this 'if' helps to tree-shake the WorkerThreadEventImpl class if threads are disabled.
+    if (MonoWasmThreads) {
+        return new WorkerThreadEventImpl(type, pthread_ptr, port);
+    } else {
+        throw new Error("threads support disabled");
+    }
 }
