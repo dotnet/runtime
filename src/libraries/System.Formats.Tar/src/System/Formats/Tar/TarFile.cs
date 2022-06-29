@@ -275,7 +275,7 @@ namespace System.Formats.Tar
         // It assumes the sourceDirectoryName is a fully qualified path, and allows choosing if the archive stream should be left open or not.
         private static void CreateFromDirectoryInternal(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, bool leaveOpen)
         {
-            Debug.Assert(VerifyCreateFromDirectoryArguments(sourceDirectoryName, destination));
+            VerifyCreateFromDirectoryArguments(sourceDirectoryName, destination);
 
             using (TarWriter writer = new TarWriter(destination, TarEntryFormat.Pax, leaveOpen))
             {
@@ -331,7 +331,7 @@ namespace System.Formats.Tar
         // It assumes the sourceDirectoryName is a fully qualified path, and allows choosing if the archive stream should be left open or not.
         private static async Task CreateFromDirectoryInternalAsync(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, bool leaveOpen, CancellationToken cancellationToken)
         {
-            Debug.Assert(VerifyCreateFromDirectoryArguments(sourceDirectoryName, destination));
+            VerifyCreateFromDirectoryArguments(sourceDirectoryName, destination);
             cancellationToken.ThrowIfCancellationRequested();
 
             TarWriter writer = new TarWriter(destination, TarEntryFormat.Pax, leaveOpen);
@@ -388,7 +388,7 @@ namespace System.Formats.Tar
         // It assumes the destinationDirectoryName is a fully qualified path, and allows choosing if the archive stream should be left open or not.
         private static void ExtractToDirectoryInternal(Stream source, string destinationDirectoryPath, bool overwriteFiles, bool leaveOpen)
         {
-            Debug.Assert(ValidateExtractToDirectoryArguments(source, destinationDirectoryPath));
+            VerifyExtractToDirectoryArguments(source, destinationDirectoryPath);
 
             using TarReader reader = new TarReader(source, leaveOpen);
 
@@ -427,7 +427,7 @@ namespace System.Formats.Tar
         // It assumes the destinationDirectoryName is a fully qualified path, and allows choosing if the archive stream should be left open or not.
         private static async Task ExtractToDirectoryInternalAsync(Stream source, string destinationDirectoryPath, bool overwriteFiles, bool leaveOpen, CancellationToken cancellationToken)
         {
-            Debug.Assert(ValidateExtractToDirectoryArguments(source, destinationDirectoryPath));
+            VerifyExtractToDirectoryArguments(source, destinationDirectoryPath);
             cancellationToken.ThrowIfCancellationRequested();
 
             TarReader reader = new TarReader(source, leaveOpen);
@@ -444,22 +444,22 @@ namespace System.Formats.Tar
             }
         }
 
-        private static bool VerifyCreateFromDirectoryArguments(string sourceDirectoryName, Stream destination)
+        [Conditional("DEBUG")]
+        private static void VerifyCreateFromDirectoryArguments(string sourceDirectoryName, Stream destination)
         {
             Debug.Assert(!string.IsNullOrEmpty(sourceDirectoryName));
             Debug.Assert(destination != null);
             Debug.Assert(Path.IsPathFullyQualified(sourceDirectoryName));
             Debug.Assert(destination.CanWrite);
-            return true;
         }
 
-        private static bool ValidateExtractToDirectoryArguments(Stream source, string destinationDirectoryPath)
+        [Conditional("DEBUG")]
+        private static void VerifyExtractToDirectoryArguments(Stream source, string destinationDirectoryPath)
         {
             Debug.Assert(source != null);
             Debug.Assert(!string.IsNullOrEmpty(destinationDirectoryPath));
             Debug.Assert(Path.IsPathFullyQualified(destinationDirectoryPath));
             Debug.Assert(source.CanRead);
-            return true;
         }
     }
 }
