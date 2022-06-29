@@ -3,7 +3,6 @@
 
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {

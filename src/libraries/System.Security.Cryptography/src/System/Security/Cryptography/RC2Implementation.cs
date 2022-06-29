@@ -2,13 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.Versioning;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "We are providing the implementation for RC2, not consuming it.")]
-    [UnsupportedOSPlatform("browser")]
     internal sealed partial class RC2Implementation : RC2
     {
         private const int BitsPerByte = 8;

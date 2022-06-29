@@ -32,11 +32,15 @@ namespace System.Security.Cryptography.Tests
 
                 aes.Mode = CipherMode.ECB;
                 Assert.Throws<PlatformNotSupportedException>(() => aes.CreateEncryptor());
+                Assert.Throws<PlatformNotSupportedException>(() => aes.CreateEncryptor(s_iv, s_iv));
                 Assert.Throws<PlatformNotSupportedException>(() => aes.CreateDecryptor());
+                Assert.Throws<PlatformNotSupportedException>(() => aes.CreateDecryptor(s_iv, s_iv));
 
                 aes.Mode = CipherMode.CFB;
                 Assert.Throws<PlatformNotSupportedException>(() => aes.CreateEncryptor());
+                Assert.Throws<PlatformNotSupportedException>(() => aes.CreateEncryptor(s_iv, s_iv));
                 Assert.Throws<PlatformNotSupportedException>(() => aes.CreateDecryptor());
+                Assert.Throws<PlatformNotSupportedException>(() => aes.CreateDecryptor(s_iv, s_iv));
             }
         }
     }

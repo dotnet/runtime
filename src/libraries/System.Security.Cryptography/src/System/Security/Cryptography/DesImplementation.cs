@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.Versioning;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "We are providing the implementation for DES, not consuming it.")]
-    [UnsupportedOSPlatform("browser")]
     internal sealed partial class DesImplementation : DES
     {
         private const int BitsPerByte = 8;

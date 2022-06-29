@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.Versioning;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
@@ -43,7 +42,6 @@ namespace System.Security.Cryptography
             base.Dispose(disposing);
         }
 
-        [UnsupportedOSPlatform("browser")]
         protected override bool TryDecryptEcbCore(
             ReadOnlySpan<byte> ciphertext,
             Span<byte> destination,
@@ -65,7 +63,6 @@ namespace System.Security.Cryptography
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         protected override bool TryEncryptEcbCore(
             ReadOnlySpan<byte> plaintext,
             Span<byte> destination,
@@ -131,7 +128,6 @@ namespace System.Security.Cryptography
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         protected override bool TryDecryptCfbCore(
             ReadOnlySpan<byte> ciphertext,
             ReadOnlySpan<byte> iv,
@@ -157,7 +153,6 @@ namespace System.Security.Cryptography
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         protected override bool TryEncryptCfbCore(
             ReadOnlySpan<byte> plaintext,
             ReadOnlySpan<byte> iv,
@@ -221,9 +216,7 @@ namespace System.Security.Cryptography
             // only 8bits/128bits feedback would be valid.
             if (feedback != 8 && feedback != 128)
             {
-#pragma warning disable CA1416 // CipherMode.CFB is unsupported on Browser. It is checked elsewhere.
                 throw new CryptographicException(string.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedback, CipherMode.CFB));
-#pragma warning restore CA1416
             }
         }
 

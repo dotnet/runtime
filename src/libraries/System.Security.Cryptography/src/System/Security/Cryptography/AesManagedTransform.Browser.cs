@@ -54,7 +54,8 @@ namespace System.Security.Cryptography
         {
             if (disposing)
             {
-                // We need to always zeroize the following fields because they contain sensitive data
+                // We need to always zeroize the following fields because they contain sensitive data.
+                // Note: Can't use CryptographicOperations.ZeroMemory since these are int[] and not byte[].
                 if (_IV != null)
                 {
                     Array.Clear(_IV);
@@ -132,12 +133,12 @@ namespace System.Security.Cryptography
         }
 
         //
-        // Encrypts the inputBuffer into the outputBuffer using the AES encryption routine.
+        // Encrypts input into output using the AES encryption routine.
         // This method writes the encrypted data into the output buffer.
         //
-        private int EncryptData(ReadOnlySpan<byte> inputBuffer, Span<byte> outputBuffer)
+        private int EncryptData(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            int inputCount = inputBuffer.Length;
+            int inputCount = input.Length;
 
             Span<int> work = stackalloc int[BlockSizeInts];
             Span<int> temp = stackalloc int[BlockSizeInts];
@@ -147,7 +148,7 @@ namespace System.Security.Cryptography
             int transformCount = 0;
             for (int blockNum = 0; blockNum < iNumBlocks; ++blockNum)
             {
-                inputBuffer.Slice(workBaseIndex, BlockSizeBytes).CopyTo(MemoryMarshal.AsBytes(work));
+                input.Slice(workBaseIndex, BlockSizeBytes).CopyTo(MemoryMarshal.AsBytes(work));
 
                 for (int i = 0; i < BlockSizeInts; ++i)
                 {
@@ -159,10 +160,10 @@ namespace System.Security.Cryptography
 
                 for (int i = 0; i < BlockSizeInts; ++i)
                 {
-                    outputBuffer[transformCount++] = (byte)(temp[i] & 0xFF);
-                    outputBuffer[transformCount++] = (byte)(temp[i] >> 8 & 0xFF);
-                    outputBuffer[transformCount++] = (byte)(temp[i] >> 16 & 0xFF);
-                    outputBuffer[transformCount++] = (byte)(temp[i] >> 24 & 0xFF);
+                    output[transformCount++] = (byte)(temp[i] & 0xFF);
+                    output[transformCount++] = (byte)(temp[i] >> 8 & 0xFF);
+                    output[transformCount++] = (byte)(temp[i] >> 16 & 0xFF);
+                    output[transformCount++] = (byte)(temp[i] >> 24 & 0xFF);
                 }
 
                 Debug.Assert(_lastBlockBuffer.Length == BlockSizeInts);
@@ -175,12 +176,12 @@ namespace System.Security.Cryptography
         }
 
         //
-        // Decrypts the inputBuffer into the outputBuffer using the AES encryption routine.
+        // Decrypts intput into output using the AES encryption routine.
         // This method writes the decrypted data into the output buffer.
         //
-        private int DecryptData(ReadOnlySpan<byte> inputBuffer, Span<byte> outputBuffer)
+        private int DecryptData(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            int inputCount = inputBuffer.Length;
+            int inputCount = input.Length;
 
             Span<int> work = stackalloc int[BlockSizeInts];
             Span<int> temp = stackalloc int[BlockSizeInts];
@@ -192,10 +193,10 @@ namespace System.Security.Cryptography
                 index = workBaseIndex;
                 for (int i = 0; i < BlockSizeInts; ++i)
                 {
-                    int i0 = inputBuffer[index++];
-                    int i1 = inputBuffer[index++];
-                    int i2 = inputBuffer[index++];
-                    int i3 = inputBuffer[index++];
+                    int i0 = input[index++];
+                    int i1 = input[index++];
+                    int i2 = input[index++];
+                    int i3 = input[index++];
                     work[i] = i3 << 24 | i2 << 16 | i1 << 8 | i0;
                 }
 
@@ -206,19 +207,19 @@ namespace System.Security.Cryptography
                 {
                     temp[i] ^= _lastBlockBuffer[i];
                     // save the input buffer
-                    int i0 = inputBuffer[index++];
-                    int i1 = inputBuffer[index++];
-                    int i2 = inputBuffer[index++];
-                    int i3 = inputBuffer[index++];
+                    int i0 = input[index++];
+                    int i1 = input[index++];
+                    int i2 = input[index++];
+                    int i3 = input[index++];
                     _lastBlockBuffer[i] = i3 << 24 | i2 << 16 | i1 << 8 | i0;
                 }
 
                 for (int i = 0; i < BlockSizeInts; ++i)
                 {
-                    outputBuffer[transformCount++] = (byte)(temp[i] & 0xFF);
-                    outputBuffer[transformCount++] = (byte)(temp[i] >> 8 & 0xFF);
-                    outputBuffer[transformCount++] = (byte)(temp[i] >> 16 & 0xFF);
-                    outputBuffer[transformCount++] = (byte)(temp[i] >> 24 & 0xFF);
+                    output[transformCount++] = (byte)(temp[i] & 0xFF);
+                    output[transformCount++] = (byte)(temp[i] >> 8 & 0xFF);
+                    output[transformCount++] = (byte)(temp[i] >> 16 & 0xFF);
+                    output[transformCount++] = (byte)(temp[i] >> 24 & 0xFF);
                 }
 
                 workBaseIndex += BlockSizeBytes;
@@ -410,20 +411,9 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static int rot1(int val)
-        {
-            return (val << 8 & unchecked((int)0xFFFFFF00)) | (val >> 24 & unchecked((int)0x000000FF));
-        }
-
-        private static int rot2(int val)
-        {
-            return (val << 16 & unchecked((int)0xFFFF0000)) | (val >> 16 & unchecked((int)0x0000FFFF));
-        }
-
-        private static int rot3(int val)
-        {
-            return (val << 24 & unchecked((int)0xFF000000)) | (val >> 8 & unchecked((int)0x00FFFFFF));
-        }
+        private static int rot1(int val) => int.RotateLeft(val, 8);
+        private static int rot2(int val) => int.RotateLeft(val, 16);
+        private static int rot3(int val) => int.RotateLeft(val, 24);
 
         private static int SubWord(int a)
         {
