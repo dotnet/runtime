@@ -92,7 +92,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 QUIC_HANDLE* handle;
                 Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-                ThrowIfFailure(MsQuicApi.Api.ApiTable->ListenerOpen(
+                ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->ListenerOpen(
                     MsQuicApi.Api.Registration.QuicHandle,
                     &NativeCallback,
                     (void*)GCHandle.ToIntPtr(_stateHandle),
@@ -196,7 +196,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     address.Family = QUIC_ADDRESS_FAMILY_UNSPEC;
                 }
 
-                ThrowIfFailure(MsQuicApi.Api.ApiTable->ListenerStart(
+                ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->ListenerStart(
                     _state.Handle.QuicHandle,
                     msquicBuffers.Buffers,
                     (uint)applicationProtocols.Count,

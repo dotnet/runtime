@@ -164,7 +164,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             QUIC_HANDLE* handle;
             using var msquicBuffers = new MsQuicBuffers();
             msquicBuffers.Initialize(alpnProtocols, alpnProtocol => alpnProtocol.Protocol);
-            ThrowIfFailure(MsQuicApi.Api.ApiTable->ConfigurationOpen(
+            ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->ConfigurationOpen(
                 MsQuicApi.Api.Registration.QuicHandle,
                 msquicBuffers.Buffers,
                 (uint)alpnProtocols.Count,
@@ -248,7 +248,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 }
 #endif
 
-                ThrowIfFailure(status, "ConfigurationLoadCredential failed");
+                ThrowHelper.ThrowIfMsQuicError(status, "ConfigurationLoadCredential failed");
             }
             catch
             {

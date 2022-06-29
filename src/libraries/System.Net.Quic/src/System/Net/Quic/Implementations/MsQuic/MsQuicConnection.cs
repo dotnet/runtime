@@ -175,7 +175,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 QUIC_HANDLE* handle;
                 Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-                ThrowIfFailure(MsQuicApi.Api.ApiTable->ConnectionOpen(
+                ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->ConnectionOpen(
                     MsQuicApi.Api.Registration.QuicHandle,
                     &NativeCallback,
                     (void*)GCHandle.ToIntPtr(_state.StateGCHandle),
@@ -259,7 +259,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 Debug.Assert(state.Connection != null);
                 state.Connection = null;
 
-                Exception ex = new MsQuicException(connectionEvent.SHUTDOWN_INITIATED_BY_TRANSPORT.Status, "Connection has been shutdown by transport");
+                Exception ex = ThrowHelper.GetExceptionForMsQuicStatus(connectionEvent.SHUTDOWN_INITIATED_BY_TRANSPORT.Status, "Connection has been shutdown by transport");
                 state.ConnectTcs!.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(ex));
                 state.ConnectTcs = null;
             }
@@ -560,7 +560,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             try
             {
                 Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-                ThrowIfFailure(MsQuicApi.Api.ApiTable->ConnectionStart(
+                ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->ConnectionStart(
                     _state.Handle.QuicHandle,
                     _configuration.QuicHandle,
                     af,

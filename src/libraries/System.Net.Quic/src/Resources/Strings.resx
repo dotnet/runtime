@@ -165,6 +165,9 @@
   <data name="net_quic_not_connected" xml:space="preserve">
     <value>Connection is not connected.</value>
   </data>
+  <data name="net_quic_internal_error" xml:space="preserve">
+    <value>An internal error has occured, see inner exception for more details.</value>
+  </data>
   <data name="net_ssl_app_protocols_invalid" xml:space="preserve">
     <value>The application protocol list is invalid.</value>
   </data>
@@ -174,8 +177,36 @@
   <data name="net_quic_empty_cipher_suite" xml:space="preserve">
     <value>CipherSuitePolicy must specify at least one cipher supported by QUIC.</value>
   </data>
+  <data name="net_quic_address_in_use" xml:space="preserve">
+    <value>The local address is already in use.</value>
+  </data>
+  <data name="net_quic_host_unreachable" xml:space="preserve">
+    <value>The server is currnetly unreachable.</value>
+  </data>
+  <data name="net_quic_connection_refused" xml:space="preserve">
+    <value>The server refused the connection.</value>
+  </data>
+  <data name="net_quic_protocol_error" xml:space="preserve">
+    <value>A QUIC protocol error was encountered</value>
+  </data>
+  <data name="net_quic_ver_neg_error" xml:space="preserve">
+    <value>A version negotiation error was encountered.</value>
+  </data>
+  <data name="net_quic_alpn_neg_error" xml:space="preserve">
+    <value>Application layer protocol negotiation error was encountered.</value>
+  </data>
+  <data name="net_quic_connection_idle" xml:space="preserve">
+    <value>The connection timed out from inactivity.</value>
+  </data>
+  <!-- Same as in System.Net.Security -->
   <data name="net_io_invalidnestedcall" xml:space="preserve">
-    <value> This method may not be called when another {0} operation is pending.</value>
+    <value>This method may not be called when another {0} operation is pending.</value>
+  </data>
+  <data name="net_auth_SSPI" xml:space="preserve">
+    <value>Authentication failed, see inner exception.</value>
+  </data>
+  <data name="net_auth_tls_alert" xml:space="preserve">
+    <value>Authentication failed because the remote party sent a TLS alert: '{0}'.</value>
   </data>
   <!-- Referenced in shared IPEndPointExtensions.cs-->
   <data name="net_InvalidAddressFamily" xml:space="preserve">
