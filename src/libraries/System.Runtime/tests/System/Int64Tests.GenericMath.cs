@@ -197,8 +197,8 @@ namespace System.Tests
         [Fact]
         public static void AllBitsSetTest()
         {
-            Assert.Equal(unchecked((long)0xFFFFFFFFFFFFFFFF), (long)BinaryNumberHelper <long>.AllBitsSet);
-            Assert.Equal((long)0, (long)(BinaryNumberHelper<long>.AllBitsSet + 1));
+            Assert.Equal(unchecked((long)0xFFFF_FFFF_FFFF_FFFF), BinaryNumberHelper<long>.AllBitsSet);
+            Assert.Equal(0L, ~BinaryNumberHelper<long>.AllBitsSet);
         }
 
         [Fact]

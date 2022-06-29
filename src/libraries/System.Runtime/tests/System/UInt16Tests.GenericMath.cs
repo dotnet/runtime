@@ -199,7 +199,7 @@ namespace System.Tests
         public static void AllBitsSetTest()
         {
             Assert.Equal((ushort)0xFFFF, BinaryNumberHelper<ushort>.AllBitsSet);
-            Assert.Equal((ushort)0, (ushort)(BinaryNumberHelper<ushort>.AllBitsSet + 1));
+            Assert.Equal((ushort)0, (ushort)~BinaryNumberHelper<ushort>.AllBitsSet);
         }
 
         [Fact]

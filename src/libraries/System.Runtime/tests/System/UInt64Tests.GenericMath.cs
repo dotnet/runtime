@@ -42,8 +42,8 @@ namespace System.Tests
         [Fact]
         public static void AllBitsSetTest()
         {
-            Assert.Equal((ulong)0xFFFFFFFFFFFFFFFF, BinaryNumberHelper<ulong>.AllBitsSet);
-            Assert.Equal((ulong)0, (ulong)(BinaryNumberHelper<ulong>.AllBitsSet + 1));
+            Assert.Equal(0xFFFF_FFFF_FFFF_FFFF, BinaryNumberHelper<ulong>.AllBitsSet);
+            Assert.Equal(0UL, ~BinaryNumberHelper<ulong>.AllBitsSet);
         }
 
         [Fact]

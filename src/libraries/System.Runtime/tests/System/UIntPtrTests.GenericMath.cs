@@ -374,13 +374,13 @@ namespace System.Tests
         {
             if (nint.Size == sizeof(uint))
             {
-                Assert.Equal((uint)0xFFFFFFFF, BinaryNumberHelper<nuint>.AllBitsSet);
-                Assert.Equal((uint)0, (uint)(BinaryNumberHelper<nuint>.AllBitsSet + 1));
+                Assert.Equal(0xFFFF_FFFF, BinaryNumberHelper<nuint>.AllBitsSet);
+                Assert.Equal(0U, ~(uint)BinaryNumberHelper<nuint>.AllBitsSet);
             }
             else
             {
-                Assert.Equal((ulong)0xFFFFFFFFFFFFFFFF, BinaryNumberHelper<nuint>.AllBitsSet);
-                Assert.Equal((ulong)0, (ulong)(BinaryNumberHelper<nuint>.AllBitsSet + 1));
+                Assert.Equal(0xFFFF_FFFF_FFFF_FFFF, BinaryNumberHelper<nuint>.AllBitsSet);
+                Assert.Equal(0UL, ~(ulong)BinaryNumberHelper<nuint>.AllBitsSet);
             }
 
         }

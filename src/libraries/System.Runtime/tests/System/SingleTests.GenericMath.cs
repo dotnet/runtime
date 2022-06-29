@@ -92,8 +92,8 @@ namespace System.Tests
         [Fact]
         public static void AllBitsSetTest()
         {
-            Assert.Equal((uint)0xFFFFFFFF, BitConverter.SingleToUInt32Bits(BinaryNumberHelper<float>.AllBitsSet));
-            Assert.Equal((uint)0, (uint)(BitConverter.SingleToUInt32Bits(BinaryNumberHelper<float>.AllBitsSet) + 1));
+            Assert.Equal(0xFFFF_FFFF, BitConverter.SingleToUInt32Bits(BinaryNumberHelper<float>.AllBitsSet));
+            Assert.Equal(0U, ~BitConverter.SingleToUInt32Bits(BinaryNumberHelper<float>.AllBitsSet));
         }
 
         [Fact]

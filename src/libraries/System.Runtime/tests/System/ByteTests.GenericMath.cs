@@ -198,7 +198,7 @@ namespace System.Tests
         public static void AllBitsSetTest()
         {
             Assert.Equal((byte)0xFF, BinaryNumberHelper<byte>.AllBitsSet);
-            Assert.Equal((byte)0, (byte)(BinaryNumberHelper<byte>.AllBitsSet + 1));
+            Assert.Equal((byte)0, (byte)~BinaryNumberHelper<byte>.AllBitsSet);
         }
 
         [Fact]

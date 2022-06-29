@@ -223,12 +223,12 @@ namespace System.Runtime.InteropServices.Tests
             if (Environment.Is64BitProcess)
             {
                 Assert.Equal(0xFFFF_FFFF_FFFF_FFFF, BitConverter.DoubleToUInt64Bits((double)BinaryNumberHelper<NFloat>.AllBitsSet));
-                Assert.Equal((ulong)0, (ulong)(BitConverter.DoubleToUInt64Bits((double)BinaryNumberHelper<NFloat>.AllBitsSet) + 1));
+                Assert.Equal(0UL, ~BitConverter.DoubleToUInt64Bits((double)BinaryNumberHelper<NFloat>.AllBitsSet));
             }
             else
             {
                 Assert.Equal(0xFFFF_FFFF, BitConverter.SingleToUInt32Bits((float)BinaryNumberHelper<NFloat>.AllBitsSet));
-                Assert.Equal((uint)0, (uint)(BitConverter.SingleToUInt32Bits((float)BinaryNumberHelper<NFloat>.AllBitsSet) + 1));
+                Assert.Equal(0U, ~BitConverter.SingleToUInt32Bits((float)BinaryNumberHelper<NFloat>.AllBitsSet));
             }
         }
 

@@ -247,9 +247,9 @@ namespace System.Tests
         [Fact]
         public static void AllBitsSetTest()
         {
-            Int128 compare = new Int128(0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF);
+            Int128 compare = new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
             Assert.Equal(compare, BinaryNumberHelper<Int128>.AllBitsSet);
-            Assert.Equal((Int128)0, (Int128)(BinaryNumberHelper<Int128>.AllBitsSet + 1));
+            Assert.Equal((Int128)0, ~BinaryNumberHelper<Int128>.AllBitsSet);
         }
 
         [Fact]

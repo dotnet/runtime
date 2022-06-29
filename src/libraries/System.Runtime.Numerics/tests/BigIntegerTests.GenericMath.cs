@@ -554,6 +554,7 @@ namespace System.Numerics.Tests
         public static void AllBitsSetTest()
         {
             Assert.Equal(NegativeOne, BinaryNumberHelper<BigInteger>.AllBitsSet);
+            Assert.Equal(BigInteger.Zero, ~BinaryNumberHelper<BigInteger>.AllBitsSet);
         }
 
         [Fact]
