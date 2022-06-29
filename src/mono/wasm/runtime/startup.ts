@@ -769,9 +769,9 @@ export type DownloadAssetsContext = {
 /// 2. Emscripten does not run the preInit or preRun functions in the workers.
 /// 3. At the point when this executes there is no pthread assigned to the worker yet.
 async function mono_wasm_pthread_worker_init(): Promise<void> {
-    // This is a good place to attach listeners for the pthread MessagePorts using pthreads_worker.addThreadCreatedCallback();
+    // This is a good place for subsystems to attach listeners for pthreads_worker.currrentWorkerThreadEvents
     console.debug("mono_wasm_pthread_worker_init");
-    pthreads_worker.addThreadCreatedCallback((thread_id) => {
-        console.debug("thread created", thread_id);
+    pthreads_worker.currentWorkerThreadEvents.addEventListener(pthreads_worker.dotnetPthreadCreated, (ev) => {
+        console.debug("thread created", ev.pthread_ptr);
     });
 }

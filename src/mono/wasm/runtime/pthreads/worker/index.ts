@@ -6,51 +6,61 @@
 import { Module, ENVIRONMENT_IS_PTHREAD } from "../../imports";
 import { makeChannelCreatedMonoMessage, pthread_ptr } from "../shared";
 import { mono_assert, is_nullish } from "../../types";
+import {
+    makeWorkerThreadEvent,
+    dotnetPthreadCreated,
+    dotnetPthreadAttached,
+    WorkerThreadEventTarget
+} from "./events";
 
-export type ThreadCreatedCallback = (pthread_ptr: pthread_ptr, main_port: MessagePort) => void;
+// re-export some of the events types
+export {
+    WorkerThreadEventMap,
+    dotnetPthreadAttached,
+    dotnetPthreadCreated,
+    WorkerThreadEvent,
+    WorkerThreadEventTarget,
+} from "./events";
 
-const threadCreatedCallbacks = Array<ThreadCreatedCallback>();
-
-/// Adds a callback to be called when a new pthread is created.
-/// It is passed a MessagePort that can be used to communicate with the main thread by adding an event listener to it using addEventListener("message", ...)
-export function addThreadCreatedCallback(fn: ThreadCreatedCallback): void {
-    threadCreatedCallbacks.push(fn);
-}
+/// This is the "public internal" API for runtime subsystems that wish to be notified about
+/// pthreads that are running on the current worker.
+/// Example:
+///    currentWorkerThreadEvents.addEventListener(dotnetPthreadCreated, (ev: WorkerThreadEvent) => {
+///       console.debug ("thread created on worker with id", ev.pthread_ptr);
+///    });
+export const currentWorkerThreadEvents: WorkerThreadEventTarget = new EventTarget();
 
 function monoDedicatedChannelMessageFromMainToWorker(event: MessageEvent<string>): void {
     console.debug("got message from main on the dedicated channel", event.data);
 }
 
-/// Called in the worker thread when a new pthread is started by Emscripten.
-/// The pthread may have nothing to do with Mono yet.
-/// It could have been started on behalf of a third party native library.
-export function mono_wasm_pthread_on_pthread_created(pthread_id: pthread_ptr): void {
-    console.debug("creating a channel", pthread_id);
+function setupChannelToMainThread(pthread_ptr: pthread_ptr): void {
+    console.debug("creating a channel", pthread_ptr);
     const channel = new MessageChannel();
     const workerPort = channel.port1;
     const mainPort = channel.port2;
     workerPort.addEventListener("message", monoDedicatedChannelMessageFromMainToWorker);
     workerPort.start();
-    self.postMessage(makeChannelCreatedMonoMessage(pthread_id, mainPort), [mainPort]);
-    for (const fn of threadCreatedCallbacks) {
-        fn(pthread_id, workerPort);
-    }
+    self.postMessage(makeChannelCreatedMonoMessage(pthread_ptr, mainPort), [mainPort]);
 }
 
+/// This is an implementation detail function.
 /// Called in the worker thread from mono when a pthread becomes attached to the mono runtime.
 export function mono_wasm_pthread_on_pthread_attached(pthread_id: pthread_ptr): void {
     console.debug("attaching pthread to runtime", pthread_id);
+    currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadAttached, pthread_id));
 }
 
+/// This is an implementation detail function.
 /// Called by emscripten when a pthread is setup to run on a worker.  Can be called multiple times
 /// for the same worker, since emscripten can reuse workers.  This is an implementation detail, that shouldn't be used directly.
-/// See mono_wasm_pthread_on_pthread_created for the substantive part of this.
 export function afterThreadInit(): void {
     // don't do this callback for the main thread
     if (ENVIRONMENT_IS_PTHREAD) {
         const pthread_ptr = (<any>Module)["_pthread_self"]();
         mono_assert(!is_nullish(pthread_ptr), "pthread_self() returned null");
         console.debug("after thread init, pthread ptr", pthread_ptr);
-        mono_wasm_pthread_on_pthread_created(pthread_ptr);
+        setupChannelToMainThread(pthread_ptr);
+        currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadCreated, pthread_ptr));
     }
 }
