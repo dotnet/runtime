@@ -1206,5 +1206,119 @@ class C
 
 			return VerifyDynamicallyAccessedMembersAnalyzer (TargetMethodWithAnnotations);
 		}
+
+		[Fact]
+		public Task MethodArgumentIsInvalidOperation ()
+		{
+			var Source = """
+			using System;
+			using System.Diagnostics.CodeAnalysis;
+
+			class C
+			{
+				public static void Main()
+				{
+					RequireAll(type);
+				}
+
+				static void RequireAll([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type t) {}
+			}
+			""";
+
+			return VerifyDynamicallyAccessedMembersAnalyzer (Source,
+				DiagnosticResult.CompilerError ("CS0103").WithSpan (8, 14, 8, 18).WithArguments ("type"));
+		}
+
+		[Fact]
+		public Task MethodReturnIsInvalidOperation ()
+		{
+			var Source = """
+			using System;
+			using System.Diagnostics.CodeAnalysis;
+
+			class C
+			{
+				public static void Main()
+				{
+					GetTypeWithAll ();
+				}
+				
+				[return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+				static Type GetTypeWithAll() => type;
+			}
+			""";
+
+			return VerifyDynamicallyAccessedMembersAnalyzer (Source,
+				DiagnosticResult.CompilerError ("CS0103").WithSpan (12, 34, 12, 38).WithArguments ("type"));
+		}
+
+		[Fact]
+		public Task AssignmentSourceIsInvalidOperation ()
+		{
+			var Source = """
+			using System;
+			using System.Diagnostics.CodeAnalysis;
+
+			class C
+			{
+				public static void Main()
+				{
+					fieldRequiresAll = type;
+				}
+				
+				[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+				static Type fieldRequiresAll;
+			}
+			""";
+
+			return VerifyDynamicallyAccessedMembersAnalyzer (Source,
+				DiagnosticResult.CompilerError ("CS0103").WithSpan (8, 22, 8, 26).WithArguments ("type"));
+		}
+
+		[Fact]
+		public Task AssignmentTargetIsInvalidOperation ()
+		{
+			var Source = """
+			using System;
+			using System.Diagnostics.CodeAnalysis;
+
+			class C
+			{
+				public static void Main()
+				{
+					type = GetTypeWithAll();
+				}
+				
+				[return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+				static Type GetTypeWithAll() => null;
+			}
+			""";
+
+			return VerifyDynamicallyAccessedMembersAnalyzer (Source,
+				DiagnosticResult.CompilerError ("CS0103").WithSpan (8, 3, 8, 7).WithArguments ("type"));
+		}
+
+		[Fact]
+		public Task AssignmentTargetIsCapturedInvalidOperation ()
+		{
+			var Source = """
+			using System;
+			using System.Diagnostics.CodeAnalysis;
+
+			class C
+			{
+				public static void Main()
+				{
+					type ??= GetTypeWithAll();
+				}
+				
+				[return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+				static Type GetTypeWithAll() => null;
+			}
+			""";
+
+			return VerifyDynamicallyAccessedMembersAnalyzer (Source,
+				DiagnosticResult.CompilerError ("CS0103").WithSpan (8, 3, 8, 7).WithArguments ("type"));
+		}
 	}
 }
