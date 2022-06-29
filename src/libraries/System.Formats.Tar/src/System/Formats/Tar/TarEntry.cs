@@ -19,8 +19,8 @@ namespace System.Formats.Tar
         // Used to access the data section of this entry in an unseekable file
         private TarReader? _readerOfOrigin;
 
-    // Constructor called when reading a TarEntry from a TarReader.
-    internal TarEntry(TarHeader header, TarReader readerOfOrigin, TarEntryFormat format)
+        // Constructor called when reading a TarEntry from a TarReader.
+        internal TarEntry(TarHeader header, TarReader readerOfOrigin, TarEntryFormat format)
         {
             // This constructor is called after reading a header from the archive,
             // and we should've already detected the format of the header.
