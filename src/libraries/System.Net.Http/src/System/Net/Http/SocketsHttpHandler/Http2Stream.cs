@@ -1432,133 +1432,39 @@ namespace System.Net.Http
                 Failed
             }
 
-            private sealed class Http2ReadStream : HttpBaseStream
+            private sealed class Http2ReadStream : Http2ReadWriteStream
             {
-                private Http2Stream? _http2Stream;
-                private readonly HttpResponseMessage _responseMessage;
+                public Http2ReadStream(Http2Stream http2Stream) : base(http2Stream) { }
 
-                public Http2ReadStream(Http2Stream http2Stream)
-                {
-                    Debug.Assert(http2Stream != null);
-                    Debug.Assert(http2Stream._response != null);
-                    _http2Stream = http2Stream;
-                    _responseMessage = _http2Stream._response;
-                }
-
-                ~Http2ReadStream()
-                {
-                    if (NetEventSource.Log.IsEnabled()) _http2Stream?.Trace("");
-                    try
-                    {
-                        Dispose(disposing: false);
-                    }
-                    catch (Exception e)
-                    {
-                        if (NetEventSource.Log.IsEnabled()) _http2Stream?.Trace($"Error: {e}");
-                    }
-                }
-
-                protected override void Dispose(bool disposing)
-                {
-                    Http2Stream? http2Stream = Interlocked.Exchange(ref _http2Stream, null);
-                    if (http2Stream == null)
-                    {
-                        return;
-                    }
-
-                    // Technically we shouldn't be doing the following work when disposing == false,
-                    // as the following work relies on other finalizable objects.  But given the HTTP/2
-                    // protocol, we have little choice: if someone drops the Http2ReadStream without
-                    // disposing of it, we need to a) signal to the server that the stream is being
-                    // canceled, and b) clean up the associated state in the Http2Connection.
-
-                    http2Stream.CloseResponseBody();
-
-                    base.Dispose(disposing);
-                }
-
-                public override bool CanRead => _http2Stream != null;
                 public override bool CanWrite => false;
-
-                public override int Read(Span<byte> destination)
-                {
-                    Http2Stream http2Stream = _http2Stream ?? throw new ObjectDisposedException(nameof(Http2ReadStream));
-
-                    return http2Stream.ReadData(destination, _responseMessage);
-                }
-
-                public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
-                {
-                    Http2Stream? http2Stream = _http2Stream;
-
-                    if (http2Stream == null)
-                    {
-                        return ValueTask.FromException<int>(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http2ReadStream))));
-                    }
-
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        return ValueTask.FromCanceled<int>(cancellationToken);
-                    }
-
-                    return http2Stream.ReadDataAsync(destination, _responseMessage, cancellationToken);
-                }
-
-                public override void CopyTo(Stream destination, int bufferSize)
-                {
-                    ValidateCopyToArguments(destination, bufferSize);
-                    Http2Stream http2Stream = _http2Stream ?? throw ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http2ReadStream)));
-                    http2Stream.CopyTo(_responseMessage, destination, bufferSize);
-                }
-
-                public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
-                {
-                    ValidateCopyToArguments(destination, bufferSize);
-                    Http2Stream? http2Stream = _http2Stream;
-                    return
-                        http2Stream is null ? Task.FromException<int>(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http2ReadStream)))) :
-                        cancellationToken.IsCancellationRequested ? Task.FromCanceled<int>(cancellationToken) :
-                        http2Stream.CopyToAsync(_responseMessage, destination, bufferSize, cancellationToken);
-                }
 
                 public override void Write(ReadOnlySpan<byte> buffer) => throw new NotSupportedException(SR.net_http_content_readonly_stream);
 
                 public override ValueTask WriteAsync(ReadOnlyMemory<byte> destination, CancellationToken cancellationToken) => throw new NotSupportedException();
             }
 
-            private sealed class Http2WriteStream : HttpBaseStream
+            private sealed class Http2WriteStream : Http2ReadWriteStream
             {
-                private Http2Stream? _http2Stream;
 
                 public long BytesWritten { get; private set; }
 
                 public long ContentLength { get; private set; }
 
-                public Http2WriteStream(Http2Stream http2Stream, long contentLength)
+                public Http2WriteStream(Http2Stream http2Stream, long contentLength) : base(http2Stream)
                 {
-                    Debug.Assert(http2Stream != null);
                     Debug.Assert(contentLength >= -1);
-                    _http2Stream = http2Stream;
                     ContentLength = contentLength;
                 }
 
-                protected override void Dispose(bool disposing)
-                {
-                    Http2Stream? http2Stream = Interlocked.Exchange(ref _http2Stream, null);
-                    if (http2Stream == null)
-                    {
-                        return;
-                    }
-
-                    base.Dispose(disposing);
-                }
-
                 public override bool CanRead => false;
-                public override bool CanWrite => _http2Stream != null;
 
                 public override int Read(Span<byte> buffer) => throw new NotSupportedException();
 
                 public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+                public override void CopyTo(Stream destination, int bufferSize) => throw new NotSupportedException();
+
+                public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken) => throw new NotSupportedException();
 
                 public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
                 {
@@ -1569,38 +1475,11 @@ namespace System.Net.Http
                         return ValueTask.FromException(new HttpRequestException(SR.net_http_content_write_larger_than_content_length));
                     }
 
-                    Http2Stream? http2Stream = _http2Stream;
-
-                    if (http2Stream == null)
-                    {
-                        return ValueTask.FromException(new ObjectDisposedException(nameof(Http2WriteStream)));
-                    }
-
-                    return http2Stream.SendDataAsync(buffer, cancellationToken);
-                }
-
-                public override Task FlushAsync(CancellationToken cancellationToken)
-                {
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        return Task.FromCanceled(cancellationToken);
-                    }
-
-                    Http2Stream? http2Stream = _http2Stream;
-
-                    if (http2Stream == null)
-                    {
-                        return Task.CompletedTask;
-                    }
-
-                    // In order to flush this stream's previous writes, we need to flush the connection. We
-                    // really only need to do any work here if the connection's buffer has any pending writes
-                    // from this stream, but we currently lack a good/efficient/safe way of doing that.
-                    return http2Stream._connection.FlushAsync(cancellationToken);
+                    return base.WriteAsync(buffer, cancellationToken);
                 }
             }
 
-            public sealed class Http2ReadWriteStream : HttpBaseStream
+            public class Http2ReadWriteStream : HttpBaseStream
             {
                 private Http2Stream? _http2Stream;
                 // should be removed
