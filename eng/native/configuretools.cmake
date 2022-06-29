@@ -42,6 +42,7 @@ if(NOT WIN32 AND NOT CLR_CMAKE_TARGET_BROWSER)
   locate_toolchain_exec(ar CMAKE_AR)
   locate_toolchain_exec(nm CMAKE_NM)
   locate_toolchain_exec(ranlib CMAKE_RANLIB)
+  locate_toolchain_exec(objcopy CMAKE_OBJCOPY)
 
   if(CMAKE_C_COMPILER_ID MATCHES "Clang")
     locate_toolchain_exec(link CMAKE_LINKER)
@@ -55,11 +56,10 @@ if(NOT WIN32 AND NOT CLR_CMAKE_TARGET_BROWSER)
     elseif(CMAKE_CROSSCOMPILING AND NOT DEFINED CLR_CROSS_COMPONENTS_BUILD AND
         CMAKE_SYSTEM_PROCESSOR MATCHES "^(armv8l|armv7l|armv6l|aarch64|arm|s390x|ppc64le)$")
       set(TOOLSET_PREFIX "${TOOLCHAIN}-")
-    else()
+    elseif(CLR_CMAKE_TARGET_ALPINE_LINUX AND CMAKE_C_COMPILER_VERSION VERSION_LESS 8.0)
       set(TOOLSET_PREFIX "")
     endif()
 
-    locate_toolchain_exec(objcopy CMAKE_OBJCOPY)
   endif()
 endif()
 
