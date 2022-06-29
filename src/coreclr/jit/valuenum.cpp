@@ -4836,7 +4836,7 @@ void Compiler::fgValueNumberArrayElemStore(GenTree* storeNode, VNFuncApp* addrFu
 //
 void Compiler::fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, FieldSeq* fieldSeq, ssize_t offset)
 {
-    assert(fieldSeq != nullptr);
+    noway_assert(fieldSeq != nullptr);
 
     // Two cases:
     //
@@ -4886,7 +4886,7 @@ void Compiler::fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, Fiel
 void Compiler::fgValueNumberFieldStore(
     GenTree* storeNode, GenTree* baseAddr, FieldSeq* fieldSeq, ssize_t offset, unsigned storeSize, ValueNum value)
 {
-    assert(fieldSeq != nullptr);
+    noway_assert(fieldSeq != nullptr);
 
     // Two cases:
     //  1) Instance field / "complex" static: heap[field][baseAddr][offset + load size] = value.
