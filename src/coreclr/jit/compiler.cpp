@@ -116,25 +116,25 @@ inline bool _our_GetThreadCycles(unsigned __int64* cycleOut)
 #endif // which host OS
 
 const BYTE genTypeSizes[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) sz,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) sz,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE genTypeAlignments[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) al,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) al,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE genTypeStSzs[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) st,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) st,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE genActualTypes[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) jitType,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) jitType,
 #include "typelist.h"
 #undef DEF_TP
 };
@@ -10199,10 +10199,6 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                     m_stressLclFld++;
                     break;
 
-                case AddressExposedReason::COPY_FLD_BY_FLD:
-                    m_copyFldByFld++;
-                    break;
-
                 case AddressExposedReason::DISPATCH_RET_BUF:
                     m_dispatchRetBuf++;
                     break;
@@ -10301,7 +10297,6 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_wideIndir, m_addrExposed);
     PRINT_STATS(m_osrExposed, m_addrExposed);
     PRINT_STATS(m_stressLclFld, m_addrExposed);
-    PRINT_STATS(m_copyFldByFld, m_addrExposed);
     PRINT_STATS(m_dispatchRetBuf, m_addrExposed);
 }
 #endif // TRACK_ENREG_STATS

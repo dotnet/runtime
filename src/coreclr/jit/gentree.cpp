@@ -22888,9 +22888,6 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
     switch (howToReturnStruct)
     {
         case Compiler::SPK_EnclosingType:
-            m_isEnclosingType = true;
-            FALLTHROUGH;
-
         case Compiler::SPK_PrimitiveType:
         {
             assert(returnType != TYP_UNKNOWN);
