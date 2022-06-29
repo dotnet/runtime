@@ -40,21 +40,8 @@ export interface WorkerThreadEventTarget extends EventTarget {
     addEventListener(type: string, callback: EventListenerOrEventListenerObject | null, options?: boolean | AddEventListenerOptions): void;
 }
 
-// export class WorkerThreadEventTargetImpl extends EventTarget implements WorkerThreadEventTarget {
-//     constructor() {
-//         super();
-//     }
-//     dispatchEvent(event: Event): boolean {
-//         return super.dispatchEvent(event);
-//     }
-
-//     addEventListener(type: string, callback: EventListenerOrEventListenerObject | null, options?: boolean | AddEventListenerOptions): void {
-//         super.addEventListener(type, callback, options);
-//     }
-// }
-
 export function makeWorkerThreadEvent(type: keyof WorkerThreadEventMap, pthread_ptr: pthread_ptr, port: MessagePort): WorkerThreadEvent {
     // this assert helps to tree-shake the WorkerThreadEventImpl class if threads are disabled
-    mono_assert(MonoWasmThreads, "threads support disabled"); // this causes WorkerThreadEvent to be linked out
+    mono_assert(MonoWasmThreads, "threads support disabled"); // this should cause WorkerThreadEvent to be linked out
     return new WorkerThreadEventImpl(type, pthread_ptr, port);
 }
