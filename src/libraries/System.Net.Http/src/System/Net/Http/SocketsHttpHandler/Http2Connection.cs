@@ -792,6 +792,7 @@ namespace System.Net.Http
                 // Parse settings and process the ones we care about.
                 ReadOnlySpan<byte> settings = _incomingBuffer.ActiveSpan.Slice(0, frameHeader.PayloadLength);
                 bool maxConcurrentStreamsReceived = false;
+                bool enableConnectReceived = false;
                 while (settings.Length > 0)
                 {
                     Debug.Assert((settings.Length % 6) == 0);
@@ -829,8 +830,9 @@ namespace System.Net.Http
                         case SettingId.EnableConnect:
                             if (settingValue == 1)
                             {
-                                IsConnectEnabled = true;
+                                IsConnectEnabled.SetResult(true);
                             }
+                            enableConnectReceived = true;
                             break;
 
                         default:
@@ -840,10 +842,18 @@ namespace System.Net.Http
                     }
                 }
 
-                if (initialFrame && !maxConcurrentStreamsReceived)
+                if (initialFrame)
                 {
-                    // Set to 'infinite' because MaxConcurrentStreams was not set on the initial SETTINGS frame.
-                    ChangeMaxConcurrentStreams(int.MaxValue);
+                    if (!maxConcurrentStreamsReceived)
+                    {
+                        // Set to 'infinite' because MaxConcurrentStreams was not set on the initial SETTINGS frame.
+                        ChangeMaxConcurrentStreams(int.MaxValue);
+                    }
+
+                    if (!enableConnectReceived)
+                    {
+                        IsConnectEnabled.SetResult(false);
+                    }
                 }
 
                 _incomingBuffer.Discard(frameHeader.PayloadLength);
@@ -1906,7 +1916,7 @@ namespace System.Net.Http
             EnableConnect = 0x8
         }
 
-        internal bool IsConnectEnabled { get; private set; }
+        internal TaskCompletionSource<bool> IsConnectEnabled { get; private set; } = new TaskCompletionSource<bool>();
 
         // Note that this is safe to be called concurrently by multiple threads.
 

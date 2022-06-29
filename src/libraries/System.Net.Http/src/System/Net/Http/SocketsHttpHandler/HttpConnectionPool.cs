@@ -1022,16 +1022,14 @@ namespace System.Net.Http
                             Debug.Assert(connection is not null || !_http2Enabled);
                             if (connection is not null)
                             {
-                                if (!request.IsWebSocketH2Request() || connection.IsConnectEnabled)
-                                {
-                                    response = await connection.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
-                                }
-                                else if (request.IsWebSocketH2Request() && !connection.IsConnectEnabled)
+                                if (request.IsWebSocketH2Request() && !await connection.IsConnectEnabled.Task.ConfigureAwait(false))
                                 {
                                     HttpRequestException exception = new("Extended CONNECT is not supported");
                                     exception.Data["SETTINGS_ENABLE_CONNECT_PROTOCOL"] = false;
                                     throw exception;
                                 }
+
+                                response = await connection.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
                             }
                         }
 
