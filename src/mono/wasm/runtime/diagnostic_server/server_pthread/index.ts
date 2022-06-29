@@ -8,9 +8,9 @@ import { Module } from "../../imports";
 import { controlCommandReceived } from "./event_pipe";
 import { isDiagnosticMessage } from "../shared/types";
 import { CharPtr } from "../../types/emscripten";
+import { DiagnosticServer } from "./event_pipe";
 
-
-class DiagnosticServer {
+class DiagnosticServerImpl implements DiagnosticServer {
     readonly websocketUrl: string;
     readonly ws: WebSocket | null;
     constructor(websocketUrl: string) {
@@ -33,19 +33,27 @@ class DiagnosticServer {
         }
     }
 
-    private installTimeoutHandler(): void {
-        setTimeout(this.timeoutHandler.bind(this), 500);
+    private stopRequested = false;
+
+    stop(): void {
+        this.stopRequested = true;
     }
 
-    private timeoutHandler(this: DiagnosticServer): void {
+    private installTimeoutHandler(): void {
+        if (!this.stopRequested) {
+            setTimeout(this.timeoutHandler.bind(this), 500);
+        }
+    }
+
+    private timeoutHandler(this: DiagnosticServerImpl): void {
         console.debug("ping from diagnostic server");
         this.installTimeoutHandler();
     }
 
-    onMessage(this: DiagnosticServer, event: MessageEvent<unknown>): void {
+    onMessage(this: DiagnosticServerImpl, event: MessageEvent<unknown>): void {
         const d = event.data;
         if (d && isDiagnosticMessage(d)) {
-            controlCommandReceived(d);
+            controlCommandReceived(this, d);
         }
     }
 }
@@ -55,6 +63,6 @@ class DiagnosticServer {
 export function mono_wasm_diagnostic_server_on_server_thread_created(websocketUrlPtr: CharPtr): void {
     const websocketUrl = Module.UTF8ToString(websocketUrlPtr);
     console.debug(`mono_wasm_diagnostic_server_on_server_thread_created, url ${websocketUrl}`);
-    const server = new DiagnosticServer(websocketUrl);
+    const server = new DiagnosticServerImpl(websocketUrl);
     server.start();
 }

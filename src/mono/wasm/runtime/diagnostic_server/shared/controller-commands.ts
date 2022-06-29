@@ -6,12 +6,17 @@ import { EventPipeSessionDiagnosticServerID, EventPipeSessionIDImpl, DiagnosticM
 
 export type DiagnosticServerControlCommand =
     DiagnosticServerControlCommandStart
+    | DiagnosticServerControlCommandStop
     | DiagnosticServerControlCommandSetSessionID
     ;
 
 export interface DiagnosticServerControlCommandStart extends DiagnosticMessage {
     cmd: "start",
     url: string, // websocket url to connect to
+}
+
+export interface DiagnosticServerControlCommandStop extends DiagnosticMessage {
+    cmd: "stop",
 }
 
 export interface DiagnosticServerControlCommandSetSessionID extends DiagnosticMessage {

@@ -10,6 +10,10 @@ import type {
     /*DiagnosticServerControlCommandStart, DiagnosticServerControlCommandSetSessionID*/
 } from "../shared/controller-commands";
 
+export interface DiagnosticServer {
+    stop(): void;
+}
+
 /// Everything the diagnostic server knows about a connection.
 /// The connection has a server ID and a websocket. If it's an eventpipe session, it will also have an eventpipe ID assigned when the runtime starts an EventPipe session.
 
@@ -194,13 +198,16 @@ function startServer(url: string): SessionManager {
 
 let sessionManager: SessionManager | null = null;
 
-export function controlCommandReceived(msg: DiagnosticMessage): void {
+export function controlCommandReceived(server: DiagnosticServer, msg: DiagnosticMessage): void {
     const cmd = msg as DiagnosticServerControlCommand;
     switch (cmd.cmd) {
         case "start":
             if (sessionManager !== null)
                 throw new Error("server already started");
             sessionManager = startServer(cmd.url);
+            break;
+        case "stop":
+            server.stop();
             break;
         case "set_session_id":
             if (sessionManager === null)
