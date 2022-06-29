@@ -6262,40 +6262,31 @@ bool Compiler::optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefK
     return false;
 }
 
-void Compiler::optPerformHoistExpr(GenTree** link, BasicBlock* exprBb, unsigned lnum)
+void Compiler::optPerformHoistExpr(GenTree** link, BasicBlock* exprBb, Statement* exprStmt, unsigned lnum)
 {
     assert(exprBb != nullptr);
 
-    GenTree* origExpr = *link;
+    GenTree* hoistExpr = *link;
 
 #ifdef DEBUG
     if (verbose)
     {
         printf("\nHoisting a copy of ");
-        printTreeID(origExpr);
-        printf(" " FMT_VN, origExpr->gtVNPair.GetLiberal());
+        printTreeID(hoistExpr);
+        printf(" " FMT_VN, hoistExpr->gtVNPair.GetLiberal());
         printf(" from " FMT_BB " into PreHeader " FMT_BB " for loop " FMT_LP " <" FMT_BB ".." FMT_BB ">:\n",
                exprBb->bbNum, optLoopTable[lnum].lpHead->bbNum, lnum, optLoopTable[lnum].lpTop->bbNum,
                optLoopTable[lnum].lpBottom->bbNum);
-        gtDispTree(origExpr);
+        gtDispTree(hoistExpr);
         printf("\n");
     }
 #endif
 
     assert(link != nullptr);
 
-    // Create a copy of the expression and mark it for CSE's.
-    GenTree* hoistExpr = gtCloneExpr(origExpr, GTF_MAKE_CSE);
-
     // The hoist Expr does not have to computed into a specific register,
     // so clear the RegNum if it was set in the original expression
     hoistExpr->ClearRegNum();
-
-    // Copy any loop memory dependence.
-    optCopyLoopMemoryDependence(origExpr, hoistExpr);
-
-    // At this point we should have a cloned expression, marked with the GTF_MAKE_CSE flag
-    assert(hoistExpr != origExpr);
 
     /* Put the statement in the preheader */
 
@@ -6303,27 +6294,26 @@ void Compiler::optPerformHoistExpr(GenTree** link, BasicBlock* exprBb, unsigned 
 
     BasicBlock* preHead = optLoopTable[lnum].lpHead;
 
-    // fgMorphTree requires that compCurBB be the block that contains
-    // (or in this case, will contain) the expression.
-    compCurBB = preHead;
-    hoistExpr = fgMorphTree(hoistExpr);
-
     GenTree* hoist = hoistExpr;
-    // The value of the expression isn't used (unless it's an assignment).
-    if (hoistExpr->OperGet() != GT_ASG)
-    {
-        hoist = gtUnusedValNode(hoistExpr);
-        //CORINFO_CLASS_HANDLE structHnd = nullptr;
-        //// When we have a GT_IND node with a SIMD type then we don't have a reliable
-        //// struct handle and gtGetStructHandleIfPresent returns a guess that can be wrong
-        ////
-        //if (varTypeIsStruct(hoistExpr) && ((hoistExpr->OperGet() != GT_IND) || !varTypeIsSIMD(hoistExpr)))
-        //{
-        //    structHnd = gtGetStructHandleIfPresent(hoistExpr);
-        //}
 
-        //TempInfo tempInfo = fgMakeTemp(hoistExpr, structHnd);
-        //hoist = tempInfo.asg;
+    if (hoistExpr->OperIs(GT_ASG))
+    {
+        *link = gtNewNothingNode();
+    }
+    else
+    {
+        CORINFO_CLASS_HANDLE structHnd = nullptr;
+        // When we have a GT_IND node with a SIMD type then we don't have a reliable
+        // struct handle and gtGetStructHandleIfPresent returns a guess that can be wrong
+        //
+        if (varTypeIsStruct(hoistExpr) && ((hoistExpr->OperGet() != GT_IND) || !varTypeIsSIMD(hoistExpr)))
+        {
+            structHnd = gtGetStructHandleIfPresent(hoistExpr);
+        }
+
+        TempInfo tempInfo = fgMakeTemp(hoistExpr, structHnd);
+        hoist             = tempInfo.asg;
+        *link             = tempInfo.load;
     }
 
     preHead->bbFlags |= (exprBb->bbFlags & (BBF_HAS_IDX_LEN | BBF_HAS_NULLCHECK));
@@ -6352,6 +6342,8 @@ void Compiler::optPerformHoistExpr(GenTree** link, BasicBlock* exprBb, unsigned 
     }
 
     hoistStmt->SetNextStmt(nullptr);
+
+    gtUpdateStmtSideEffects(exprStmt);
 
 #ifdef DEBUG
     if (verbose)
@@ -6384,19 +6376,19 @@ void Compiler::optPerformHoistExpr(GenTree** link, BasicBlock* exprBb, unsigned 
         NodeToTestDataMap* testData = GetNodeTestData();
 
         TestLabelAndNum tlAndN;
-        if (testData->Lookup(origExpr, &tlAndN) && tlAndN.m_tl == TL_LoopHoist)
+        if (testData->Lookup(hoistExpr, &tlAndN) && tlAndN.m_tl == TL_LoopHoist)
         {
             if (tlAndN.m_num == -1)
             {
                 printf("Node ");
-                printTreeID(origExpr);
+                printTreeID(hoistExpr);
                 printf(" was declared 'do not hoist', but is being hoisted.\n");
                 assert(false);
             }
             else if (tlAndN.m_num != depth)
             {
                 printf("Node ");
-                printTreeID(origExpr);
+                printTreeID(hoistExpr);
                 printf(" was declared as hoistable from loop at nesting depth %d; actually hoisted from loop at depth "
                        "%d.\n",
                        tlAndN.m_num, depth);
@@ -6406,7 +6398,7 @@ void Compiler::optPerformHoistExpr(GenTree** link, BasicBlock* exprBb, unsigned 
             {
                 // We've correctly hoisted this, so remove the annotation.  Later, we'll check for any remaining "must
                 // hoist" annotations.
-                testData->Remove(origExpr);
+                testData->Remove(hoistExpr);
                 // Now we insert an annotation to make sure that "hoistExpr" is actually CSE'd.
                 tlAndN.m_tl  = TL_CSE_Def;
                 tlAndN.m_num = m_loopHoistCSEClass++;
@@ -7086,6 +7078,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
         unsigned          m_loopNum;
         LoopHoistContext* m_hoistContext;
         BasicBlock*       m_currentBlock;
+        Statement*        m_currentStmt;
 
         bool IsNodeHoistable(GenTree* node)
         {
@@ -7214,13 +7207,15 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
             m_currentBlock = block;
             for (Statement* const stmt : block->NonPhiStatements())
             {
+                m_currentStmt = stmt;
+
                 WalkTree(stmt->GetRootNodePointer(), nullptr);
                 Value& top = m_valueStack.TopRef();
                 assert(top.Node() == stmt->GetRootNode());
 
                 if (top.m_hoistable)
                 {
-                    m_compiler->optHoistCandidate(stmt->GetRootNodePointer(), block, m_loopNum, m_hoistContext);
+                    m_compiler->optHoistCandidate(stmt->GetRootNodePointer(), block, stmt, m_loopNum, m_hoistContext);
                 }
                 else
                 {
@@ -7572,7 +7567,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
 
                         if (IsHoistableOverExcepSibling(value.Node(), hasExcep))
                         {
-                            m_compiler->optHoistCandidate(value.NodePointer(), m_currentBlock, m_loopNum, m_hoistContext);
+                            m_compiler->optHoistCandidate(value.NodePointer(), m_currentBlock, m_currentStmt, m_loopNum, m_hoistContext);
                         }
 
                         // Don't hoist this tree again.
@@ -7643,7 +7638,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
     hoistContext->ResetHoistedInCurLoop();
 }
 
-void Compiler::optHoistCandidate(GenTree** link, BasicBlock* treeBb, unsigned lnum, LoopHoistContext* hoistCtxt)
+void Compiler::optHoistCandidate(GenTree** link, BasicBlock* treeBb, Statement* treeStmt, unsigned lnum, LoopHoistContext* hoistCtxt)
 {
     assert(lnum != BasicBlock::NOT_IN_LOOP);
 
@@ -7679,7 +7674,7 @@ void Compiler::optHoistCandidate(GenTree** link, BasicBlock* treeBb, unsigned ln
     }
 
     // Expression can be hoisted
-    optPerformHoistExpr(link, treeBb, lnum);
+    optPerformHoistExpr(link, treeBb, treeStmt, lnum);
 
     // Increment lpHoistedExprCount or lpHoistedFPExprCount
     if (!varTypeIsFloating(tree->TypeGet()))
