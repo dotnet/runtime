@@ -412,16 +412,6 @@ class Program
             Assert.AreEqual(value[i], (byte)(9 - i));
     }
 
-    static void TestLoadR2RImageFromByteArray()
-    {
-        Assembly assembly1 = typeof(Program).Assembly;
-
-        byte[] array = File.ReadAllBytes(assembly1.Location);
-        Assembly assembly2 = Assembly.Load(array);
-
-        Assert.AreEqual(assembly2.FullName, assembly1.FullName);
-    }
-
     static void RunAllTests()
     {
         Console.WriteLine("TestVirtualMethodCalls");
@@ -502,9 +492,6 @@ class Program
 
         Console.WriteLine("RVAFieldTest");
         RVAFieldTest();
-
-        Console.WriteLine("TestLoadR2RImageFromByteArray");
-        TestLoadR2RImageFromByteArray();
     }
 
     static int Main()

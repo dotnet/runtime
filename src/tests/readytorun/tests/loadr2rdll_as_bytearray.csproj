@@ -1,0 +1,78 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>exe</OutputType>
+    <CrossGenTest>false</CrossGenTest>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="loadr2rdll_as_bytearray.cs" />
+  </ItemGroup>
+  <PropertyGroup>
+    <CLRTestBatchPreCommands><![CDATA[
+$(CLRTestBatchPreCommands)
+
+REM Suppress some COMPlus variables for the duration of Crossgen2 execution
+setlocal
+set "COMPlus_GCName="
+set "COMPlus_GCStress="
+set "COMPlus_HeapVerify="
+set "COMPlus_ReadyToRun="
+
+md IL_DLLS
+if not exist IL_DLLS\loadr2rdll_as_bytearray.dll (
+    copy /y loadr2rdll_as_bytearray.dll IL_DLLS\loadr2rdll_as_bytearray.dll
+)
+if not exist IL_DLLS\loadr2rdll_as_bytearray.dll (
+    echo FAILED to copy loadr2rdll_as_bytearray.dll to IL_DLLS
+    exit /b 1
+)
+
+%Core_Root%\CoreRun.exe %Core_Root%\crossgen2\crossgen2.dll --map -r:%Core_Root%\*.dll -o:loadr2rdll_as_bytearray.dll IL_DLLS\loadr2rdll_as_bytearray.dll
+
+set CrossGenStatus=!ERRORLEVEL!
+IF NOT !CrossGenStatus!==0 (
+    ECHO Crossgen failed with exitcode - !CrossGenStatus!
+    Exit /b 1
+)
+if not exist loadr2rdll_as_bytearray.map (
+    echo FAILED to build loadr2rdll_as_bytearray.dll
+    exit /b 1
+)
+
+endlocal
+]]></CLRTestBatchPreCommands>
+    <BashCLRTestPreCommands><![CDATA[
+$(BashCLRTestPreCommands)
+
+# Suppress some COMPlus variables for the duration of Crossgen2 execution
+export -n COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun
+
+mkdir IL_DLLS
+
+if [ ! -f IL_DLLS/loadr2rdll_as_bytearray.dll ]
+then
+  cp loadr2rdll_as_bytearray.dll IL_DLLS/loadr2rdll_as_bytearray.dll
+fi
+if [ ! -f IL_DLLS/loadr2rdll_as_bytearray.dll ]
+then
+  echo Failed to copy loadr2rdll_as_bytearray.dll to IL_DLLS
+  exit 1
+fi
+
+$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll --map -r:$CORE_ROOT/*.dll -o:loadr2rdll_as_bytearray.dll IL_DLLS/loadr2rdll_as_bytearray.dll
+
+__cgExitCode=$?
+if [ $__cgExitCode -ne 0 ]
+then
+  echo Crossgen failed with exitcode: $__cgExitCode
+  exit 1
+fi
+if [ ! -f loadr2rdll_as_bytearray.map ]
+then
+  echo Failed to build loadr2rdll_as_bytearray.dll
+  exit 1
+fi
+
+export COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun
+]]></BashCLRTestPreCommands>
+  </PropertyGroup>
+</Project>
