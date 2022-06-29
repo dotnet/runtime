@@ -235,9 +235,19 @@ namespace Microsoft.Interop
                 };
             }
 
-            ICustomTypeMarshallingStrategy marshallingStrategy = new StatelessValueMarshalling(marshallerData.MarshallerType.Syntax, marshallerData.NativeType.Syntax, marshallerData.Shape);
-            if (marshallerData.Shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
-                marshallingStrategy = new CallerAllocatedBufferMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax, marshallerData.BufferElementType.Syntax);
+            ICustomTypeMarshallingStrategy marshallingStrategy;
+            if (marshallerData.HasState)
+            {
+                marshallingStrategy = new StatefulValueMarshalling(marshallerData.MarshallerType.Syntax, marshallerData.NativeType.Syntax, marshallerData.Shape);
+                if (marshallerData.Shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
+                    marshallingStrategy = new StatefulCallerAllocatedBufferMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax, marshallerData.BufferElementType.Syntax);
+            }
+            else
+            {
+                marshallingStrategy = new StatelessValueMarshalling(marshallerData.MarshallerType.Syntax, marshallerData.NativeType.Syntax, marshallerData.Shape);
+                if (marshallerData.Shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
+                    marshallingStrategy = new StatelessCallerAllocatedBufferMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax, marshallerData.BufferElementType.Syntax);
+            }
 
             IMarshallingGenerator marshallingGenerator = new CustomNativeTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: false);
 
