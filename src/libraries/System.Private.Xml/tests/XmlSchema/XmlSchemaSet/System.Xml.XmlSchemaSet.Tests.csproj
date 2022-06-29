@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <IlcTrimMetadata>false</IlcTrimMetadata>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CError.cs" />

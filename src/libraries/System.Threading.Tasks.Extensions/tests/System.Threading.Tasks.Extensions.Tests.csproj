@@ -3,6 +3,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TestRuntime>true</TestRuntime>
+    <IlcTrimMetadata>false</IlcTrimMetadata>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AsyncMethodBuilderAttributeTests.cs" />

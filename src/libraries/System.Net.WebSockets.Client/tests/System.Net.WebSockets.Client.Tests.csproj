@@ -3,6 +3,7 @@
     <StringResourcesPath>../src/Resources/Strings.resx</StringResourcesPath>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <DefineConstants>$(DefineConstants);NETSTANDARD</DefineConstants>
+    <IlcTrimMetadata>false</IlcTrimMetadata>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
