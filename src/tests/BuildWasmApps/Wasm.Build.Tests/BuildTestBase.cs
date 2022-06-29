@@ -345,7 +345,14 @@ namespace Wasm.Build.Tests
             (int exitCode, string buildOutput) result;
             try
             {
-                result = AssertBuild(sb.ToString(), id, expectSuccess: options.ExpectSuccess, envVars: s_buildEnv.EnvVars);
+                var envVars = s_buildEnv.EnvVars;
+                if (options.ExtraBuildEnvironmentVariables is not null)
+                {
+                    envVars = new Dictionary<string, string>(s_buildEnv.EnvVars);
+                    foreach (var kvp in options.ExtraBuildEnvironmentVariables!)
+                        envVars[kvp.Key] = kvp.Value;
+                }
+                result = AssertBuild(sb.ToString(), id, expectSuccess: options.ExpectSuccess, envVars: envVars);
 
                 //AssertRuntimePackPath(result.buildOutput);
 
@@ -898,7 +905,8 @@ namespace Wasm.Build.Tests
         string? Verbosity                 = null,
         string? Label                     = null,
         string? TargetFramework           = null,
-        string? MainJS                    = null
+        string? MainJS                    = null,
+        IDictionary<string, string>? ExtraBuildEnvironmentVariables = null
     );
 
     public record BlazorBuildOptions
