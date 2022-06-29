@@ -141,14 +141,17 @@ namespace System.Formats.Tar
         /// <para>-or-</para>
         /// <para>Two or more Extended Attributes entries were found consecutively in the current <see cref="TarEntryFormat.Pax"/> archive.</para></exception>
         /// <exception cref="IOException">An I/O problem occurred.</exception>
-        public async ValueTask<TarEntry?> GetNextEntryAsync(bool copyData = false, CancellationToken cancellationToken = default)
+        public ValueTask<TarEntry?> GetNextEntryAsync(bool copyData = false, CancellationToken cancellationToken = default)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled<TarEntry?>(cancellationToken);
+            }
 
             if (_reachedEndMarkers)
             {
                 // Avoid advancing the stream if we already found the end of the archive.
-                return null;
+                return ValueTask.FromResult<TarEntry?>(null);
             }
 
             Debug.Assert(_archiveStream.CanRead);
@@ -156,35 +159,10 @@ namespace System.Formats.Tar
             if (_archiveStream.CanSeek && _archiveStream.Length == 0)
             {
                 // Attempting to get the next entry on an empty tar stream
-                return null;
+                return ValueTask.FromResult<TarEntry?>(null);
             }
 
-            await AdvanceDataStreamIfNeededAsync(cancellationToken).ConfigureAwait(false);
-
-            (bool result, TarHeader header) = await TryGetNextEntryHeaderAsync(copyData, cancellationToken).ConfigureAwait(false);
-            if (result)
-            {
-                if (!_readFirstEntry)
-                {
-                    _readFirstEntry = true;
-                }
-
-                TarEntry entry = header._format switch
-                {
-                    TarEntryFormat.Pax => header._typeFlag is TarEntryType.GlobalExtendedAttributes ?
-                                          new PaxGlobalExtendedAttributesTarEntry(header, this) : new PaxTarEntry(header, this),
-                    TarEntryFormat.Gnu => new GnuTarEntry(header, this),
-                    TarEntryFormat.Ustar => new UstarTarEntry(header, this),
-                    TarEntryFormat.V7 or TarEntryFormat.Unknown or _ => new V7TarEntry(header, this),
-                };
-
-                _previouslyReadEntry = entry;
-                PreserveDataStreamForDisposalIfNeeded(entry);
-                return entry;
-            }
-
-            _reachedEndMarkers = true;
-            return null;
+            return GetNextEntryInternalAsync(copyData, cancellationToken);
         }
 
         // Moves the underlying archive stream position pointer to the beginning of the next header.
@@ -313,6 +291,37 @@ namespace System.Formats.Tar
                     _isDisposed = true;
                 }
             }
+        }
+
+        // Asynchronously retrieves the next entry if one is found.
+        private async ValueTask<TarEntry?> GetNextEntryInternalAsync(bool copyData, CancellationToken cancellationToken)
+        {
+            await AdvanceDataStreamIfNeededAsync(cancellationToken).ConfigureAwait(false);
+
+            (bool result, TarHeader header) = await TryGetNextEntryHeaderAsync(copyData, cancellationToken).ConfigureAwait(false);
+            if (result)
+            {
+                if (!_readFirstEntry)
+                {
+                    _readFirstEntry = true;
+                }
+
+                TarEntry entry = header._format switch
+                {
+                    TarEntryFormat.Pax => header._typeFlag is TarEntryType.GlobalExtendedAttributes ?
+                                          new PaxGlobalExtendedAttributesTarEntry(header, this) : new PaxTarEntry(header, this),
+                    TarEntryFormat.Gnu => new GnuTarEntry(header, this),
+                    TarEntryFormat.Ustar => new UstarTarEntry(header, this),
+                    TarEntryFormat.V7 or TarEntryFormat.Unknown or _ => new V7TarEntry(header, this),
+                };
+
+                _previouslyReadEntry = entry;
+                PreserveDataStreamForDisposalIfNeeded(entry);
+                return entry;
+            }
+
+            _reachedEndMarkers = true;
+            return null;
         }
 
         // Attempts to read the next tar archive entry header.
