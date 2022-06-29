@@ -117,10 +117,10 @@ namespace LibraryImportGenerator.UnitTests
 
             // [In, Out] attributes
             // By value non-blittable array
-            yield return new [] { CodeSnippets.ByValueParameterWithModifier("S[]", "Out")
+            yield return new[] { CodeSnippets.ByValueParameterWithModifier("S[]", "Out")
                 + CodeSnippets.CustomStructMarshalling_V1.NonBlittableUserDefinedType()
                 + CodeSnippets.CustomStructMarshalling_V1.NativeTypeRef };
-            yield return new [] { CodeSnippets.ByValueParameterWithModifier("S[]", "In, Out")
+            yield return new[] { CodeSnippets.ByValueParameterWithModifier("S[]", "In, Out")
                 + CodeSnippets.CustomStructMarshalling_V1.NonBlittableUserDefinedType()
                 + CodeSnippets.CustomStructMarshalling_V1.NativeTypeRef };
 

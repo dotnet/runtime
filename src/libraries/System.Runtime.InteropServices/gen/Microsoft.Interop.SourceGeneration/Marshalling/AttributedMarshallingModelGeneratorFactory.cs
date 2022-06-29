@@ -12,7 +12,7 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    public readonly record struct AttributedMarshallingModelOptions(bool RuntimeMarshallingDisabled);
+    public readonly record struct AttributedMarshallingModelOptions(bool RuntimeMarshallingDisabled, Scenario InScenario, Scenario RefScenario, Scenario OutScenario);
 
     public class AttributedMarshallingModelGeneratorFactory : IMarshallingGeneratorFactory
     {
@@ -213,15 +213,15 @@ namespace Microsoft.Interop
             CustomTypeMarshallerData marshallerData;
             if (info.IsManagedReturnPosition)
             {
-                marshallerData = marshalInfo.Marshallers.GetScenarioOrDefault(Scenario.ManagedToUnmanagedOut);
+                marshallerData = marshalInfo.Marshallers.GetScenarioOrDefault(Options.OutScenario);
             }
             else
             {
                 marshallerData = info.RefKind switch
                 {
-                    RefKind.None or RefKind.In => marshalInfo.Marshallers.GetScenarioOrDefault(Scenario.ManagedToUnmanagedIn),
-                    RefKind.Ref => marshalInfo.Marshallers.GetScenarioOrDefault(Scenario.ManagedToUnmanagedRef),
-                    RefKind.Out => marshalInfo.Marshallers.GetScenarioOrDefault(Scenario.ManagedToUnmanagedOut),
+                    RefKind.None or RefKind.In => marshalInfo.Marshallers.GetScenarioOrDefault(Options.InScenario),
+                    RefKind.Ref => marshalInfo.Marshallers.GetScenarioOrDefault(Options.RefScenario),
+                    RefKind.Out => marshalInfo.Marshallers.GetScenarioOrDefault(Options.OutScenario),
                     _ => throw new MarshallingNotSupportedException(info, context)
                 };
             }
@@ -246,11 +246,11 @@ namespace Microsoft.Interop
                 : marshallingGenerator;
         }
 
-        private static void ValidateCustomNativeTypeMarshallingSupported(TypePositionInfo info, StubCodeContext context, NativeMarshallingAttributeInfo marshalInfo)
+        private void ValidateCustomNativeTypeMarshallingSupported(TypePositionInfo info, StubCodeContext context, NativeMarshallingAttributeInfo marshalInfo)
         {
             // Marshalling out or return parameter, but no out marshaller is specified
             if ((info.RefKind == RefKind.Out || info.IsManagedReturnPosition)
-                && !marshalInfo.Marshallers.IsDefinedOrDefault(Scenario.ManagedToUnmanagedOut))
+                && !marshalInfo.Marshallers.IsDefinedOrDefault(Options.OutScenario))
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
@@ -259,7 +259,7 @@ namespace Microsoft.Interop
             }
 
             // Marshalling ref parameter, but no ref marshaller is specified
-            if (info.RefKind == RefKind.Ref && !marshalInfo.Marshallers.IsDefinedOrDefault(Scenario.ManagedToUnmanagedRef))
+            if (info.RefKind == RefKind.Ref && !marshalInfo.Marshallers.IsDefinedOrDefault(Options.RefScenario))
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
@@ -269,7 +269,7 @@ namespace Microsoft.Interop
 
             // Marshalling in parameter, but no in marshaller is specified
             if (info.RefKind == RefKind.In
-                && !marshalInfo.Marshallers.IsDefinedOrDefault(Scenario.ManagedToUnmanagedIn))
+                && !marshalInfo.Marshallers.IsDefinedOrDefault(Options.InScenario))
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
@@ -281,7 +281,7 @@ namespace Microsoft.Interop
             if (!info.IsByRef
                 && !info.IsManagedReturnPosition
                 && context.SingleFrameSpansNativeContext
-                && !(marshalInfo.IsPinnableManagedType || marshalInfo.Marshallers.IsDefinedOrDefault(Scenario.ManagedToUnmanagedIn)))
+                && !(marshalInfo.IsPinnableManagedType || marshalInfo.Marshallers.IsDefinedOrDefault(Options.InScenario)))
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
@@ -395,7 +395,11 @@ namespace Microsoft.Interop
             NativeLinearCollectionMarshallingInfo_V1 collectionInfo,
             ICustomNativeTypeMarshallingStrategy marshallingStrategy)
         {
-            var elementInfo = new TypePositionInfo(collectionInfo.ElementType, collectionInfo.ElementMarshallingInfo) { ManagedIndex = info.ManagedIndex };
+            var elementInfo = new TypePositionInfo(collectionInfo.ElementType, collectionInfo.ElementMarshallingInfo)
+            {
+                ManagedIndex = info.ManagedIndex,
+                RefKind = CreateElementRefKind(info.RefKind, info.ByValueContentsMarshalKind)
+            };
             IMarshallingGenerator elementMarshaller = _elementMarshallingGenerator.Create(
                 elementInfo,
                 new LinearCollectionElementMarshallingCodeContext(StubCodeContext.Stage.Setup, string.Empty, string.Empty, context));
@@ -445,6 +449,15 @@ namespace Microsoft.Interop
             }
 
             return marshallingGenerator;
+        }
+
+        private static RefKind CreateElementRefKind(RefKind refKind, ByValueContentsMarshalKind byValueContentsMarshalKind)
+        {
+            if (refKind == RefKind.None)
+            {
+                return byValueContentsMarshalKind.GetRefKindForByValueContentsKind();
+            }
+            return refKind;
         }
     }
 }
