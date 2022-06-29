@@ -23,10 +23,7 @@ namespace System.Formats.Tar
         internal bool TryGetNextHeader(Stream archiveStream, bool copyData)
         {
             // The four supported formats have a header that fits in the default record size
-            byte[] rented = ArrayPool<byte>.Shared.Rent(minimumLength: TarHelpers.RecordSize);
-
-            Span<byte> buffer = rented.AsSpan(0, TarHelpers.RecordSize); // minimumLength means the array could've been larger
-            buffer.Clear(); // Rented arrays aren't clean
+            Span<byte> buffer = stackalloc byte[TarHelpers.RecordSize];
 
             archiveStream.ReadExactly(buffer);
 
@@ -61,7 +58,6 @@ namespace System.Formats.Tar
 
             ProcessDataBlock(archiveStream, copyData);
 
-            ArrayPool<byte>.Shared.Return(rented);
             return true;
         }
 
