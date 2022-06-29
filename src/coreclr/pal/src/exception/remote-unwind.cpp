@@ -143,7 +143,7 @@ typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size
 
 #ifndef FEATURE_USE_SYSTEM_LIBUNWIND
 extern "C" int
-_OOP_find_proc_info(
+unw_get_proc_info_in_range(
     unw_word_t start_ip,
     unw_word_t end_ip,
     unw_word_t eh_frame_table,
@@ -2354,7 +2354,7 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
     info->FunctionStart = pip->start_ip;
     return UNW_ESUCCESS;
 #else
-    return _OOP_find_proc_info(start_ip, end_ip, ehFrameHdrAddr, ehFrameHdrLen, exidxFrameHdrAddr, exidxFrameHdrLen, as, ip, pip, need_unwind_info, arg);
+    return unw_get_proc_info_in_range(start_ip, end_ip, ehFrameHdrAddr, ehFrameHdrLen, exidxFrameHdrAddr, exidxFrameHdrLen, as, ip, pip, need_unwind_info, arg);
 #endif // FEATURE_USE_SYSTEM_LIBUNWIND
 
 #endif // __APPLE__
