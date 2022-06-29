@@ -866,29 +866,29 @@ namespace System.Xml
         public void WriteDateTimeArray(DateTime[] array, int offset, int count)
         {
             WriteArrayInfo(XmlBinaryNodeType.DateTimeTextWithEndElement, count);
-            for (int i = 0; i < count; i++)
+            foreach (var dateTime in array.AsSpan(offset, count))
             {
-                WriteInt64(ToBinary(array[offset + i]));
+                WriteInt64(ToBinary(dateTime));
             }
         }
 
         public void WriteGuidArray(Guid[] array, int offset, int count)
         {
-            Span<byte> bytes = stackalloc byte[16];
             WriteArrayInfo(XmlBinaryNodeType.GuidTextWithEndElement, count);
-            for (int i = 0; i < count; i++)
+            foreach (ref var guid in array.AsSpan(offset, count))
             {
-                array[offset + i].TryWriteBytes(bytes);
-                WriteBytes(bytes);
+                var bytes = GetBuffer(16, out int bufferOffset).AsSpan(bufferOffset);
+                guid.TryWriteBytes(bytes);
+                Advance(16);
             }
         }
 
         public void WriteTimeSpanArray(TimeSpan[] array, int offset, int count)
         {
             WriteArrayInfo(XmlBinaryNodeType.TimeSpanTextWithEndElement, count);
-            for (int i = 0; i < count; i++)
+            foreach (ref TimeSpan timespan in array.AsSpan(offset, count))
             {
-                WriteInt64(array[offset + i].Ticks);
+                WriteInt64(timespan.Ticks);
             }
         }
 
