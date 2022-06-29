@@ -1706,13 +1706,10 @@ namespace System.Diagnostics.Tracing
         private static Guid GenerateGuidFromName(string name)
         {
 #if ES_BUILD_STANDALONE
-            if (namespaceBytes == null)
-            {
-                namespaceBytes = new byte[] {
-                    0x48, 0x2C, 0x2D, 0xB2, 0xC3, 0x90, 0x47, 0xC8,
-                    0x87, 0xF8, 0x1A, 0x15, 0xBF, 0xC1, 0x30, 0xFB,
-                };
-            }
+            namespaceBytes ??= new byte[] {
+                0x48, 0x2C, 0x2D, 0xB2, 0xC3, 0x90, 0x47, 0xC8,
+                0x87, 0xF8, 0x1A, 0x15, 0xBF, 0xC1, 0x30, 0xFB,
+            };
 #else
             ReadOnlySpan<byte> namespaceBytes = new byte[] // rely on C# compiler optimization to remove byte[] allocation
             {

@@ -23,16 +23,6 @@ namespace System.Runtime.Serialization
         }
 #endif
 
-        public Collection<Type> KnownTypes
-        {
-            get
-            {
-                if (_knownTypes == null)
-                {
-                    _knownTypes = new Collection<Type>();
-                }
-                return _knownTypes;
-            }
-        }
+        public Collection<Type> KnownTypes => _knownTypes ??= new Collection<Type>();
     }
 }

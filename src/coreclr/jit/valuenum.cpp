@@ -7279,7 +7279,13 @@ struct ValueNumberState
     }
 };
 
-void Compiler::fgValueNumber()
+//------------------------------------------------------------------------
+// fgValueNumber: Run value numbering for the entire method
+//
+// Returns:
+//   suitable phase status
+//
+PhaseStatus Compiler::fgValueNumber()
 {
 #ifdef DEBUG
     // This could be a JITDUMP, but some people find it convenient to set a breakpoint on the printf.
@@ -7292,7 +7298,7 @@ void Compiler::fgValueNumber()
     // If we skipped SSA, skip VN as well.
     if (fgSsaPassesCompleted == 0)
     {
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     // Allocate the value number store.
@@ -7475,6 +7481,8 @@ void Compiler::fgValueNumber()
 #endif // DEBUG
 
     fgVNPassesCompleted++;
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 void Compiler::fgValueNumberBlock(BasicBlock* blk)
@@ -8311,19 +8319,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
         if (lclDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
         {
             unsigned lhsLclSize = lvaLclExactSize(lhsLclNum);
-            unsigned storeSize;
-            if (lhs->OperIs(GT_LCL_VAR))
-            {
-                storeSize = lhsLclSize;
-            }
-            else if (lhs->OperIs(GT_LCL_FLD))
-            {
-                storeSize = lhs->AsLclFld()->GetSize();
-            }
-            else
-            {
-                storeSize = lhs->AsIndir()->Size();
-            }
+            unsigned storeSize  = lhs->GetLayout(this)->GetSize();
 
             ValueNumPair rhsVNPair = ValueNumPair();
             if (tree->OperIsInitBlkOp())

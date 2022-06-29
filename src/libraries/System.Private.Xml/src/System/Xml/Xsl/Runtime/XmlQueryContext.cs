@@ -267,8 +267,7 @@ namespace System.Xml.Xsl.Runtime
                 throw new XslTransformException(SR.XmlIl_UnknownExtObj, namespaceUri);
 
             // Bind to a method on the instance object
-            if (_extFuncsLate == null)
-                _extFuncsLate = new XmlExtensionFunctionTable();
+            _extFuncsLate ??= new XmlExtensionFunctionTable();
 
             // Bind to the instance, looking for a matching method (throws if no matching method)
             XmlExtensionFunction extFunc = _extFuncsLate.Bind(name, namespaceUri, args.Length, instance.GetType(), XmlQueryRuntime.LateBoundFlags);

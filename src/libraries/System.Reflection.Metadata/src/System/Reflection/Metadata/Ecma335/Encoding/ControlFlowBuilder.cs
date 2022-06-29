@@ -215,10 +215,7 @@ namespace System.Reflection.Metadata.Ecma335
             ValidateLabel(handlerStart, nameof(handlerStart));
             ValidateLabel(handlerEnd, nameof(handlerEnd));
 
-            if (_lazyExceptionHandlers == null)
-            {
-                _lazyExceptionHandlers = ImmutableArray.CreateBuilder<ExceptionHandlerInfo>();
-            }
+            _lazyExceptionHandlers ??= ImmutableArray.CreateBuilder<ExceptionHandlerInfo>();
 
             _lazyExceptionHandlers.Add(new ExceptionHandlerInfo(kind, tryStart, tryEnd, handlerStart, handlerEnd, filterStart, catchType));
         }

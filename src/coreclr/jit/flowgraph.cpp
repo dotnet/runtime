@@ -1277,11 +1277,16 @@ bool Compiler::fgCastNeeded(GenTree* tree, var_types toType)
         return false;
     }
     //
-    // If the sign-ness of the two types are different then a cast is necessary
+    // If the sign-ness of the two types are different then a cast is necessary, except for
+    // an unsigned -> signed cast where we already know the sign bit is zero.
     //
     if (varTypeIsUnsigned(toType) != varTypeIsUnsigned(fromType))
     {
-        return true;
+        bool isZeroExtension = varTypeIsUnsigned(fromType) && (genTypeSize(fromType) < genTypeSize(toType));
+        if (!isZeroExtension)
+        {
+            return true;
+        }
     }
     //
     // If the from type is the same size or smaller then an additional cast is not necessary
@@ -2885,7 +2890,7 @@ void Compiler::fgAddInternal()
 /*****************************************************************************/
 /*****************************************************************************/
 
-void Compiler::fgFindOperOrder()
+PhaseStatus Compiler::fgFindOperOrder()
 {
 #ifdef DEBUG
     if (verbose)
@@ -2908,6 +2913,8 @@ void Compiler::fgFindOperOrder()
             gtSetStmtInfo(stmt);
         }
     }
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 //------------------------------------------------------------------------
@@ -3972,7 +3979,7 @@ GenTree* Compiler::fgSetTreeSeq(GenTree* tree, bool isLIR)
  *  Also finds blocks that need GC polls and inserts them as needed.
  */
 
-void Compiler::fgSetBlockOrder()
+PhaseStatus Compiler::fgSetBlockOrder()
 {
 #ifdef DEBUG
     if (verbose)
@@ -4075,8 +4082,11 @@ void Compiler::fgSetBlockOrder()
     {
         printf("The biggest BB has %4u tree nodes\n", BasicBlock::s_nMaxTrees);
     }
-    fgDebugCheckLinks();
 #endif // DEBUG
+
+    // Return "everything" to enable consistency checking of the statement links during post phase.
+    //
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 /*****************************************************************************/

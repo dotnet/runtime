@@ -18,6 +18,7 @@ class Program
         TestAbstractDerivedByUnrelatedTypeWithDevirtualizedCall.Run();
         TestUnusedDefaultInterfaceMethod.Run();
         TestArrayElementTypeOperations.Run();
+        TestStaticVirtualMethodOptimizations.Run();
 
         return 100;
     }
@@ -273,6 +274,42 @@ class Program
         }
     }
 
+    class TestStaticVirtualMethodOptimizations
+    {
+        interface IFoo
+        {
+            static abstract Type Frob();
+        }
+
+        struct StructWithReachableStaticVirtual : IFoo
+        {
+            public static Type Frob() => typeof(Marker1);
+        }
+
+        class ClassWithUnreachableStaticVirtual : IFoo
+        {
+            public static Type Frob() => typeof(Marker2);
+        }
+
+        class Marker1 { }
+        class Marker2 { }
+
+        static Type Call<T>() where T : IFoo => T.Frob();
+
+        public static void Run()
+        {
+            Console.WriteLine("Testing unused static virtual method optimization");
+
+            // No shared generic code - we should not see IFoo.Frob as "virtually used"
+            Call<StructWithReachableStaticVirtual>();
+
+            // Implements IFoo.Frob, but there's no consumption place, so won't be generated.
+            new ClassWithUnreachableStaticVirtual().ToString();
+
+            ThrowIfNotPresent(typeof(TestStaticVirtualMethodOptimizations), nameof(Marker1));
+            ThrowIfPresent(typeof(TestStaticVirtualMethodOptimizations), nameof(Marker2));
+        }
+    }
 
     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
         Justification = "That's the point")]

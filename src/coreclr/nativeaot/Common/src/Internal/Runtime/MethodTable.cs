@@ -68,9 +68,18 @@ namespace Internal.Runtime
             internal ushort _usInterfaceMethodSlot;
             internal ushort _usImplMethodSlot;
         }
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct StaticDispatchMapEntry
+        {
+            // Do not put any other fields before this one. We need StaticDispatchMapEntry* be castable to DispatchMapEntry*.
+            internal DispatchMapEntry _entry;
+            internal ushort _usContextMapSource;
+        }
 
         private ushort _standardEntryCount; // Implementations on the class
         private ushort _defaultEntryCount; // Default implementations
+        private ushort _standardStaticEntryCount; // Implementations on the class (static virtuals)
+        private ushort _defaultStaticEntryCount; // Default implementations (static virtuals)
         private DispatchMapEntry _dispatchMap; // at least one entry if any interfaces defined
 
         public uint NumStandardEntries
@@ -101,20 +110,54 @@ namespace Internal.Runtime
 #endif
         }
 
+        public uint NumStandardStaticEntries
+        {
+            get
+            {
+                return _standardStaticEntryCount;
+            }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                _standardStaticEntryCount = checked((ushort)value);
+            }
+#endif
+        }
+
+        public uint NumDefaultStaticEntries
+        {
+            get
+            {
+                return _defaultStaticEntryCount;
+            }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                _defaultStaticEntryCount = checked((ushort)value);
+            }
+#endif
+        }
+
         public int Size
         {
             get
             {
-                return sizeof(ushort) + sizeof(ushort) + sizeof(DispatchMapEntry) * ((int)_standardEntryCount + (int)_defaultEntryCount);
+                return sizeof(ushort) + sizeof(ushort) + sizeof(ushort) + sizeof(ushort)
+                    + sizeof(DispatchMapEntry) * ((int)_standardEntryCount + (int)_defaultEntryCount)
+                    + sizeof(StaticDispatchMapEntry) * ((int)_standardStaticEntryCount + (int)_defaultStaticEntryCount);
             }
         }
 
-        public DispatchMapEntry* this[int index]
+        public DispatchMapEntry* GetEntry(int index)
         {
-            get
-            {
-                return (DispatchMapEntry*)Unsafe.AsPointer(ref Unsafe.Add(ref _dispatchMap, index));
-            }
+            Debug.Assert(index <= _defaultEntryCount + _standardEntryCount);
+            return (DispatchMapEntry*)Unsafe.AsPointer(ref Unsafe.Add(ref _dispatchMap, index));
+        }
+
+        public DispatchMapEntry* GetStaticEntry(int index)
+        {
+            Debug.Assert(index <= _defaultStaticEntryCount + _standardStaticEntryCount);
+            return (DispatchMapEntry*)(((StaticDispatchMapEntry*)Unsafe.AsPointer(ref Unsafe.Add(ref _dispatchMap, _standardEntryCount + _defaultEntryCount))) + index);
         }
     }
 

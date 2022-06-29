@@ -142,7 +142,7 @@ namespace Microsoft.Interop
     /// </summary>
     public record NativeMarshallingAttributeInfo(
         ManagedTypeInfo EntryPointType,
-        CustomTypeMarshallers ManagedToUnmanagedMarshallers,
+        CustomTypeMarshallers Marshallers,
         bool IsPinnableManagedType) : MarshallingInfo;
 
     /// <summary>
@@ -584,7 +584,7 @@ namespace Microsoft.Interop
             ref int maxIndirectionDepthUsed)
         {
             bool isLinearCollectionMarshalling = ManualTypeMarshallingHelper.IsLinearCollectionEntryPoint(entryPointType);
-            if (ManualTypeMarshallingHelper.TryGetMarshallers(entryPointType, type, isLinearCollectionMarshalling, out CustomTypeMarshallers? marshallers))
+            if (ManualTypeMarshallingHelper.TryGetMarshallersFromEntryType(entryPointType, type, isLinearCollectionMarshalling, _compilation, out CustomTypeMarshallers? marshallers))
             {
                 if (!entryPointType.IsStatic)
                 {

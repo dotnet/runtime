@@ -424,13 +424,10 @@ namespace System.Net
                 throw new Win32Exception(NTE_FAIL);
             }
 
-            fixed (void* ptr = &field)
-            {
-                Span<byte> span = new Span<byte>(ptr, sizeof(MessageField));
-                BinaryPrimitives.WriteInt16LittleEndian(span, (short)length);
-                BinaryPrimitives.WriteInt16LittleEndian(span.Slice(2), (short)length);
-                BinaryPrimitives.WriteInt32LittleEndian(span.Slice(4), offset);
-            }
+            Span<byte> span = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref field, 1));
+            BinaryPrimitives.WriteInt16LittleEndian(span, (short)length);
+            BinaryPrimitives.WriteInt16LittleEndian(span.Slice(2), (short)length);
+            BinaryPrimitives.WriteInt32LittleEndian(span.Slice(4), offset);
         }
 
         private static void AddToPayload(ref MessageField field, ReadOnlySpan<byte> data, Span<byte> payload, ref int offset)

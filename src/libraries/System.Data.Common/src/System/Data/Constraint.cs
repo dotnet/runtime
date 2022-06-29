@@ -32,10 +32,7 @@ namespace System.Data
             get { return _name; }
             set
             {
-                if (value == null)
-                {
-                    value = string.Empty;
-                }
+                value ??= string.Empty;
 
                 if (string.IsNullOrEmpty(value) && (Table != null) && InCollection)
                 {

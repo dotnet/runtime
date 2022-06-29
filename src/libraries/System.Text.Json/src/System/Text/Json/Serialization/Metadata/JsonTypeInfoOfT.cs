@@ -32,7 +32,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(createObject is null or Func<object> or Func<T>);
 
-            CheckMutable();
+            VerifyMutable();
 
             if (Kind == JsonTypeInfoKind.None)
             {

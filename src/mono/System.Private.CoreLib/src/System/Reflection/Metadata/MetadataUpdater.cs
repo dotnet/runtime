@@ -51,7 +51,7 @@ namespace System.Reflection.Metadata
 
         public static bool IsSupported { get; } = ApplyUpdateEnabled(justComponentCheck: 0) != 0;
 
-        private static Lazy<string> s_ApplyUpdateCapabilities = new Lazy<string>(() => InitializeApplyUpdateCapabilities());
+        private static readonly Lazy<string> s_ApplyUpdateCapabilities = new Lazy<string>(InitializeApplyUpdateCapabilities);
 
         private static string InitializeApplyUpdateCapabilities()
         {

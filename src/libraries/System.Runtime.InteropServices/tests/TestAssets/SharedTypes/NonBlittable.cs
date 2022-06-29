@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -18,10 +19,9 @@ namespace SharedTypes
         public string str2;
     }
 
-    [ManagedToUnmanagedMarshallers(typeof(StringContainer),
-        InMarshaller = typeof(In),
-        RefMarshaller = typeof(Ref),
-        OutMarshaller = typeof(Out))]
+    [CustomMarshaller(typeof(StringContainer), Scenario.ManagedToUnmanagedIn, typeof(In))]
+    [CustomMarshaller(typeof(StringContainer), Scenario.ManagedToUnmanagedRef, typeof(Ref))]
+    [CustomMarshaller(typeof(StringContainer), Scenario.ManagedToUnmanagedOut, typeof(Out))]
     public static class StringContainerMarshaller
     {
         public struct StringContainerNative
@@ -76,7 +76,19 @@ namespace SharedTypes
         }
     }
 
-    [ManagedToUnmanagedMarshallers(typeof(double))]
+    [CustomMarshaller(typeof(double), Scenario.ManagedToUnmanagedIn, typeof(DoubleToBytesBigEndianMarshaller))]
+    public static unsafe class DoubleToBytesBigEndianMarshaller
+    {
+        public const int BufferSize = 8;
+
+        public static byte* ConvertToUnmanaged(double managed, Span<byte> buffer)
+        {
+            BinaryPrimitives.WriteDoubleBigEndian(buffer, managed);
+            return (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(buffer));
+        }
+    }
+
+    [CustomMarshaller(typeof(double), Scenario.ManagedToUnmanagedIn, typeof(DoubleToLongMarshaller))]
     public static class DoubleToLongMarshaller
     {
         public static long ConvertToUnmanaged(double managed)
@@ -93,7 +105,7 @@ namespace SharedTypes
         public bool b3;
     }
 
-    [ManagedToUnmanagedMarshallers(typeof(BoolStruct))]
+    [CustomMarshaller(typeof(BoolStruct), Scenario.Default, typeof(BoolStructMarshaller))]
     public static class BoolStructMarshaller
     {
         public struct BoolStructNative
@@ -132,7 +144,7 @@ namespace SharedTypes
         public ref int GetPinnableReference() => ref i;
     }
 
-    [ManagedToUnmanagedMarshallers(typeof(IntWrapper))]
+    [CustomMarshaller(typeof(IntWrapper), Scenario.Default, typeof(IntWrapperMarshaller))]
     public static unsafe class IntWrapperMarshaller
     {
         public static int* ConvertToUnmanaged(IntWrapper managed)

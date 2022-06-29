@@ -96,6 +96,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new object[] { CodeSnippets.CustomStructMarshalling.ManagedToNativeOnlyReturnValue, 1, 0 };
             yield return new object[] { CodeSnippets.CustomStructMarshalling.NativeToManagedOnlyInParameter, 1, 0 };
             yield return new object[] { CodeSnippets.CustomStructMarshalling.NonStaticMarshallerEntryPoint, 2, 0 };
+            yield return new object[] { CodeSnippets.CustomStructMarshalling.StackallocOnlyRefParameter, 1, 0 };
             yield return new object[] { CodeSnippets.CustomStructMarshalling_V1.TwoStageRefReturn, 3, 0 };
             yield return new object[] { CodeSnippets.CustomStructMarshalling_V1.ManagedToNativeOnlyOutParameter, 1, 0 };
             yield return new object[] { CodeSnippets.CustomStructMarshalling_V1.ManagedToNativeOnlyReturnValue, 1, 0 };
