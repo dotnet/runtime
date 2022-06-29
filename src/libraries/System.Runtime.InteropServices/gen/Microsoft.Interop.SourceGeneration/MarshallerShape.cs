@@ -261,10 +261,8 @@ namespace Microsoft.Interop
 
             IMethodSymbol toManaged = GetToManagedMethod(marshallerType, managedType);
             IMethodSymbol toManagedGuaranteed = GetToManagedGuaranteedMethod(marshallerType, managedType);
-            ImmutableArray<IMethodSymbol> fromUnmanagedCandidates = ImmutableArray.CreateRange(GetFromUnmanagedMethodCandidates(marshallerType));
-            if ((toManaged, toManagedGuaranteed) is not (null, null)
-                && fromUnmanagedCandidates.Length == 1
-                && (unmanagedType is null || SymbolEqualityComparer.Default.Equals(fromUnmanagedCandidates[0].Parameters[0].Type, unmanagedType)))
+            IMethodSymbol fromUnmanaged = GetFromUnmanagedMethod(marshallerType, unmanagedType);
+            if ((toManaged, toManagedGuaranteed) is not (null, null) && fromUnmanaged is not null)
             {
                 if (toManagedGuaranteed is not null)
                 {
@@ -276,7 +274,7 @@ namespace Microsoft.Interop
                 }
                 methods = methods with
                 {
-                    FromUnmanaged = fromUnmanagedCandidates[0],
+                    FromUnmanaged = fromUnmanaged,
                     ToManaged = toManaged,
                     ToManagedGuranteed = toManagedGuaranteed
                 };
@@ -377,11 +375,38 @@ namespace Microsoft.Interop
                 .FirstOrDefault(m => m is { IsStatic: false, Parameters.Length: 0, ReturnsVoid: false, ReturnsByRef: false, ReturnsByRefReadonly: false });
         }
 
-        private static IEnumerable<IMethodSymbol> GetFromUnmanagedMethodCandidates(ITypeSymbol type)
+        private static IMethodSymbol? GetFromUnmanagedMethod(ITypeSymbol type, ITypeSymbol? unmanagedType)
         {
-            return type.GetMembers(ShapeMemberNames.Value.Stateful.FromUnmanaged)
+            IMethodSymbol[] candidates = type.GetMembers(ShapeMemberNames.Value.Stateful.FromUnmanaged)
                 .OfType<IMethodSymbol>()
-                .Where(m => m is { IsStatic: false, Parameters.Length: 1, ReturnsVoid: true });
+                .Where(m => m is { IsStatic: false, Parameters.Length: 1, ReturnsVoid: true })
+                .ToArray();
+
+            // If there are multiple overloads of FromUnmanaged, we'll treat it as not present.
+            // Otherwise we get into a weird state where bidirectional marshallers would support overloads
+            // of FromUnmanaged as we'd have an unmanaged type to check, but unmanaged->managed marshallers
+            // would not support it as there's no way to know which overload is the correct overload.
+            if (candidates.Length != 1)
+            {
+                return null;
+            }
+
+            if (unmanagedType is null)
+            {
+                // We don't know the unmanaged type to expected for the parameter, so just assume that the only overload of FromUnmanaged
+                // is correct.
+                return candidates[0];
+            }
+
+            if (SymbolEqualityComparer.Default.Equals(candidates[0].Parameters[0].Type, unmanagedType))
+            {
+                // We know the unmanaged type and it matches.
+                // Use the method as we know it will work.
+                return candidates[0];
+            }
+
+            // The unmanaged type doesn't match the expected type, so we don't have an overload that will work.
+            return null;
         }
 
         private static IMethodSymbol? GetStatefulFreeMethod(ITypeSymbol type)
