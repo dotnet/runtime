@@ -8,6 +8,10 @@ class ThreadStore;
 class CLREventStatic;
 class Thread;
 
+#ifdef TARGET_UNIX
+#include "UnixContext.h"
+#endif
+
 // The offsets of some fields in the thread (in particular, m_pTransitionFrame) are known to the compiler and get
 // inlined into the code.  Let's make sure they don't change just because we enable/disable server GC in a particular
 // runtime build.
@@ -90,8 +94,9 @@ struct ThreadBuffer
     PTR_VOID                m_pThreadStressLog;                     // pointer to head of thread's StressLogChunks
 #ifdef FEATURE_SUSPEND_REDIRECTION
     uint8_t*                m_redirectionContextBuffer;              // storage for redirection context, allocated on demand
-    CONTEXT*                m_redirectionContext;                    // legacy context somewhere inside the context buffer
 #endif //FEATURE_SUSPEND_REDIRECTION
+    NATIVE_CONTEXT*         m_redirectionContext;                    // legacy context somewhere inside the context buffer
+
 #ifdef FEATURE_GC_STRESS
     uint32_t                m_uRand;                                // current per-thread random number
 #endif // FEATURE_GC_STRESS
@@ -265,8 +270,8 @@ public:
     Object* GetThreadStaticStorageForModule(uint32_t moduleIndex);
     bool SetThreadStaticStorageForModule(Object* pStorage, uint32_t moduleIndex);
 
+    NATIVE_CONTEXT* GetRedirectionContext();
 #ifdef FEATURE_SUSPEND_REDIRECTION
-    CONTEXT* GetRedirectionContext();
 #endif //FEATURE_SUSPEND_REDIRECTION
 };
 

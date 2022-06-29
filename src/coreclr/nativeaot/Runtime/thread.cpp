@@ -28,10 +28,6 @@
 #include "RhConfig.h"
 #include "RhVolatile.h"
 
-#ifdef TARGET_UNIX
-#include "UnixContext.h"
-#endif
-
 #ifndef DACCESS_COMPILE
 
 EXTERN_C NATIVEAOT_API void* REDHAWK_CALLCONV RhpHandleAlloc(void* pObject, int type);
@@ -292,8 +288,8 @@ void Thread::Construct()
 
 #ifdef FEATURE_SUSPEND_REDIRECTION
     m_redirectionContextBuffer = NULL;
-    m_redirectionContext = NULL;
 #endif //FEATURE_SUSPEND_REDIRECTION
+    m_redirectionContext = NULL;
 }
 
 bool Thread::IsInitialized()
@@ -669,8 +665,11 @@ UInt32_BOOL Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThread
         // perform in-line wait on the current thread
         if (pThreadToHijack == NULL)
         {
-            //pThread->WaitForGC(pThreadContext);
-            //return true;
+            ASSERT(pThread->m_redirectionContext == NULL);
+            pThread->m_redirectionContext = pThreadContext;
+            pThread->WaitForGC(REDIRECTED_THREAD_MARKER);
+            pThread->m_redirectionContext = NULL;
+            return true;
         }
 
 #ifdef FEATURE_SUSPEND_REDIRECTION
@@ -801,23 +800,25 @@ bool Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, void* 
     return true;
 }
 
-#ifdef FEATURE_SUSPEND_REDIRECTION
-CONTEXT* Thread::GetRedirectionContext()
+NATIVE_CONTEXT* Thread::GetRedirectionContext()
 {
+#ifdef FEATURE_SUSPEND_REDIRECTION
     if (m_redirectionContext == NULL)
     {
         m_redirectionContext = PalAllocateCompleteOSContext(&m_redirectionContextBuffer);
     }
+#endif
 
     return m_redirectionContext;
 }
 
+#ifdef FEATURE_SUSPEND_REDIRECTION
 bool Thread::Redirect()
 {
     if (IsDoNotTriggerGcSet())
         return false;
 
-    CONTEXT* redirectionContext = GetRedirectionContext();
+    NATIVE_CONTEXT* redirectionContext = GetRedirectionContext();
     if (redirectionContext == NULL)
         return false;
 

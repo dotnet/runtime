@@ -97,13 +97,11 @@ StackFrameIterator::StackFrameIterator(Thread * pThreadToWalk, PInvokeTransition
     STRESS_LOG0(LF_STACKWALK, LL_INFO10000, "----Init---- [ GC ]\n");
     ASSERT(!pThreadToWalk->DangerousCrossThreadIsHijacked());
 
-#ifdef FEATURE_SUSPEND_REDIRECTION
     if (pInitialTransitionFrame == REDIRECTED_THREAD_MARKER)
     {
         InternalInit(pThreadToWalk, pThreadToWalk->GetRedirectionContext(), GcStackWalkFlags | ActiveStackFrame);
     }
     else
-#endif
     {
         InternalInit(pThreadToWalk, pInitialTransitionFrame, GcStackWalkFlags);
     }

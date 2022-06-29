@@ -253,6 +253,8 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
                 // too long (we probably don't need a 15ms wait here).  Instead, we'll just burn some
                 // cycles.
     	        // @TODO: need tuning for spin
+                // @TODO: need tuning for this whole loop as well.
+                //        we are likley too aggressive with interruptions which may result in longer pauses.
                 YieldProcessorNormalizedForPreSkylakeCount(normalizationInfo, 10000);
             }
         }

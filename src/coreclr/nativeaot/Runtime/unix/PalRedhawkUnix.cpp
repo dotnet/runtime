@@ -546,9 +546,13 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalSleep(uint32_t milliseconds)
 
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI __stdcall PalSwitchToThread()
 {
-    // sched_yield yields to another thread in the current process. This implementation
-    // won't work well for cross-process synchronization.
-    return sched_yield() == 0;
+    // sched_yield yields to another thread in the current process.
+    sched_yield();
+
+    // The return value of sched_yield indicates the success of the call and does not tell whether a context switch happened.
+    // On Linux sched_yield is documented as never failing.
+    // Since we do not know if there was a context switch, we will just return `false`.
+    return false;
 }
 
 extern "C" UInt32_BOOL CloseHandle(HANDLE handle)
@@ -994,7 +998,7 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalHija
 REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* pThreadToHijack)
 {
     ThreadUnixHandle* threadHandle = (ThreadUnixHandle*)hThread;
-    int status = 0; // pthread_kill(*threadHandle->GetObject(), INJECT_ACTIVATION_SIGNAL);
+    int status = pthread_kill(*threadHandle->GetObject(), INJECT_ACTIVATION_SIGNAL);
     // We can get EAGAIN when printing stack overflow stack trace and when other threads hit
     // stack overflow too. Those are held in the sigsegv_handler with blocked signals until
     // the process exits.
