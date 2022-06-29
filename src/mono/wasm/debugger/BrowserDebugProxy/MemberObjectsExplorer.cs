@@ -558,7 +558,7 @@ namespace BrowserDebugProxy
                     typeId,
                     typeName,
                     getPropertiesParamBuffer,
-                    getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerProxyAttribute),
+                    getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerProxyAttribute) || getCommandType.HasFlag(GetObjectCommandOptions.AutoEvaluateProperties),
                     id,
                     isValueType: false,
                     isOwn,

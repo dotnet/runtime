@@ -59,7 +59,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         OwnProperties = 4,
         ForDebuggerProxyAttribute = 8,
         ForDebuggerDisplayAttribute = 16,
-        WithProperties = 32
+        WithProperties = 32,
+        AutoEvaluateProperties = 64
     }
 
     internal enum CommandSet {

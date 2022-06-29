@@ -566,6 +566,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                         return true;
                     }
+                case "DotnetDebugger.setEvaluationOptions":
+                    {
+                        //receive the available options from DAP to variables, stack and evaluate commands.
+                        if (args["options"]?["noFuncEval"]?.Value<bool>() == true)
+                            context.AutoEvaluateProperties = false;
+                        else
+                            context.AutoEvaluateProperties = true;
+                        return true;
+                    }
             }
 
             return false;
@@ -741,6 +750,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (args["forDebuggerDisplayAttribute"]?.Value<bool>() == true)
                     getObjectOptions |= GetObjectCommandOptions.ForDebuggerDisplayAttribute;
             }
+            if (context.AutoEvaluateProperties)
+                getObjectOptions |= GetObjectCommandOptions.AutoEvaluateProperties;
             try
             {
                 switch (objectId.Scheme)
