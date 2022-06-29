@@ -220,13 +220,13 @@ mono_liveness_handle_exception_clauses (MonoCompile *cfg)
 		outer_try [i] = TRUE;
 	/* Iterate over the clauses backward, so outer clauses come first */
 	/* This avoids doing an O(2) search, since we can determine when inner clauses end */
-	for (guint i = header->num_clauses - 1; i >= 0; --i) {
+	for (int i = header->num_clauses - 1; i >= 0; --i) {
 		clause = &header->clauses [i];
 
 		if (clause->flags != 0) {
 			outer_try [i] = TRUE;
 			/* Iterate over inner clauses */
-			for (guint j = i - 1; j >= 0; --j) {
+			for (int j = i - 1; j >= 0; --j) {
 				clause2 = &header->clauses [j];
 
 				if (clause2->flags == 0 && MONO_OFFSET_IN_HANDLER (clause, clause2->try_offset)) {
