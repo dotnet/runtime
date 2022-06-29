@@ -526,7 +526,6 @@ namespace System.Security.Cryptography.Tests
         [InlineData(PaddingMode.PKCS7)]
         [InlineData(PaddingMode.ANSIX923)]
         [InlineData(PaddingMode.ISO10126)]
-        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public void DecryptOneShot_Cbc_TooShortDoesNotContainPlaintext(PaddingMode paddingMode)
         {
             using (SymmetricAlgorithm alg = CreateAlgorithm())

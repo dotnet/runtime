@@ -756,7 +756,4 @@
   <data name="PlatformNotSupported_CipherModeBrowser" xml:space="preserve">
     <value>Only CipherMode.CBC is supported on this platform.</value>
   </data>
-  <data name="PlatformNotSupported_PaddingModeBrowser" xml:space="preserve">
-    <value>Only PaddingMode.PKCS7 is supported on this platform.</value>
-  </data>
 </root>

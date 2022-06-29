@@ -149,8 +149,6 @@ namespace System.Security.Cryptography
 
         public static int GetPaddingLength(ReadOnlySpan<byte> block, PaddingMode paddingMode, int blockSize)
         {
-            Debug.Assert(!OperatingSystem.IsBrowser() || paddingMode == PaddingMode.PKCS7);
-
             int padBytes;
 
             // See PadBlock for a description of the padding modes.
