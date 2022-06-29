@@ -130,7 +130,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            return source.CreateOrderedEnumerable(keySelector, comparer, false);
+            return source.CreateOrderedEnumerable(keySelector, comparer, true);
         }
     }
 
