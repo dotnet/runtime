@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             object[] arg = new object[] {"1","2"};
             //Assert.Equal(123456, Runtime.DoSomething("test", arg));
-            for(int i = 0; i < 1500; i++)
+            for(int i = 0; i < 10000; i++)
             {
                 Console.WriteLine("I " + i);
                 Assert.Equal(0, Runtime.DoNothing());
