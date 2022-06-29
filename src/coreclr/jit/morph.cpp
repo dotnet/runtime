@@ -12070,20 +12070,25 @@ DONE_MORPHING_CHILDREN:
 
                 // If the right operand is just a void nop node, throw it away. Unless this is a
                 // comma throw, in which case we want the top-level morphing loop to recognize it.
-                if (op2->IsNothingNode() && op1->TypeIs(TYP_VOID) && !fgIsCommaThrow(tree))
+                if (op2->IsNothingNode())
                 {
-                    op1->gtFlags |= (tree->gtFlags & GTF_DONT_CSE);
-                    DEBUG_DESTROY_NODE(tree);
-                    DEBUG_DESTROY_NODE(op2);
-                    return op1;
+                    // If the right operand is just a void nop node, throw it away. Unless this is a
+                    // comma throw, in which case we want the top-level morphing loop to recognize it.
+                    if (op1->TypeIs(TYP_VOID) && !fgIsCommaThrow(tree))
+                    {
+                        op1->gtFlags |= (tree->gtFlags & GTF_DONT_CSE);
+                        DEBUG_DESTROY_NODE(tree);
+                        DEBUG_DESTROY_NODE(op2);
+                        return op1;
+                    }
+                    // If the left operand is invariant, then this entire node does nothing at all; return the nop.
+                    else if (op1->IsInvariant())
+                    {
+                        DEBUG_DESTROY_NODE(tree);
+                        DEBUG_DESTROY_NODE(op1);
+                        return op2;
+                    }
                 }
-            }
-
-            if (op2->IsNothingNode() && op1->IsInvariant())
-            {
-                DEBUG_DESTROY_NODE(tree);
-                DEBUG_DESTROY_NODE(op1);
-                return op2;
             }
 
             break;
