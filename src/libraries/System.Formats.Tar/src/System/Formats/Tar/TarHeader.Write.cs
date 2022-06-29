@@ -220,7 +220,7 @@ namespace System.Formats.Tar
             }
 
             // Third, we write this header as a normal one
-           return  await WriteAsGnuInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+           return await WriteAsGnuInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
         }
 
         // Creates and returns a GNU long metadata header, with the specified long text written into its data stream.
