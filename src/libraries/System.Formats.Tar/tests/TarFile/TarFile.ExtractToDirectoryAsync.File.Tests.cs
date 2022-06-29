@@ -22,14 +22,14 @@ namespace System.Formats.Tar.Tests
         [Fact]
         public async Task InvalidPaths_Throw()
         {
-            await Assert.ThrowsAsync<ArgumentNullException>(async () => await TarFile.ExtractToDirectoryAsync(sourceFileName: null, destinationDirectoryName: "path", overwriteFiles: false));
-            await Assert.ThrowsAsync<ArgumentException>(async () => await TarFile.ExtractToDirectoryAsync(sourceFileName: string.Empty, destinationDirectoryName: "path", overwriteFiles: false));
-            await Assert.ThrowsAsync<ArgumentNullException>(async () => await TarFile.ExtractToDirectoryAsync(sourceFileName: "path", destinationDirectoryName: null, overwriteFiles: false));
-            await Assert.ThrowsAsync<ArgumentException>(async () => await TarFile.ExtractToDirectoryAsync(sourceFileName: "path", destinationDirectoryName: string.Empty, overwriteFiles: false));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => TarFile.ExtractToDirectoryAsync(sourceFileName: null, destinationDirectoryName: "path", overwriteFiles: false));
+            await Assert.ThrowsAsync<ArgumentException>(() => TarFile.ExtractToDirectoryAsync(sourceFileName: string.Empty, destinationDirectoryName: "path", overwriteFiles: false));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => TarFile.ExtractToDirectoryAsync(sourceFileName: "path", destinationDirectoryName: null, overwriteFiles: false));
+            await Assert.ThrowsAsync<ArgumentException>(() => TarFile.ExtractToDirectoryAsync(sourceFileName: "path", destinationDirectoryName: string.Empty, overwriteFiles: false));
         }
 
         [Fact]
-        public async Task NonExistentFile_Throws_Async()
+        public Task NonExistentFile_Throws_Async()
         {
             using TempDirectory root = new TempDirectory();
 
@@ -38,11 +38,11 @@ namespace System.Formats.Tar.Tests
 
             Directory.CreateDirectory(dirPath);
 
-            await Assert.ThrowsAsync<FileNotFoundException>(async () => await TarFile.ExtractToDirectoryAsync(sourceFileName: filePath, destinationDirectoryName: dirPath, overwriteFiles: false));
+            return Assert.ThrowsAsync<FileNotFoundException>(() => TarFile.ExtractToDirectoryAsync(sourceFileName: filePath, destinationDirectoryName: dirPath, overwriteFiles: false));
         }
 
         [Fact]
-        public async Task NonExistentDirectory_Throws_Async()
+        public Task NonExistentDirectory_Throws_Async()
         {
             using TempDirectory root = new TempDirectory();
 
@@ -51,7 +51,7 @@ namespace System.Formats.Tar.Tests
 
             File.Create(filePath).Dispose();
 
-            await Assert.ThrowsAsync<DirectoryNotFoundException>(async () => await TarFile.ExtractToDirectoryAsync(sourceFileName: filePath, destinationDirectoryName: dirPath, overwriteFiles: false));
+            return Assert.ThrowsAsync<DirectoryNotFoundException>(() => TarFile.ExtractToDirectoryAsync(sourceFileName: filePath, destinationDirectoryName: dirPath, overwriteFiles: false));
         }
 
         [Theory]
@@ -102,7 +102,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
-        public async Task Extract_Archive_File_OverwriteFalse_Async()
+        public Task Extract_Archive_File_OverwriteFalse_Async()
         {
             string sourceArchiveFileName = GetTarFilePath(CompressionMethod.Uncompressed, TestTarFormat.pax, "file");
 
@@ -112,7 +112,7 @@ namespace System.Formats.Tar.Tests
 
             File.Create(filePath).Dispose();
 
-            await Assert.ThrowsAsync<IOException>(async () => await TarFile.ExtractToDirectoryAsync(sourceArchiveFileName, destination.Path, overwriteFiles: false));
+            return Assert.ThrowsAsync<IOException>(() => TarFile.ExtractToDirectoryAsync(sourceArchiveFileName, destination.Path, overwriteFiles: false));
         }
 
         [Fact]

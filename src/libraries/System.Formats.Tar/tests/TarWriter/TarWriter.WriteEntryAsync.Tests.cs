@@ -42,7 +42,7 @@ namespace System.Formats.Tar.Tests
             await writer.DisposeAsync();
 
             PaxTarEntry entry = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName);
-            await Assert.ThrowsAsync<ObjectDisposedException>(async () => await writer.WriteEntryAsync(entry));
+            await Assert.ThrowsAsync<ObjectDisposedException>(() => writer.WriteEntryAsync(entry));
         }
 
         [Fact]

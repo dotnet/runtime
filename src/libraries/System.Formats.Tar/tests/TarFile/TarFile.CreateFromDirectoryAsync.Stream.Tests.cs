@@ -23,33 +23,33 @@ namespace System.Formats.Tar.Tests
         public async Task InvalidPath_Throws_Async()
         {
             using MemoryStream archive = new MemoryStream();
-            await Assert.ThrowsAsync<ArgumentNullException>(async () => await TarFile.CreateFromDirectoryAsync(sourceDirectoryName: null,destination: archive, includeBaseDirectory: false));
-            await Assert.ThrowsAsync<ArgumentException>(async () => await TarFile.CreateFromDirectoryAsync(sourceDirectoryName: string.Empty,destination: archive, includeBaseDirectory: false));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => TarFile.CreateFromDirectoryAsync(sourceDirectoryName: null,destination: archive, includeBaseDirectory: false));
+            await Assert.ThrowsAsync<ArgumentException>(() => TarFile.CreateFromDirectoryAsync(sourceDirectoryName: string.Empty,destination: archive, includeBaseDirectory: false));
         }
 
         [Fact]
-        public async Task NullStream_Throws_Async()
+        public Task NullStream_Throws_Async()
         {
             using MemoryStream archive = new MemoryStream();
-            await Assert.ThrowsAsync<ArgumentNullException>(async () => await TarFile.CreateFromDirectoryAsync(sourceDirectoryName: "path",destination: null, includeBaseDirectory: false));
+            return Assert.ThrowsAsync<ArgumentNullException>(() => TarFile.CreateFromDirectoryAsync(sourceDirectoryName: "path",destination: null, includeBaseDirectory: false));
         }
 
         [Fact]
-        public async Task UnwritableStream_Throws_Async()
+        public Task UnwritableStream_Throws_Async()
         {
             using MemoryStream archive = new MemoryStream();
             using WrappedStream unwritable = new WrappedStream(archive, canRead: true, canWrite: false, canSeek: true);
-            await Assert.ThrowsAsync<IOException>(async () => await TarFile.CreateFromDirectoryAsync(sourceDirectoryName: "path",destination: unwritable, includeBaseDirectory: false));
+            return Assert.ThrowsAsync<IOException>(() => TarFile.CreateFromDirectoryAsync(sourceDirectoryName: "path",destination: unwritable, includeBaseDirectory: false));
         }
 
         [Fact]
-        public async Task NonExistentDirectory_Throws_Async()
+        public Task NonExistentDirectory_Throws_Async()
         {
             using TempDirectory root = new TempDirectory();
             string dirPath = Path.Join(root.Path, "dir");
 
             using MemoryStream archive = new MemoryStream();
-            await Assert.ThrowsAsync<DirectoryNotFoundException>(async () => await TarFile.CreateFromDirectoryAsync(sourceDirectoryName: dirPath, destination: archive, includeBaseDirectory: false));
+            return Assert.ThrowsAsync<DirectoryNotFoundException>(() => TarFile.CreateFromDirectoryAsync(sourceDirectoryName: dirPath, destination: archive, includeBaseDirectory: false));
         }
     }
 }

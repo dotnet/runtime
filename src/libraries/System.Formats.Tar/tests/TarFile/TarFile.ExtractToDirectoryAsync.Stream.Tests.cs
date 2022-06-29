@@ -22,35 +22,33 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
-        public async Task NullStream_Throws_Async()
-        {
-            await Assert.ThrowsAsync<ArgumentNullException>(async () => await TarFile.ExtractToDirectoryAsync(source: null, destinationDirectoryName: "path", overwriteFiles: false));
-        }
+        public Task NullStream_Throws_Async() =>
+            Assert.ThrowsAsync<ArgumentNullException>(() => TarFile.ExtractToDirectoryAsync(source: null, destinationDirectoryName: "path", overwriteFiles: false));
 
         [Fact]
         public async Task InvalidPath_Throws_Async()
         {
             using MemoryStream archive = new MemoryStream();
-            await Assert.ThrowsAsync<ArgumentNullException>(async () => await TarFile.ExtractToDirectoryAsync(archive, destinationDirectoryName: null, overwriteFiles: false));
-            await Assert.ThrowsAsync<ArgumentException>(async () => await TarFile.ExtractToDirectoryAsync(archive, destinationDirectoryName: string.Empty, overwriteFiles: false));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => TarFile.ExtractToDirectoryAsync(archive, destinationDirectoryName: null, overwriteFiles: false));
+            await Assert.ThrowsAsync<ArgumentException>(() => TarFile.ExtractToDirectoryAsync(archive, destinationDirectoryName: string.Empty, overwriteFiles: false));
         }
 
         [Fact]
-        public async Task UnreadableStream_Throws_Async()
+        public Task UnreadableStream_Throws_Async()
         {
             using MemoryStream archive = new MemoryStream();
             using WrappedStream unreadable = new WrappedStream(archive, canRead: false, canWrite: true, canSeek: true);
-            await Assert.ThrowsAsync<IOException>(async () => await TarFile.ExtractToDirectoryAsync(unreadable, destinationDirectoryName: "path", overwriteFiles: false));
+            return Assert.ThrowsAsync<IOException>(() => TarFile.ExtractToDirectoryAsync(unreadable, destinationDirectoryName: "path", overwriteFiles: false));
         }
 
         [Fact]
-        public async Task NonExistentDirectory_Throws_Async()
+        public Task NonExistentDirectory_Throws_Async()
         {
             using TempDirectory root = new TempDirectory();
             string dirPath = Path.Join(root.Path, "dir");
 
             using MemoryStream archive = new MemoryStream();
-            await Assert.ThrowsAsync<DirectoryNotFoundException>(async () => await TarFile.ExtractToDirectoryAsync(archive, destinationDirectoryName: dirPath, overwriteFiles: false));
+            return Assert.ThrowsAsync<DirectoryNotFoundException>(() => TarFile.ExtractToDirectoryAsync(archive, destinationDirectoryName: dirPath, overwriteFiles: false));
         }
 
         [Fact]
@@ -102,7 +100,7 @@ namespace System.Formats.Tar.Tests
 
             using TempDirectory root = new TempDirectory();
 
-            await Assert.ThrowsAsync<IOException>(async () => await TarFile.ExtractToDirectoryAsync(archive, root.Path, overwriteFiles: false));
+            await Assert.ThrowsAsync<IOException>(() => TarFile.ExtractToDirectoryAsync(archive, root.Path, overwriteFiles: false));
 
             Assert.Equal(0, Directory.GetFileSystemEntries(root.Path).Count());
         }

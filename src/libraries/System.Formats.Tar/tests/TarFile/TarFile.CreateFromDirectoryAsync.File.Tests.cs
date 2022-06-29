@@ -23,25 +23,25 @@ namespace System.Formats.Tar.Tests
         [Fact]
         public async Task InvalidPaths_Throw_Async()
         {
-            await Assert.ThrowsAsync<ArgumentNullException>(async () => await TarFile.CreateFromDirectoryAsync(sourceDirectoryName: null,destinationFileName: "path", includeBaseDirectory: false));
-            await Assert.ThrowsAsync<ArgumentException>(async () => await TarFile.CreateFromDirectoryAsync(sourceDirectoryName: string.Empty,destinationFileName: "path", includeBaseDirectory: false));
-            await Assert.ThrowsAsync<ArgumentNullException>(async () => await TarFile.CreateFromDirectoryAsync(sourceDirectoryName: "path",destinationFileName: null, includeBaseDirectory: false));
-            await Assert.ThrowsAsync<ArgumentException>(async () => await TarFile.CreateFromDirectoryAsync(sourceDirectoryName: "path",destinationFileName: string.Empty, includeBaseDirectory: false));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => TarFile.CreateFromDirectoryAsync(sourceDirectoryName: null,destinationFileName: "path", includeBaseDirectory: false));
+            await Assert.ThrowsAsync<ArgumentException>(() => TarFile.CreateFromDirectoryAsync(sourceDirectoryName: string.Empty,destinationFileName: "path", includeBaseDirectory: false));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => TarFile.CreateFromDirectoryAsync(sourceDirectoryName: "path",destinationFileName: null, includeBaseDirectory: false));
+            await Assert.ThrowsAsync<ArgumentException>(() => TarFile.CreateFromDirectoryAsync(sourceDirectoryName: "path",destinationFileName: string.Empty, includeBaseDirectory: false));
         }
 
         [Fact]
-        public async Task NonExistentDirectory_Throws_Async()
+        public Task NonExistentDirectory_Throws_Async()
         {
             using TempDirectory root = new TempDirectory();
 
             string dirPath = Path.Join(root.Path, "dir");
             string filePath = Path.Join(root.Path, "file.tar");
 
-            await Assert.ThrowsAsync<DirectoryNotFoundException>(async () => await TarFile.CreateFromDirectoryAsync(sourceDirectoryName: "IDontExist", destinationFileName: filePath, includeBaseDirectory: false));
+            return Assert.ThrowsAsync<DirectoryNotFoundException>(() => TarFile.CreateFromDirectoryAsync(sourceDirectoryName: "IDontExist", destinationFileName: filePath, includeBaseDirectory: false));
         }
 
         [Fact]
-        public async Task DestinationExists_Throws_Async()
+        public Task DestinationExists_Throws_Async()
         {
             using TempDirectory root = new TempDirectory();
 
@@ -51,7 +51,7 @@ namespace System.Formats.Tar.Tests
             string filePath = Path.Join(root.Path, "file.tar");
             File.Create(filePath).Dispose();
 
-            await Assert.ThrowsAsync<IOException>(async () => await TarFile.CreateFromDirectoryAsync(sourceDirectoryName: dirPath, destinationFileName: filePath, includeBaseDirectory: false));
+            return Assert.ThrowsAsync<IOException>(() => TarFile.CreateFromDirectoryAsync(sourceDirectoryName: dirPath, destinationFileName: filePath, includeBaseDirectory: false));
         }
 
         [Theory]

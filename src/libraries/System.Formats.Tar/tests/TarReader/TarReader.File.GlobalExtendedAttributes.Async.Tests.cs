@@ -82,7 +82,7 @@ namespace System.Formats.Tar.Tests
             await using (reader)
             {
                 TarEntry entry = await reader.GetNextEntryAsync();
-                await Assert.ThrowsAsync<InvalidOperationException>(async () => await entry.ExtractToFileAsync(Path.Join(root.Path, "file"), overwrite: true));
+                await Assert.ThrowsAsync<InvalidOperationException>(() => entry.ExtractToFileAsync(Path.Join(root.Path, "file"), overwrite: true));
             }
         }
     }

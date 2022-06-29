@@ -24,7 +24,7 @@ namespace System.Formats.Tar.Tests
 
             Directory.CreateDirectory(destination);
 
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await TarFile.ExtractToDirectoryAsync(archive, destination, overwriteFiles: false));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => TarFile.ExtractToDirectoryAsync(archive, destination, overwriteFiles: false));
 
             Assert.Equal(0, Directory.GetFileSystemEntries(destination).Count());
         }
