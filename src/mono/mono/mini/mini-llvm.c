@@ -3897,7 +3897,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 	 */
 	ctx->gc_var_indexes = g_new0 (int, cfg->next_vreg);
 	int ngc_vars = 0;
-	for (int i = 0; i < cfg->next_vreg; ++i) {
+	for (guint32 i = 0; i < cfg->next_vreg; ++i) {
 		if (vreg_is_ref (cfg, i)) {
 			ctx->gc_var_indexes [i] = ngc_vars + 1;
 			ngc_vars ++;
@@ -4161,7 +4161,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 	 * Storing ref arguments to the pin area is not needed
 	 * since it's done by the caller.
 	 */
-	for (int i = 0; i < cfg->num_varinfo; ++i) {
+	for (guint i = 0; i < cfg->num_varinfo; ++i) {
 		MonoInst *var = cfg->varinfo [i];
 
 		if (var->opcode == OP_ARG && vreg_is_ref (cfg, var->dreg) && ctx->values [var->dreg])
