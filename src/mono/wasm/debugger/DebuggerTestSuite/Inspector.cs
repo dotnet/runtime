@@ -13,6 +13,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 using System.Runtime.ExceptionServices;
+using Microsoft.AspNetCore.Routing.Tree;
+using System.Globalization;
 
 #nullable enable
 
@@ -146,7 +148,7 @@ namespace DebuggerTests
             }
         }
 
-        private static string FormatConsoleAPICalled(JObject args)
+        private (string line, string type) FormatConsoleAPICalled(JObject args)
         {
             string? type = args?["type"]?.Value<string>();
             List<string> consoleArgs = new();
@@ -156,8 +158,9 @@ namespace DebuggerTests
                     consoleArgs.Add(arg!["value"]!.ToString());
             }
 
+            type ??= "log";
             if (consoleArgs.Count == 0)
-                return "console: <message missing>";
+                return (line: "console: <message missing>", type);
 
             int position = 1;
             string first = consoleArgs[0];
@@ -180,7 +183,7 @@ namespace DebuggerTests
                     output = output[..^1];
             }
 
-            return $"console.{type}: {output}";
+            return ($"console.{type}: {output}", type);
         }
 
         async Task OnMessage(string method, JObject args, CancellationToken token)
@@ -196,8 +199,17 @@ namespace DebuggerTests
                     break;
                 case "Runtime.consoleAPICalled":
                 {
-                    string line = FormatConsoleAPICalled(args);
-                    _logger.LogInformation(line);
+                    (string line, string type) = FormatConsoleAPICalled(args);
+                    switch (type)
+                    {
+                        case "log": _logger.LogInformation(line); break;
+                        case "debug": _logger.LogDebug(line); break;
+                        case "error": _logger.LogError(line); break;
+                        case "warn": _logger.LogWarning(line); break;
+                        case "trace": _logger.LogTrace(line); break;
+                        default: _logger.LogInformation(line); break;
+                    }
+
                     if (DetectAndFailOnAssertions &&
                             (line.Contains("console.error: [MONO]") || line.Contains("console.warning: [MONO]")))
                     {
