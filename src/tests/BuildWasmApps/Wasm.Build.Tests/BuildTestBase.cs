@@ -237,8 +237,17 @@ namespace Wasm.Build.Tests
             if (useWasmConsoleOutput)
             {
                 string wasmConsolePath = Path.Combine(testLogPath, "wasm-console.log");
-                if (File.Exists(wasmConsolePath))
-                    output = File.ReadAllText(wasmConsolePath);
+                try
+                {
+                    if (File.Exists(wasmConsolePath))
+                        output = File.ReadAllText(wasmConsolePath);
+                    else
+                        _testOutput.WriteLine($"Warning: Could not find {wasmConsolePath}. Ignoring.");
+                }
+                catch (IOException ioex)
+                {
+                    _testOutput.WriteLine($"Warning: Could not read {wasmConsolePath}: {ioex}");
+                }
             }
 
             if (exitCode != xharnessExitCode)

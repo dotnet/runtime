@@ -107,9 +107,9 @@ function set_exit_code(exit_code, reason) {
         if (is_node) {
             let _flush = function(_stream) {
                  return new Promise((resolve, reject) => {
-                     setTimeout(reject, 30000);
-                     _stream.write('', function() { resolve () });
+                     setTimeout(() => { reject(new Error("timed out waiting for stdout/stderr streams to flush")) }, 30000);
                      _stream.on('error', (error) => reject(error));
+                     _stream.write('', function() { resolve () });
                  });
             };
             let stderrFlushed = _flush(process.stderr);
