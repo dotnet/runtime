@@ -3,6 +3,7 @@
 
 /// <reference lib="webworker" />
 
+import MonoWasmThreads from "consts:monoWasmThreads";
 import { Module, ENVIRONMENT_IS_PTHREAD } from "../../imports";
 import { makeChannelCreatedMonoMessage, pthread_ptr } from "../shared";
 import { mono_assert, is_nullish } from "../../types";
@@ -28,7 +29,8 @@ export {
 ///    currentWorkerThreadEvents.addEventListener(dotnetPthreadCreated, (ev: WorkerThreadEvent) => {
 ///       console.debug ("thread created on worker with id", ev.pthread_ptr);
 ///    });
-export const currentWorkerThreadEvents: WorkerThreadEventTarget = new EventTarget();
+export const currentWorkerThreadEvents: WorkerThreadEventTarget =
+    MonoWasmThreads ? new EventTarget() : null as any as WorkerThreadEventTarget; // treeshake if threads are disabled
 
 function monoDedicatedChannelMessageFromMainToWorker(event: MessageEvent<string>): void {
     console.debug("got message from main on the dedicated channel", event.data);
