@@ -3,20 +3,18 @@
 
 namespace System.Runtime.InteropServices.JavaScript
 {
+    [Obsolete]
     public class ArrayBuffer : JSObject
     {
         /// <summary>
         /// Initializes a new instance of the JavaScript Core ArrayBuffer class.
         /// </summary>
-        public ArrayBuffer() : base(nameof(ArrayBuffer))
-        { }
-
-        /// <summary>
-        /// Initializes a new instance of the JavaScript Core ArrayBuffer class.
-        /// </summary>
         /// <param name="length">Length.</param>
-        public ArrayBuffer(int length) : base(nameof(ArrayBuffer), length)
-        { }
+        public ArrayBuffer(int length)
+            : base(JavaScriptImports.CreateCSOwnedObject(nameof(ArrayBuffer), new object[] { length }))
+        {
+            JSHostImplementation.RegisterCSOwnedObject(this);
+        }
 
         /// <summary>
         /// Initializes a new instance of the JavaScript Core ArrayBuffer class.
@@ -29,20 +27,20 @@ namespace System.Runtime.InteropServices.JavaScript
         /// The length of an ArrayBuffer in bytes.
         /// </summary>
         /// <value>The length of the underlying ArrayBuffer in bytes.</value>
-        public int ByteLength => (int)GetObjectProperty("byteLength");
+        public int ByteLength => (int)this.GetObjectProperty("byteLength");
 
         /// <summary>
         /// Gets a value indicating whether this ArrayBuffer is view.
         /// </summary>
         /// <value><c>true</c> if is view; otherwise, <c>false</c>.</value>
-        public bool IsView => (bool)GetObjectProperty("isView");
+        public bool IsView => (bool)this.GetObjectProperty("isView");
 
         /// <summary>
         /// Slice the specified begin.
         /// </summary>
         /// <returns>The slice.</returns>
         /// <param name="begin">Begin.</param>
-        public ArrayBuffer Slice(int begin) => (ArrayBuffer)Invoke("slice", begin);
+        public ArrayBuffer Slice(int begin) => (ArrayBuffer)this.Invoke("slice", begin);
 
         /// <summary>
         /// Slice the specified begin and end.
@@ -50,6 +48,6 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <returns>The slice.</returns>
         /// <param name="begin">Begin.</param>
         /// <param name="end">End.</param>
-        public ArrayBuffer Slice(int begin, int end) => (ArrayBuffer)Invoke("slice", begin, end);
+        public ArrayBuffer Slice(int begin, int end) => (ArrayBuffer)this.Invoke("slice", begin, end);
     }
 }

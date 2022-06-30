@@ -12,10 +12,14 @@ namespace System.Runtime.InteropServices.JavaScript
     /// allows executing code in the global scope, prompting better programming habits and allowing for more efficient
     /// code minification.
     /// </remarks>
+    [Obsolete]
     public class Function : JSObject
     {
-        public Function(params object[] args) : base(nameof(Function), args)
-        { }
+        public Function(params object[] args)
+            : base(JavaScriptImports.CreateCSOwnedObject(nameof(Function), args))
+        {
+            JSHostImplementation.RegisterCSOwnedObject(this);
+        }
 
         internal Function(IntPtr jsHandle) : base(jsHandle)
         { }
@@ -26,7 +30,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <returns>The apply.</returns>
         /// <param name="thisArg">This argument.</param>
         /// <param name="argsArray">Arguments.</param>
-        public object Apply(object? thisArg, object[]? argsArray = null) => Invoke("apply", thisArg, argsArray);
+        public object Apply(object? thisArg, object[]? argsArray = null) => this.Invoke("apply", thisArg, argsArray);
 
         /// <summary>
         /// Creates a new Function that, when called, has its this keyword set to the provided value, with a given sequence of arguments preceding any provided when the new function is called.
@@ -34,7 +38,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <returns>The bind.</returns>
         /// <param name="thisArg">This argument.</param>
         /// <param name="argsArray">Arguments.</param>
-        public Function Bind(object? thisArg, object[]? argsArray = null) => (Function)Invoke("bind", thisArg, argsArray);
+        public Function Bind(object? thisArg, object[]? argsArray = null) => (Function)this.Invoke("bind", thisArg, argsArray);
 
         /// <summary>
         /// Calls a function with a given `this` value and arguments provided individually.
@@ -47,7 +51,7 @@ namespace System.Runtime.InteropServices.JavaScript
             object?[] argsList = new object[argsArray.Length + 1];
             argsList[0] = thisArg;
             System.Array.Copy(argsArray, 0, argsList, 1, argsArray.Length);
-            return Invoke("call", argsList);
+            return this.Invoke("call", argsList);
         }
 
         /// <summary>

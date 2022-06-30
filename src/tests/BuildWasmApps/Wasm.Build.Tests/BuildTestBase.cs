@@ -152,11 +152,13 @@ namespace Wasm.Build.Tests
             }
 
             string bundleDir = Path.Combine(GetBinDir(baseDir: buildDir, config: buildArgs.Config, targetFramework: targetFramework), "AppBundle");
-            (string testCommand, string extraXHarnessArgs) = host switch
+
+            // Use wasm-console.log to get the xharness output for non-browser cases
+            (string testCommand, string extraXHarnessArgs, bool useWasmConsoleOutput) = host switch
             {
-                RunHost.V8     => ("wasm test", "--js-file=test-main.js --engine=V8 -v trace"),
-                RunHost.NodeJS => ("wasm test", "--js-file=test-main.js --engine=NodeJS -v trace"),
-                _              => ("wasm test-browser", $"-v trace -b {host} --web-server-use-cop")
+                RunHost.V8     => ("wasm test", "--js-file=test-main.js --engine=V8 -v trace", true),
+                RunHost.NodeJS => ("wasm test", "--js-file=test-main.js --engine=NodeJS -v trace", true),
+                _              => ("wasm test-browser", $"-v trace -b {host} --web-server-use-cop", false)
             };
 
             string testLogPath = Path.Combine(_logPath, host.ToString());
@@ -170,7 +172,8 @@ namespace Wasm.Build.Tests
                                 expectedAppExitCode: expectedExitCode,
                                 extraXHarnessArgs: extraXHarnessArgs,
                                 appArgs: args,
-                                extraXHarnessMonoArgs: extraXHarnessMonoArgs
+                                extraXHarnessMonoArgs: extraXHarnessMonoArgs,
+                                useWasmConsoleOutput: useWasmConsoleOutput
                                 );
 
             if (buildArgs.AOT)
@@ -192,7 +195,8 @@ namespace Wasm.Build.Tests
 
         protected static string RunWithXHarness(string testCommand, string testLogPath, string projectName, string bundleDir,
                                         ITestOutputHelper _testOutput, IDictionary<string, string>? envVars=null,
-                                        int expectedAppExitCode=0, int xharnessExitCode=0, string? extraXHarnessArgs=null, string? appArgs=null, string? extraXHarnessMonoArgs = null)
+                                        int expectedAppExitCode=0, int xharnessExitCode=0, string? extraXHarnessArgs=null,
+                                        string? appArgs=null, string? extraXHarnessMonoArgs = null, bool useWasmConsoleOutput = false)
         {
             _testOutput.WriteLine($"============== {testCommand} =============");
             Directory.CreateDirectory(testLogPath);
@@ -230,6 +234,21 @@ namespace Wasm.Build.Tests
                                         timeoutMs: s_defaultPerTestTimeoutMs);
 
             File.WriteAllText(Path.Combine(testLogPath, $"xharness.log"), output);
+            if (useWasmConsoleOutput)
+            {
+                string wasmConsolePath = Path.Combine(testLogPath, "wasm-console.log");
+                try
+                {
+                    if (File.Exists(wasmConsolePath))
+                        output = File.ReadAllText(wasmConsolePath);
+                    else
+                        _testOutput.WriteLine($"Warning: Could not find {wasmConsolePath}. Ignoring.");
+                }
+                catch (IOException ioex)
+                {
+                    _testOutput.WriteLine($"Warning: Could not read {wasmConsolePath}: {ioex}");
+                }
+            }
 
             if (exitCode != xharnessExitCode)
             {
@@ -758,9 +777,12 @@ namespace Wasm.Build.Tests
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
 
-                // process.WaitForExit doesn't work if the process exits too quickly?
-                // resetEvent.WaitOne();
-                if (!process.WaitForExit(timeoutMs ?? s_defaultPerTestTimeoutMs))
+                using CancellationTokenSource cts = new();
+                cts.CancelAfter(timeoutMs ?? s_defaultPerTestTimeoutMs);
+
+                await process.WaitForExitAsync(cts.Token);
+
+                if (cts.IsCancellationRequested)
                 {
                     // process didn't exit
                     process.Kill(entireProcessTree: true);
@@ -770,13 +792,11 @@ namespace Wasm.Build.Tests
                         throw new XunitException($"Process timed out. Last 20 lines of output:{Environment.NewLine}{string.Join(Environment.NewLine, lastLines)}");
                     }
                 }
-                else
-                {
-                    // this will ensure that all the async event handling
-                    // has completed
-                    // https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.process.waitforexit?view=net-5.0#System_Diagnostics_Process_WaitForExit_System_Int32_
-                    await process.WaitForExitAsync();
-                }
+
+                // this will ensure that all the async event handling has completed
+                // and should be called after process.WaitForExit(int)
+                // https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.process.waitforexit?view=net-5.0#System_Diagnostics_Process_WaitForExit_System_Int32_
+                process.WaitForExit();
 
                 process.ErrorDataReceived -= logStdErr;
                 process.OutputDataReceived -= logStdOut;

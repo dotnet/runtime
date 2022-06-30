@@ -16,9 +16,6 @@ export interface MonoObject extends ManagedPointer {
 export interface MonoString extends MonoObject {
     __brand: "MonoString"
 }
-export interface MonoInternedString extends MonoString {
-    __brandString: "MonoInternedString"
-}
 export interface MonoClass extends MonoObject {
     __brand: "MonoClass"
 }
@@ -134,9 +131,9 @@ export const enum AssetBehaviours {
 
 export type RuntimeHelpers = {
     get_call_sig_ref: MonoMethod;
-    runtime_namespace: string;
-    runtime_classname: string;
-    wasm_runtime_class: MonoClass;
+    runtime_interop_namespace: string;
+    runtime_interop_exports_classname: string;
+    runtime_interop_exports_class: MonoClass;
     bind_runtime_method: typeof bind_runtime_method;
 
     _box_buffer_size: number;
@@ -156,7 +153,7 @@ export type RuntimeHelpers = {
     mono_wasm_bindings_is_ready: boolean;
 
     loaded_files: string[];
-    config: MonoConfig | MonoConfigError;
+    config: MonoConfig;
     wait_for_debugger?: number;
     fetch: (url: string) => Promise<Response>;
 }

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -124,7 +124,7 @@
     <value>Invalid argument: {0} can not be null and must have a length</value>
   </data>
   <data name="SystemRuntimeInteropServicesJavaScript_PlatformNotSupported" xml:space="preserve">
-    <value>System.Private.Runtime.InteropServices.JavaScript is not supported on this platform.</value>
+    <value>System.Runtime.InteropServices.JavaScript is not supported on this platform.</value>
   </data>
   <data name="TypedArrayNotCorrectType" xml:space="preserve">
     <value>TypedArray is not of correct type.</value>
