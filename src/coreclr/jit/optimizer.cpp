@@ -6301,31 +6301,19 @@ void Compiler::optPerformHoistExpr(GenTree** link, BasicBlock* exprBb, Statement
     }
     else
     {
-        unsigned  cseLclVarNum = lvaGrabTemp(false DEBUGARG("optPerformHoistExpr"));
-        var_types cseLclVarTyp = genActualType(hoistExpr->TypeGet());
-        if (varTypeIsStruct(cseLclVarTyp))
+        unsigned  lclVarNum = lvaGrabTemp(false DEBUGARG("optPerformHoistExpr"));
+        var_types lclVarTyp = genActualType(hoistExpr->TypeGet());
+        if (varTypeIsStruct(lclVarTyp))
         {
             CORINFO_CLASS_HANDLE structHnd = gtGetStructHandle(hoistExpr);
             assert(structHnd != NO_CLASS_HANDLE);
-            lvaSetStruct(cseLclVarNum, structHnd, false);
+            lvaSetStruct(lclVarNum, structHnd, false);
         }
-        lvaTable[cseLclVarNum].lvType = cseLclVarTyp;
-        GenTree* cseLclVar            = gtNewLclvNode(cseLclVarNum, cseLclVarTyp);
+        lvaTable[lclVarNum].lvType = lclVarTyp;
+        GenTree* lclVar            = gtNewLclvNode(lclVarNum, lclVarTyp);
 
-         GenTree* asg = gtNewTempAssign(cseLclVarNum, hoistExpr);
-         GenTree* load = gtNewLclvNode(cseLclVarNum, cseLclVarTyp);
-        //CORINFO_CLASS_HANDLE structHnd = nullptr;
-        //// When we have a GT_IND node with a SIMD type then we don't have a reliable
-        //// struct handle and gtGetStructHandleIfPresent returns a guess that can be wrong
-        ////
-        //if (varTypeIsStruct(hoistExpr) && ((hoistExpr->OperGet() != GT_IND) || !varTypeIsSIMD(hoistExpr)))
-        //{
-        //    structHnd = gtGetStructHandleIfPresent(hoistExpr);
-        //}
-
-        //TempInfo tempInfo = fgMakeTemp(hoistExpr, structHnd);
-        //hoist             = tempInfo.asg;
-        //*link             = tempInfo.load;
+         GenTree* asg = gtNewTempAssign(lclVarNum, hoistExpr);
+         GenTree* load = gtNewLclvNode(lclVarNum, lclVarTyp);
 
          hoist = asg;
          *link = load;
