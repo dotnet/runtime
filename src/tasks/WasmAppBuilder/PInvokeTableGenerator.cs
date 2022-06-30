@@ -19,7 +19,7 @@ internal sealed class PInvokeTableGenerator
 
     public PInvokeTableGenerator(TaskLoggingHelper log) => Log = log;
 
-    public IEnumerable<string>? GenPInvokeTable(string[] pinvokeModules, string[] assemblies, string outputPath)
+    public bool TryGenPInvokeTable(string[] pinvokeModules, string[] assemblies, string outputPath, [NotNullWhen(true)] out IEnumerable<string>? cookies)
     {
         var modules = new Dictionary<string, string>();
         foreach (var module in pinvokeModules)
@@ -45,7 +45,10 @@ internal sealed class PInvokeTableGenerator
         }
 
         if (hasError)
-            return null;
+        {
+            cookies = null;
+            return false;
+        }
 
         string tmpFileName = Path.GetTempFileName();
         try
@@ -66,7 +69,8 @@ internal sealed class PInvokeTableGenerator
             File.Delete(tmpFileName);
         }
 
-        return signatures;
+        cookies = signatures;
+        return true;
     }
 
     private bool CollectPInvokes(List<PInvoke> pinvokes, List<PInvokeCallback> callbacks, List<string> signatures, Type type)
@@ -78,7 +82,7 @@ internal sealed class PInvokeTableGenerator
             {
                 CollectPInvokesForMethod(method);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not LogAsErrorException)
             {
                 hasError = true;
                 Log.LogError($"Could not get pinvoke, or callbacks for method {method.Name}: {ex.Message}");

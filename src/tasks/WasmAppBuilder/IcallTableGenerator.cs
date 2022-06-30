@@ -32,7 +32,7 @@ internal sealed class IcallTableGenerator
     // The runtime icall table should be generated using
     // mono --print-icall-table
     //
-    public IEnumerable<string>? GenIcallTable(string? runtimeIcallTableFile, string[] assemblies, string? outputPath)
+    public bool TryGenIcallTable(string? runtimeIcallTableFile, string[] assemblies, string? outputPath, [NotNullWhen(true)] out IEnumerable<string>? cookies)
     {
         _icalls.Clear();
         _signatures.Clear();
@@ -55,7 +55,10 @@ internal sealed class IcallTableGenerator
         }
 
         if (hasError)
-            return null;
+        {
+            cookies = null;
+            return false;
+        }
 
         if (outputPath != null)
         {
@@ -76,7 +79,8 @@ internal sealed class IcallTableGenerator
             }
         }
 
-        return _signatures;
+        cookies = _signatures;
+        return true;
     }
 
     private void EmitTable(StreamWriter w)
@@ -159,7 +163,7 @@ internal sealed class IcallTableGenerator
             {
                 AddSignature(type, method);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not LogAsErrorException)
             {
                 hasError = true;
                 Log.LogError($"Could not get icall, or callbacks for method {method.Name}: {ex.Message}");

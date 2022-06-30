@@ -68,22 +68,19 @@ public class ManagedToNativeGenerator : Task
         var pinvoke = new PInvokeTableGenerator(Log);
         var icall = new IcallTableGenerator(Log);
 
-        var pinvokeCookies = pinvoke.GenPInvokeTable(PInvokeModules, Assemblies!, PInvokeOutputPath!);
-        var icallCookies = icall.GenIcallTable(RuntimeIcallTableFile, Assemblies!, IcallOutputPath);
+        if (pinvoke.TryGenPInvokeTable(PInvokeModules, Assemblies!, PInvokeOutputPath!, out var pinvokeCookies) && icall.TryGenIcallTable(RuntimeIcallTableFile, Assemblies!, IcallOutputPath, out var icallCookies))
+        {
+            IEnumerable<string> cookies = Enumerable.Concat(
+                pinvokeCookies,
+                icallCookies
+            );
 
-        if (pinvokeCookies == null || icallCookies == null)
-            return;
+            var m2n = new InterpToNativeGenerator(Log);
+            m2n.Generate(cookies, InterpToNativeOutputPath!);
 
-        IEnumerable<string> cookies = Enumerable.Concat(
-            pinvokeCookies,
-            icallCookies
-        );
-
-        var m2n = new InterpToNativeGenerator(Log);
-        m2n.Generate(cookies, InterpToNativeOutputPath!);
-
-        FileWrites = IcallOutputPath != null
-            ? new string[] { PInvokeOutputPath, IcallOutputPath, InterpToNativeOutputPath }
-            : new string[] { PInvokeOutputPath, InterpToNativeOutputPath };
+            FileWrites = IcallOutputPath != null
+                ? new string[] { PInvokeOutputPath, IcallOutputPath, InterpToNativeOutputPath }
+                : new string[] { PInvokeOutputPath, InterpToNativeOutputPath };
+        }
     }
 }
