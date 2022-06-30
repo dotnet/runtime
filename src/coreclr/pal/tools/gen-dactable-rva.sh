@@ -16,11 +16,9 @@ while read -r line; do
     #
     array=($line)
     value="$(printf "%s\n" ${array[2]:(${#array[2]} > 16 ? -16 : 0)})"
-    zeros="0000000000000000"
-    pvalue="$(printf "%s%s" "${zeros:${#value}}" "$value")"
 
     # Write line to file and exit
-    printf "#define DAC_TABLE_RVA 0x%s\n" "$pvalue" > "$2"
+    printf "#define DAC_TABLE_RVA 0x%s\n" "$value" > "$2"
     break
   fi
 done < <(${NM:-nm} $__DynamicSymbolsOption -P -t x $1)
