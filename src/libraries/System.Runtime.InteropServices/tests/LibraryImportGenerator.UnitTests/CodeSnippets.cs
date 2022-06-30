@@ -1688,7 +1688,7 @@ partial class Test
         [MarshalUsing(CountElementName=""arr7"", ElementIndirectionDepth = 7)]
         [MarshalUsing(CountElementName=""arr8"", ElementIndirectionDepth = 8)]
         [MarshalUsing(CountElementName=""arr9"", ElementIndirectionDepth = 9)]
-        [MarshalUsing(CountElementName=""arr10"", ElementIndirectionDepth = 10)] ref int[][][][][][][][][][][] arr11,
+        [MarshalUsing(CountElementName=""arr10"", ElementIndirectionDepth = 10)]ref int[][][][][][][][][][][] arr11,
         [MarshalUsing(CountElementName=""arr0"", ElementIndirectionDepth = 0)]
         [MarshalUsing(CountElementName=""arr1"", ElementIndirectionDepth = 1)]
         [MarshalUsing(CountElementName=""arr2"", ElementIndirectionDepth = 2)]
@@ -1698,7 +1698,7 @@ partial class Test
         [MarshalUsing(CountElementName=""arr6"", ElementIndirectionDepth = 6)]
         [MarshalUsing(CountElementName=""arr7"", ElementIndirectionDepth = 7)]
         [MarshalUsing(CountElementName=""arr8"", ElementIndirectionDepth = 8)]
-        [MarshalUsing(CountElementName=""arr9"", ElementIndirectionDepth = 9)]ref int[][][][][][][][][][][] arr10,
+        [MarshalUsing(CountElementName=""arr9"", ElementIndirectionDepth = 9)]ref int[][][][][][][][][][] arr10,
         [MarshalUsing(CountElementName=""arr0"", ElementIndirectionDepth = 0)]
         [MarshalUsing(CountElementName=""arr1"", ElementIndirectionDepth = 1)]
         [MarshalUsing(CountElementName=""arr2"", ElementIndirectionDepth = 2)]
@@ -1707,7 +1707,7 @@ partial class Test
         [MarshalUsing(CountElementName=""arr5"", ElementIndirectionDepth = 5)]
         [MarshalUsing(CountElementName=""arr6"", ElementIndirectionDepth = 6)]
         [MarshalUsing(CountElementName=""arr7"", ElementIndirectionDepth = 7)]
-        [MarshalUsing(CountElementName=""arr8"", ElementIndirectionDepth = 8)]ref int[][][][][][][][][][] arr9,
+        [MarshalUsing(CountElementName=""arr8"", ElementIndirectionDepth = 8)]ref int[][][][][][][][][] arr9,
         [MarshalUsing(CountElementName=""arr0"", ElementIndirectionDepth = 0)]
         [MarshalUsing(CountElementName=""arr1"", ElementIndirectionDepth = 1)]
         [MarshalUsing(CountElementName=""arr2"", ElementIndirectionDepth = 2)]
@@ -1715,7 +1715,7 @@ partial class Test
         [MarshalUsing(CountElementName=""arr4"", ElementIndirectionDepth = 4)]
         [MarshalUsing(CountElementName=""arr5"", ElementIndirectionDepth = 5)]
         [MarshalUsing(CountElementName=""arr6"", ElementIndirectionDepth = 6)]
-        [MarshalUsing(CountElementName=""arr7"", ElementIndirectionDepth = 7)]ref int[][][][][][][][][] arr8,
+        [MarshalUsing(CountElementName=""arr7"", ElementIndirectionDepth = 7)]ref int[][][][][][][][] arr8,
         [MarshalUsing(CountElementName=""arr0"", ElementIndirectionDepth = 0)]
         [MarshalUsing(CountElementName=""arr1"", ElementIndirectionDepth = 1)]
         [MarshalUsing(CountElementName=""arr2"", ElementIndirectionDepth = 2)]
