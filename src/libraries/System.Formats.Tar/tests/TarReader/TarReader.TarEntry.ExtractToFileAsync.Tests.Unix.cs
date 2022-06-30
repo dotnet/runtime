@@ -13,11 +13,9 @@ namespace System.Formats.Tar.Tests
         [Fact]
         public async Task SpecialFile_Unelevated_Throws_Async()
         {
-            using TempDirectory root = new TempDirectory();
-            using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, TestTarFormat.ustar, "specialfiles");
-
-            TarReader reader = new TarReader(ms);
-            await using (reader)
+            using (TempDirectory root = new TempDirectory())
+            await using (MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, TestTarFormat.ustar, "specialfiles"))
+            await using (TarReader reader = new TarReader(ms))
             {
                 string path = Path.Join(root.Path, "output");
 

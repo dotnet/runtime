@@ -66,23 +66,24 @@ namespace System.Formats.Tar.Tests
         [Fact]
         public async Task ExtractGlobalExtendedAttributesEntry_Throws_Async()
         {
-            using TempDirectory root = new TempDirectory();
-
-            using MemoryStream archiveStream = new MemoryStream();
-            TarWriter writer = new TarWriter(archiveStream, leaveOpen: true);
-            await using (writer)
+            using (TempDirectory root = new TempDirectory())
             {
-                PaxGlobalExtendedAttributesTarEntry gea = new PaxGlobalExtendedAttributesTarEntry(new Dictionary<string, string>());
-                await writer.WriteEntryAsync(gea);
-            }
+                await using (MemoryStream archiveStream = new MemoryStream())
+                {
+                    await using (TarWriter writer = new TarWriter(archiveStream, leaveOpen: true))
+                    {
+                        PaxGlobalExtendedAttributesTarEntry gea = new PaxGlobalExtendedAttributesTarEntry(new Dictionary<string, string>());
+                        await writer.WriteEntryAsync(gea);
+                    }
 
-            archiveStream.Position = 0;
+                    archiveStream.Position = 0;
 
-            TarReader reader = new TarReader(archiveStream, leaveOpen: false);
-            await using (reader)
-            {
-                TarEntry entry = await reader.GetNextEntryAsync();
-                await Assert.ThrowsAsync<InvalidOperationException>(() => entry.ExtractToFileAsync(Path.Join(root.Path, "file"), overwrite: true));
+                    await using (TarReader reader = new TarReader(archiveStream, leaveOpen: false))
+                    {
+                        TarEntry entry = await reader.GetNextEntryAsync();
+                        await Assert.ThrowsAsync<InvalidOperationException>(() => entry.ExtractToFileAsync(Path.Join(root.Path, "file"), overwrite: true));
+                    }
+                }
             }
         }
     }

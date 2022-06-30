@@ -13,20 +13,22 @@ namespace System.Formats.Tar.Tests
         [Fact]
         public async Task Extract_SpecialFiles_Unix_Unelevated_ThrowsUnauthorizedAccess_Async()
         {
-            string originalFileName = GetTarFilePath(CompressionMethod.Uncompressed, TestTarFormat.ustar, "specialfiles");
-            using TempDirectory root = new TempDirectory();
+            using (TempDirectory root = new TempDirectory())
+            {
+                string originalFileName = GetTarFilePath(CompressionMethod.Uncompressed, TestTarFormat.ustar, "specialfiles");
 
-            string archive = Path.Join(root.Path, "input.tar");
-            string destination = Path.Join(root.Path, "dir");
+                string archive = Path.Join(root.Path, "input.tar");
+                string destination = Path.Join(root.Path, "dir");
 
-            // Copying the tar to reduce the chance of other tests failing due to being used by another process
-            File.Copy(originalFileName, archive);
+                // Copying the tar to reduce the chance of other tests failing due to being used by another process
+                File.Copy(originalFileName, archive);
 
-            Directory.CreateDirectory(destination);
+                Directory.CreateDirectory(destination);
 
-            await Assert.ThrowsAsync<UnauthorizedAccessException>(() => TarFile.ExtractToDirectoryAsync(archive, destination, overwriteFiles: false));
+                await Assert.ThrowsAsync<UnauthorizedAccessException>(() => TarFile.ExtractToDirectoryAsync(archive, destination, overwriteFiles: false));
 
-            Assert.Equal(0, Directory.GetFileSystemEntries(destination).Count());
+                Assert.Equal(0, Directory.GetFileSystemEntries(destination).Count());
+            }
         }
     }
 }

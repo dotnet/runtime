@@ -31,19 +31,20 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Gnu)]
         public async Task Constructor_Name_FullPath_DestinationDirectory_Mismatch_Throws_Async(TarEntryFormat format)
         {
-            using TempDirectory root = new TempDirectory();
+            using (TempDirectory root = new TempDirectory())
+            {
+                string fullPath = Path.Join(Path.GetPathRoot(root.Path), "dir", "file.txt");
 
-            string fullPath = Path.Join(Path.GetPathRoot(root.Path), "dir", "file.txt");
+                TarEntry entry = InvokeTarEntryCreationConstructor(format, GetTarEntryTypeForTarEntryFormat(TarEntryType.RegularFile, format), fullPath);
 
-            TarEntry entry = InvokeTarEntryCreationConstructor(format, GetTarEntryTypeForTarEntryFormat(TarEntryType.RegularFile, format), fullPath);
+                entry.DataStream = new MemoryStream();
+                entry.DataStream.Write(new byte[] { 0x1 });
+                entry.DataStream.Seek(0, SeekOrigin.Begin);
 
-            entry.DataStream = new MemoryStream();
-            entry.DataStream.Write(new byte[] { 0x1 });
-            entry.DataStream.Seek(0, SeekOrigin.Begin);
+                await Assert.ThrowsAsync<IOException>(() => entry.ExtractToFileAsync(root.Path, overwrite: false));
 
-            await Assert.ThrowsAsync<IOException>(() => entry.ExtractToFileAsync(root.Path, overwrite: false));
-
-            Assert.False(File.Exists(fullPath));
+                Assert.False(File.Exists(fullPath));
+            }
         }
 
         [Theory]
@@ -53,19 +54,20 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Gnu)]
         public async Task Constructor_Name_FullPath_DestinationDirectory_Match_AdditionalSubdirectory_Throws_Async(TarEntryFormat format)
         {
-            using TempDirectory root = new TempDirectory();
+            using (TempDirectory root = new TempDirectory())
+            {
+                string fullPath = Path.Join(root.Path, "dir", "file.txt");
 
-            string fullPath = Path.Join(root.Path, "dir", "file.txt");
+                TarEntry entry = InvokeTarEntryCreationConstructor(format, GetTarEntryTypeForTarEntryFormat(TarEntryType.RegularFile, format), fullPath);
 
-            TarEntry entry = InvokeTarEntryCreationConstructor(format, GetTarEntryTypeForTarEntryFormat(TarEntryType.RegularFile, format), fullPath);
+                entry.DataStream = new MemoryStream();
+                entry.DataStream.Write(new byte[] { 0x1 });
+                entry.DataStream.Seek(0, SeekOrigin.Begin);
 
-            entry.DataStream = new MemoryStream();
-            entry.DataStream.Write(new byte[] { 0x1 });
-            entry.DataStream.Seek(0, SeekOrigin.Begin);
+                await Assert.ThrowsAsync<IOException>(() => entry.ExtractToFileAsync(root.Path, overwrite: false));
 
-            await Assert.ThrowsAsync<IOException>(() => entry.ExtractToFileAsync(root.Path, overwrite: false));
-
-            Assert.False(File.Exists(fullPath));
+                Assert.False(File.Exists(fullPath));
+            }
         }
 
         [Theory]
@@ -75,37 +77,41 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Gnu)]
         public async Task Constructor_Name_FullPath_DestinationDirectory_Match_Async(TarEntryFormat format)
         {
-            using TempDirectory root = new TempDirectory();
+            using (TempDirectory root = new TempDirectory())
+            {
 
-            string fullPath = Path.Join(root.Path, "file.txt");
+                string fullPath = Path.Join(root.Path, "file.txt");
 
-            TarEntry entry = InvokeTarEntryCreationConstructor(format, GetTarEntryTypeForTarEntryFormat(TarEntryType.RegularFile, format), fullPath);
+                TarEntry entry = InvokeTarEntryCreationConstructor(format, GetTarEntryTypeForTarEntryFormat(TarEntryType.RegularFile, format), fullPath);
 
-            entry.DataStream = new MemoryStream();
-            entry.DataStream.Write(new byte[] { 0x1 });
-            entry.DataStream.Seek(0, SeekOrigin.Begin);
+                entry.DataStream = new MemoryStream();
+                entry.DataStream.Write(new byte[] { 0x1 });
+                entry.DataStream.Seek(0, SeekOrigin.Begin);
 
-            await entry.ExtractToFileAsync(fullPath, overwrite: false);
+                await entry.ExtractToFileAsync(fullPath, overwrite: false);
 
-            Assert.True(File.Exists(fullPath));
+                Assert.True(File.Exists(fullPath));
+            }
         }
 
         [Theory]
         [MemberData(nameof(GetFormatsAndLinks))]
         public async Task ExtractToFile_Link_Throws_Async(TarEntryFormat format, TarEntryType entryType)
         {
-            using TempDirectory root = new TempDirectory();
-            string fileName = "mylink";
-            string fullPath = Path.Join(root.Path, fileName);
+            using (TempDirectory root = new TempDirectory())
+            {
+                string fileName = "mylink";
+                string fullPath = Path.Join(root.Path, fileName);
 
-            string linkTarget = PlatformDetection.IsWindows ? @"C:\Windows\system32\notepad.exe" : "/usr/bin/nano";
+                string linkTarget = PlatformDetection.IsWindows ? @"C:\Windows\system32\notepad.exe" : "/usr/bin/nano";
 
-            TarEntry entry = InvokeTarEntryCreationConstructor(format, entryType, fileName);
-            entry.LinkName = linkTarget;
+                TarEntry entry = InvokeTarEntryCreationConstructor(format, entryType, fileName);
+                entry.LinkName = linkTarget;
 
-            await Assert.ThrowsAsync<InvalidOperationException>(() => entry.ExtractToFileAsync(fileName, overwrite: false));
+                await Assert.ThrowsAsync<InvalidOperationException>(() => entry.ExtractToFileAsync(fileName, overwrite: false));
 
-            Assert.Equal(0, Directory.GetFileSystemEntries(root.Path).Count());
+                Assert.Equal(0, Directory.GetFileSystemEntries(root.Path).Count());
+            }
         }
     }
 }

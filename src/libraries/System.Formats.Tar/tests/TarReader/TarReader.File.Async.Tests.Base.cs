@@ -16,221 +16,221 @@ namespace System.Formats.Tar.Tests
         protected async Task Read_Archive_File_Async_Internal(TarEntryFormat format, TestTarFormat testFormat)
         {
             string testCaseName = "file";
-            using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
-
-            TarReader reader = new TarReader(ms);
-            await using (reader)
+            await using (MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName))
             {
-                if (testFormat is TestTarFormat.pax_gea)
+                await using (TarReader reader = new TarReader(ms))
                 {
-                    TarEntry entry = await reader.GetNextEntryAsync();
-                    VerifyGlobalExtendedAttributes(entry);
+                    if (testFormat is TestTarFormat.pax_gea)
+                    {
+                        TarEntry entry = await reader.GetNextEntryAsync();
+                        VerifyGlobalExtendedAttributes(entry);
+                    }
+
+                    TarEntry file = await reader.GetNextEntryAsync();
+
+                    VerifyRegularFileEntry(file, format, "file.txt", $"Hello {testCaseName}");
+
+                    Assert.Null(await reader.GetNextEntryAsync());
                 }
-
-                TarEntry file = await reader.GetNextEntryAsync();
-
-                VerifyRegularFileEntry(file, format, "file.txt", $"Hello {testCaseName}");
-
-                Assert.Null(await reader.GetNextEntryAsync());
             }
         }
 
         protected async Task Read_Archive_File_HardLink_Async_Internal(TarEntryFormat format, TestTarFormat testFormat)
         {
             string testCaseName = "file_hardlink";
-            using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
-
-            TarReader reader = new TarReader(ms);
-            await using (reader)
+            await using (MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName))
             {
-                if (testFormat is TestTarFormat.pax_gea)
+                await using (TarReader reader = new TarReader(ms))
                 {
-                    TarEntry entry = await reader.GetNextEntryAsync();
-                    VerifyGlobalExtendedAttributes(entry);
+                    if (testFormat is TestTarFormat.pax_gea)
+                    {
+                        TarEntry entry = await reader.GetNextEntryAsync();
+                        VerifyGlobalExtendedAttributes(entry);
+                    }
+
+                    TarEntry file = await reader.GetNextEntryAsync();
+
+                    VerifyRegularFileEntry(file, format, "file.txt", $"Hello {testCaseName}");
+
+                    TarEntry hardLink = await reader.GetNextEntryAsync();
+                    // The 'tar' tool detects hardlinks as regular files and saves them as such in the archives, for all formats
+                    VerifyRegularFileEntry(hardLink, format, "hardlink.txt", $"Hello {testCaseName}");
+
+                    Assert.Null(await reader.GetNextEntryAsync());
                 }
-
-                TarEntry file = await reader.GetNextEntryAsync();
-
-                VerifyRegularFileEntry(file, format, "file.txt", $"Hello {testCaseName}");
-
-                TarEntry hardLink = await reader.GetNextEntryAsync();
-                // The 'tar' tool detects hardlinks as regular files and saves them as such in the archives, for all formats
-                VerifyRegularFileEntry(hardLink, format, "hardlink.txt", $"Hello {testCaseName}");
-
-                Assert.Null(await reader.GetNextEntryAsync());
             }
         }
 
         protected async Task Read_Archive_File_SymbolicLink_Async_Internal(TarEntryFormat format, TestTarFormat testFormat)
         {
             string testCaseName = "file_symlink";
-            using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
-
-            TarReader reader = new TarReader(ms);
-            await using (reader)
+            await using (MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName))
             {
-                if (testFormat is TestTarFormat.pax_gea)
+                await using (TarReader reader = new TarReader(ms))
                 {
-                    TarEntry entry = await reader.GetNextEntryAsync();
-                    VerifyGlobalExtendedAttributes(entry);
+                    if (testFormat is TestTarFormat.pax_gea)
+                    {
+                        TarEntry entry = await reader.GetNextEntryAsync();
+                        VerifyGlobalExtendedAttributes(entry);
+                    }
+
+                    TarEntry file = await reader.GetNextEntryAsync();
+
+                    VerifyRegularFileEntry(file, format, "file.txt", $"Hello {testCaseName}");
+
+                    TarEntry symbolicLink = await reader.GetNextEntryAsync();
+                    VerifySymbolicLinkEntry(symbolicLink, format, "link.txt", "file.txt");
+
+                    Assert.Null(await reader.GetNextEntryAsync());
                 }
-
-                TarEntry file = await reader.GetNextEntryAsync();
-
-                VerifyRegularFileEntry(file, format, "file.txt", $"Hello {testCaseName}");
-
-                TarEntry symbolicLink = await reader.GetNextEntryAsync();
-                VerifySymbolicLinkEntry(symbolicLink, format, "link.txt", "file.txt");
-
-                Assert.Null(await reader.GetNextEntryAsync());
             }
         }
 
         protected async Task Read_Archive_Folder_File_Async_Internal(TarEntryFormat format, TestTarFormat testFormat)
         {
             string testCaseName = "folder_file";
-            using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
-
-            TarReader reader = new TarReader(ms);
-            await using (reader)
+            await using (MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName))
             {
-                if (testFormat is TestTarFormat.pax_gea)
+                await using (TarReader reader = new TarReader(ms))
                 {
-                    TarEntry entry = await reader.GetNextEntryAsync();
-                    VerifyGlobalExtendedAttributes(entry);
+                    if (testFormat is TestTarFormat.pax_gea)
+                    {
+                        TarEntry entry = await reader.GetNextEntryAsync();
+                        VerifyGlobalExtendedAttributes(entry);
+                    }
+
+                    TarEntry directory = await reader.GetNextEntryAsync();
+
+                    VerifyDirectoryEntry(directory, format, "folder/");
+
+                    TarEntry file = await reader.GetNextEntryAsync();
+                    VerifyRegularFileEntry(file, format, "folder/file.txt", $"Hello {testCaseName}");
+
+                    Assert.Null(await reader.GetNextEntryAsync());
                 }
-
-                TarEntry directory = await reader.GetNextEntryAsync();
-
-                VerifyDirectoryEntry(directory, format, "folder/");
-
-                TarEntry file = await reader.GetNextEntryAsync();
-                VerifyRegularFileEntry(file, format, "folder/file.txt", $"Hello {testCaseName}");
-
-                Assert.Null(await reader.GetNextEntryAsync());
             }
         }
 
         protected async Task Read_Archive_Folder_File_Utf8_Async_Internal(TarEntryFormat format, TestTarFormat testFormat)
         {
             string testCaseName = "folder_file_utf8";
-            using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
-
-            TarReader reader = new TarReader(ms);
-            await using (reader)
+            await using (MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName))
             {
-                if (testFormat is TestTarFormat.pax_gea)
+                await using (TarReader reader = new TarReader(ms))
                 {
-                    TarEntry entry = await reader.GetNextEntryAsync();
-                    VerifyGlobalExtendedAttributes(entry);
+                    if (testFormat is TestTarFormat.pax_gea)
+                    {
+                        TarEntry entry = await reader.GetNextEntryAsync();
+                        VerifyGlobalExtendedAttributes(entry);
+                    }
+
+                    TarEntry directory = await reader.GetNextEntryAsync();
+
+                    VerifyDirectoryEntry(directory, format, "f\u00f6ld\u00ebr/"); //földër
+
+                    TarEntry file = await reader.GetNextEntryAsync();
+                    VerifyRegularFileEntry(file, format, "f\u00f6ld\u00ebr/\u00e1\u00f6\u00f1.txt", $"Hello {testCaseName}"); // földër/áöñ.txt
+
+                    Assert.Null(await reader.GetNextEntryAsync());
                 }
-
-                TarEntry directory = await reader.GetNextEntryAsync();
-
-                VerifyDirectoryEntry(directory, format, "f\u00f6ld\u00ebr/"); //földër
-
-                TarEntry file = await reader.GetNextEntryAsync();
-                VerifyRegularFileEntry(file, format, "f\u00f6ld\u00ebr/\u00e1\u00f6\u00f1.txt", $"Hello {testCaseName}"); // földër/áöñ.txt
-
-                Assert.Null(await reader.GetNextEntryAsync());
             }
         }
 
         protected async Task Read_Archive_Folder_Subfolder_File_Async_Internal(TarEntryFormat format, TestTarFormat testFormat)
         {
             string testCaseName = "folder_subfolder_file";
-            using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
-
-            TarReader reader = new TarReader(ms);
-            await using (reader)
+            await using (MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName))
             {
-                if (testFormat is TestTarFormat.pax_gea)
+                await using (TarReader reader = new TarReader(ms))
                 {
-                    TarEntry entry = await reader.GetNextEntryAsync();
-                    VerifyGlobalExtendedAttributes(entry);
+                    if (testFormat is TestTarFormat.pax_gea)
+                    {
+                        TarEntry entry = await reader.GetNextEntryAsync();
+                        VerifyGlobalExtendedAttributes(entry);
+                    }
+
+                    TarEntry parent = await reader.GetNextEntryAsync();
+
+                    VerifyDirectoryEntry(parent, format, "parent/");
+
+                    TarEntry child = await reader.GetNextEntryAsync();
+                    VerifyDirectoryEntry(child, format, "parent/child/");
+
+                    TarEntry file = await reader.GetNextEntryAsync();
+                    VerifyRegularFileEntry(file, format, "parent/child/file.txt", $"Hello {testCaseName}");
+
+                    Assert.Null(await reader.GetNextEntryAsync());
                 }
-
-                TarEntry parent = await reader.GetNextEntryAsync();
-
-                VerifyDirectoryEntry(parent, format, "parent/");
-
-                TarEntry child = await reader.GetNextEntryAsync();
-                VerifyDirectoryEntry(child, format, "parent/child/");
-
-                TarEntry file = await reader.GetNextEntryAsync();
-                VerifyRegularFileEntry(file, format, "parent/child/file.txt", $"Hello {testCaseName}");
-
-                Assert.Null(await reader.GetNextEntryAsync());
             }
         }
 
         protected async Task Read_Archive_FolderSymbolicLink_Folder_Subfolder_File_Async_Internal(TarEntryFormat format, TestTarFormat testFormat)
         {
             string testCaseName = "foldersymlink_folder_subfolder_file";
-            using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
-
-            TarReader reader = new TarReader(ms);
-            await using (reader)
+            await using (MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName))
             {
-                if (testFormat is TestTarFormat.pax_gea)
+                await using (TarReader reader = new TarReader(ms))
                 {
-                    TarEntry entry = await reader.GetNextEntryAsync();
-                    VerifyGlobalExtendedAttributes(entry);
+                    if (testFormat is TestTarFormat.pax_gea)
+                    {
+                        TarEntry entry = await reader.GetNextEntryAsync();
+                        VerifyGlobalExtendedAttributes(entry);
+                    }
+
+                    TarEntry childlink = await reader.GetNextEntryAsync();
+
+                    VerifySymbolicLinkEntry(childlink, format, "childlink", "parent/child");
+
+                    TarEntry parent = await reader.GetNextEntryAsync();
+                    VerifyDirectoryEntry(parent, format, "parent/");
+
+                    TarEntry child = await reader.GetNextEntryAsync();
+                    VerifyDirectoryEntry(child, format, "parent/child/");
+
+                    TarEntry file = await reader.GetNextEntryAsync();
+                    VerifyRegularFileEntry(file, format, "parent/child/file.txt", $"Hello {testCaseName}");
+
+                    Assert.Null(await reader.GetNextEntryAsync());
                 }
-
-                TarEntry childlink = await reader.GetNextEntryAsync();
-
-                VerifySymbolicLinkEntry(childlink, format, "childlink", "parent/child");
-
-                TarEntry parent = await reader.GetNextEntryAsync();
-                VerifyDirectoryEntry(parent, format, "parent/");
-
-                TarEntry child = await reader.GetNextEntryAsync();
-                VerifyDirectoryEntry(child, format, "parent/child/");
-
-                TarEntry file = await reader.GetNextEntryAsync();
-                VerifyRegularFileEntry(file, format, "parent/child/file.txt", $"Hello {testCaseName}");
-
-                Assert.Null(await reader.GetNextEntryAsync());
             }
         }
 
         protected async Task Read_Archive_Many_Small_Files_Async_Internal(TarEntryFormat format, TestTarFormat testFormat)
         {
             string testCaseName = "many_small_files";
-            using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
-
-            TarReader reader = new TarReader(ms);
-            await using (reader)
+            await using (MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName))
             {
-                TarEntry entry;
-                if (testFormat is TestTarFormat.pax_gea)
+                await using (TarReader reader = new TarReader(ms))
                 {
-                    entry = await reader.GetNextEntryAsync();
-                    VerifyGlobalExtendedAttributes(entry);
-                }
-
-                List<TarEntry> entries = new List<TarEntry>();
-                bool isFirstEntry = true;
-                while ((entry = await reader.GetNextEntryAsync()) != null)
-                {
-                    if (isFirstEntry)
+                    TarEntry entry;
+                    if (testFormat is TestTarFormat.pax_gea)
                     {
-                        isFirstEntry = false;
+                        entry = await reader.GetNextEntryAsync();
+                        VerifyGlobalExtendedAttributes(entry);
                     }
-                    Assert.Equal(format, entry.Format);
-                    entries.Add(entry);
-                }
 
-                int directoriesCount = entries.Count(e => e.EntryType == TarEntryType.Directory);
-                Assert.Equal(10, directoriesCount);
+                    List<TarEntry> entries = new List<TarEntry>();
+                    bool isFirstEntry = true;
+                    while ((entry = await reader.GetNextEntryAsync()) != null)
+                    {
+                        if (isFirstEntry)
+                        {
+                            isFirstEntry = false;
+                        }
+                        Assert.Equal(format, entry.Format);
+                        entries.Add(entry);
+                    }
 
-                TarEntryType actualEntryType = format is TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile;
+                    int directoriesCount = entries.Count(e => e.EntryType == TarEntryType.Directory);
+                    Assert.Equal(10, directoriesCount);
 
-                for (int i = 0; i < 10; i++)
-                {
-                    int filesCount = entries.Count(e => e.EntryType == actualEntryType && e.Name.StartsWith($"{i}/"));
-                    Assert.Equal(10, filesCount);
+                    TarEntryType actualEntryType = format is TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile;
+
+                    for (int i = 0; i < 10; i++)
+                    {
+                        int filesCount = entries.Count(e => e.EntryType == actualEntryType && e.Name.StartsWith($"{i}/"));
+                        Assert.Equal(10, filesCount);
+                    }
                 }
             }
         }
@@ -238,141 +238,141 @@ namespace System.Formats.Tar.Tests
         protected async Task Read_Archive_LongPath_Splitable_Under255_Async_Internal(TarEntryFormat format, TestTarFormat testFormat)
         {
             string testCaseName = "longpath_splitable_under255";
-            using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
-
-            TarReader reader = new TarReader(ms);
-            await using (reader)
+            await using (MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName))
             {
-                if (testFormat is TestTarFormat.pax_gea)
+                await using (TarReader reader = new TarReader(ms))
                 {
-                    TarEntry entry = await reader.GetNextEntryAsync();
-                    VerifyGlobalExtendedAttributes(entry);
+                    if (testFormat is TestTarFormat.pax_gea)
+                    {
+                        TarEntry entry = await reader.GetNextEntryAsync();
+                        VerifyGlobalExtendedAttributes(entry);
+                    }
+
+                    TarEntry directory = await reader.GetNextEntryAsync();
+
+                    VerifyDirectoryEntry(directory, format,
+                        "00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999/");
+
+                    TarEntry file = await reader.GetNextEntryAsync();
+                    VerifyRegularFileEntry(file, format,
+                        $"00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999/00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999.txt",
+                        $"Hello {testCaseName}");
+
+                    Assert.Null(await reader.GetNextEntryAsync());
                 }
-
-                TarEntry directory = await reader.GetNextEntryAsync();
-
-                VerifyDirectoryEntry(directory, format,
-                    "00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999/");
-
-                TarEntry file = await reader.GetNextEntryAsync();
-                VerifyRegularFileEntry(file, format,
-                    $"00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999/00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999.txt",
-                    $"Hello {testCaseName}");
-
-                Assert.Null(await reader.GetNextEntryAsync());
             }
         }
 
         protected async Task Read_Archive_SpecialFiles_Async_Internal(TarEntryFormat format, TestTarFormat testFormat)
         {
             string testCaseName = "specialfiles";
-            using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
-
-            TarReader reader = new TarReader(ms);
-            await using (reader)
+            await using (MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName))
             {
-                if (testFormat is TestTarFormat.pax_gea)
+                await using (TarReader reader = new TarReader(ms))
                 {
-                    TarEntry entry = await reader.GetNextEntryAsync();
-                    VerifyGlobalExtendedAttributes(entry);
+                    if (testFormat is TestTarFormat.pax_gea)
+                    {
+                        TarEntry entry = await reader.GetNextEntryAsync();
+                        VerifyGlobalExtendedAttributes(entry);
+                    }
+
+                    PosixTarEntry blockDevice = await reader.GetNextEntryAsync() as PosixTarEntry;
+
+                    VerifyBlockDeviceEntry(blockDevice, format, AssetBlockDeviceFileName);
+
+                    PosixTarEntry characterDevice = await reader.GetNextEntryAsync() as PosixTarEntry;
+                    VerifyCharacterDeviceEntry(characterDevice, format, AssetCharacterDeviceFileName);
+
+                    PosixTarEntry fifo = await reader.GetNextEntryAsync() as PosixTarEntry;
+                    VerifyFifoEntry(fifo, format, "fifofile");
+
+                    Assert.Null(await reader.GetNextEntryAsync());
                 }
-
-                PosixTarEntry blockDevice = await reader.GetNextEntryAsync() as PosixTarEntry;
-
-                VerifyBlockDeviceEntry(blockDevice, format, AssetBlockDeviceFileName);
-
-                PosixTarEntry characterDevice = await reader.GetNextEntryAsync() as PosixTarEntry;
-                VerifyCharacterDeviceEntry(characterDevice, format, AssetCharacterDeviceFileName);
-
-                PosixTarEntry fifo = await reader.GetNextEntryAsync() as PosixTarEntry;
-                VerifyFifoEntry(fifo, format, "fifofile");
-
-                Assert.Null(await reader.GetNextEntryAsync());
             }
         }
 
         protected async Task Read_Archive_File_LongSymbolicLink_Async_Internal(TarEntryFormat format, TestTarFormat testFormat)
         {
             string testCaseName = "file_longsymlink";
-            using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
-
-            TarReader reader = new TarReader(ms);
-            await using (reader)
+            await using (MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName))
             {
-                if (testFormat is TestTarFormat.pax_gea)
+                await using (TarReader reader = new TarReader(ms))
                 {
-                    TarEntry entry = await reader.GetNextEntryAsync();
-                    VerifyGlobalExtendedAttributes(entry);
+                    if (testFormat is TestTarFormat.pax_gea)
+                    {
+                        TarEntry entry = await reader.GetNextEntryAsync();
+                        VerifyGlobalExtendedAttributes(entry);
+                    }
+
+                    TarEntry directory = await reader.GetNextEntryAsync();
+
+                    VerifyDirectoryEntry(directory, format,
+                    "000000000011111111112222222222333333333344444444445555555555666666666677777777778888888888999999999900000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555/");
+
+                    TarEntry file = await reader.GetNextEntryAsync();
+                    VerifyRegularFileEntry(file, format,
+                    "000000000011111111112222222222333333333344444444445555555555666666666677777777778888888888999999999900000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555/00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555555556666666666777777777788888888889999999999000000000011111111112222222222333333333344444444445.txt",
+                    $"Hello {testCaseName}");
+
+                    TarEntry symbolicLink = await reader.GetNextEntryAsync();
+                    VerifySymbolicLinkEntry(symbolicLink, format,
+                    "link.txt",
+                    "000000000011111111112222222222333333333344444444445555555555666666666677777777778888888888999999999900000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555/00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555555556666666666777777777788888888889999999999000000000011111111112222222222333333333344444444445.txt");
+
+                    Assert.Null(await reader.GetNextEntryAsync());
                 }
-
-                TarEntry directory = await reader.GetNextEntryAsync();
-
-                VerifyDirectoryEntry(directory, format,
-                "000000000011111111112222222222333333333344444444445555555555666666666677777777778888888888999999999900000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555/");
-
-                TarEntry file = await reader.GetNextEntryAsync();
-                VerifyRegularFileEntry(file, format,
-                "000000000011111111112222222222333333333344444444445555555555666666666677777777778888888888999999999900000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555/00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555555556666666666777777777788888888889999999999000000000011111111112222222222333333333344444444445.txt",
-                $"Hello {testCaseName}");
-
-                TarEntry symbolicLink = await reader.GetNextEntryAsync();
-                VerifySymbolicLinkEntry(symbolicLink, format,
-                "link.txt",
-                "000000000011111111112222222222333333333344444444445555555555666666666677777777778888888888999999999900000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555/00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555555556666666666777777777788888888889999999999000000000011111111112222222222333333333344444444445.txt");
-
-                Assert.Null(await reader.GetNextEntryAsync());
             }
         }
 
         protected async Task Read_Archive_LongFileName_Over100_Under255_Async_Internal(TarEntryFormat format, TestTarFormat testFormat)
         {
             string testCaseName = "longfilename_over100_under255";
-            using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
-
-            TarReader reader = new TarReader(ms);
-            await using (reader)
+            await using (MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName))
             {
-                if (testFormat is TestTarFormat.pax_gea)
+                await using (TarReader reader = new TarReader(ms))
                 {
-                    TarEntry entry = await reader.GetNextEntryAsync();
-                    VerifyGlobalExtendedAttributes(entry);
+                    if (testFormat is TestTarFormat.pax_gea)
+                    {
+                        TarEntry entry = await reader.GetNextEntryAsync();
+                        VerifyGlobalExtendedAttributes(entry);
+                    }
+
+                    TarEntry file = await reader.GetNextEntryAsync();
+
+                    VerifyRegularFileEntry(file, format,
+                        "000000000011111111112222222222333333333344444444445555555555666666666677777777778888888888999999999900000000001111111111222222222233333333334444444444.txt",
+                        $"Hello {testCaseName}");
+
+                    Assert.Null(await reader.GetNextEntryAsync());
                 }
-
-                TarEntry file = await reader.GetNextEntryAsync();
-
-                VerifyRegularFileEntry(file, format,
-                    "000000000011111111112222222222333333333344444444445555555555666666666677777777778888888888999999999900000000001111111111222222222233333333334444444444.txt",
-                    $"Hello {testCaseName}");
-
-                Assert.Null(await reader.GetNextEntryAsync());
             }
         }
 
         protected async Task Read_Archive_LongPath_Over255_Async_Internal(TarEntryFormat format, TestTarFormat testFormat)
         {
             string testCaseName = "longpath_over255";
-            using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
-
-            TarReader reader = new TarReader(ms);
-            await using (reader)
+            await using (MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName))
             {
-                if (testFormat is TestTarFormat.pax_gea)
+                await using (TarReader reader = new TarReader(ms))
                 {
-                    TarEntry entry = await reader.GetNextEntryAsync();
-                    VerifyGlobalExtendedAttributes(entry);
+                    if (testFormat is TestTarFormat.pax_gea)
+                    {
+                        TarEntry entry = await reader.GetNextEntryAsync();
+                        VerifyGlobalExtendedAttributes(entry);
+                    }
+
+                    TarEntry directory = await reader.GetNextEntryAsync();
+
+                    VerifyDirectoryEntry(directory, format,
+                    "000000000011111111112222222222333333333344444444445555555555666666666677777777778888888888999999999900000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555/");
+
+                    TarEntry file = await reader.GetNextEntryAsync();
+                    VerifyRegularFileEntry(file, format,
+                    "000000000011111111112222222222333333333344444444445555555555666666666677777777778888888888999999999900000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555/00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555555556666666666777777777788888888889999999999000000000011111111112222222222333333333344444444445.txt",
+                    $"Hello {testCaseName}");
+
+                    Assert.Null(await reader.GetNextEntryAsync());
                 }
-
-                TarEntry directory = await reader.GetNextEntryAsync();
-
-                VerifyDirectoryEntry(directory, format,
-                "000000000011111111112222222222333333333344444444445555555555666666666677777777778888888888999999999900000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555/");
-
-                TarEntry file = await reader.GetNextEntryAsync();
-                VerifyRegularFileEntry(file, format,
-                "000000000011111111112222222222333333333344444444445555555555666666666677777777778888888888999999999900000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555/00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555555556666666666777777777788888888889999999999000000000011111111112222222222333333333344444444445.txt",
-                $"Hello {testCaseName}");
-
-                Assert.Null(await reader.GetNextEntryAsync());
             }
         }
 

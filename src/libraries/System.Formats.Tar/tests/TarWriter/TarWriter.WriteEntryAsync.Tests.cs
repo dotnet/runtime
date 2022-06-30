@@ -91,28 +91,29 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Gnu)]
         public async Task WriteEntry_RespectDefaultWriterFormat_Async(TarEntryFormat expectedFormat)
         {
-            using TempDirectory root = new TempDirectory();
-
-            string path = Path.Join(root.Path, "file.txt");
-            File.Create(path).Dispose();
-
-            using MemoryStream archiveStream = new MemoryStream();
-            TarWriter writer = new TarWriter(archiveStream, expectedFormat, leaveOpen: true);
-            await using (writer)
+            using (TempDirectory root = new TempDirectory())
             {
-                await writer.WriteEntryAsync(path, "file.txt");
-            }
+                string path = Path.Join(root.Path, "file.txt");
+                File.Create(path).Dispose();
 
-            archiveStream.Position = 0;
-            TarReader reader = new TarReader(archiveStream, leaveOpen: false);
-            await using (reader)
-            {
-                TarEntry entry = await reader.GetNextEntryAsync();
-                Assert.Equal(expectedFormat, entry.Format);
+                await using (MemoryStream archiveStream = new MemoryStream())
+                {
+                    await using (TarWriter writer = new TarWriter(archiveStream, expectedFormat, leaveOpen: true))
+                    {
+                        await writer.WriteEntryAsync(path, "file.txt");
+                    }
 
-                Type expectedType = GetTypeForFormat(expectedFormat);
+                    archiveStream.Position = 0;
+                    await using (TarReader reader = new TarReader(archiveStream, leaveOpen: false))
+                    {
+                        TarEntry entry = await reader.GetNextEntryAsync();
+                        Assert.Equal(expectedFormat, entry.Format);
 
-                Assert.Equal(expectedType, entry.GetType());
+                        Type expectedType = GetTypeForFormat(expectedFormat);
+
+                        Assert.Equal(expectedType, entry.GetType());
+                    }
+                }
             }
         }
 

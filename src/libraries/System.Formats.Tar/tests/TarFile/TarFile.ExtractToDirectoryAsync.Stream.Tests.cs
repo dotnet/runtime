@@ -13,12 +13,14 @@ namespace System.Formats.Tar.Tests
     public class TarFile_ExtractToDirectoryAsync_Stream_Tests : TarTestsBase
     {
         [Fact]
-        public Task ExtractToDirectoryAsync_Cancel()
+        public async Task ExtractToDirectoryAsync_Cancel()
         {
             CancellationTokenSource cs = new CancellationTokenSource();
             cs.Cancel();
-            MemoryStream archiveStream = new MemoryStream();
-            return Assert.ThrowsAsync<TaskCanceledException>(() => TarFile.ExtractToDirectoryAsync(archiveStream, "directory", overwriteFiles: true, cs.Token));
+            using (MemoryStream archiveStream = new MemoryStream())
+            {
+                await Assert.ThrowsAsync<TaskCanceledException>(() => TarFile.ExtractToDirectoryAsync(archiveStream, "directory", overwriteFiles: true, cs.Token));
+            }
         }
 
         [Fact]
@@ -28,58 +30,70 @@ namespace System.Formats.Tar.Tests
         [Fact]
         public async Task InvalidPath_Throws_Async()
         {
-            using MemoryStream archive = new MemoryStream();
-            await Assert.ThrowsAsync<ArgumentNullException>(() => TarFile.ExtractToDirectoryAsync(archive, destinationDirectoryName: null, overwriteFiles: false));
-            await Assert.ThrowsAsync<ArgumentException>(() => TarFile.ExtractToDirectoryAsync(archive, destinationDirectoryName: string.Empty, overwriteFiles: false));
+            using (MemoryStream archive = new MemoryStream())
+            {
+                await Assert.ThrowsAsync<ArgumentNullException>(() => TarFile.ExtractToDirectoryAsync(archive, destinationDirectoryName: null, overwriteFiles: false));
+                await Assert.ThrowsAsync<ArgumentException>(() => TarFile.ExtractToDirectoryAsync(archive, destinationDirectoryName: string.Empty, overwriteFiles: false));
+            }
         }
 
         [Fact]
-        public Task UnreadableStream_Throws_Async()
+        public async Task UnreadableStream_Throws_Async()
         {
-            using MemoryStream archive = new MemoryStream();
-            using WrappedStream unreadable = new WrappedStream(archive, canRead: false, canWrite: true, canSeek: true);
-            return Assert.ThrowsAsync<IOException>(() => TarFile.ExtractToDirectoryAsync(unreadable, destinationDirectoryName: "path", overwriteFiles: false));
+            using (MemoryStream archive = new MemoryStream())
+            {
+                using (WrappedStream unreadable = new WrappedStream(archive, canRead: false, canWrite: true, canSeek: true))
+                {
+                    await Assert.ThrowsAsync<IOException>(() => TarFile.ExtractToDirectoryAsync(unreadable, destinationDirectoryName: "path", overwriteFiles: false));
+                }
+            }
         }
 
         [Fact]
-        public Task NonExistentDirectory_Throws_Async()
+        public async Task NonExistentDirectory_Throws_Async()
         {
-            using TempDirectory root = new TempDirectory();
-            string dirPath = Path.Join(root.Path, "dir");
+            using (TempDirectory root = new TempDirectory())
+            {
+                string dirPath = Path.Join(root.Path, "dir");
 
-            using MemoryStream archive = new MemoryStream();
-            return Assert.ThrowsAsync<DirectoryNotFoundException>(() => TarFile.ExtractToDirectoryAsync(archive, destinationDirectoryName: dirPath, overwriteFiles: false));
+                using (MemoryStream archive = new MemoryStream())
+                {
+                    await Assert.ThrowsAsync<DirectoryNotFoundException>(() => TarFile.ExtractToDirectoryAsync(archive, destinationDirectoryName: dirPath, overwriteFiles: false));
+                }
+            }
         }
 
         [Fact]
         public async Task ExtractEntry_ManySubfolderSegments_NoPrecedingDirectoryEntries_Async()
         {
-            using TempDirectory root = new TempDirectory();
-
-            string firstSegment = "a";
-            string secondSegment = Path.Join(firstSegment, "b");
-            string fileWithTwoSegments = Path.Join(secondSegment, "c.txt");
-
-            using MemoryStream archive = new MemoryStream();
-            TarWriter writer = new TarWriter(archive, TarEntryFormat.Ustar, leaveOpen: true);
-            await using (writer)
+            using (TempDirectory root = new TempDirectory())
             {
-                // No preceding directory entries for the segments
-                UstarTarEntry entry = new UstarTarEntry(TarEntryType.RegularFile, fileWithTwoSegments);
+                string firstSegment = "a";
+                string secondSegment = Path.Join(firstSegment, "b");
+                string fileWithTwoSegments = Path.Join(secondSegment, "c.txt");
 
-                entry.DataStream = new MemoryStream();
-                entry.DataStream.Write(new byte[] { 0x1 });
-                entry.DataStream.Seek(0, SeekOrigin.Begin);
+                await using (MemoryStream archive = new MemoryStream())
+                {
+                    await using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Ustar, leaveOpen: true))
+                    {
+                        // No preceding directory entries for the segments
+                        UstarTarEntry entry = new UstarTarEntry(TarEntryType.RegularFile, fileWithTwoSegments);
 
-                await writer.WriteEntryAsync(entry);
+                        entry.DataStream = new MemoryStream();
+                        entry.DataStream.Write(new byte[] { 0x1 });
+                        entry.DataStream.Seek(0, SeekOrigin.Begin);
+
+                        await writer.WriteEntryAsync(entry);
+                    }
+
+                    archive.Seek(0, SeekOrigin.Begin);
+                    await TarFile.ExtractToDirectoryAsync(archive, root.Path, overwriteFiles: false);
+
+                    Assert.True(Directory.Exists(Path.Join(root.Path, firstSegment)));
+                    Assert.True(Directory.Exists(Path.Join(root.Path, secondSegment)));
+                    Assert.True(File.Exists(Path.Join(root.Path, fileWithTwoSegments)));
+                }
             }
-
-            archive.Seek(0, SeekOrigin.Begin);
-            await TarFile.ExtractToDirectoryAsync(archive, root.Path, overwriteFiles: false);
-
-            Assert.True(Directory.Exists(Path.Join(root.Path, firstSegment)));
-            Assert.True(Directory.Exists(Path.Join(root.Path, secondSegment)));
-            Assert.True(File.Exists(Path.Join(root.Path, fileWithTwoSegments)));
         }
 
         [Theory]
@@ -87,22 +101,23 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryType.HardLink)]
         public async Task Extract_LinkEntry_TargetOutsideDirectory_Async(TarEntryType entryType)
         {
-            using MemoryStream archive = new MemoryStream();
-            TarWriter writer = new TarWriter(archive, TarEntryFormat.Ustar, leaveOpen: true);
-            await using (writer)
+            await using (MemoryStream archive = new MemoryStream())
             {
-                UstarTarEntry entry = new UstarTarEntry(entryType, "link");
-                entry.LinkName = PlatformDetection.IsWindows ? @"C:\Windows\System32\notepad.exe" : "/usr/bin/nano";
-                await writer.WriteEntryAsync(entry);
+                await using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Ustar, leaveOpen: true))
+                {
+                    UstarTarEntry entry = new UstarTarEntry(entryType, "link");
+                    entry.LinkName = PlatformDetection.IsWindows ? @"C:\Windows\System32\notepad.exe" : "/usr/bin/nano";
+                    await writer.WriteEntryAsync(entry);
+                }
+
+                archive.Seek(0, SeekOrigin.Begin);
+
+                using (TempDirectory root = new TempDirectory())
+                {
+                    await Assert.ThrowsAsync<IOException>(() => TarFile.ExtractToDirectoryAsync(archive, root.Path, overwriteFiles: false));
+                    Assert.Equal(0, Directory.GetFileSystemEntries(root.Path).Count());
+                }
             }
-
-            archive.Seek(0, SeekOrigin.Begin);
-
-            using TempDirectory root = new TempDirectory();
-
-            await Assert.ThrowsAsync<IOException>(() => TarFile.ExtractToDirectoryAsync(archive, root.Path, overwriteFiles: false));
-
-            Assert.Equal(0, Directory.GetFileSystemEntries(root.Path).Count());
         }
 
         [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
@@ -131,31 +146,33 @@ namespace System.Formats.Tar.Tests
         // the base directory past that length, to ensure this scenario is tested everywhere.
         private async Task Extract_LinkEntry_TargetInsideDirectory_Internal_Async(TarEntryType entryType, TarEntryFormat format, string subfolder)
         {
-            using TempDirectory root = new TempDirectory();
-
-            string baseDir = string.IsNullOrEmpty(subfolder) ? root.Path : Path.Join(root.Path, subfolder);
-            Directory.CreateDirectory(baseDir);
-
-            string linkName = "link";
-            string targetName = "target";
-            string targetPath = Path.Join(baseDir, targetName);
-
-            File.Create(targetPath).Dispose();
-
-            using MemoryStream archive = new MemoryStream();
-            TarWriter writer = new TarWriter(archive, format, leaveOpen: true);
-            await using (writer)
+            using (TempDirectory root = new TempDirectory())
             {
-                TarEntry entry = InvokeTarEntryCreationConstructor(format, entryType, linkName);
-                entry.LinkName = targetPath;
-                await writer.WriteEntryAsync(entry);
+                string baseDir = string.IsNullOrEmpty(subfolder) ? root.Path : Path.Join(root.Path, subfolder);
+                Directory.CreateDirectory(baseDir);
+
+                string linkName = "link";
+                string targetName = "target";
+                string targetPath = Path.Join(baseDir, targetName);
+
+                File.Create(targetPath).Dispose();
+
+                await using (MemoryStream archive = new MemoryStream())
+                {
+                    await using (TarWriter writer = new TarWriter(archive, format, leaveOpen: true))
+                    {
+                        TarEntry entry = InvokeTarEntryCreationConstructor(format, entryType, linkName);
+                        entry.LinkName = targetPath;
+                        await writer.WriteEntryAsync(entry);
+                    }
+
+                    archive.Seek(0, SeekOrigin.Begin);
+
+                    await TarFile.ExtractToDirectoryAsync(archive, baseDir, overwriteFiles: false);
+
+                    Assert.Equal(2, Directory.GetFileSystemEntries(baseDir).Count());
+                }
             }
-
-            archive.Seek(0, SeekOrigin.Begin);
-
-            await TarFile.ExtractToDirectoryAsync(archive, baseDir, overwriteFiles: false);
-
-            Assert.Equal(2, Directory.GetFileSystemEntries(baseDir).Count());
         }
     }
 }
