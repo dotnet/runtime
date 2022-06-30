@@ -1,0 +1,17 @@
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using Xunit;
+
+namespace System.Linq.Tests
+{
+    public sealed class CreateOrderedEnumerableTests
+    {
+        [Fact]
+        public void ThrowsNullKeySelector()
+        {
+            var enumerable = new int[0].Order();
+            Assert.Throws<ArgumentNullException>(() => enumerable.CreateOrderedEnumerable((Func<int, int>)null!, null, false));
+        }
+    }
+}
