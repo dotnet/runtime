@@ -830,6 +830,7 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat PositiveInfinity { get { throw null; } }
         public static int Size { get { throw null; } }
         static System.Runtime.InteropServices.NFloat System.Numerics.IAdditiveIdentity<System.Runtime.InteropServices.NFloat,System.Runtime.InteropServices.NFloat>.AdditiveIdentity { get { throw null; } }
+        static System.Runtime.InteropServices.NFloat System.Numerics.IBinaryNumber<System.Runtime.InteropServices.NFloat>.AllBitsSet { get { throw null; } }
         static System.Runtime.InteropServices.NFloat System.Numerics.IMultiplicativeIdentity<System.Runtime.InteropServices.NFloat,System.Runtime.InteropServices.NFloat>.MultiplicativeIdentity { get { throw null; } }
         static System.Runtime.InteropServices.NFloat System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.One { get { throw null; } }
         static int System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.Radix { get { throw null; } }

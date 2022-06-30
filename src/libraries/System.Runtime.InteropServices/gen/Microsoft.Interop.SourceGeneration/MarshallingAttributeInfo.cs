@@ -584,7 +584,7 @@ namespace Microsoft.Interop
             ref int maxIndirectionDepthUsed)
         {
             bool isLinearCollectionMarshalling = ManualTypeMarshallingHelper.IsLinearCollectionEntryPoint(entryPointType);
-            if (ManualTypeMarshallingHelper.TryGetMarshallersFromEntryType(entryPointType, type, isLinearCollectionMarshalling, _compilation, out CustomTypeMarshallers? marshallers))
+            if (ManualTypeMarshallingHelper.HasEntryPointMarshallerAttribute(entryPointType))
             {
                 if (!entryPointType.IsStatic)
                 {
@@ -592,10 +592,15 @@ namespace Microsoft.Interop
                     return NoMarshallingInfo.Instance;
                 }
 
-                bool isPinnableManagedType = !isMarshalUsingAttribute && ManualTypeMarshallingHelper.FindGetPinnableReference(type) is not null;
-                return isLinearCollectionMarshalling
-                    ? NoMarshallingInfo.Instance // TODO: handle linear collection marshallers
-                    : new NativeMarshallingAttributeInfo(ManagedTypeInfo.CreateTypeInfoForTypeSymbol(entryPointType), marshallers.Value, isPinnableManagedType);
+                if (ManualTypeMarshallingHelper.TryGetMarshallersFromEntryType(entryPointType, type, isLinearCollectionMarshalling, _compilation, out CustomTypeMarshallers? marshallers))
+                {
+                    bool isPinnableManagedType = !isMarshalUsingAttribute && ManualTypeMarshallingHelper.FindGetPinnableReference(type) is not null;
+                    return isLinearCollectionMarshalling
+                        ? NoMarshallingInfo.Instance // TODO: handle linear collection marshallers
+                        : new NativeMarshallingAttributeInfo(ManagedTypeInfo.CreateTypeInfoForTypeSymbol(entryPointType), marshallers.Value, isPinnableManagedType);
+                }
+
+                return NoMarshallingInfo.Instance;
             }
 
             return CreateNativeMarshallingInfo_V1(type, entryPointType, attrData, isMarshalUsingAttribute, indirectionLevel, parsedCountInfo, useSiteAttributes, inspectedElements, ref maxIndirectionDepthUsed);

@@ -15,6 +15,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Systen.Net.Mail.Tests;
+using System.Net.Test.Common;
 using Xunit;
 
 namespace System.Net.Mail.Tests
@@ -23,6 +24,8 @@ namespace System.Net.Mail.Tests
     public class SmtpClientTest : FileCleanupTestBase
     {
         private SmtpClient _smtp;
+
+        public static bool IsNtlmInstalled => Capability.IsNtlmInstalled();
 
         private SmtpClient Smtp
         {
@@ -556,6 +559,22 @@ namespace System.Net.Mail.Tests
                 Assert.Equal("bar", server.Password);
                 Assert.Equal("LOGIN", server.AuthMethodUsed, StringComparer.OrdinalIgnoreCase);
             }
+        }
+
+        [ConditionalFact(nameof(IsNtlmInstalled))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/65678", TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.MacCatalyst)]
+        public void TestGssapiAuthentication()
+        {
+            using var server = new LoopbackSmtpServer();
+            server.AdvertiseGssapiAuthSupport = true;
+            server.ExpectedGssapiCredential = new NetworkCredential("foo", "bar");
+            using SmtpClient client = server.CreateClient();
+            client.Credentials = server.ExpectedGssapiCredential;
+            MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
+
+            client.Send(msg);
+
+            Assert.Equal("GSSAPI", server.AuthMethodUsed, StringComparer.OrdinalIgnoreCase);
         }
     }
 }

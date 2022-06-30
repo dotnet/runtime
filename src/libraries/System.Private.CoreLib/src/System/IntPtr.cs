@@ -359,6 +359,9 @@ namespace System
         // IBinaryNumber
         //
 
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
+        static nint IBinaryNumber<nint>.AllBitsSet => -1;
+
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(nint value) => BitOperations.IsPow2(value);
 
