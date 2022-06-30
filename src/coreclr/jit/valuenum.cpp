@@ -9201,7 +9201,7 @@ void Compiler::fgValueNumberSimd(GenTreeSIMD* tree)
 
         if (isMemoryLoad)
         {
-            // Currently the only SIMD operation with MemoryLoad sematics is SIMDIntrinsicInitArray
+            // Currently the only SIMD operation with MemoryLoad semantics is SIMDIntrinsicInitArray
             // and it has to be handled specially since it has an optional op2
             //
             assert(tree->GetSIMDIntrinsicId() == SIMDIntrinsicInitArray);
