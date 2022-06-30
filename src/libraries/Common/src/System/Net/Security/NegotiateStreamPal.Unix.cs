@@ -85,146 +85,6 @@ namespace System.Net.Security
             }
         }
 
-        private static bool GssInitSecurityContext(
-            ref SafeGssContextHandle? context,
-            SafeGssCredHandle credential,
-            bool isNtlm,
-            ChannelBinding? channelBinding,
-            SafeGssNameHandle? targetName,
-            Interop.NetSecurityNative.GssFlags inFlags,
-            ReadOnlySpan<byte> buffer,
-            out byte[]? outputBuffer,
-            out uint outFlags,
-            out bool isNtlmUsed)
-        {
-            outputBuffer = null;
-            outFlags = 0;
-
-            // EstablishSecurityContext is called multiple times in a session.
-            // In each call, we need to pass the context handle from the previous call.
-            // For the first call, the context handle will be null.
-            bool newContext = false;
-            if (context == null)
-            {
-                newContext = true;
-                context = new SafeGssContextHandle();
-            }
-
-            Interop.NetSecurityNative.GssBuffer token = default(Interop.NetSecurityNative.GssBuffer);
-            Interop.NetSecurityNative.Status status;
-
-            try
-            {
-                Interop.NetSecurityNative.Status minorStatus;
-
-                if (channelBinding != null)
-                {
-                    // If a TLS channel binding token (cbt) is available then get the pointer
-                    // to the application specific data.
-                    int appDataOffset = Marshal.SizeOf<SecChannelBindings>();
-                    Debug.Assert(appDataOffset < channelBinding.Size);
-                    IntPtr cbtAppData = channelBinding.DangerousGetHandle() + appDataOffset;
-                    int cbtAppDataSize = channelBinding.Size - appDataOffset;
-                    status = Interop.NetSecurityNative.InitSecContext(out minorStatus,
-                                                                      credential,
-                                                                      ref context,
-                                                                      isNtlm,
-                                                                      cbtAppData,
-                                                                      cbtAppDataSize,
-                                                                      targetName,
-                                                                      (uint)inFlags,
-                                                                      buffer,
-                                                                      ref token,
-                                                                      out outFlags,
-                                                                      out isNtlmUsed);
-                }
-                else
-                {
-                    status = Interop.NetSecurityNative.InitSecContext(out minorStatus,
-                                                                      credential,
-                                                                      ref context,
-                                                                      isNtlm,
-                                                                      targetName,
-                                                                      (uint)inFlags,
-                                                                      buffer,
-                                                                      ref token,
-                                                                      out outFlags,
-                                                                      out isNtlmUsed);
-                }
-
-                if ((status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE) &&
-                    (status != Interop.NetSecurityNative.Status.GSS_S_CONTINUE_NEEDED))
-                {
-                    if (newContext)
-                    {
-                        context.Dispose();
-                        context = null;
-                    }
-                    throw new Interop.NetSecurityNative.GssApiException(status, minorStatus);
-                }
-
-                outputBuffer = token.ToByteArray();
-            }
-            finally
-            {
-                token.Dispose();
-            }
-
-            return status == Interop.NetSecurityNative.Status.GSS_S_COMPLETE;
-        }
-
-        private static bool GssAcceptSecurityContext(
-            ref SafeGssContextHandle? context,
-            SafeGssCredHandle credential,
-            ReadOnlySpan<byte> buffer,
-            out byte[] outputBuffer,
-            out uint outFlags,
-            out bool isNtlmUsed)
-        {
-            Debug.Assert(credential != null);
-
-            bool newContext = false;
-            if (context == null)
-            {
-                newContext = true;
-                context = new SafeGssContextHandle();
-            }
-
-            Interop.NetSecurityNative.GssBuffer token = default(Interop.NetSecurityNative.GssBuffer);
-            Interop.NetSecurityNative.Status status;
-
-            try
-            {
-                Interop.NetSecurityNative.Status minorStatus;
-                status = Interop.NetSecurityNative.AcceptSecContext(out minorStatus,
-                                                                    credential,
-                                                                    ref context,
-                                                                    buffer,
-                                                                    ref token,
-                                                                    out outFlags,
-                                                                    out isNtlmUsed);
-
-                if ((status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE) &&
-                    (status != Interop.NetSecurityNative.Status.GSS_S_CONTINUE_NEEDED))
-                {
-                    if (newContext)
-                    {
-                        context.Dispose();
-                        context = null;
-                    }
-                    throw new Interop.NetSecurityNative.GssApiException(status, minorStatus);
-                }
-
-                outputBuffer = token.ToByteArray();
-            }
-            finally
-            {
-                token.Dispose();
-            }
-
-            return status == Interop.NetSecurityNative.Status.GSS_S_COMPLETE;
-        }
-
         private static string GssGetUser(
             ref SafeGssContextHandle? context)
         {
@@ -287,27 +147,70 @@ namespace System.Net.Security
                 context = new SafeDeleteNegoContext(credential, targetName!);
             }
 
+            Interop.NetSecurityNative.GssBuffer token = default(Interop.NetSecurityNative.GssBuffer);
+            Interop.NetSecurityNative.Status status;
+            Interop.NetSecurityNative.Status minorStatus;
             SafeDeleteNegoContext negoContext = (SafeDeleteNegoContext)context;
+            SafeGssContextHandle contextHandle = negoContext.GssContext;
             try
             {
                 Interop.NetSecurityNative.GssFlags inputFlags =
                     ContextFlagsAdapterPal.GetInteropFromContextFlagsPal(inFlags, isServer: false);
                 uint outputFlags;
                 bool isNtlmUsed;
-                SafeGssContextHandle? contextHandle = negoContext.GssContext;
-                bool done = GssInitSecurityContext(
-                   ref contextHandle,
-                   credential.GssCredential,
-                   isNtlmOnly,
-                   channelBinding,
-                   negoContext.TargetName,
-                   inputFlags,
-                   incomingBlob,
-                   out resultBuffer,
-                   out outputFlags,
-                   out isNtlmUsed);
 
-                if (done)
+                if (channelBinding != null)
+                {
+                    // If a TLS channel binding token (cbt) is available then get the pointer
+                    // to the application specific data.
+                    int appDataOffset = Marshal.SizeOf<SecChannelBindings>();
+                    Debug.Assert(appDataOffset < channelBinding.Size);
+                    IntPtr cbtAppData = channelBinding.DangerousGetHandle() + appDataOffset;
+                    int cbtAppDataSize = channelBinding.Size - appDataOffset;
+                    status = Interop.NetSecurityNative.InitSecContext(out minorStatus,
+                                                                      credential.GssCredential,
+                                                                      ref contextHandle,
+                                                                      isNtlmOnly,
+                                                                      cbtAppData,
+                                                                      cbtAppDataSize,
+                                                                      negoContext.TargetName,
+                                                                      (uint)inputFlags,
+                                                                      incomingBlob,
+                                                                      ref token,
+                                                                      out outputFlags,
+                                                                      out isNtlmUsed);
+                }
+                else
+                {
+                    status = Interop.NetSecurityNative.InitSecContext(out minorStatus,
+                                                                      credential.GssCredential,
+                                                                      ref contextHandle,
+                                                                      isNtlmOnly,
+                                                                      negoContext.TargetName,
+                                                                      (uint)inputFlags,
+                                                                      incomingBlob,
+                                                                      ref token,
+                                                                      out outputFlags,
+                                                                      out isNtlmUsed);
+                }
+
+                if ((status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE) &&
+                    (status != Interop.NetSecurityNative.Status.GSS_S_CONTINUE_NEEDED))
+                {
+                    if (negoContext.GssContext.IsInvalid)
+                    {
+                        context.Dispose();
+                    }
+
+                    Interop.NetSecurityNative.GssApiException gex = new Interop.NetSecurityNative.GssApiException(status, minorStatus);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, gex);
+                    resultBuffer = Array.Empty<byte>();
+                    return new SecurityStatusPal(GetErrorCode(gex), gex);
+                }
+
+                resultBuffer = token.ToByteArray();
+
+                if (status == Interop.NetSecurityNative.Status.GSS_S_COMPLETE)
                 {
                     if (NetEventSource.Log.IsEnabled())
                     {
@@ -322,17 +225,9 @@ namespace System.Net.Security
                 Debug.Assert(resultBuffer != null, "Unexpected null buffer returned by GssApi");
                 outFlags = ContextFlagsAdapterPal.GetContextFlagsPalFromInterop(
                     (Interop.NetSecurityNative.GssFlags)outputFlags, isServer: false);
-                Debug.Assert(negoContext.GssContext == null || contextHandle == negoContext.GssContext);
 
-                // Save the inner context handle for further calls to NetSecurity
-                Debug.Assert(negoContext.GssContext == null || contextHandle == negoContext.GssContext);
-                if (null == negoContext.GssContext)
-                {
-                    negoContext.SetGssContext(contextHandle!);
-                }
-
-                SecurityStatusPalErrorCode errorCode = done ?
-                    (negoContext.IsNtlmUsed && resultBuffer.Length > 0 ? SecurityStatusPalErrorCode.OK : SecurityStatusPalErrorCode.CompleteNeeded) :
+                SecurityStatusPalErrorCode errorCode = status == Interop.NetSecurityNative.Status.GSS_S_COMPLETE ?
+                    SecurityStatusPalErrorCode.OK :
                     SecurityStatusPalErrorCode.ContinueNeeded;
                 return new SecurityStatusPal(errorCode);
             }
@@ -340,6 +235,22 @@ namespace System.Net.Security
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, ex);
                 return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, ex);
+            }
+            finally
+            {
+                token.Dispose();
+
+                // Save the inner context handle for further calls to NetSecurity
+                //
+                // For the first call `negoContext.GssContext` is invalid and we expect the
+                // inital handle to be returned from AcceptSecContext. For any subsequent
+                // call the handle should stay the same or it can be destroyed by the native
+                // AcceptSecContext call.
+                Debug.Assert(
+                    negoContext.GssContext == contextHandle ||
+                    negoContext.GssContext.IsInvalid ||
+                    contextHandle.IsInvalid);
+                negoContext.SetGssContext(contextHandle);
             }
         }
 
@@ -388,33 +299,44 @@ namespace System.Net.Security
             securityContext ??= new SafeDeleteNegoContext((SafeFreeNegoCredentials)credentialsHandle!);
 
             SafeDeleteNegoContext negoContext = (SafeDeleteNegoContext)securityContext;
+            SafeGssContextHandle contextHandle = negoContext.GssContext;
+            Interop.NetSecurityNative.GssBuffer token = default(Interop.NetSecurityNative.GssBuffer);
             try
             {
-                SafeGssContextHandle? contextHandle = negoContext.GssContext;
-                bool done = GssAcceptSecurityContext(
-                   ref contextHandle,
-                   negoContext.AcceptorCredential,
-                   incomingBlob,
-                   out resultBlob,
-                   out uint outputFlags,
-                   out bool isNtlmUsed);
+                Interop.NetSecurityNative.Status status;
+                Interop.NetSecurityNative.Status minorStatus;
+                status = Interop.NetSecurityNative.AcceptSecContext(out minorStatus,
+                                                                    negoContext.AcceptorCredential,
+                                                                    ref contextHandle,
+                                                                    incomingBlob,
+                                                                    ref token,
+                                                                    out uint outputFlags,
+                                                                    out bool isNtlmUsed);
+
+                if ((status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE) &&
+                    (status != Interop.NetSecurityNative.Status.GSS_S_CONTINUE_NEEDED))
+                {
+                    if (negoContext.GssContext.IsInvalid)
+                    {
+                        contextHandle.Dispose();
+                    }
+
+                    Interop.NetSecurityNative.GssApiException gex = new Interop.NetSecurityNative.GssApiException(status, minorStatus);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, gex);
+                    resultBlobLength = 0;
+                    return new SecurityStatusPal(GetErrorCode(gex), gex);
+                }
+
+                resultBlob = token.ToByteArray();
 
                 Debug.Assert(resultBlob != null, "Unexpected null buffer returned by GssApi");
-                Debug.Assert(negoContext.GssContext == null || contextHandle == negoContext.GssContext);
-
-                // Save the inner context handle for further calls to NetSecurity
-                Debug.Assert(negoContext.GssContext == null || contextHandle == negoContext.GssContext);
-                if (null == negoContext.GssContext)
-                {
-                    negoContext.SetGssContext(contextHandle!);
-                }
 
                 contextFlags = ContextFlagsAdapterPal.GetContextFlagsPalFromInterop(
                     (Interop.NetSecurityNative.GssFlags)outputFlags, isServer: true);
                 resultBlobLength = resultBlob.Length;
 
                 SecurityStatusPalErrorCode errorCode;
-                if (done)
+                if (status == Interop.NetSecurityNative.Status.GSS_S_COMPLETE)
                 {
                     if (NetEventSource.Log.IsEnabled())
                     {
@@ -423,7 +345,7 @@ namespace System.Net.Security
                     }
 
                     negoContext.SetAuthenticationPackage(isNtlmUsed);
-                    errorCode = (isNtlmUsed && resultBlob.Length > 0) ? SecurityStatusPalErrorCode.OK : SecurityStatusPalErrorCode.CompleteNeeded;
+                    errorCode = SecurityStatusPalErrorCode.OK;
                 }
                 else
                 {
@@ -432,17 +354,27 @@ namespace System.Net.Security
 
                 return new SecurityStatusPal(errorCode);
             }
-            catch (Interop.NetSecurityNative.GssApiException gex)
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, gex);
-                resultBlobLength = 0;
-                return new SecurityStatusPal(GetErrorCode(gex), gex);
-            }
             catch (Exception ex)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, ex);
                 resultBlobLength = 0;
                 return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, ex);
+            }
+            finally
+            {
+                token.Dispose();
+
+                // Save the inner context handle for further calls to NetSecurity
+                //
+                // For the first call `negoContext.GssContext` is invalid and we expect the
+                // inital handle to be returned from AcceptSecContext. For any subsequent
+                // call the handle should stay the same or it can be destroyed by the native
+                // AcceptSecContext call.
+                Debug.Assert(
+                    negoContext.GssContext == contextHandle ||
+                    negoContext.GssContext.IsInvalid ||
+                    contextHandle.IsInvalid);
+                negoContext.SetGssContext(contextHandle);
             }
         }
 
