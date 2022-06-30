@@ -162,7 +162,7 @@ internal sealed class IcallTableGenerator
             catch (Exception ex)
             {
                 hasError = true;
-                Log.LogError($"Could not get pinvoke, or callbacks for method {method.Name}: {ex.Message}");
+                Log.LogError($"Could not get icall, or callbacks for method {method.Name}: {ex.Message}");
                 continue;
             }
 
