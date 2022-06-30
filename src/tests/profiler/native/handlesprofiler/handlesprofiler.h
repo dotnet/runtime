@@ -22,6 +22,9 @@ public:
     virtual HRESULT STDMETHODCALLTYPE ObjectAllocated(ObjectID objectId, ClassID classId);
 
 private:
+    void CheckIfAlive(ObjectHandleID handle, bool shouldBeAlive);
+
+private:
     std::atomic<int> _gcCount;
     std::atomic<int> _failures;
     std::atomic<bool> _isInduced;
