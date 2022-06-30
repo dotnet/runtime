@@ -75,12 +75,6 @@ namespace System.Xml
             _textNodeOffset = this.BufferOffset - 1;
         }
 
-        private ref byte GetBufferRef(int size)
-            => ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(GetBuffer(size, out int offset)), offset);
-
-        private ref byte GetTextNodeBufferRef(int size)
-            => ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(GetTextNodeBuffer(size, out int offset)), offset);
-
         private byte[] GetTextNodeBuffer(int size, out int offset)
         {
             if (_inAttribute)
@@ -107,46 +101,45 @@ namespace System.Xml
             }
         }
 
-        private void WriteTextNodeWithInt8(XmlBinaryNodeType nodeType, byte value)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void WriteTextNodeRaw<T>(XmlBinaryNodeType nodeType, T value)
+            where T : unmanaged
         {
-            ref byte bytePtr = ref GetTextNodeBufferRef(2);
+            // GetBuffer performs bounds checks and ensures returned buffer has size of at least (1 + Unsafe.SizeOf<T>())
+            var buffer = GetBuffer(1 + Unsafe.SizeOf<T>(), out int offset);
+
+            DiagnosticUtility.DebugAssert(offset >= 0 && offset + 1 + Unsafe.SizeOf<T>() < buffer.Length, "WriteTextNodeRaw");
+            ref byte bytePtr = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(buffer), offset);
+
             bytePtr = (byte)nodeType;
-            Unsafe.Add(ref bytePtr, 1) = value;
-            Advance(2);
+            Unsafe.WriteUnaligned<T>(ref Unsafe.Add(ref bytePtr, 1), value);
+            Advance(1 + Unsafe.SizeOf<T>());
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void WriteRaw<T>(T value)
+            where T : unmanaged
+        {
+            // GetBuffer performs bounds checks and ensures returned buffer has size of at least (1 + Unsafe.SizeOf<T>())
+            var buffer = GetBuffer(Unsafe.SizeOf<T>(), out int offset);
+
+            DiagnosticUtility.DebugAssert(offset >= 0 && offset + Unsafe.SizeOf<T>() < buffer.Length, "WriteTextNodeRaw");
+            ref byte bytePtr = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(buffer), offset);
+            Unsafe.WriteUnaligned<T>(ref bytePtr, value);
+            Advance(Unsafe.SizeOf<T>());
+        }
+
+        private void WriteTextNodeWithInt8(XmlBinaryNodeType nodeType, byte value)
+            => WriteTextNodeRaw<byte>(nodeType, value);
 
         private void WriteTextNodeWithInt16(XmlBinaryNodeType nodeType, short value)
-        {
-            ref byte bytePtr = ref GetTextNodeBufferRef(3);
-            bytePtr = (byte)nodeType;
-            Unsafe.Add(ref bytePtr, 1) = (byte)(value);
-            Unsafe.Add(ref bytePtr, 2) = (byte)(value >> 8);
-            Advance(3);
-        }
+           => WriteTextNodeRaw<short>(nodeType, BitConverter.IsLittleEndian ? value : BinaryPrimitives.ReverseEndianness((value)));
 
         private void WriteTextNodeWithInt32(XmlBinaryNodeType nodeType, int value)
-        {
-            ref byte bytePtr = ref GetTextNodeBufferRef(5);
-            bytePtr = (byte)nodeType;
-            if (!BitConverter.IsLittleEndian)
-            {
-                value = BinaryPrimitives.ReverseEndianness(value);
-            }
-            Unsafe.WriteUnaligned(ref Unsafe.Add(ref bytePtr, 1), value);
-            Advance(5);
-        }
+           => WriteTextNodeRaw<int>(nodeType, BitConverter.IsLittleEndian ? value : BinaryPrimitives.ReverseEndianness((value)));
 
         private void WriteTextNodeWithInt64(XmlBinaryNodeType nodeType, long value)
-        {
-            ref byte bytePtr = ref GetTextNodeBufferRef(9);
-            bytePtr = (byte)nodeType;
-            if (!BitConverter.IsLittleEndian)
-            {
-                value = BinaryPrimitives.ReverseEndianness(value);
-            }
-            Unsafe.WriteUnaligned(ref Unsafe.Add(ref bytePtr, 1), value);
-            Advance(9);
-        }
+           => WriteTextNodeRaw<long>(nodeType, BitConverter.IsLittleEndian ? value : BinaryPrimitives.ReverseEndianness((value)));
 
         public override void WriteDeclaration()
         {
@@ -519,15 +512,7 @@ namespace System.Xml
         }
 
         private void WriteInt64(long value)
-        {
-            ref byte bytePtr = ref GetBufferRef(8);
-            if (!BitConverter.IsLittleEndian)
-            {
-                value = BinaryPrimitives.ReverseEndianness(value);
-            }
-            Unsafe.WriteUnaligned(ref bytePtr, value);
-            Advance(8);
-        }
+            => WriteRaw<long>(BitConverter.IsLittleEndian ? value : BinaryPrimitives.ReverseEndianness(value));
 
         public override void WriteBase64Text(byte[]? trailBytes, int trailByteCount, byte[] base64Buffer, int base64Offset, int base64Count)
         {
@@ -733,7 +718,7 @@ namespace System.Xml
             }
         }
 
-        public unsafe override void WriteFloatText(float f)
+        public override void WriteFloatText(float f)
         {
             int i;
             if (f >= short.MinValue && f <= short.MaxValue && (i = (int)f) == f)
@@ -742,41 +727,29 @@ namespace System.Xml
             }
             else
             {
-                ref byte bytePtr = ref GetTextNodeBufferRef(1 + Unsafe.SizeOf<float>());
-                bytePtr = (byte)XmlBinaryNodeType.FloatText;
-                Unsafe.WriteUnaligned(ref Unsafe.Add(ref bytePtr, 1), f);
-                Advance(1 + sizeof(float));
+                WriteTextNodeRaw(XmlBinaryNodeType.DecimalText, f);
             }
         }
 
         public override void WriteDoubleText(double d)
         {
             float f;
-            if (d >= float.MinValue && d <= float.MaxValue && (f = (float)d) == d)
+            if ((f = (float)d) == d)
             {
                 WriteFloatText(f);
             }
             else
             {
-                ref byte bytePtr = ref GetTextNodeBufferRef(1 + Unsafe.SizeOf<double>());
-                bytePtr = (byte)XmlBinaryNodeType.DoubleText;
-                Unsafe.WriteUnaligned(ref Unsafe.Add(ref bytePtr, 1), d);
-                Advance(1 + Unsafe.SizeOf<double>());
+                WriteTextNodeRaw(XmlBinaryNodeType.DecimalText, d);
             }
         }
 
         public override void WriteDecimalText(decimal d)
-        {
-            ref byte bytePtr = ref GetTextNodeBufferRef(1 + Unsafe.SizeOf<decimal>());
-            bytePtr = (byte)XmlBinaryNodeType.DecimalText;
-            Unsafe.WriteUnaligned(ref Unsafe.Add(ref bytePtr, 1), d);
-            Advance(1 + Unsafe.SizeOf<decimal>());
-        }
+            => WriteTextNodeRaw(XmlBinaryNodeType.DecimalText, d);
 
         public override void WriteDateTimeText(DateTime dt)
-        {
-            WriteTextNodeWithInt64(XmlBinaryNodeType.DateTimeText, ToBinary(dt));
-        }
+            => WriteTextNodeWithInt64(XmlBinaryNodeType.DateTimeText, ToBinary(dt));
+
         private static long ToBinary(DateTime dt)
         {
             long temp = 0;
