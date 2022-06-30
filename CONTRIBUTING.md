@@ -1,6 +1,6 @@
 # Contribution to .NET Runtime
 
-You can contribute to .NET Runtime with issues and PRs. Simply filing issues for problems you encounter is a great way to contribute. Contributing implementations is greatly appreciated BLAH.
+You can contribute to .NET Runtime with issues and PRs. Simply filing issues for problems you encounter is a great way to contribute. Contributing implementations is greatly appreciated.
 
 ## Reporting Issues
 
