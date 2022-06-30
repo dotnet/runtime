@@ -209,8 +209,8 @@ namespace System.Reflection
                         {
                             if (arg != null && sigType.IsNullableOfT)
                             {
-                                // ParameterInfo.DefaultValue returns the raw value if the enum is nullable that needs
-                                // to be parsed to the Enum type more info: https://github.com/dotnet/runtime/issues/12924
+                                // In case if the parameter is nullable Enum type ParameterInfo.DefaultValue returns a raw value which
+                                // needs to be parsed to the Enum type, for more info: https://github.com/dotnet/runtime/issues/12924
                                 Type argumentType = sigType.GetGenericArguments()[0];
                                 if (argumentType.IsEnum)
                                 {
