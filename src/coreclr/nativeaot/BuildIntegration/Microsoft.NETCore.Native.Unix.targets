@@ -107,11 +107,11 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="@(NativeFramework->'-framework %(Identity)')" Condition="'$(TargetOS)' == 'OSX'" />
     </ItemGroup>
 
-    <Exec Command="command -v $(CppLinker)" IgnoreExitCode="true" StandardOutputImportance="Low">
+    <Exec Command="command -v &quot;$(CppLinker)&quot;" IgnoreExitCode="true" StandardOutputImportance="Low">
       <Output TaskParameter="ExitCode" PropertyName="_WhereLinker" />
     </Exec>
 
-    <Exec Command="command -v $(CppCompilerAndLinkerAlternative)" Condition="'$(CppCompilerAndLinkerAlternative)' != '' and '$(_WhereLinker)' != '0'" IgnoreExitCode="true" StandardOutputImportance="Low">
+    <Exec Command="command -v &quot;$(CppCompilerAndLinkerAlternative)&quot;" Condition="'$(CppCompilerAndLinkerAlternative)' != '' and '$(_WhereLinker)' != '0'" IgnoreExitCode="true" StandardOutputImportance="Low">
       <Output TaskParameter="ExitCode" PropertyName="_WhereLinkerAlt" />
     </Exec>
 
@@ -128,7 +128,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <Error Condition="'$(_WhereLinker)' != '0' and '$(CppCompilerAndLinkerAlternative)' == '' and '$(TargetOS)' != 'OSX'"
       Text="Requested linker ('$(CppLinker)') not found in PATH." />
 
-    <Exec Command="command -v $(ObjCopyName)" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(TargetOS)' != 'OSX' and '$(StripSymbols)' == 'true'">
+    <Exec Command="command -v &quot;$(ObjCopyName)&quot;" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(TargetOS)' != 'OSX' and '$(StripSymbols)' == 'true'">
       <Output TaskParameter="ExitCode" PropertyName="_WhereSymbolStripper" />
     </Exec>
     <Error Condition="'$(_WhereSymbolStripper)' != '0' and '$(StripSymbols)' == 'true' and '$(TargetOS)' != 'OSX'"
