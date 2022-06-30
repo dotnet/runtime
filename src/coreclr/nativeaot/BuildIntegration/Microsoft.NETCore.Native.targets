@@ -347,9 +347,9 @@ The .NET Foundation licenses this file to you under the MIT license.
     <!-- strip symbols, see https://github.com/dotnet/runtime/blob/5d3288d/eng/native/functions.cmake#L374 -->
     <Exec Condition="'$(StripSymbols)' == 'true' and '$(TargetOS)' != 'windows' and '$(TargetOS)' != 'OSX'"
       Command="
-        objcopy --only-keep-debug &quot;$(NativeBinary)&quot; &quot;$(NativeBinary)$(NativeSymbolExt)&quot; &amp;&amp;
-        objcopy --strip-unneeded &quot;$(NativeBinary)&quot; &amp;&amp;
-        objcopy --add-gnu-debuglink=&quot;$(NativeBinary)$(NativeSymbolExt)&quot; &quot;$(NativeBinary)&quot;" />
+        $(ObjCopyName) --only-keep-debug &quot;$(NativeBinary)&quot; &quot;$(NativeBinary)$(NativeSymbolExt)&quot; &amp;&amp;
+        $(ObjCopyName) --strip-debug --strip-unneeded &quot;$(NativeBinary)&quot; &amp;&amp;
+        $(ObjCopyName) --add-gnu-debuglink=&quot;$(NativeBinary)$(NativeSymbolExt)&quot; &quot;$(NativeBinary)&quot;" />
 
     <Exec Condition="'$(StripSymbols)' == 'true' and '$(TargetOS)' == 'OSX'" Command="dsymutil $(DsymUtilOptions) &quot;$(NativeBinary)&quot;" />
     <Exec Condition="'$(StripSymbols)' == 'true' and '$(TargetOS)' == 'OSX'" Command="strip -no_code_signature_warning -S &quot;$(NativeBinary)&quot;" />
