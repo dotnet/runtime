@@ -81,19 +81,31 @@ namespace System.Text.RegularExpressions
 
     internal static class TrieExtensions
     {
-        public static (int MatchCount, string? SingleMatch) GetMatchCountAndSingleMatch(this List<TrieNode> trie)
+        public static int GetMatchCount(this List<TrieNode> trie)
         {
             int matchCount = 0;
-            string? singleMatch = null;
             foreach (TrieNode node in trie)
             {
                 if (node.IsMatch)
                 {
                     matchCount++;
-                    singleMatch ??= node.GetPath(trie);
                 }
             }
-            return (matchCount, singleMatch);
+            return matchCount;
+        }
+
+        public static string GetCommonPrefix(this List<TrieNode> trie)
+        {
+            TrieNode currentNode = trie[TrieNode.Root];
+            while (currentNode.Children is { Count: 1 } dict)
+            {
+                foreach (KeyValuePair<char, int> kvp in dict)
+                {
+                    currentNode = trie[kvp.Value];
+                    break;
+                }
+            }
+            return currentNode.GetPath(trie);
         }
     }
 }

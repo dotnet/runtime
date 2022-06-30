@@ -31,12 +31,11 @@ namespace System.Text.RegularExpressions
 
             if (TrieBuilder.TryCreateFromPrefix(node, out List<TrieNode>? trie))
             {
-                (int matchCount, string? singleMatch) = trie.GetMatchCountAndSingleMatch();
-                if (singleMatch is not null)
+                if (trie.GetMatchCount() < MinMultiPrefixes)
                 {
-                    return (singleMatch, null);
+                    return (trie.GetCommonPrefix(), null);
                 }
-                else if (matchCount >= MinMultiPrefixes)
+                else
                 {
                     return (null, new MultiStringMatcher(trie));
                 }
