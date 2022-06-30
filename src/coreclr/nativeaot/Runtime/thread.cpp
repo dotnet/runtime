@@ -289,7 +289,7 @@ void Thread::Construct()
 #ifdef FEATURE_SUSPEND_REDIRECTION
     m_redirectionContextBuffer = NULL;
 #endif //FEATURE_SUSPEND_REDIRECTION
-    m_redirectionContext = NULL;
+    m_interruptedContext = NULL;
 }
 
 bool Thread::IsInitialized()
@@ -607,28 +607,23 @@ bool Thread::IsHijackTarget(void * address)
     return false;
 }
 
-bool Thread::Hijack()
+void Thread::Hijack()
 {
     ASSERT(ThreadStore::GetCurrentThread() == ThreadStore::GetSuspendingThread());
     ASSERT_MSG(ThreadStore::GetSuspendingThread() != this, "You may not hijack a thread from itself.");
 
-    if (m_hPalThread == INVALID_HANDLE_VALUE)
+    if (m_hPalThread != INVALID_HANDLE_VALUE)
     {
         // cannot proceed
-        return false;
+        return;
     }
-
-    // requires THREAD_SUSPEND_RESUME / THREAD_GET_CONTEXT / THREAD_SET_CONTEXT permissions
-
-    Thread* pCurrentThread = ThreadStore::GetCurrentThread();
 
     // PalHijack will call HijackCallback or make the target thread call it.
     // It may aslo do nothing it thread is in inconvenient state.
-    uint32_t result = PalHijack(m_hPalThread, this);
-    return result == 0;
+    PalHijack(m_hPalThread, this);
 }
 
-UInt32_BOOL Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijack)
+void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijack)
 {
     Thread* pThread = (Thread*) pThreadToHijack;
     if (pThread == NULL)
@@ -646,7 +641,7 @@ UInt32_BOOL Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThread
     {
         // This thread has already made it to preemptive (posted a transition frame)
         // we do not need to hijack it
-        return true;
+        return;
     }
 
     void* pvAddress = (void*)pThreadContext->GetIp();
@@ -655,7 +650,7 @@ UInt32_BOOL Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThread
     {
         // Running in cooperative mode, but not managed.
         // We cannot continue.
-        return false;
+        return;
     }
 
     ICodeManager* codeManager = runtime->GetCodeManagerForAddress(pvAddress);
@@ -665,22 +660,22 @@ UInt32_BOOL Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThread
         // perform in-line wait on the current thread
         if (pThreadToHijack == NULL)
         {
-            ASSERT(pThread->m_redirectionContext == NULL);
-            pThread->m_redirectionContext = pThreadContext;
-            pThread->WaitForGC(REDIRECTED_THREAD_MARKER);
-            pThread->m_redirectionContext = NULL;
-            return true;
+            ASSERT(pThread->m_interruptedContext == NULL);
+            pThread->m_interruptedContext = pThreadContext;
+            pThread->WaitForGC(INTERRUPTED_THREAD_MARKER);
+            pThread->m_interruptedContext = NULL;
+            return;
         }
 
 #ifdef FEATURE_SUSPEND_REDIRECTION
         if (pThread->Redirect())
         {
-            return true;
+            return;
         }
 #endif //FEATURE_SUSPEND_REDIRECTION
     }
 
-    return pThread->HijackReturnAddress(pThreadContext, NormalHijackTargets);
+    pThread->HijackReturnAddress(pThreadContext, NormalHijackTargets);
 }
 
 #ifdef FEATURE_GC_STRESS
@@ -800,25 +795,30 @@ bool Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, void* 
     return true;
 }
 
-NATIVE_CONTEXT* Thread::GetRedirectionContext()
+NATIVE_CONTEXT* Thread::GetInterruptedContext()
 {
-#ifdef FEATURE_SUSPEND_REDIRECTION
-    if (m_redirectionContext == NULL)
-    {
-        m_redirectionContext = PalAllocateCompleteOSContext(&m_redirectionContextBuffer);
-    }
-#endif
-
-    return m_redirectionContext;
+    ASSERT(m_interruptedContext != NULL);
+    return m_interruptedContext;
 }
 
 #ifdef FEATURE_SUSPEND_REDIRECTION
+
+NATIVE_CONTEXT* Thread::EnsureRedirectionContext()
+{
+    if (m_redirectionContextBuffer == NULL)
+    {
+        m_interruptedContext = PalAllocateCompleteOSContext(&m_redirectionContextBuffer);
+    }
+
+    return m_interruptedContext;
+}
+
 bool Thread::Redirect()
 {
     if (IsDoNotTriggerGcSet())
         return false;
 
-    NATIVE_CONTEXT* redirectionContext = GetRedirectionContext();
+    NATIVE_CONTEXT* redirectionContext = EnsureRedirectionContext();
     if (redirectionContext == NULL)
         return false;
 
@@ -1027,10 +1027,10 @@ EXTERN_C NOINLINE void FASTCALL RhpGcPoll2(PInvokeTransitionFrame* pFrame)
 EXTERN_C NOINLINE void FASTCALL RhpSuspendRedirected()
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
-    pThread->WaitForGC(REDIRECTED_THREAD_MARKER);
+    pThread->WaitForGC(INTERRUPTED_THREAD_MARKER);
 
     // restore execution at interrupted location
-    PalRestoreContext(pThread->GetRedirectionContext());
+    PalRestoreContext(pThread->GetInterruptedContext());
     UNREACHABLE();
 }
 

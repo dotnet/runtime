@@ -32,7 +32,10 @@ class Thread;
 #endif // HOST_64BIT
 
 #define TOP_OF_STACK_MARKER ((PInvokeTransitionFrame*)(ptrdiff_t)-1)
-#define REDIRECTED_THREAD_MARKER ((PInvokeTransitionFrame*)(ptrdiff_t)-2)
+
+// the thread has been interrupted and context for the interruption point
+// can be retrieved via GetInterruptedContext()
+#define INTERRUPTED_THREAD_MARKER ((PInvokeTransitionFrame*)(ptrdiff_t)-2)
 
 enum SyncRequestResult
 {
@@ -92,10 +95,10 @@ struct ThreadBuffer
     uint64_t                m_uPalThreadIdForLogging;               // @TODO: likely debug-only
     EEThreadId              m_threadId;
     PTR_VOID                m_pThreadStressLog;                     // pointer to head of thread's StressLogChunks
+    NATIVE_CONTEXT*         m_interruptedContext;                   // context for an asynchronously interrupted thread.
 #ifdef FEATURE_SUSPEND_REDIRECTION
-    uint8_t*                m_redirectionContextBuffer;              // storage for redirection context, allocated on demand
+    uint8_t*                m_redirectionContextBuffer;             // storage for redirection context, allocated on demand
 #endif //FEATURE_SUSPEND_REDIRECTION
-    NATIVE_CONTEXT*         m_redirectionContext;                    // legacy context somewhere inside the context buffer
 
 #ifdef FEATURE_GC_STRESS
     uint32_t                m_uRand;                                // current per-thread random number
@@ -139,7 +142,7 @@ private:
     void ClearState(ThreadStateFlags flags);
     bool IsStateSet(ThreadStateFlags flags);
 
-    static UInt32_BOOL HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijack);
+    static void HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijack);
     bool HijackReturnAddress(PAL_LIMITED_CONTEXT* pSuspendCtx, void * pvHijackTargets[]);
     bool HijackReturnAddress(NATIVE_CONTEXT* pSuspendCtx, void* pvHijackTargets[]);
     bool HijackReturnAddressWorker(StackFrameIterator* frameIterator, void* pvHijackTargets[]);
@@ -183,7 +186,7 @@ public:
     bool GcScanRoots(GcScanRootsCallbackFunc * pfnCallback, void * token, PTR_PAL_LIMITED_CONTEXT pInitialContext);
 #endif
 
-    bool                Hijack();
+    void                Hijack();
     void                Unhijack();
 #ifdef FEATURE_GC_STRESS
     static void         HijackForGcStress(PAL_LIMITED_CONTEXT * pSuspendCtx);
@@ -270,8 +273,10 @@ public:
     Object* GetThreadStaticStorageForModule(uint32_t moduleIndex);
     bool SetThreadStaticStorageForModule(Object* pStorage, uint32_t moduleIndex);
 
-    NATIVE_CONTEXT* GetRedirectionContext();
+    NATIVE_CONTEXT* GetInterruptedContext();
+
 #ifdef FEATURE_SUSPEND_REDIRECTION
+    NATIVE_CONTEXT* EnsureRedirectionContext();
 #endif //FEATURE_SUSPEND_REDIRECTION
 };
 

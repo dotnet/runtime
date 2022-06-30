@@ -97,9 +97,9 @@ StackFrameIterator::StackFrameIterator(Thread * pThreadToWalk, PInvokeTransition
     STRESS_LOG0(LF_STACKWALK, LL_INFO10000, "----Init---- [ GC ]\n");
     ASSERT(!pThreadToWalk->DangerousCrossThreadIsHijacked());
 
-    if (pInitialTransitionFrame == REDIRECTED_THREAD_MARKER)
+    if (pInitialTransitionFrame == INTERRUPTED_THREAD_MARKER)
     {
-        InternalInit(pThreadToWalk, pThreadToWalk->GetRedirectionContext(), GcStackWalkFlags | ActiveStackFrame);
+        InternalInit(pThreadToWalk, pThreadToWalk->GetInterruptedContext(), GcStackWalkFlags | ActiveStackFrame);
     }
     else
     {

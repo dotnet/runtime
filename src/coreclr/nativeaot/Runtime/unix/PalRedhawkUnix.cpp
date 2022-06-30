@@ -987,7 +987,7 @@ static void ActivationHandler(int code, siginfo_t* siginfo, void* context)
     }
 }
 
-REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalHijackCallback callback)
+REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalHijackCallback callback)
 {
     ASSERT(g_pHijackCallback == NULL);
     g_pHijackCallback = callback;
@@ -995,7 +995,7 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalHija
     return AddSignalHandler(INJECT_ACTIVATION_SIGNAL, ActivationHandler, &g_previousActivationHandler);
 }
 
-REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* pThreadToHijack)
+REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* pThreadToHijack)
 {
     ThreadUnixHandle* threadHandle = (ThreadUnixHandle*)hThread;
     int status = pthread_kill(*threadHandle->GetObject(), INJECT_ACTIVATION_SIGNAL);
@@ -1007,7 +1007,7 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ voi
     // On Apple, pthread_kill is not allowed to be sent to dispatch queue threads
     if (status == ENOTSUP)
     {
-        return status;
+        return;
     }
 #endif
 
@@ -1018,8 +1018,6 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ voi
         // if the thread doesn't exist anymore.
         abort();
     }
-
-    return status;
 }
 
 extern "C" uint32_t WaitForSingleObjectEx(HANDLE handle, uint32_t milliseconds, UInt32_BOOL alertable)

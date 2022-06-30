@@ -508,8 +508,7 @@ class ThreadTest
         TestMaxStackSize();
         TestStartShutdown();
 
-        // TODO: VS this is crashing on my VM
-        // TestConcurrentIsBackgroundProperty();
+        TestConcurrentIsBackgroundProperty();
 
         return (s_failed == 0) ? BasicThreading.Pass : BasicThreading.Fail;
     }
