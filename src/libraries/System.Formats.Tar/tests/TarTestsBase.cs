@@ -12,8 +12,8 @@ namespace System.Formats.Tar.Tests
         protected readonly string ModifiedEntryName = "ModifiedEntryName.ext";
 
         // Default values are what a TarEntry created with its constructor will set
-        protected const TarFileMode DefaultMode = TarFileMode.UserRead | TarFileMode.UserWrite | TarFileMode.GroupRead | TarFileMode.OtherRead; // 644 in octal, internally used as default
-        protected const TarFileMode DefaultWindowsMode = TarFileMode.UserRead | TarFileMode.UserWrite | TarFileMode.UserExecute | TarFileMode.GroupRead | TarFileMode.GroupWrite | TarFileMode.GroupExecute | TarFileMode.OtherRead | TarFileMode.OtherWrite | TarFileMode.UserExecute; // Creating archives in Windows always sets the mode to 777
+        protected const UnixFileMode DefaultMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead; // 644 in octal, internally used as default
+        protected const UnixFileMode DefaultWindowsMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.UserExecute; // Creating archives in Windows always sets the mode to 777
         protected const int DefaultGid = 0;
         protected const int DefaultUid = 0;
         protected const int DefaultDeviceMajor = 0;
@@ -29,12 +29,15 @@ namespace System.Formats.Tar.Tests
         protected const int TestBlockDeviceMinor = 65;
         protected const int TestCharacterDeviceMajor = 51;
         protected const int TestCharacterDeviceMinor = 42;
-        protected readonly DateTimeOffset TestModificationTime = new DateTimeOffset(2003, 3, 3, 3, 33, 33, TimeSpan.Zero);
-        protected readonly DateTimeOffset TestAccessTime = new DateTimeOffset(2022, 2, 2, 2, 22, 22, TimeSpan.Zero);
-        protected readonly DateTimeOffset TestChangeTime = new DateTimeOffset(2011, 11, 11, 11, 11, 11, TimeSpan.Zero);
+
+        protected readonly DateTimeOffset MinimumTime = new(2022, 1, 1, 1, 1, 1, TimeSpan.Zero);
+        protected readonly DateTimeOffset TestModificationTime = new DateTimeOffset(2022, 2, 2, 2, 2, 2, TimeSpan.Zero);
+        protected readonly DateTimeOffset TestAccessTime = new DateTimeOffset(2022, 3, 3, 3, 3, 3, TimeSpan.Zero);
+        protected readonly DateTimeOffset TestChangeTime = new DateTimeOffset(2022, 4, 4, 4, 4, 4, TimeSpan.Zero);
+
         protected readonly string TestLinkName = "TestLinkName";
-        protected const TarFileMode TestMode = TarFileMode.UserRead | TarFileMode.UserWrite | TarFileMode.GroupRead | TarFileMode.GroupWrite | TarFileMode.OtherRead | TarFileMode.OtherWrite;
-        protected readonly DateTimeOffset TestTimestamp = DateTimeOffset.Now;
+        protected const UnixFileMode TestMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.OtherRead | UnixFileMode.OtherWrite;
+
         protected const string TestGName = "group";
         protected const string TestUName = "user";
 
@@ -47,13 +50,27 @@ namespace System.Formats.Tar.Tests
         protected const int AssetBlockDeviceMinor = 53;
         protected const int AssetCharacterDeviceMajor = 49;
         protected const int AssetCharacterDeviceMinor = 86;
-        protected const TarFileMode AssetMode = TarFileMode.UserRead | TarFileMode.UserWrite | TarFileMode.UserExecute | TarFileMode.GroupRead | TarFileMode.OtherRead;
-        protected const TarFileMode AssetSpecialFileMode = TarFileMode.UserRead | TarFileMode.UserWrite | TarFileMode.GroupRead | TarFileMode.OtherRead;
-        protected const TarFileMode AssetSymbolicLinkMode = TarFileMode.OtherExecute | TarFileMode.OtherWrite | TarFileMode.OtherRead | TarFileMode.GroupExecute | TarFileMode.GroupWrite | TarFileMode.GroupRead | TarFileMode.UserExecute | TarFileMode.UserWrite | TarFileMode.UserRead;
+        protected const UnixFileMode AssetMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.GroupRead | UnixFileMode.OtherRead;
+        protected const UnixFileMode AssetSpecialFileMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead;
+        protected const UnixFileMode AssetSymbolicLinkMode = UnixFileMode.OtherExecute | UnixFileMode.OtherWrite | UnixFileMode.OtherRead | UnixFileMode.GroupExecute | UnixFileMode.GroupWrite | UnixFileMode.GroupRead | UnixFileMode.UserExecute | UnixFileMode.UserWrite | UnixFileMode.UserRead;
         protected const string AssetGName = "devdiv";
         protected const string AssetUName = "dotnet";
         protected const string AssetPaxGeaKey = "globexthdr.MyGlobalExtendedAttribute";
         protected const string AssetPaxGeaValue = "hello";
+
+        protected const string PaxEaName = "path";
+        protected const string PaxEaLinkName = "linkpath";
+        protected const string PaxEaMode = "mode";
+        protected const string PaxEaGName = "gname";
+        protected const string PaxEaUName = "uname";
+        protected const string PaxEaGid = "gid";
+        protected const string PaxEaUid = "uid";
+        protected const string PaxEaATime = "atime";
+        protected const string PaxEaCTime = "ctime";
+        protected const string PaxEaMTime = "mtime";
+        protected const string PaxEaSize = "size";
+        protected const string PaxEaDevMajor = "devmajor";
+        protected const string PaxEaDevMinor = "devminor";
 
         protected enum CompressionMethod
         {
@@ -174,7 +191,7 @@ namespace System.Formats.Tar.Tests
             entry.Mode = TestMode;
 
             // MTime: Verify the default value was approximately "now" by default
-            DateTimeOffset approxNow = DateTimeOffset.Now.Subtract(TimeSpan.FromHours(6));
+            DateTimeOffset approxNow = DateTimeOffset.UtcNow.Subtract(TimeSpan.FromHours(6));
             Assert.True(entry.ModificationTime > approxNow);
 
             Assert.Throws<ArgumentOutOfRangeException>(() => entry.ModificationTime = DateTime.MinValue); // Minimum allowed is UnixEpoch, not MinValue
@@ -282,5 +299,28 @@ namespace System.Formats.Tar.Tests
                 Assert.False(entry.DataStream.CanWrite);
             }
         }
+
+        protected Type GetTypeForFormat(TarEntryFormat expectedFormat)
+        {
+            return expectedFormat switch
+            {
+                TarEntryFormat.V7 => typeof(V7TarEntry),
+                TarEntryFormat.Ustar => typeof(UstarTarEntry),
+                TarEntryFormat.Pax => typeof(PaxTarEntry),
+                TarEntryFormat.Gnu => typeof(GnuTarEntry),
+                _ => throw new FormatException($"Unrecognized format: {expectedFormat}"),
+            };
+        }
+
+        protected TarEntry InvokeTarEntryCreationConstructor(TarEntryFormat targetFormat, TarEntryType entryType, string entryName)
+            => targetFormat switch
+            {
+                TarEntryFormat.V7 => new V7TarEntry(entryType, entryName),
+                TarEntryFormat.Ustar => new UstarTarEntry(entryType, entryName),
+                TarEntryFormat.Pax => new PaxTarEntry(entryType, entryName),
+                TarEntryFormat.Gnu => new GnuTarEntry(entryType, entryName),
+                _ => throw new FormatException($"Unexpected format: {targetFormat}")
+            };
+
     }
 }

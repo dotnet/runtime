@@ -108,11 +108,7 @@ namespace System.Text.Json.Nodes
             }
             else
             {
-                JsonNode? jNode = value as JsonNode;
-                if (jNode == null)
-                {
-                    jNode = new JsonValueNotTrimmable<T>(value);
-                }
+                JsonNode jNode = value as JsonNode ?? new JsonValueNotTrimmable<T>(value);
 
                 // Call the IList.Add() implementation.
                 Add(jNode);

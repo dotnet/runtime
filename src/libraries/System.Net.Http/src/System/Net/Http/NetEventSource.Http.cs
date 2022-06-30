@@ -83,8 +83,8 @@ namespace System.Net
         {
             if (IsEnabled())
             {
-                if (arg4 == null) arg4 = "";
-                if (arg5 == null) arg5 = "";
+                arg4 ??= "";
+                arg5 ??= "";
 
                 fixed (char* string4Bytes = arg4)
                 fixed (char* string5Bytes = arg5)

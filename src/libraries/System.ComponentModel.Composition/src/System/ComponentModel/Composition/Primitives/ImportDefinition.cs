@@ -263,10 +263,7 @@ namespace System.ComponentModel.Composition.Primitives
         {
             Requires.NotNull(exportDefinition, nameof(exportDefinition));
 
-            if (_compiledConstraint == null)
-            {
-                _compiledConstraint = Constraint.Compile();
-            }
+            _compiledConstraint ??= Constraint.Compile();
 
             return _compiledConstraint.Invoke(exportDefinition);
         }

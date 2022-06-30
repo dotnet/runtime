@@ -64,10 +64,7 @@ namespace System.Net
             }
             set
             {
-                if (_credentials == null)
-                {
-                    _credentials = new WeakReference(null);
-                }
+                _credentials ??= new WeakReference(null);
                 _credentials.Target = value;
             }
         }
@@ -845,7 +842,7 @@ namespace System.Net
         {
             get
             {
-                return (_bannerMessage != null) ? _bannerMessage.ToString() : null;
+                return _bannerMessage?.ToString();
             }
         }
 
@@ -856,7 +853,7 @@ namespace System.Net
         {
             get
             {
-                return (_welcomeMessage != null) ? _welcomeMessage.ToString() : null;
+                return _welcomeMessage?.ToString();
             }
         }
 
@@ -867,7 +864,7 @@ namespace System.Net
         {
             get
             {
-                return (_exitMessage != null) ? _exitMessage.ToString() : null;
+                return _exitMessage?.ToString();
             }
         }
 

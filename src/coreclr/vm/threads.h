@@ -3826,7 +3826,7 @@ private:
     bool m_RedirectContextInUse;
 #endif
 
-    BOOL IsContextSafeToRedirect(T_CONTEXT* pContext);
+    BOOL IsContextSafeToRedirect(const T_CONTEXT* pContext);
 
 public:
     PT_CONTEXT GetSavedRedirectContext()
@@ -4507,6 +4507,17 @@ public:
     #else
         return false;
     #endif
+    }
+
+    static bool UseRedirectForGcStress()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+#ifdef USE_REDIRECT_FOR_GCSTRESS
+        return UseContextBasedThreadRedirection();
+#else
+        return false;
+#endif
     }
 
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
@@ -6237,5 +6248,14 @@ public:
 private:
     Thread* m_PreviousValue;
 };
+
+#ifndef DACCESS_COMPILE
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+EXTERN_C void STDCALL ClrRestoreNonvolatileContextWorker(PCONTEXT ContextRecord, DWORD64 ssp);
+#endif
+#if !(defined(TARGET_WINDOWS) && defined(TARGET_X86))
+void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord);
+#endif
+#endif // DACCESS_COMPILE
 
 #endif //__threads_h__

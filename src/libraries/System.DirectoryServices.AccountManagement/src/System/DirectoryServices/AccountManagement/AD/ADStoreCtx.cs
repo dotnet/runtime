@@ -155,14 +155,12 @@ namespace System.DirectoryServices.AccountManagement
                 // (it's probably read-only, e.g., "lastLogon").
                 if (toLdap != null)
                 {
-                    if (mappingTableByProperty[propertyName] == null)
-                        mappingTableByProperty[propertyName] = new ArrayList();
+                    mappingTableByProperty[propertyName] ??= new ArrayList();
 
                     ((ArrayList)mappingTableByProperty[propertyName]).Add(propertyEntry);
                 }
 
-                if (mappingTableByPropertyFull[propertyName] == null)
-                    mappingTableByPropertyFull[propertyName] = new ArrayList();
+                mappingTableByPropertyFull[propertyName] ??= new ArrayList();
 
                 ((ArrayList)mappingTableByPropertyFull[propertyName]).Add(propertyEntry);
 
@@ -173,8 +171,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     string ldapAttributeLower = ldapAttribute.ToLowerInvariant();
 
-                    if (mappingTableByLDAP[ldapAttributeLower] == null)
-                        mappingTableByLDAP[ldapAttributeLower] = new ArrayList();
+                    mappingTableByLDAP[ldapAttributeLower] ??= new ArrayList();
 
                     ((ArrayList)mappingTableByLDAP[ldapAttributeLower]).Add(propertyEntry);
                 }
@@ -1192,9 +1189,9 @@ namespace System.DirectoryServices.AccountManagement
                     // duplicates because the list of global groups will show up on both the GC and DC.
                     Debug.Assert(p.ContextType == ContextType.Domain);
 
-                    Forest forest = Forest.GetForest(new DirectoryContext(DirectoryContextType.Forest, this.DnsForestName, this.credentials != null ? this.credentials.UserName : null, this.credentials != null ? this.credentials.Password : null));
+                    Forest forest = Forest.GetForest(new DirectoryContext(DirectoryContextType.Forest, this.DnsForestName, this.credentials?.UserName, this.credentials?.Password));
 
-                    DirectoryContext dc = new DirectoryContext(DirectoryContextType.Domain, this.DnsDomainName, this.credentials != null ? this.credentials.UserName : null, this.credentials != null ? this.credentials.Password : null);
+                    DirectoryContext dc = new DirectoryContext(DirectoryContextType.Domain, this.DnsDomainName, this.credentials?.UserName, this.credentials?.Password);
                     DomainController dd = DomainController.FindOne(dc);
 
                     GlobalCatalog gc = null;
@@ -1213,7 +1210,7 @@ namespace System.DirectoryServices.AccountManagement
                             }
                         }
 
-                        roots.Add(new DirectoryEntry("GC://" + gc.Name + "/" + p.DistinguishedName, this.credentials != null ? this.credentials.UserName : null, this.credentials != null ? this.credentials.Password : null, this.AuthTypes));
+                        roots.Add(new DirectoryEntry("GC://" + gc.Name + "/" + p.DistinguishedName, this.credentials?.UserName, this.credentials?.Password, this.AuthTypes));
 
                         if (!string.Equals(this.DnsDomainName, gc.Domain.Name, StringComparison.OrdinalIgnoreCase))
                         {

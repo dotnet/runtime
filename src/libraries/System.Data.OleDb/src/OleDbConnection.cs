@@ -616,7 +616,7 @@ namespace System.Data.OleDb
             }
             else if ((int)hresult < 0)
             {
-                e = ODB.NoErrorInformation((null != connection) ? connection.Provider : null, hresult, null); // OleDbException
+                e = ODB.NoErrorInformation(connection?.Provider, hresult, null); // OleDbException
 
                 ResetState(connection);
             }

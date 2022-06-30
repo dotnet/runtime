@@ -18,8 +18,7 @@ namespace System.DirectoryServices.Protocols
             UTF8Encoding utf8Encoder = new UTF8Encoding();
             byte[] encodingResult = null;
             // value is allowed to be null in certain scenario, so if it is null, just set it to empty array.
-            if (value == null)
-                value = Array.Empty<object>();
+            value ??= Array.Empty<object>();
 
             Debug.WriteLine("Begin encoding\n");
 

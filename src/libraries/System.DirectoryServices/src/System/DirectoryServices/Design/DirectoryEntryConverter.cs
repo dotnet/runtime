@@ -62,14 +62,8 @@ namespace System.DirectoryServices.Design
             return base.ConvertTo(context, culture, value, destinationType!);
         }
 
-        public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext? context)
-        {
-            if (s_values == null)
-            {
-                s_values = new StandardValuesCollection(new object?[] { null });
-            }
-            return s_values;
-        }
+        public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext? context) =>
+            s_values ??= new StandardValuesCollection(new object?[] { null });
 
         internal static DirectoryEntry? GetFromCache(string path)
         {

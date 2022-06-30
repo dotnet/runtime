@@ -23,7 +23,7 @@ namespace System.Text.RegularExpressions.Generator
 
         private static bool IsSyntaxTargetForGeneration(SyntaxNode node, CancellationToken cancellationToken) =>
             // We don't have a semantic model here, so the best we can do is say whether there are any attributes.
-            node is MethodDeclarationSyntax { AttributeLists: { Count: > 0 } };
+            node is MethodDeclarationSyntax { AttributeLists.Count: > 0 };
 
         private static bool IsSemanticTargetForGeneration(SemanticModel semanticModel, MethodDeclarationSyntax methodDeclarationSyntax, CancellationToken cancellationToken)
         {

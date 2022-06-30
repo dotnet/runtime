@@ -2801,7 +2801,7 @@ wait_for_tids (struct wait_data *wait, guint32 timeout, gboolean check_state_cha
 	for( i = 0; i < wait->num; i++)
 		mono_threads_close_thread_handle (wait->handles [i]);
 
-	if (ret >= MONO_THREAD_INFO_WAIT_RET_SUCCESS_0 && ret < (MONO_THREAD_INFO_WAIT_RET_SUCCESS_0 + wait->num)) {
+	if (ret >= MONO_THREAD_INFO_WAIT_RET_SUCCESS_0 && GINT_TO_UINT32(ret) < MONO_THREAD_INFO_WAIT_RET_SUCCESS_0 + wait->num) {
 		MonoInternalThread *internal;
 
 		internal = wait->threads [ret - MONO_THREAD_INFO_WAIT_RET_SUCCESS_0];
@@ -3289,12 +3289,12 @@ mono_thread_get_undeniable_exception (void)
 
 #if MONO_SMALL_CONFIG
 #define NUM_STATIC_DATA_IDX 4
-static const int static_data_size [NUM_STATIC_DATA_IDX] = {
+static const guint32 static_data_size [NUM_STATIC_DATA_IDX] = {
 	64, 256, 1024, 4096
 };
 #else
 #define NUM_STATIC_DATA_IDX 8
-static const int static_data_size [NUM_STATIC_DATA_IDX] = {
+static const guint32 static_data_size [NUM_STATIC_DATA_IDX] = {
 	1024, 4096, 16384, 65536, 262144, 1048576, 4194304, 16777216
 };
 #endif
@@ -3336,7 +3336,6 @@ static void
 mono_alloc_static_data (gpointer **static_data_ptr, guint32 offset, void *alloc_key)
 {
 	guint idx = ACCESS_SPECIAL_STATIC_OFFSET (offset, index);
-	int i;
 
 	gpointer* static_data = *static_data_ptr;
 	if (!static_data) {
@@ -3355,7 +3354,7 @@ mono_alloc_static_data (gpointer **static_data_ptr, guint32 offset, void *alloc_
 		static_data [0] = static_data;
 	}
 
-	for (i = 1; i <= idx; ++i) {
+	for (guint i = 1; i <= idx; ++i) {
 		if (static_data [i])
 			continue;
 
@@ -3372,8 +3371,7 @@ mono_alloc_static_data (gpointer **static_data_ptr, guint32 offset, void *alloc_
 static void
 mono_free_static_data (gpointer* static_data)
 {
-	int i;
-	for (i = 1; i < NUM_STATIC_DATA_IDX; ++i) {
+	for (guint i = 1; i < NUM_STATIC_DATA_IDX; ++i) {
 		gpointer p = static_data [i];
 		if (!p)
 			continue;
@@ -3496,7 +3494,7 @@ clear_reference_bitmap (MonoBitSet **sets, guint32 offset, guint32 size)
 	offset = ACCESS_SPECIAL_STATIC_OFFSET (offset, offset);
 	offset /= sizeof (uintptr_t);
 	/* offset is now the bitmap offset */
-	for (int i = 0; i < size / sizeof (uintptr_t); i++)
+	for (guint i = 0; i < size / sizeof (uintptr_t); i++)
 		mono_bitset_clear_fast (rb, offset + i);
 }
 
@@ -4860,10 +4858,8 @@ mono_thread_internal_describe (MonoInternalThread *internal, GString *text)
 	}
 
 	if (internal->owned_mutexes) {
-		int i;
-
 		g_string_append (text, ", owns : [");
-		for (i = 0; i < internal->owned_mutexes->len; i++)
+		for (guint i = 0; i < internal->owned_mutexes->len; i++)
 			g_string_append_printf (text, i == 0 ? "%p" : ", %p", g_ptr_array_index (internal->owned_mutexes, i));
 		g_string_append (text, "]");
 	}

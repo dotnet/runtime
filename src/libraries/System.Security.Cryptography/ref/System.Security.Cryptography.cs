@@ -47,7 +47,6 @@ namespace System.Security.Cryptography
     public abstract partial class Aes : System.Security.Cryptography.SymmetricAlgorithm
     {
         protected Aes() { }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static new System.Security.Cryptography.Aes Create() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.Aes? Create(string algorithmName) { throw null; }
@@ -98,7 +97,6 @@ namespace System.Security.Cryptography
     [System.ObsoleteAttribute("Derived cryptographic types are obsolete. Use the Create method on the base type instead.", DiagnosticId="SYSLIB0021", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class AesCryptoServiceProvider : System.Security.Cryptography.Aes
     {
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public AesCryptoServiceProvider() { }
         public override int BlockSize { get { throw null; } set { } }
         public override int FeedbackSize { get { throw null; } set { } }
@@ -135,7 +133,6 @@ namespace System.Security.Cryptography
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     [System.ObsoleteAttribute("Derived cryptographic types are obsolete. Use the Create method on the base type instead.", DiagnosticId="SYSLIB0021", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public sealed partial class AesManaged : System.Security.Cryptography.Aes
     {
         public AesManaged() { }
@@ -1747,14 +1744,12 @@ namespace System.Security.Cryptography
     public abstract partial class Rijndael : System.Security.Cryptography.SymmetricAlgorithm
     {
         protected Rijndael() { }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static new System.Security.Cryptography.Rijndael Create() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.Rijndael? Create(string algName) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     [System.ObsoleteAttribute("The Rijndael and RijndaelManaged types are obsolete. Use Aes instead.", DiagnosticId="SYSLIB0022", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public sealed partial class RijndaelManaged : System.Security.Cryptography.Rijndael
     {
         public RijndaelManaged() { }

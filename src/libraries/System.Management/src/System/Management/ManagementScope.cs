@@ -617,7 +617,7 @@ namespace System.Management
         }
 
         internal ManagementScope(ManagementPath path, ManagementScope scope)
-            : this(path, (null != scope) ? scope.options : null) { }
+            : this(path, scope?.options) { }
 
         internal static ManagementScope _Clone(ManagementScope scope)
         {
@@ -808,10 +808,7 @@ namespace System.Management
         {
             get
             {
-                if (options == null)
-                    return options = ConnectionOptions._Clone(null, new IdentifierChangedEventHandler(HandleIdentifierChange));
-                else
-                    return options;
+                return options ??= ConnectionOptions._Clone(null, new IdentifierChangedEventHandler(HandleIdentifierChange));
             }
             set
             {
@@ -849,10 +846,7 @@ namespace System.Management
         {
             get
             {
-                if (prvpath == null)
-                    return prvpath = ManagementPath._Clone(null);
-                else
-                    return prvpath;
+                return prvpath ??= ManagementPath._Clone(null);
             }
             set
             {

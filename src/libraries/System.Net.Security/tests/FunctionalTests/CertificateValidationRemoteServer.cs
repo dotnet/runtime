@@ -101,12 +101,17 @@ namespace System.Net.Security.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Linux)]
-        [Theory]
+        [ConditionalTheory]
         [OuterLoop("Subject to system load race conditions")]
         [InlineData(false)]
         [InlineData(true)]
         public Task ConnectWithRevocation_StapledOcsp(bool offlineContext)
         {
+            if (PlatformDetection.IsRedHatFamily7 && !offlineContext)
+            {
+                throw new SkipTestException("Active test issue https://github.com/dotnet/runtime/issues/71037");
+            }
+
             // Offline will only work if
             // a) the revocation has been checked recently enough that it is cached, or
             // b) the server stapled the response

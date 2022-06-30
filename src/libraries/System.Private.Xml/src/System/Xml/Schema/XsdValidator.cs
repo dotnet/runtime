@@ -379,10 +379,7 @@ namespace System.Xml.Schema
 
         private SchemaElementDecl? ThoroughGetElementDecl(SchemaElementDecl? elementDecl, XmlQualifiedName xsiType, string? xsiNil)
         {
-            if (elementDecl == null)
-            {
-                elementDecl = schemaInfo!.GetElementDecl(elementName);
-            }
+            elementDecl ??= schemaInfo!.GetElementDecl(elementName);
             if (elementDecl != null)
             {
                 if (xsiType.IsEmpty)
@@ -762,17 +759,14 @@ namespace System.Xml.Schema
             // Note: It used to be true that we only called this if _fValidate was true,
             // but due to the fact that you can now dynamically type somethign as an ID
             // that is no longer true.
-            if (_IDs == null)
-            {
-                _IDs = new Hashtable();
-            }
+            _IDs ??= new Hashtable();
 
             _IDs.Add(name, node);
         }
 
         public override object? FindId(string name)
         {
-            return _IDs == null ? null : _IDs[name];
+            return _IDs?[name];
         }
 
         public bool IsXSDRoot(string localName, string ns)

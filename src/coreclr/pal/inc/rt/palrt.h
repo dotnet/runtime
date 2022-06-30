@@ -1148,6 +1148,14 @@ typedef struct _DISPATCHER_CONTEXT {
     DWORD Reserved;
 } DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
 
+#elif defined(HOST_POWERPC64)
+
+typedef struct _DISPATCHER_CONTEXT {
+    // PPC64LE does not build the VM or JIT at this point,
+    // so we only provide a dummy definition.
+    DWORD Reserved;
+} DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
+
 #else
 
 #error Unknown architecture for defining DISPATCHER_CONTEXT.

@@ -164,14 +164,8 @@ namespace System.Security.Cryptography.Xml
         // when an EncyptedData references an EncryptedKey using a CarriedKeyName and Recipient
         public string Recipient
         {
-            get
-            {
-                // an unspecified value for an XmlAttribute is string.Empty
-                if (_recipient == null)
-                    _recipient = string.Empty;
-                return _recipient;
-            }
-            set { _recipient = value; }
+            get => _recipient ??= string.Empty; // an unspecified value for an XmlAttribute is string.Empty
+            set => _recipient = value;
         }
 
         //
@@ -204,7 +198,7 @@ namespace System.Security.Cryptography.Xml
                 if (cipherData.CipherReference.Uri.Length == 0)
                 {
                     // self referenced Uri
-                    string baseUri = (_document == null ? null : _document.BaseURI);
+                    string baseUri = _document?.BaseURI;
                     TransformChain tc = cipherData.CipherReference.TransformChain;
                     if (tc == null)
                     {
@@ -222,7 +216,7 @@ namespace System.Security.Cryptography.Xml
                         throw new CryptographicException(SR.Cryptography_Xml_UriNotSupported);
                     }
                     inputStream = new MemoryStream(_encoding.GetBytes(idElem.OuterXml));
-                    string baseUri = (_document == null ? null : _document.BaseURI);
+                    string baseUri = _document?.BaseURI;
                     TransformChain tc = cipherData.CipherReference.TransformChain;
                     if (tc == null)
                     {

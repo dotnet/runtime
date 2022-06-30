@@ -426,7 +426,7 @@ namespace System.Runtime.Serialization
 
         internal virtual Type? GetSerializeType(object? graph)
         {
-            return (graph == null) ? null : graph.GetType();
+            return graph?.GetType();
         }
 
         internal virtual Type? GetDeserializeType()
@@ -435,17 +435,6 @@ namespace System.Runtime.Serialization
         }
 
         private static IFormatterConverter? s_formatterConverter;
-        internal static IFormatterConverter FormatterConverter
-        {
-            get
-            {
-                if (s_formatterConverter == null)
-                {
-                    s_formatterConverter = new FormatterConverter();
-                }
-
-                return s_formatterConverter;
-            }
-        }
+        internal static IFormatterConverter FormatterConverter => s_formatterConverter ??= new FormatterConverter();
     }
 }

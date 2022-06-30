@@ -120,15 +120,16 @@ namespace System.Xml.Xsl.Runtime
                     {
                         // Space was previous character or this is a non-space character
                         if (sb == null)
+                        {
                             sb = new StringBuilder(value.Length);
+                        }
                         else
+                        {
                             sb.Append(' ');
+                        }
 
                         // Copy non-space characters into string builder
-                        if (idxSpace == idx)
-                            sb.Append(value, idxStart, idx - idxStart - 1);
-                        else
-                            sb.Append(value, idxStart, idx - idxStart);
+                        sb.Append(value, idxStart, idxSpace == idx ? idx - idxStart - 1 : idx - idxStart);
 
                         idxStart = idx + 1;
                     }

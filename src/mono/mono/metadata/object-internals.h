@@ -330,7 +330,7 @@ struct _MonoStringBuilder {
 	int maxCapacity;
 };
 
-static inline int
+static inline guint
 mono_string_builder_capacity (MonoStringBuilderHandle sbh)
 {
 	MonoStringBuilder *sb = MONO_HANDLE_RAW (sbh);

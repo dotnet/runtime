@@ -103,7 +103,7 @@ namespace System.Drawing
             int flags,
             int dataSize,
             IntPtr data,
-            PlayRecordCallback callbackData);
+            PlayRecordCallback? callbackData);
 
 #if NET7_0_OR_GREATER
         [CustomTypeMarshaller(typeof(EnumerateMetafileProc), CustomTypeMarshallerKind.Value, Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.TwoStageMarshalling | CustomTypeMarshallerFeatures.UnmanagedResources)]
@@ -120,7 +120,7 @@ namespace System.Drawing
             public EnumerateMetafileProcMarshaller(EnumerateMetafileProc? managed)
             {
                 _managed = managed is null ? null : (recordType, flags, dataSize, data, callbackData) =>
-                    managed(recordType, flags, dataSize, data, Marshal.GetDelegateForFunctionPointer<PlayRecordCallback>(callbackData)) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+                    managed(recordType, flags, dataSize, data, callbackData == IntPtr.Zero ? null : Marshal.GetDelegateForFunctionPointer<PlayRecordCallback>(callbackData)) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
                 _nativeFunction = _managed is null ? null : (delegate* unmanaged<IntPtr, Interop.BOOL>)Marshal.GetFunctionPointerForDelegate(_managed);
             }
 

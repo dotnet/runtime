@@ -147,8 +147,7 @@ namespace System.IO.Enumeration
                             if (_options.RecurseSubdirectories && _remainingRecursionDepth > 0 && ShouldRecurseIntoEntry(ref entry))
                             {
                                 // Recursion is on and the directory was accepted, Queue it
-                                if (_pending == null)
-                                    _pending = new Queue<(string Path, int RemainingDepth)>();
+                                _pending ??= new Queue<(string Path, int RemainingDepth)>();
                                 _pending.Enqueue((Path.Join(_currentPath, entry.FileName), _remainingRecursionDepth - 1));
                             }
                         }

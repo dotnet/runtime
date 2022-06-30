@@ -117,7 +117,7 @@ namespace Microsoft.Interop
             {
                 CountInfo countInfo;
                 MarshallingInfo elementMarshallingInfo;
-                if (info.MarshallingAttributeInfo is NativeLinearCollectionMarshallingInfo collectionMarshalling
+                if (info.MarshallingAttributeInfo is NativeLinearCollectionMarshallingInfo_V1 collectionMarshalling
                     && collectionMarshalling.UseDefaultMarshalling
                     && collectionMarshalling.ElementCountInfo is NoCountInfo or SizeAndParamIndexInfo
                     && collectionMarshalling.ElementMarshallingInfo is NoMarshallingInfo or MarshalAsInfo { UnmanagedType: not UnmanagedType.CustomMarshaler }

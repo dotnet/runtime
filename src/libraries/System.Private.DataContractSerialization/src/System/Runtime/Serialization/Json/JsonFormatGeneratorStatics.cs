@@ -318,17 +318,7 @@ namespace System.Runtime.Serialization
                 return s_serializationExceptionCtor;
             }
         }
-        public static Type[] SerInfoCtorArgs
-        {
-            get
-            {
-                if (s_serInfoCtorArgs == null)
-                {
-                    s_serInfoCtorArgs = new Type[] { typeof(SerializationInfo), typeof(StreamingContext) };
-                }
-                return s_serInfoCtorArgs;
-            }
-        }
+        public static Type[] SerInfoCtorArgs => s_serInfoCtorArgs ??= new Type[] { typeof(SerializationInfo), typeof(StreamingContext) };
         public static MethodInfo ThrowDuplicateMemberExceptionMethod
         {
             get

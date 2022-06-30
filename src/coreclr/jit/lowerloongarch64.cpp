@@ -417,19 +417,19 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
 }
 
 //------------------------------------------------------------------------
-// LowerPutArgStk: Lower a GT_PUTARG_STK.
+// LowerPutArgStkOrSplit: Lower a GT_PUTARG_STK/GT_PUTARG_SPLIT.
 //
 // Arguments:
-//    putArgStk - The node to lower
+//    putArgNode - The node to lower
 //
-void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
+void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
 {
-    GenTree* src = putArgStk->Data();
+    GenTree* src = putArgNode->Data();
 
     if (src->TypeIs(TYP_STRUCT))
     {
         // STRUCT args (FIELD_LIST / OBJ) will always be contained.
-        MakeSrcContained(putArgStk, src);
+        MakeSrcContained(putArgNode, src);
 
         // Additionally, codegen supports containment of local addresses under OBJs.
         if (src->OperIs(GT_OBJ) && src->AsObj()->Addr()->OperIs(GT_LCL_VAR_ADDR))

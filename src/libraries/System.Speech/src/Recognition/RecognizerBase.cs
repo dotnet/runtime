@@ -296,8 +296,8 @@ ISpGrammarResourceLoader
 
         void IRecognizerInternal.SetDictationContext(Grammar grammar, string precedingText, string subsequentText)
         {
-            if (precedingText == null) { precedingText = string.Empty; }
-            if (subsequentText == null) { subsequentText = string.Empty; }
+            precedingText ??= string.Empty;
+            subsequentText ??= string.Empty;
 
             SPTEXTSELECTIONINFO selectionInfo = new(0, 0, (uint)precedingText.Length, 0);
             string textString = precedingText + subsequentText + "\0\0";
@@ -1590,7 +1590,7 @@ ISpGrammarResourceLoader
 
                         sapiGrammar.SetGrammarLoader(_recoThunk);
                     }
-                    sapiGrammar.LoadCmdFromMemory2(dataPtr, SPLOADOPTIONS.SPLO_STATIC, null, baseUri == null ? null : baseUri.ToString());
+                    sapiGrammar.LoadCmdFromMemory2(dataPtr, SPLOADOPTIONS.SPLO_STATIC, null, baseUri?.ToString());
                 }
                 else
                 {

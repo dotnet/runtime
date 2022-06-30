@@ -700,7 +700,7 @@ mono_image_check_for_module_cctor (MonoImage *image)
  * it cannot be loaded. NULL without MonoError being set will be interpreted as "not found".
  */
 MonoImage*
-mono_image_load_module_checked (MonoImage *image, int idx, MonoError *error)
+mono_image_load_module_checked (MonoImage *image, uint32_t idx, MonoError *error)
 {
 	error_init (error);
 
@@ -928,7 +928,6 @@ mono_has_pdb_checksum (char *raw_data, uint32_t raw_data_len)
 {
 	MonoDotNetHeader cli_header;
 	MonoMSDOSHeader msdos;
-	int idx;
 	guint8 *data;
 
 	int offset = 0;
@@ -950,7 +949,7 @@ mono_has_pdb_checksum (char *raw_data, uint32_t raw_data_len)
 			return FALSE;
 		else {
 			const int top = cli_header.coff.coff_sections;
-			int addr = debug_dir_entry->rva;
+			guint32 addr = debug_dir_entry->rva;
 			int i = 0;
 			for (i = 0; i < top; i++){
 				MonoSectionTable t;
@@ -974,7 +973,7 @@ mono_has_pdb_checksum (char *raw_data, uint32_t raw_data_len)
 					break;
 				}
 			}
-			for (idx = 0; idx < debug_dir_entry->size / sizeof (ImageDebugDirectory); ++idx) {
+			for (guint32 idx = 0; idx < debug_dir_entry->size / sizeof (ImageDebugDirectory); ++idx) {
 				data = (guint8 *) ((ImageDebugDirectory *) (raw_data + addr) + idx);
 				debug_dir.characteristics = read32(data);
 				debug_dir.time_date_stamp = read32(data + 4);
@@ -1164,7 +1163,7 @@ dump_encmap (MonoImage *image)
 
 	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE)) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "ENCMAP for %s", image->filename);
-		for (int i = 0; i < table_info_get_rows (encmap); ++i) {
+		for (guint32 i = 0; i < table_info_get_rows (encmap); ++i) {
 			guint32 cols [MONO_ENCMAP_SIZE];
 			mono_metadata_decode_row (encmap, i, cols, MONO_ENCMAP_SIZE);
 			int token = cols [MONO_ENCMAP_TOKEN];
@@ -2556,7 +2555,7 @@ mono_image_get_resource (MonoImage *image, guint32 offset, guint32 *size)
 
 // Returning NULL with no error set will be interpeted as "not found"
 MonoImage*
-mono_image_load_file_for_image_checked (MonoImage *image, int fileidx, MonoError *error)
+mono_image_load_file_for_image_checked (MonoImage *image, uint32_t fileidx, MonoError *error)
 {
 	char *base_dir, *name;
 	MonoImage *res;
@@ -2591,7 +2590,6 @@ mono_image_load_file_for_image_checked (MonoImage *image, int fileidx, MonoError
 		mono_image_unlock (image);
 		mono_image_close (old);
 	} else {
-		int i;
 		/* g_print ("loaded file %s from %s (%p)\n", name, image->name, image->assembly); */
 		if (!assign_assembly_parent_for_netmodule (res, image, error)) {
 			mono_image_unlock (image);
@@ -2599,13 +2597,13 @@ mono_image_load_file_for_image_checked (MonoImage *image, int fileidx, MonoError
 			return NULL;
 		}
 
-		for (i = 0; i < res->module_count; ++i) {
+		for (guint32 i = 0; i < res->module_count; ++i) {
 			if (res->modules [i] && !res->modules [i]->assembly)
 				res->modules [i]->assembly = image->assembly;
 		}
 
 		if (!image->files) {
-			int n = table_info_get_rows (t);
+			guint32 n = table_info_get_rows (t);
 			image->files = g_new0 (MonoImage*, n);
 			image->file_count = n;
 		}

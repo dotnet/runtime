@@ -950,14 +950,6 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
     // begin Early Processing
     //
     {
-#ifndef USE_REDIRECT_FOR_GCSTRESS
-        if (IsGcMarker(pContextRecord, pExceptionRecord))
-        {
-            returnDisposition = ExceptionContinueExecution;
-            goto lExit;
-        }
-#endif // !USE_REDIRECT_FOR_GCSTRESS
-
         EH_LOG((LL_INFO100, "..................................................................................\n"));
         EH_LOG((LL_INFO100, "ProcessCLRException enter, sp = 0x%p, ControlPc = 0x%p\n", MemoryStackFp, pDispatcherContext->ControlPc));
         DebugLogExceptionRecord(pExceptionRecord);

@@ -1908,7 +1908,7 @@ namespace System.Xml.Xsl.Xslt
             QilNode countMatches, fromMatches, A, F, AF;
             QilIterator i, j;
 
-            countPattern2 = (countPattern != null) ? countPattern.DeepClone(_f.BaseFactory) : null;
+            countPattern2 = countPattern?.DeepClone(_f.BaseFactory);
             countMatches = _f.Filter(i = _f.For(_f.AncestorOrSelf(GetCurrentNode())), MatchCountPattern(countPattern, i));
             if (multiple)
             {
@@ -2424,10 +2424,7 @@ namespace System.Xml.Xsl.Xslt
             XPathScanner scanner;
             QilNode result;
 
-            if (_keyMatchBuilder == null)
-            {
-                _keyMatchBuilder = new KeyMatchBuilder((IXPathEnvironment)this);
-            }
+            _keyMatchBuilder ??= new KeyMatchBuilder((IXPathEnvironment)this);
             SetEnvironmentFlags(/*allowVariables:*/false, /*allowCurrent:*/false, /*allowKey:*/false);
             if (pttrn == null)
             {

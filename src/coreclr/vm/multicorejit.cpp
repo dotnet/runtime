@@ -309,10 +309,9 @@ bool RecorderModuleInfo::SetModule(Module * pMod)
     simpleName.Set((const BYTE *) pModuleName, lenModuleName); // SBuffer::Set copies over name
 
     SString sAssemblyName;
-    StackScratchBuffer scratch;
     pMod->GetAssembly()->GetPEAssembly()->GetDisplayName(sAssemblyName);
 
-    LPCUTF8 pAssemblyName = sAssemblyName.GetUTF8(scratch);
+    LPCUTF8 pAssemblyName = sAssemblyName.GetUTF8();
     unsigned lenAssemblyName = sAssemblyName.GetCount();
     assemblyName.Set((const BYTE *) pAssemblyName, lenAssemblyName);
 

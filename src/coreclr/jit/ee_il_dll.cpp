@@ -1122,34 +1122,64 @@ void Compiler::eeDispLineInfos()
  * (e.g., host AMD64, target ARM64), then VM will get confused anyway.
  */
 
-void Compiler::eeAllocMem(AllocMemArgs* args)
+void Compiler::eeAllocMem(AllocMemArgs* args, const UNATIVE_OFFSET roDataSectionAlignment)
 {
 #ifdef DEBUG
-    const UNATIVE_OFFSET hotSizeRequest  = args->hotCodeSize;
-    const UNATIVE_OFFSET coldSizeRequest = args->coldCodeSize;
 
-    // Fake splitting implementation: place hot/cold code in contiguous section
-    if (JitConfig.JitFakeProcedureSplitting() && (coldSizeRequest > 0))
+    // Fake splitting implementation: place hot/cold code in contiguous section.
+    UNATIVE_OFFSET coldCodeOffset = 0;
+    if (JitConfig.JitFakeProcedureSplitting() && (args->coldCodeSize > 0))
     {
-        args->hotCodeSize  = hotSizeRequest + coldSizeRequest;
+        coldCodeOffset = args->hotCodeSize;
+        assert(coldCodeOffset > 0);
+        args->hotCodeSize += args->coldCodeSize;
         args->coldCodeSize = 0;
     }
-#endif
+
+#endif // DEBUG
+
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+
+    // For arm64/LoongArch64, we want to allocate JIT data always adjacent to code similar to what native compiler does.
+    // This way allows us to use a single `ldr` to access such data like float constant/jmp table.
+    // For LoongArch64 using `pcaddi + ld` to access such data.
+
+    UNATIVE_OFFSET roDataAlignmentDelta = 0;
+    if (args->roDataSize > 0)
+    {
+        roDataAlignmentDelta = AlignmentPad(args->hotCodeSize, roDataSectionAlignment);
+    }
+
+    const UNATIVE_OFFSET roDataOffset = args->hotCodeSize + roDataAlignmentDelta;
+    args->hotCodeSize                 = roDataOffset + args->roDataSize;
+    args->roDataSize                  = 0;
+
+#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
     info.compCompHnd->allocMem(args);
 
 #ifdef DEBUG
-    if (JitConfig.JitFakeProcedureSplitting() && (coldSizeRequest > 0))
-    {
-        // Fix up hot/cold code pointers
-        args->coldCodeBlock   = ((BYTE*)args->hotCodeBlock) + hotSizeRequest;
-        args->coldCodeBlockRW = ((BYTE*)args->hotCodeBlockRW) + hotSizeRequest;
 
-        // Reset args' hot/cold code sizes in case caller reads them later
-        args->hotCodeSize  = hotSizeRequest;
-        args->coldCodeSize = coldSizeRequest;
+    if (JitConfig.JitFakeProcedureSplitting() && (coldCodeOffset > 0))
+    {
+        // Fix up cold code pointers. Cold section is adjacent to hot section.
+        assert(args->coldCodeBlock == nullptr);
+        assert(args->coldCodeBlockRW == nullptr);
+        args->coldCodeBlock   = ((BYTE*)args->hotCodeBlock) + coldCodeOffset;
+        args->coldCodeBlockRW = ((BYTE*)args->hotCodeBlockRW) + coldCodeOffset;
     }
-#endif
+
+#endif // DEBUG
+
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+
+    // Fix up data section pointers.
+    assert(args->roDataBlock == nullptr);
+    assert(args->roDataBlockRW == nullptr);
+    args->roDataBlock   = ((BYTE*)args->hotCodeBlock) + roDataOffset;
+    args->roDataBlockRW = ((BYTE*)args->hotCodeBlockRW) + roDataOffset;
+
+#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 }
 
 void Compiler::eeReserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSize)

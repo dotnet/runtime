@@ -143,7 +143,7 @@ namespace System.Runtime.Serialization
                 XmlDictionary dictionary = new XmlDictionary();
                 this.Name = dictionary.Add(StableName.Name);
                 this.Namespace = dictionary.Add(StableName.Namespace);
-                object[]? xmlRootAttributes = (UnderlyingType == null) ? null : UnderlyingType.GetCustomAttributes(Globals.TypeOfXmlRootAttribute, false).ToArray();
+                object[]? xmlRootAttributes = UnderlyingType?.GetCustomAttributes(Globals.TypeOfXmlRootAttribute, false).ToArray();
                 if (xmlRootAttributes == null || xmlRootAttributes.Length == 0)
                 {
                     if (hasRoot)

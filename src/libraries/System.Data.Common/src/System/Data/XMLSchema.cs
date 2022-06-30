@@ -217,15 +217,12 @@ namespace System.Data
                     XmlSchemaSimpleType? xmlSimpleType = (item as XmlSchemaSimpleType);
                     if (xmlSimpleType != null)
                     {
-                        if (_udSimpleTypes == null)
-                        {
-                            _udSimpleTypes = new Hashtable();
-                        }
+                        _udSimpleTypes ??= new Hashtable();
 
                         _udSimpleTypes[type.QualifiedName.ToString()] = xmlSimpleType;
                         DataColumn? dc = (DataColumn?)_existingSimpleTypeMap![type.QualifiedName.ToString()];
                         // Assumption is that our simple type qualified name ihas the same output as XmlSchemaSimpleType type.QualifiedName.ToString()
-                        SimpleType? tmpSimpleType = (dc != null) ? dc.SimpleType : null;
+                        SimpleType? tmpSimpleType = dc?.SimpleType;
 
                         if (tmpSimpleType != null)
                         {
@@ -372,8 +369,7 @@ namespace System.Data
                     {
                         if (attrs[i].LocalName == "Expression")
                         {
-                            if (_expressions == null)
-                                _expressions = new Hashtable();
+                            _expressions ??= new Hashtable();
                             _expressions[dc] = attrs[i].Value;
                             _columnExpressions!.Add(dc);
                             break;

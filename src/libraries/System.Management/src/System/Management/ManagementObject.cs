@@ -502,10 +502,7 @@ namespace System.Management
         {
             get
             {
-                if (scope == null)
-                    return scope = ManagementScope._Clone(null);
-                else
-                    return scope;
+                return scope ??= ManagementScope._Clone(null);
             }
             set
             {
@@ -557,10 +554,7 @@ namespace System.Management
         {
             get
             {
-                if (path == null)
-                    return path = ManagementPath._Clone(null);
-                else
-                    return path;
+                return path ??= ManagementPath._Clone(null);
             }
             set
             {
@@ -624,10 +618,7 @@ namespace System.Management
         {
             get
             {
-                if (options == null)
-                    return options = ObjectGetOptions._Clone(null);
-                else
-                    return options;
+                return options ??= ObjectGetOptions._Clone(null);
             }
             set
             {
@@ -1597,10 +1588,7 @@ namespace System.Management
             {
             }
 
-            if (newPath == null)
-                newPath = new ManagementPath();
-
-            return newPath;
+            return newPath ?? new ManagementPath();
         }
 
         /// <summary>
@@ -2308,7 +2296,7 @@ namespace System.Management
                 {
                     securityHandler = scope.GetSecurityHandler();
 
-                    IWbemClassObjectFreeThreaded inParams = (null == inParameters) ? null : inParameters.wbemObject;
+                    IWbemClassObjectFreeThreaded inParams = inParameters?.wbemObject;
                     IWbemClassObjectFreeThreaded outParams = null;
 
                     status = scope.GetSecuredIWbemServicesHandler(scope.GetIWbemServices()).ExecMethod_(

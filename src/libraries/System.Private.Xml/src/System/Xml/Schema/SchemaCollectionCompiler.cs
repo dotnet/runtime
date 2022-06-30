@@ -513,10 +513,7 @@ namespace System.Xml.Schema
             else
             {
                 group.IsProcessing = true;
-                if (group.CanonicalParticle == null)
-                {
-                    group.CanonicalParticle = CannonicalizeParticle(group.Particle, true, true);
-                }
+                group.CanonicalParticle ??= CannonicalizeParticle(group.Particle, true, true);
                 Debug.Assert(group.CanonicalParticle != null);
                 group.IsProcessing = false;
             }
@@ -1789,7 +1786,7 @@ namespace System.Xml.Schema
 
         private void CompileLocalAttributes(XmlSchemaComplexType? baseType, XmlSchemaComplexType derivedType, XmlSchemaObjectCollection attributes, XmlSchemaAnyAttribute? anyAttribute, XmlSchemaDerivationMethod derivedBy)
         {
-            XmlSchemaAnyAttribute? baseAttributeWildcard = baseType != null ? baseType.AttributeWildcard : null;
+            XmlSchemaAnyAttribute? baseAttributeWildcard = baseType?.AttributeWildcard;
             for (int i = 0; i < attributes.Count; ++i)
             {
                 XmlSchemaAttribute? attribute = attributes[i] as XmlSchemaAttribute;
