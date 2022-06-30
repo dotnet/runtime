@@ -110,7 +110,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <PropertyGroup Condition="'$(_VCVarsAllFound)' == '0'">
       <_CppToolsDirectory>$(_FindVCVarsallOutput.Split(`#`)[0])</_CppToolsDirectory>
       <CppCompiler>"$(_CppToolsDirectory)cl.exe"</CppCompiler>
-      <CppLinker>"$(_CppToolsDirectory)link.exe"</CppLinker>
+      <CppLinker>$(_CppToolsDirectory)link.exe</CppLinker>
       <CppLibCreator>"$(_CppToolsDirectory)lib.exe"</CppLibCreator>
     </PropertyGroup>
 
