@@ -60,7 +60,7 @@ namespace ILCompiler.Dataflow
                 fieldDefinition.DoesFieldRequire(DiagnosticUtilities.RequiresDynamicCodeAttribute, out _);
         }
 
-        static void CheckAndReportRequires(in DiagnosticContext diagnosticContext, TypeSystemEntity calledMember, string requiresAttributeName)
+        internal static void CheckAndReportRequires(in DiagnosticContext diagnosticContext, TypeSystemEntity calledMember, string requiresAttributeName)
         {
             if (!calledMember.DoesMemberRequire(requiresAttributeName, out var requiresAttribute))
                 return;
@@ -161,7 +161,8 @@ namespace ILCompiler.Dataflow
 
         private void HandleStoreValueWithDynamicallyAccessedMembers(MethodIL methodBody, int offset, ValueWithDynamicallyAccessedMembers targetValue, MultiValue sourceValue, Origin memberWithRequirements)
         {
-            if (targetValue.DynamicallyAccessedMemberTypes != 0)
+            // We must record all field accesses since we need to check RUC/RDC/RAF attributes on them regardless of annotations
+            if (targetValue.DynamicallyAccessedMemberTypes != 0 || targetValue is FieldValue)
             {
                 _origin = _origin.WithInstructionOffset(methodBody, offset);
                 HandleAssignmentPattern(_origin, sourceValue, targetValue, memberWithRequirements);
@@ -170,9 +171,6 @@ namespace ILCompiler.Dataflow
 
         protected override void HandleStoreField(MethodIL methodBody, int offset, FieldValue field, MultiValue valueToStore)
             => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, field, valueToStore, new FieldOrigin(field.Field));
-        // TODO: The previous HandleStoreField also did this:
-        // CheckAndReportRequires(field.Field, new MessageOrigin(methodBody.OwningMethod), RequiresUnreferencedCodeAttribute);
-        // CheckAndReportRequires(field.Field, new MessageOrigin(methodBody.OwningMethod), RequiresDynamicCodeAttribute);
 
         protected override void HandleStoreParameter(MethodIL methodBody, int offset, MethodParameterValue parameter, MultiValue valueToStore)
             => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, parameter, valueToStore, parameter.ParameterOrigin);

@@ -118,7 +118,7 @@ namespace ILCompiler.Dataflow
                 return new KnownStringValue(str);
             }
 
-            // We shouldn't have gotten a non-null annotation for this from GetParameterAnnotation
+            // We shouldn't have gotten a None annotation from flow annotations since only string/Type can have annotations
             throw new InvalidOperationException();
         }
 

@@ -21,14 +21,13 @@ namespace ILCompiler.Dataflow
     // Currently this is implemented using heuristics
     public class CompilerGeneratedState
     {
-        readonly ILProvider _ilProvider;
         readonly record struct TypeArgumentInfo(
             /// <summary>The method which calls the ctor for the given type</summary>
             MethodDesc CreatingMethod,
             /// <summary>Attributes for the type, pulled from the creators type arguments</summary>
             IReadOnlyList<GenericParameterDesc?>? OriginalAttributes);
 
-        TypeCacheHashtable _typeCacheHashtable;
+        readonly TypeCacheHashtable _typeCacheHashtable;
 
         public Logger? Logger
         {
@@ -38,8 +37,6 @@ namespace ILCompiler.Dataflow
 
         public CompilerGeneratedState(ILProvider ilProvider)
         {
-            _ilProvider = ilProvider;
-
             _typeCacheHashtable = new TypeCacheHashtable(ilProvider);
         }
 
@@ -63,7 +60,7 @@ namespace ILCompiler.Dataflow
         {
             public readonly MetadataType Type;
 
-            // The MetadataType keys must be type definitions (uninstantiated)
+            // The MetadataType keys must be type definitions (uninstantiated) same goes for MethodDesc must be method definition
             private Dictionary<MetadataType, MethodDesc>? _compilerGeneratedTypeToUserCodeMethod;
             private Dictionary<MetadataType, TypeArgumentInfo>? _generatedTypeToTypeArgumentInfo;
             private Dictionary<MethodDesc, MethodDesc>? _compilerGeneratedMethodToUserCodeMethod;
