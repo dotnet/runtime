@@ -6491,7 +6491,8 @@ void Compiler::optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt)
                 // Here, we are arranging the blocks in reverse lexical order, so when they are removed from the
                 // head of this list and pushed on the stack of hoisting blocks to process, they are in
                 // forward lexical order when popped. Note that for child loops `i` and `j`, in order `i`
-                // followed by `j` in the `lpSibling` list, that `j` is actually first in lexical order.
+                // followed by `j` in the `lpSibling` list, that `j` is actually first in lexical order
+                // and that makes these blocks arranged in reverse lexical order in this list.
                 // That is, the sibling list is in reverse lexical order.
                 // Note: the sibling list order should not matter to any algorithm; this order is not guaranteed.
                 *preHeaderAppendPtr = new (this, CMK_LoopHoist) BasicBlockList(preHeaderBlock, nullptr);
@@ -7105,8 +7106,8 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                 }
                 else
                 {
-                    JITDUMP("      [%06u] not %s: %s\n", dspTreeID(top.Node()),
-                            top.m_invariant ? "hoistable" : "invariant", top.m_failReason);
+                    JITDUMP("      [%06u] %s: %s\n", dspTreeID(top.Node()),
+                            top.m_invariant ? "not hoistable" : "not invariant", top.m_failReason);
                 }
 
                 m_valueStack.Reset();
@@ -7475,8 +7476,8 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                             // should not hoist further children past it.
                             hasExcep = (tree->gtFlags & GTF_EXCEPT) != 0;
                         }
-                        JITDUMP("      [%06u] not %s: %s\n", dspTreeID(value.Node()),
-                                value.m_invariant ? "hoistable" : "invariant", value.m_failReason);
+                        JITDUMP("      [%06u] %s: %s\n", dspTreeID(value.Node()),
+                                value.m_invariant ? "not hoistable" : "not invariant", value.m_failReason);
                     }
                     else
                     {
