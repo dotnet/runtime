@@ -95,10 +95,7 @@ namespace System.Runtime.Serialization
 
         public DataContractSerializer(Type type, DataContractSerializerSettings? settings)
         {
-            if (settings == null)
-            {
-                settings = new DataContractSerializerSettings();
-            }
+            settings ??= new DataContractSerializerSettings();
             Initialize(type, settings.RootName, settings.RootNamespace, settings.KnownTypes, settings.MaxItemsInObjectGraph, false,
                 settings.PreserveObjectReferences, settings.DataContractResolver, settings.SerializeReadOnlyTypes);
         }
@@ -357,8 +354,7 @@ namespace System.Runtime.Serialization
                 graph = SurrogateToDataContractType(_serializationSurrogateProvider, graph, declaredType, ref graphType);
             }
 
-            if (dataContractResolver == null)
-                dataContractResolver = this.DataContractResolver;
+            dataContractResolver ??= this.DataContractResolver;
 
             if (graph == null)
             {
@@ -437,8 +433,7 @@ namespace System.Runtime.Serialization
             if (MaxItemsInObjectGraph == 0)
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ExceededMaxItemsQuota, MaxItemsInObjectGraph)));
 
-            if (dataContractResolver == null)
-                dataContractResolver = this.DataContractResolver;
+            dataContractResolver ??= this.DataContractResolver;
 
             if (verifyObjectName)
             {

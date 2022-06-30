@@ -282,10 +282,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal override IList<KeyValuePair<string, object>> GetMembers(IEnumerable<string> names)
         {
-            if (names == null)
-            {
-                names = GetMemberNames(true);
-            }
+            names ??= GetMemberNames(true);
 
             Type comType = RuntimeCallableWrapper.GetType();
 

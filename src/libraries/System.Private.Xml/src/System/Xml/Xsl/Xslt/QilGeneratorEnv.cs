@@ -425,10 +425,7 @@ namespace System.Xml.Xsl.Xslt
             }
             else
             {
-                if (_generalKey == null)
-                {
-                    _generalKey = CreateGeneralKeyFunction();
-                }
+                _generalKey ??= CreateGeneralKeyFunction();
                 QilIterator i = _f.Let(name);
                 QilNode resolvedName = ResolveQNameDynamic(/*ignoreDefaultNs:*/true, i);
                 result = _f.Invoke(_generalKey, _f.ActualParameterList(i, resolvedName, key, env.GetCurrent()!));

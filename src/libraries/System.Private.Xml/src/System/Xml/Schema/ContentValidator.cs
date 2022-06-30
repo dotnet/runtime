@@ -1630,10 +1630,7 @@ namespace System.Xml.Schema
                 {
                     if (transition[i] != -1)
                     {
-                        if (names == null)
-                        {
-                            names = new ArrayList();
-                        }
+                        names ??= new ArrayList();
 
                         XmlSchemaParticle? p = (XmlSchemaParticle?)_symbols.GetParticle(i);
                         if (p == null)
@@ -1783,10 +1780,7 @@ namespace System.Xml.Schema
             BitSet curpos = context.CurPos[context.CurrentState.CurPosIndex];
             for (int pos = curpos.NextSet(-1); pos != -1; pos = curpos.NextSet(pos))
             {
-                if (names == null)
-                {
-                    names = new ArrayList();
-                }
+                names ??= new ArrayList();
                 XmlSchemaParticle? p = (XmlSchemaParticle?)_positions[pos].particle;
                 if (p == null)
                 {
@@ -1992,10 +1986,7 @@ namespace System.Xml.Schema
                         }
 
                         RangePositionInfo newRPosInfo = runningPositions[matchCount];
-                        if (newRPosInfo.rangeCounters == null)
-                        {
-                            newRPosInfo.rangeCounters = new decimal[_minMaxNodesCount];
-                        }
+                        newRPosInfo.rangeCounters ??= new decimal[_minMaxNodesCount];
 
                         Array.Copy(rposInfo.rangeCounters, newRPosInfo.rangeCounters, rposInfo.rangeCounters.Length);
                         decimal count = ++newRPosInfo.rangeCounters[lrNode.Pos];
@@ -2020,10 +2011,7 @@ namespace System.Xml.Schema
                             runningPositions[matchCount] = newRPosInfo;
                             j = matchCount + 1;
                             newRPosInfo = runningPositions[j];
-                            if (newRPosInfo.rangeCounters == null)
-                            {
-                                newRPosInfo.rangeCounters = new decimal[_minMaxNodesCount];
-                            }
+                            newRPosInfo.rangeCounters ??= new decimal[_minMaxNodesCount];
                             Array.Copy(rposInfo.rangeCounters, newRPosInfo.rangeCounters, rposInfo.rangeCounters.Length);
                             newRPosInfo.curpos = _followpos[cPos];
                             newRPosInfo.rangeCounters[lrNode.Pos] = 0;
@@ -2066,10 +2054,7 @@ namespace System.Xml.Schema
                 }
                 for (int pos = expectedPos.NextSet(-1); pos != -1; pos = expectedPos.NextSet(pos))
                 {
-                    if (names == null)
-                    {
-                        names = new ArrayList();
-                    }
+                    names ??= new ArrayList();
                     int symbol = _positions[pos].symbol;
                     if (symbol >= 0)
                     { //non range nodes

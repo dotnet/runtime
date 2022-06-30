@@ -1774,6 +1774,7 @@ public:
     inline bool IsFloatPositiveZero() const;
     inline bool IsFloatNegativeZero() const;
     inline bool IsVectorZero() const;
+    inline bool IsVectorCreate() const;
     inline bool IsVectorAllBitsSet() const;
     inline bool IsVectorConst();
 
@@ -4038,7 +4039,6 @@ struct ReturnTypeDesc
 {
 private:
     var_types m_regType[MAX_RET_REG_COUNT];
-    bool      m_isEnclosingType;
 
 #ifdef DEBUG
     bool m_inited;
@@ -4064,7 +4064,6 @@ public:
         {
             m_regType[i] = TYP_UNKNOWN;
         }
-        m_isEnclosingType = false;
 #ifdef DEBUG
         m_inited = false;
 #endif
@@ -4156,13 +4155,6 @@ public:
         assert(result != TYP_UNKNOWN);
 
         return result;
-    }
-
-    // True if this value is returned in integer register
-    // that is larger than the type itself.
-    bool IsEnclosingType() const
-    {
-        return m_isEnclosingType;
     }
 
     // Get i'th ABI return register
@@ -4439,12 +4431,6 @@ public:
     unsigned GetStackSlotsNumber() const
     {
         return roundUp(GetStackByteSize(), TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
-    }
-
-    // Can we replace the struct type of this node with a primitive type for argument passing?
-    bool TryPassAsPrimitive() const
-    {
-        return !IsSplit() && ((NumRegs == 1) || (ByteSize <= TARGET_POINTER_SIZE));
     }
 };
 
@@ -8394,6 +8380,52 @@ inline bool GenTree::IsFloatPositiveZero() const
 inline bool GenTree::IsVectorZero() const
 {
     return IsCnsVec() && AsVecCon()->IsZero();
+}
+
+//-------------------------------------------------------------------
+// IsVectorCreate: returns true if this node is the creation of a vector.
+//                 Does not include "Unsafe" method calls.
+//
+// Returns:
+//     True if this node is the creation of a vector
+//
+inline bool GenTree::IsVectorCreate() const
+{
+#ifdef FEATURE_HW_INTRINSICS
+    if (OperIs(GT_HWINTRINSIC))
+    {
+        switch (AsHWIntrinsic()->GetHWIntrinsicId())
+        {
+            case NI_Vector128_Create:
+#if defined(TARGET_XARCH)
+            case NI_Vector256_Create:
+#elif defined(TARGET_ARMARCH)
+            case NI_Vector64_Create:
+#endif
+                return true;
+
+            default:
+                return false;
+        }
+    }
+#endif // FEATURE_HW_INTRINSICS
+
+#ifdef FEATURE_SIMD
+    if (OperIs(GT_SIMD))
+    {
+        switch (AsSIMD()->GetSIMDIntrinsicId())
+        {
+            case SIMDIntrinsicInit:
+            case SIMDIntrinsicInitN:
+                return true;
+
+            default:
+                return false;
+        }
+    }
+#endif // FEATURE_SIMD
+
+    return false;
 }
 
 //-------------------------------------------------------------------

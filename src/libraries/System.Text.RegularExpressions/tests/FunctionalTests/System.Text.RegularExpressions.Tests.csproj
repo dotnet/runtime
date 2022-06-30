@@ -72,4 +72,7 @@
   <ItemGroup>
     <PackageReference Include="System.Text.RegularExpressions.TestData" Version="$(SystemTextRegularExpressionsTestDataVersion)" />
   </ItemGroup>
+  <ItemGroup>
+    <HighAotMemoryUsageAssembly Include="Microsoft.CodeAnalysis.CSharp.dll" /> 
+  </ItemGroup>
 </Project>

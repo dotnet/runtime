@@ -3721,9 +3721,7 @@ save_seq_points (TransformData *td, MonoJitInfo *jinfo)
 static void
 interp_emit_memory_barrier (TransformData *td, int kind)
 {
-#if defined(TARGET_WASM)
-	// mono_memory_barrier is dummy on wasm
-#elif defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 	if (kind == MONO_MEMORY_BARRIER_SEQ)
 		interp_add_ins (td, MINT_MONO_MEMORY_BARRIER);
 #else

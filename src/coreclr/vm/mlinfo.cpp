@@ -3250,12 +3250,11 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
     if (LoggingOn(LF_MARSHALER, LL_INFO10))
     {
         SString logbuf;
-        StackScratchBuffer scratch;
 
         IMDInternalImport *pInternalImport = pModule->GetMDImport();
 
         logbuf.AppendASCII("------------------------------------------------------------\n");
-        LOG((LF_MARSHALER, LL_INFO10, logbuf.GetANSI(scratch)));
+        LOG((LF_MARSHALER, LL_INFO10, logbuf.GetUTF8()));
         logbuf.Clear();
 
         logbuf.AppendASCII("Managed type: ");
@@ -3273,7 +3272,7 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
         }
 
         logbuf.AppendASCII("\n");
-        LOG((LF_MARSHALER, LL_INFO10, logbuf.GetANSI(scratch)));
+        LOG((LF_MARSHALER, LL_INFO10, logbuf.GetUTF8()));
         logbuf.Clear();
 
         logbuf.AppendASCII("NativeType  : ");
@@ -3361,7 +3360,7 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
                         strLen = CPackedLen::GetLength(pvNativeType, (void const **)&pvNativeType);
                         if (strLen)
                         {
-                            BYTE* p = (BYTE*)logbuf.OpenANSIBuffer(strLen);
+                            BYTE* p = (BYTE*)logbuf.OpenUTF8Buffer(strLen);
                             memcpyNoGCRefs(p, pvNativeType, strLen);
                             logbuf.CloseBuffer();
                             logbuf.AppendASCII("\0");
@@ -3377,7 +3376,7 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
                         strLen = CPackedLen::GetLength(pvNativeType, (void const **)&pvNativeType);
                         if (strLen)
                         {
-                            BYTE* p = (BYTE*)logbuf.OpenANSIBuffer(strLen);
+                            BYTE* p = (BYTE*)logbuf.OpenUTF8Buffer(strLen);
                             memcpyNoGCRefs(p, pvNativeType, strLen);
                             logbuf.CloseBuffer();
                             logbuf.AppendASCII("\0");
@@ -3393,7 +3392,7 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
                         strLen = CPackedLen::GetLength(pvNativeType, (void const **)&pvNativeType);
                         if (strLen)
                         {
-                            BYTE* p = (BYTE*)logbuf.OpenANSIBuffer(strLen);
+                            BYTE* p = (BYTE*)logbuf.OpenUTF8Buffer(strLen);
                             memcpyNoGCRefs(p, pvNativeType, strLen);
                             logbuf.CloseBuffer();
                             logbuf.AppendASCII("\0");
@@ -3408,7 +3407,7 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
                         strLen = CPackedLen::GetLength(pvNativeType, (void const **)&pvNativeType);
                         if (strLen)
                         {
-                            BYTE* p = (BYTE*)logbuf.OpenANSIBuffer(strLen);
+                            BYTE* p = (BYTE*)logbuf.OpenUTF8Buffer(strLen);
                             memcpyNoGCRefs(p, pvNativeType, strLen);
                             logbuf.CloseBuffer();
                             logbuf.AppendASCII("\0");
@@ -3428,7 +3427,7 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
             }
         }
         logbuf.AppendASCII("\n");
-        LOG((LF_MARSHALER, LL_INFO10, logbuf.GetANSI(scratch)));
+        LOG((LF_MARSHALER, LL_INFO10, logbuf.GetUTF8()));
         logbuf.Clear();
 
         logbuf.AppendASCII("MarshalType : ");
@@ -3488,7 +3487,7 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
 
         logbuf.AppendASCII("\n");
 
-        LOG((LF_MARSHALER, LL_INFO10, logbuf.GetANSI(scratch)));
+        LOG((LF_MARSHALER, LL_INFO10, logbuf.GetUTF8()));
         logbuf.Clear();
     }
 } // MarshalInfo::DumpMarshalInfo

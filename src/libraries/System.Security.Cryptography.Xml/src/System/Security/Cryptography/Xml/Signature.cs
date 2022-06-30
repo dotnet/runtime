@@ -62,13 +62,8 @@ namespace System.Security.Cryptography.Xml
 
         public KeyInfo KeyInfo
         {
-            get
-            {
-                if (_keyInfo == null)
-                    _keyInfo = new KeyInfo();
-                return _keyInfo;
-            }
-            set { _keyInfo = value; }
+            get => _keyInfo ??= new KeyInfo();
+            set => _keyInfo = value;
         }
 
         public IList ObjectList

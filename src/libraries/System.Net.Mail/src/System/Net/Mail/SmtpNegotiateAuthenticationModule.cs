@@ -124,7 +124,7 @@ namespace System.Net.Mail
 
             try
             {
-                len = clientContext.VerifySignature(input, 0, input.Length);
+                len = clientContext.VerifySignature(input);
             }
             catch (Win32Exception)
             {
@@ -179,7 +179,7 @@ namespace System.Net.Mail
             byte[]? output = null;
             try
             {
-                len = clientContext.MakeSignature(input, 0, 4, ref output);
+                len = clientContext.MakeSignature(input.AsSpan(0, 4), ref output);
             }
             catch (Win32Exception)
             {

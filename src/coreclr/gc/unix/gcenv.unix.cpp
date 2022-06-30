@@ -569,6 +569,9 @@ void GCToOSInterface::FlushProcessWriteBuffers()
             {
                 CHECK_MACH("thread_get_register_pointer_values()", machret);
             }
+
+            machret = mach_port_deallocate(mach_task_self(), pThreads[i]);
+            CHECK_MACH("mach_port_deallocate()", machret);
         }
         // Deallocate the thread list now we're done with it.
         machret = vm_deallocate(mach_task_self(), (vm_address_t)pThreads, cThreads * sizeof(thread_act_t));
@@ -876,7 +879,7 @@ done:
     return result;
 }
 
-#define UPDATE_CACHE_SIZE_AND_LEVEL(CACHE_LEVEL) if (size > cacheSize) { cacheSize = size; cacheLevel = CACHE_LEVEL; }
+#define UPDATE_CACHE_SIZE_AND_LEVEL(NEW_CACHE_SIZE, NEW_CACHE_LEVEL) if (NEW_CACHE_SIZE > cacheSize) { cacheSize = NEW_CACHE_SIZE; cacheLevel = NEW_CACHE_LEVEL; }
 
 static size_t GetLogicalProcessorCacheSizeFromOS()
 {
@@ -886,19 +889,19 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
 
 #ifdef _SC_LEVEL1_DCACHE_SIZE
     size = ( size_t) sysconf(_SC_LEVEL1_DCACHE_SIZE);
-    UPDATE_CACHE_SIZE_AND_LEVEL(1)
+    UPDATE_CACHE_SIZE_AND_LEVEL(size, 1)
 #endif
 #ifdef _SC_LEVEL2_CACHE_SIZE
     size = ( size_t) sysconf(_SC_LEVEL2_CACHE_SIZE);
-    UPDATE_CACHE_SIZE_AND_LEVEL(2)
+    UPDATE_CACHE_SIZE_AND_LEVEL(size, 2)
 #endif
 #ifdef _SC_LEVEL3_CACHE_SIZE
     size = ( size_t) sysconf(_SC_LEVEL3_CACHE_SIZE);
-    UPDATE_CACHE_SIZE_AND_LEVEL(3)
+    UPDATE_CACHE_SIZE_AND_LEVEL(size, 3)
 #endif
 #ifdef _SC_LEVEL4_CACHE_SIZE
     size = ( size_t) sysconf(_SC_LEVEL4_CACHE_SIZE);
-    UPDATE_CACHE_SIZE_AND_LEVEL(4)
+    UPDATE_CACHE_SIZE_AND_LEVEL(size, 4)
 #endif
 
 #if defined(TARGET_LINUX) && !defined(HOST_ARM) && !defined(HOST_X86)
@@ -926,7 +929,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
 
                 if (ReadMemoryValueFromFile(path_to_level_file, &level))
                 {
-                    UPDATE_CACHE_SIZE_AND_LEVEL(level)
+                    UPDATE_CACHE_SIZE_AND_LEVEL(size, level)
                 }
                 else
                 {

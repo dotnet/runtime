@@ -73,10 +73,7 @@ namespace System.Net.Mail
             {
                 if (_readState != ReadState.Done)
                 {
-                    if (_byteBuffer == null)
-                    {
-                        _byteBuffer = new byte[SmtpReplyReaderFactory.DefaultBufferSize];
-                    }
+                    _byteBuffer ??= new byte[SmtpReplyReaderFactory.DefaultBufferSize];
 
                     while (0 != Read(caller, _byteBuffer, 0, _byteBuffer.Length)) ;
                 }
@@ -310,10 +307,7 @@ namespace System.Net.Mail
                 return Array.Empty<LineInfo>();
             }
 
-            if (_byteBuffer == null)
-            {
-                _byteBuffer = new byte[SmtpReplyReaderFactory.DefaultBufferSize];
-            }
+            _byteBuffer ??= new byte[SmtpReplyReaderFactory.DefaultBufferSize];
 
             System.Diagnostics.Debug.Assert(_readState == ReadState.Status0);
 
@@ -398,10 +392,7 @@ namespace System.Net.Mail
                     return;
                 }
 
-                if (_parent._byteBuffer == null)
-                {
-                    _parent._byteBuffer = new byte[SmtpReplyReaderFactory.DefaultBufferSize];
-                }
+                _parent._byteBuffer ??= new byte[SmtpReplyReaderFactory.DefaultBufferSize];
 
                 System.Diagnostics.Debug.Assert(_parent._readState == ReadState.Status0);
 

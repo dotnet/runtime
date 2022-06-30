@@ -317,10 +317,7 @@ namespace System.Security.Cryptography.X509Certificates
                 AddUniqueStatus(overallStatus, ref statusToSet);
                 for (int i = index; i >= 0; i--)
                 {
-                    if (statuses[i] == null)
-                    {
-                        statuses[i] = new List<X509ChainStatus>();
-                    }
+                    statuses[i] ??= new List<X509ChainStatus>();
 
                     AddUniqueStatus(statuses[i], ref statusToSet);
                 }

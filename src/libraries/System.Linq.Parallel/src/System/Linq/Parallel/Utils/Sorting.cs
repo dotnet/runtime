@@ -233,10 +233,7 @@ namespace System.Linq.Parallel
                 TKey currentKey = default(TKey)!;
                 bool hadNext = _source.MoveNext(ref current!, ref currentKey);
 
-                if (keys == null)
-                {
-                    keys = new GrowingArray<TKey>();
-                }
+                keys ??= new GrowingArray<TKey>();
 
                 if (hadNext)
                 {

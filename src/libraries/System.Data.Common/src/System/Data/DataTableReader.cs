@@ -138,12 +138,7 @@ namespace System.Data
 
             // each time, we just get schema table of current table for once, no need to recreate each time, if schema is changed, reader is already
             // is invalid
-            if (_schemaTable == null)
-            {
-                _schemaTable = GetSchemaTableFromDataTable(_currentDataTable);
-            }
-
-            return _schemaTable;
+            return _schemaTable ??= GetSchemaTableFromDataTable(_currentDataTable);
         }
 
         public override bool NextResult()
@@ -158,10 +153,7 @@ namespace System.Data
 
             _currentDataTable = _tables[++_tableCounter];
 
-            if (_listener != null)
-            {
-                _listener.UpdataTable(_currentDataTable); // it will unsubscribe from preveous tables events and subscribe to new table's events
-            }
+            _listener?.UpdataTable(_currentDataTable); // it will unsubscribe from preveous tables events and subscribe to new table's events
 
             _schemaTable = null;
             _rowCounter = -1;

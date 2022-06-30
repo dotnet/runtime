@@ -172,12 +172,10 @@ namespace System.Reflection
                 s_ByReferenceOfByte_Value ??= typeof(ByReference).GetField("Value")!;
 
             private static MethodInfo? s_ThrowHelper_Throw_NullReference_InvokeNullRefReturned;
-            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, typeof(ThrowHelper))]
             public static MethodInfo ThrowHelper_Throw_NullReference_InvokeNullRefReturned() =>
                 s_ThrowHelper_Throw_NullReference_InvokeNullRefReturned ??= typeof(ThrowHelper).GetMethod(nameof(ThrowHelper.Throw_NullReference_InvokeNullRefReturned))!;
 
             private static MethodInfo? s_Pointer_Box;
-            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, typeof(Pointer))]
             public static MethodInfo Pointer_Box() =>
                 s_Pointer_Box ??= typeof(Pointer).GetMethod(nameof(Pointer.Box), new[] { typeof(void*), typeof(Type) })!;
 

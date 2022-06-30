@@ -11190,6 +11190,16 @@ MONO_RESTORE_WARNING
 			break;
 		}
 #endif
+#ifdef TARGET_WASM
+		case OP_WASM_ONESCOMPLEMENT: {
+			LLVMTypeRef i4v128_t = LLVMVectorType (i4_t, 4);
+			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
+			LLVMValueRef cast = LLVMBuildBitCast (builder, lhs, i4v128_t, "");
+			LLVMValueRef result = LLVMBuildNot (builder, cast, "wasm_not");
+			values [ins->dreg] = LLVMBuildBitCast (builder, result, ret_t, "");
+			break;
+		}
+#endif
 
 		case OP_DUMMY_USE:
 			break;

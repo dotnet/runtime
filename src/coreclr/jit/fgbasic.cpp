@@ -3247,14 +3247,6 @@ void Compiler::fgFindBasicBlocks()
             BADCODE("Handler Clause is invalid");
         }
 
-#if HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
-        // This will change the block weight from 0 to 1
-        // and clear the rarely run flag
-        hndBegBB->makeBlockHot();
-#else
-        hndBegBB->bbSetRunRarely();   // handler entry points are rarely executed
-#endif
-
         if (hndEndOff < info.compILCodeSize)
         {
             hndEndBB = fgLookupBB(hndEndOff);
@@ -3265,14 +3257,6 @@ void Compiler::fgFindBasicBlocks()
             filtBB = HBtab->ebdFilter = fgLookupBB(clause.FilterOffset);
             filtBB->bbCatchTyp        = BBCT_FILTER;
             hndBegBB->bbCatchTyp      = BBCT_FILTER_HANDLER;
-
-#if HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
-            // This will change the block weight from 0 to 1
-            // and clear the rarely run flag
-            filtBB->makeBlockHot();
-#else
-            filtBB->bbSetRunRarely(); // filter entry points are rarely executed
-#endif
 
             // Mark all BBs that belong to the filter with the XTnum of the corresponding handler
             for (block = filtBB; /**/; block = block->bbNext)

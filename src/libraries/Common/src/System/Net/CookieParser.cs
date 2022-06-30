@@ -775,10 +775,7 @@ namespace System.Net
 
                 if (first && (token == CookieToken.NameValuePair || token == CookieToken.Attribute))
                 {
-                    if (cookie == null)
-                    {
-                        cookie = new Cookie();
-                    }
+                    cookie ??= new Cookie();
                     InternalSetNameMethod(cookie, _tokenizer.Name);
                     cookie.Value = _tokenizer.Value;
                 }

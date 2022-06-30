@@ -3576,14 +3576,19 @@ void Compiler::fgDebugCheckNodesUniqueness()
 //    - All parents of the loop with the block contain that block
 //    - If the loop has a pre-header, it is valid
 //    - The loop flags are valid
+//    - no loop shares `top` with any of its children
+//    - no loop shares `bottom` with the header of any of its siblings
+//    - no top-entry loop has a predecessor that comes from outside the loop other than from lpHead
 //
 void Compiler::fgDebugCheckLoopTable()
 {
 #ifdef DEBUG
-    if (verbose)
+    if (!optLoopTableValid)
     {
-        printf("*************** In fgDebugCheckLoopTable\n");
+        JITDUMP("*************** In fgDebugCheckLoopTable: loop table not valid\n");
+        return;
     }
+    JITDUMP("*************** In fgDebugCheckLoopTable\n");
 #endif // DEBUG
 
     if (optLoopCount > 0)
@@ -3668,6 +3673,41 @@ void Compiler::fgDebugCheckLoopTable()
         {
             return lpDisjoint(blockNumMap, loop, lp2.lpTop, lp2.lpBottom);
         }
+
+        // Like Disjoint, but also checks lpHead
+        //
+        static bool lpFullyDisjoint(const unsigned* blockNumMap, const LoopDsc* loop, const LoopDsc& lp2)
+        {
+            return lpDisjoint(blockNumMap, loop, lp2.lpTop, lp2.lpBottom) &&
+                   !lpContains(blockNumMap, loop, lp2.lpHead) && !lpContains(blockNumMap, &lp2, loop->lpHead);
+        }
+
+        // If a top-entry loop, lpHead must be only non-loop pred of lpTop
+        static bool lpHasWellFormedBackedges(const unsigned* blockNumMap, const LoopDsc* loop)
+        {
+            if (loop->lpTop != loop->lpEntry)
+            {
+                // not top-entry, assume ok for now
+                return true;
+            }
+
+            bool foundHead = false;
+            for (BasicBlock* const pred : loop->lpTop->PredBlocks())
+            {
+                if (pred == loop->lpHead)
+                {
+                    foundHead = true;
+                    continue;
+                }
+
+                if (!lpContains(blockNumMap, loop, pred))
+                {
+                    return false;
+                }
+            }
+
+            return foundHead;
+        }
     };
 
     // Check the loop table itself.
@@ -3690,6 +3730,7 @@ void Compiler::fgDebugCheckLoopTable()
         assert(loop.lpBottom != nullptr);
 
         assert(MappedChecks::lpWellFormed(blockNumMap, &loop));
+        assert(MappedChecks::lpHasWellFormedBackedges(blockNumMap, &loop));
 
         if (loop.lpExitCnt == 1)
         {
@@ -3705,7 +3746,7 @@ void Compiler::fgDebugCheckLoopTable()
         {
             // This is a top-level loop.
 
-            // Verify all top-level loops are disjoint. We don't have a list of just these (such as a
+            // Verify all top-level loops are fully disjoint. We don't have a list of just these (such as a
             // top-level pseudo-loop entry with a list of all top-level lists), so we have to iterate
             // over the entire loop table.
             for (unsigned j = 0; j < optLoopCount; j++)
@@ -3725,7 +3766,7 @@ void Compiler::fgDebugCheckLoopTable()
                     // Only consider top-level loops
                     continue;
                 }
-                assert(MappedChecks::lpDisjoint(blockNumMap, &loop, otherLoop));
+                assert(MappedChecks::lpFullyDisjoint(blockNumMap, &loop, otherLoop));
             }
         }
         else
@@ -3758,7 +3799,7 @@ void Compiler::fgDebugCheckLoopTable()
                 assert(childLoop.lpParent == i);
             }
 
-            // Verify all child loops are disjoint.
+            // Verify all child loops are fully disjoint.
             for (unsigned child = loop.lpChild;    //
                  child != BasicBlock::NOT_IN_LOOP; //
                  child = optLoopTable[child].lpSibling)
@@ -3777,8 +3818,21 @@ void Compiler::fgDebugCheckLoopTable()
                     {
                         continue;
                     }
-                    assert(MappedChecks::lpDisjoint(blockNumMap, &childLoop, child2Loop));
+                    assert(MappedChecks::lpFullyDisjoint(blockNumMap, &childLoop, child2Loop));
                 }
+            }
+
+            // Verify no child shares lpTop with its parent.
+            for (unsigned child = loop.lpChild;    //
+                 child != BasicBlock::NOT_IN_LOOP; //
+                 child = optLoopTable[child].lpSibling)
+            {
+                const LoopDsc& childLoop = optLoopTable[child];
+                if (childLoop.lpFlags & LPFLG_REMOVED)
+                {
+                    continue;
+                }
+                assert(loop.lpTop != childLoop.lpTop);
             }
         }
 

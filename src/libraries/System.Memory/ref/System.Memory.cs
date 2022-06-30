@@ -530,6 +530,7 @@ namespace System.Buffers.Text
         public static bool TryParse(System.ReadOnlySpan<byte> source, out ulong value, out int bytesConsumed, char standardFormat = '\0') { throw null; }
     }
 }
+
 namespace System.Runtime.InteropServices
 {
     public static partial class MemoryMarshal

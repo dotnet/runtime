@@ -20,8 +20,8 @@ namespace System.Formats.Tar
         internal const byte EqualsChar = 0x3d;
         internal const byte NewLineChar = 0xa;
 
-        internal const TarFileMode DefaultMode = // 644 in octal
-            TarFileMode.UserRead | TarFileMode.UserWrite | TarFileMode.GroupRead | TarFileMode.OtherRead;
+        internal const UnixFileMode DefaultMode = // 644 in octal
+            UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead;
 
         // Helps advance the stream a total number of bytes larger than int.MaxValue.
         internal static void AdvanceStream(Stream archiveStream, long bytesToDiscard)
@@ -102,17 +102,8 @@ namespace System.Formats.Tar
         }
 
         // Returns true if all the bytes in the specified array are nulls, false otherwise.
-        internal static bool IsAllNullBytes(Span<byte> buffer)
-        {
-            for (int i = 0; i < buffer.Length; i++)
-            {
-                if (buffer[i] != 0)
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
+        internal static bool IsAllNullBytes(Span<byte> buffer) =>
+            buffer.IndexOfAnyExcept((byte)0) < 0;
 
         // Converts the specified number of seconds that have passed since the Unix Epoch to a DateTimeOffset.
         internal static DateTimeOffset GetDateTimeOffsetFromSecondsSinceEpoch(long secondsSinceUnixEpoch) =>
