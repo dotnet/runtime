@@ -12,6 +12,8 @@ using System.Globalization;
 using System.Runtime.Serialization;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Runtime.CompilerServices;
+using System.Buffers.Binary;
 
 namespace System.Xml
 {
@@ -25,7 +27,6 @@ namespace System.Xml
         private int _offsetMax;
         private IXmlDictionary? _dictionary;
         private XmlBinaryReaderSession? _session;
-        private byte[]? _guid;
         private int _offset;
         private const int maxBytesPerChar = 3;
         private char[]? _chars;
@@ -167,6 +168,11 @@ namespace System.Xml
             }
             return _buffer;
         }
+
+        private ref byte GetBufferRef(int size)
+            => ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(GetBuffer(size, out int offset)), offset);
+        private Span<byte> GetBufferSpan(int size)
+            => GetBuffer(size, out int offset, out int offsetMax).AsSpan(offset, (offsetMax - offset));
 
         public byte[] GetBuffer(out int offset, out int offsetMax)
         {
@@ -344,41 +350,28 @@ namespace System.Xml
         }
 
         public int ReadUInt8()
-        {
-            byte b = GetByte();
-            Advance(1);
-            return b;
-        }
+            => ReadRawBytes<byte>();
 
         public int ReadInt8()
-        {
-            return (sbyte)ReadUInt8();
-        }
+            => (sbyte)ReadUInt8();
 
         public int ReadUInt16()
         {
-            int offset;
-            byte[] buffer = GetBuffer(2, out offset);
-            int i = buffer[offset + 0] + (buffer[offset + 1] << 8);
-            Advance(2);
+            ushort i = ReadRawBytes<ushort>();
+            if (!BitConverter.IsLittleEndian)
+                i = BinaryPrimitives.ReverseEndianness(i);
             return i;
         }
 
         public int ReadInt16()
-        {
-            return (short)ReadUInt16();
-        }
+            => unchecked((short)ReadUInt16());
 
         public int ReadInt32()
         {
-            int offset;
-            byte[] buffer = GetBuffer(4, out offset);
-            byte b1 = buffer[offset + 0];
-            byte b2 = buffer[offset + 1];
-            byte b3 = buffer[offset + 2];
-            byte b4 = buffer[offset + 3];
-            Advance(4);
-            return (((((b4 << 8) + b3) << 8) + b2) << 8) + b1;
+            int i = ReadRawBytes<int>();
+            if (!BitConverter.IsLittleEndian)
+                i = BinaryPrimitives.ReverseEndianness(i);
+            return i;
         }
 
         public int ReadUInt31()
@@ -391,56 +384,20 @@ namespace System.Xml
 
         public long ReadInt64()
         {
-            long lo = (uint)ReadInt32();
-            long hi = (uint)ReadInt32();
-            return (hi << 32) + lo;
+            long l = ReadRawBytes<long>();
+            if (!BitConverter.IsLittleEndian)
+                l = BinaryPrimitives.ReverseEndianness(l);
+            return l;
         }
 
-        public unsafe float ReadSingle()
-        {
-            int offset;
-            byte[] buffer = GetBuffer(ValueHandleLength.Single, out offset);
-            float value;
-            byte* pb = (byte*)&value;
-            DiagnosticUtility.DebugAssert(sizeof(float) == 4, "");
-            pb[0] = buffer[offset + 0];
-            pb[1] = buffer[offset + 1];
-            pb[2] = buffer[offset + 2];
-            pb[3] = buffer[offset + 3];
-            Advance(ValueHandleLength.Single);
-            return value;
-        }
+        public float ReadSingle()
+            => ReadRawBytes<float>();
 
         public unsafe double ReadDouble()
-        {
-            int offset;
-            byte[] buffer = GetBuffer(ValueHandleLength.Double, out offset);
-            double value;
-            byte* pb = (byte*)&value;
-            DiagnosticUtility.DebugAssert(sizeof(double) == 8, "");
-            pb[0] = buffer[offset + 0];
-            pb[1] = buffer[offset + 1];
-            pb[2] = buffer[offset + 2];
-            pb[3] = buffer[offset + 3];
-            pb[4] = buffer[offset + 4];
-            pb[5] = buffer[offset + 5];
-            pb[6] = buffer[offset + 6];
-            pb[7] = buffer[offset + 7];
-            Advance(ValueHandleLength.Double);
-            return value;
-        }
+            => ReadRawBytes<double>();
 
         public unsafe decimal ReadDecimal()
-        {
-            int offset;
-            byte[] buffer = GetBuffer(ValueHandleLength.Decimal, out offset);
-            decimal value;
-            byte* pb = (byte*)&value;
-            for (int i = 0; i < sizeof(decimal); i++)
-                pb[i] = buffer[offset + i];
-            Advance(ValueHandleLength.Decimal);
-            return value;
-        }
+            => ReadRawBytes<decimal>();
 
         public UniqueId ReadUniqueId()
         {
@@ -522,12 +479,14 @@ namespace System.Xml
 
         private unsafe void UnsafeReadArray(byte* dst, int length)
         {
+            // TODO: BlockCopy
             if (_stream != null)
             {
                 const int chunk = 256;
                 while (length >= chunk)
                 {
                     byte[] _buffer = GetBuffer(chunk, out _offset);
+                    // TODO:  read directly from stream ?
                     for (int i = 0; i < chunk; i++)
                     {
                         *dst++ = _buffer[_offset + i];
@@ -736,6 +695,7 @@ namespace System.Xml
 
         private int GetApostropheCharEntity(int offset, int length)
         {
+            // TODO: "constant span " and ends with ..
             byte[] buffer = _buffer;
             if (length != 6 ||
                 buffer[offset + 1] != (byte)'a' ||
@@ -994,83 +954,41 @@ namespace System.Xml
             return (sbyte)GetByte(offset);
         }
 
-        public int GetInt16(int offset)
+
+        private T ReadRawBytes<T>() where T : unmanaged
         {
-            byte[] buffer = _buffer;
-            return (short)(buffer[offset] + (buffer[offset + 1] << 8));
+            var value = Unsafe.ReadUnaligned<T>(ref GetBufferRef(Unsafe.SizeOf<T>()));
+            Advance(Unsafe.SizeOf<T>());
+            return value;
         }
+
+        private T ReadRawBytes<T>(int offset) where T : unmanaged
+        {
+            return MemoryMarshal.Read<T>(_buffer.AsSpan(offset, Unsafe.SizeOf<T>()));
+        }
+
+        public int GetInt16(int offset)
+            => BitConverter.IsLittleEndian ? ReadRawBytes<short>(offset) : BinaryPrimitives.ReverseEndianness(ReadRawBytes<short>(offset));
 
         public int GetInt32(int offset)
-        {
-            byte[] buffer = _buffer;
-            byte b1 = buffer[offset + 0];
-            byte b2 = buffer[offset + 1];
-            byte b3 = buffer[offset + 2];
-            byte b4 = buffer[offset + 3];
-            return (((((b4 << 8) + b3) << 8) + b2) << 8) + b1;
-        }
+            => BitConverter.IsLittleEndian ? ReadRawBytes<int>(offset) : BinaryPrimitives.ReverseEndianness(ReadRawBytes<int>(offset));
 
         public long GetInt64(int offset)
-        {
-            byte[] buffer = _buffer;
-            byte b1, b2, b3, b4;
-            b1 = buffer[offset + 0];
-            b2 = buffer[offset + 1];
-            b3 = buffer[offset + 2];
-            b4 = buffer[offset + 3];
-            long lo = (uint)(((((b4 << 8) + b3) << 8) + b2) << 8) + b1;
-            b1 = buffer[offset + 4];
-            b2 = buffer[offset + 5];
-            b3 = buffer[offset + 6];
-            b4 = buffer[offset + 7];
-            long hi = (uint)(((((b4 << 8) + b3) << 8) + b2) << 8) + b1;
-            return (hi << 32) + lo;
-        }
+            => BitConverter.IsLittleEndian ? ReadRawBytes<long>(offset) : BinaryPrimitives.ReverseEndianness(ReadRawBytes<long>(offset));
 
         public ulong GetUInt64(int offset)
         {
             return (ulong)GetInt64(offset);
         }
 
-        public unsafe float GetSingle(int offset)
-        {
-            byte[] buffer = _buffer;
-            float value;
-            byte* pb = (byte*)&value;
-            DiagnosticUtility.DebugAssert(sizeof(float) == 4, "");
-            pb[0] = buffer[offset + 0];
-            pb[1] = buffer[offset + 1];
-            pb[2] = buffer[offset + 2];
-            pb[3] = buffer[offset + 3];
-            return value;
-        }
+        public float GetSingle(int offset)
+            => ReadRawBytes<float>(offset);
 
-        public unsafe double GetDouble(int offset)
-        {
-            byte[] buffer = _buffer;
-            double value;
-            byte* pb = (byte*)&value;
-            DiagnosticUtility.DebugAssert(sizeof(double) == 8, "");
-            pb[0] = buffer[offset + 0];
-            pb[1] = buffer[offset + 1];
-            pb[2] = buffer[offset + 2];
-            pb[3] = buffer[offset + 3];
-            pb[4] = buffer[offset + 4];
-            pb[5] = buffer[offset + 5];
-            pb[6] = buffer[offset + 6];
-            pb[7] = buffer[offset + 7];
-            return value;
-        }
+        public double GetDouble(int offset)
+            => ReadRawBytes<double>(offset);
 
-        public unsafe decimal GetDecimal(int offset)
-        {
-            byte[] buffer = _buffer;
-            decimal value;
-            byte* pb = (byte*)&value;
-            for (int i = 0; i < sizeof(decimal); i++)
-                pb[i] = buffer[offset + i];
-            return value;
-        }
+        public decimal GetDecimal(int offset)
+            => ReadRawBytes<decimal>(offset);
 
         public UniqueId GetUniqueId(int offset)
         {
@@ -1079,10 +997,7 @@ namespace System.Xml
 
         public Guid GetGuid(int offset)
         {
-            if (_guid == null)
-                _guid = new byte[16];
-            System.Buffer.BlockCopy(_buffer, offset, _guid, 0, _guid.Length);
-            return new Guid(_guid);
+            return new Guid(_buffer.AsSpan(offset));
         }
 
         public void GetBase64(int srcOffset, byte[] buffer, int dstOffset, int count)
