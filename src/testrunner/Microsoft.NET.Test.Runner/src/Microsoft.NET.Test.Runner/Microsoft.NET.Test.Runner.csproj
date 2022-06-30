@@ -1,0 +1,61 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net6.0;net7.0</TargetFrameworks>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <SignAssembly>True</SignAssembly>
+    <DelaySign>False</DelaySign>
+    <AssemblyOriginatorKeyFile>strongName.snk</AssemblyOriginatorKeyFile>
+    <IsTrimmable>true</IsTrimmable>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Exclude from compilation is used to inject Main inside the self contained test project -->
+    <Compile Remove="buildMultiTargeting\Microsoft.NET.Test.Runner.Program.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="buildMultiTargeting/**">
+      <Pack>true</Pack>
+      <PackagePath>buildMultiTargeting</PackagePath>
+    </Content>
+    <TfmSpecificPackageFile Include="build/**">
+      <PackagePath>build/$(TargetFramework)</PackagePath>
+    </TfmSpecificPackageFile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="UserMessages.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>UserMessages.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="UserMessages.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>UserMessages.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <!-- Generates Nuget package layout inside artifacts to make it testable with simple imports -->
+  <Target Name="ReproNugetPackageLayout" AfterTargets="Build" Condition=" '$(TargetFramework)' != '' ">
+    <ItemGroup>
+      <MSBuildAssetsBuildTargeting Include="buildMultiTargeting/**" />
+      <MSBuildAssetsBuild Include="build/**" />
+      <MSBuildLib Include="$(TargetDir)$(TargetName).dll" />
+      <MSBuildLib Include="$(TargetDir)$(TargetName).pdb" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(MSBuildAssetsBuildTargeting)" DestinationFiles="@(MSBuildAssetsBuildTargeting->'$(RepoRoot)src\testrunner\packageLayout\Microsoft.NET.Test.Runner\buildMultiTargeting\%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy SourceFiles="@(MSBuildAssetsBuild)" DestinationFiles="@(MSBuildAssetsBuild->'$(RepoRoot)src\testrunner\packageLayout\Microsoft.NET.Test.Runner\build\$(TargetFramework)\%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy SourceFiles="@(MSBuildLib)" DestinationFiles="@(MSBuildLib->'$(RepoRoot)src\testrunner\packageLayout\Microsoft.NET.Test.Runner\lib\$(TargetFramework)\%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+  
+  <!-- Ship package inside artifacts/packages -->
+  <Target Name="CopyPackage" AfterTargets="Pack">
+    <Message Importance="high" Text="$(PackageFolder)" />
+    <Copy SourceFiles="$(OutputPath)\$(PackageId).$(PackageVersion).nupkg" DestinationFolder="$(PackageFolder)" />
+  </Target>
+</Project>

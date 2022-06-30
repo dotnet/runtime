@@ -1,0 +1,6 @@
+#nullable enable
+Microsoft.NET.Test.Runner.TestPlatformRunner
+Microsoft.NET.Test.Runner.TestPlatformRunner.TestPlatformRunner() -> void
+static Microsoft.NET.Test.Runner.TestPlatformRunner.Main(string![]! args) -> int
+Microsoft.NET.Test.Runner.TestExtensions
+static Microsoft.NET.Test.Runner.TestExtensions.RegisterRunnerToExtensionCallback(System.Func<string!, System.Threading.Tasks.Task<string!>!>! callback) -> void

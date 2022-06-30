@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Project InitialTargets="_CompileMainCS" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+	<Target Name="_CompileMainCS" Condition=" '$(Language)' == 'C#' " >
+		<ItemGroup>
+			<Compile Include="$(MSBuildThisFileDirectory)Microsoft.NET.Test.Runner.Program.cs" />
+		</ItemGroup>
+	</Target>
+	<Target Name="_CompileMainNotSupported" Condition=" '$(Language)' != 'C#' " >
+		<Error Text="Only C# project are at the moment supported" />
+	</Target>
+</Project>

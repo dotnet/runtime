@@ -190,5 +190,6 @@
     <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>
     <WixPackageVersion>1.0.0-v3.14.0.5722</WixPackageVersion>
     <MonoWorkloadManifestVersion>6.0.0-preview.5.21275.7</MonoWorkloadManifestVersion>
+    <MicrosoftNETTestRunnerVersion>1.0.0</MicrosoftNETTestRunnerVersion>
   </PropertyGroup>
 </Project>

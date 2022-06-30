@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="$(MSBuildThisFileDirectory)..\..\buildMultiTargeting\Microsoft.NET.Test.Runner.targets" />
+</Project>

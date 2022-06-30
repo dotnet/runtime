@@ -3,6 +3,7 @@
     <!-- Microsoft.Net.Test.Sdk brings a lot of satellite assemblies in. -->
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <TestRunnerConfigPath>$(MSBuildThisFileDirectory)xunit.runner.json</TestRunnerConfigPath>
+    <SelfContainedTestRunner>false</SelfContainedTestRunner>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,11 +22,11 @@
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' != 'true' and '$(PublishingTestsRun)' != 'true' and '$(TestSingleFile)' != 'true'">
+  <ItemGroup Condition="'$(ArchiveTests)' != 'true' and '$(PublishingTestsRun)' != 'true' and '$(TestSingleFile)' != 'true' and $(SelfContainedTestRunner) == 'false' ">
     <!-- Microsoft.Net.Test.Sdk brings a lot of assemblies with it. To reduce helix payload submission size we disable it on CI. -->
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="$(MicrosoftNETTestSdkVersion)" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="$(MicrosoftNETTestSdkVersion)" />     
     <PackageReference Include="xunit.runner.visualstudio" Version="$(XUnitRunnerVisualStudioVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="coverlet.collector" Version="$(CoverletCollectorVersion)" />
+    <PackageReference Include="coverlet.collector" Version="$(CoverletCollectorVersion)" />    
   </ItemGroup>
 
   <ItemGroup>

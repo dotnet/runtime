@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <Import Project="$(RepoRoot)src\testrunner\packageLayout\Microsoft.NET.Test.Runner\build\netstandard2.0\Microsoft.NET.Test.Runner.props" />
+
+  <ItemGroup>
+    <Compile Include="..\..\src\Microsoft.NET.Test.Runner\JsonRpc\Jsonite\Jsonite.cs" Link="Jsonite.cs" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="$(RepoRoot)src\testrunner\Microsoft.NET.Test.Runner\src\Microsoft.NET.Test.Runner\Microsoft.NET.Test.Runner.csproj" />
+  </ItemGroup>
+
+  <Import Project="$(RepoRoot)src\testrunner\packageLayout\Microsoft.NET.Test.Runner\build\netstandard2.0\Microsoft.NET.Test.Runner.targets" />
+</Project>

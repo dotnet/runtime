@@ -316,6 +316,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Runner" Version="$(MicrosoftNETTestRunnerVersion)" Condition="'$(SelfContainedTestRunner)' == true" />
     <AnalyzerReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj" />
 
     <PackageReference Include="Moq" Version="$(MoqVersion)" />

@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>preview</LangVersion>
+    <Nullable>enable</Nullable>
+    <RepoRoot>$(MSBuildThisFileDirectory)/../../</RepoRoot>
+    <PackageFolder>$(RepoRoot)artifacts/packages/MicrosoftNETTestRunner</PackageFolder>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+</Project>
