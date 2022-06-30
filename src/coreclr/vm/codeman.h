@@ -1107,6 +1107,16 @@ public:
         return m_CPUCompileFlags;
     }
 
+private:
+    bool m_storeRichDebugInfo;
+
+public:
+    bool IsStoringRichDebugInfo()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_storeRichDebugInfo;
+    }
+
 private :
     PTR_HostCodeHeap    m_cleanupList;
     //When EH Clauses are resolved we need to atomically update the TypeHandle

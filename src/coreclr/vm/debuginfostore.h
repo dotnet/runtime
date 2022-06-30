@@ -76,14 +76,16 @@ public:
         IN OUT NibbleWriter * pBuffer
     );
 
-    // Stores the result into SBuffer (used by NGen), or in LoaderHeap (used by JIT)
+    // Stores the result in LoaderHeap
     static PTR_BYTE CompressBoundariesAndVars(
         IN ICorDebugInfo::OffsetMapping * pOffsetMapping,
         IN ULONG            iOffsetMapping,
         IN ICorDebugInfo::NativeVarInfo * pNativeVarInfo,
         IN ULONG            iNativeVarInfo,
         IN PatchpointInfo * patchpointInfo,
-        IN OUT SBuffer    * pDebugInfoBuffer,
+        IN PTR_BYTE         pRichDebugInfo,
+        IN ULONG32          richDebugInfoSize,
+        IN BOOL             writeFlagByte,
         IN LoaderHeap     * pLoaderHeap
     );
 
@@ -104,6 +106,8 @@ public:
         IN PTR_BYTE pDebugInfo
     );
 #endif
+
+    static PTR_BYTE RestoreRichDebugInfo(IN PTR_BYTE pDebugInfo);
 
 #ifdef DACCESS_COMPILE
     static void EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE pDebugInfo, BOOL hasFlagByte);

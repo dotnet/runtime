@@ -1253,6 +1253,7 @@ EEJitManager::EEJitManager()
     m_AltJITRequired   = false;
 #endif
 
+    m_storeRichDebugInfo = false;
     m_cleanupList = NULL;
 }
 
@@ -2009,6 +2010,8 @@ BOOL EEJitManager::LoadJIT()
         return TRUE;
 
     SetCpuInfo();
+
+    m_storeRichDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_RichDebugInfo) != 0;
 
     ICorJitCompiler* newJitCompiler = NULL;
 
@@ -3931,6 +3934,11 @@ BOOL EEJitManager::GetBoundariesAndVars(
 #else
     BOOL hasFlagByte = FALSE;
 #endif
+
+    if (m_storeRichDebugInfo)
+    {
+        hasFlagByte = TRUE;
+    }
 
     // Uncompress. This allocates memory and may throw.
     CompressDebugInfo::RestoreBoundariesAndVars(
