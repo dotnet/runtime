@@ -611,7 +611,7 @@ mono_analyze_liveness (MonoCompile *cfg)
 
 #ifdef DEBUG_LIVENESS
 	if (cfg->verbose_level > 1) {
-		for (guint i = cfg->num_bblocks - 1; i >= 0; i--) {
+		for (int i = cfg->num_bblocks - 1; i >= 0; i--) {
 			MonoBasicBlock *bb = cfg->bblocks [i];
 
 			printf ("LIVE IN  BB%d: ", bb->block_num);
@@ -926,7 +926,7 @@ mono_analyze_liveness2 (MonoCompile *cfg)
 		/* Ranges would overflow */
 		return;
 
-	for (guint bnum = cfg->num_bblocks - 1; bnum >= 0; --bnum) {
+	for (int bnum = cfg->num_bblocks - 1; bnum >= 0; --bnum) {
 		MonoBasicBlock *bb = cfg->bblocks [bnum];
 		MonoInst *ins;
 
@@ -959,12 +959,12 @@ mono_analyze_liveness2 (MonoCompile *cfg)
 	 * Process bblocks in reverse order, so the addition of new live ranges
 	 * to the intervals is faster.
 	 */
-	for (guint bnum = cfg->num_bblocks - 1; bnum >= 0; --bnum) {
+	for (int bnum = cfg->num_bblocks - 1; bnum >= 0; --bnum) {
 		MonoBasicBlock *bb = cfg->bblocks [bnum];
 		MonoInst *ins;
 
 		block_from = (bb->dfn << BB_ID_SHIFT) + 1; /* so pos > 0 */
-		if (bnum < cfg->num_bblocks - 1)
+		if (GINT_TO_UINT(bnum) < cfg->num_bblocks - 1)
 			/* Beginning of the next bblock */
 			block_to = (cfg->bblocks [bnum + 1]->dfn << BB_ID_SHIFT) + 1;
 		else
