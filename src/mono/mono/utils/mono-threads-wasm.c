@@ -425,7 +425,7 @@ mono_threads_wasm_on_thread_attached (void)
 	if (mono_threads_wasm_is_browser_thread ()) {
 		return;
 	}
-	// Set up a MessageChannel between the new thread (which might be on a pooled reused WebWorker) and the main thread.
+	// Notify JS that the pthread attachd to Mono
 	pthread_t id = pthread_self ();
 	MONO_ENTER_GC_SAFE;
 	mono_wasm_pthread_on_pthread_attached (id);
@@ -455,7 +455,6 @@ mono_threads_wasm_async_run_in_main_thread_vii (void (*func) (gpointer, gpointer
 
 
 #endif /* DISABLE_THREADS */
-
 
 #endif /* HOST_BROWSER */
 
