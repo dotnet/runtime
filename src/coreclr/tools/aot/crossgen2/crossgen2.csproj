@@ -9,7 +9,7 @@
     <NativeAotSupported Condition="'$(DotNetBuildFromSource)' == 'true' or '$(TargetOS)' == 'osx'">false</NativeAotSupported>
     <!-- Trimming is not currently working, but set the appropriate feature flags for NativeAOT -->
     <PublishTrimmed Condition="'$(NativeAotSupported)' == 'true'">true</PublishTrimmed>
-    <RuntimeIdentifiers Condition="'$(RunningPublish)' != 'true' and '$(DotNetBuildFromSource)' != 'true'">linux-x64;linux-musl-x64;linux-arm;linux-musl-arm;linux-arm64;linux-musl-arm64;freebsd-x64;osx-x64;osx-arm64;win-x64;win-x86;win-arm64;win-arm</RuntimeIdentifiers>
+    <RuntimeIdentifiers Condition="'$(RunningPublish)' != 'true' and '$(DotNetBuildFromSource)' != 'true'">linux-x64;linux-musl-x64;linux-arm;linux-musl-arm;linux-arm64;linux-musl-arm64;freebsd-x64;freebsd-arm64;osx-x64;osx-arm64;win-x64;win-x86;win-arm64;win-arm</RuntimeIdentifiers>
     <RuntimeIdentifiers Condition="'$(DotNetBuildFromSource)' == 'true'">$(PackageRID)</RuntimeIdentifiers>
     <SelfContained>false</SelfContained>
     <SelfContained Condition="'$(RunningPublish)' == 'true'">true</SelfContained>
