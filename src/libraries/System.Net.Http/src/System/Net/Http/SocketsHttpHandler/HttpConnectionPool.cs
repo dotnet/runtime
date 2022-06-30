@@ -1022,11 +1022,16 @@ namespace System.Net.Http
                             Debug.Assert(connection is not null || !_http2Enabled);
                             if (connection is not null)
                             {
-                                if (request.IsWebSocketH2Request() && !await connection.IsConnectEnabled.Task.ConfigureAwait(false))
+                                if (request.IsWebSocketH2Request())
                                 {
-                                    HttpRequestException exception = new("Extended CONNECT is not supported");
-                                    exception.Data["SETTINGS_ENABLE_CONNECT_PROTOCOL"] = false;
-                                    throw exception;
+                                    int settingsTimeoutInMilliseconds = 5 * 60 * 1000;
+                                    CancellationTokenSource cts = new CancellationTokenSource(settingsTimeoutInMilliseconds);
+                                    if (!await connection.IsConnectEnabled.WaitWithCancellationAsync(cts.Token).ConfigureAwait(false))
+                                    {
+                                        HttpRequestException exception = new("Extended CONNECT is not supported");
+                                        exception.Data["SETTINGS_ENABLE_CONNECT_PROTOCOL"] = false;
+                                        throw exception;
+                                    }
                                 }
 
                                 response = await connection.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
