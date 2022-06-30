@@ -256,6 +256,16 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
         }
 
     } while (keepWaiting);
+
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+    // Flush the store buffers on all CPUs, to ensure that all changes made so far are seen
+    // by the GC threads. This only matters on weak memory ordered processors as
+    // the strong memory ordered processors wouldn't have reordered the relevant writes.
+    // This is needed to synchronize threads that were running in preemptive mode thus were
+    // left alone by suspension to flush their writes that they made before they switched to
+    // preemptive mode.
+    PalFlushProcessWriteBuffers();
+#endif //TARGET_ARM || TARGET_ARM64
 }
 
 void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
@@ -265,6 +275,16 @@ void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
         pTargetThread->ResetCachedTransitionFrame();
     }
     END_FOREACH_THREAD
+
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+        // Flush the store buffers on all CPUs, to ensure that they all see changes made
+        // by the GC threads. This only matters on weak memory ordered processors as
+        // the strong memory ordered processors wouldn't have reordered the relevant reads.
+        // This is needed to synchronize threads that were running in preemptive mode while
+        // the runtime was suspended and that will return to cooperative mode after the runtime
+        // is restarted.
+        PalFlushProcessWriteBuffers();
+#endif //TARGET_ARM || TARGET_ARM64
 
     RhpTrapThreads &= ~(uint32_t)TrapThreadsFlags::TrapThreads;
 
