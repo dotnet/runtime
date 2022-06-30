@@ -3933,6 +3933,63 @@ namespace System.Numerics
         /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
         static int INumberBase<BigInteger>.Radix => 2;
 
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static BigInteger CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            BigInteger result;
+
+            if (typeof(TOther) == typeof(BigInteger))
+            {
+                result = (BigInteger)(object)value!;
+            }
+            else if (!TryConvertFromChecked(value, out result) && !TOther.TryConvertToChecked(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static BigInteger CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            BigInteger result;
+
+            if (typeof(TOther) == typeof(BigInteger))
+            {
+                result = (BigInteger)(object)value!;
+            }
+            else if (!TryConvertFromSaturating(value, out result) && !TOther.TryConvertToSaturating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static BigInteger CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            BigInteger result;
+
+            if (typeof(TOther) == typeof(BigInteger))
+            {
+                result = (BigInteger)(object)value!;
+            }
+            else if (!TryConvertFromTruncating(value, out result) && !TOther.TryConvertToTruncating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
         static bool INumberBase<BigInteger>.IsCanonical(BigInteger value) => true;
 
@@ -4066,107 +4123,110 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<BigInteger>.TryConvertFromChecked<TOther>(TOther value, out BigInteger result)
+        static bool INumberBase<BigInteger>.TryConvertFromChecked<TOther>(TOther value, out BigInteger result) => TryConvertFromChecked(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromChecked<TOther>(TOther value, out BigInteger result)
         {
             if (typeof(TOther) == typeof(byte))
             {
-                byte actualValue = (byte)(object)value;
+                byte actualValue = (byte)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(char))
             {
-                char actualValue = (char)(object)value;
+                char actualValue = (char)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(decimal))
             {
-                decimal actualValue = (decimal)(object)value;
+                decimal actualValue = (decimal)(object)value!;
                 result = (BigInteger)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(double))
             {
-                double actualValue = (double)(object)value;
+                double actualValue = (double)(object)value!;
                 result = checked((BigInteger)actualValue);
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
             {
-                Half actualValue = (Half)(object)value;
+                Half actualValue = (Half)(object)value!;
                 result = checked((BigInteger)actualValue);
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
             {
-                short actualValue = (short)(object)value;
+                short actualValue = (short)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(int))
             {
-                int actualValue = (int)(object)value;
+                int actualValue = (int)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(long))
             {
-                long actualValue = (long)(object)value;
+                long actualValue = (long)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(Int128))
             {
-                Int128 actualValue = (Int128)(object)value;
+                Int128 actualValue = (Int128)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(nint))
             {
-                nint actualValue = (nint)(object)value;
+                nint actualValue = (nint)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(sbyte))
             {
-                sbyte actualValue = (sbyte)(object)value;
+                sbyte actualValue = (sbyte)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(float))
             {
-                float actualValue = (float)(object)value;
+                float actualValue = (float)(object)value!;
                 result = checked((BigInteger)actualValue);
                 return true;
             }
             else if (typeof(TOther) == typeof(ushort))
             {
-                ushort actualValue = (ushort)(object)value;
+                ushort actualValue = (ushort)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(uint))
             {
-                uint actualValue = (uint)(object)value;
+                uint actualValue = (uint)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(ulong))
             {
-                ulong actualValue = (ulong)(object)value;
+                ulong actualValue = (ulong)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(UInt128))
             {
-                UInt128 actualValue = (UInt128)(object)value;
+                UInt128 actualValue = (UInt128)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
-                nuint actualValue = (nuint)(object)value;
+                nuint actualValue = (nuint)(object)value!;
                 result = actualValue;
                 return true;
             }
@@ -4179,107 +4239,110 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<BigInteger>.TryConvertFromSaturating<TOther>(TOther value, out BigInteger result)
+        static bool INumberBase<BigInteger>.TryConvertFromSaturating<TOther>(TOther value, out BigInteger result) => TryConvertFromSaturating(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromSaturating<TOther>(TOther value, out BigInteger result)
         {
             if (typeof(TOther) == typeof(byte))
             {
-                byte actualValue = (byte)(object)value;
+                byte actualValue = (byte)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(char))
             {
-                char actualValue = (char)(object)value;
+                char actualValue = (char)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(decimal))
             {
-                decimal actualValue = (decimal)(object)value;
+                decimal actualValue = (decimal)(object)value!;
                 result = (BigInteger)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(double))
             {
-                double actualValue = (double)(object)value;
+                double actualValue = (double)(object)value!;
                 result = double.IsNaN(actualValue) ? Zero : (BigInteger)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
             {
-                Half actualValue = (Half)(object)value;
+                Half actualValue = (Half)(object)value!;
                 result = Half.IsNaN(actualValue) ? Zero : (BigInteger)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
             {
-                short actualValue = (short)(object)value;
+                short actualValue = (short)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(int))
             {
-                int actualValue = (int)(object)value;
+                int actualValue = (int)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(long))
             {
-                long actualValue = (long)(object)value;
+                long actualValue = (long)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(Int128))
             {
-                Int128 actualValue = (Int128)(object)value;
+                Int128 actualValue = (Int128)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(nint))
             {
-                nint actualValue = (nint)(object)value;
+                nint actualValue = (nint)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(sbyte))
             {
-                sbyte actualValue = (sbyte)(object)value;
+                sbyte actualValue = (sbyte)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(float))
             {
-                float actualValue = (float)(object)value;
+                float actualValue = (float)(object)value!;
                 result = float.IsNaN(actualValue) ? Zero : (BigInteger)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(ushort))
             {
-                ushort actualValue = (ushort)(object)value;
+                ushort actualValue = (ushort)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(uint))
             {
-                uint actualValue = (uint)(object)value;
+                uint actualValue = (uint)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(ulong))
             {
-                ulong actualValue = (ulong)(object)value;
+                ulong actualValue = (ulong)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(UInt128))
             {
-                UInt128 actualValue = (UInt128)(object)value;
+                UInt128 actualValue = (UInt128)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
-                nuint actualValue = (nuint)(object)value;
+                nuint actualValue = (nuint)(object)value!;
                 result = actualValue;
                 return true;
             }
@@ -4292,107 +4355,110 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<BigInteger>.TryConvertFromTruncating<TOther>(TOther value, out BigInteger result)
+        static bool INumberBase<BigInteger>.TryConvertFromTruncating<TOther>(TOther value, out BigInteger result) => TryConvertFromTruncating(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromTruncating<TOther>(TOther value, out BigInteger result)
         {
             if (typeof(TOther) == typeof(byte))
             {
-                byte actualValue = (byte)(object)value;
+                byte actualValue = (byte)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(char))
             {
-                char actualValue = (char)(object)value;
+                char actualValue = (char)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(decimal))
             {
-                decimal actualValue = (decimal)(object)value;
+                decimal actualValue = (decimal)(object)value!;
                 result = (BigInteger)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(double))
             {
-                double actualValue = (double)(object)value;
+                double actualValue = (double)(object)value!;
                 result = double.IsNaN(actualValue) ? Zero : (BigInteger)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
             {
-                Half actualValue = (Half)(object)value;
+                Half actualValue = (Half)(object)value!;
                 result = Half.IsNaN(actualValue) ? Zero : (BigInteger)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
             {
-                short actualValue = (short)(object)value;
+                short actualValue = (short)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(int))
             {
-                int actualValue = (int)(object)value;
+                int actualValue = (int)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(long))
             {
-                long actualValue = (long)(object)value;
+                long actualValue = (long)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(Int128))
             {
-                Int128 actualValue = (Int128)(object)value;
+                Int128 actualValue = (Int128)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(nint))
             {
-                nint actualValue = (nint)(object)value;
+                nint actualValue = (nint)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(sbyte))
             {
-                sbyte actualValue = (sbyte)(object)value;
+                sbyte actualValue = (sbyte)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(float))
             {
-                float actualValue = (float)(object)value;
+                float actualValue = (float)(object)value!;
                 result = float.IsNaN(actualValue) ? Zero : (BigInteger)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(ushort))
             {
-                ushort actualValue = (ushort)(object)value;
+                ushort actualValue = (ushort)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(uint))
             {
-                uint actualValue = (uint)(object)value;
+                uint actualValue = (uint)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(ulong))
             {
-                ulong actualValue = (ulong)(object)value;
+                ulong actualValue = (ulong)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(UInt128))
             {
-                UInt128 actualValue = (UInt128)(object)value;
+                UInt128 actualValue = (UInt128)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
-                nuint actualValue = (nuint)(object)value;
+                nuint actualValue = (nuint)(object)value!;
                 result = actualValue;
                 return true;
             }

@@ -1277,6 +1277,63 @@ namespace System
             return value;
         }
 
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Int128 CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            Int128 result;
+
+            if (typeof(TOther) == typeof(Int128))
+            {
+                result = (Int128)(object)value!;
+            }
+            else if (!TryConvertFromChecked(value, out result) && !TOther.TryConvertToChecked(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Int128 CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            Int128 result;
+
+            if (typeof(TOther) == typeof(Int128))
+            {
+                result = (Int128)(object)value!;
+            }
+            else if (!TryConvertFromSaturating(value, out result) && !TOther.TryConvertToSaturating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Int128 CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            Int128 result;
+
+            if (typeof(TOther) == typeof(Int128))
+            {
+                result = (Int128)(object)value!;
+            }
+            else if (!TryConvertFromTruncating(value, out result) && !TOther.TryConvertToTruncating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
         static bool INumberBase<Int128>.IsCanonical(Int128 value) => true;
 
@@ -1416,7 +1473,10 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<Int128>.TryConvertFromChecked<TOther>(TOther value, out Int128 result)
+        static bool INumberBase<Int128>.TryConvertFromChecked<TOther>(TOther value, out Int128 result) => TryConvertFromChecked(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromChecked<TOther>(TOther value, out Int128 result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1429,49 +1489,49 @@ namespace System
 
             if (typeof(TOther) == typeof(double))
             {
-                double actualValue = (double)(object)value;
+                double actualValue = (double)(object)value!;
                 result = checked((Int128)actualValue);
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
             {
-                Half actualValue = (Half)(object)value;
+                Half actualValue = (Half)(object)value!;
                 result = checked((Int128)actualValue);
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
             {
-                short actualValue = (short)(object)value;
+                short actualValue = (short)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(int))
             {
-                int actualValue = (int)(object)value;
+                int actualValue = (int)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(long))
             {
-                long actualValue = (long)(object)value;
+                long actualValue = (long)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(nint))
             {
-                nint actualValue = (nint)(object)value;
+                nint actualValue = (nint)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(sbyte))
             {
-                sbyte actualValue = (sbyte)(object)value;
+                sbyte actualValue = (sbyte)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(float))
             {
-                float actualValue = (float)(object)value;
+                float actualValue = (float)(object)value!;
                 result = checked((Int128)actualValue);
                 return true;
             }
@@ -1484,7 +1544,10 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<Int128>.TryConvertFromSaturating<TOther>(TOther value, out Int128 result)
+        static bool INumberBase<Int128>.TryConvertFromSaturating<TOther>(TOther value, out Int128 result) => TryConvertFromSaturating(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromSaturating<TOther>(TOther value, out Int128 result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1497,51 +1560,51 @@ namespace System
 
             if (typeof(TOther) == typeof(double))
             {
-                double actualValue = (double)(object)value;
+                double actualValue = (double)(object)value!;
                 result = (actualValue >= +170141183460469231731687303715884105727.0) ? MaxValue :
                          (actualValue <= -170141183460469231731687303715884105728.0) ? MinValue : (Int128)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
             {
-                Half actualValue = (Half)(object)value;
+                Half actualValue = (Half)(object)value!;
                 result = (actualValue == Half.PositiveInfinity) ? MaxValue :
                          (actualValue == Half.NegativeInfinity) ? MinValue : (Int128)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
             {
-                short actualValue = (short)(object)value;
+                short actualValue = (short)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(int))
             {
-                int actualValue = (int)(object)value;
+                int actualValue = (int)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(long))
             {
-                long actualValue = (long)(object)value;
+                long actualValue = (long)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(nint))
             {
-                nint actualValue = (nint)(object)value;
+                nint actualValue = (nint)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(sbyte))
             {
-                sbyte actualValue = (sbyte)(object)value;
+                sbyte actualValue = (sbyte)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(float))
             {
-                float actualValue = (float)(object)value;
+                float actualValue = (float)(object)value!;
                 result = (actualValue >= +170141183460469231731687303715884105727.0f) ? MaxValue :
                          (actualValue <= -170141183460469231731687303715884105728.0f) ? MinValue : (Int128)actualValue;
                 return true;
@@ -1555,7 +1618,10 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<Int128>.TryConvertFromTruncating<TOther>(TOther value, out Int128 result)
+        static bool INumberBase<Int128>.TryConvertFromTruncating<TOther>(TOther value, out Int128 result) => TryConvertFromTruncating(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromTruncating<TOther>(TOther value, out Int128 result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1568,51 +1634,51 @@ namespace System
 
             if (typeof(TOther) == typeof(double))
             {
-                double actualValue = (double)(object)value;
+                double actualValue = (double)(object)value!;
                 result = (actualValue >= +170141183460469231731687303715884105727.0) ? MaxValue :
                          (actualValue <= -170141183460469231731687303715884105728.0) ? MinValue : (Int128)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
             {
-                Half actualValue = (Half)(object)value;
+                Half actualValue = (Half)(object)value!;
                 result = (actualValue == Half.PositiveInfinity) ? MaxValue :
                          (actualValue == Half.NegativeInfinity) ? MinValue : (Int128)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
             {
-                short actualValue = (short)(object)value;
+                short actualValue = (short)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(int))
             {
-                int actualValue = (int)(object)value;
+                int actualValue = (int)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(long))
             {
-                long actualValue = (long)(object)value;
+                long actualValue = (long)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(nint))
             {
-                nint actualValue = (nint)(object)value;
+                nint actualValue = (nint)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(sbyte))
             {
-                sbyte actualValue = (sbyte)(object)value;
+                sbyte actualValue = (sbyte)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(float))
             {
-                float actualValue = (float)(object)value;
+                float actualValue = (float)(object)value!;
                 result = (actualValue >= +170141183460469231731687303715884105727.0f) ? MaxValue :
                          (actualValue <= -170141183460469231731687303715884105728.0f) ? MinValue : (Int128)actualValue;
                 return true;

@@ -526,6 +526,63 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
         public static nint Abs(nint value) => Math.Abs(value);
 
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static nint CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            nint result;
+
+            if (typeof(TOther) == typeof(nint))
+            {
+                result = (nint)(object)value!;
+            }
+            else if (!TryConvertFromChecked(value, out result) && !TOther.TryConvertToChecked(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static nint CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            nint result;
+
+            if (typeof(TOther) == typeof(nint))
+            {
+                result = (nint)(object)value!;
+            }
+            else if (!TryConvertFromSaturating(value, out result) && !TOther.TryConvertToSaturating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static nint CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            nint result;
+
+            if (typeof(TOther) == typeof(nint))
+            {
+                result = (nint)(object)value!;
+            }
+            else if (!TryConvertFromTruncating(value, out result) && !TOther.TryConvertToTruncating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
         static bool INumberBase<nint>.IsCanonical(nint value) => true;
 
@@ -665,7 +722,10 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<nint>.TryConvertFromChecked<TOther>(TOther value, out nint result)
+        static bool INumberBase<nint>.TryConvertFromChecked<TOther>(TOther value, out nint result) => TryConvertFromChecked(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromChecked<TOther>(TOther value, out nint result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -678,49 +738,49 @@ namespace System
 
             if (typeof(TOther) == typeof(double))
             {
-                double actualValue = (double)(object)value;
+                double actualValue = (double)(object)value!;
                 result = checked((nint)actualValue);
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
             {
-                Half actualValue = (Half)(object)value;
+                Half actualValue = (Half)(object)value!;
                 result = checked((nint)actualValue);
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
             {
-                short actualValue = (short)(object)value;
+                short actualValue = (short)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(int))
             {
-                int actualValue = (int)(object)value;
+                int actualValue = (int)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(long))
             {
-                long actualValue = (long)(object)value;
+                long actualValue = (long)(object)value!;
                 result = checked((nint)actualValue);
                 return true;
             }
             else if (typeof(TOther) == typeof(Int128))
             {
-                Int128 actualValue = (Int128)(object)value;
+                Int128 actualValue = (Int128)(object)value!;
                 result = checked((nint)actualValue);
                 return true;
             }
             else if (typeof(TOther) == typeof(sbyte))
             {
-                sbyte actualValue = (sbyte)(object)value;
+                sbyte actualValue = (sbyte)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(float))
             {
-                float actualValue = (float)(object)value;
+                float actualValue = (float)(object)value!;
                 result = checked((nint)actualValue);
                 return true;
             }
@@ -733,7 +793,10 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<nint>.TryConvertFromSaturating<TOther>(TOther value, out nint result)
+        static bool INumberBase<nint>.TryConvertFromSaturating<TOther>(TOther value, out nint result) => TryConvertFromSaturating(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromSaturating<TOther>(TOther value, out nint result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -746,53 +809,53 @@ namespace System
 
             if (typeof(TOther) == typeof(double))
             {
-                double actualValue = (double)(object)value;
+                double actualValue = (double)(object)value!;
                 result = (actualValue >= nint_t.MaxValue) ? unchecked((nint)nint_t.MaxValue) :
                          (actualValue <= nint_t.MinValue) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
             {
-                Half actualValue = (Half)(object)value;
+                Half actualValue = (Half)(object)value!;
                 result = (actualValue == Half.PositiveInfinity) ? unchecked((nint)nint_t.MaxValue) :
                          (actualValue == Half.NegativeInfinity) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
             {
-                short actualValue = (short)(object)value;
+                short actualValue = (short)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(int))
             {
-                int actualValue = (int)(object)value;
+                int actualValue = (int)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(long))
             {
-                long actualValue = (long)(object)value;
+                long actualValue = (long)(object)value!;
                 result = (actualValue >= nint_t.MaxValue) ? unchecked((nint)nint_t.MaxValue) :
                          (actualValue <= nint_t.MinValue) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(Int128))
             {
-                Int128 actualValue = (Int128)(object)value;
+                Int128 actualValue = (Int128)(object)value!;
                 result = (actualValue >= nint_t.MaxValue) ? unchecked((nint)nint_t.MaxValue) :
                          (actualValue <= nint_t.MinValue) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(sbyte))
             {
-                sbyte actualValue = (sbyte)(object)value;
+                sbyte actualValue = (sbyte)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(float))
             {
-                float actualValue = (float)(object)value;
+                float actualValue = (float)(object)value!;
                 result = (actualValue >= nint_t.MaxValue) ? unchecked((nint)nint_t.MaxValue) :
                          (actualValue <= nint_t.MinValue) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
                 return true;
@@ -806,7 +869,10 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<nint>.TryConvertFromTruncating<TOther>(TOther value, out nint result)
+        static bool INumberBase<nint>.TryConvertFromTruncating<TOther>(TOther value, out nint result) => TryConvertFromTruncating(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromTruncating<TOther>(TOther value, out nint result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -819,51 +885,51 @@ namespace System
 
             if (typeof(TOther) == typeof(double))
             {
-                double actualValue = (double)(object)value;
+                double actualValue = (double)(object)value!;
                 result = (actualValue >= nint_t.MaxValue) ? unchecked((nint)nint_t.MaxValue) :
                          (actualValue <= nint_t.MinValue) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
             {
-                Half actualValue = (Half)(object)value;
+                Half actualValue = (Half)(object)value!;
                 result = (actualValue == Half.PositiveInfinity) ? unchecked((nint)nint_t.MaxValue) :
                          (actualValue == Half.NegativeInfinity) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
             {
-                short actualValue = (short)(object)value;
+                short actualValue = (short)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(int))
             {
-                int actualValue = (int)(object)value;
+                int actualValue = (int)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(long))
             {
-                long actualValue = (long)(object)value;
+                long actualValue = (long)(object)value!;
                 result = (nint)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(Int128))
             {
-                Int128 actualValue = (Int128)(object)value;
+                Int128 actualValue = (Int128)(object)value!;
                 result = (nint)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(sbyte))
             {
-                sbyte actualValue = (sbyte)(object)value;
+                sbyte actualValue = (sbyte)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(float))
             {
-                float actualValue = (float)(object)value;
+                float actualValue = (float)(object)value!;
                 result = (actualValue >= nint_t.MaxValue) ? unchecked((nint)nint_t.MaxValue) :
                          (actualValue <= nint_t.MinValue) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
                 return true;

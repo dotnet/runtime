@@ -1430,6 +1430,63 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
         public static Half Abs(Half value) => (Half)MathF.Abs((float)value);
 
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Half CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            Half result;
+
+            if (typeof(TOther) == typeof(Half))
+            {
+                result = (Half)(object)value!;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToChecked(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Half CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            Half result;
+
+            if (typeof(TOther) == typeof(Half))
+            {
+                result = (Half)(object)value!;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToSaturating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Half CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            Half result;
+
+            if (typeof(TOther) == typeof(Half))
+            {
+                result = (Half)(object)value!;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToTruncating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
         static bool INumberBase<Half>.IsCanonical(Half value) => true;
 
@@ -1556,49 +1613,49 @@ namespace System
 
             if (typeof(TOther) == typeof(double))
             {
-                double actualValue = (double)(object)value;
+                double actualValue = (double)(object)value!;
                 result = (Half)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
             {
-                short actualValue = (short)(object)value;
+                short actualValue = (short)(object)value!;
                 result = (Half)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(int))
             {
-                int actualValue = (int)(object)value;
+                int actualValue = (int)(object)value!;
                 result = (Half)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(long))
             {
-                long actualValue = (long)(object)value;
+                long actualValue = (long)(object)value!;
                 result = (Half)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(Int128))
             {
-                Int128 actualValue = (Int128)(object)value;
+                Int128 actualValue = (Int128)(object)value!;
                 result = (Half)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(nint))
             {
-                nint actualValue = (nint)(object)value;
+                nint actualValue = (nint)(object)value!;
                 result = (Half)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(sbyte))
             {
-                sbyte actualValue = (sbyte)(object)value;
+                sbyte actualValue = (sbyte)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(float))
             {
-                float actualValue = (float)(object)value;
+                float actualValue = (float)(object)value!;
                 result = (Half)actualValue;
                 return true;
             }

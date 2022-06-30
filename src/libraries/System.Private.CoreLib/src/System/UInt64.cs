@@ -508,6 +508,63 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
         static ulong INumberBase<ulong>.Abs(ulong value) => value;
 
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ulong CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            ulong result;
+
+            if (typeof(TOther) == typeof(ulong))
+            {
+                result = (ulong)(object)value!;
+            }
+            else if (!TryConvertFromChecked(value, out result) && !TOther.TryConvertToChecked(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ulong CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            ulong result;
+
+            if (typeof(TOther) == typeof(ulong))
+            {
+                result = (ulong)(object)value!;
+            }
+            else if (!TryConvertFromSaturating(value, out result) && !TOther.TryConvertToSaturating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ulong CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            ulong result;
+
+            if (typeof(TOther) == typeof(ulong))
+            {
+                result = (ulong)(object)value!;
+            }
+            else if (!TryConvertFromTruncating(value, out result) && !TOther.TryConvertToTruncating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
         static bool INumberBase<ulong>.IsCanonical(ulong value) => true;
 
@@ -573,7 +630,10 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<ulong>.TryConvertFromChecked<TOther>(TOther value, out ulong result)
+        static bool INumberBase<ulong>.TryConvertFromChecked<TOther>(TOther value, out ulong result) => TryConvertFromChecked(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromChecked<TOther>(TOther value, out ulong result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -586,43 +646,43 @@ namespace System
 
             if (typeof(TOther) == typeof(byte))
             {
-                byte actualValue = (byte)(object)value;
+                byte actualValue = (byte)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(char))
             {
-                char actualValue = (char)(object)value;
+                char actualValue = (char)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(decimal))
             {
-                decimal actualValue = (decimal)(object)value;
+                decimal actualValue = (decimal)(object)value!;
                 result = checked((ulong)actualValue);
                 return true;
             }
             else if (typeof(TOther) == typeof(ushort))
             {
-                ushort actualValue = (ushort)(object)value;
+                ushort actualValue = (ushort)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(uint))
             {
-                uint actualValue = (uint)(object)value;
+                uint actualValue = (uint)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(UInt128))
             {
-                UInt128 actualValue = (UInt128)(object)value;
+                UInt128 actualValue = (UInt128)(object)value!;
                 result = checked((ulong)actualValue);
                 return true;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
-                nuint actualValue = (nuint)(object)value;
+                nuint actualValue = (nuint)(object)value!;
                 result = actualValue;
                 return true;
             }
@@ -635,7 +695,10 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<ulong>.TryConvertFromSaturating<TOther>(TOther value, out ulong result)
+        static bool INumberBase<ulong>.TryConvertFromSaturating<TOther>(TOther value, out ulong result) => TryConvertFromSaturating(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromSaturating<TOther>(TOther value, out ulong result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -648,44 +711,44 @@ namespace System
 
             if (typeof(TOther) == typeof(byte))
             {
-                byte actualValue = (byte)(object)value;
+                byte actualValue = (byte)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(char))
             {
-                char actualValue = (char)(object)value;
+                char actualValue = (char)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(decimal))
             {
-                decimal actualValue = (decimal)(object)value;
+                decimal actualValue = (decimal)(object)value!;
                 result = (actualValue >= MaxValue) ? MaxValue :
                          (actualValue <= MinValue) ? MinValue : (ulong)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(ushort))
             {
-                ushort actualValue = (ushort)(object)value;
+                ushort actualValue = (ushort)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(uint))
             {
-                uint actualValue = (uint)(object)value;
+                uint actualValue = (uint)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(UInt128))
             {
-                UInt128 actualValue = (UInt128)(object)value;
+                UInt128 actualValue = (UInt128)(object)value!;
                 result = (actualValue >= MaxValue) ? MaxValue : (ulong)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
-                nuint actualValue = (nuint)(object)value;
+                nuint actualValue = (nuint)(object)value!;
                 result = actualValue;
                 return true;
             }
@@ -698,7 +761,10 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<ulong>.TryConvertFromTruncating<TOther>(TOther value, out ulong result)
+        static bool INumberBase<ulong>.TryConvertFromTruncating<TOther>(TOther value, out ulong result) => TryConvertFromTruncating(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromTruncating<TOther>(TOther value, out ulong result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -711,44 +777,44 @@ namespace System
 
             if (typeof(TOther) == typeof(byte))
             {
-                byte actualValue = (byte)(object)value;
+                byte actualValue = (byte)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(char))
             {
-                char actualValue = (char)(object)value;
+                char actualValue = (char)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(decimal))
             {
-                decimal actualValue = (decimal)(object)value;
+                decimal actualValue = (decimal)(object)value!;
                 result = (actualValue >= MaxValue) ? MaxValue :
                          (actualValue <= MinValue) ? MinValue : (ulong)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(ushort))
             {
-                ushort actualValue = (ushort)(object)value;
+                ushort actualValue = (ushort)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(uint))
             {
-                uint actualValue = (uint)(object)value;
+                uint actualValue = (uint)(object)value!;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(UInt128))
             {
-                UInt128 actualValue = (UInt128)(object)value;
+                UInt128 actualValue = (UInt128)(object)value!;
                 result = (ulong)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
-                nuint actualValue = (nuint)(object)value;
+                nuint actualValue = (nuint)(object)value!;
                 result = actualValue;
                 return true;
             }
