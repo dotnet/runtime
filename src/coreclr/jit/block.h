@@ -888,6 +888,8 @@ struct BasicBlock : private LIR::Range
 
     BasicBlock* GetUniqueSucc() const;
 
+    BasicBlock* GetFarthestUniqueSuccOrSelf() const;
+
     unsigned countOfInEdges() const
     {
         return bbRefs;

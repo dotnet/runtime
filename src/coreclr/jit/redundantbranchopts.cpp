@@ -53,19 +53,21 @@ PhaseStatus Compiler::optRedundantBranches()
 
                 madeChanges |= m_compiler->optRedundantBranch(block);
 
-                if (madeChanges && bbNext != nullptr && bbNext->countOfInEdges() == 0)
+                // It's possible that either bbNext or bbJump were unlinked and it's proven
+                // to be profitable to pay special attention to their successors.
+                if (madeChanges && (bbNext != nullptr) && (bbNext->countOfInEdges() == 0))
                 {
-                    for (BasicBlock* successor : bbNext->Succs())
+                    for (BasicBlock* succ : bbNext->Succs())
                     {
-                        m_compiler->optRedundantBranch(successor);
+                        m_compiler->optRedundantBranch(succ->GetFarthestUniqueSuccOrSelf());
                     }
                 }
 
-                if (madeChanges && bbJump != nullptr && bbJump->countOfInEdges() == 0)
+                if (madeChanges && (bbJump != nullptr) && (bbJump->countOfInEdges() == 0))
                 {
-                    for (BasicBlock* successor : bbJump->Succs())
+                    for (BasicBlock* succ : bbJump->Succs())
                     {
-                        m_compiler->optRedundantBranch(successor);
+                        m_compiler->optRedundantBranch(succ->GetFarthestUniqueSuccOrSelf());
                     }
                 }
             }
@@ -390,7 +392,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
 
                     if (trueReaches && falseReaches && rii.canInferFromTrue && rii.canInferFromFalse)
                     {
-                        // Throughput fix - it didn't produce much diffs any way
+                        // JIT-TP: it didn't produce diffs so let's skip it
                         if (trySpeculativeDom)
                         {
                             break;
@@ -572,7 +574,6 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
                 JITDUMP(" -- " FMT_BB " not closest branching dom, so no threading\n", idomBlock->bbNum);
                 return false;
             }
-
             JITDUMP(" -- bypassing %sdom " FMT_BB " as it was already optimized\n",
                     (idomBlock == block->bbIDom) ? "i" : "", idomBlock->bbNum);
             idomBlock = idomBlock->bbIDom;
