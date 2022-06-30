@@ -106,11 +106,11 @@ extern "C" BOOL CRTInitStdStreams( void );
 
 extern bool g_running_in_exe;
 
-// #if defined(TARGET_ARM64)
-// // Flag to check if atomics feature is available on
-// // the machine
-// bool g_arm64_atomics_present = false;
-// #endif
+#if defined(TARGET_ARM64)
+// Flag to check if atomics feature is available on
+// the machine
+bool g_arm64_atomics_present = false;
+#endif
 
 Volatile<INT> init_count = 0;
 Volatile<BOOL> shutdown_intent = 0;
