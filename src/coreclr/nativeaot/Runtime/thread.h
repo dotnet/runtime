@@ -257,7 +257,6 @@ public:
     //
     // Managed/unmanaged interop transitions support APIs
     //
-    void WaitForSuspend();
     void WaitForGC(PInvokeTransitionFrame* pTransitionFrame);
 
     void ReversePInvokeAttachOrTrapThread(ReversePInvokeFrame * pFrame);

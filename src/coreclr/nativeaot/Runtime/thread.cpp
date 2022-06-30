@@ -69,12 +69,6 @@ PInvokeTransitionFrame* Thread::GetTransitionFrameForStackTrace()
     return m_pDeferredTransitionFrame;
 }
 
-void Thread::WaitForSuspend()
-{
-    Unhijack();
-    GetThreadStore()->WaitForSuspendComplete();
-}
-
 void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
 {
     ASSERT(!IsDoNotTriggerGcSet());
@@ -152,16 +146,6 @@ void Thread::EnablePreemptiveMode()
 
     // ORDERING -- this write must occur before checking the trap
     m_pTransitionFrame = m_pDeferredTransitionFrame;
-
-    // We need to prevent compiler reordering between above write and below read.  Both the read and the write
-    // are volatile, so it's possible that the particular semantic for volatile that MSVC provides is enough,
-    // but if not, this barrier would be required.  If so, it won't change anything to add the barrier.
-    _ReadWriteBarrier();
-
-    if (ThreadStore::IsTrapThreadsRequested())
-    {
-        WaitForSuspend();
-    }
 }
 
 void Thread::DisablePreemptiveMode()
@@ -1002,19 +986,6 @@ EXTERN_C void FASTCALL RhpUnsuppressGcStress()
 }
 #endif // FEATURE_GC_STRESS
 
-// Standard calling convention variant and actual implementation for RhpWaitForSuspend
-EXTERN_C NOINLINE void FASTCALL RhpWaitForSuspend2()
-{
-    // The wait operation below may trash the last win32 error. We save the error here so that it can be
-    // restored after the wait operation;
-    int32_t lastErrorOnEntry = PalGetLastError();
-
-    ThreadStore::GetCurrentThread()->WaitForSuspend();
-
-    // Restore the saved error
-    PalSetLastError(lastErrorOnEntry);
-}
-
 // Standard calling convention variant and actual implementation for RhpWaitForGC
 EXTERN_C NOINLINE void FASTCALL RhpWaitForGC2(PInvokeTransitionFrame * pFrame)
 {
@@ -1307,10 +1278,6 @@ void Thread::EnsureRuntimeInitialized()
 FORCEINLINE void Thread::InlineReversePInvokeReturn(ReversePInvokeFrame * pFrame)
 {
     m_pTransitionFrame = pFrame->m_savedPInvokeTransitionFrame;
-    if (ThreadStore::IsTrapThreadsRequested())
-    {
-        RhpWaitForSuspend2();
-    }
 }
 
 FORCEINLINE void Thread::InlinePInvoke(PInvokeTransitionFrame * pFrame)
@@ -1318,15 +1285,6 @@ FORCEINLINE void Thread::InlinePInvoke(PInvokeTransitionFrame * pFrame)
     pFrame->m_pThread = this;
     // set our mode to preemptive
     m_pTransitionFrame = pFrame;
-
-    // We need to prevent compiler reordering between above write and below read.
-    _ReadWriteBarrier();
-
-    // now check if we need to trap the thread
-    if (ThreadStore::IsTrapThreadsRequested())
-    {
-        RhpWaitForSuspend2();
-    }
 }
 
 FORCEINLINE void Thread::InlinePInvokeReturn(PInvokeTransitionFrame * pFrame)

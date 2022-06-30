@@ -282,13 +282,6 @@ void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
     UnlockThreadStore();
 } // ResumeAllThreads
 
-void ThreadStore::WaitForSuspendComplete()
-{
-    uint32_t waitResult = m_SuspendCompleteEvent.Wait(INFINITE, false);
-    if (waitResult == WAIT_FAILED)
-        RhFailFast();
-}
-
 #ifndef DACCESS_COMPILE
 
 void ThreadStore::InitiateThreadAbort(Thread* targetThread, Object * threadAbortException, bool doRudeAbort)

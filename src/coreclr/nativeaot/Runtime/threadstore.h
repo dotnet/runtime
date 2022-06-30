@@ -64,7 +64,6 @@ public:
     void        ResumeAllThreads(bool waitForGCEvent);
 
     static bool IsTrapThreadsRequested();
-    void        WaitForSuspendComplete();
 };
 typedef DPTR(ThreadStore) PTR_ThreadStore;
 
