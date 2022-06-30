@@ -43947,18 +43947,15 @@ HRESULT GCHeap::Initialize()
     gc_heap::regions_range = (size_t)GCConfig::GetGCRegionRange();
     if (gc_heap::regions_range == 0)
     {
-        if (gc_heap::regions_range == 0)
+        if (gc_heap::heap_hard_limit)
         {
-            if (gc_heap::heap_hard_limit)
-            {
-                gc_heap::regions_range = 2 * gc_heap::heap_hard_limit;
-            }
-            else
-            {
-                gc_heap::regions_range = max(274877906944L, (size_t)(2 * gc_heap::total_physical_mem));
-            }
-            gc_heap::regions_range = align_on_page(gc_heap::regions_range);
+            gc_heap::regions_range = 2 * gc_heap::heap_hard_limit;
         }
+        else
+        {
+            gc_heap::regions_range = max(((size_t)256 * 1024 * 1024 * 1024), (size_t)(2 * gc_heap::total_physical_mem));
+        }
+        gc_heap::regions_range = align_on_page(gc_heap::regions_range);
     }
     // TODO: Set config after config API is merged.
 #endif //USE_REGIONS
