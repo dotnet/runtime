@@ -56,11 +56,7 @@ if(NOT WIN32 AND NOT CLR_CMAKE_TARGET_BROWSER)
       set(TOOLSET_PREFIX ${ANDROID_TOOLCHAIN_PREFIX})
     elseif(CMAKE_CROSSCOMPILING AND NOT DEFINED CLR_CROSS_COMPONENTS_BUILD AND
         CMAKE_SYSTEM_PROCESSOR MATCHES "^(armv8l|armv7l|armv6l|aarch64|arm|s390x|ppc64le)$")
-      if(FREEBSD)
-        set(TOOLSET_PREFIX "llvm-")
-      else()
-        set(TOOLSET_PREFIX "${TOOLCHAIN}-")
-      endif()
+      set(TOOLSET_PREFIX "${TOOLCHAIN}-")
     endif()
 
   endif()
