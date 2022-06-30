@@ -792,7 +792,6 @@ namespace System.Net.Http
                 // Parse settings and process the ones we care about.
                 ReadOnlySpan<byte> settings = _incomingBuffer.ActiveSpan.Slice(0, frameHeader.PayloadLength);
                 bool maxConcurrentStreamsReceived = false;
-                bool enableConnectReceived = false;
                 while (settings.Length > 0)
                 {
                     Debug.Assert((settings.Length % 6) == 0);
@@ -832,7 +831,6 @@ namespace System.Net.Http
                             {
                                 IsConnectEnabled.TrySetResult(true);
                             }
-                            enableConnectReceived = true;
                             break;
 
                         default:
@@ -1465,7 +1463,7 @@ namespace System.Net.Http
             {
                 if (request.Headers.Protocol != null)
                 {
-                    WriteBytes(":protocol"u8, ref headerBuffer);
+                    WriteBytes(HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingNewNameToAllocatedArray(":protocol"), ref headerBuffer);
                     Encoding? protocolEncoding = _pool.Settings._requestHeaderEncodingSelector?.Invoke(":protocol", request);
                     WriteLiteralHeaderValue(request.Headers.Protocol, protocolEncoding, ref headerBuffer);
                 }
@@ -1914,7 +1912,7 @@ namespace System.Net.Http
             EnableConnect = 0x8
         }
 
-        internal TaskCompletionSource<bool> IsConnectEnabled { get; private set; } = new TaskCompletionSource<bool>(TaskCompletionOptions.RunContinuationsAsynchronously);
+        internal TaskCompletionSourceWithCancellation<bool> IsConnectEnabled { get; private set; } = new TaskCompletionSourceWithCancellation<bool>();
 
         // Note that this is safe to be called concurrently by multiple threads.
 
