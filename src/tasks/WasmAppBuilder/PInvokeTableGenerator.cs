@@ -71,8 +71,7 @@ internal sealed class PInvokeTableGenerator
             }
             catch (Exception ex)
             {
-                Log.LogMessage(MessageImportance.Low, $"Could not get pinvoke, or callbacks for method {method.Name}: {ex}");
-                continue;
+                throw new LogAsErrorException($"Could not get pinvoke, or callbacks for method {method.Name}: {ex}");
             }
         }
 
