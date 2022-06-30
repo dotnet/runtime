@@ -130,9 +130,9 @@ submit-tests-helix:
 run-debugger-tests:
 	rm -f $(TOP)/artifacts/bin/DebuggerTestSuite/x64/Debug/*log; \
 	if [ ! -z "$(TEST_FILTER)" ]; then \
-		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) -v minimal -l trx --results-directory $(TOP)/artifacts/log/$(CONFIG) --filter "Category!=failing&FullyQualifiedName~$(TEST_FILTER)" $(TEST_ARGS); \
+	$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) "-l:trx;LogFileName=DebuggerTestsResults.xml" --results-directory $(TOP)/artifacts/log/$(CONFIG) --filter "Category!=failing&FullyQualifiedName~$(TEST_FILTER)" $(TEST_ARGS); \
 	else \
-		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) -v minimal -l trx --results-directory $(TOP)/artifacts/log/$(CONFIG) --filter "Category!=failing" $(TEST_ARGS); \
+		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) "-l:trx;LogFileName=DebuggerTestsResults.xml" --results-directory $(TOP)/artifacts/log/$(CONFIG) --filter "Category!=failing" $(TEST_ARGS); \
 	fi
 
 build-dbg-proxy:
