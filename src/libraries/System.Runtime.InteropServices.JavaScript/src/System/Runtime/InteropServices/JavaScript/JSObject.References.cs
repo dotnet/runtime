@@ -8,7 +8,6 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     public partial class JSObject
     {
-        public bool IsDisposed { get => _isDisposed; }
         internal IntPtr JSHandle;
 
         internal GCHandle? InFlight;
@@ -55,10 +54,13 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
+        /// <inheritdoc />
         public override bool Equals([NotNullWhen(true)] object? obj) => obj is JSObject other && JSHandle == other.JSHandle;
 
+        /// <inheritdoc />
         public override int GetHashCode() => (int)JSHandle;
 
+        /// <inheritdoc />
         public override string ToString() => $"(js-obj js '{JSHandle}')";
 
         private void Dispose(bool disposing)
@@ -71,11 +73,17 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
+        /// <summary>
+        /// Dispose the JavaScript object handle and release it's reference.
+        /// </summary>
         ~JSObject()
         {
             Dispose(disposing: false);
         }
 
+        /// <summary>
+        /// Dispose the JavaScript object handle and release it's reference.
+        /// </summary>
         public void Dispose()
         {
             Dispose(disposing: true);
