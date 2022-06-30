@@ -830,7 +830,7 @@ namespace System.Net.Http
                         case SettingId.EnableConnect:
                             if (settingValue == 1)
                             {
-                                IsConnectEnabled.SetResult(true);
+                                IsConnectEnabled.TrySetResult(true);
                             }
                             enableConnectReceived = true;
                             break;
@@ -850,10 +850,8 @@ namespace System.Net.Http
                         ChangeMaxConcurrentStreams(int.MaxValue);
                     }
 
-                    if (!enableConnectReceived)
-                    {
-                        IsConnectEnabled.SetResult(false);
-                    }
+                    // Set a default value if it wasn't enabled above.
+                    IsConnectEnabled.TrySetResult(false);
                 }
 
                 _incomingBuffer.Discard(frameHeader.PayloadLength);
@@ -1916,7 +1914,7 @@ namespace System.Net.Http
             EnableConnect = 0x8
         }
 
-        internal TaskCompletionSource<bool> IsConnectEnabled { get; private set; } = new TaskCompletionSource<bool>();
+        internal TaskCompletionSource<bool> IsConnectEnabled { get; private set; } = new TaskCompletionSource<bool>(TaskCompletionOptions.RunContinuationsAsynchronously);
 
         // Note that this is safe to be called concurrently by multiple threads.
 
