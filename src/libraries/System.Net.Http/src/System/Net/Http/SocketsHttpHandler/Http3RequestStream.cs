@@ -228,23 +228,27 @@ namespace System.Net.Http
                 shouldCancelBody = false;
                 return response;
             }
-            catch (QuicStreamAbortedException ex) when (ex.ErrorCode == (long)Http3ErrorCode.VersionFallback)
+            catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted)
             {
-                // The server is requesting us fall back to an older HTTP version.
-                throw new HttpRequestException(SR.net_http_retry_on_older_version, ex, RequestRetryType.RetryOnLowerHttpVersion);
+                Debug.Assert(ex.ApplicationErrorCode.HasValue);
+
+                switch ((Http3ErrorCode)ex.ApplicationErrorCode.Value)
+                {
+                    case Http3ErrorCode.VersionFallback:
+                        // The server is requesting us fall back to an older HTTP version.
+                        throw new HttpRequestException(SR.net_http_retry_on_older_version, ex, RequestRetryType.RetryOnLowerHttpVersion);
+
+                    case Http3ErrorCode.RequestRejected:
+                        // The server is rejecting the request without processing it, retry it on a different connection.
+                        throw new HttpRequestException(SR.net_http_request_aborted, ex, RequestRetryType.RetryOnConnectionFailure);
+
+                    default:
+                        // Our stream was reset.
+                        Exception? abortException = _connection.AbortException;
+                        throw new HttpRequestException(SR.net_http_client_execution_error, abortException ?? ex);
+                }
             }
-            catch (QuicStreamAbortedException ex) when (ex.ErrorCode == (long)Http3ErrorCode.RequestRejected)
-            {
-                // The server is rejecting the request without processing it, retry it on a different connection.
-                throw new HttpRequestException(SR.net_http_request_aborted, ex, RequestRetryType.RetryOnConnectionFailure);
-            }
-            catch (QuicStreamAbortedException ex)
-            {
-                // Our stream was reset.
-                Exception? abortException = _connection.AbortException;
-                throw new HttpRequestException(SR.net_http_client_execution_error, abortException ?? ex);
-            }
-            catch (QuicConnectionAbortedException ex)
+            catch (QuicException ex) when (ex.QuicError == QuicError.ConnectionAborted)
             {
                 // Our connection was reset. Start shutting down the connection.
                 Exception abortException = _connection.Abort(ex);
@@ -1185,15 +1189,21 @@ namespace System.Net.Http
         {
             switch (ex)
             {
-                // Peer aborted the stream
-                case QuicStreamAbortedException:
-                // User aborted the stream
-                case QuicOperationAbortedException:
-                    throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));
-                case QuicConnectionAbortedException:
-                    // Our connection was reset. Start aborting the connection.
-                    Exception abortException = _connection.Abort(ex);
-                    throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, abortException));
+                case QuicException e:
+                    switch (e.QuicError)
+                    {
+                        // Peer aborted the stream
+                        case QuicError.StreamAborted:
+                        // User aborted the stream
+                        case QuicError.OperationAborted:
+                            throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));
+
+                        case QuicError.ConnectionAborted:
+                            // Our connection was reset. Start aborting the connection.
+                            Exception abortException = _connection.Abort(ex);
+                            throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, abortException));
+                    }
+                    break;
                 case Http3ConnectionException:
                     // A connection-level protocol error has occurred on our stream.
                     _connection.Abort(ex);
@@ -1202,10 +1212,10 @@ namespace System.Net.Http
                     _stream.AbortRead((long)Http3ErrorCode.RequestCancelled);
                     ExceptionDispatchInfo.Throw(ex); // Rethrow.
                     return; // Never reached.
-                default:
-                    _stream.AbortRead((long)Http3ErrorCode.InternalError);
-                    throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));
             }
+
+            _stream.AbortRead((long)Http3ErrorCode.InternalError);
+            throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));
         }
 
         private async ValueTask<bool> ReadNextDataFrameAsync(HttpResponseMessage response, CancellationToken cancellationToken)

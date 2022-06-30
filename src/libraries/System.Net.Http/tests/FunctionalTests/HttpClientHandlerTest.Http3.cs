@@ -12,6 +12,7 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Reflection;
+using System.Security.Authentication;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -277,13 +278,13 @@ namespace System.Net.Http.Functional.Tests
 
                 await stream.SendFrameAsync(ReservedHttp2PriorityFrameId, new byte[8]);
 
-                QuicConnectionAbortedException ex = await Assert.ThrowsAsync<QuicConnectionAbortedException>(async () =>
+                QuicException ex = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionAborted, async () =>
                 {
                     await stream.HandleRequestAsync();
                     using Http3LoopbackStream stream2 = await connection.AcceptRequestStreamAsync();
                 });
 
-                Assert.Equal(UnexpectedFrameErrorCode, ex.ErrorCode);
+                Assert.Equal(UnexpectedFrameErrorCode, ex.ApplicationErrorCode);
             });
 
             Task clientTask = Task.Run(async () =>
@@ -325,13 +326,13 @@ namespace System.Net.Http.Functional.Tests
                     {
                         await stream.SendResponseBodyAsync(data, isFinal: false);
                     }
-                    catch (QuicStreamAbortedException)
+                    catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted)
                     {
                         hasFailed = true;
                         break;
                     }
                 }
-                Assert.True(hasFailed, $"Expected {nameof(QuicStreamAbortedException)}, instead ran successfully for {sw.Elapsed}");
+                Assert.True(hasFailed, $"Expected {nameof(QuicException)} with {nameof(QuicError.StreamAborted)}, instead ran successfully for {sw.Elapsed}");
             });
 
             Task clientTask = Task.Run(async () =>
@@ -384,13 +385,13 @@ namespace System.Net.Http.Functional.Tests
                         var (frameType, payload) = await stream.ReadFrameAsync();
                         Assert.Equal(Http3LoopbackStream.DataFrame, frameType);
                     }
-                    catch (QuicStreamAbortedException)
+                    catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted)
                     {
                         hasFailed = true;
                         break;
                     }
                 }
-                Assert.True(hasFailed, $"Expected {nameof(QuicStreamAbortedException)}, instead ran successfully for {sw.Elapsed}");
+                Assert.True(hasFailed, $"Expected {nameof(QuicException)} with {nameof(QuicError.StreamAborted)}, instead ran successfully for {sw.Elapsed}");
             });
 
             Task clientTask = Task.Run(async () =>
@@ -682,8 +683,8 @@ namespace System.Net.Http.Functional.Tests
                 // In that case even with synchronization via semaphores, first writes after peer aborting may "succeed" (get SEND_COMPLETE event)
                 // We are asserting that PEER_RECEIVE_ABORTED would still arrive eventually
 
-                var ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => SendDataForever(stream).WaitAsync(TimeSpan.FromSeconds(10)));
-                Assert.Equal(268, ex.ErrorCode);
+                var ex = await AssertThrowsQuicExceptionAsync(QuicError.StreamAborted, () => SendDataForever(stream).WaitAsync(TimeSpan.FromSeconds(10)));
+                Assert.Equal(268, ex.ApplicationErrorCode);
 
                 serverDone.Release();
             });
@@ -724,7 +725,8 @@ namespace System.Net.Http.Functional.Tests
                 {
                     var ioe = Assert.IsType<IOException>(ex);
                     var hre = Assert.IsType<HttpRequestException>(ioe.InnerException);
-                    Assert.IsType<QuicOperationAbortedException>(hre.InnerException);
+                    var qex = Assert.IsType<QuicException>(hre.InnerException);
+                    Assert.Equal(QuicError.OperationAborted, qex.QuicError);
                 }
 
                 clientDone.Release();
@@ -762,9 +764,9 @@ namespace System.Net.Http.Functional.Tests
                 // In that case even with synchronization via semaphores, first writes after peer aborting may "succeed" (get SEND_COMPLETE event)
                 // We are asserting that PEER_RECEIVE_ABORTED would still arrive eventually
 
-                var ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => SendDataForever(stream).WaitAsync(TimeSpan.FromSeconds(20)));
+                QuicException ex = await AssertThrowsQuicExceptionAsync(QuicError.StreamAborted, () => SendDataForever(stream).WaitAsync(TimeSpan.FromSeconds(20)));
                 // exact error code depends on who won the race
-                Assert.True(ex.ErrorCode == 268 /* cancellation */ || ex.ErrorCode == 0xffffffff /* disposal */, $"Expected 268 or 0xffffffff, got {ex.ErrorCode}");
+                Assert.True(ex.ApplicationErrorCode == 268 /* cancellation */ || ex.ApplicationErrorCode == 0xffffffff /* disposal */, $"Expected 268 or 0xffffffff, got {ex.ApplicationErrorCode}");
 
                 serverDone.Release();
             });
@@ -797,7 +799,8 @@ namespace System.Net.Http.Functional.Tests
                 {
                     var ioe = Assert.IsType<IOException>(ex);
                     var hre = Assert.IsType<HttpRequestException>(ioe.InnerException);
-                    Assert.IsType<QuicOperationAbortedException>(hre.InnerException);
+                    var qex = Assert.IsType<QuicException>(hre.InnerException);
+                    Assert.Equal(QuicError.OperationAborted, qex.QuicError);
                 }
 
                 clientDone.Release();
@@ -877,7 +880,9 @@ namespace System.Net.Http.Functional.Tests
                 };
 
                 HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(10)));
-                Assert.Contains("ALPN_NEG_FAILURE", ex.Message);
+                Assert.IsType<AuthenticationException>(ex.InnerException);
+                // TODO: check that the exception was caused by ALPN mismatch
+                // Assert.Contains("ALPN_NEG_FAILURE", authEx.InnerException?.Message);
 
                 clientDone.Release();
             });
@@ -1096,8 +1101,8 @@ namespace System.Net.Http.Functional.Tests
             await clientTask.WaitAsync(TimeSpan.FromSeconds(120));
 
             // server receives cancellation
-            var ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => serverTask.WaitAsync(TimeSpan.FromSeconds(120)));
-            Assert.Equal(268 /*H3_REQUEST_CANCELLED (0x10C)*/, ex.ErrorCode);
+            QuicException ex = await AssertThrowsQuicExceptionAsync(QuicError.StreamAborted, () => serverTask.WaitAsync(TimeSpan.FromSeconds(120)));
+            Assert.Equal(268 /*H3_REQUEST_CANCELLED (0x10C)*/, ex.ApplicationErrorCode);
 
             Assert.NotNull(serverStream);
             serverStream.Dispose();
@@ -1161,8 +1166,8 @@ namespace System.Net.Http.Functional.Tests
             await clientTask.WaitAsync(TimeSpan.FromSeconds(120));
 
             // server receives cancellation
-            var ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => serverTask.WaitAsync(TimeSpan.FromSeconds(120)));
-            Assert.Equal(268 /*H3_REQUEST_CANCELLED (0x10C)*/, ex.ErrorCode);
+            QuicException ex = await AssertThrowsQuicExceptionAsync(QuicError.StreamAborted, () => serverTask.WaitAsync(TimeSpan.FromSeconds(120)));
+            Assert.Equal(268 /*H3_REQUEST_CANCELLED (0x10C)*/, ex.ApplicationErrorCode);
 
             Assert.NotNull(serverStream);
             serverStream.Dispose();
@@ -1335,6 +1340,13 @@ namespace System.Net.Http.Functional.Tests
             serverStream.Dispose();
             Assert.NotNull(connection);
             connection.Dispose();
+        }
+
+        private static async Task<QuicException> AssertThrowsQuicExceptionAsync(QuicError expectedError, Func<Task> testCode)
+        {
+            QuicException ex = await Assert.ThrowsAsync<QuicException>(testCode);
+            Assert.Equal(expectedError, ex.QuicError);
+            return ex;
         }
 
         public static TheoryData<HttpStatusCode, bool> StatusCodesTestData()
