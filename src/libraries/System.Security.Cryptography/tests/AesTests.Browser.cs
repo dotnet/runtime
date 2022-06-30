@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Linq;
 using Xunit;
 
 namespace System.Security.Cryptography.Tests
@@ -49,7 +48,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public static void Aes_InvalidKeySize_192_Browser()
         {
-            byte[] key192 = Enumerable.Repeat<byte>(0, 24).ToArray();
+            byte[] key192 = new byte[192 / 8];
             using (Aes aes = Aes.Create())
             {
                 Assert.False(aes.ValidKeySize(192));

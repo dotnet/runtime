@@ -162,6 +162,7 @@ namespace System.Security.Cryptography
 
         private void Reset()
         {
+            CryptographicOperations.ZeroMemory(_lastBlockBuffer);
             _lastBlockBuffer = null;
         }
     }
