@@ -774,7 +774,7 @@ namespace System
                 case GCConfigurationType.StringUtf8:
                     {
                         string? dataAsString = Marshal.PtrToStringUTF8((IntPtr)data);
-                        configurationDictionary![nameAsString] = dataAsString ?? string.Empty;
+                        configurationDictionary[nameAsString] = dataAsString ?? string.Empty;
                         break;
                     }
 

@@ -5,6 +5,7 @@
 // Exposes features of the Garbage Collector to managed code.
 //
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.CompilerServices;
@@ -593,6 +594,64 @@ namespace System
             }
         }
 
+        internal struct GCConfigurationContext
+        {
+            internal Dictionary<string, object> Configurations;
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void Callback(void* configurationContext, void* name, void* publicKey, RuntimeImports.GCConfigurationType type, long data)
+        {
+            // If the public key is null, it means that the corresponding configuration isn't publicly available
+            // and therefore, we shouldn't add it to the configuration dictionary to return to the user.
+            if (publicKey == null)
+            {
+                return;
+            }
+
+            Debug.Assert(name != null);
+            Debug.Assert(configurationContext != null);
+
+            ref GCConfigurationContext context = ref Unsafe.As<byte, GCConfigurationContext>(ref *(byte*)configurationContext);
+            Debug.Assert(context.Configurations != null);
+            Dictionary<string, object> configurationDictionary = context.Configurations!;
+
+            string nameAsString = Marshal.PtrToStringUTF8((IntPtr)name)!;
+            switch (type)
+            {
+                case RuntimeImports.GCConfigurationType.Int64:
+                    configurationDictionary[nameAsString] = data;
+                    break;
+
+                case RuntimeImports.GCConfigurationType.StringUtf8:
+                    {
+                        string? dataAsString = Marshal.PtrToStringUTF8((IntPtr)data);
+                        configurationDictionary[nameAsString] = dataAsString ?? string.Empty;
+                        break;
+                    }
+
+                case RuntimeImports.GCConfigurationType.Boolean:
+                    configurationDictionary![nameAsString] = data != 0;
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Gets the Configurations used by the Garbage Collector. The value of these configurations used don't neccessarily have to be the same as the ones that are passed by the user.
+        /// For example for the "GCHeapCount" configuration, if the user supplies a value higher than the number of CPUs, the configuration that will be used is that of the number of CPUs.
+        /// <returns> A Read Only Dictionary with configuration names and values of the configuration as the keys and values of the dictionary, respectively.</returns>
+        /// </summary>
+        public static unsafe IReadOnlyDictionary<string, object> GetConfigurationVariables()
+        {
+            GCConfigurationContext context = new GCConfigurationContext
+            {
+                Configurations = new Dictionary<string, object>()
+            };
+
+            RuntimeImports.RhEnumerateConfigurationValues(Unsafe.AsPointer(ref context), &Callback);
+            return context.Configurations!;
+        }
+
         public static void RemoveMemoryPressure(long bytesAllocated)
         {
             if (bytesAllocated <= 0)
@@ -781,11 +840,6 @@ namespace System
         public static TimeSpan GetTotalPauseDuration()
         {
             return new TimeSpan(RuntimeImports.RhGetTotalPauseDuration());
-        }
-
-        public static System.Collections.Generic.IReadOnlyDictionary<string, object> GetConfigurationVariables()
-        {
-            throw new NotImplementedException();
         }
     }
 }

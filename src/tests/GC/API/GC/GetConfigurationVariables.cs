@@ -6,10 +6,10 @@ using Xunit;
 
 namespace ConfigurationVariables
 {
-    public class Test_GetConfigurationVariables : IDisposable 
+    public static class Test_GetConfigurationVariables
     {
         [Fact]
-        public void CollectAllVariables()
+        public static void CollectAllVariables()
         {
             var configurations = GC.GetConfigurationVariables();
             Assert.True(configurations != null);
@@ -20,7 +20,5 @@ namespace ConfigurationVariables
                 Assert.True(kvp.Value != null, $"The value of configuration: {kvp.Key} is null.");
             }
         }
-
-        public void Dispose() {}
     }
 }
