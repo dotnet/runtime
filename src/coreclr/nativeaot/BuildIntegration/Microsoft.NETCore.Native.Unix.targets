@@ -21,8 +21,8 @@ The .NET Foundation licenses this file to you under the MIT license.
     <CppLinker>$(CppCompilerAndLinker)</CppLinker>
     <CppLibCreator>ar</CppLibCreator>
     <DsymUtilOptions Condition="'$(TargetOS)' == 'OSX'">--flat</DsymUtilOptions>
-    <ObjCopyName Condition="'$(TargetOS)' != 'OSX' and '$(CppCompilerAndLinker)' != 'clang'">objcopy</ObjCopyName>
-    <ObjCopyName Condition="'$(TargetOS)' != 'OSX' and '$(CppCompilerAndLinker)' == 'clang'">llvm-objcopy</ObjCopyName>
+    <ObjCopyName Condition="'$(ObjCopyName)' == '' and '$(TargetOS)' != 'OSX' and '$(CppCompilerAndLinker)' != 'clang'">objcopy</ObjCopyName>
+    <ObjCopyName Condition="'$(ObjCopyName)' == '' and '$(TargetOS)' != 'OSX' and '$(CppCompilerAndLinker)' == 'clang'">llvm-objcopy</ObjCopyName>
   </PropertyGroup>
 
   <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
