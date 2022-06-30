@@ -569,18 +569,26 @@ namespace System
 
             Debug.Assert(argSetupState.parameters != null);
             object? incomingParam = argSetupState.parameters[index];
+            bool nullable = type.ToEETypePtr().IsNullable;
 
             // Handle default parameters
             if ((incomingParam == System.Reflection.Missing.Value) && paramType == DynamicInvokeParamType.In)
             {
                 incomingParam = GetDefaultValue(argSetupState.targetMethodOrDelegate, type, index);
+                if (incomingParam != null && nullable)
+                {
+                    EETypePtr nullableType = type.ToEETypePtr().NullableType;
+                    if (nullableType.IsEnum)
+                    {
+                        incomingParam = Enum.ToObject(Type.GetTypeFromEETypePtr(nullableType), incomingParam);
+                    }
+                }
 
                 // The default value is captured into the parameters array
                 argSetupState.parameters[index] = incomingParam;
             }
 
             RuntimeTypeHandle widenAndCompareType = type;
-            bool nullable = type.ToEETypePtr().IsNullable;
             if (nullable)
             {
                 widenAndCompareType = new RuntimeTypeHandle(type.ToEETypePtr().NullableType);

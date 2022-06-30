@@ -742,7 +742,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public static void InvokeNullableEnumParameterDefualtNull()
+        public static void InvokeNullableEnumParameterDefaultNull()
         {
             MethodInfo method = typeof(EnumMethods).GetMethod("NullableEnumDefaultNull", BindingFlags.Static | BindingFlags.NonPublic);
 
@@ -753,7 +753,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public static void InvokeNullableEnumParameterNoDefual()
+        public static void InvokeNullableEnumParameterNoDefault()
         {
             MethodInfo method = typeof(EnumMethods).GetMethod("NullableEnumNoDefault", BindingFlags.Static | BindingFlags.NonPublic);
 
@@ -1229,10 +1229,12 @@ namespace System.Reflection.Tests
         {
             return yesNo;
         }
+
         static YesNo? NullableEnumDefaultNull(YesNo? yesNo = null)
         {
             return yesNo;
         }
+
         static YesNo? NullableEnumNoDefault(YesNo? yesNo)
         {
             return yesNo;
