@@ -33,6 +33,8 @@ namespace System.Net
         private byte[]? _negotiateMessage;
         private byte[]? _clientSigningKey;
         private byte[]? _serverSigningKey;
+        private byte[]? _clientSealingKey;
+        private byte[]? _serverSealingKey;
         private RC4? _clientSeal;
         private RC4? _serverSeal;
         private uint _clientSequenceNumber;
@@ -291,6 +293,8 @@ namespace System.Net
             _negotiateMessage = null;
             _clientSigningKey = null;
             _serverSigningKey = null;
+            _clientSealingKey = null;
+            _serverSealingKey = null;
             _clientSeal?.Dispose();
             _serverSeal?.Dispose();
             _clientSeal = null;
@@ -753,8 +757,9 @@ namespace System.Net
             // Derive signing keys
             _clientSigningKey = DeriveKey(exportedSessionKey, ClientSigningKeyMagic);
             _serverSigningKey = DeriveKey(exportedSessionKey, ServerSigningKeyMagic);
-            _clientSeal = new RC4(DeriveKey(exportedSessionKey, ClientSealingKeyMagic));
-            _serverSeal = new RC4(DeriveKey(exportedSessionKey, ServerSealingKeyMagic));
+            _clientSealingKey = DeriveKey(exportedSessionKey, ClientSealingKeyMagic);
+            _serverSealingKey = DeriveKey(exportedSessionKey, ServerSealingKeyMagic);
+            ResetKeys();
             _clientSequenceNumber = 0;
             _serverSequenceNumber = 0;
             CryptographicOperations.ZeroMemory(exportedSessionKey);
@@ -763,6 +768,12 @@ namespace System.Net
 
             statusCode = SecurityStatusPalOk;
             return responseBytes;
+        }
+
+        private void ResetKeys()
+        {
+            _clientSeal = new RC4(_clientSealingKey);
+            _serverSeal = new RC4(_serverSealingKey);
         }
 
         private void CalculateSignature(
@@ -986,6 +997,8 @@ namespace System.Net
                     statusCode = SecurityStatusPalMessageAltered;
                     return null;
                 }
+
+                ResetKeys();
             }
 
             IsCompleted = state == NegState.AcceptCompleted || state == NegState.Reject;
@@ -1000,12 +1013,12 @@ namespace System.Net
         }
 
 #pragma warning disable CA1822
-        internal int Encrypt(ReadOnlySpan<byte> buffer, [NotNull] ref byte[]? output, uint sequenceNumber)
+        internal int Encrypt(ReadOnlySpan<byte> buffer, [NotNull] ref byte[]? output)
         {
             throw new PlatformNotSupportedException();
         }
 
-        internal int Decrypt(Span<byte> payload, out int newOffset, uint expectedSeqNumber)
+        internal int Decrypt(Span<byte> payload, out int newOffset)
         {
             throw new PlatformNotSupportedException();
         }
