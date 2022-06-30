@@ -11,6 +11,7 @@ parameters:
   liveLibrariesBuildConfig: ''
   crossgen2: false
   compositeBuildMode: false
+  useCodeFlowEnforcement: ''
   helixQueues: ''
   condition: true
   stagedBuild: false
@@ -111,6 +112,13 @@ jobs:
     - ${{ if ne(parameters.runtimeVariant, '') }}:
       - name: runtimeVariantArg
         value: '/p:RuntimeVariant=${{ parameters.runtimeVariant }}'
+
+    - name: codeFlowEnforcementArg
+      value: ''
+
+    - ${{ if ne(parameters.useCodeFlowEnforcement, '') }}:
+      - name: codeFlowEnforcementArg
+        value: '/p:UseCodeFlowEnforcement=${{ parameters.useCodeFlowEnforcement }}'
 
     - name: crossgenArg
       value: ''
@@ -301,8 +309,8 @@ jobs:
     # during product build (so that we could zip up the files in their final test location
     # and directly unzip them there after download). Unfortunately the logic to copy
     # the native artifacts to the final test folders is dependent on availability of the
-    # managed test artifacts.
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(logRootNameArg)Native $(testTreeFilterArg) $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg)
+    # managed test artifacts. This step also generates the final test execution scripts.
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(logRootNameArg)Native $(testTreeFilterArg) $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg) $(codeFlowEnforcementArg)
       displayName: Copy native test components to test output folder
 
 
