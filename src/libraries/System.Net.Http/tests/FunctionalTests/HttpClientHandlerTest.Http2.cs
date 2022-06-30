@@ -28,25 +28,18 @@ namespace System.Net.Http.Functional.Tests
         {
         }
 
-        private async Task AssertProtocolErrorAsync<T>(Task task, ProtocolErrors errorCode)
-            where T : Exception
+        private async Task AssertProtocolErrorAsync(Task task, ProtocolErrors errorCode)
         {
-            Exception e = await Assert.ThrowsAsync<T>(() => task);
-            string text = e.ToString();
-            Assert.Contains(((int)errorCode).ToString("x"), text);
-            Assert.Contains(
-                Enum.IsDefined(typeof(ProtocolErrors), errorCode) ? errorCode.ToString() : "(unknown error)",
-                text);
+            HttpRequestException outerEx = await Assert.ThrowsAsync<HttpRequestException>(() => task);
+            _output.WriteLine(outerEx.InnerException.Message);
+            HttpProtocolException protocolEx = Assert.IsType<HttpProtocolException>(outerEx.InnerException);
+            Assert.Equal(errorCode, (ProtocolErrors)protocolEx.ErrorCode);
         }
 
-        private Task AssertProtocolErrorAsync(Task task, ProtocolErrors errorCode)
+        private async Task AssertProtocolErrorForIOExceptionAsync(Task task, ProtocolErrors errorCode)
         {
-            return AssertProtocolErrorAsync<HttpRequestException>(task, errorCode);
-        }
-
-        private Task AssertProtocolErrorForIOExceptionAsync(Task task, ProtocolErrors errorCode)
-        {
-            return AssertProtocolErrorAsync<IOException>(task, errorCode);
+            HttpProtocolException protocolEx = await Assert.ThrowsAsync<HttpProtocolException>(() => task);
+            Assert.Equal(errorCode, (ProtocolErrors)protocolEx.ErrorCode);
         }
 
         private async Task<(bool, T)> IgnoreSpecificException<ExpectedException, T>(Task<T> task, string expectedExceptionContent = null) where ExpectedException : Exception
@@ -959,9 +952,8 @@ namespace System.Net.Http.Functional.Tests
                         sendTask
                     }.WhenAllOrAnyFailed(TestHelper.PassingTestTimeoutMilliseconds));
 
-                Assert.IsType<IOException>(exception.InnerException);
-                Assert.NotNull(exception.InnerException.InnerException);
-                Assert.Contains("PROTOCOL_ERROR", exception.InnerException.InnerException.Message);
+                var protocolException = Assert.IsType<HttpProtocolException>(exception.InnerException);
+                Assert.Equal((long)ProtocolErrors.PROTOCOL_ERROR, protocolException.ErrorCode);
             }
         }
 
@@ -3441,7 +3433,7 @@ namespace System.Net.Http.Functional.Tests
                     // An exception will be thrown by either GetAsync or ReadAsStringAsync once
                     // the inbound window size has been exceeded. Which one depends on how quickly
                     // ProcessIncomingFramesAsync() can read data off the socket.
-                    Exception requestException = await Assert.ThrowsAsync<HttpRequestException>(async () =>
+                    HttpRequestException requestException = await Assert.ThrowsAsync<HttpRequestException>(async () =>
                     {
                         using HttpClient client = CreateHttpClient();
                         using HttpResponseMessage response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
@@ -3452,15 +3444,9 @@ namespace System.Net.Http.Functional.Tests
                         await response.Content.ReadAsStringAsync();
                     });
 
-                    // A Http2ConnectionException will be present somewhere in the inner exceptions.
-                    // Its location depends on which method threw the exception.
-                    while (requestException?.GetType().FullName.Equals("System.Net.Http.Http2ConnectionException") == false)
-                    {
-                        requestException = requestException.InnerException;
-                    }
-
-                    Assert.NotNull(requestException);
-                    Assert.Contains("FLOW_CONTROL_ERROR", requestException.Message);
+                    HttpProtocolException protocolException = Assert.IsType<HttpProtocolException>(requestException.InnerException);
+                    Assert.Equal((long)ProtocolErrors.FLOW_CONTROL_ERROR, protocolException.ErrorCode);
+                    Assert.Contains("FLOW_CONTROL_ERROR", protocolException.Message);
                 },
                 async server =>
                 {

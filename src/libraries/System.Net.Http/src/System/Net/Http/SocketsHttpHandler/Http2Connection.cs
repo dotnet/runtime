@@ -993,14 +993,8 @@ namespace System.Net.Http
 
             _incomingBuffer.Discard(frameHeader.PayloadLength);
 
-            if (protocolError == Http2ProtocolErrorCode.RefusedStream)
-            {
-                http2Stream.OnReset(new Http2StreamException(protocolError), resetStreamErrorCode: protocolError, canRetry: true);
-            }
-            else
-            {
-                http2Stream.OnReset(new Http2StreamException(protocolError), resetStreamErrorCode: protocolError);
-            }
+            bool canRetry = protocolError == Http2ProtocolErrorCode.RefusedStream;
+            http2Stream.OnReset(HttpProtocolException.CreateHttp2StreamException(protocolError), resetStreamErrorCode: protocolError, canRetry: canRetry);
         }
 
         private void ProcessGoAwayFrame(FrameHeader frameHeader)
@@ -1024,7 +1018,7 @@ namespace System.Net.Http
             _incomingBuffer.Discard(frameHeader.PayloadLength);
 
             Debug.Assert(lastStreamId >= 0);
-            Exception resetException = new Http2ConnectionException(errorCode);
+            Exception resetException = HttpProtocolException.CreateHttp2ConnectionException(errorCode);
 
             // There is no point sending more PING frames for RTT estimation:
             _rttEstimator.OnGoAwayReceived();
@@ -1964,7 +1958,7 @@ namespace System.Net.Http
             {
                 if (e is IOException ||
                     e is ObjectDisposedException ||
-                    e is Http2ProtocolException ||
+                    e is HttpProtocolException ||
                     e is InvalidOperationException)
                 {
                     throw new HttpRequestException(SR.net_http_client_execution_error, e);
@@ -2070,7 +2064,7 @@ namespace System.Net.Http
             throw new HttpRequestException(message, innerException, allowRetry: RequestRetryType.RetryOnConnectionFailure);
 
         private static Exception GetRequestAbortedException(Exception? innerException = null) =>
-            new IOException(SR.net_http_request_aborted, innerException);
+            innerException as HttpProtocolException ?? new IOException(SR.net_http_request_aborted, innerException);
 
         [DoesNotReturn]
         private static void ThrowRequestAborted(Exception? innerException = null) =>
@@ -2082,6 +2076,6 @@ namespace System.Net.Http
 
         [DoesNotReturn]
         private static void ThrowProtocolError(Http2ProtocolErrorCode errorCode) =>
-            throw new Http2ConnectionException(errorCode);
+            throw HttpProtocolException.CreateHttp2ConnectionException(errorCode);
     }
 }
