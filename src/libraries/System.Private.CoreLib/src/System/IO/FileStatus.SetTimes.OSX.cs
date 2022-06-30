@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.InteropServices;
+using System.Diagnostics;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
@@ -16,6 +17,9 @@ namespace System.IO
 
         private void SetCreationTime(SafeFileHandle? handle, string? path, DateTimeOffset time, bool asDirectory)
         {
+            // Either `handle` or `path` must not be null
+            Debug.Assert(handle is not null || path is not null);
+
             // Try to set the attribute on the file system entry using setattrlist,
             // if we get ENOTSUP then it means that "The volume does not support
             // setattrlist()", so we fall back to the method used on other unix
