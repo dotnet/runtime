@@ -28,8 +28,6 @@ const originalConsole = {
 
 let runArgs = {};
 let consoleWebSocket;
-let is_debugging = false;
-let forward_console = true;
 
 function proxyConsoleMethod(prefix, func, asJson) {
     return function () {
@@ -85,10 +83,11 @@ function set_exit_code(exit_code, reason) {
         //Tell xharness WasmBrowserTestRunner what was the exit code
         const tests_done_elem = document.createElement("label");
         tests_done_elem.id = "tests_done";
+        if (exit_code) tests_done_elem.style.background = "red";
         tests_done_elem.innerHTML = exit_code.toString();
         document.body.appendChild(tests_done_elem);
 
-        if (forward_console) {
+        if (runArgs && runArgs.forwardConsole) {
             const stop_when_ws_buffer_empty = () => {
                 if (consoleWebSocket.bufferedAmount == 0) {
                     // tell xharness WasmTestMessagesProcessor we are done.
@@ -107,14 +106,11 @@ function set_exit_code(exit_code, reason) {
     } else if (App && App.INTERNAL) {
         if (is_node) {
             let _flush = function(_stream) {
-                return new Promise((resolve, reject) => {
-                    if (!_stream.write('')) {
-                        _stream.on('drain', () => resolve());
-                        setTimeout(reject, 3000);
-                    } else {
-                        resolve();
-                    }
-                });
+                 return new Promise((resolve, reject) => {
+                     setTimeout(() => { reject(new Error("timed out waiting for stdout/stderr streams to flush")) }, 30000);
+                     _stream.on('error', (error) => reject(error));
+                     _stream.write('', function() { resolve () });
+                 });
             };
             let stderrFlushed = _flush(process.stderr);
             let stdoutFlushed = _flush(process.stdout);
@@ -124,7 +120,7 @@ function set_exit_code(exit_code, reason) {
                         () => App.INTERNAL.mono_wasm_exit(exit_code),
                         reason => {
                             console.error(`flushing std* streams failed: ${reason}`);
-                            App.INTERNAL.mono_wasm_exit(123);
+                            App.INTERNAL.mono_wasm_exit(123456);
                         });
         } else {
             App.INTERNAL.mono_wasm_exit(exit_code);
@@ -154,7 +150,7 @@ function initRunArgs() {
     runArgs.applicationArguments = runArgs.applicationArguments === undefined ? [] : runArgs.applicationArguments;
     runArgs.profilers = runArgs.profilers === undefined ? [] : runArgs.profilers;
     runArgs.workingDirectory = runArgs.workingDirectory === undefined ? '/' : runArgs.workingDirectory;
-    runArgs.environment_variables = runArgs.environment_variables === undefined ? {} : runArgs.environment_variables;
+    runArgs.environmentVariables = runArgs.environmentVariables === undefined ? {} : runArgs.environmentVariables;
     runArgs.runtimeArgs = runArgs.runtimeArgs === undefined ? [] : runArgs.runtimeArgs;
     runArgs.enableGC = runArgs.enableGC === undefined ? true : runArgs.enableGC;
     runArgs.diagnosticTracing = runArgs.diagnosticTracing === undefined ? false : runArgs.diagnosticTracing;
@@ -177,7 +173,7 @@ function processQueryArguments(incomingArguments) {
             const parts = arg.split('=');
             if (parts.length != 2)
                 set_exit_code(1, "Error: malformed argument: '" + currentArg);
-            runArgs.environment_variables[parts[0]] = parts[1];
+            runArgs.environmentVariables[parts[0]] = parts[1];
         } else if (currentArg.startsWith("--runtime-arg=")) {
             const arg = currentArg.substring("--runtime-arg=".length);
             runArgs.runtimeArgs.push(arg);
@@ -218,8 +214,8 @@ function processQueryArguments(incomingArguments) {
 
     runArgs.applicationArguments = incomingArguments;
     // cheap way to let the testing infrastructure know we're running in a browser context (or not)
-    runArgs.environment_variables["IsBrowserDomSupported"] = is_browser.toString().toLowerCase();
-    runArgs.environment_variables["IsNodeJS"] = is_node.toString().toLowerCase();
+    runArgs.environmentVariables["IsBrowserDomSupported"] = is_browser.toString().toLowerCase();
+    runArgs.environmentVariables["IsNodeJS"] = is_node.toString().toLowerCase();
 
     return runArgs;
 }
@@ -227,13 +223,10 @@ function processQueryArguments(incomingArguments) {
 function applyArguments() {
     initRunArgs();
 
-    // set defaults
-    is_debugging = runArgs.debugging === true;
-    forward_console = runArgs.forwardConsole === true;
 
     console.log("Application arguments: " + runArgs.applicationArguments.join(' '));
 
-    if (forward_console) {
+    if (!!runArgs.forwardConsole) {
         const methods = ["debug", "trace", "warn", "info", "error"];
         for (let m of methods) {
             if (typeof (console[m]) !== "function") {
@@ -272,44 +265,21 @@ function applyArguments() {
 }
 
 async function loadDotnet(file) {
-    let loadScript = undefined;
-    if (typeof WScript !== "undefined") { // Chakra
-        loadScript = function (file) {
-            WScript.LoadScriptFile(file);
-            return globalThis.createDotnetRuntime;
+    const cjsExport = new Promise((resolve) => {
+        globalThis.__onDotnetRuntimeLoaded = (createDotnetRuntime) => {
+            delete globalThis.__onDotnetRuntimeLoaded;
+            resolve(createDotnetRuntime);
         };
-    } else if (is_node) { // NodeJS
-        loadScript = async function (file) {
-            return require(file);
-        };
-    } else if (is_browser) { // vanila JS in browser
-        loadScript = function (file) {
-            var loaded = new Promise((resolve, reject) => {
-                globalThis.__onDotnetRuntimeLoaded = (createDotnetRuntime) => {
-                    // this is callback we have in CJS version of the runtime
-                    resolve(createDotnetRuntime);
-                };
-                import(file).then(({ default: createDotnetRuntime }) => {
-                    // this would work with ES6 default export
-                    if (createDotnetRuntime) {
-                        resolve(createDotnetRuntime);
-                    }
-                }, reject);
-            });
-            return loaded;
-        }
-    }
-    else if (typeof globalThis.load !== 'undefined') {
-        loadScript = async function (file) {
-            globalThis.load(file)
-            return globalThis.createDotnetRuntime;
-        }
-    }
-    else {
-        throw new Error("Unknown environment, can't load config");
+    });
+
+    const { default: createDotnetRuntime } = await import(file);
+    if (createDotnetRuntime) {
+        // this runs when loaded module was ES6
+        delete globalThis.__onDotnetRuntimeLoaded;
+        return createDotnetRuntime;
     }
 
-    return loadScript(file);
+    return await cjsExport;
 }
 
 // this can't be function because of `arguments` scope
@@ -345,15 +315,15 @@ if (queryArguments.length > 0) {
     argsPromise = Promise.resolve(processQueryArguments(queryArguments));
 } else {
     argsPromise = fetch('/runArgs.json')
-                        .then(async (response) => {
-                            if (!response.ok) {
-                                console.debug(`could not load /args.json: ${response.status}. Ignoring`);
-                            } else {
-                                runArgs = await response.json();
-                                console.debug(`runArgs: ${JSON.stringify(runArgs)}`);
-                            }
-                        })
-                        .catch(error => console.error(`Failed to load args: ${stringify_as_error_with_stack(error)}`));
+        .then(async (response) => {
+            if (!response.ok) {
+                console.debug(`could not load /args.json: ${response.status}. Ignoring`);
+            } else {
+                runArgs = await response.json();
+                console.debug(`runArgs: ${JSON.stringify(runArgs)}`);
+            }
+        })
+        .catch(error => console.error(`Failed to load args: ${stringify_as_error_with_stack(error)}`));
 }
 
 if (typeof globalThis.crypto === 'undefined') {
@@ -368,70 +338,28 @@ if (typeof globalThis.crypto === 'undefined') {
     }
 }
 
-if (typeof globalThis.performance === 'undefined') {
-    if (is_node) {
-        const { performance } = require("perf_hooks");
-        globalThis.performance = performance;
-    } else {
-        // performance.now() is used by emscripten and doesn't work in JSC
-        globalThis.performance = {
-            now: function () {
-                return Date.now();
-            }
-        }
+let toAbsoluteUrl = function (path, prefix) {
+    if (prefix.startsWith("/")) {
+        return path;
     }
+    return prefix + path;
 }
-
-let toAbsoluteUrl = function(possiblyRelativeUrl) { return possiblyRelativeUrl; }
 if (is_browser) {
     const anchorTagForAbsoluteUrlConversions = document.createElement('a');
-    toAbsoluteUrl = function toAbsoluteUrl(possiblyRelativeUrl) {
-       anchorTagForAbsoluteUrlConversions.href = possiblyRelativeUrl;
-       return anchorTagForAbsoluteUrlConversions.href;
+    toAbsoluteUrl = function toAbsoluteUrl(path, prefix) {
+        anchorTagForAbsoluteUrlConversions.href = prefix + path;
+        return anchorTagForAbsoluteUrlConversions.href;
     }
 }
 
-Promise.all([ argsPromise, loadDotnetPromise ]).then(async ([ _, createDotnetRuntime ]) => {
+Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntime]) => {
     applyArguments();
-
-    if (is_node) {
-        const modulesToLoad = runArgs.environment_variables["NPM_MODULES"];
-        if (modulesToLoad) {
-            modulesToLoad.split(',').forEach(module => {
-                const { 0:moduleName, 1:globalAlias } = module.split(':');
-
-                let message = `Loading npm '${moduleName}'`;
-                let moduleExport = require(moduleName);
-
-                if (globalAlias) {
-                    message += ` and attaching to global as '${globalAlias}'`;
-                    globalThis[globalAlias] = moduleExport;
-                } else if(moduleName == "node-fetch") {
-                    message += ' and attaching to global';
-                    globalThis.fetch = moduleExport.default;
-                    globalThis.Headers = moduleExport.Headers;
-                    globalThis.Request = moduleExport.Request;
-                    globalThis.Response = moduleExport.Response;
-                } else if(moduleName == "node-abort-controller") {
-                    message += ' and attaching to global';
-                    globalThis.AbortController = moduleExport.AbortController;
-                }
-
-                console.log(message);
-            });
-        }
-    }
-
-    // Must be after loading npm modules.
-    runArgs.environment_variables["IsWebSocketSupported"] = ("WebSocket" in globalThis).toString().toLowerCase();
 
     return createDotnetRuntime(({ MONO, INTERNAL, BINDING, Module }) => ({
         disableDotnet6Compatibility: true,
         config: null,
         configSrc: "./mono-config.json",
-        locateFile: (path, prefix) => {
-            return toAbsoluteUrl(prefix + path);
-        },
+        locateFile: toAbsoluteUrl,
         onConfigLoaded: (config) => {
             if (!Module.config) {
                 const err = new Error("Could not find ./mono-config.json. Cancelling run");
@@ -439,16 +367,47 @@ Promise.all([ argsPromise, loadDotnetPromise ]).then(async ([ _, createDotnetRun
                 throw err;
             }
             // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
-            for (let variable in runArgs.environment_variables) {
-                config.environment_variables[variable] = runArgs.environment_variables[variable];
+            for (let variable in runArgs.environmentVariables) {
+                config.environment_variables[variable] = runArgs.environmentVariables[variable];
             }
             config.diagnostic_tracing = !!runArgs.diagnosticTracing;
-            if (is_debugging) {
+            if (!!runArgs.debugging) {
                 if (config.debug_level == 0)
                     config.debug_level = -1;
 
                 config.wait_for_debugger = -1;
             }
+    
+            if (is_node) {
+                const modulesToLoad = runArgs.environmentVariables["NPM_MODULES"];
+                if (modulesToLoad) {
+                    modulesToLoad.split(',').forEach(module => {
+                        const { 0: moduleName, 1: globalAlias } = module.split(':');
+        
+                        let message = `Loading npm '${moduleName}'`;
+                        let moduleExport = INTERNAL.require(moduleName);
+        
+                        if (globalAlias) {
+                            message += ` and attaching to global as '${globalAlias}'`;
+                            globalThis[globalAlias] = moduleExport;
+                        } else if (moduleName == "node-fetch") {
+                            message += ' and attaching to global';
+                            globalThis.fetch = moduleExport.default;
+                            globalThis.Headers = moduleExport.Headers;
+                            globalThis.Request = moduleExport.Request;
+                            globalThis.Response = moduleExport.Response;
+                        } else if (moduleName == "node-abort-controller") {
+                            message += ' and attaching to global';
+                            globalThis.AbortController = moduleExport.AbortController;
+                        }
+        
+                        console.log(message);
+                    });
+                }
+            }
+
+            // Must be after loading npm modules.
+            config.environment_variables["IsWebSocketSupported"] = ("WebSocket" in globalThis).toString().toLowerCase();
         },
         preRun: () => {
             if (!runArgs.enableGC) {
@@ -469,7 +428,7 @@ Promise.all([ argsPromise, loadDotnetPromise ]).then(async ([ _, createDotnetRun
         onAbort: (error) => {
             set_exit_code(1, stringify_as_error_with_stack(new Error()));
         },
-    }))
+    }));
 }).catch(function (err) {
     set_exit_code(1, "failed to load the dotnet.js file.\n" + stringify_as_error_with_stack(err));
 });

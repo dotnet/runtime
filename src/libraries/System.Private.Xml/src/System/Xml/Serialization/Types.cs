@@ -1,18 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Text;
+using System.Xml;
+using System.Xml.Schema;
+
 namespace System.Xml.Serialization
 {
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Reflection;
-    using System.Text;
-    using System.Xml;
-    using System.Xml.Schema;
-
     // These classes provide a higher level view on reflection specific to
     // Xml serialization, for example:
     // - allowing one to talk about types w/o having them compiled yet
@@ -166,17 +166,8 @@ namespace System.Xml.Serialization
             get { return _fullName; }
         }
 
-        internal string CSharpName
-        {
-            get
-            {
-                if (_cSharpName == null)
-                {
-                    _cSharpName = _type == null ? CodeIdentifier.GetCSharpName(_fullName) : CodeIdentifier.GetCSharpName(_type);
-                }
-                return _cSharpName;
-            }
-        }
+        internal string CSharpName =>
+            _cSharpName ??= _type == null ? CodeIdentifier.GetCSharpName(_fullName) : CodeIdentifier.GetCSharpName(_type);
 
         internal XmlSchemaType? DataType
         {
@@ -419,12 +410,7 @@ namespace System.Xml.Serialization
             get { return _weight; }
         }
 
-        internal TypeDesc CreateArrayTypeDesc()
-        {
-            if (_arrayTypeDesc == null)
-                _arrayTypeDesc = new TypeDesc(null, $"{_name}[]", $"{_fullName}[]", TypeKind.Array, null, TypeFlags.Reference | (_flags & TypeFlags.UseReflection), this);
-            return _arrayTypeDesc;
-        }
+        internal TypeDesc CreateArrayTypeDesc() => _arrayTypeDesc ??= new TypeDesc(null, $"{_name}[]", $"{_fullName}[]", TypeKind.Array, null, TypeFlags.Reference | (_flags & TypeFlags.UseReflection), this);
 
         internal TypeDesc? BaseTypeDesc
         {
@@ -735,18 +721,14 @@ namespace System.Xml.Serialization
             {
                 throw new InvalidOperationException(SR.Format(SR.XmlUnsupportedOpenGenericType, type));
             }
-            TypeDesc? typeDesc = (TypeDesc?)s_primitiveTypes[type];
-            if (typeDesc == null)
-            {
-                typeDesc = (TypeDesc?)_typeDescs[type];
-                if (typeDesc == null)
-                {
-                    typeDesc = ImportTypeDesc(type, source, directReference);
-                }
-            }
+
+            TypeDesc typeDesc =
+                (TypeDesc?)s_primitiveTypes[type] ??
+                (TypeDesc?)_typeDescs[type] ??
+                ImportTypeDesc(type, source, directReference);
+
             if (throwOnError)
                 typeDesc.CheckSupported();
-
 
             return typeDesc;
         }
@@ -824,10 +806,7 @@ namespace System.Xml.Serialization
             {
                 kind = TypeKind.Enum;
                 flags |= TypeFlags.Unsupported;
-                if (exception == null)
-                {
-                    exception = new NotSupportedException(SR.Format(SR.XmlSerializerUnsupportedType, type.FullName));
-                }
+                exception ??= new NotSupportedException(SR.Format(SR.XmlSerializerUnsupportedType, type.FullName));
             }
             else if (type == typeof(void))
             {
@@ -845,10 +824,7 @@ namespace System.Xml.Serialization
                 if (type.GetArrayRank() > 1)
                 {
                     flags |= TypeFlags.Unsupported;
-                    if (exception == null)
-                    {
-                        exception = new NotSupportedException(SR.Format(SR.XmlUnsupportedRank, type.FullName));
-                    }
+                    exception ??= new NotSupportedException(SR.Format(SR.XmlUnsupportedRank, type.FullName));
                 }
                 arrayElementType = type.GetElementType();
                 flags |= TypeFlags.HasDefaultConstructor;
@@ -867,10 +843,7 @@ namespace System.Xml.Serialization
             {
                 kind = TypeKind.Primitive;
                 flags |= TypeFlags.Unsupported;
-                if (exception == null)
-                {
-                    exception = new NotSupportedException(SR.Format(SR.XmlSerializerUnsupportedType, type.FullName));
-                }
+                exception ??= new NotSupportedException(SR.Format(SR.XmlSerializerUnsupportedType, type.FullName));
             }
             else if (type.IsEnum)
             {
@@ -1176,10 +1149,7 @@ namespace System.Xml.Serialization
             {
                 if (ShouldBeReplaced(pair.Value, structMapping.TypeDesc!.Type!, out replacedInfo))
                 {
-                    if (replaceList == null)
-                    {
-                        replaceList = new Dictionary<string, MemberInfo>();
-                    }
+                    replaceList ??= new Dictionary<string, MemberInfo>();
 
                     replaceList.Add(pair.Key, replacedInfo);
                 }
@@ -1379,9 +1349,8 @@ namespace System.Xml.Serialization
                 {
                     for (int i = 0; i < defaultMembers.Length; i++)
                     {
-                        if (defaultMembers[i] is PropertyInfo)
+                        if (defaultMembers[i] is PropertyInfo defaultProp)
                         {
-                            PropertyInfo defaultProp = (PropertyInfo)defaultMembers[i];
                             if (defaultProp.DeclaringType != t) continue;
                             if (!defaultProp.CanRead) continue;
                             MethodInfo getMethod = defaultProp.GetMethod!;

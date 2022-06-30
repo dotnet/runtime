@@ -157,10 +157,8 @@ namespace System.Xml
             CreateValidator(partialValidationType, validationFlags);
             if (_psviAugmentation)
             {
-                if (_schemaInfo == null)
-                { //Might have created it during FindSchemaInfo
-                    _schemaInfo = new XmlSchemaInfo();
-                }
+                //Might have created it during FindSchemaInfo
+                _schemaInfo ??= new XmlSchemaInfo();
                 _attributeSchemaInfo = new XmlSchemaInfo();
             }
             ValidateNode(nodeToValidate);
@@ -221,27 +219,13 @@ namespace System.Xml
             return dictionary;
         }
 
-        public string? LookupNamespace(string prefix)
-        {
-            string? namespaceName = _nsManager.LookupNamespace(prefix);
-            if (namespaceName == null)
-            {
-                namespaceName = _startNode!.GetNamespaceOfPrefixStrict(prefix);
-            }
+        public string? LookupNamespace(string prefix) =>
+            _nsManager.LookupNamespace(prefix) ??
+            _startNode!.GetNamespaceOfPrefixStrict(prefix);
 
-            return namespaceName;
-        }
-
-        public string? LookupPrefix(string namespaceName)
-        {
-            string? prefix = _nsManager.LookupPrefix(namespaceName);
-            if (prefix == null)
-            {
-                prefix = _startNode!.GetPrefixOfNamespaceStrict(namespaceName);
-            }
-
-            return prefix;
-        }
+        public string? LookupPrefix(string namespaceName) =>
+            _nsManager.LookupPrefix(namespaceName) ??
+            _startNode!.GetPrefixOfNamespaceStrict(namespaceName);
 
         private IXmlNamespaceResolver NamespaceResolver
         {
@@ -525,7 +509,7 @@ namespace System.Xml
 
             if (parentNode == null)
             { //Did not find any type info all the way to the root, currentNode is Document || DocumentFragment
-                nodeIndex = nodeIndex - 1; //Subtract the one for document and set the node to null
+                nodeIndex--; //Subtract the one for document and set the node to null
                 _nodeSequenceToValidate![nodeIndex] = null;
                 return GetTypeFromAncestors(elementToValidate, null, nodeIndex);
             }

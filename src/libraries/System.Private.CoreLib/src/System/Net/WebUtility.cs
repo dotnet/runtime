@@ -722,8 +722,7 @@ namespace System.Net
             private void FlushBytes()
             {
                 Debug.Assert(_numBytes > 0);
-                if (_charBuffer == null)
-                    _charBuffer = new char[_bufferSize];
+                _charBuffer ??= new char[_bufferSize];
 
                 _numChars += _encoding.GetChars(_byteBuffer!, 0, _numBytes, _charBuffer, _numChars);
                 _numBytes = 0;
@@ -746,16 +745,14 @@ namespace System.Net
                 if (_numBytes > 0)
                     FlushBytes();
 
-                if (_charBuffer == null)
-                    _charBuffer = new char[_bufferSize];
+                _charBuffer ??= new char[_bufferSize];
 
                 _charBuffer[_numChars++] = ch;
             }
 
             internal void AddByte(byte b)
             {
-                if (_byteBuffer == null)
-                    _byteBuffer = new byte[_bufferSize];
+                _byteBuffer ??= new byte[_bufferSize];
 
                 _byteBuffer[_numBytes++] = b;
             }

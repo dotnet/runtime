@@ -20,7 +20,7 @@ namespace System.Text.RegularExpressions
 
             int count = 0;
 
-            RunAllMatchesWithCallback(input, 0, ref count, static (ref int count, Match match) =>
+            RunAllMatchesWithCallback(input, RightToLeft ? input.Length : 0, ref count, static (ref int count, Match match) =>
             {
                 count++;
                 return true;
@@ -34,11 +34,20 @@ namespace System.Text.RegularExpressions
         /// </summary>
         /// <param name="input">The span to search for a match.</param>
         /// <returns>The number of matches.</returns>
-        public int Count(ReadOnlySpan<char> input)
+        public int Count(ReadOnlySpan<char> input) =>
+            Count(input, RightToLeft ? input.Length : 0);
+
+        /// <summary>
+        /// Searches an input span for all occurrences of a regular expression and returns the number of matches.
+        /// </summary>
+        /// <param name="input">The span to search for a match.</param>
+        /// <param name="startat">The zero-based character position at which to start the search.</param>
+        /// <returns>The number of matches.</returns>
+        public int Count(ReadOnlySpan<char> input, int startat)
         {
             int count = 0;
 
-            RunAllMatchesWithCallback(input, 0, ref count, static (ref int count, Match match) =>
+            RunAllMatchesWithCallback(input, startat, ref count, static (ref int count, Match match) =>
             {
                 count++;
                 return true;

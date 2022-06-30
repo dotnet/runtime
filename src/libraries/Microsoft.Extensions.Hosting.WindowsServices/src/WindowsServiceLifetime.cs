@@ -54,10 +54,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
             {
                 Logger.LogInformation("Application is shutting down...");
             });
-            ApplicationLifetime.ApplicationStopped.Register(() =>
-            {
-                _delayStop.Set();
-            });
+            ApplicationLifetime.ApplicationStopped.Register(_delayStop.Set);
 
             Thread thread = new Thread(Run);
             thread.IsBackground = true;

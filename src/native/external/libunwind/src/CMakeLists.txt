@@ -351,7 +351,7 @@ endif()
 
 add_library(libunwind
   OBJECT
-  win/pal-single-threaded.c
+  remote/win/missing-functions.c
   # ${libunwind_la_SOURCES}  Local...
   ${libunwind_remote_la_SOURCES}
     # Commented out above for LOCAL + REMOTE runtime build

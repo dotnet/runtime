@@ -1277,11 +1277,16 @@ bool Compiler::fgCastNeeded(GenTree* tree, var_types toType)
         return false;
     }
     //
-    // If the sign-ness of the two types are different then a cast is necessary
+    // If the sign-ness of the two types are different then a cast is necessary, except for
+    // an unsigned -> signed cast where we already know the sign bit is zero.
     //
     if (varTypeIsUnsigned(toType) != varTypeIsUnsigned(fromType))
     {
-        return true;
+        bool isZeroExtension = varTypeIsUnsigned(fromType) && (genTypeSize(fromType) < genTypeSize(toType));
+        if (!isZeroExtension)
+        {
+            return true;
+        }
     }
     //
     // If the from type is the same size or smaller then an additional cast is not necessary
@@ -2885,7 +2890,7 @@ void Compiler::fgAddInternal()
 /*****************************************************************************/
 /*****************************************************************************/
 
-void Compiler::fgFindOperOrder()
+PhaseStatus Compiler::fgFindOperOrder()
 {
 #ifdef DEBUG
     if (verbose)
@@ -2908,6 +2913,8 @@ void Compiler::fgFindOperOrder()
             gtSetStmtInfo(stmt);
         }
     }
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 //------------------------------------------------------------------------
@@ -3354,6 +3361,28 @@ void Compiler::fgCreateFunclets()
 #endif // DEBUG
 }
 
+//------------------------------------------------------------------------
+// fgFuncletsAreCold: Determine if EH funclets can be moved to cold section.
+//
+// Notes:
+//   Walk the EH funclet blocks of a function to determine if the funclet
+//   section is cold. If any of the funclets are hot, then it may not be
+//   beneficial to split at fgFirstFuncletBB and move all funclets to
+//   the cold section.
+//
+bool Compiler::fgFuncletsAreCold()
+{
+    for (BasicBlock* block = fgFirstFuncletBB; block != nullptr; block = block->bbNext)
+    {
+        if (!block->isRunRarely())
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 #endif // defined(FEATURE_EH_FUNCLETS)
 
 /*-------------------------------------------------------------------------
@@ -3394,17 +3423,6 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
     }
 #endif // DEBUG
 
-#if defined(FEATURE_EH_FUNCLETS)
-    // TODO-CQ: handle hot/cold splitting in functions with EH (including synchronized methods
-    // that create EH in methods without explicit EH clauses).
-
-    if (compHndBBtabCount > 0)
-    {
-        JITDUMP("No procedure splitting will be done for this method with EH (implementation limitation)\n");
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-#endif // FEATURE_EH_FUNCLETS
-
     BasicBlock* firstColdBlock       = nullptr;
     BasicBlock* prevToFirstColdBlock = nullptr;
     BasicBlock* block;
@@ -3413,14 +3431,15 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
     bool forceSplit = false;
 
 #ifdef DEBUG
-    // If stress-splitting, split right after the first block; don't handle functions with EH
-    forceSplit = JitConfig.JitStressProcedureSplitting() && (compHndBBtabCount == 0);
+    // If stress-splitting, split right after the first block
+    forceSplit = JitConfig.JitStressProcedureSplitting();
 #endif
 
     if (forceSplit)
     {
         firstColdBlock       = fgFirstBB->bbNext;
         prevToFirstColdBlock = fgFirstBB;
+        JITDUMP("JitStressProcedureSplitting is enabled: Splitting after the first basic block\n");
     }
     else
     {
@@ -3448,12 +3467,29 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                     prevToFirstColdBlock = nullptr;
                 }
             }
-            else // (firstColdBlock == NULL)
+            else // (firstColdBlock == NULL) -- we don't have a candidate for first cold block
             {
-                // We don't have a candidate for first cold block
+
+#ifdef FEATURE_EH_FUNCLETS
+                //
+                // If a function has exception handling and we haven't found the first cold block yet,
+                // consider splitting at the first funclet; do not consider splitting between funclets,
+                // as this may break unwind info.
+                //
+                if (block == fgFirstFuncletBB)
+                {
+                    if (fgFuncletsAreCold())
+                    {
+                        firstColdBlock       = block;
+                        prevToFirstColdBlock = lblk;
+                    }
+
+                    break;
+                }
+#endif // FEATURE_EH_FUNCLETS
 
                 // Is this a cold block?
-                if (!blockMustBeInHotSection && (block->isRunRarely() == true))
+                if (!blockMustBeInHotSection && block->isRunRarely())
                 {
                     //
                     // If the last block that was hot was a BBJ_COND
@@ -3943,7 +3979,7 @@ GenTree* Compiler::fgSetTreeSeq(GenTree* tree, bool isLIR)
  *  Also finds blocks that need GC polls and inserts them as needed.
  */
 
-void Compiler::fgSetBlockOrder()
+PhaseStatus Compiler::fgSetBlockOrder()
 {
 #ifdef DEBUG
     if (verbose)
@@ -4046,8 +4082,11 @@ void Compiler::fgSetBlockOrder()
     {
         printf("The biggest BB has %4u tree nodes\n", BasicBlock::s_nMaxTrees);
     }
-    fgDebugCheckLinks();
 #endif // DEBUG
+
+    // Return "everything" to enable consistency checking of the statement links during post phase.
+    //
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 /*****************************************************************************/
@@ -4127,47 +4166,6 @@ void Compiler::fgSetBlockOrder(BasicBlock* block)
     }
 
     return firstNode;
-}
-
-/*static*/ Compiler::fgWalkResult Compiler::fgChkThrowCB(GenTree** pTree, fgWalkData* data)
-{
-    GenTree* tree = *pTree;
-
-    // If this tree doesn't have the EXCEPT flag set, then there is no
-    // way any of the child nodes could throw, so we can stop recursing.
-    if (!(tree->gtFlags & GTF_EXCEPT))
-    {
-        return Compiler::WALK_SKIP_SUBTREES;
-    }
-
-    switch (tree->gtOper)
-    {
-        case GT_MUL:
-        case GT_ADD:
-        case GT_SUB:
-        case GT_CAST:
-            if (tree->gtOverflow())
-            {
-                return Compiler::WALK_ABORT;
-            }
-            break;
-
-        case GT_INDEX_ADDR:
-            // This calls CORINFO_HELP_RNGCHKFAIL for Debug code.
-            if (tree->AsIndexAddr()->IsBoundsChecked())
-            {
-                return Compiler::WALK_ABORT;
-            }
-            break;
-
-        case GT_BOUNDS_CHECK:
-            return Compiler::WALK_ABORT;
-
-        default:
-            break;
-    }
-
-    return Compiler::WALK_CONTINUE;
 }
 
 /*static*/ Compiler::fgWalkResult Compiler::fgChkLocAllocCB(GenTree** pTree, fgWalkData* data)

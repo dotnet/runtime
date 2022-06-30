@@ -342,10 +342,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 if (parts.Remove(part))
                 {
-                    if (partsToRemove == null)
-                    {
-                        partsToRemove = new List<ComposablePart>();
-                    }
+                    partsToRemove ??= new List<ComposablePart>();
                     partsToRemove.Add(part);
                 }
             }

@@ -552,7 +552,7 @@ namespace System.Text.Json.SourceGeneration
                 return typeGenerationSpec;
             }
 
-            internal static bool IsSyntaxTargetForGeneration(SyntaxNode node) => node is ClassDeclarationSyntax { AttributeLists: { Count: > 0 }, BaseList: { Types : {Count : > 0 } } };
+            internal static bool IsSyntaxTargetForGeneration(SyntaxNode node) => node is ClassDeclarationSyntax { AttributeLists.Count: > 0, BaseList.Types.Count: > 0 };
 
             internal static ClassDeclarationSyntax? GetSemanticTargetForGeneration(GeneratorSyntaxContext context, CancellationToken cancellationToken)
             {
@@ -1212,13 +1212,21 @@ namespace System.Text.Json.SourceGeneration
                     out bool setterIsVirtual,
                     out bool setterIsInitOnly);
 
+                bool needsAtSign = memberInfo switch
+                {
+                    PropertyInfoWrapper prop => prop.NeedsAtSign,
+                    FieldInfoWrapper field => field.NeedsAtSign,
+                    _ => false
+                };
+
                 string clrName = memberInfo.Name;
                 string runtimePropertyName = DetermineRuntimePropName(clrName, jsonPropertyName, _currentContextNamingPolicy);
                 string propertyNameVarName = DeterminePropNameIdentifier(runtimePropertyName);
 
                 return new PropertyGenerationSpec
                 {
-                    ClrName = clrName,
+                    NameSpecifiedInSourceCode = needsAtSign ? "@" + memberInfo.Name : memberInfo.Name,
+                    ClrName = memberInfo.Name,
                     IsProperty = memberInfo.MemberType == MemberTypes.Property,
                     IsPublic = isPublic,
                     IsVirtual = isVirtual,
@@ -1465,11 +1473,11 @@ namespace System.Text.Json.SourceGeneration
 
                     if (forType)
                     {
-                        return $"{Emitter.GetConverterFromFactoryMethodName}(typeof({type.GetCompilableName()}), new {converterType.GetCompilableName()}())";
+                        return $"{Emitter.GetConverterFromFactoryMethodName}({OptionsLocalVariableName}, typeof({type.GetCompilableName()}), new {converterType.GetCompilableName()}())";
                     }
                     else
                     {
-                        return $"{Emitter.JsonContextVarName}.{Emitter.GetConverterFromFactoryMethodName}<{type.GetCompilableName()}>(new {converterType.GetCompilableName()}())";
+                        return $"{Emitter.GetConverterFromFactoryMethodName}<{type.GetCompilableName()}>({OptionsLocalVariableName}, new {converterType.GetCompilableName()}())";
                     }
                 }
 

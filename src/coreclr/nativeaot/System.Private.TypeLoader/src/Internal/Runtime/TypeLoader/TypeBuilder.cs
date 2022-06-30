@@ -266,10 +266,8 @@ namespace Internal.Runtime.TypeLoader
 
             bool noExtraPreparation = false; // Set this to true for types which don't need other types to be prepared. I.e GenericTypeDefinitions
 
-            if (type is DefType)
+            if (type is DefType typeAsDefType)
             {
-                DefType typeAsDefType = (DefType)type;
-
                 if (typeAsDefType.HasInstantiation)
                 {
                     if (typeAsDefType.IsTypeDefinition)
@@ -305,10 +303,8 @@ namespace Internal.Runtime.TypeLoader
             {
                 PrepareType(((ParameterizedType)type).ParameterType);
 
-                if (type is ArrayType)
+                if (type is ArrayType typeAsArrayType)
                 {
-                    ArrayType typeAsArrayType = (ArrayType)type;
-
                     if (typeAsArrayType.IsSzArray && !typeAsArrayType.ElementType.IsPointer)
                     {
                         TypeDesc.ComputeTemplate(state);
@@ -1156,8 +1152,10 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private unsafe void FinishTypeDictionary(TypeDesc type, TypeBuilderState state)
+        private unsafe void FinishTypeDictionary(TypeDesc type)
         {
+            TypeBuilderState state = type.GetTypeBuilderState();
+
             if (state.Dictionary != null)
             {
                 // First, update the dictionary slot in the type's vtable to point to the created dictionary when applicable
@@ -1326,10 +1324,8 @@ namespace Internal.Runtime.TypeLoader
 
             var state = type.GetTypeBuilderState();
 
-            if (type is DefType)
+            if (type is DefType typeAsDefType)
             {
-                DefType typeAsDefType = (DefType)type;
-
                 if (type.HasInstantiation)
                 {
                     // Type definitions don't need any further finishing once created by the EETypeCreator
@@ -1354,8 +1350,6 @@ namespace Internal.Runtime.TypeLoader
 
                 FinishInterfaces(type, state);
 
-                FinishTypeDictionary(type, state);
-
                 FinishClassConstructor(type, state);
 
 #if FEATURE_UNIVERSAL_GENERICS
@@ -1367,10 +1361,8 @@ namespace Internal.Runtime.TypeLoader
             }
             else if (type is ParameterizedType)
             {
-                if (type is ArrayType)
+                if (type is ArrayType typeAsSzArrayType)
                 {
-                    ArrayType typeAsSzArrayType = (ArrayType)type;
-
                     state.HalfBakedRuntimeTypeHandle.SetRelatedParameterType(GetRuntimeTypeHandle(typeAsSzArrayType.ElementType));
 
                     state.HalfBakedRuntimeTypeHandle.SetComponentSize(state.ComponentSize.Value);
@@ -1379,8 +1371,6 @@ namespace Internal.Runtime.TypeLoader
 
                     if (typeAsSzArrayType.IsSzArray && !typeAsSzArrayType.ElementType.IsPointer)
                     {
-                        FinishTypeDictionary(type, state);
-
 #if FEATURE_UNIVERSAL_GENERICS
                         // For types that were allocated from universal canonical templates, patch their vtables with
                         // pointers to calling convention conversion thunks
@@ -1528,6 +1518,11 @@ namespace Internal.Runtime.TypeLoader
             for (int i = 0; i < _typesThatNeedTypeHandles.Count; i++)
             {
                 FinishRuntimeType(_typesThatNeedTypeHandles[i]);
+            }
+
+            for (int i = 0; i < _typesThatNeedTypeHandles.Count; i++)
+            {
+                FinishTypeDictionary(_typesThatNeedTypeHandles[i]);
             }
 
             for (int i = 0; i < _methodsThatNeedDictionaries.Count; i++)

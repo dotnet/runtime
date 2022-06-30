@@ -25,7 +25,7 @@ namespace System.IO
             // Want to throw the original argument name
             OriginalPath = originalPath;
 
-            fullPath = fullPath ?? originalPath;
+            fullPath ??= originalPath;
             Debug.Assert(!isNormalized || !PathInternal.IsPartiallyQualified(fullPath.AsSpan()), "should be fully qualified if normalized");
 
             FullPath = isNormalized ? fullPath ?? originalPath : Path.GetFullPath(fullPath);

@@ -138,6 +138,16 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        public void HMacMD5_EmptyKey()
+        {
+            VerifyRepeating(
+                input: "Crypto is fun!",
+                1,
+                hexKey: "",
+                output: "7554A8C4641CBA36BE2AC20CACEA1136");
+        }
+
+        [Fact]
         public void HmacMD5_Stream_MultipleOf4096()
         {
             // Verfied with:

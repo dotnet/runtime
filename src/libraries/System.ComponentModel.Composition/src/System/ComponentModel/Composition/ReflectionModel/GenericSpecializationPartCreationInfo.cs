@@ -88,10 +88,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 Thread.MemoryBarrier();
                 lock (_lock)
                 {
-                    if (_constructor == null)
-                    {
-                        _constructor = result;
-                    }
+                    _constructor ??= result;
                 }
             }
 

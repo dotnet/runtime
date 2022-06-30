@@ -583,14 +583,25 @@ namespace Internal.Runtime.TypeLoader
                     DispatchMap* pDynamicDispatchMap = (DispatchMap*)dynamicDispatchMapPtr;
                     pDynamicDispatchMap->NumStandardEntries = pTemplateDispatchMap->NumStandardEntries;
                     pDynamicDispatchMap->NumDefaultEntries = pTemplateDispatchMap->NumDefaultEntries;
+                    pDynamicDispatchMap->NumStandardStaticEntries = pTemplateDispatchMap->NumStandardStaticEntries;
+                    pDynamicDispatchMap->NumDefaultStaticEntries = pTemplateDispatchMap->NumDefaultStaticEntries;
 
-                    for (int i = 0; i < pTemplateDispatchMap->NumStandardEntries + pTemplateDispatchMap->NumDefaultEntries; i++)
+                    uint numInstanceEntries = pTemplateDispatchMap->NumStandardEntries + pTemplateDispatchMap->NumDefaultEntries;
+                    for (uint i = 0; i < numInstanceEntries + pTemplateDispatchMap->NumStandardStaticEntries + pTemplateDispatchMap->NumDefaultStaticEntries; i++)
                     {
-                        DispatchMap.DispatchMapEntry* pTemplateEntry = (*pTemplateDispatchMap)[i];
-                        DispatchMap.DispatchMapEntry* pDynamicEntry = (*pDynamicDispatchMap)[i];
+                        DispatchMap.DispatchMapEntry* pTemplateEntry = i < numInstanceEntries ?
+                            pTemplateDispatchMap->GetEntry((int)i) :
+                            pTemplateDispatchMap->GetStaticEntry((int)(i - numInstanceEntries));
+                        DispatchMap.DispatchMapEntry* pDynamicEntry = i < numInstanceEntries ?
+                            pDynamicDispatchMap->GetEntry((int)i) :
+                            pDynamicDispatchMap->GetStaticEntry((int)(i - numInstanceEntries));
 
                         pDynamicEntry->_usInterfaceIndex = pTemplateEntry->_usInterfaceIndex;
                         pDynamicEntry->_usInterfaceMethodSlot = pTemplateEntry->_usInterfaceMethodSlot;
+                        if (i >= numInstanceEntries)
+                        {
+                            ((DispatchMap.StaticDispatchMapEntry*)pDynamicEntry)->_usContextMapSource = ((DispatchMap.StaticDispatchMapEntry*)pTemplateEntry)->_usContextMapSource;
+                        }
                         if (pTemplateEntry->_usImplMethodSlot < pTemplateEEType->NumVtableSlots)
                         {
                             pDynamicEntry->_usImplMethodSlot = (ushort)state.VTableSlotsMapping.GetVTableSlotInTargetType(pTemplateEntry->_usImplMethodSlot);
@@ -941,7 +952,7 @@ namespace Internal.Runtime.TypeLoader
                         }
                         else
                         {
-                            seriesSize = seriesSize - size;
+                            seriesSize -= size;
                             *ptr-- = (void*)seriesOffset;
                             *ptr-- = (void*)seriesSize;
                         }

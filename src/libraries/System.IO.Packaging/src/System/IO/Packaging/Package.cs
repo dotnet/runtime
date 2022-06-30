@@ -69,9 +69,7 @@ namespace System.IO.Packaging
             {
                 ThrowIfObjectDisposed();
 
-                if (_packageProperties == null)
-                    _packageProperties = new PartBasedPackageProperties(this);
-                return _packageProperties;
+                return _packageProperties ??= new PartBasedPackageProperties(this);
             }
         }
 
@@ -993,7 +991,7 @@ namespace System.IO.Packaging
         //Throw if the object is in a disposed state
         private void ThrowIfObjectDisposed()
         {
-            if (_disposed == true)
+            if (_disposed)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed);
         }
 
@@ -1001,10 +999,7 @@ namespace System.IO.Packaging
         private void EnsureRelationships()
         {
             // once per package
-            if (_relationships == null)
-            {
-                _relationships = new InternalRelationshipCollection(this);
-            }
+            _relationships ??= new InternalRelationshipCollection(this);
         }
 
         //Delete All Package-level Relationships

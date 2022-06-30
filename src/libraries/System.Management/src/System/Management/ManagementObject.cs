@@ -114,8 +114,7 @@ namespace System.Management
 
         internal void FireIdentifierChanged()
         {
-            if (IdentifierChanged != null)
-                IdentifierChanged(this, null);
+            IdentifierChanged?.Invoke(this, null);
         }
 
         internal bool PutButNotGot
@@ -503,10 +502,7 @@ namespace System.Management
         {
             get
             {
-                if (scope == null)
-                    return scope = ManagementScope._Clone(null);
-                else
-                    return scope;
+                return scope ??= ManagementScope._Clone(null);
             }
             set
             {
@@ -558,10 +554,7 @@ namespace System.Management
         {
             get
             {
-                if (path == null)
-                    return path = ManagementPath._Clone(null);
-                else
-                    return path;
+                return path ??= ManagementPath._Clone(null);
             }
             set
             {
@@ -625,10 +618,7 @@ namespace System.Management
         {
             get
             {
-                if (options == null)
-                    return options = ObjectGetOptions._Clone(null);
-                else
-                    return options;
+                return options ??= ObjectGetOptions._Clone(null);
             }
             set
             {
@@ -1598,10 +1588,7 @@ namespace System.Management
             {
             }
 
-            if (newPath == null)
-                newPath = new ManagementPath();
-
-            return newPath;
+            return newPath ?? new ManagementPath();
         }
 
         /// <summary>
@@ -2309,7 +2296,7 @@ namespace System.Management
                 {
                     securityHandler = scope.GetSecurityHandler();
 
-                    IWbemClassObjectFreeThreaded inParams = (null == inParameters) ? null : inParameters.wbemObject;
+                    IWbemClassObjectFreeThreaded inParams = inParameters?.wbemObject;
                     IWbemClassObjectFreeThreaded outParams = null;
 
                     status = scope.GetSecuredIWbemServicesHandler(scope.GetIWbemServices()).ExecMethod_(
@@ -2574,7 +2561,7 @@ namespace System.Management
                 }
 
                 //Have we already got this object
-                if (!IsBound && (getObject == true))
+                if (!IsBound && getObject)
                     needToGetObject = true;
 
                 if (null == scope)
@@ -2614,7 +2601,7 @@ namespace System.Management
                         scope.Initialize();
 
                         // If we have just connected, make sure we get the object
-                        if (getObject == true)
+                        if (getObject)
                         {
                             needToGetObject = true;
                         }

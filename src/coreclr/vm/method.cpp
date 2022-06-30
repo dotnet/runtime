@@ -353,17 +353,15 @@ VOID MethodDesc::GetFullMethodInfo(SString& fullMethodSigName)
     PCCOR_SIGNATURE pSig;
 
     SString methodFullName;
-    StackScratchBuffer namespaceNameBuffer, methodNameBuffer;
     methodFullName.AppendPrintf(
         (LPCUTF8)"[%s] %s::%s",
         GetModule()->GetAssembly()->GetSimpleName(),
-        namespaceOrClassName.GetUTF8(namespaceNameBuffer),
-        methodName.GetUTF8(methodNameBuffer));
+        namespaceOrClassName.GetUTF8(),
+        methodName.GetUTF8());
 
     GetSig(&pSig, &cSig);
 
-    StackScratchBuffer buffer;
-    PrettyPrintSig(pSig, (DWORD)cSig, methodFullName.GetUTF8(buffer), &qbOut, GetMDImport(), NULL);
+    PrettyPrintSig(pSig, (DWORD)cSig, methodFullName.GetUTF8(), &qbOut, GetMDImport(), NULL);
     fullMethodSigName.AppendUTF8((char *)qbOut.Ptr());
 }
 
@@ -2117,6 +2115,13 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
             return (MethodDesc*)((FixupPrecode*)pInstr)->GetMethodDesc();
         }
 
+        // Is it an FCALL?
+        MethodDesc* pFCallMD = ECall::MapTargetBackToMethod(entryPoint);
+        if (pFCallMD != NULL)
+        {
+            return pFCallMD;
+        }
+
         return NULL;
     }
 
@@ -2150,11 +2155,6 @@ MethodDesc* Entry2MethodDesc(PCODE entryPoint, MethodTable *pMT)
         RETURN(pMD);
 
     pMD = VirtualCallStubManagerManager::Entry2MethodDesc(entryPoint, pMT);
-    if (pMD != NULL)
-        RETURN(pMD);
-
-    // Is it an FCALL?
-    pMD = ECall::MapTargetBackToMethod(entryPoint);
     if (pMD != NULL)
         RETURN(pMD);
 

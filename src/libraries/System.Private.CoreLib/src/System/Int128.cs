@@ -21,11 +21,13 @@ namespace System
     {
         internal const int Size = 16;
 
-        // Unix System V ABI actually requires this to be little endian
-        // order and not `upper, lower` on big endian systems.
-
+#if BIGENDIAN
+        private readonly ulong _upper;
+        private readonly ulong _lower;
+#else
         private readonly ulong _lower;
         private readonly ulong _upper;
+#endif
 
         /// <summary>Initializes a new instance of the <see cref="Int128" /> struct.</summary>
         /// <param name="upper">The upper 64-bits of the 128-bit value.</param>
@@ -866,6 +868,9 @@ namespace System
         //
         // IBinaryNumber
         //
+
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
+        static Int128 IBinaryNumber<Int128>.AllBitsSet => new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(Int128 value) => (PopCount(value) == 1U) && IsPositive(value);

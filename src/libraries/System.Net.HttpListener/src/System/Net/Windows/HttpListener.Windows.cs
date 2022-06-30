@@ -35,11 +35,7 @@ namespace System.Net
         // 0.5 seconds per request.  Respond with a 400 Bad Request.
         private const int UnknownHeaderLimit = 1000;
 
-        private static readonly byte[] s_wwwAuthenticateBytes = new byte[]
-        {
-            (byte) 'W', (byte) 'W', (byte) 'W', (byte) '-', (byte) 'A', (byte) 'u', (byte) 't', (byte) 'h',
-            (byte) 'e', (byte) 'n', (byte) 't', (byte) 'i', (byte) 'c', (byte) 'a', (byte) 't', (byte) 'e'
-        };
+        private static readonly byte[] s_wwwAuthenticateBytes = "WWW-Authenticate"u8.ToArray();
 
         private HttpListenerSession? _currentSession;
 
@@ -577,10 +573,7 @@ namespace System.Net
                     }
 
                     // HandleAuthentication may have cleaned this up.
-                    if (memoryBlob == null)
-                    {
-                        memoryBlob = new SyncRequestContext(checked((int)size));
-                    }
+                    memoryBlob ??= new SyncRequestContext(checked((int)size));
 
                     requestId = 0;
                 }
@@ -792,13 +785,8 @@ namespace System.Net
                 ExtendedProtectionSelector? extendedProtectionSelector = _extendedProtectionSelectorDelegate;
                 if (extendedProtectionSelector != null)
                 {
-                    extendedProtectionPolicy = extendedProtectionSelector(httpContext.Request);
-
-                    if (extendedProtectionPolicy == null)
-                    {
-                        extendedProtectionPolicy = new ExtendedProtectionPolicy(PolicyEnforcement.Never);
-                    }
                     // Cache the results of extendedProtectionSelector (if any)
+                    extendedProtectionPolicy = extendedProtectionSelector(httpContext.Request) ?? new ExtendedProtectionPolicy(PolicyEnforcement.Never);
                     httpContext.ExtendedProtectionPolicy = extendedProtectionPolicy;
                 }
 
@@ -807,13 +795,10 @@ namespace System.Net
                 if (authorizationHeader != null && (authenticationScheme & ~AuthenticationSchemes.Anonymous) != AuthenticationSchemes.None)
                 {
                     // Find the end of the scheme name.  Trust that HTTP.SYS parsed out just our header ok.
-                    for (index = 0; index < authorizationHeader.Length; index++)
+                    index = authorizationHeader.AsSpan().IndexOfAny(" \t\r\n");
+                    if (index < 0)
                     {
-                        if (authorizationHeader[index] == ' ' || authorizationHeader[index] == '\t' ||
-                            authorizationHeader[index] == '\r' || authorizationHeader[index] == '\n')
-                        {
-                            break;
-                        }
+                        index = authorizationHeader.Length;
                     }
 
                     // Currently only allow one Authorization scheme/header per request.
@@ -873,14 +858,8 @@ namespace System.Net
 
                     // Find the beginning of the blob.  Trust that HTTP.SYS parsed out just our header ok.
                     Debug.Assert(authorizationHeader != null);
-                    for (index++; index < authorizationHeader!.Length; index++)
-                    {
-                        if (authorizationHeader[index] != ' ' && authorizationHeader[index] != '\t' &&
-                            authorizationHeader[index] != '\r' && authorizationHeader[index] != '\n')
-                        {
-                            break;
-                        }
-                    }
+                    int nonWhitespace = authorizationHeader.AsSpan(index + 1).IndexOfAnyExcept(" \t\r\n");
+                    index = nonWhitespace >= 0 ? index + 1 + nonWhitespace : authorizationHeader.Length;
                     string inBlob = index < authorizationHeader.Length ? authorizationHeader.Substring(index) : "";
 
                     IPrincipal? principal = null;
@@ -1531,10 +1510,7 @@ namespace System.Net
                 if (challenge.Length > 0)
                 {
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "challenge:" + challenge);
-                    if (challenges == null)
-                    {
-                        challenges = new ArrayList(4);
-                    }
+                    challenges ??= new ArrayList(4);
                     challenges.Add(challenge);
                 }
             }

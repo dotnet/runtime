@@ -82,7 +82,7 @@ namespace System.Security.Cryptography.Cose
             CoseHeaderMap? unprotectedHeaders,
             bool isDetached)
         {
-            Debug.Assert(contentStream == null || (isDetached == true && contentBytes.Length == 0));
+            Debug.Assert(contentStream == null || (isDetached && contentBytes.Length == 0));
 
             ValidateBeforeSign(protectedHeaders, unprotectedHeaders, keyType, hashAlgorithm, out int? algHeaderValueToSlip);
 

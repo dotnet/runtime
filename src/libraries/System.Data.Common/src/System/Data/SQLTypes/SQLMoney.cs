@@ -150,7 +150,7 @@ namespace System.Data.SqlTypes
             long ret = _value / (s_lTickBase / 10);
             bool fPositive = (ret >= 0);
             long remainder = ret % 10;
-            ret = ret / 10;
+            ret /= 10;
 
             if (remainder >= 5)
             {
@@ -515,10 +515,8 @@ namespace System.Data.SqlTypes
         // If object is not of same type, this method throws an ArgumentException.
         public int CompareTo(object? value)
         {
-            if (value is SqlMoney)
+            if (value is SqlMoney i)
             {
-                SqlMoney i = (SqlMoney)value;
-
                 return CompareTo(i);
             }
             throw ADP.WrongType(value!.GetType(), typeof(SqlMoney));

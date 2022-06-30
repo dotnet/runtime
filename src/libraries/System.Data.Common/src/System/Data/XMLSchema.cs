@@ -186,9 +186,8 @@ namespace System.Data
                 {
                     _annotations!.Add((XmlSchemaAnnotation)item);
                 }
-                if (item is XmlSchemaElement)
+                if (item is XmlSchemaElement elem)
                 {
-                    XmlSchemaElement elem = (XmlSchemaElement)item;
                     _elements!.Add(elem);
                     _elementsTable![elem.QualifiedName] = elem;
                 }
@@ -218,15 +217,12 @@ namespace System.Data
                     XmlSchemaSimpleType? xmlSimpleType = (item as XmlSchemaSimpleType);
                     if (xmlSimpleType != null)
                     {
-                        if (_udSimpleTypes == null)
-                        {
-                            _udSimpleTypes = new Hashtable();
-                        }
+                        _udSimpleTypes ??= new Hashtable();
 
                         _udSimpleTypes[type.QualifiedName.ToString()] = xmlSimpleType;
                         DataColumn? dc = (DataColumn?)_existingSimpleTypeMap![type.QualifiedName.ToString()];
                         // Assumption is that our simple type qualified name ihas the same output as XmlSchemaSimpleType type.QualifiedName.ToString()
-                        SimpleType? tmpSimpleType = (dc != null) ? dc.SimpleType : null;
+                        SimpleType? tmpSimpleType = dc?.SimpleType;
 
                         if (tmpSimpleType != null)
                         {
@@ -373,8 +369,7 @@ namespace System.Data
                     {
                         if (attrs[i].LocalName == "Expression")
                         {
-                            if (_expressions == null)
-                                _expressions = new Hashtable();
+                            _expressions ??= new Hashtable();
                             _expressions[dc] = attrs[i].Value;
                             _columnExpressions!.Add(dc);
                             break;
@@ -610,9 +605,8 @@ namespace System.Data
                     if (ct.ContentModel is XmlSchemaSimpleContent)
                     {
                         XmlSchemaAnnotated? cContent = ((XmlSchemaSimpleContent)(ct.ContentModel)).Content;
-                        if (cContent is XmlSchemaSimpleContentExtension)
+                        if (cContent is XmlSchemaSimpleContentExtension ccExtension)
                         {
-                            XmlSchemaSimpleContentExtension ccExtension = ((XmlSchemaSimpleContentExtension)cContent);
                             if (HasAttributes(ccExtension.Attributes))
                                 return null;
                         }
@@ -1058,9 +1052,8 @@ namespace System.Data
                 if (ct.ContentModel is XmlSchemaComplexContent)
                 {
                     XmlSchemaAnnotated? cContent = ((XmlSchemaComplexContent)(ct.ContentModel)).Content;
-                    if (cContent is XmlSchemaComplexContentExtension)
+                    if (cContent is XmlSchemaComplexContentExtension ccExtension)
                     {
-                        XmlSchemaComplexContentExtension ccExtension = ((XmlSchemaComplexContentExtension)cContent);
                         if (!(ct.BaseXmlSchemaType is XmlSchemaComplexType && FromInference))
                             HandleAttributes(ccExtension.Attributes, table, isBase);
 
@@ -1102,9 +1095,8 @@ namespace System.Data
                 {
                     Debug.Assert(ct.ContentModel is XmlSchemaSimpleContent, "expected simpleContent or complexContent");
                     XmlSchemaAnnotated cContent = ((XmlSchemaSimpleContent)(ct.ContentModel)).Content!;
-                    if (cContent is XmlSchemaSimpleContentExtension)
+                    if (cContent is XmlSchemaSimpleContentExtension ccExtension)
                     {
-                        XmlSchemaSimpleContentExtension ccExtension = ((XmlSchemaSimpleContentExtension)cContent);
                         HandleAttributes(ccExtension.Attributes, table, isBase);
                         if (ct.BaseXmlSchemaType is XmlSchemaComplexType)
                         {
@@ -1493,7 +1485,7 @@ namespace System.Data
                     int i = 0;
                     colName = typeName + "_Text";
                     while (table.Columns[colName] != null)
-                        colName = colName + i++;
+                        colName += i++;
                 }
                 else
                 {
@@ -1537,15 +1529,13 @@ namespace System.Data
 
             Debug.Assert((node is XmlSchemaElement) || (node is XmlSchemaAttribute), "GetInstanceName should only be called on attribute or elements");
 
-            if (node is XmlSchemaElement)
+            if (node is XmlSchemaElement el)
             {
-                XmlSchemaElement el = (XmlSchemaElement)node;
                 instanceName = el.Name ?? el.RefName.Name;
             }
-            else if (node is XmlSchemaAttribute)
+            else if (node is XmlSchemaAttribute attr)
             {
-                XmlSchemaAttribute el = (XmlSchemaAttribute)node;
-                instanceName = el.Name ?? el.RefName.Name;
+                instanceName = attr.Name ?? attr.RefName.Name;
             }
 
             Debug.Assert((instanceName != null) && (instanceName.Length != 0), "instanceName cannot be null or empty. There's an error in the XSD compiler");
@@ -2003,7 +1993,7 @@ namespace System.Data
                 colName = table.TableName + "_Text";
                 while (table.Columns[colName] != null)
                 {
-                    colName = colName + i++;
+                    colName += i++;
                 }
             }
             else
@@ -2115,7 +2105,7 @@ namespace System.Data
                 colName = table.TableName + "_Text";
                 while (table.Columns[colName] != null)
                 {
-                    colName = colName + i++;
+                    colName += i++;
                 }
             }
             else

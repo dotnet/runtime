@@ -249,21 +249,11 @@ namespace System.ServiceProcess
         /// can be used to write notification of service command calls, such as Start and Stop, to the Application event log. This property is read-only.
         /// </summary>
         [Browsable(false), DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public virtual EventLog EventLog
-        {
-            get
+        public virtual EventLog EventLog =>
+            _eventLog ??= new EventLog("Application")
             {
-                if (_eventLog == null)
-                {
-                    _eventLog = new EventLog("Application")
-                    {
-                        Source = ServiceName
-                    };
-                }
-
-                return _eventLog;
-            }
-        }
+                Source = ServiceName
+            };
 
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         protected IntPtr ServiceHandle
@@ -297,24 +287,10 @@ namespace System.ServiceProcess
             }
         }
 
-        internal static bool ValidServiceName(string serviceName)
-        {
-            if (serviceName == null)
-                return false;
-
-            // not too long and check for empty name as well.
-            if (serviceName.Length > ServiceBase.MaxNameLength || serviceName.Length == 0)
-                return false;
-
-            // no slashes or backslash allowed
-            foreach (char c in serviceName)
-            {
-                if (c == '\\' || c == '/')
-                    return false;
-            }
-
-            return true;
-        }
+        internal static bool ValidServiceName(string serviceName) =>
+            !string.IsNullOrEmpty(serviceName) &&
+            serviceName.Length <= ServiceBase.MaxNameLength && // not too long
+            serviceName.AsSpan().IndexOfAny('\\', '/') < 0; // no slashes or backslash allowed
 
         /// <summary>
         ///    <para>Disposes of the resources (other than memory ) used by
@@ -909,7 +885,7 @@ namespace System.ServiceProcess
                 _commandPropsFrozen = true;
                 if ((_status.controlsAccepted & AcceptOptions.ACCEPT_STOP) != 0)
                 {
-                    _status.controlsAccepted = _status.controlsAccepted | AcceptOptions.ACCEPT_SHUTDOWN;
+                    _status.controlsAccepted |= AcceptOptions.ACCEPT_SHUTDOWN;
                 }
 
                 _status.currentState = ServiceControlStatus.STATE_START_PENDING;

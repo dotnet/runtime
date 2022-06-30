@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml.Schema
 {
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
-
     internal abstract class SchemaDeclBase
     {
         internal enum Use
@@ -97,10 +97,7 @@ namespace System.Xml.Schema
 
         internal void AddValue(string value)
         {
-            if (values == null)
-            {
-                values = new List<string>();
-            }
+            values ??= new List<string>();
             values.Add(value);
         }
 

@@ -4034,17 +4034,22 @@ size_t LclVarDsc::lvArgStackSize() const
 //
 var_types LclVarDsc::GetRegisterType(const GenTreeLclVarCommon* tree) const
 {
-    var_types targetType = tree->gtType;
-    var_types lclVarType = TypeGet();
+    var_types targetType = tree->TypeGet();
 
     if (targetType == TYP_STRUCT)
     {
-        if (lclVarType == TYP_STRUCT)
+        ClassLayout* layout;
+        if (tree->OperIs(GT_LCL_FLD, GT_STORE_LCL_FLD))
         {
-            assert(!tree->OperIsLocalField() && "do not expect struct local fields.");
-            lclVarType = GetLayout()->GetRegisterType();
+            layout = tree->AsLclFld()->GetLayout();
         }
-        targetType = lclVarType;
+        else
+        {
+            assert((TypeGet() == TYP_STRUCT) && tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR));
+            layout = GetLayout();
+        }
+
+        targetType = layout->GetRegisterType();
     }
 
 #ifdef DEBUG
@@ -4053,7 +4058,7 @@ var_types LclVarDsc::GetRegisterType(const GenTreeLclVarCommon* tree) const
         const bool phiStore = (tree->gtGetOp1()->OperIsNonPhiLocal() == false);
         // Ensure that the lclVar node is typed correctly,
         // does not apply to phi-stores because they do not produce code in the merge block.
-        assert(phiStore || targetType == genActualType(lclVarType));
+        assert(phiStore || targetType == genActualType(TypeGet()));
     }
 #endif
     return targetType;
@@ -4234,49 +4239,57 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 
             /* Is this an assignment to a local variable? */
 
-            if (op1->gtOper == GT_LCL_VAR && op2->gtType != TYP_BOOL)
+            if (op1->gtOper == GT_LCL_VAR)
             {
-                /* Only simple assignments allowed for booleans */
+                LclVarDsc* varDsc = lvaGetDesc(op1->AsLclVarCommon());
 
-                if (tree->gtOper != GT_ASG)
+                if (varDsc->lvPinned && varDsc->lvAllDefsAreNoGc)
                 {
-                    goto NOT_BOOL;
+                    if (!op2->IsNotGcDef())
+                    {
+                        varDsc->lvAllDefsAreNoGc = false;
+                    }
                 }
 
-                /* Is the RHS clearly a boolean value? */
-
-                switch (op2->gtOper)
+                if (op2->gtType != TYP_BOOL)
                 {
-                    unsigned lclNum;
+                    /* Only simple assignments allowed for booleans */
 
-                    case GT_CNS_INT:
+                    if (tree->gtOper != GT_ASG)
+                    {
+                        goto NOT_BOOL;
+                    }
 
-                        if (op2->AsIntCon()->gtIconVal == 0)
-                        {
+                    /* Is the RHS clearly a boolean value? */
+
+                    switch (op2->gtOper)
+                    {
+                        case GT_CNS_INT:
+
+                            if (op2->AsIntCon()->gtIconVal == 0)
+                            {
+                                break;
+                            }
+                            if (op2->AsIntCon()->gtIconVal == 1)
+                            {
+                                break;
+                            }
+
+                            // Not 0 or 1, fall through ....
+                            FALLTHROUGH;
+
+                        default:
+
+                            if (op2->OperIsCompare())
+                            {
+                                break;
+                            }
+
+                        NOT_BOOL:
+
+                            varDsc->lvIsBoolean = false;
                             break;
-                        }
-                        if (op2->AsIntCon()->gtIconVal == 1)
-                        {
-                            break;
-                        }
-
-                        // Not 0 or 1, fall through ....
-                        FALLTHROUGH;
-
-                    default:
-
-                        if (op2->OperIsCompare())
-                        {
-                            break;
-                        }
-
-                    NOT_BOOL:
-
-                        lclNum = op1->AsLclVarCommon()->GetLclNum();
-                        noway_assert(lclNum < lvaCount);
-
-                        lvaTable[lclNum].lvIsBoolean = false;
-                        break;
+                    }
                 }
             }
         }
@@ -4331,7 +4344,8 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
     {
         if (lvaVarAddrExposed(lclNum))
         {
-            varDsc->lvIsBoolean = false;
+            varDsc->lvIsBoolean      = false;
+            varDsc->lvAllDefsAreNoGc = false;
         }
 
         if (tree->gtOper == GT_LCL_FLD)
@@ -4558,6 +4572,9 @@ void Compiler::lvaMarkLocalVars(BasicBlock* block, bool isRecompute)
 //------------------------------------------------------------------------
 // lvaMarkLocalVars: enable normal ref counting, compute initial counts, sort locals table
 //
+// Returns:
+//    suitable phase status
+//
 // Notes:
 //    Now behaves differently in minopts / debug. Instead of actually inspecting
 //    the IR and counting references, the jit assumes all locals are referenced
@@ -4566,9 +4583,8 @@ void Compiler::lvaMarkLocalVars(BasicBlock* block, bool isRecompute)
 //    Also, when optimizing, lays the groundwork for assertion prop and more.
 //    See details in lvaMarkLclRefs.
 
-void Compiler::lvaMarkLocalVars()
+PhaseStatus Compiler::lvaMarkLocalVars()
 {
-
     JITDUMP("\n*************** In lvaMarkLocalVars()");
 
     // If we have direct pinvokes, verify the frame list root local was set up properly
@@ -4580,6 +4596,8 @@ void Compiler::lvaMarkLocalVars()
             noway_assert(info.compLvFrameListRoot >= info.compLocalsCount && info.compLvFrameListRoot < lvaCount);
         }
     }
+
+    unsigned const lvaCountOrig = lvaCount;
 
 #if !defined(FEATURE_EH_FUNCLETS)
 
@@ -4662,7 +4680,9 @@ void Compiler::lvaMarkLocalVars()
     // If we don't need precise reference counts, e.g. we're not optimizing, we're done.
     if (!PreciseRefCountsRequired())
     {
-        return;
+        // This phase may add new locals
+        //
+        return (lvaCount != lvaCountOrig) ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
     }
 
     const bool reportParamTypeArg = lvaReportParamTypeArg();
@@ -4681,8 +4701,9 @@ void Compiler::lvaMarkLocalVars()
 
     assert(PreciseRefCountsRequired());
 
-    // Note: optAddCopies() depends on lvaRefBlks, which is set in lvaMarkLocalVars(BasicBlock*), called above.
-    optAddCopies();
+    // This phase may add new locals.
+    //
+    return (lvaCount != lvaCountOrig) ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------
@@ -4803,6 +4824,8 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
         {
             varDsc->lvSingleDef             = varDsc->lvIsParam;
             varDsc->lvSingleDefRegCandidate = varDsc->lvIsParam;
+
+            varDsc->lvAllDefsAreNoGc = (varDsc->lvImplicitlyReferenced == false);
         }
     }
 
@@ -4920,6 +4943,13 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
             {
                 varDsc->lvImplicitlyReferenced = 1;
             }
+        }
+
+        if (varDsc->lvPinned && varDsc->lvAllDefsAreNoGc)
+        {
+            varDsc->lvPinned = 0;
+
+            JITDUMP("V%02u was unpinned as all def candidates were local.\n", lclNum);
         }
     }
 }
@@ -6385,7 +6415,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     {
         codeGen->SetSaveFpLrWithAllCalleeSavedRegisters(false); // Disable using new frames
     }
-    else if (opts.compJitSaveFpLrWithCalleeSavedRegisters == 2)
+    else if ((opts.compJitSaveFpLrWithCalleeSavedRegisters == 2) || (opts.compJitSaveFpLrWithCalleeSavedRegisters == 3))
     {
         codeGen->SetSaveFpLrWithAllCalleeSavedRegisters(true); // Force using new frames
     }

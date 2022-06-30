@@ -10,13 +10,13 @@ if(CLR_CMAKE_HOST_WIN32)
     # Fake it until support is added
     check_include_files(stdalign.h HAVE_STDALIGN_H)
     if (NOT HAVE_STDALIGN_H)
-        configure_file(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/win/fakestdalign.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/stdalign.h COPYONLY)
+        configure_file(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote/win/fakestdalign.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/stdalign.h COPYONLY)
     endif (NOT HAVE_STDALIGN_H)
 
     # MSVC compiler is currently missing C11 stdatomic.h header
     check_c_source_compiles("#include <stdatomic.h> void main() { _Atomic int a; }" HAVE_STDATOMIC_H)
     if (NOT HAVE_STDATOMIC_H)
-        configure_file(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/win/fakestdatomic.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/stdatomic.h COPYONLY)
+        configure_file(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote/win/fakestdatomic.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/stdatomic.h COPYONLY)
     endif (NOT HAVE_STDATOMIC_H)
 
     # MSVC compiler is currently missing C11 _Thread_local

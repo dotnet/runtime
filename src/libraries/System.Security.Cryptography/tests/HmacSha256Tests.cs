@@ -125,6 +125,16 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        public void HmacSha256_EmptyKey()
+        {
+            VerifyRepeating(
+                input: "Crypto is fun!",
+                1,
+                hexKey: "",
+                output: "DE26DD5A23A91021F61EACF8A8DD324AB5637977486A10D701C4DFA4AE33CB4F");
+        }
+
+        [Fact]
         public void HmacSha256_Stream_MultipleOf4096()
         {
             // Verfied with:

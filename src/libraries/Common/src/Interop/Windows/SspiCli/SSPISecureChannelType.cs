@@ -136,7 +136,7 @@ namespace System.Net
             throw new NotSupportedException();
         }
 
-        public int CompleteAuthToken(ref SafeDeleteSslContext? refContext, in SecurityBuffer inputBuffer)
+        public int CompleteAuthToken(ref SafeDeleteSslContext? refContext, in InputSecurityBuffer inputBuffer)
         {
             throw new NotSupportedException();
         }

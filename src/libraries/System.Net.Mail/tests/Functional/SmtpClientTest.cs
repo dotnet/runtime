@@ -523,5 +523,39 @@ namespace System.Net.Mail.Tests
             quitReceived.Wait(TimeSpan.FromSeconds(30));
             Assert.True(quitMessageReceived, "QUIT message not received");
         }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task TestMultipleMailDelivery(bool asyncSend)
+        {
+            using var server = new LoopbackSmtpServer();
+            using SmtpClient client = server.CreateClient();
+            client.Timeout = 10000;
+            client.Credentials = new NetworkCredential("foo", "bar");
+            MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
+
+            for (var i = 0; i < 5; i++)
+            {
+                if (asyncSend)
+                {
+                    using var cts = new CancellationTokenSource(10000);
+                    await client.SendMailAsync(msg, cts.Token);
+                }
+                else
+                {
+                    client.Send(msg);
+                }
+
+                Assert.Equal("<foo@example.com>", server.MailFrom);
+                Assert.Equal("<bar@example.com>", server.MailTo);
+                Assert.Equal("hello", server.Message.Subject);
+                Assert.Equal("howdydoo", server.Message.Body);
+                Assert.Equal(GetClientDomain(), server.ClientDomain);
+                Assert.Equal("foo", server.Username);
+                Assert.Equal("bar", server.Password);
+                Assert.Equal("LOGIN", server.AuthMethodUsed, StringComparer.OrdinalIgnoreCase);
+            }
+        }
     }
 }

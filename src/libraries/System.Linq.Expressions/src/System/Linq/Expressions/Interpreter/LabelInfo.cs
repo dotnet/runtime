@@ -165,10 +165,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private void EnsureLabel(LightCompiler compiler)
         {
-            if (_label == null)
-            {
-                _label = compiler.Instructions.MakeLabel();
-            }
+            _label ??= compiler.Instructions.MakeLabel();
         }
 
         private bool DefinedIn(LabelScopeInfo scope)
@@ -331,10 +328,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             Debug.Assert(CanJumpInto);
 
-            if (_labels == null)
-            {
-                _labels = new HybridReferenceDictionary<LabelTarget, LabelInfo>();
-            }
+            _labels ??= new HybridReferenceDictionary<LabelTarget, LabelInfo>();
 
             _labels[target] = info;
         }

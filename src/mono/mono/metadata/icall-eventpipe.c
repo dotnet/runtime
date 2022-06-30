@@ -386,6 +386,22 @@ ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorke
 }
 
 void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolMinMaxThreads (
+	uint16_t min_worker_threads,
+	uint16_t max_worker_threads,
+	uint16_t min_io_completion_threads,
+	uint16_t max_io_completion_threads,
+	uint16_t clr_instance_id)
+{
+	mono_component_event_pipe ()->write_event_threadpool_min_max_threads (
+		min_worker_threads,
+		max_worker_threads,
+		min_io_completion_threads,
+		max_io_completion_threads,
+		clr_instance_id);
+}
+
+void
 ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentSample (
 	double throughput,
 	uint16_t clr_instance_id)
@@ -657,6 +673,19 @@ ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorke
 {
 	ERROR_DECL (error);
 	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolWorkerThreadWait");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolMinMaxThreads (
+	uint16_t min_worker_threads,
+	uint16_t max_worker_threads,
+	uint16_t min_io_completion_threads,
+	uint16_t max_io_completion_threads,
+	uint16_t clr_instance_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolMinMaxThreads");
 	mono_error_set_pending_exception (error);
 }
 

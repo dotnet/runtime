@@ -14,8 +14,6 @@ namespace System.Security.Cryptography
         public const string SHA384 = "SHA384";
         public const string SHA512 = "SHA512";
 
-        private static readonly HashSet<string> s_allNames = CreateAllNames();
-
         /// <summary>
         /// Map HashAlgorithm type to string; .NET Framework uses CryptoConfig functionality.
         /// </summary>
@@ -39,27 +37,34 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Uppercase known hash algorithms. BCrypt is case-sensitive and requires uppercase.
         /// </summary>
-        public static string ToUpper(string hashAlgorithName)
+        public static string ToUpper(string hashAlgorithmName)
         {
-            if (s_allNames.Contains(hashAlgorithName))
+            if (hashAlgorithmName.Equals(SHA256, StringComparison.OrdinalIgnoreCase))
             {
-                return hashAlgorithName.ToUpperInvariant();
+                return SHA256;
             }
 
-            return hashAlgorithName;
-        }
+            if (hashAlgorithmName.Equals(SHA384, StringComparison.OrdinalIgnoreCase))
+            {
+                return SHA384;
+            }
 
-        private static HashSet<string> CreateAllNames()
-        {
-            var allNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (hashAlgorithmName.Equals(SHA512, StringComparison.OrdinalIgnoreCase))
+            {
+                return SHA512;
+            }
 
-            allNames.Add(HashAlgorithmNames.SHA1);
-            allNames.Add(HashAlgorithmNames.SHA256);
-            allNames.Add(HashAlgorithmNames.SHA384);
-            allNames.Add(HashAlgorithmNames.SHA512);
-            allNames.Add(HashAlgorithmNames.MD5);
+            if (hashAlgorithmName.Equals(SHA1, StringComparison.OrdinalIgnoreCase))
+            {
+                return SHA1;
+            }
 
-            return allNames;
+            if (hashAlgorithmName.Equals(MD5, StringComparison.OrdinalIgnoreCase))
+            {
+                return MD5;
+            }
+
+            return hashAlgorithmName;
         }
     }
 }

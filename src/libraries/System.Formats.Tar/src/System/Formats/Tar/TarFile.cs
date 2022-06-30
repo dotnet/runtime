@@ -255,7 +255,10 @@ namespace System.Formats.Tar
             TarEntry? entry;
             while ((entry = reader.GetNextEntry()) != null)
             {
-                entry.ExtractRelativeToDirectory(destinationDirectoryPath, overwriteFiles);
+                if (entry is not PaxGlobalExtendedAttributesTarEntry)
+                {
+                    entry.ExtractRelativeToDirectory(destinationDirectoryPath, overwriteFiles);
+                }
             }
         }
     }

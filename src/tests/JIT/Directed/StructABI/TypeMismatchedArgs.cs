@@ -41,6 +41,21 @@ public unsafe class TypeMismatchedArgs
             return 105;
         }
 
+        if (ProblemWithRegFileMismatch_Win_x64(12, 13))
+        {
+            return 106;
+        }
+
+        if (ProblemWithPromotedStruct_Unix_x64(new StructWithFourLongs { LongOne = 1, LongTwo = 2, LongThree = 3, LongFour = 4 }))
+        {
+            return 107;
+        }
+
+        if (ProblemWithPromotedStruct_x86(new DblLngStruct { FirstLngValue = 1, SecondLngValue = 2 }))
+        {
+            return 108;
+        }
+
         return 100;
     }
 
@@ -87,6 +102,37 @@ public unsafe class TypeMismatchedArgs
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool ProblemWithRegFileMismatch_Win_x64(double dbl, float flt)
+    {
+        if (CallForDblStruct(*(DblStruct*)&dbl) != dbl)
+        {
+            return true;
+        }
+        if (CallForFltStruct(*(FltStruct*)&flt) != flt)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool ProblemWithPromotedStruct_Unix_x64(StructWithFourLongs b)
+    {
+        var c = b;
+
+        return CallForDblStructs(default, default, default, default, *(DblLngStruct*)&c) != c.LongTwo;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool ProblemWithPromotedStruct_x86(DblLngStruct a)
+    {
+        var b = a;
+
+        return CallForStructWithIndex(*(StructWithIndex*)&b) != (int)(b.FirstLngValue >> 32);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static float CallForVector4(Vector4 value) => value.X;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -97,6 +143,18 @@ public unsafe class TypeMismatchedArgs
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static long CallForSplitStructWithFourLongs(int arg0, int arg1, StructWithFourLongs splitArg) => splitArg.LongOne;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static double CallForDblStruct(DblStruct value) => value.Dbl;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static float CallForFltStruct(FltStruct value) => value.Flt;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static long CallForDblStructs(DblLngStruct arg0, DblLngStruct arg1, DblLngStruct arg2, DblLngStruct arg3, DblLngStruct stkArg) => stkArg.SecondLngValue;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int CallForStructWithIndex(StructWithIndex value) => value.Value;
 }
 
 [StructLayout(LayoutKind.Explicit)]
@@ -169,4 +227,20 @@ struct FourDoublesHfaStruct
     public double SecondDblValue;
     public double ThirdDblValue;
     public double FourthDblValue;
+}
+
+struct DblStruct
+{
+    public double Dbl;
+}
+
+struct FltStruct
+{
+    public float Flt;
+}
+
+struct StructWithIndex
+{
+    public int Index;
+    public int Value;
 }

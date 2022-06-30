@@ -73,21 +73,21 @@ internal static partial class Interop
             ref IntPtr credHandle);
 
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_InitSecContext")]
-        internal static partial Status InitSecContext(
+        private static partial Status InitSecContext(
             out Status minorStatus,
             SafeGssCredHandle initiatorCredHandle,
             ref SafeGssContextHandle contextHandle,
             [MarshalAs(UnmanagedType.Bool)] bool isNtlmOnly,
             SafeGssNameHandle? targetName,
             uint reqFlags,
-            byte[]? inputBytes,
+            ref byte inputBytes,
             int inputLength,
             ref GssBuffer token,
             out uint retFlags,
             [MarshalAs(UnmanagedType.Bool)] out bool isNtlmUsed);
 
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_InitSecContextEx")]
-        internal static partial Status InitSecContext(
+        private static partial Status InitSecContext(
             out Status minorStatus,
             SafeGssCredHandle initiatorCredHandle,
             ref SafeGssContextHandle contextHandle,
@@ -96,22 +96,98 @@ internal static partial class Interop
             int cbtSize,
             SafeGssNameHandle? targetName,
             uint reqFlags,
-            byte[]? inputBytes,
+            ref byte inputBytes,
             int inputLength,
             ref GssBuffer token,
             out uint retFlags,
             [MarshalAs(UnmanagedType.Bool)] out bool isNtlmUsed);
 
+        internal static Status InitSecContext(
+            out Status minorStatus,
+            SafeGssCredHandle initiatorCredHandle,
+            ref SafeGssContextHandle contextHandle,
+            bool isNtlmOnly,
+            SafeGssNameHandle? targetName,
+            uint reqFlags,
+            ReadOnlySpan<byte> inputBytes,
+            ref GssBuffer token,
+            out uint retFlags,
+            out bool isNtlmUsed)
+        {
+            return InitSecContext(
+                out minorStatus,
+                initiatorCredHandle,
+                ref contextHandle,
+                isNtlmOnly,
+                targetName,
+                reqFlags,
+                ref MemoryMarshal.GetReference(inputBytes),
+                inputBytes.Length,
+                ref token,
+                out retFlags,
+                out isNtlmUsed);
+        }
+
+        internal static Status InitSecContext(
+            out Status minorStatus,
+            SafeGssCredHandle initiatorCredHandle,
+            ref SafeGssContextHandle contextHandle,
+            bool isNtlmOnly,
+            IntPtr cbt,
+            int cbtSize,
+            SafeGssNameHandle? targetName,
+            uint reqFlags,
+            ReadOnlySpan<byte> inputBytes,
+            ref GssBuffer token,
+            out uint retFlags,
+            out bool isNtlmUsed)
+        {
+            return InitSecContext(
+                out minorStatus,
+                initiatorCredHandle,
+                ref contextHandle,
+                isNtlmOnly,
+                cbt,
+                cbtSize,
+                targetName,
+                reqFlags,
+                ref MemoryMarshal.GetReference(inputBytes),
+                inputBytes.Length,
+                ref token,
+                out retFlags,
+                out isNtlmUsed);
+        }
+
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_AcceptSecContext")]
-        internal static partial Status AcceptSecContext(
+        private static partial Status AcceptSecContext(
             out Status minorStatus,
             SafeGssCredHandle acceptorCredHandle,
             ref SafeGssContextHandle acceptContextHandle,
-            byte[]? inputBytes,
+            ref byte inputBytes,
             int inputLength,
             ref GssBuffer token,
             out uint retFlags,
             [MarshalAs(UnmanagedType.Bool)] out bool isNtlmUsed);
+
+        internal static Status AcceptSecContext(
+            out Status minorStatus,
+            SafeGssCredHandle acceptorCredHandle,
+            ref SafeGssContextHandle acceptContextHandle,
+            ReadOnlySpan<byte> inputBytes,
+            ref GssBuffer token,
+            out uint retFlags,
+            out bool isNtlmUsed)
+        {
+            return AcceptSecContext(
+                out minorStatus,
+                acceptorCredHandle,
+                ref acceptContextHandle,
+                ref MemoryMarshal.GetReference(inputBytes),
+                inputBytes.Length,
+                ref token,
+                out retFlags,
+                out isNtlmUsed);
+        }
 
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_DeleteSecContext")]
         internal static partial Status DeleteSecContext(
@@ -134,10 +210,10 @@ internal static partial class Interop
             ref GssBuffer outBuffer);
 
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_Unwrap")]
-        private static partial Status Unwrap(
+        private static unsafe partial Status Unwrap(
             out Status minorStatus,
             SafeGssContextHandle? contextHandle,
-            byte[] inputBytes,
+            byte* inputBytes,
             int offset,
             int count,
             ref GssBuffer outBuffer);
@@ -155,19 +231,16 @@ internal static partial class Interop
             }
         }
 
-        internal static Status UnwrapBuffer(
+        internal static unsafe Status UnwrapBuffer(
             out Status minorStatus,
             SafeGssContextHandle? contextHandle,
-            byte[] inputBytes,
-            int offset,
-            int count,
+            ReadOnlySpan<byte> inputBytes,
             ref GssBuffer outBuffer)
         {
-            Debug.Assert(inputBytes != null, "inputBytes must be valid value");
-            Debug.Assert(offset >= 0 && offset <= inputBytes.Length, "offset must be valid");
-            Debug.Assert(count >= 0 && count <= inputBytes.Length, "count must be valid");
-
-            return Unwrap(out minorStatus, contextHandle, inputBytes, offset, count, ref outBuffer);
+            fixed (byte* inputBytesPtr = inputBytes)
+            {
+                return Unwrap(out minorStatus, contextHandle, inputBytesPtr, 0, inputBytes.Length, ref outBuffer);
+            }
         }
     }
 }
