@@ -71,12 +71,13 @@ let is_debugging = false;
 
 function initRunArgs() {
     // set defaults
-    runArgs.applicationArguments = runArgs.applicationArguments === undefined ? [] : runArgs.applicationArguments;
+    runArgs.applicationArguments = []; // not set in runArgs.json for non-browser cases
     runArgs.workingDirectory = runArgs.workingDirectory === undefined ? '/' : runArgs.workingDirectory;
     runArgs.environmentVariables = runArgs.environmentVariables === undefined ? {} : runArgs.environmentVariables;
     runArgs.runtimeArgs = runArgs.runtimeArgs === undefined ? [] : runArgs.runtimeArgs;
     runArgs.diagnosticTracing = runArgs.diagnosticTracing === undefined ? false : runArgs.diagnosticTracing;
     runArgs.debugging = runArgs.debugging === undefined ? false : runArgs.debugging;
+    runArgs.forwardConsole = false; // not relevant for non-browser
 }
 
 function mergeArguments() {
