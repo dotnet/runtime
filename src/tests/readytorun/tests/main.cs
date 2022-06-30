@@ -513,8 +513,9 @@ class Program
         Console.WriteLine("RVAFieldTest");
         RVAFieldTest();
 
-        Console.WriteLine("TestLoadR2RImageFromByteArray");
-        TestLoadR2RImageFromByteArray();
+//        Disable for https://github.com/dotnet/runtime/issues/71507
+//        Console.WriteLine("TestLoadR2RImageFromByteArray");
+//        TestLoadR2RImageFromByteArray();
 
         Console.WriteLine("TestILBodyChange");
         TestILBodyChange();
