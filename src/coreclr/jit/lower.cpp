@@ -259,6 +259,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             ContainCheckBoundsChk(node->AsBoundsChk());
             break;
 #endif // TARGET_XARCH
+
         case GT_ARR_ELEM:
             return LowerArrElem(node);
 
