@@ -432,7 +432,7 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
         MakeSrcContained(putArgNode, src);
 
         // Currently, codegen does not support LCL_VAR/LCL_FLD sources, so we morph them to OBJs.
-        // TODO-LOONGARCH64: support the local nodes in codegen and remove this code.
+        // TODO-ADDR: support the local nodes in codegen and remove this code.
         if (src->OperIsLocalRead())
         {
             unsigned     lclNum  = src->AsLclVarCommon()->GetLclNum();
