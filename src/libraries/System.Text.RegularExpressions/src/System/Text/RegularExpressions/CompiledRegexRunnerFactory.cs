@@ -11,18 +11,24 @@ namespace System.Text.RegularExpressions
         private readonly DynamicMethod _scanMethod;
         /// <summary>This field will only be set if the pattern has backreferences and uses RegexOptions.IgnoreCase</summary>
         private readonly CultureInfo? _culture;
+        /// <summary>
+        /// This field will only be set if the regex's <see cref="RegexFindOptimizations.FindMode"/>
+        /// is <see cref="FindNextStartingPositionMode.LeadingMultiString_LeftToRight"/>.
+        /// </summary>
+        private readonly MultiStringMatcher? _prefixMatcher;
 
         // Delegate is lazily created to avoid forcing JIT'ing until the regex is actually executed.
         private CompiledRegexRunner.ScanDelegate? _scan;
 
-        public CompiledRegexRunnerFactory(DynamicMethod scanMethod, CultureInfo? culture)
+        public CompiledRegexRunnerFactory(DynamicMethod scanMethod, CultureInfo? culture, MultiStringMatcher? prefixMatcher)
         {
             _scanMethod = scanMethod;
             _culture = culture;
+            _prefixMatcher = prefixMatcher;
         }
 
         protected internal override RegexRunner CreateInstance() =>
             new CompiledRegexRunner(
-                _scan ??= _scanMethod.CreateDelegate<CompiledRegexRunner.ScanDelegate>(), _culture);
+                _scan ??= _scanMethod.CreateDelegate<CompiledRegexRunner.ScanDelegate>(), _culture, _prefixMatcher);
     }
 }

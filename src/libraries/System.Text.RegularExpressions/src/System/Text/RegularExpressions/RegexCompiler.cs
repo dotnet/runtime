@@ -24,6 +24,7 @@ namespace System.Text.RegularExpressions
         private static readonly FieldInfo s_runstackField = RegexRunnerField("runstack");
         private static readonly FieldInfo s_cultureField = typeof(CompiledRegexRunner).GetField("_culture", BindingFlags.Instance | BindingFlags.NonPublic)!;
         private static readonly FieldInfo s_caseBehaviorField = typeof(CompiledRegexRunner).GetField("_caseBehavior", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        private static readonly FieldInfo s_prefixMatcherField = typeof(CompiledRegexRunner).GetField("_prefixMatcher", BindingFlags.Instance | BindingFlags.NonPublic)!;
 
         private static readonly MethodInfo s_captureMethod = RegexRunnerMethod("Capture");
         private static readonly MethodInfo s_transferCaptureMethod = RegexRunnerMethod("TransferCapture");
@@ -37,6 +38,7 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_crawlposMethod = RegexRunnerMethod("Crawlpos");
         private static readonly MethodInfo s_charInClassMethod = RegexRunnerMethod("CharInClass");
         private static readonly MethodInfo s_checkTimeoutMethod = RegexRunnerMethod("CheckTimeout");
+        private static readonly MethodInfo s_multiStringMatcherFindMethod = typeof(MultiStringMatcher).GetMethod(nameof(MultiStringMatcher.Find))!;
 
         private static readonly MethodInfo s_regexCaseEquivalencesTryFindCaseEquivalencesForCharWithIBehaviorMethod = typeof(RegexCaseEquivalences).GetMethod("TryFindCaseEquivalencesForCharWithIBehavior", BindingFlags.Static | BindingFlags.Public)!;
         private static readonly MethodInfo s_charIsDigitMethod = typeof(char).GetMethod("IsDigit", new Type[] { typeof(char) })!;
@@ -451,6 +453,10 @@ namespace System.Text.RegularExpressions
                     EmitLiteralAfterAtomicLoop();
                     break;
 
+                case FindNextStartingPositionMode.LeadingMultiString_LeftToRight:
+                    EmitMultiStringMatcherFind();
+                    break;
+
                 default:
                     Debug.Fail($"Unexpected mode: {_regexTree.FindOptimizations.FindMode}");
                     goto case FindNextStartingPositionMode.NoSearch;
@@ -756,6 +762,37 @@ namespace System.Text.RegularExpressions
                 Ret();
             }
 
+            void EmitMultiStringMatcherFind()
+            {
+                RegexFindOptimizations opts = _regexTree.FindOptimizations;
+                Debug.Assert(opts.FindMode is FindNextStartingPositionMode.LeadingMultiString_LeftToRight && opts.PrefixMatcher is not null);
+
+                using RentedLocalBuilder i = RentInt32Local();
+
+                // int i = _prefixMatcher.Find(inputSpan.Slice(pos));
+                Ldthisfld(s_prefixMatcherField);
+                Ldloca(inputSpan);
+                Ldloc(pos);
+                Call(s_spanSliceIntMethod);
+                Call(s_multiStringMatcherFindMethod);
+                Stloc(i);
+
+                // if (i < 0) goto ReturnFalse;
+                Ldloc(i);
+                Ldc(0);
+                BltFar(returnFalse);
+
+                // base.runtextpos = pos + i;
+                // return true;
+                Ldthis();
+                Ldloc(pos);
+                Ldloc(i);
+                Add();
+                Stfld(s_runtextposField);
+                Ldc(1);
+                Ret();
+            }
+
             // Emits a case-sensitive right-to-left search for a substring.
             void EmitIndexOf_RightToLeft()
             {
@@ -946,7 +983,7 @@ namespace System.Text.RegularExpressions
                 // if (!CharInClass(slice[i + 2], prefix[2], "...")) continue;
                 // ...
                 Debug.Assert(setIndex is 0 or 1);
-                for ( ; setIndex < setsToUse; setIndex++)
+                for (; setIndex < setsToUse; setIndex++)
                 {
                     Debug.Assert(needLoop);
                     Ldloca(textSpanLocal);
