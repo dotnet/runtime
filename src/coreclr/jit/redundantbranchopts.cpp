@@ -23,10 +23,9 @@ PhaseStatus Compiler::optRedundantBranches()
     {
     public:
         bool madeChanges;
-        bool considerRevisiting;
 
         OptRedundantBranchesDomTreeVisitor(Compiler* compiler)
-            : DomTreeVisitor(compiler, compiler->fgSsaDomTree), madeChanges(false), considerRevisiting(false)
+            : DomTreeVisitor(compiler, compiler->fgSsaDomTree), madeChanges(false)
         {
         }
 
@@ -48,7 +47,27 @@ PhaseStatus Compiler::optRedundantBranches()
             if (block->bbJumpKind == BBJ_COND)
             {
                 madeChanges |= m_compiler->optRedundantRelop(block);
-                madeChanges |= m_compiler->optRedundantBranch(block, considerRevisiting);
+
+                BasicBlock* bbNext = block->bbNext;
+                BasicBlock* bbJump = block->bbJumpDest;
+
+                madeChanges |= m_compiler->optRedundantBranch(block);
+
+                if (madeChanges && bbNext != nullptr && bbNext->countOfInEdges() == 0)
+                {
+                    for (BasicBlock* successor : bbNext->Succs())
+                    {
+                        m_compiler->optRedundantBranch(successor);
+                    }
+                }
+
+                if (madeChanges && bbJump != nullptr && bbJump->countOfInEdges() == 0)
+                {
+                    for (BasicBlock* successor : bbJump->Succs())
+                    {
+                        m_compiler->optRedundantBranch(successor);
+                    }
+                }
             }
         }
     };
@@ -61,18 +80,6 @@ PhaseStatus Compiler::optRedundantBranches()
     for (BasicBlock* const block : Blocks())
     {
         block->bbFlags &= ~BBF_VISITED;
-    }
-
-    // We've made some changes so it makes sense to try
-    // one more time
-    if (visitor.considerRevisiting)
-    {
-        assert(visitor.madeChanges);
-        visitor.WalkTree();
-        for (BasicBlock* const block : Blocks())
-        {
-            block->bbFlags &= ~BBF_VISITED;
-        }
     }
 
 #if DEBUG
@@ -245,13 +252,11 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
 //
 // Arguments:
 //   block              - block with branch to optimize
-//   considerRevisiting - a hint for the "optimize redundant branches" phase to
-//                        have a 2nd run
 //
 // Returns:
 //   True if the branch was optimized.
 //
-bool Compiler::optRedundantBranch(BasicBlock* const block, bool& considerRevisiting)
+bool Compiler::optRedundantBranch(BasicBlock* const block)
 {
     Statement* const stmt = block->lastStmt();
 
@@ -494,21 +499,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block, bool& considerRevisit
 
     JITDUMP("\nRedundant branch opt in " FMT_BB ":\n", block->bbNum);
 
-    const BasicBlock* jumpBb = block->bbJumpDest;
-    const BasicBlock* nextBb = block->bbNext;
-
     fgMorphBlockStmt(block, stmt DEBUGARG(__FUNCTION__));
-
-    // A quick heuristic: if Morph made block's successors unreachable
-    // it's proven to be profitable to run the opt-br phase again
-    if ((nextBb != nullptr) && (nextBb->countOfInEdges() == 0))
-    {
-        considerRevisiting = true;
-    }
-    if ((jumpBb != nullptr) && (jumpBb->countOfInEdges() == 0))
-    {
-        considerRevisiting = true;
-    }
 
     return true;
 }
@@ -565,8 +556,7 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     // we might need to duplicate a lot of code to thread
     // the jumps. See if that's the case.
     //
-    BasicBlock* idomBlock = fgGetDomSpeculatively(block);
-    const bool  isIDom    = domBlock == idomBlock;
+    const bool isIDom = domBlock == block->bbIDom;
     if (!isIDom)
     {
         // Walk up the dom tree until we hit dom block.
@@ -575,6 +565,7 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
         // then we must have already optimized them, and
         // so should not have to duplicate code to thread.
         //
+        BasicBlock* idomBlock = block->bbIDom;
         while ((idomBlock != nullptr) && (idomBlock != domBlock))
         {
             if (idomBlock->bbJumpKind == BBJ_COND)
@@ -584,8 +575,8 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
             }
 
             JITDUMP(" -- bypassing %sdom " FMT_BB " as it was already optimized\n",
-                    (idomBlock == fgGetDomSpeculatively(block)) ? "i" : "", idomBlock->bbNum);
-            idomBlock = fgGetDomSpeculatively(idomBlock);
+                    (idomBlock == block->bbIDom) ? "i" : "", idomBlock->bbNum);
+            idomBlock = idomBlock->bbIDom;
         }
 
         // If we didn't bail out above, we should have reached domBlock.
