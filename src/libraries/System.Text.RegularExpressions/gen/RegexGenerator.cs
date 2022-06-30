@@ -207,6 +207,7 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine($"    using System;");
                 writer.WriteLine($"    using System.CodeDom.Compiler;");
                 writer.WriteLine($"    using System.Collections;");
+                writer.WriteLine($"    using System.Collections.Generic;");
                 writer.WriteLine($"    using System.ComponentModel;");
                 writer.WriteLine($"    using System.Globalization;");
                 writer.WriteLine($"    using System.Runtime.CompilerServices;");

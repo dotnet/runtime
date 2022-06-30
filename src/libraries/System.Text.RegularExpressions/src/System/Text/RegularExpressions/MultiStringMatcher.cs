@@ -11,7 +11,7 @@ namespace System.Text.RegularExpressions
     /// </summary>
     internal sealed class MultiStringMatcher
     {
-        private readonly List<TrieNode> _trie;
+        internal readonly List<TrieNode> Trie;
 
         /// <summary>
         /// Creates a <see cref="MultiStringMatcher"/> from a trie, and
@@ -22,12 +22,12 @@ namespace System.Text.RegularExpressions
         {
             BuildTrieLinks(trie);
 
-            _trie = trie;
+            Trie = trie;
         }
 
         public MultiStringMatcher(ReadOnlySpan<string> words)
         {
-            _trie = BuildTrie(words);
+            Trie = BuildTrie(words);
         }
 
         private static List<TrieNode> BuildTrie(ReadOnlySpan<string> words)
@@ -121,7 +121,7 @@ namespace System.Text.RegularExpressions
                 char c = text[i];
                 while (true)
                 {
-                    if (_trie[currentState].Children.TryGetValue(c, out int nextState))
+                    if (Trie[currentState].Children.TryGetValue(c, out int nextState))
                     {
                         currentState = nextState;
                         break;
@@ -137,16 +137,16 @@ namespace System.Text.RegularExpressions
                         break;
                     }
 
-                    currentState = _trie[currentState].SuffixLink;
+                    currentState = Trie[currentState].SuffixLink;
                 }
 
-                int dictLink = _trie[currentState].DictionaryLink;
+                int dictLink = Trie[currentState].DictionaryLink;
 
                 if (dictLink != TrieNode.Root)
                 {
                     // Found a match. We mark it and continue searching hoping it is getting bigger.
                     // The depth of the node we are in is the length of the word we found.
-                    int indexOfMatch = i + 1 - _trie[dictLink].Depth;
+                    int indexOfMatch = i + 1 - Trie[dictLink].Depth;
 
                     // We want to return the leftmost-longest match.
                     // If this match starts later than the match we might have found before,
