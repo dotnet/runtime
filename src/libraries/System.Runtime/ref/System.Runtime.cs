@@ -12540,14 +12540,6 @@ namespace System.Runtime.CompilerServices
         object? this[int index] { get; }
         int Length { get; }
     }
-    // See src\libraries\System.Private.CoreLib\src\System\Runtime\CompilerServices\LifetimeAnnotationAttribute.cs
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
-    internal sealed class LifetimeAnnotationAttribute : System.Attribute
-    {
-        public LifetimeAnnotationAttribute(bool isRefScoped, bool isValueScoped) { throw null; }
-        public bool IsRefScoped { get { throw null; } }
-        public bool IsValueScoped { get { throw null; } }
-    }
     public enum LoadHint
     {
         Default = 0,
