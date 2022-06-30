@@ -14,7 +14,6 @@ The .NET Foundation licenses this file to you under the MIT license.
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <CppCompiler>cl</CppCompiler>
     <CppLinker>link</CppLinker>
     <CppLibCreator>lib</CppLibCreator>
     <LibrarySuffix>.lib</LibrarySuffix>
@@ -109,9 +108,8 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <PropertyGroup Condition="'$(_VCVarsAllFound)' == '0'">
       <_CppToolsDirectory>$(_FindVCVarsallOutput.Split(`#`)[0])</_CppToolsDirectory>
-      <CppCompiler>"$(_CppToolsDirectory)cl.exe"</CppCompiler>
       <CppLinker>$(_CppToolsDirectory)link.exe</CppLinker>
-      <CppLibCreator>"$(_CppToolsDirectory)lib.exe"</CppLibCreator>
+      <CppLibCreator>$(_CppToolsDirectory)lib.exe</CppLibCreator>
     </PropertyGroup>
 
     <Error Condition="'$(_VCVarsAllFound)' == '1'" Text="Platform linker not found. To fix this problem, download and install Visual Studio 2022 from http://visualstudio.com. Make sure to install the Desktop Development for C++ workload. For ARM64 development also install C++ ARM64 build tools." />
