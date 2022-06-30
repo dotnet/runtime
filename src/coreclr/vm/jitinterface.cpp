@@ -9063,31 +9063,7 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
 
     if (!ftn->IsFCall() && ftn->IsVersionableWithPrecode() && (ftn->GetPrecodeType() == PRECODE_FIXUP) && !ftn->IsPointingToStableNativeCode())
     {
-        bool skipPrecode = false;
-        bool profilerPresent = false;
-
-#ifdef PROFILING_SUPPORTED
-        profilerPresent = CORProfilerPresent();
-#endif
-
-        // If the direct target is already on tier1 we might be able to skip the precode and call it directly
-        // ReJIT is not going to like that
-        if (!profilerPresent && (accessFlags & CORINFO_ACCESS_DIRECT) && ftn->HasNativeCodeSlot())
-        {
-            CodeVersionManager::LockHolder codeVersioningLockHolder;
-            NativeCodeVersion activeCodeVersion = ftn->GetCodeVersionManager()->GetActiveILCodeVersion(ftn)
-                .GetActiveNativeCodeVersion(ftn);
-            if (activeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier::OptimizationTier1)
-            {
-                ret = (void*)ftn->GetAddrOfNativeCodeSlot();
-                skipPrecode = true;
-            }
-        }
-
-        if (!skipPrecode)
-        {
-            ret = ((FixupPrecode*)ftn->GetOrCreatePrecode())->GetTargetSlot();
-        }
+        ret = ((FixupPrecode*)ftn->GetOrCreatePrecode())->GetTargetSlot();
         accessType = IAT_PVALUE;
     }
     else

@@ -251,7 +251,7 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
 // optRedundantBranch: try and optimize a possibly redundant branch
 //
 // Arguments:
-//   block              - block with branch to optimize
+//   block - block with branch to optimize
 //
 // Returns:
 //   True if the branch was optimized.
@@ -500,7 +500,6 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
     JITDUMP("\nRedundant branch opt in " FMT_BB ":\n", block->bbNum);
 
     fgMorphBlockStmt(block, stmt DEBUGARG(__FUNCTION__));
-
     return true;
 }
 

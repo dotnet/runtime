@@ -3978,8 +3978,6 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
             aflags = (CORINFO_ACCESS_FLAGS)(aflags | CORINFO_ACCESS_NONNULL);
         }
 
-        aflags = (CORINFO_ACCESS_FLAGS)(aflags | CORINFO_ACCESS_DIRECT);
-
         CORINFO_CONST_LOOKUP addrInfo;
         comp->info.compCompHnd->getFunctionEntryPoint(call->gtCallMethHnd, &addrInfo, aflags);
 
