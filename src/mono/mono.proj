@@ -279,6 +279,13 @@
       <_MonoBuildEnv Include="TARGET_BUILD_ARCH=x64" />
     </ItemGroup>
 
+    <!-- ARM64 FreeBSD cross build options -->
+    <ItemGroup Condition="'$(TargetsFreeBSD)' == 'true' and '$(MonoCrossDir)' != '' and '$(TargetArchitecture)' == 'arm64'">
+      <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
+      <_MonoBuildEnv Include="TARGET_BUILD_ARCH=arm64" />
+      <_MonoBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)usr/local/libdata/pkgconfig" />
+    </ItemGroup>
+
     <!-- Windows specific options -->
     <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
       <_MonoCPPFLAGS Include="-DWIN32" />
