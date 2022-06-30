@@ -49,15 +49,22 @@ namespace DebuggerTests
                     })
                     .ConfigureLogging(logging =>
                     {
-                        logging
-                                .ClearProviders()
-                                .AddXunit(testOutput)
-                                //.AddSimpleConsole(options =>
-                                //{
-                                    //options.SingleLine = true;
-                                    //options.TimestampFormat = "[HH:mm:ss] ";
-                                //})
-                                //.AddFilter("DevToolsProxy", LogLevel.Debug)
+                        if (TestOptions.LogToConsole)
+                        {
+                            logging.AddSimpleConsole(options =>
+                                    {
+                                        options.SingleLine = true;
+                                        options.TimestampFormat = "[HH:mm:ss] ";
+                                    })
+                                    .AddFilter("DevToolsProxy", LogLevel.Debug);
+                        }
+                        else
+                        {
+                            // remove the default logger - console
+                            logging.ClearProviders();
+                        }
+
+                        logging.AddXunit(testOutput)
                                 .AddFile(Path.Combine(DebuggerTestBase.TestLogPath, "proxy.log"),
                                             minimumLevel: LogLevel.Trace,
                                             levelOverrides: new Dictionary<string, LogLevel>

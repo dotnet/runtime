@@ -37,18 +37,20 @@ namespace DebuggerTests
         private Exception? _isFailingWithException;
 
         protected static Lazy<ILoggerFactory> s_loggerFactory = new(() =>
-        {
-            return LoggerFactory.Create(builder => {});
-            //return LoggerFactory.Create(builder =>
-                    ////builder
-                        ////// .AddFile(logFilePath, minimumLevel: LogLevel.Debug)
-                        ////.AddSimpleConsole(options =>
-                            ////{
-                                ////options.SingleLine = true;
-                                ////options.TimestampFormat = "[HH:mm:ss] ";
-                            ////})
-                           ////.AddFilter(null, LogLevel.Debug));
-        });
+            LoggerFactory.Create(builder =>
+            {
+                if (TestOptions.LogToConsole)
+                {
+                    builder
+                        .AddSimpleConsole(options =>
+                            {
+                                options.SingleLine = true;
+                                options.TimestampFormat = "[HH:mm:ss] ";
+                            })
+                           .AddFilter(null, LogLevel.Debug);
+                        // .AddFile(logFilePath, minimumLevel: LogLevel.Debug)
+                }
+            }));
 
         protected ILogger _logger;
         public int Id { get; init; }

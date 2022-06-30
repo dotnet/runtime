@@ -71,7 +71,7 @@ namespace DebuggerTests
 
         static protected string FindTestPath()
         {
-            string test_app_path = Environment.GetEnvironmentVariable("DEBUGGER_TEST_PATH");
+            string test_app_path = EnvironmentVariables.DebuggerTestPath;
 
             if (string.IsNullOrEmpty(test_app_path))
             {
@@ -106,7 +106,7 @@ namespace DebuggerTests
             {
                 if (s_testLogPath == null)
                 {
-                    string logPathVar = Environment.GetEnvironmentVariable("TEST_LOG_PATH");
+                    string logPathVar = EnvironmentVariables.TestLogPath;
                     logPathVar = string.IsNullOrEmpty(logPathVar) ? Environment.CurrentDirectory : logPathVar;
                     Interlocked.CompareExchange(ref s_testLogPath, logPathVar, null);
                 }
