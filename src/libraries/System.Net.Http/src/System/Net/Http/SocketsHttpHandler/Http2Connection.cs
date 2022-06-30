@@ -8,7 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Net.Http.HPack;
-using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -829,7 +828,7 @@ namespace System.Net.Http
                         case SettingId.EnableConnect:
                             if (settingValue == 1)
                             {
-                                IsConnectEnabled.TrySetResult(true);
+                                IsConnectEnabled = true;
                             }
                             break;
 
@@ -848,8 +847,7 @@ namespace System.Net.Http
                         ChangeMaxConcurrentStreams(int.MaxValue);
                     }
 
-                    // Set a default value if it wasn't enabled above.
-                    IsConnectEnabled.TrySetResult(false);
+                    InitialSettingsReceived.TrySetResult(true);
                 }
 
                 _incomingBuffer.Discard(frameHeader.PayloadLength);
@@ -1912,7 +1910,8 @@ namespace System.Net.Http
             EnableConnect = 0x8
         }
 
-        internal TaskCompletionSourceWithCancellation<bool> IsConnectEnabled { get; private set; } = new TaskCompletionSourceWithCancellation<bool>();
+        internal TaskCompletionSourceWithCancellation<bool> InitialSettingsReceived { get; private set; } = new TaskCompletionSourceWithCancellation<bool>();
+        internal bool IsConnectEnabled { get; private set; }
 
         // Note that this is safe to be called concurrently by multiple threads.
 

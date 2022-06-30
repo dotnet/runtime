@@ -1026,7 +1026,7 @@ namespace System.Net.Http
                                 {
                                     int settingsTimeoutInMilliseconds = 5 * 60 * 1000;
                                     CancellationTokenSource cts = new CancellationTokenSource(settingsTimeoutInMilliseconds);
-                                    if (!await connection.IsConnectEnabled.WaitWithCancellationAsync(cts.Token).ConfigureAwait(false))
+                                    if (await connection.InitialSettingsReceived.WaitWithCancellationAsync(cts.Token).ConfigureAwait(false) && !connection.IsConnectEnabled)
                                     {
                                         HttpRequestException exception = new("Extended CONNECT is not supported");
                                         exception.Data["SETTINGS_ENABLE_CONNECT_PROTOCOL"] = false;
